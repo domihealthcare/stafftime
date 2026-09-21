@@ -1,0 +1,253 @@
+// Domi Time & Scheduling — core data model (Phase 1)
+//
+// Conventions (kept aligned with Domi EMR so a future merge is cheap):
+//  - UUID primary keys
+//  - snake_case table names via @@map, camelCase in the client
+//  - all timestamps stored in UTC; each Location carries its own IANA timezone
+//    so reporting stays correct if a location is ever added outside NJ
+//  - Employee.externalId is the stable hook for linking to EMR staff records
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ---------------------------------------------------------------------------
+// Enums
+// ---------------------------------------------------------------------------
+
+enum Role {
+  EMPLOYEE
+  MANAGER
+  ADMIN
+}
+
+enum EmploymentStatus {
+  PENDING
+  ACTIVE
+  ON_LEAVE
+  TERMINATED
+}
+
+enum PayType {
+  HOURLY
+  SALARY
+}
+
+enum ShiftStatus {
+  DRAFT
+  PUBLISHED
+  CANCELLED
+}
+
+/// How the punch was submitted.
+enum ClockMethod {
+  WEB
+  MOBILE
+  KIOSK
+}
+
+/// How we proved the employee was actually at the location.
+enum VerificationMethod {
+  GEOFENCE
+  IP_ALLOWLIST
+  KIOSK
+  MANUAL
+}
+
+enum TimeEntryStatus {
+  OPEN
+  COMPLETED
+  NEEDS_REVIEW
+  APPROVED
+}
+
+// ---------------------------------------------------------------------------
+// Location
+// ---------------------------------------------------------------------------
+
+/// A physical practice location. Carries the geofence and IP allow-list used to
+/// verify clock-ins.
+model Location {
+  id           String  @id @default(uuid()) @db.Uuid
+  name         String
+  slug         String  @unique
+  addressLine1 String
+  addressLine2 String?
+  city         String
+  state        String  @db.Char(2)
+  postalCode   String
+  /// IANA timezone, e.g. "America/New_York".
+  timezone     String  @default("America/New_York")
+
+  /// Geofence centre. Decimal(9,6) gives ~11cm precision — plenty for a radius check.
+  latitude  Decimal @db.Decimal(9, 6)
+  longitude Decimal @db.Decimal(9, 6)
+  /// How far from the centre a web/mobile punch may be and still count as "at work".
+  geofenceRadiusMeters Int @default(150)
+
+  /// Fallback verification for web punches: exact IPv4/IPv6 addresses or IPv4 CIDR
+  /// blocks (e.g. "203.0.113.7", "203.0.113.0/24") belonging to this office.
+  allowedIps String[] @default([])
+
+  /// Whether a location-bound kiosk session may be opened for this location.
+  kioskEnabled Boolean @default(true)
+  isActive     Boolean @default(true)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  employees   EmployeeLocation[]
+  shifts      Shift[]
+  timeEntries TimeEntry[]
+
+  @@map("locations")
+}
+
+// ---------------------------------------------------------------------------
+// Employee
+// ---------------------------------------------------------------------------
+
+model Employee {
+  id String @id @default(uuid()) @db.Uuid
+
+  /// Stable identifier for future Domi EMR linkage. Nullable today, unique when set,
+  /// so staff records can be matched later without a messy migration.
+  externalId String? @unique
+
+  firstName     String
+  lastName      String
+  preferredName String?
+  email         String  @unique
+  phone         String?
+
+  role             Role             @default(EMPLOYEE)
+  employmentStatus EmploymentStatus @default(PENDING)
+  payType          PayType          @default(HOURLY)
+
+  hireDate        DateTime  @db.Date
+  terminationDate DateTime? @db.Date
+
+  /// Kiosk credentials. The PIN is only ever stored hashed.
+  pinHash String?
+  badgeId String? @unique
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  locations   EmployeeLocation[]
+  shifts      Shift[]
+  timeEntries TimeEntry[]
+
+  createdShifts       Shift[]     @relation("ShiftCreatedBy")
+  editedTimeEntries   TimeEntry[] @relation("TimeEntryEditedBy")
+  approvedTimeEntries TimeEntry[] @relation("TimeEntryApprovedBy")
+
+  @@index([employmentStatus])
+  @@map("employees")
+}
+
+/// An employee may be assigned to more than one location (North Bergen / West New York).
+/// Clock-in is only permitted at an assigned location.
+model EmployeeLocation {
+  employeeId String   @db.Uuid
+  locationId String   @db.Uuid
+  isPrimary  Boolean  @default(false)
+  assignedAt DateTime @default(now())
+
+  employee Employee @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+  location Location @relation(fields: [locationId], references: [id], onDelete: Cascade)
+
+  @@id([employeeId, locationId])
+  @@index([locationId])
+  @@map("employee_locations")
+}
+
+// ---------------------------------------------------------------------------
+// Shift
+// ---------------------------------------------------------------------------
+
+/// A scheduled shift, built by a manager in the scheduler.
+model Shift {
+  id         String      @id @default(uuid()) @db.Uuid
+  employeeId String      @db.Uuid
+  locationId String      @db.Uuid
+  startsAt   DateTime
+  endsAt     DateTime
+  status     ShiftStatus @default(DRAFT)
+  notes      String?
+
+  createdById String? @db.Uuid
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  employee  Employee    @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+  location  Location    @relation(fields: [locationId], references: [id], onDelete: Restrict)
+  createdBy Employee?   @relation("ShiftCreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
+  timeEntries TimeEntry[]
+
+  @@index([employeeId, startsAt])
+  @@index([locationId, startsAt])
+  @@map("shifts")
+}
+
+// ---------------------------------------------------------------------------
+// TimeEntry
+// ---------------------------------------------------------------------------
+
+/// One clock-in (and eventually clock-out) pair. Every punch records how it was
+/// submitted and how it was verified, so a disputed timesheet can be reconstructed.
+model TimeEntry {
+  id         String          @id @default(uuid()) @db.Uuid
+  employeeId String          @db.Uuid
+  locationId String          @db.Uuid
+  shiftId    String?         @db.Uuid
+  method     ClockMethod
+  status     TimeEntryStatus @default(OPEN)
+
+  clockInAt             DateTime
+  clockInLatitude       Decimal?           @db.Decimal(9, 6)
+  clockInLongitude      Decimal?           @db.Decimal(9, 6)
+  clockInAccuracyMeters Int?
+  clockInIp             String?
+  clockInVerification   VerificationMethod
+
+  clockOutAt             DateTime?
+  clockOutLatitude       Decimal?            @db.Decimal(9, 6)
+  clockOutLongitude      Decimal?            @db.Decimal(9, 6)
+  clockOutAccuracyMeters Int?
+  clockOutIp             String?
+  clockOutVerification   VerificationMethod?
+
+  /// Flags surfaced to managers on the timesheet review screen.
+  isLate           Boolean @default(false)
+  isEarlyDeparture Boolean @default(false)
+  isManuallyEdited Boolean @default(false)
+  isMissingPunch   Boolean @default(false)
+
+  /// Audit trail for manual edits and approvals.
+  editedById String?   @db.Uuid
+  editedAt   DateTime?
+  editReason String?
+  approvedById String?   @db.Uuid
+  approvedAt   DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  employee   Employee  @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+  location   Location  @relation(fields: [locationId], references: [id], onDelete: Restrict)
+  shift      Shift?    @relation(fields: [shiftId], references: [id], onDelete: SetNull)
+  editedBy   Employee? @relation("TimeEntryEditedBy", fields: [editedById], references: [id], onDelete: SetNull)
+  approvedBy Employee? @relation("TimeEntryApprovedBy", fields: [approvedById], references: [id], onDelete: SetNull)
+
+  @@index([employeeId, clockInAt])
+  @@index([locationId, clockInAt])
+  @@index([shiftId])
+  @@map("time_entries")
+}

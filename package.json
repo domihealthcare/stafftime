@@ -1,0 +1,27 @@
+{
+  "name": "stafftime",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Domi Time & Scheduling — staff clock-in, scheduling and timesheets",
+  "workspaces": [
+    "apps/*"
+  ],
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "dev": "npm run start:dev --workspace @stafftime/api",
+    "build": "npm run build --workspace @stafftime/api",
+    "test": "npm run test --workspace @stafftime/api",
+    "lint": "npm run lint --workspace @stafftime/api",
+    "format": "prettier --write \"apps/**/*.{ts,tsx,js,json,md}\"",
+    "db:up": "docker compose up -d postgres",
+    "db:down": "docker compose down",
+    "db:migrate": "npm run prisma:migrate --workspace @stafftime/api",
+    "db:seed": "npm run prisma:seed --workspace @stafftime/api",
+    "db:studio": "npm run prisma:studio --workspace @stafftime/api"
+  },
+  "devDependencies": {
+    "prettier": "^3.3.3"
+  }
+}
