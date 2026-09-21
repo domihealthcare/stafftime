@@ -28,26 +28,34 @@ Phase 1. Answers belong in `docs/architecture.md` once confirmed.
 ## Product decisions
 
 - [ ] **Kiosk device:** dedicated tablet per location, or a shared front-desk PC?
-      Affects how the location-bound kiosk session is established and secured.
-- [ ] **Kiosk auth:** PIN, badge tap, or both? The schema supports both
-      (`pinHash`, `badgeId`); nothing decides between them yet.
+      Kiosk mode works on either — the device is bound to a location when it is
+      paired — but this decides whether badge readers are worth buying.
+- [ ] **Kiosk auth:** PIN is built and working. Badge tap is not; the schema
+      stores `badgeId` and it is a small addition, but it needs a reader in hand
+      to test. Is PIN enough day to day?
 - [ ] **Who may correct a timesheet** — any manager, or only the employee's own
       manager? Today any manager can edit any entry.
 - [ ] **Overnight shifts.** Supported by the schema (start/end are full
       timestamps), untested against real scheduling patterns.
 
-## Needed for the kiosk screen (Phase 1, not yet built)
+## Kiosk
 
-The web and mobile clock-in screens are done. The kiosk is not, and it needs
-backend work first:
+Built and working with PINs. What is left:
 
-- [ ] **A kiosk session endpoint** — pairing a device to a location and holding
-      that binding, so the tablet identifies its own location.
-- [ ] **A PIN/badge verification endpoint.** The schema stores `pinHash` and
-      `badgeId` and the API can set a PIN, but nothing verifies one yet. The
-      clock-in API already accepts `method: KIOSK`, so the punch itself works —
-      only the "who is this?" step is missing.
-- [ ] Decide PIN vs badge tap (see below) before building the screen.
+- [x] ~~A kiosk session endpoint pairing a device to a location.~~ Done.
+- [x] ~~A PIN verification endpoint.~~ Done, with policy, argon2 and lockout.
+- [ ] **Badge tap.** Not built. A USB badge reader behaves like a keyboard, so
+      the screen would listen for a fast burst of keystrokes ending in Enter and
+      match it against `Employee.badgeId` — a small addition, but it cannot be
+      written or tested responsibly without a reader in hand. Needs the device
+      decision below first.
+- [ ] **Kiosk browser setup.** Whatever the device, it wants guided access or
+      kiosk browser mode so staff cannot navigate away, and the screen kept
+      awake. Device configuration rather than code, but somebody has to do it
+      before launch.
+- [ ] **Per-device PIN attempt throttling.** Lockout is per employee today, so
+      someone at the tablet could try 5 PINs each against many names. Worth a
+      device-level cooldown on top.
 
 ## Technical to-dos
 
@@ -57,9 +65,8 @@ backend work first:
       needs an admin to issue a temporary password. A "forgot password" email
       flow needs an email sender (SendGrid, Resend, SES) chosen and configured —
       not set up, and a decision for you rather than a technical blocker.
-- [ ] **Rate limiting and lockout on kiosk PIN entry.** Sign-in has both; the
-      kiosk PIN path does not exist yet and will need its own, since a 4-digit
-      PIN with unlimited attempts is guessable.
+- [x] ~~Rate limiting and lockout on kiosk PIN entry.~~ Done — 5 attempts then
+      10 minutes, tracked separately from password lockout.
 - [ ] **Per-IP rate limiting on the login endpoint.** Account lockout stops
       guessing at one account; it does not stop one attacker spraying one common
       password across every known address.

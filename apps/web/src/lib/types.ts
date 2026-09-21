@@ -36,6 +36,8 @@ export interface EmployeeSummary {
 }
 
 export interface Employee extends EmployeeSummary {
+  /// Whether a kiosk PIN is set. The PIN itself is never sent to the client.
+  hasKioskPin?: boolean;
   preferredName: string | null;
   externalId?: string | null;
   /// True while an admin-set temporary password is still in force.

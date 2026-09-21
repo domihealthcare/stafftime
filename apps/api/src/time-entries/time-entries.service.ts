@@ -218,9 +218,12 @@ export class TimeEntriesService {
     const entry = await this.findOne(id);
 
     const clockInAt = dto.clockInAt ? new Date(dto.clockInAt) : entry.clockInAt;
-    const clockOutAt = dto.clockOutAt
-      ? new Date(dto.clockOutAt)
-      : (entry.clockOutAt ?? null);
+    // Omitting clockOutAt keeps whatever is there; clearing it is an explicit ask.
+    const clockOutAt = dto.clearClockOut
+      ? null
+      : dto.clockOutAt
+        ? new Date(dto.clockOutAt)
+        : (entry.clockOutAt ?? null);
 
     if (clockOutAt && clockOutAt <= clockInAt) {
       throw new BadRequestException('clockOutAt must be after clockInAt.');

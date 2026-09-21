@@ -56,14 +56,35 @@ export function isPasswordChangeRequired(error: unknown): boolean {
   return error instanceof ApiError && error.code === PASSWORD_CHANGE_REQUIRED;
 }
 
+/**
+ * Pulls the machine-readable hint out of an error body.
+ *
+ * Nest spreads an exception's object payload across the top level, so a guard
+ * throwing `{ message, code }` arrives as `{ message, code }` — not nested.
+ * The nested shape is checked too, for handlers that wrap their payload.
+ */
 function extractCode(body: unknown): string | undefined {
-  if (body && typeof body === 'object' && 'message' in body) {
+  if (!body || typeof body !== 'object') {
+    return undefined;
+  }
+
+  if ('code' in body) {
+    const code = (body as { code: unknown }).code;
+    if (typeof code === 'string') {
+      return code;
+    }
+  }
+
+  if ('message' in body) {
     const message = (body as { message: unknown }).message;
     if (message && typeof message === 'object' && 'code' in message) {
       const code = (message as { code: unknown }).code;
-      return typeof code === 'string' ? code : undefined;
+      if (typeof code === 'string') {
+        return code;
+      }
     }
   }
+
   return undefined;
 }
 
@@ -112,7 +133,87 @@ export interface AuthSession {
   ipAddress: string | null;
 }
 
+export interface KioskSession {
+  deviceName: string;
+  locationId: string;
+  locationName: string;
+}
+
+export interface KioskEmployee {
+  id: string;
+  firstName: string;
+  lastName: string;
+}
+
+export interface KioskPunchResult {
+  action: 'CLOCKED_IN' | 'CLOCKED_OUT';
+  employeeName: string;
+  at: string;
+  locationName: string;
+  workedMinutes?: number;
+  isLate: boolean;
+}
+
+export interface KioskDevice {
+  id: string;
+  name: string;
+  pairedAt: string | null;
+  lastSeenAt: string | null;
+  pairingExpiresAt: string | null;
+  createdAt: string;
+  location: { id: string; name: string };
+}
+
+export interface NewKioskDevice {
+  id: string;
+  name: string;
+  pairingCode: string;
+  pairingExpiresAt: string;
+  locationName: string;
+}
+
+/// The tablet's own calls. Authenticated by the device cookie, never a person.
+export const kioskApi = {
+  pair: (pairingCode: string) =>
+    request<KioskSession>('/kiosk/pair', {
+      method: 'POST',
+      body: JSON.stringify({ pairingCode }),
+    }),
+  session: () => request<KioskSession>('/kiosk/session'),
+  employees: () => request<KioskEmployee[]>('/kiosk/employees'),
+  punch: (employeeId: string, pin: string) =>
+    request<KioskPunchResult>('/kiosk/punch', {
+      method: 'POST',
+      body: JSON.stringify({ employeeId, pin }),
+    }),
+  unpair: () => request<{ unpaired: boolean }>('/kiosk/unpair', { method: 'POST' }),
+};
+
+export const KIOSK_NOT_PAIRED = 'KIOSK_NOT_PAIRED';
+
+export function isKioskUnpaired(error: unknown): boolean {
+  return error instanceof ApiError && error.code === KIOSK_NOT_PAIRED;
+}
+
 export const api = {
+  listKioskDevices: () => request<KioskDevice[]>('/kiosk/devices'),
+  createKioskDevice: (name: string, locationId: string) =>
+    request<NewKioskDevice>('/kiosk/devices', {
+      method: 'POST',
+      body: JSON.stringify({ name, locationId }),
+    }),
+  regenerateKioskCode: (deviceId: string) =>
+    request<NewKioskDevice>(`/kiosk/devices/${deviceId}/pairing-code`, { method: 'POST' }),
+  revokeKioskDevice: (deviceId: string) =>
+    request<{ revoked: boolean }>(`/kiosk/devices/${deviceId}`, { method: 'DELETE' }),
+  setKioskPin: (employeeId: string, pin: string) =>
+    request<{ set: boolean }>(`/kiosk/employees/${employeeId}/pin`, {
+      method: 'PUT',
+      body: JSON.stringify({ pin }),
+    }),
+  clearKioskPin: (employeeId: string) =>
+    request<{ cleared: boolean }>(`/kiosk/employees/${employeeId}/pin`, { method: 'DELETE' }),
+
   login: (email: string, password: string) =>
     request<Employee>('/auth/login', {
       method: 'POST',
@@ -152,7 +253,15 @@ export const api = {
     request<TimeEntry[]>(`/time-entries${toQuery(params)}`),
   approveTimeEntry: (id: string) =>
     request<TimeEntry>(`/time-entries/${id}/approve`, { method: 'PATCH' }),
-  editTimeEntry: (id: string, body: { clockInAt?: string; clockOutAt?: string; editReason: string }) =>
+  editTimeEntry: (
+    id: string,
+    body: {
+      clockInAt?: string;
+      clockOutAt?: string;
+      clearClockOut?: boolean;
+      editReason: string;
+    },
+  ) =>
     request<TimeEntry>(`/time-entries/${id}`, { method: 'PATCH', body: JSON.stringify(body) }),
 
   listShifts: (params: Record<string, string | undefined> = {}) =>

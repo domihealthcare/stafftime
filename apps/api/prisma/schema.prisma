@@ -101,9 +101,10 @@ model Location {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  employees   EmployeeLocation[]
-  shifts      Shift[]
-  timeEntries TimeEntry[]
+  employees    EmployeeLocation[]
+  shifts       Shift[]
+  timeEntries  TimeEntry[]
+  kioskDevices KioskDevice[]
 
   @@map("locations")
 }
@@ -146,8 +147,13 @@ model Employee {
   lockedUntil         DateTime?
 
   /// Kiosk credentials. The PIN is only ever stored hashed.
-  pinHash String?
-  badgeId String? @unique
+  pinHash      String?
+  pinUpdatedAt DateTime?
+  /// PIN lockout is tracked separately from password lockout: someone fumbling
+  /// the keypad at the front desk should not lose access to the web app too.
+  pinFailedAttempts Int       @default(0)
+  pinLockedUntil    DateTime?
+  badgeId           String?   @unique
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -157,7 +163,8 @@ model Employee {
   timeEntries TimeEntry[]
   sessions    Session[]
 
-  createdShifts       Shift[]     @relation("ShiftCreatedBy")
+  createdShifts       Shift[]       @relation("ShiftCreatedBy")
+  createdKiosks       KioskDevice[] @relation("KioskCreatedBy")
   editedTimeEntries   TimeEntry[] @relation("TimeEntryEditedBy")
   approvedTimeEntries TimeEntry[] @relation("TimeEntryApprovedBy")
 
@@ -179,6 +186,44 @@ model EmployeeLocation {
   @@id([employeeId, locationId])
   @@index([locationId])
   @@map("employee_locations")
+}
+
+// ---------------------------------------------------------------------------
+// Kiosk
+// ---------------------------------------------------------------------------
+
+/// A tablet or front-desk PC bound to one location.
+///
+/// The device itself proves where a punch happened, which is why a kiosk punch
+/// needs no geolocation. Binding is the whole security model here, so a device
+/// is created for a specific location and cannot be moved — pair a new one
+/// instead.
+model KioskDevice {
+  id         String @id @default(uuid()) @db.Uuid
+  name       String
+  locationId String @db.Uuid
+
+  /// SHA-256 of the long-lived device token. Null until the device is paired.
+  tokenHash String? @unique
+
+  /// SHA-256 of the short single-use pairing code an admin reads out to the
+  /// device. Cleared the moment it is used, so a code cannot be replayed.
+  pairingCodeHash  String?   @unique
+  pairingExpiresAt DateTime?
+
+  pairedAt    DateTime?
+  lastSeenAt  DateTime?
+  revokedAt   DateTime?
+  createdById String?   @db.Uuid
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  location  Location  @relation(fields: [locationId], references: [id], onDelete: Cascade)
+  createdBy Employee? @relation("KioskCreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
+
+  @@index([locationId])
+  @@map("kiosk_devices")
 }
 
 // ---------------------------------------------------------------------------

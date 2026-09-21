@@ -222,3 +222,83 @@ clock-in and fails validation.
   calls it yet; expired rows accumulate harmlessly until it is scheduled.
 - **Vercel project setup** — build commands, the hosted `DATABASE_URL`, and
   running `prisma migrate deploy` on release.
+
+## Kiosk mode
+
+A tablet or front-desk PC bound to one location. The device itself is the proof
+of where a punch happened, which is why a kiosk punch needs no geolocation —
+and why the binding is the whole security model.
+
+### Two credentials, neither sufficient alone
+
+A kiosk punch needs **the device** and **the person**:
+
+- The device holds a long-lived opaque token (httpOnly cookie, SHA-256 stored).
+  It proves "this tablet is North Bergen's" and nothing else.
+- The person enters a PIN, every single time.
+
+`KioskDeviceGuard` is deliberately separate from `SessionAuthGuard`. A kiosk
+token cannot read a timesheet, list staff beyond its own location, or act as
+anybody — verified by test. That matters because the tablet sits unattended on a
+counter: whoever picks it up gets the device credential for free, and it must be
+worth as little as possible on its own.
+
+### Pairing
+
+An admin creates the kiosk in the web app and gets a ten-character code, shown
+once. On the tablet, `/kiosk` takes that code and exchanges it for the device
+token.
+
+The code exists so nobody types a 43-character token on a tablet keyboard. It is
+single-use (cleared the instant it is redeemed), expires in 15 minutes, stored
+only as a hash, and drawn from an alphabet with no O/0, I/1, S/5 or Z/2 — because
+it gets read aloud across a room.
+
+A device stops working the moment it is revoked, and also if its location is
+deactivated or has kiosk mode switched off. Nothing needs to reach the tablet
+for that to take effect.
+
+### PINs
+
+A PIN has almost no entropy, so it gets three layers rather than one:
+
+1. **Policy.** Stricter than the password rules: no repeated digits, no
+   consecutive runs, no repeated short patterns (`1212`), no plausible years,
+   and a list of keypad favourites. `1234`, `0000`, `2580` and `1995` are all
+   refused.
+2. **argon2id**, same as passwords. Overkill for four digits on its own, which
+   is why it is not on its own.
+3. **Lockout** after 5 wrong attempts for 10 minutes — tighter than the
+   password limits, and tracked in separate columns so fumbling the keypad at
+   the front desk never locks someone out of the web app.
+
+### What the keypad will not tell you
+
+A wrong PIN, an unknown employee, and an employee with no PIN set all return the
+identical message, and the unknown case still pays for one argon2 verification
+so timing does not answer either. Employment status is checked only after the
+PIN is proven. The staff list is scoped to the device's own location, so a
+tablet cannot be used to read the whole practice roster.
+
+### The punch itself
+
+One request does PIN check and punch together. There is no intermediate "PIN
+accepted" state for the next person to walk up and inherit — which is the
+failure mode of a kiosk that logs you in and then waits.
+
+Direction is a toggle: an open entry means clock out, otherwise clock in. The
+confirmation auto-dismisses after four seconds, and an abandoned PIN screen
+clears itself after thirty, so a shared tablet never sits showing someone else's
+name and a half-typed PIN.
+
+### Decisions worth revisiting
+
+- **The staff list is visible on the tablet.** It is how you tap your own name,
+  and it is the standard time-clock pattern, but it does show who works at that
+  location to anyone standing at the desk. The alternative — typing an employee
+  number — is slower for a practice this size. Worth revisiting if the tablet
+  ends up somewhere more public than the back of the front desk.
+- **Badge tap is not built.** The schema stores `badgeId` and a USB badge reader
+  behaves like a keyboard, so it is a small addition — but it cannot be written
+  responsibly without a reader in hand to test against. See
+  `docs/open-questions.md`.

@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { NavLink, Outlet } from 'react-router-dom';
-import { useIsManager, useSession } from '../lib/session';
+import { useIsAdmin, useIsManager, useSession } from '../lib/session';
 
 const linkClasses = ({ isActive }: { isActive: boolean }) =>
   `rounded-lg px-3 py-2 text-sm font-medium transition ${
@@ -10,6 +10,7 @@ const linkClasses = ({ isActive }: { isActive: boolean }) =>
 export function Layout() {
   const { employee, signOut } = useSession();
   const isManager = useIsManager();
+  const isAdmin = useIsAdmin();
   const [signingOut, setSigningOut] = useState(false);
 
   async function handleSignOut() {
@@ -37,6 +38,11 @@ export function Layout() {
               <NavLink to="/schedule" className={linkClasses}>
                 Schedule
               </NavLink>
+              {isAdmin && (
+                <NavLink to="/kiosks" className={linkClasses}>
+                  Kiosks
+                </NavLink>
+              )}
             </nav>
           </div>
 

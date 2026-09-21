@@ -17,6 +17,15 @@ const prisma = new PrismaClient();
  * `npm run create-admin`, which prompts for a password.
  */
 const DEV_PASSWORD = 'shift-change-2026';
+
+/// Development kiosk PINs, one per seeded person so the keypad is usable
+/// immediately. Like the password above, this is local-only.
+const DEV_PINS: Record<string, string> = {
+  'admin@domihealthcare.com': '8261',
+  'manager@domihealthcare.com': '7394',
+  'frontdesk@domihealthcare.com': '4817',
+  'ma@domihealthcare.com': '5063',
+};
 async function main() {
   const northBergen = await prisma.location.upsert({
     where: { slug: 'north-bergen' },
@@ -99,6 +108,7 @@ async function main() {
   const passwordHash = await hash(DEV_PASSWORD);
 
   for (const person of people) {
+    const pinHash = await hash(DEV_PINS[person.email]);
     const employee = await prisma.employee.upsert({
       where: { email: person.email },
       // Reset credentials on every seed so a half-finished experiment (a lockout,
@@ -109,6 +119,10 @@ async function main() {
         mustChangePassword: person.mustChangePassword,
         failedLoginAttempts: 0,
         lockedUntil: null,
+        pinHash,
+        pinUpdatedAt: new Date(),
+        pinFailedAttempts: 0,
+        pinLockedUntil: null,
       },
       create: {
         firstName: person.firstName,
@@ -121,6 +135,8 @@ async function main() {
         passwordHash,
         passwordUpdatedAt: new Date(),
         mustChangePassword: person.mustChangePassword,
+        pinHash,
+        pinUpdatedAt: new Date(),
       },
     });
 
@@ -167,11 +183,15 @@ async function main() {
     select: { email: true, role: true, mustChangePassword: true },
     orderBy: { email: 'asc' },
   });
+  const withPins = employees.map((employee) => ({
+    ...employee,
+    kioskPin: DEV_PINS[employee.email],
+  }));
 
   console.log('\nSeeded locations:');
   console.table([northBergen, westNewYork].map((l) => ({ name: l.name, slug: l.slug })));
   console.log(`Seeded sign-ins — every account's password is: ${DEV_PASSWORD}`);
-  console.table(employees);
+  console.table(withPins);
   console.log(
     'ma@domihealthcare.com starts with a temporary password, to demonstrate the forced change.\n',
   );

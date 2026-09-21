@@ -10,7 +10,6 @@ import {
   ParseUUIDPipe,
   Patch,
   Post,
-  Put,
   Query,
 } from '@nestjs/common';
 import { EmploymentStatus, Role } from '@prisma/client';
@@ -18,7 +17,6 @@ import { CurrentUser } from '../common/auth/current-user.decorator';
 import { AuthUser } from '../common/auth/auth-user';
 import { Roles } from '../common/auth/roles.decorator';
 import { CreateEmployeeDto } from './dto/create-employee.dto';
-import { SetPinDto } from './dto/set-pin.dto';
 import { UpdateEmployeeDto } from './dto/update-employee.dto';
 import { EmployeesService } from './employees.service';
 
@@ -58,12 +56,6 @@ export class EmployeesController {
   @Roles(Role.ADMIN)
   update(@Param('id', ParseUUIDPipe) id: string, @Body() dto: UpdateEmployeeDto) {
     return this.employees.update(id, dto);
-  }
-
-  @Put(':id/pin')
-  @Roles(Role.ADMIN)
-  setPin(@Param('id', ParseUUIDPipe) id: string, @Body() dto: SetPinDto) {
-    return this.employees.setPin(id, dto.pin);
   }
 
   @Delete(':id')

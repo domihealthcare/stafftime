@@ -20,16 +20,33 @@ export function EditEntryDialog({
   onClose: () => void;
   onSaved: () => void;
 }) {
-  const [clockInAt, setClockInAt] = useState(toLocalInputValue(new Date(entry.clockInAt)));
-  const [clockOutAt, setClockOutAt] = useState(
-    entry.clockOutAt ? toLocalInputValue(new Date(entry.clockOutAt)) : '',
-  );
+  // The form works in local wall-clock strings, which are only second-precise.
+  // Remembering the initial values lets an untouched field be left alone
+  // entirely, rather than round-tripped through a lossy conversion.
+  const initialIn = toLocalInputValue(new Date(entry.clockInAt));
+  const initialOut = entry.clockOutAt ? toLocalInputValue(new Date(entry.clockOutAt)) : '';
+
+  const [clockInAt, setClockInAt] = useState(initialIn);
+  const [clockOutAt, setClockOutAt] = useState(initialOut);
   const [editReason, setEditReason] = useState('');
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const outBeforeIn =
-    clockOutAt !== '' && new Date(clockOutAt).getTime() <= new Date(clockInAt).getTime();
+  const inChanged = clockInAt !== initialIn;
+  const outChanged = clockOutAt !== initialOut;
+
+  // Compare what the entry would actually become: an untouched field keeps its
+  // original full-precision timestamp, so a sub-second punch does not read as
+  // clock-out-before-clock-in just because the inputs round to whole seconds.
+  const effectiveIn = inChanged ? new Date(clockInAt) : new Date(entry.clockInAt);
+  const effectiveOut =
+    clockOutAt === ''
+      ? null
+      : outChanged
+        ? new Date(clockOutAt)
+        : new Date(entry.clockOutAt as string);
+
+  const outBeforeIn = effectiveOut !== null && effectiveOut.getTime() <= effectiveIn.getTime();
   const canSave = editReason.trim().length >= 3 && !outBeforeIn;
 
   async function submit(event: React.FormEvent) {
@@ -38,8 +55,11 @@ export function EditEntryDialog({
     setError(null);
     try {
       await api.editTimeEntry(entry.id, {
-        clockInAt: new Date(clockInAt).toISOString(),
-        clockOutAt: clockOutAt ? new Date(clockOutAt).toISOString() : undefined,
+        // Only send what the manager actually touched.
+        clockInAt: inChanged ? new Date(clockInAt).toISOString() : undefined,
+        clockOutAt: outChanged && clockOutAt !== '' ? new Date(clockOutAt).toISOString() : undefined,
+        // Emptying a field that had a value is a deliberate "this punch is missing".
+        clearClockOut: initialOut !== '' && clockOutAt === '' ? true : undefined,
         editReason,
       });
       onSaved();

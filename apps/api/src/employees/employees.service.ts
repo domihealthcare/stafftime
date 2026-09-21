@@ -5,7 +5,6 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { EmploymentStatus, Prisma } from '@prisma/client';
-import { createHash, randomBytes, scryptSync, timingSafeEqual } from 'node:crypto';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateEmployeeDto } from './dto/create-employee.dto';
 import { UpdateEmployeeDto } from './dto/update-employee.dto';
@@ -17,7 +16,7 @@ const EMPLOYEE_INCLUDE = {
 } satisfies Prisma.EmployeeInclude;
 
 /// Never return credential columns to a client.
-const HIDDEN_FIELDS = ['pinHash'] as const;
+const HIDDEN_FIELDS = ['pinHash', 'passwordHash'] as const;
 
 @Injectable()
 export class EmployeesService {
@@ -122,15 +121,6 @@ export class EmployeesService {
     return this.strip(updated);
   }
 
-  async setPin(id: string, pin: string) {
-    await this.findOne(id);
-    await this.prisma.employee.update({
-      where: { id },
-      data: { pinHash: hashPin(pin) },
-    });
-    return { success: true };
-  }
-
   async isAssignedToLocation(employeeId: string, locationId: string): Promise<boolean> {
     const assignment = await this.prisma.employeeLocation.findUnique({
       where: { employeeId_locationId: { employeeId, locationId } },
@@ -162,39 +152,18 @@ export class EmployeesService {
     return error;
   }
 
-  private strip<T extends Record<string, unknown>>(employee: T): Omit<T, 'pinHash'> {
-    const copy = { ...employee };
+  /**
+   * Removes credential columns and replaces them with the one fact a client
+   * legitimately needs: whether a kiosk PIN exists. The hash itself never
+   * crosses the wire.
+   */
+  private strip<T extends Record<string, unknown>>(
+    employee: T,
+  ): Omit<T, 'pinHash' | 'passwordHash'> & { hasKioskPin: boolean } {
+    const copy = { ...employee, hasKioskPin: employee.pinHash !== null };
     for (const field of HIDDEN_FIELDS) {
       delete copy[field];
     }
     return copy;
   }
-}
-
-const PIN_KEY_LENGTH = 64;
-
-/// scrypt with a per-PIN salt. PINs are short, so this is a stopgap for kiosk
-/// login only — the auth pass should add rate limiting and lockout on top.
-export function hashPin(pin: string): string {
-  const salt = randomBytes(16).toString('hex');
-  const derived = scryptSync(pin, salt, PIN_KEY_LENGTH).toString('hex');
-  return `scrypt$${salt}$${derived}`;
-}
-
-export function verifyPin(pin: string, stored: string): boolean {
-  const [scheme, salt, derived] = stored.split('$');
-  if (scheme !== 'scrypt' || !salt || !derived) {
-    return false;
-  }
-  const candidate = scryptSync(pin, salt, PIN_KEY_LENGTH);
-  const expected = Buffer.from(derived, 'hex');
-  if (candidate.length !== expected.length) {
-    return false;
-  }
-  return timingSafeEqual(candidate, expected);
-}
-
-/// Stable, non-reversible fingerprint used only in logs, never for auth.
-export function fingerprint(value: string): string {
-  return createHash('sha256').update(value).digest('hex').slice(0, 12);
 }

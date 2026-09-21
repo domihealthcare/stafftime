@@ -13,10 +13,11 @@ Phase 1, backend and web app:
 - Core data model — Location, Employee, Shift, TimeEntry
 - Sign-in with passwords, roles and server-side sessions
 - Clock in/out with location verification (geofence, office IP, kiosk)
+- Front-desk kiosk mode — tablet bound to a location, staff clock in by PIN
 - Timesheet view, with manager approval and corrections
 - Manager shift scheduler
 
-Not built yet: the kiosk screen, self-service password reset, PTO,
+Not built yet: badge-tap clock-in, self-service password reset, PTO,
 onboarding/offboarding checklists, and the ADP export.
 
 ## Repository layout
@@ -79,10 +80,10 @@ The seed creates four accounts, all sharing the password
 
 | Email | Role |
 | --- | --- |
-| `admin@domihealthcare.com` | Admin |
-| `manager@domihealthcare.com` | Manager |
-| `frontdesk@domihealthcare.com` | Employee |
-| `ma@domihealthcare.com` | Employee — starts with a temporary password, so you can try the forced-change flow |
+| `admin@domihealthcare.com` | Admin — kiosk PIN `8261` |
+| `manager@domihealthcare.com` | Manager — kiosk PIN `7394` |
+| `frontdesk@domihealthcare.com` | Employee — kiosk PIN `4817` |
+| `ma@domihealthcare.com` | Employee — kiosk PIN `5063`; starts with a temporary password, so you can try the forced-change flow |
 
 ### On a real deployment
 
@@ -101,6 +102,17 @@ hire must replace the first time they sign in. There is no self-service "forgot
 password" yet — that needs email sending, which is not set up (see
 `docs/open-questions.md`).
 
+## Trying the kiosk
+
+1. Sign in as the admin and open **Kiosks**
+2. Add a kiosk, pick a location, and note the pairing code
+3. Open `http://localhost:5173/kiosk` (a second browser profile stands in for the
+   tablet) and enter the code
+4. Tap a name and enter that person's PIN from the table above
+
+The tablet stays paired until an admin revokes it. Only staff assigned to that
+location, still employed, and with a PIN set appear on the keypad.
+
 ## Endpoints
 
 | Method | Path | Who |
@@ -112,6 +124,11 @@ password" yet — that needs email sending, which is not set up (see
 | `POST` | `/api/auth/change-password` | signed in |
 | `GET`/`DELETE` | `/api/auth/sessions` | signed in — list or sign out other browsers |
 | `PUT` | `/api/auth/employees/:id/password` | admin — issue a temporary password |
+| `POST` | `/api/kiosk/pair` | anyone with a valid pairing code |
+| `GET` | `/api/kiosk/session` `/employees` | the paired device |
+| `POST` | `/api/kiosk/punch` | the paired device, plus the employee's PIN |
+| `POST`/`GET`/`DELETE` | `/api/kiosk/devices` | admin |
+| `PUT`/`DELETE` | `/api/kiosk/employees/:id/pin` | admin |
 | `GET/POST/PATCH/DELETE` | `/api/locations` | admin (reads: anyone) |
 | `GET/POST/PATCH/DELETE` | `/api/employees` | admin (`/me`: anyone) |
 | `GET/POST/PATCH/DELETE` | `/api/shifts` | manager (employees see their own) |
@@ -126,7 +143,9 @@ password" yet — that needs email sending, which is not set up (see
 
 | Screen | What it does |
 | --- | --- |
+| **Kiosk** (`/kiosk`) | The front-desk tablet. Tap your name, enter your PIN, clock in or out. No sign-in, no navigation anywhere else |
 | **Clock** | Clock in/out with a live elapsed timer, today's shift, and a plain-language reason whenever a punch is refused |
 | **Timesheet** | Weekly hours. Managers see everyone, plus approve and correct; employees see only their own |
 | **Schedule** | Week grid. Managers add and remove shifts; employees see their own |
 | **Sign in** | Email and password. A temporary password lands you on a forced change screen and nothing else |
+| **Kiosks** (admin) | Pair and revoke tablets, and set staff PINs |

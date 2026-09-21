@@ -1,9 +1,11 @@
 import { BrowserRouter, Route, Routes } from 'react-router-dom';
+import { KioskApp } from './kiosk/KioskApp';
 import { Layout } from './components/Layout';
 import { Spinner } from './components/ui';
 import { SessionProvider, useSession } from './lib/session';
 import { ChangePasswordPage } from './pages/ChangePasswordPage';
 import { ClockPage } from './pages/ClockPage';
+import { KiosksPage } from './pages/KiosksPage';
 import { LoginPage } from './pages/LoginPage';
 import { SchedulePage } from './pages/SchedulePage';
 import { TimesheetPage } from './pages/TimesheetPage';
@@ -36,6 +38,7 @@ function Routed() {
         <Route path="timesheet" element={<TimesheetPage />} />
         <Route path="schedule" element={<SchedulePage />} />
         <Route path="password" element={<ChangePasswordPage forced={false} />} />
+        <Route path="kiosks" element={<KiosksPage />} />
         <Route path="*" element={<ClockPage />} />
       </Route>
     </Routes>
@@ -45,9 +48,22 @@ function Routed() {
 export function App() {
   return (
     <BrowserRouter>
-      <SessionProvider>
-        <Routed />
-      </SessionProvider>
+      <Routes>
+        {/*
+          The kiosk lives outside the signed-in app entirely: its own route, its
+          own device credential, and no SessionProvider — a tablet must never be
+          able to inherit a person's session.
+        */}
+        <Route path="/kiosk" element={<KioskApp />} />
+        <Route
+          path="*"
+          element={
+            <SessionProvider>
+              <Routed />
+            </SessionProvider>
+          }
+        />
+      </Routes>
     </BrowserRouter>
   );
 }

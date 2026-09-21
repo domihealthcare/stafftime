@@ -43,6 +43,18 @@ class EnvironmentVariables {
   @Min(1)
   LOCKOUT_MINUTES = 15;
 
+  /// Kiosk PIN lockout, tracked separately from password lockout. Tighter,
+  /// because a PIN has far less entropy than a password.
+  @Type(() => Number)
+  @IsInt()
+  @Min(3)
+  MAX_PIN_ATTEMPTS = 5;
+
+  @Type(() => Number)
+  @IsInt()
+  @Min(1)
+  PIN_LOCKOUT_MINUTES = 10;
+
   @Type(() => Number)
   @IsInt()
   @Min(0)
