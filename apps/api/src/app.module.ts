@@ -7,6 +7,7 @@ import { AuthModule } from './auth/auth.module';
 import { SessionAuthGuard } from './common/auth/session.guard';
 import { validateEnv } from './config/env.validation';
 import { EmployeesModule } from './employees/employees.module';
+import { ExportsModule } from './exports/exports.module';
 import { KioskModule } from './kiosk/kiosk.module';
 import { LocationsModule } from './locations/locations.module';
 import { PrismaModule } from './prisma/prisma.module';
@@ -23,6 +24,7 @@ import { TimeEntriesModule } from './time-entries/time-entries.module';
     ShiftsModule,
     TimeEntriesModule,
     KioskModule,
+    ExportsModule,
   ],
   controllers: [AppController],
   providers: [

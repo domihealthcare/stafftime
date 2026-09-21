@@ -18,12 +18,34 @@ export interface LocationSummary {
 
 export interface Location extends LocationSummary {
   addressLine1: string;
+  addressLine2?: string | null;
   city: string;
   state: string;
+  postalCode: string;
+  timezone: string;
+  /// Prisma sends Decimal columns as strings, to avoid float rounding.
+  latitude: string;
+  longitude: string;
   geofenceRadiusMeters: number;
   allowedIps: string[];
   kioskEnabled: boolean;
   isActive: boolean;
+}
+
+export interface UpdateLocationInput {
+  name?: string;
+  addressLine1?: string;
+  addressLine2?: string;
+  city?: string;
+  state?: string;
+  postalCode?: string;
+  timezone?: string;
+  latitude?: number;
+  longitude?: number;
+  geofenceRadiusMeters?: number;
+  allowedIps?: string[];
+  kioskEnabled?: boolean;
+  isActive?: boolean;
 }
 
 export interface EmployeeSummary {

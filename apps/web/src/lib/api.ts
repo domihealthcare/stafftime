@@ -1,4 +1,10 @@
-import type { Employee, Location, Shift, TimeEntry } from './types';
+import type {
+  Employee,
+  Location,
+  Shift,
+  TimeEntry,
+  UpdateLocationInput,
+} from './types';
 
 /**
  * The session lives in an httpOnly cookie the browser sends automatically, so
@@ -195,7 +201,69 @@ export function isKioskUnpaired(error: unknown): boolean {
   return error instanceof ApiError && error.code === KIOSK_NOT_PAIRED;
 }
 
+export interface TimesheetExportOptions {
+  from: string;
+  to: string;
+  locationId?: string;
+  employeeIds?: string[];
+  statuses?: string[];
+  includeOpen?: boolean;
+  columns?: string[];
+  includeSummary?: boolean;
+  splitOvertime?: boolean;
+  format?: 'xlsx' | 'csv';
+}
+
+export interface ExportColumn {
+  key: string;
+  label: string;
+  group: string;
+  default: boolean;
+  hint?: string;
+}
+
+export interface ExportPreview {
+  entryCount: number;
+  employeeCount: number;
+  totalHours: number;
+  openEntryCount: number;
+  flaggedCount: number;
+  overtimeHours: number;
+}
+
 export const api = {
+  updateLocation: (id: string, body: UpdateLocationInput) =>
+    request<Location>(`/locations/${id}`, { method: 'PATCH', body: JSON.stringify(body) }),
+
+  exportColumns: () =>
+    request<{ columns: ExportColumn[]; defaults: string[] }>('/exports/columns'),
+  previewExport: (options: TimesheetExportOptions) =>
+    request<ExportPreview>('/exports/timesheet/preview', {
+      method: 'POST',
+      body: JSON.stringify(options),
+    }),
+  /// Returns the file itself, plus the filename the server chose.
+  downloadExport: async (options: TimesheetExportOptions) => {
+    const response = await fetch('/api/exports/timesheet', {
+      method: 'POST',
+      credentials: 'include',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(options),
+    });
+
+    if (!response.ok) {
+      const body = await response.json().catch(() => null);
+      throw new ApiError(response.status, extractMessage(body, response.status));
+    }
+
+    const disposition = response.headers.get('content-disposition') ?? '';
+    const match = /filename="([^"]+)"/.exec(disposition);
+    return {
+      blob: await response.blob(),
+      filename: match?.[1] ?? `timesheet.${options.format ?? 'xlsx'}`,
+    };
+  },
+
   listKioskDevices: () => request<KioskDevice[]>('/kiosk/devices'),
   createKioskDevice: (name: string, locationId: string) =>
     request<NewKioskDevice>('/kiosk/devices', {
@@ -235,7 +303,8 @@ export const api = {
       body: JSON.stringify({ temporaryPassword }),
     }),
 
-  listLocations: () => request<Location[]>('/locations'),
+  listLocations: (includeInactive = false) =>
+    request<Location[]>(`/locations${includeInactive ? '?includeInactive=true' : ''}`),
   listEmployees: () => request<Employee[]>('/employees'),
 
   currentEntry: () => request<TimeEntry | null>('/time-entries/current'),

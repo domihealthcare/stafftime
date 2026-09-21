@@ -29,7 +29,16 @@ const DEV_PINS: Record<string, string> = {
 async function main() {
   const northBergen = await prisma.location.upsert({
     where: { slug: 'north-bergen' },
-    update: {},
+    // Reset the geofence too, so seeding always gives a known starting point —
+    // otherwise an experiment on the Locations screen quietly persists.
+    update: {
+      latitude: 40.804,
+      longitude: -74.012,
+      geofenceRadiusMeters: 150,
+      allowedIps: [],
+      kioskEnabled: true,
+      isActive: true,
+    },
     create: {
       name: 'North Bergen',
       slug: 'north-bergen',
@@ -48,7 +57,14 @@ async function main() {
 
   const westNewYork = await prisma.location.upsert({
     where: { slug: 'west-new-york' },
-    update: {},
+    update: {
+      latitude: 40.7878,
+      longitude: -74.0143,
+      geofenceRadiusMeters: 150,
+      allowedIps: [],
+      kioskEnabled: true,
+      isActive: true,
+    },
     create: {
       name: 'West New York',
       slug: 'west-new-york',

@@ -16,9 +16,12 @@ Phase 1, backend and web app:
 - Front-desk kiosk mode — tablet bound to a location, staff clock in by PIN
 - Timesheet view, with manager approval and corrections
 - Manager shift scheduler
+- Timesheet export to Excel or CSV, with selectable columns
+- Admin screens for locations (geofence, IPs) and kiosks
 
-Not built yet: badge-tap clock-in, self-service password reset, PTO,
-onboarding/offboarding checklists, and the ADP export.
+Not built yet: the ADP TotalSource export (waiting on ADP's pay codes and client
+code), badge-tap clock-in, self-service password reset, PTO, and
+onboarding/offboarding checklists.
 
 ## Repository layout
 
@@ -113,6 +116,20 @@ password" yet — that needs email sending, which is not set up (see
 The tablet stays paired until an admin revokes it. Only staff assigned to that
 location, still employed, and with a PIN set appear on the keypad.
 
+## Setting the geofence
+
+The seeded coordinates are **placeholders** — approximate town-centre points
+with a guessed 150m radius. Before anyone clocks in for real:
+
+1. Sign in as an admin **on your phone** and open **Locations**
+2. Stand at the front desk and press **Use my current location**
+3. Check the numbers, set a radius, and save
+4. Walk to the far corner of the office and try clocking in. If it refuses,
+   the radius is too tight
+
+Repeat at the other office. Running `npm run db:seed` resets both back to the
+placeholders, so do not run it after setting real values.
+
 ## Endpoints
 
 | Method | Path | Who |
@@ -129,6 +146,9 @@ location, still employed, and with a PIN set appear on the keypad.
 | `POST` | `/api/kiosk/punch` | the paired device, plus the employee's PIN |
 | `POST`/`GET`/`DELETE` | `/api/kiosk/devices` | admin |
 | `PUT`/`DELETE` | `/api/kiosk/employees/:id/pin` | admin |
+| `GET` | `/api/exports/columns` | manager |
+| `POST` | `/api/exports/timesheet/preview` | manager |
+| `POST` | `/api/exports/timesheet` | manager — returns .xlsx or .csv |
 | `GET/POST/PATCH/DELETE` | `/api/locations` | admin (reads: anyone) |
 | `GET/POST/PATCH/DELETE` | `/api/employees` | admin (`/me`: anyone) |
 | `GET/POST/PATCH/DELETE` | `/api/shifts` | manager (employees see their own) |
@@ -148,4 +168,6 @@ location, still employed, and with a PIN set appear on the keypad.
 | **Timesheet** | Weekly hours. Managers see everyone, plus approve and correct; employees see only their own |
 | **Schedule** | Week grid. Managers add and remove shifts; employees see their own |
 | **Sign in** | Email and password. A temporary password lands you on a forced change screen and nothing else |
+| **Export** (manager) | Produce a timesheet spreadsheet for a period, choosing exactly which columns go in it |
 | **Kiosks** (admin) | Pair and revoke tablets, and set staff PINs |
+| **Locations** (admin) | Each office's coordinates, geofence radius and IP allow-list. Has a "use my current location" button, so you can set it standing at the desk |

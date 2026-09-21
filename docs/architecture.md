@@ -302,3 +302,57 @@ name and a half-typed PIN.
   behaves like a keyboard, so it is a small addition — but it cannot be written
   responsibly without a reader in hand to test against. See
   `docs/open-questions.md`.
+
+## Timesheet export
+
+A spreadsheet of hours for a period, built to be useful on its own while the ADP
+adapter waits on pay codes — and shaped so that adapter slots in beside it
+rather than replacing it.
+
+`TimesheetExportService` turns entries into rows and totals; `workbook.ts`
+renders them. Splitting those two means the ADP CSV, when it comes, reuses the
+aggregation and only writes a different file.
+
+### Details that matter to whoever opens the file
+
+- **Times are rendered in the location's timezone**, not UTC and not the
+  exporting manager's. The sheet should match the clock the employee was
+  actually looking at.
+- **Hours are numbers, not text**, with a `0.00` format and a live `SUM` formula
+  at the foot. Whoever receives it can sort, filter and total without cleaning
+  anything up.
+- **The Summary sheet carries its own provenance** — period, location, generated
+  timestamp, entry count — so a printed copy still says what it covers.
+- **Open entries are excluded by default.** They have no hours to pay, and
+  including them silently would understate a total that looks complete. When
+  included, they are counted as zero and the note says so.
+
+### Overtime
+
+Optional, and computed **per calendar week** rather than across the period: 45
+hours one week and 35 the next is five hours of overtime, not zero. Weeks start
+Monday in the location's timezone, so a late Sunday shift lands in the right one.
+
+Salaried staff are never split, on the assumption they are exempt.
+
+**That assumption needs confirming.** Pay type is a reasonable proxy for exempt
+status but it is not the legal test, and this is the kind of thing that is
+expensive to get wrong. Flagged in `docs/open-questions.md`.
+
+### Column selection
+
+The catalogue lives in `apps/api/src/exports/columns.ts` and is served to the
+web app at `GET /exports/columns`, so the checkboxes and the writer cannot drift
+apart. Adding a column is one entry in that array plus a case in the row builder.
+
+## Locations admin
+
+The screen that decides whether clock-in works at all. Built phone-first,
+because the only reliable way to get a geofence right is to stand at the front
+desk and read the coordinates off the device in your hand — hence **Use my
+current location**, which fills the form and reports how far the reading is from
+what is currently saved, but never saves on its own.
+
+Saving updates that one location in the page's state rather than reloading the
+list. Reloading unmounted the cards, which threw away the confirmation and any
+unsaved edits sitting in the other location's form.

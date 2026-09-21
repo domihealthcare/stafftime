@@ -5,25 +5,36 @@ Phase 1. Answers belong in `docs/architecture.md` once confirmed.
 
 ## Blocking before anyone clocks in for real
 
+There is now a screen for all three of these: sign in as an admin **on your
+phone**, open **Locations**, and set them standing at each front desk. Note that
+`npm run db:seed` resets them back to placeholders.
+
 - [ ] **Real street addresses and surveyed coordinates for both offices.** The
-      seed uses approximate town-centre points and `TODO` addresses. Standing at
-      each front desk with a phone and reading the coordinates is enough.
+      seed uses approximate town-centre points and `TODO` addresses. The
+      **Use my current location** button captures them from the device.
 - [ ] **Geofence radius per location.** Currently 150m everywhere, a placeholder.
       Too tight and staff cannot clock in at their own desk; too loose and the
-      parking lot across the street counts. Worth testing on-site before picking.
+      parking lot across the street counts. Try clocking in from the far corner
+      of the office before settling on a number.
 - [ ] **Office IP addresses** for the allow-list fallback — and whether they are
       static. A dynamic residential-style IP would make this check unreliable.
 - [ ] **Geolocation consent disclosure.** The brief flags this: browser clock-in
       captures staff location, which needs a handbook/policy disclosure before
       launch. Flagged here rather than built silently.
 
-## Needed for the ADP export (Phase 1, not yet started)
+## Needed for the ADP export (still blocked on ADP)
+
+The generic Excel/CSV export is built and usable for payroll in the meantime.
+What is still missing is ADP-specific, and none of it can be guessed:
 
 - [ ] ADP TotalSource company/client code.
 - [ ] Activate the "Time Sheet Import" feature on the Domi Healthcare account.
 - [ ] The specific earning/pay codes ADP expects, so hours map correctly.
 - [ ] Confirm whether TotalSource (PEO) uses a different file spec than
       standalone ADP Run / Workforce Now — it sometimes does.
+
+When those arrive, the work is an adapter that reuses the existing aggregation
+and writes ADP's layout — the timesheet logic itself does not change.
 
 ## Product decisions
 
@@ -37,6 +48,13 @@ Phase 1. Answers belong in `docs/architecture.md` once confirmed.
       manager? Today any manager can edit any entry.
 - [ ] **Overnight shifts.** Supported by the schema (start/end are full
       timestamps), untested against real scheduling patterns.
+- [ ] **Confirm who is exempt from overtime.** The export's optional overtime
+      split treats salaried staff as exempt and hourly staff as not. Pay type is
+      a reasonable proxy but it is not the legal test, and this is expensive to
+      get wrong — worth confirming with whoever runs payroll before the first
+      real export.
+- [ ] **Confirm the overtime rule itself** — over 40 hours per week is the
+      federal baseline, but check nothing else applies to a NJ practice.
 
 ## Kiosk
 

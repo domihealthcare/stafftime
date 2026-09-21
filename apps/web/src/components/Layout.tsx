@@ -38,10 +38,20 @@ export function Layout() {
               <NavLink to="/schedule" className={linkClasses}>
                 Schedule
               </NavLink>
-              {isAdmin && (
-                <NavLink to="/kiosks" className={linkClasses}>
-                  Kiosks
+              {isManager && (
+                <NavLink to="/export" className={linkClasses}>
+                  Export
                 </NavLink>
+              )}
+              {isAdmin && (
+                <>
+                  <NavLink to="/kiosks" className={linkClasses}>
+                    Kiosks
+                  </NavLink>
+                  <NavLink to="/locations" className={linkClasses}>
+                    Locations
+                  </NavLink>
+                </>
               )}
             </nav>
           </div>
