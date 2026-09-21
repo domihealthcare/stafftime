@@ -140,3 +140,33 @@ export interface ReportPreset {
   ownerName: string;
   updatedAt: string;
 }
+
+export interface PtoPolicy {
+  id: string;
+  vacationDaysPerYear: number;
+  sickDaysPerYear: number;
+  maxCarryoverDays: number;
+  sickCarryoverDays: number;
+  yearStartMonth: number;
+  yearStartDay: number;
+  prorateFirstYear: boolean;
+}
+
+export interface AllowanceBalance {
+  entitled: number;
+  carriedOver: number;
+  available: number;
+  used: number;
+  pending: number;
+  remaining: number;
+}
+
+export interface PtoBalance {
+  employeeId: string;
+  policyYear: number;
+  yearStart: string;
+  yearEnd: string;
+  vacation: AllowanceBalance;
+  sick: AllowanceBalance;
+  unpaidAndOther: number;
+}

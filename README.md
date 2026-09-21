@@ -17,12 +17,14 @@ Phase 1, backend and web app:
 - Timesheet view, with manager approval and corrections
 - Manager shift scheduler
 - Timesheet export to Excel or CSV, with selectable columns and saved reports
-- PTO requests with manager approval
+- PTO requests with manager approval, balances and a practice-set policy
 - Admin screens for locations (geofence, IPs) and kiosks
 
 Not built yet: the ADP TotalSource export (waiting on ADP's pay codes and client
-code), badge-tap clock-in, self-service password reset, PTO balances and
-accrual, and onboarding/offboarding checklists.
+code), badge-tap clock-in, self-service password reset, and
+onboarding/offboarding checklists.
+
+**Deploying it:** see [DEPLOY.md](./DEPLOY.md).
 
 ## Repository layout
 
@@ -156,6 +158,9 @@ placeholders, so do not run it after setting real values.
 | `PATCH` | `/api/pto/:id/review` | manager — approve or deny |
 | `PATCH` | `/api/pto/:id/cancel` | the requester, or a manager |
 | `GET` | `/api/pto/:id/conflicts` | manager — shifts clashing with the request |
+| `GET` | `/api/pto/policy` | anyone signed in |
+| `PATCH` | `/api/pto/policy` | admin |
+| `GET` | `/api/pto/balance` | own balance; managers can ask for anyone's |
 | `GET/POST/PATCH/DELETE` | `/api/locations` | admin (reads: anyone) |
 | `GET/POST/PATCH/DELETE` | `/api/employees` | admin (`/me`: anyone) |
 | `GET/POST/PATCH/DELETE` | `/api/shifts` | manager (employees see their own) |
@@ -175,7 +180,7 @@ placeholders, so do not run it after setting real values.
 | **Timesheet** | Weekly hours. Managers see everyone, plus approve and correct; employees see only their own |
 | **Schedule** | Week grid. Managers add and remove shifts; employees see their own |
 | **Sign in** | Email and password. A temporary password lands you on a forced change screen and nothing else |
-| **Time off** | Request time off; managers approve or deny, and can file on someone's behalf |
+| **Time off** | Request time off and see your balance; managers approve or deny, and can file on someone's behalf. Admins set the practice's PTO rules here |
 | **Export** (manager) | Produce a timesheet spreadsheet for a period, choosing exactly which columns go in it. Settings can be saved as named reports and shared |
 | **Kiosks** (admin) | Pair and revoke tablets, and set staff PINs |
 | **Locations** (admin) | Each office's coordinates, geofence radius and IP allow-list. Has a "use my current location" button, so you can set it standing at the desk |

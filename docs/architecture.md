@@ -406,3 +406,68 @@ a single-day request rather than a pretend time.
 - **Approving does not touch the schedule.** The review screen shows shifts
   already booked inside the dates so a manager knows what needs re-covering, but
   nothing is cancelled automatically: deciding who covers is a human judgement.
+
+## PTO policy and balances
+
+The practice's rules are a row in the database, not constants: they are a policy
+decision Domi owns and they will change. Defaults are the starting point Anthony
+gave — **15 days PTO, 5 sick days, 5 days carried over** — and an admin edits
+them on the Time off screen. Everyone else sees the same numbers read-only,
+because staff should be able to check what they are entitled to without asking.
+
+### What draws on what
+
+`VACATION` and `PERSONAL` come out of the PTO allowance; `SICK` has its own;
+`BEREAVEMENT`, `UNPAID` and `OTHER` are recorded but deducted from neither.
+Whether personal days *should* share the PTO allowance is a handbook decision —
+flagged in `docs/open-questions.md`.
+
+### Carry-over
+
+Worked out by walking forward from the hire year: each year's unused days,
+capped by the policy, become the next year's carry-over, and that carry-over
+feeds the year after. Capping at each step is what stops four untouched years
+becoming sixty days. The walk starts at the hire date, so it is bounded.
+
+Sick days do not carry by default (`sickCarryoverDays` is 0), but the practice
+can turn it on.
+
+### Proration
+
+A mid-year starter gets the share of the policy year they are present for. On by
+default, because granting someone hired in December a full fifteen days is
+clearly wrong; the practice can switch it off.
+
+### Balances never block
+
+A request that would exceed the allowance is **warned about, not refused** — on
+the employee's form and on the manager's card. Going over happens, and whether
+it is allowed is a manager's judgement, not a rule the software should enforce
+silently.
+
+Pending requests count against the balance as well as approved ones, so the same
+day cannot be spent twice while a decision is outstanding.
+
+### The policy year
+
+January to December by default, configurable to a fiscal year. The balance shown
+is for one policy year, so the request form only compares against it when the
+requested dates fall inside — booking next June against this year's remaining
+days would be plainly wrong, so it says which year the request lands in instead.
+
+## Deployment
+
+`vercel.json` and `api/index.ts` set up a single Vercel project that serves the
+built web app as static files and routes `/api/*` to the NestJS app running as
+one serverless function.
+
+One project, one origin. That is not incidental: the session cookie is
+`sameSite=lax`, which is what removes the need for CSRF tokens, and that only
+works if the browser sees the API and the app on the same host.
+
+The Nest app is cached per warm instance — booting it and opening a database
+connection on every request would be slow and would exhaust Postgres
+connections. Two connection strings are needed: a pooled one for the app, and a
+direct one for migrations, which cannot run through a pooler.
+
+Step-by-step instructions are in `DEPLOY.md`.

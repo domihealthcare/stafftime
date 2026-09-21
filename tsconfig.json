@@ -1,0 +1,19 @@
+{
+  "//": "Used by Vercel to compile the serverless function in api/. The apps have their own configs.",
+  "compilerOptions": {
+    "module": "commonjs",
+    "target": "ES2022",
+    "lib": ["ES2022"],
+    "moduleResolution": "node",
+    "emitDecoratorMetadata": true,
+    "experimentalDecorators": true,
+    "allowSyntheticDefaultImports": true,
+    "esModuleInterop": true,
+    "skipLibCheck": true,
+    "strict": true,
+    "resolveJsonModule": true,
+    "noEmit": true
+  },
+  "include": ["api/**/*.ts", "apps/api/src/**/*.ts"],
+  "exclude": ["node_modules", "**/*.spec.ts", "apps/web"]
+}

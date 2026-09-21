@@ -38,11 +38,21 @@ and writes ADP's layout — the timesheet logic itself does not change.
 
 ## PTO (Phase 2, requests and approval are built)
 
-- [ ] **Balances and accrual.** Not built, and not guessable: does PTO accrue per
-      pay period or land as an annual grant? Does it carry over? Is sick leave
-      tracked separately from vacation (NJ has its own earned-sick-leave rules)?
-      Answer these before building a balance, because the accrual model decides
-      the schema.
+- [x] ~~Balances and carry-over.~~ Built. The practice sets the rules on the
+      Time off screen; defaults are 15 PTO days, 5 sick days, 5 carried over.
+- [ ] **Confirm personal days come out of the PTO allowance** rather than being
+      their own bucket. It is the common arrangement, but it is a handbook
+      decision.
+- [ ] **Accrual, if Domi wants it.** Days are currently granted for the whole
+      policy year up front (prorated for a new hire). If PTO should instead
+      accrue per pay period, that is a different model and worth deciding before
+      anyone relies on a balance.
+- [ ] **NJ earned sick leave.** The sick allowance is a plain number the practice
+      sets. New Jersey has its own accrual and carry-over rules for earned sick
+      leave — worth checking the default of 5 days with no carry-over is
+      compliant for Domi's headcount.
+- [ ] **Per-employee allowances.** One policy covers everyone today. Part-timers
+      or longer-tenured staff may warrant different numbers.
 - [ ] **Who approves whom.** Today any manager can decide any request except
       their own. Fine for two locations; revisit if that changes.
 - [ ] **Should approving PTO cancel the shifts inside it?** Today it does not —

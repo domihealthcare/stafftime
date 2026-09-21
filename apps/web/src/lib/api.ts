@@ -2,6 +2,8 @@ import type {
   ConflictingShift,
   Employee,
   Location,
+  PtoBalance,
+  PtoPolicy,
   PtoRequest,
   ReportPreset,
   Shift,
@@ -271,6 +273,11 @@ export const api = {
   cancelPto: (id: string) =>
     request<PtoRequest>(`/pto/${id}/cancel`, { method: 'PATCH' }),
   ptoConflicts: (id: string) => request<ConflictingShift[]>(`/pto/${id}/conflicts`),
+  ptoPolicy: () => request<PtoPolicy>('/pto/policy'),
+  updatePtoPolicy: (body: Partial<Omit<PtoPolicy, 'id'>>) =>
+    request<PtoPolicy>('/pto/policy', { method: 'PATCH', body: JSON.stringify(body) }),
+  ptoBalance: (employeeId?: string) =>
+    request<PtoBalance>(`/pto/balance${employeeId ? `?employeeId=${employeeId}` : ''}`),
 
   updateLocation: (id: string, body: UpdateLocationInput) =>
     request<Location>(`/locations/${id}`, { method: 'PATCH', body: JSON.stringify(body) }),

@@ -1,7 +1,17 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { ApiError, api } from '../lib/api';
-import { useIsManager, useSession } from '../lib/session';
-import type { ConflictingShift, Employee, PtoRequest, PtoStatus, PtoType } from '../lib/types';
+import { useIsAdmin, useIsManager, useSession } from '../lib/session';
+import type {
+  ConflictingShift,
+  Employee,
+  PtoBalance,
+  PtoPolicy,
+  PtoRequest,
+  PtoStatus,
+  PtoType,
+} from '../lib/types';
+import { PtoBalanceCard } from '../components/PtoBalanceCard';
+import { PtoPolicyEditor } from '../components/PtoPolicyEditor';
 import { Alert, Badge, Card, EmptyState, PageHeading, Spinner } from '../components/ui';
 
 const TYPE_LABELS: Record<PtoType, string> = {
@@ -23,7 +33,10 @@ const STATUS_TONE: Record<PtoStatus, 'warning' | 'success' | 'danger' | 'neutral
 export function TimeOffPage() {
   const { employee } = useSession();
   const isManager = useIsManager();
+  const isAdmin = useIsAdmin();
   const [requests, setRequests] = useState<PtoRequest[]>([]);
+  const [balance, setBalance] = useState<PtoBalance | null>(null);
+  const [policy, setPolicy] = useState<PtoPolicy | null>(null);
   const [staff, setStaff] = useState<Employee[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -33,12 +46,16 @@ export function TimeOffPage() {
   const load = useCallback(async () => {
     setLoading(true);
     try {
-      const [requestData, staffData] = await Promise.all([
+      const [requestData, staffData, balanceData, policyData] = await Promise.all([
         api.listPto(),
         isManager ? api.listEmployees() : Promise.resolve([]),
+        api.ptoBalance(),
+        api.ptoPolicy(),
       ]);
       setRequests(requestData);
       setStaff(staffData);
+      setBalance(balanceData);
+      setPolicy(policyData);
       setError(null);
     } catch (err) {
       setError(err instanceof ApiError ? err.message : 'Could not load time off.');
@@ -72,6 +89,26 @@ export function TimeOffPage() {
             : 'Your time off requests.'
         }
       />
+
+      {balance && (
+        <div className="mb-4">
+          <PtoBalanceCard balance={balance} />
+        </div>
+      )}
+
+      {policy && (
+        <div className="mb-4">
+          <PtoPolicyEditor
+            policy={policy}
+            canEdit={isAdmin}
+            onSaved={(updated) => {
+              setPolicy(updated);
+              // Balances are derived from the policy, so reload them.
+              void load();
+            }}
+          />
+        </div>
+      )}
 
       {isManager && pendingForMe > 0 && (
         <div className="mb-4">
@@ -118,6 +155,7 @@ export function TimeOffPage() {
         <div className="mb-4">
           <RequestForm
             staff={isManager ? staff : []}
+            balance={balance}
             onCreated={() => {
               setShowForm(false);
               void load();
@@ -349,9 +387,11 @@ function RequestCard({
 
 function RequestForm({
   staff,
+  balance,
   onCreated,
 }: {
   staff: Employee[];
+  balance: PtoBalance | null;
   onCreated: () => void;
 }) {
   const [type, setType] = useState<PtoType>('VACATION');
@@ -366,6 +406,39 @@ function RequestForm({
   // One date is the common case; the end mirrors the start until changed.
   const effectiveEnd = endDate || startDate;
   const singleDay = Boolean(startDate) && effectiveEnd === startDate;
+
+  // A rough count so the form can warn before submitting. The server is the
+  // authority; this is only to stop a surprise.
+  const requestedDays = startDate
+    ? singleDay && isHalfDay
+      ? 0.5
+      : Math.round(
+          (new Date(`${effectiveEnd}T00:00:00Z`).getTime() -
+            new Date(`${startDate}T00:00:00Z`).getTime()) /
+            86_400_000,
+        ) + 1
+    : 0;
+
+  const bucket = type === 'SICK' ? 'sick' : type === 'VACATION' || type === 'PERSONAL' ? 'vacation' : null;
+
+  // The balance on screen is for one policy year, so it can only speak to a
+  // request inside that year. Booking next June against this year's remaining
+  // days would be plainly wrong.
+  const inBalanceYear =
+    balance !== null &&
+    startDate >= balance.yearStart &&
+    effectiveEnd <= balance.yearEnd;
+
+  // Only for the person's own request: a manager filing for someone else is
+  // looking at their own balance, which would mislead.
+  const isOwnRequest = employeeId === '';
+  const showBalance =
+    bucket !== null && balance !== null && isOwnRequest && requestedDays > 0 && inBalanceYear;
+  const showOtherYearNote =
+    bucket !== null && balance !== null && isOwnRequest && requestedDays > 0 && !inBalanceYear;
+  const remainingAfter = showBalance
+    ? Math.round((balance[bucket].remaining - requestedDays) * 10) / 10
+    : 0;
 
   async function submit(event: React.FormEvent) {
     event.preventDefault();
@@ -500,6 +573,27 @@ function RequestForm({
             className={field}
           />
         </div>
+
+        {showOtherYearNote && (
+          <p className="text-sm text-slate-600">
+            {requestedDays} day{requestedDays === 1 ? '' : 's'} · falls outside the{' '}
+            {balance.policyYear} policy year, so it does not come off the balance above.
+          </p>
+        )}
+
+        {showBalance &&
+          (remainingAfter < 0 ? (
+            <Alert tone="warning">
+              That is {requestedDays} day{requestedDays === 1 ? '' : 's'}, which puts you{' '}
+              {Math.abs(remainingAfter)} over your {bucket === 'sick' ? 'sick' : 'PTO'}{' '}
+              allowance. You can still ask — a manager decides.
+            </Alert>
+          ) : (
+            <p className="text-sm text-slate-600">
+              {requestedDays} day{requestedDays === 1 ? '' : 's'} ·{' '}
+              {remainingAfter} left afterwards.
+            </p>
+          ))}
 
         {problem && <Alert>{problem}</Alert>}
 

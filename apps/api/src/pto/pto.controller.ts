@@ -18,12 +18,42 @@ import {
   CreatePtoRequestDto,
   QueryPtoRequestsDto,
   ReviewPtoRequestDto,
+  UpdatePtoPolicyDto,
 } from './dto/pto.dto';
+import { PtoPolicyService } from './pto-policy.service';
 import { PtoService } from './pto.service';
 
 @Controller('pto')
 export class PtoController {
-  constructor(private readonly pto: PtoService) {}
+  constructor(
+    private readonly pto: PtoService,
+    private readonly policy: PtoPolicyService,
+  ) {}
+
+  /// The rules. Readable by everyone — staff should be able to see what they
+  /// are entitled to without asking.
+  @Get('policy')
+  getPolicy() {
+    return this.policy.get();
+  }
+
+  @Patch('policy')
+  @Roles(Role.ADMIN)
+  updatePolicy(@Body() dto: UpdatePtoPolicyDto, @CurrentUser() user: AuthUser) {
+    return this.policy.update(dto, user.id);
+  }
+
+  /// Your own balance, or anyone's if you manage.
+  @Get('balance')
+  balance(
+    @CurrentUser() user: AuthUser,
+    @Query('employeeId') employeeId?: string,
+    @Query('year') year?: string,
+  ) {
+    const target =
+      user.role === Role.EMPLOYEE || !employeeId ? user.id : employeeId;
+    return this.policy.balanceFor(target, year ? Number(year) : undefined);
+  }
 
   /// Anyone can ask for time off.
   @Post()

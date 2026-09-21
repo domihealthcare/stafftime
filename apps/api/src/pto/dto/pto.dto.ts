@@ -4,10 +4,13 @@ import {
   IsBoolean,
   IsDateString,
   IsEnum,
+  IsInt,
   IsOptional,
   IsString,
   IsUUID,
   Length,
+  Max,
+  Min,
 } from 'class-validator';
 
 export class CreatePtoRequestDto {
@@ -72,4 +75,48 @@ export class QueryPtoRequestsDto {
   @IsOptional()
   @IsDateString()
   to?: string;
+}
+
+/// The practice's rules. Every field optional — an admin changes one line at a
+/// time, not the whole policy.
+export class UpdatePtoPolicyDto {
+  @IsOptional()
+  @IsInt()
+  @Min(0)
+  @Max(365)
+  vacationDaysPerYear?: number;
+
+  @IsOptional()
+  @IsInt()
+  @Min(0)
+  @Max(365)
+  sickDaysPerYear?: number;
+
+  @IsOptional()
+  @IsInt()
+  @Min(0)
+  @Max(365)
+  maxCarryoverDays?: number;
+
+  @IsOptional()
+  @IsInt()
+  @Min(0)
+  @Max(365)
+  sickCarryoverDays?: number;
+
+  @IsOptional()
+  @IsInt()
+  @Min(1)
+  @Max(12)
+  yearStartMonth?: number;
+
+  @IsOptional()
+  @IsInt()
+  @Min(1)
+  @Max(28)
+  yearStartDay?: number;
+
+  @IsOptional()
+  @IsBoolean()
+  prorateFirstYear?: boolean;
 }

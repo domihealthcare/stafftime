@@ -2,7 +2,7 @@
   "name": "stafftime",
   "version": "0.1.0",
   "private": true,
-  "description": "Domi Time & Scheduling \u2014 staff clock-in, scheduling and timesheets",
+  "description": "Domi Time & Scheduling — staff clock-in, scheduling and timesheets",
   "workspaces": [
     "apps/*"
   ],
@@ -22,10 +22,12 @@
     "db:studio": "npm run prisma:studio --workspace @stafftime/api",
     "dev:api": "npm run start:dev --workspace @stafftime/api",
     "dev:web": "npm run dev --workspace @stafftime/web",
-    "typecheck": "npm run typecheck --workspace @stafftime/web"
+    "typecheck": "npm run typecheck --workspace @stafftime/web",
+    "vercel-build": "npm run prisma:generate --workspace @stafftime/api && npm run prisma:deploy --workspace @stafftime/api && npm run build --workspace @stafftime/web"
   },
   "devDependencies": {
-    "prettier": "^3.3.3",
-    "concurrently": "^9.0.1"
+    "@vercel/node": "^5.10.2",
+    "concurrently": "^9.0.1",
+    "prettier": "^3.3.3"
   }
 }

@@ -14,6 +14,9 @@ generator client {
 datasource db {
   provider = "postgresql"
   url      = env("DATABASE_URL")
+  /// Migrations need a direct connection: they cannot run through a connection
+  /// pooler. On a local database this is the same value as DATABASE_URL.
+  directUrl = env("DIRECT_DATABASE_URL")
 }
 
 // ---------------------------------------------------------------------------
@@ -185,6 +188,7 @@ model Employee {
   reportPresets       ReportPreset[] @relation("ReportPresetOwner")
   ptoRequests         PtoRequest[]   @relation("PtoRequester")
   reviewedPtoRequests PtoRequest[]   @relation("PtoReviewer")
+  editedPtoPolicies   PtoPolicy[]    @relation("PtoPolicyEditor")
   editedTimeEntries   TimeEntry[] @relation("TimeEntryEditedBy")
   approvedTimeEntries TimeEntry[] @relation("TimeEntryApprovedBy")
 
@@ -211,6 +215,42 @@ model EmployeeLocation {
 // ---------------------------------------------------------------------------
 // PTO
 // ---------------------------------------------------------------------------
+
+/// The practice's time-off rules. One row, edited by an admin.
+///
+/// Kept as data rather than constants because these are a policy decision the
+/// practice owns, and they will change — a new handbook, a new state rule, a
+/// different carry-over. Defaults are Domi's starting point: 15 days PTO, 5
+/// sick days, 5 days of PTO carried into the next year.
+model PtoPolicy {
+  id String @id @default(uuid()) @db.Uuid
+
+  /// Annual entitlement, in days.
+  vacationDaysPerYear Int @default(15)
+  sickDaysPerYear     Int @default(5)
+
+  /// Unused days that survive into the next policy year, capped.
+  maxCarryoverDays     Int @default(5)
+  /// Sick days usually do not carry; kept separate so the practice can decide.
+  sickCarryoverDays    Int @default(0)
+
+  /// When the policy year begins. 1 January by default; set to a different
+  /// month and day if Domi ever runs PTO on a fiscal year.
+  yearStartMonth Int @default(1)
+  yearStartDay   Int @default(1)
+
+  /// Give a mid-year starter a share of the year rather than the whole
+  /// entitlement.
+  prorateFirstYear Boolean @default(true)
+
+  updatedById String?   @db.Uuid
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  updatedBy Employee? @relation("PtoPolicyEditor", fields: [updatedById], references: [id], onDelete: SetNull)
+
+  @@map("pto_policy")
+}
 
 /// A request for time off.
 ///

@@ -26,3 +26,6 @@ coverage/
 
 # local database volume
 .postgres-data/
+
+# local scratch harnesses
+*.local.ts
