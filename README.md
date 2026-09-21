@@ -8,18 +8,21 @@ See [CLAUDE.md](./CLAUDE.md) for the full project brief, and
 
 ## What exists today
 
-Phase 1 backend scaffold: the core data model (Location, Employee, Shift,
-TimeEntry), clock-in/out with location verification for all three methods
-(web, mobile, kiosk), and a manager shift scheduler.
+Phase 1, backend and web app:
 
-Not built yet: real login, PTO, onboarding/offboarding checklists, the ADP
-export, and the React frontend.
+- Core data model — Location, Employee, Shift, TimeEntry
+- Clock in/out with location verification (geofence, office IP, kiosk)
+- Timesheet view, with manager approval and corrections
+- Manager shift scheduler
+
+Not built yet: real login, the kiosk screen, PTO, onboarding/offboarding
+checklists, and the ADP export.
 
 ## Repository layout
 
 ```
 apps/api/     NestJS + Prisma backend
-apps/web/     React + Vite frontend (not started)
+apps/web/     React + Vite + Tailwind web app
 docs/         architecture notes, open questions
 ```
 
@@ -44,15 +47,19 @@ npm run db:migrate
 # 5. load the two locations and some test staff
 npm run db:seed
 
-# 6. start the API
+# 6. start the API and the web app together
 npm run dev
 ```
 
-The API is then at http://localhost:3000/api — check it with:
+Then open **http://localhost:5173** in your browser.
+
+The API runs alongside it at http://localhost:3000/api — check it with:
 
 ```bash
 curl http://localhost:3000/api/health
 ```
+
+Run them separately with `npm run dev:api` and `npm run dev:web` if you prefer.
 
 ### Other useful commands
 
@@ -60,14 +67,17 @@ curl http://localhost:3000/api/health
 | --- | --- |
 | `npm test` | Run the test suite |
 | `npm run lint` | Check code style |
+| `npm run build` | Build both apps for production |
 | `npm run db:studio` | Open a visual database browser |
 | `npm run db:down` | Stop the local database |
 
 ## Calling the API while there is no login yet
 
-Authentication is stubbed for now. Every request (except `/api/health`) needs an
-`x-dev-employee-id` header naming the employee making the call — the seed script
-prints the ids to paste in:
+Authentication is stubbed for now. Opening the web app shows a list of seeded
+staff — pick one to act as them, and use "Switch user" in the header to change.
+
+Behind the scenes every request (except `/api/health`) carries an
+`x-dev-employee-id` header naming the caller:
 
 ```bash
 curl http://localhost:3000/api/employees/me \
@@ -91,3 +101,12 @@ This is development-only. The app refuses to start with `AUTH_MODE=dev` when
 | `GET` | `/api/time-entries` | manager (employees see their own) |
 | `PATCH` | `/api/time-entries/:id` | manager — edit, reason required |
 | `PATCH` | `/api/time-entries/:id/approve` | manager |
+| `GET` | `/api/dev/employees` | anyone — **dev mode only**, 404s otherwise |
+
+## Screens
+
+| Screen | What it does |
+| --- | --- |
+| **Clock** | Clock in/out with a live elapsed timer, today's shift, and a plain-language reason whenever a punch is refused |
+| **Timesheet** | Weekly hours. Managers see everyone, plus approve and correct; employees see only their own |
+| **Schedule** | Week grid. Managers add and remove shifts; employees see their own |

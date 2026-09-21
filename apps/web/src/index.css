@@ -1,0 +1,10 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  html {
+    /* Keep content clear of the iOS home indicator on the kiosk/phone views. */
+    -webkit-tap-highlight-color: transparent;
+  }
+}

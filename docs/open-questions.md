@@ -36,6 +36,19 @@ Phase 1. Answers belong in `docs/architecture.md` once confirmed.
 - [ ] **Overnight shifts.** Supported by the schema (start/end are full
       timestamps), untested against real scheduling patterns.
 
+## Needed for the kiosk screen (Phase 1, not yet built)
+
+The web and mobile clock-in screens are done. The kiosk is not, and it needs
+backend work first:
+
+- [ ] **A kiosk session endpoint** — pairing a device to a location and holding
+      that binding, so the tablet identifies its own location.
+- [ ] **A PIN/badge verification endpoint.** The schema stores `pinHash` and
+      `badgeId` and the API can set a PIN, but nothing verifies one yet. The
+      clock-in API already accepts `method: KIOSK`, so the punch itself works —
+      only the "who is this?" step is missing.
+- [ ] Decide PIN vs badge tap (see below) before building the screen.
+
 ## Technical to-dos
 
 - [ ] **Replace the stubbed auth** with real login before any deployment. See
@@ -49,3 +62,10 @@ Phase 1. Answers belong in `docs/architecture.md` once confirmed.
 - [ ] **Integration tests against a real database.** Unit tests cover the
       verification rules; the service layer is currently only covered by manual
       end-to-end checks.
+- [ ] **Generate the frontend's API types from the server** instead of
+      hand-maintaining `apps/web/src/lib/types.ts`. Today a server-side rename
+      compiles fine and breaks at runtime.
+- [ ] **Automated browser tests.** The web app's flows were verified by driving a
+      real browser, but those checks are not committed as a suite yet.
+- [ ] **CORS or a same-origin rewrite for production** — the Vite dev proxy does
+      not exist once deployed. See `docs/architecture.md`.

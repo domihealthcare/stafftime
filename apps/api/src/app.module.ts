@@ -5,6 +5,7 @@ import { AppController } from './app.controller';
 import { DevAuthGuard } from './common/auth/dev-auth.guard';
 import { RolesGuard } from './common/auth/roles.guard';
 import { validateEnv } from './config/env.validation';
+import { DevModule } from './dev/dev.module';
 import { EmployeesModule } from './employees/employees.module';
 import { LocationsModule } from './locations/locations.module';
 import { PrismaModule } from './prisma/prisma.module';
@@ -15,6 +16,7 @@ import { TimeEntriesModule } from './time-entries/time-entries.module';
   imports: [
     ConfigModule.forRoot({ isGlobal: true, validate: validateEnv }),
     PrismaModule,
+    DevModule,
     LocationsModule,
     EmployeesModule,
     ShiftsModule,

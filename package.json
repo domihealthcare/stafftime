@@ -2,7 +2,7 @@
   "name": "stafftime",
   "version": "0.1.0",
   "private": true,
-  "description": "Domi Time & Scheduling — staff clock-in, scheduling and timesheets",
+  "description": "Domi Time & Scheduling \u2014 staff clock-in, scheduling and timesheets",
   "workspaces": [
     "apps/*"
   ],
@@ -10,18 +10,22 @@
     "node": ">=20"
   },
   "scripts": {
-    "dev": "npm run start:dev --workspace @stafftime/api",
-    "build": "npm run build --workspace @stafftime/api",
+    "dev": "concurrently -n api,web -c cyan,magenta \"npm run dev:api\" \"npm run dev:web\"",
+    "build": "npm run build --workspace @stafftime/api && npm run build --workspace @stafftime/web",
     "test": "npm run test --workspace @stafftime/api",
-    "lint": "npm run lint --workspace @stafftime/api",
+    "lint": "npm run lint --workspace @stafftime/api && npm run lint --workspace @stafftime/web",
     "format": "prettier --write \"apps/**/*.{ts,tsx,js,json,md}\"",
     "db:up": "docker compose up -d postgres",
     "db:down": "docker compose down",
     "db:migrate": "npm run prisma:migrate --workspace @stafftime/api",
     "db:seed": "npm run prisma:seed --workspace @stafftime/api",
-    "db:studio": "npm run prisma:studio --workspace @stafftime/api"
+    "db:studio": "npm run prisma:studio --workspace @stafftime/api",
+    "dev:api": "npm run start:dev --workspace @stafftime/api",
+    "dev:web": "npm run dev --workspace @stafftime/web",
+    "typecheck": "npm run typecheck --workspace @stafftime/web"
   },
   "devDependencies": {
-    "prettier": "^3.3.3"
+    "prettier": "^3.3.3",
+    "concurrently": "^9.0.1"
   }
 }

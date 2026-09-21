@@ -97,3 +97,57 @@ entries are silently scoped to their own records rather than being refused.
   serializable transaction covers the same race without that footgun.
 - **Location coordinates are `Decimal(9,6)`** (~11cm precision). Prisma returns
   these as `Decimal` objects, converted to numbers at the verification boundary.
+
+## Web app (apps/web)
+
+React + Vite + Tailwind, three screens: **Clock**, **Timesheet**, **Schedule**.
+
+The Vite dev server proxies `/api` to the NestJS server on port 3000, so the
+browser sees a single origin and there is no CORS configuration to get wrong
+during development. That changes at deploy time — see the to-do below.
+
+### Where the seams are
+
+- **`lib/api.ts`** is the only file that knows how the caller is identified.
+  Today `authHeaders()` returns the dev employee header; with real login it
+  returns a bearer token, and nothing else in the app changes.
+- **`lib/session.tsx`** holds the signed-in employee in the shape real login will
+  fill, so screens consuming `useSession()` are already final.
+- **`lib/types.ts`** hand-mirrors the API's response shapes. This is the weakest
+  seam in the app: a change on the server will not break the build, it will break
+  at runtime. Generating these from the API is a tracked to-do.
+
+### Clock screen
+
+The screen the whole product is judged on, so the failure paths get the care:
+
+- Geolocation is requested **inside the click handler**. Browsers only show the
+  permission prompt on a user gesture, so asking on page load would silently fail.
+- **A location failure does not abort the punch.** The request is still sent
+  without coordinates, because the server may accept it on the office IP. Only
+  the server decides.
+- Refusals show the server's own sentence ("You appear to be about 1812m from
+  North Bergen…") rather than a generic error, and offer the kiosk whenever the
+  browser will keep refusing.
+- Phones are reported as `MOBILE` and desktops as `WEB`, detected via
+  `pointer: coarse`, so the timesheet can tell them apart.
+
+### Timesheet
+
+Employees are scoped to their own entries by the API, and the UI hides the
+manager-only columns to match. Corrections require a reason of at least three
+characters, and the reason is displayed on the row afterwards — the audit trail
+is only worth keeping if someone can actually read it.
+
+`<input type="datetime-local">` is given `step="1"` and fed seconds. Without
+that, opening a correction dialog and saving an *untouched* field rounds the
+timestamp down to the minute, which on a short punch pushes clock-out onto
+clock-in and fails validation.
+
+## Deployment to-dos (not yet done)
+
+- **CORS or a rewrite.** The dev-server proxy does not exist in production. Serve
+  both from one origin (a Vercel rewrite) or enable CORS on the API for
+  `staff.domihealthcare.com`.
+- **Vercel project setup** — build commands, the hosted `DATABASE_URL`, and
+  running `prisma migrate deploy` on release.
