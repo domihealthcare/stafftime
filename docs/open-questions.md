@@ -51,10 +51,22 @@ backend work first:
 
 ## Technical to-dos
 
-- [ ] **Replace the stubbed auth** with real login before any deployment. See
-      `docs/architecture.md`.
-- [ ] **Rate limiting and lockout on kiosk PIN entry.** A 4-digit PIN with
-      unlimited attempts is guessable; the hashing alone is not enough.
+- [x] ~~Replace the stubbed auth with real login before any deployment.~~ Done —
+      passwords, roles and server-side sessions. See `docs/architecture.md`.
+- [ ] **Self-service password reset.** Today a locked-out or forgetful employee
+      needs an admin to issue a temporary password. A "forgot password" email
+      flow needs an email sender (SendGrid, Resend, SES) chosen and configured —
+      not set up, and a decision for you rather than a technical blocker.
+- [ ] **Rate limiting and lockout on kiosk PIN entry.** Sign-in has both; the
+      kiosk PIN path does not exist yet and will need its own, since a 4-digit
+      PIN with unlimited attempts is guessable.
+- [ ] **Per-IP rate limiting on the login endpoint.** Account lockout stops
+      guessing at one account; it does not stop one attacker spraying one common
+      password across every known address.
+- [ ] **Schedule `SessionService.purgeExpired()`** so expired session rows are
+      cleaned up rather than accumulating.
+- [ ] **Two-factor authentication** — worth considering given the app holds
+      staff location history, but not started.
 - [ ] **Tune the GPS accuracy tolerance** (currently 2× the geofence radius)
       against real readings from both offices — indoor fixes are often poor.
 - [ ] **Decide the hosted Postgres provider** before deploying (Neon, Supabase,

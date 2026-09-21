@@ -1,3 +1,4 @@
+import { hash } from '@node-rs/argon2';
 import { EmploymentStatus, PayType, PrismaClient, Role, ShiftStatus } from '@prisma/client';
 
 const prisma = new PrismaClient();
@@ -9,7 +10,13 @@ const prisma = new PrismaClient();
  * Coordinates are approximate town-centre points and the geofence radii are
  * placeholders — see docs/open-questions.md. Replace both with surveyed values
  * before anyone clocks in for real.
+ *
+ * Every seeded account shares one well-known development password. That is
+ * acceptable precisely because this script is for local work only — never point
+ * it at a real database. Production accounts are created with
+ * `npm run create-admin`, which prompts for a password.
  */
+const DEV_PASSWORD = 'shift-change-2026';
 async function main() {
   const northBergen = await prisma.location.upsert({
     where: { slug: 'north-bergen' },
@@ -57,6 +64,7 @@ async function main() {
       role: Role.ADMIN,
       locations: [northBergen.id, westNewYork.id],
       primary: northBergen.id,
+      mustChangePassword: false,
     },
     {
       email: 'manager@domihealthcare.com',
@@ -65,6 +73,7 @@ async function main() {
       role: Role.MANAGER,
       locations: [northBergen.id, westNewYork.id],
       primary: northBergen.id,
+      mustChangePassword: false,
     },
     {
       email: 'frontdesk@domihealthcare.com',
@@ -73,6 +82,7 @@ async function main() {
       role: Role.EMPLOYEE,
       locations: [northBergen.id],
       primary: northBergen.id,
+      mustChangePassword: false,
     },
     {
       email: 'ma@domihealthcare.com',
@@ -81,13 +91,25 @@ async function main() {
       role: Role.EMPLOYEE,
       locations: [westNewYork.id],
       primary: westNewYork.id,
+      // Left true on purpose, so the forced-password-change flow is easy to try.
+      mustChangePassword: true,
     },
   ];
+
+  const passwordHash = await hash(DEV_PASSWORD);
 
   for (const person of people) {
     const employee = await prisma.employee.upsert({
       where: { email: person.email },
-      update: {},
+      // Reset credentials on every seed so a half-finished experiment (a lockout,
+      // a changed password) never leaves you unable to sign in.
+      update: {
+        passwordHash,
+        passwordUpdatedAt: new Date(),
+        mustChangePassword: person.mustChangePassword,
+        failedLoginAttempts: 0,
+        lockedUntil: null,
+      },
       create: {
         firstName: person.firstName,
         lastName: person.lastName,
@@ -96,6 +118,9 @@ async function main() {
         employmentStatus: EmploymentStatus.ACTIVE,
         payType: PayType.HOURLY,
         hireDate: new Date('2025-01-06'),
+        passwordHash,
+        passwordUpdatedAt: new Date(),
+        mustChangePassword: person.mustChangePassword,
       },
     });
 
@@ -139,14 +164,17 @@ async function main() {
   }
 
   const employees = await prisma.employee.findMany({
-    select: { id: true, email: true, role: true },
+    select: { email: true, role: true, mustChangePassword: true },
     orderBy: { email: 'asc' },
   });
 
   console.log('\nSeeded locations:');
-  console.table([northBergen, westNewYork].map((l) => ({ id: l.id, name: l.name, slug: l.slug })));
-  console.log('Seeded employees (use the id as the x-dev-employee-id header):');
+  console.table([northBergen, westNewYork].map((l) => ({ name: l.name, slug: l.slug })));
+  console.log(`Seeded sign-ins — every account's password is: ${DEV_PASSWORD}`);
   console.table(employees);
+  console.log(
+    'ma@domihealthcare.com starts with a temporary password, to demonstrate the forced change.\n',
+  );
 }
 
 main()

@@ -132,6 +132,19 @@ model Employee {
   hireDate        DateTime  @db.Date
   terminationDate DateTime? @db.Date
 
+  /// Login credentials. Null until an admin sets a password, which is how a new
+  /// hire's account exists before they can sign in.
+  passwordHash      String?
+  passwordUpdatedAt DateTime?
+  /// True for an admin-set temporary password: the holder must replace it before
+  /// they can do anything else.
+  mustChangePassword Boolean @default(true)
+
+  lastLoginAt DateTime?
+  /// Brute-force protection. Cleared on any successful sign-in.
+  failedLoginAttempts Int       @default(0)
+  lockedUntil         DateTime?
+
   /// Kiosk credentials. The PIN is only ever stored hashed.
   pinHash String?
   badgeId String? @unique
@@ -142,6 +155,7 @@ model Employee {
   locations   EmployeeLocation[]
   shifts      Shift[]
   timeEntries TimeEntry[]
+  sessions    Session[]
 
   createdShifts       Shift[]     @relation("ShiftCreatedBy")
   editedTimeEntries   TimeEntry[] @relation("TimeEntryEditedBy")
@@ -165,6 +179,36 @@ model EmployeeLocation {
   @@id([employeeId, locationId])
   @@index([locationId])
   @@map("employee_locations")
+}
+
+// ---------------------------------------------------------------------------
+// Session
+// ---------------------------------------------------------------------------
+
+/// A signed-in browser.
+///
+/// Sessions are server-side and opaque rather than self-contained tokens, so
+/// access can be withdrawn the moment someone is offboarded instead of waiting
+/// for a token to expire. Only the SHA-256 of the token is stored: a leaked
+/// database row cannot be replayed as a login.
+model Session {
+  id         String   @id @default(uuid()) @db.Uuid
+  employeeId String   @db.Uuid
+  /// SHA-256 of the opaque session token. The token itself is never stored.
+  tokenHash  String   @unique
+  expiresAt  DateTime
+  lastUsedAt DateTime @default(now())
+  revokedAt  DateTime?
+  /// Recorded so a user can recognise their own sessions, and for incident review.
+  userAgent  String?
+  ipAddress  String?
+  createdAt  DateTime @default(now())
+
+  employee Employee @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+
+  @@index([employeeId])
+  @@index([expiresAt])
+  @@map("sessions")
 }
 
 // ---------------------------------------------------------------------------

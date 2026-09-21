@@ -10,5 +10,7 @@ export interface AuthUser {
 declare module 'express' {
   interface Request {
     user?: AuthUser;
+    /// The raw session token, so a handler can revoke or preserve this session.
+    sessionToken?: string;
   }
 }

@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { NavLink, Outlet } from 'react-router-dom';
 import { useIsManager, useSession } from '../lib/session';
 
@@ -9,6 +10,16 @@ const linkClasses = ({ isActive }: { isActive: boolean }) =>
 export function Layout() {
   const { employee, signOut } = useSession();
   const isManager = useIsManager();
+  const [signingOut, setSigningOut] = useState(false);
+
+  async function handleSignOut() {
+    setSigningOut(true);
+    try {
+      await signOut();
+    } finally {
+      setSigningOut(false);
+    }
+  }
 
   return (
     <div className="min-h-screen bg-slate-100">
@@ -38,12 +49,19 @@ export function Layout() {
                 </span>
               )}
             </span>
-            <button
-              type="button"
-              onClick={signOut}
+            <NavLink
+              to="/password"
               className="text-sm font-medium text-slate-500 hover:text-slate-900"
             >
-              Switch user
+              Password
+            </NavLink>
+            <button
+              type="button"
+              onClick={() => void handleSignOut()}
+              disabled={signingOut}
+              className="text-sm font-medium text-slate-500 hover:text-slate-900 disabled:opacity-60"
+            >
+              {signingOut ? 'Signing out…' : 'Sign out'}
             </button>
           </div>
         </div>

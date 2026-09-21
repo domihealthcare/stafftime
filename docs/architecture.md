@@ -76,18 +76,83 @@ Clock-in runs in a `Serializable` transaction: checking for an existing open
 punch and inserting the new one must be atomic, or a double-tapped button leaves
 someone clocked in twice.
 
-## Auth (stubbed)
+## Authentication
 
-`DevAuthGuard` trusts an `x-dev-employee-id` header. This is **not**
-authentication — it exists so the API is usable before login is built. Env
-validation refuses to boot with `AUTH_MODE=dev` under `NODE_ENV=production`.
+Passwords are hashed with **argon2id** at the parameters OWASP recommends
+(19 MiB, 2 iterations, 1 lane — the library defaults). `@node-rs/argon2` ships
+prebuilt binaries, so there is no native compilation step to fail on a deploy.
 
-The contract around it is already final: guards populate `request.user`, routes
-declare requirements with `@Roles(...)`, and `@CurrentUser()` reads the caller.
-Swapping in a JWT strategy replaces one guard and touches no call sites.
+### Sessions, not tokens
+
+A signed-in browser holds an opaque random token; the server stores only its
+SHA-256. Nothing about the user is encoded in it.
+
+This was chosen over JWTs deliberately. A JWT stays valid until it expires,
+which is exactly wrong for a product whose Phase 3 is an **offboarding
+checklist with access revocation**. Server-side sessions can be withdrawn the
+instant someone is offboarded, and `SessionService.resolve` additionally refuses
+any session whose employee is `TERMINATED` — so revocation happens even when
+nobody remembers to revoke.
+
+A session ends at its absolute expiry (12h), after an idle stretch (8h), when
+revoked, or when the employee is terminated. The idle timeout is aimed squarely
+at the shared front-desk browser left open overnight.
+
+`lastUsedAt` is refreshed at most once a minute rather than on every request —
+otherwise every read would carry a write.
+
+### The cookie
+
+`httpOnly` (a script on the page cannot read it, so an XSS bug cannot steal the
+session), `sameSite=lax` (not sent cross-site, which is what blocks CSRF —
+combined with same-origin hosting, no separate CSRF token is needed), and
+`secure` in production.
+
+### What a failed sign-in reveals
+
+Nothing. A wrong password and an unknown address return the identical message,
+and an unknown address still pays for one argon2 verification against a dummy
+hash so the response time does not give the answer away either. The
+`TERMINATED` check runs *after* the password is proven, so a former employee's
+status cannot be probed with a guess.
+
+Lockout is 8 attempts, then 15 minutes — long enough to stop online guessing,
+short enough that a real person who fat-fingered their password is not calling
+an admin. An admin can reset it sooner by issuing a temporary password.
+
+### The password policy
+
+Length, plus a blocklist. No forced symbol-and-digit mixes: those produce
+`Password1!` and sticky notes, which is why NIST dropped them.
+
+The blocklist works on the **stem** — digits and punctuation are stripped before
+comparison — because a 12-character minimum does not prevent `password1234`, it
+invites it. Also rejected: keyboard and counting runs, digits alone, too few
+distinct characters, the practice and location names, and the user's own name or
+email.
+
+### Temporary passwords
+
+An admin sets one for onboarding or lockout recovery. It signs the person in and
+nothing more: `SessionAuthGuard` refuses every route except `me`,
+`change-password` and `logout` until it is replaced, and the web app shows only
+the change-password screen to match. Setting one also revokes every existing
+session for that employee.
+
+Changing your own password requires the current one — an unattended browser
+should not be a takeover — and signs out every *other* browser, which is what
+ends an intruder's session if the old password had leaked.
+
+### Roles
 
 `ADMIN` implicitly passes every `@Roles` check. Employees listing shifts or time
 entries are silently scoped to their own records rather than being refused.
+
+### Bootstrapping
+
+There is no sign-up page, so a fresh database has no way in. `npm run
+create-admin` creates the first administrator, prompting for the password with
+echo disabled so it never lands in shell history or the process list.
 
 ## Decisions worth revisiting
 
@@ -108,11 +173,13 @@ during development. That changes at deploy time — see the to-do below.
 
 ### Where the seams are
 
-- **`lib/api.ts`** is the only file that knows how the caller is identified.
-  Today `authHeaders()` returns the dev employee header; with real login it
-  returns a bearer token, and nothing else in the app changes.
-- **`lib/session.tsx`** holds the signed-in employee in the shape real login will
-  fill, so screens consuming `useSession()` are already final.
+- **`lib/api.ts`** is the only file that knows how the caller is identified. The
+  session rides in an httpOnly cookie, so it attaches nothing by hand — it just
+  sets `credentials: 'include'` and lets the browser do it.
+- **`lib/session.tsx`** holds the signed-in employee. On load it asks
+  `/auth/me` rather than assuming signed-out, so an existing cookie restores the
+  session; a 401 there is the ordinary "not signed in" answer, not an error to
+  show the user.
 - **`lib/types.ts`** hand-mirrors the API's response shapes. This is the weakest
   seam in the app: a change on the server will not break the build, it will break
   at runtime. Generating these from the API is a tracked to-do.
@@ -146,8 +213,12 @@ clock-in and fails validation.
 
 ## Deployment to-dos (not yet done)
 
-- **CORS or a rewrite.** The dev-server proxy does not exist in production. Serve
-  both from one origin (a Vercel rewrite) or enable CORS on the API for
-  `staff.domihealthcare.com`.
+- **Same-origin hosting is now required, not merely convenient.** The session
+  cookie is `sameSite=lax`, which is what removes the need for CSRF tokens — but
+  it means the API must be served from the same origin as the web app (a Vercel
+  rewrite). Splitting them across domains would force `sameSite=none` and a
+  CSRF-token scheme.
+- **A session cleanup job.** `SessionService.purgeExpired()` exists but nothing
+  calls it yet; expired rows accumulate harmlessly until it is scheduled.
 - **Vercel project setup** — build commands, the hosted `DATABASE_URL`, and
   running `prisma migrate deploy` on release.

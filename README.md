@@ -11,12 +11,13 @@ See [CLAUDE.md](./CLAUDE.md) for the full project brief, and
 Phase 1, backend and web app:
 
 - Core data model — Location, Employee, Shift, TimeEntry
+- Sign-in with passwords, roles and server-side sessions
 - Clock in/out with location verification (geofence, office IP, kiosk)
 - Timesheet view, with manager approval and corrections
 - Manager shift scheduler
 
-Not built yet: real login, the kiosk screen, PTO, onboarding/offboarding
-checklists, and the ADP export.
+Not built yet: the kiosk screen, self-service password reset, PTO,
+onboarding/offboarding checklists, and the ADP export.
 
 ## Repository layout
 
@@ -71,27 +72,46 @@ Run them separately with `npm run dev:api` and `npm run dev:web` if you prefer.
 | `npm run db:studio` | Open a visual database browser |
 | `npm run db:down` | Stop the local database |
 
-## Calling the API while there is no login yet
+## Signing in
 
-Authentication is stubbed for now. Opening the web app shows a list of seeded
-staff — pick one to act as them, and use "Switch user" in the header to change.
+The seed creates four accounts, all sharing the password
+**`shift-change-2026`** — fine for local work, never for a real database:
 
-Behind the scenes every request (except `/api/health`) carries an
-`x-dev-employee-id` header naming the caller:
+| Email | Role |
+| --- | --- |
+| `admin@domihealthcare.com` | Admin |
+| `manager@domihealthcare.com` | Manager |
+| `frontdesk@domihealthcare.com` | Employee |
+| `ma@domihealthcare.com` | Employee — starts with a temporary password, so you can try the forced-change flow |
+
+### On a real deployment
+
+There is no sign-up page, so the first administrator is created from the
+command line after the database is migrated:
 
 ```bash
-curl http://localhost:3000/api/employees/me \
-  -H "x-dev-employee-id: <an-id-from-the-seed-output>"
+npm run create-admin --workspace @stafftime/api
 ```
 
-This is development-only. The app refuses to start with `AUTH_MODE=dev` when
-`NODE_ENV=production`, so it cannot reach the internet in this state.
+It prompts for the details and hides the password as you type, so nothing
+sensitive lands in your shell history.
+
+Everyone else is added by an admin, who sets a temporary password that the new
+hire must replace the first time they sign in. There is no self-service "forgot
+password" yet — that needs email sending, which is not set up (see
+`docs/open-questions.md`).
 
 ## Endpoints
 
 | Method | Path | Who |
 | --- | --- | --- |
 | `GET` | `/api/health` | anyone |
+| `POST` | `/api/auth/login` | anyone |
+| `POST` | `/api/auth/logout` | signed in |
+| `GET` | `/api/auth/me` | signed in |
+| `POST` | `/api/auth/change-password` | signed in |
+| `GET`/`DELETE` | `/api/auth/sessions` | signed in — list or sign out other browsers |
+| `PUT` | `/api/auth/employees/:id/password` | admin — issue a temporary password |
 | `GET/POST/PATCH/DELETE` | `/api/locations` | admin (reads: anyone) |
 | `GET/POST/PATCH/DELETE` | `/api/employees` | admin (`/me`: anyone) |
 | `GET/POST/PATCH/DELETE` | `/api/shifts` | manager (employees see their own) |
@@ -101,7 +121,6 @@ This is development-only. The app refuses to start with `AUTH_MODE=dev` when
 | `GET` | `/api/time-entries` | manager (employees see their own) |
 | `PATCH` | `/api/time-entries/:id` | manager — edit, reason required |
 | `PATCH` | `/api/time-entries/:id/approve` | manager |
-| `GET` | `/api/dev/employees` | anyone — **dev mode only**, 404s otherwise |
 
 ## Screens
 
@@ -110,3 +129,4 @@ This is development-only. The app refuses to start with `AUTH_MODE=dev` when
 | **Clock** | Clock in/out with a live elapsed timer, today's shift, and a plain-language reason whenever a punch is refused |
 | **Timesheet** | Weekly hours. Managers see everyone, plus approve and correct; employees see only their own |
 | **Schedule** | Week grid. Managers add and remove shifts; employees see their own |
+| **Sign in** | Email and password. A temporary password lands you on a forced change screen and nothing else |

@@ -37,7 +37,10 @@ export interface EmployeeSummary {
 
 export interface Employee extends EmployeeSummary {
   preferredName: string | null;
-  externalId: string | null;
+  externalId?: string | null;
+  /// True while an admin-set temporary password is still in force.
+  mustChangePassword?: boolean;
+  lastLoginAt?: string | null;
   locations: { locationId: string; isPrimary: boolean; location: LocationSummary }[];
 }
 

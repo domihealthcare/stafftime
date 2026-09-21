@@ -7,13 +7,6 @@ export enum NodeEnv {
   Production = 'production',
 }
 
-/// "dev" trusts a request header for identity so endpoints are usable before real
-/// login exists. Replaced by JWT auth in the auth pass.
-export enum AuthMode {
-  Dev = 'dev',
-  Jwt = 'jwt',
-}
-
 class EnvironmentVariables {
   @IsEnum(NodeEnv)
   NODE_ENV: NodeEnv = NodeEnv.Development;
@@ -27,8 +20,28 @@ class EnvironmentVariables {
   @Max(65535)
   PORT = 3000;
 
-  @IsEnum(AuthMode)
-  AUTH_MODE: AuthMode = AuthMode.Dev;
+  /// Absolute lifetime of a signed-in session.
+  @Type(() => Number)
+  @IsInt()
+  @Min(1)
+  SESSION_TTL_HOURS = 12;
+
+  /// A session also dies after this long without use, so a shared front-desk
+  /// browser left open overnight is not still signed in come morning.
+  @Type(() => Number)
+  @IsInt()
+  @Min(1)
+  SESSION_IDLE_TIMEOUT_HOURS = 8;
+
+  @Type(() => Number)
+  @IsInt()
+  @Min(3)
+  MAX_LOGIN_ATTEMPTS = 8;
+
+  @Type(() => Number)
+  @IsInt()
+  @Min(1)
+  LOCKOUT_MINUTES = 15;
 
   @Type(() => Number)
   @IsInt()
@@ -45,13 +58,6 @@ export function validateEnv(raw: Record<string, unknown>) {
   if (errors.length > 0) {
     const details = errors.map((e) => Object.values(e.constraints ?? {}).join(', ')).join('; ');
     throw new Error(`Invalid environment configuration: ${details}`);
-  }
-
-  // Fail loudly rather than silently shipping header-trust auth to production.
-  if (config.NODE_ENV === NodeEnv.Production && config.AUTH_MODE === AuthMode.Dev) {
-    throw new Error(
-      'AUTH_MODE=dev cannot be used when NODE_ENV=production. Real authentication is required.',
-    );
   }
 
   return config;
