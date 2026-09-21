@@ -1,5 +1,6 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { NavLink, Outlet } from 'react-router-dom';
+import { api } from '../lib/api';
 import { useIsAdmin, useIsManager, useSession } from '../lib/session';
 
 const linkClasses = ({ isActive }: { isActive: boolean }) =>
@@ -12,6 +13,22 @@ export function Layout() {
   const isManager = useIsManager();
   const isAdmin = useIsAdmin();
   const [signingOut, setSigningOut] = useState(false);
+  const [pendingPto, setPendingPto] = useState(0);
+
+  // A badge on the tab, so a manager does not have to go looking for requests.
+  useEffect(() => {
+    if (!isManager) {
+      return;
+    }
+    let cancelled = false;
+    api
+      .ptoPendingCount()
+      .then((result) => !cancelled && setPendingPto(result.pending))
+      .catch(() => undefined);
+    return () => {
+      cancelled = true;
+    };
+  }, [isManager]);
 
   async function handleSignOut() {
     setSigningOut(true);
@@ -37,6 +54,14 @@ export function Layout() {
               </NavLink>
               <NavLink to="/schedule" className={linkClasses}>
                 Schedule
+              </NavLink>
+              <NavLink to="/time-off" className={linkClasses}>
+                Time off
+                {pendingPto > 0 && (
+                  <span className="ml-1.5 rounded-full bg-amber-100 px-1.5 py-0.5 text-xs font-semibold text-amber-800">
+                    {pendingPto}
+                  </span>
+                )}
               </NavLink>
               {isManager && (
                 <NavLink to="/export" className={linkClasses}>

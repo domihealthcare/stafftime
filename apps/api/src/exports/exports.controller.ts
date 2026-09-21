@@ -1,7 +1,23 @@
-import { Body, Controller, Get, HttpCode, HttpStatus, Post, Res } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Delete,
+  Get,
+  HttpCode,
+  HttpStatus,
+  Param,
+  ParseUUIDPipe,
+  Patch,
+  Post,
+  Res,
+} from '@nestjs/common';
 import { Role } from '@prisma/client';
 import type { Response } from 'express';
+import { AuthUser } from '../common/auth/auth-user';
+import { CurrentUser } from '../common/auth/current-user.decorator';
 import { Roles } from '../common/auth/roles.decorator';
+import { SaveReportPresetDto, UpdateReportPresetDto } from './dto/report-preset.dto';
+import { ReportPresetsService } from './report-presets.service';
 import { DEFAULT_COLUMN_KEYS, TIMESHEET_COLUMNS } from './columns';
 import { ExportTimesheetDto } from './dto/export-timesheet.dto';
 import { TimesheetExportService } from './timesheet-export.service';
@@ -10,7 +26,10 @@ import { buildTimesheetCsv, buildTimesheetWorkbook } from './workbook';
 @Controller('exports')
 @Roles(Role.MANAGER)
 export class ExportsController {
-  constructor(private readonly timesheets: TimesheetExportService) {}
+  constructor(
+    private readonly timesheets: TimesheetExportService,
+    private readonly presets: ReportPresetsService,
+  ) {}
 
   /// The column catalogue, so the export screen's checkboxes come from the
   /// server rather than a hand-maintained copy.
@@ -54,6 +73,41 @@ export class ExportsController {
       .setHeader('Content-Disposition', `attachment; filename="${filename}.xlsx"`)
       .setHeader('Content-Length', String(workbook.byteLength))
       .send(workbook);
+  }
+
+  // ------------------------------------------------------------- saved reports
+
+  /// Your saved reports, plus any a colleague shared.
+  @Get('presets')
+  listPresets(@CurrentUser() user: AuthUser) {
+    return this.presets.list(user);
+  }
+
+  @Post('presets')
+  createPreset(@Body() dto: SaveReportPresetDto, @CurrentUser() user: AuthUser) {
+    return this.presets.create(dto, user);
+  }
+
+  @Patch('presets/:id')
+  updatePreset(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Body() dto: UpdateReportPresetDto,
+    @CurrentUser() user: AuthUser,
+  ) {
+    return this.presets.update(id, dto, user);
+  }
+
+  @Delete('presets/:id')
+  @HttpCode(HttpStatus.OK)
+  deletePreset(@Param('id', ParseUUIDPipe) id: string, @CurrentUser() user: AuthUser) {
+    return this.presets.remove(id, user);
+  }
+
+  /// The stored options, re-validated, so the export screen can load a saved
+  /// report into its form.
+  @Get('presets/:id/options')
+  presetOptions(@Param('id', ParseUUIDPipe) id: string, @CurrentUser() user: AuthUser) {
+    return this.presets.resolveOptions(id, user);
   }
 }
 

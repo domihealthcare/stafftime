@@ -6,6 +6,7 @@ import {
   type ExportPreview,
   type TimesheetExportOptions,
 } from '../lib/api';
+import type { ReportPreset } from '../lib/types';
 import { addDays, startOfWeek, toLocalInputValue } from '../lib/format';
 import type { Location } from '../lib/types';
 import { Alert, Card, PageHeading, Spinner } from '../components/ui';
@@ -34,17 +35,31 @@ export function ExportPage() {
   const [splitOvertime, setSplitOvertime] = useState(false);
   const [format, setFormat] = useState<'xlsx' | 'csv'>('xlsx');
 
+  const [presets, setPresets] = useState<ReportPreset[]>([]);
+  const [activePresetId, setActivePresetId] = useState<string | null>(null);
+  const [savingPreset, setSavingPreset] = useState(false);
+  // Its own error, not the page's: the preview refreshes on a timer and clears
+  // the page error, which would silently wipe a message about a saved report.
+  const [presetError, setPresetError] = useState<string | null>(null);
+  const [presetName, setPresetName] = useState('');
+  const [presetShared, setPresetShared] = useState(true);
+
   const [preview, setPreview] = useState<ExportPreview | null>(null);
   const [previewing, setPreviewing] = useState(false);
   const [downloading, setDownloading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  const loadPresets = useCallback(async () => {
+    setPresets(await api.listReportPresets());
+  }, []);
+
   useEffect(() => {
-    Promise.all([api.exportColumns(), api.listLocations()])
-      .then(([columnData, locationData]) => {
+    Promise.all([api.exportColumns(), api.listLocations(), api.listReportPresets()])
+      .then(([columnData, locationData, presetData]) => {
         setColumns(columnData.columns);
         setSelected(columnData.defaults);
         setLocations(locationData);
+        setPresets(presetData);
       })
       .catch((err: unknown) =>
         setError(err instanceof ApiError ? err.message : 'Could not load export options.'),
@@ -90,6 +105,66 @@ export function ExportPage() {
     return () => window.clearTimeout(timer);
   }, [refreshPreview]);
 
+  /// Loads a saved report's options into the form. The period is deliberately
+  /// not stored, so whatever dates are on screen stay put.
+  async function applyPreset(id: string) {
+    setPresetError(null);
+    try {
+      const options = await api.reportPresetOptions(id);
+      if (options.columns?.length) setSelected(options.columns);
+      if (options.statuses?.length) setStatuses(options.statuses);
+      setLocationId(options.locationId ?? '');
+      setIncludeOpen(options.includeOpen ?? false);
+      setIncludeSummary(options.includeSummary ?? true);
+      setSplitOvertime(options.splitOvertime ?? false);
+      setFormat(options.format === 'csv' ? 'csv' : 'xlsx');
+      setActivePresetId(id);
+    } catch (err) {
+      setPresetError(
+        err instanceof ApiError ? err.message : 'Could not open that saved report.',
+      );
+    }
+  }
+
+  async function savePreset() {
+    setPresetError(null);
+    try {
+      await api.saveReportPreset({
+        name: presetName.trim(),
+        isShared: presetShared,
+        // Everything except the period, which is nearly always "the last one"
+        // rather than the specific fortnight this export happens to cover.
+        options: {
+          locationId: options.locationId,
+          statuses: options.statuses,
+          includeOpen: options.includeOpen,
+          columns: options.columns,
+          includeSummary: options.includeSummary,
+          splitOvertime: options.splitOvertime,
+          format: options.format,
+        },
+      });
+      setPresetName('');
+      setSavingPreset(false);
+      await loadPresets();
+    } catch (err) {
+      setPresetError(err instanceof ApiError ? err.message : 'Could not save that report.');
+    }
+  }
+
+  async function deletePreset(id: string, name: string) {
+    if (!window.confirm(`Delete the saved report "${name}"?`)) {
+      return;
+    }
+    try {
+      await api.deleteReportPreset(id);
+      if (activePresetId === id) setActivePresetId(null);
+      await loadPresets();
+    } catch (err) {
+      setPresetError(err instanceof ApiError ? err.message : 'Could not delete that report.');
+    }
+  }
+
   async function download() {
     setDownloading(true);
     setError(null);
@@ -121,6 +196,9 @@ export function ExportPage() {
     return [...map.entries()];
   }, [columns]);
 
+  const field =
+    'mt-1 w-full rounded-lg border-slate-300 text-sm shadow-sm focus:border-brand-600 focus:ring-brand-600';
+
   if (loading) {
     return (
       <Card className="p-6">
@@ -128,9 +206,6 @@ export function ExportPage() {
       </Card>
     );
   }
-
-  const field =
-    'mt-1 w-full rounded-lg border-slate-300 text-sm shadow-sm focus:border-brand-600 focus:ring-brand-600';
 
   return (
     <div className="mx-auto max-w-3xl">
@@ -140,6 +215,106 @@ export function ExportPage() {
       />
 
       <Card className="p-5">
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <h2 className="text-sm font-semibold text-slate-900">Saved reports</h2>
+          <button
+            type="button"
+            onClick={() => setSavingPreset((open) => !open)}
+            className="text-xs font-medium text-slate-600 hover:text-slate-900"
+          >
+            {savingPreset ? 'Cancel' : 'Save these settings'}
+          </button>
+        </div>
+
+        {presets.length === 0 && !savingPreset ? (
+          <p className="mt-2 text-sm text-slate-500">
+            None yet. Set up an export the way you want it, then save it here so the next
+            one is a single tap.
+          </p>
+        ) : (
+          <div className="mt-3 flex flex-wrap gap-2">
+            {presets.map((preset) => (
+              <span
+                key={preset.id}
+                className={`inline-flex items-center gap-1 rounded-lg border px-1 ${
+                  activePresetId === preset.id
+                    ? 'border-brand-600 bg-brand-50'
+                    : 'border-slate-300 bg-white'
+                }`}
+              >
+                <button
+                  type="button"
+                  onClick={() => void applyPreset(preset.id)}
+                  className="px-2 py-1.5 text-sm font-medium text-slate-700 hover:text-slate-900"
+                >
+                  {preset.name}
+                  {preset.isShared && !preset.isMine && (
+                    <span className="ml-1 text-xs font-normal text-slate-500">
+                      · {preset.ownerName}
+                    </span>
+                  )}
+                </button>
+                {preset.isMine && (
+                  <button
+                    type="button"
+                    onClick={() => void deletePreset(preset.id, preset.name)}
+                    aria-label={`Delete ${preset.name}`}
+                    className="px-1.5 py-1.5 text-xs text-slate-400 hover:text-rose-600"
+                  >
+                    ×
+                  </button>
+                )}
+              </span>
+            ))}
+          </div>
+        )}
+
+        {presetError && (
+          <div className="mt-3">
+            <Alert>{presetError}</Alert>
+          </div>
+        )}
+
+        {savingPreset && (
+          <div className="mt-3 border-t border-slate-100 pt-3">
+            <label htmlFor="preset-name" className="block text-sm font-medium text-slate-700">
+              Name this report
+            </label>
+            <input
+              id="preset-name"
+              type="text"
+              autoFocus
+              maxLength={60}
+              placeholder="Biweekly payroll"
+              value={presetName}
+              onChange={(event) => setPresetName(event.target.value)}
+              className={field}
+            />
+            <label className="mt-2 flex items-center gap-2 text-sm text-slate-700">
+              <input
+                type="checkbox"
+                checked={presetShared}
+                onChange={(event) => setPresetShared(event.target.checked)}
+                className="rounded border-slate-300 text-brand-600 focus:ring-brand-600"
+              />
+              Share with other managers
+            </label>
+            <p className="mt-1 text-xs text-slate-500">
+              Saves the columns, filters and format — not the dates.
+            </p>
+            <button
+              type="button"
+              disabled={presetName.trim().length === 0}
+              onClick={() => void savePreset()}
+              className="mt-3 rounded-lg bg-brand-600 px-4 py-2 text-sm font-medium text-white hover:bg-brand-700 disabled:opacity-60"
+            >
+              Save report
+            </button>
+          </div>
+        )}
+      </Card>
+
+      <Card className="mt-4 p-5">
         <h2 className="text-sm font-semibold text-slate-900">Period</h2>
         <div className="mt-2 grid gap-3 sm:grid-cols-2">
           <div>

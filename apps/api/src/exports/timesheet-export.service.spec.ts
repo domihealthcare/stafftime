@@ -7,9 +7,18 @@ import {
   hoursBetween,
   weekKey,
 } from './timesheet-export.service';
+import { Workbook } from 'exceljs';
+import JSZip from 'jszip';
 import { buildTimesheetCsv, buildTimesheetWorkbook } from './workbook';
 
 const ZONE = 'America/New_York';
+
+/// exceljs declares its own Buffer type, structurally identical to Node's here.
+async function reopen(buffer: Buffer): Promise<Workbook> {
+  const workbook = new Workbook();
+  await workbook.xlsx.load(buffer as unknown as Parameters<typeof workbook.xlsx.load>[0]);
+  return workbook;
+}
 
 describe('time helpers', () => {
   it('measures hours to two decimals', () => {
@@ -315,6 +324,61 @@ describe('TimesheetExportService', () => {
       const { service } = build([entry({ isLate: true, isEarlyDeparture: true })]);
       const data = await service.build({ ...period, columns: ['flags'] });
       expect(buildTimesheetCsv(data)).toContain('"Late, Left early"');
+    });
+
+    it('writes the hours total as a number, not just a formula', async () => {
+      const { service } = build([
+        entry(),
+        entry({ id: 'te-2', clockOutAt: new Date('2026-09-21T18:30:00Z') }),
+      ]);
+      const data = await service.build(period);
+      const buffer = await buildTimesheetWorkbook(data);
+
+      const reread = await reopen(buffer);
+      const sheet = reread.getWorksheet('Time entries')!;
+      const hoursColumn = data.meta.columns.indexOf('hours') + 1;
+      const totalCell = sheet.getRow(sheet.rowCount).getCell(hoursColumn);
+
+      // A formula with no cached result shows blank until the viewer decides to
+      // recalculate, which is how the first version shipped.
+      expect(totalCell.value).toMatchObject({
+        formula: expect.stringContaining('SUM('),
+        result: 13.5, // 8 + 5.5
+      });
+    });
+
+    it('asks the viewer to recalculate on open', async () => {
+      const { service } = build([entry()]);
+      const buffer = await buildTimesheetWorkbook(await service.build(period));
+
+      // Asserted against the file's own bytes: exceljs writes this flag but does
+      // not read it back, so re-opening the workbook would prove nothing.
+      const zip = await JSZip.loadAsync(buffer);
+      const xml = await zip.file('xl/workbook.xml')!.async('string');
+      expect(xml).toContain('fullCalcOnLoad="1"');
+    });
+
+    it('writes the cached value next to the formula in the file itself', async () => {
+      const { service } = build([entry()]);
+      const buffer = await buildTimesheetWorkbook(await service.build(period));
+
+      const zip = await JSZip.loadAsync(buffer);
+      const sheetXml = await zip.file('xl/worksheets/sheet1.xml')!.async('string');
+      // <f> is the formula, <v> the cached result. Without the <v>, the cell is
+      // blank until something recalculates it.
+      expect(sheetXml).toMatch(/<f>SUM\([A-Z]+\d+:[A-Z]+\d+\)<\/f><v>[\d.]+<\/v>/);
+    });
+
+    it('does not write a Total label over the hours column itself', async () => {
+      const { service } = build([entry()]);
+      // Hours first: there is no column to the left to put the label in.
+      const data = await service.build({ ...period, columns: ['hours', 'date'] });
+      const buffer = await buildTimesheetWorkbook(data);
+
+      const reread = await reopen(buffer);
+      const sheet = reread.getWorksheet('Time entries')!;
+      const totalCell = sheet.getRow(sheet.rowCount).getCell(1);
+      expect(totalCell.value).toMatchObject({ result: 8 });
     });
 
     it('builds an empty workbook without throwing', async () => {

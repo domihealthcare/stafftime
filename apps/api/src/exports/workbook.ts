@@ -16,6 +16,9 @@ export async function buildTimesheetWorkbook(data: TimesheetData): Promise<Buffe
   const workbook = new Workbook();
   workbook.creator = 'Domi Time & Scheduling';
   workbook.created = data.meta.generatedAt;
+  // Without this, a formula written by a library sits blank until the viewer
+  // happens to recalculate. Belt and braces with the cached results below.
+  workbook.calcProperties.fullCalcOnLoad = true;
 
   buildEntriesSheet(workbook, data);
   if (data.meta.entryCount > 0 || data.totals.length > 0) {
@@ -63,10 +66,27 @@ function buildEntriesSheet(workbook: Workbook, data: TimesheetData) {
   // A visible total, so nobody has to trust a hidden sum.
   const hoursIndex = data.meta.columns.indexOf('hours');
   if (hoursIndex >= 0 && data.rows.length > 0) {
+    const column = hoursIndex + 1;
+    const letter = columnLetter(column);
     const totalRow = sheet.addRow([]);
-    totalRow.getCell(Math.max(1, hoursIndex)).value = 'Total';
-    const cell = totalRow.getCell(hoursIndex + 1);
-    cell.value = { formula: `SUM(${columnLetter(hoursIndex + 1)}2:${columnLetter(hoursIndex + 1)}${data.rows.length + 1})` };
+
+    // The label goes in the column to the left, unless hours is the first one.
+    if (column > 1) {
+      totalRow.getCell(column - 1).value = 'Total';
+    }
+
+    const total = data.rows.reduce((sum, row) => {
+      const value = row.values.hours;
+      return sum + (typeof value === 'number' ? value : 0);
+    }, 0);
+
+    const cell = totalRow.getCell(column);
+    // The formula keeps the total live if someone edits a row; the cached
+    // result means it shows a number the moment the file is opened.
+    cell.value = {
+      formula: `SUM(${letter}2:${letter}${data.rows.length + 1})`,
+      result: Math.round(total * 100) / 100,
+    };
     cell.numFmt = '0.00';
     totalRow.font = { bold: true };
   }

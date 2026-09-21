@@ -10,6 +10,7 @@ import { LocationsPage } from './pages/LocationsPage';
 import { KiosksPage } from './pages/KiosksPage';
 import { LoginPage } from './pages/LoginPage';
 import { SchedulePage } from './pages/SchedulePage';
+import { TimeOffPage } from './pages/TimeOffPage';
 import { TimesheetPage } from './pages/TimesheetPage';
 
 function Routed() {
@@ -40,6 +41,7 @@ function Routed() {
         <Route path="timesheet" element={<TimesheetPage />} />
         <Route path="schedule" element={<SchedulePage />} />
         <Route path="password" element={<ChangePasswordPage forced={false} />} />
+        <Route path="time-off" element={<TimeOffPage />} />
         <Route path="export" element={<ExportPage />} />
         <Route path="kiosks" element={<KiosksPage />} />
         <Route path="locations" element={<LocationsPage />} />

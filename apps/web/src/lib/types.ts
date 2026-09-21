@@ -100,3 +100,43 @@ export interface TimeEntry {
   location?: LocationSummary;
   shift?: { id: string; startsAt: string; endsAt: string } | null;
 }
+
+// ---------------------------------------------------------------------------
+// PTO
+// ---------------------------------------------------------------------------
+
+export type PtoType = 'VACATION' | 'SICK' | 'PERSONAL' | 'BEREAVEMENT' | 'UNPAID' | 'OTHER';
+export type PtoStatus = 'PENDING' | 'APPROVED' | 'DENIED' | 'CANCELLED';
+
+export interface PtoRequest {
+  id: string;
+  employeeId: string;
+  type: PtoType;
+  status: PtoStatus;
+  /// Plain calendar dates, "2026-11-03" — not timestamps.
+  startDate: string;
+  endDate: string;
+  isHalfDay: boolean;
+  days: number;
+  notes: string | null;
+  reviewNote: string | null;
+  reviewedAt: string | null;
+  employee?: { id: string; firstName: string; lastName: string; preferredName: string | null };
+  reviewedBy?: { id: string; firstName: string; lastName: string } | null;
+}
+
+export interface ConflictingShift {
+  id: string;
+  startsAt: string;
+  endsAt: string;
+  location: { name: string };
+}
+
+export interface ReportPreset {
+  id: string;
+  name: string;
+  isShared: boolean;
+  isMine: boolean;
+  ownerName: string;
+  updatedAt: string;
+}

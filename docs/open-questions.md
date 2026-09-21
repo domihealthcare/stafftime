@@ -36,6 +36,21 @@ What is still missing is ADP-specific, and none of it can be guessed:
 When those arrive, the work is an adapter that reuses the existing aggregation
 and writes ADP's layout — the timesheet logic itself does not change.
 
+## PTO (Phase 2, requests and approval are built)
+
+- [ ] **Balances and accrual.** Not built, and not guessable: does PTO accrue per
+      pay period or land as an annual grant? Does it carry over? Is sick leave
+      tracked separately from vacation (NJ has its own earned-sick-leave rules)?
+      Answer these before building a balance, because the accrual model decides
+      the schema.
+- [ ] **Who approves whom.** Today any manager can decide any request except
+      their own. Fine for two locations; revisit if that changes.
+- [ ] **Should approving PTO cancel the shifts inside it?** Today it does not —
+      the manager sees the clash and reassigns cover by hand. Automatic
+      cancellation would be easy to add but hard to undo.
+- [ ] **Notifications.** Nobody is told when a request is decided; they have to
+      look. Needs the same email decision as password reset.
+
 ## Product decisions
 
 - [ ] **Kiosk device:** dedicated tablet per location, or a shared front-desk PC?

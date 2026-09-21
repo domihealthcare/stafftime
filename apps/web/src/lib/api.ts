@@ -1,6 +1,9 @@
 import type {
+  ConflictingShift,
   Employee,
   Location,
+  PtoRequest,
+  ReportPreset,
   Shift,
   TimeEntry,
   UpdateLocationInput,
@@ -232,6 +235,43 @@ export interface ExportPreview {
 }
 
 export const api = {
+  // ---------------------------------------------------------------- saved reports
+  listReportPresets: () => request<ReportPreset[]>('/exports/presets'),
+  saveReportPreset: (body: {
+    name: string;
+    isShared?: boolean;
+    options: Partial<TimesheetExportOptions>;
+  }) => request<ReportPreset>('/exports/presets', { method: 'POST', body: JSON.stringify(body) }),
+  updateReportPreset: (
+    id: string,
+    body: { name?: string; isShared?: boolean; options?: Partial<TimesheetExportOptions> },
+  ) => request<ReportPreset>(`/exports/presets/${id}`, { method: 'PATCH', body: JSON.stringify(body) }),
+  deleteReportPreset: (id: string) =>
+    request<{ deleted: boolean }>(`/exports/presets/${id}`, { method: 'DELETE' }),
+  reportPresetOptions: (id: string) =>
+    request<Partial<TimesheetExportOptions>>(`/exports/presets/${id}/options`),
+
+  // -------------------------------------------------------------------------- pto
+  listPto: (params: Record<string, string | undefined> = {}) =>
+    request<PtoRequest[]>(`/pto${toQuery(params)}`),
+  ptoPendingCount: () => request<{ pending: number }>('/pto/pending-count'),
+  createPto: (body: {
+    type: string;
+    startDate: string;
+    endDate: string;
+    isHalfDay?: boolean;
+    notes?: string;
+    employeeId?: string;
+  }) => request<PtoRequest>('/pto', { method: 'POST', body: JSON.stringify(body) }),
+  reviewPto: (id: string, decision: 'APPROVED' | 'DENIED', reviewNote?: string) =>
+    request<PtoRequest>(`/pto/${id}/review`, {
+      method: 'PATCH',
+      body: JSON.stringify({ decision, reviewNote }),
+    }),
+  cancelPto: (id: string) =>
+    request<PtoRequest>(`/pto/${id}/cancel`, { method: 'PATCH' }),
+  ptoConflicts: (id: string) => request<ConflictingShift[]>(`/pto/${id}/conflicts`),
+
   updateLocation: (id: string, body: UpdateLocationInput) =>
     request<Location>(`/locations/${id}`, { method: 'PATCH', body: JSON.stringify(body) }),
 

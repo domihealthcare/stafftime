@@ -66,6 +66,23 @@ enum TimeEntryStatus {
   APPROVED
 }
 
+enum PtoType {
+  VACATION
+  SICK
+  PERSONAL
+  BEREAVEMENT
+  UNPAID
+  OTHER
+}
+
+enum PtoStatus {
+  PENDING
+  APPROVED
+  DENIED
+  /// Withdrawn by the employee, or cancelled by a manager after approval.
+  CANCELLED
+}
+
 // ---------------------------------------------------------------------------
 // Location
 // ---------------------------------------------------------------------------
@@ -164,7 +181,10 @@ model Employee {
   sessions    Session[]
 
   createdShifts       Shift[]       @relation("ShiftCreatedBy")
-  createdKiosks       KioskDevice[] @relation("KioskCreatedBy")
+  createdKiosks       KioskDevice[]  @relation("KioskCreatedBy")
+  reportPresets       ReportPreset[] @relation("ReportPresetOwner")
+  ptoRequests         PtoRequest[]   @relation("PtoRequester")
+  reviewedPtoRequests PtoRequest[]   @relation("PtoReviewer")
   editedTimeEntries   TimeEntry[] @relation("TimeEntryEditedBy")
   approvedTimeEntries TimeEntry[] @relation("TimeEntryApprovedBy")
 
@@ -186,6 +206,83 @@ model EmployeeLocation {
   @@id([employeeId, locationId])
   @@index([locationId])
   @@map("employee_locations")
+}
+
+// ---------------------------------------------------------------------------
+// PTO
+// ---------------------------------------------------------------------------
+
+/// A request for time off.
+///
+/// Dates are whole days (`@db.Date`), not timestamps: "the 3rd to the 7th"
+/// means those days wherever the employee is, with no timezone to get wrong.
+/// Half days are handled by `isHalfDay` on a single-day request rather than by
+/// pretending a date is a time.
+///
+/// Balances and accrual are deliberately absent — the brief asks for requests
+/// and approval, and how Domi accrues PTO is not settled. See
+/// docs/open-questions.md.
+model PtoRequest {
+  id         String    @id @default(uuid()) @db.Uuid
+  employeeId String    @db.Uuid
+  type       PtoType
+  status     PtoStatus @default(PENDING)
+
+  /// Inclusive first and last day off.
+  startDate DateTime @db.Date
+  endDate   DateTime @db.Date
+  /// Only meaningful when startDate equals endDate.
+  isHalfDay Boolean  @default(false)
+
+  /// The employee's reason, optional — sick leave should not require one.
+  notes String?
+
+  reviewedById String?   @db.Uuid
+  reviewedAt   DateTime?
+  /// A manager's note, shown to the employee. Required when denying.
+  reviewNote   String?
+
+  cancelledAt DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  employee   Employee  @relation("PtoRequester", fields: [employeeId], references: [id], onDelete: Cascade)
+  reviewedBy Employee? @relation("PtoReviewer", fields: [reviewedById], references: [id], onDelete: SetNull)
+
+  @@index([employeeId, startDate])
+  @@index([status, startDate])
+  @@map("pto_requests")
+}
+
+// ---------------------------------------------------------------------------
+// Saved reports
+// ---------------------------------------------------------------------------
+
+/// A named set of export options — "Biweekly payroll", "North Bergen overtime".
+///
+/// The options are stored as JSON rather than columns because they are the
+/// export screen's own shape, and every added option would otherwise be a
+/// migration. They are re-validated against the export DTO on use, so a stale
+/// or hand-edited preset cannot smuggle anything through.
+model ReportPreset {
+  id      String @id @default(uuid()) @db.Uuid
+  name    String
+  ownerId String @db.Uuid
+  /// Shared presets are visible to every manager, not just the person who made
+  /// one. A small practice wants "the payroll export" to be the same export
+  /// whoever runs it.
+  isShared Boolean @default(false)
+  options  Json
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  owner Employee @relation("ReportPresetOwner", fields: [ownerId], references: [id], onDelete: Cascade)
+
+  @@unique([ownerId, name])
+  @@index([isShared])
+  @@map("report_presets")
 }
 
 // ---------------------------------------------------------------------------

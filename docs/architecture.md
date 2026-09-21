@@ -356,3 +356,53 @@ what is currently saved, but never saves on its own.
 Saving updates that one location in the page's state rather than reloading the
 list. Reloading unmounted the cards, which threw away the confirmation and any
 unsaved edits sitting in the other location's form.
+
+## Saved reports
+
+A named set of export options — "Biweekly payroll", "North Bergen overtime" —
+so a recurring export is one tap rather than fifteen checkboxes.
+
+The options are stored as a JSON column rather than as columns of their own,
+because they are the export screen's shape and every new option would otherwise
+be a migration. The trade-off is that the database cannot vouch for them, so
+they are **re-validated against the export DTO on the way out**: a stale preset
+saved before a column was renamed fails cleanly with "re-save it from the export
+screen" rather than producing a broken file.
+
+The period is deliberately **not** saved. A payroll export is almost always "the
+last fortnight", not one specific fortnight, so applying a preset leaves
+whatever dates are on screen alone.
+
+Presets can be shared, which is the point for a practice this size: the admin
+sets up "the payroll export" once and every manager runs the same one. The owner
+or an admin can edit or delete; other managers can only use it.
+
+## PTO
+
+Phase 2 of the brief: requests and an approval workflow. Balances and accrual are
+deliberately absent — how Domi accrues PTO is not settled, and guessing it would
+be worse than leaving it out. See `docs/open-questions.md`.
+
+### Dates are days, not timestamps
+
+`startDate` and `endDate` are `@db.Date`, parsed and rendered at UTC midnight.
+"The 3rd to the 7th" means those calendar days wherever the employee happens to
+be, and there is no timezone that can shift them by one. Half days are a flag on
+a single-day request rather than a pretend time.
+
+### The rules worth knowing
+
+- **Overlapping requests are refused**, counting only pending and approved ones —
+  a denied request should not block a second attempt at the same week.
+- **Nobody decides their own request**, managers included. The error points them
+  at another manager or an admin.
+- **Denying requires a reason**, which is shown to the employee. "No" without a
+  reason is how a request turns into a conversation nobody has a record of.
+- **Requests are never deleted.** Withdrawing or cancelling sets a status and a
+  timestamp, because an approved absence that later gets cancelled is exactly
+  the thing someone needs to look back at.
+- **Time off that has already passed cannot be cancelled** — that would quietly
+  rewrite history. A manager corrects the timesheet instead.
+- **Approving does not touch the schedule.** The review screen shows shifts
+  already booked inside the dates so a manager knows what needs re-covering, but
+  nothing is cancelled automatically: deciding who covers is a human judgement.
