@@ -206,6 +206,23 @@ export interface CoverageDay {
   away: { employeeId: string; employeeName: string; type: PtoType }[];
 }
 
+/// Somebody the rota puts over forty hours in a week. Scheduled hours, not
+/// worked ones, and counted across every location — see the server for why.
+export interface OvertimeWarning {
+  employeeId: string;
+  employeeName: string;
+  weekStart: string;
+  scheduledHours: number;
+  overtimeHours: number;
+  /// Some of the week's hours are at a location this screen is not showing.
+  spansLocations: boolean;
+}
+
+export interface Coverage {
+  days: CoverageDay[];
+  overtime: OvertimeWarning[];
+}
+
 // ---------------------------------------------------------------------------
 // Onboarding / offboarding checklists
 // ---------------------------------------------------------------------------

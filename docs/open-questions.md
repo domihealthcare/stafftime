@@ -105,10 +105,19 @@ built. What is deliberately left open:
 - [ ] **Minimum staffing per location per day**, so coverage can say "short one
       person" rather than only reporting the hours it found. Needs a number from
       whoever runs the front desk.
-- [ ] **Should the coverage summary flag anything else?** It currently names
-      empty days, who is away on approved leave, and shifts that clash with
-      approved leave. Overtime risk (someone scheduled past 40 hours) is the
-      obvious next one, and easy to add.
+- [x] ~~Overtime risk on the coverage summary.~~ Built. It counts the whole
+      week rather than the window on screen, and every location rather than the
+      one being viewed, because either shortcut would hide the case it exists
+      for.
+- [ ] **Should it count hours already worked, not just scheduled?** Today it is
+      scheduled hours, which is the honest answer to "what is this rota about to
+      cost" and the only one that can be explained on screen. But somebody who
+      stayed late every day can cross forty without the rota showing it. Worth
+      asking the managers whether they want the current week to blend actual
+      punches in, knowing the number gets harder to reason about.
+- [ ] **Should it stop anything, or only say so?** Today it warns. Refusing to
+      schedule past forty would be wrong for a practice that sometimes needs the
+      cover, but a confirmation step is arguable.
 
 ## Onboarding / offboarding checklists (Phase 3, built)
 

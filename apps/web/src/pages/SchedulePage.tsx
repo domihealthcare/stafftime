@@ -2,7 +2,15 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { api } from '../lib/api';
 import { addDays, formatTime, startOfWeek, toLocalInputValue } from '../lib/format';
 import { useIsManager } from '../lib/session';
-import type { CoverageDay, Employee, Location, PlanResult, Shift } from '../lib/types';
+import type {
+  Coverage,
+  CoverageDay,
+  Employee,
+  Location,
+  OvertimeWarning,
+  PlanResult,
+  Shift,
+} from '../lib/types';
 import { CalendarLinkCard } from '../components/CalendarLinkCard';
 import { PlanResultNotice } from '../components/PlanResultNotice';
 import { RepeatShiftsForm } from '../components/RepeatShiftsForm';
@@ -14,7 +22,7 @@ export function SchedulePage() {
   const [shifts, setShifts] = useState<Shift[]>([]);
   const [employees, setEmployees] = useState<Employee[]>([]);
   const [locations, setLocations] = useState<Location[]>([]);
-  const [coverage, setCoverage] = useState<CoverageDay[]>([]);
+  const [coverage, setCoverage] = useState<Coverage | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [planning, setPlanning] = useState(false);
@@ -39,7 +47,7 @@ export function SchedulePage() {
 
       // Only managers may list staff or read coverage.
       if (isManager) {
-        const [staff, days] = await Promise.all([
+        const [staff, weekCoverage] = await Promise.all([
           api.listEmployees(),
           api.coverage({
             from: weekStart.toISOString().slice(0, 10),
@@ -47,7 +55,7 @@ export function SchedulePage() {
           }),
         ]);
         setEmployees(staff);
-        setCoverage(days);
+        setCoverage(weekCoverage);
       }
       setError(null);
     } catch (err) {
@@ -171,9 +179,9 @@ export function SchedulePage() {
         </div>
       )}
 
-      {isManager && coverage.length > 0 && (
+      {isManager && coverage && coverage.days.length > 0 && (
         <div className="mb-6">
-          <CoverageStrip days={coverage} />
+          <CoverageStrip days={coverage.days} overtime={coverage.overtime} />
         </div>
       )}
 
@@ -473,7 +481,13 @@ function defaultInput(day: Date, hour: number): string {
 }
 
 /// A week at a glance: hours covered, who is off, and the days with nobody on.
-function CoverageStrip({ days }: { days: CoverageDay[] }) {
+function CoverageStrip({
+  days,
+  overtime,
+}: {
+  days: CoverageDay[];
+  overtime: OvertimeWarning[];
+}) {
   const totalHours = Math.round(days.reduce((sum, day) => sum + day.staffedHours, 0) * 10) / 10;
   const emptyDays = days.filter((day) => day.shifts.length === 0);
   const conflicts = days.flatMap((day) =>
@@ -559,6 +573,37 @@ function CoverageStrip({ days }: { days: CoverageDay[] }) {
               </li>
             ))}
           </ul>
+        </div>
+      )}
+
+      {overtime.length > 0 && (
+        <div className="mt-3 rounded-lg bg-amber-50 p-3 text-sm text-amber-900 ring-1 ring-inset ring-amber-200">
+          <p className="font-medium">
+            {overtime.length === 1
+              ? '1 person is scheduled past 40 hours'
+              : `${overtime.length} people are scheduled past 40 hours`}
+          </p>
+          <ul className="mt-1 space-y-0.5 text-xs">
+            {overtime.map((warning) => (
+              <li key={`${warning.employeeId}-${warning.weekStart}`}>
+                <span className="font-medium">{warning.employeeName}</span> —{' '}
+                {warning.scheduledHours} hours in the week of{' '}
+                {new Date(`${warning.weekStart}T00:00:00Z`).toLocaleDateString(undefined, {
+                  timeZone: 'UTC',
+                  month: 'short',
+                  day: 'numeric',
+                })}
+                , so {warning.overtimeHours} at overtime
+                {/* The hours are totalled across the practice, so say when some
+                    of them are somewhere this screen is not showing — otherwise
+                    the number looks wrong to whoever is reading it. */}
+                {warning.spansLocations && ' (including hours at another location)'}
+              </li>
+            ))}
+          </ul>
+          <p className="mt-1.5 text-xs text-amber-800">
+            Hours as scheduled, not as worked. Hourly staff only.
+          </p>
         </div>
       )}
 

@@ -1,10 +1,11 @@
 import { BadRequestException, Injectable, Logger, NotFoundException } from '@nestjs/common';
-import { Prisma, PtoStatus, ShiftStatus } from '@prisma/client';
+import { PayType, Prisma, PtoStatus, ShiftStatus } from '@prisma/client';
 import {
   addDaysTo,
   datesBetween,
   isoWeekdayOf,
   localDateIn,
+  weekStartIn,
   zonedTimeToUtc,
 } from '../common/util/zoned-time.util';
 import { PrismaService } from '../prisma/prisma.service';
@@ -13,6 +14,23 @@ import { CopyWeekDto, QueryCoverageDto, RepeatShiftsDto } from './dto/repeat-shi
 /// Guards against a mis-typed year turning into three thousand shifts.
 const MAX_GENERATED_SHIFTS = 200;
 const MAX_SPAN_DAYS = 400;
+
+/// The same forty hours the payroll export splits on, and for the same reason:
+/// a rota that predicts overtime and an export that reports it must not
+/// disagree about what overtime is.
+const OVERTIME_THRESHOLD_HOURS = 40;
+
+export interface OvertimeWarning {
+  employeeId: string;
+  employeeName: string;
+  /// Monday of the week these hours fall in, as a plain date.
+  weekStart: string;
+  scheduledHours: number;
+  overtimeHours: number;
+  /// True when some of the week's hours are at a location the manager is not
+  /// currently looking at, which is the case a single-location view would miss.
+  spansLocations: boolean;
+}
 
 export type SkipReason = 'OVERLAPS_SHIFT' | 'ON_APPROVED_LEAVE';
 
@@ -184,10 +202,11 @@ export class ShiftPlanningService {
 
   /**
    * Day-by-day staffing for a window: who is on, how many hours are covered,
-   * and who is away.
+   * who is away, and who the rota is about to push into overtime.
    *
-   * The point is the gaps — a day with nobody scheduled, or somebody scheduled
-   * while they are on approved leave.
+   * The point is the gaps — a day with nobody scheduled, somebody scheduled
+   * while they are on approved leave, or a week that has quietly passed forty
+   * hours for someone.
    */
   async coverage(query: QueryCoverageDto) {
     const from = query.from.slice(0, 10);
@@ -226,7 +245,7 @@ export class ShiftPlanningService {
       }),
     ]);
 
-    return dates.map((date) => {
+    const days = dates.map((date) => {
       const onThisDay = shifts.filter(
         (shift) => localDateIn(shift.startsAt, shift.location.timezone) === date,
       );
@@ -269,6 +288,95 @@ export class ShiftPlanningService {
         })),
       };
     });
+
+    return { days, overtime: await this.overtimeForWeeksTouching(dates, query.locationId) };
+  }
+
+  /**
+   * Who the rota puts over forty hours, for every week the window touches.
+   *
+   * Two things here are easy to get wrong and both would make the warning
+   * useless in exactly the cases it exists for:
+   *
+   * **The whole week counts, not the visible window.** A manager looking at
+   * Wednesday to Friday still needs Monday and Tuesday in the total, or adding
+   * a sixth day looks free. So the query widens to the Monday of the first week
+   * and the Sunday of the last, whatever was asked for.
+   *
+   * **Every location counts, not the one being viewed.** Somebody on 24 hours
+   * at North Bergen and 20 at West New York is on 44 for the week, and a
+   * per-location view is precisely where that goes unnoticed. The hours are
+   * therefore totalled across the practice even when the screen is filtered,
+   * and `spansLocations` tells the screen to say so.
+   *
+   * Scheduled hours, not worked ones: this is a question about a rota being
+   * built, and mixing in actual punches would make the number impossible to
+   * explain. Hourly staff only, matching the payroll export — see the note
+   * there about pay type not being the legal test for exempt status.
+   */
+  private async overtimeForWeeksTouching(
+    dates: string[],
+    viewingLocationId?: string,
+  ): Promise<OvertimeWarning[]> {
+    const firstMonday = mondayOnOrBefore(dates[0]);
+    const lastSunday = addDaysTo(mondayOnOrBefore(dates[dates.length - 1]), 6);
+
+    const shifts = await this.prisma.shift.findMany({
+      where: {
+        status: { not: ShiftStatus.CANCELLED },
+        startsAt: { gte: new Date(`${firstMonday}T00:00:00Z`) },
+        endsAt: { lt: new Date(`${addDaysTo(lastSunday, 2)}T00:00:00Z`) },
+        employee: { payType: PayType.HOURLY },
+      },
+      include: SHIFT_INCLUDE,
+    });
+
+    // employeeId + week → the hours and where they were worked.
+    const weeks = new Map<
+      string,
+      {
+        employeeId: string;
+        employeeName: string;
+        weekStart: string;
+        hours: number;
+        locationIds: Set<string>;
+      }
+    >();
+
+    for (const shift of shifts) {
+      const weekStart = weekStartIn(shift.startsAt, shift.location.timezone);
+      const key = `${shift.employeeId}:${weekStart}`;
+
+      const week = weeks.get(key) ?? {
+        employeeId: shift.employeeId,
+        employeeName: displayName(shift.employee),
+        weekStart,
+        hours: 0,
+        locationIds: new Set<string>(),
+      };
+      week.hours += (shift.endsAt.getTime() - shift.startsAt.getTime()) / 3_600_000;
+      week.locationIds.add(shift.locationId);
+      weeks.set(key, week);
+    }
+
+    return [...weeks.values()]
+      .filter((week) => week.hours > OVERTIME_THRESHOLD_HOURS)
+      .map((week) => ({
+        employeeId: week.employeeId,
+        employeeName: week.employeeName,
+        weekStart: week.weekStart,
+        scheduledHours: round2(week.hours),
+        overtimeHours: round2(week.hours - OVERTIME_THRESHOLD_HOURS),
+        spansLocations:
+          viewingLocationId !== undefined &&
+          (week.locationIds.size > 1 || !week.locationIds.has(viewingLocationId)),
+      }))
+      .sort(
+        (a, b) =>
+          a.weekStart.localeCompare(b.weekStart) ||
+          b.overtimeHours - a.overtimeHours ||
+          a.employeeName.localeCompare(b.employeeName),
+      );
   }
 
   // -------------------------------------------------------------------------
@@ -411,4 +519,15 @@ function daysBetween(from: string, to: string): number {
     (new Date(`${to}T00:00:00Z`).getTime() - new Date(`${from}T00:00:00Z`).getTime()) /
       86_400_000,
   );
+}
+
+/// The Monday on or before a plain date. `weekStartIn` answers this for an
+/// instant in a timezone; this is the same question for a date that is already
+/// a local calendar day.
+function mondayOnOrBefore(date: string): string {
+  return addDaysTo(date, -((isoWeekdayOf(date) + 6) % 7));
+}
+
+function round2(value: number): number {
+  return Math.round(value * 100) / 100;
 }

@@ -361,6 +361,41 @@ name and a half-typed PIN.
   responsibly without a reader in hand to test against. See
   `docs/open-questions.md`.
 
+### Warning about overtime while the rota is being built
+
+The coverage strip answers "is anybody scheduled?"; this answers "is anybody
+scheduled too much?", at the moment a manager can still do something about it
+rather than a fortnight later when the payroll export splits the hours.
+
+Two details are the whole feature, and either one taken literally turns the
+warning off in exactly the case it exists for.
+
+**The whole week counts, not the window on screen.** A manager looking at
+Thursday and Friday still needs Monday to Wednesday in the total, or adding a
+sixth day looks free. The overtime query therefore widens to the Monday of the
+first week and the Sunday of the last, whatever window was asked for.
+
+**Every location counts, not the one being viewed.** Somebody on 24 hours at
+North Bergen and 20 at West New York is on 44 for the week, and a per-location
+view is precisely where that goes unnoticed. The hours are totalled across the
+practice even when the screen is filtered, and `spansLocations` tells the screen
+to say so — otherwise the number looks wrong to whoever is reading it.
+
+Weeks start Monday in the location's timezone, using the same `weekStartIn` as
+the payroll export. That sharing is deliberate: a rota that predicts overtime
+and an export that reports it must not disagree about where a week begins, and a
+late Sunday shift has to land in the week the person experienced rather than the
+week UTC puts it in.
+
+**Scheduled hours, not worked ones.** This is a question about a rota being
+built, and mixing in actual punches would make the number impossible to explain
+— "why does it say 41 when I scheduled 38?". The screen says which it is. The
+gap is real, though: somebody who stayed late every day this week can cross forty
+without the rota ever showing it. Noted in `docs/open-questions.md`.
+
+Hourly staff only, matching the export, with the same caveat — pay type is a
+reasonable proxy for exempt status and is not the legal test.
+
 ## Timesheet export
 
 A spreadsheet of hours for a period, built to be useful on its own while the ADP
@@ -387,7 +422,7 @@ aggregation and only writes a different file.
 
 ### Overtime
 
-Optional, and computed **per calendar week** rather than across the period: 45
+Optional here, and computed **per calendar week** rather than across the period: 45
 hours one week and 35 the next is five hours of overtime, not zero. Weeks start
 Monday in the location's timezone, so a late Sunday shift lands in the right one.
 

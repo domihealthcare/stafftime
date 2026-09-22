@@ -1,5 +1,6 @@
 import { BadRequestException, Injectable } from '@nestjs/common';
 import { PayType, PayrollExportStatus, Prisma, TimeEntryStatus } from '@prisma/client';
+import { weekStartIn } from '../common/util/zoned-time.util';
 import { PrismaService } from '../prisma/prisma.service';
 import { payrollStateOf } from '../time-entries/payroll-state';
 import { DEFAULT_COLUMN_KEYS, type TimesheetColumnKey } from './columns';
@@ -267,7 +268,7 @@ export class TimesheetExportService {
       if (splitOvertime && employee.payType === PayType.HOURLY) {
         const weeks = new Map<string, number>();
         for (const entry of employeeEntries) {
-          const key = weekKey(entry.clockInAt, entry.location.timezone);
+          const key = weekStartIn(entry.clockInAt, entry.location.timezone);
           weeks.set(
             key,
             (weeks.get(key) ?? 0) + hoursBetween(entry.clockInAt, entry.clockOutAt),
@@ -360,9 +361,7 @@ export function formatTime(date: Date, zone: string): string {
 
 /// Identifies the Monday-based week a punch falls in, in the location's
 /// timezone, so a late Sunday shift does not land in the wrong week.
-export function weekKey(date: Date, zone: string): string {
-  const local = new Date(`${formatDate(date, zone)}T00:00:00Z`);
-  const daysSinceMonday = (local.getUTCDay() + 6) % 7;
-  local.setUTCDate(local.getUTCDate() - daysSinceMonday);
-  return local.toISOString().slice(0, 10);
-}
+///
+/// Lives in `common/util/zoned-time.util.ts` because the rota's overtime
+/// warning has to agree with this one about where a week begins.
+export { weekStartIn as weekKey };

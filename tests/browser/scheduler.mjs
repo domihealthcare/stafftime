@@ -109,6 +109,68 @@ await step('copy-last-week pulls a rota forward', async () => {
 });
 await page.screenshot({ path: `${OUT}/39-copy-week.png`, fullPage: true });
 
+// --- overtime ---
+//
+// Against real Postgres, so the query's own filters do the work rather than a
+// mock returning everything regardless.
+
+await step('a normal week says nothing about overtime', async () => {
+  await page.goto(`${BASE}/schedule`, { waitUntil: 'networkidle' });
+  for (let i = 0; i < 20; i += 1) {
+    if (/Feb 1|Feb 2/.test(await page.locator('main').innerText())) break;
+    await page.getByRole('button', { name: 'Next →' }).click();
+    await page.waitForTimeout(250);
+  }
+  await page.getByText('Coverage this week').waitFor({ timeout: 15000 });
+
+  if ((await page.getByText(/scheduled past 40 hours/).count()) > 0)
+    throw new Error('two 8-hour shifts were reported as overtime');
+});
+
+await step('a rota that crosses 40 hours is called out, in hours', async () => {
+  // Frankie already has Tuesday and Thursday that week. Six 9-hour days on top
+  // is well over.
+  await page.getByRole('button', { name: 'Repeating shifts' }).click();
+  await page.getByLabel('Employee').selectOption({ label: 'Frankie Front-Desk' });
+  for (const day of ['Sat', 'Sun']) {
+    await page.getByRole('button', { name: day, exact: true }).click();
+  }
+  await page.getByLabel('Starts').fill('08:00');
+  await page.getByLabel('Ends').fill('17:00');
+  await page.getByLabel('From').fill('2027-02-01');
+  await page.getByLabel('Until').fill('2027-02-07');
+  await page.getByLabel(/Publish straight away/).check();
+  await page.getByRole('button', { name: 'Create the shifts' }).click();
+  await page.getByText(/shifts created/).waitFor({ timeout: 20000 });
+
+  // No reload: the week being viewed is component state, and reloading would
+  // drop the manager back on today's week, where none of this applies.
+  await page.getByText(/scheduled past 40 hours/).waitFor({ timeout: 20000 });
+
+  const panel = await page.locator('main').innerText();
+  if (!/Frankie Front-Desk/.test(panel))
+    throw new Error('the warning did not name who it is about');
+  // 5 nine-hour days + the Tuesday and Thursday eights = 61.
+  if (!/61 hours in the week of/.test(panel))
+    throw new Error(`the warning did not give the week's hours: ${panel.slice(0, 400)}`);
+  if (!/21 at overtime/.test(panel))
+    throw new Error('the warning did not say how many hours are over');
+});
+await page.screenshot({ path: `${OUT}/39a-overtime.png`, fullPage: true });
+
+await step('the warning follows the week, not the days on screen', async () => {
+  // The following week has none of those shifts, so it must go quiet — and
+  // coming back must bring it back, rather than it being sticky UI state.
+  await page.getByRole('button', { name: 'Next →' }).click();
+  await page.waitForTimeout(1500);
+  if ((await page.getByText(/scheduled past 40 hours/).count()) > 0)
+    throw new Error('the warning followed the manager into a week it does not apply to');
+
+  await page.getByRole('button', { name: '← Previous' }).click();
+  await page.waitForTimeout(1500);
+  await page.getByText(/scheduled past 40 hours/).waitFor({ timeout: 15000 });
+});
+
 await step('an employee sees neither the planning tools nor coverage', async () => {
   const empCtx = await browser.newContext({ viewport: { width: 1280, height: 900 } });
   const emp = await empCtx.newPage();

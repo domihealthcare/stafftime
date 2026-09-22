@@ -8,7 +8,7 @@ import type {
   ChecklistTaskStatus,
   ChecklistTemplate,
   ConflictingShift,
-  CoverageDay,
+  Coverage,
   PlanResult,
   Employee,
   Location,
@@ -544,7 +544,7 @@ export const api = {
     status?: string;
   }) => request<PlanResult>('/shifts/copy-week', { method: 'POST', body: JSON.stringify(body) }),
   coverage: (params: { from: string; to: string; locationId?: string }) =>
-    request<CoverageDay[]>(`/shifts/coverage${toQuery(params)}`),
+    request<Coverage>(`/shifts/coverage${toQuery(params)}`),
 
   listShifts: (params: Record<string, string | undefined> = {}) =>
     request<Shift[]>(`/shifts${toQuery(params)}`),
