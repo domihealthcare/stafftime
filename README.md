@@ -18,6 +18,8 @@ Phase 1, backend and web app:
 - Manager shift scheduler
 - Timesheet export to Excel or CSV, with selectable columns and saved reports
 - PTO requests with manager approval, balances and a practice-set policy
+- Calendar syncing — each employee gets a private subscription URL for Google
+  Calendar, Apple Calendar or Outlook
 - Admin screens for locations (geofence, IPs) and kiosks
 
 Not built yet: the ADP TotalSource export (waiting on ADP's pay codes and client
@@ -160,6 +162,9 @@ placeholders, so do not run it after setting real values.
 | `GET` | `/api/pto/policy` | anyone signed in |
 | `PATCH` | `/api/pto/policy` | admin |
 | `GET` | `/api/pto/balance` | own balance; managers can ask for anyone's |
+| `GET` | `/api/config` | anyone — is this a test environment? |
+| `GET`/`POST`/`DELETE` | `/api/calendar/link` | signed in — your own subscription URL |
+| `GET` | `/api/calendar/:token/domi.ics` | anyone with the token — the feed itself |
 | `GET/POST/PATCH/DELETE` | `/api/locations` | admin (reads: anyone) |
 | `GET/POST/PATCH/DELETE` | `/api/employees` | admin (`/me`: anyone) |
 | `GET/POST/PATCH/DELETE` | `/api/shifts` | manager (employees see their own) |
@@ -179,6 +184,7 @@ placeholders, so do not run it after setting real values.
 | **Timesheet** | Weekly hours. Managers see everyone, plus approve and correct; employees see only their own |
 | **Schedule** | Week grid. Managers add and remove shifts; employees see their own |
 | **Sign in** | Email and password. A temporary password lands you on a forced change screen and nothing else |
+| **Schedule** | Also where an employee turns on calendar syncing |
 | **Time off** | Request time off and see your balance; managers approve or deny, and can file on someone's behalf. Admins set the practice's PTO rules here |
 | **Export** (manager) | Produce a timesheet spreadsheet for a period, choosing exactly which columns go in it. Settings can be saved as named reports and shared |
 | **Staff** (admin) | Add people, set their role and locations, issue a temporary password, mark someone as no longer employed |

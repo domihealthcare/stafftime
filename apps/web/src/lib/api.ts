@@ -236,7 +236,26 @@ export interface ExportPreview {
   overtimeHours: number;
 }
 
+export interface AppConfig {
+  environment: 'production' | 'test';
+  isTestEnvironment: boolean;
+}
+
+export interface CalendarLink {
+  hasLink: boolean;
+  token: string | null;
+  createdAt: string | null;
+}
+
 export const api = {
+  appConfig: () => request<AppConfig>('/config'),
+
+  // ------------------------------------------------------------------- calendar
+  calendarLink: () => request<CalendarLink>('/calendar/link'),
+  issueCalendarLink: () => request<{ token: string }>('/calendar/link', { method: 'POST' }),
+  revokeCalendarLink: () =>
+    request<{ revoked: boolean }>('/calendar/link', { method: 'DELETE' }),
+
   // ------------------------------------------------------------- first-run setup
   setupStatus: () => request<{ needsSetup: boolean }>('/setup/status'),
   createFirstAdmin: (body: {

@@ -51,6 +51,7 @@ a pooler and use the direct one.
 | `DATABASE_URL` | the **pooled** connection string |
 | `DIRECT_DATABASE_URL` | the **direct** connection string |
 | `SETUP_TOKEN` | a long random phrase you invent — see below |
+| `APP_ENVIRONMENT` | `test` while managers are reviewing, `production` later |
 | `SESSION_TTL_HOURS` | `12` |
 | `SESSION_IDLE_TIMEOUT_HOURS` | `8` |
 | `MAX_LOGIN_ATTEMPTS` | `8` |
@@ -63,6 +64,11 @@ a pooler and use the direct one.
 administrator account. Make it long and unguessable — four or five random words
 is ideal, for example `copper-lantern-harbour-tuesday-49`. You will type it once
 and then delete it.
+
+**`APP_ENVIRONMENT=test`** puts a standing amber banner on every screen saying
+nothing there is real. Leave it on `test` for the review, and change it to
+`production` — or remove it — when you are ready for actual hours. It defaults
+to production if unset, so it is never a test environment by accident.
 
 Do **not** add `NODE_ENV`. Vercel sets it, and that is what makes the login
 cookie secure.
@@ -135,9 +141,13 @@ same screen.
 Send them the link and their email address. Give them the temporary password by
 phone or in person — not in the same email as the link.
 
-Everything they do is real: real punches, real requests. If you would rather
-they poked at throwaway data first, make a **second** Vercel project against a
-**second** Neon database and share that URL instead.
+With `APP_ENVIRONMENT=test` set, every screen tells them plainly that nothing is
+real — so they can clock in, request time off and poke at anything without
+worrying they have created a payroll problem.
+
+When you are ready for real hours: change `APP_ENVIRONMENT` to `production`,
+redeploy, and clear out the practice data they created. Ask me for a hand with
+that when you get there — it wants care rather than a delete button.
 
 ---
 

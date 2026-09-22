@@ -10,6 +10,13 @@ import {
   validateSync,
 } from 'class-validator';
 
+/// What this deployment is for. Drives a visible banner, and gates anything
+/// that must never touch real data.
+export enum AppEnvironment {
+  Production = 'production',
+  Test = 'test',
+}
+
 export enum NodeEnv {
   Development = 'development',
   Test = 'test',
@@ -19,6 +26,11 @@ export enum NodeEnv {
 class EnvironmentVariables {
   @IsEnum(NodeEnv)
   NODE_ENV: NodeEnv = NodeEnv.Development;
+
+  /// Defaults to production, so a deployment is only ever a test environment on
+  /// purpose — never by forgetting to set something.
+  @IsEnum(AppEnvironment)
+  APP_ENVIRONMENT: AppEnvironment = AppEnvironment.Production;
 
   @IsString()
   DATABASE_URL!: string;

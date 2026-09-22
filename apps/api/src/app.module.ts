@@ -3,7 +3,9 @@ import { ConfigModule } from '@nestjs/config';
 import { APP_GUARD } from '@nestjs/core';
 import { AppController } from './app.controller';
 import { RolesGuard } from './common/auth/roles.guard';
+import { AppConfigModule } from './app-config/app-config.module';
 import { AuthModule } from './auth/auth.module';
+import { CalendarModule } from './calendar/calendar.module';
 import { SessionAuthGuard } from './common/auth/session.guard';
 import { validateEnv } from './config/env.validation';
 import { EmployeesModule } from './employees/employees.module';
@@ -21,6 +23,8 @@ import { TimeEntriesModule } from './time-entries/time-entries.module';
     ConfigModule.forRoot({ isGlobal: true, validate: validateEnv }),
     PrismaModule,
     AuthModule,
+    AppConfigModule,
+    CalendarModule,
     LocationsModule,
     EmployeesModule,
     ShiftsModule,
