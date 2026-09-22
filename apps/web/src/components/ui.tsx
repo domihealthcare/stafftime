@@ -1,8 +1,23 @@
 import type { ReactNode } from 'react';
 
-export function Card({ children, className = '' }: { children: ReactNode; className?: string }) {
+export function Card({
+  children,
+  className = '',
+  testId,
+}: {
+  children: ReactNode;
+  className?: string;
+  /// A handle for the browser suites. Worth having where a screen shows one
+  /// card per person: "the card containing this text" matches whatever else
+  /// happens to contain it too, and a loose match there means a test that
+  /// confidently does the wrong thing to the wrong person.
+  testId?: string;
+}) {
   return (
-    <div className={`rounded-xl border border-slate-200 bg-white shadow-sm ${className}`}>
+    <div
+      data-testid={testId}
+      className={`rounded-xl border border-slate-200 bg-white shadow-sm ${className}`}
+    >
       {children}
     </div>
   );

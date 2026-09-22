@@ -3,6 +3,7 @@ import { ApiError, api, type KioskDevice, type NewKioskDevice } from '../lib/api
 import { formatDateTime } from '../lib/format';
 import type { Employee, Location } from '../lib/types';
 import { Alert, Badge, Card, EmptyState, PageHeading, Spinner } from '../components/ui';
+import { NeedsAttention } from '../components/NeedsAttention';
 
 /// Admin-only. Two jobs in one place, because they are the two halves of making
 /// a kiosk usable: pair the tablet, and give staff a PIN to use on it.
@@ -43,6 +44,8 @@ export function KiosksPage() {
         title="Kiosks"
         subtitle="Front-desk tablets, and the PINs staff use on them."
       />
+
+      <NeedsAttention sections={['silentKiosks']} />
 
       {error && (
         <div className="mb-4">

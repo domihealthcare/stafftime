@@ -72,9 +72,34 @@ Two rules worth knowing about:
   and flagged `NEEDS_REVIEW` for a manager. Trapping someone on the clock because
   their phone lost GPS in the parking lot would be worse than an entry to review.
 
-Clock-in runs in a `Serializable` transaction: checking for an existing open
-punch and inserting the new one must be atomic, or a double-tapped button leaves
-someone clocked in twice.
+### Two taps at once
+
+Both punches are written under a guard, and both guards have been watched to
+fail — `tests/browser/race.mjs` fires genuinely concurrent requests at the real
+API against real Postgres, because that is the only place a race exists. A unit
+test with a mocked client cannot have one.
+
+**Clock-in** runs in a `Serializable` transaction: checking for an existing open
+punch and inserting the new one must be atomic. Dropped to `ReadCommitted`, six
+of eight simultaneous punches were accepted — and the damage was sticky rather
+than cosmetic. Each later clock-out closed exactly one of the six, so the
+employee was refused every clock-in for days until somebody noticed and cleaned
+up by hand. "Clocked in twice" undersells it: the clock jams.
+
+**Clock-out** is a compare-and-set — `updateMany` with `clockOutAt: null` in the
+where clause, and a `ConflictException` when it matches nothing. It used to be a
+plain `update` on an id read a few lines earlier, and eight simultaneous taps
+were eight writes to the same row, each stamping its own clock-out time over the
+last. The hours barely moved, since the writes were milliseconds apart, but each
+one carried its own *verification* result too: a punch made from the car park,
+correctly recorded `MANUAL` and flagged `NEEDS_REVIEW`, could be overwritten by a
+tap that happened to land afterwards from inside the geofence, and the flag
+simply vanished. That is the check the third case in `race.mjs` makes — the row
+on file must be exactly what the one accepted response said.
+
+The loser of either race gets the same answer a slow second tap would get a
+minute later, rather than a different one because it arrived a millisecond
+earlier.
 
 ### What happens to the captured position
 
@@ -336,6 +361,69 @@ name and a half-typed PIN.
   responsibly without a reader in hand to test against. See
   `docs/open-questions.md`.
 
+### A week to build one, a month to see its shape
+
+The Schedule screen does both. The week view is where shifts are added and
+removed; the month view is an overview, and a day in it is a way back to that
+week.
+
+**The month is drawn as whole Monday-to-Sunday weeks**, so every row has seven
+days and the month sits inside it — four rows for a February that starts on a
+Monday, six for a month that straddles. The days either side are shown but
+dimmed: a shift on the 1st matters whichever row it lands in.
+
+**Counts, not shift cards.** Seven columns on a phone is about fifty pixels
+each, which fits a number and nothing else. A month view is for spotting the
+shape of a rota — the empty Tuesday, the week everybody is on — rather than
+reading who is doing what, and the detail is one tap away in the week it belongs
+to. The phone suite asserts this, so a later attempt to put names back will be
+noticed rather than shipped.
+
+**The day-by-day coverage strip stays a week thing.** A month of those squares
+would be a second, worse calendar next to the real one. The overtime warning
+appears in both views, from the same component: overtime is a per-week question
+either way, and a month view that quietly used a different rule would be worse
+than one that said nothing.
+
+`monthGrid` in `lib/format.ts` builds the range. It is worth reading the note on
+`addMonths` next to it: `setMonth` on the 31st rolls into the month after next,
+and a schedule that skips February is a memorable bug.
+
+### Warning about overtime while the rota is being built
+
+The coverage strip answers "is anybody scheduled?"; this answers "is anybody
+scheduled too much?", at the moment a manager can still do something about it
+rather than a fortnight later when the payroll export splits the hours.
+
+Two details are the whole feature, and either one taken literally turns the
+warning off in exactly the case it exists for.
+
+**The whole week counts, not the window on screen.** A manager looking at
+Thursday and Friday still needs Monday to Wednesday in the total, or adding a
+sixth day looks free. The overtime query therefore widens to the Monday of the
+first week and the Sunday of the last, whatever window was asked for.
+
+**Every location counts, not the one being viewed.** Somebody on 24 hours at
+North Bergen and 20 at West New York is on 44 for the week, and a per-location
+view is precisely where that goes unnoticed. The hours are totalled across the
+practice even when the screen is filtered, and `spansLocations` tells the screen
+to say so — otherwise the number looks wrong to whoever is reading it.
+
+Weeks start Monday in the location's timezone, using the same `weekStartIn` as
+the payroll export. That sharing is deliberate: a rota that predicts overtime
+and an export that reports it must not disagree about where a week begins, and a
+late Sunday shift has to land in the week the person experienced rather than the
+week UTC puts it in.
+
+**Scheduled hours, not worked ones.** This is a question about a rota being
+built, and mixing in actual punches would make the number impossible to explain
+— "why does it say 41 when I scheduled 38?". The screen says which it is. The
+gap is real, though: somebody who stayed late every day this week can cross forty
+without the rota ever showing it. Noted in `docs/open-questions.md`.
+
+Hourly staff only, matching the export, with the same caveat — pay type is a
+reasonable proxy for exempt status and is not the legal test.
+
 ## Timesheet export
 
 A spreadsheet of hours for a period, built to be useful on its own while the ADP
@@ -362,7 +450,7 @@ aggregation and only writes a different file.
 
 ### Overtime
 
-Optional, and computed **per calendar week** rather than across the period: 45
+Optional here, and computed **per calendar week** rather than across the period: 45
 hours one week and 35 the next is five hours of overtime, not zero. Weeks start
 Monday in the location's timezone, so a late Sunday shift lands in the right one.
 
@@ -1248,24 +1336,76 @@ get wrong. Employees still see only their own; recording and renewing stays with
 managers; deleting stays with admins. `src/common/no-sensitive-data.spec.ts`
 fails if the columns come back.
 
+## What needs a look
+
+`AttentionService` is the one place that answers "what does somebody need to
+deal with?" — nine lists of ready-to-read lines. It is read twice: by the
+nightly email, and by the banners on the screens.
+
+That sharing is the point. Two implementations would drift, and the failure
+would be quiet and embarrassing: an email chasing something the screen says is
+fine, or the reverse.
+
+### What it chases, and why each threshold
+
+- **Kiosk tablets gone quiet** — paired, unrevoked, and not seen for 24 hours.
+  The tablet polls while it sits on the kiosk screen, so silence is real: it is
+  unplugged, off the wifi, or somebody closed the browser. A day is long enough
+  that an overnight router reboot does not raise it. A tablet that has *never*
+  been seen is worded differently from one that has stopped, because those are
+  different problems — a setup nobody finished, versus a thing that broke.
+- **Next week unpublished** — no published shifts for the coming week, from four
+  days out. Drafts do not count: staff cannot see a draft, so a fully drafted
+  week is indistinguishable from an empty one to the people who need to know
+  when to turn up. The line says so when drafts exist, because "you wrote it,
+  you just did not publish it" is a much shorter conversation. Only locations
+  with published shifts in the last 28 days are chased, so a location scheduled
+  some other way does not complain every night forever.
+- **Shifts for people who have left** — future shifts for terminated staff,
+  grouped per person. Looking forward only: a shift they actually worked is
+  history, not a mistake.
+- **Hours not approved** — completed punches unapproved for over a week,
+  grouped per person and oldest first. These are the hours that quietly miss a
+  pay run. Six unapproved shifts for one person is one thing to do, not six
+  lines of email.
+- Plus the four that were already there: lapsed and lapsing credentials, overdue
+  checklist tasks, punches with no clock-out, undecided time off.
+
+### Banners go where the thing gets fixed
+
+`NeedsAttention` takes the sections that belong on the screen it is on: silent
+tablets on Kiosks, the rota warnings on Schedule, unapproved hours and missing
+punches on Timesheet. Deliberately not one banner listing everything on every
+page — the same warning on eight screens is wallpaper, and gets scrolled past
+within a week.
+
+It is manager-only (every line names somebody) and fails quietly: a banner that
+cannot load is not worth an error on a screen somebody came to for something
+else.
+
 ## The nightly digest
 
 `DigestService` runs from the maintenance job, because that is already the one
-thing that happens every night whether anybody is looking or not. It gathers
-what nobody would find out about unless they went looking:
+thing that happens every night whether anybody is looking or not. What goes in
+it is `AttentionService`'s job — the same nine lists the banners read, so the
+email and the app cannot disagree. This is only about sending it.
 
-- credentials that have lapsed, and ones about to
-- checklist tasks past their due date
-- punches with no clock-out, from the last fortnight
-- time-off requests still waiting on a decision
-
-Two rules make it worth reading:
+Three rules make it worth reading:
 
 **It says nothing when there is nothing to say.** A daily email that is usually
 empty gets filtered into a folder within a fortnight, and then the one that
 matters goes there too.
 
 **Empty sections are left out, not printed empty.** Same reason.
+
+**It is a manager's to turn off**, not an admin's to turn off for them
+(`wantsDailyDigest`, on by default). A practice with two managers and an admin
+does not need all three chasing the same lapsed licence, and an unwanted daily
+email is one that gets filtered — taking the one that mattered with it. Nothing
+is lost by opting out: every line is also on the screen it belongs to, which is
+why the banners came first. When everybody has opted out the job logs that it
+had something to say and nobody to say it to, rather than emailing somebody
+anyway.
 
 Each line names the person and the thing, so the email can be acted on without
 opening the app.

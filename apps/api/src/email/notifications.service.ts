@@ -126,8 +126,14 @@ export class NotificationsService {
 
     this.dispatch(to, 'What needs a look today', [
       `Hello ${firstName},`,
+      // Roughly in the order somebody would act: the things that are broken
+      // right now, then the things with a deadline, then the paperwork.
+      ...section('Kiosk tablets that have gone quiet:', contents.silentKiosks),
+      ...section('Next week is not published yet:', contents.unpublishedRota),
+      ...section('Shifts for people who have left:', contents.shiftsForLeavers),
       ...section('Credentials that have already lapsed:', contents.expiredCredentials),
       ...section('Credentials expiring soon:', contents.expiringCredentials),
+      ...section('Hours not approved yet:', contents.unapprovedHours),
       ...section('Checklist tasks past their due date:', contents.overdueTasks),
       ...section('Punches with no clock-out:', contents.missingPunches),
       ...section('Time off waiting on a decision:', contents.undecidedTimeOff),

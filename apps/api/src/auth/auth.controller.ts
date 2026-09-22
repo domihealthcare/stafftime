@@ -8,6 +8,7 @@ import {
   Ip,
   Param,
   ParseUUIDPipe,
+  Patch,
   Post,
   Put,
   Req,
@@ -25,6 +26,7 @@ import { PrismaService } from '../prisma/prisma.service';
 import { AuthService } from './auth.service';
 import { SESSION_COOKIE, clearSessionCookie, sessionCookieOptions } from './cookie';
 import { ChangePasswordDto } from './dto/change-password.dto';
+import { UpdatePreferencesDto } from './dto/preferences.dto';
 import {
   CompletePasswordResetDto,
   RequestPasswordResetDto,
@@ -134,6 +136,25 @@ export class AuthController {
     return { changed: true, ...result };
   }
 
+  /**
+   * Your own notification preferences.
+   *
+   * Only one so far: whether you get the nightly round-up. Yours to set rather
+   * than an admin's, because an unwanted daily email is one you filter, and a
+   * filtered folder is where the one that mattered ends up too.
+   */
+  @Patch('preferences')
+  async updatePreferences(
+    @Body() dto: UpdatePreferencesDto,
+    @CurrentUser() user: AuthUser,
+  ) {
+    await this.prisma.employee.update({
+      where: { id: user.id },
+      data: { wantsDailyDigest: dto.wantsDailyDigest },
+    });
+    return this.describeCurrentUser(user.id);
+  }
+
   /// The browsers currently signed in as you, so you can spot one you do not
   /// recognise.
   @Get('sessions')
@@ -181,6 +202,7 @@ export class AuthController {
         role: true,
         employmentStatus: true,
         mustChangePassword: true,
+        wantsDailyDigest: true,
         lastLoginAt: true,
         locations: {
           select: {

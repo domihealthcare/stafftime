@@ -104,6 +104,14 @@ export function Layout() {
                 </span>
               )}
             </span>
+            {isManager && (
+              <NavLink
+                to="/notifications"
+                className="text-sm font-medium text-slate-500 hover:text-slate-900"
+              >
+                Notifications
+              </NavLink>
+            )}
             <NavLink
               to="/password"
               className="text-sm font-medium text-slate-500 hover:text-slate-900"

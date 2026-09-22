@@ -105,10 +105,19 @@ built. What is deliberately left open:
 - [ ] **Minimum staffing per location per day**, so coverage can say "short one
       person" rather than only reporting the hours it found. Needs a number from
       whoever runs the front desk.
-- [ ] **Should the coverage summary flag anything else?** It currently names
-      empty days, who is away on approved leave, and shifts that clash with
-      approved leave. Overtime risk (someone scheduled past 40 hours) is the
-      obvious next one, and easy to add.
+- [x] ~~Overtime risk on the coverage summary.~~ Built. It counts the whole
+      week rather than the window on screen, and every location rather than the
+      one being viewed, because either shortcut would hide the case it exists
+      for.
+- [ ] **Should it count hours already worked, not just scheduled?** Today it is
+      scheduled hours, which is the honest answer to "what is this rota about to
+      cost" and the only one that can be explained on screen. But somebody who
+      stayed late every day can cross forty without the rota showing it. Worth
+      asking the managers whether they want the current week to blend actual
+      punches in, knowing the number gets harder to reason about.
+- [ ] **Should it stop anything, or only say so?** Today it warns. Refusing to
+      schedule past forty would be wrong for a practice that sometimes needs the
+      cover, but a confirmation step is arguable.
 
 ## Onboarding / offboarding checklists (Phase 3, built)
 
@@ -146,6 +155,8 @@ practice:
       asking for one.
 - [ ] **Notifications.** Nobody is told that a task is overdue, or that a new
       hire has something waiting. Same email decision as password reset and PTO.
+      The nightly round-up does chase overdue tasks in bulk, which may be
+      enough — worth asking before building per-task emails.
 - [x] ~~A template editor.~~ Built. An admin can add, reword, reorder and
       remove tasks, set who each one is for and when it is due, create new
       templates and retire old ones — all on the Checklists screen.
@@ -236,12 +247,23 @@ Built and working with PINs. What is left:
       `DEPLOY.md` — a free tier that is enough for a practice this size, and it
       hands out both a pooled and a direct connection string, which Prisma
       migrations need.
-- [ ] **Integration tests against a real database at the service layer.** The
-      browser suites in `tests/browser` now cover the service layer end to end
-      against real Postgres, which was the gap. What is still missing is the
-      awkward middle: a service-level test that can force a race or a partial
-      failure (two clock-ins at once, an export that dies between the storage
-      write and the record) without driving a browser.
+- [x] ~~Tests that can force a race.~~ `tests/browser/race.mjs` fires genuinely
+      concurrent requests at the real API. It found one: clock-out was a plain
+      read-then-write, and eight simultaneous taps were eight writes, each
+      carrying its own verification result over the last. Now a compare-and-set.
+      Both guards have been watched to fail — see the note in that directory's
+      README before changing how a punch is written.
+- [ ] **`/attention` is re-queried on every screen that shows a banner.** Three
+      manager screens each ask for all nine lists on mount, which is eight or so
+      queries a time. Measured at ~7ms against a seeded database, so it is not
+      worth caching for a practice of twenty — noted because it is the sort of
+      thing that stops being free at a different size, and because the obvious
+      fix (cache it in the session context) is a five-minute change if it ever
+      does.
+- [ ] **A partial-failure test.** Still missing: something that can kill an
+      export between the storage write and the record landing, to prove the
+      orphan sweep picks up the pieces. Harder than a race, because it needs to
+      interrupt the process rather than just crowd it.
 - [ ] **Generate the frontend's API types from the server** instead of
       hand-maintaining `apps/web/src/lib/types.ts`. Today a server-side rename
       compiles fine and breaks at runtime.

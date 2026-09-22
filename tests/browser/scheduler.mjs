@@ -109,6 +109,155 @@ await step('copy-last-week pulls a rota forward', async () => {
 });
 await page.screenshot({ path: `${OUT}/39-copy-week.png`, fullPage: true });
 
+// --- overtime ---
+//
+// Against real Postgres, so the query's own filters do the work rather than a
+// mock returning everything regardless.
+
+await step('a normal week says nothing about overtime', async () => {
+  await page.goto(`${BASE}/schedule`, { waitUntil: 'networkidle' });
+  for (let i = 0; i < 20; i += 1) {
+    if (/Feb 1|Feb 2/.test(await page.locator('main').innerText())) break;
+    await page.getByRole('button', { name: 'Next →' }).click();
+    await page.waitForTimeout(250);
+  }
+  await page.getByText('Coverage this week').waitFor({ timeout: 15000 });
+
+  if ((await page.getByText(/scheduled past 40 hours/).count()) > 0)
+    throw new Error('two 8-hour shifts were reported as overtime');
+});
+
+await step('a rota that crosses 40 hours is called out, in hours', async () => {
+  // Frankie already has Tuesday and Thursday that week. Six 9-hour days on top
+  // is well over.
+  await page.getByRole('button', { name: 'Repeating shifts' }).click();
+  await page.getByLabel('Employee').selectOption({ label: 'Frankie Front-Desk' });
+  for (const day of ['Sat', 'Sun']) {
+    await page.getByRole('button', { name: day, exact: true }).click();
+  }
+  await page.getByLabel('Starts').fill('08:00');
+  await page.getByLabel('Ends').fill('17:00');
+  await page.getByLabel('From').fill('2027-02-01');
+  await page.getByLabel('Until').fill('2027-02-07');
+  await page.getByLabel(/Publish straight away/).check();
+  await page.getByRole('button', { name: 'Create the shifts' }).click();
+  await page.getByText(/shifts created/).waitFor({ timeout: 20000 });
+
+  // No reload: the week being viewed is component state, and reloading would
+  // drop the manager back on today's week, where none of this applies.
+  await page.getByText(/scheduled past 40 hours/).waitFor({ timeout: 20000 });
+
+  const panel = await page.locator('main').innerText();
+  if (!/Frankie Front-Desk/.test(panel))
+    throw new Error('the warning did not name who it is about');
+  // 5 nine-hour days + the Tuesday and Thursday eights = 61.
+  if (!/61 hours in the week of/.test(panel))
+    throw new Error(`the warning did not give the week's hours: ${panel.slice(0, 400)}`);
+  if (!/21 at overtime/.test(panel))
+    throw new Error('the warning did not say how many hours are over');
+});
+await page.screenshot({ path: `${OUT}/39a-overtime.png`, fullPage: true });
+
+await step('the warning follows the week, not the days on screen', async () => {
+  // The following week has none of those shifts, so it must go quiet — and
+  // coming back must bring it back, rather than it being sticky UI state.
+  await page.getByRole('button', { name: 'Next →' }).click();
+  await page.waitForTimeout(1500);
+  if ((await page.getByText(/scheduled past 40 hours/).count()) > 0)
+    throw new Error('the warning followed the manager into a week it does not apply to');
+
+  await page.getByRole('button', { name: '← Previous' }).click();
+  await page.waitForTimeout(1500);
+  await page.getByText(/scheduled past 40 hours/).waitFor({ timeout: 15000 });
+});
+
+// --- the month view ---
+
+await step('the month view shows the month it says it does', async () => {
+  // The suite has been working in February 2027; switching views should stay
+  // there rather than jumping back to today.
+  await page.getByRole('button', { name: 'Month', exact: true }).click();
+  await page.getByTestId('month-grid').waitFor({ timeout: 15000 });
+  await page.getByText('February 2027').waitFor({ timeout: 10000 });
+});
+await page.screenshot({ path: `${OUT}/39b-month.png`, fullPage: true });
+
+await step('it is whole weeks, starting Monday, with every day of the month', async () => {
+  const grid = page.getByTestId('month-grid');
+  const cells = grid.getByRole('button');
+  const count = await cells.count();
+
+  if (count % 7 !== 0) throw new Error(`${count} day cells, which is not whole weeks`);
+
+  // February 2027 starts on a Monday and has 28 days, so it is exactly four
+  // rows with nothing spilling either side.
+  if (count !== 28) throw new Error(`expected 28 cells for February 2027, got ${count}`);
+
+  const first = await cells.first().getAttribute('aria-label');
+  if (!/^Monday, February 1/.test(first ?? ''))
+    throw new Error(`the grid starts on "${first}"`);
+  const last = await cells.last().getAttribute('aria-label');
+  if (!/^Sunday, February 28/.test(last ?? ''))
+    throw new Error(`the grid ends on "${last}"`);
+});
+
+await step('a day says how many are on and for how long', async () => {
+  // Monday 1 February carries one of the nine-hour shifts from the overtime
+  // rota above.
+  const monday = page.getByTestId('month-grid').getByRole('button').first();
+  const label = await monday.getAttribute('aria-label');
+  if (!/1 shift, 9 hours/.test(label ?? ''))
+    throw new Error(`Monday reads "${label}"`);
+
+  const text = await monday.innerText();
+  if (!/1 on/.test(text) || !/9h/.test(text))
+    throw new Error(`the cell shows "${text.replace(/\n/g, ' ')}"`);
+});
+
+await step('an empty day is visibly empty rather than blank', async () => {
+  // Found rather than assumed: this suite has built several overlapping rotas
+  // by now, and guessing which square is free is how a test ends up asserting
+  // something that happens to be true today.
+  const cells = page.getByTestId('month-grid').getByRole('button');
+  const labels = await cells.evaluateAll((nodes) =>
+    nodes.map((node) => node.getAttribute('aria-label') ?? ''),
+  );
+
+  const emptyIndex = labels.findIndex((label) => /no shifts/.test(label));
+  if (emptyIndex === -1)
+    throw new Error(`every day in the month has a shift, so nothing was tested: ${labels[0]}`);
+
+  const text = await cells.nth(emptyIndex).innerText();
+  if (!/—/.test(text))
+    throw new Error(`an empty day rendered as "${text.replace(/\n/g, ' ')}" rather than a dash`);
+});
+
+await step('overtime is still called out a month at a time', async () => {
+  // It is a per-week question either way, and the month view would be worse
+  // than useless if it quietly used a different rule.
+  await page.getByText('Overtime this month').waitFor({ timeout: 10000 });
+  const text = await page.locator('main').innerText();
+  if (!/61 hours in the week of/.test(text))
+    throw new Error('the month view lost the overtime warning');
+});
+
+await step('Previous and Next move a month, not a week', async () => {
+  await page.getByRole('button', { name: 'Next →' }).click();
+  await page.getByText('March 2027').waitFor({ timeout: 10000 });
+  await page.getByRole('button', { name: '← Previous' }).click();
+  await page.getByText('February 2027').waitFor({ timeout: 10000 });
+});
+
+await step('picking a day opens that week', async () => {
+  // The month view is an overview; the week is where shifts are edited, so a
+  // day has to be a way back into it.
+  await page.getByTestId('month-grid').getByRole('button').nth(7).click(); // Mon 8 Feb
+  await page.getByTestId('week-grid').waitFor({ timeout: 15000 });
+
+  const text = await page.locator('main').innerText();
+  if (!/Feb 8/.test(text)) throw new Error(`the week did not follow the day picked: ${text.slice(0, 200)}`);
+});
+
 await step('an employee sees neither the planning tools nor coverage', async () => {
   const empCtx = await browser.newContext({ viewport: { width: 1280, height: 900 } });
   const emp = await empCtx.newPage();

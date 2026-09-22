@@ -1,4 +1,5 @@
 import type {
+  Attention,
   Checklist,
   Credential,
   CredentialKind,
@@ -8,7 +9,7 @@ import type {
   ChecklistTaskStatus,
   ChecklistTemplate,
   ConflictingShift,
-  CoverageDay,
+  Coverage,
   PlanResult,
   Employee,
   Location,
@@ -485,6 +486,12 @@ export const api = {
       body: JSON.stringify({ currentPassword, newPassword }),
     }),
   listSessions: () => request<AuthSession[]>('/auth/sessions'),
+  attention: () => request<Attention>('/attention'),
+  setDigestPreference: (wantsDailyDigest: boolean) =>
+    request<Employee>('/auth/preferences', {
+      method: 'PATCH',
+      body: JSON.stringify({ wantsDailyDigest }),
+    }),
   revokeOtherSessions: () =>
     request<{ signedOut: number }>('/auth/sessions', { method: 'DELETE' }),
   setTemporaryPassword: (employeeId: string, temporaryPassword: string) =>
@@ -544,7 +551,7 @@ export const api = {
     status?: string;
   }) => request<PlanResult>('/shifts/copy-week', { method: 'POST', body: JSON.stringify(body) }),
   coverage: (params: { from: string; to: string; locationId?: string }) =>
-    request<CoverageDay[]>(`/shifts/coverage${toQuery(params)}`),
+    request<Coverage>(`/shifts/coverage${toQuery(params)}`),
 
   listShifts: (params: Record<string, string | undefined> = {}) =>
     request<Shift[]>(`/shifts${toQuery(params)}`),

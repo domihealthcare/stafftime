@@ -323,20 +323,27 @@ describe('ShiftPlanningService', () => {
   });
 
   describe('coverage', () => {
-    function coverageSetup(shifts: unknown[], leave: unknown[] = []) {
-      const prisma = {
+    /// The mock returns the same shifts for both of coverage's queries — the
+    /// day grid and the week totals — which is what a real database would do
+    /// when the window is a whole week at one location.
+    function coveragePrisma(shifts: unknown[], leave: unknown[] = []) {
+      return {
         location: { findUnique: jest.fn() },
         employeeLocation: { findUnique: jest.fn() },
         shift: { findMany: jest.fn().mockResolvedValue(shifts), findFirst: jest.fn(), create: jest.fn() },
         ptoRequest: { findMany: jest.fn().mockResolvedValue(leave), findFirst: jest.fn() },
       };
+    }
+
+    function coverageSetup(shifts: unknown[], leave: unknown[] = []) {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      return new ShiftPlanningService(prisma as any);
+      return new ShiftPlanningService(coveragePrisma(shifts, leave) as any);
     }
 
     const shift = {
       id: 'sh-1',
       employeeId: 'emp-1',
+      locationId: 'loc-1',
       startsAt: new Date('2026-09-22T13:00:00.000Z'),
       endsAt: new Date('2026-09-22T21:00:00.000Z'),
       status: ShiftStatus.PUBLISHED,
@@ -344,9 +351,197 @@ describe('ShiftPlanningService', () => {
       location: { id: 'loc-1', name: 'North Bergen', slug: 'north-bergen', timezone: NJ },
     };
 
+    /**
+     * The overtime warning.
+     *
+     * Two of these are the whole point. A window is usually part of a week and
+     * a screen is usually one location, and either of those, taken literally,
+     * turns the warning off in exactly the case a manager needed it.
+     */
+    describe('overtime', () => {
+      /// Takes the same shifts for both of coverage's queries — the day grid
+      /// and the week totals — which is what a real database would do.
+      function withShifts(shifts: unknown[]) {
+        return coverageSetup(shifts);
+      }
+
+      const hourly = {
+        id: 'emp-1',
+        firstName: 'Frankie',
+        lastName: 'Front-Desk',
+        preferredName: null,
+      };
+
+      /// A shift of `hours` hours starting 9am Eastern on `date`. A long one
+      /// runs past midnight UTC, which is the point — the week it belongs to is
+      /// decided in New Jersey, not in UTC.
+      const shiftOn = (date: string, hours: number, over: Record<string, unknown> = {}) => {
+        const startsAt = new Date(`${date}T13:00:00.000Z`);
+        return {
+          id: `sh-${date}-${hours}`,
+          employeeId: 'emp-1',
+          locationId: 'loc-1',
+          startsAt,
+          endsAt: new Date(startsAt.getTime() + hours * 3_600_000),
+          status: ShiftStatus.PUBLISHED,
+          employee: hourly,
+          location: { id: 'loc-1', name: 'North Bergen', slug: 'north-bergen', timezone: NJ },
+          ...over,
+        };
+      };
+
+      it('says nothing at forty hours, and speaks at forty-one', async () => {
+        const five8s = ['21', '22', '23', '24', '25'].map((d) => shiftOn(`2026-09-${d}`, 8));
+
+        const exactly40 = await withShifts(five8s).coverage({
+          from: '2026-09-21',
+          to: '2026-09-27',
+        });
+        expect(exactly40.overtime).toEqual([]);
+
+        const { overtime } = await withShifts([
+          ...five8s,
+          shiftOn('2026-09-26', 4),
+        ]).coverage({ from: '2026-09-21', to: '2026-09-27' });
+
+        expect(overtime).toHaveLength(1);
+        expect(overtime[0]).toMatchObject({
+          employeeName: 'Frankie Front-Desk',
+          weekStart: '2026-09-21',
+          scheduledHours: 44,
+          overtimeHours: 4,
+        });
+      });
+
+      it('counts the whole week, not just the days on screen', async () => {
+        // A manager looking at Thursday and Friday still has to see the
+        // thirty-two hours already scheduled Monday to Wednesday, or adding a
+        // sixth day looks free.
+        const { overtime } = await withShifts([
+          shiftOn('2026-09-21', 8),
+          shiftOn('2026-09-22', 8),
+          shiftOn('2026-09-23', 8),
+          shiftOn('2026-09-24', 8),
+          shiftOn('2026-09-25', 8),
+        ]).coverage({ from: '2026-09-24', to: '2026-09-25' });
+
+        expect(overtime).toHaveLength(0);
+
+        const { overtime: pushed } = await withShifts([
+          shiftOn('2026-09-21', 8),
+          shiftOn('2026-09-22', 8),
+          shiftOn('2026-09-23', 8),
+          shiftOn('2026-09-24', 8),
+          shiftOn('2026-09-25', 8),
+          shiftOn('2026-09-26', 6),
+        ]).coverage({ from: '2026-09-24', to: '2026-09-25' });
+
+        expect(pushed[0]).toMatchObject({ scheduledHours: 46, overtimeHours: 6 });
+      });
+
+      it('asks the database for whole weeks and hourly staff only', async () => {
+        // The mock returns whatever it is given regardless of the where clause,
+        // so the filters that matter have to be asserted on the query itself.
+        const prisma = coveragePrisma([]);
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        await new ShiftPlanningService(prisma as any).coverage({
+          from: '2026-09-24',
+          to: '2026-09-25',
+          locationId: 'loc-1',
+        });
+
+        // Two queries: the day grid, then the week totals.
+        const [grid, weeks] = prisma.shift.findMany.mock.calls.map((call) => call[0].where);
+
+        // The grid is the window, at one location.
+        expect(grid.locationId).toBe('loc-1');
+        expect(grid.startsAt.gte.toISOString()).toBe('2026-09-24T00:00:00.000Z');
+
+        // The totals start from the Monday, and are not narrowed to a location.
+        expect(weeks.startsAt.gte.toISOString()).toBe('2026-09-21T00:00:00.000Z');
+        expect(weeks.locationId).toBeUndefined();
+        expect(weeks.employee).toEqual({ payType: 'HOURLY' });
+        expect(weeks.status).toEqual({ not: ShiftStatus.CANCELLED });
+      });
+
+      it('adds up hours from every location, not just the one being viewed', async () => {
+        // 24 hours at North Bergen and 20 at West New York is 44 for the week.
+        // A per-location view is exactly where that goes unnoticed.
+        const elsewhere = {
+          locationId: 'loc-2',
+          location: { id: 'loc-2', name: 'West New York', slug: 'west-new-york', timezone: NJ },
+        };
+
+        const { overtime } = await withShifts([
+          shiftOn('2026-09-21', 8),
+          shiftOn('2026-09-22', 8),
+          shiftOn('2026-09-23', 8),
+          shiftOn('2026-09-24', 10, elsewhere),
+          shiftOn('2026-09-25', 10, elsewhere),
+        ]).coverage({ from: '2026-09-21', to: '2026-09-27', locationId: 'loc-1' });
+
+        expect(overtime).toHaveLength(1);
+        expect(overtime[0]).toMatchObject({
+          scheduledHours: 44,
+          overtimeHours: 4,
+          // So the screen can say the hours are not all here.
+          spansLocations: true,
+        });
+      });
+
+      it('does not cry wolf when the whole week is at the location on screen', async () => {
+        const { overtime } = await withShifts([
+          shiftOn('2026-09-21', 12),
+          shiftOn('2026-09-22', 12),
+          shiftOn('2026-09-23', 12),
+          shiftOn('2026-09-24', 12),
+        ]).coverage({ from: '2026-09-21', to: '2026-09-27', locationId: 'loc-1' });
+
+        expect(overtime[0]).toMatchObject({ scheduledHours: 48, spansLocations: false });
+      });
+
+      it('splits weeks at Monday in local time, matching the payroll export', async () => {
+        // A Sunday evening shift belongs to the week the person experienced.
+        // 9pm Eastern Sunday is Monday in UTC, which is the trap.
+        const { overtime } = await withShifts([
+          shiftOn('2026-09-21', 12),
+          shiftOn('2026-09-22', 12),
+          shiftOn('2026-09-23', 12),
+          shiftOn('2026-09-24', 12),
+          // Sunday the 27th, 9pm Eastern — still the 21st's week.
+          {
+            ...shiftOn('2026-09-27', 3),
+            startsAt: new Date('2026-09-28T01:00:00.000Z'),
+            endsAt: new Date('2026-09-28T04:00:00.000Z'),
+          },
+        ]).coverage({ from: '2026-09-21', to: '2026-09-27' });
+
+        expect(overtime).toHaveLength(1);
+        expect(overtime[0]).toMatchObject({ weekStart: '2026-09-21', scheduledHours: 51 });
+      });
+
+      it('reports the worst week first when several are over', async () => {
+        const { overtime } = await withShifts([
+          shiftOn('2026-09-21', 12),
+          shiftOn('2026-09-22', 12),
+          shiftOn('2026-09-23', 12),
+          shiftOn('2026-09-24', 12),
+          shiftOn('2026-09-28', 12),
+          shiftOn('2026-09-29', 12),
+          shiftOn('2026-09-30', 12),
+          shiftOn('2026-10-01', 10),
+        ]).coverage({ from: '2026-09-21', to: '2026-10-04' });
+
+        expect(overtime.map((w) => [w.weekStart, w.overtimeHours])).toEqual([
+          ['2026-09-21', 8],
+          ['2026-09-28', 6],
+        ]);
+      });
+    });
+
     it('returns one entry per day in the window', async () => {
       const service = coverageSetup([]);
-      const days = await service.coverage({ from: '2026-09-21', to: '2026-09-27' });
+      const { days } = await service.coverage({ from: '2026-09-21', to: '2026-09-27' });
       expect(days).toHaveLength(7);
       expect(days[0].date).toBe('2026-09-21');
       expect(days[6].date).toBe('2026-09-27');
@@ -354,7 +549,7 @@ describe('ShiftPlanningService', () => {
 
     it('totals the staffed hours for a day', async () => {
       const service = coverageSetup([shift]);
-      const days = await service.coverage({ from: '2026-09-21', to: '2026-09-27' });
+      const { days } = await service.coverage({ from: '2026-09-21', to: '2026-09-27' });
       const tuesday = days.find((day) => day.date === '2026-09-22')!;
       expect(tuesday.staffedHours).toBe(8);
       expect(tuesday.peopleScheduled).toBe(1);
@@ -362,7 +557,7 @@ describe('ShiftPlanningService', () => {
 
     it('shows a day with nobody on as an empty one', async () => {
       const service = coverageSetup([shift]);
-      const days = await service.coverage({ from: '2026-09-21', to: '2026-09-27' });
+      const { days } = await service.coverage({ from: '2026-09-21', to: '2026-09-27' });
       const monday = days.find((day) => day.date === '2026-09-21')!;
       expect(monday.shifts).toHaveLength(0);
       expect(monday.staffedHours).toBe(0);
@@ -377,7 +572,7 @@ describe('ShiftPlanningService', () => {
           endsAt: new Date('2026-09-23T05:00:00.000Z'),
         },
       ]);
-      const days = await service.coverage({ from: '2026-09-21', to: '2026-09-27' });
+      const { days } = await service.coverage({ from: '2026-09-21', to: '2026-09-27' });
       expect(days.find((day) => day.date === '2026-09-22')!.shifts).toHaveLength(1);
       expect(days.find((day) => day.date === '2026-09-23')!.shifts).toHaveLength(0);
     });
@@ -392,7 +587,7 @@ describe('ShiftPlanningService', () => {
           employee: { firstName: 'Max', lastName: 'Assistant', preferredName: null },
         },
       ]);
-      const days = await service.coverage({ from: '2026-09-21', to: '2026-09-27' });
+      const { days } = await service.coverage({ from: '2026-09-21', to: '2026-09-27' });
 
       expect(days.find((day) => day.date === '2026-09-21')!.away).toHaveLength(0);
       const tuesday = days.find((day) => day.date === '2026-09-22')!;
@@ -413,7 +608,7 @@ describe('ShiftPlanningService', () => {
           employee: { firstName: 'Frankie', lastName: 'Front-Desk', preferredName: null },
         },
       ]);
-      const days = await service.coverage({ from: '2026-09-21', to: '2026-09-27' });
+      const { days } = await service.coverage({ from: '2026-09-21', to: '2026-09-27' });
       expect(days.find((day) => day.date === '2026-09-22')!.shifts[0].conflictsWithLeave).toBe(
         true,
       );
@@ -421,7 +616,7 @@ describe('ShiftPlanningService', () => {
 
     it('does not flag a shift on a day the person is not away', async () => {
       const service = coverageSetup([shift]);
-      const days = await service.coverage({ from: '2026-09-21', to: '2026-09-27' });
+      const { days } = await service.coverage({ from: '2026-09-21', to: '2026-09-27' });
       expect(days.find((day) => day.date === '2026-09-22')!.shifts[0].conflictsWithLeave).toBe(
         false,
       );

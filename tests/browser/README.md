@@ -47,6 +47,7 @@ first argument.
 | --- | --- | --- |
 | `CHROMIUM_PATH` | whatever Playwright downloaded | Point at a preinstalled Chromium instead of downloading one. |
 | `PGHOST_LOCAL` / `PGPORT_LOCAL` | `127.0.0.1` / `5433` | Where `run-all.sh` resets state between suites. |
+| `API_URL` | `http://127.0.0.1:3000/api` | Only `race.mjs` uses it — it talks to the API directly rather than through the web server's proxy. |
 
 ## Things worth knowing
 
@@ -54,6 +55,16 @@ first argument.
   entry, a changed password, a paired kiosk or a rota behind on purpose. The
   runner re-seeds and clears that between suites instead of depending on which
   suite ran first.
+- **Two suites drive no browser at all.** `race.mjs` fires genuinely concurrent
+  requests at the API, and `privacy.mjs` checks what the API does and does not
+  hand back. They live here because this is the harness that has a real server
+  and a real database in front of it, which is the only place those questions
+  have an answer.
+- **`race.mjs` has been watched to fail.** Dropping clock-in to `ReadCommitted`
+  and removing the compare-and-set from clock-out makes all three of its checks
+  fail. A concurrency test that has never been seen to fail is not evidence of
+  anything, so if you change how those two punches are written, break them
+  deliberately once and check this still notices.
 - **`setup.mjs` is not in `run-all.sh`.** It exercises first-run setup, which
   only happens when no admin exists yet. Run it by hand against an empty
   database.

@@ -193,7 +193,7 @@ function StaffCard({
   }
 
   return (
-    <Card className={`p-4 ${terminated ? 'opacity-60' : ''}`}>
+    <Card testId={`staff-${person.email}`} className={`p-4 ${terminated ? 'opacity-60' : ''}`}>
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
           <p className="font-medium text-slate-900">

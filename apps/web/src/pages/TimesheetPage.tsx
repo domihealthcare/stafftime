@@ -11,6 +11,7 @@ import { useIsManager, useSession } from '../lib/session';
 import type { TimeEntry } from '../lib/types';
 import { EditEntryDialog } from '../components/EditEntryDialog';
 import { Alert, Badge, Card, EmptyState, PageHeading, Spinner } from '../components/ui';
+import { NeedsAttention } from '../components/NeedsAttention';
 
 export function TimesheetPage() {
   const { employee } = useSession();
@@ -71,6 +72,8 @@ export function TimesheetPage() {
             : 'Your recorded hours.'
         }
       />
+
+      <NeedsAttention sections={['unapprovedHours', 'missingPunches']} />
 
       <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
         <div className="flex items-center gap-2">

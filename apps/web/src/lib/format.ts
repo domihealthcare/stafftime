@@ -88,3 +88,50 @@ export function addDays(date: Date, days: number): Date {
   result.setDate(result.getDate() + days);
   return result;
 }
+
+export function startOfMonth(date: Date): Date {
+  const result = new Date(date);
+  result.setHours(0, 0, 0, 0);
+  result.setDate(1);
+  return result;
+}
+
+/// Steps whole months from the first of a month.
+///
+/// Always call it on a date that is already the first. `setMonth` on the 31st
+/// rolls into the next month — 31 January plus one month is 3 March — and a
+/// schedule that skips February is a memorable bug.
+export function addMonths(date: Date, months: number): Date {
+  const result = startOfMonth(date);
+  result.setMonth(result.getMonth() + months);
+  return result;
+}
+
+/// The Monday-to-Sunday grid that contains a whole month: five or six full
+/// weeks, so every row has seven days and the month sits inside it.
+export function monthGrid(monthStart: Date): Date[] {
+  const first = startOfWeek(startOfMonth(monthStart));
+  const monthEnd = addMonths(monthStart, 1);
+
+  const days: Date[] = [];
+  for (let day = first; day < monthEnd || days.length % 7 !== 0; day = addDays(day, 1)) {
+    days.push(day);
+    // A runaway loop here would hang the browser rather than fail loudly. Six
+    // rows is the most any month needs; breaking at exactly 42 keeps the whole
+    // -weeks promise that the grid's layout depends on.
+    if (days.length === 42) break;
+  }
+  return days;
+}
+
+/// A date as the person looking at the screen would write it, not as UTC would.
+///
+/// `toISOString().slice(0, 10)` is the tempting version and is wrong east of
+/// UTC: local midnight there is the previous day in UTC, so a week starting
+/// Monday is sent to the server as starting Sunday. Nobody at Domi would ever
+/// see it; somebody testing from Europe would, and be very confused.
+export function localDate(date: Date): string {
+  const pad = (n: number) => String(n).padStart(2, '0');
+  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`;
+}
+

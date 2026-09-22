@@ -111,3 +111,20 @@ export function addDaysTo(date: string, days: number): string {
   shifted.setUTCDate(shifted.getUTCDate() + days);
   return shifted.toISOString().slice(0, 10);
 }
+
+/**
+ * The Monday of the week an instant falls in, in a given timezone.
+ *
+ * Shared by the payroll export, which splits hours over forty, and the rota's
+ * overtime warning, which predicts them. Those two must agree about where a
+ * week begins or the schedule will promise one thing and the payslip say
+ * another — a late Sunday shift in particular has to land in the week the
+ * person experienced, not the week UTC puts it in.
+ */
+export function weekStartIn(instant: Date, zone: string): string {
+  const local = new Date(`${localDateIn(instant, zone)}T00:00:00Z`);
+  const daysSinceMonday = (local.getUTCDay() + 6) % 7;
+  local.setUTCDate(local.getUTCDate() - daysSinceMonday);
+  return local.toISOString().slice(0, 10);
+}
+

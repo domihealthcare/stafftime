@@ -116,6 +116,44 @@ Build this as an **adapter/plugin pattern**, not a hardcoded ADP integration:
 3. **Phase 3:** onboarding/offboarding checklists (task tracking only — no
    document upload; see *Data this app does not hold*).
 
+## Where it has got to (September 2026)
+
+All three phases are built and running against a real database, but **not yet
+deployed** — `staff.domihealthcare.com` is still waiting on the Vercel and Neon
+setup in `DEPLOY.md`. `main` is intended as a test environment for manager
+review; `APP_ENVIRONMENT=test` puts a standing banner on every screen.
+
+Beyond the phases, the parts worth knowing about before picking up work:
+
+- **Payroll export** is an adapter (`PayrollExporter`). The spreadsheet exporter
+  works and every run is recorded so it can be re-downloaded exactly as it went
+  out. The ADP TotalSource adapter is registered but refuses, naming what it is
+  waiting for — see *Payroll export*, above, for what to get from ADP.
+- **Hours already sent to payroll are protected** from a careless edit: a
+  correction is allowed but has to be deliberate, and is then flagged until it
+  reaches a later run.
+- **Licence and certification expiry**, dates only (see *Data this app does not
+  hold*), chased by the nightly round-up.
+- **A nightly round-up** of what needs a look — lapsing licences, overdue
+  checklist tasks, undecided time off, punches with no clock-out, kiosk tablets
+  that have gone quiet, next week still unpublished, hours nobody has approved,
+  shifts for people who have left. The same nine lists appear as banners on the
+  screens where each thing gets fixed, from one service, so the email and the
+  app cannot disagree. Managers can turn the email off; nothing is lost by it.
+  **Needs an email provider configured before any of it sends.**
+- **The scheduler** does a week (for building) and a month (for overview), warns
+  when the rota puts somebody past forty hours in a week, and syncs to Google,
+  Apple or Outlook calendars by private subscription URL.
+- **Tests**: ~540 unit tests, and ~220 end-to-end checks in `tests/browser`
+  driven against a real API, a real Postgres and a real Chromium. Both run in CI
+  on every push. The convention is to run the browser suites twice — once
+  against the dev server, once against `vite preview`, which applies the
+  deployed security headers.
+
+`docs/architecture.md` is the long version, and explains *why* for anything
+surprising. `docs/open-questions.md` is what is still waiting on a decision, and
+`docs/manager-review.md` is written for the managers rather than for us.
+
 ## Ways of working
 - Confirm scope and data accuracy before drafting deliverables — don't build ahead
   of confirmed requirements.
