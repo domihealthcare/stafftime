@@ -148,10 +148,29 @@ Build this as an **adapter/plugin pattern**, not a hardcoded ADP integration:
 
 ## Where it has got to (September 2026)
 
-All three phases are built and running against a real database, but **not yet
-deployed** — `staff.domihealthcare.com` is still waiting on the Vercel and Neon
-setup in `DEPLOY.md`. `main` is intended as a test environment for manager
-review; `APP_ENVIRONMENT=test` puts a standing banner on every screen.
+All three phases are built, and **deployed and live** on Vercel against a Neon
+Postgres, at `https://stafftime-ap.vercel.app` — verified 22 September 2026:
+health endpoint OK, demo data loaded, sign-in working, and the deployed
+security headers (CSP, HSTS, `X-Frame-Options`) all present on the production
+bundle. `main` is the test environment for manager review; `APP_ENVIRONMENT` is
+`test`, so `/config` reports `isTestEnvironment: true` and a standing banner
+sits on every screen.
+
+Still to do on the deployment, in `DEPLOY.md`:
+
+- ~~`staff.domihealthcare.com` does not exist yet~~ — **done, 22 September
+  2026.** The CNAME points at `6eb32dbe408d7769.vercel-dns-017.com`, the
+  certificate is issued, and the app answers on the real address: `/api/health`
+  OK, `/api/config` reporting the test environment, sign-in returning 200. The
+  Vercel URL `stafftime-ap.vercel.app` still works alongside it.
+- **The geofence pins are still the seeded placeholders** (North Bergen
+  40.804/-74.012, West New York 40.7878/-74.0143), carried straight from
+  `prisma/seed.ts` — the addresses were typed in but the coordinates were
+  never captured. With a 500 ft radius an approximate pin can refuse somebody
+  standing at their own front desk. Fix by standing at each office and
+  pressing **Use my current location** on the Locations screen.
+- **`SETUP_TOKEN` should be deleted** from the Vercel environment variables
+  now that the first admin exists, and the Neon password rotated.
 
 Beyond the phases, the parts worth knowing about before picking up work:
 

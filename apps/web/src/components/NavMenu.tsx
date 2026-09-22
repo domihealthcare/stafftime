@@ -52,12 +52,14 @@ export function NavMenu({
   if (items.length === 0) return null;
 
   return (
-    <div className="relative" ref={container}>
+    // Positioned against the nav on a phone, so the list spans its width and
+    // cannot run off either edge; against its own button from `sm` up.
+    <div className="sm:relative" ref={container}>
       <button
         type="button"
         aria-expanded={open}
         onClick={() => setOpen((shown) => !shown)}
-        className={className({ isActive })}
+        className={`w-full sm:w-auto ${className({ isActive })}`}
       >
         {label}
         <span aria-hidden className="ml-1 text-slate-400">
@@ -65,7 +67,7 @@ export function NavMenu({
         </span>
       </button>
       {open && (
-        <div className="absolute left-0 z-20 mt-1 w-48 rounded-xl border border-slate-200 bg-white p-1 shadow-lg">
+        <div className="absolute inset-x-0 z-20 mt-1 rounded-xl border border-slate-200 bg-white p-1 shadow-lg sm:inset-x-auto sm:left-0 sm:w-48">
           {items.map((item) => (
             <NavLink
               key={item.to}
