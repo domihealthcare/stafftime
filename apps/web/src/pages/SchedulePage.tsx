@@ -3,6 +3,7 @@ import { api } from '../lib/api';
 import { addDays, formatTime, startOfWeek, toLocalInputValue } from '../lib/format';
 import { useIsManager } from '../lib/session';
 import type { Employee, Location, Shift } from '../lib/types';
+import { CalendarLinkCard } from '../components/CalendarLinkCard';
 import { Alert, Badge, Card, EmptyState, PageHeading, Spinner } from '../components/ui';
 
 export function SchedulePage() {
@@ -61,6 +62,10 @@ export function SchedulePage() {
         title="Schedule"
         subtitle={isManager ? 'Build the week for both locations.' : 'Your upcoming shifts.'}
       />
+
+      <div className="mb-4">
+        <CalendarLinkCard />
+      </div>
 
       <div className="mb-4 flex items-center gap-2">
         <button

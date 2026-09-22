@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { BrowserRouter, Route, Routes } from 'react-router-dom';
 import { api } from './lib/api';
+import { EnvironmentBanner } from './components/EnvironmentBanner';
 import { KioskApp } from './kiosk/KioskApp';
 import { Layout } from './components/Layout';
 import { Spinner } from './components/ui';
@@ -81,6 +82,8 @@ function Routed() {
 export function App() {
   return (
     <BrowserRouter>
+      {/* Above everything, including sign-in and the kiosk. */}
+      <EnvironmentBanner />
       <Routes>
         {/*
           The kiosk lives outside the signed-in app entirely: its own route, its

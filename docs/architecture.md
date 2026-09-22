@@ -506,3 +506,69 @@ and says to use a different channel from the one carrying the link.
 Terminating is a status change, never a delete, so timesheets stay attributable.
 An admin cannot terminate themselves, which would lock the practice out of its
 own administration.
+
+## Test environments
+
+`APP_ENVIRONMENT` is `production` by default, so a deployment is only ever a
+test environment on purpose — never by forgetting to set something. Set it to
+`test` and every screen carries a standing amber banner saying nothing there is
+real.
+
+The banner sits above the router, so it appears on the sign-in screen and the
+kiosk too. Those are exactly where someone could mistake a review deployment
+for the one their hours are recorded in, and the kiosk in particular is a device
+a member of staff walks up to without context.
+
+`GET /api/config` is public for the same reason: the banner has to render before
+anyone signs in.
+
+## Calendar syncing
+
+Each employee can generate a private subscription URL carrying their published
+shifts and approved time off. One iCalendar feed covers Google Calendar, Apple
+Calendar and Outlook, which is why this is one feature rather than three
+integrations — and why it is a *subscription* rather than a download: a shift
+added next month appears without anyone doing anything.
+
+### The token is the credential
+
+A calendar app cannot send a cookie or an auth header, so the unguessable token
+in the path is what authenticates the request. That is how Google's own secret
+iCal addresses work, and it means the URL must be treated as a password. The
+screen says so plainly, and offers **Regenerate** — which rotates the token and
+breaks the old URL everywhere — and **Turn off**.
+
+The feed is scoped to one employee, and stops working the moment they are
+terminated, like their sign-in.
+
+### What goes in it
+
+Published shifts only. A draft is a manager's working copy, and putting
+provisional shifts on somebody's personal calendar would be worse than putting
+nothing there.
+
+Approved time off appears as all-day events marked `TRANSPARENT`, so it does not
+make the person look busy to anything reading their availability.
+
+The window is bounded — 60 days back, a year forward — so the feed stays small
+for an app polling it hourly.
+
+### The format details that actually matter
+
+`apps/api/src/calendar/ical.ts` is hand-rolled rather than pulled from a
+library, because the subset needed is small and the rules that break real
+calendar apps are few: CRLF endings everywhere, lines folded at 75 **octets**
+with continuations starting with a space, `,` `;` `\` and newlines escaped
+inside TEXT values, and a stable `UID` per record with a `SEQUENCE` derived from
+`updatedAt` so an edited shift replaces rather than duplicates.
+
+Folding counts octets, not characters, so a multi-byte character is never split
+across the boundary.
+
+All-day `DTEND` is **exclusive**: time off from the 3rd to the 7th inclusive is
+written as `DTSTART:20261103` / `DTEND:20261108`. Getting that wrong silently
+loses the last day, which is why there is a test for it.
+
+The output is verified both by unit tests and by parsing a real generated feed
+with `ical.js` — a strict third-party parser — so the check is "would a calendar
+app accept this", not "does it look right to us".

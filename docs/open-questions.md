@@ -61,6 +61,22 @@ and writes ADP's layout — the timesheet logic itself does not change.
 - [ ] **Notifications.** Nobody is told when a request is decided; they have to
       look. Needs the same email decision as password reset.
 
+## Calendar syncing
+
+Built as a read-only iCalendar subscription per employee.
+
+- [ ] **A per-location feed for managers**, so someone can see the whole
+      front-desk roster in their own calendar. Same mechanism, wider scope —
+      worth doing if managers ask.
+- [ ] **Two-way sync is not planned.** Writing to Google Calendar needs OAuth,
+      refresh tokens and per-user consent, and the schedule should be edited in
+      one place anyway. Worth revisiting only if someone genuinely wants to move
+      a shift from their phone's calendar app.
+- [ ] **Confirm the refresh interval is acceptable.** The feed asks subscribers
+      to re-check hourly, but Google in particular decides for itself and can
+      take considerably longer. If same-day schedule changes need to reach people
+      promptly, that wants a notification, not a calendar.
+
 ## Product decisions
 
 - [ ] **Kiosk device:** dedicated tablet per location, or a shared front-desk PC?

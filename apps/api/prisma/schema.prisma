@@ -166,6 +166,11 @@ model Employee {
   failedLoginAttempts Int       @default(0)
   lockedUntil         DateTime?
 
+  /// Secret used to build this employee's calendar subscription URL. Null until
+  /// they ask for one. Rotating it invalidates the old link everywhere.
+  calendarToken       String?   @unique
+  calendarTokenSetAt  DateTime?
+
   /// Kiosk credentials. The PIN is only ever stored hashed.
   pinHash      String?
   pinUpdatedAt DateTime?
