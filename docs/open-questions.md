@@ -253,6 +253,13 @@ Built and working with PINs. What is left:
       carrying its own verification result over the last. Now a compare-and-set.
       Both guards have been watched to fail — see the note in that directory's
       README before changing how a punch is written.
+- [ ] **`/attention` is re-queried on every screen that shows a banner.** Three
+      manager screens each ask for all nine lists on mount, which is eight or so
+      queries a time. Measured at ~7ms against a seeded database, so it is not
+      worth caching for a practice of twenty — noted because it is the sort of
+      thing that stops being free at a different size, and because the obvious
+      fix (cache it in the session context) is a five-minute change if it ever
+      does.
 - [ ] **A partial-failure test.** Still missing: something that can kill an
       export between the storage write and the record landing, to prove the
       orphan sweep picks up the pieces. Harder than a race, because it needs to
