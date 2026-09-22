@@ -1,0 +1,13 @@
+{
+  "name": "@stafftime/browser-tests",
+  "version": "0.1.0",
+  "private": true,
+  "description": "End-to-end browser checks for Domi Time & Scheduling",
+  "type": "module",
+  "scripts": {
+    "test": "bash run-all.sh"
+  },
+  "dependencies": {
+    "playwright": "^1.63.0"
+  }
+}

@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { ApiError, api } from '../lib/api';
+import { formatCalendarDate } from '../lib/format';
 import { useIsAdmin, useIsManager, useSession } from '../lib/session';
 import type {
   ConflictingShift,
@@ -612,13 +613,8 @@ function RequestForm({
 /// "Tue 3 Nov", or "3–7 Nov" for a range. Dates are plain calendar days, so
 /// they are parsed as UTC to stop a timezone shifting them a day.
 function formatRange(start: string, end: string, isHalfDay: boolean): string {
-  const format = (value: string) =>
-    new Date(`${value}T00:00:00Z`).toLocaleDateString(undefined, {
-      timeZone: 'UTC',
-      weekday: 'short',
-      month: 'short',
-      day: 'numeric',
-    });
+  // No year: a time-off request is always about the near future.
+  const format = (value: string) => formatCalendarDate(value, { year: false });
 
   if (start === end) {
     return isHalfDay ? `${format(start)} (half day)` : format(start);

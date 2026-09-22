@@ -6,6 +6,9 @@ Deployed at **staff.domihealthcare.com**.
 See [CLAUDE.md](./CLAUDE.md) for the full project brief, and
 [docs/](./docs) for architecture notes and open questions.
 
+**Showing it to the managers?** [docs/manager-review.md](./docs/manager-review.md)
+is written for them: what to try, in what order, and what to comment on.
+
 ## What exists today
 
 Phase 1, backend and web app:
@@ -15,25 +18,29 @@ Phase 1, backend and web app:
 - Clock in/out with location verification (geofence, office IP, kiosk)
 - Front-desk kiosk mode — tablet bound to a location, staff clock in by PIN
 - Timesheet view, with manager approval and corrections
-- Manager shift scheduler
+- Manager shift scheduler — a week grid, repeating rotas, copy-last-week, and
+  a coverage summary that names the gaps
 - Timesheet export to Excel or CSV, with selectable columns and saved reports
 - PTO requests with manager approval, balances and a practice-set policy
 - Calendar syncing — each employee gets a private subscription URL for Google
   Calendar, Apple Calendar or Outlook
+- Onboarding and offboarding checklists — editable templates, a per-person
+  instance, and documents (I-9, W-4, signed handbook) attached to the task they
+  belong to
 - Admin screens for locations (geofence, IPs) and kiosks
 
 Not built yet: the ADP TotalSource export (waiting on ADP's pay codes and client
-code), badge-tap clock-in, self-service password reset, and
-onboarding/offboarding checklists.
+code), badge-tap clock-in, and self-service password reset.
 
 **Deploying it:** see [DEPLOY.md](./DEPLOY.md).
 
 ## Repository layout
 
 ```
-apps/api/     NestJS + Prisma backend
-apps/web/     React + Vite + Tailwind web app
-docs/         architecture notes, open questions
+apps/api/       NestJS + Prisma backend
+apps/web/       React + Vite + Tailwind web app
+tests/browser/  end-to-end checks driven by a real browser
+docs/           architecture notes, open questions
 ```
 
 ## Getting started
@@ -75,9 +82,12 @@ Run them separately with `npm run dev:api` and `npm run dev:web` if you prefer.
 
 | Command | What it does |
 | --- | --- |
-| `npm test` | Run the test suite |
+| `npm test` | Run the unit tests |
+| `npm run test:browser` | Run the end-to-end browser checks (see [tests/browser](./tests/browser)) |
 | `npm run lint` | Check code style |
 | `npm run build` | Build both apps for production |
+| `npm run preview` | Serve the built web app with the deployed security headers, at http://localhost:4173 |
+| `npm run db:demo` | Load five weeks of realistic demo data for a review — **replaces** existing shifts, punches and time off |
 | `npm run db:studio` | Open a visual database browser |
 | `npm run db:down` | Stop the local database |
 
@@ -168,6 +178,17 @@ placeholders, so do not run it after setting real values.
 | `GET/POST/PATCH/DELETE` | `/api/locations` | admin (reads: anyone) |
 | `GET/POST/PATCH/DELETE` | `/api/employees` | admin (`/me`: anyone) |
 | `GET/POST/PATCH/DELETE` | `/api/shifts` | manager (employees see their own) |
+| `POST` | `/api/shifts/repeat` | manager — build a rota across a date range |
+| `POST` | `/api/shifts/copy-week` | manager — copy one week's rota into another |
+| `GET` | `/api/shifts/coverage` | manager — hours and gaps for a week |
+| `GET` | `/api/checklists/templates` | manager — read; `POST`/`PATCH`/`DELETE` are admin |
+| `GET` | `/api/checklists` | own checklists; managers see everyone's |
+| `POST` | `/api/checklists` | manager — start one for somebody |
+| `DELETE` | `/api/checklists/:id` | admin — takes its documents with it |
+| `PATCH` | `/api/checklists/tasks/:id` | manager, or the employee for their own tasks |
+| `POST` | `/api/checklists/tasks/:id/documents` | admin, or the employee for their own tasks |
+| `GET`/`DELETE` | `/api/checklists/documents/:id` | admin, or the person it is about |
+| `GET` | `/api/maintenance/purge` | the scheduled housekeeping job, with `CRON_SECRET` |
 | `POST` | `/api/time-entries/clock-in` | anyone |
 | `POST` | `/api/time-entries/clock-out` | anyone |
 | `GET` | `/api/time-entries/current` | anyone |
@@ -182,11 +203,11 @@ placeholders, so do not run it after setting real values.
 | **Kiosk** (`/kiosk`) | The front-desk tablet. Tap your name, enter your PIN, clock in or out. No sign-in, no navigation anywhere else |
 | **Clock** | Clock in/out with a live elapsed timer, today's shift, and a plain-language reason whenever a punch is refused |
 | **Timesheet** | Weekly hours. Managers see everyone, plus approve and correct; employees see only their own |
-| **Schedule** | Week grid. Managers add and remove shifts; employees see their own |
+| **Schedule** | Week grid. Managers add and remove shifts, build repeating rotas, copy last week forward, and see a coverage summary; employees see their own shifts and can turn on calendar syncing |
 | **Sign in** | Email and password. A temporary password lands you on a forced change screen and nothing else |
-| **Schedule** | Also where an employee turns on calendar syncing |
 | **Time off** | Request time off and see your balance; managers approve or deny, and can file on someone's behalf. Admins set the practice's PTO rules here |
 | **Export** (manager) | Produce a timesheet spreadsheet for a period, choosing exactly which columns go in it. Settings can be saved as named reports and shared |
+| **Checklists** | Onboarding and offboarding. Managers start one, work through it and see what is overdue; an employee sees their own and the parts that are theirs to do. Documents attach to the task they belong to |
 | **Staff** (admin) | Add people, set their role and locations, issue a temporary password, mark someone as no longer employed |
 | **Kiosks** (admin) | Pair and revoke tablets, and set staff PINs |
 | **Locations** (admin) | Each office's coordinates, geofence radius and IP allow-list. Has a "use my current location" button, so you can set it standing at the desk |

@@ -17,6 +17,12 @@ export enum AppEnvironment {
   Test = 'test',
 }
 
+/// Where uploaded documents live. See src/storage.
+export enum FileStorageBackend {
+  Database = 'database',
+  Disk = 'disk',
+}
+
 export enum NodeEnv {
   Development = 'development',
   Test = 'test',
@@ -64,6 +70,39 @@ class EnvironmentVariables {
   @Min(1)
   LOCKOUT_MINUTES = 15;
 
+  /// Per-address sign-in throttling, on top of per-account lockout. The
+  /// account limit stops someone grinding at one password; this stops one
+  /// address trying one password against every account in turn.
+  ///
+  /// It counts distinct accounts rather than raw failures because both offices
+  /// share an address: a busy Monday is few accounts and many attempts, which
+  /// account lockout already covers, while spraying is many accounts and few
+  /// attempts each. MAX_FAILURES is only a backstop, so it is set high.
+  ///
+  /// A throttled address does not stop the front desk: kiosk punches use a PIN
+  /// and never go through the sign-in route.
+  @Type(() => Number)
+  @IsInt()
+  @Min(1)
+  LOGIN_THROTTLE_WINDOW_MINUTES = 10;
+
+  @Type(() => Number)
+  @IsInt()
+  @Min(2)
+  LOGIN_THROTTLE_MAX_ACCOUNTS = 10;
+
+  @Type(() => Number)
+  @IsInt()
+  @Min(10)
+  LOGIN_THROTTLE_MAX_FAILURES = 60;
+
+  /// Shared secret for the scheduled maintenance route. Unset means the route
+  /// refuses everything, so it is never left open by omission.
+  @IsOptional()
+  @IsString()
+  @MinLength(16)
+  CRON_SECRET?: string;
+
   /// Kiosk PIN lockout, tracked separately from password lockout. Tighter,
   /// because a PIN has far less entropy than a password.
   @Type(() => Number)
@@ -80,6 +119,23 @@ class EnvironmentVariables {
   @IsInt()
   @Min(0)
   PUNCH_GRACE_MINUTES = 5;
+
+  /// Where uploaded checklist documents are kept: "database" (the default, and
+  /// the only one that works on Vercel) or "disk" for local work.
+  @IsEnum(FileStorageBackend)
+  FILE_STORAGE: FileStorageBackend = FileStorageBackend.Database;
+
+  /// Only read when FILE_STORAGE is "disk".
+  @IsString()
+  FILE_STORAGE_DIR = './var/uploads';
+
+  /// Largest document that may be uploaded, in megabytes. A signed PDF is well
+  /// under this; the cap is here so one person cannot fill the database.
+  @Type(() => Number)
+  @IsInt()
+  @Min(1)
+  @Max(50)
+  MAX_UPLOAD_MB = 10;
 
   /// Enables the one-time, browser-based creation of the first administrator.
   /// Unset it once that account exists — the route then disappears.

@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { Fragment, useCallback, useEffect, useMemo, useState } from 'react';
 import { api } from '../lib/api';
 import {
   addDays,
@@ -130,7 +130,8 @@ export function TimesheetPage() {
               </thead>
               <tbody className="divide-y divide-slate-100">
                 {entries.map((entry) => (
-                  <tr key={entry.id} className="hover:bg-slate-50">
+                  <Fragment key={entry.id}>
+                  <tr className="hover:bg-slate-50">
                     <td className="whitespace-nowrap px-4 py-3 text-slate-700">
                       {formatDate(entry.clockInAt)}
                     </td>
@@ -155,11 +156,8 @@ export function TimesheetPage() {
                     <td className="whitespace-nowrap px-4 py-3">
                       <VerificationBadge entry={entry} />
                     </td>
-                    <td className="px-4 py-3">
+                    <td className="whitespace-nowrap px-4 py-3">
                       <Flags entry={entry} />
-                      {entry.editReason && (
-                        <p className="mt-1 max-w-48 text-xs text-slate-500">{entry.editReason}</p>
-                      )}
                     </td>
                     {isManager && (
                       <td className="whitespace-nowrap px-4 py-3">
@@ -189,6 +187,18 @@ export function TimesheetPage() {
                       </td>
                     )}
                   </tr>
+                  {/* The reason for a correction is a sentence, so it gets a
+                      line rather than being squeezed into the flags column. */}
+                  {entry.editReason && (
+                    <tr className="border-none">
+                      <td colSpan={isManager ? 8 : 6} className="px-4 pb-3 pt-0">
+                        <p className="text-xs text-slate-500">
+                          <span className="font-medium">Corrected:</span> {entry.editReason}
+                        </p>
+                      </td>
+                    </tr>
+                  )}
+                  </Fragment>
                 ))}
               </tbody>
             </table>

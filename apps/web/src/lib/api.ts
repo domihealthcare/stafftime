@@ -1,5 +1,12 @@
 import type {
+  Checklist,
+  ChecklistDocument,
+  ChecklistKind,
+  ChecklistTaskStatus,
+  ChecklistTemplate,
   ConflictingShift,
+  CoverageDay,
+  PlanResult,
   Employee,
   Location,
   PtoBalance,
@@ -7,6 +14,7 @@ import type {
   PtoRequest,
   ReportPreset,
   Shift,
+  TemplateTaskInput,
   TimeEntry,
   UpdateLocationInput,
 } from './types';
@@ -57,6 +65,70 @@ async function request<T>(path: string, init: RequestInit = {}): Promise<T> {
   }
 
   return body as T;
+}
+
+/**
+ * A multipart upload. Deliberately does not go through `request`: setting
+ * Content-Type by hand would omit the boundary the browser generates, and the
+ * server would see one unparseable blob instead of a file.
+ */
+async function upload<T>(path: string, file: File): Promise<T> {
+  const form = new FormData();
+  form.append('file', file);
+
+  let response: Response;
+  try {
+    response = await fetch(`/api${path}`, {
+      method: 'POST',
+      credentials: 'include',
+      body: form,
+    });
+  } catch {
+    throw new ApiError(0, 'Could not reach the server. Check your connection and try again.');
+  }
+
+  const body = await response.json().catch(() => null);
+  if (!response.ok) {
+    throw new ApiError(response.status, extractMessage(body, response.status), extractCode(body));
+  }
+  return body as T;
+}
+
+/**
+ * Fetches a file and hands back a blob. There is no URL a browser could open
+ * directly — every document goes through an authorised route — so a download
+ * has to be fetched and then handed to the browser.
+ */
+async function download(path: string): Promise<{ blob: Blob; filename: string }> {
+  let response: Response;
+  try {
+    response = await fetch(`/api${path}`, { credentials: 'include' });
+  } catch {
+    throw new ApiError(0, 'Could not reach the server. Check your connection and try again.');
+  }
+
+  if (!response.ok) {
+    const body = await response.json().catch(() => null);
+    throw new ApiError(response.status, extractMessage(body, response.status), extractCode(body));
+  }
+
+  return {
+    blob: await response.blob(),
+    filename: filenameFromDisposition(response.headers.get('Content-Disposition')),
+  };
+}
+
+function filenameFromDisposition(header: string | null): string {
+  if (!header) return 'document';
+  const encoded = /filename\*=UTF-8''([^;]+)/i.exec(header);
+  if (encoded) {
+    try {
+      return decodeURIComponent(encoded[1]);
+    } catch {
+      // Fall through to the plain form.
+    }
+  }
+  return /filename="([^"]+)"/i.exec(header)?.[1] ?? 'document';
 }
 
 /// Set when the server says a temporary password must be replaced before
@@ -448,6 +520,26 @@ export const api = {
   ) =>
     request<TimeEntry>(`/time-entries/${id}`, { method: 'PATCH', body: JSON.stringify(body) }),
 
+  repeatShifts: (body: {
+    employeeId: string;
+    locationId: string;
+    startTime: string;
+    endTime: string;
+    daysOfWeek: number[];
+    from: string;
+    until: string;
+    status?: string;
+    notes?: string;
+  }) => request<PlanResult>('/shifts/repeat', { method: 'POST', body: JSON.stringify(body) }),
+  copyWeek: (body: {
+    fromWeekStart: string;
+    toWeekStart: string;
+    locationId?: string;
+    status?: string;
+  }) => request<PlanResult>('/shifts/copy-week', { method: 'POST', body: JSON.stringify(body) }),
+  coverage: (params: { from: string; to: string; locationId?: string }) =>
+    request<CoverageDay[]>(`/shifts/coverage${toQuery(params)}`),
+
   listShifts: (params: Record<string, string | undefined> = {}) =>
     request<Shift[]>(`/shifts${toQuery(params)}`),
   createShift: (body: {
@@ -458,6 +550,56 @@ export const api = {
     status?: string;
   }) => request<Shift>('/shifts', { method: 'POST', body: JSON.stringify(body) }),
   deleteShift: (id: string) => request<unknown>(`/shifts/${id}`, { method: 'DELETE' }),
+
+  listChecklists: (params: Record<string, string | undefined> = {}) =>
+    request<Checklist[]>(`/checklists${toQuery(params)}`),
+  checklist: (id: string) => request<Checklist>(`/checklists/${id}`),
+  startChecklist: (body: {
+    employeeId: string;
+    kind: ChecklistKind;
+    templateId?: string;
+    anchorDate?: string;
+  }) => request<Checklist>('/checklists', { method: 'POST', body: JSON.stringify(body) }),
+  deleteChecklist: (id: string) =>
+    request<{ deleted: boolean; documentsDeleted: number }>(`/checklists/${id}`, {
+      method: 'DELETE',
+    }),
+  updateChecklistTask: (taskId: string, status: ChecklistTaskStatus, note?: string) =>
+    request<Checklist>(`/checklists/tasks/${taskId}`, {
+      method: 'PATCH',
+      body: JSON.stringify({ status, note }),
+    }),
+
+  uploadChecklistDocument: (taskId: string, file: File) =>
+    upload<ChecklistDocument>(`/checklists/tasks/${taskId}/documents`, file),
+  downloadChecklistDocument: (documentId: string) =>
+    download(`/checklists/documents/${documentId}`),
+  deleteChecklistDocument: (documentId: string) =>
+    request<{ deleted: boolean }>(`/checklists/documents/${documentId}`, { method: 'DELETE' }),
+
+  checklistTemplates: (kind?: ChecklistKind) =>
+    request<ChecklistTemplate[]>(`/checklists/templates${toQuery({ kind })}`),
+  createChecklistTemplate: (body: {
+    kind: ChecklistKind;
+    name: string;
+    description?: string;
+    isDefault?: boolean;
+    tasks: TemplateTaskInput[];
+  }) =>
+    request<ChecklistTemplate>('/checklists/templates', {
+      method: 'POST',
+      body: JSON.stringify(body),
+    }),
+  updateChecklistTemplate: (
+    id: string,
+    body: { name?: string; description?: string; isDefault?: boolean; tasks?: TemplateTaskInput[] },
+  ) =>
+    request<ChecklistTemplate>(`/checklists/templates/${id}`, {
+      method: 'PATCH',
+      body: JSON.stringify(body),
+    }),
+  archiveChecklistTemplate: (id: string) =>
+    request<ChecklistTemplate>(`/checklists/templates/${id}`, { method: 'DELETE' }),
 };
 
 function toQuery(params: Record<string, string | undefined>): string {

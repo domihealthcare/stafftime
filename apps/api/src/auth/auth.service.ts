@@ -9,6 +9,7 @@ import {
 import { ConfigService } from '@nestjs/config';
 import { EmploymentStatus } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
+import { LoginThrottleService } from './login-throttle.service';
 import { PasswordService } from './password.service';
 import { IssuedSession, SessionService } from './session.service';
 
@@ -31,6 +32,7 @@ export class AuthService {
     private readonly prisma: PrismaService,
     private readonly passwords: PasswordService,
     private readonly sessions: SessionService,
+    private readonly throttle: LoginThrottleService,
     config: ConfigService,
   ) {
     this.maxAttempts = config.get<number>('MAX_LOGIN_ATTEMPTS', 8);
@@ -38,6 +40,10 @@ export class AuthService {
   }
 
   async login(email: string, password: string, context: LoginContext): Promise<IssuedSession> {
+    // Before the lookup and before any hashing, so a throttled address costs
+    // us nothing to refuse.
+    await this.throttle.assertNotThrottled(context.ipAddress);
+
     const employee = await this.prisma.employee.findUnique({
       where: { email: email.trim().toLowerCase() },
       select: {
@@ -54,6 +60,7 @@ export class AuthService {
     // time does not reveal which emails exist.
     if (!employee?.passwordHash) {
       await this.passwords.verify(password, DUMMY_HASH);
+      await this.throttle.recordFailure(email, context.ipAddress);
       throw new UnauthorizedException(SIGN_IN_FAILED);
     }
 
@@ -70,6 +77,7 @@ export class AuthService {
     const correct = await this.passwords.verify(password, employee.passwordHash);
     if (!correct) {
       await this.recordFailure(employee.id, employee.failedLoginAttempts);
+      await this.throttle.recordFailure(email, context.ipAddress);
       throw new UnauthorizedException(SIGN_IN_FAILED);
     }
 

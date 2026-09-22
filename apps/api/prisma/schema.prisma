@@ -12,8 +12,8 @@ generator client {
 }
 
 datasource db {
-  provider = "postgresql"
-  url      = env("DATABASE_URL")
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
   /// Migrations need a direct connection: they cannot run through a connection
   /// pooler. On a local database this is the same value as DATABASE_URL.
   directUrl = env("DIRECT_DATABASE_URL")
@@ -105,10 +105,10 @@ model Location {
   timezone     String  @default("America/New_York")
 
   /// Geofence centre. Decimal(9,6) gives ~11cm precision — plenty for a radius check.
-  latitude  Decimal @db.Decimal(9, 6)
-  longitude Decimal @db.Decimal(9, 6)
+  latitude             Decimal @db.Decimal(9, 6)
+  longitude            Decimal @db.Decimal(9, 6)
   /// How far from the centre a web/mobile punch may be and still count as "at work".
-  geofenceRadiusMeters Int @default(150)
+  geofenceRadiusMeters Int     @default(150)
 
   /// Fallback verification for web punches: exact IPv4/IPv6 addresses or IPv4 CIDR
   /// blocks (e.g. "203.0.113.7", "203.0.113.0/24") belonging to this office.
@@ -155,25 +155,25 @@ model Employee {
 
   /// Login credentials. Null until an admin sets a password, which is how a new
   /// hire's account exists before they can sign in.
-  passwordHash      String?
-  passwordUpdatedAt DateTime?
+  passwordHash       String?
+  passwordUpdatedAt  DateTime?
   /// True for an admin-set temporary password: the holder must replace it before
   /// they can do anything else.
-  mustChangePassword Boolean @default(true)
+  mustChangePassword Boolean   @default(true)
 
-  lastLoginAt DateTime?
+  lastLoginAt         DateTime?
   /// Brute-force protection. Cleared on any successful sign-in.
   failedLoginAttempts Int       @default(0)
   lockedUntil         DateTime?
 
   /// Secret used to build this employee's calendar subscription URL. Null until
   /// they ask for one. Rotating it invalidates the old link everywhere.
-  calendarToken       String?   @unique
-  calendarTokenSetAt  DateTime?
+  calendarToken      String?   @unique
+  calendarTokenSetAt DateTime?
 
   /// Kiosk credentials. The PIN is only ever stored hashed.
-  pinHash      String?
-  pinUpdatedAt DateTime?
+  pinHash           String?
+  pinUpdatedAt      DateTime?
   /// PIN lockout is tracked separately from password lockout: someone fumbling
   /// the keypad at the front desk should not lose access to the web app too.
   pinFailedAttempts Int       @default(0)
@@ -188,14 +188,20 @@ model Employee {
   timeEntries TimeEntry[]
   sessions    Session[]
 
-  createdShifts       Shift[]       @relation("ShiftCreatedBy")
+  createdShifts       Shift[]        @relation("ShiftCreatedBy")
   createdKiosks       KioskDevice[]  @relation("KioskCreatedBy")
   reportPresets       ReportPreset[] @relation("ReportPresetOwner")
   ptoRequests         PtoRequest[]   @relation("PtoRequester")
   reviewedPtoRequests PtoRequest[]   @relation("PtoReviewer")
   editedPtoPolicies   PtoPolicy[]    @relation("PtoPolicyEditor")
-  editedTimeEntries   TimeEntry[] @relation("TimeEntryEditedBy")
-  approvedTimeEntries TimeEntry[] @relation("TimeEntryApprovedBy")
+  editedTimeEntries   TimeEntry[]    @relation("TimeEntryEditedBy")
+  approvedTimeEntries TimeEntry[]    @relation("TimeEntryApprovedBy")
+
+  checklists                 EmployeeChecklist[]     @relation("EmployeeChecklistSubject")
+  createdChecklists          EmployeeChecklist[]     @relation("EmployeeChecklistCreatedBy")
+  createdChecklistTemplates  ChecklistTemplate[]     @relation("ChecklistTemplateCreatedBy")
+  completedChecklistTasks    EmployeeChecklistTask[] @relation("ChecklistTaskCompletedBy")
+  uploadedChecklistDocuments ChecklistDocument[]     @relation("ChecklistDocumentUploadedBy")
 
   @@index([employmentStatus])
   @@map("employees")
@@ -227,17 +233,25 @@ model EmployeeLocation {
 /// practice owns, and they will change — a new handbook, a new state rule, a
 /// different carry-over. Defaults are Domi's starting point: 15 days PTO, 5
 /// sick days, 5 days of PTO carried into the next year.
+/// The practice's PTO rules. There is exactly one of these, and the database
+/// enforces that: `singleton` is always 1 and is unique, so a second row cannot
+/// be created even by two requests arriving at the same moment.
+///
+/// Without it, two concurrent first reads both find nothing and both insert,
+/// and the practice quietly ends up with two policies — one of which nobody's
+/// edits ever reach.
 model PtoPolicy {
-  id String @id @default(uuid()) @db.Uuid
+  id        String @id @default(uuid()) @db.Uuid
+  singleton Int    @unique @default(1)
 
   /// Annual entitlement, in days.
   vacationDaysPerYear Int @default(15)
   sickDaysPerYear     Int @default(5)
 
   /// Unused days that survive into the next policy year, capped.
-  maxCarryoverDays     Int @default(5)
+  maxCarryoverDays  Int @default(5)
   /// Sick days usually do not carry; kept separate so the practice can decide.
-  sickCarryoverDays    Int @default(0)
+  sickCarryoverDays Int @default(0)
 
   /// When the policy year begins. 1 January by default; set to a different
   /// month and day if Domi ever runs PTO on a fiscal year.
@@ -248,9 +262,9 @@ model PtoPolicy {
   /// entitlement.
   prorateFirstYear Boolean @default(true)
 
-  updatedById String?   @db.Uuid
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
+  updatedById String?  @db.Uuid
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
 
   updatedBy Employee? @relation("PtoPolicyEditor", fields: [updatedById], references: [id], onDelete: SetNull)
 
@@ -311,9 +325,9 @@ model PtoRequest {
 /// migration. They are re-validated against the export DTO on use, so a stale
 /// or hand-edited preset cannot smuggle anything through.
 model ReportPreset {
-  id      String @id @default(uuid()) @db.Uuid
-  name    String
-  ownerId String @db.Uuid
+  id       String  @id @default(uuid()) @db.Uuid
+  name     String
+  ownerId  String  @db.Uuid
   /// Shared presets are visible to every manager, not just the person who made
   /// one. A small practice wants "the payroll export" to be the same export
   /// whoever runs it.
@@ -379,17 +393,17 @@ model KioskDevice {
 /// for a token to expire. Only the SHA-256 of the token is stored: a leaked
 /// database row cannot be replayed as a login.
 model Session {
-  id         String   @id @default(uuid()) @db.Uuid
-  employeeId String   @db.Uuid
+  id         String    @id @default(uuid()) @db.Uuid
+  employeeId String    @db.Uuid
   /// SHA-256 of the opaque session token. The token itself is never stored.
-  tokenHash  String   @unique
+  tokenHash  String    @unique
   expiresAt  DateTime
-  lastUsedAt DateTime @default(now())
+  lastUsedAt DateTime  @default(now())
   revokedAt  DateTime?
   /// Recorded so a user can recognise their own sessions, and for incident review.
   userAgent  String?
   ipAddress  String?
-  createdAt  DateTime @default(now())
+  createdAt  DateTime  @default(now())
 
   employee Employee @relation(fields: [employeeId], references: [id], onDelete: Cascade)
 
@@ -417,9 +431,9 @@ model Shift {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  employee  Employee    @relation(fields: [employeeId], references: [id], onDelete: Cascade)
-  location  Location    @relation(fields: [locationId], references: [id], onDelete: Restrict)
-  createdBy Employee?   @relation("ShiftCreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
+  employee    Employee    @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+  location    Location    @relation(fields: [locationId], references: [id], onDelete: Restrict)
+  createdBy   Employee?   @relation("ShiftCreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
   timeEntries TimeEntry[]
 
   @@index([employeeId, startsAt])
@@ -462,9 +476,9 @@ model TimeEntry {
   isMissingPunch   Boolean @default(false)
 
   /// Audit trail for manual edits and approvals.
-  editedById String?   @db.Uuid
-  editedAt   DateTime?
-  editReason String?
+  editedById   String?   @db.Uuid
+  editedAt     DateTime?
+  editReason   String?
   approvedById String?   @db.Uuid
   approvedAt   DateTime?
 
@@ -481,4 +495,211 @@ model TimeEntry {
   @@index([locationId, clockInAt])
   @@index([shiftId])
   @@map("time_entries")
+}
+
+// ---------------------------------------------------------------------------
+// Onboarding / offboarding checklists (Phase 3)
+// ---------------------------------------------------------------------------
+
+enum ChecklistKind {
+  ONBOARDING
+  OFFBOARDING
+}
+
+/// Who is expected to do a task. Not a permission — an admin can complete
+/// anything — but it tells a new hire which items are theirs.
+enum TaskOwner {
+  EMPLOYEE
+  MANAGER
+  ADMIN
+}
+
+enum ChecklistTaskStatus {
+  PENDING
+  DONE
+  /// Deliberately skipped, with a reason. Distinct from PENDING so an unfinished
+  /// checklist cannot be mistaken for a finished one.
+  NOT_APPLICABLE
+}
+
+/// A reusable list of tasks. Templates are edited freely; instances are
+/// snapshots (see EmployeeChecklist), so editing one never rewrites history.
+model ChecklistTemplate {
+  id          String        @id @default(uuid()) @db.Uuid
+  kind        ChecklistKind
+  name        String
+  description String?
+  /// The template offered first when starting a checklist of this kind.
+  isDefault   Boolean       @default(false)
+  /// Retired templates stay for provenance but are not offered.
+  archivedAt  DateTime?
+
+  createdById String? @db.Uuid
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  createdBy Employee?               @relation("ChecklistTemplateCreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
+  tasks     ChecklistTemplateTask[]
+  instances EmployeeChecklist[]
+
+  @@index([kind, archivedAt])
+  @@map("checklist_templates")
+}
+
+model ChecklistTemplateTask {
+  id          String    @id @default(uuid()) @db.Uuid
+  templateId  String    @db.Uuid
+  /// Display order within the template. Gaps are fine.
+  position    Int
+  title       String
+  description String?
+  owner       TaskOwner @default(ADMIN)
+
+  /// Whether finishing this task needs a file attached (I-9, W-4, signed handbook).
+  requiresDocument Boolean @default(false)
+
+  /// Due date relative to the anchor date of the instance — the hire date for
+  /// onboarding, the last day for offboarding. Negative means before it.
+  dueOffsetDays Int?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  template ChecklistTemplate @relation(fields: [templateId], references: [id], onDelete: Cascade)
+
+  @@index([templateId, position])
+  @@map("checklist_template_tasks")
+}
+
+/// One person's checklist. The tasks are copied from the template at creation
+/// rather than referenced, because a signed I-9 recorded against a task whose
+/// wording later changed is a compliance problem, not a convenience.
+model EmployeeChecklist {
+  id         String        @id @default(uuid()) @db.Uuid
+  employeeId String        @db.Uuid
+  kind       ChecklistKind
+  /// Name copied from the template, so it reads correctly even if the template
+  /// is renamed or retired.
+  name       String
+  /// Provenance only. Null if the template was deleted.
+  templateId String?       @db.Uuid
+
+  /// Hire date for onboarding, last day for offboarding. Task due dates hang off it.
+  anchorDate  DateTime  @db.Date
+  completedAt DateTime?
+
+  createdById String? @db.Uuid
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  employee  Employee                @relation("EmployeeChecklistSubject", fields: [employeeId], references: [id], onDelete: Cascade)
+  createdBy Employee?               @relation("EmployeeChecklistCreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
+  template  ChecklistTemplate?      @relation(fields: [templateId], references: [id], onDelete: SetNull)
+  tasks     EmployeeChecklistTask[]
+
+  @@index([employeeId, kind])
+  @@index([completedAt])
+  @@map("employee_checklists")
+}
+
+model EmployeeChecklistTask {
+  id          String    @id @default(uuid()) @db.Uuid
+  checklistId String    @db.Uuid
+  position    Int
+  title       String
+  description String?
+  owner       TaskOwner @default(ADMIN)
+
+  requiresDocument Boolean   @default(false)
+  dueAt            DateTime? @db.Date
+
+  status ChecklistTaskStatus @default(PENDING)
+  /// Why a task was marked not applicable, or any note left when completing it.
+  note   String?
+
+  completedById String?   @db.Uuid
+  completedAt   DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  checklist   EmployeeChecklist   @relation(fields: [checklistId], references: [id], onDelete: Cascade)
+  completedBy Employee?           @relation("ChecklistTaskCompletedBy", fields: [completedById], references: [id], onDelete: SetNull)
+  documents   ChecklistDocument[]
+
+  @@index([checklistId, position])
+  @@index([status, dueAt])
+  @@map("employee_checklist_tasks")
+}
+
+/// A file attached to a checklist task. These hold the most sensitive data in
+/// the app — an I-9 or W-4 carries a social security number — so the bytes live
+/// behind the storage adapter under an unguessable key and are only ever served
+/// through an authorised download route, never from a public URL.
+model ChecklistDocument {
+  id     String @id @default(uuid()) @db.Uuid
+  taskId String @db.Uuid
+
+  /// Name as uploaded, shown in the UI. Never used as a path.
+  filename    String
+  contentType String
+  sizeBytes   Int
+  /// Opaque key the storage adapter resolves. Unguessable by construction.
+  storageKey  String @unique
+  /// SHA-256 of the bytes, so a re-upload can be recognised and a download verified.
+  checksum    String
+
+  uploadedById String?  @db.Uuid
+  uploadedAt   DateTime @default(now())
+
+  task       EmployeeChecklistTask @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  uploadedBy Employee?             @relation("ChecklistDocumentUploadedBy", fields: [uploadedById], references: [id], onDelete: SetNull)
+
+  @@index([taskId])
+  @@map("checklist_documents")
+}
+
+// ---------------------------------------------------------------------------
+// File storage
+// ---------------------------------------------------------------------------
+
+/// Bytes held by the database file-storage adapter (see src/storage). Kept in
+/// its own table, with no foreign key to whatever references it, so the adapter
+/// stays a storage backend and knows nothing about checklists — swapping in a
+/// blob store later touches only src/storage.
+///
+/// Listing documents never touches this table, so a file listing cannot
+/// accidentally pull megabytes of PDFs into memory.
+model StoredFile {
+  storageKey String   @id
+  bytes      Bytes
+  createdAt  DateTime @default(now())
+
+  @@map("stored_files")
+}
+
+// ---------------------------------------------------------------------------
+// Login attempts (per-address throttling)
+// ---------------------------------------------------------------------------
+
+/// One row per *failed* sign-in, used to throttle an address that is guessing.
+///
+/// In the database rather than in memory because the production deployment is
+/// serverless: an in-memory counter lives in one instance and an attacker's
+/// next request lands in another, so it would count almost nothing.
+///
+/// The email is stored hashed. The throttle needs to know how many *different*
+/// accounts an address has gone after, not which — and a plaintext column here
+/// would be a standing list of who somebody tried to sign in as.
+model LoginAttempt {
+  id        String   @id @default(uuid()) @db.Uuid
+  ipAddress String
+  emailHash String
+  at        DateTime @default(now())
+
+  @@index([ipAddress, at])
+  @@index([at])
+  @@map("login_attempts")
 }

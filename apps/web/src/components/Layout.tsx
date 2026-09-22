@@ -63,6 +63,9 @@ export function Layout() {
                   </span>
                 )}
               </NavLink>
+              <NavLink to="/checklists" className={linkClasses}>
+                Checklists
+              </NavLink>
               {isManager && (
                 <NavLink to="/export" className={linkClasses}>
                   Export

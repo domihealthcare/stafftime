@@ -170,3 +170,123 @@ export interface PtoBalance {
   sick: AllowanceBalance;
   unpaidAndOther: number;
 }
+
+export interface PlannedSkip {
+  date: string;
+  reason: 'OVERLAPS_SHIFT' | 'ON_APPROVED_LEAVE';
+  detail: string;
+}
+
+export interface PlanResult {
+  created: number;
+  skipped: PlannedSkip[];
+  dates: string[];
+}
+
+export interface CoverageShift {
+  id: string;
+  employeeId: string;
+  employeeName: string;
+  locationName: string;
+  startsAt: string;
+  endsAt: string;
+  status: ShiftStatus;
+  /// Scheduled while on approved leave — nearly always a mistake.
+  conflictsWithLeave: boolean;
+}
+
+export interface CoverageDay {
+  date: string;
+  weekday: number;
+  shifts: CoverageShift[];
+  staffedHours: number;
+  peopleScheduled: number;
+  away: { employeeId: string; employeeName: string; type: PtoType }[];
+}
+
+// ---------------------------------------------------------------------------
+// Onboarding / offboarding checklists
+// ---------------------------------------------------------------------------
+
+export type ChecklistKind = 'ONBOARDING' | 'OFFBOARDING';
+export type TaskOwner = 'EMPLOYEE' | 'MANAGER' | 'ADMIN';
+export type ChecklistTaskStatus = 'PENDING' | 'DONE' | 'NOT_APPLICABLE';
+
+export interface ChecklistTemplateTask {
+  id: string;
+  position: number;
+  title: string;
+  description: string | null;
+  owner: TaskOwner;
+  requiresDocument: boolean;
+  dueOffsetDays: number | null;
+}
+
+export interface ChecklistTemplate {
+  id: string;
+  kind: ChecklistKind;
+  name: string;
+  description: string | null;
+  isDefault: boolean;
+  archivedAt: string | null;
+  tasks: ChecklistTemplateTask[];
+}
+
+/// What the screens are told about a document. Never the bytes — those come
+/// from the download route, one file at a time.
+export interface ChecklistDocument {
+  id: string;
+  filename: string;
+  contentType: string;
+  sizeBytes: number;
+  uploadedAt: string;
+  uploadedBy: { id: string; firstName: string; lastName: string } | null;
+}
+
+export interface ChecklistTask {
+  id: string;
+  checklistId: string;
+  position: number;
+  title: string;
+  description: string | null;
+  owner: TaskOwner;
+  requiresDocument: boolean;
+  dueAt: string | null;
+  status: ChecklistTaskStatus;
+  note: string | null;
+  completedAt: string | null;
+  completedBy: { id: string; firstName: string; lastName: string } | null;
+  documents: ChecklistDocument[];
+}
+
+export interface Checklist {
+  id: string;
+  kind: ChecklistKind;
+  name: string;
+  anchorDate: string;
+  completedAt: string | null;
+  createdAt: string;
+  employee: {
+    id: string;
+    firstName: string;
+    lastName: string;
+    preferredName: string | null;
+    hireDate: string;
+    terminationDate: string | null;
+    employmentStatus: string;
+  };
+  tasks: ChecklistTask[];
+  progress: { total: number; settled: number; pending: number; percent: number };
+  overdueCount: number;
+  nextTask: string | null;
+}
+
+/// A task as the template editor sends it back. No id: the list is replaced
+/// whole, in the order given.
+export interface TemplateTaskInput {
+  title: string;
+  description?: string;
+  owner?: TaskOwner;
+  requiresDocument?: boolean;
+  dueOffsetDays?: number;
+}

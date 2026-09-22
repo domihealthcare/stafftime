@@ -44,7 +44,7 @@ a pooler and use the direct one.
 2. **Add New → Project**, and import `domihealthcare/stafftime`
 3. Leave every build setting alone. The repository already tells Vercel what to
    do
-4. Expand **Environment Variables** and add these ten:
+4. Expand **Environment Variables** and add these twelve:
 
 | Name | Value |
 | --- | --- |
@@ -59,11 +59,29 @@ a pooler and use the direct one.
 | `MAX_PIN_ATTEMPTS` | `5` |
 | `PIN_LOCKOUT_MINUTES` | `10` |
 | `PUNCH_GRACE_MINUTES` | `5` |
+| `MAX_UPLOAD_MB` | `10` |
+| `CRON_SECRET` | another long random phrase — see below |
 
 **`SETUP_TOKEN`** is a one-time password that lets you create the first
 administrator account. Make it long and unguessable — four or five random words
 is ideal, for example `copper-lantern-harbour-tuesday-49`. You will type it once
 and then delete it.
+
+**`CRON_SECRET`** authorises the nightly housekeeping job — clearing expired
+sessions, stale sign-in counters and kiosk pairing codes that were never used.
+Make it long and random, the same way as `SETUP_TOKEN`, and keep it: unlike
+`SETUP_TOKEN` this one stays. If it is missing the job simply refuses to run,
+which is safe but means nothing gets tidied up.
+
+**`MAX_UPLOAD_MB`** is the largest checklist document anybody can attach. A
+scanned form is well under 10MB; the cap is there so one person cannot fill the
+database.
+
+There is deliberately nothing to configure for document storage. Uploaded
+documents go in the database, which means they are covered by Neon's backups
+and there is no second account to set up — and no public link to a file with
+somebody's social security number in it. See `docs/architecture.md` if that ever
+needs to change.
 
 **`APP_ENVIRONMENT=test`** puts a standing amber banner on every screen saying
 nothing there is real. Leave it on `test` for the review, and change it to
@@ -140,6 +158,27 @@ same screen.
 
 Send them the link and their email address. Give them the temporary password by
 phone or in person — not in the same email as the link.
+
+Send them [docs/manager-review.md](./docs/manager-review.md) too. It is written
+for them rather than for a developer: what to try, in what order, what is
+deliberately missing, and what we need them to comment on.
+
+**Give them something to look at.** An empty timesheet tells a practice manager
+nothing. `npm run db:demo` loads a realistic five weeks — eight more staff across the
+two offices, rotas, punches that are mostly fine and occasionally not, time off in
+every state, a checklist part-way through. It replaces whatever shifts and
+punches are already there, and it refuses to run unless `APP_ENVIRONMENT` is
+`test`, so it cannot touch a live payroll.
+
+To run it against the deployed database, use the direct connection string from
+Neon:
+
+```bash
+APP_ENVIRONMENT=test \
+DATABASE_URL="<the direct connection string>" \
+DIRECT_DATABASE_URL="<the direct connection string>" \
+npm run db:demo
+```
 
 With `APP_ENVIRONMENT=test` set, every screen tells them plainly that nothing is
 real — so they can clock in, request time off and poke at anything without

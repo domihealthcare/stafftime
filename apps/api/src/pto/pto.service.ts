@@ -7,6 +7,11 @@ import {
 } from '@nestjs/common';
 import { EmploymentStatus, Prisma, PtoStatus, Role, ShiftStatus } from '@prisma/client';
 import { AuthUser } from '../common/auth/auth-user';
+import {
+  countDays,
+  isoDate,
+  toUtcDate,
+} from '../common/util/calendar-date.util';
 import { PrismaService } from '../prisma/prisma.service';
 import {
   CreatePtoRequestDto,
@@ -295,23 +300,6 @@ export class PtoService {
 }
 
 // ---------------------------------------------------------------------------
-
-/// Parses "2026-11-03" as that calendar day, not as a local timestamp.
-function toUtcDate(value: string): Date {
-  const date = new Date(`${value.slice(0, 10)}T00:00:00.000Z`);
-  if (Number.isNaN(date.getTime())) {
-    throw new BadRequestException(`"${value}" is not a valid date.`);
-  }
-  return date;
-}
-
-export function isoDate(date: Date): string {
-  return date.toISOString().slice(0, 10);
-}
-
-export function countDays(startDate: Date, endDate: Date): number {
-  return Math.round((endDate.getTime() - startDate.getTime()) / 86_400_000) + 1;
-}
 
 /// "an approved request", not "a approved request".
 function article(word: string): string {
