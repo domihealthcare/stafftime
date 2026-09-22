@@ -212,8 +212,18 @@ export class TimeEntriesService {
 
     const clockOutAt = new Date();
 
-    return this.prisma.timeEntry.update({
-      where: { id: open.id },
+    // Compare-and-set, for the same reason clock-in runs serializable: the
+    // entry was read a few lines up and something else may have closed it in
+    // between. `clockOutAt: null` in the where clause makes the database do the
+    // deciding, so only the first of several concurrent punches lands.
+    //
+    // Without it, six taps on a slow phone were six writes to the same row,
+    // each stamping its own clock-out time over the last. The hours barely
+    // moved — they were milliseconds apart — but the *verification* came along
+    // for the ride, so a punch correctly flagged NEEDS_REVIEW could be
+    // overwritten by a later one that passed, and the flag simply vanished.
+    const updated = await this.prisma.timeEntry.updateMany({
+      where: { id: open.id, clockOutAt: null },
       data: {
         clockOutAt,
         clockOutLatitude: dto.latitude,
@@ -224,6 +234,16 @@ export class TimeEntriesService {
         status: needsReview ? TimeEntryStatus.NEEDS_REVIEW : TimeEntryStatus.COMPLETED,
         isEarlyDeparture: open.shift ? this.isEarlyDeparture(clockOutAt, open.shift.endsAt) : false,
       },
+    });
+
+    // Somebody else closed it first. The same answer a second tap gets a minute
+    // later, rather than a different one because it arrived a millisecond later.
+    if (updated.count === 0) {
+      throw new ConflictException('No open time entry to clock out of.');
+    }
+
+    return this.prisma.timeEntry.findUniqueOrThrow({
+      where: { id: open.id },
       select: TIME_ENTRY_SELECT,
     });
   }

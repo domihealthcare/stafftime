@@ -236,12 +236,16 @@ Built and working with PINs. What is left:
       `DEPLOY.md` — a free tier that is enough for a practice this size, and it
       hands out both a pooled and a direct connection string, which Prisma
       migrations need.
-- [ ] **Integration tests against a real database at the service layer.** The
-      browser suites in `tests/browser` now cover the service layer end to end
-      against real Postgres, which was the gap. What is still missing is the
-      awkward middle: a service-level test that can force a race or a partial
-      failure (two clock-ins at once, an export that dies between the storage
-      write and the record) without driving a browser.
+- [x] ~~Tests that can force a race.~~ `tests/browser/race.mjs` fires genuinely
+      concurrent requests at the real API. It found one: clock-out was a plain
+      read-then-write, and eight simultaneous taps were eight writes, each
+      carrying its own verification result over the last. Now a compare-and-set.
+      Both guards have been watched to fail — see the note in that directory's
+      README before changing how a punch is written.
+- [ ] **A partial-failure test.** Still missing: something that can kill an
+      export between the storage write and the record landing, to prove the
+      orphan sweep picks up the pieces. Harder than a race, because it needs to
+      interrupt the process rather than just crowd it.
 - [ ] **Generate the frontend's API types from the server** instead of
       hand-maintaining `apps/web/src/lib/types.ts`. Today a server-side rename
       compiles fine and breaks at runtime.

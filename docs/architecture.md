@@ -72,9 +72,34 @@ Two rules worth knowing about:
   and flagged `NEEDS_REVIEW` for a manager. Trapping someone on the clock because
   their phone lost GPS in the parking lot would be worse than an entry to review.
 
-Clock-in runs in a `Serializable` transaction: checking for an existing open
-punch and inserting the new one must be atomic, or a double-tapped button leaves
-someone clocked in twice.
+### Two taps at once
+
+Both punches are written under a guard, and both guards have been watched to
+fail — `tests/browser/race.mjs` fires genuinely concurrent requests at the real
+API against real Postgres, because that is the only place a race exists. A unit
+test with a mocked client cannot have one.
+
+**Clock-in** runs in a `Serializable` transaction: checking for an existing open
+punch and inserting the new one must be atomic. Dropped to `ReadCommitted`, six
+of eight simultaneous punches were accepted — and the damage was sticky rather
+than cosmetic. Each later clock-out closed exactly one of the six, so the
+employee was refused every clock-in for days until somebody noticed and cleaned
+up by hand. "Clocked in twice" undersells it: the clock jams.
+
+**Clock-out** is a compare-and-set — `updateMany` with `clockOutAt: null` in the
+where clause, and a `ConflictException` when it matches nothing. It used to be a
+plain `update` on an id read a few lines earlier, and eight simultaneous taps
+were eight writes to the same row, each stamping its own clock-out time over the
+last. The hours barely moved, since the writes were milliseconds apart, but each
+one carried its own *verification* result too: a punch made from the car park,
+correctly recorded `MANUAL` and flagged `NEEDS_REVIEW`, could be overwritten by a
+tap that happened to land afterwards from inside the geofence, and the flag
+simply vanished. That is the check the third case in `race.mjs` makes — the row
+on file must be exactly what the one accepted response said.
+
+The loser of either race gets the same answer a slow second tap would get a
+minute later, rather than a different one because it arrived a millisecond
+earlier.
 
 ### What happens to the captured position
 
