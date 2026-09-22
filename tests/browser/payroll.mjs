@@ -39,6 +39,8 @@ await step('a punch to export', async () => {
   await page.getByRole('button', { name: 'Clock in' }).waitFor({ timeout: 20000 });
 });
 
+await page.getByRole('button', { name: 'Manage', exact: true }).click();
+
 await page.getByRole('link', { name: /^Export/ }).first().click();
 await page.getByText('Export timesheets').waitFor({ timeout: 15000 });
 
@@ -129,6 +131,7 @@ await step('pressing it again makes the correction', async () => {
 });
 
 await step('the export screen warns that the correction has not reached payroll', async () => {
+  await page.getByRole('button', { name: 'Manage', exact: true }).click();
   await page.getByRole('link', { name: /^Export/ }).first().click();
   // The screen opens on last week again, so point it back at today.
   const today = new Date().toISOString().slice(0, 10);
@@ -171,7 +174,7 @@ await step('an employee is offered none of this', async () => {
   await emp.getByRole('button', { name: 'Sign in' }).click();
   await emp.getByText('Not clocked in').waitFor({ timeout: 20000 });
 
-  if ((await emp.getByRole('link', { name: /^Export/ }).count()) > 0)
+  if ((await emp.getByRole('button', { name: 'Manage', exact: true }).count()) > 0)
     throw new Error('an employee was offered the export screen');
   await empCtx.close();
 });

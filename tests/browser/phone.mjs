@@ -97,16 +97,36 @@ await step('a checklist can be started from a phone', async () => {
 });
 await page.screenshot({ path: `${OUT}/50-phone-clock.png`, fullPage: true });
 
+/// Which top-bar menu a screen sits under, if any.
+const MENU = {
+  News: 'Team',
+  Resources: 'Team',
+  'Job roles': 'Manage',
+  Export: 'Manage',
+  Staff: 'Manage',
+  Kiosks: 'Manage',
+  Locations: 'Manage',
+};
+
+async function openMenuFor(page, name) {
+  if (MENU[name]) await page.getByRole('button', { name: MENU[name], exact: true }).click();
+}
+
 await step('every navigation link is reachable without scrolling sideways', async () => {
-  // An admin has nine destinations. They wrap onto several rows rather than
-  // running off the edge or hiding behind a menu.
-  for (const name of ['Clock', 'Timesheet', 'Schedule', 'Time off', 'Checklists', 'Licences', 'Export', 'Staff', 'Kiosks', 'Locations']) {
-    const link = page.getByRole('link', { name: new RegExp(`^${name}`) }).first();
+  // The everyday screens sit in the top bar; the rest open from Team and
+  // Manage. Either way, nothing may run off the edge of the phone.
+  for (const name of [
+    'Clock', 'Timesheet', 'Schedule', 'Time off', 'Checklists', 'Licences',
+    'News', 'Resources', 'Job roles', 'Export', 'Staff', 'Kiosks', 'Locations',
+  ]) {
+    await openMenuFor(page, name);
+    const link = page.getByRole('navigation').getByRole('link', { name: new RegExp(`^${name}`) }).first();
     if ((await link.count()) === 0) throw new Error(`${name} is missing from the nav`);
     const box = await link.boundingBox();
     if (!box) throw new Error(`${name} is not visible`);
-    if (box.x + box.width > PHONE.width + 1)
-      throw new Error(`${name} sits at ${Math.round(box.x + box.width)}px, off a ${PHONE.width}px screen`);
+    if (box.x < -1 || box.x + box.width > PHONE.width + 1)
+      throw new Error(`${name} sits at ${Math.round(box.x)}–${Math.round(box.x + box.width)}px, off a ${PHONE.width}px screen`);
+    if (MENU[name]) await page.keyboard.press('Escape');
   }
 });
 
@@ -116,13 +136,17 @@ for (const [label, screen] of [
   ['Time off', 'Time off'],
   ['Checklists', 'Checklists'],
   ['Licences', 'Licences'],
+  ['News', 'News'],
+  ['Resources', 'Resources'],
+  ['Job roles', 'Job roles'],
   ['Export', 'Export'],
   ['Staff', 'Staff'],
   ['Kiosks', 'Kiosks'],
   ['Locations', 'Locations'],
 ]) {
   await step(`the ${screen.toLowerCase()} screen fits a phone`, async () => {
-    await page.getByRole('link', { name: new RegExp(`^${label}`) }).first().click();
+    await openMenuFor(page, label);
+    await page.getByRole('navigation').getByRole('link', { name: new RegExp(`^${label}`) }).first().click();
     await assertNoSidewaysScroll(page, screen);
   });
 }

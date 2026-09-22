@@ -48,12 +48,13 @@ await step('the right token creates the account and signs you straight in', asyn
   await page.getByRole('button', { name: 'Create administrator' }).click();
   // Straight into the app — no second sign-in, no forced password change.
   await page.getByText('Not clocked in').waitFor({ timeout: 20000 });
-  await page.getByRole('link', { name: 'Locations' }).waitFor({ timeout: 5000 });
+  await page.getByRole('button', { name: 'Manage', exact: true }).waitFor({ timeout: 5000 });
 });
 await page.screenshot({ path: `${OUT}/33-setup-done.png`, fullPage: true });
 
 // From here on: the journey an administrator actually takes on day one.
 await step('a fresh practice is told it has no locations yet', async () => {
+  await page.getByRole('button', { name: 'Manage', exact: true }).click();
   await page.getByRole('link', { name: 'Locations' }).click();
   await page.getByText(/No locations yet/).waitFor({ timeout: 10000 });
 });
@@ -71,6 +72,7 @@ await step('an admin can add the first office', async () => {
 });
 
 await step('an admin can add their first manager', async () => {
+  await page.getByRole('button', { name: 'Manage', exact: true }).click();
   await page.getByRole('link', { name: 'Staff' }).click();
   await page.getByRole('button', { name: '+ Add someone' }).click();
   await page.getByLabel('First name').fill('Morgan');

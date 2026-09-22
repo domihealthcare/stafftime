@@ -28,6 +28,7 @@ await admin.getByText('Not clocked in').waitFor({ timeout: 15000 });
 
 let pairingCode;
 await step('admin sees a Kiosks tab and can add a device', async () => {
+  await admin.getByRole('button', { name: 'Manage', exact: true }).click();
   await admin.getByRole('link', { name: 'Kiosks' }).click();
   await admin.getByRole('button', { name: '+ Add kiosk' }).waitFor({ timeout: 10000 });
   await admin.getByRole('button', { name: '+ Add kiosk' }).click();

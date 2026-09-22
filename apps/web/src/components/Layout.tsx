@@ -2,13 +2,34 @@ import { useEffect, useState } from 'react';
 import { NavLink, Outlet } from 'react-router-dom';
 import { api } from '../lib/api';
 import { AccountMenu } from './AccountMenu';
+import { NavMenu } from './NavMenu';
 import { useIsAdmin, useIsManager } from '../lib/session';
 
 /// Tighter padding on a phone, so more of the nav fits per row before it wraps.
 const linkClasses = ({ isActive }: { isActive: boolean }) =>
   `whitespace-nowrap rounded-lg px-2.5 py-2 text-sm font-medium transition sm:px-3 ${
-    isActive ? 'bg-brand-50 text-brand-800' : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'
+    isActive
+      ? 'bg-brand-50 text-brand-800'
+      : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'
   }`;
+
+/// The practice's shared screens: what is going on, and where things are.
+const TEAM = [
+  { to: '/news', label: 'News' },
+  { to: '/resources', label: 'Resources' },
+];
+
+/// Running the practice. Grouped so the top bar stays one or two rows on a
+/// phone instead of four.
+const MANAGE = [
+  { to: '/job-roles', label: 'Job roles' },
+  { to: '/export', label: 'Export' },
+];
+const ADMINISTER = [
+  { to: '/staff', label: 'Staff' },
+  { to: '/kiosks', label: 'Kiosks' },
+  { to: '/locations', label: 'Locations' },
+];
 
 export function Layout() {
   const isManager = useIsManager();
@@ -40,18 +61,15 @@ export function Layout() {
             and, because the dropdown is right-aligned, pushed the menu off the
             left edge of a phone screen entirely. */}
         <div className="mx-auto flex max-w-6xl items-start justify-between gap-2 px-4 py-3">
-          {/* Everything here wraps. An admin has nine destinations, which do
-              not fit on one line on a phone — and this app is used on phones,
-              standing at the front desk. Wrapping keeps every screen one tap
-              away rather than hiding half of them behind a menu. */}
+          {/* Everything here wraps. The everyday screens stay one tap away;
+              the practice-wide ones sit under Team and Manage, because an
+              admin's fifteen destinations laid out flat took four rows of a
+              phone before the screen even started. */}
           <div className="flex min-w-0 flex-wrap items-center gap-x-1 gap-y-0.5">
             <span className="mr-1 font-semibold text-slate-900 sm:mr-3">Domi</span>
             <nav className="flex flex-wrap items-center gap-x-1 gap-y-0.5">
               <NavLink to="/" end className={linkClasses}>
                 Clock
-              </NavLink>
-              <NavLink to="/news" className={linkClasses}>
-                News
               </NavLink>
               <NavLink to="/timesheet" className={linkClasses}>
                 Timesheet
@@ -73,24 +91,12 @@ export function Layout() {
               <NavLink to="/credentials" className={linkClasses}>
                 Licences
               </NavLink>
-              {isManager && (
-                <NavLink to="/export" className={linkClasses}>
-                  Export
-                </NavLink>
-              )}
-              {isAdmin && (
-                <>
-                  <NavLink to="/staff" className={linkClasses}>
-                    Staff
-                  </NavLink>
-                  <NavLink to="/kiosks" className={linkClasses}>
-                    Kiosks
-                  </NavLink>
-                  <NavLink to="/locations" className={linkClasses}>
-                    Locations
-                  </NavLink>
-                </>
-              )}
+              <NavMenu label="Team" items={TEAM} className={linkClasses} />
+              <NavMenu
+                label="Manage"
+                items={[...(isManager ? MANAGE : []), ...(isAdmin ? ADMINISTER : [])]}
+                className={linkClasses}
+              />
             </nav>
           </div>
 

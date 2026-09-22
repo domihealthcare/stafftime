@@ -14,6 +14,7 @@ import { CredentialsModule } from './credentials/credentials.module';
 import { EmailModule } from './email/email.module';
 import { EmployeesModule } from './employees/employees.module';
 import { ExportsModule } from './exports/exports.module';
+import { JobRolesModule } from './job-roles/job-roles.module';
 import { KioskModule } from './kiosk/kiosk.module';
 import { LocationsModule } from './locations/locations.module';
 import { MaintenanceModule } from './maintenance/maintenance.module';
@@ -45,6 +46,7 @@ import { TimeEntriesModule } from './time-entries/time-entries.module';
     ChecklistsModule,
     CredentialsModule,
     AnnouncementsModule,
+    JobRolesModule,
     MaintenanceModule,
     SetupModule,
   ],

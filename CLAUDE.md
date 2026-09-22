@@ -123,9 +123,13 @@ Build this as an **adapter/plugin pattern**, not a hardcoded ADP integration:
      ticking another moves it, it cannot be unticked without choosing another,
      and if it is deleted the newest remaining post takes over. All posts are
      listed on a **News** page, newest first, like a blog.
-   - **Job roles and resources** — admins define job roles (Front Desk, Medical
-     Assistant, Provider, Billing…) and assign staff to them. This is separate
-     from the Employee / Manager / Admin access level. Each job role has a
+   - **Job roles and resources** — **managers** (and admins) keep the list of
+     job roles and who is in each; the starting list is Front Desk, Medical
+     Assistant, Provider, Administrative, Manager. Somebody can hold **several**
+     (front desk staff who also work as MAs; providers who also do admin work).
+     A job role decides which resources somebody sees and **nothing else** — it
+     is separate from the Employee / Manager / Admin access level, so being in
+     "Administrative" or "Manager" grants no power in the app. Each job role has a
      resources section: **links** (Drive, ADP, vendor portals) and **pages
      written in the app**. No uploads for now; uploads may come later, but that
      would be a deliberate reversal of *Data this app does not hold*, not a

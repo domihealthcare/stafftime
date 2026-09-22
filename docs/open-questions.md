@@ -178,9 +178,12 @@ practice:
 
 Scope is in `CLAUDE.md` under *Build phasing*. Still to settle:
 
-- [ ] **The list of job roles.** Seeded with Front Desk, Medical Assistant,
-      Provider, Billing and Practice Manager as a starting point; admins can
-      rename, add and remove them.
+- [x] ~~The list of job roles.~~ Front Desk, Medical Assistant, Provider,
+      Administrative, Manager — confirmed. Managers can rename, add and remove
+      them, and put somebody in more than one.
+- [ ] **Assigning job roles to existing staff.** Only the seeded test accounts
+      are in a role. Somebody needs to go down the Job roles screen once the
+      real staff list is in.
 - [ ] **Uploads for resources.** Links and written pages only for now. Adding
       uploads later reverses *Data this app does not hold* and needs deciding
       out loud, with limits on what may be uploaded.

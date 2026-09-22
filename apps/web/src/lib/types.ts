@@ -426,3 +426,42 @@ export interface Announcement {
   createdAt: string;
   author: { id: string; firstName: string; lastName: string; preferredName: string | null } | null;
 }
+
+export interface PersonName {
+  id: string;
+  firstName: string;
+  lastName: string;
+  preferredName: string | null;
+}
+
+/// What somebody does at the practice. Decides which resources they see —
+/// never what they may do in the app, which is `Employee.role`.
+export interface JobRole {
+  id: string;
+  name: string;
+  description: string | null;
+  sortOrder: number;
+  resourceCount: number;
+  members: PersonName[];
+}
+
+export type ResourceKind = 'LINK' | 'PAGE';
+
+export interface Resource {
+  id: string;
+  jobRoleId: string | null;
+  kind: ResourceKind;
+  title: string;
+  url: string | null;
+  body: string | null;
+  sortOrder: number;
+  updatedAt: string;
+}
+
+export interface ResourceSection {
+  /// Null is the section everybody sees.
+  jobRole: { id: string; name: string; description: string | null } | null;
+  /// Whether the viewer is in this role.
+  yours: boolean;
+  resources: Resource[];
+}

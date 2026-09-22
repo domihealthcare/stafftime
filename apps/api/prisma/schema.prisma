@@ -224,6 +224,8 @@ model Employee {
   credentials               EmployeeCredential[]    @relation("CredentialSubject")
   recordedCredentials       EmployeeCredential[]    @relation("CredentialRecordedBy")
   announcements             Announcement[]          @relation("AnnouncementAuthor")
+  jobRoles                  EmployeeJobRole[]
+  createdResources          Resource[]              @relation("ResourceCreatedBy")
 
   @@index([employmentStatus])
   @@map("employees")
@@ -931,4 +933,82 @@ model Announcement {
 
   @@index([createdAt])
   @@map("announcements")
+}
+
+// ---------------------------------------------------------------------------
+// Job roles and resources (Phase 4)
+// ---------------------------------------------------------------------------
+
+/// What somebody does at the practice: Front Desk, Medical Assistant,
+/// Provider… Managers keep the list and decide who is in each.
+///
+/// Not the same thing as `Employee.role`, which is what somebody may *do in
+/// this app* (Employee / Manager / Admin). A job role called "Administrative"
+/// decides which resources a person sees and nothing else — it grants no
+/// access. The two are kept apart so that tidying the job list can never
+/// quietly hand somebody the payroll export.
+///
+/// A person may hold several: some front desk staff also work as MAs.
+model JobRole {
+  id          String  @id @default(uuid()) @db.Uuid
+  name        String  @unique
+  description String?
+  sortOrder   Int     @default(0)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  members   EmployeeJobRole[]
+  resources Resource[]
+
+  @@map("job_roles")
+}
+
+model EmployeeJobRole {
+  employeeId String   @db.Uuid
+  jobRoleId  String   @db.Uuid
+  createdAt  DateTime @default(now())
+
+  employee Employee @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+  jobRole  JobRole  @relation(fields: [jobRoleId], references: [id], onDelete: Cascade)
+
+  @@id([employeeId, jobRoleId])
+  @@index([jobRoleId])
+  @@map("employee_job_roles")
+}
+
+enum ResourceKind {
+  /// Somewhere else: a Drive folder, ADP, a vendor portal.
+  LINK
+  /// Written here, in plain text: "How to open the North Bergen office".
+  PAGE
+}
+
+/// Something a job role needs to hand: a link or a short written page.
+///
+/// Never a file. Nothing is uploaded to this app (see *Data this app does not
+/// hold* in CLAUDE.md); a document lives where the practice already keeps it,
+/// and a resource links to it.
+///
+/// `jobRoleId` null means everybody sees it.
+model Resource {
+  id        String       @id @default(uuid()) @db.Uuid
+  jobRoleId String?      @db.Uuid
+  kind      ResourceKind
+  title     String
+  /// For a LINK. Only http(s) — checked in the service.
+  url       String?
+  /// For a PAGE, or a line of explanation under a LINK.
+  body      String?
+  sortOrder Int          @default(0)
+
+  createdById String?  @db.Uuid
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  jobRole   JobRole?  @relation(fields: [jobRoleId], references: [id], onDelete: Restrict)
+  createdBy Employee? @relation("ResourceCreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
+
+  @@index([jobRoleId, sortOrder])
+  @@map("resources")
 }

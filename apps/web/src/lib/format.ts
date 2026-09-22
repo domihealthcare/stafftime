@@ -145,3 +145,12 @@ export function localDate(date: Date): string {
   return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`;
 }
 
+
+/// What colleagues call somebody: the name they go by, then their surname.
+export function displayName(person: {
+  firstName: string;
+  lastName: string;
+  preferredName: string | null;
+}): string {
+  return `${person.preferredName ?? person.firstName} ${person.lastName}`;
+}
