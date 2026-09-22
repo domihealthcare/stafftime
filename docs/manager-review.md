@@ -164,8 +164,19 @@ payroll.
 
 **The ADP TotalSource export is not built yet.** It cannot be: it needs the
 client code and the exact pay codes from ADP, and guessing them would produce a
-file ADP rejects. Getting those is on the list. Until then this spreadsheet is
-the payroll route.
+file ADP rejects. You will see it listed on the screen, greyed out, saying what
+it is waiting for. Until then this spreadsheet is the payroll route.
+
+**Every export is kept.** Under the download button is a list of every run —
+when, by whom, how many hours — with the file exactly as it went out. If payroll
+ever disagrees with you six weeks later, you can open the file that was actually
+sent rather than trying to remember.
+
+**Hours that have already been sent are protected.** Correct one and the app
+stops you, says when it went to payroll, and makes you press again. It then
+flags the correction so the next export tells you it still has to reach payroll.
+
+- **Tell us:** is that the right amount of friction, or is it in the way?
 
 - **Tell us:** which columns do you actually want? Save the combination as a
   report and it is one tap next time.

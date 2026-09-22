@@ -102,6 +102,8 @@ describe('TimesheetExportService', () => {
       },
       location: { id: 'loc-1', name: 'North Bergen', timezone: ZONE },
       shift: null,
+      // No payroll run has been near these hours.
+      payrollExports: [],
       editedBy: null,
       approvedBy: null,
       ...overrides,
@@ -415,6 +417,7 @@ function fortyFiveHourWeek() {
       payType: PayType.HOURLY,
     },
     location: { id: 'loc-1', name: 'North Bergen', timezone: ZONE },
+    payrollExports: [],
     shift: null,
     editedBy: null,
     approvedBy: null,

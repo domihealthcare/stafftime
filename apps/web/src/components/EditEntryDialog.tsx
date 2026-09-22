@@ -1,6 +1,6 @@
 import { useState } from 'react';
-import { api } from '../lib/api';
-import { toLocalInputValue } from '../lib/format';
+import { ApiError, api } from '../lib/api';
+import { formatCalendarDate, toLocalInputValue } from '../lib/format';
 import type { TimeEntry } from '../lib/types';
 import { Alert } from './ui';
 
@@ -31,6 +31,9 @@ export function EditEntryDialog({
   const [editReason, setEditReason] = useState('');
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  /// Set when the server refuses because these hours already went to payroll.
+  /// The correction is still allowed, but somebody has to say they know.
+  const [exportedWarning, setExportedWarning] = useState<string | null>(null);
 
   const inChanged = clockInAt !== initialIn;
   const outChanged = clockOutAt !== initialOut;
@@ -61,10 +64,17 @@ export function EditEntryDialog({
         // Emptying a field that had a value is a deliberate "this punch is missing".
         clearClockOut: initialOut !== '' && clockOutAt === '' ? true : undefined,
         editReason,
+        // Only after the manager has been shown the warning and pressed again.
+        acknowledgeExported: exportedWarning !== null ? true : undefined,
       });
       onSaved();
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Could not save that correction.');
+      if (err instanceof ApiError && err.code === 'ALREADY_EXPORTED') {
+        // Not a failure — a question. The same button now says what it will do.
+        setExportedWarning(err.message);
+      } else {
+        setError(err instanceof Error ? err.message : 'Could not save that correction.');
+      }
     } finally {
       setBusy(false);
     }
@@ -87,6 +97,14 @@ export function EditEntryDialog({
             : 'This employee'}
           {entry.location ? ` · ${entry.location.name}` : ''}
         </p>
+
+        {entry.payroll?.exported && !exportedWarning && (
+          <p className="mt-2 text-xs text-amber-700">
+            These hours went to payroll on{' '}
+            {formatCalendarDate(entry.payroll.exportedAt as string)}. A correction now has to
+            reach a later pay run.
+          </p>
+        )}
 
         <form onSubmit={(event) => void submit(event)} className="mt-4 space-y-3">
           <div>
@@ -145,6 +163,13 @@ export function EditEntryDialog({
 
           {error && <Alert>{error}</Alert>}
 
+          {exportedWarning && (
+            <Alert tone="warning">
+              {exportedWarning} Press save again to make the correction anyway — it will be
+              flagged so it can go out in the next run.
+            </Alert>
+          )}
+
           <p className="text-xs text-slate-500">
             This correction is recorded against your name and shown on the timesheet.
           </p>
@@ -155,7 +180,11 @@ export function EditEntryDialog({
               disabled={busy || !canSave}
               className="rounded-lg bg-brand-600 px-4 py-2 text-sm font-medium text-white hover:bg-brand-700 disabled:opacity-60"
             >
-              {busy ? 'Saving…' : 'Save correction'}
+              {busy
+                ? 'Saving…'
+                : exportedWarning
+                  ? 'Correct it anyway'
+                  : 'Save correction'}
             </button>
             <button
               type="button"

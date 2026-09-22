@@ -22,7 +22,9 @@ Phase 1, backend and web app:
 - Timesheet view, with manager approval and corrections
 - Manager shift scheduler — a week grid, repeating rotas, copy-last-week, and
   a coverage summary that names the gaps
-- Timesheet export to Excel or CSV, with selectable columns and saved reports
+- Timesheet export to Excel or CSV, with selectable columns and saved reports —
+  every run recorded, with the file kept so it can be produced again byte for
+  byte, and hours that have already been paid protected from a careless edit
 - PTO requests with manager approval, balances and a practice-set policy
 - Calendar syncing — each employee gets a private subscription URL for Google
   Calendar, Apple Calendar or Outlook
@@ -175,6 +177,10 @@ placeholders, so do not run it after setting real values.
 | `POST`/`GET`/`DELETE` | `/api/kiosk/devices` | admin |
 | `PUT`/`DELETE` | `/api/kiosk/employees/:id/pin` | admin |
 | `GET` | `/api/exports/columns` | manager |
+| `GET` | `/api/exports/targets` | manager — where hours can be sent, and what is not ready |
+| `GET` | `/api/exports/history` | manager — every run |
+| `GET` | `/api/exports/history/:id/file` | manager — the file exactly as it went out |
+| `POST` | `/api/exports/history/:id/void` | manager — no longer the run that counts |
 | `POST` | `/api/exports/timesheet/preview` | manager |
 | `POST` | `/api/exports/timesheet` | manager — returns .xlsx or .csv |
 | `GET`/`POST` | `/api/exports/presets` | manager — saved reports |
@@ -220,7 +226,7 @@ placeholders, so do not run it after setting real values.
 | **Schedule** | Week grid. Managers add and remove shifts, build repeating rotas, copy last week forward, and see a coverage summary; employees see their own shifts and can turn on calendar syncing |
 | **Sign in** | Email and password. A temporary password lands you on a forced change screen and nothing else |
 | **Time off** | Request time off and see your balance; managers approve or deny, and can file on someone's behalf. Admins set the practice's PTO rules here |
-| **Export** (manager) | Produce a timesheet spreadsheet for a period, choosing exactly which columns go in it. Settings can be saved as named reports and shared |
+| **Export** (manager) | Produce a timesheet spreadsheet for a period, choosing exactly which columns go in it. Settings can be saved as named reports and shared. Every run is listed below with its file, and the screen warns about hours corrected since they were last sent |
 | **Checklists** | Onboarding and offboarding. Managers start one, work through it and see what is overdue; an employee sees their own and the parts that are theirs to do. Documents attach to the task they belong to. Admins edit the templates here — add, reword, reorder and retire |
 | **Staff** (admin) | Add people, set their role and locations, issue a temporary password, mark someone as no longer employed |
 | **Kiosks** (admin) | Pair and revoke tablets, and set staff PINs |

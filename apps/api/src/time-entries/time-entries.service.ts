@@ -9,6 +9,7 @@ import { ConfigService } from '@nestjs/config';
 import {
   ClockMethod,
   EmploymentStatus,
+  PayrollExportStatus,
   Prisma,
   Role,
   ShiftStatus,
@@ -18,6 +19,7 @@ import {
 import { AuthUser } from '../common/auth/auth-user';
 import { normalizeIp } from '../common/util/ip.util';
 import { PrismaService } from '../prisma/prisma.service';
+import { payrollStateOf, withPayroll } from './payroll-state';
 import { ClockInDto } from './dto/clock-in.dto';
 import { ClockOutDto } from './dto/clock-out.dto';
 import { EditTimeEntryDto } from './dto/edit-time-entry.dto';
@@ -31,6 +33,15 @@ const TIME_ENTRY_INCLUDE = {
   employee: { select: { id: true, firstName: true, lastName: true } },
   location: { select: { id: true, name: true, slug: true, timezone: true } },
   shift: { select: { id: true, startsAt: true, endsAt: true } },
+  /// Which payroll runs these hours went out in. Voided runs are excluded:
+  /// they are on the record but they are no longer what payroll was paid.
+  payrollExports: {
+    where: { export: { status: PayrollExportStatus.GENERATED } },
+    select: {
+      export: { select: { id: true, target: true, generatedAt: true } },
+    },
+    orderBy: { export: { generatedAt: 'desc' } },
+  },
 } satisfies Prisma.TimeEntryInclude;
 
 /// How far from a punch we will look for a scheduled shift to attach it to.
@@ -177,8 +188,8 @@ export class TimeEntriesService {
     });
   }
 
-  findAll(query: QueryTimeEntriesDto) {
-    return this.prisma.timeEntry.findMany({
+  async findAll(query: QueryTimeEntriesDto) {
+    const entries = await this.prisma.timeEntry.findMany({
       where: {
         employeeId: query.employeeId,
         locationId: query.locationId,
@@ -191,8 +202,12 @@ export class TimeEntriesService {
       include: TIME_ENTRY_INCLUDE,
       orderBy: { clockInAt: 'desc' },
     });
+
+    return entries.map((entry) => withPayroll(entry));
   }
 
+  /// The raw row, payroll state and all. Callers that hand an entry back to a
+  /// screen put it through `withPayroll` first.
   async findOne(id: string) {
     const entry = await this.prisma.timeEntry.findUnique({
       where: { id },
@@ -211,11 +226,12 @@ export class TimeEntriesService {
       include: TIME_ENTRY_INCLUDE,
       orderBy: { clockInAt: 'desc' },
     });
-    return open ?? null;
+    return open ? withPayroll(open) : null;
   }
 
   async edit(id: string, dto: EditTimeEntryDto, actor: AuthUser) {
     const entry = await this.findOne(id);
+    this.assertEditIsDeliberate(entry, dto);
 
     const clockInAt = dto.clockInAt ? new Date(dto.clockInAt) : entry.clockInAt;
     // Omitting clockOutAt keeps whatever is there; clearing it is an explicit ask.
@@ -229,7 +245,7 @@ export class TimeEntriesService {
       throw new BadRequestException('clockOutAt must be after clockInAt.');
     }
 
-    return this.prisma.timeEntry.update({
+    const updated = await this.prisma.timeEntry.update({
       where: { id },
       data: {
         clockInAt,
@@ -243,6 +259,33 @@ export class TimeEntriesService {
       },
       include: TIME_ENTRY_INCLUDE,
     });
+
+    return withPayroll(updated);
+  }
+
+  /**
+   * Corrections to hours that have already been paid are allowed, but not by
+   * accident.
+   *
+   * Refusing outright would be worse: the database would stay wrong forever,
+   * and the mistake is usually exactly what needs fixing. But changing a number
+   * that has already gone to payroll, with nobody noticing, means the
+   * spreadsheet and this app quietly disagree — so the manager has to say they
+   * know, and the entry is then flagged until it reaches a later run.
+   */
+  private assertEditIsDeliberate(
+    entry: Prisma.TimeEntryGetPayload<{ include: typeof TIME_ENTRY_INCLUDE }>,
+    dto: EditTimeEntryDto,
+  ): void {
+    const payroll = payrollStateOf(entry);
+    if (!payroll.exported || dto.acknowledgeExported) return;
+
+    throw new ConflictException({
+      code: 'ALREADY_EXPORTED',
+      message: `These hours were already sent to payroll on ${payroll.exportedAt?.toISOString().slice(0, 10)}. Correcting them now means the correction has to reach a later pay run.`,
+      exportedAt: payroll.exportedAt,
+      exportId: payroll.exportId,
+    });
   }
 
   async approve(id: string, actor: AuthUser) {
@@ -251,7 +294,7 @@ export class TimeEntriesService {
       throw new BadRequestException('Cannot approve a time entry that is still open.');
     }
 
-    return this.prisma.timeEntry.update({
+    const approved = await this.prisma.timeEntry.update({
       where: { id },
       data: {
         status: TimeEntryStatus.APPROVED,
@@ -260,6 +303,8 @@ export class TimeEntriesService {
       },
       include: TIME_ENTRY_INCLUDE,
     });
+
+    return withPayroll(approved);
   }
 
   // -------------------------------------------------------------------------

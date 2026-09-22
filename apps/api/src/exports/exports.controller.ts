@@ -20,8 +20,8 @@ import { SaveReportPresetDto, UpdateReportPresetDto } from './dto/report-preset.
 import { ReportPresetsService } from './report-presets.service';
 import { DEFAULT_COLUMN_KEYS, TIMESHEET_COLUMNS } from './columns';
 import { ExportTimesheetDto } from './dto/export-timesheet.dto';
+import { PayrollExportsService } from './payroll/payroll-exports.service';
 import { TimesheetExportService } from './timesheet-export.service';
-import { buildTimesheetCsv, buildTimesheetWorkbook } from './workbook';
 
 @Controller('exports')
 @Roles(Role.MANAGER)
@@ -29,7 +29,16 @@ export class ExportsController {
   constructor(
     private readonly timesheets: TimesheetExportService,
     private readonly presets: ReportPresetsService,
+    private readonly payroll: PayrollExportsService,
   ) {}
+
+  /// Where hours can be sent, including the targets that are not ready yet and
+  /// why — a provider the practice is waiting on is easier to chase when the
+  /// app names it.
+  @Get('targets')
+  targets() {
+    return this.payroll.targets();
+  }
 
   /// The column catalogue, so the export screen's checkboxes come from the
   /// server rather than a hand-maintained copy.
@@ -48,31 +57,58 @@ export class ExportsController {
     return this.timesheets.preview(dto);
   }
 
+  /**
+   * Produces the file **and records what went out**.
+   *
+   * The brief asks for an export record so a run can be audited or repeated,
+   * and this is the only route that produces one — there is no way to send
+   * hours to payroll without leaving a trace of which hours they were.
+   */
   @Post('timesheet')
-  async timesheet(@Body() dto: ExportTimesheetDto, @Res() response: Response) {
-    const data = await this.timesheets.build(dto);
-    const filename = buildFilename(dto, data.meta.locationName);
+  async timesheet(
+    @Body() dto: ExportTimesheetDto,
+    @CurrentUser() user: AuthUser,
+    @Res() response: Response,
+  ) {
+    const { record, file } = await this.payroll.run(dto, dto.target ?? 'spreadsheet', user);
 
-    if (dto.format === 'csv') {
-      response
-        .status(HttpStatus.OK)
-        .setHeader('Content-Type', 'text/csv; charset=utf-8')
-        .setHeader('Content-Disposition', `attachment; filename="${filename}.csv"`)
-        // Excel needs the BOM to read UTF-8 in a CSV correctly.
-        .send(`﻿${buildTimesheetCsv(data)}`);
-      return;
-    }
-
-    const workbook = await buildTimesheetWorkbook(data);
     response
       .status(HttpStatus.OK)
-      .setHeader(
-        'Content-Type',
-        'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-      )
-      .setHeader('Content-Disposition', `attachment; filename="${filename}.xlsx"`)
-      .setHeader('Content-Length', String(workbook.byteLength))
-      .send(workbook);
+      .setHeader('Content-Type', file.contentType)
+      .setHeader('Content-Disposition', `attachment; filename="${file.filename}"`)
+      .setHeader('Content-Length', String(file.bytes.byteLength))
+      // So the screen can show what was just recorded without asking again.
+      .setHeader('X-Payroll-Export-Id', record.id)
+      .send(file.bytes);
+  }
+
+  /// Every run, newest first.
+  @Get('history')
+  history() {
+    return this.payroll.list();
+  }
+
+  /// The file exactly as it went out. Re-deriving it from today's data is the
+  /// one thing an audit must not do.
+  @Get('history/:id/file')
+  async historyFile(@Param('id', ParseUUIDPipe) id: string, @Res() response: Response) {
+    const file = await this.payroll.download(id);
+
+    response
+      .status(HttpStatus.OK)
+      .setHeader('Content-Type', file.contentType)
+      .setHeader('X-Content-Type-Options', 'nosniff')
+      .setHeader('Content-Disposition', `attachment; filename="${file.filename}"`)
+      .setHeader('Content-Length', String(file.bytes.byteLength))
+      .send(file.bytes);
+  }
+
+  /// No longer the run that counts — superseded, or sent in error. The record
+  /// and its file stay.
+  @Post('history/:id/void')
+  @HttpCode(HttpStatus.OK)
+  voidExport(@Param('id', ParseUUIDPipe) id: string, @CurrentUser() user: AuthUser) {
+    return this.payroll.void(id, user);
   }
 
   // ------------------------------------------------------------- saved reports
@@ -111,17 +147,3 @@ export class ExportsController {
   }
 }
 
-/// A filename someone can find again in six months.
-function buildFilename(dto: ExportTimesheetDto, locationName: string | null): string {
-  const slug = (value: string) =>
-    value
-      .toLowerCase()
-      .replace(/[^a-z0-9]+/g, '-')
-      .replace(/(^-|-$)/g, '');
-
-  const parts = ['domi-timesheet', dto.from.slice(0, 10), 'to', dto.to.slice(0, 10)];
-  if (locationName) {
-    parts.push(slug(locationName));
-  }
-  return parts.join('_');
-}

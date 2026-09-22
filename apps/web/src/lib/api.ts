@@ -1,5 +1,7 @@
 import type {
   Checklist,
+  PayrollExportRecord,
+  PayrollTarget,
   ChecklistDocument,
   ChecklistKind,
   ChecklistTaskStatus,
@@ -289,6 +291,8 @@ export interface TimesheetExportOptions {
   includeSummary?: boolean;
   splitOvertime?: boolean;
   format?: 'xlsx' | 'csv';
+  /// Which payroll target. Defaults to the spreadsheet.
+  target?: string;
 }
 
 export interface ExportColumn {
@@ -306,6 +310,11 @@ export interface ExportPreview {
   openEntryCount: number;
   flaggedCount: number;
   overtimeHours: number;
+  /// How many of these hours have already gone to payroll once.
+  alreadyExportedCount: number;
+  /// …and how many of those have been corrected since. Those corrections have
+  /// not reached payroll, so they have to go out in this run.
+  correctedSinceExportCount: number;
 }
 
 export interface AppConfig {
@@ -435,6 +444,12 @@ export const api = {
 
   exportColumns: () =>
     request<{ columns: ExportColumn[]; defaults: string[] }>('/exports/columns'),
+  payrollTargets: () => request<PayrollTarget[]>('/exports/targets'),
+  exportHistory: () => request<PayrollExportRecord[]>('/exports/history'),
+  /// The file exactly as it went out, not a fresh build of the same period.
+  downloadPastExport: (id: string) => download(`/exports/history/${id}/file`),
+  voidExport: (id: string) =>
+    request<PayrollExportRecord>(`/exports/history/${id}/void`, { method: 'POST' }),
   previewExport: (options: TimesheetExportOptions) =>
     request<ExportPreview>('/exports/timesheet/preview', {
       method: 'POST',
@@ -457,6 +472,9 @@ export const api = {
     const disposition = response.headers.get('content-disposition') ?? '';
     const match = /filename="([^"]+)"/.exec(disposition);
     return {
+      /// Which run this was recorded as, so the screen can show the history
+      /// without asking again.
+      exportId: response.headers.get('x-payroll-export-id'),
       blob: await response.blob(),
       filename: match?.[1] ?? `timesheet.${options.format ?? 'xlsx'}`,
     };
@@ -527,6 +545,9 @@ export const api = {
       clockOutAt?: string;
       clearClockOut?: boolean;
       editReason: string;
+      /// Set only after the server has refused once because these hours have
+      /// already gone to payroll.
+      acknowledgeExported?: boolean;
     },
   ) =>
     request<TimeEntry>(`/time-entries/${id}`, { method: 'PATCH', body: JSON.stringify(body) }),

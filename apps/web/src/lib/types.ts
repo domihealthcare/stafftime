@@ -99,6 +99,8 @@ export interface TimeEntry {
   employee?: { id: string; firstName: string; lastName: string };
   location?: LocationSummary;
   shift?: { id: string; startsAt: string; endsAt: string } | null;
+  /// Present on every entry the timesheet screens read.
+  payroll?: PayrollState;
 }
 
 // ---------------------------------------------------------------------------
@@ -289,4 +291,49 @@ export interface TemplateTaskInput {
   owner?: TaskOwner;
   requiresDocument?: boolean;
   dueOffsetDays?: number;
+}
+
+// ---------------------------------------------------------------------------
+// Payroll export
+// ---------------------------------------------------------------------------
+
+/// Where hours can be sent. Targets that are not ready say why.
+export interface PayrollTarget {
+  key: string;
+  label: string;
+  description: string;
+  available: boolean;
+  unavailableReason?: string;
+}
+
+export type PayrollExportStatus = 'GENERATED' | 'FAILED' | 'VOIDED';
+
+/// One run, as the history shows it.
+export interface PayrollExportRecord {
+  id: string;
+  target: string;
+  status: PayrollExportStatus;
+  periodStart: string;
+  periodEnd: string;
+  filename: string;
+  contentType: string;
+  sizeBytes: number;
+  checksum: string;
+  entryCount: number;
+  employeeCount: number;
+  totalHours: number;
+  failureReason: string | null;
+  generatedAt: string;
+  fileAvailable: boolean;
+  location: { id: string; name: string } | null;
+  generatedBy: { id: string; firstName: string; lastName: string } | null;
+}
+
+/// Whether these hours have already gone to payroll, and whether they have been
+/// corrected since. Worked out by the server; see apps/api/src/time-entries.
+export interface PayrollState {
+  exported: boolean;
+  exportedAt: string | null;
+  exportId: string | null;
+  changedSinceExport: boolean;
 }

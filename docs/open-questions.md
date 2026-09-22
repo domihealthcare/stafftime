@@ -33,8 +33,11 @@ What is still missing is ADP-specific, and none of it can be guessed:
 - [ ] Confirm whether TotalSource (PEO) uses a different file spec than
       standalone ADP Run / Workforce Now — it sometimes does.
 
-When those arrive, the work is an adapter that reuses the existing aggregation
-and writes ADP's layout — the timesheet logic itself does not change.
+When those arrive, the work is **one file**:
+`apps/api/src/exports/payroll/adp-totalsource.exporter.ts`. The adapter is
+already registered and appears on the export screen, greyed out, saying what it
+is waiting for. The hours reach it already aggregated, so only the column layout
+and the pay-code mapping remain.
 
 ## PTO (Phase 2, requests and approval are built)
 

@@ -1102,3 +1102,86 @@ address.
 
 Dates in emails are rendered in UTC from the `@db.Date` values, for the same
 reason the app does: a day is a day wherever you read it.
+
+## Payroll export
+
+The brief asks for two things here, and they were the last parts of the core
+data model still missing: a `PayrollExporter` interface so a new provider is a
+new adapter, and a `PayrollExport` record for every run so one can be audited or
+repeated.
+
+### The adapter
+
+`src/exports/payroll/payroll-exporter.ts`. The aggregation — who worked, for how
+long, what counts as overtime — happens once in `TimesheetExportService` and is
+handed over already done. An exporter's whole job is layout: which columns, in
+what order, with which pay codes. Adding Gusto or Paychex later is one class and
+one line in the module.
+
+Two are registered. `SpreadsheetExporter` is the general-purpose one the
+practice runs payroll on today. `AdpTotalSourceExporter` is **registered but
+refuses**, and says exactly what it is waiting for: the Domi client code, the
+earning codes for regular, overtime and paid leave, and confirmation of which
+import layout TotalSource uses.
+
+Refusing is the right behaviour. A guessed layout is worse than none — ADP
+rejects the file and wastes an afternoon, or accepts it against the wrong pay
+codes and pays people wrong. Showing it on the screen, greyed out with its
+reason, is better than leaving it out: a provider the practice is chasing is
+easier to chase when the app names it where it would be used.
+
+### What gets recorded
+
+Every run writes a `PayrollExport`: the period, the target, who ran it, the
+counts and total hours, the options in full so it can be repeated, and the file
+itself through the same `FileStorage` adapter as checklist documents.
+
+Keeping the bytes matters. Re-deriving the file from the same period later would
+use *today's* data, which is the one thing an audit must not do — the whole
+reason to look is usually that something has since changed.
+
+A run that fails is recorded too, with its reason. "We tried to send these hours
+and could not" is part of the trail.
+
+Runs are **voided**, never deleted. A voided run stays readable; it is simply no
+longer the one that counts.
+
+### Which entries, not which dates
+
+`PayrollExportEntry` links a run to the exact time entries that went into it.
+The date range alone is not enough: an entry created or corrected afterwards
+falls inside the same range but was not in the file, and that difference is the
+whole point of asking whether hours have been paid yet.
+
+The ids come from the same read that built the file, carried through
+`TimesheetData.entryIds`. A second query could select a different set — an entry
+corrected between the two — and the record of what was paid would be wrong.
+
+## Hours that have already been paid
+
+`src/time-entries/payroll-state.ts` answers two questions about a time entry:
+has it been sent to payroll, and has it changed since.
+
+**Derived, not stored.** A flag would have to be kept in step with every edit,
+every export and every void, and the one time it drifted is the time somebody
+gets paid twice. Voided runs are filtered out in the query, so an entry whose
+only run was voided reads as never sent.
+
+It lives in its own file because two features need the same rule — the
+timesheet, to refuse a careless correction, and the export preview, to count
+corrections that have not reached payroll. Two copies would eventually disagree,
+and the disagreement would be about somebody's pay.
+
+### Correcting paid hours
+
+Refusing outright would be worse than allowing it: the database would stay wrong
+forever, and the mistake is usually exactly what needs fixing. But changing a
+number that has already gone to payroll, with nobody noticing, leaves the
+spreadsheet and this app quietly disagreeing.
+
+So the first attempt is refused with `ALREADY_EXPORTED` and the date it went
+out; the dialog turns that into a warning and relabels its button *Correct it
+anyway*. The second attempt carries `acknowledgeExported` and goes through. The
+entry then reads as changed-since-export, and the export preview counts it —
+*"1 entry has been corrected since it last went to payroll"* — so the correction
+cannot be quietly forgotten before the next run.
