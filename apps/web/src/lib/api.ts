@@ -10,6 +10,7 @@ import type {
   ChecklistTemplate,
   ConflictingShift,
   Coverage,
+  DemoSummary,
   PlanResult,
   PracticeSettings,
   Employee,
@@ -488,6 +489,8 @@ export const api = {
     }),
   listSessions: () => request<AuthSession[]>('/auth/sessions'),
   attention: () => request<Attention>('/attention'),
+
+  loadDemoData: () => request<DemoSummary>('/demo/load', { method: 'POST' }),
 
   practiceSettings: () => request<PracticeSettings>('/settings'),
   updatePracticeSettings: (body: Partial<Omit<PracticeSettings, 'updatedAt'>>) =>

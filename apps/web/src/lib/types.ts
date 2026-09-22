@@ -221,6 +221,17 @@ export interface OvertimeWarning {
   spansLocations: boolean;
 }
 
+/// What loading the demo data produced.
+export interface DemoSummary {
+  staffAdded: number;
+  shifts: number;
+  timeEntries: number;
+  flaggedEntries: number;
+  timeOffRequests: number;
+  checklists: number;
+  sharedPassword: string;
+}
+
 /// Practice-wide scheduling rules, set by an admin.
 export interface PracticeSettings {
   overtimeThresholdHours: number;

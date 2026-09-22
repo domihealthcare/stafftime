@@ -243,21 +243,24 @@ for them rather than for a developer: what to try, in what order, what is
 deliberately missing, and what we need them to comment on.
 
 **Give them something to look at.** An empty timesheet tells a practice manager
-nothing. `npm run db:demo` loads a realistic five weeks — eight more staff across the
-two offices, rotas, punches that are mostly fine and occasionally not, time off in
-every state, a checklist part-way through. It replaces whatever shifts and
-punches are already there, and it refuses to run unless `APP_ENVIRONMENT` is
-`test`, so it cannot touch a live payroll.
+nothing.
 
-To run it against the deployed database, use the direct connection string from
-Neon:
+Signed in as an admin on a test deployment, open the account menu (top right) →
+**Practice settings** → **Load demo data**. It loads a realistic five weeks —
+eight more staff across the two offices, rotas, punches that are mostly fine and
+occasionally not, time off in every state, a checklist part-way through.
 
-```bash
-APP_ENVIRONMENT=test \
-DATABASE_URL="<the direct connection string>" \
-DIRECT_DATABASE_URL="<the direct connection string>" \
-npm run db:demo
-```
+It **replaces** whatever shifts and punches are already there, and it refuses
+unless `APP_ENVIRONMENT` is `test`, so it cannot touch a live payroll. Your
+account, your locations and your checklist templates are left alone.
+
+The button is not shown at all on a production deployment, and every demo
+account shares one well-known password — which is the other reason it is
+test-only.
+
+(There is a terminal equivalent, `npm run db:demo`, if you would rather. It
+needs the *direct* connection string from Neon in both `DATABASE_URL` and
+`DIRECT_DATABASE_URL`, plus `APP_ENVIRONMENT=test`.)
 
 With `APP_ENVIRONMENT=test` set, every screen tells them plainly that nothing is
 real — so they can clock in, request time off and poke at anything without

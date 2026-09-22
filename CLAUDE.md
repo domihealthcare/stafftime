@@ -145,6 +145,10 @@ Beyond the phases, the parts worth knowing about before picking up work:
   staff checking when they are on, often on a phone), warns when the rota puts
   somebody past the overtime threshold in a week, and syncs to Google, Apple or
   Outlook calendars by private subscription URL.
+- **Demo data** loads from a button (account menu → Practice settings), not
+  only from a terminal — whoever sets a deployment up is in a browser. Admin
+  only, and refuses unless `APP_ENVIRONMENT` is `test`: it replaces every shift
+  and punch, and every demo account shares one password.
 - **`PracticeSettings`** holds the numbers the practice sets for itself: the
   overtime threshold (40) and how many days before a week starts an unpublished
   rota gets chased (4). Both were constants until Dominguez asked for them to be

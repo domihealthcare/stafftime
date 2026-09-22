@@ -247,6 +247,61 @@ await step('putting it back makes the warning go away again', async () => {
     throw new Error('30 hours was still reported as overtime at a threshold of 40');
 });
 
+// --- demo data ---
+
+await step('demo data is admin-only, and says what it will replace', async () => {
+  await pickFromAccountMenu(admin, 'Practice settings');
+  await admin.getByRole('heading', { name: 'Demo data' }).waitFor({ timeout: 15000 });
+
+  const text = await admin.locator('main').innerText();
+  if (!/replaces/i.test(text))
+    throw new Error('the card does not warn that it replaces existing data');
+
+  // A manager should not be offered it, and should be refused if they ask.
+  const mgrCtx = await browser.newContext({ viewport: { width: 1280, height: 1000 } });
+  const manager = await mgrCtx.newPage();
+  await manager.goto(`${BASE}/`, { waitUntil: 'networkidle' });
+  await manager.getByLabel('Email').fill('manager@domihealthcare.com');
+  await manager.getByLabel('Password', { exact: true }).fill('shift-change-2026');
+  await manager.getByRole('button', { name: 'Sign in' }).click();
+  await manager.getByText('Not clocked in').waitFor({ timeout: 20000 });
+
+  await pickFromAccountMenu(manager, 'Practice settings');
+  await manager.getByLabel('Overtime starts after').waitFor({ timeout: 15000 });
+  if ((await manager.getByRole('heading', { name: 'Demo data' }).count()) > 0)
+    throw new Error('a manager was offered the demo data loader');
+
+  const refused = await manager.request.post(`${BASE}/api/demo/load`);
+  if (refused.status() !== 403)
+    throw new Error(`a manager's demo load got ${refused.status()}, not 403`);
+
+  await mgrCtx.close();
+});
+
+await step('it asks before replacing anything', async () => {
+  // A destructive button that fires on the first click is one somebody presses
+  // while reading the sentence next to it.
+  await admin.getByRole('button', { name: 'Load demo data' }).click();
+  await admin.getByText(/Replace the shifts and punches/).waitFor({ timeout: 10000 });
+  await admin.getByRole('button', { name: 'Cancel' }).click();
+  await admin.getByRole('button', { name: 'Load demo data' }).waitFor({ timeout: 10000 });
+});
+
+await step('loading it fills the app with something to look at', async () => {
+  await admin.getByRole('button', { name: 'Load demo data' }).click();
+  await admin.getByRole('button', { name: 'Yes, load it' }).click();
+  await admin.getByText('Demo data loaded.').waitFor({ timeout: 120000 });
+
+  const text = await admin.locator('main').innerText();
+  if (!/\d+ staff added/.test(text)) throw new Error(`no staff reported: ${text.slice(0, 200)}`);
+
+  // And it is really there, not just reported.
+  const rows = await (await admin.request.get(`${BASE}/api/time-entries`)).json();
+  if (rows.length < 20)
+    throw new Error(`only ${rows.length} time entries reached the timesheet`);
+});
+await admin.screenshot({ path: `${OUT}/75-demo-data.png`, fullPage: true });
+
 await browser.close();
 console.log(`\n${errors.length === 0 ? 'ALL ATTENTION CHECKS PASSED' : `PROBLEMS (${errors.length}):`}`);
 errors.forEach((e) => console.log(' - ' + e));

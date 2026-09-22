@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { ApiError, api } from '../lib/api';
 import { useIsAdmin } from '../lib/session';
 import type { PracticeSettings } from '../lib/types';
+import { DemoDataCard } from '../components/DemoDataCard';
 import { Alert, Card, PageHeading, Spinner } from '../components/ui';
 
 /// The two rules the practice sets for itself. Both arrived as defaults in the
@@ -145,6 +146,8 @@ export function SettingsPage() {
           )}
         </Card>
       )}
+
+      {isAdmin && <DemoDataCard />}
     </div>
   );
 }
