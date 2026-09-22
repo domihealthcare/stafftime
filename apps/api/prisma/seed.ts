@@ -135,9 +135,17 @@ async function main() {
     const pinHash = await hash(DEV_PINS[person.email]);
     const employee = await prisma.employee.upsert({
       where: { email: person.email },
-      // Reset credentials on every seed so a half-finished experiment (a lockout,
-      // a changed password) never leaves you unable to sign in.
+      // Reset every field a half-finished experiment could have left changed —
+      // a lockout, a changed password, somebody marked as having left, a
+      // switched-off digest. The point of `db:seed` is a *known* starting
+      // state, and a field left out here is one that quietly persists and makes
+      // the next run behave differently for no visible reason.
       update: {
+        role: person.role,
+        employmentStatus: EmploymentStatus.ACTIVE,
+        payType: PayType.HOURLY,
+        terminationDate: null,
+        wantsDailyDigest: true,
         passwordHash,
         passwordUpdatedAt: new Date(),
         mustChangePassword: person.mustChangePassword,

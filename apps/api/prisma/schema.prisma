@@ -167,6 +167,15 @@ model Employee {
   failedLoginAttempts Int       @default(0)
   lockedUntil         DateTime?
 
+  /// Whether this manager gets the nightly round-up of what needs a look.
+  ///
+  /// On by default, and theirs to turn off. The digest only sends when there is
+  /// something to say, so it is not noisy — but a practice with two managers
+  /// and one admin does not need all three chasing the same lapsed licence, and
+  /// an unwanted daily email is one that gets filtered, taking the one that
+  /// mattered with it. Ignored for employees, who never receive it.
+  wantsDailyDigest Boolean @default(true)
+
   /// Secret used to build this employee's calendar subscription URL. Null until
   /// they ask for one. Rotating it invalidates the old link everywhere.
   calendarToken      String?   @unique

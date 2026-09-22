@@ -1,5 +1,7 @@
 import { Global, Logger, Module } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
+import { AttentionController } from './attention.controller';
+import { AttentionService } from './attention.service';
 import { DigestService } from './digest.service';
 import { EMAIL_SENDER, EmailSender } from './email-sender';
 import { LogEmailSender } from './log-email.sender';
@@ -40,8 +42,10 @@ import { ResendEmailSender } from './resend-email.sender';
       },
     },
     NotificationsService,
+    AttentionService,
     DigestService,
   ],
-  exports: [EMAIL_SENDER, NotificationsService, DigestService],
+  controllers: [AttentionController],
+  exports: [EMAIL_SENDER, NotificationsService, AttentionService, DigestService],
 })
 export class EmailModule {}

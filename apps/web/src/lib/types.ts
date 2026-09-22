@@ -64,6 +64,9 @@ export interface Employee extends EmployeeSummary {
   externalId?: string | null;
   /// True while an admin-set temporary password is still in force.
   mustChangePassword?: boolean;
+  /// Whether this manager gets the nightly round-up. Ignored for employees,
+  /// who are never sent it.
+  wantsDailyDigest?: boolean;
   lastLoginAt?: string | null;
   locations: { locationId: string; isPrimary: boolean; location: LocationSummary }[];
 }
@@ -221,6 +224,21 @@ export interface OvertimeWarning {
 export interface Coverage {
   days: CoverageDay[];
   overtime: OvertimeWarning[];
+}
+
+/// What the app knows needs a look, in the same words the nightly email uses —
+/// it is the same list, read twice, so the screen and the email cannot
+/// disagree. Each field is a set of ready-to-read lines.
+export interface Attention {
+  expiredCredentials: string[];
+  expiringCredentials: string[];
+  overdueTasks: string[];
+  missingPunches: string[];
+  undecidedTimeOff: string[];
+  silentKiosks: string[];
+  unpublishedRota: string[];
+  unapprovedHours: string[];
+  shiftsForLeavers: string[];
 }
 
 // ---------------------------------------------------------------------------

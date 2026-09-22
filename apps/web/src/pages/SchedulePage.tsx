@@ -15,6 +15,7 @@ import { CalendarLinkCard } from '../components/CalendarLinkCard';
 import { PlanResultNotice } from '../components/PlanResultNotice';
 import { RepeatShiftsForm } from '../components/RepeatShiftsForm';
 import { Alert, Badge, Card, EmptyState, PageHeading, Spinner } from '../components/ui';
+import { NeedsAttention } from '../components/NeedsAttention';
 
 export function SchedulePage() {
   const isManager = useIsManager();
@@ -103,6 +104,8 @@ export function SchedulePage() {
         title="Schedule"
         subtitle={isManager ? 'Build the week for both locations.' : 'Your upcoming shifts.'}
       />
+
+      <NeedsAttention sections={['unpublishedRota', 'shiftsForLeavers']} />
 
       <div className="mb-4">
         <CalendarLinkCard />

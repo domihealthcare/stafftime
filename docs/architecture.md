@@ -1308,24 +1308,76 @@ get wrong. Employees still see only their own; recording and renewing stays with
 managers; deleting stays with admins. `src/common/no-sensitive-data.spec.ts`
 fails if the columns come back.
 
+## What needs a look
+
+`AttentionService` is the one place that answers "what does somebody need to
+deal with?" — nine lists of ready-to-read lines. It is read twice: by the
+nightly email, and by the banners on the screens.
+
+That sharing is the point. Two implementations would drift, and the failure
+would be quiet and embarrassing: an email chasing something the screen says is
+fine, or the reverse.
+
+### What it chases, and why each threshold
+
+- **Kiosk tablets gone quiet** — paired, unrevoked, and not seen for 24 hours.
+  The tablet polls while it sits on the kiosk screen, so silence is real: it is
+  unplugged, off the wifi, or somebody closed the browser. A day is long enough
+  that an overnight router reboot does not raise it. A tablet that has *never*
+  been seen is worded differently from one that has stopped, because those are
+  different problems — a setup nobody finished, versus a thing that broke.
+- **Next week unpublished** — no published shifts for the coming week, from four
+  days out. Drafts do not count: staff cannot see a draft, so a fully drafted
+  week is indistinguishable from an empty one to the people who need to know
+  when to turn up. The line says so when drafts exist, because "you wrote it,
+  you just did not publish it" is a much shorter conversation. Only locations
+  with published shifts in the last 28 days are chased, so a location scheduled
+  some other way does not complain every night forever.
+- **Shifts for people who have left** — future shifts for terminated staff,
+  grouped per person. Looking forward only: a shift they actually worked is
+  history, not a mistake.
+- **Hours not approved** — completed punches unapproved for over a week,
+  grouped per person and oldest first. These are the hours that quietly miss a
+  pay run. Six unapproved shifts for one person is one thing to do, not six
+  lines of email.
+- Plus the four that were already there: lapsed and lapsing credentials, overdue
+  checklist tasks, punches with no clock-out, undecided time off.
+
+### Banners go where the thing gets fixed
+
+`NeedsAttention` takes the sections that belong on the screen it is on: silent
+tablets on Kiosks, the rota warnings on Schedule, unapproved hours and missing
+punches on Timesheet. Deliberately not one banner listing everything on every
+page — the same warning on eight screens is wallpaper, and gets scrolled past
+within a week.
+
+It is manager-only (every line names somebody) and fails quietly: a banner that
+cannot load is not worth an error on a screen somebody came to for something
+else.
+
 ## The nightly digest
 
 `DigestService` runs from the maintenance job, because that is already the one
-thing that happens every night whether anybody is looking or not. It gathers
-what nobody would find out about unless they went looking:
+thing that happens every night whether anybody is looking or not. What goes in
+it is `AttentionService`'s job — the same nine lists the banners read, so the
+email and the app cannot disagree. This is only about sending it.
 
-- credentials that have lapsed, and ones about to
-- checklist tasks past their due date
-- punches with no clock-out, from the last fortnight
-- time-off requests still waiting on a decision
-
-Two rules make it worth reading:
+Three rules make it worth reading:
 
 **It says nothing when there is nothing to say.** A daily email that is usually
 empty gets filtered into a folder within a fortnight, and then the one that
 matters goes there too.
 
 **Empty sections are left out, not printed empty.** Same reason.
+
+**It is a manager's to turn off**, not an admin's to turn off for them
+(`wantsDailyDigest`, on by default). A practice with two managers and an admin
+does not need all three chasing the same lapsed licence, and an unwanted daily
+email is one that gets filtered — taking the one that mattered with it. Nothing
+is lost by opting out: every line is also on the screen it belongs to, which is
+why the banners came first. When everybody has opted out the job logs that it
+had something to say and nobody to say it to, rather than emailing somebody
+anyway.
 
 Each line names the person and the thing, so the email can be acted on without
 opening the app.

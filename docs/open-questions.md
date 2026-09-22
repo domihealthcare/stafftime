@@ -155,6 +155,8 @@ practice:
       asking for one.
 - [ ] **Notifications.** Nobody is told that a task is overdue, or that a new
       hire has something waiting. Same email decision as password reset and PTO.
+      The nightly round-up does chase overdue tasks in bulk, which may be
+      enough — worth asking before building per-task emails.
 - [x] ~~A template editor.~~ Built. An admin can add, reword, reorder and
       remove tasks, set who each one is for and when it is due, create new
       templates and retire old ones — all on the Checklists screen.
