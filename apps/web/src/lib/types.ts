@@ -170,3 +170,36 @@ export interface PtoBalance {
   sick: AllowanceBalance;
   unpaidAndOther: number;
 }
+
+export interface PlannedSkip {
+  date: string;
+  reason: 'OVERLAPS_SHIFT' | 'ON_APPROVED_LEAVE';
+  detail: string;
+}
+
+export interface PlanResult {
+  created: number;
+  skipped: PlannedSkip[];
+  dates: string[];
+}
+
+export interface CoverageShift {
+  id: string;
+  employeeId: string;
+  employeeName: string;
+  locationName: string;
+  startsAt: string;
+  endsAt: string;
+  status: ShiftStatus;
+  /// Scheduled while on approved leave — nearly always a mistake.
+  conflictsWithLeave: boolean;
+}
+
+export interface CoverageDay {
+  date: string;
+  weekday: number;
+  shifts: CoverageShift[];
+  staffedHours: number;
+  peopleScheduled: number;
+  away: { employeeId: string; employeeName: string; type: PtoType }[];
+}

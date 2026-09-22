@@ -15,7 +15,8 @@ Phase 1, backend and web app:
 - Clock in/out with location verification (geofence, office IP, kiosk)
 - Front-desk kiosk mode — tablet bound to a location, staff clock in by PIN
 - Timesheet view, with manager approval and corrections
-- Manager shift scheduler
+- Manager shift scheduler — a week grid, repeating rotas, copy-last-week, and
+  a coverage summary that names the gaps
 - Timesheet export to Excel or CSV, with selectable columns and saved reports
 - PTO requests with manager approval, balances and a practice-set policy
 - Calendar syncing — each employee gets a private subscription URL for Google
@@ -31,9 +32,10 @@ onboarding/offboarding checklists.
 ## Repository layout
 
 ```
-apps/api/     NestJS + Prisma backend
-apps/web/     React + Vite + Tailwind web app
-docs/         architecture notes, open questions
+apps/api/       NestJS + Prisma backend
+apps/web/       React + Vite + Tailwind web app
+tests/browser/  end-to-end checks driven by a real browser
+docs/           architecture notes, open questions
 ```
 
 ## Getting started
@@ -75,7 +77,8 @@ Run them separately with `npm run dev:api` and `npm run dev:web` if you prefer.
 
 | Command | What it does |
 | --- | --- |
-| `npm test` | Run the test suite |
+| `npm test` | Run the unit tests |
+| `npm run test:browser` | Run the end-to-end browser checks (see [tests/browser](./tests/browser)) |
 | `npm run lint` | Check code style |
 | `npm run build` | Build both apps for production |
 | `npm run db:studio` | Open a visual database browser |
@@ -168,6 +171,9 @@ placeholders, so do not run it after setting real values.
 | `GET/POST/PATCH/DELETE` | `/api/locations` | admin (reads: anyone) |
 | `GET/POST/PATCH/DELETE` | `/api/employees` | admin (`/me`: anyone) |
 | `GET/POST/PATCH/DELETE` | `/api/shifts` | manager (employees see their own) |
+| `POST` | `/api/shifts/repeat` | manager — build a rota across a date range |
+| `POST` | `/api/shifts/copy-week` | manager — copy one week's rota into another |
+| `GET` | `/api/shifts/coverage` | manager — hours and gaps for a week |
 | `POST` | `/api/time-entries/clock-in` | anyone |
 | `POST` | `/api/time-entries/clock-out` | anyone |
 | `GET` | `/api/time-entries/current` | anyone |
@@ -182,9 +188,8 @@ placeholders, so do not run it after setting real values.
 | **Kiosk** (`/kiosk`) | The front-desk tablet. Tap your name, enter your PIN, clock in or out. No sign-in, no navigation anywhere else |
 | **Clock** | Clock in/out with a live elapsed timer, today's shift, and a plain-language reason whenever a punch is refused |
 | **Timesheet** | Weekly hours. Managers see everyone, plus approve and correct; employees see only their own |
-| **Schedule** | Week grid. Managers add and remove shifts; employees see their own |
+| **Schedule** | Week grid. Managers add and remove shifts, build repeating rotas, copy last week forward, and see a coverage summary; employees see their own shifts and can turn on calendar syncing |
 | **Sign in** | Email and password. A temporary password lands you on a forced change screen and nothing else |
-| **Schedule** | Also where an employee turns on calendar syncing |
 | **Time off** | Request time off and see your balance; managers approve or deny, and can file on someone's behalf. Admins set the practice's PTO rules here |
 | **Export** (manager) | Produce a timesheet spreadsheet for a period, choosing exactly which columns go in it. Settings can be saved as named reports and shared |
 | **Staff** (admin) | Add people, set their role and locations, issue a temporary password, mark someone as no longer employed |

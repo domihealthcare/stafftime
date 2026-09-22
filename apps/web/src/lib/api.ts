@@ -1,5 +1,7 @@
 import type {
   ConflictingShift,
+  CoverageDay,
+  PlanResult,
   Employee,
   Location,
   PtoBalance,
@@ -447,6 +449,26 @@ export const api = {
     },
   ) =>
     request<TimeEntry>(`/time-entries/${id}`, { method: 'PATCH', body: JSON.stringify(body) }),
+
+  repeatShifts: (body: {
+    employeeId: string;
+    locationId: string;
+    startTime: string;
+    endTime: string;
+    daysOfWeek: number[];
+    from: string;
+    until: string;
+    status?: string;
+    notes?: string;
+  }) => request<PlanResult>('/shifts/repeat', { method: 'POST', body: JSON.stringify(body) }),
+  copyWeek: (body: {
+    fromWeekStart: string;
+    toWeekStart: string;
+    locationId?: string;
+    status?: string;
+  }) => request<PlanResult>('/shifts/copy-week', { method: 'POST', body: JSON.stringify(body) }),
+  coverage: (params: { from: string; to: string; locationId?: string }) =>
+    request<CoverageDay[]>(`/shifts/coverage${toQuery(params)}`),
 
   listShifts: (params: Record<string, string | undefined> = {}) =>
     request<Shift[]>(`/shifts${toQuery(params)}`),

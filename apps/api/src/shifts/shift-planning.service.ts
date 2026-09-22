@@ -1,0 +1,414 @@
+import { BadRequestException, Injectable, Logger, NotFoundException } from '@nestjs/common';
+import { Prisma, PtoStatus, ShiftStatus } from '@prisma/client';
+import {
+  addDaysTo,
+  datesBetween,
+  isoWeekdayOf,
+  localDateIn,
+  zonedTimeToUtc,
+} from '../common/util/zoned-time.util';
+import { PrismaService } from '../prisma/prisma.service';
+import { CopyWeekDto, QueryCoverageDto, RepeatShiftsDto } from './dto/repeat-shifts.dto';
+
+/// Guards against a mis-typed year turning into three thousand shifts.
+const MAX_GENERATED_SHIFTS = 200;
+const MAX_SPAN_DAYS = 400;
+
+export type SkipReason = 'OVERLAPS_SHIFT' | 'ON_APPROVED_LEAVE';
+
+export interface PlannedSkip {
+  date: string;
+  reason: SkipReason;
+  detail: string;
+}
+
+export interface PlanResult {
+  created: number;
+  skipped: PlannedSkip[];
+  /// The dates that now have a shift, for the UI to jump to.
+  dates: string[];
+}
+
+const SHIFT_INCLUDE = {
+  employee: { select: { id: true, firstName: true, lastName: true, preferredName: true } },
+  location: { select: { id: true, name: true, slug: true, timezone: true } },
+} satisfies Prisma.ShiftInclude;
+
+/**
+ * Building a schedule in bulk, rather than one shift at a time.
+ *
+ * Everything here works in the location's own wall-clock time: a repeating 9am
+ * shift stays at 9am through a clock change, and a copied week lands on the
+ * same local hours it came from.
+ *
+ * Conflicts are skipped and reported, never silently dropped or forced. A
+ * manager needs to know that Thursday did not get made because someone is on
+ * leave.
+ */
+@Injectable()
+export class ShiftPlanningService {
+  private readonly logger = new Logger(ShiftPlanningService.name);
+
+  constructor(private readonly prisma: PrismaService) {}
+
+  async repeat(dto: RepeatShiftsDto, createdById: string): Promise<PlanResult> {
+    if (dto.endTime <= dto.startTime) {
+      throw new BadRequestException(
+        'The end time must be after the start time. An overnight shift needs to be added a day at a time for now.',
+      );
+    }
+
+    const dates = datesBetween(dto.from, dto.until);
+    if (dates.length === 0) {
+      throw new BadRequestException('The last date cannot be before the first.');
+    }
+    if (dates.length > MAX_SPAN_DAYS) {
+      throw new BadRequestException(
+        `That spans ${dates.length} days. Plan at most ${MAX_SPAN_DAYS} days at a time.`,
+      );
+    }
+
+    const location = await this.requireLocation(dto.locationId);
+    await this.requireAssignment(dto.employeeId, dto.locationId);
+
+    const wanted = dates.filter((date) => dto.daysOfWeek.includes(isoWeekdayOf(date)));
+    if (wanted.length === 0) {
+      throw new BadRequestException(
+        'None of those weekdays fall inside that date range.',
+      );
+    }
+    if (wanted.length > MAX_GENERATED_SHIFTS) {
+      throw new BadRequestException(
+        `That would create ${wanted.length} shifts. Plan at most ${MAX_GENERATED_SHIFTS} at a time.`,
+      );
+    }
+
+    const candidates = wanted.map((date) => ({
+      date,
+      startsAt: zonedTimeToUtc(date, dto.startTime, location.timezone),
+      endsAt: zonedTimeToUtc(date, dto.endTime, location.timezone),
+    }));
+
+    return this.createAll(candidates, {
+      employeeId: dto.employeeId,
+      locationId: dto.locationId,
+      status: dto.status ?? ShiftStatus.DRAFT,
+      notes: dto.notes,
+      createdById,
+      timezone: location.timezone,
+    });
+  }
+
+  /**
+   * Copies a week forward.
+   *
+   * Shifts move by whole days rather than a fixed number of milliseconds, and
+   * are rebuilt from their local wall-clock time — so a 9am shift copied across
+   * a clock change is still 9am, not 8 or 10.
+   */
+  async copyWeek(dto: CopyWeekDto, createdById: string): Promise<PlanResult> {
+    const fromStart = dto.fromWeekStart.slice(0, 10);
+    const toStart = dto.toWeekStart.slice(0, 10);
+    if (fromStart === toStart) {
+      throw new BadRequestException('Those are the same week.');
+    }
+
+    const offsetDays = Math.round(
+      (new Date(`${toStart}T00:00:00Z`).getTime() -
+        new Date(`${fromStart}T00:00:00Z`).getTime()) /
+        86_400_000,
+    );
+
+    const source = await this.prisma.shift.findMany({
+      where: {
+        locationId: dto.locationId,
+        employeeId: dto.employeeIds?.length ? { in: dto.employeeIds } : undefined,
+        status: { not: ShiftStatus.CANCELLED },
+        startsAt: {
+          gte: new Date(`${fromStart}T00:00:00Z`),
+          lt: new Date(`${addDaysTo(fromStart, 7)}T00:00:00Z`),
+        },
+      },
+      select: {
+        employeeId: true,
+        locationId: true,
+        startsAt: true,
+        endsAt: true,
+        notes: true,
+        location: { select: { timezone: true } },
+      },
+      orderBy: { startsAt: 'asc' },
+    });
+
+    if (source.length === 0) {
+      throw new BadRequestException('There are no shifts in that week to copy.');
+    }
+
+    const skipped: PlannedSkip[] = [];
+    const dates: string[] = [];
+    let created = 0;
+
+    for (const shift of source) {
+      const zone = shift.location.timezone;
+      // Read the original in its own local terms, then rebuild it a week later.
+      const localDate = localDateIn(shift.startsAt, zone);
+      const localStart = localTimeIn(shift.startsAt, zone);
+      const localEnd = localTimeIn(shift.endsAt, zone);
+      // An overnight shift ends on the following local date.
+      const endOffset = daysBetween(localDate, localDateIn(shift.endsAt, zone));
+
+      const targetDate = addDaysTo(localDate, offsetDays);
+      const startsAt = zonedTimeToUtc(targetDate, localStart, zone);
+      const endsAt = zonedTimeToUtc(addDaysTo(targetDate, endOffset), localEnd, zone);
+
+      const result = await this.createAll(
+        [{ date: targetDate, startsAt, endsAt }],
+        {
+          employeeId: shift.employeeId,
+          locationId: shift.locationId,
+          status: dto.status ?? ShiftStatus.DRAFT,
+          notes: shift.notes ?? undefined,
+          createdById,
+          timezone: zone,
+        },
+      );
+
+      created += result.created;
+      skipped.push(...result.skipped);
+      dates.push(...result.dates);
+    }
+
+    this.logger.log(`Copied ${created} shifts from week ${fromStart} to ${toStart}`);
+    return { created, skipped, dates: [...new Set(dates)].sort() };
+  }
+
+  /**
+   * Day-by-day staffing for a window: who is on, how many hours are covered,
+   * and who is away.
+   *
+   * The point is the gaps — a day with nobody scheduled, or somebody scheduled
+   * while they are on approved leave.
+   */
+  async coverage(query: QueryCoverageDto) {
+    const from = query.from.slice(0, 10);
+    const to = query.to.slice(0, 10);
+    const dates = datesBetween(from, to);
+    if (dates.length === 0 || dates.length > 62) {
+      throw new BadRequestException('Ask for a window between one day and two months.');
+    }
+
+    const windowStart = new Date(`${from}T00:00:00Z`);
+    const windowEnd = new Date(`${addDaysTo(to, 1)}T00:00:00Z`);
+
+    const [shifts, leave] = await Promise.all([
+      this.prisma.shift.findMany({
+        where: {
+          locationId: query.locationId,
+          status: { not: ShiftStatus.CANCELLED },
+          startsAt: { gte: windowStart, lt: windowEnd },
+        },
+        include: SHIFT_INCLUDE,
+        orderBy: { startsAt: 'asc' },
+      }),
+      this.prisma.ptoRequest.findMany({
+        where: {
+          status: PtoStatus.APPROVED,
+          startDate: { lt: windowEnd },
+          endDate: { gte: windowStart },
+        },
+        select: {
+          employeeId: true,
+          type: true,
+          startDate: true,
+          endDate: true,
+          employee: { select: { firstName: true, preferredName: true, lastName: true } },
+        },
+      }),
+    ]);
+
+    return dates.map((date) => {
+      const onThisDay = shifts.filter(
+        (shift) => localDateIn(shift.startsAt, shift.location.timezone) === date,
+      );
+
+      const away = leave.filter(
+        (request) =>
+          request.startDate.toISOString().slice(0, 10) <= date &&
+          request.endDate.toISOString().slice(0, 10) >= date,
+      );
+
+      const awayIds = new Set(away.map((request) => request.employeeId));
+
+      return {
+        date,
+        weekday: isoWeekdayOf(date),
+        shifts: onThisDay.map((shift) => ({
+          id: shift.id,
+          employeeId: shift.employeeId,
+          employeeName: displayName(shift.employee),
+          locationName: shift.location.name,
+          startsAt: shift.startsAt.toISOString(),
+          endsAt: shift.endsAt.toISOString(),
+          status: shift.status,
+          // The thing a manager needs to see: scheduled while on leave.
+          conflictsWithLeave: awayIds.has(shift.employeeId),
+        })),
+        staffedHours:
+          Math.round(
+            onThisDay.reduce(
+              (sum, shift) =>
+                sum + (shift.endsAt.getTime() - shift.startsAt.getTime()) / 3_600_000,
+              0,
+            ) * 100,
+          ) / 100,
+        peopleScheduled: new Set(onThisDay.map((shift) => shift.employeeId)).size,
+        away: away.map((request) => ({
+          employeeId: request.employeeId,
+          employeeName: displayName(request.employee),
+          type: request.type,
+        })),
+      };
+    });
+  }
+
+  // -------------------------------------------------------------------------
+
+  /**
+   * Creates each candidate that does not clash, reporting the rest.
+   *
+   * Approved leave is a skip rather than a failure: scheduling somebody over
+   * their own holiday is nearly always a mistake, and telling the manager which
+   * days were dropped is more useful than refusing the whole batch.
+   */
+  private async createAll(
+    candidates: { date: string; startsAt: Date; endsAt: Date }[],
+    common: {
+      employeeId: string;
+      locationId: string;
+      status: ShiftStatus;
+      notes?: string;
+      createdById: string;
+      timezone: string;
+    },
+  ): Promise<PlanResult> {
+    const skipped: PlannedSkip[] = [];
+    const dates: string[] = [];
+    let created = 0;
+
+    for (const candidate of candidates) {
+      const clash = await this.prisma.shift.findFirst({
+        where: {
+          employeeId: common.employeeId,
+          status: { not: ShiftStatus.CANCELLED },
+          startsAt: { lt: candidate.endsAt },
+          endsAt: { gt: candidate.startsAt },
+        },
+        select: { id: true },
+      });
+
+      if (clash) {
+        skipped.push({
+          date: candidate.date,
+          reason: 'OVERLAPS_SHIFT',
+          detail: 'Already has a shift at that time',
+        });
+        continue;
+      }
+
+      const onLeave = await this.prisma.ptoRequest.findFirst({
+        where: {
+          employeeId: common.employeeId,
+          status: PtoStatus.APPROVED,
+          startDate: { lte: new Date(`${candidate.date}T00:00:00.000Z`) },
+          endDate: { gte: new Date(`${candidate.date}T00:00:00.000Z`) },
+        },
+        select: { type: true },
+      });
+
+      if (onLeave) {
+        skipped.push({
+          date: candidate.date,
+          reason: 'ON_APPROVED_LEAVE',
+          detail: `On approved ${onLeave.type.toLowerCase()} leave`,
+        });
+        continue;
+      }
+
+      await this.prisma.shift.create({
+        data: {
+          employeeId: common.employeeId,
+          locationId: common.locationId,
+          startsAt: candidate.startsAt,
+          endsAt: candidate.endsAt,
+          status: common.status,
+          notes: common.notes,
+          createdById: common.createdById,
+        },
+      });
+
+      created += 1;
+      dates.push(candidate.date);
+    }
+
+    return { created, skipped, dates };
+  }
+
+  private async requireLocation(locationId: string) {
+    const location = await this.prisma.location.findUnique({
+      where: { id: locationId },
+      select: { id: true, name: true, timezone: true, isActive: true },
+    });
+    if (!location) {
+      throw new NotFoundException(`Location ${locationId} not found`);
+    }
+    if (!location.isActive) {
+      throw new BadRequestException(`${location.name} is not an active location.`);
+    }
+    return location;
+  }
+
+  private async requireAssignment(employeeId: string, locationId: string) {
+    const assignment = await this.prisma.employeeLocation.findUnique({
+      where: { employeeId_locationId: { employeeId, locationId } },
+      select: { employeeId: true },
+    });
+    if (!assignment) {
+      throw new BadRequestException(
+        'That employee is not assigned to that location. Assign it first.',
+      );
+    }
+  }
+}
+
+// ---------------------------------------------------------------------------
+
+function displayName(person: {
+  firstName: string;
+  lastName: string;
+  preferredName?: string | null;
+}): string {
+  return `${person.preferredName ?? person.firstName} ${person.lastName}`;
+}
+
+/// "HH:MM" on the wall clock in `zone`.
+function localTimeIn(instant: Date, zone: string): string {
+  const parts = Object.fromEntries(
+    new Intl.DateTimeFormat('en-GB', {
+      timeZone: zone,
+      hour: '2-digit',
+      minute: '2-digit',
+      hour12: false,
+    })
+      .formatToParts(instant)
+      .map((part) => [part.type, part.value]),
+  );
+  const hour = parts.hour === '24' ? '00' : parts.hour;
+  return `${hour}:${parts.minute}`;
+}
+
+function daysBetween(from: string, to: string): number {
+  return Math.round(
+    (new Date(`${to}T00:00:00Z`).getTime() - new Date(`${from}T00:00:00Z`).getTime()) /
+      86_400_000,
+  );
+}

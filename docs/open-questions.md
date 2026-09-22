@@ -77,6 +77,28 @@ Built as a read-only iCalendar subscription per employee.
       take considerably longer. If same-day schedule changes need to reach people
       promptly, that wants a notification, not a calendar.
 
+## Scheduling
+
+The week grid, repeating rotas, copy-last-week and the coverage summary are
+built. What is deliberately left open:
+
+- [ ] **How far ahead schedules are published.** Shifts can be created as drafts
+      or published straight away, and only published shifts reach an employee's
+      calendar feed. Nobody has decided the practice's actual habit — a fortnight
+      out, a month out — which is worth settling before managers build the habit
+      for themselves.
+- [ ] **Whether repeating rotas should be editable as a series.** They are
+      materialised as individual shifts on purpose (see `docs/architecture.md`),
+      so "change every Thursday from March" means deleting and rebuilding. Fine
+      at this size; revisit if it becomes a chore.
+- [ ] **Minimum staffing per location per day**, so coverage can say "short one
+      person" rather than only reporting the hours it found. Needs a number from
+      whoever runs the front desk.
+- [ ] **Should the coverage summary flag anything else?** It currently names
+      empty days, who is away on approved leave, and shifts that clash with
+      approved leave. Overtime risk (someone scheduled past 40 hours) is the
+      obvious next one, and easy to add.
+
 ## Product decisions
 
 - [ ] **Kiosk device:** dedicated tablet per location, or a shared front-desk PC?
@@ -88,7 +110,8 @@ Built as a read-only iCalendar subscription per employee.
 - [ ] **Who may correct a timesheet** — any manager, or only the employee's own
       manager? Today any manager can edit any entry.
 - [ ] **Overnight shifts.** Supported by the schema (start/end are full
-      timestamps), untested against real scheduling patterns.
+      timestamps) and preserved when a week is copied, but no real Domi shift
+      crosses midnight yet, so the handling is untested against actual practice.
 - [ ] **Confirm who is exempt from overtime.** The export's optional overtime
       split treats salaried staff as exempt and hourly staff as not. Pay type is
       a reasonable proxy but it is not the legal test, and this is expensive to
@@ -135,15 +158,20 @@ Built and working with PINs. What is left:
       staff location history, but not started.
 - [ ] **Tune the GPS accuracy tolerance** (currently 2× the geofence radius)
       against real readings from both offices — indoor fixes are often poor.
-- [ ] **Decide the hosted Postgres provider** before deploying (Neon, Supabase,
-      Vercel Postgres). Local Docker only, for now.
+- [x] ~~Decide the hosted Postgres provider.~~ Neon, as written up in
+      `DEPLOY.md` — a free tier that is enough for a practice this size, and it
+      hands out both a pooled and a direct connection string, which Prisma
+      migrations need.
 - [ ] **Integration tests against a real database.** Unit tests cover the
       verification rules; the service layer is currently only covered by manual
       end-to-end checks.
 - [ ] **Generate the frontend's API types from the server** instead of
       hand-maintaining `apps/web/src/lib/types.ts`. Today a server-side rename
       compiles fine and breaks at runtime.
-- [ ] **Automated browser tests.** The web app's flows were verified by driving a
-      real browser, but those checks are not committed as a suite yet.
-- [ ] **CORS or a same-origin rewrite for production** — the Vite dev proxy does
-      not exist once deployed. See `docs/architecture.md`.
+- [x] ~~Automated browser tests.~~ Committed as a suite in `tests/browser`
+      (`npm run test:browser`). Still to do: get them running in CI rather than
+      only on a developer's machine, which needs a Postgres service and a
+      headless browser in the pipeline.
+- [x] ~~CORS or a same-origin rewrite for production.~~ Solved by hosting the
+      API and the web app as one Vercel project, so the browser only ever talks
+      to one origin and the session cookie needs no cross-site handling.

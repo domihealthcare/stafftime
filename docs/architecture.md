@@ -572,3 +572,78 @@ loses the last day, which is why there is a test for it.
 The output is verified both by unit tests and by parsing a real generated feed
 with `ical.js` — a strict third-party parser — so the check is "would a calendar
 app accept this", not "does it look right to us".
+
+## Shift planning
+
+`apps/api/src/shifts/shift-planning.service.ts` sits beside the plain
+create/update/delete of `ShiftsService` and handles the three things a manager
+actually does when building a schedule: repeat a shift across a date range,
+copy one week's rota into another, and check whether a week is covered.
+
+### Rotas are rows, not rules
+
+`POST /api/shifts/repeat` materialises one `Shift` row per date. It does not
+store a recurrence rule.
+
+Storing the rule would be tidier and is what a calendar app does, but it makes
+every other feature harder: a timesheet has to expand the rule before it can
+match a punch to a shift, an exception (someone covers one Thursday) becomes a
+second concept, and editing one day means splitting the series. Rows are boring
+and every existing query already understands them. If a manager wants to change
+next month, they delete those shifts and make new ones.
+
+The guards are there because "repeat this" is easy to point at a decade:
+`MAX_GENERATED_SHIFTS = 200` and `MAX_SPAN_DAYS = 400`, both refused up front
+rather than part-way through.
+
+### Conflicts are skipped and reported
+
+A rota that runs into an existing shift, or into approved time off, does not
+fail and does not silently overwrite. The conflicting dates are skipped, and the
+response says which and why:
+
+```ts
+type SkipReason = 'OVERLAPS_SHIFT' | 'ON_APPROVED_LEAVE';
+interface PlanResult { created: number; skipped: PlannedSkip[]; dates: string[]; }
+```
+
+The web app shows that list. A manager asking for a month of Tuesdays and
+getting 3 instead of 4 needs to know which Tuesday is missing — "created: 3" on
+its own is worse than an error.
+
+Re-running the same rota is therefore safe and idempotent-ish: everything is
+skipped as `OVERLAPS_SHIFT`, nothing is duplicated.
+
+### Copy week rebuilds from wall-clock time
+
+`POST /api/shifts/copy-week` does **not** add seven days of milliseconds to each
+timestamp. It reads each source shift's local start and end time, then rebuilds
+that time on the target date in the location's timezone.
+
+Adding 604800000ms across a clock change moves a 9am shift to 8am or 10am. Staff
+read the schedule as "I'm on at nine", so nine is what gets copied. Overnight
+shifts keep their length via an `endOffset` in days, so a 10pm–6am shift still
+ends the following morning.
+
+### Coverage answers a different question
+
+`GET /api/shifts/coverage` files each shift under its **local** date, not its
+UTC date — otherwise an evening shift lands on tomorrow. Per day it reports
+scheduled hours, who is on, who is away on approved leave, and whether a
+scheduled shift clashes with approved leave (`conflictsWithLeave`).
+
+That last flag exists because approving time off deliberately does not cancel
+shifts (see the PTO notes) — somebody has to reassign the cover, and this is
+where they find out they haven't.
+
+### Timezone arithmetic
+
+All of the above needs wall-clock-to-UTC conversion that survives DST, which is
+`apps/api/src/common/util/zoned-time.util.ts`. It measures a zone's offset at an
+instant using `Intl.DateTimeFormat` and converts in two passes: guess with the
+offset at the naive instant, then re-measure at the guess and correct. One pass
+is wrong for times near a transition.
+
+No timezone library is pulled in for this. The whole file is under 150 lines,
+`Intl` is already in Node, and a dependency here would be carrying a database of
+every zone's history to answer "what is 9am in America/New_York".

@@ -2,8 +2,10 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { api } from '../lib/api';
 import { addDays, formatTime, startOfWeek, toLocalInputValue } from '../lib/format';
 import { useIsManager } from '../lib/session';
-import type { Employee, Location, Shift } from '../lib/types';
+import type { CoverageDay, Employee, Location, PlanResult, Shift } from '../lib/types';
 import { CalendarLinkCard } from '../components/CalendarLinkCard';
+import { PlanResultNotice } from '../components/PlanResultNotice';
+import { RepeatShiftsForm } from '../components/RepeatShiftsForm';
 import { Alert, Badge, Card, EmptyState, PageHeading, Spinner } from '../components/ui';
 
 export function SchedulePage() {
@@ -12,8 +14,12 @@ export function SchedulePage() {
   const [shifts, setShifts] = useState<Shift[]>([]);
   const [employees, setEmployees] = useState<Employee[]>([]);
   const [locations, setLocations] = useState<Location[]>([]);
+  const [coverage, setCoverage] = useState<CoverageDay[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [planning, setPlanning] = useState(false);
+  const [planResult, setPlanResult] = useState<PlanResult | null>(null);
+  const [copying, setCopying] = useState(false);
 
   const weekEnd = useMemo(() => addDays(weekStart, 7), [weekStart]);
   const days = useMemo(
@@ -31,9 +37,17 @@ export function SchedulePage() {
       setShifts(shiftData);
       setLocations(locationData);
 
-      // Only managers may list staff; employees just see their own schedule.
+      // Only managers may list staff or read coverage.
       if (isManager) {
-        setEmployees(await api.listEmployees());
+        const [staff, days] = await Promise.all([
+          api.listEmployees(),
+          api.coverage({
+            from: weekStart.toISOString().slice(0, 10),
+            to: addDays(weekStart, 6).toISOString().slice(0, 10),
+          }),
+        ]);
+        setEmployees(staff);
+        setCoverage(days);
       }
       setError(null);
     } catch (err) {
@@ -46,6 +60,25 @@ export function SchedulePage() {
   useEffect(() => {
     void load();
   }, [load]);
+
+  /// Pulls the previous week forward. Drafts by default, so the manager checks
+  /// it before staff see it.
+  async function copyPreviousWeek() {
+    setCopying(true);
+    setError(null);
+    try {
+      const result = await api.copyWeek({
+        fromWeekStart: addDays(weekStart, -7).toISOString().slice(0, 10),
+        toWeekStart: weekStart.toISOString().slice(0, 10),
+      });
+      setPlanResult(result);
+      await load();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Could not copy that week.');
+    } finally {
+      setCopying(false);
+    }
+  }
 
   const shiftsByDay = useMemo(() => {
     const map = new Map<string, Shift[]>();
@@ -94,6 +127,53 @@ export function SchedulePage() {
       {error && (
         <div className="mb-4">
           <Alert>{error}</Alert>
+        </div>
+      )}
+
+      {isManager && planResult && (
+        <div className="mb-4">
+          <PlanResultNotice result={planResult} onDismiss={() => setPlanResult(null)} />
+        </div>
+      )}
+
+      {isManager && (
+        <div className="mb-4 flex flex-wrap gap-2">
+          <button
+            type="button"
+            onClick={() => setPlanning((open) => !open)}
+            className="rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50"
+          >
+            {planning ? 'Close' : 'Repeating shifts'}
+          </button>
+          <button
+            type="button"
+            disabled={copying}
+            onClick={() => void copyPreviousWeek()}
+            className="rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50 disabled:opacity-60"
+          >
+            {copying ? 'Copying…' : 'Copy last week into this one'}
+          </button>
+        </div>
+      )}
+
+      {isManager && planning && (
+        <div className="mb-6">
+          <RepeatShiftsForm
+            employees={employees}
+            locations={locations}
+            defaultFrom={weekStart.toISOString().slice(0, 10)}
+            onCreated={(result) => {
+              setPlanResult(result);
+              setPlanning(false);
+              void load();
+            }}
+          />
+        </div>
+      )}
+
+      {isManager && coverage.length > 0 && (
+        <div className="mb-6">
+          <CoverageStrip days={coverage} />
         </div>
       )}
 
@@ -383,4 +463,106 @@ function defaultInput(day: Date, hour: number): string {
   const date = new Date(day);
   date.setHours(hour, 0, 0, 0);
   return toLocalInputValue(date);
+}
+
+/// A week at a glance: hours covered, who is off, and the days with nobody on.
+function CoverageStrip({ days }: { days: CoverageDay[] }) {
+  const totalHours = Math.round(days.reduce((sum, day) => sum + day.staffedHours, 0) * 10) / 10;
+  const emptyDays = days.filter((day) => day.shifts.length === 0);
+  const conflicts = days.flatMap((day) =>
+    day.shifts.filter((shift) => shift.conflictsWithLeave).map((shift) => ({ day, shift })),
+  );
+
+  return (
+    <Card className="p-4">
+      <div className="flex flex-wrap items-baseline justify-between gap-2">
+        <h2 className="text-sm font-semibold text-slate-900">Coverage this week</h2>
+        <span className="text-sm text-slate-600">
+          <span className="font-semibold text-slate-900">{totalHours}</span> hours scheduled
+        </span>
+      </div>
+
+      <div className="mt-3 grid grid-cols-7 gap-1">
+        {days.map((day) => {
+          const empty = day.shifts.length === 0;
+          return (
+            <div
+              key={day.date}
+              className={`rounded-lg px-1 py-2 text-center ${
+                empty ? 'bg-amber-50 ring-1 ring-inset ring-amber-200' : 'bg-slate-50'
+              }`}
+            >
+              <p className="text-xs font-medium uppercase tracking-wide text-slate-500">
+                {new Date(`${day.date}T00:00:00Z`).toLocaleDateString(undefined, {
+                  timeZone: 'UTC',
+                  weekday: 'short',
+                })}
+              </p>
+              <p
+                className={`mt-0.5 text-lg font-semibold tabular-nums ${
+                  empty ? 'text-amber-800' : 'text-slate-900'
+                }`}
+              >
+                {day.staffedHours || '—'}
+              </p>
+              <p className="text-xs text-slate-500">
+                {day.peopleScheduled > 0
+                  ? `${day.peopleScheduled} on`
+                  : 'nobody'}
+              </p>
+              {day.away.length > 0 && (
+                <p className="mt-0.5 text-xs text-slate-500">{day.away.length} off</p>
+              )}
+            </div>
+          );
+        })}
+      </div>
+
+      {emptyDays.length > 0 && (
+        <p className="mt-3 text-sm text-amber-800">
+          {emptyDays.length === 7
+            ? 'Nobody is scheduled at all this week.'
+            : `Nobody scheduled on ${emptyDays
+                .map((day) =>
+                  new Date(`${day.date}T00:00:00Z`).toLocaleDateString(undefined, {
+                    timeZone: 'UTC',
+                    weekday: 'long',
+                  }),
+                )
+                .join(', ')}.`}
+        </p>
+      )}
+
+      {conflicts.length > 0 && (
+        <div className="mt-3 rounded-lg bg-rose-50 p-3 text-sm text-rose-900 ring-1 ring-inset ring-rose-200">
+          <p className="font-medium">
+            {conflicts.length} shift{conflicts.length === 1 ? '' : 's'} scheduled during
+            approved leave
+          </p>
+          <ul className="mt-1 space-y-0.5 text-xs">
+            {conflicts.slice(0, 5).map(({ day, shift }) => (
+              <li key={shift.id}>
+                {shift.employeeName} —{' '}
+                {new Date(`${day.date}T00:00:00Z`).toLocaleDateString(undefined, {
+                  timeZone: 'UTC',
+                  weekday: 'short',
+                  month: 'short',
+                  day: 'numeric',
+                })}
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+
+      {days.some((day) => day.away.length > 0) && (
+        <p className="mt-3 text-xs text-slate-500">
+          Away this week:{' '}
+          {[
+            ...new Set(days.flatMap((day) => day.away.map((person) => person.employeeName))),
+          ].join(', ')}
+        </p>
+      )}
+    </Card>
+  );
 }
