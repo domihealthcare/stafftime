@@ -1,5 +1,9 @@
 import type {
   Checklist,
+  Credential,
+  CredentialKind,
+  PayrollExportRecord,
+  PayrollTarget,
   ChecklistDocument,
   ChecklistKind,
   ChecklistTaskStatus,
@@ -289,6 +293,8 @@ export interface TimesheetExportOptions {
   includeSummary?: boolean;
   splitOvertime?: boolean;
   format?: 'xlsx' | 'csv';
+  /// Which payroll target. Defaults to the spreadsheet.
+  target?: string;
 }
 
 export interface ExportColumn {
@@ -306,6 +312,11 @@ export interface ExportPreview {
   openEntryCount: number;
   flaggedCount: number;
   overtimeHours: number;
+  /// How many of these hours have already gone to payroll once.
+  alreadyExportedCount: number;
+  /// …and how many of those have been corrected since. Those corrections have
+  /// not reached payroll, so they have to go out in this run.
+  correctedSinceExportCount: number;
 }
 
 export interface AppConfig {
@@ -435,6 +446,12 @@ export const api = {
 
   exportColumns: () =>
     request<{ columns: ExportColumn[]; defaults: string[] }>('/exports/columns'),
+  payrollTargets: () => request<PayrollTarget[]>('/exports/targets'),
+  exportHistory: () => request<PayrollExportRecord[]>('/exports/history'),
+  /// The file exactly as it went out, not a fresh build of the same period.
+  downloadPastExport: (id: string) => download(`/exports/history/${id}/file`),
+  voidExport: (id: string) =>
+    request<PayrollExportRecord>(`/exports/history/${id}/void`, { method: 'POST' }),
   previewExport: (options: TimesheetExportOptions) =>
     request<ExportPreview>('/exports/timesheet/preview', {
       method: 'POST',
@@ -457,6 +474,9 @@ export const api = {
     const disposition = response.headers.get('content-disposition') ?? '';
     const match = /filename="([^"]+)"/.exec(disposition);
     return {
+      /// Which run this was recorded as, so the screen can show the history
+      /// without asking again.
+      exportId: response.headers.get('x-payroll-export-id'),
       blob: await response.blob(),
       filename: match?.[1] ?? `timesheet.${options.format ?? 'xlsx'}`,
     };
@@ -527,6 +547,9 @@ export const api = {
       clockOutAt?: string;
       clearClockOut?: boolean;
       editReason: string;
+      /// Set only after the server has refused once because these hours have
+      /// already gone to payroll.
+      acknowledgeExported?: boolean;
     },
   ) =>
     request<TimeEntry>(`/time-entries/${id}`, { method: 'PATCH', body: JSON.stringify(body) }),
@@ -587,6 +610,38 @@ export const api = {
     download(`/checklists/documents/${documentId}`),
   deleteChecklistDocument: (documentId: string) =>
     request<{ deleted: boolean }>(`/checklists/documents/${documentId}`, { method: 'DELETE' }),
+
+  listCredentials: (params: Record<string, string | undefined> = {}) =>
+    request<Credential[]>(`/credentials${toQuery(params)}`),
+  createCredential: (body: {
+    employeeId: string;
+    kind: CredentialKind;
+    name: string;
+    issuer?: string;
+    reference?: string;
+    issuedOn?: string;
+    expiresOn: string;
+    notes?: string;
+  }) => request<Credential>('/credentials', { method: 'POST', body: JSON.stringify(body) }),
+  updateCredential: (
+    id: string,
+    body: Partial<{
+      kind: CredentialKind;
+      name: string;
+      issuer: string;
+      reference: string;
+      issuedOn: string;
+      expiresOn: string;
+      notes: string;
+    }>,
+  ) => request<Credential>(`/credentials/${id}`, { method: 'PATCH', body: JSON.stringify(body) }),
+  archiveCredential: (id: string) =>
+    request<Credential>(`/credentials/${id}/archive`, { method: 'POST' }),
+  deleteCredential: (id: string) =>
+    request<{ deleted: boolean }>(`/credentials/${id}`, { method: 'DELETE' }),
+  uploadCredentialScan: (id: string, file: File) =>
+    upload<Credential>(`/credentials/${id}/scan`, file),
+  downloadCredentialScan: (id: string) => download(`/credentials/${id}/scan`),
 
   checklistTemplates: (kind?: ChecklistKind) =>
     request<ChecklistTemplate[]>(`/checklists/templates${toQuery({ kind })}`),

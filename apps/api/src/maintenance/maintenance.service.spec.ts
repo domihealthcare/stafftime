@@ -12,6 +12,7 @@ describe('MaintenanceService', () => {
     const sessions = { purgeExpired: jest.fn().mockResolvedValue(7) };
     const throttle = { purgeOld: jest.fn().mockResolvedValue(3) };
     const resets = { purgeExpired: jest.fn().mockResolvedValue(4) };
+    const digest = { send: jest.fn().mockResolvedValue({ sent: 2, contents: {} }) };
 
     return {
       service: new MaintenanceService(
@@ -19,11 +20,13 @@ describe('MaintenanceService', () => {
         sessions as never,
         throttle as never,
         resets as never,
+        digest as never,
       ),
       prisma,
       sessions,
       throttle,
       resets,
+      digest,
     };
   }
 
@@ -35,6 +38,7 @@ describe('MaintenanceService', () => {
       spentResetTokens: 4,
       expiredPairingCodes: 2,
       orphanedFiles: 1,
+      digestSentTo: 2,
     });
   });
 
@@ -66,6 +70,19 @@ describe('MaintenanceService', () => {
 
     const where = prisma.storedFile.deleteMany.mock.calls[0][0].where;
     expect(where.storageKey).toBeUndefined();
+  });
+
+  it('still tidies up when the digest cannot be sent', async () => {
+    // Tidying up and telling people are separate concerns: a mail provider
+    // having a bad night must not stop expired sessions being cleared.
+    const { service, sessions, digest } = build();
+    digest.send.mockRejectedValue(new Error('mail server down'));
+
+    await expect(service.purge()).resolves.toMatchObject({
+      expiredSessions: 7,
+      digestSentTo: 0,
+    });
+    expect(sessions.purgeExpired).toHaveBeenCalled();
   });
 
   it('gives an in-flight upload an hour before calling it an orphan', async () => {

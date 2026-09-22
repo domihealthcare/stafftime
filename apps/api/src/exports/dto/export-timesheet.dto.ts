@@ -9,7 +9,9 @@ import {
   IsEnum,
   IsIn,
   IsOptional,
+  IsString,
   IsUUID,
+  MaxLength,
 } from 'class-validator';
 import { ALL_COLUMN_KEYS, type TimesheetColumnKey } from '../columns';
 
@@ -67,4 +69,11 @@ export class ExportTimesheetDto {
   @Transform(({ value }) => (typeof value === 'string' ? value : undefined))
   @IsIn(['xlsx', 'csv'])
   format?: 'xlsx' | 'csv';
+
+  /// Which payroll target to produce for. Defaults to the spreadsheet, which
+  /// is what the practice runs payroll on until ADP's details arrive.
+  @IsOptional()
+  @IsString()
+  @MaxLength(60)
+  target?: string;
 }

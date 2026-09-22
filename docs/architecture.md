@@ -1102,3 +1102,152 @@ address.
 
 Dates in emails are rendered in UTC from the `@db.Date` values, for the same
 reason the app does: a day is a day wherever you read it.
+
+## Payroll export
+
+The brief asks for two things here, and they were the last parts of the core
+data model still missing: a `PayrollExporter` interface so a new provider is a
+new adapter, and a `PayrollExport` record for every run so one can be audited or
+repeated.
+
+### The adapter
+
+`src/exports/payroll/payroll-exporter.ts`. The aggregation — who worked, for how
+long, what counts as overtime — happens once in `TimesheetExportService` and is
+handed over already done. An exporter's whole job is layout: which columns, in
+what order, with which pay codes. Adding Gusto or Paychex later is one class and
+one line in the module.
+
+Two are registered. `SpreadsheetExporter` is the general-purpose one the
+practice runs payroll on today. `AdpTotalSourceExporter` is **registered but
+refuses**, and says exactly what it is waiting for: the Domi client code, the
+earning codes for regular, overtime and paid leave, and confirmation of which
+import layout TotalSource uses.
+
+Refusing is the right behaviour. A guessed layout is worse than none — ADP
+rejects the file and wastes an afternoon, or accepts it against the wrong pay
+codes and pays people wrong. Showing it on the screen, greyed out with its
+reason, is better than leaving it out: a provider the practice is chasing is
+easier to chase when the app names it where it would be used.
+
+### What gets recorded
+
+Every run writes a `PayrollExport`: the period, the target, who ran it, the
+counts and total hours, the options in full so it can be repeated, and the file
+itself through the same `FileStorage` adapter as checklist documents.
+
+Keeping the bytes matters. Re-deriving the file from the same period later would
+use *today's* data, which is the one thing an audit must not do — the whole
+reason to look is usually that something has since changed.
+
+A run that fails is recorded too, with its reason. "We tried to send these hours
+and could not" is part of the trail.
+
+Runs are **voided**, never deleted. A voided run stays readable; it is simply no
+longer the one that counts.
+
+### Which entries, not which dates
+
+`PayrollExportEntry` links a run to the exact time entries that went into it.
+The date range alone is not enough: an entry created or corrected afterwards
+falls inside the same range but was not in the file, and that difference is the
+whole point of asking whether hours have been paid yet.
+
+The ids come from the same read that built the file, carried through
+`TimesheetData.entryIds`. A second query could select a different set — an entry
+corrected between the two — and the record of what was paid would be wrong.
+
+## Hours that have already been paid
+
+`src/time-entries/payroll-state.ts` answers two questions about a time entry:
+has it been sent to payroll, and has it changed since.
+
+**Derived, not stored.** A flag would have to be kept in step with every edit,
+every export and every void, and the one time it drifted is the time somebody
+gets paid twice. Voided runs are filtered out in the query, so an entry whose
+only run was voided reads as never sent.
+
+It lives in its own file because two features need the same rule — the
+timesheet, to refuse a careless correction, and the export preview, to count
+corrections that have not reached payroll. Two copies would eventually disagree,
+and the disagreement would be about somebody's pay.
+
+### Correcting paid hours
+
+Refusing outright would be worse than allowing it: the database would stay wrong
+forever, and the mistake is usually exactly what needs fixing. But changing a
+number that has already gone to payroll, with nobody noticing, leaves the
+spreadsheet and this app quietly disagreeing.
+
+So the first attempt is refused with `ALREADY_EXPORTED` and the date it went
+out; the dialog turns that into a warning and relabels its button *Correct it
+anyway*. The second attempt carries `acknowledgeExported` and goes through. The
+entry then reads as changed-since-export, and the export preview counts it —
+*"1 entry has been corrected since it last went to payroll"* — so the correction
+cannot be quietly forgotten before the next run.
+
+## Licences and certifications
+
+`EmployeeCredential` is anything with a renewal date: a state licence, a board
+certification, a BLS card, a DEA registration.
+
+Its own record rather than a field on a checklist document, because a credential
+outlives the checklist it was first collected on. A licence renews every couple
+of years, long after onboarding is finished, and the renewal has nowhere to go
+if the only home is a one-off task.
+
+For a medical practice this is the compliance risk that bites quietly: nobody
+notices a lapsed licence until somebody asks to see it, usually at the worst
+possible moment. So the screen opens on **what is about to lapse**, soonest
+first, rather than on everything the practice holds — and "expiring within N
+days" always includes what has already lapsed, because the one that ran out last
+month is more urgent than the one running out next month, not less.
+
+`daysUntil` is zero on the day a credential runs out, and that still counts as
+valid: a licence is good until the end of the day it expires.
+
+### Who sees what
+
+Three levels, and the middle one is the interesting one:
+
+- **The record** — that a credential exists, what it is, and when it expires —
+  is visible to managers. Knowing who is licensed to do what is part of running
+  a rota.
+- **The number** is not. A manager gets to know the credential is current
+  without being handed its identifier.
+- **The scan** is admin-only, plus the person it belongs to, like checklist
+  documents. A licence document carries a number, a signature and sometimes a
+  home address.
+
+### Uploads are validated in one place
+
+`src/storage/upload-validation.ts` holds the allow-list, the magic-byte check
+and the filename sanitising, shared by checklist documents and credential scans.
+One implementation on purpose: a second copy of these rules would eventually be
+the lenient one, and it would be the one an attacker found.
+
+## The nightly digest
+
+`DigestService` runs from the maintenance job, because that is already the one
+thing that happens every night whether anybody is looking or not. It gathers
+what nobody would find out about unless they went looking:
+
+- credentials that have lapsed, and ones about to
+- checklist tasks past their due date
+- punches with no clock-out, from the last fortnight
+- time-off requests still waiting on a decision
+
+Two rules make it worth reading:
+
+**It says nothing when there is nothing to say.** A daily email that is usually
+empty gets filtered into a folder within a fortnight, and then the one that
+matters goes there too.
+
+**Empty sections are left out, not printed empty.** Same reason.
+
+Each line names the person and the thing, so the email can be acted on without
+opening the app.
+
+It cannot fail the job it runs inside. Tidying up and telling people are
+separate concerns, and a mail provider having a bad night must not stop expired
+sessions being cleared.

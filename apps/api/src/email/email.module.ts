@@ -1,5 +1,6 @@
 import { Global, Logger, Module } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
+import { DigestService } from './digest.service';
 import { EMAIL_SENDER, EmailSender } from './email-sender';
 import { LogEmailSender } from './log-email.sender';
 import { NotificationsService } from './notifications.service';
@@ -39,7 +40,8 @@ import { ResendEmailSender } from './resend-email.sender';
       },
     },
     NotificationsService,
+    DigestService,
   ],
-  exports: [EMAIL_SENDER, NotificationsService],
+  exports: [EMAIL_SENDER, NotificationsService, DigestService],
 })
 export class EmailModule {}

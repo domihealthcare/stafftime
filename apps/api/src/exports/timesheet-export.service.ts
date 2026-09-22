@@ -1,6 +1,7 @@
 import { BadRequestException, Injectable } from '@nestjs/common';
-import { PayType, Prisma, TimeEntryStatus } from '@prisma/client';
+import { PayType, PayrollExportStatus, Prisma, TimeEntryStatus } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
+import { payrollStateOf } from '../time-entries/payroll-state';
 import { DEFAULT_COLUMN_KEYS, type TimesheetColumnKey } from './columns';
 import { ExportTimesheetDto } from './dto/export-timesheet.dto';
 
@@ -36,6 +37,13 @@ export interface EmployeeTotal {
 export interface TimesheetData {
   rows: TimesheetRow[];
   totals: EmployeeTotal[];
+  /// Exactly the entries this data was built from.
+  ///
+  /// Carried here rather than re-queried, because a payroll export records
+  /// which hours went out and a second query could quietly select a different
+  /// set — an entry corrected between the two, say. The record of what was
+  /// paid has to come from the same read as the file.
+  entryIds: string[];
   meta: {
     from: Date;
     to: Date;
@@ -47,6 +55,12 @@ export interface TimesheetData {
     openEntryCount: number;
     splitOvertime: boolean;
     generatedAt: Date;
+    /// How many of these entries were already sent to payroll, and how many of
+    /// those have been corrected since the file went out. The second number is
+    /// the one that matters: those corrections have not reached payroll, and
+    /// somebody has to carry them into this run.
+    alreadyExportedCount: number;
+    correctedSinceExportCount: number;
   };
 }
 
@@ -64,6 +78,13 @@ const ENTRY_INCLUDE = {
   },
   location: { select: { id: true, name: true, timezone: true } },
   shift: { select: { startsAt: true, endsAt: true } },
+  /// So the preview can say which of these hours have already been sent, and
+  /// which have been corrected since.
+  payrollExports: {
+    where: { export: { status: PayrollExportStatus.GENERATED } },
+    select: { export: { select: { id: true, target: true, generatedAt: true } } },
+    orderBy: { export: { generatedAt: 'desc' } },
+  },
   editedBy: { select: { firstName: true, lastName: true } },
   approvedBy: { select: { firstName: true, lastName: true } },
 } satisfies Prisma.TimeEntryInclude;
@@ -103,6 +124,9 @@ export class TimesheetExportService {
     });
 
     const rows = entries.map((entry) => this.toRow(entry, columns));
+    // Worked out from the rows already read rather than a second query, so the
+    // counts cannot describe a different set of entries from the file.
+    const payrollStates = entries.map((entry) => payrollStateOf(entry));
     const totals = this.buildTotals(entries, dto.splitOvertime ?? false);
 
     const location = dto.locationId
@@ -115,6 +139,7 @@ export class TimesheetExportService {
     return {
       rows,
       totals,
+      entryIds: entries.map((entry) => entry.id),
       meta: {
         from,
         to,
@@ -126,6 +151,9 @@ export class TimesheetExportService {
         openEntryCount: entries.filter((e) => e.clockOutAt === null).length,
         splitOvertime: dto.splitOvertime ?? false,
         generatedAt: new Date(),
+        alreadyExportedCount: payrollStates.filter((state) => state.exported).length,
+        correctedSinceExportCount: payrollStates.filter((state) => state.changedSinceExport)
+          .length,
       },
     };
   }
@@ -141,6 +169,8 @@ export class TimesheetExportService {
       openEntryCount: meta.openEntryCount,
       flaggedCount: totals.reduce((sum, t) => sum + t.flagged, 0),
       overtimeHours: round2(totals.reduce((sum, t) => sum + t.overtimeHours, 0)),
+      alreadyExportedCount: meta.alreadyExportedCount,
+      correctedSinceExportCount: meta.correctedSinceExportCount,
     };
   }
 

@@ -9,6 +9,7 @@ import { CalendarModule } from './calendar/calendar.module';
 import { ChecklistsModule } from './checklists/checklists.module';
 import { SessionAuthGuard } from './common/auth/session.guard';
 import { validateEnv } from './config/env.validation';
+import { CredentialsModule } from './credentials/credentials.module';
 import { EmailModule } from './email/email.module';
 import { EmployeesModule } from './employees/employees.module';
 import { ExportsModule } from './exports/exports.module';
@@ -37,6 +38,7 @@ import { TimeEntriesModule } from './time-entries/time-entries.module';
     ExportsModule,
     PtoModule,
     ChecklistsModule,
+    CredentialsModule,
     MaintenanceModule,
     SetupModule,
   ],

@@ -1,6 +1,7 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { LoginThrottleService } from '../auth/login-throttle.service';
 import { PasswordResetService } from '../auth/password-reset.service';
+import { DigestService } from '../email/digest.service';
 import { SessionService } from '../auth/session.service';
 import { PrismaService } from '../prisma/prisma.service';
 
@@ -15,6 +16,9 @@ export interface PurgeReport {
   spentResetTokens: number;
   expiredPairingCodes: number;
   orphanedFiles: number;
+  /// How many managers were told about something that needs a look. Zero when
+  /// there was nothing to say, which is most days.
+  digestSentTo: number;
 }
 
 /**
@@ -24,6 +28,9 @@ export interface PurgeReport {
  * accumulate a row per sign-in, the throttle table grows with every wrong
  * password, and a pairing code or reset link that was never used is a live
  * credential sitting in the database.
+ *
+ * It also sends the daily digest, because this is already the one thing that
+ * runs every night whether anybody is looking or not.
  */
 @Injectable()
 export class MaintenanceService {
@@ -34,6 +41,7 @@ export class MaintenanceService {
     private readonly sessions: SessionService,
     private readonly throttle: LoginThrottleService,
     private readonly resets: PasswordResetService,
+    private readonly digest: DigestService,
   ) {}
 
   async purge(): Promise<PurgeReport> {
@@ -43,12 +51,32 @@ export class MaintenanceService {
       spentResetTokens: await this.resets.purgeExpired(),
       expiredPairingCodes: await this.clearExpiredPairingCodes(),
       orphanedFiles: await this.deleteOrphanedFiles(),
+      digestSentTo: await this.sendDigest(),
     };
 
     this.logger.log(
       `Purged ${report.expiredSessions} session(s), ${report.staleLoginAttempts} login attempt(s), ${report.spentResetTokens} reset token(s), ${report.expiredPairingCodes} pairing code(s), ${report.orphanedFiles} orphaned file(s)`,
     );
     return report;
+  }
+
+  /**
+   * The nightly round-up of what nobody has got to yet.
+   *
+   * Never allowed to fail the job. Tidying up and telling people are separate
+   * concerns, and a mail provider having a bad night must not stop expired
+   * sessions being cleared.
+   */
+  private async sendDigest(): Promise<number> {
+    try {
+      const { sent } = await this.digest.send();
+      return sent;
+    } catch (error) {
+      this.logger.error(
+        `Could not send the daily digest: ${error instanceof Error ? error.message : error}`,
+      );
+      return 0;
+    }
   }
 
   /// A pairing code that expired unused is still a credential. Clearing it

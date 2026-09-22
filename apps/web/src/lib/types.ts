@@ -99,6 +99,8 @@ export interface TimeEntry {
   employee?: { id: string; firstName: string; lastName: string };
   location?: LocationSummary;
   shift?: { id: string; startsAt: string; endsAt: string } | null;
+  /// Present on every entry the timesheet screens read.
+  payroll?: PayrollState;
 }
 
 // ---------------------------------------------------------------------------
@@ -289,4 +291,90 @@ export interface TemplateTaskInput {
   owner?: TaskOwner;
   requiresDocument?: boolean;
   dueOffsetDays?: number;
+}
+
+// ---------------------------------------------------------------------------
+// Payroll export
+// ---------------------------------------------------------------------------
+
+/// Where hours can be sent. Targets that are not ready say why.
+export interface PayrollTarget {
+  key: string;
+  label: string;
+  description: string;
+  available: boolean;
+  unavailableReason?: string;
+}
+
+export type PayrollExportStatus = 'GENERATED' | 'FAILED' | 'VOIDED';
+
+/// One run, as the history shows it.
+export interface PayrollExportRecord {
+  id: string;
+  target: string;
+  status: PayrollExportStatus;
+  periodStart: string;
+  periodEnd: string;
+  filename: string;
+  contentType: string;
+  sizeBytes: number;
+  checksum: string;
+  entryCount: number;
+  employeeCount: number;
+  totalHours: number;
+  failureReason: string | null;
+  generatedAt: string;
+  fileAvailable: boolean;
+  location: { id: string; name: string } | null;
+  generatedBy: { id: string; firstName: string; lastName: string } | null;
+}
+
+/// Whether these hours have already gone to payroll, and whether they have been
+/// corrected since. Worked out by the server; see apps/api/src/time-entries.
+export interface PayrollState {
+  exported: boolean;
+  exportedAt: string | null;
+  exportId: string | null;
+  changedSinceExport: boolean;
+}
+
+// ---------------------------------------------------------------------------
+// Licences and certifications
+// ---------------------------------------------------------------------------
+
+export type CredentialKind =
+  | 'LICENSE'
+  | 'CERTIFICATION'
+  | 'LIFE_SUPPORT'
+  | 'REGISTRATION'
+  | 'IMMUNIZATION'
+  | 'BACKGROUND_CHECK'
+  | 'OTHER';
+
+export interface Credential {
+  id: string;
+  kind: CredentialKind;
+  name: string;
+  issuer: string | null;
+  /// Null for anyone but an admin or the person it belongs to.
+  reference: string | null;
+  issuedOn: string | null;
+  expiresOn: string;
+  notes: string | null;
+  filename: string | null;
+  sizeBytes: number | null;
+  archivedAt: string | null;
+  hasScan: boolean;
+  /// Negative once it has lapsed; zero on the day it runs out, which still
+  /// counts as valid.
+  daysUntilExpiry: number;
+  expired: boolean;
+  employee: {
+    id: string;
+    firstName: string;
+    lastName: string;
+    preferredName: string | null;
+    employmentStatus: string;
+  };
+  recordedBy: { id: string; firstName: string; lastName: string } | null;
 }

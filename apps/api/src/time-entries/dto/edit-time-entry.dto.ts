@@ -21,4 +21,11 @@ export class EditTimeEntryDto {
   @IsString()
   @Length(3, 500)
   editReason!: string;
+
+  /// Set when the manager has been told these hours already went to payroll and
+  /// means to correct them anyway. Without it the edit is refused, so a
+  /// correction to paid hours is never made by accident.
+  @IsOptional()
+  @IsBoolean()
+  acknowledgeExported?: boolean;
 }

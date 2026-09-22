@@ -33,8 +33,11 @@ What is still missing is ADP-specific, and none of it can be guessed:
 - [ ] Confirm whether TotalSource (PEO) uses a different file spec than
       standalone ADP Run / Workforce Now — it sometimes does.
 
-When those arrive, the work is an adapter that reuses the existing aggregation
-and writes ADP's layout — the timesheet logic itself does not change.
+When those arrive, the work is **one file**:
+`apps/api/src/exports/payroll/adp-totalsource.exporter.ts`. The adapter is
+already registered and appears on the export screen, greyed out, saying what it
+is waiting for. The hours reach it already aggregated, so only the column layout
+and the pay-code mapping remain.
 
 ## PTO (Phase 2, requests and approval are built)
 
@@ -61,9 +64,10 @@ and writes ADP's layout — the timesheet logic itself does not change.
 - [x] ~~Notifications when a request is decided.~~ Built — the requester is
       emailed the decision and the reason, and every manager is emailed when a
       request comes in. Needs an email provider configured to actually send.
-- [ ] **Anything else worth emailing about?** Overdue checklist tasks and
-      licences about to expire are the obvious candidates. The daily maintenance
-      job is the natural place to send them from.
+- [x] ~~Anything else worth emailing about?~~ The nightly digest now chases
+      lapsed and expiring credentials, overdue checklist tasks, punches with no
+      clock-out, and undecided time off. It stays quiet on days when there is
+      nothing to say.
 
 ## Calendar syncing
 
@@ -125,10 +129,11 @@ decision from the practice:
       the last day, whichever is later — and the practice needs a habit for
       acting on it. Worth deciding whether the app should flag documents that
       are past their retention period.
-- [ ] **Licence and certification expiry.** A licence is attached as a document
-      with no expiry date recorded, so nothing can warn that it lapses next
-      month. Tracking expiry dates and warning ahead of them is a natural next
-      step and would want its own screen.
+- [x] ~~Licence and certification expiry.~~ Built, on its own screen, with the
+      nightly digest chasing what is about to lapse. Still to confirm: how far
+      ahead the practice wants warning (60 days by default), and whether a
+      lapsed licence should stop somebody being scheduled — today it is
+      reported, not enforced.
 - [ ] **Should marking somebody as no longer employed start an offboarding
       checklist?** Today the two are separate: an admin marks them terminated on
       the Staff screen and starts the checklist here. Linking them would mean

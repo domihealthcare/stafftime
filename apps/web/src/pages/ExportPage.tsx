@@ -7,9 +7,15 @@ import {
   type TimesheetExportOptions,
 } from '../lib/api';
 import type { ReportPreset } from '../lib/types';
-import { addDays, startOfWeek, toLocalInputValue } from '../lib/format';
-import type { Location } from '../lib/types';
-import { Alert, Card, PageHeading, Spinner } from '../components/ui';
+import {
+  addDays,
+  formatCalendarDate,
+  formatDateTime,
+  startOfWeek,
+  toLocalInputValue,
+} from '../lib/format';
+import type { Location, PayrollExportRecord, PayrollTarget } from '../lib/types';
+import { Alert, Badge, Card, EmptyState, PageHeading, Spinner } from '../components/ui';
 
 const STATUS_CHOICES = [
   { value: 'APPROVED', label: 'Approved', hint: 'Signed off by a manager' },
@@ -44,6 +50,10 @@ export function ExportPage() {
   const [presetName, setPresetName] = useState('');
   const [presetShared, setPresetShared] = useState(true);
 
+  const [targets, setTargets] = useState<PayrollTarget[]>([]);
+  const [target, setTarget] = useState('spreadsheet');
+  const [history, setHistory] = useState<PayrollExportRecord[]>([]);
+
   const [preview, setPreview] = useState<ExportPreview | null>(null);
   const [previewing, setPreviewing] = useState(false);
   const [downloading, setDownloading] = useState(false);
@@ -54,12 +64,20 @@ export function ExportPage() {
   }, []);
 
   useEffect(() => {
-    Promise.all([api.exportColumns(), api.listLocations(), api.listReportPresets()])
-      .then(([columnData, locationData, presetData]) => {
+    Promise.all([
+      api.exportColumns(),
+      api.listLocations(),
+      api.listReportPresets(),
+      api.payrollTargets(),
+      api.exportHistory(),
+    ])
+      .then(([columnData, locationData, presetData, targetData, historyData]) => {
         setColumns(columnData.columns);
         setSelected(columnData.defaults);
         setLocations(locationData);
         setPresets(presetData);
+        setTargets(targetData);
+        setHistory(historyData);
       })
       .catch((err: unknown) =>
         setError(err instanceof ApiError ? err.message : 'Could not load export options.'),
@@ -169,7 +187,11 @@ export function ExportPage() {
     setDownloading(true);
     setError(null);
     try {
-      const { blob, filename } = await api.downloadExport({ ...options, to: endExclusive(to) });
+      const { blob, filename } = await api.downloadExport({
+        ...options,
+        to: endExclusive(to),
+        target,
+      });
       const url = URL.createObjectURL(blob);
       const link = document.createElement('a');
       link.href = url;
@@ -178,6 +200,9 @@ export function ExportPage() {
       link.click();
       link.remove();
       URL.revokeObjectURL(url);
+
+      // Every run is recorded, so the history below is now out of date.
+      setHistory(await api.exportHistory());
     } catch (err) {
       setError(err instanceof ApiError ? err.message : 'Could not produce that file.');
     } finally {
@@ -559,9 +584,62 @@ export function ExportPage() {
                 {preview.openEntryCount} still open, counted as zero hours.
               </p>
             )}
+            {preview.correctedSinceExportCount > 0 && (
+              <p className="mt-1 text-sm text-amber-700">
+                {preview.correctedSinceExportCount === 1
+                  ? '1 entry has been corrected since it last went to payroll — that correction has not reached payroll yet.'
+                  : `${preview.correctedSinceExportCount} entries have been corrected since they last went to payroll — those corrections have not reached payroll yet.`}
+              </p>
+            )}
+            {preview.alreadyExportedCount > 0 &&
+              preview.alreadyExportedCount === preview.entryCount && (
+                <p className="mt-1 text-sm text-slate-600">
+                  All of these hours have been exported before. Running it again is fine — every
+                  run is recorded below.
+                </p>
+              )}
           </div>
         ) : (
           <p className="text-sm text-slate-500">Choose a period to see what is included.</p>
+        )}
+
+        {targets.length > 1 && (
+          <div className="mt-4">
+            <p className="mb-1 text-sm font-medium text-slate-700">Send to</p>
+            <div className="space-y-2">
+              {targets.map((option) => (
+                <label
+                  key={option.key}
+                  className={`flex gap-2 rounded-lg border p-3 text-sm ${
+                    option.available
+                      ? 'cursor-pointer border-slate-300 hover:bg-slate-50'
+                      : 'border-slate-200 bg-slate-50'
+                  }`}
+                >
+                  <input
+                    type="radio"
+                    name="payroll-target"
+                    className="mt-1"
+                    value={option.key}
+                    checked={target === option.key}
+                    disabled={!option.available}
+                    onChange={() => setTarget(option.key)}
+                  />
+                  <span className="min-w-0">
+                    <span className="font-medium text-slate-900">{option.label}</span>
+                    <span className="mt-0.5 block text-xs text-slate-600">
+                      {option.description}
+                    </span>
+                    {!option.available && option.unavailableReason && (
+                      <span className="mt-1 block text-xs text-amber-700">
+                        {option.unavailableReason}
+                      </span>
+                    )}
+                  </span>
+                </label>
+              ))}
+            </div>
+          </div>
         )}
 
         <button
@@ -578,10 +656,115 @@ export function ExportPage() {
         </button>
       </Card>
 
-      <p className="mt-4 text-center text-xs text-slate-500">
-        The ADP TotalSource export is not built yet — it needs the pay codes and client code
-        from ADP. This spreadsheet works for payroll in the meantime.
-      </p>
+      <div className="mt-6">
+        <h2 className="mb-2 text-sm font-semibold uppercase tracking-wide text-slate-500">
+          Past exports
+        </h2>
+        <p className="mb-3 text-sm text-slate-600">
+          Every run is kept, with the file exactly as it went out — so a disagreement with
+          payroll can be settled by looking rather than by guessing.
+        </p>
+        <ExportHistory
+          history={history}
+          onChanged={async () => setHistory(await api.exportHistory())}
+          onError={setError}
+        />
+      </div>
+    </div>
+  );
+}
+
+function ExportHistory({
+  history,
+  onChanged,
+  onError,
+}: {
+  history: PayrollExportRecord[];
+  onChanged: () => Promise<void>;
+  onError: (message: string) => void;
+}) {
+  const [busyId, setBusyId] = useState<string | null>(null);
+
+  if (history.length === 0) {
+    return <EmptyState>Nothing has been exported yet.</EmptyState>;
+  }
+
+  async function saveFile(record: PayrollExportRecord) {
+    onError('');
+    try {
+      const { blob, filename } = await api.downloadPastExport(record.id);
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = filename;
+      link.click();
+      URL.revokeObjectURL(url);
+    } catch (err) {
+      onError(err instanceof ApiError ? err.message : 'Could not open that file.');
+    }
+  }
+
+  return (
+    <div className="space-y-2">
+      {history.map((record) => (
+        <Card key={record.id} className="p-3">
+          <div className="flex flex-wrap items-start justify-between gap-3">
+            <div className="min-w-0">
+              <div className="flex flex-wrap items-center gap-2">
+                <span className="text-sm font-medium text-slate-900">
+                  {formatCalendarDate(record.periodStart, { year: false })} –{' '}
+                  {formatCalendarDate(record.periodEnd, { year: false })}
+                </span>
+                {record.status === 'FAILED' && <Badge tone="danger">failed</Badge>}
+                {record.status === 'VOIDED' && <Badge>voided</Badge>}
+                {record.location && <Badge>{record.location.name}</Badge>}
+              </div>
+              <p className="mt-0.5 text-xs text-slate-500">
+                {record.status === 'FAILED'
+                  ? record.failureReason
+                  : `${record.entryCount} entries · ${record.employeeCount} people · ${record.totalHours} hours`}
+              </p>
+              <p className="mt-0.5 text-xs text-slate-400">
+                {record.target} · {formatDateTime(record.generatedAt)}
+                {record.generatedBy &&
+                  ` · ${record.generatedBy.firstName} ${record.generatedBy.lastName}`}
+              </p>
+            </div>
+
+            <div className="flex shrink-0 items-center gap-3">
+              {record.fileAvailable && (
+                <button
+                  type="button"
+                  onClick={() => void saveFile(record)}
+                  className="text-xs font-medium text-brand-700 underline hover:text-brand-900"
+                >
+                  The file
+                </button>
+              )}
+              {record.status === 'GENERATED' && (
+                <button
+                  type="button"
+                  disabled={busyId === record.id}
+                  onClick={async () => {
+                    setBusyId(record.id);
+                    try {
+                      await api.voidExport(record.id);
+                      await onChanged();
+                    } catch (err) {
+                      onError(err instanceof ApiError ? err.message : 'Could not void that run.');
+                    } finally {
+                      setBusyId(null);
+                    }
+                  }}
+                  className="text-xs font-medium text-slate-500 hover:text-rose-700 disabled:opacity-60"
+                >
+                  Void
+                </button>
+              )}
+            </div>
+          </div>
+        </Card>
+      ))}
     </div>
   );
 }
