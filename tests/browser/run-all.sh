@@ -3,17 +3,20 @@
 # server (:5173). See README.md in this directory for what has to be up first.
 #
 # Each suite assumes a clean slate: nobody on the clock, no paired kiosks, no
-# lockouts, and none of the demo data from `npm run db:demo`. Suites deliberately leave state behind (an open entry, a changed
-# password, a rota), so reset between them rather than relying on run order.
+# lockouts, and none of the demo data from `npm run db:demo`. Suites deliberately
+# leave state behind (an open entry, a changed password, a rota, an edited
+# template), so reset between them rather than relying on run order.
 set -uo pipefail
 HERE="$(cd "$(dirname "$0")" && pwd)"
 API_DIR="$HERE/../../apps/api"
 PGPORT_LOCAL="${PGPORT_LOCAL:-5433}"
 PGHOST_LOCAL="${PGHOST_LOCAL:-127.0.0.1}"
+PGUSER_LOCAL="${PGUSER_LOCAL:-postgres}"
+PGDATABASE_LOCAL="${PGDATABASE_LOCAL:-stafftime}"
 
 reset_state() {
   (cd "$API_DIR" && npx ts-node prisma/seed.ts >/dev/null 2>&1)
-  psql -h "$PGHOST_LOCAL" -p "$PGPORT_LOCAL" -U postgres -d stafftime -q \
+  psql -h "$PGHOST_LOCAL" -p "$PGPORT_LOCAL" -U "$PGUSER_LOCAL" -d "$PGDATABASE_LOCAL" -q \
     -c "update time_entries set \"clockOutAt\" = \"clockInAt\" + interval '1 hour', status='COMPLETED' where \"clockOutAt\" is null;" \
     -c "delete from kiosk_devices;" \
     -c "delete from pto_requests;" \
@@ -25,12 +28,14 @@ reset_state() {
     -c "delete from employee_checklists;" \
     -c "delete from stored_files;" \
     -c "delete from login_attempts;" \
-    -c "delete from employees where \"externalId\" like 'demo:%';"
+    -c "delete from employees where \"externalId\" like 'demo:%';" \
+    -c "delete from checklist_templates where \"createdById\" is not null;" \
+    -c "delete from password_reset_tokens;"
 }
 
 # The scheduler suite builds its rotas in February 2027 so that clearing them
 # cannot touch the shift the seed puts on today's date.
-SUITES="drive refusals correct auth kiosk export locations pto pto-policy presets calendar scheduler checklists"
+SUITES="drive refusals correct auth kiosk export locations pto pto-policy presets calendar scheduler checklists phone reset"
 
 # Full output per suite goes to a file, and only the step lines are printed, so
 # a failure's detail is still there to read rather than truncated away.

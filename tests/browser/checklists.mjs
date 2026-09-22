@@ -217,6 +217,144 @@ await step('an admin can delete the checklist, documents and all', async () => {
   await admin.getByText(/Nothing on the go/).waitFor({ timeout: 15000 });
 });
 
+// --- editing the templates themselves ---
+//
+// The whole point of shipping the seeded lists is that the practice edits them
+// to match how it actually works, so the editing has to be real rather than a
+// promise in a document.
+
+/// Expands a template card if it is not already open. Clicking blindly toggles,
+/// which closes the one you meant to read.
+async function openTemplate(page, name) {
+  const card = page.getByRole('button', { name }).last();
+  await card.waitFor({ timeout: 10000 });
+  if ((await card.getAttribute('aria-expanded')) !== 'true') await card.click();
+}
+
+await step('an admin can open a template for editing', async () => {
+  await openTemplate(admin, /New hire — Domi Healthcare/);
+  await admin.getByRole('button', { name: 'Edit this template' }).click();
+  await admin.getByLabel('Template name').waitFor({ timeout: 10000 });
+});
+
+await step('a task can be added, worded, assigned and given a due date', async () => {
+  await admin.getByRole('button', { name: '+ Add a task' }).click();
+
+  // The new task is the last one; the seeded template has 18.
+  const index = 19;
+  await admin.getByLabel(`Task ${index} title`).fill('Parking permit issued');
+  await admin.getByLabel(`Task ${index} notes`).fill('The lot behind the North Bergen office.');
+  await admin.getByLabel(`Task ${index} owner`).selectOption({ label: 'A manager' });
+  await admin.getByLabel(`Task ${index} due`).selectOption({ label: 'after the start date' });
+  await admin.getByLabel(`Task ${index} days`).fill('2');
+
+  await admin.getByRole('button', { name: 'Save the template' }).click();
+  await admin.getByText('19 tasks, 7 needing a document').waitFor({ timeout: 15000 });
+});
+await admin.screenshot({ path: `${OUT}/46-template-edited.png`, fullPage: true });
+
+await step('the change is on the template, described in plain words', async () => {
+  await admin.getByText('Parking permit issued').waitFor({ timeout: 10000 });
+  await admin.getByText('2 days after').first().waitFor({ timeout: 5000 });
+
+  // "1 day before", not "1 days before".
+  const text = await admin.locator('main').innerText();
+  if (/\b1 days (before|after)\b/.test(text))
+    throw new Error('a single day is being described in the plural');
+  if (!/\b1 day (before|after)\b/.test(text))
+    throw new Error('expected a task due one day either side of the start date');
+});
+
+await step('a task can be reordered and removed', async () => {
+  await openTemplate(admin, /New hire — Domi Healthcare/);
+  await admin.getByRole('button', { name: 'Edit this template' }).click();
+  await admin.getByLabel('Task 1 title').waitFor({ timeout: 10000 });
+
+  const first = await admin.getByLabel('Task 1 title').inputValue();
+  await admin.getByRole('button', { name: 'Move task 1 down' }).click();
+  if ((await admin.getByLabel('Task 2 title').inputValue()) !== first)
+    throw new Error('moving a task down did not move it');
+
+  await admin.getByRole('button', { name: 'Remove task 2' }).click();
+  await admin.getByRole('button', { name: 'Save the template' }).click();
+  await admin.getByText('18 tasks').first().waitFor({ timeout: 15000 });
+});
+
+await step('the edit does not disturb a checklist already under way', async () => {
+  // Start one from the edited template, then edit the template again and check
+  // the started checklist keeps the wording it began with.
+  await admin.getByRole('button', { name: 'Start a checklist' }).click();
+  await admin.getByLabel('Who').selectOption({ label: 'Frankie Front-Desk' });
+  await admin.getByRole('button', { name: 'Start it' }).click();
+  await admin.getByText(/0 of 18/).waitFor({ timeout: 20000 });
+
+  // The running checklist names the template it came from, so there are now two
+  // buttons carrying that text. openTemplate takes the later one, which is the
+  // template card.
+  await openTemplate(admin, /New hire — Domi Healthcare/);
+  await admin.getByRole('button', { name: 'Edit this template' }).click();
+  await admin.getByLabel('Task 1 title').fill('COMPLETELY DIFFERENT WORDING');
+  await admin.getByRole('button', { name: 'Save the template' }).click();
+  await admin.getByText('COMPLETELY DIFFERENT WORDING').waitFor({ timeout: 15000 });
+
+  // The running checklist still says what it said when it was started.
+  await admin.reload({ waitUntil: 'networkidle' });
+  await admin.getByRole('button', { name: /Frankie/ }).first().click();
+  const running = await admin.locator('main').innerText();
+  if (/COMPLETELY DIFFERENT WORDING/.test(running))
+    throw new Error('editing the template rewrote a checklist that was already under way');
+});
+
+await step('a new template can be created from nothing', async () => {
+  await admin.getByRole('button', { name: '+ New offboarding template' }).click();
+  await admin.getByLabel('Template name').fill('Locum departure');
+  await admin.getByLabel('Task 1 title').fill('Return the badge');
+  await admin.getByRole('button', { name: 'Create the template' }).click();
+
+  const card = admin.getByRole('button', { name: /Locum departure/ });
+  await card.waitFor({ timeout: 15000 });
+
+  // "1 task", not "1 tasks", and filed under offboarding.
+  const label = await card.innerText();
+  if (!/\boffboarding\b/.test(label)) throw new Error(`created under the wrong kind: ${label}`);
+  if (!/\b1 task\b/.test(label)) throw new Error(`expected "1 task", got: ${label}`);
+});
+
+await step('editing shows the editor instead of the list, not both', async () => {
+  await openTemplate(admin, /Locum departure/);
+  await admin.getByRole('button', { name: 'Edit this template' }).click();
+  await admin.getByLabel('Task 1 title').waitFor({ timeout: 10000 });
+
+  // The read-only row for the same task would be a second copy of it on screen.
+  const copies = await admin.getByText('Return the badge', { exact: true }).count();
+  if (copies > 0)
+    throw new Error('the read-only task list is still showing underneath the editor');
+  await admin.getByRole('button', { name: 'Cancel' }).click();
+});
+
+await step('a template with no name or no tasks is refused with a reason', async () => {
+  await admin.getByRole('button', { name: '+ New onboarding template' }).click();
+  await admin.getByRole('button', { name: 'Create the template' }).click();
+  await admin.getByText('Give the template a name.').waitFor({ timeout: 10000 });
+
+  await admin.getByLabel('Template name').fill('Empty one');
+  await admin.getByRole('button', { name: 'Remove task 1' }).click();
+  await admin.getByRole('button', { name: 'Create the template' }).click();
+  await admin.getByText(/needs at least one task/).waitFor({ timeout: 10000 });
+  await admin.getByRole('button', { name: 'Cancel' }).click();
+});
+
+await step('a manager can read the templates but not change them', async () => {
+  await manager.reload({ waitUntil: 'networkidle' });
+  await manager.getByText('Templates').first().waitFor({ timeout: 15000 });
+  await openTemplate(manager, /Departure — Domi Healthcare/);
+
+  for (const name of ['Edit this template', 'Retire this template', '+ New onboarding template']) {
+    if ((await manager.getByRole('button', { name }).count()) > 0)
+      throw new Error(`a manager was offered "${name}"`);
+  }
+});
+
 await browser.close();
 console.log(`\n${errors.length === 0 ? 'ALL CHECKLIST CHECKS PASSED' : `PROBLEMS (${errors.length}):`}`);
 errors.forEach((e) => console.log(' - ' + e));

@@ -329,6 +329,17 @@ export const api = {
     request<{ revoked: boolean }>('/calendar/link', { method: 'DELETE' }),
 
   // ------------------------------------------------------------- first-run setup
+  requestPasswordReset: (email: string) =>
+    request<{ message: string }>('/auth/forgot-password', {
+      method: 'POST',
+      body: JSON.stringify({ email }),
+    }),
+  resetPassword: (token: string, newPassword: string) =>
+    request<{ email: string; signedOutEverywhere: boolean }>('/auth/reset-password', {
+      method: 'POST',
+      body: JSON.stringify({ token, newPassword }),
+    }),
+
   setupStatus: () => request<{ needsSetup: boolean }>('/setup/status'),
   createFirstAdmin: (body: {
     setupToken: string;

@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { Link } from 'react-router-dom';
 import { ApiError } from '../lib/api';
 import { useSession } from '../lib/session';
 import { Alert, Card } from '../components/ui';
@@ -79,9 +80,13 @@ export function LoginPage() {
           </form>
         </Card>
 
-        <p className="mt-4 text-center text-xs text-slate-500">
-          Forgotten your password? Ask an administrator to reset it — there is no
-          self-service reset yet.
+        <p className="mt-4 text-center text-sm">
+          <Link
+            to="/forgot-password"
+            className="font-medium text-brand-700 hover:text-brand-900"
+          >
+            Forgotten your password?
+          </Link>
         </p>
       </div>
     </div>

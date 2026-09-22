@@ -12,6 +12,7 @@ import {
   isoDate,
   toUtcDate,
 } from '../common/util/calendar-date.util';
+import { NotificationsService } from '../email/notifications.service';
 import { PrismaService } from '../prisma/prisma.service';
 import {
   CreatePtoRequestDto,
@@ -31,7 +32,10 @@ const MAX_REQUEST_DAYS = 90;
 export class PtoService {
   private readonly logger = new Logger(PtoService.name);
 
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly notifications: NotificationsService,
+  ) {}
 
   async create(dto: CreatePtoRequestDto, actor: AuthUser) {
     const employeeId = this.resolveEmployeeId(dto, actor);
@@ -67,6 +71,11 @@ export class PtoService {
     });
 
     this.logger.log(`PTO request ${request.id} created for employee ${employeeId}`);
+
+    // Not awaited: nobody's request should fail because a mail server is slow,
+    // and until now a request could sit for a week because nobody looked.
+    this.notifyQuietly(() => this.notifications.ptoRequested(request.id));
+
     return this.decorate(request);
   }
 
@@ -148,7 +157,25 @@ export class PtoService {
     });
 
     this.logger.log(`PTO request ${id} ${dto.decision.toLowerCase()} by ${actor.id}`);
+    this.notifyQuietly(() => this.notifications.ptoDecided(updated.id));
+
     return this.decorate(updated);
+  }
+
+  /**
+   * Starts a notification and walks away.
+   *
+   * `void somePromise()` is not enough: an unhandled rejection takes the whole
+   * Node process down, so a mail server having a bad afternoon would stop the
+   * practice clocking in. The rejection has to be caught here, where the only
+   * sensible response is a line in the log.
+   */
+  private notifyQuietly(send: () => Promise<void>): void {
+    send().catch((error: unknown) =>
+      this.logger.error(
+        `Could not send a time-off notification: ${error instanceof Error ? error.message : error}`,
+      ),
+    );
   }
 
   /**

@@ -11,12 +11,19 @@ describe('MaintenanceService', () => {
     };
     const sessions = { purgeExpired: jest.fn().mockResolvedValue(7) };
     const throttle = { purgeOld: jest.fn().mockResolvedValue(3) };
+    const resets = { purgeExpired: jest.fn().mockResolvedValue(4) };
 
     return {
-      service: new MaintenanceService(prisma as never, sessions as never, throttle as never),
+      service: new MaintenanceService(
+        prisma as never,
+        sessions as never,
+        throttle as never,
+        resets as never,
+      ),
       prisma,
       sessions,
       throttle,
+      resets,
     };
   }
 
@@ -25,6 +32,7 @@ describe('MaintenanceService', () => {
     await expect(service.purge()).resolves.toEqual({
       expiredSessions: 7,
       staleLoginAttempts: 3,
+      spentResetTokens: 4,
       expiredPairingCodes: 2,
       orphanedFiles: 1,
     });

@@ -115,6 +115,11 @@ coverage strip flags the clash instead, and a person reassigns the cover.
 
 ### 5. Time off (**Time off**)
 
+You should get an email when somebody asks for time off, and they should get one
+when you decide — with your reason on it. See the note about email below if
+nothing turns up.
+
+
 Request, approve, deny. Balances come from a policy the practice sets — it
 currently says 15 PTO days, 5 sick days, and 5 days that can carry into next
 year. An admin can change all three on that screen.
@@ -137,7 +142,14 @@ The lists in there are a **starting point built from what a small New Jersey
 practice generally has to do**, not from how Domi actually does it. Go through
 them line by line.
 
-- **Tell us:** what is missing, what is wrong, and what we have invented.
+You do not have to just tell us — an admin can edit the lists directly.
+Open a template, press **Edit this template**, and you can reword a task,
+move it up or down, say who it is for, say when it is due, mark whether it
+needs a document, add tasks and remove them. Editing a template never touches
+a checklist already under way.
+
+- **Tell us:** what is missing, what is wrong, and what we have invented —
+  or just fix it in the app and tell us what you changed.
 - Note that documents are visible to an **admin and to the person they are
   about, and nobody else** — an I-9 has a social security number on it.
   Managers can see that a form was collected but cannot open it. If that is
@@ -167,8 +179,12 @@ the payroll route.
 
 Worth knowing so you do not report these as faults:
 
-- **No "forgot my password" email.** An admin issues a temporary password. Email
-  sending is a decision nobody has made yet.
+- **Email may not be switched on yet.** Password reset and the time-off
+  notifications are built, but they need an email account set up against the
+  practice's domain before anything actually sends. Until then those messages go
+  into a log only we can see. If you press "Forgotten your password?" and
+  nothing arrives, that is why — tell us and we will check whether it has been
+  set up.
 - **No badge tap**, only PINs.
 - **No ADP integration**, only the spreadsheet — see above.
 - **No notifications.** Nobody is emailed or texted when a request is decided or

@@ -25,8 +25,13 @@ import { PrismaService } from '../prisma/prisma.service';
 import { AuthService } from './auth.service';
 import { SESSION_COOKIE, clearSessionCookie, sessionCookieOptions } from './cookie';
 import { ChangePasswordDto } from './dto/change-password.dto';
+import {
+  CompletePasswordResetDto,
+  RequestPasswordResetDto,
+} from './dto/password-reset.dto';
 import { LoginDto } from './dto/login.dto';
 import { SetPasswordDto } from './dto/set-password.dto';
+import { PasswordResetService } from './password-reset.service';
 import { SessionService } from './session.service';
 
 @Controller('auth')
@@ -36,10 +41,37 @@ export class AuthController {
   constructor(
     private readonly auth: AuthService,
     private readonly sessions: SessionService,
+    private readonly resets: PasswordResetService,
     private readonly prisma: PrismaService,
     config: ConfigService,
   ) {
     this.isProduction = config.get<string>('NODE_ENV') === 'production';
+  }
+
+  /**
+   * Asking for a reset link.
+   *
+   * Always answers the same way, whether or not the address belongs to anyone.
+   * "No such account" here is a way to find out who works at the practice.
+   */
+  @Post('forgot-password')
+  @Public()
+  @HttpCode(HttpStatus.OK)
+  forgotPassword(@Body() dto: RequestPasswordResetDto, @Ip() ip: string) {
+    return this.resets.request(dto.email, ip);
+  }
+
+  /// Spending the link. Signs out every session afterwards, including this one.
+  @Post('reset-password')
+  @Public()
+  @HttpCode(HttpStatus.OK)
+  async resetPassword(
+    @Body() dto: CompletePasswordResetDto,
+    @Res({ passthrough: true }) response: Response,
+  ) {
+    const result = await this.resets.complete(dto.token, dto.newPassword);
+    clearSessionCookie(response, this.isProduction);
+    return { ...result, signedOutEverywhere: true };
   }
 
   @Post('login')

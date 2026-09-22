@@ -923,3 +923,182 @@ recorded. The whole point is to see what the flagged cases look like.
 
 `docs/manager-review.md` is the walkthrough that goes with it, written for the
 managers rather than for a developer.
+
+## Phones
+
+Half of this app is used on a phone: clocking in at the desk, a manager
+approving hours between patients, an admin setting a geofence while standing at
+the front door. `tests/browser/phone.mjs` runs the whole app at 390px wide — the
+narrowest phone anyone at the practice is likely to have.
+
+The check that matters is **horizontal overflow**. A page wider than the window
+means the entire layout slides sideways under a thumb, which makes everything
+feel broken even where it works. A table that scrolls inside its own box is
+fine; the page itself scrolling is not. The suite measures
+`documentElement.scrollWidth` against `clientWidth` on every screen and names
+the offending elements when it finds a difference.
+
+Two things it caught:
+
+- **The navigation ran off the edge of every signed-in screen.** An admin has
+  nine destinations in a single non-wrapping flex row, so every page scrolled to
+  807px in a 390px window. It now wraps onto two or three rows. A hamburger menu
+  would be tidier and worse: this is an app where "Clock" should be one tap, and
+  hiding eight of nine destinations behind a button to save a few pixels of
+  header is the wrong trade.
+- **The checklist task actions could not shrink**, because the block holding the
+  file picker was `shrink-0`. On a phone the actions now sit under the task
+  rather than beside it.
+
+### The timesheet is a table or a list, depending on room
+
+Below `sm` the timesheet renders each entry as a card instead of a row. Eight
+columns do not fit on a phone, and the alternative — a sideways-scrolling table
+— puts **Approve** furthest from the thumb when approving is the entire job.
+
+Both layouts are always in the DOM, one hidden by CSS. That matters when writing
+a check against this screen: `getByText(...).first()` resolves to the hidden
+copy, which never becomes visible and times out. Ask for
+`.locator('visible=true').first()` instead.
+
+### Editing a template
+
+The task list is sent **whole** on every save rather than patched task by task.
+A checklist is read as a list, so it is edited as a list, and reordering is then
+just moving an item rather than renumbering everything around it. The server
+deletes the template's tasks and recreates them inside one transaction.
+
+That would be reckless if instances referenced templates. They do not — they are
+snapshots — so nothing already under way can be disturbed by it. The editor says
+so on screen, because an admin about to reword "sign the 2026 handbook" needs to
+know they are not rewriting what forty people already signed. There is a browser
+check that starts a checklist, rewords the template underneath it, and asserts
+the running checklist kept its original wording.
+
+`dueOffsetDays` is stored as a signed number of days, but nobody thinks in
+signed numbers. The editor splits it into a direction and a count — *before the
+start date*, *after the last day*, *on the day*, *whenever* — and the wording
+follows the template's kind, since an onboarding checklist hangs off a start
+date and an offboarding one off a last day.
+
+Templates are **retired**, never deleted, so a finished checklist can still say
+where it came from. Retiring also clears the default flag; if that leaves the
+practice with no default for that kind, starting a checklist says so plainly
+rather than failing.
+
+## Continuous integration
+
+`.github/workflows/ci.yml` runs on every push to every branch. Two jobs:
+
+- **checks** — lint, typecheck, unit tests and a production build. No database,
+  because the unit tests do not need one, so it comes back quickly.
+- **browser** — a Postgres service container, the schema built from the
+  migration chain, both apps built, the API started, and every browser suite.
+
+The browser job deliberately runs against **`vite preview`**, not the dev
+server. That serves the real production bundle with the real security headers —
+`vite.config.ts` reads them out of `vercel.json` — so a Content-Security-Policy
+that breaks the app fails in CI rather than on the practice's phones. It is also
+the closest thing to what Vercel serves.
+
+Building the schema with `prisma migrate deploy` from empty is a test in its own
+right: it proves the whole migration chain still applies in order, including the
+hand-written parts (the PTO policy singleton migration collapses duplicates
+before adding its constraint, and that SQL has to work on an empty table too).
+
+Screenshots and per-suite logs upload as an artifact on every run, pass or fail.
+A browser check that fails only in CI is otherwise almost impossible to read.
+
+`run-all.sh` takes `PGHOST_LOCAL`, `PGPORT_LOCAL`, `PGUSER_LOCAL` and
+`PGDATABASE_LOCAL`, which is how the same script serves both a laptop on port
+5433 and a service container on 5432.
+
+## Email
+
+Another adapter, the same shape as the payroll exporter and the file storage:
+one narrow `EmailSender` interface in `src/email`, an implementation per
+provider, and nothing else in the app knows which is in use.
+
+Sending is **best effort by contract**. Implementations log rather than throw,
+callers do not await, and `NotificationsService` catches. An approval that
+failed because a mail server hiccuped would be a far worse bug than a missing
+notification.
+
+Note that `void somePromise()` is *not* enough to make something fire and
+forget: an unhandled rejection takes the Node process down, so a mail provider
+having a bad afternoon would stop the practice clocking in. Every call site
+attaches a `.catch`. There is a test for it, which is how the bug was found.
+
+### The default is "write it to the log"
+
+`LogEmailSender` is what runs with no provider configured, and that is
+deliberate: sending real mail needs an account, a verified domain and DNS
+records, none of which should be a prerequisite for running the app locally. A
+developer testing a password reset copies the link out of the terminal.
+
+In production it warns on **every message** that nothing was sent, because a
+silent non-delivery that looks like success is the worst outcome available.
+
+`ResendEmailSender` is the real one — plain `fetch` to one HTTP endpoint rather
+than an SDK, since a dependency wrapping one POST is a dependency to keep up to
+date for no benefit, and it keeps the serverless bundle small. HTTP rather than
+SMTP because the app runs as a serverless function, where outbound SMTP is slow
+at best and blocked at worst. It has its own timeout, so a provider that never
+answers cannot hold a function open until the platform kills it.
+
+Mail from a test deployment is prefixed `[Test]` in the subject line, where
+somebody sees it before opening anything.
+
+## Password reset
+
+`POST /api/auth/forgot-password` always answers the same way — *"If that address
+belongs to a Domi account, a reset link is on its way."* — whether the address
+exists, belongs to somebody who has left, or has asked five times this hour.
+Anything else on an unauthenticated form is a way to find out who works at the
+practice. There is a browser check that compares the two answers character for
+character.
+
+The token is 32 random bytes, url-safe, and **only its SHA-256 is stored**, for
+the same reason session tokens are: a database dump must not hand somebody a
+working link into every account.
+
+Links last 30 minutes and are single use. Spending one also spends every other
+outstanding link for that account — asking twice and using the first should not
+leave the second working.
+
+Expired, spent, never-existed and belongs-to-somebody-who-left all produce
+**one** message. Distinguishing them tells an attacker which guesses were close.
+
+Completing a reset signs out every session on the account, including the browser
+doing the resetting. If the reason for the reset was that somebody else had the
+old password, leaving their session alive defeats the exercise — so the screen
+says so rather than letting it be a surprise.
+
+Rate limited at five links per account per hour, so the form cannot be used to
+bombard a colleague's inbox, and the per-address sign-in throttle covers the
+rest.
+
+### How it is tested without a mail server
+
+The browser suite reads the link out of the server log, which is where the
+default sender writes it. That tests the real path, and it is the same way a
+developer gets the link locally.
+
+The tempting alternative — returning the link in the HTTP response when
+`APP_ENVIRONMENT` is `test` — was rejected. One mistyped environment variable on
+a real deployment would make every account takeable by anyone who knows an
+address.
+
+## Who gets told what
+
+- **Somebody asks for time off** → every active manager and admin, except the
+  person who asked. Until now a request could sit for a week because nobody
+  went and looked.
+- **A request is decided** → the person who asked, with the manager's name and
+  their reason. An approval also says that shifts already on the schedule are
+  still there, because approving leave deliberately does not cancel them.
+- **A password reset is requested** → the link, to an address that may not
+  belong to anybody. The service decides that and never says either way.
+
+Dates in emails are rendered in UTC from the `@db.Date` values, for the same
+reason the app does: a day is a day wherever you read it.

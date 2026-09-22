@@ -17,6 +17,8 @@ import { SetupPage } from './pages/SetupPage';
 import { StaffPage } from './pages/StaffPage';
 import { ChecklistsPage } from './pages/ChecklistsPage';
 import { TimeOffPage } from './pages/TimeOffPage';
+import { ForgotPasswordPage } from './pages/ForgotPasswordPage';
+import { ResetPasswordPage } from './pages/ResetPasswordPage';
 import { TimesheetPage } from './pages/TimesheetPage';
 
 function Routed() {
@@ -93,6 +95,14 @@ export function App() {
           able to inherit a person's session.
         */}
         <Route path="/kiosk" element={<KioskApp />} />
+
+        {/*
+          Password reset is for people who cannot sign in, so it lives outside
+          the session gate — otherwise the only way to reach it would be to
+          already have the thing you have lost.
+        */}
+        <Route path="/forgot-password" element={<ForgotPasswordPage />} />
+        <Route path="/reset-password" element={<ResetPasswordPage />} />
         <Route
           path="*"
           element={

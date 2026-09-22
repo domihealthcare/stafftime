@@ -1,5 +1,7 @@
 # Domi Time & Scheduling
 
+[![CI](https://github.com/domihealthcare/stafftime/actions/workflows/ci.yml/badge.svg)](https://github.com/domihealthcare/stafftime/actions/workflows/ci.yml)
+
 Staff clock-in/out, scheduling and timesheets for Domi Healthcare.
 Deployed at **staff.domihealthcare.com**.
 
@@ -24,13 +26,15 @@ Phase 1, backend and web app:
 - PTO requests with manager approval, balances and a practice-set policy
 - Calendar syncing — each employee gets a private subscription URL for Google
   Calendar, Apple Calendar or Outlook
+- Self-service password reset, and emails when time off is asked for or decided
+  (needs an email provider configured — see [DEPLOY.md](./DEPLOY.md))
 - Onboarding and offboarding checklists — editable templates, a per-person
   instance, and documents (I-9, W-4, signed handbook) attached to the task they
   belong to
 - Admin screens for locations (geofence, IPs) and kiosks
 
-Not built yet: the ADP TotalSource export (waiting on ADP's pay codes and client
-code), badge-tap clock-in, and self-service password reset.
+Not built yet: the ADP TotalSource export (waiting on ADP's pay codes and
+client code) and badge-tap clock-in.
 
 **Deploying it:** see [DEPLOY.md](./DEPLOY.md).
 
@@ -41,7 +45,12 @@ apps/api/       NestJS + Prisma backend
 apps/web/       React + Vite + Tailwind web app
 tests/browser/  end-to-end checks driven by a real browser
 docs/           architecture notes, open questions
+.github/        CI — every push runs the lot
 ```
+
+Every push runs the unit tests, the linters, a production build, and the whole
+browser suite against a real Postgres and a real browser. See
+`.github/workflows/ci.yml`.
 
 ## Getting started
 
@@ -114,8 +123,11 @@ if you would rather.)
 
 Everyone else is added by an admin on the **Staff** screen, who issues a
 temporary password that the new hire must replace the first time they sign in.
-There is no self-service "forgot password" yet — that needs email sending, which
-is not set up (see `docs/open-questions.md`).
+
+**Forgotten passwords** are self-service: the sign-in screen offers a reset
+link, good once and for 30 minutes. That needs an email provider configured
+(`RESEND_API_KEY` and `EMAIL_FROM`) — without one, the email is written to the
+server log instead, which is how it works locally.
 
 ## Trying the kiosk
 
@@ -153,6 +165,8 @@ placeholders, so do not run it after setting real values.
 | `POST` | `/api/auth/logout` | signed in |
 | `GET` | `/api/auth/me` | signed in |
 | `POST` | `/api/auth/change-password` | signed in |
+| `POST` | `/api/auth/forgot-password` | anyone — always answers the same way |
+| `POST` | `/api/auth/reset-password` | anyone with a valid link, once |
 | `GET`/`DELETE` | `/api/auth/sessions` | signed in — list or sign out other browsers |
 | `PUT` | `/api/auth/employees/:id/password` | admin — issue a temporary password |
 | `POST` | `/api/kiosk/pair` | anyone with a valid pairing code |
@@ -207,7 +221,7 @@ placeholders, so do not run it after setting real values.
 | **Sign in** | Email and password. A temporary password lands you on a forced change screen and nothing else |
 | **Time off** | Request time off and see your balance; managers approve or deny, and can file on someone's behalf. Admins set the practice's PTO rules here |
 | **Export** (manager) | Produce a timesheet spreadsheet for a period, choosing exactly which columns go in it. Settings can be saved as named reports and shared |
-| **Checklists** | Onboarding and offboarding. Managers start one, work through it and see what is overdue; an employee sees their own and the parts that are theirs to do. Documents attach to the task they belong to |
+| **Checklists** | Onboarding and offboarding. Managers start one, work through it and see what is overdue; an employee sees their own and the parts that are theirs to do. Documents attach to the task they belong to. Admins edit the templates here — add, reword, reorder and retire |
 | **Staff** (admin) | Add people, set their role and locations, issue a temporary password, mark someone as no longer employed |
 | **Kiosks** (admin) | Pair and revoke tablets, and set staff PINs |
 | **Locations** (admin) | Each office's coordinates, geofence radius and IP allow-list. Has a "use my current location" button, so you can set it standing at the desk |

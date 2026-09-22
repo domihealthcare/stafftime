@@ -114,7 +114,7 @@ export function TimesheetPage() {
             <EmptyState>No time entries this week.</EmptyState>
           </div>
         ) : (
-          <div className="overflow-x-auto">
+          <div className="hidden overflow-x-auto sm:block">
             <table className="min-w-full divide-y divide-slate-200 text-sm">
               <thead className="bg-slate-50 text-left text-xs uppercase tracking-wide text-slate-500">
                 <tr>
@@ -161,29 +161,12 @@ export function TimesheetPage() {
                     </td>
                     {isManager && (
                       <td className="whitespace-nowrap px-4 py-3">
-                        <div className="flex items-center gap-2">
-                          {entry.status === 'APPROVED' ? (
-                            <span className="text-xs text-slate-400">Approved</span>
-                          ) : entry.clockOutAt ? (
-                            <button
-                              type="button"
-                              onClick={() => void approve(entry.id)}
-                              disabled={busyId === entry.id}
-                              className="rounded-lg bg-brand-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-brand-700 disabled:opacity-60"
-                            >
-                              {busyId === entry.id ? 'Approving…' : 'Approve'}
-                            </button>
-                          ) : (
-                            <span className="text-xs text-slate-400">Still open</span>
-                          )}
-                          <button
-                            type="button"
-                            onClick={() => setEditing(entry)}
-                            className="text-xs font-medium text-slate-500 hover:text-slate-900"
-                          >
-                            Correct
-                          </button>
-                        </div>
+                        <EntryActions
+                          entry={entry}
+                          busy={busyId === entry.id}
+                          onApprove={() => void approve(entry.id)}
+                          onCorrect={() => setEditing(entry)}
+                        />
                       </td>
                     )}
                   </tr>
@@ -204,6 +187,65 @@ export function TimesheetPage() {
             </table>
           </div>
         )}
+
+        {/* A phone cannot show eight columns, and sideways-scrolling a table to
+            reach Approve is miserable when that is the whole job. Same entries,
+            stacked, with the action where the thumb already is. */}
+        {!loading && entries.length > 0 && (
+          <ul className="divide-y divide-slate-100 sm:hidden">
+            {entries.map((entry) => (
+              <li key={entry.id} className="px-4 py-3">
+                <div className="flex items-start justify-between gap-3">
+                  <div className="min-w-0">
+                    {isManager && entry.employee && (
+                      <p className="font-medium text-slate-900">
+                        {entry.employee.firstName} {entry.employee.lastName}
+                      </p>
+                    )}
+                    <p className="text-sm text-slate-600">{formatDate(entry.clockInAt)}</p>
+                    <p className="mt-0.5 text-sm tabular-nums text-slate-700">
+                      {formatTime(entry.clockInAt)} –{' '}
+                      {entry.clockOutAt ? formatTime(entry.clockOutAt) : '—'}
+                    </p>
+                  </div>
+                  <div className="shrink-0 text-right">
+                    <p className="font-semibold tabular-nums text-slate-900">
+                      {entry.clockOutAt
+                        ? `${durationHours(entry.clockInAt, entry.clockOutAt).toFixed(2)}h`
+                        : '—'}
+                    </p>
+                    <div className="mt-1 flex justify-end">
+                      <VerificationBadge entry={entry} />
+                    </div>
+                  </div>
+                </div>
+
+                {hasFlags(entry) && (
+                  <div className="mt-2 flex flex-wrap items-center gap-1">
+                    <Flags entry={entry} />
+                  </div>
+                )}
+
+                {entry.editReason && (
+                  <p className="mt-1 text-xs text-slate-500">
+                    <span className="font-medium">Corrected:</span> {entry.editReason}
+                  </p>
+                )}
+
+                {isManager && (
+                  <div className="mt-2">
+                    <EntryActions
+                      entry={entry}
+                      busy={busyId === entry.id}
+                      onApprove={() => void approve(entry.id)}
+                      onCorrect={() => setEditing(entry)}
+                    />
+                  </div>
+                )}
+              </li>
+            ))}
+          </ul>
+        )}
       </Card>
 
       {editing && (
@@ -223,6 +265,56 @@ export function TimesheetPage() {
           with a reason.
         </p>
       )}
+    </div>
+  );
+}
+
+/// The table shows an em dash for an unflagged entry to keep the column
+/// aligned. A card has no column to align, so it shows nothing at all.
+function hasFlags(entry: TimeEntry): boolean {
+  return (
+    entry.isLate ||
+    entry.isEarlyDeparture ||
+    entry.isMissingPunch ||
+    entry.isManuallyEdited ||
+    entry.status === 'NEEDS_REVIEW'
+  );
+}
+
+function EntryActions({
+  entry,
+  busy,
+  onApprove,
+  onCorrect,
+}: {
+  entry: TimeEntry;
+  busy: boolean;
+  onApprove: () => void;
+  onCorrect: () => void;
+}) {
+  return (
+    <div className="flex items-center gap-2">
+      {entry.status === 'APPROVED' ? (
+        <span className="text-xs text-slate-400">Approved</span>
+      ) : entry.clockOutAt ? (
+        <button
+          type="button"
+          onClick={onApprove}
+          disabled={busy}
+          className="rounded-lg bg-brand-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-brand-700 disabled:opacity-60"
+        >
+          {busy ? 'Approving…' : 'Approve'}
+        </button>
+      ) : (
+        <span className="text-xs text-slate-400">Still open</span>
+      )}
+      <button
+        type="button"
+        onClick={onCorrect}
+        className="text-xs font-medium text-slate-500 hover:text-slate-900"
+      >
+        Correct
+      </button>
     </div>
   );
 }

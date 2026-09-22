@@ -1,5 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { LoginThrottleService } from '../auth/login-throttle.service';
+import { PasswordResetService } from '../auth/password-reset.service';
 import { SessionService } from '../auth/session.service';
 import { PrismaService } from '../prisma/prisma.service';
 
@@ -11,6 +12,7 @@ const ORPHAN_GRACE_MINUTES = 60;
 export interface PurgeReport {
   expiredSessions: number;
   staleLoginAttempts: number;
+  spentResetTokens: number;
   expiredPairingCodes: number;
   orphanedFiles: number;
 }
@@ -20,8 +22,8 @@ export interface PurgeReport {
  *
  * None of this is urgent, and none of it can be left forever: expired sessions
  * accumulate a row per sign-in, the throttle table grows with every wrong
- * password, and a pairing code that was never used is a live credential sitting
- * in the database.
+ * password, and a pairing code or reset link that was never used is a live
+ * credential sitting in the database.
  */
 @Injectable()
 export class MaintenanceService {
@@ -31,18 +33,20 @@ export class MaintenanceService {
     private readonly prisma: PrismaService,
     private readonly sessions: SessionService,
     private readonly throttle: LoginThrottleService,
+    private readonly resets: PasswordResetService,
   ) {}
 
   async purge(): Promise<PurgeReport> {
     const report: PurgeReport = {
       expiredSessions: await this.sessions.purgeExpired(),
       staleLoginAttempts: await this.throttle.purgeOld(),
+      spentResetTokens: await this.resets.purgeExpired(),
       expiredPairingCodes: await this.clearExpiredPairingCodes(),
       orphanedFiles: await this.deleteOrphanedFiles(),
     };
 
     this.logger.log(
-      `Purged ${report.expiredSessions} session(s), ${report.staleLoginAttempts} login attempt(s), ${report.expiredPairingCodes} pairing code(s), ${report.orphanedFiles} orphaned file(s)`,
+      `Purged ${report.expiredSessions} session(s), ${report.staleLoginAttempts} login attempt(s), ${report.spentResetTokens} reset token(s), ${report.expiredPairingCodes} pairing code(s), ${report.orphanedFiles} orphaned file(s)`,
     );
     return report;
   }

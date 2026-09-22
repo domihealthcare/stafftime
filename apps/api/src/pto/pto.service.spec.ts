@@ -64,9 +64,59 @@ describe('PtoService', () => {
       },
       shift: { findMany: jest.fn().mockResolvedValue([]) },
     };
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    return { service: new PtoService(prisma as any), prisma };
+    // Notifications are fire and forget, so the double only has to not throw.
+    const notifications = {
+      ptoRequested: jest.fn().mockResolvedValue(undefined),
+      ptoDecided: jest.fn().mockResolvedValue(undefined),
+    };
+    return {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      service: new PtoService(prisma as any, notifications as any),
+      prisma,
+      notifications,
+    };
   }
+
+  describe('telling people', () => {
+    it('tells the managers when somebody asks for time off', async () => {
+      const { service, notifications } = build();
+      await service.create(
+        { type: PtoType.VACATION, startDate: '2026-11-03', endDate: '2026-11-05' },
+        employee,
+      );
+
+      expect(notifications.ptoRequested).toHaveBeenCalledWith('pto-1');
+    });
+
+    it('tells the employee when it is decided', async () => {
+      const { service, notifications } = build({
+        request: {
+          id: 'pto-1',
+          employeeId: 'emp-1',
+          status: PtoStatus.PENDING,
+          startDate: new Date('2026-11-03T00:00:00.000Z'),
+          endDate: new Date('2026-11-05T00:00:00.000Z'),
+        },
+      });
+      await service.review('pto-1', { decision: PtoStatus.APPROVED }, manager);
+
+      expect(notifications.ptoDecided).toHaveBeenCalledWith('pto-1');
+    });
+
+    it('does not let a failed notification fail the request itself', async () => {
+      // An approval that errored because a mail server hiccuped would be a far
+      // worse bug than a missing email.
+      const { service, notifications } = build();
+      notifications.ptoRequested.mockRejectedValue(new Error('mail server down'));
+
+      await expect(
+        service.create(
+          { type: PtoType.VACATION, startDate: '2026-11-03', endDate: '2026-11-05' },
+          employee,
+        ),
+      ).resolves.toBeDefined();
+    });
+  });
 
   const request = (overrides: Record<string, unknown> = {}) => ({
     type: PtoType.VACATION,

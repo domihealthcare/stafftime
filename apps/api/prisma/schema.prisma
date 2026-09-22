@@ -202,6 +202,7 @@ model Employee {
   createdChecklistTemplates  ChecklistTemplate[]     @relation("ChecklistTemplateCreatedBy")
   completedChecklistTasks    EmployeeChecklistTask[] @relation("ChecklistTaskCompletedBy")
   uploadedChecklistDocuments ChecklistDocument[]     @relation("ChecklistDocumentUploadedBy")
+  passwordResetTokens        PasswordResetToken[]    @relation("PasswordResetSubject")
 
   @@index([employmentStatus])
   @@map("employees")
@@ -702,4 +703,31 @@ model LoginAttempt {
   @@index([ipAddress, at])
   @@index([at])
   @@map("login_attempts")
+}
+
+// ---------------------------------------------------------------------------
+// Password reset
+// ---------------------------------------------------------------------------
+
+/// A one-time link for setting a new password.
+///
+/// Only the hash is stored, for the same reason session tokens are: a database
+/// dump must not hand somebody a working link into every account. Single use,
+/// short lived, and every other outstanding token for that employee is spent
+/// the moment one is used.
+model PasswordResetToken {
+  id          String    @id @default(uuid()) @db.Uuid
+  employeeId  String    @db.Uuid
+  tokenHash   String    @unique
+  expiresAt   DateTime
+  usedAt      DateTime?
+  /// Where the request came from, for working out afterwards who was knocking.
+  requestedIp String?
+  createdAt   DateTime  @default(now())
+
+  employee Employee @relation("PasswordResetSubject", fields: [employeeId], references: [id], onDelete: Cascade)
+
+  @@index([employeeId, createdAt])
+  @@index([expiresAt])
+  @@map("password_reset_tokens")
 }
