@@ -1,5 +1,7 @@
 import type {
   Checklist,
+  Credential,
+  CredentialKind,
   PayrollExportRecord,
   PayrollTarget,
   ChecklistDocument,
@@ -608,6 +610,38 @@ export const api = {
     download(`/checklists/documents/${documentId}`),
   deleteChecklistDocument: (documentId: string) =>
     request<{ deleted: boolean }>(`/checklists/documents/${documentId}`, { method: 'DELETE' }),
+
+  listCredentials: (params: Record<string, string | undefined> = {}) =>
+    request<Credential[]>(`/credentials${toQuery(params)}`),
+  createCredential: (body: {
+    employeeId: string;
+    kind: CredentialKind;
+    name: string;
+    issuer?: string;
+    reference?: string;
+    issuedOn?: string;
+    expiresOn: string;
+    notes?: string;
+  }) => request<Credential>('/credentials', { method: 'POST', body: JSON.stringify(body) }),
+  updateCredential: (
+    id: string,
+    body: Partial<{
+      kind: CredentialKind;
+      name: string;
+      issuer: string;
+      reference: string;
+      issuedOn: string;
+      expiresOn: string;
+      notes: string;
+    }>,
+  ) => request<Credential>(`/credentials/${id}`, { method: 'PATCH', body: JSON.stringify(body) }),
+  archiveCredential: (id: string) =>
+    request<Credential>(`/credentials/${id}/archive`, { method: 'POST' }),
+  deleteCredential: (id: string) =>
+    request<{ deleted: boolean }>(`/credentials/${id}`, { method: 'DELETE' }),
+  uploadCredentialScan: (id: string, file: File) =>
+    upload<Credential>(`/credentials/${id}/scan`, file),
+  downloadCredentialScan: (id: string) => download(`/credentials/${id}/scan`),
 
   checklistTemplates: (kind?: ChecklistKind) =>
     request<ChecklistTemplate[]>(`/checklists/templates${toQuery({ kind })}`),

@@ -18,6 +18,7 @@ import { Response } from 'express';
 import { AuthUser } from '../common/auth/auth-user';
 import { CurrentUser } from '../common/auth/current-user.decorator';
 import { Roles } from '../common/auth/roles.decorator';
+import { attachmentHeader } from '../storage/upload-validation';
 import {
   ChecklistDocumentsService,
   UploadedFileLike,
@@ -162,7 +163,7 @@ export class ChecklistsController {
     // Always an attachment, and never sniffed: whatever is in there, the
     // browser must not decide to run it in the app's own origin.
     res.setHeader('X-Content-Type-Options', 'nosniff');
-    res.setHeader('Content-Disposition', attachment(file.filename));
+    res.setHeader('Content-Disposition', attachmentHeader(file.filename));
     res.setHeader('Cache-Control', 'no-store');
     res.send(file.bytes);
   }
@@ -174,11 +175,4 @@ export class ChecklistsController {
   ) {
     return this.documents.remove(documentId, user);
   }
-}
-
-/// RFC 5987 encoding, so a filename with an accent or a comma in it survives
-/// the header rather than truncating the download name.
-function attachment(filename: string): string {
-  const ascii = filename.replace(/[^\x20-\x7e]/g, '_').replace(/["\\]/g, '');
-  return `attachment; filename="${ascii}"; filename*=UTF-8''${encodeURIComponent(filename)}`;
 }

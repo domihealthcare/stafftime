@@ -100,7 +100,7 @@ await page.screenshot({ path: `${OUT}/50-phone-clock.png`, fullPage: true });
 await step('every navigation link is reachable without scrolling sideways', async () => {
   // An admin has nine destinations. They wrap onto several rows rather than
   // running off the edge or hiding behind a menu.
-  for (const name of ['Clock', 'Timesheet', 'Schedule', 'Time off', 'Checklists', 'Export', 'Staff', 'Kiosks', 'Locations']) {
+  for (const name of ['Clock', 'Timesheet', 'Schedule', 'Time off', 'Checklists', 'Licences', 'Export', 'Staff', 'Kiosks', 'Locations']) {
     const link = page.getByRole('link', { name: new RegExp(`^${name}`) }).first();
     if ((await link.count()) === 0) throw new Error(`${name} is missing from the nav`);
     const box = await link.boundingBox();
@@ -115,6 +115,7 @@ for (const [label, screen] of [
   ['Schedule', 'Schedule'],
   ['Time off', 'Time off'],
   ['Checklists', 'Checklists'],
+  ['Licences', 'Licences'],
   ['Export', 'Export'],
   ['Staff', 'Staff'],
   ['Kiosks', 'Kiosks'],

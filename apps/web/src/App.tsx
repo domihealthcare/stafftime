@@ -16,6 +16,7 @@ import { SchedulePage } from './pages/SchedulePage';
 import { SetupPage } from './pages/SetupPage';
 import { StaffPage } from './pages/StaffPage';
 import { ChecklistsPage } from './pages/ChecklistsPage';
+import { CredentialsPage } from './pages/CredentialsPage';
 import { TimeOffPage } from './pages/TimeOffPage';
 import { ForgotPasswordPage } from './pages/ForgotPasswordPage';
 import { ResetPasswordPage } from './pages/ResetPasswordPage';
@@ -73,6 +74,7 @@ function Routed() {
         <Route path="password" element={<ChangePasswordPage forced={false} />} />
         <Route path="time-off" element={<TimeOffPage />} />
         <Route path="checklists" element={<ChecklistsPage />} />
+        <Route path="credentials" element={<CredentialsPage />} />
         <Route path="export" element={<ExportPage />} />
         <Route path="staff" element={<StaffPage />} />
         <Route path="kiosks" element={<KiosksPage />} />

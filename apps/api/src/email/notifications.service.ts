@@ -2,6 +2,7 @@ import { Inject, Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { EmploymentStatus, PtoStatus, PtoType, Role } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
+import type { DigestContents } from './digest.service';
 import { EMAIL_SENDER, EmailSender } from './email-sender';
 
 /**
@@ -110,6 +111,29 @@ export class NotificationsService {
         `Approve or deny it here: ${this.appUrl}/time-off`,
       ]);
     }
+  }
+
+  /**
+   * The nightly round-up of what nobody has got to yet.
+   *
+   * Sections with nothing in them are left out entirely rather than printed
+   * empty. An email that is mostly "nothing to report" teaches people to skim
+   * past it, and then they skim past the one that matters.
+   */
+  dailyDigest(to: string, firstName: string, contents: DigestContents): void {
+    const section = (heading: string, lines: string[]) =>
+      lines.length === 0 ? [] : ['', heading, ...lines.map((line) => `  · ${line}`)];
+
+    this.dispatch(to, 'What needs a look today', [
+      `Hello ${firstName},`,
+      ...section('Credentials that have already lapsed:', contents.expiredCredentials),
+      ...section('Credentials expiring soon:', contents.expiringCredentials),
+      ...section('Checklist tasks past their due date:', contents.overdueTasks),
+      ...section('Punches with no clock-out:', contents.missingPunches),
+      ...section('Time off waiting on a decision:', contents.undecidedTimeOff),
+      '',
+      `Everything here is in the app: ${this.appUrl}`,
+    ]);
   }
 
   /// The reset link itself. Sent to an address that may not belong to anyone —

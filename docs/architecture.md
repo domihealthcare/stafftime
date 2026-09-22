@@ -1185,3 +1185,69 @@ anyway*. The second attempt carries `acknowledgeExported` and goes through. The
 entry then reads as changed-since-export, and the export preview counts it —
 *"1 entry has been corrected since it last went to payroll"* — so the correction
 cannot be quietly forgotten before the next run.
+
+## Licences and certifications
+
+`EmployeeCredential` is anything with a renewal date: a state licence, a board
+certification, a BLS card, a DEA registration.
+
+Its own record rather than a field on a checklist document, because a credential
+outlives the checklist it was first collected on. A licence renews every couple
+of years, long after onboarding is finished, and the renewal has nowhere to go
+if the only home is a one-off task.
+
+For a medical practice this is the compliance risk that bites quietly: nobody
+notices a lapsed licence until somebody asks to see it, usually at the worst
+possible moment. So the screen opens on **what is about to lapse**, soonest
+first, rather than on everything the practice holds — and "expiring within N
+days" always includes what has already lapsed, because the one that ran out last
+month is more urgent than the one running out next month, not less.
+
+`daysUntil` is zero on the day a credential runs out, and that still counts as
+valid: a licence is good until the end of the day it expires.
+
+### Who sees what
+
+Three levels, and the middle one is the interesting one:
+
+- **The record** — that a credential exists, what it is, and when it expires —
+  is visible to managers. Knowing who is licensed to do what is part of running
+  a rota.
+- **The number** is not. A manager gets to know the credential is current
+  without being handed its identifier.
+- **The scan** is admin-only, plus the person it belongs to, like checklist
+  documents. A licence document carries a number, a signature and sometimes a
+  home address.
+
+### Uploads are validated in one place
+
+`src/storage/upload-validation.ts` holds the allow-list, the magic-byte check
+and the filename sanitising, shared by checklist documents and credential scans.
+One implementation on purpose: a second copy of these rules would eventually be
+the lenient one, and it would be the one an attacker found.
+
+## The nightly digest
+
+`DigestService` runs from the maintenance job, because that is already the one
+thing that happens every night whether anybody is looking or not. It gathers
+what nobody would find out about unless they went looking:
+
+- credentials that have lapsed, and ones about to
+- checklist tasks past their due date
+- punches with no clock-out, from the last fortnight
+- time-off requests still waiting on a decision
+
+Two rules make it worth reading:
+
+**It says nothing when there is nothing to say.** A daily email that is usually
+empty gets filtered into a folder within a fortnight, and then the one that
+matters goes there too.
+
+**Empty sections are left out, not printed empty.** Same reason.
+
+Each line names the person and the thing, so the email can be acted on without
+opening the app.
+
+It cannot fail the job it runs inside. Tidying up and telling people are
+separate concerns, and a mail provider having a bad night must not stop expired
+sessions being cleared.

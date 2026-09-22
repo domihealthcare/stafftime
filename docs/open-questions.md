@@ -64,9 +64,10 @@ and the pay-code mapping remain.
 - [x] ~~Notifications when a request is decided.~~ Built — the requester is
       emailed the decision and the reason, and every manager is emailed when a
       request comes in. Needs an email provider configured to actually send.
-- [ ] **Anything else worth emailing about?** Overdue checklist tasks and
-      licences about to expire are the obvious candidates. The daily maintenance
-      job is the natural place to send them from.
+- [x] ~~Anything else worth emailing about?~~ The nightly digest now chases
+      lapsed and expiring credentials, overdue checklist tasks, punches with no
+      clock-out, and undecided time off. It stays quiet on days when there is
+      nothing to say.
 
 ## Calendar syncing
 
@@ -128,10 +129,11 @@ decision from the practice:
       the last day, whichever is later — and the practice needs a habit for
       acting on it. Worth deciding whether the app should flag documents that
       are past their retention period.
-- [ ] **Licence and certification expiry.** A licence is attached as a document
-      with no expiry date recorded, so nothing can warn that it lapses next
-      month. Tracking expiry dates and warning ahead of them is a natural next
-      step and would want its own screen.
+- [x] ~~Licence and certification expiry.~~ Built, on its own screen, with the
+      nightly digest chasing what is about to lapse. Still to confirm: how far
+      ahead the practice wants warning (60 days by default), and whether a
+      lapsed licence should stop somebody being scheduled — today it is
+      reported, not enforced.
 - [ ] **Should marking somebody as no longer employed start an offboarding
       checklist?** Today the two are separate: an admin marks them terminated on
       the Staff screen and starts the checklist here. Linking them would mean

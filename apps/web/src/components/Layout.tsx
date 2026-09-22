@@ -71,6 +71,9 @@ export function Layout() {
               <NavLink to="/checklists" className={linkClasses}>
                 Checklists
               </NavLink>
+              <NavLink to="/credentials" className={linkClasses}>
+                Licences
+              </NavLink>
               {isManager && (
                 <NavLink to="/export" className={linkClasses}>
                   Export

@@ -205,6 +205,8 @@ model Employee {
   uploadedChecklistDocuments ChecklistDocument[]     @relation("ChecklistDocumentUploadedBy")
   passwordResetTokens        PasswordResetToken[]    @relation("PasswordResetSubject")
   payrollExports             PayrollExport[]         @relation("PayrollExportGeneratedBy")
+  credentials                EmployeeCredential[]    @relation("CredentialSubject")
+  recordedCredentials        EmployeeCredential[]    @relation("CredentialRecordedBy")
 
   @@index([employmentStatus])
   @@map("employees")
@@ -818,4 +820,73 @@ model PayrollExportEntry {
   @@id([exportId, timeEntryId])
   @@index([timeEntryId])
   @@map("payroll_export_entries")
+}
+
+// ---------------------------------------------------------------------------
+// Licences and certifications
+// ---------------------------------------------------------------------------
+
+enum CredentialKind {
+  /// A state professional licence — medical, nursing, pharmacy.
+  LICENSE
+  /// Board certification, or a specialty credential.
+  CERTIFICATION
+  /// CPR / BLS / ACLS card.
+  LIFE_SUPPORT
+  /// DEA registration, CLIA, NPI — anything with a renewal date.
+  REGISTRATION
+  IMMUNIZATION
+  BACKGROUND_CHECK
+  OTHER
+}
+
+/// Something with an expiry date that somebody has to renew.
+///
+/// Its own record rather than a field on a checklist document, because a
+/// credential outlives the checklist it was first collected on: a licence
+/// renews every couple of years, long after onboarding is finished, and the
+/// renewal has nowhere to go if the only home is a one-off task.
+///
+/// For a medical practice this is the compliance risk that bites quietly —
+/// nobody notices a lapsed licence until somebody asks for it.
+model EmployeeCredential {
+  id         String         @id @default(uuid()) @db.Uuid
+  employeeId String         @db.Uuid
+  kind       CredentialKind
+  /// What it is, in the practice's own words: "NJ Registered Nurse licence".
+  name       String
+  /// Who issued it. Optional — not every credential has a meaningful issuer.
+  issuer     String?
+  /// The licence or certificate number. Not a secret, but not something to put
+  /// on a screen anybody can reach either; see the service for who may read it.
+  reference  String?
+
+  issuedOn  DateTime? @db.Date
+  /// The whole point of the record. Whole days, like every other date here.
+  expiresOn DateTime  @db.Date
+
+  notes String?
+
+  /// The scan, through the same storage adapter as checklist documents. Null
+  /// when only the dates have been recorded.
+  filename    String?
+  contentType String?
+  sizeBytes   Int?
+  storageKey  String? @unique
+  checksum    String?
+
+  /// Superseded by a renewal, or no longer relevant. Kept for the history.
+  archivedAt DateTime?
+
+  recordedById String?  @db.Uuid
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  employee   Employee  @relation("CredentialSubject", fields: [employeeId], references: [id], onDelete: Cascade)
+  recordedBy Employee? @relation("CredentialRecordedBy", fields: [recordedById], references: [id], onDelete: SetNull)
+
+  @@index([employeeId, archivedAt])
+  /// The query the whole feature exists for: what expires next.
+  @@index([expiresOn, archivedAt])
+  @@map("employee_credentials")
 }

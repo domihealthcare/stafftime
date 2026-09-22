@@ -156,7 +156,27 @@ a checklist already under way.
   wrong for how the practice works, say so: the fix is giving the right person
   the admin role.
 
-### 7. The payroll spreadsheet (**Export**)
+### 7. Licences and certifications (**Licences**)
+
+Anything with a renewal date — a state licence, a BLS card, a DEA registration.
+The screen opens on what lapses in the next 60 days, with anything already
+expired at the top in red.
+
+Record one against a person, put the expiry date on it, and optionally attach a
+scan. When it renews, press **Renew**, put the new date in, and attach the new
+scan — you do not fill the whole form again.
+
+You will also get an email about anything lapsing, as part of the nightly
+round-up (see the note about email below).
+
+- **Tell us:** is 60 days the right amount of warning?
+- **Tell us:** should a lapsed licence actually stop somebody being put on the
+  rota, or is telling you enough? Today it tells you.
+- Note the number and the scan are visible to an **admin and the person they
+  belong to** only. A manager sees that a licence is current, which is what
+  running a rota needs.
+
+### 8. The payroll spreadsheet (**Export**)
 
 Pick a period, tick the columns you want, download an Excel file. It tells you
 how many entries are flagged before you download, so nothing surprising lands in
@@ -190,6 +210,10 @@ flags the correction so the next export tells you it still has to reach payroll.
 
 Worth knowing so you do not report these as faults:
 
+- **The nightly round-up.** Once email is on, managers get one email a day
+  listing anything that needs a look: licences lapsing, checklist tasks overdue,
+  punches with no clock-out, time off nobody has decided. On a day when there is
+  nothing, it sends nothing — deliberately, so it stays worth reading.
 - **Email may not be switched on yet.** Password reset and the time-off
   notifications are built, but they need an email account set up against the
   practice's domain before anything actually sends. Until then those messages go

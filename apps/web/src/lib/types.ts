@@ -337,3 +337,44 @@ export interface PayrollState {
   exportId: string | null;
   changedSinceExport: boolean;
 }
+
+// ---------------------------------------------------------------------------
+// Licences and certifications
+// ---------------------------------------------------------------------------
+
+export type CredentialKind =
+  | 'LICENSE'
+  | 'CERTIFICATION'
+  | 'LIFE_SUPPORT'
+  | 'REGISTRATION'
+  | 'IMMUNIZATION'
+  | 'BACKGROUND_CHECK'
+  | 'OTHER';
+
+export interface Credential {
+  id: string;
+  kind: CredentialKind;
+  name: string;
+  issuer: string | null;
+  /// Null for anyone but an admin or the person it belongs to.
+  reference: string | null;
+  issuedOn: string | null;
+  expiresOn: string;
+  notes: string | null;
+  filename: string | null;
+  sizeBytes: number | null;
+  archivedAt: string | null;
+  hasScan: boolean;
+  /// Negative once it has lapsed; zero on the day it runs out, which still
+  /// counts as valid.
+  daysUntilExpiry: number;
+  expired: boolean;
+  employee: {
+    id: string;
+    firstName: string;
+    lastName: string;
+    preferredName: string | null;
+    employmentStatus: string;
+  };
+  recordedBy: { id: string; firstName: string; lastName: string } | null;
+}
