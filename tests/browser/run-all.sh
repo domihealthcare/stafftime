@@ -33,7 +33,8 @@ reset_state() {
     -c "delete from password_reset_tokens;" \
     -c "delete from payroll_exports;" \
     -c "delete from employee_credentials;" \
-    -c "update employees set \"employmentStatus\" = 'ACTIVE', \"wantsDailyDigest\" = true;"
+    -c "update employees set \"employmentStatus\" = 'ACTIVE', \"wantsDailyDigest\" = true;" \
+    -c "delete from practice_settings;"
 }
 
 # The scheduler suite builds its rotas in February 2027 so that clearing them

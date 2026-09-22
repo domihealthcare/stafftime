@@ -109,15 +109,18 @@ built. What is deliberately left open:
       week rather than the window on screen, and every location rather than the
       one being viewed, because either shortcut would hide the case it exists
       for.
+- [x] ~~Is 40 the right line, and is 4 days the right warning?~~ Both are now
+      settings rather than constants, with those as defaults. Confirmed as
+      sensible defaults; the practice can move either without a deploy.
 - [ ] **Should it count hours already worked, not just scheduled?** Today it is
       scheduled hours, which is the honest answer to "what is this rota about to
       cost" and the only one that can be explained on screen. But somebody who
       stayed late every day can cross forty without the rota showing it. Worth
       asking the managers whether they want the current week to blend actual
       punches in, knowing the number gets harder to reason about.
-- [ ] **Should it stop anything, or only say so?** Today it warns. Refusing to
-      schedule past forty would be wrong for a practice that sometimes needs the
-      cover, but a confirmation step is arguable.
+- [x] ~~Should it stop anything, or only say so?~~ Confirmed: it warns. Refusing
+      to schedule past the threshold would be wrong for a practice that
+      sometimes needs the cover.
 
 ## Onboarding / offboarding checklists (Phase 3, built)
 

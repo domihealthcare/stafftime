@@ -372,12 +372,23 @@ days and the month sits inside it — four rows for a February that starts on a
 Monday, six for a month that straddles. The days either side are shown but
 dimmed: a shift on the 1st matters whichever row it lands in.
 
-**Counts, not shift cards.** Seven columns on a phone is about fifty pixels
-each, which fits a number and nothing else. A month view is for spotting the
-shape of a rota — the empty Tuesday, the week everybody is on — rather than
-reading who is doing what, and the detail is one tap away in the week it belongs
-to. The phone suite asserts this, so a later attempt to put names back will be
-noticed rather than shipped.
+**It shows who is on.** This is mostly a staff screen — a manager builds the
+rota a week at a time on a laptop; an employee opens the month to see which days
+they are working, on a phone. So the square lists first names for a manager, who
+is looking at everybody, and times for an employee, who only ever sees their own
+shifts and would otherwise read their own name forty times.
+
+At phone width a square is about forty pixels of text, where "1pm–9pm"
+truncates to "1p…" and tells nobody anything. So the narrow rendering is the
+start time alone, which still answers the question somebody opened the month to
+ask — am I on at nine or at one — with the full range in the `aria-label` and
+one tap away in the week. Three lines per day, then "+2 more".
+
+**The chosen view is remembered** in `localStorage`, because whichever one you
+want you tend to want every time: a manager lives in the week, somebody checking
+their own shifts lives in the month, and neither should re-pick it after each
+trip to another screen. Every touch of storage is guarded — it throws in a
+private window — and the default stands if it fails.
 
 **The day-by-day coverage strip stays a week thing.** A month of those squares
 would be a second, worse calendar next to the real one. The overtime warning
@@ -414,6 +425,18 @@ the payroll export. That sharing is deliberate: a rota that predicts overtime
 and an export that reports it must not disagree about where a week begins, and a
 late Sunday shift has to land in the week the person experienced rather than the
 week UTC puts it in.
+
+**The threshold is the practice's**, in `PracticeSettings`, not a constant.
+Forty is the federal line and a sensible default, but it was a default nobody
+had been asked about. The payroll export splits at the same number and the
+spreadsheet's notes sheet states it, so the rota, the export and the file cannot
+say three different things.
+
+The coverage response carries the threshold it applied, rather than the screen
+assuming one. That is not theoretical tidiness: the warning text hardcoded
+"past 40 hours" and kept saying it after the setting moved to 20 — the API was
+right and the screen was confidently wrong. A browser check for the setting
+caught it.
 
 **Scheduled hours, not worked ones.** This is a question about a rota being
 built, and mixing in actual punches would make the number impossible to explain
@@ -1335,6 +1358,33 @@ So managers see everything a credential record now holds, and there is no tier t
 get wrong. Employees still see only their own; recording and renewing stays with
 managers; deleting stays with admins. `src/common/no-sensitive-data.spec.ts`
 fails if the columns come back.
+
+## Settings the practice sets for itself
+
+`PracticeSettings` is a database-enforced singleton, the same shape as
+`PtoPolicy` and for the same reason — see the note on `PtoPolicyService.get`,
+where a read-then-create race produced eighteen policy rows in testing.
+
+It holds two numbers, both of which started life as constants:
+
+- **`overtimeThresholdHours`** (40) — where the rota warns and the payroll
+  export splits.
+- **`rotaWarningDays`** (4) — how close the coming week has to be before an
+  unpublished rota is chased.
+
+Constants were the right place to start: the numbers had to come from somewhere
+and nobody had an opinion yet. They moved here when it turned out both were a
+guess standing in for something only the practice knows — how far ahead Domi
+publishes a rota, and what it treats as too many hours. A guess that has been
+overruled should not need a deploy.
+
+Both are bounded in the DTO rather than free. Below about twenty hours the
+overtime warning fires for every part-timer and stops meaning anything; above
+sixty it never fires at all. Either way the setting quietly turns the feature
+off, which is not what somebody adjusting a number expects to have done.
+
+Managers read them — the numbers explain what their screens are telling them —
+and only an admin changes them.
 
 ## What needs a look
 

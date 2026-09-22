@@ -8,6 +8,7 @@ import {
 } from '@prisma/client';
 import { addUtcDays, isoDate, toUtcDate } from '../common/util/calendar-date.util';
 import { PrismaService } from '../prisma/prisma.service';
+import { PracticeSettingsService } from '../settings/practice-settings.service';
 
 /// How far ahead it looks for credentials about to lapse. Long enough to renew
 /// a state licence without rushing.
@@ -22,11 +23,6 @@ const MISSING_PUNCH_DAYS = 14;
 /// thing is unplugged, off the wifi, or somebody closed the browser. A day is
 /// long enough that an overnight router reboot does not raise it.
 const KIOSK_SILENT_HOURS = 24;
-
-/// How close the coming week has to be before an unpublished rota is worth
-/// mentioning. Staff cannot see a draft, so from their side an unpublished week
-/// looks like no week at all — but saying so eight days out is nagging.
-const ROTA_WARNING_DAYS = 4;
 
 /// Only locations that were actually being rota'd recently get chased about it.
 /// A location nobody schedules through the app should not generate a nightly
@@ -62,7 +58,10 @@ export interface DigestContents {
  */
 @Injectable()
 export class AttentionService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly settings: PracticeSettingsService,
+  ) {}
 
   async gather(): Promise<DigestContents> {
     const today = toUtcDate(isoDate(new Date()));
@@ -289,10 +288,14 @@ export class AttentionService {
    *
    * Only locations rota'd through the app recently are chased, so a location
    * that is scheduled some other way does not complain every night forever.
+   *
+   * How close is close enough is the practice's to set — four days is a guess
+   * about how far ahead Domi publishes, and a guess is a poor thing to bake in.
    */
   private async unpublishedRota(today: Date, day: (date: Date) => string): Promise<string[]> {
+    const { rotaWarningDays } = await this.settings.get();
     const daysUntilMonday = (8 - ((today.getUTCDay() + 6) % 7) - 1) % 7 || 7;
-    if (daysUntilMonday > ROTA_WARNING_DAYS) return [];
+    if (daysUntilMonday > rotaWarningDays) return [];
 
     const weekStart = addUtcDays(today, daysUntilMonday);
     const weekEnd = addUtcDays(weekStart, 7);

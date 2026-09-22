@@ -221,9 +221,19 @@ export interface OvertimeWarning {
   spansLocations: boolean;
 }
 
+/// Practice-wide scheduling rules, set by an admin.
+export interface PracticeSettings {
+  overtimeThresholdHours: number;
+  rotaWarningDays: number;
+  updatedAt: string;
+}
+
 export interface Coverage {
   days: CoverageDay[];
   overtime: OvertimeWarning[];
+  /// The line these warnings were worked out against. Sent rather than assumed,
+  /// because the practice can change it.
+  overtimeThresholdHours: number;
 }
 
 /// What the app knows needs a look, in the same words the nightly email uses —

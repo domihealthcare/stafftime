@@ -201,16 +201,17 @@ await step('it is whole weeks, starting Monday, with every day of the month', as
     throw new Error(`the grid ends on "${last}"`);
 });
 
-await step('a day says how many are on and for how long', async () => {
+await step('a manager sees who is on, not just how many', async () => {
   // Monday 1 February carries one of the nine-hour shifts from the overtime
-  // rota above.
+  // rota above. A manager is looking at everybody, so the name is the useful
+  // part.
   const monday = page.getByTestId('month-grid').getByRole('button').first();
   const label = await monday.getAttribute('aria-label');
-  if (!/1 shift, 9 hours/.test(label ?? ''))
+  if (!/1 shift: Frankie/.test(label ?? ''))
     throw new Error(`Monday reads "${label}"`);
 
   const text = await monday.innerText();
-  if (!/1 on/.test(text) || !/9h/.test(text))
+  if (!/Frankie/.test(text))
     throw new Error(`the cell shows "${text.replace(/\n/g, ' ')}"`);
 });
 
@@ -256,6 +257,43 @@ await step('picking a day opens that week', async () => {
 
   const text = await page.locator('main').innerText();
   if (!/Feb 8/.test(text)) throw new Error(`the week did not follow the day picked: ${text.slice(0, 200)}`);
+});
+
+await step('an employee sees when they are on, not their own name', async () => {
+  // This is mostly who the month view is for: somebody checking which days
+  // they are working. They only ever see their own shifts, so the name would
+  // be their own name twenty times over — the time is the useful part.
+  const empCtx = await browser.newContext({ viewport: { width: 1280, height: 1000 } });
+  const emp = await empCtx.newPage();
+  await emp.goto(`${BASE}/`, { waitUntil: 'networkidle' });
+  await emp.getByLabel('Email').fill('frontdesk@domihealthcare.com');
+  await emp.getByLabel('Password', { exact: true }).fill('shift-change-2026');
+  await emp.getByRole('button', { name: 'Sign in' }).click();
+  await emp.getByText('Not clocked in').waitFor({ timeout: 15000 });
+  await emp.getByRole('link', { name: 'Schedule' }).click();
+  await emp.getByRole('button', { name: 'Month', exact: true }).click();
+  await emp.getByTestId('month-grid').waitFor({ timeout: 15000 });
+
+  // Navigate to February 2027, where this suite built the rota.
+  for (let i = 0; i < 20; i += 1) {
+    if (/February 2027/.test(await emp.locator('main').innerText())) break;
+    await emp.getByRole('button', { name: 'Next →' }).click();
+    await emp.waitForTimeout(250);
+  }
+
+  const withShifts = emp
+    .getByTestId('month-grid')
+    .getByRole('button')
+    .filter({ hasNotText: '—' })
+    .first();
+  const label = await withShifts.getAttribute('aria-label');
+
+  if (/Frankie/.test(label ?? ''))
+    throw new Error(`an employee was shown their own name: "${label}"`);
+  if (!/\d(am|pm)–\d/.test(label ?? ''))
+    throw new Error(`expected a time range, got "${label}"`);
+
+  await empCtx.close();
 });
 
 await step('an employee sees neither the planning tools nor coverage', async () => {

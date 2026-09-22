@@ -140,6 +140,112 @@ await step('turning it back on works too', async () => {
     throw new Error('the toggle did not switch back on');
 });
 
+// --- practice settings ---
+
+await step('the numbers behind the warnings are the practice’s to set', async () => {
+  await admin.getByRole('link', { name: 'Settings' }).first().click();
+  await admin.getByLabel('Overtime starts after').waitFor({ timeout: 15000 });
+
+  const threshold = admin.getByLabel('Overtime starts after');
+  if ((await threshold.inputValue()) !== '40')
+    throw new Error(`the default threshold is ${await threshold.inputValue()}, not 40`);
+
+  const window = admin.getByLabel('Chase an unpublished rota');
+  if ((await window.inputValue()) !== '4')
+    throw new Error(`the default warning window is ${await window.inputValue()}, not 4`);
+});
+
+await step('a manager can read them but not change them', async () => {
+  const mgrCtx = await browser.newContext({ viewport: { width: 1280, height: 1000 } });
+  const manager = await mgrCtx.newPage();
+  await manager.goto(`${BASE}/`, { waitUntil: 'networkidle' });
+  await manager.getByLabel('Email').fill('manager@domihealthcare.com');
+  await manager.getByLabel('Password', { exact: true }).fill('shift-change-2026');
+  await manager.getByRole('button', { name: 'Sign in' }).click();
+  await manager.getByText('Not clocked in').waitFor({ timeout: 20000 });
+
+  await manager.getByRole('link', { name: 'Settings' }).first().click();
+  const field = manager.getByLabel('Overtime starts after');
+  await field.waitFor({ timeout: 15000 });
+
+  // Readable, because the numbers explain what their screens are telling them.
+  if (!(await field.isDisabled())) throw new Error('a manager could edit the settings');
+  if ((await manager.getByRole('button', { name: 'Save' }).count()) > 0)
+    throw new Error('a manager was offered Save');
+
+  // And the server says so too, not just the screen.
+  const response = await manager.request.fetch(`${BASE}/api/settings`, {
+    method: 'PATCH',
+    data: { overtimeThresholdHours: 20 },
+  });
+  if (response.status() !== 403)
+    throw new Error(`a manager's PATCH got ${response.status()}, not 403`);
+
+  await mgrCtx.close();
+});
+
+await step('changing the threshold changes what the rota warns about', async () => {
+  // The real test of a setting is whether anything downstream notices.
+  const threshold = admin.getByLabel('Overtime starts after');
+  await threshold.fill('20');
+  await admin.getByRole('button', { name: 'Save' }).click();
+  await admin.getByText('Saved.').waitFor({ timeout: 15000 });
+
+  // The seeded rota is a single 8-hour shift today, which is over 20 for
+  // nobody — so build a week that clears the new line but not the old one.
+  await admin.getByRole('link', { name: /^Schedule/ }).first().click();
+  await admin.getByRole('button', { name: 'Repeating shifts' }).click();
+  // Not Frankie: an earlier step in this suite marks them as no longer
+  // employed, which takes them out of the dropdown.
+  await admin.getByLabel('Employee').selectOption({ label: 'Max Assistant' });
+  await admin.getByLabel('Starts').fill('09:00');
+  await admin.getByLabel('Ends').fill('15:00');
+  await admin.getByLabel('From').fill('2027-03-01');
+  await admin.getByLabel('Until').fill('2027-03-05');
+  await admin.getByLabel(/Publish straight away/).check();
+  await admin.getByRole('button', { name: 'Create the shifts' }).click();
+  await admin.getByText(/shifts created/).waitFor({ timeout: 20000 });
+
+  // 5 × 6 hours = 30: nothing at all under the default 40, ten hours of
+  // overtime under the 20 just set.
+  //
+  // Navigated by month rather than by week — the week label reads
+  // "Mar 1 – Mar 7, 2027", so matching on the month name means stepping through
+  // twenty-odd weeks and hoping the loop bound is generous enough.
+  await admin.getByRole('button', { name: 'Month', exact: true }).click();
+  await admin.getByTestId('month-grid').waitFor({ timeout: 15000 });
+  for (let i = 0; i < 12; i += 1) {
+    if (/March 2027/.test(await admin.locator('main').innerText())) break;
+    await admin.getByRole('button', { name: 'Next →' }).click();
+    await admin.waitForTimeout(250);
+  }
+  await admin.getByText('March 2027').waitFor({ timeout: 10000 });
+  await admin.getByText(/scheduled past 20 hours/).waitFor({ timeout: 20000 });
+
+  const text = await admin.locator('main').innerText();
+  if (!/30 hours in the week of/.test(text))
+    throw new Error(`the warning did not use the new line: ${text.slice(0, 300)}`);
+});
+await admin.screenshot({ path: `${OUT}/74-settings.png`, fullPage: true });
+
+await step('putting it back makes the warning go away again', async () => {
+  await admin.getByRole('link', { name: 'Settings' }).first().click();
+  await admin.getByLabel('Overtime starts after').fill('40');
+  await admin.getByRole('button', { name: 'Save' }).click();
+  await admin.getByText('Saved.').waitFor({ timeout: 15000 });
+
+  await admin.getByRole('link', { name: /^Schedule/ }).first().click();
+  await admin.getByTestId('month-grid').waitFor({ timeout: 15000 });
+  for (let i = 0; i < 12; i += 1) {
+    if (/March 2027/.test(await admin.locator('main').innerText())) break;
+    await admin.getByRole('button', { name: 'Next →' }).click();
+    await admin.waitForTimeout(250);
+  }
+  await admin.waitForTimeout(1200);
+  if ((await admin.getByText(/scheduled past \d+ hours/).count()) > 0)
+    throw new Error('30 hours was still reported as overtime at a threshold of 40');
+});
+
 await browser.close();
 console.log(`\n${errors.length === 0 ? 'ALL ATTENTION CHECKS PASSED' : `PROBLEMS (${errors.length}):`}`);
 errors.forEach((e) => console.log(' - ' + e));

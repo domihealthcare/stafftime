@@ -9,6 +9,16 @@ export function formatTime(iso: string): string {
   });
 }
 
+/// The shortest honest way to say a time: "9am", "1:30pm". For places where a
+/// full "9:00 AM" would not fit — a month grid column is about fifty pixels on
+/// a phone — and where the minutes are usually zero anyway.
+export function formatTimeCompact(iso: string): string {
+  const date = new Date(iso);
+  const full = date.toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' });
+  // Drop ":00" and the space before am/pm, in whatever form the locale used.
+  return full.replace(/:00/, '').replace(/\s+/g, '').toLowerCase();
+}
+
 export function formatDate(iso: string): string {
   return new Date(iso).toLocaleDateString(undefined, {
     weekday: 'short',

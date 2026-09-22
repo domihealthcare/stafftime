@@ -1,5 +1,6 @@
 import { BadRequestException } from '@nestjs/common';
 import { PtoStatus, ShiftStatus } from '@prisma/client';
+import { fakeSettings } from '../settings/practice-settings.test-double';
 import { ShiftPlanningService } from './shift-planning.service';
 
 const NJ = 'America/New_York';
@@ -42,7 +43,7 @@ describe('ShiftPlanningService', () => {
       },
     };
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    return { service: new ShiftPlanningService(prisma as any), prisma, created };
+    return { service: new ShiftPlanningService(prisma as any, fakeSettings()), prisma, created };
   }
 
   const repeat = (overrides: Record<string, unknown> = {}) => ({
@@ -335,9 +336,16 @@ describe('ShiftPlanningService', () => {
       };
     }
 
-    function coverageSetup(shifts: unknown[], leave: unknown[] = []) {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      return new ShiftPlanningService(coveragePrisma(shifts, leave) as any);
+    function coverageSetup(
+      shifts: unknown[],
+      leave: unknown[] = [],
+      settings: { overtimeThresholdHours?: number } = {},
+    ) {
+      return new ShiftPlanningService(
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        coveragePrisma(shifts, leave) as any,
+        fakeSettings(settings),
+      );
     }
 
     const shift = {
@@ -413,6 +421,19 @@ describe('ShiftPlanningService', () => {
         });
       });
 
+      it('uses the threshold the practice set, not a constant', async () => {
+        // Forty is the federal line and a sensible default. A practice that
+        // wants to hear about it sooner should not need a deploy.
+        const five8s = ['21', '22', '23', '24', '25'].map((d) => shiftOn(`2026-09-${d}`, 8));
+
+        const { overtime } = await coverageSetup(five8s, [], {
+          overtimeThresholdHours: 35,
+        }).coverage({ from: '2026-09-21', to: '2026-09-27' });
+
+        expect(overtime).toHaveLength(1);
+        expect(overtime[0]).toMatchObject({ scheduledHours: 40, overtimeHours: 5 });
+      });
+
       it('counts the whole week, not just the days on screen', async () => {
         // A manager looking at Thursday and Friday still has to see the
         // thirty-two hours already scheduled Monday to Wednesday, or adding a
@@ -444,7 +465,7 @@ describe('ShiftPlanningService', () => {
         // so the filters that matter have to be asserted on the query itself.
         const prisma = coveragePrisma([]);
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        await new ShiftPlanningService(prisma as any).coverage({
+        await new ShiftPlanningService(prisma as any, fakeSettings()).coverage({
           from: '2026-09-24',
           to: '2026-09-25',
           locationId: 'loc-1',

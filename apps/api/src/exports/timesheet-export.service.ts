@@ -2,6 +2,7 @@ import { BadRequestException, Injectable } from '@nestjs/common';
 import { PayType, PayrollExportStatus, Prisma, TimeEntryStatus } from '@prisma/client';
 import { weekStartIn } from '../common/util/zoned-time.util';
 import { PrismaService } from '../prisma/prisma.service';
+import { PracticeSettingsService } from '../settings/practice-settings.service';
 import { payrollStateOf } from '../time-entries/payroll-state';
 import { DEFAULT_COLUMN_KEYS, type TimesheetColumnKey } from './columns';
 import { ExportTimesheetDto } from './dto/export-timesheet.dto';
@@ -12,7 +13,6 @@ const DEFAULT_STATUSES: TimeEntryStatus[] = [
   TimeEntryStatus.APPROVED,
 ];
 
-const OVERTIME_THRESHOLD_HOURS = 40;
 /// Longest period we will build in one go, to keep a mis-typed date range from
 /// pulling years of entries into memory.
 const MAX_PERIOD_DAYS = 400;
@@ -55,6 +55,9 @@ export interface TimesheetData {
     totalHours: number;
     openEntryCount: number;
     splitOvertime: boolean;
+    /// Carried so the file can state the rule it was built with, rather than
+    /// a number that was true when the code was written.
+    overtimeThresholdHours: number;
     generatedAt: Date;
     /// How many of these entries were already sent to payroll, and how many of
     /// those have been corrected since the file went out. The second number is
@@ -94,7 +97,10 @@ type EntryWithRelations = Prisma.TimeEntryGetPayload<{ include: typeof ENTRY_INC
 
 @Injectable()
 export class TimesheetExportService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly settings: PracticeSettingsService,
+  ) {}
 
   async build(dto: ExportTimesheetDto): Promise<TimesheetData> {
     const from = new Date(dto.from);
@@ -128,7 +134,14 @@ export class TimesheetExportService {
     // Worked out from the rows already read rather than a second query, so the
     // counts cannot describe a different set of entries from the file.
     const payrollStates = entries.map((entry) => payrollStateOf(entry));
-    const totals = this.buildTotals(entries, dto.splitOvertime ?? false);
+    // The same threshold the rota warns on. If these two ever disagreed, the
+    // schedule would promise one thing and the payslip say another.
+    const { overtimeThresholdHours } = await this.settings.get();
+    const totals = this.buildTotals(
+      entries,
+      dto.splitOvertime ?? false,
+      overtimeThresholdHours,
+    );
 
     const location = dto.locationId
       ? await this.prisma.location.findUnique({
@@ -151,6 +164,7 @@ export class TimesheetExportService {
         totalHours: round2(totals.reduce((sum, t) => sum + t.hours, 0)),
         openEntryCount: entries.filter((e) => e.clockOutAt === null).length,
         splitOvertime: dto.splitOvertime ?? false,
+        overtimeThresholdHours,
         generatedAt: new Date(),
         alreadyExportedCount: payrollStates.filter((state) => state.exported).length,
         correctedSinceExportCount: payrollStates.filter((state) => state.changedSinceExport)
@@ -244,10 +258,17 @@ export class TimesheetExportService {
    * the whole period — 45 hours one week and 35 the next is five hours of
    * overtime, not zero. Salaried staff are treated as exempt and never split.
    *
+   * The threshold comes from the practice's settings rather than a constant, so
+   * this and the rota's overtime warning cannot drift apart.
+   *
    * TODO: confirm exempt status per employee with whoever runs payroll. Pay type
    * is a reasonable proxy but it is not the legal test.
    */
-  private buildTotals(entries: EntryWithRelations[], splitOvertime: boolean): EmployeeTotal[] {
+  private buildTotals(
+    entries: EntryWithRelations[],
+    splitOvertime: boolean,
+    thresholdHours: number,
+  ): EmployeeTotal[] {
     const byEmployee = new Map<string, EntryWithRelations[]>();
     for (const entry of entries) {
       byEmployee.set(entry.employeeId, [...(byEmployee.get(entry.employeeId) ?? []), entry]);
@@ -276,8 +297,8 @@ export class TimesheetExportService {
         }
         regularHours = 0;
         for (const weekHours of weeks.values()) {
-          regularHours += Math.min(weekHours, OVERTIME_THRESHOLD_HOURS);
-          overtimeHours += Math.max(0, weekHours - OVERTIME_THRESHOLD_HOURS);
+          regularHours += Math.min(weekHours, thresholdHours);
+          overtimeHours += Math.max(0, weekHours - thresholdHours);
         }
       }
 

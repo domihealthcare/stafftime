@@ -1,3 +1,4 @@
+import { fakeSettings } from '../settings/practice-settings.test-double';
 import { AttentionService } from './attention.service';
 import { DigestService } from './digest.service';
 
@@ -15,6 +16,7 @@ function build(
     leaverShifts?: unknown[];
     locations?: unknown[];
     staff?: { id: string; firstName: string; lastName: string }[];
+    settings?: { rotaWarningDays?: number; overtimeThresholdHours?: number };
   } = {},
 ) {
   const managers = data.managers ?? [
@@ -45,7 +47,7 @@ function build(
   };
   const notifications = { dailyDigest: jest.fn() };
 
-  const attention = new AttentionService(prisma as never);
+  const attention = new AttentionService(prisma as never, fakeSettings(data.settings));
 
   return {
     // `service` sends; `attention` decides what there is to send. Tests about
@@ -260,6 +262,20 @@ describe('DigestService — what is going wrong at the office', () => {
       expect((await attention.gather()).unpublishedRota).toEqual([]);
       // Not just filtered out afterwards — never asked for.
       expect(prisma.location.findMany).not.toHaveBeenCalled();
+    });
+
+    it('uses the window the practice set, not a constant', async () => {
+      // Monday the 21st is a week from the coming Monday. Silent by default,
+      // and not silent for a practice that publishes a fortnight ahead and
+      // wants longer to notice.
+      jest.useFakeTimers().setSystemTime(day('2026-09-21'));
+
+      const quiet = build({ locations: [northBergen([])] });
+      expect((await quiet.attention.gather()).unpublishedRota).toEqual([]);
+
+      const loud = build({ locations: [northBergen([])], settings: { rotaWarningDays: 7 } });
+      const [line] = (await loud.attention.gather()).unpublishedRota;
+      expect(line).toMatch(/starting in 7 days/);
     });
 
     it('speaks four days out, and says how long is left', async () => {

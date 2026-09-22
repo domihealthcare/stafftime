@@ -198,14 +198,15 @@ model Employee {
   timeEntries TimeEntry[]
   sessions    Session[]
 
-  createdShifts       Shift[]        @relation("ShiftCreatedBy")
-  createdKiosks       KioskDevice[]  @relation("KioskCreatedBy")
-  reportPresets       ReportPreset[] @relation("ReportPresetOwner")
-  ptoRequests         PtoRequest[]   @relation("PtoRequester")
-  reviewedPtoRequests PtoRequest[]   @relation("PtoReviewer")
-  editedPtoPolicies   PtoPolicy[]    @relation("PtoPolicyEditor")
-  editedTimeEntries   TimeEntry[]    @relation("TimeEntryEditedBy")
-  approvedTimeEntries TimeEntry[]    @relation("TimeEntryApprovedBy")
+  createdShifts       Shift[]            @relation("ShiftCreatedBy")
+  createdKiosks       KioskDevice[]      @relation("KioskCreatedBy")
+  reportPresets       ReportPreset[]     @relation("ReportPresetOwner")
+  ptoRequests         PtoRequest[]       @relation("PtoRequester")
+  reviewedPtoRequests PtoRequest[]       @relation("PtoReviewer")
+  editedPtoPolicies   PtoPolicy[]        @relation("PtoPolicyEditor")
+  editedSettings      PracticeSettings[] @relation("PracticeSettingsEditor")
+  editedTimeEntries   TimeEntry[]        @relation("TimeEntryEditedBy")
+  approvedTimeEntries TimeEntry[]        @relation("TimeEntryApprovedBy")
 
   checklists                EmployeeChecklist[]     @relation("EmployeeChecklistSubject")
   createdChecklists         EmployeeChecklist[]     @relation("EmployeeChecklistCreatedBy")
@@ -282,6 +283,38 @@ model PtoPolicy {
   updatedBy Employee? @relation("PtoPolicyEditor", fields: [updatedById], references: [id], onDelete: SetNull)
 
   @@map("pto_policy")
+}
+
+/// Practice-wide scheduling rules the managers set for themselves.
+///
+/// These started as constants in the code, which is the right place to start —
+/// the numbers had to come from somewhere and nobody had an opinion yet. They
+/// are here now because both turned out to be a guess standing in for something
+/// only the practice knows: how far ahead Domi publishes a rota, and what it
+/// treats as too many hours.
+///
+/// A database-enforced singleton, the same shape as `PtoPolicy` and for the
+/// same reason — see the note on `PtoPolicyService.get`.
+model PracticeSettings {
+  id        String @id @default(uuid()) @db.Uuid
+  singleton Int    @unique @default(1)
+
+  /// Hours in a week past which the rota warns, and the payroll export splits.
+  /// Forty is the federal line and New Jersey follows it; a practice that
+  /// wanted to be told earlier could set it lower.
+  overtimeThresholdHours Int @default(40)
+
+  /// How close the coming week has to be before an unpublished rota is chased.
+  /// Four days by default: close enough to be urgent, far enough to fix.
+  rotaWarningDays Int @default(4)
+
+  updatedById String?  @db.Uuid
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  updatedBy Employee? @relation("PracticeSettingsEditor", fields: [updatedById], references: [id], onDelete: SetNull)
+
+  @@map("practice_settings")
 }
 
 /// A request for time off.

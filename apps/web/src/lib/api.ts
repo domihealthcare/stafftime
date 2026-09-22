@@ -11,6 +11,7 @@ import type {
   ConflictingShift,
   Coverage,
   PlanResult,
+  PracticeSettings,
   Employee,
   Location,
   PtoBalance,
@@ -487,6 +488,13 @@ export const api = {
     }),
   listSessions: () => request<AuthSession[]>('/auth/sessions'),
   attention: () => request<Attention>('/attention'),
+
+  practiceSettings: () => request<PracticeSettings>('/settings'),
+  updatePracticeSettings: (body: Partial<Omit<PracticeSettings, 'updatedAt'>>) =>
+    request<PracticeSettings>('/settings', {
+      method: 'PATCH',
+      body: JSON.stringify(body),
+    }),
   setDigestPreference: (wantsDailyDigest: boolean) =>
     request<Employee>('/auth/preferences', {
       method: 'PATCH',

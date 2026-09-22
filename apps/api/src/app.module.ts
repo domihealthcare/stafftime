@@ -18,6 +18,7 @@ import { LocationsModule } from './locations/locations.module';
 import { MaintenanceModule } from './maintenance/maintenance.module';
 import { PrismaModule } from './prisma/prisma.module';
 import { PtoModule } from './pto/pto.module';
+import { SettingsModule } from './settings/settings.module';
 import { SetupModule } from './setup/setup.module';
 import { ShiftsModule } from './shifts/shifts.module';
 import { TimeEntriesModule } from './time-entries/time-entries.module';
@@ -29,6 +30,7 @@ import { TimeEntriesModule } from './time-entries/time-entries.module';
     EmailModule,
     AuthModule,
     AppConfigModule,
+    SettingsModule,
     CalendarModule,
     LocationsModule,
     EmployeesModule,
