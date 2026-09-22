@@ -132,7 +132,6 @@ function toTaskRow(task: CreateTemplateDto['tasks'][number], index: number) {
     title: task.title,
     description: task.description,
     owner: task.owner,
-    requiresDocument: task.requiresDocument ?? false,
     dueOffsetDays: task.dueOffsetDays,
   };
 }

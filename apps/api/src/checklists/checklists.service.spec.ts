@@ -29,7 +29,6 @@ const TEMPLATE = {
       title: 'Form I-9 completed and verified',
       description: 'Section 2 within three business days.',
       owner: TaskOwner.ADMIN,
-      requiresDocument: true,
       dueOffsetDays: 3,
     },
     {
@@ -37,7 +36,6 @@ const TEMPLATE = {
       title: 'Employee handbook acknowledged',
       description: null,
       owner: TaskOwner.EMPLOYEE,
-      requiresDocument: false,
       dueOffsetDays: 5,
     },
     {
@@ -45,7 +43,6 @@ const TEMPLATE = {
       title: 'Introduced to the team',
       description: null,
       owner: TaskOwner.MANAGER,
-      requiresDocument: false,
       dueOffsetDays: null,
     },
   ],
@@ -97,7 +94,6 @@ function build(
           tasks: data.tasks.create.map((task: Record<string, unknown>, index: number) => ({
             id: `task-${index}`,
             status: ChecklistTaskStatus.PENDING,
-            documents: [],
             ...task,
           })),
         };
@@ -124,8 +120,6 @@ function build(
               id: 'task-0',
               checklistId: 'chk-1',
               owner: TaskOwner.ADMIN,
-              requiresDocument: false,
-              documents: [],
               checklist: { id: 'chk-1', employeeId: 'emp-1', kind: ChecklistKind.ONBOARDING },
             }
           : options.task,
@@ -135,14 +129,7 @@ function build(
     },
   };
 
-  const documents = { removeStored: jest.fn(async () => 0) };
-
-  return {
-    service: new ChecklistsService(prisma as never, documents as never),
-    prisma,
-    documents,
-    created,
-  };
+  return { service: new ChecklistsService(prisma as never), prisma, created };
 }
 
 describe('ChecklistsService — starting one', () => {
@@ -155,7 +142,6 @@ describe('ChecklistsService — starting one', () => {
     expect(tasks[0]).toMatchObject({
       position: 0,
       title: 'Form I-9 completed and verified',
-      requiresDocument: true,
     });
     // The name is copied too, so a renamed template does not rename history.
     expect(created[0].name).toBe('New hire — Domi Healthcare');
@@ -279,32 +265,12 @@ describe('ChecklistsService — starting one', () => {
 });
 
 describe('ChecklistsService — ticking things off', () => {
-  it('will not tick off a task that needs a document until one is attached', async () => {
+  it('ticks a task off, recording who did it and when', async () => {
     const { service, prisma } = build({
       task: {
         id: 'task-0',
         checklistId: 'chk-1',
         owner: TaskOwner.ADMIN,
-        requiresDocument: true,
-        documents: [],
-        checklist: { id: 'chk-1', employeeId: 'emp-1', kind: ChecklistKind.ONBOARDING },
-      },
-    });
-
-    await expect(
-      service.updateTask('task-0', { status: ChecklistTaskStatus.DONE }, admin),
-    ).rejects.toThrow(/needs a document/);
-    expect(prisma.employeeChecklistTask.update).not.toHaveBeenCalled();
-  });
-
-  it('ticks it off once the document is there', async () => {
-    const { service, prisma } = build({
-      task: {
-        id: 'task-0',
-        checklistId: 'chk-1',
-        owner: TaskOwner.ADMIN,
-        requiresDocument: true,
-        documents: [{ id: 'doc-1' }],
         checklist: { id: 'chk-1', employeeId: 'emp-1', kind: ChecklistKind.ONBOARDING },
       },
     });
@@ -400,8 +366,6 @@ describe('ChecklistsService — who may do what', () => {
     id: 'task-1',
     checklistId: 'chk-1',
     owner: TaskOwner.EMPLOYEE,
-    requiresDocument: false,
-    documents: [],
     checklist: { id: 'chk-1', employeeId: 'emp-1', kind: ChecklistKind.ONBOARDING },
   };
 
@@ -469,23 +433,11 @@ describe('ChecklistsService — who may do what', () => {
 });
 
 describe('ChecklistsService — deleting one', () => {
-  it('takes the attached documents with it', async () => {
-    const { service, documents } = build({
-      checklist: {
-        id: 'chk-1',
-        tasks: [
-          { documents: [{ storageKey: 'a' }, { storageKey: 'b' }] },
-          { documents: [] },
-          { documents: [{ storageKey: 'c' }] },
-        ],
-      },
-    });
+  it('deletes the checklist', async () => {
+    const { service, prisma } = build({ checklist: { id: 'chk-1' } });
 
-    await expect(service.remove('chk-1')).resolves.toEqual({
-      deleted: true,
-      documentsDeleted: 3,
-    });
-    expect(documents.removeStored).toHaveBeenCalledWith(['a', 'b', 'c']);
+    await expect(service.remove('chk-1')).resolves.toEqual({ deleted: true });
+    expect(prisma.employeeChecklist.delete).toHaveBeenCalledWith({ where: { id: 'chk-1' } });
   });
 
   it('refuses a checklist that does not exist', async () => {

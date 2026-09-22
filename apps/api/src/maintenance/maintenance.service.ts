@@ -4,10 +4,14 @@ import { PasswordResetService } from '../auth/password-reset.service';
 import { DigestService } from '../email/digest.service';
 import { SessionService } from '../auth/session.service';
 import { PrismaService } from '../prisma/prisma.service';
+import {
+  LOCATION_RETENTION_DAYS,
+  locationRetentionCutoff,
+} from '../time-entries/location-retention';
 
 /// An unreferenced file younger than this is left alone: it may belong to an
-/// upload that is still in flight, between the storage write and the metadata
-/// row landing.
+/// export that is still in flight, between the storage write and the record
+/// landing.
 const ORPHAN_GRACE_MINUTES = 60;
 
 export interface PurgeReport {
@@ -16,6 +20,8 @@ export interface PurgeReport {
   spentResetTokens: number;
   expiredPairingCodes: number;
   orphanedFiles: number;
+  /// Punches whose captured coordinates and IP were cleared for age.
+  clearedLocations: number;
   /// How many managers were told about something that needs a look. Zero when
   /// there was nothing to say, which is most days.
   digestSentTo: number;
@@ -51,11 +57,12 @@ export class MaintenanceService {
       spentResetTokens: await this.resets.purgeExpired(),
       expiredPairingCodes: await this.clearExpiredPairingCodes(),
       orphanedFiles: await this.deleteOrphanedFiles(),
+      clearedLocations: await this.clearOldPunchLocations(),
       digestSentTo: await this.sendDigest(),
     };
 
     this.logger.log(
-      `Purged ${report.expiredSessions} session(s), ${report.staleLoginAttempts} login attempt(s), ${report.spentResetTokens} reset token(s), ${report.expiredPairingCodes} pairing code(s), ${report.orphanedFiles} orphaned file(s)`,
+      `Purged ${report.expiredSessions} session(s), ${report.staleLoginAttempts} login attempt(s), ${report.spentResetTokens} reset token(s), ${report.expiredPairingCodes} pairing code(s), ${report.orphanedFiles} orphaned file(s), ${report.clearedLocations} punch location(s)`,
     );
     return report;
   }
@@ -79,6 +86,52 @@ export class MaintenanceService {
     }
   }
 
+  /**
+   * Clears the coordinates and IP off punches older than the retention window.
+   *
+   * The punch itself is untouched — the time, the location it was attributed
+   * to, and what the geofence check concluded all stay. What goes is the raw
+   * position: a record of where each member of staff physically was on each
+   * morning, which stops being useful long before it stops being sensitive.
+   *
+   * See `time-entries/location-retention.ts` for why ninety days.
+   *
+   * Only rows that still hold something are touched, so a quiet night is a
+   * no-op rather than a full-table write.
+   */
+  private async clearOldPunchLocations(): Promise<number> {
+    const cutoff = locationRetentionCutoff();
+
+    const result = await this.prisma.timeEntry.updateMany({
+      where: {
+        clockInAt: { lt: cutoff },
+        OR: [
+          { clockInLatitude: { not: null } },
+          { clockInIp: { not: null } },
+          { clockOutLatitude: { not: null } },
+          { clockOutIp: { not: null } },
+        ],
+      },
+      data: {
+        clockInLatitude: null,
+        clockInLongitude: null,
+        clockInAccuracyMeters: null,
+        clockInIp: null,
+        clockOutLatitude: null,
+        clockOutLongitude: null,
+        clockOutAccuracyMeters: null,
+        clockOutIp: null,
+      },
+    });
+
+    if (result.count > 0) {
+      this.logger.log(
+        `Cleared captured location from ${result.count} punch(es) older than ${LOCATION_RETENTION_DAYS} days`,
+      );
+    }
+    return result.count;
+  }
+
   /// A pairing code that expired unused is still a credential. Clearing it
   /// leaves the device row alone — an admin can issue a fresh code.
   private async clearExpiredPairingCodes(): Promise<number> {
@@ -96,19 +149,24 @@ export class MaintenanceService {
   /**
    * Bytes nothing points at any more.
    *
-   * The database storage backend has no foreign key back to the documents that
-   * reference it — on purpose, so it stays a storage backend — and deleting a
-   * document removes the metadata row before the bytes. That order is right
-   * (the other way round leaves a download that 404s) but it means a failure
-   * between the two steps leaves bytes behind. This is the sweep for them.
+   * Payroll export files are the only thing this app stores bytes for. The
+   * storage backend has no foreign key back to the records that reference it —
+   * on purpose, so it stays a storage backend — and voiding an export clears
+   * the metadata's pointer before the bytes go. That order is right (the other
+   * way round leaves a download that 404s) but a failure between the two steps
+   * leaves bytes behind. This is the sweep for them.
+   *
+   * The list of keys to keep must cover every kind of record that stores bytes.
+   * Miss one and this quietly deletes live files an hour after they are written.
    */
   private async deleteOrphanedFiles(): Promise<number> {
     const before = new Date(Date.now() - ORPHAN_GRACE_MINUTES * 60_000);
 
-    const referenced = await this.prisma.checklistDocument.findMany({
+    const referenced = await this.prisma.payrollExport.findMany({
+      where: { storageKey: { not: null } },
       select: { storageKey: true },
     });
-    const keys = referenced.map((document) => document.storageKey);
+    const keys = referenced.map((row) => row.storageKey!);
 
     const result = await this.prisma.storedFile.deleteMany({
       where: {

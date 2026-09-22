@@ -8,21 +8,11 @@ import {
   Patch,
   Post,
   Query,
-  Res,
-  UploadedFile,
-  UseInterceptors,
 } from '@nestjs/common';
-import { FileInterceptor } from '@nestjs/platform-express';
 import { ChecklistKind, Role } from '@prisma/client';
-import { Response } from 'express';
 import { AuthUser } from '../common/auth/auth-user';
 import { CurrentUser } from '../common/auth/current-user.decorator';
 import { Roles } from '../common/auth/roles.decorator';
-import { attachmentHeader } from '../storage/upload-validation';
-import {
-  ChecklistDocumentsService,
-  UploadedFileLike,
-} from './checklist-documents.service';
 import { ChecklistTemplatesService } from './checklist-templates.service';
 import { ChecklistsService } from './checklists.service';
 import {
@@ -33,18 +23,11 @@ import {
   UpdateTemplateDto,
 } from './dto/checklist.dto';
 
-/// A hard ceiling on what multer will even buffer. The configured limit
-/// (MAX_UPLOAD_MB) is enforced in the service; this is only here because the
-/// interceptor's options are fixed when the class is defined, before config is
-/// available, and something has to stop a 2GB POST before it reaches memory.
-const HARD_UPLOAD_CEILING_BYTES = 50 * 1024 * 1024;
-
 @Controller('checklists')
 export class ChecklistsController {
   constructor(
     private readonly checklists: ChecklistsService,
     private readonly templates: ChecklistTemplatesService,
-    private readonly documents: ChecklistDocumentsService,
   ) {}
 
   // -------------------------------------------------------------------------
@@ -117,7 +100,7 @@ export class ChecklistsController {
     return this.checklists.start(dto, user);
   }
 
-  /// Admin-only, because this takes the attached documents with it.
+  /// Admin-only: a completed checklist is a record of what was done and when.
   @Delete(':id')
   @Roles(Role.ADMIN)
   remove(@Param('id', ParseUUIDPipe) id: string) {
@@ -131,48 +114,5 @@ export class ChecklistsController {
     @CurrentUser() user: AuthUser,
   ) {
     return this.checklists.updateTask(taskId, dto, user);
-  }
-
-  // -------------------------------------------------------------------------
-  // Documents
-  // -------------------------------------------------------------------------
-
-  @Post('tasks/:taskId/documents')
-  @UseInterceptors(
-    FileInterceptor('file', { limits: { fileSize: HARD_UPLOAD_CEILING_BYTES, files: 1 } }),
-  )
-  upload(
-    @Param('taskId', ParseUUIDPipe) taskId: string,
-    @UploadedFile() file: UploadedFileLike | undefined,
-    @CurrentUser() user: AuthUser,
-  ) {
-    return this.documents.upload(taskId, file, user);
-  }
-
-  /// The only way the bytes ever leave the server. There is no public URL for a
-  /// checklist document, by design — see src/storage/file-storage.ts.
-  @Get('documents/:documentId')
-  async download(
-    @Param('documentId', ParseUUIDPipe) documentId: string,
-    @CurrentUser() user: AuthUser,
-    @Res() res: Response,
-  ) {
-    const file = await this.documents.download(documentId, user);
-
-    res.setHeader('Content-Type', file.contentType);
-    // Always an attachment, and never sniffed: whatever is in there, the
-    // browser must not decide to run it in the app's own origin.
-    res.setHeader('X-Content-Type-Options', 'nosniff');
-    res.setHeader('Content-Disposition', attachmentHeader(file.filename));
-    res.setHeader('Cache-Control', 'no-store');
-    res.send(file.bytes);
-  }
-
-  @Delete('documents/:documentId')
-  removeDocument(
-    @Param('documentId', ParseUUIDPipe) documentId: string,
-    @CurrentUser() user: AuthUser,
-  ) {
-    return this.documents.remove(documentId, user);
   }
 }

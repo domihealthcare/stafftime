@@ -3,6 +3,7 @@ import {
   ConflictException,
   ForbiddenException,
   Injectable,
+  Logger,
   NotFoundException,
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
@@ -19,6 +20,7 @@ import {
 import { AuthUser } from '../common/auth/auth-user';
 import { normalizeIp } from '../common/util/ip.util';
 import { PrismaService } from '../prisma/prisma.service';
+import { isPastLocationRetention } from './location-retention';
 import { payrollStateOf, withPayroll } from './payroll-state';
 import { ClockInDto } from './dto/clock-in.dto';
 import { ClockOutDto } from './dto/clock-out.dto';
@@ -29,7 +31,44 @@ import {
   VerifiableLocation,
 } from './location-verification.service';
 
-const TIME_ENTRY_INCLUDE = {
+/**
+ * What a time entry looks like when it leaves the server.
+ *
+ * A `select` rather than an `include`, and that is the whole point: an include
+ * returns every scalar on the row, which means the captured coordinates and IP
+ * of every punch went out with every timesheet, to every screen, forever — and
+ * nothing on the screens ever used them.
+ *
+ * They are still recorded, because a disputed punch is the reason to capture
+ * them, and `clockInVerification` says what the check concluded. But reading
+ * where somebody physically was is a deliberate act now: one entry at a time,
+ * through `locationTrail`, admin-only and logged. Listing a fortnight of
+ * timesheets is not that act.
+ *
+ * Adding a field here is how the coordinates would come back, so: don't.
+ */
+const TIME_ENTRY_SELECT = {
+  id: true,
+  employeeId: true,
+  locationId: true,
+  shiftId: true,
+  method: true,
+  status: true,
+  clockInAt: true,
+  clockInVerification: true,
+  clockOutAt: true,
+  clockOutVerification: true,
+  isLate: true,
+  isEarlyDeparture: true,
+  isManuallyEdited: true,
+  isMissingPunch: true,
+  editedById: true,
+  editedAt: true,
+  editReason: true,
+  approvedById: true,
+  approvedAt: true,
+  createdAt: true,
+  updatedAt: true,
   employee: { select: { id: true, firstName: true, lastName: true } },
   location: { select: { id: true, name: true, slug: true, timezone: true } },
   shift: { select: { id: true, startsAt: true, endsAt: true } },
@@ -42,13 +81,14 @@ const TIME_ENTRY_INCLUDE = {
     },
     orderBy: { export: { generatedAt: 'desc' } },
   },
-} satisfies Prisma.TimeEntryInclude;
+} satisfies Prisma.TimeEntrySelect;
 
 /// How far from a punch we will look for a scheduled shift to attach it to.
 const SHIFT_MATCH_WINDOW_MINUTES = 240;
 
 @Injectable()
 export class TimeEntriesService {
+  private readonly logger = new Logger(TimeEntriesService.name);
   private readonly graceMinutes: number;
 
   constructor(
@@ -125,7 +165,7 @@ export class TimeEntriesService {
               clockInVerification: outcome.verificationMethod,
               isLate: shift ? this.isLate(clockInAt, shift.startsAt) : false,
             },
-            include: TIME_ENTRY_INCLUDE,
+            select: TIME_ENTRY_SELECT,
           });
         },
         { isolationLevel: Prisma.TransactionIsolationLevel.Serializable },
@@ -184,7 +224,7 @@ export class TimeEntriesService {
         status: needsReview ? TimeEntryStatus.NEEDS_REVIEW : TimeEntryStatus.COMPLETED,
         isEarlyDeparture: open.shift ? this.isEarlyDeparture(clockOutAt, open.shift.endsAt) : false,
       },
-      include: TIME_ENTRY_INCLUDE,
+      select: TIME_ENTRY_SELECT,
     });
   }
 
@@ -199,7 +239,7 @@ export class TimeEntriesService {
           lt: query.to ? new Date(query.to) : undefined,
         },
       },
-      include: TIME_ENTRY_INCLUDE,
+      select: TIME_ENTRY_SELECT,
       orderBy: { clockInAt: 'desc' },
     });
 
@@ -211,7 +251,7 @@ export class TimeEntriesService {
   async findOne(id: string) {
     const entry = await this.prisma.timeEntry.findUnique({
       where: { id },
-      include: TIME_ENTRY_INCLUDE,
+      select: TIME_ENTRY_SELECT,
     });
     if (!entry) {
       throw new NotFoundException(`Time entry ${id} not found`);
@@ -223,7 +263,7 @@ export class TimeEntriesService {
   async findCurrent(employeeId: string) {
     const open = await this.prisma.timeEntry.findFirst({
       where: { employeeId, clockOutAt: null },
-      include: TIME_ENTRY_INCLUDE,
+      select: TIME_ENTRY_SELECT,
       orderBy: { clockInAt: 'desc' },
     });
     return open ? withPayroll(open) : null;
@@ -257,7 +297,7 @@ export class TimeEntriesService {
         editReason: dto.editReason,
         status: clockOutAt ? TimeEntryStatus.COMPLETED : TimeEntryStatus.NEEDS_REVIEW,
       },
-      include: TIME_ENTRY_INCLUDE,
+      select: TIME_ENTRY_SELECT,
     });
 
     return withPayroll(updated);
@@ -274,7 +314,7 @@ export class TimeEntriesService {
    * know, and the entry is then flagged until it reaches a later run.
    */
   private assertEditIsDeliberate(
-    entry: Prisma.TimeEntryGetPayload<{ include: typeof TIME_ENTRY_INCLUDE }>,
+    entry: Prisma.TimeEntryGetPayload<{ select: typeof TIME_ENTRY_SELECT }>,
     dto: EditTimeEntryDto,
   ): void {
     const payroll = payrollStateOf(entry);
@@ -286,6 +326,54 @@ export class TimeEntriesService {
       exportedAt: payroll.exportedAt,
       exportId: payroll.exportId,
     });
+  }
+
+  /**
+   * Where a punch was made from — one entry, on purpose, and written to the log.
+   *
+   * This is the only route that returns coordinates. Capturing them is what
+   * makes a browser clock-in trustworthy, and there is one honest reason to
+   * read them back: somebody disputes a punch, or a manager thinks one was made
+   * from a car park. Everything else about the entry is already on the
+   * timesheet, including what the geofence check concluded.
+   *
+   * Admin-only, and logged, because "I looked up where you were on the 3rd"
+   * should leave a trace. Coordinates older than the retention window have
+   * already been cleared by the nightly job, and the answer then says so
+   * rather than pretending the punch had no location.
+   */
+  async locationTrail(id: string, actor: AuthUser) {
+    const entry = await this.prisma.timeEntry.findUnique({
+      where: { id },
+      select: {
+        id: true,
+        employeeId: true,
+        clockInAt: true,
+        clockInLatitude: true,
+        clockInLongitude: true,
+        clockInAccuracyMeters: true,
+        clockInIp: true,
+        clockInVerification: true,
+        clockOutAt: true,
+        clockOutLatitude: true,
+        clockOutLongitude: true,
+        clockOutAccuracyMeters: true,
+        clockOutIp: true,
+        clockOutVerification: true,
+      },
+    });
+    if (!entry) throw new NotFoundException(`Time entry ${id} not found`);
+
+    this.logger.log(
+      `Location detail for entry ${id} (employee ${entry.employeeId}) read by ${actor.id}`,
+    );
+
+    const cleared =
+      entry.clockInLatitude === null &&
+      entry.clockInIp === null &&
+      isPastLocationRetention(entry.clockInAt);
+
+    return { ...entry, cleared };
   }
 
   async approve(id: string, actor: AuthUser) {
@@ -301,7 +389,7 @@ export class TimeEntriesService {
         approvedById: actor.id,
         approvedAt: new Date(),
       },
-      include: TIME_ENTRY_INCLUDE,
+      select: TIME_ENTRY_SELECT,
     });
 
     return withPayroll(approved);

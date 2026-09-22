@@ -76,6 +76,39 @@ Clock-in runs in a `Serializable` transaction: checking for an existing open
 punch and inserting the new one must be atomic, or a double-tapped button leaves
 someone clocked in twice.
 
+### What happens to the captured position
+
+Capturing a coordinate is what makes a browser clock-in mean anything. Keeping
+it is a different question, and the answer is three rules.
+
+**It is not part of a timesheet.** The query behind every list of entries is an
+explicit `select` that does not name the coordinate or IP columns. It used to be
+an `include`, which returns every scalar on the row — so the position of every
+punch went out with every timesheet, to every screen, and nothing on any screen
+ever read one. That is the worst kind of exposure: all of the risk, none of the
+use. Adding a field to `TIME_ENTRY_SELECT` is how it would come back.
+
+**Reading one is a deliberate act.** `GET /api/time-entries/:id/location` is the
+only route that returns coordinates: one entry, admin-only, and the read is
+written to the server log. The honest reason to want them is a disputed punch,
+and a dispute is about one punch. "I looked up where you were on the 3rd" should
+leave a trace.
+
+**They expire.** The nightly job clears coordinates, accuracy and IP off punches
+older than 90 days. The punch survives — the time, the location it was
+attributed to, and what the check concluded — so *was this punch verified?* is
+answerable forever while *where exactly were they standing?* is answerable for a
+quarter. `time-entries/location-retention.ts` argues the number: a dispute
+happens within a pay period or two, and what is left after that is a map of
+where each member of staff was on each morning, for as long as the app runs.
+
+The lookup route distinguishes "cleared for age" from "never captured", because
+a kiosk punch has no coordinates and never did, and reporting that as *cleared*
+would send somebody looking for data that never existed.
+
+`docs/location-disclosure.md` has the staff-facing side: what is captured, and
+draft handbook wording.
+
 ## Authentication
 
 Passwords are hashed with **argon2id** at the parameters OWASP recommends
@@ -651,13 +684,16 @@ every zone's history to answer "what is 9am in America/New_York".
 ## Onboarding and offboarding checklists
 
 Phase 3. A `ChecklistTemplate` is a reusable list of tasks; an
-`EmployeeChecklist` is one person's copy of it, with documents attached to the
-tasks that need them.
+`EmployeeChecklist` is one person's copy of it.
+
+The lists track **that** a step was done, by whom and when. They deliberately do
+not hold the paperwork those steps produce — see *What a checklist does not
+hold*, below.
 
 ### Instances are snapshots, not references
 
 Starting a checklist copies the template's tasks — title, description, owner,
-whether a document is needed — into `EmployeeChecklistTask` rows. The template
+due offset — into `EmployeeChecklistTask` rows. The template
 is kept as `templateId` for provenance and nothing else.
 
 Referencing the template instead would be less data and much worse: reword "sign
@@ -699,59 +735,39 @@ checklist never completes and nobody can tell an unfinished list from a finished
 one. Marking something not applicable **requires** a reason — a skipped
 compliance task with no explanation is worse than an unfinished one.
 
-A task marked as needing a document cannot be ticked off until one is attached.
-That is the one rule the whole feature exists for.
-
 Completion is derived, not set: the checklist is stamped `completedAt` exactly
 when nothing is left `PENDING`, and un-stamped if a task is reopened.
 
-### Who may see a document
+### What a checklist does not hold
 
-This is the most sensitive data in the app. An I-9 or a W-4 carries a social
-security number.
+An earlier version of this let you attach the I-9, the W-4 and the signed
+handbook to the tasks, and stored the bytes. That was removed on purpose.
 
-- **Reading** a document: an admin, or the person it is about. Your own
-  personnel file is yours to see, including the parts the practice filled in.
-- **Attaching or removing** one: an admin, or the person it is about for the
-  tasks that are theirs to do. An employee hands in their own handbook
-  acknowledgement; they do not touch what the practice filed.
-- **Managers cannot see the bytes at all.** They run the checklist, and they can
-  see that a form was collected and by whom, which is what running it needs. The
-  form itself is an HR record. Whoever at Domi should see them gets the admin
-  role — that is the practice's decision to make, not one baked in here.
+This is a timekeeping app. It answers "who was here, and for how long" — and, on
+these screens, "has the new hire been set up yet". The documents an onboarding
+produces are the most sensitive records a practice holds: an I-9 or a W-4 carries
+a social security number. Holding them here meant a clock-in app, used from
+phones on the shop floor and from a shared tablet at the front desk, was also the
+place a breach would be worth having. The personnel file — wherever the practice
+already keeps it, and however it is already controlled — is the right home for
+that, and it does not need a second copy.
 
-Managers also cannot attach documents, deliberately: allowing an upload while
-forbidding a download would be theatre, since anyone attaching a form has read
-it.
+So the task says "Form I-9 completed and verified", it records who verified it
+and when, and the form stays where personnel records live. The checklist is a
+better checklist for it: the question "is the paperwork done" is answered by a
+tick either way, and the thing that made it risky is gone.
 
-This is a defensible default rather than an obvious one, and it is written down
-in `docs/open-questions.md` as something to confirm.
+The same reasoning removed the licence number and the licence scan from
+credentials (see *Licence and certification expiry*), which now hold dates only.
 
-### There is no URL for a document
+Two guards keep it that way, because the easy way to undo this is to add one
+column in a pull request that looks harmless:
 
-Every download goes through `GET /api/checklists/documents/:id`, which checks
-who is asking, then sends the bytes with `Content-Disposition: attachment`,
-`X-Content-Type-Options: nosniff` and `Cache-Control: no-store`.
-
-The alternative — a long random public URL from a blob store — makes the bytes
-reachable by anyone who ever sees the link: a forwarded email, a browser
-history, a proxy log, a screenshot. A link is a bearer token that never expires
-and cannot be revoked except by deleting the file. For a document containing an
-SSN that is not a trade worth making, so the `FileStorage` interface has no
-method that returns a URL and no backend is ever asked for one.
-
-### What may be attached
-
-An allow-list: PDF, JPEG, PNG. What people actually attach is a scanned form or
-a photo of one; anything else is a mistake or an attack.
-
-The declared content type is checked, and then the first bytes of the file are
-checked against it, so an HTML page renamed `i9.pdf` and labelled
-`application/pdf` is refused. Size is measured from the buffer rather than
-trusted from the request, and `MAX_UPLOAD_MB` caps it — with a hard ceiling in
-the interceptor as well, because the interceptor's options are fixed before
-config is available and something has to stop a 2GB POST before it reaches
-memory.
+- `src/common/no-sensitive-data.spec.ts` reads `schema.prisma` and fails if an
+  identity number, a stored document or a `requiresDocument` flag reappears on
+  the employee or credential models.
+- The browser suites assert that no `input[type=file]` exists on the checklist
+  or credential screens at all.
 
 ### File storage is an adapter
 
@@ -759,35 +775,42 @@ memory.
 narrow `FileStorage` interface (`put`, `get`, `delete`) with two
 implementations.
 
+**One caller: payroll exports.** Nothing is uploaded to this app. The only bytes
+it stores are the spreadsheets it generates itself, kept so a run can be
+re-downloaded exactly as it went to payroll rather than re-derived from today's
+data.
+
 **`DatabaseFileStorage` is the default**, and at this scale it is the right
-default. The documents are a handful of PDFs per employee — an I-9, a W-4, a
-signed handbook, a receipt for a returned laptop — so tens of megabytes for
-twenty-odd staff. Keeping them in Postgres means they inherit the database's
-backups, access control and encryption at rest; there is no second account to
-set up and no bucket policy to get wrong; and a database restore restores the
-documents with it, which matters for records the practice must retain. Bytes
-live in their own `stored_files` table with no foreign key back to the
-checklist, so the adapter stays a storage backend and a document listing never
-drags file contents into memory.
+default. An export is a few hundred kilobytes and there are twenty-six of them a
+year. Keeping them in Postgres means they inherit the database's backups, access
+control and encryption at rest; there is no second account to set up and no
+bucket policy to get wrong; and a database restore restores the export history
+with it. Bytes live in their own `stored_files` table with no foreign key back to
+the export record, so the adapter stays a storage backend and listing the export
+history never drags file contents into memory.
+
+There is no public URL for one either: a timesheet names everybody who works here
+and what they were paid for, and a long random link is a bearer token that never
+expires and cannot be revoked except by deleting the file. `FileStorage` has no
+method that returns a URL, so no backend is ever asked for one.
 
 **`LocalDiskFileStorage`** exists to prove the seam is real and is genuinely
 useful for local work — you can open the folder. It is wrong for Vercel, where
 the filesystem is ephemeral and per-instance.
 
-Keys are `2026/09/` plus 16 random bytes. Nothing from the uploaded filename
-goes into them: a key built from a filename is how you end up serving
-`../../.env`, and it would leak the contents of the file to anyone who saw the
-key ("i9-signed-dominguez.pdf"). Every backend validates the key against that
-pattern before touching anything, and the disk backend additionally confirms the
-resolved path is still inside its root.
+Keys are `2026/09/` plus 16 random bytes. Nothing from the file's own name goes
+into them: a key built from a filename is how you end up serving `../../.env`.
+Every backend validates the key against that pattern before touching anything,
+and the disk backend additionally confirms the resolved path is still inside its
+root.
 
-Deleting a document removes the metadata row first and the bytes second. The
-other order leaves a document row whose file has gone, which looks like data
-loss; this order leaves unreferenced bytes, which is recoverable garbage.
+Clearing an export's file clears the metadata pointer first and the bytes second.
+The other order leaves a record whose file has gone, which looks like data loss;
+this order leaves unreferenced bytes, which is recoverable garbage and which the
+nightly sweep collects.
 
-The database stops being sensible somewhere around a few gigabytes, or the day
-someone wants to attach video. That is what the interface is for — S3 or a blob
-store is one class.
+The database stops being sensible somewhere around a few gigabytes. That is what
+the interface is for — S3 or a blob store is one class.
 
 ## Hardening
 
@@ -830,7 +853,7 @@ a plaintext column would be a standing list of who somebody tried to sign in as.
 `GET /api/maintenance/purge`, called daily by Vercel Cron (`vercel.json`). It
 removes expired sessions, throttle rows past the window, kiosk pairing codes
 that expired unused (an unused code is still a live credential), and file bytes
-that no document references any more.
+that no export record references any more.
 
 There is nobody signed in when a cron fires, so the route cannot sit behind the
 session guard. It is authorised with `CRON_SECRET` compared in constant time,
@@ -840,8 +863,10 @@ maintenance endpoint that opens when a variable is missing is worse than not
 having one.
 
 The orphaned-file sweep leaves anything younger than an hour alone, since it may
-belong to an upload that is mid-flight between the storage write and the
-metadata row.
+belong to an export that is mid-flight between the storage write and the record.
+Its keep-list must name every model that holds a `storageKey`: miss one and the
+sweep quietly deletes live files an hour after they are written. There is a test
+for exactly that.
 
 ### Response headers
 
@@ -1134,7 +1159,7 @@ easier to chase when the app names it where it would be used.
 
 Every run writes a `PayrollExport`: the period, the target, who ran it, the
 counts and total hours, the options in full so it can be repeated, and the file
-itself through the same `FileStorage` adapter as checklist documents.
+itself through the `FileStorage` adapter.
 
 Keeping the bytes matters. Re-deriving the file from the same period later would
 use *today's* data, which is the one thing an audit must not do — the whole
@@ -1191,7 +1216,7 @@ cannot be quietly forgotten before the next run.
 `EmployeeCredential` is anything with a renewal date: a state licence, a board
 certification, a BLS card, a DEA registration.
 
-Its own record rather than a field on a checklist document, because a credential
+Its own record rather than a field on a checklist task, because a credential
 outlives the checklist it was first collected on. A licence renews every couple
 of years, long after onboarding is finished, and the renewal has nowhere to go
 if the only home is a one-off task.
@@ -1206,25 +1231,22 @@ month is more urgent than the one running out next month, not less.
 `daysUntil` is zero on the day a credential runs out, and that still counts as
 valid: a licence is good until the end of the day it expires.
 
-### Who sees what
+### Dates only
 
-Three levels, and the middle one is the interesting one:
+A credential record is a name, an issuer, an expiry date and a note. It used to
+carry the licence number and a scan of the licence too, behind an access rule
+that showed the number to an admin and the owner but not to a manager.
 
-- **The record** — that a credential exists, what it is, and when it expires —
-  is visible to managers. Knowing who is licensed to do what is part of running
-  a rota.
-- **The number** is not. A manager gets to know the credential is current
-  without being handed its identifier.
-- **The scan** is admin-only, plus the person it belongs to, like checklist
-  documents. A licence document carries a number, a signature and sometimes a
-  home address.
+That rule was the tell. Once a field needs its own visibility tier, the question
+worth asking is why a timekeeping app is holding it at all — and the answer was
+that it did not need to. What the practice needs from this screen is *the 13th of
+March*, early enough to chase. The number and the document belong in the
+personnel file, where they already are.
 
-### Uploads are validated in one place
-
-`src/storage/upload-validation.ts` holds the allow-list, the magic-byte check
-and the filename sanitising, shared by checklist documents and credential scans.
-One implementation on purpose: a second copy of these rules would eventually be
-the lenient one, and it would be the one an attacker found.
+So managers see everything a credential record now holds, and there is no tier to
+get wrong. Employees still see only their own; recording and renewing stays with
+managers; deleting stays with admins. `src/common/no-sensitive-data.spec.ts`
+fails if the columns come back.
 
 ## The nightly digest
 

@@ -31,11 +31,6 @@ export class CreateCredentialDto {
   issuer?: string;
 
   @IsOptional()
-  @IsString()
-  @MaxLength(80)
-  reference?: string;
-
-  @IsOptional()
   @IsISO8601()
   issuedOn?: string;
 
@@ -65,11 +60,6 @@ export class UpdateCredentialDto {
   @IsString()
   @MaxLength(160)
   issuer?: string;
-
-  @IsOptional()
-  @IsString()
-  @MaxLength(80)
-  reference?: string;
 
   @IsOptional()
   @IsISO8601()

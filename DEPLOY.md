@@ -59,7 +59,6 @@ a pooler and use the direct one.
 | `MAX_PIN_ATTEMPTS` | `5` |
 | `PIN_LOCKOUT_MINUTES` | `10` |
 | `PUNCH_GRACE_MINUTES` | `5` |
-| `MAX_UPLOAD_MB` | `10` |
 | `CRON_SECRET` | another long random phrase — see below |
 | `APP_URL` | `https://staff.domihealthcare.com` |
 
@@ -77,15 +76,14 @@ Make it long and random, the same way as `SETUP_TOKEN`, and keep it: unlike
 `SETUP_TOKEN` this one stays. If it is missing the job simply refuses to run,
 which is safe but means nothing gets tidied up.
 
-**`MAX_UPLOAD_MB`** is the largest checklist document anybody can attach. A
-scanned form is well under 10MB; the cap is there so one person cannot fill the
-database.
+There is deliberately nothing to configure for file storage, and nothing to
+upload. The only files this app holds are the payroll exports it generates
+itself, kept so a run can be re-downloaded exactly as it went out; they live in
+the database, covered by Neon's backups, with no public link to any of them.
 
-There is deliberately nothing to configure for document storage. Uploaded
-documents go in the database, which means they are covered by Neon's backups
-and there is no second account to set up — and no public link to a file with
-somebody's social security number in it. See `docs/architecture.md` if that ever
-needs to change.
+The app holds no personnel documents at all — no I-9, no W-4, no licence scans —
+and no social security numbers. That is a deliberate decision, not an omission:
+see *What a checklist does not hold* in `docs/architecture.md`.
 
 **`APP_ENVIRONMENT=test`** puts a standing amber banner on every screen saying
 nothing there is real. Leave it on `test` for the review, and change it to

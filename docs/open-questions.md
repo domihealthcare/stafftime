@@ -18,9 +18,12 @@ phone**, open **Locations**, and set them standing at each front desk. Note that
       of the office before settling on a number.
 - [ ] **Office IP addresses** for the allow-list fallback — and whether they are
       static. A dynamic residential-style IP would make this check unreliable.
-- [ ] **Geolocation consent disclosure.** The brief flags this: browser clock-in
-      captures staff location, which needs a handbook/policy disclosure before
-      launch. Flagged here rather than built silently.
+- [ ] **Geolocation consent disclosure.** Draft wording is written, in
+      `docs/location-disclosure.md`, along with exactly what the app captures
+      and for how long. It needs a read by whoever advises Domi on employment
+      matters, and it lists four things for the practice to settle — chief among
+      them whether the kiosk is genuinely available on every shift, since the
+      opt-out depends on it.
 
 ## Needed for the ADP export (still blocked on ADP)
 
@@ -109,31 +112,33 @@ built. What is deliberately left open:
 
 ## Onboarding / offboarding checklists (Phase 3, built)
 
-Templates, per-person checklists and document upload all work. What needs a
-decision from the practice:
+Templates and per-person checklists work. What needs a decision from the
+practice:
 
-- [ ] **Confirm who should see the documents.** Today: an admin, or the person
-      the document is about. Managers run the checklist and can see that a form
-      was collected, but cannot open it — an I-9 carries a social security
-      number, and the form itself is an HR record. If the practice manager is
-      the one collecting I-9s, give them the admin role rather than loosening
-      the rule. Worth an explicit decision, because it is the tightest sensible
-      default rather than the only one.
+- [x] ~~Who should see the attached documents?~~ Moot: the app no longer holds
+      any. Document upload was removed deliberately — a timekeeping app is the
+      wrong place for an I-9, and the personnel file is the right one. The
+      checklists track that a step was done and by whom. See *What a checklist
+      does not hold* in `architecture.md`.
+- [ ] **Does that cause a problem in practice?** Worth asking the managers
+      directly once they have run a real onboarding: is there a step that only
+      makes sense with the form to hand?
 - [ ] **Go through the seeded templates line by line.** They are a starting
       point built from what a small New Jersey primary care practice generally
       has to do, not from Domi's actual process. Things that are probably wrong
       until someone checks: whether CPR/BLS is required for each clinical role,
       who issues keys, whether there is a 30-day check-in at all.
-- [ ] **Record retention.** The app never deletes a document on its own. The
-      I-9 has its own rule — three years after the hire date or one year after
-      the last day, whichever is later — and the practice needs a habit for
-      acting on it. Worth deciding whether the app should flag documents that
-      are past their retention period.
+- [ ] **Record retention is now entirely the practice's.** The I-9 has its own
+      rule — three years after the hire date or one year after the last day,
+      whichever is later — and since the app holds no copy, nothing here can
+      remind anyone. Worth deciding whether it should: a checklist task on the
+      offboarding list ("I-9 retention date diarised") would cost nothing.
 - [x] ~~Licence and certification expiry.~~ Built, on its own screen, with the
-      nightly digest chasing what is about to lapse. Still to confirm: how far
-      ahead the practice wants warning (60 days by default), and whether a
-      lapsed licence should stop somebody being scheduled — today it is
-      reported, not enforced.
+      nightly digest chasing what is about to lapse. Dates only — the licence
+      number and any scan were removed along with the checklist documents. Still
+      to confirm: how far ahead the practice wants warning (60 days by default),
+      and whether a lapsed licence should stop somebody being scheduled — today
+      it is reported, not enforced.
 - [ ] **Should marking somebody as no longer employed start an offboarding
       checklist?** Today the two are separate: an admin marks them terminated on
       the Staff screen and starts the checklist here. Linking them would mean
@@ -144,13 +149,10 @@ decision from the practice:
 - [x] ~~A template editor.~~ Built. An admin can add, reword, reorder and
       remove tasks, set who each one is for and when it is due, create new
       templates and retire old ones — all on the Checklists screen.
-- [ ] **Document storage at scale.** Bytes are in Postgres, which is right for
-      tens of megabytes and wrong for gigabytes. If the practice starts
-      attaching scans of everything, a blob store becomes worth the extra moving
-      part — that is one new class behind the existing `FileStorage` interface.
-      Note that a blob store's public URLs would need private buckets or
-      short-lived signed URLs; a long random public link is a permanent
-      unrevocable bearer token for a document with an SSN in it.
+- [x] ~~Document storage at scale.~~ Moot: nothing is uploaded. The only bytes
+      the app stores are the payroll exports it generates, which are small and
+      few. `FileStorage` stays an adapter, so a blob store remains one class if
+      that ever changes.
 
 ## Product decisions
 
@@ -219,8 +221,9 @@ Built and working with PINs. What is left:
       throttle rows, expired kiosk pairing codes and orphaned file bytes.
       Needs `CRON_SECRET` set on the deployment — without it the route refuses
       everything rather than falling open.
-- [ ] **Two-factor authentication** — worth considering given the app holds
-      staff location history and now I-9s, but not started.
+- [ ] **Two-factor authentication** — less pressing now the personnel documents
+      are gone, but the app still holds staff location history and everybody's
+      hours. Not started.
 - [ ] **Confirm the Content-Security-Policy survives the real deployment.** It
       is set in `vercel.json` and verified locally against the production
       bundle (`npm run preview` serves the same headers, and the browser suites
@@ -237,8 +240,8 @@ Built and working with PINs. What is left:
       browser suites in `tests/browser` now cover the service layer end to end
       against real Postgres, which was the gap. What is still missing is the
       awkward middle: a service-level test that can force a race or a partial
-      failure (two clock-ins at once, an upload that dies between the storage
-      write and the metadata row) without driving a browser.
+      failure (two clock-ins at once, an export that dies between the storage
+      write and the record) without driving a browser.
 - [ ] **Generate the frontend's API types from the server** instead of
       hand-maintaining `apps/web/src/lib/types.ts`. Today a server-side rename
       compiles fine and breaks at runtime.

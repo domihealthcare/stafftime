@@ -1,13 +1,16 @@
-/// The seam between "we hold a file for this employee" and "the bytes live
-/// somewhere". Deliberately narrow: put, get, delete, and nothing about URLs.
+/// The seam between "we generated a file" and "the bytes live somewhere".
+/// Deliberately narrow: put, get, delete, and nothing about URLs.
 ///
-/// No URL, because the files this app stores are the most sensitive data it
-/// holds — an I-9 or a W-4 carries a social security number. A storage backend
-/// that hands out a public link, however long and random, makes those bytes
-/// reachable by anyone who ever sees the link: a forwarded email, a browser
-/// history, a proxy log. Every download therefore goes through an authorised
-/// route in this app, which means the interface never needs to produce a URL
-/// and a backend is never asked for one.
+/// One caller: the payroll exporter. This app deliberately holds no personnel
+/// documents — no I-9, no W-4, no licence scans — so a generated timesheet is
+/// the only file it ever stores.
+///
+/// No URL, because a timesheet still names everybody who works here and what
+/// they were paid for. A storage backend that hands out a public link, however
+/// long and random, makes those bytes reachable by anyone who ever sees the
+/// link: a forwarded email, a browser history, a proxy log. Every download
+/// therefore goes through an authorised route in this app, which means the
+/// interface never needs to produce a URL and a backend is never asked for one.
 ///
 /// Adding a provider (S3, Vercel Blob, Azure) means writing one class, the same
 /// shape as the payroll exporter pattern in the brief.
@@ -36,8 +39,8 @@ export interface PutOptions {
 export interface StoredFileRef {
   storageKey: string;
   sizeBytes: number;
-  /// SHA-256 of the bytes, hex. Lets a caller notice a re-upload of the same
-  /// file, and lets a download be checked against what was stored.
+  /// SHA-256 of the bytes, hex. Lets a download be checked against what was
+  /// stored — "is this the file we sent to payroll?" has an answer.
   checksum: string;
 }
 

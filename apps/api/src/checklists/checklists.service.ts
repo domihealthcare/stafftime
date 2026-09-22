@@ -15,11 +15,8 @@ import {
 import { AuthUser } from '../common/auth/auth-user';
 import { addUtcDays, isoDate, toUtcDate } from '../common/util/calendar-date.util';
 import { PrismaService } from '../prisma/prisma.service';
-import { ChecklistDocumentsService } from './checklist-documents.service';
 import { QueryChecklistsDto, StartChecklistDto, UpdateTaskDto } from './dto/checklist.dto';
 
-/// Documents are listed but their bytes are not: the file itself is fetched
-/// from the download route, which checks who is asking.
 const CHECKLIST_INCLUDE = {
   employee: {
     select: {
@@ -36,17 +33,6 @@ const CHECKLIST_INCLUDE = {
     orderBy: { position: 'asc' },
     include: {
       completedBy: { select: { id: true, firstName: true, lastName: true } },
-      documents: {
-        orderBy: { uploadedAt: 'asc' },
-        select: {
-          id: true,
-          filename: true,
-          contentType: true,
-          sizeBytes: true,
-          uploadedAt: true,
-          uploadedBy: { select: { id: true, firstName: true, lastName: true } },
-        },
-      },
     },
   },
 } satisfies Prisma.EmployeeChecklistInclude;
@@ -59,10 +45,7 @@ type ChecklistRow = Prisma.EmployeeChecklistGetPayload<{
 export class ChecklistsService {
   private readonly logger = new Logger(ChecklistsService.name);
 
-  constructor(
-    private readonly prisma: PrismaService,
-    private readonly documents: ChecklistDocumentsService,
-  ) {}
+  constructor(private readonly prisma: PrismaService) {}
 
   /// Copies a template into a checklist for one person.
   ///
@@ -137,7 +120,6 @@ export class ChecklistsService {
             title: task.title,
             description: task.description,
             owner: task.owner,
-            requiresDocument: task.requiresDocument,
             dueAt:
               task.dueOffsetDays === null
                 ? null
@@ -193,22 +175,11 @@ export class ChecklistsService {
       where: { id: taskId },
       include: {
         checklist: { select: { id: true, employeeId: true, kind: true } },
-        documents: { select: { id: true } },
       },
     });
     if (!task) throw new NotFoundException('That task does not exist.');
 
     this.assertMayCompleteTask(task, actor);
-
-    if (
-      dto.status === ChecklistTaskStatus.DONE &&
-      task.requiresDocument &&
-      task.documents.length === 0
-    ) {
-      throw new BadRequestException(
-        'That task needs a document attached before it can be ticked off.',
-      );
-    }
 
     if (dto.status === ChecklistTaskStatus.NOT_APPLICABLE && !dto.note?.trim()) {
       throw new BadRequestException(
@@ -231,28 +202,19 @@ export class ChecklistsService {
     return this.findOne(task.checklistId, actor);
   }
 
-  /// Deleting a checklist deletes the documents attached to it, which is why it
-  /// is admin-only and why the bytes are cleaned up explicitly: the storage
-  /// backend has no foreign keys to cascade through.
+  /// Admin-only: a finished checklist is a record of what was done and when,
+  /// so removing one is a deliberate act rather than a manager tidying up.
   async remove(id: string) {
     const checklist = await this.prisma.employeeChecklist.findUnique({
       where: { id },
-      select: {
-        id: true,
-        tasks: { select: { documents: { select: { storageKey: true } } } },
-      },
+      select: { id: true },
     });
     if (!checklist) throw new NotFoundException('That checklist does not exist.');
 
-    const keys = checklist.tasks.flatMap((task) =>
-      task.documents.map((doc) => doc.storageKey),
-    );
-
     await this.prisma.employeeChecklist.delete({ where: { id } });
-    await this.documents.removeStored(keys);
 
-    this.logger.log(`Checklist ${id} deleted, with ${keys.length} document(s)`);
-    return { deleted: true, documentsDeleted: keys.length };
+    this.logger.log(`Checklist ${id} deleted`);
+    return { deleted: true };
   }
 
   /// Marks the checklist finished exactly when nothing is left pending, and

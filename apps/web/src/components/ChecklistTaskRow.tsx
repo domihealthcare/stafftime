@@ -1,7 +1,6 @@
-import { useRef, useState } from 'react';
+import { useState } from 'react';
 import { ApiError, api } from '../lib/api';
 import { formatCalendarDate, formatDate } from '../lib/format';
-import { useIsAdmin } from '../lib/session';
 import type { Checklist, ChecklistTask, ChecklistTaskStatus } from '../lib/types';
 import { Badge } from './ui';
 
@@ -20,15 +19,10 @@ export function ChecklistTaskRow({
   canComplete: boolean;
   onChanged: (checklist: Checklist) => void;
 }) {
-  const isAdmin = useIsAdmin();
-  const fileInput = useRef<HTMLInputElement>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [skipping, setSkipping] = useState(false);
   const [note, setNote] = useState('');
-  // Most tasks are just ticked off. A file picker on every row is noise, so it
-  // only shows where a document is actually wanted — or on request.
-  const [attaching, setAttaching] = useState(false);
 
   const overdue =
     task.status === 'PENDING' && task.dueAt !== null && task.dueAt.slice(0, 10) < today();
@@ -44,37 +38,6 @@ export function ChecklistTaskRow({
       setError(cause instanceof ApiError ? cause.message : 'That did not save.');
     } finally {
       setBusy(false);
-    }
-  }
-
-  async function attach(file: File) {
-    setBusy(true);
-    setError(null);
-    try {
-      await api.uploadChecklistDocument(task.id, file);
-      onChanged(await api.checklist(task.checklistId));
-    } catch (cause) {
-      setError(cause instanceof ApiError ? cause.message : 'That file did not upload.');
-    } finally {
-      setBusy(false);
-      if (fileInput.current) fileInput.current.value = '';
-    }
-  }
-
-  async function saveFile(documentId: string) {
-    setError(null);
-    try {
-      const { blob, filename } = await api.downloadChecklistDocument(documentId);
-      // There is no openable URL for a document, so the blob is handed to the
-      // browser as a one-off link that is revoked straight away.
-      const url = URL.createObjectURL(blob);
-      const link = document.createElement('a');
-      link.href = url;
-      link.download = filename;
-      link.click();
-      URL.revokeObjectURL(url);
-    } catch (cause) {
-      setError(cause instanceof ApiError ? cause.message : 'That file could not be opened.');
     }
   }
 
@@ -97,9 +60,6 @@ export function ChecklistTaskRow({
             {task.status === 'DONE' && <Badge tone="success">done</Badge>}
             {task.status === 'NOT_APPLICABLE' && <Badge>not applicable</Badge>}
             {overdue && <Badge tone="danger">overdue</Badge>}
-            {task.requiresDocument && task.documents.length === 0 && (
-              <Badge tone="warning">needs a document</Badge>
-            )}
           </div>
 
           {task.description && (
@@ -119,62 +79,12 @@ export function ChecklistTaskRow({
           {task.note && (
             <p className="mt-1 text-xs italic text-slate-500">“{task.note}”</p>
           )}
-
-          {task.documents.length > 0 && (
-            <ul className="mt-2 space-y-1">
-              {task.documents.map((doc) => (
-                <li key={doc.id} className="flex items-center gap-2 text-xs">
-                  <button
-                    type="button"
-                    onClick={() => void saveFile(doc.id)}
-                    className="font-medium text-brand-700 underline hover:text-brand-900"
-                  >
-                    {doc.filename}
-                  </button>
-                  <span className="text-slate-400">{formatSize(doc.sizeBytes)}</span>
-                  {isAdmin && (
-                    <button
-                      type="button"
-                      onClick={async () => {
-                        await api.deleteChecklistDocument(doc.id);
-                        onChanged(await api.checklist(task.checklistId));
-                      }}
-                      className="text-slate-400 hover:text-rose-700"
-                    >
-                      remove
-                    </button>
-                  )}
-                </li>
-              ))}
-            </ul>
-          )}
         </div>
 
         {canComplete && (
           <div className="flex w-full flex-wrap items-center gap-2 sm:w-auto sm:shrink-0">
             {task.status === 'PENDING' ? (
               <>
-                {task.requiresDocument || attaching ? (
-                  <input
-                    ref={fileInput}
-                    type="file"
-                    aria-label={`Attach a document to “${task.title}”`}
-                    accept="application/pdf,image/png,image/jpeg"
-                    className="max-w-full text-xs text-slate-600 sm:w-44"
-                    onChange={(event) => {
-                      const file = event.target.files?.[0];
-                      if (file) void attach(file);
-                    }}
-                  />
-                ) : (
-                  <button
-                    type="button"
-                    onClick={() => setAttaching(true)}
-                    className="text-xs font-medium text-slate-500 hover:text-slate-900"
-                  >
-                    Attach a file
-                  </button>
-                )}
                 <button
                   type="button"
                   disabled={busy}
@@ -232,12 +142,6 @@ export function ChecklistTaskRow({
       {error && <p className="mt-2 text-xs text-rose-700">{error}</p>}
     </li>
   );
-}
-
-function formatSize(bytes: number): string {
-  if (bytes < 1024) return `${bytes} B`;
-  if (bytes < 1024 * 1024) return `${Math.round(bytes / 1024)} KB`;
-  return `${(bytes / 1024 / 1024).toFixed(1)} MB`;
 }
 
 function today(): string {

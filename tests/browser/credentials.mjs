@@ -1,7 +1,5 @@
 import { chromium } from 'playwright';
-import { mkdirSync, writeFileSync } from 'node:fs';
-import { join } from 'node:path';
-import { tmpdir } from 'node:os';
+import { mkdirSync } from 'node:fs';
 
 const OUT = process.argv[2] || new URL('./shots/', import.meta.url).pathname;
 mkdirSync(OUT, { recursive: true });
@@ -17,9 +15,6 @@ const step = async (name, fn) => {
   try { await fn(); console.log(`PASS  ${name}`); }
   catch (e) { console.log(`FAIL  ${name}: ${e.message}`); errors.push(`${name}: ${e.message}`); }
 };
-
-const scan = join(tmpdir(), 'credential-licence.pdf');
-writeFileSync(scan, '%PDF-1.7\n1 0 obj\n<< /Type /Catalog >>\nendobj\ntrailer\n%%EOF\n');
 
 const dayOffset = (n) => {
   const date = new Date();
@@ -48,19 +43,28 @@ await step('the screen opens on what is about to lapse', async () => {
   });
 });
 
-await step('a licence can be recorded, with its scan', async () => {
+await step('a licence is recorded by its date', async () => {
   await admin.getByRole('button', { name: '+ Record one' }).click();
   await admin.getByLabel('Who').selectOption({ label: 'Frankie Front-Desk' });
   await admin.getByLabel('Kind').selectOption({ label: 'Professional licence' });
   await admin.getByLabel('What it is').fill('NJ Registered Nurse licence');
   await admin.getByLabel('Issued by').fill('NJ Board of Nursing');
-  await admin.getByLabel('Number').fill('26NR12345600');
   await admin.getByLabel('Expires').fill(dayOffset(21));
-  await admin.getByLabel('A scan').setInputFiles(scan);
   await admin.getByRole('button', { name: 'Record it' }).click();
 
   await admin.getByText('NJ Registered Nurse licence').first().waitFor({ timeout: 20000 });
   await admin.getByText('21 days left').waitFor({ timeout: 10000 });
+});
+
+await step('the form asks for nothing but the date', async () => {
+  // A licence number and a scan of the licence are what an HR system holds.
+  // This one holds the expiry so nothing lapses unnoticed, and stops there.
+  await admin.getByRole('button', { name: '+ Record one' }).click();
+  if ((await admin.getByLabel('Number').count()) > 0)
+    throw new Error('the form asked for a licence number');
+  if ((await admin.locator('input[type=file]').count()) > 0)
+    throw new Error('the form offered to take a scan');
+  await admin.getByRole('button', { name: 'Cancel' }).click();
 });
 await admin.screenshot({ path: `${OUT}/62-credentials.png`, fullPage: true });
 
@@ -96,7 +100,7 @@ await step('a shorter window hides what is further out', async () => {
   await admin.getByText('DEA registration').first().waitFor({ timeout: 10000 });
 });
 
-await step('renewing is a date and a new scan, not a whole form', async () => {
+await step('renewing is a date, not a whole form', async () => {
   await admin.getByRole('button', { name: 'Renew' }).first().click();
   await admin.getByLabel('New expiry date').fill(dayOffset(400));
   await admin.getByRole('button', { name: 'Save the renewal' }).click();
@@ -108,15 +112,6 @@ await step('renewing is a date and a new scan, not a whole form', async () => {
     throw new Error('the renewal did not take');
 });
 
-await step('the scan can be opened by an admin', async () => {
-  const [download] = await Promise.all([
-    admin.waitForEvent('download', { timeout: 20000 }),
-    admin.getByRole('button', { name: 'credential-licence.pdf' }).first().click(),
-  ]);
-  if (download.suggestedFilename() !== 'credential-licence.pdf')
-    throw new Error(`downloaded ${download.suggestedFilename()}`);
-});
-
 const mgrCtx = await browser.newContext({ viewport: { width: 1280, height: 1000 } });
 const manager = await mgrCtx.newPage();
 manager.on('pageerror', (e) => errors.push(`manager pageerror: ${e.message}`));
@@ -124,23 +119,17 @@ await signIn(manager, 'manager@domihealthcare.com');
 await manager.getByRole('link', { name: /^Licences/ }).first().click();
 await manager.getByRole('button', { name: 'Everything' }).click();
 
-await step('a manager sees what is current but not the licence number', async () => {
+await step('a manager sees what is current, and nothing to open', async () => {
   await manager.getByText('NJ Registered Nurse licence').first().waitFor({ timeout: 15000 });
+  await manager.getByText('21 days left').waitFor({ timeout: 10000 });
 
-  const text = await manager.locator('main').innerText();
-  if (text.includes('26NR12345600'))
-    throw new Error('a manager was shown the licence number');
-});
-
-await step('a manager cannot open the scan itself', async () => {
-  await manager.getByRole('button', { name: 'credential-licence.pdf' }).first().click();
-  await manager.getByText(/only visible to an admin, or to the person it belongs to/).waitFor({
-    timeout: 15000,
-  });
+  // There is no document to withhold, because there is no document.
+  if ((await manager.locator('main a[download], main input[type=file]').count()) > 0)
+    throw new Error('the screen offered a file');
 });
 await manager.screenshot({ path: `${OUT}/63-credentials-manager.png`, fullPage: true });
 
-await step('an employee sees their own, with the number', async () => {
+await step('an employee sees their own and cannot record one', async () => {
   const empCtx = await browser.newContext({ viewport: { width: 1280, height: 1000 } });
   const emp = await empCtx.newPage();
   await signIn(emp, 'frontdesk@domihealthcare.com');
@@ -150,9 +139,6 @@ await step('an employee sees their own, with the number', async () => {
   await emp.getByText('Your licences').waitFor({ timeout: 15000 });
   await emp.getByText('NJ Registered Nurse licence').first().waitFor({ timeout: 10000 });
 
-  const text = await emp.locator('main').innerText();
-  if (!text.includes('26NR12345600'))
-    throw new Error('the person it belongs to could not see their own licence number');
   if ((await emp.getByRole('button', { name: '+ Record one' }).count()) > 0)
     throw new Error('an employee was offered the record form');
 

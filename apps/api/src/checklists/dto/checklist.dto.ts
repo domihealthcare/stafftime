@@ -35,10 +35,6 @@ export class TemplateTaskDto {
   @IsEnum(TaskOwner)
   owner?: TaskOwner;
 
-  @IsOptional()
-  @IsBoolean()
-  requiresDocument?: boolean;
-
   /// Days relative to the hire date (onboarding) or last day (offboarding).
   /// Negative is before it — an I-9 is due on day one, equipment goes back on
   /// the last day, and a background check might be -7.

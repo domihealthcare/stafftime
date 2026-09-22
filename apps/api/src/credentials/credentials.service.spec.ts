@@ -1,9 +1,7 @@
 import { BadRequestException, ForbiddenException, NotFoundException } from '@nestjs/common';
-import { ConfigService } from '@nestjs/config';
 import { CredentialKind, Role } from '@prisma/client';
 import { CredentialsService, daysUntil } from './credentials.service';
 
-const admin = { id: 'adm-1', email: 'admin@domihealthcare.com', role: Role.ADMIN };
 const manager = { id: 'mgr-1', email: 'morgan@domihealthcare.com', role: Role.MANAGER };
 const employee = { id: 'emp-1', email: 'frankie@domihealthcare.com', role: Role.EMPLOYEE };
 const other = { id: 'emp-2', email: 'mo@domihealthcare.com', role: Role.EMPLOYEE };
@@ -23,17 +21,12 @@ function row(over: Record<string, unknown> = {}) {
     kind: CredentialKind.LICENSE,
     name: 'NJ Registered Nurse licence',
     issuer: 'NJ Board of Nursing',
-    reference: '26NR12345600',
     issuedOn: day('2024-07-01'),
     expiresOn: inDays(30),
     notes: null,
-    filename: null,
-    contentType: null,
-    sizeBytes: null,
     archivedAt: null,
     createdAt: new Date(),
     updatedAt: new Date(),
-    storageKey: null,
     employee: {
       id: 'emp-1',
       firstName: 'Frankie',
@@ -57,25 +50,7 @@ function build(options: { rows?: unknown[]; one?: unknown } = {}) {
     },
     employee: { findUnique: jest.fn().mockResolvedValue({ id: 'emp-1' }) },
   };
-  const storage = {
-    put: jest.fn(async (bytes: Buffer) => ({
-      storageKey: '2026/09/3f6a5c1d2e4b8a7f9c0d1e2f3a4b5c6d',
-      sizeBytes: bytes.byteLength,
-      checksum: 'deadbeef',
-    })),
-    get: jest.fn(async () => Buffer.from('%PDF-1.7 scan')),
-    delete: jest.fn(),
-  };
-
-  return {
-    service: new CredentialsService(
-      prisma as never,
-      new ConfigService({ MAX_UPLOAD_MB: 10 }),
-      storage as never,
-    ),
-    prisma,
-    storage,
-  };
+  return { service: new CredentialsService(prisma as never), prisma };
 }
 
 describe('daysUntil', () => {
@@ -122,17 +97,33 @@ describe('CredentialsService', () => {
     expect(where.expiresOn.gte).toBeUndefined();
   });
 
-  it('keeps the licence number from a manager, but not from the person it belongs to', async () => {
-    // A manager needs to know the credential is current, not to be handed its
-    // identifier.
-    const forManager = await build().service.findAll({}, manager);
-    expect(forManager[0].reference).toBeNull();
+  it('never asks the database for a licence number or a scan', async () => {
+    // The point of this screen is the *date*. A licence number, a scan, a
+    // signature — none of it belongs in a timekeeping app, so the query that
+    // feeds every credential response must not reach for them. If somebody adds
+    // a column back, this is what should stop them.
+    const { service, prisma } = build();
+    await service.findAll({}, manager);
 
-    const forOwner = await build().service.findAll({}, employee);
-    expect(forOwner[0].reference).toBe('26NR12345600');
+    const select = prisma.employeeCredential.findMany.mock.calls[0][0].select;
+    for (const field of [
+      'reference',
+      'storageKey',
+      'filename',
+      'contentType',
+      'sizeBytes',
+      'checksum',
+    ]) {
+      expect(select).not.toHaveProperty(field);
+    }
+  });
 
-    const forAdmin = await build().service.findAll({}, admin);
-    expect(forAdmin[0].reference).toBe('26NR12345600');
+  it("refuses an employee sight of somebody else's, even by id", async () => {
+    // findAll narrows by actor; findOne takes an id, so it has to check too.
+    const { service } = build({ one: row() });
+    await expect(service.findOne('cred-1', other)).rejects.toThrow(ForbiddenException);
+    await expect(service.findOne('cred-1', employee)).resolves.toMatchObject({ id: 'cred-1' });
+    await expect(service.findOne('cred-1', manager)).resolves.toMatchObject({ id: 'cred-1' });
   });
 
   it('refuses an expiry before the issue date', async () => {
@@ -171,59 +162,5 @@ describe('CredentialsService', () => {
       expect.objectContaining({ data: { archivedAt: expect.any(Date) } }),
     );
     expect(prisma.employeeCredential.delete).not.toHaveBeenCalled();
-  });
-});
-
-describe('the scan', () => {
-  const file = {
-    originalname: 'licence.pdf',
-    mimetype: 'application/pdf',
-    size: 20,
-    buffer: Buffer.from('%PDF-1.7 the scan'),
-  };
-
-  it('is refused to a manager — a licence document carries more than a date', async () => {
-    const { service, storage } = build({ one: { ...row(), employeeId: 'emp-1' } });
-    await expect(service.downloadScan('cred-1', manager)).rejects.toThrow(ForbiddenException);
-    expect(storage.get).not.toHaveBeenCalled();
-  });
-
-  it('is available to an admin and to the person it belongs to', async () => {
-    const withScan = {
-      ...row(),
-      employeeId: 'emp-1',
-      storageKey: '2026/09/3f6a5c1d2e4b8a7f9c0d1e2f3a4b5c6d',
-      filename: 'licence.pdf',
-      contentType: 'application/pdf',
-    };
-
-    await expect(build({ one: withScan }).service.downloadScan('cred-1', admin)).resolves
-      .toMatchObject({ filename: 'licence.pdf' });
-    await expect(build({ one: withScan }).service.downloadScan('cred-1', employee)).resolves
-      .toMatchObject({ filename: 'licence.pdf' });
-    await expect(
-      build({ one: withScan }).service.downloadScan('cred-1', other),
-    ).rejects.toThrow(ForbiddenException);
-  });
-
-  it('applies the same upload rules as every other document', async () => {
-    const { service } = build({ one: { ...row(), employeeId: 'emp-1' } });
-    await expect(
-      service.attach(
-        'cred-1',
-        { ...file, mimetype: 'application/pdf', buffer: Buffer.from('<html>') },
-        admin,
-      ),
-    ).rejects.toThrow(/not really a PDF/);
-  });
-
-  it('clears up the scan it replaced', async () => {
-    const { service, storage } = build({
-      one: { ...row(), employeeId: 'emp-1', storageKey: '2026/08/oldkey' },
-    });
-    await service.attach('cred-1', file, admin);
-
-    expect(storage.put).toHaveBeenCalled();
-    expect(storage.delete).toHaveBeenCalledWith('2026/08/oldkey');
   });
 });

@@ -567,7 +567,6 @@ async function seedChecklists(
           title: task.title,
           description: task.description,
           owner: task.owner,
-          requiresDocument: task.requiresDocument,
           dueAt:
             task.dueOffsetDays === null
               ? null
@@ -578,10 +577,9 @@ async function seedChecklists(
     include: { tasks: { orderBy: { position: 'asc' } } },
   });
 
-  // The ones that do not need a document are done; the paperwork is what is
-  // still outstanding, which is exactly how it goes.
-  for (const task of checklist.tasks) {
-    if (task.requiresDocument) continue;
+  // A checklist part-way through, which is how a manager will usually find one:
+  // the early tasks ticked off and the rest still open.
+  for (const task of checklist.tasks.slice(0, Math.ceil(checklist.tasks.length / 2))) {
     await prisma.employeeChecklistTask.update({
       where: { id: task.id },
       data: {

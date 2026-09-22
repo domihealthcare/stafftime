@@ -16,6 +16,7 @@ import type { Response } from 'express';
 import { AuthUser } from '../common/auth/auth-user';
 import { CurrentUser } from '../common/auth/current-user.decorator';
 import { Roles } from '../common/auth/roles.decorator';
+import { attachmentHeader } from '../storage/download-headers';
 import { SaveReportPresetDto, UpdateReportPresetDto } from './dto/report-preset.dto';
 import { ReportPresetsService } from './report-presets.service';
 import { DEFAULT_COLUMN_KEYS, TIMESHEET_COLUMNS } from './columns';
@@ -75,7 +76,7 @@ export class ExportsController {
     response
       .status(HttpStatus.OK)
       .setHeader('Content-Type', file.contentType)
-      .setHeader('Content-Disposition', `attachment; filename="${file.filename}"`)
+      .setHeader('Content-Disposition', attachmentHeader(file.filename))
       .setHeader('Content-Length', String(file.bytes.byteLength))
       // So the screen can show what was just recorded without asking again.
       .setHeader('X-Payroll-Export-Id', record.id)
@@ -98,7 +99,7 @@ export class ExportsController {
       .status(HttpStatus.OK)
       .setHeader('Content-Type', file.contentType)
       .setHeader('X-Content-Type-Options', 'nosniff')
-      .setHeader('Content-Disposition', `attachment; filename="${file.filename}"`)
+      .setHeader('Content-Disposition', attachmentHeader(file.filename))
       .setHeader('Content-Length', String(file.bytes.byteLength))
       .send(file.bytes);
   }
