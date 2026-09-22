@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { ApiError, api } from '../lib/api';
 import { useSession } from '../lib/session';
+import { PasswordField } from '../components/PasswordField';
 import { Alert, Card } from '../components/ui';
 
 /**
@@ -18,7 +19,8 @@ export function ChangePasswordPage({ forced }: { forced: boolean }) {
   const [busy, setBusy] = useState(false);
 
   const mismatch = confirmation.length > 0 && confirmation !== newPassword;
-  const tooShort = newPassword.length > 0 && newPassword.length < 12;
+  // The length rule is now shown live by the field itself, rather than as a
+  // separate line that only turned red after the fact.
   const canSubmit =
     currentPassword.length > 0 && newPassword.length >= 12 && confirmation === newPassword;
 
@@ -67,56 +69,35 @@ export function ChangePasswordPage({ forced }: { forced: boolean }) {
         <Card className="p-6">
           <form onSubmit={(event) => void submit(event)} className="space-y-4">
             <div>
-              <label htmlFor="current" className="block text-sm font-medium text-slate-700">
-                {forced ? 'Temporary password' : 'Current password'}
-              </label>
-              <input
+              <PasswordField
                 id="current"
-                type="password"
-                required
-                autoComplete="current-password"
+                label={forced ? 'Temporary password' : 'Current password'}
                 value={currentPassword}
-                onChange={(event) => setCurrentPassword(event.target.value)}
-                className="mt-1 w-full rounded-lg border-slate-300 py-2.5 text-base shadow-sm focus:border-brand-600 focus:ring-brand-600"
+                onChange={setCurrentPassword}
               />
             </div>
 
-            <div>
-              <label htmlFor="new" className="block text-sm font-medium text-slate-700">
-                New password
-              </label>
-              <input
-                id="new"
-                type="password"
-                required
-                autoComplete="new-password"
-                value={newPassword}
-                onChange={(event) => setNewPassword(event.target.value)}
-                className="mt-1 w-full rounded-lg border-slate-300 py-2.5 text-base shadow-sm focus:border-brand-600 focus:ring-brand-600"
-              />
-              <p className={`mt-1 text-xs ${tooShort ? 'text-rose-600' : 'text-slate-500'}`}>
-                At least 12 characters. Three unrelated words make a strong, memorable
-                password.
-              </p>
-            </div>
+            <PasswordField
+              id="new"
+              label="New password"
+              value={newPassword}
+              onChange={setNewPassword}
+              autoComplete="new-password"
+              requirement={{
+                label:
+                  'At least 12 characters. Three unrelated words make a strong, memorable password.',
+                met: newPassword.length >= 12,
+              }}
+            />
 
-            <div>
-              <label htmlFor="confirm" className="block text-sm font-medium text-slate-700">
-                Confirm new password
-              </label>
-              <input
-                id="confirm"
-                type="password"
-                required
-                autoComplete="new-password"
-                value={confirmation}
-                onChange={(event) => setConfirmation(event.target.value)}
-                className="mt-1 w-full rounded-lg border-slate-300 py-2.5 text-base shadow-sm focus:border-brand-600 focus:ring-brand-600"
-              />
-              {mismatch && (
-                <p className="mt-1 text-xs text-rose-600">Those passwords do not match.</p>
-              )}
-            </div>
+            <PasswordField
+              id="confirm"
+              label="Confirm new password"
+              value={confirmation}
+              onChange={setConfirmation}
+              autoComplete="new-password"
+              error={mismatch ? 'Those passwords do not match.' : undefined}
+            />
 
             {error && <Alert>{error}</Alert>}
             {done && <Alert tone="success">{done}</Alert>}

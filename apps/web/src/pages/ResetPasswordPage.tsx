@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
+import { PasswordField } from '../components/PasswordField';
 import { Alert, Card } from '../components/ui';
 import { ApiError, api } from '../lib/api';
 
@@ -76,40 +77,26 @@ export function ResetPasswordPage() {
             aria-describedby. Inside it, it would become part of the field's
             name — "New password At least 12 characters…" — which is both wrong
             for a screen reader and impossible to address in a test. */}
-        <div>
-          <label htmlFor="new" className="block text-sm font-medium text-slate-700">
-            New password
-          </label>
-          <input
-            id="new"
-            aria-describedby="new-hint"
-            type="password"
-            required
-            autoFocus
-            autoComplete="new-password"
-            value={password}
-            onChange={(event) => setPassword(event.target.value)}
-            className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2"
-          />
-          <p id="new-hint" className="mt-1 text-xs text-slate-500">
-            At least 12 characters. Three unrelated words work well.
-          </p>
-        </div>
+        <PasswordField
+          id="new"
+          label="New password"
+          value={password}
+          onChange={setPassword}
+          autoComplete="new-password"
+          autoFocus
+          requirement={{
+            label: 'At least 12 characters. Three unrelated words work well.',
+            met: password.length >= 12,
+          }}
+        />
 
-        <div>
-          <label htmlFor="confirm" className="block text-sm font-medium text-slate-700">
-            Confirm new password
-          </label>
-          <input
-            id="confirm"
-            type="password"
-            required
-            autoComplete="new-password"
-            value={confirm}
-            onChange={(event) => setConfirm(event.target.value)}
-            className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2"
-          />
-        </div>
+        <PasswordField
+          id="confirm"
+          label="Confirm new password"
+          value={confirm}
+          onChange={setConfirm}
+          autoComplete="new-password"
+        />
 
         {mismatch && <p className="text-sm text-rose-700">Those passwords do not match</p>}
         {error && <Alert>{error}</Alert>}

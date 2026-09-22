@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { ApiError, api } from '../lib/api';
+import { PasswordField } from '../components/PasswordField';
 import { Alert, Card } from '../components/ui';
 
 /**
@@ -45,8 +46,10 @@ export function SetupPage({ onCreated }: { onCreated: () => void }) {
     }
   }
 
+  // px-3 matters: without it the text sits flush against the border, which is
+  // what a first-time user noticed before anything else on this screen.
   const field =
-    'mt-1 w-full rounded-lg border-slate-300 py-2.5 text-base shadow-sm focus:border-brand-600 focus:ring-brand-600';
+    'mt-1 w-full rounded-lg border-slate-300 px-3 py-2.5 text-base shadow-sm focus:border-brand-600 focus:ring-brand-600';
 
   return (
     <div className="flex min-h-screen flex-col justify-center bg-slate-100 px-4 py-12">
@@ -125,41 +128,26 @@ export function SetupPage({ onCreated }: { onCreated: () => void }) {
               />
             </div>
 
-            <div>
-              <label htmlFor="setup-password" className="block text-sm font-medium text-slate-700">
-                Password
-              </label>
-              <input
-                id="setup-password"
-                type="password"
-                required
-                autoComplete="new-password"
-                value={password}
-                onChange={(event) => setPassword(event.target.value)}
-                className={field}
-              />
-              <p className="mt-1 text-xs text-slate-500">
-                At least 12 characters. Three unrelated words work well.
-              </p>
-            </div>
+            <PasswordField
+              id="setup-password"
+              label="Password"
+              value={password}
+              onChange={setPassword}
+              autoComplete="new-password"
+              requirement={{
+                label: 'At least 12 characters. Three unrelated words work well.',
+                met: password.length >= 12,
+              }}
+            />
 
-            <div>
-              <label htmlFor="setup-confirm" className="block text-sm font-medium text-slate-700">
-                Confirm password
-              </label>
-              <input
-                id="setup-confirm"
-                type="password"
-                required
-                autoComplete="new-password"
-                value={confirmation}
-                onChange={(event) => setConfirmation(event.target.value)}
-                className={field}
-              />
-              {mismatch && (
-                <p className="mt-1 text-xs text-rose-600">Those passwords do not match.</p>
-              )}
-            </div>
+            <PasswordField
+              id="setup-confirm"
+              label="Confirm password"
+              value={confirmation}
+              onChange={setConfirmation}
+              autoComplete="new-password"
+              error={mismatch ? 'Those passwords do not match.' : undefined}
+            />
 
             {error && <Alert>{error}</Alert>}
 

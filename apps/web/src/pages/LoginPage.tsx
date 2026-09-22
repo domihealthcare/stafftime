@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { ApiError } from '../lib/api';
 import { useSession } from '../lib/session';
+import { PasswordField } from '../components/PasswordField';
 import { Alert, Card } from '../components/ui';
 
 export function LoginPage() {
@@ -49,22 +50,16 @@ export function LoginPage() {
                 autoFocus
                 value={email}
                 onChange={(event) => setEmail(event.target.value)}
-                className="mt-1 w-full rounded-lg border-slate-300 py-2.5 text-base shadow-sm focus:border-brand-600 focus:ring-brand-600"
+                className="mt-1 w-full rounded-lg border-slate-300 px-3 py-2.5 text-base shadow-sm focus:border-brand-600 focus:ring-brand-600"
               />
             </div>
 
             <div>
-              <label htmlFor="password" className="block text-sm font-medium text-slate-700">
-                Password
-              </label>
-              <input
+              <PasswordField
                 id="password"
-                type="password"
-                required
-                autoComplete="current-password"
+                label="Password"
                 value={password}
-                onChange={(event) => setPassword(event.target.value)}
-                className="mt-1 w-full rounded-lg border-slate-300 py-2.5 text-base shadow-sm focus:border-brand-600 focus:ring-brand-600"
+                onChange={setPassword}
               />
             </div>
 
