@@ -58,8 +58,12 @@ and writes ADP's layout — the timesheet logic itself does not change.
 - [ ] **Should approving PTO cancel the shifts inside it?** Today it does not —
       the manager sees the clash and reassigns cover by hand. Automatic
       cancellation would be easy to add but hard to undo.
-- [ ] **Notifications.** Nobody is told when a request is decided; they have to
-      look. Needs the same email decision as password reset.
+- [x] ~~Notifications when a request is decided.~~ Built — the requester is
+      emailed the decision and the reason, and every manager is emailed when a
+      request comes in. Needs an email provider configured to actually send.
+- [ ] **Anything else worth emailing about?** Overdue checklist tasks and
+      licences about to expire are the obvious candidates. The daily maintenance
+      job is the natural place to send them from.
 
 ## Calendar syncing
 
@@ -187,10 +191,17 @@ Built and working with PINs. What is left:
 
 - [x] ~~Replace the stubbed auth with real login before any deployment.~~ Done —
       passwords, roles and server-side sessions. See `docs/architecture.md`.
-- [ ] **Self-service password reset.** Today a locked-out or forgetful employee
-      needs an admin to issue a temporary password. A "forgot password" email
-      flow needs an email sender (SendGrid, Resend, SES) chosen and configured —
-      not set up, and a decision for you rather than a technical blocker.
+- [x] ~~Self-service password reset.~~ Built, behind the same adapter pattern as
+      payroll and file storage. **It needs an email provider to actually send
+      anything**: set `RESEND_API_KEY` and `EMAIL_FROM` on the deployment, on a
+      domain verified with Resend. Without them, messages are written to the
+      server log instead — fine locally, useless in production, and warned about
+      on every message.
+- [ ] **Choose the email provider and verify a sending domain.** Resend is
+      implemented; SendGrid or SES would each be one new class. Somebody has to
+      pick one, make an account, and add the DNS records that let mail from
+      `domihealthcare.com` past a spam filter. That is the remaining blocker for
+      password resets and every notification.
 - [x] ~~Rate limiting and lockout on kiosk PIN entry.~~ Done — 5 attempts then
       10 minutes, tracked separately from password lockout.
 - [x] ~~Per-address rate limiting on the login endpoint.~~ Done, and it counts

@@ -29,12 +29,13 @@ reset_state() {
     -c "delete from stored_files;" \
     -c "delete from login_attempts;" \
     -c "delete from employees where \"externalId\" like 'demo:%';" \
-    -c "delete from checklist_templates where \"createdById\" is not null;"
+    -c "delete from checklist_templates where \"createdById\" is not null;" \
+    -c "delete from password_reset_tokens;"
 }
 
 # The scheduler suite builds its rotas in February 2027 so that clearing them
 # cannot touch the shift the seed puts on today's date.
-SUITES="drive refusals correct auth kiosk export locations pto pto-policy presets calendar scheduler checklists phone"
+SUITES="drive refusals correct auth kiosk export locations pto pto-policy presets calendar scheduler checklists phone reset"
 
 # Full output per suite goes to a file, and only the step lines are printed, so
 # a failure's detail is still there to read rather than truncated away.

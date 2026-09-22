@@ -96,6 +96,23 @@ class EnvironmentVariables {
   @Min(10)
   LOGIN_THROTTLE_MAX_FAILURES = 60;
 
+  /// Where this deployment lives, used to build links in emails. A reset link
+  /// pointing at localhost is no use to anybody.
+  @IsString()
+  APP_URL = 'http://localhost:5173';
+
+  /// Email provider. Both of these have to be set for mail to actually leave
+  /// the building; with either missing, messages are written to the server log
+  /// instead — loudly, in production.
+  @IsOptional()
+  @IsString()
+  RESEND_API_KEY?: string;
+
+  /// The From address, on a domain verified with the provider.
+  @IsOptional()
+  @IsString()
+  EMAIL_FROM?: string;
+
   /// Shared secret for the scheduled maintenance route. Unset means the route
   /// refuses everything, so it is never left open by omission.
   @IsOptional()

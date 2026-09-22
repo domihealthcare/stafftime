@@ -44,7 +44,7 @@ a pooler and use the direct one.
 2. **Add New → Project**, and import `domihealthcare/stafftime`
 3. Leave every build setting alone. The repository already tells Vercel what to
    do
-4. Expand **Environment Variables** and add these twelve:
+4. Expand **Environment Variables** and add these thirteen:
 
 | Name | Value |
 | --- | --- |
@@ -61,11 +61,15 @@ a pooler and use the direct one.
 | `PUNCH_GRACE_MINUTES` | `5` |
 | `MAX_UPLOAD_MB` | `10` |
 | `CRON_SECRET` | another long random phrase — see below |
+| `APP_URL` | `https://staff.domihealthcare.com` |
 
 **`SETUP_TOKEN`** is a one-time password that lets you create the first
 administrator account. Make it long and unguessable — four or five random words
 is ideal, for example `copper-lantern-harbour-tuesday-49`. You will type it once
 and then delete it.
+
+**`APP_URL`** is how emails know where to point. A password reset link that
+says `localhost` is no use to anybody.
 
 **`CRON_SECRET`** authorises the nightly housekeeping job — clearing expired
 sessions, stale sign-in counters and kiosk pairing codes that were never used.
@@ -153,6 +157,36 @@ either refuse people or accept the car park.
 **e. Kiosks, if you want them** — *Kiosks*. Add a tablet per location, open
 `/kiosk` on that tablet, and type the pairing code. Set each person's PIN on the
 same screen.
+
+## Turning email on
+
+Until this is done, the app still works — but **nothing is emailed**. Password
+resets and time-off notifications get written to the server log instead, where
+only you can see them, and the log says so on every message.
+
+It is two variables, and the fiddly part is DNS rather than code:
+
+1. Sign up at [resend.com](https://resend.com). The free tier is far more than
+   a practice this size will use.
+2. Add `domihealthcare.com` as a sending domain and follow their instructions to
+   add the DNS records they give you. This is the step that takes a day or two,
+   because it is whoever manages the domain's DNS, and without it mail from you
+   lands in spam.
+3. Create an API key.
+4. In Vercel → **Settings → Environment Variables**, add:
+
+| Name | Value |
+| --- | --- |
+| `RESEND_API_KEY` | the key from step 3 |
+| `EMAIL_FROM` | `Domi Time & Scheduling <no-reply@domihealthcare.com>` |
+
+5. Redeploy, then use **Forgotten your password?** on the sign-in screen with
+   your own address. If the email arrives, it is working. If it does not, the
+   Vercel function log says exactly why — usually that the domain is not
+   verified yet.
+
+Another provider (SendGrid, SES) is one new class in `apps/api/src/email` — the
+app does not care which one sends. See `docs/architecture.md`.
 
 ## Showing it to your managers
 

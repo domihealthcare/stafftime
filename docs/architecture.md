@@ -1012,3 +1012,93 @@ A browser check that fails only in CI is otherwise almost impossible to read.
 `run-all.sh` takes `PGHOST_LOCAL`, `PGPORT_LOCAL`, `PGUSER_LOCAL` and
 `PGDATABASE_LOCAL`, which is how the same script serves both a laptop on port
 5433 and a service container on 5432.
+
+## Email
+
+Another adapter, the same shape as the payroll exporter and the file storage:
+one narrow `EmailSender` interface in `src/email`, an implementation per
+provider, and nothing else in the app knows which is in use.
+
+Sending is **best effort by contract**. Implementations log rather than throw,
+callers do not await, and `NotificationsService` catches. An approval that
+failed because a mail server hiccuped would be a far worse bug than a missing
+notification.
+
+Note that `void somePromise()` is *not* enough to make something fire and
+forget: an unhandled rejection takes the Node process down, so a mail provider
+having a bad afternoon would stop the practice clocking in. Every call site
+attaches a `.catch`. There is a test for it, which is how the bug was found.
+
+### The default is "write it to the log"
+
+`LogEmailSender` is what runs with no provider configured, and that is
+deliberate: sending real mail needs an account, a verified domain and DNS
+records, none of which should be a prerequisite for running the app locally. A
+developer testing a password reset copies the link out of the terminal.
+
+In production it warns on **every message** that nothing was sent, because a
+silent non-delivery that looks like success is the worst outcome available.
+
+`ResendEmailSender` is the real one — plain `fetch` to one HTTP endpoint rather
+than an SDK, since a dependency wrapping one POST is a dependency to keep up to
+date for no benefit, and it keeps the serverless bundle small. HTTP rather than
+SMTP because the app runs as a serverless function, where outbound SMTP is slow
+at best and blocked at worst. It has its own timeout, so a provider that never
+answers cannot hold a function open until the platform kills it.
+
+Mail from a test deployment is prefixed `[Test]` in the subject line, where
+somebody sees it before opening anything.
+
+## Password reset
+
+`POST /api/auth/forgot-password` always answers the same way — *"If that address
+belongs to a Domi account, a reset link is on its way."* — whether the address
+exists, belongs to somebody who has left, or has asked five times this hour.
+Anything else on an unauthenticated form is a way to find out who works at the
+practice. There is a browser check that compares the two answers character for
+character.
+
+The token is 32 random bytes, url-safe, and **only its SHA-256 is stored**, for
+the same reason session tokens are: a database dump must not hand somebody a
+working link into every account.
+
+Links last 30 minutes and are single use. Spending one also spends every other
+outstanding link for that account — asking twice and using the first should not
+leave the second working.
+
+Expired, spent, never-existed and belongs-to-somebody-who-left all produce
+**one** message. Distinguishing them tells an attacker which guesses were close.
+
+Completing a reset signs out every session on the account, including the browser
+doing the resetting. If the reason for the reset was that somebody else had the
+old password, leaving their session alive defeats the exercise — so the screen
+says so rather than letting it be a surprise.
+
+Rate limited at five links per account per hour, so the form cannot be used to
+bombard a colleague's inbox, and the per-address sign-in throttle covers the
+rest.
+
+### How it is tested without a mail server
+
+The browser suite reads the link out of the server log, which is where the
+default sender writes it. That tests the real path, and it is the same way a
+developer gets the link locally.
+
+The tempting alternative — returning the link in the HTTP response when
+`APP_ENVIRONMENT` is `test` — was rejected. One mistyped environment variable on
+a real deployment would make every account takeable by anyone who knows an
+address.
+
+## Who gets told what
+
+- **Somebody asks for time off** → every active manager and admin, except the
+  person who asked. Until now a request could sit for a week because nobody
+  went and looked.
+- **A request is decided** → the person who asked, with the manager's name and
+  their reason. An approval also says that shifts already on the schedule are
+  still there, because approving leave deliberately does not cancel them.
+- **A password reset is requested** → the link, to an address that may not
+  belong to anybody. The service decides that and never says either way.
+
+Dates in emails are rendered in UTC from the `@db.Date` values, for the same
+reason the app does: a day is a day wherever you read it.

@@ -26,13 +26,15 @@ Phase 1, backend and web app:
 - PTO requests with manager approval, balances and a practice-set policy
 - Calendar syncing — each employee gets a private subscription URL for Google
   Calendar, Apple Calendar or Outlook
+- Self-service password reset, and emails when time off is asked for or decided
+  (needs an email provider configured — see [DEPLOY.md](./DEPLOY.md))
 - Onboarding and offboarding checklists — editable templates, a per-person
   instance, and documents (I-9, W-4, signed handbook) attached to the task they
   belong to
 - Admin screens for locations (geofence, IPs) and kiosks
 
-Not built yet: the ADP TotalSource export (waiting on ADP's pay codes and client
-code), badge-tap clock-in, and self-service password reset.
+Not built yet: the ADP TotalSource export (waiting on ADP's pay codes and
+client code) and badge-tap clock-in.
 
 **Deploying it:** see [DEPLOY.md](./DEPLOY.md).
 
@@ -121,8 +123,11 @@ if you would rather.)
 
 Everyone else is added by an admin on the **Staff** screen, who issues a
 temporary password that the new hire must replace the first time they sign in.
-There is no self-service "forgot password" yet — that needs email sending, which
-is not set up (see `docs/open-questions.md`).
+
+**Forgotten passwords** are self-service: the sign-in screen offers a reset
+link, good once and for 30 minutes. That needs an email provider configured
+(`RESEND_API_KEY` and `EMAIL_FROM`) — without one, the email is written to the
+server log instead, which is how it works locally.
 
 ## Trying the kiosk
 
@@ -160,6 +165,8 @@ placeholders, so do not run it after setting real values.
 | `POST` | `/api/auth/logout` | signed in |
 | `GET` | `/api/auth/me` | signed in |
 | `POST` | `/api/auth/change-password` | signed in |
+| `POST` | `/api/auth/forgot-password` | anyone — always answers the same way |
+| `POST` | `/api/auth/reset-password` | anyone with a valid link, once |
 | `GET`/`DELETE` | `/api/auth/sessions` | signed in — list or sign out other browsers |
 | `PUT` | `/api/auth/employees/:id/password` | admin — issue a temporary password |
 | `POST` | `/api/kiosk/pair` | anyone with a valid pairing code |
