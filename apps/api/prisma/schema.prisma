@@ -1,0 +1,479 @@
+// Domi Time & Scheduling — core data model (Phase 1)
+//
+// Conventions (kept aligned with Domi EMR so a future merge is cheap):
+//  - UUID primary keys
+//  - snake_case table names via @@map, camelCase in the client
+//  - all timestamps stored in UTC; each Location carries its own IANA timezone
+//    so reporting stays correct if a location is ever added outside NJ
+//  - Employee.externalId is the stable hook for linking to EMR staff records
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+  /// Migrations need a direct connection: they cannot run through a connection
+  /// pooler. On a local database this is the same value as DATABASE_URL.
+  directUrl = env("DIRECT_DATABASE_URL")
+}
+
+// ---------------------------------------------------------------------------
+// Enums
+// ---------------------------------------------------------------------------
+
+enum Role {
+  EMPLOYEE
+  MANAGER
+  ADMIN
+}
+
+enum EmploymentStatus {
+  PENDING
+  ACTIVE
+  ON_LEAVE
+  TERMINATED
+}
+
+enum PayType {
+  HOURLY
+  SALARY
+}
+
+enum ShiftStatus {
+  DRAFT
+  PUBLISHED
+  CANCELLED
+}
+
+/// How the punch was submitted.
+enum ClockMethod {
+  WEB
+  MOBILE
+  KIOSK
+}
+
+/// How we proved the employee was actually at the location.
+enum VerificationMethod {
+  GEOFENCE
+  IP_ALLOWLIST
+  KIOSK
+  MANUAL
+}
+
+enum TimeEntryStatus {
+  OPEN
+  COMPLETED
+  NEEDS_REVIEW
+  APPROVED
+}
+
+enum PtoType {
+  VACATION
+  SICK
+  PERSONAL
+  BEREAVEMENT
+  UNPAID
+  OTHER
+}
+
+enum PtoStatus {
+  PENDING
+  APPROVED
+  DENIED
+  /// Withdrawn by the employee, or cancelled by a manager after approval.
+  CANCELLED
+}
+
+// ---------------------------------------------------------------------------
+// Location
+// ---------------------------------------------------------------------------
+
+/// A physical practice location. Carries the geofence and IP allow-list used to
+/// verify clock-ins.
+model Location {
+  id           String  @id @default(uuid()) @db.Uuid
+  name         String
+  slug         String  @unique
+  addressLine1 String
+  addressLine2 String?
+  city         String
+  state        String  @db.Char(2)
+  postalCode   String
+  /// IANA timezone, e.g. "America/New_York".
+  timezone     String  @default("America/New_York")
+
+  /// Geofence centre. Decimal(9,6) gives ~11cm precision — plenty for a radius check.
+  latitude  Decimal @db.Decimal(9, 6)
+  longitude Decimal @db.Decimal(9, 6)
+  /// How far from the centre a web/mobile punch may be and still count as "at work".
+  geofenceRadiusMeters Int @default(150)
+
+  /// Fallback verification for web punches: exact IPv4/IPv6 addresses or IPv4 CIDR
+  /// blocks (e.g. "203.0.113.7", "203.0.113.0/24") belonging to this office.
+  allowedIps String[] @default([])
+
+  /// Whether a location-bound kiosk session may be opened for this location.
+  kioskEnabled Boolean @default(true)
+  isActive     Boolean @default(true)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  employees    EmployeeLocation[]
+  shifts       Shift[]
+  timeEntries  TimeEntry[]
+  kioskDevices KioskDevice[]
+
+  @@map("locations")
+}
+
+// ---------------------------------------------------------------------------
+// Employee
+// ---------------------------------------------------------------------------
+
+model Employee {
+  id String @id @default(uuid()) @db.Uuid
+
+  /// Stable identifier for future Domi EMR linkage. Nullable today, unique when set,
+  /// so staff records can be matched later without a messy migration.
+  externalId String? @unique
+
+  firstName     String
+  lastName      String
+  preferredName String?
+  email         String  @unique
+  phone         String?
+
+  role             Role             @default(EMPLOYEE)
+  employmentStatus EmploymentStatus @default(PENDING)
+  payType          PayType          @default(HOURLY)
+
+  hireDate        DateTime  @db.Date
+  terminationDate DateTime? @db.Date
+
+  /// Login credentials. Null until an admin sets a password, which is how a new
+  /// hire's account exists before they can sign in.
+  passwordHash      String?
+  passwordUpdatedAt DateTime?
+  /// True for an admin-set temporary password: the holder must replace it before
+  /// they can do anything else.
+  mustChangePassword Boolean @default(true)
+
+  lastLoginAt DateTime?
+  /// Brute-force protection. Cleared on any successful sign-in.
+  failedLoginAttempts Int       @default(0)
+  lockedUntil         DateTime?
+
+  /// Kiosk credentials. The PIN is only ever stored hashed.
+  pinHash      String?
+  pinUpdatedAt DateTime?
+  /// PIN lockout is tracked separately from password lockout: someone fumbling
+  /// the keypad at the front desk should not lose access to the web app too.
+  pinFailedAttempts Int       @default(0)
+  pinLockedUntil    DateTime?
+  badgeId           String?   @unique
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  locations   EmployeeLocation[]
+  shifts      Shift[]
+  timeEntries TimeEntry[]
+  sessions    Session[]
+
+  createdShifts       Shift[]       @relation("ShiftCreatedBy")
+  createdKiosks       KioskDevice[]  @relation("KioskCreatedBy")
+  reportPresets       ReportPreset[] @relation("ReportPresetOwner")
+  ptoRequests         PtoRequest[]   @relation("PtoRequester")
+  reviewedPtoRequests PtoRequest[]   @relation("PtoReviewer")
+  editedPtoPolicies   PtoPolicy[]    @relation("PtoPolicyEditor")
+  editedTimeEntries   TimeEntry[] @relation("TimeEntryEditedBy")
+  approvedTimeEntries TimeEntry[] @relation("TimeEntryApprovedBy")
+
+  @@index([employmentStatus])
+  @@map("employees")
+}
+
+/// An employee may be assigned to more than one location (North Bergen / West New York).
+/// Clock-in is only permitted at an assigned location.
+model EmployeeLocation {
+  employeeId String   @db.Uuid
+  locationId String   @db.Uuid
+  isPrimary  Boolean  @default(false)
+  assignedAt DateTime @default(now())
+
+  employee Employee @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+  location Location @relation(fields: [locationId], references: [id], onDelete: Cascade)
+
+  @@id([employeeId, locationId])
+  @@index([locationId])
+  @@map("employee_locations")
+}
+
+// ---------------------------------------------------------------------------
+// PTO
+// ---------------------------------------------------------------------------
+
+/// The practice's time-off rules. One row, edited by an admin.
+///
+/// Kept as data rather than constants because these are a policy decision the
+/// practice owns, and they will change — a new handbook, a new state rule, a
+/// different carry-over. Defaults are Domi's starting point: 15 days PTO, 5
+/// sick days, 5 days of PTO carried into the next year.
+model PtoPolicy {
+  id String @id @default(uuid()) @db.Uuid
+
+  /// Annual entitlement, in days.
+  vacationDaysPerYear Int @default(15)
+  sickDaysPerYear     Int @default(5)
+
+  /// Unused days that survive into the next policy year, capped.
+  maxCarryoverDays     Int @default(5)
+  /// Sick days usually do not carry; kept separate so the practice can decide.
+  sickCarryoverDays    Int @default(0)
+
+  /// When the policy year begins. 1 January by default; set to a different
+  /// month and day if Domi ever runs PTO on a fiscal year.
+  yearStartMonth Int @default(1)
+  yearStartDay   Int @default(1)
+
+  /// Give a mid-year starter a share of the year rather than the whole
+  /// entitlement.
+  prorateFirstYear Boolean @default(true)
+
+  updatedById String?   @db.Uuid
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  updatedBy Employee? @relation("PtoPolicyEditor", fields: [updatedById], references: [id], onDelete: SetNull)
+
+  @@map("pto_policy")
+}
+
+/// A request for time off.
+///
+/// Dates are whole days (`@db.Date`), not timestamps: "the 3rd to the 7th"
+/// means those days wherever the employee is, with no timezone to get wrong.
+/// Half days are handled by `isHalfDay` on a single-day request rather than by
+/// pretending a date is a time.
+///
+/// Balances and accrual are deliberately absent — the brief asks for requests
+/// and approval, and how Domi accrues PTO is not settled. See
+/// docs/open-questions.md.
+model PtoRequest {
+  id         String    @id @default(uuid()) @db.Uuid
+  employeeId String    @db.Uuid
+  type       PtoType
+  status     PtoStatus @default(PENDING)
+
+  /// Inclusive first and last day off.
+  startDate DateTime @db.Date
+  endDate   DateTime @db.Date
+  /// Only meaningful when startDate equals endDate.
+  isHalfDay Boolean  @default(false)
+
+  /// The employee's reason, optional — sick leave should not require one.
+  notes String?
+
+  reviewedById String?   @db.Uuid
+  reviewedAt   DateTime?
+  /// A manager's note, shown to the employee. Required when denying.
+  reviewNote   String?
+
+  cancelledAt DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  employee   Employee  @relation("PtoRequester", fields: [employeeId], references: [id], onDelete: Cascade)
+  reviewedBy Employee? @relation("PtoReviewer", fields: [reviewedById], references: [id], onDelete: SetNull)
+
+  @@index([employeeId, startDate])
+  @@index([status, startDate])
+  @@map("pto_requests")
+}
+
+// ---------------------------------------------------------------------------
+// Saved reports
+// ---------------------------------------------------------------------------
+
+/// A named set of export options — "Biweekly payroll", "North Bergen overtime".
+///
+/// The options are stored as JSON rather than columns because they are the
+/// export screen's own shape, and every added option would otherwise be a
+/// migration. They are re-validated against the export DTO on use, so a stale
+/// or hand-edited preset cannot smuggle anything through.
+model ReportPreset {
+  id      String @id @default(uuid()) @db.Uuid
+  name    String
+  ownerId String @db.Uuid
+  /// Shared presets are visible to every manager, not just the person who made
+  /// one. A small practice wants "the payroll export" to be the same export
+  /// whoever runs it.
+  isShared Boolean @default(false)
+  options  Json
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  owner Employee @relation("ReportPresetOwner", fields: [ownerId], references: [id], onDelete: Cascade)
+
+  @@unique([ownerId, name])
+  @@index([isShared])
+  @@map("report_presets")
+}
+
+// ---------------------------------------------------------------------------
+// Kiosk
+// ---------------------------------------------------------------------------
+
+/// A tablet or front-desk PC bound to one location.
+///
+/// The device itself proves where a punch happened, which is why a kiosk punch
+/// needs no geolocation. Binding is the whole security model here, so a device
+/// is created for a specific location and cannot be moved — pair a new one
+/// instead.
+model KioskDevice {
+  id         String @id @default(uuid()) @db.Uuid
+  name       String
+  locationId String @db.Uuid
+
+  /// SHA-256 of the long-lived device token. Null until the device is paired.
+  tokenHash String? @unique
+
+  /// SHA-256 of the short single-use pairing code an admin reads out to the
+  /// device. Cleared the moment it is used, so a code cannot be replayed.
+  pairingCodeHash  String?   @unique
+  pairingExpiresAt DateTime?
+
+  pairedAt    DateTime?
+  lastSeenAt  DateTime?
+  revokedAt   DateTime?
+  createdById String?   @db.Uuid
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  location  Location  @relation(fields: [locationId], references: [id], onDelete: Cascade)
+  createdBy Employee? @relation("KioskCreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
+
+  @@index([locationId])
+  @@map("kiosk_devices")
+}
+
+// ---------------------------------------------------------------------------
+// Session
+// ---------------------------------------------------------------------------
+
+/// A signed-in browser.
+///
+/// Sessions are server-side and opaque rather than self-contained tokens, so
+/// access can be withdrawn the moment someone is offboarded instead of waiting
+/// for a token to expire. Only the SHA-256 of the token is stored: a leaked
+/// database row cannot be replayed as a login.
+model Session {
+  id         String   @id @default(uuid()) @db.Uuid
+  employeeId String   @db.Uuid
+  /// SHA-256 of the opaque session token. The token itself is never stored.
+  tokenHash  String   @unique
+  expiresAt  DateTime
+  lastUsedAt DateTime @default(now())
+  revokedAt  DateTime?
+  /// Recorded so a user can recognise their own sessions, and for incident review.
+  userAgent  String?
+  ipAddress  String?
+  createdAt  DateTime @default(now())
+
+  employee Employee @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+
+  @@index([employeeId])
+  @@index([expiresAt])
+  @@map("sessions")
+}
+
+// ---------------------------------------------------------------------------
+// Shift
+// ---------------------------------------------------------------------------
+
+/// A scheduled shift, built by a manager in the scheduler.
+model Shift {
+  id         String      @id @default(uuid()) @db.Uuid
+  employeeId String      @db.Uuid
+  locationId String      @db.Uuid
+  startsAt   DateTime
+  endsAt     DateTime
+  status     ShiftStatus @default(DRAFT)
+  notes      String?
+
+  createdById String? @db.Uuid
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  employee  Employee    @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+  location  Location    @relation(fields: [locationId], references: [id], onDelete: Restrict)
+  createdBy Employee?   @relation("ShiftCreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
+  timeEntries TimeEntry[]
+
+  @@index([employeeId, startsAt])
+  @@index([locationId, startsAt])
+  @@map("shifts")
+}
+
+// ---------------------------------------------------------------------------
+// TimeEntry
+// ---------------------------------------------------------------------------
+
+/// One clock-in (and eventually clock-out) pair. Every punch records how it was
+/// submitted and how it was verified, so a disputed timesheet can be reconstructed.
+model TimeEntry {
+  id         String          @id @default(uuid()) @db.Uuid
+  employeeId String          @db.Uuid
+  locationId String          @db.Uuid
+  shiftId    String?         @db.Uuid
+  method     ClockMethod
+  status     TimeEntryStatus @default(OPEN)
+
+  clockInAt             DateTime
+  clockInLatitude       Decimal?           @db.Decimal(9, 6)
+  clockInLongitude      Decimal?           @db.Decimal(9, 6)
+  clockInAccuracyMeters Int?
+  clockInIp             String?
+  clockInVerification   VerificationMethod
+
+  clockOutAt             DateTime?
+  clockOutLatitude       Decimal?            @db.Decimal(9, 6)
+  clockOutLongitude      Decimal?            @db.Decimal(9, 6)
+  clockOutAccuracyMeters Int?
+  clockOutIp             String?
+  clockOutVerification   VerificationMethod?
+
+  /// Flags surfaced to managers on the timesheet review screen.
+  isLate           Boolean @default(false)
+  isEarlyDeparture Boolean @default(false)
+  isManuallyEdited Boolean @default(false)
+  isMissingPunch   Boolean @default(false)
+
+  /// Audit trail for manual edits and approvals.
+  editedById String?   @db.Uuid
+  editedAt   DateTime?
+  editReason String?
+  approvedById String?   @db.Uuid
+  approvedAt   DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  employee   Employee  @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+  location   Location  @relation(fields: [locationId], references: [id], onDelete: Restrict)
+  shift      Shift?    @relation(fields: [shiftId], references: [id], onDelete: SetNull)
+  editedBy   Employee? @relation("TimeEntryEditedBy", fields: [editedById], references: [id], onDelete: SetNull)
+  approvedBy Employee? @relation("TimeEntryApprovedBy", fields: [approvedById], references: [id], onDelete: SetNull)
+
+  @@index([employeeId, clockInAt])
+  @@index([locationId, clockInAt])
+  @@index([shiftId])
+  @@map("time_entries")
+}
