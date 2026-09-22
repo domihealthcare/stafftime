@@ -141,9 +141,14 @@ Beyond the phases, the parts worth knowing about before picking up work:
   screens where each thing gets fixed, from one service, so the email and the
   app cannot disagree. Managers can turn the email off; nothing is lost by it.
   **Needs an email provider configured before any of it sends.**
-- **The scheduler** does a week (for building) and a month (for overview), warns
-  when the rota puts somebody past forty hours in a week, and syncs to Google,
-  Apple or Outlook calendars by private subscription URL.
+- **The scheduler** does a week (for building, on a laptop) and a month (for
+  staff checking when they are on, often on a phone), warns when the rota puts
+  somebody past the overtime threshold in a week, and syncs to Google, Apple or
+  Outlook calendars by private subscription URL.
+- **`PracticeSettings`** holds the numbers the practice sets for itself: the
+  overtime threshold (40) and how many days before a week starts an unpublished
+  rota gets chased (4). Both were constants until Dominguez asked for them to be
+  adjustable; the defaults are confirmed.
 - **Tests**: ~540 unit tests, and ~220 end-to-end checks in `tests/browser`
   driven against a real API, a real Postgres and a real Chromium. Both run in CI
   on every push. The convention is to run the browser suites twice — once

@@ -4,6 +4,7 @@ import {
   addDays,
   addMonths,
   formatTime,
+  formatTimeCompact,
   localDate,
   monthGrid,
   startOfMonth,
@@ -26,12 +27,28 @@ import { RepeatShiftsForm } from '../components/RepeatShiftsForm';
 import { Alert, Badge, Card, EmptyState, PageHeading, Spinner } from '../components/ui';
 import { NeedsAttention } from '../components/NeedsAttention';
 
+/// Where the week/month choice is remembered. Per browser, per person on that
+/// browser — it never leaves the device and nothing depends on it.
+const VIEW_KEY = 'domi.schedule.view';
+
 export function SchedulePage() {
   const isManager = useIsManager();
   /// A week at a time to build a rota, a month at a time to see the shape of
   /// one. The week view is where shifts are added and removed; the month view
   /// is an overview, and a day in it is a way back to that week.
-  const [view, setView] = useState<'week' | 'month'>('week');
+  ///
+  /// Remembered, because whichever one you want you tend to want every time —
+  /// a manager building rotas lives in the week, somebody checking their own
+  /// shifts lives in the month, and neither should re-pick it after every trip
+  /// to another screen. Browser storage can throw (private windows, blocked
+  /// site data), so every touch of it is guarded and the default stands.
+  const [view, setView] = useState<'week' | 'month'>(() => {
+    try {
+      return window.localStorage.getItem(VIEW_KEY) === 'month' ? 'month' : 'week';
+    } catch {
+      return 'week';
+    }
+  });
   const [weekStart, setWeekStart] = useState(() => startOfWeek(new Date()));
   const [monthStart, setMonthStart] = useState(() => startOfMonth(new Date()));
   const [shifts, setShifts] = useState<Shift[]>([]);
@@ -185,6 +202,11 @@ export function SchedulePage() {
               type="button"
               aria-pressed={view === option}
               onClick={() => {
+                try {
+                  window.localStorage.setItem(VIEW_KEY, option);
+                } catch {
+                  // A remembered preference is a convenience, not a feature.
+                }
                 if (option === 'month') {
                   setMonthStart(startOfMonth(weekStart));
                 } else if (startOfMonth(weekStart).getTime() !== monthStart.getTime()) {
@@ -260,14 +282,21 @@ export function SchedulePage() {
       {isManager && coverage && coverage.days.length > 0 && (
         <div className="mb-6">
           {view === 'week' ? (
-            <CoverageStrip days={coverage.days} overtime={coverage.overtime} />
+            <CoverageStrip
+              days={coverage.days}
+              overtime={coverage.overtime}
+              overtimeThresholdHours={coverage.overtimeThresholdHours}
+            />
           ) : (
             coverage.overtime.length > 0 && (
               <Card className="p-4">
                 <h2 className="mb-2 text-sm font-semibold text-slate-900">
                   Overtime this month
                 </h2>
-                <OvertimeNotice overtime={coverage.overtime} />
+                <OvertimeNotice
+                  overtime={coverage.overtime}
+                  thresholdHours={coverage.overtimeThresholdHours}
+                />
               </Card>
             )
           )}
@@ -299,9 +328,15 @@ export function SchedulePage() {
           days={days}
           monthStart={monthStart}
           shiftsByDay={shiftsByDay}
+          showNames={isManager}
           onPickDay={(day) => {
             setWeekStart(startOfWeek(day));
             setView('week');
+            try {
+              window.localStorage.setItem(VIEW_KEY, 'week');
+            } catch {
+              // As above.
+            }
           }}
         />
       ) : (
@@ -583,9 +618,11 @@ function defaultInput(day: Date, hour: number): string {
 function CoverageStrip({
   days,
   overtime,
+  overtimeThresholdHours,
 }: {
   days: CoverageDay[];
   overtime: OvertimeWarning[];
+  overtimeThresholdHours: number;
 }) {
   const totalHours = Math.round(days.reduce((sum, day) => sum + day.staffedHours, 0) * 10) / 10;
   const emptyDays = days.filter((day) => day.shifts.length === 0);
@@ -677,7 +714,7 @@ function CoverageStrip({
 
       {overtime.length > 0 && (
         <div className="mt-3">
-          <OvertimeNotice overtime={overtime} />
+          <OvertimeNotice overtime={overtime} thresholdHours={overtimeThresholdHours} />
         </div>
       )}
 
@@ -701,13 +738,22 @@ function CoverageStrip({
  * is why the same component serves both — a month view that quietly used a
  * different rule would be worse than one that said nothing.
  */
-function OvertimeNotice({ overtime }: { overtime: OvertimeWarning[] }) {
+function OvertimeNotice({
+  overtime,
+  thresholdHours,
+}: {
+  overtime: OvertimeWarning[];
+  /// From the server, not a constant here. The practice can move this line, and
+  /// a warning that names the wrong number in confident words is worse than one
+  /// that says nothing.
+  thresholdHours: number;
+}) {
   return (
     <div className="rounded-lg bg-amber-50 p-3 text-sm text-amber-900 ring-1 ring-inset ring-amber-200">
       <p className="font-medium">
         {overtime.length === 1
-          ? '1 person is scheduled past 40 hours'
-          : `${overtime.length} people are scheduled past 40 hours`}
+          ? `1 person is scheduled past ${thresholdHours} hours`
+          : `${overtime.length} people are scheduled past ${thresholdHours} hours`}
       </p>
       <ul className="mt-1 space-y-0.5 text-xs">
         {overtime.map((warning) => (
@@ -735,26 +781,36 @@ function OvertimeNotice({ overtime }: { overtime: OvertimeWarning[] }) {
 }
 
 /**
- * A month at a glance: how many people are on each day, and for how long.
+ * A month at a glance — who is on, and when.
  *
- * Counts rather than shift cards, on purpose. Seven columns on a phone is about
- * fifty pixels each, which fits a number and nothing else — and a month view is
- * for spotting the shape of a rota (the empty Tuesday, the week everybody is
- * on) rather than for reading who is doing what. A day is a link back to its
- * week, which is where the detail and the editing live.
+ * This is mostly a staff screen. A manager builds the rota a week at a time on
+ * a laptop; an employee opens the month to see which days they are working, and
+ * opens it on a phone. That shapes what each square holds: an employee sees
+ * their own shifts, so one compact time per day is enough and fits at seven
+ * columns even at 390px. A manager sees everybody, so the square lists first
+ * names and says how many more there are.
+ *
+ * A day is still a link to its week, which is where shifts are added and
+ * removed.
  */
 function MonthGrid({
   days,
   monthStart,
   shiftsByDay,
+  showNames,
   onPickDay,
 }: {
   days: Date[];
   monthStart: Date;
   shiftsByDay: Map<string, Shift[]>;
+  /// A manager sees whose shift it is; an employee is only ever shown their
+  /// own, so the name would be their own name forty times.
+  showNames: boolean;
   onPickDay: (day: Date) => void;
 }) {
   const today = new Date().toDateString();
+  // Three lines is what fits before a square starts scrolling on a laptop.
+  const MAX_LINES = 3;
 
   return (
     <div data-testid="month-grid">
@@ -777,22 +833,29 @@ function MonthGrid({
       <div className="grid grid-cols-7 gap-1">
         {days.map((day) => {
           const dayShifts = shiftsByDay.get(day.toDateString()) ?? [];
-          const hours =
-            Math.round(
-              dayShifts.reduce(
-                (sum, shift) =>
-                  sum +
-                  (new Date(shift.endsAt).getTime() - new Date(shift.startsAt).getTime()) /
-                    3_600_000,
-                0,
-              ) * 10,
-            ) / 10;
 
           // The days either side of the month are there to square off the grid.
           // They are shown, because a shift on the 1st matters whichever row it
           // lands in, but dimmed so the month still reads as a month.
           const outside = day.getMonth() !== monthStart.getMonth();
           const isToday = day.toDateString() === today;
+
+          // Two renderings of the same shift. The full one is what the screen
+          // reader and a laptop get; the short one is what fits in a column
+          // about forty pixels wide, where "1pm–9pm" truncates to "1p…" and
+          // tells nobody anything. The start time on its own still answers the
+          // question an employee opened the month to ask — am I on at nine or
+          // at one — and the rest is one tap away in the week.
+          const described = dayShifts.map((shift) =>
+            showNames
+              ? (shift.employee?.firstName ?? 'Someone')
+              : `${formatTimeCompact(shift.startsAt)}–${formatTimeCompact(shift.endsAt)}`,
+          );
+          const shortened = dayShifts.map((shift) =>
+            showNames
+              ? (shift.employee?.firstName ?? 'Someone')
+              : formatTimeCompact(shift.startsAt),
+          );
 
           return (
             <button
@@ -806,9 +869,9 @@ function MonthGrid({
               })} — ${
                 dayShifts.length === 0
                   ? 'no shifts'
-                  : `${dayShifts.length} shift${dayShifts.length === 1 ? '' : 's'}, ${hours} hours`
+                  : `${dayShifts.length} shift${dayShifts.length === 1 ? '' : 's'}: ${described.join(', ')}`
               }`}
-              className={`min-h-[72px] rounded-lg border p-1.5 text-left transition hover:border-brand-400 hover:bg-brand-50 sm:min-h-[92px] sm:p-2 ${
+              className={`min-h-[72px] rounded-lg border p-1.5 text-left align-top transition hover:border-brand-400 hover:bg-brand-50 sm:min-h-[104px] sm:p-2 ${
                 isToday ? 'border-brand-500 ring-1 ring-brand-500' : 'border-slate-200'
               } ${outside ? 'bg-slate-50 opacity-60' : 'bg-white'}`}
             >
@@ -823,12 +886,22 @@ function MonthGrid({
               {dayShifts.length === 0 ? (
                 <span className="mt-1 block text-[11px] text-slate-300 sm:text-xs">—</span>
               ) : (
-                <>
-                  <span className="mt-1 block text-[11px] font-medium text-slate-700 sm:text-xs">
-                    {dayShifts.length} on
-                  </span>
-                  <span className="block text-[11px] text-slate-500 sm:text-xs">{hours}h</span>
-                </>
+                <span className="mt-0.5 block space-y-0.5">
+                  {described.slice(0, MAX_LINES).map((line, index) => (
+                    <span
+                      key={`${line}-${index}`}
+                      className="block truncate rounded bg-brand-50 px-1 text-[10px] leading-4 text-brand-900 sm:text-[11px] sm:leading-5"
+                    >
+                      <span className="sm:hidden">{shortened[index]}</span>
+                      <span className="hidden sm:inline">{line}</span>
+                    </span>
+                  ))}
+                  {described.length > MAX_LINES && (
+                    <span className="block px-1 text-[10px] text-slate-500 sm:text-[11px]">
+                      +{described.length - MAX_LINES} more
+                    </span>
+                  )}
+                </span>
               )}
             </button>
           );

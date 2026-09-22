@@ -22,6 +22,7 @@ const data: TimesheetData = {
     totalHours: 24.5,
     openEntryCount: 0,
     splitOvertime: false,
+    overtimeThresholdHours: 40,
     generatedAt: new Date(),
     alreadyExportedCount: 0,
     correctedSinceExportCount: 0,

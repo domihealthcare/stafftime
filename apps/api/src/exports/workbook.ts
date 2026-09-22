@@ -158,7 +158,10 @@ function buildSummarySheet(workbook: Workbook, data: TimesheetData) {
     notes.push(['Open entries included', `${data.meta.openEntryCount} (no clock-out, counted as 0 hours)`]);
   }
   if (showOvertime) {
-    notes.push(['Overtime', 'Over 40 hours per week, hourly staff only']);
+    notes.push([
+      'Overtime',
+      `Over ${data.meta.overtimeThresholdHours} hours per week, hourly staff only`,
+    ]);
   }
   for (const [label, value] of notes) {
     const row = sheet.addRow([label, value]);

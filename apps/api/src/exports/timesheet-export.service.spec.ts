@@ -1,4 +1,5 @@
 import { PayType, TimeEntryStatus } from '@prisma/client';
+import { fakeSettings } from '../settings/practice-settings.test-double';
 import {
   TimesheetExportService,
   describeFlags,
@@ -116,7 +117,7 @@ describe('TimesheetExportService', () => {
       location: { findUnique: jest.fn().mockResolvedValue({ name: 'North Bergen' }) },
     };
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    return { service: new TimesheetExportService(prisma as any), prisma };
+    return { service: new TimesheetExportService(prisma as any, fakeSettings()), prisma };
   }
 
   const period = { from: '2026-09-14T00:00:00Z', to: '2026-09-28T00:00:00Z' };

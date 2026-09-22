@@ -8,6 +8,7 @@ import { Spinner } from './components/ui';
 import { SessionProvider, useSession } from './lib/session';
 import { ChangePasswordPage } from './pages/ChangePasswordPage';
 import { NotificationsPage } from './pages/NotificationsPage';
+import { SettingsPage } from './pages/SettingsPage';
 import { ClockPage } from './pages/ClockPage';
 import { ExportPage } from './pages/ExportPage';
 import { LocationsPage } from './pages/LocationsPage';
@@ -74,6 +75,7 @@ function Routed() {
         <Route path="schedule" element={<SchedulePage />} />
         <Route path="password" element={<ChangePasswordPage forced={false} />} />
         <Route path="notifications" element={<NotificationsPage />} />
+        <Route path="settings" element={<SettingsPage />} />
         <Route path="time-off" element={<TimeOffPage />} />
         <Route path="checklists" element={<ChecklistsPage />} />
         <Route path="credentials" element={<CredentialsPage />} />

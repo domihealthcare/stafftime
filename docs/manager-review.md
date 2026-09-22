@@ -116,10 +116,19 @@ opens that week, where shifts are actually added and removed. It deliberately
 does not show names: seven columns on a phone leaves room for a number and not
 much else.
 
-- **Tell us:** is the month view showing the right thing? Counts and hours, or
-  would you rather see who is on?
-- **Tell us:** is 40 hours the right line, and should it ever stop you
-  scheduling somebody rather than just saying so? Today it only says so.
+The month view shows **who is on** — first names if you are a manager looking at
+everybody, or your own start times if you are looking at your own shifts. On a
+phone it shows the start time only, because a column that narrow cannot fit
+"1pm–9pm" without cutting it in half. Whichever view you pick is remembered.
+
+Both numbers behind the schedule warnings are now yours, on the **Settings**
+screen: how many hours a week counts as overtime (40), and how many days before
+a week starts the app chases you for an unpublished rota (4). An admin changes
+them; managers can see them.
+
+- **Tell us:** once you have used it for a fortnight, are those two numbers
+  right? They are easy to change, so change them rather than working around
+  them.
 
 Approving somebody's time off deliberately does **not** cancel their shifts. The
 coverage strip flags the clash instead, and a person reassigns the cover.

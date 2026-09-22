@@ -9,16 +9,12 @@ import {
   zonedTimeToUtc,
 } from '../common/util/zoned-time.util';
 import { PrismaService } from '../prisma/prisma.service';
+import { PracticeSettingsService } from '../settings/practice-settings.service';
 import { CopyWeekDto, QueryCoverageDto, RepeatShiftsDto } from './dto/repeat-shifts.dto';
 
 /// Guards against a mis-typed year turning into three thousand shifts.
 const MAX_GENERATED_SHIFTS = 200;
 const MAX_SPAN_DAYS = 400;
-
-/// The same forty hours the payroll export splits on, and for the same reason:
-/// a rota that predicts overtime and an export that reports it must not
-/// disagree about what overtime is.
-const OVERTIME_THRESHOLD_HOURS = 40;
 
 export interface OvertimeWarning {
   employeeId: string;
@@ -67,7 +63,10 @@ const SHIFT_INCLUDE = {
 export class ShiftPlanningService {
   private readonly logger = new Logger(ShiftPlanningService.name);
 
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly settings: PracticeSettingsService,
+  ) {}
 
   async repeat(dto: RepeatShiftsDto, createdById: string): Promise<PlanResult> {
     if (dto.endTime <= dto.startTime) {
@@ -289,7 +288,16 @@ export class ShiftPlanningService {
       };
     });
 
-    return { days, overtime: await this.overtimeForWeeksTouching(dates, query.locationId) };
+    const { overtimeThresholdHours } = await this.settings.get();
+
+    return {
+      days,
+      overtime: await this.overtimeForWeeksTouching(dates, query.locationId),
+      // The response says which line it applied. Without it the screen has to
+      // guess, and a screen that guesses "40" while the practice has set 20
+      // tells people the wrong rule in confident words.
+      overtimeThresholdHours,
+    };
   }
 
   /**
@@ -313,11 +321,15 @@ export class ShiftPlanningService {
    * built, and mixing in actual punches would make the number impossible to
    * explain. Hourly staff only, matching the payroll export — see the note
    * there about pay type not being the legal test for exempt status.
+   *
+   * The threshold is the practice's, not a constant: forty is the federal line
+   * and a sensible default, but it is theirs to move.
    */
   private async overtimeForWeeksTouching(
     dates: string[],
     viewingLocationId?: string,
   ): Promise<OvertimeWarning[]> {
+    const { overtimeThresholdHours } = await this.settings.get();
     const firstMonday = mondayOnOrBefore(dates[0]);
     const lastSunday = addDaysTo(mondayOnOrBefore(dates[dates.length - 1]), 6);
 
@@ -360,13 +372,13 @@ export class ShiftPlanningService {
     }
 
     return [...weeks.values()]
-      .filter((week) => week.hours > OVERTIME_THRESHOLD_HOURS)
+      .filter((week) => week.hours > overtimeThresholdHours)
       .map((week) => ({
         employeeId: week.employeeId,
         employeeName: week.employeeName,
         weekStart: week.weekStart,
         scheduledHours: round2(week.hours),
-        overtimeHours: round2(week.hours - OVERTIME_THRESHOLD_HOURS),
+        overtimeHours: round2(week.hours - overtimeThresholdHours),
         spansLocations:
           viewingLocationId !== undefined &&
           (week.locationIds.size > 1 || !week.locationIds.has(viewingLocationId)),
