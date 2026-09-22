@@ -960,3 +960,28 @@ Both layouts are always in the DOM, one hidden by CSS. That matters when writing
 a check against this screen: `getByText(...).first()` resolves to the hidden
 copy, which never becomes visible and times out. Ask for
 `.locator('visible=true').first()` instead.
+
+### Editing a template
+
+The task list is sent **whole** on every save rather than patched task by task.
+A checklist is read as a list, so it is edited as a list, and reordering is then
+just moving an item rather than renumbering everything around it. The server
+deletes the template's tasks and recreates them inside one transaction.
+
+That would be reckless if instances referenced templates. They do not — they are
+snapshots — so nothing already under way can be disturbed by it. The editor says
+so on screen, because an admin about to reword "sign the 2026 handbook" needs to
+know they are not rewriting what forty people already signed. There is a browser
+check that starts a checklist, rewords the template underneath it, and asserts
+the running checklist kept its original wording.
+
+`dueOffsetDays` is stored as a signed number of days, but nobody thinks in
+signed numbers. The editor splits it into a direction and a count — *before the
+start date*, *after the last day*, *on the day*, *whenever* — and the wording
+follows the template's kind, since an onboarding checklist hangs off a start
+date and an offboarding one off a last day.
+
+Templates are **retired**, never deleted, so a finished checklist can still say
+where it came from. Retiring also clears the default flag; if that leaves the
+practice with no default for that kind, starting a checklist says so plainly
+rather than failing.

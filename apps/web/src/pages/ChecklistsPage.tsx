@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { ChecklistTaskRow } from '../components/ChecklistTaskRow';
+import { ChecklistTemplateEditor } from '../components/ChecklistTemplateEditor';
 import { Alert, Badge, Card, EmptyState, PageHeading, Spinner } from '../components/ui';
 import { ApiError, api } from '../lib/api';
 import { formatCalendarDate } from '../lib/format';
@@ -23,6 +24,7 @@ export function ChecklistsPage() {
   const [staff, setStaff] = useState<Employee[]>([]);
   const [state, setState] = useState<StateFilter>('open');
   const [openId, setOpenId] = useState<string | null>(null);
+  const [newTemplateKind, setNewTemplateKind] = useState<ChecklistKind | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -189,9 +191,56 @@ export function ChecklistsPage() {
             works. Changing a template never alters a checklist already under way, so
             what somebody signed stays what they signed.
           </p>
+
+          {isAdmin && !newTemplateKind && (
+            <div className="mb-3 flex flex-wrap gap-2">
+              <button
+                type="button"
+                onClick={() => setNewTemplateKind('ONBOARDING')}
+                className="rounded-lg border border-slate-300 px-3 py-1.5 text-sm font-medium text-slate-700 hover:bg-slate-50"
+              >
+                + New onboarding template
+              </button>
+              <button
+                type="button"
+                onClick={() => setNewTemplateKind('OFFBOARDING')}
+                className="rounded-lg border border-slate-300 px-3 py-1.5 text-sm font-medium text-slate-700 hover:bg-slate-50"
+              >
+                + New offboarding template
+              </button>
+            </div>
+          )}
+
+          {newTemplateKind && (
+            <div className="mb-3">
+              <Card>
+                <ChecklistTemplateEditor
+                  kind={newTemplateKind}
+                  onSaved={(created) => {
+                    setTemplates((current) => [...current, created]);
+                    setNewTemplateKind(null);
+                  }}
+                  onCancel={() => setNewTemplateKind(null)}
+                />
+              </Card>
+            </div>
+          )}
+
           <div className="space-y-3">
             {templates.map((template) => (
-              <TemplateCard key={template.id} template={template} />
+              <TemplateCard
+                key={template.id}
+                template={template}
+                canEdit={isAdmin}
+                onChanged={(updated) =>
+                  setTemplates((current) =>
+                    current.map((item) => (item.id === updated.id ? updated : item)),
+                  )
+                }
+                onArchived={(id) =>
+                  setTemplates((current) => current.filter((item) => item.id !== id))
+                }
+              />
             ))}
           </div>
         </div>
@@ -486,8 +535,29 @@ function StartChecklistForm({
   );
 }
 
-function TemplateCard({ template }: { template: ChecklistTemplate }) {
+/// "1 day before", not "1 days before".
+function describeDue(offsetDays: number | null): string {
+  if (offsetDays === null) return 'no due date';
+  if (offsetDays === 0) return 'on the day';
+
+  const days = Math.abs(offsetDays);
+  return `${days} ${days === 1 ? 'day' : 'days'} ${offsetDays > 0 ? 'after' : 'before'}`;
+}
+
+function TemplateCard({
+  template,
+  canEdit,
+  onChanged,
+  onArchived,
+}: {
+  template: ChecklistTemplate;
+  canEdit: boolean;
+  onChanged: (template: ChecklistTemplate) => void;
+  onArchived: (id: string) => void;
+}) {
   const [expanded, setExpanded] = useState(false);
+  const [editing, setEditing] = useState(false);
+  const [confirmingArchive, setConfirmingArchive] = useState(false);
   const needingDocuments = template.tasks.filter((task) => task.requiresDocument).length;
 
   return (
@@ -507,7 +577,7 @@ function TemplateCard({ template }: { template: ChecklistTemplate }) {
             {template.isDefault && <Badge tone="success">default</Badge>}
           </div>
           <p className="mt-1 text-xs text-slate-500">
-            {template.tasks.length} tasks
+            {template.tasks.length} {template.tasks.length === 1 ? 'task' : 'tasks'}
             {needingDocuments > 0 && `, ${needingDocuments} needing a document`}
           </p>
         </div>
@@ -516,22 +586,14 @@ function TemplateCard({ template }: { template: ChecklistTemplate }) {
         </span>
       </button>
 
-      {expanded && (
+      {expanded && !editing && (
         <ol className="divide-y divide-slate-100 border-t border-slate-100">
           {template.tasks.map((task) => (
             <li key={task.id} className="px-4 py-2 text-sm">
               <div className="flex flex-wrap items-center gap-2">
                 <span className="text-slate-900">{task.title}</span>
                 {task.requiresDocument && <Badge tone="warning">document</Badge>}
-                <span className="text-xs text-slate-500">
-                  {task.dueOffsetDays === null
-                    ? 'no due date'
-                    : task.dueOffsetDays === 0
-                      ? 'on the day'
-                      : task.dueOffsetDays > 0
-                        ? `${task.dueOffsetDays} days after`
-                        : `${Math.abs(task.dueOffsetDays)} days before`}
-                </span>
+                <span className="text-xs text-slate-500">{describeDue(task.dueOffsetDays)}</span>
               </div>
               {task.description && (
                 <p className="mt-0.5 text-xs text-slate-600">{task.description}</p>
@@ -539,6 +601,62 @@ function TemplateCard({ template }: { template: ChecklistTemplate }) {
             </li>
           ))}
         </ol>
+      )}
+
+      {expanded && canEdit && !editing && (
+        <div className="flex flex-wrap items-center gap-3 border-t border-slate-100 px-4 py-3">
+          <button
+            type="button"
+            onClick={() => setEditing(true)}
+            className="rounded-lg border border-slate-300 px-3 py-1.5 text-sm font-medium text-slate-700 hover:bg-slate-50"
+          >
+            Edit this template
+          </button>
+
+          {confirmingArchive ? (
+            <div className="flex flex-wrap items-center gap-2 text-sm">
+              <span className="text-slate-700">
+                Retire it? Checklists already started keep working.
+              </span>
+              <button
+                type="button"
+                onClick={async () => {
+                  await api.archiveChecklistTemplate(template.id);
+                  onArchived(template.id);
+                }}
+                className="rounded-lg bg-slate-800 px-3 py-1.5 text-xs font-semibold text-white"
+              >
+                Retire it
+              </button>
+              <button
+                type="button"
+                onClick={() => setConfirmingArchive(false)}
+                className="text-xs font-medium text-slate-600 hover:text-slate-900"
+              >
+                Keep it
+              </button>
+            </div>
+          ) : (
+            <button
+              type="button"
+              onClick={() => setConfirmingArchive(true)}
+              className="text-sm font-medium text-slate-500 hover:text-rose-700"
+            >
+              Retire this template
+            </button>
+          )}
+        </div>
+      )}
+
+      {expanded && editing && (
+        <ChecklistTemplateEditor
+          template={template}
+          onSaved={(updated) => {
+            onChanged(updated);
+            setEditing(false);
+          }}
+          onCancel={() => setEditing(false)}
+        />
       )}
     </Card>
   );

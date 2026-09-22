@@ -25,7 +25,8 @@ reset_state() {
     -c "delete from employee_checklists;" \
     -c "delete from stored_files;" \
     -c "delete from login_attempts;" \
-    -c "delete from employees where \"externalId\" like 'demo:%';"
+    -c "delete from employees where \"externalId\" like 'demo:%';" \
+    -c "delete from checklist_templates where \"createdById\" is not null;"
 }
 
 # The scheduler suite builds its rotas in February 2027 so that clearing them

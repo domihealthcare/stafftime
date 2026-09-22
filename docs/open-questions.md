@@ -132,10 +132,9 @@ decision from the practice:
       asking for one.
 - [ ] **Notifications.** Nobody is told that a task is overdue, or that a new
       hire has something waiting. Same email decision as password reset and PTO.
-- [ ] **A template editor.** Templates are readable in the app and editable
-      through the API (`PATCH /api/checklists/templates/:id`), but there is no
-      screen for editing them yet. Worth building once the practice has settled
-      what the lists should say — editing a template is a rare act.
+- [x] ~~A template editor.~~ Built. An admin can add, reword, reorder and
+      remove tasks, set who each one is for and when it is due, create new
+      templates and retire old ones — all on the Checklists screen.
 - [ ] **Document storage at scale.** Bytes are in Postgres, which is right for
       tens of megabytes and wrong for gigabytes. If the practice starts
       attaching scans of everything, a blob store becomes worth the extra moving

@@ -137,7 +137,14 @@ The lists in there are a **starting point built from what a small New Jersey
 practice generally has to do**, not from how Domi actually does it. Go through
 them line by line.
 
-- **Tell us:** what is missing, what is wrong, and what we have invented.
+You do not have to just tell us — an admin can edit the lists directly.
+Open a template, press **Edit this template**, and you can reword a task,
+move it up or down, say who it is for, say when it is due, mark whether it
+needs a document, add tasks and remove them. Editing a template never touches
+a checklist already under way.
+
+- **Tell us:** what is missing, what is wrong, and what we have invented —
+  or just fix it in the app and tell us what you changed.
 - Note that documents are visible to an **admin and to the person they are
   about, and nobody else** — an I-9 has a social security number on it.
   Managers can see that a form was collected but cannot open it. If that is

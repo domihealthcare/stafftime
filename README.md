@@ -207,7 +207,7 @@ placeholders, so do not run it after setting real values.
 | **Sign in** | Email and password. A temporary password lands you on a forced change screen and nothing else |
 | **Time off** | Request time off and see your balance; managers approve or deny, and can file on someone's behalf. Admins set the practice's PTO rules here |
 | **Export** (manager) | Produce a timesheet spreadsheet for a period, choosing exactly which columns go in it. Settings can be saved as named reports and shared |
-| **Checklists** | Onboarding and offboarding. Managers start one, work through it and see what is overdue; an employee sees their own and the parts that are theirs to do. Documents attach to the task they belong to |
+| **Checklists** | Onboarding and offboarding. Managers start one, work through it and see what is overdue; an employee sees their own and the parts that are theirs to do. Documents attach to the task they belong to. Admins edit the templates here — add, reword, reorder and retire |
 | **Staff** (admin) | Add people, set their role and locations, issue a temporary password, mark someone as no longer employed |
 | **Kiosks** (admin) | Pair and revoke tablets, and set staff PINs |
 | **Locations** (admin) | Each office's coordinates, geofence radius and IP allow-list. Has a "use my current location" button, so you can set it standing at the desk |
