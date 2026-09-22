@@ -162,13 +162,16 @@ await step('the repeating-shifts form fits a phone', async () => {
 });
 await page.screenshot({ path: `${OUT}/53-phone-repeat.png`, fullPage: true });
 
-await step('an open checklist fits a phone, file picker and all', async () => {
+await step('an open checklist fits a phone', async () => {
   await page.getByRole('link', { name: /^Checklists/ }).first().click();
   await page.getByRole('button', { name: /onboarding/ }).first().click();
   await page.getByText('Form I-9 completed and verified').first().waitFor({ timeout: 15000 });
-  // The file picker on a task that needs a document is the widest control in
-  // the app, and the first thing to push a phone layout sideways.
-  await page.getByLabel(/Attach a document/).first().waitFor({ timeout: 10000 });
+  // A task row carries a title, a due date and two buttons on one line, which
+  // is the thing most likely to push a phone layout sideways.
+  await page
+    .getByRole('button', { name: 'Not applicable' })
+    .first()
+    .waitFor({ timeout: 10000 });
   await assertNoSidewaysScroll(page, 'Checklist detail');
 });
 await page.screenshot({ path: `${OUT}/54-phone-checklist.png`, fullPage: true });

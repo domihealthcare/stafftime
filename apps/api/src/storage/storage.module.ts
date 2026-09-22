@@ -5,7 +5,7 @@ import { DatabaseFileStorage } from './database-file.storage';
 import { FILE_STORAGE, FileStorage } from './file-storage';
 import { LocalDiskFileStorage } from './local-disk-file.storage';
 
-/// Which backend holds uploaded documents. Chosen once, here, so nothing else
+/// Which backend holds generated files. Chosen once, here, so nothing else
 /// in the app knows or cares.
 @Module({
   providers: [
@@ -17,11 +17,11 @@ import { LocalDiskFileStorage } from './local-disk-file.storage';
 
         if (backend === 'disk') {
           const dir = config.get<string>('FILE_STORAGE_DIR') ?? './var/uploads';
-          new Logger('StorageModule').log(`Document storage: local disk (${dir})`);
+          new Logger('StorageModule').log(`File storage: local disk (${dir})`);
           return new LocalDiskFileStorage(dir);
         }
 
-        new Logger('StorageModule').log('Document storage: database');
+        new Logger('StorageModule').log('File storage: database');
         return new DatabaseFileStorage(prisma);
       },
     },

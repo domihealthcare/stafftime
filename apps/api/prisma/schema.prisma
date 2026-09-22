@@ -198,15 +198,14 @@ model Employee {
   editedTimeEntries   TimeEntry[]    @relation("TimeEntryEditedBy")
   approvedTimeEntries TimeEntry[]    @relation("TimeEntryApprovedBy")
 
-  checklists                 EmployeeChecklist[]     @relation("EmployeeChecklistSubject")
-  createdChecklists          EmployeeChecklist[]     @relation("EmployeeChecklistCreatedBy")
-  createdChecklistTemplates  ChecklistTemplate[]     @relation("ChecklistTemplateCreatedBy")
-  completedChecklistTasks    EmployeeChecklistTask[] @relation("ChecklistTaskCompletedBy")
-  uploadedChecklistDocuments ChecklistDocument[]     @relation("ChecklistDocumentUploadedBy")
-  passwordResetTokens        PasswordResetToken[]    @relation("PasswordResetSubject")
-  payrollExports             PayrollExport[]         @relation("PayrollExportGeneratedBy")
-  credentials                EmployeeCredential[]    @relation("CredentialSubject")
-  recordedCredentials        EmployeeCredential[]    @relation("CredentialRecordedBy")
+  checklists                EmployeeChecklist[]     @relation("EmployeeChecklistSubject")
+  createdChecklists         EmployeeChecklist[]     @relation("EmployeeChecklistCreatedBy")
+  createdChecklistTemplates ChecklistTemplate[]     @relation("ChecklistTemplateCreatedBy")
+  completedChecklistTasks   EmployeeChecklistTask[] @relation("ChecklistTaskCompletedBy")
+  passwordResetTokens       PasswordResetToken[]    @relation("PasswordResetSubject")
+  payrollExports            PayrollExport[]         @relation("PayrollExportGeneratedBy")
+  credentials               EmployeeCredential[]    @relation("CredentialSubject")
+  recordedCredentials       EmployeeCredential[]    @relation("CredentialRecordedBy")
 
   @@index([employmentStatus])
   @@map("employees")
@@ -563,9 +562,6 @@ model ChecklistTemplateTask {
   description String?
   owner       TaskOwner @default(ADMIN)
 
-  /// Whether finishing this task needs a file attached (I-9, W-4, signed handbook).
-  requiresDocument Boolean @default(false)
-
   /// Due date relative to the anchor date of the instance — the hire date for
   /// onboarding, the last day for offboarding. Negative means before it.
   dueOffsetDays Int?
@@ -619,8 +615,7 @@ model EmployeeChecklistTask {
   description String?
   owner       TaskOwner @default(ADMIN)
 
-  requiresDocument Boolean   @default(false)
-  dueAt            DateTime? @db.Date
+  dueAt DateTime? @db.Date
 
   status ChecklistTaskStatus @default(PENDING)
   /// Why a task was marked not applicable, or any note left when completing it.
@@ -632,40 +627,12 @@ model EmployeeChecklistTask {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  checklist   EmployeeChecklist   @relation(fields: [checklistId], references: [id], onDelete: Cascade)
-  completedBy Employee?           @relation("ChecklistTaskCompletedBy", fields: [completedById], references: [id], onDelete: SetNull)
-  documents   ChecklistDocument[]
+  checklist   EmployeeChecklist @relation(fields: [checklistId], references: [id], onDelete: Cascade)
+  completedBy Employee?         @relation("ChecklistTaskCompletedBy", fields: [completedById], references: [id], onDelete: SetNull)
 
   @@index([checklistId, position])
   @@index([status, dueAt])
   @@map("employee_checklist_tasks")
-}
-
-/// A file attached to a checklist task. These hold the most sensitive data in
-/// the app — an I-9 or W-4 carries a social security number — so the bytes live
-/// behind the storage adapter under an unguessable key and are only ever served
-/// through an authorised download route, never from a public URL.
-model ChecklistDocument {
-  id     String @id @default(uuid()) @db.Uuid
-  taskId String @db.Uuid
-
-  /// Name as uploaded, shown in the UI. Never used as a path.
-  filename    String
-  contentType String
-  sizeBytes   Int
-  /// Opaque key the storage adapter resolves. Unguessable by construction.
-  storageKey  String @unique
-  /// SHA-256 of the bytes, so a re-upload can be recognised and a download verified.
-  checksum    String
-
-  uploadedById String?  @db.Uuid
-  uploadedAt   DateTime @default(now())
-
-  task       EmployeeChecklistTask @relation(fields: [taskId], references: [id], onDelete: Cascade)
-  uploadedBy Employee?             @relation("ChecklistDocumentUploadedBy", fields: [uploadedById], references: [id], onDelete: SetNull)
-
-  @@index([taskId])
-  @@map("checklist_documents")
 }
 
 // ---------------------------------------------------------------------------
@@ -779,8 +746,8 @@ model PayrollExport {
   sizeBytes   Int
   /// SHA-256 of the bytes, so "is this the file we sent?" has an answer.
   checksum    String
-  /// The bytes, through the same storage adapter as checklist documents. Null
-  /// once a retention sweep has removed them, leaving the record behind.
+  /// The bytes, through the storage adapter. Null once a retention sweep has
+  /// removed them, leaving the record behind.
   storageKey  String?
 
   /// What it contained, so the numbers can be checked without opening the file.
@@ -842,6 +809,11 @@ enum CredentialKind {
 
 /// Something with an expiry date that somebody has to renew.
 ///
+/// Dates only, on purpose. This is a timekeeping app: it records *that* a
+/// licence runs out on the 13th so the practice can be chased about it, and
+/// deliberately does not hold the licence number or a scan of the document.
+/// Those belong in the personnel file, wherever the practice keeps it.
+///
 /// Its own record rather than a field on a checklist document, because a
 /// credential outlives the checklist it was first collected on: a licence
 /// renews every couple of years, long after onboarding is finished, and the
@@ -857,23 +829,11 @@ model EmployeeCredential {
   name       String
   /// Who issued it. Optional — not every credential has a meaningful issuer.
   issuer     String?
-  /// The licence or certificate number. Not a secret, but not something to put
-  /// on a screen anybody can reach either; see the service for who may read it.
-  reference  String?
-
-  issuedOn  DateTime? @db.Date
+  issuedOn   DateTime?      @db.Date
   /// The whole point of the record. Whole days, like every other date here.
-  expiresOn DateTime  @db.Date
+  expiresOn  DateTime       @db.Date
 
   notes String?
-
-  /// The scan, through the same storage adapter as checklist documents. Null
-  /// when only the dates have been recorded.
-  filename    String?
-  contentType String?
-  sizeBytes   Int?
-  storageKey  String? @unique
-  checksum    String?
 
   /// Superseded by a renewal, or no longer relevant. Kept for the history.
   archivedAt DateTime?

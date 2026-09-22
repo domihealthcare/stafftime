@@ -340,7 +340,7 @@ function ChecklistCard({
               {confirming ? (
                 <div className="flex flex-wrap items-center gap-2 text-sm">
                   <span className="text-rose-800">
-                    Delete this checklist and every document attached to it?
+                    Delete this checklist and the record of what was done?
                   </span>
                   <button
                     type="button"
@@ -558,7 +558,6 @@ function TemplateCard({
   const [expanded, setExpanded] = useState(false);
   const [editing, setEditing] = useState(false);
   const [confirmingArchive, setConfirmingArchive] = useState(false);
-  const needingDocuments = template.tasks.filter((task) => task.requiresDocument).length;
 
   return (
     <Card>
@@ -578,7 +577,6 @@ function TemplateCard({
           </div>
           <p className="mt-1 text-xs text-slate-500">
             {template.tasks.length} {template.tasks.length === 1 ? 'task' : 'tasks'}
-            {needingDocuments > 0 && `, ${needingDocuments} needing a document`}
           </p>
         </div>
         <span aria-hidden className="text-slate-400">
@@ -592,7 +590,6 @@ function TemplateCard({
             <li key={task.id} className="px-4 py-2 text-sm">
               <div className="flex flex-wrap items-center gap-2">
                 <span className="text-slate-900">{task.title}</span>
-                {task.requiresDocument && <Badge tone="warning">document</Badge>}
                 <span className="text-xs text-slate-500">{describeDue(task.dueOffsetDays)}</span>
               </div>
               {task.description && (

@@ -18,7 +18,6 @@ interface DraftTask {
   title: string;
   description: string;
   owner: TaskOwner;
-  requiresDocument: boolean;
   due: 'none' | 'on-the-day' | 'before' | 'after';
   dueDays: number;
 }
@@ -38,7 +37,6 @@ function toDraft(task: ChecklistTemplate['tasks'][number]): DraftTask {
     title: task.title,
     description: task.description ?? '',
     owner: task.owner,
-    requiresDocument: task.requiresDocument,
     due:
       task.dueOffsetDays === null
         ? 'none'
@@ -65,7 +63,6 @@ function toInput(task: DraftTask): TemplateTaskInput {
     title: task.title.trim(),
     description: task.description.trim() || undefined,
     owner: task.owner,
-    requiresDocument: task.requiresDocument,
     dueOffsetDays: offset,
   };
 }
@@ -75,7 +72,6 @@ const blankTask = (): DraftTask => ({
   title: '',
   description: '',
   owner: 'ADMIN',
-  requiresDocument: false,
   due: 'none',
   dueDays: 0,
 });
@@ -274,16 +270,6 @@ export function ChecklistTemplateEditor({
                     </label>
                   )}
 
-                  <label className="flex items-center gap-1 text-slate-600">
-                    <input
-                      type="checkbox"
-                      checked={task.requiresDocument}
-                      onChange={(event) =>
-                        update(task.key, { requiresDocument: event.target.checked })
-                      }
-                    />
-                    needs a document
-                  </label>
                 </div>
               </div>
 

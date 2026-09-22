@@ -1,11 +1,11 @@
 import { MaintenanceService } from './maintenance.service';
 
 describe('MaintenanceService', () => {
-  function build(options: { documents?: { storageKey: string }[] } = {}) {
+  function build(options: { exports?: { storageKey: string }[] } = {}) {
     const prisma = {
       kioskDevice: { updateMany: jest.fn().mockResolvedValue({ count: 2 }) },
-      checklistDocument: {
-        findMany: jest.fn().mockResolvedValue(options.documents ?? []),
+      payrollExport: {
+        findMany: jest.fn().mockResolvedValue(options.exports ?? []),
       },
       storedFile: { deleteMany: jest.fn().mockResolvedValue({ count: 1 }) },
     };
@@ -52,9 +52,13 @@ describe('MaintenanceService', () => {
     expect(call.data).toEqual({ pairingCodeHash: null, pairingExpiresAt: null });
   });
 
-  it('leaves bytes that a document still points at', async () => {
+  it('leaves bytes that an export record still points at', async () => {
+    // The files this sweeps are payroll exports, kept so a run can be
+    // re-downloaded exactly as it went out. Deleting one an hour after it was
+    // generated would be silent data loss, so the keep-list is the thing to
+    // get right.
     const { service, prisma } = build({
-      documents: [{ storageKey: 'a' }, { storageKey: 'b' }],
+      exports: [{ storageKey: 'a' }, { storageKey: 'b' }],
     });
     await service.purge();
 
@@ -62,10 +66,19 @@ describe('MaintenanceService', () => {
     expect(where.storageKey).toEqual({ notIn: ['a', 'b'] });
   });
 
+  it('only asks for exports that still have their bytes', async () => {
+    const { service, prisma } = build();
+    await service.purge();
+
+    expect(prisma.payrollExport.findMany).toHaveBeenCalledWith(
+      expect.objectContaining({ where: { storageKey: { not: null } } }),
+    );
+  });
+
   it('does not build an empty notIn when nothing is referenced', async () => {
     // `notIn: []` matches nothing in some engines and everything in others.
     // Leaving the clause out entirely is unambiguous.
-    const { service, prisma } = build({ documents: [] });
+    const { service, prisma } = build({ exports: [] });
     await service.purge();
 
     const where = prisma.storedFile.deleteMany.mock.calls[0][0].where;

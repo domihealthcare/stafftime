@@ -28,18 +28,30 @@ Phase 1, backend and web app:
 - PTO requests with manager approval, balances and a practice-set policy
 - Calendar syncing — each employee gets a private subscription URL for Google
   Calendar, Apple Calendar or Outlook
-- Licence and certification tracking, with expiry dates and scans
+- Licence and certification tracking by expiry date, so nothing lapses unnoticed
 - Self-service password reset, emails when time off is asked for or decided, and
   a nightly digest of what needs a look — lapsed licences, overdue checklist
   tasks, missing punches, undecided time off (needs an email provider
   configured — see [DEPLOY.md](./DEPLOY.md))
-- Onboarding and offboarding checklists — editable templates, a per-person
-  instance, and documents (I-9, W-4, signed handbook) attached to the task they
-  belong to
+- Onboarding and offboarding checklists — editable templates and a per-person
+  instance, tracking what has been done and by whom
 - Admin screens for locations (geofence, IPs) and kiosks
 
 Not built yet: the ADP TotalSource export (waiting on ADP's pay codes and
 client code) and badge-tap clock-in.
+
+## What it deliberately does not hold
+
+No social security numbers, no licence numbers, no scans of anything, and no
+personnel documents — no I-9, no W-4, no signed handbook on file here. This is a
+timekeeping app: it records that somebody worked, and that a licence runs out on
+the 13th so it can be chased. The paperwork lives in the personnel file, where
+it already is and already belongs.
+
+Nothing is uploaded to this app at all. The only files it stores are the payroll
+exports it generates itself. There is a test that reads the database schema and
+fails if any of this creeps back in — see *What a checklist does not hold* in
+[docs/architecture.md](./docs/architecture.md).
 
 **Deploying it:** see [DEPLOY.md](./DEPLOY.md).
 
@@ -207,14 +219,11 @@ placeholders, so do not run it after setting real values.
 | `GET` | `/api/checklists/templates` | manager — read; `POST`/`PATCH`/`DELETE` are admin |
 | `GET` | `/api/checklists` | own checklists; managers see everyone's |
 | `POST` | `/api/checklists` | manager — start one for somebody |
-| `DELETE` | `/api/checklists/:id` | admin — takes its documents with it |
+| `DELETE` | `/api/checklists/:id` | admin |
 | `PATCH` | `/api/checklists/tasks/:id` | manager, or the employee for their own tasks |
-| `POST` | `/api/checklists/tasks/:id/documents` | admin, or the employee for their own tasks |
-| `GET`/`DELETE` | `/api/checklists/documents/:id` | admin, or the person it is about |
 | `GET` | `/api/credentials` | own credentials; managers see everyone's |
 | `GET` | `/api/credentials/expiring` | manager — what lapses next |
 | `POST`/`PATCH` | `/api/credentials` | manager |
-| `POST`/`GET` | `/api/credentials/:id/scan` | upload: manager; the file: admin, or the person it belongs to |
 | `GET` | `/api/maintenance/purge` | the scheduled housekeeping job, with `CRON_SECRET` |
 | `POST` | `/api/time-entries/clock-in` | anyone |
 | `POST` | `/api/time-entries/clock-out` | anyone |
@@ -234,8 +243,8 @@ placeholders, so do not run it after setting real values.
 | **Sign in** | Email and password. A temporary password lands you on a forced change screen and nothing else |
 | **Time off** | Request time off and see your balance; managers approve or deny, and can file on someone's behalf. Admins set the practice's PTO rules here |
 | **Export** (manager) | Produce a timesheet spreadsheet for a period, choosing exactly which columns go in it. Settings can be saved as named reports and shared. Every run is listed below with its file, and the screen warns about hours corrected since they were last sent |
-| **Licences** | Licences, certifications and anything else with a renewal date. Opens on what is about to lapse. Managers see what is current; the number and the scan are for an admin, or the person they belong to |
-| **Checklists** | Onboarding and offboarding. Managers start one, work through it and see what is overdue; an employee sees their own and the parts that are theirs to do. Documents attach to the task they belong to. Admins edit the templates here — add, reword, reorder and retire |
+| **Licences** | Licences, certifications and anything else with a renewal date. Opens on what is about to lapse. Dates only — the licence number and the document itself stay in the personnel file |
+| **Checklists** | Onboarding and offboarding. Managers start one, work through it and see what is overdue; an employee sees their own and the parts that are theirs to do. Admins edit the templates here — add, reword, reorder and retire |
 | **Staff** (admin) | Add people, set their role and locations, issue a temporary password, mark someone as no longer employed |
 | **Kiosks** (admin) | Pair and revoke tablets, and set staff PINs |
 | **Locations** (admin) | Each office's coordinates, geofence radius and IP allow-list. Has a "use my current location" button, so you can set it standing at the desk |

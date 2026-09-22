@@ -36,10 +36,38 @@ records without a messy migration.
   missing punch)
 - **PTORequest** — employee, type, date range, status, approver, notes
 - **OnboardingChecklist** / **OffboardingChecklist** — reusable templates plus a
-  per-employee instance with task status and document uploads (I-9, W-4, handbook
-  signoff, equipment return, access revocation, etc.)
+  per-employee instance with task status (I-9 verified, W-4 collected, handbook
+  signoff, equipment return, access revocation, etc.). Tasks record **that** a
+  step was done and by whom — see *Data this app does not hold*, below
+- **EmployeeCredential** — licences and certifications, tracked by expiry date so
+  nothing lapses unnoticed. Dates only
 - **PayrollExport** — export batch record: date range, target system, status,
   generated file reference (for audit trail / re-export)
+
+## Data this app does not hold
+Decided in September 2026, after the checklists were built with document upload
+and it was taken back out.
+
+This is a timekeeping app, not a payroll or HR system. It deliberately stores:
+- **no social security numbers**, and no identity numbers of any kind
+- **no personnel documents** — no I-9, no W-4, no signed handbook, no licence
+  scans. The checklist records that the step was done; the paperwork stays in the
+  personnel file, where the practice already keeps it and already controls it
+- **no licence numbers** — the credential screen holds the expiry date, which is
+  the thing a manager actually needs to act on
+
+Nothing is uploaded to the app at all. The only files it stores are the payroll
+export spreadsheets it generates itself.
+
+The reasoning: this is the app people open on their phones and on a shared
+front-desk tablet. Putting the practice's most sensitive records behind that is
+a large risk for no benefit — none of it was needed to answer "who was here, for
+how long, and is the new hire set up yet".
+
+Two guards keep it that way, because the easy way to undo it is one harmless-
+looking column: `apps/api/src/common/no-sensitive-data.spec.ts` reads the schema
+and fails if such a field reappears, and the browser suites assert there is no
+file input anywhere.
 
 ## Clock-in methods (all three, from day one)
 1. **Web / mobile browser** — browser geolocation API checks the employee is within
@@ -79,7 +107,8 @@ Build this as an **adapter/plugin pattern**, not a hardcoded ADP integration:
    mobile + kiosk) with location verification, timesheet view, manager shift
    scheduler, ADP export.
 2. **Phase 2:** PTO requests + manager approval workflow.
-3. **Phase 3:** onboarding/offboarding checklists with document upload.
+3. **Phase 3:** onboarding/offboarding checklists (task tracking only — no
+   document upload; see *Data this app does not hold*).
 
 ## Ways of working
 - Confirm scope and data accuracy before drafting deliverables — don't build ahead

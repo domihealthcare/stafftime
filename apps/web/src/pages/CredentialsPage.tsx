@@ -202,20 +202,6 @@ function CredentialCard({
     credential.employee.preferredName ??
     `${credential.employee.firstName} ${credential.employee.lastName}`;
 
-  async function saveScan() {
-    try {
-      const { blob, filename } = await api.downloadCredentialScan(credential.id);
-      const url = URL.createObjectURL(blob);
-      const link = document.createElement('a');
-      link.href = url;
-      link.download = filename;
-      link.click();
-      URL.revokeObjectURL(url);
-    } catch (cause) {
-      onError(cause instanceof ApiError ? cause.message : 'Could not open that scan.');
-    }
-  }
-
   return (
     <Card className="p-3">
       <div className="flex flex-wrap items-start justify-between gap-3">
@@ -229,7 +215,6 @@ function CredentialCard({
           <p className="mt-0.5 text-xs text-slate-500">
             Expires {formatCalendarDate(credential.expiresOn)}
             {credential.issuer && ` · ${credential.issuer}`}
-            {credential.reference && ` · ${credential.reference}`}
           </p>
           {credential.notes && (
             <p className="mt-0.5 text-xs text-slate-600">{credential.notes}</p>
@@ -237,15 +222,6 @@ function CredentialCard({
         </div>
 
         <div className="flex shrink-0 flex-wrap items-center gap-3">
-          {credential.hasScan && (
-            <button
-              type="button"
-              onClick={() => void saveScan()}
-              className="text-xs font-medium text-brand-700 underline hover:text-brand-900"
-            >
-              {credential.filename}
-            </button>
-          )}
           {canEdit && (
             <button
               type="button"
@@ -320,8 +296,8 @@ function ExpiryBadge({ credential }: { credential: Credential }) {
   return <Badge tone="success">current</Badge>;
 }
 
-/// Renewing is the common act: the same credential, a new date, usually a new
-/// scan. It is a small form rather than a trip through the full editor.
+/// Renewing is the common act: the same credential, a new date. It is a small
+/// form rather than a trip through the full editor.
 function RenewalForm({
   credential,
   onSaved,
@@ -332,14 +308,12 @@ function RenewalForm({
   onError: (message: string) => void;
 }) {
   const [expiresOn, setExpiresOn] = useState(credential.expiresOn.slice(0, 10));
-  const [file, setFile] = useState<File | null>(null);
   const [busy, setBusy] = useState(false);
 
   async function save() {
     setBusy(true);
     try {
       await api.updateCredential(credential.id, { expiresOn });
-      if (file) await api.uploadCredentialScan(credential.id, file);
       onSaved();
     } catch (cause) {
       onError(cause instanceof ApiError ? cause.message : 'Could not save that.');
@@ -358,18 +332,6 @@ function RenewalForm({
           value={expiresOn}
           onChange={(event) => setExpiresOn(event.target.value)}
           className="rounded-lg border border-slate-300 px-2 py-1.5"
-        />
-      </label>
-      <label className="text-sm">
-        <span className="mb-1 block font-medium text-slate-700">
-          New scan <span className="font-normal text-slate-400">(optional)</span>
-        </span>
-        <input
-          aria-label="New scan"
-          type="file"
-          accept="application/pdf,image/png,image/jpeg"
-          onChange={(event) => setFile(event.target.files?.[0] ?? null)}
-          className="max-w-full text-xs text-slate-600"
         />
       </label>
       <button
@@ -397,9 +359,7 @@ function CredentialForm({
   const [kind, setKind] = useState<CredentialKind>('LICENSE');
   const [name, setName] = useState('');
   const [issuer, setIssuer] = useState('');
-  const [reference, setReference] = useState('');
   const [expiresOn, setExpiresOn] = useState('');
-  const [file, setFile] = useState<File | null>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -407,15 +367,13 @@ function CredentialForm({
     setBusy(true);
     setError(null);
     try {
-      const created = await api.createCredential({
+      await api.createCredential({
         employeeId,
         kind,
         name: name.trim(),
         issuer: issuer.trim() || undefined,
-        reference: reference.trim() || undefined,
         expiresOn,
       });
-      if (file) await api.uploadCredentialScan(created.id, file);
       onSaved();
     } catch (cause) {
       setError(cause instanceof ApiError ? cause.message : 'Could not save that.');
@@ -493,36 +451,12 @@ function CredentialForm({
             className="w-full rounded-lg border border-slate-300 px-2 py-1.5"
           />
         </label>
-
-        <label className="text-sm">
-          <span className="mb-1 block font-medium text-slate-700">
-            Number <span className="font-normal text-slate-400">(optional)</span>
-          </span>
-          <input
-            aria-label="Number"
-            value={reference}
-            onChange={(event) => setReference(event.target.value)}
-            className="w-full rounded-lg border border-slate-300 px-2 py-1.5"
-          />
-        </label>
       </div>
 
-      <label className="mt-3 block text-sm">
-        <span className="mb-1 block font-medium text-slate-700">
-          A scan <span className="font-normal text-slate-400">(optional)</span>
-        </span>
-        <input
-          aria-label="A scan"
-          type="file"
-          accept="application/pdf,image/png,image/jpeg"
-          onChange={(event) => setFile(event.target.files?.[0] ?? null)}
-          className="max-w-full text-xs text-slate-600"
-        />
-        <span className="mt-1 block text-xs text-slate-500">
-          Only an admin, and the person it belongs to, can open it — a licence document
-          carries more than a date.
-        </span>
-      </label>
+      <p className="mt-3 text-xs text-slate-500">
+        Dates only. The licence number and the document itself belong in the personnel
+        file — this screen exists so nothing lapses unnoticed, not to hold the paperwork.
+      </p>
 
       {error && (
         <div className="mt-3">

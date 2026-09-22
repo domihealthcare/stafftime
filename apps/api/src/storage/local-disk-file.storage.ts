@@ -9,7 +9,7 @@ import { isValidStorageKey, newStorageKey } from './storage-key';
 ///
 /// The second implementation exists to prove the seam is real, and it is
 /// genuinely useful for local work: you can open the folder and look at what
-/// was uploaded. It is **not** suitable for the Vercel deployment, where the
+/// was written. It is **not** suitable for the Vercel deployment, where the
 /// filesystem is ephemeral and every serverless instance has its own — a file
 /// written by one request would be missing from the next.
 @Injectable()

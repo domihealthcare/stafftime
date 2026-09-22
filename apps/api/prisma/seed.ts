@@ -242,27 +242,29 @@ main()
 /// care practice actually has to get through, in roughly the order they happen,
 /// so the practice can edit a real list rather than build one from nothing.
 ///
+/// Several of these produce a document — an I-9, a W-4, a signed handbook. This
+/// app tracks whether the task was done and by whom; the paperwork itself lives
+/// in the personnel file, wherever the practice keeps it. A timekeeping app is
+/// not the right place for a social security number.
+///
 /// `dueOffsetDays` is relative to the hire date (onboarding) or the last day
 /// (offboarding) — negative means before it.
 const ONBOARDING_TASKS: TemplateTaskSeed[] = [
   {
     title: 'Signed offer letter on file',
     owner: TaskOwner.ADMIN,
-    requiresDocument: true,
     dueOffsetDays: -7,
   },
   {
     title: 'Form I-9 completed and verified',
     description:
-      'Section 1 by the employee on or before day one; Section 2 by the practice within three business days of the start date. Keep a copy of the documents presented.',
+      'Section 1 by the employee on or before day one; Section 2 by the practice within three business days of the start date. The form and the documents presented go in the personnel file, not here.',
     owner: TaskOwner.ADMIN,
-    requiresDocument: true,
     dueOffsetDays: 3,
   },
   {
     title: 'Form W-4 and NJ-W4 completed',
     owner: TaskOwner.ADMIN,
-    requiresDocument: true,
     dueOffsetDays: 1,
   },
   {
@@ -281,27 +283,25 @@ const ONBOARDING_TASKS: TemplateTaskSeed[] = [
     description:
       'Includes the clock-in policy and the location-tracking disclosure for browser clock-ins.',
     owner: TaskOwner.EMPLOYEE,
-    requiresDocument: true,
     dueOffsetDays: 5,
   },
   {
     title: 'HIPAA privacy and security training completed',
     owner: TaskOwner.EMPLOYEE,
-    requiresDocument: true,
     dueOffsetDays: 14,
   },
   {
     title: 'Professional licence or certification verified',
-    description: 'Where the role has one. Note the expiry date so it can be re-checked.',
+    description:
+      'Where the role has one. Record the expiry date on the Credentials screen so it gets chased before it lapses.',
     owner: TaskOwner.ADMIN,
-    requiresDocument: true,
     dueOffsetDays: 0,
   },
   {
-    title: 'CPR / BLS card on file',
-    description: 'Clinical staff. Mark not applicable for non-clinical roles.',
+    title: 'CPR / BLS card seen and recorded',
+    description:
+      'Clinical staff. Add the expiry date on the Credentials screen. Mark not applicable for non-clinical roles.',
     owner: TaskOwner.ADMIN,
-    requiresDocument: true,
     dueOffsetDays: 14,
   },
   {
@@ -356,7 +356,6 @@ const OFFBOARDING_TASKS: TemplateTaskSeed[] = [
   {
     title: 'Resignation letter or termination notice on file',
     owner: TaskOwner.ADMIN,
-    requiresDocument: true,
     dueOffsetDays: -14,
   },
   {
@@ -406,7 +405,6 @@ const OFFBOARDING_TASKS: TemplateTaskSeed[] = [
   {
     title: 'Laptop, phone and any other equipment returned',
     owner: TaskOwner.MANAGER,
-    requiresDocument: true,
     dueOffsetDays: 0,
   },
   {
@@ -455,7 +453,6 @@ interface TemplateTaskSeed {
   title: string;
   description?: string;
   owner: TaskOwner;
-  requiresDocument?: boolean;
   dueOffsetDays?: number;
 }
 
@@ -521,7 +518,6 @@ function toTaskRow(task: TemplateTaskSeed, index: number) {
     title: task.title,
     description: task.description,
     owner: task.owner,
-    requiresDocument: task.requiresDocument ?? false,
     dueOffsetDays: task.dueOffsetDays,
   };
 }

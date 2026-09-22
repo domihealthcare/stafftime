@@ -220,7 +220,6 @@ export interface ChecklistTemplateTask {
   title: string;
   description: string | null;
   owner: TaskOwner;
-  requiresDocument: boolean;
   dueOffsetDays: number | null;
 }
 
@@ -234,17 +233,6 @@ export interface ChecklistTemplate {
   tasks: ChecklistTemplateTask[];
 }
 
-/// What the screens are told about a document. Never the bytes — those come
-/// from the download route, one file at a time.
-export interface ChecklistDocument {
-  id: string;
-  filename: string;
-  contentType: string;
-  sizeBytes: number;
-  uploadedAt: string;
-  uploadedBy: { id: string; firstName: string; lastName: string } | null;
-}
-
 export interface ChecklistTask {
   id: string;
   checklistId: string;
@@ -252,13 +240,11 @@ export interface ChecklistTask {
   title: string;
   description: string | null;
   owner: TaskOwner;
-  requiresDocument: boolean;
   dueAt: string | null;
   status: ChecklistTaskStatus;
   note: string | null;
   completedAt: string | null;
   completedBy: { id: string; firstName: string; lastName: string } | null;
-  documents: ChecklistDocument[];
 }
 
 export interface Checklist {
@@ -289,7 +275,6 @@ export interface TemplateTaskInput {
   title: string;
   description?: string;
   owner?: TaskOwner;
-  requiresDocument?: boolean;
   dueOffsetDays?: number;
 }
 
@@ -356,15 +341,10 @@ export interface Credential {
   kind: CredentialKind;
   name: string;
   issuer: string | null;
-  /// Null for anyone but an admin or the person it belongs to.
-  reference: string | null;
   issuedOn: string | null;
   expiresOn: string;
   notes: string | null;
-  filename: string | null;
-  sizeBytes: number | null;
   archivedAt: string | null;
-  hasScan: boolean;
   /// Negative once it has lapsed; zero on the day it runs out, which still
   /// counts as valid.
   daysUntilExpiry: number;

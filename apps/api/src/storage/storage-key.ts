@@ -4,7 +4,7 @@ import { randomBytes } from 'node:crypto';
 /// so a filesystem backend never accumulates a single directory with tens of
 /// thousands of entries in it.
 ///
-/// Nothing from the uploaded filename goes in. A key built from a filename is
+/// Nothing from the stored file's name goes in. A key built from a filename is
 /// how you end up serving `../../.env`, and it would also leak the contents of
 /// the file to anyone who saw the key ("i9-signed-dominguez.pdf").
 const KEY_PATTERN = /^\d{4}\/\d{2}\/[0-9a-f]{32}$/;

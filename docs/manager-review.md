@@ -135,8 +135,14 @@ those dates before you decide.
 
 ### 6. Onboarding and offboarding (**Checklists**)
 
-A list per new hire and per leaver, with the paperwork attached to the step it
-belongs to — I-9, W-4, signed handbook, equipment back, access revoked.
+A list per new hire and per leaver — I-9 done, W-4 done, handbook signed,
+equipment back, access revoked — tracking who did each step and when.
+
+**The paperwork itself does not go in here.** No forms, no scans, nothing with a
+social security number on it. The app records that the I-9 was verified and by
+whom; the form stays in the personnel file where you keep it now. That is on
+purpose: this is the app people open on their phones and on the front-desk
+tablet, and it is the wrong place for the practice's most sensitive records.
 
 The lists in there are a **starting point built from what a small New Jersey
 practice generally has to do**, not from how Domi actually does it. Go through
@@ -144,17 +150,13 @@ them line by line.
 
 You do not have to just tell us — an admin can edit the lists directly.
 Open a template, press **Edit this template**, and you can reword a task,
-move it up or down, say who it is for, say when it is due, mark whether it
-needs a document, add tasks and remove them. Editing a template never touches
-a checklist already under way.
+move it up or down, say who it is for, say when it is due, add tasks and remove
+them. Editing a template never touches a checklist already under way.
 
 - **Tell us:** what is missing, what is wrong, and what we have invented —
   or just fix it in the app and tell us what you changed.
-- Note that documents are visible to an **admin and to the person they are
-  about, and nobody else** — an I-9 has a social security number on it.
-  Managers can see that a form was collected but cannot open it. If that is
-  wrong for how the practice works, say so: the fix is giving the right person
-  the admin role.
+- **Tell us:** does keeping the paperwork out of here cause you a problem in
+  practice? If a step only makes sense with the form to hand, say which one.
 
 ### 7. Licences and certifications (**Licences**)
 
@@ -162,9 +164,11 @@ Anything with a renewal date — a state licence, a BLS card, a DEA registration
 The screen opens on what lapses in the next 60 days, with anything already
 expired at the top in red.
 
-Record one against a person, put the expiry date on it, and optionally attach a
-scan. When it renews, press **Renew**, put the new date in, and attach the new
-scan — you do not fill the whole form again.
+Record one against a person and put the expiry date on it. When it renews, press
+**Renew** and put the new date in — you do not fill the whole form again.
+
+**Dates only**, deliberately: no licence numbers and no scans. What this screen
+is for is the 13th of March turning up early enough to chase.
 
 You will also get an email about anything lapsing, as part of the nightly
 round-up (see the note about email below).
@@ -172,9 +176,6 @@ round-up (see the note about email below).
 - **Tell us:** is 60 days the right amount of warning?
 - **Tell us:** should a lapsed licence actually stop somebody being put on the
   rota, or is telling you enough? Today it tells you.
-- Note the number and the scan are visible to an **admin and the person they
-  belong to** only. A manager sees that a licence is current, which is what
-  running a rota needs.
 
 ### 8. The payroll spreadsheet (**Export**)
 
@@ -238,7 +239,7 @@ Worth knowing so you do not report these as faults:
   stops working immediately.
 - **Anything you type in here is throwaway.** It is a test copy and the data may
   be wiped without warning. Do not put anything real in it — not a real
-  employee's address, not a real I-9.
+  employee's address, not a real licence number.
 
 ---
 

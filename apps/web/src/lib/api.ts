@@ -4,7 +4,6 @@ import type {
   CredentialKind,
   PayrollExportRecord,
   PayrollTarget,
-  ChecklistDocument,
   ChecklistKind,
   ChecklistTaskStatus,
   ChecklistTemplate,
@@ -72,36 +71,9 @@ async function request<T>(path: string, init: RequestInit = {}): Promise<T> {
 }
 
 /**
- * A multipart upload. Deliberately does not go through `request`: setting
- * Content-Type by hand would omit the boundary the browser generates, and the
- * server would see one unparseable blob instead of a file.
- */
-async function upload<T>(path: string, file: File): Promise<T> {
-  const form = new FormData();
-  form.append('file', file);
-
-  let response: Response;
-  try {
-    response = await fetch(`/api${path}`, {
-      method: 'POST',
-      credentials: 'include',
-      body: form,
-    });
-  } catch {
-    throw new ApiError(0, 'Could not reach the server. Check your connection and try again.');
-  }
-
-  const body = await response.json().catch(() => null);
-  if (!response.ok) {
-    throw new ApiError(response.status, extractMessage(body, response.status), extractCode(body));
-  }
-  return body as T;
-}
-
-/**
  * Fetches a file and hands back a blob. There is no URL a browser could open
- * directly — every document goes through an authorised route — so a download
- * has to be fetched and then handed to the browser.
+ * directly — the payroll export files go through an authorised route — so a
+ * download has to be fetched and then handed to the browser.
  */
 async function download(path: string): Promise<{ blob: Blob; filename: string }> {
   let response: Response;
@@ -595,21 +567,12 @@ export const api = {
     anchorDate?: string;
   }) => request<Checklist>('/checklists', { method: 'POST', body: JSON.stringify(body) }),
   deleteChecklist: (id: string) =>
-    request<{ deleted: boolean; documentsDeleted: number }>(`/checklists/${id}`, {
-      method: 'DELETE',
-    }),
+    request<{ deleted: boolean }>(`/checklists/${id}`, { method: 'DELETE' }),
   updateChecklistTask: (taskId: string, status: ChecklistTaskStatus, note?: string) =>
     request<Checklist>(`/checklists/tasks/${taskId}`, {
       method: 'PATCH',
       body: JSON.stringify({ status, note }),
     }),
-
-  uploadChecklistDocument: (taskId: string, file: File) =>
-    upload<ChecklistDocument>(`/checklists/tasks/${taskId}/documents`, file),
-  downloadChecklistDocument: (documentId: string) =>
-    download(`/checklists/documents/${documentId}`),
-  deleteChecklistDocument: (documentId: string) =>
-    request<{ deleted: boolean }>(`/checklists/documents/${documentId}`, { method: 'DELETE' }),
 
   listCredentials: (params: Record<string, string | undefined> = {}) =>
     request<Credential[]>(`/credentials${toQuery(params)}`),
@@ -618,7 +581,6 @@ export const api = {
     kind: CredentialKind;
     name: string;
     issuer?: string;
-    reference?: string;
     issuedOn?: string;
     expiresOn: string;
     notes?: string;
@@ -629,7 +591,6 @@ export const api = {
       kind: CredentialKind;
       name: string;
       issuer: string;
-      reference: string;
       issuedOn: string;
       expiresOn: string;
       notes: string;
@@ -639,9 +600,6 @@ export const api = {
     request<Credential>(`/credentials/${id}/archive`, { method: 'POST' }),
   deleteCredential: (id: string) =>
     request<{ deleted: boolean }>(`/credentials/${id}`, { method: 'DELETE' }),
-  uploadCredentialScan: (id: string, file: File) =>
-    upload<Credential>(`/credentials/${id}/scan`, file),
-  downloadCredentialScan: (id: string) => download(`/credentials/${id}/scan`),
 
   checklistTemplates: (kind?: ChecklistKind) =>
     request<ChecklistTemplate[]>(`/checklists/templates${toQuery({ kind })}`),

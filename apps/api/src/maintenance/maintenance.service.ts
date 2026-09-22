@@ -96,19 +96,24 @@ export class MaintenanceService {
   /**
    * Bytes nothing points at any more.
    *
-   * The database storage backend has no foreign key back to the documents that
-   * reference it — on purpose, so it stays a storage backend — and deleting a
-   * document removes the metadata row before the bytes. That order is right
-   * (the other way round leaves a download that 404s) but it means a failure
-   * between the two steps leaves bytes behind. This is the sweep for them.
+   * Payroll export files are the only thing this app stores bytes for. The
+   * storage backend has no foreign key back to the records that reference it —
+   * on purpose, so it stays a storage backend — and voiding an export clears
+   * the metadata's pointer before the bytes go. That order is right (the other
+   * way round leaves a download that 404s) but a failure between the two steps
+   * leaves bytes behind. This is the sweep for them.
+   *
+   * The list of keys to keep must cover every kind of record that stores bytes.
+   * Miss one and this quietly deletes live files an hour after they are written.
    */
   private async deleteOrphanedFiles(): Promise<number> {
     const before = new Date(Date.now() - ORPHAN_GRACE_MINUTES * 60_000);
 
-    const referenced = await this.prisma.checklistDocument.findMany({
+    const referenced = await this.prisma.payrollExport.findMany({
+      where: { storageKey: { not: null } },
       select: { storageKey: true },
     });
-    const keys = referenced.map((document) => document.storageKey);
+    const keys = referenced.map((row) => row.storageKey!);
 
     const result = await this.prisma.storedFile.deleteMany({
       where: {
