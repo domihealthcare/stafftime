@@ -20,6 +20,7 @@
     "db:down": "docker compose down",
     "db:migrate": "npm run prisma:migrate --workspace @stafftime/api",
     "db:seed": "npm run prisma:seed --workspace @stafftime/api",
+    "db:demo": "npm run demo:seed --workspace @stafftime/api",
     "db:studio": "npm run prisma:studio --workspace @stafftime/api",
     "dev:api": "npm run start:dev --workspace @stafftime/api",
     "dev:web": "npm run dev --workspace @stafftime/web",

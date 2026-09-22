@@ -3,7 +3,7 @@
 # server (:5173). See README.md in this directory for what has to be up first.
 #
 # Each suite assumes a clean slate: nobody on the clock, no paired kiosks, no
-# lockouts. Suites deliberately leave state behind (an open entry, a changed
+# lockouts, and none of the demo data from `npm run db:demo`. Suites deliberately leave state behind (an open entry, a changed
 # password, a rota), so reset between them rather than relying on run order.
 set -uo pipefail
 HERE="$(cd "$(dirname "$0")" && pwd)"
@@ -24,26 +24,33 @@ reset_state() {
     -c "delete from shifts where \"startsAt\" >= '2027-01-01';" \
     -c "delete from employee_checklists;" \
     -c "delete from stored_files;" \
-    -c "delete from login_attempts;"
+    -c "delete from login_attempts;" \
+    -c "delete from employees where \"externalId\" like 'demo:%';"
 }
 
 # The scheduler suite builds its rotas in February 2027 so that clearing them
 # cannot touch the shift the seed puts on today's date.
 SUITES="drive refusals correct auth kiosk export locations pto pto-policy presets calendar scheduler checklists"
 
+# Full output per suite goes to a file, and only the step lines are printed, so
+# a failure's detail is still there to read rather than truncated away.
+LOG_DIR="${LOG_DIR:-$HERE/logs}"
+mkdir -p "$LOG_DIR"
+
 failed=0
 for suite in ${SUITES}; do
   reset_state
   printf "\n===== %s =====\n" "$suite"
-  if ! (cd "$HERE" && node "$suite.mjs" "$@" 2>&1 | tail -40); then
+  if ! (cd "$HERE" && node "$suite.mjs" "$@" > "$LOG_DIR/$suite.log" 2>&1); then
     failed=1
   fi
+  grep -E '^(PASS|FAIL)|^ - |^PROBLEMS|^ALL ' "$LOG_DIR/$suite.log" || cat "$LOG_DIR/$suite.log"
 done
 
 reset_state
 if [ "$failed" -eq 0 ]; then
   printf "\n===== every suite passed =====\n"
 else
-  printf "\n===== SOME SUITES FAILED =====\n"
+  printf "\n===== SOME SUITES FAILED — full output in %s =====\n" "$LOG_DIR"
 fi
 exit $failed

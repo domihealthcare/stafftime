@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import { PtoPolicy, PtoStatus, PtoType } from '@prisma/client';
+import { Prisma, PtoPolicy, PtoStatus, PtoType } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { UpdatePtoPolicyDto } from './dto/pto.dto';
 
@@ -44,24 +44,58 @@ export interface PtoBalance {
   unpaidAndOther: number;
 }
 
+/// The only value `PtoPolicy.singleton` ever takes. See the model comment.
+const SINGLETON = 1;
+
+/// Postgres's "duplicate key" as Prisma reports it.
+function isUniqueViolation(error: unknown): boolean {
+  return (
+    error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2002'
+  );
+}
+
 @Injectable()
 export class PtoPolicyService {
   constructor(private readonly prisma: PrismaService) {}
 
-  /// There is exactly one policy. It is created on first read, so a fresh
-  /// database starts with the defaults rather than nothing.
+  /// There is exactly one policy, created on first read so a fresh database
+  /// starts with the defaults rather than nothing.
+  ///
+  /// The first read is frequently two reads: the Time off screen asks for the
+  /// policy and for a balance at the same moment, and a balance needs the
+  /// policy too. A plain read-then-create meant both found nothing and both
+  /// inserted — twenty concurrent first reads produced eighteen policies in
+  /// testing — after which edits landed on one row and reads came back from
+  /// another.
+  ///
+  /// So the row is a database-enforced singleton, and the loser of the race
+  /// reads the winner's row rather than failing.
   async get(): Promise<PtoPolicy> {
-    const existing = await this.prisma.ptoPolicy.findFirst({ orderBy: { createdAt: 'asc' } });
-    if (existing) {
-      return existing;
+    const existing = await this.prisma.ptoPolicy.findUnique({
+      where: { singleton: SINGLETON },
+    });
+    if (existing) return existing;
+
+    try {
+      return await this.prisma.ptoPolicy.create({ data: { singleton: SINGLETON } });
+    } catch (error) {
+      // Somebody else created it between the read and the write. The unique
+      // column is what makes that a clean, detectable loss rather than a
+      // second policy nobody knows about, and the loser simply reads the
+      // winner's row.
+      if (isUniqueViolation(error)) {
+        return this.prisma.ptoPolicy.findUniqueOrThrow({
+          where: { singleton: SINGLETON },
+        });
+      }
+      throw error;
     }
-    return this.prisma.ptoPolicy.create({ data: {} });
   }
 
   async update(dto: UpdatePtoPolicyDto, updatedById: string): Promise<PtoPolicy> {
-    const policy = await this.get();
+    await this.get();
     return this.prisma.ptoPolicy.update({
-      where: { id: policy.id },
+      where: { singleton: SINGLETON },
       data: { ...dto, updatedById },
     });
   }

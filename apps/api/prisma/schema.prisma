@@ -233,8 +233,16 @@ model EmployeeLocation {
 /// practice owns, and they will change — a new handbook, a new state rule, a
 /// different carry-over. Defaults are Domi's starting point: 15 days PTO, 5
 /// sick days, 5 days of PTO carried into the next year.
+/// The practice's PTO rules. There is exactly one of these, and the database
+/// enforces that: `singleton` is always 1 and is unique, so a second row cannot
+/// be created even by two requests arriving at the same moment.
+///
+/// Without it, two concurrent first reads both find nothing and both insert,
+/// and the practice quietly ends up with two policies — one of which nobody's
+/// edits ever reach.
 model PtoPolicy {
-  id String @id @default(uuid()) @db.Uuid
+  id        String @id @default(uuid()) @db.Uuid
+  singleton Int    @unique @default(1)
 
   /// Annual entitlement, in days.
   vacationDaysPerYear Int @default(15)

@@ -159,6 +159,27 @@ same screen.
 Send them the link and their email address. Give them the temporary password by
 phone or in person — not in the same email as the link.
 
+Send them [docs/manager-review.md](./docs/manager-review.md) too. It is written
+for them rather than for a developer: what to try, in what order, what is
+deliberately missing, and what we need them to comment on.
+
+**Give them something to look at.** An empty timesheet tells a practice manager
+nothing. `npm run db:demo` loads a realistic five weeks — eight more staff across the
+two offices, rotas, punches that are mostly fine and occasionally not, time off in
+every state, a checklist part-way through. It replaces whatever shifts and
+punches are already there, and it refuses to run unless `APP_ENVIRONMENT` is
+`test`, so it cannot touch a live payroll.
+
+To run it against the deployed database, use the direct connection string from
+Neon:
+
+```bash
+APP_ENVIRONMENT=test \
+DATABASE_URL="<the direct connection string>" \
+DIRECT_DATABASE_URL="<the direct connection string>" \
+npm run db:demo
+```
+
 With `APP_ENVIRONMENT=test` set, every screen tells them plainly that nothing is
 real — so they can clock in, request time off and poke at anything without
 worrying they have created a payroll problem.

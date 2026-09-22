@@ -6,6 +6,9 @@ Deployed at **staff.domihealthcare.com**.
 See [CLAUDE.md](./CLAUDE.md) for the full project brief, and
 [docs/](./docs) for architecture notes and open questions.
 
+**Showing it to the managers?** [docs/manager-review.md](./docs/manager-review.md)
+is written for them: what to try, in what order, and what to comment on.
+
 ## What exists today
 
 Phase 1, backend and web app:
@@ -84,6 +87,7 @@ Run them separately with `npm run dev:api` and `npm run dev:web` if you prefer.
 | `npm run lint` | Check code style |
 | `npm run build` | Build both apps for production |
 | `npm run preview` | Serve the built web app with the deployed security headers, at http://localhost:4173 |
+| `npm run db:demo` | Load five weeks of realistic demo data for a review — **replaces** existing shifts, punches and time off |
 | `npm run db:studio` | Open a visual database browser |
 | `npm run db:down` | Stop the local database |
 

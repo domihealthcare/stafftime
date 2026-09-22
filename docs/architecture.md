@@ -866,3 +866,60 @@ configuration, and the browser suites can be pointed at it with
 `BASE_URL=http://127.0.0.1:4173` — which is how the policy was checked, rather
 than by reading it and hoping. Downloads (blob URLs), geolocation and the kiosk
 all work under it.
+
+### The policy is one row, and the database enforces it
+
+`PtoPolicyService.get()` creates the policy on first read, so a fresh
+deployment starts with sensible defaults rather than nothing. That used to be a
+plain read-then-create, which is a race: the Time off screen asks for the policy
+and for a balance at the same moment, and a balance needs the policy too, so the
+very first page load is two concurrent creates. Twenty concurrent first reads
+produced **eighteen** policy rows when measured against real Postgres.
+
+Nothing failed loudly. `findFirst` picked whichever row sorted first, so an
+admin's edit landed on one row while later reads came back from another, and the
+practice's PTO rules silently reverted. It surfaced as an intermittently failing
+browser check — the sort was only unstable when two rows shared a `createdAt`
+millisecond.
+
+The fix is a `singleton` column that is always 1 and unique, so a second row
+cannot exist. `get()` reads by that key, creates when there is nothing, and
+treats a duplicate-key error as having lost the race — it re-reads the winner's
+row rather than failing. `update()` writes by the same key rather than by an id
+it read a moment earlier.
+
+The migration collapses any duplicates a deployment already has before adding
+the constraint, keeping the most recently updated row as the practice's latest
+intent.
+
+## Demo data for a review
+
+`npm run db:demo` (`apps/api/prisma/demo.ts`) fills the app with a plausible
+five weeks: eight more staff across the two offices, rotas, punches that are
+mostly fine and occasionally not, time off in every state, somebody over forty
+hours so the overtime column has something in it, and a checklist part-way
+through.
+
+It exists because an empty timesheet tells a practice manager nothing, and
+"imagine there were hours here" is not a review.
+
+Three things about how it is built:
+
+- **It is deterministic.** The jitter on each punch comes from a fixed-seed
+  generator, so two people looking at the app are looking at the same data.
+- **It is a reset, not an addition.** Every shift, punch, time-off request and
+  checklist is cleared first. A generated week next to leftovers from somebody's
+  experiments is harder to read than either alone. Locations, accounts and
+  checklist templates are left alone — those belong to `db:seed`, and a reviewer
+  may have set real geofence coordinates.
+- **It refuses to run against production.** `APP_ENVIRONMENT` must not be
+  `production` unless `ALLOW_DEMO_DATA=yes-really` is set as well. It deletes
+  real hours and creates accounts sharing one well-known password; that is not
+  something to do by pasting the wrong connection string.
+
+The data is deliberately imperfect: somebody late, somebody who left early,
+somebody who forgot to clock out, one entry a manager corrected with the reason
+recorded. The whole point is to see what the flagged cases look like.
+
+`docs/manager-review.md` is the walkthrough that goes with it, written for the
+managers rather than for a developer.

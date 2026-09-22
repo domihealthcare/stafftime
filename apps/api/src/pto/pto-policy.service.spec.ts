@@ -1,8 +1,9 @@
-import { PtoStatus, PtoType } from '@prisma/client';
+import { Prisma, PtoStatus, PtoType } from '@prisma/client';
 import { PtoPolicyService, TYPE_BUCKET, daysWithin } from './pto-policy.service';
 
 const DEFAULT_POLICY = {
   id: 'policy-1',
+  singleton: 1,
   vacationDaysPerYear: 15,
   sickDaysPerYear: 5,
   maxCarryoverDays: 5,
@@ -70,9 +71,11 @@ describe('PtoPolicyService', () => {
     const requests = options.requests ?? [];
     const prisma = {
       ptoPolicy: {
-        findFirst: jest
+        // One row, keyed by its singleton column — see the service.
+        findUnique: jest
           .fn()
           .mockResolvedValue('policy' in options ? options.policy : DEFAULT_POLICY),
+        findUniqueOrThrow: jest.fn().mockResolvedValue(DEFAULT_POLICY),
         create: jest.fn().mockResolvedValue(DEFAULT_POLICY),
         update: jest.fn().mockImplementation(({ data }) => ({ ...DEFAULT_POLICY, ...data })),
       },
@@ -103,7 +106,43 @@ describe('PtoPolicyService', () => {
     it('creates the defaults on a database that has none', async () => {
       const { service, prisma } = build({ policy: null });
       await service.get();
-      expect(prisma.ptoPolicy.create).toHaveBeenCalledWith({ data: {} });
+
+      expect(prisma.ptoPolicy.create).toHaveBeenCalledWith({
+        data: { singleton: 1 },
+      });
+    });
+
+    it('reads the winner\'s row when two first requests race', async () => {
+      // The Time off screen asks for the policy and for a balance at once, and
+      // a balance needs the policy too, so the very first page load is two
+      // concurrent creates. Without the unique column both used to succeed and
+      // the practice ended up with two policies.
+      const { service, prisma } = build({ policy: null });
+      prisma.ptoPolicy.create.mockRejectedValue(
+        new Prisma.PrismaClientKnownRequestError('duplicate key', {
+          code: 'P2002',
+          clientVersion: 'test',
+        }),
+      );
+
+      await expect(service.get()).resolves.toMatchObject({ id: 'policy-1' });
+      expect(prisma.ptoPolicy.findUniqueOrThrow).toHaveBeenCalledWith({
+        where: { singleton: 1 },
+      });
+    });
+
+    it('does not swallow a failure that is not a lost race', async () => {
+      const { service, prisma } = build({ policy: null });
+      prisma.ptoPolicy.create.mockRejectedValue(new Error('the database is on fire'));
+
+      await expect(service.get()).rejects.toThrow('the database is on fire');
+    });
+
+    it('updates the one row by its singleton key, not by an id it read earlier', async () => {
+      const { service, prisma } = build();
+      await service.update({ vacationDaysPerYear: 18 }, 'admin-1');
+
+      expect(prisma.ptoPolicy.update.mock.calls[0][0].where).toEqual({ singleton: 1 });
     });
 
     it('defaults to 15 PTO days, 5 sick days and 5 carried over', async () => {
