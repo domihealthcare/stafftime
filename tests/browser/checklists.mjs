@@ -110,6 +110,10 @@ employee.on('pageerror', (e) => errors.push(`pageerror: ${e.message}`));
 await signIn(employee, 'frontdesk@domihealthcare.com');
 await employee.getByRole('link', { name: 'Checklists' }).click();
 
+// Checklist cards are found inside `main` rather than anywhere on the page:
+// the account button in the header is labelled with the signed-in person's
+// name too, and it comes first in the DOM, so an unscoped search for a button
+// named after somebody opens the account menu instead.
 await step('the employee sees their own checklist', async () => {
   await employee.getByText('Your checklist').waitFor({ timeout: 15000 });
   await employee.getByText(/Frankie/).first().waitFor({ timeout: 10000 });
@@ -123,7 +127,7 @@ await step('the employee is not offered the manager tools', async () => {
 });
 
 await step('the employee can only act on the tasks that are theirs', async () => {
-  await employee.getByRole('button', { name: /Frankie/ }).first().click();
+  await employee.locator('main').getByRole('button', { name: /Frankie/ }).first().click();
 
   const ownTask = employee.locator('li', { hasText: 'Emergency contact recorded' }).last();
   await ownTask.getByRole('button', { name: 'Mark done' }).waitFor({ timeout: 10000 });
@@ -150,7 +154,7 @@ await signIn(manager, 'manager@domihealthcare.com');
 await manager.getByRole('link', { name: 'Checklists' }).click();
 
 await step('a manager runs the checklist', async () => {
-  await manager.getByRole('button', { name: /Frankie/ }).first().click();
+  await manager.locator('main').getByRole('button', { name: /Frankie/ }).first().click();
   await manager
     .locator('li', { hasText: 'Building keys' })
     .last()
@@ -166,7 +170,7 @@ await step('a manager is not offered the delete', async () => {
 
 await step('an admin can delete the checklist', async () => {
   await admin.reload({ waitUntil: 'networkidle' });
-  await admin.getByRole('button', { name: /Frankie/ }).first().click();
+  await admin.locator('main').getByRole('button', { name: /Frankie/ }).first().click();
   await admin.getByRole('button', { name: 'Delete this checklist' }).click();
   await admin.getByText(/the record of what was done/).waitFor({ timeout: 5000 });
   await admin.getByRole('button', { name: 'Yes, delete it' }).click();
@@ -255,7 +259,7 @@ await step('the edit does not disturb a checklist already under way', async () =
 
   // The running checklist still says what it said when it was started.
   await admin.reload({ waitUntil: 'networkidle' });
-  await admin.getByRole('button', { name: /Frankie/ }).first().click();
+  await admin.locator('main').getByRole('button', { name: /Frankie/ }).first().click();
   const running = await admin.locator('main').innerText();
   if (/COMPLETELY DIFFERENT WORDING/.test(running))
     throw new Error('editing the template rewrote a checklist that was already under way');

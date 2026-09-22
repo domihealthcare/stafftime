@@ -1,6 +1,7 @@
 import { chromium } from 'playwright';
 
 import { mkdirSync } from 'node:fs';
+import { pickFromAccountMenu } from './account-menu.mjs';
 // Screenshots go wherever the caller says, or into ./shots (gitignored).
 const OUT = process.argv[2] || new URL('./shots/', import.meta.url).pathname;
 mkdirSync(OUT, { recursive: true });
@@ -115,7 +116,7 @@ await step('clock out', async () => {
 
 // --- switch to the manager ---
 await step('switch user to the manager', async () => {
-  await page.getByRole('button', { name: 'Sign out' }).click();
+  await pickFromAccountMenu(page, 'Sign out');
   await page.getByRole('button', { name: 'Sign in' }).waitFor({ timeout: 10000 });
   await signInAs(page, 'manager@domihealthcare.com');
   await page.getByText('Not clocked in').waitFor({ timeout: 10000 });

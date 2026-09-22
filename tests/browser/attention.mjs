@@ -7,6 +7,7 @@
 // fixed, and that turning the email off actually sticks.
 import { chromium } from 'playwright';
 import { mkdirSync } from 'node:fs';
+import { accountMenuHas, pickFromAccountMenu } from './account-menu.mjs';
 
 const OUT = process.argv[2] || new URL('./shots/', import.meta.url).pathname;
 mkdirSync(OUT, { recursive: true });
@@ -42,8 +43,8 @@ await step('the round-up is not an employee’s to read', async () => {
 });
 
 await step('an employee is not offered the notification settings', async () => {
-  if ((await employee.getByRole('link', { name: 'Notifications' }).count()) > 0)
-    throw new Error('an employee was shown the notifications link');
+  if (await accountMenuHas(employee, 'Notifications'))
+    throw new Error('an employee was offered the notification settings');
 });
 
 await step('a quiet practice shows no banner at all', async () => {
@@ -101,7 +102,7 @@ await step('the banner goes to the screen where it would be fixed', async () => 
 });
 
 await step('the nightly email can be turned off, and stays off', async () => {
-  await admin.getByRole('link', { name: 'Notifications' }).first().click();
+  await pickFromAccountMenu(admin, 'Notifications');
   const toggle = admin.getByRole('switch', { name: 'The nightly round-up' });
   await toggle.waitFor({ timeout: 15000 });
 
@@ -143,7 +144,7 @@ await step('turning it back on works too', async () => {
 // --- practice settings ---
 
 await step('the numbers behind the warnings are the practice’s to set', async () => {
-  await admin.getByRole('link', { name: 'Settings' }).first().click();
+  await pickFromAccountMenu(admin, 'Practice settings');
   await admin.getByLabel('Overtime starts after').waitFor({ timeout: 15000 });
 
   const threshold = admin.getByLabel('Overtime starts after');
@@ -164,7 +165,7 @@ await step('a manager can read them but not change them', async () => {
   await manager.getByRole('button', { name: 'Sign in' }).click();
   await manager.getByText('Not clocked in').waitFor({ timeout: 20000 });
 
-  await manager.getByRole('link', { name: 'Settings' }).first().click();
+  await pickFromAccountMenu(manager, 'Practice settings');
   const field = manager.getByLabel('Overtime starts after');
   await field.waitFor({ timeout: 15000 });
 
@@ -229,7 +230,7 @@ await step('changing the threshold changes what the rota warns about', async () 
 await admin.screenshot({ path: `${OUT}/74-settings.png`, fullPage: true });
 
 await step('putting it back makes the warning go away again', async () => {
-  await admin.getByRole('link', { name: 'Settings' }).first().click();
+  await pickFromAccountMenu(admin, 'Practice settings');
   await admin.getByLabel('Overtime starts after').fill('40');
   await admin.getByRole('button', { name: 'Save' }).click();
   await admin.getByText('Saved.').waitFor({ timeout: 15000 });

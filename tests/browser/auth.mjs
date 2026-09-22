@@ -1,5 +1,6 @@
 import { chromium } from 'playwright';
 import { mkdirSync } from 'node:fs';
+import { pickFromAccountMenu } from './account-menu.mjs';
 // Screenshots go wherever the caller says, or into ./shots (gitignored).
 const OUT = process.argv[2] || new URL('./shots/', import.meta.url).pathname;
 mkdirSync(OUT, { recursive: true });
@@ -42,7 +43,7 @@ await step('an unauthenticated visit shows the sign-in screen, not the app', asy
   }
   if (await page.getByRole('button', { name: 'Clock in' }).count() > 0)
     throw new Error('clock-in button was reachable without signing in');
-  if (await page.getByRole('button', { name: 'Sign out' }).count() > 0)
+  if (await page.getByRole('button', { name: /Your account/ }).count() > 0)
     throw new Error('app header was reachable without signing in');
 });
 await page.screenshot({ path: `${OUT}/12-login.png`, fullPage: true });
@@ -84,7 +85,7 @@ await step('the session survives a reload', async () => {
 });
 
 await step('signing out returns to the sign-in screen and kills the session', async () => {
-  await page.getByRole('button', { name: 'Sign out' }).click();
+  await pickFromAccountMenu(page, 'Sign out');
   await page.getByRole('button', { name: 'Sign in' }).waitFor({ timeout: 10000 });
   await page.reload({ waitUntil: 'networkidle' });
   await page.getByRole('button', { name: 'Sign in' }).waitFor({ timeout: 10000 });
@@ -130,7 +131,7 @@ await step('a good password is accepted and the app unlocks', async () => {
 await page.screenshot({ path: `${OUT}/15-unlocked.png`, fullPage: true });
 
 await step('the new password works on a fresh sign-in, the old one does not', async () => {
-  await page.getByRole('button', { name: 'Sign out' }).click();
+  await pickFromAccountMenu(page, 'Sign out');
   await page.getByRole('button', { name: 'Sign in' }).waitFor({ timeout: 10000 });
 
   await signIn(page, 'ma@domihealthcare.com', 'shift-change-2026');

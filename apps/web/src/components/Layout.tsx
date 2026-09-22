@@ -1,7 +1,8 @@
 import { useEffect, useState } from 'react';
 import { NavLink, Outlet } from 'react-router-dom';
 import { api } from '../lib/api';
-import { useIsAdmin, useIsManager, useSession } from '../lib/session';
+import { AccountMenu } from './AccountMenu';
+import { useIsAdmin, useIsManager } from '../lib/session';
 
 /// Tighter padding on a phone, so more of the nav fits per row before it wraps.
 const linkClasses = ({ isActive }: { isActive: boolean }) =>
@@ -10,10 +11,8 @@ const linkClasses = ({ isActive }: { isActive: boolean }) =>
   }`;
 
 export function Layout() {
-  const { employee, signOut } = useSession();
   const isManager = useIsManager();
   const isAdmin = useIsAdmin();
-  const [signingOut, setSigningOut] = useState(false);
   const [pendingPto, setPendingPto] = useState(0);
 
   // A badge on the tab, so a manager does not have to go looking for requests.
@@ -31,19 +30,16 @@ export function Layout() {
     };
   }, [isManager]);
 
-  async function handleSignOut() {
-    setSigningOut(true);
-    try {
-      await signOut();
-    } finally {
-      setSigningOut(false);
-    }
-  }
-
   return (
     <div className="min-h-screen bg-slate-100">
       <header className="border-b border-slate-200 bg-white">
-        <div className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-2 px-4 py-3">
+        {/* Two columns, and the outer row deliberately does not wrap: the
+            navigation wraps *inside* its own column while the account menu
+            stays pinned to the top right. Letting the whole row wrap put the
+            account on a second line at the left — which is both worse to reach
+            and, because the dropdown is right-aligned, pushed the menu off the
+            left edge of a phone screen entirely. */}
+        <div className="mx-auto flex max-w-6xl items-start justify-between gap-2 px-4 py-3">
           {/* Everything here wraps. An admin has nine destinations, which do
               not fit on one line on a phone — and this app is used on phones,
               standing at the front desk. Wrapping keeps every screen one tap
@@ -95,45 +91,8 @@ export function Layout() {
             </nav>
           </div>
 
-          <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
-            <span className="text-sm text-slate-600">
-              {employee?.firstName} {employee?.lastName}
-              {isManager && (
-                <span className="ml-2 rounded-full bg-slate-100 px-2 py-0.5 text-xs text-slate-600">
-                  {employee?.role.toLowerCase()}
-                </span>
-              )}
-            </span>
-            {isManager && (
-              <>
-                <NavLink
-                  to="/settings"
-                  className="text-sm font-medium text-slate-500 hover:text-slate-900"
-                >
-                  Settings
-                </NavLink>
-                <NavLink
-                  to="/notifications"
-                  className="text-sm font-medium text-slate-500 hover:text-slate-900"
-                >
-                  Notifications
-                </NavLink>
-              </>
-            )}
-            <NavLink
-              to="/password"
-              className="text-sm font-medium text-slate-500 hover:text-slate-900"
-            >
-              Password
-            </NavLink>
-            <button
-              type="button"
-              onClick={() => void handleSignOut()}
-              disabled={signingOut}
-              className="text-sm font-medium text-slate-500 hover:text-slate-900 disabled:opacity-60"
-            >
-              {signingOut ? 'Signing out…' : 'Sign out'}
-            </button>
+          <div className="shrink-0">
+            <AccountMenu />
           </div>
         </div>
       </header>
