@@ -1,5 +1,7 @@
 # Domi Time & Scheduling
 
+[![CI](https://github.com/domihealthcare/stafftime/actions/workflows/ci.yml/badge.svg)](https://github.com/domihealthcare/stafftime/actions/workflows/ci.yml)
+
 Staff clock-in/out, scheduling and timesheets for Domi Healthcare.
 Deployed at **staff.domihealthcare.com**.
 
@@ -41,7 +43,12 @@ apps/api/       NestJS + Prisma backend
 apps/web/       React + Vite + Tailwind web app
 tests/browser/  end-to-end checks driven by a real browser
 docs/           architecture notes, open questions
+.github/        CI — every push runs the lot
 ```
+
+Every push runs the unit tests, the linters, a production build, and the whole
+browser suite against a real Postgres and a real browser. See
+`.github/workflows/ci.yml`.
 
 ## Getting started
 

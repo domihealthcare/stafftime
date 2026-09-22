@@ -227,9 +227,8 @@ Built and working with PINs. What is left:
       hand-maintaining `apps/web/src/lib/types.ts`. Today a server-side rename
       compiles fine and breaks at runtime.
 - [x] ~~Automated browser tests.~~ Committed as a suite in `tests/browser`
-      (`npm run test:browser`). Still to do: get them running in CI rather than
-      only on a developer's machine, which needs a Postgres service and a
-      headless browser in the pipeline.
+      (`npm run test:browser`), and running in CI on every push against a real
+      Postgres and a real browser.
 - [x] ~~CORS or a same-origin rewrite for production.~~ Solved by hosting the
       API and the web app as one Vercel project, so the browser only ever talks
       to one origin and the session cookie needs no cross-site handling.

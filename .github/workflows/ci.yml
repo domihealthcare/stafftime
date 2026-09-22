@@ -1,0 +1,141 @@
+name: CI
+
+# Every push, every branch. A regression that only shows up when somebody
+# remembers to run the tests is a regression that ships.
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+# A second push to the same branch makes the first run pointless.
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  NODE_VERSION: '20'
+
+jobs:
+  checks:
+    name: Lint, types and unit tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+
+      - run: npm ci
+
+      # The Prisma client is generated code. Nothing type-checks without it.
+      - run: npm run prisma:generate --workspace @stafftime/api
+
+      - run: npm run lint
+      - run: npm run typecheck
+      - run: npm test
+      - run: npm run build
+
+  browser:
+    name: Browser checks
+    runs-on: ubuntu-latest
+    # These need a real database, a real API and a real browser, so they are
+    # slower and kept in their own job rather than blocking the fast feedback.
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: stafftime
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+
+    env:
+      DATABASE_URL: postgresql://postgres:postgres@127.0.0.1:5432/stafftime?schema=public
+      DIRECT_DATABASE_URL: postgresql://postgres:postgres@127.0.0.1:5432/stafftime?schema=public
+      APP_ENVIRONMENT: test
+      NODE_ENV: development
+      # run-all.sh resets the database between suites.
+      PGHOST_LOCAL: 127.0.0.1
+      PGPORT_LOCAL: '5432'
+      PGUSER_LOCAL: postgres
+      PGDATABASE_LOCAL: stafftime
+      PGPASSWORD: postgres
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+
+      - run: npm ci
+      - run: npm run prisma:generate --workspace @stafftime/api
+
+      - name: Create the schema
+        run: npm run prisma:deploy --workspace @stafftime/api
+
+      - name: Install Playwright and a browser
+        working-directory: tests/browser
+        run: |
+          npm ci
+          npx playwright install --with-deps chromium
+
+      - name: Build both apps
+        run: npm run build
+
+      - name: Start the API
+        run: |
+          mkdir -p tests/browser/logs
+          node apps/api/dist/main.js > tests/browser/logs/api.log 2>&1 &
+          for i in $(seq 1 40); do
+            if curl -sf http://127.0.0.1:3000/api/health > /dev/null; then
+              echo "API up"; exit 0
+            fi
+            sleep 1
+          done
+          echo "The API never came up:"; cat tests/browser/logs/api.log; exit 1
+
+      # The checks run against the built bundle with the deployed security
+      # headers applied — vite.config.ts reads them out of vercel.json — so a
+      # Content-Security-Policy that breaks the app fails here rather than on
+      # the practice's phones.
+      - name: Start the web app as it is deployed
+        working-directory: apps/web
+        run: |
+          npx vite preview --host 127.0.0.1 --port 4173 > ../../tests/browser/logs/web.log 2>&1 &
+          for i in $(seq 1 40); do
+            if curl -sf http://127.0.0.1:4173/ > /dev/null; then
+              echo "Web up"; exit 0
+            fi
+            sleep 1
+          done
+          echo "The web app never came up:"; cat ../../tests/browser/logs/web.log; exit 1
+
+      - name: Run the browser checks
+        env:
+          BASE_URL: http://127.0.0.1:4173
+        run: bash tests/browser/run-all.sh
+
+      # Screenshots and the per-suite logs are the only way to see what a
+      # failure actually looked like once the runner is gone. The server logs
+      # are written in there too, rather than /tmp, because upload-artifact
+      # only collects paths inside the workspace.
+      - name: Keep the evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: browser-evidence
+          path: |
+            tests/browser/shots/
+            tests/browser/logs/
+          retention-days: 7
+          if-no-files-found: ignore

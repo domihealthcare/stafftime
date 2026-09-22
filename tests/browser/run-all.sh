@@ -3,17 +3,20 @@
 # server (:5173). See README.md in this directory for what has to be up first.
 #
 # Each suite assumes a clean slate: nobody on the clock, no paired kiosks, no
-# lockouts, and none of the demo data from `npm run db:demo`. Suites deliberately leave state behind (an open entry, a changed
-# password, a rota), so reset between them rather than relying on run order.
+# lockouts, and none of the demo data from `npm run db:demo`. Suites deliberately
+# leave state behind (an open entry, a changed password, a rota, an edited
+# template), so reset between them rather than relying on run order.
 set -uo pipefail
 HERE="$(cd "$(dirname "$0")" && pwd)"
 API_DIR="$HERE/../../apps/api"
 PGPORT_LOCAL="${PGPORT_LOCAL:-5433}"
 PGHOST_LOCAL="${PGHOST_LOCAL:-127.0.0.1}"
+PGUSER_LOCAL="${PGUSER_LOCAL:-postgres}"
+PGDATABASE_LOCAL="${PGDATABASE_LOCAL:-stafftime}"
 
 reset_state() {
   (cd "$API_DIR" && npx ts-node prisma/seed.ts >/dev/null 2>&1)
-  psql -h "$PGHOST_LOCAL" -p "$PGPORT_LOCAL" -U postgres -d stafftime -q \
+  psql -h "$PGHOST_LOCAL" -p "$PGPORT_LOCAL" -U "$PGUSER_LOCAL" -d "$PGDATABASE_LOCAL" -q \
     -c "update time_entries set \"clockOutAt\" = \"clockInAt\" + interval '1 hour', status='COMPLETED' where \"clockOutAt\" is null;" \
     -c "delete from kiosk_devices;" \
     -c "delete from pto_requests;" \

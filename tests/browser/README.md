@@ -94,3 +94,10 @@ node phone.mjs
 Note that the timesheet renders both a table and a card list, one hidden by CSS
 depending on width. `getByText(...).first()` will resolve to the hidden copy and
 time out; use `.locator('visible=true').first()`.
+
+## In CI
+
+These run on every push (`.github/workflows/ci.yml`), against a Postgres service
+container and `vite preview`. Screenshots and the per-suite logs are uploaded as
+an artifact on every run, pass or fail, since a failure that only happens in CI
+is otherwise very hard to read.

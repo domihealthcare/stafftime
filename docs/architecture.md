@@ -985,3 +985,30 @@ Templates are **retired**, never deleted, so a finished checklist can still say
 where it came from. Retiring also clears the default flag; if that leaves the
 practice with no default for that kind, starting a checklist says so plainly
 rather than failing.
+
+## Continuous integration
+
+`.github/workflows/ci.yml` runs on every push to every branch. Two jobs:
+
+- **checks** — lint, typecheck, unit tests and a production build. No database,
+  because the unit tests do not need one, so it comes back quickly.
+- **browser** — a Postgres service container, the schema built from the
+  migration chain, both apps built, the API started, and every browser suite.
+
+The browser job deliberately runs against **`vite preview`**, not the dev
+server. That serves the real production bundle with the real security headers —
+`vite.config.ts` reads them out of `vercel.json` — so a Content-Security-Policy
+that breaks the app fails in CI rather than on the practice's phones. It is also
+the closest thing to what Vercel serves.
+
+Building the schema with `prisma migrate deploy` from empty is a test in its own
+right: it proves the whole migration chain still applies in order, including the
+hand-written parts (the PTO policy singleton migration collapses duplicates
+before adding its constraint, and that SQL has to work on an empty table too).
+
+Screenshots and per-suite logs upload as an artifact on every run, pass or fail.
+A browser check that fails only in CI is otherwise almost impossible to read.
+
+`run-all.sh` takes `PGHOST_LOCAL`, `PGPORT_LOCAL`, `PGUSER_LOCAL` and
+`PGDATABASE_LOCAL`, which is how the same script serves both a laptop on port
+5433 and a service container on 5432.
