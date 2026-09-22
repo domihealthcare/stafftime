@@ -57,6 +57,14 @@ export class TimeEntriesController {
     return this.timeEntries.findOne(id);
   }
 
+  /// Where a punch was made from. The only route that returns coordinates, and
+  /// the read is written to the log — see `TimeEntriesService.locationTrail`.
+  @Get(':id/location')
+  @Roles(Role.ADMIN)
+  locationTrail(@Param('id', ParseUUIDPipe) id: string, @CurrentUser() user: AuthUser) {
+    return this.timeEntries.locationTrail(id, user);
+  }
+
   @Patch(':id')
   @Roles(Role.MANAGER)
   edit(

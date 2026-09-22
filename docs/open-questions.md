@@ -18,9 +18,12 @@ phone**, open **Locations**, and set them standing at each front desk. Note that
       of the office before settling on a number.
 - [ ] **Office IP addresses** for the allow-list fallback — and whether they are
       static. A dynamic residential-style IP would make this check unreliable.
-- [ ] **Geolocation consent disclosure.** The brief flags this: browser clock-in
-      captures staff location, which needs a handbook/policy disclosure before
-      launch. Flagged here rather than built silently.
+- [ ] **Geolocation consent disclosure.** Draft wording is written, in
+      `docs/location-disclosure.md`, along with exactly what the app captures
+      and for how long. It needs a read by whoever advises Domi on employment
+      matters, and it lists four things for the practice to settle — chief among
+      them whether the kiosk is genuinely available on every shift, since the
+      opt-out depends on it.
 
 ## Needed for the ADP export (still blocked on ADP)
 

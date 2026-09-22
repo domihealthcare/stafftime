@@ -76,6 +76,39 @@ Clock-in runs in a `Serializable` transaction: checking for an existing open
 punch and inserting the new one must be atomic, or a double-tapped button leaves
 someone clocked in twice.
 
+### What happens to the captured position
+
+Capturing a coordinate is what makes a browser clock-in mean anything. Keeping
+it is a different question, and the answer is three rules.
+
+**It is not part of a timesheet.** The query behind every list of entries is an
+explicit `select` that does not name the coordinate or IP columns. It used to be
+an `include`, which returns every scalar on the row — so the position of every
+punch went out with every timesheet, to every screen, and nothing on any screen
+ever read one. That is the worst kind of exposure: all of the risk, none of the
+use. Adding a field to `TIME_ENTRY_SELECT` is how it would come back.
+
+**Reading one is a deliberate act.** `GET /api/time-entries/:id/location` is the
+only route that returns coordinates: one entry, admin-only, and the read is
+written to the server log. The honest reason to want them is a disputed punch,
+and a dispute is about one punch. "I looked up where you were on the 3rd" should
+leave a trace.
+
+**They expire.** The nightly job clears coordinates, accuracy and IP off punches
+older than 90 days. The punch survives — the time, the location it was
+attributed to, and what the check concluded — so *was this punch verified?* is
+answerable forever while *where exactly were they standing?* is answerable for a
+quarter. `time-entries/location-retention.ts` argues the number: a dispute
+happens within a pay period or two, and what is left after that is a map of
+where each member of staff was on each morning, for as long as the app runs.
+
+The lookup route distinguishes "cleared for age" from "never captured", because
+a kiosk punch has no coordinates and never did, and reporting that as *cleared*
+would send somebody looking for data that never existed.
+
+`docs/location-disclosure.md` has the staff-facing side: what is captured, and
+draft handbook wording.
+
 ## Authentication
 
 Passwords are hashed with **argon2id** at the parameters OWASP recommends

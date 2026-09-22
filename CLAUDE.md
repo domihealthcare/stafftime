@@ -59,6 +59,12 @@ This is a timekeeping app, not a payroll or HR system. It deliberately stores:
 Nothing is uploaded to the app at all. The only files it stores are the payroll
 export spreadsheets it generates itself.
 
+**Captured clock-in location** is kept, because it is the point of a browser
+punch, but on a short leash: never returned with a timesheet, readable one entry
+at a time by an admin and logged when it is, and deleted by the nightly job
+after 90 days. Staff-facing wording is drafted in `docs/location-disclosure.md`
+and still needs a read by whoever advises on employment matters.
+
 The reasoning: this is the app people open on their phones and on a shared
 front-desk tablet. Putting the practice's most sensitive records behind that is
 a large risk for no benefit — none of it was needed to answer "who was here, for
