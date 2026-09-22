@@ -1,6 +1,15 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { api } from '../lib/api';
-import { addDays, formatTime, startOfWeek, toLocalInputValue } from '../lib/format';
+import {
+  addDays,
+  addMonths,
+  formatTime,
+  localDate,
+  monthGrid,
+  startOfMonth,
+  startOfWeek,
+  toLocalInputValue,
+} from '../lib/format';
 import { useIsManager } from '../lib/session';
 import type {
   Coverage,
@@ -19,7 +28,12 @@ import { NeedsAttention } from '../components/NeedsAttention';
 
 export function SchedulePage() {
   const isManager = useIsManager();
+  /// A week at a time to build a rota, a month at a time to see the shape of
+  /// one. The week view is where shifts are added and removed; the month view
+  /// is an overview, and a day in it is a way back to that week.
+  const [view, setView] = useState<'week' | 'month'>('week');
   const [weekStart, setWeekStart] = useState(() => startOfWeek(new Date()));
+  const [monthStart, setMonthStart] = useState(() => startOfMonth(new Date()));
   const [shifts, setShifts] = useState<Shift[]>([]);
   const [employees, setEmployees] = useState<Employee[]>([]);
   const [locations, setLocations] = useState<Location[]>([]);
@@ -30,17 +44,25 @@ export function SchedulePage() {
   const [planResult, setPlanResult] = useState<PlanResult | null>(null);
   const [copying, setCopying] = useState(false);
 
-  const weekEnd = useMemo(() => addDays(weekStart, 7), [weekStart]);
+  /// The days on screen. A month is shown as whole Monday-to-Sunday weeks, so
+  /// every row has seven days and the month sits inside it — which means the
+  /// range loaded is a little wider than the month itself.
   const days = useMemo(
-    () => Array.from({ length: 7 }, (_, index) => addDays(weekStart, index)),
-    [weekStart],
+    () =>
+      view === 'week'
+        ? Array.from({ length: 7 }, (_, index) => addDays(weekStart, index))
+        : monthGrid(monthStart),
+    [view, weekStart, monthStart],
   );
+
+  const rangeStart = days[0];
+  const rangeEnd = useMemo(() => addDays(days[days.length - 1], 1), [days]);
 
   const load = useCallback(async () => {
     setLoading(true);
     try {
       const [shiftData, locationData] = await Promise.all([
-        api.listShifts({ from: weekStart.toISOString(), to: weekEnd.toISOString() }),
+        api.listShifts({ from: rangeStart.toISOString(), to: rangeEnd.toISOString() }),
         api.listLocations(),
       ]);
       setShifts(shiftData);
@@ -51,8 +73,8 @@ export function SchedulePage() {
         const [staff, weekCoverage] = await Promise.all([
           api.listEmployees(),
           api.coverage({
-            from: weekStart.toISOString().slice(0, 10),
-            to: addDays(weekStart, 6).toISOString().slice(0, 10),
+            from: localDate(rangeStart),
+            to: localDate(days[days.length - 1]),
           }),
         ]);
         setEmployees(staff);
@@ -64,7 +86,7 @@ export function SchedulePage() {
     } finally {
       setLoading(false);
     }
-  }, [weekStart, weekEnd, isManager]);
+  }, [rangeStart, rangeEnd, days, isManager]);
 
   useEffect(() => {
     void load();
@@ -111,28 +133,77 @@ export function SchedulePage() {
         <CalendarLinkCard />
       </div>
 
-      <div className="mb-4 flex items-center gap-2">
+      <div className="mb-4 flex flex-wrap items-center gap-2">
         <button
           type="button"
-          onClick={() => setWeekStart((current) => addDays(current, -7))}
+          onClick={() =>
+            view === 'week'
+              ? setWeekStart((current) => addDays(current, -7))
+              : setMonthStart((current) => addMonths(current, -1))
+          }
           className="rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-sm font-medium text-slate-700 hover:bg-slate-50"
         >
           ← Previous
         </button>
         <button
           type="button"
-          onClick={() => setWeekStart(startOfWeek(new Date()))}
+          onClick={() => {
+            setWeekStart(startOfWeek(new Date()));
+            setMonthStart(startOfMonth(new Date()));
+          }}
           className="rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-sm font-medium text-slate-700 hover:bg-slate-50"
         >
-          This week
+          {view === 'week' ? 'This week' : 'This month'}
         </button>
         <button
           type="button"
-          onClick={() => setWeekStart((current) => addDays(current, 7))}
+          onClick={() =>
+            view === 'week'
+              ? setWeekStart((current) => addDays(current, 7))
+              : setMonthStart((current) => addMonths(current, 1))
+          }
           className="rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-sm font-medium text-slate-700 hover:bg-slate-50"
         >
           Next →
         </button>
+
+        <span className="ml-1 text-sm font-medium text-slate-700">
+          {view === 'week'
+            ? `${weekStart.toLocaleDateString(undefined, { month: 'short', day: 'numeric' })} – ${addDays(
+                weekStart,
+                6,
+              ).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}`
+            : monthStart.toLocaleDateString(undefined, { month: 'long', year: 'numeric' })}
+        </span>
+
+        {/* Switching keeps you where you were: a week in March goes to March,
+            and picking a day in March goes back to that week — not to today. */}
+        <div className="ml-auto flex rounded-lg border border-slate-300 bg-white p-0.5">
+          {(['week', 'month'] as const).map((option) => (
+            <button
+              key={option}
+              type="button"
+              aria-pressed={view === option}
+              onClick={() => {
+                if (option === 'month') {
+                  setMonthStart(startOfMonth(weekStart));
+                } else if (startOfMonth(weekStart).getTime() !== monthStart.getTime()) {
+                  // Coming back to a different month than you left: land on its
+                  // first week rather than on a week you are no longer looking at.
+                  setWeekStart(startOfWeek(monthStart));
+                }
+                setView(option);
+              }}
+              className={`rounded-md px-3 py-1 text-sm font-medium transition ${
+                view === option
+                  ? 'bg-brand-50 text-brand-800'
+                  : 'text-slate-600 hover:text-slate-900'
+              }`}
+            >
+              {option === 'week' ? 'Week' : 'Month'}
+            </button>
+          ))}
+        </div>
       </div>
 
       {error && (
@@ -182,9 +253,24 @@ export function SchedulePage() {
         </div>
       )}
 
+      {/* The day-by-day strip is a week's worth of squares and only reads as
+          one; a month of them would be a second, worse calendar next to the
+          real one. The overtime warning is per-week either way, so it stays in
+          both views — it is the part a manager acts on. */}
       {isManager && coverage && coverage.days.length > 0 && (
         <div className="mb-6">
-          <CoverageStrip days={coverage.days} overtime={coverage.overtime} />
+          {view === 'week' ? (
+            <CoverageStrip days={coverage.days} overtime={coverage.overtime} />
+          ) : (
+            coverage.overtime.length > 0 && (
+              <Card className="p-4">
+                <h2 className="mb-2 text-sm font-semibold text-slate-900">
+                  Overtime this month
+                </h2>
+                <OvertimeNotice overtime={coverage.overtime} />
+              </Card>
+            )
+          )}
         </div>
       )}
 
@@ -208,6 +294,16 @@ export function SchedulePage() {
         <Card className="p-6">
           <Spinner label="Loading schedule" />
         </Card>
+      ) : view === 'month' ? (
+        <MonthGrid
+          days={days}
+          monthStart={monthStart}
+          shiftsByDay={shiftsByDay}
+          onPickDay={(day) => {
+            setWeekStart(startOfWeek(day));
+            setView('week');
+          }}
+        />
       ) : (
         <div
           data-testid="week-grid"
@@ -580,33 +676,8 @@ function CoverageStrip({
       )}
 
       {overtime.length > 0 && (
-        <div className="mt-3 rounded-lg bg-amber-50 p-3 text-sm text-amber-900 ring-1 ring-inset ring-amber-200">
-          <p className="font-medium">
-            {overtime.length === 1
-              ? '1 person is scheduled past 40 hours'
-              : `${overtime.length} people are scheduled past 40 hours`}
-          </p>
-          <ul className="mt-1 space-y-0.5 text-xs">
-            {overtime.map((warning) => (
-              <li key={`${warning.employeeId}-${warning.weekStart}`}>
-                <span className="font-medium">{warning.employeeName}</span> —{' '}
-                {warning.scheduledHours} hours in the week of{' '}
-                {new Date(`${warning.weekStart}T00:00:00Z`).toLocaleDateString(undefined, {
-                  timeZone: 'UTC',
-                  month: 'short',
-                  day: 'numeric',
-                })}
-                , so {warning.overtimeHours} at overtime
-                {/* The hours are totalled across the practice, so say when some
-                    of them are somewhere this screen is not showing — otherwise
-                    the number looks wrong to whoever is reading it. */}
-                {warning.spansLocations && ' (including hours at another location)'}
-              </li>
-            ))}
-          </ul>
-          <p className="mt-1.5 text-xs text-amber-800">
-            Hours as scheduled, not as worked. Hourly staff only.
-          </p>
+        <div className="mt-3">
+          <OvertimeNotice overtime={overtime} />
         </div>
       )}
 
@@ -619,5 +690,154 @@ function CoverageStrip({
         </p>
       )}
     </Card>
+  );
+}
+
+/**
+ * Who the rota puts past forty hours, and by how much.
+ *
+ * Shared by both views: the week strip shows it under the coverage squares, the
+ * month view on its own. Overtime is a per-week question in either case, which
+ * is why the same component serves both — a month view that quietly used a
+ * different rule would be worse than one that said nothing.
+ */
+function OvertimeNotice({ overtime }: { overtime: OvertimeWarning[] }) {
+  return (
+    <div className="rounded-lg bg-amber-50 p-3 text-sm text-amber-900 ring-1 ring-inset ring-amber-200">
+      <p className="font-medium">
+        {overtime.length === 1
+          ? '1 person is scheduled past 40 hours'
+          : `${overtime.length} people are scheduled past 40 hours`}
+      </p>
+      <ul className="mt-1 space-y-0.5 text-xs">
+        {overtime.map((warning) => (
+          <li key={`${warning.employeeId}-${warning.weekStart}`}>
+            <span className="font-medium">{warning.employeeName}</span> —{' '}
+            {warning.scheduledHours} hours in the week of{' '}
+            {new Date(`${warning.weekStart}T00:00:00Z`).toLocaleDateString(undefined, {
+              timeZone: 'UTC',
+              month: 'short',
+              day: 'numeric',
+            })}
+            , so {warning.overtimeHours} at overtime
+            {/* The hours are totalled across the practice, so say when some of
+                them are somewhere this screen is not showing — otherwise the
+                number looks wrong to whoever is reading it. */}
+            {warning.spansLocations && ' (including hours at another location)'}
+          </li>
+        ))}
+      </ul>
+      <p className="mt-1.5 text-xs text-amber-800">
+        Hours as scheduled, not as worked. Hourly staff only.
+      </p>
+    </div>
+  );
+}
+
+/**
+ * A month at a glance: how many people are on each day, and for how long.
+ *
+ * Counts rather than shift cards, on purpose. Seven columns on a phone is about
+ * fifty pixels each, which fits a number and nothing else — and a month view is
+ * for spotting the shape of a rota (the empty Tuesday, the week everybody is
+ * on) rather than for reading who is doing what. A day is a link back to its
+ * week, which is where the detail and the editing live.
+ */
+function MonthGrid({
+  days,
+  monthStart,
+  shiftsByDay,
+  onPickDay,
+}: {
+  days: Date[];
+  monthStart: Date;
+  shiftsByDay: Map<string, Shift[]>;
+  onPickDay: (day: Date) => void;
+}) {
+  const today = new Date().toDateString();
+
+  return (
+    <div data-testid="month-grid">
+      {/* Weekday headings, from the grid itself rather than a hardcoded list,
+          so they cannot drift out of step with the days below. */}
+      <div className="mb-1 grid grid-cols-7 gap-1">
+        {days.slice(0, 7).map((day) => (
+          <p
+            key={day.toISOString()}
+            className="text-center text-xs font-medium uppercase tracking-wide text-slate-500"
+          >
+            {day.toLocaleDateString(undefined, { weekday: 'narrow' })}
+            <span className="hidden sm:inline">
+              {day.toLocaleDateString(undefined, { weekday: 'short' }).slice(1)}
+            </span>
+          </p>
+        ))}
+      </div>
+
+      <div className="grid grid-cols-7 gap-1">
+        {days.map((day) => {
+          const dayShifts = shiftsByDay.get(day.toDateString()) ?? [];
+          const hours =
+            Math.round(
+              dayShifts.reduce(
+                (sum, shift) =>
+                  sum +
+                  (new Date(shift.endsAt).getTime() - new Date(shift.startsAt).getTime()) /
+                    3_600_000,
+                0,
+              ) * 10,
+            ) / 10;
+
+          // The days either side of the month are there to square off the grid.
+          // They are shown, because a shift on the 1st matters whichever row it
+          // lands in, but dimmed so the month still reads as a month.
+          const outside = day.getMonth() !== monthStart.getMonth();
+          const isToday = day.toDateString() === today;
+
+          return (
+            <button
+              key={day.toISOString()}
+              type="button"
+              onClick={() => onPickDay(day)}
+              aria-label={`${day.toLocaleDateString(undefined, {
+                weekday: 'long',
+                month: 'long',
+                day: 'numeric',
+              })} — ${
+                dayShifts.length === 0
+                  ? 'no shifts'
+                  : `${dayShifts.length} shift${dayShifts.length === 1 ? '' : 's'}, ${hours} hours`
+              }`}
+              className={`min-h-[72px] rounded-lg border p-1.5 text-left transition hover:border-brand-400 hover:bg-brand-50 sm:min-h-[92px] sm:p-2 ${
+                isToday ? 'border-brand-500 ring-1 ring-brand-500' : 'border-slate-200'
+              } ${outside ? 'bg-slate-50 opacity-60' : 'bg-white'}`}
+            >
+              <span
+                className={`block text-xs font-semibold sm:text-sm ${
+                  isToday ? 'text-brand-800' : 'text-slate-900'
+                }`}
+              >
+                {day.getDate()}
+              </span>
+
+              {dayShifts.length === 0 ? (
+                <span className="mt-1 block text-[11px] text-slate-300 sm:text-xs">—</span>
+              ) : (
+                <>
+                  <span className="mt-1 block text-[11px] font-medium text-slate-700 sm:text-xs">
+                    {dayShifts.length} on
+                  </span>
+                  <span className="block text-[11px] text-slate-500 sm:text-xs">{hours}h</span>
+                </>
+              )}
+            </button>
+          );
+        })}
+      </div>
+
+      <p className="mt-2 text-xs text-slate-500">
+        Pick a day to open its week, where shifts are added and removed.
+      </p>
+    </div>
   );
 }

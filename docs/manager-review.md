@@ -99,12 +99,27 @@ nothing when somebody disputes their pay.
 
 ### 4. Building the week (**Schedule**)
 
-The week grid, plus three things that save the tedious part:
+The week grid, plus four things that save the tedious part:
 
 - **Repeating shifts** — one form makes a month of Tuesdays and Thursdays.
 - **Copy last week into this one** — because most weeks look like the last one.
 - **Coverage this week** — hours per day, who is on, who is away, and the days
   nobody is scheduled at all.
+- **Overtime warning** — anybody the rota puts past 40 hours in a week, while
+  you can still move a shift. It counts the whole week even if you are only
+  looking at two days of it, and hours at both offices, not just the one on
+  screen.
+
+There is a **Week / Month** switch at the top right. The month view is an
+overview — how many people are on each day and for how long — and a day in it
+opens that week, where shifts are actually added and removed. It deliberately
+does not show names: seven columns on a phone leaves room for a number and not
+much else.
+
+- **Tell us:** is the month view showing the right thing? Counts and hours, or
+  would you rather see who is on?
+- **Tell us:** is 40 hours the right line, and should it ever stop you
+  scheduling somebody rather than just saying so? Today it only says so.
 
 Approving somebody's time off deliberately does **not** cancel their shifts. The
 coverage strip flags the clash instead, and a person reassigns the cover.
@@ -112,6 +127,8 @@ coverage strip flags the clash instead, and a person reassigns the cover.
 - **Tell us:** should it cancel them automatically? We left it manual because it
   is easy to add and hard to undo.
 - **Tell us:** how far ahead do you publish the schedule? A fortnight? A month?
+  The app starts nagging four days before an unpublished week begins, which is a
+  guess we would rather replace with your answer.
 
 ### 5. Time off (**Time off**)
 

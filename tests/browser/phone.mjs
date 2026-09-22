@@ -162,6 +162,24 @@ await step('the repeating-shifts form fits a phone', async () => {
 });
 await page.screenshot({ path: `${OUT}/53-phone-repeat.png`, fullPage: true });
 
+await step('the month view fits a phone', async () => {
+  // Seven columns is about fifty pixels each at this width, which is exactly
+  // why the month view shows counts rather than shift cards. If it ever goes
+  // back to names, this is what should notice.
+  await page.getByRole('link', { name: /^Schedule/ }).first().click();
+  await page.getByRole('button', { name: 'Month', exact: true }).click();
+  await page.getByTestId('month-grid').waitFor({ timeout: 15000 });
+  await assertNoSidewaysScroll(page, 'Month view');
+
+  // And the weekday headings still line up with seven columns of days.
+  const headings = await page.getByTestId('month-grid').locator('p').first().innerText();
+  if (headings.trim().length === 0) throw new Error('the weekday headings vanished');
+
+  await page.getByRole('button', { name: 'Week', exact: true }).click();
+  await page.getByTestId('week-grid').waitFor({ timeout: 15000 });
+});
+await page.screenshot({ path: `${OUT}/53a-phone-month.png`, fullPage: true });
+
 await step('an open checklist fits a phone', async () => {
   await page.getByRole('link', { name: /^Checklists/ }).first().click();
   await page.getByRole('button', { name: /onboarding/ }).first().click();

@@ -361,6 +361,34 @@ name and a half-typed PIN.
   responsibly without a reader in hand to test against. See
   `docs/open-questions.md`.
 
+### A week to build one, a month to see its shape
+
+The Schedule screen does both. The week view is where shifts are added and
+removed; the month view is an overview, and a day in it is a way back to that
+week.
+
+**The month is drawn as whole Monday-to-Sunday weeks**, so every row has seven
+days and the month sits inside it — four rows for a February that starts on a
+Monday, six for a month that straddles. The days either side are shown but
+dimmed: a shift on the 1st matters whichever row it lands in.
+
+**Counts, not shift cards.** Seven columns on a phone is about fifty pixels
+each, which fits a number and nothing else. A month view is for spotting the
+shape of a rota — the empty Tuesday, the week everybody is on — rather than
+reading who is doing what, and the detail is one tap away in the week it belongs
+to. The phone suite asserts this, so a later attempt to put names back will be
+noticed rather than shipped.
+
+**The day-by-day coverage strip stays a week thing.** A month of those squares
+would be a second, worse calendar next to the real one. The overtime warning
+appears in both views, from the same component: overtime is a per-week question
+either way, and a month view that quietly used a different rule would be worse
+than one that said nothing.
+
+`monthGrid` in `lib/format.ts` builds the range. It is worth reading the note on
+`addMonths` next to it: `setMonth` on the 31st rolls into the month after next,
+and a schedule that skips February is a memorable bug.
+
 ### Warning about overtime while the rota is being built
 
 The coverage strip answers "is anybody scheduled?"; this answers "is anybody
