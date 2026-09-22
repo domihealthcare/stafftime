@@ -3,6 +3,9 @@ import { mkdirSync } from 'node:fs';
 // Screenshots go wherever the caller says, or into ./shots (gitignored).
 const OUT = process.argv[2] || new URL('./shots/', import.meta.url).pathname;
 mkdirSync(OUT, { recursive: true });
+// Defaults to the dev server; point at `vite preview` to test the built bundle
+// with the deployed security headers applied.
+const BASE = process.env.BASE_URL || 'http://127.0.0.1:5173';
 const browser = await chromium.launch(
   // Fall back to whatever Playwright downloaded when CHROMIUM_PATH is unset.
   process.env.CHROMIUM_PATH ? { executablePath: process.env.CHROMIUM_PATH } : {},
@@ -24,7 +27,7 @@ const step = async (name, fn) => {
 async function signedInPage(contextOpts) {
   const ctx = await browser.newContext({ viewport: { width: 420, height: 900 }, ...contextOpts });
   const page = await ctx.newPage();
-  await page.goto('http://127.0.0.1:5173/', { waitUntil: 'networkidle' });
+  await page.goto(`${BASE}/`, { waitUntil: 'networkidle' });
   await signInAs(page, 'frontdesk@domihealthcare.com');
   await page.getByText('Not clocked in').waitFor({ timeout: 10000 });
   return page;

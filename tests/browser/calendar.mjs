@@ -3,6 +3,9 @@ import { mkdirSync } from 'node:fs';
 // Screenshots go wherever the caller says, or into ./shots (gitignored).
 const OUT = process.argv[2] || new URL('./shots/', import.meta.url).pathname;
 mkdirSync(OUT, { recursive: true });
+// Defaults to the dev server; point at `vite preview` to test the built bundle
+// with the deployed security headers applied.
+const BASE = process.env.BASE_URL || 'http://127.0.0.1:5173';
 const browser = await chromium.launch(
   // Fall back to whatever Playwright downloaded when CHROMIUM_PATH is unset.
   process.env.CHROMIUM_PATH ? { executablePath: process.env.CHROMIUM_PATH } : {},
@@ -20,7 +23,7 @@ const ctx = await browser.newContext({
 const page = await ctx.newPage();
 page.on('pageerror', (e) => errors.push(`pageerror: ${e.message}`));
 
-await page.goto('http://127.0.0.1:5173/', { waitUntil: 'networkidle' });
+await page.goto(`${BASE}/`, { waitUntil: 'networkidle' });
 
 await step('the test-environment banner shows before anyone signs in', async () => {
   await page.getByText(/Test environment — nothing here is real/).waitFor({ timeout: 15000 });
@@ -39,7 +42,7 @@ await step('the banner stays once signed in', async () => {
 await step('the banner is on the kiosk screen too', async () => {
   const kioskCtx = await browser.newContext();
   const kiosk = await kioskCtx.newPage();
-  await kiosk.goto('http://127.0.0.1:5173/kiosk', { waitUntil: 'networkidle' });
+  await kiosk.goto(`${BASE}/kiosk`, { waitUntil: 'networkidle' });
   await kiosk.getByText(/Test environment/).waitFor({ timeout: 15000 });
   await kioskCtx.close();
 });
@@ -57,7 +60,10 @@ await step('the link can be revealed and copied', async () => {
   const input = page.getByLabel('Your private calendar address');
   await input.waitFor({ timeout: 15000 });
   url = await input.inputValue();
-  if (!/^http:\/\/127\.0\.0\.1:5173\/api\/calendar\/[A-Za-z0-9_-]{32}\/domi\.ics$/.test(url))
+  const expected = new RegExp(
+    `^${BASE.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}/api/calendar/[A-Za-z0-9_-]{32}/domi\\.ics$`,
+  );
+  if (!expected.test(url))
     throw new Error(`unexpected calendar url: ${url}`);
 
   await page.getByRole('button', { name: 'Copy' }).click();

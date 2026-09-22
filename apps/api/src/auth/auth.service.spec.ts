@@ -29,15 +29,21 @@ describe('AuthService', () => {
       revoke: jest.fn().mockResolvedValue(undefined),
       revokeAllForEmployee: jest.fn().mockResolvedValue(2),
     };
+    const throttle = {
+      assertNotThrottled: jest.fn().mockResolvedValue(undefined),
+      recordFailure: jest.fn().mockResolvedValue(undefined),
+    };
     const service = new AuthService(
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       prisma as any,
       passwords,
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       sessions as any,
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      throttle as any,
       config,
     );
-    return { service, prisma, sessions };
+    return { service, prisma, sessions, throttle };
   }
 
   const active = () => ({
@@ -115,6 +121,44 @@ describe('AuthService', () => {
       const { service, prisma } = build({ ...active(), failedLoginAttempts: 0 });
       await service.login('frankie@domihealthcare.com', 'wrong', {}).catch(() => undefined);
       expect(prisma.employee.update.mock.calls[0][0].data.failedLoginAttempts).toBe(1);
+    });
+
+    it('records the failure against the address as well as the account', async () => {
+      const { service, throttle } = build({ ...active(), failedLoginAttempts: 0 });
+      await service
+        .login('frankie@domihealthcare.com', 'wrong', { ipAddress: '203.0.113.7' })
+        .catch(() => undefined);
+
+      expect(throttle.recordFailure).toHaveBeenCalledWith(
+        'frankie@domihealthcare.com',
+        '203.0.113.7',
+      );
+    });
+
+    it('records a failure for an unknown account too, so spraying is counted', async () => {
+      const { service, throttle } = build(null);
+      await service
+        .login('nobody@domihealthcare.com', 'whatever', { ipAddress: '203.0.113.7' })
+        .catch(() => undefined);
+
+      expect(throttle.recordFailure).toHaveBeenCalledWith(
+        'nobody@domihealthcare.com',
+        '203.0.113.7',
+      );
+    });
+
+    it('checks the address throttle before doing any password work', async () => {
+      const { service, prisma, throttle } = build(active());
+      throttle.assertNotThrottled.mockRejectedValue(new Error('throttled'));
+
+      await expect(
+        service.login('frankie@domihealthcare.com', 'breakfast tuesday lamp', {
+          ipAddress: '203.0.113.7',
+        }),
+      ).rejects.toThrow('throttled');
+
+      // Not even a lookup: a throttled address costs nothing to refuse.
+      expect(prisma.employee.findUnique).not.toHaveBeenCalled();
     });
 
     it('locks the account at the configured attempt limit', async () => {

@@ -4,6 +4,9 @@ import { mkdirSync } from 'node:fs';
 // Screenshots go wherever the caller says, or into ./shots (gitignored).
 const OUT = process.argv[2] || new URL('./shots/', import.meta.url).pathname;
 mkdirSync(OUT, { recursive: true });
+// Defaults to the dev server; point at `vite preview` to test the built bundle
+// with the deployed security headers applied.
+const BASE = process.env.BASE_URL || 'http://127.0.0.1:5173';
 const errors = [];
 
 const browser = await chromium.launch(
@@ -38,7 +41,7 @@ const step = async (name, fn) => {
   catch (e) { console.log(`FAIL  ${name}: ${e.message}`); errors.push(`${name}: ${e.message}`); }
 };
 
-await page.goto('http://127.0.0.1:5173/', { waitUntil: 'networkidle' });
+await page.goto(`${BASE}/`, { waitUntil: 'networkidle' });
 
 await step('sign-in screen is shown first', async () => {
   await page.getByRole('button', { name: 'Sign in' }).waitFor({ timeout: 10000 });
@@ -139,7 +142,7 @@ await step('manager creates a shift', async () => {
   await page.getByRole('button', { name: 'Create shift' }).click();
   // The form closes on success; navigate to that week to see the shift.
   await page.getByRole('button', { name: '+ Add shift' }).waitFor({ timeout: 10000 });
-  await page.goto('http://127.0.0.1:5173/schedule', { waitUntil: 'networkidle' });
+  await page.goto(`${BASE}/schedule`, { waitUntil: 'networkidle' });
 });
 
 await step('an overlapping shift is refused and the reason is shown', async () => {

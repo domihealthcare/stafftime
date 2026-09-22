@@ -62,3 +62,21 @@ first argument.
 - **Never point these at production.** The reset step re-seeds the database,
   which resets locations to placeholder coordinates and gives every seeded
   account the same well-known password.
+
+## Testing what production actually serves
+
+The deployed app sends a Content-Security-Policy and a set of other security
+headers (see `vercel.json`). A CSP that is wrong turns the whole app into a
+blank page, and a deployment is the worst place to find that out.
+
+`vite preview` serves the real production bundle with those same headers — it
+reads them out of `vercel.json` rather than keeping a copy — so the suites can
+be pointed at it:
+
+```bash
+npm run preview          # from the repo root; serves on :4173
+BASE_URL=http://127.0.0.1:4173 npm run test:browser
+```
+
+That is how the policy is checked rather than assumed. Blob-URL downloads,
+geolocation and the kiosk all work under it.

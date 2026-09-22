@@ -13,6 +13,7 @@ import { EmployeesModule } from './employees/employees.module';
 import { ExportsModule } from './exports/exports.module';
 import { KioskModule } from './kiosk/kiosk.module';
 import { LocationsModule } from './locations/locations.module';
+import { MaintenanceModule } from './maintenance/maintenance.module';
 import { PrismaModule } from './prisma/prisma.module';
 import { PtoModule } from './pto/pto.module';
 import { SetupModule } from './setup/setup.module';
@@ -34,6 +35,7 @@ import { TimeEntriesModule } from './time-entries/time-entries.module';
     ExportsModule,
     PtoModule,
     ChecklistsModule,
+    MaintenanceModule,
     SetupModule,
   ],
   controllers: [AppController],

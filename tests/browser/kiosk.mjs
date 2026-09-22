@@ -3,6 +3,9 @@ import { mkdirSync } from 'node:fs';
 // Screenshots go wherever the caller says, or into ./shots (gitignored).
 const OUT = process.argv[2] || new URL('./shots/', import.meta.url).pathname;
 mkdirSync(OUT, { recursive: true });
+// Defaults to the dev server; point at `vite preview` to test the built bundle
+// with the deployed security headers applied.
+const BASE = process.env.BASE_URL || 'http://127.0.0.1:5173';
 const browser = await chromium.launch(
   // Fall back to whatever Playwright downloaded when CHROMIUM_PATH is unset.
   process.env.CHROMIUM_PATH ? { executablePath: process.env.CHROMIUM_PATH } : {},
@@ -17,7 +20,7 @@ const step = async (name, fn) => {
 const adminCtx = await browser.newContext({ viewport: { width: 1280, height: 900 } });
 const admin = await adminCtx.newPage();
 admin.on('pageerror', (e) => errors.push(`admin pageerror: ${e.message}`));
-await admin.goto('http://127.0.0.1:5173/', { waitUntil: 'networkidle' });
+await admin.goto(`${BASE}/`, { waitUntil: 'networkidle' });
 await admin.getByLabel('Email').fill('admin@domihealthcare.com');
 await admin.getByLabel('Password', { exact: true }).fill('shift-change-2026');
 await admin.getByRole('button', { name: 'Sign in' }).click();
@@ -45,7 +48,7 @@ const tablet = await tabletCtx.newPage();
 tablet.on('pageerror', (e) => errors.push(`tablet pageerror: ${e.message}`));
 
 await step('an unpaired tablet shows the setup screen, not the keypad', async () => {
-  await tablet.goto('http://127.0.0.1:5173/kiosk', { waitUntil: 'networkidle' });
+  await tablet.goto(`${BASE}/kiosk`, { waitUntil: 'networkidle' });
   await tablet.getByText('Set up this kiosk').waitFor({ timeout: 10000 });
 });
 await tablet.screenshot({ path: `${OUT}/17-kiosk-pairing.png`, fullPage: true });

@@ -194,22 +194,36 @@ Built and working with PINs. What is left:
       not set up, and a decision for you rather than a technical blocker.
 - [x] ~~Rate limiting and lockout on kiosk PIN entry.~~ Done — 5 attempts then
       10 minutes, tracked separately from password lockout.
-- [ ] **Per-IP rate limiting on the login endpoint.** Account lockout stops
-      guessing at one account; it does not stop one attacker spraying one common
-      password across every known address.
-- [ ] **Schedule `SessionService.purgeExpired()`** so expired session rows are
-      cleaned up rather than accumulating.
+- [x] ~~Per-address rate limiting on the login endpoint.~~ Done, and it counts
+      distinct accounts rather than raw failures — both offices share an
+      address, so "N failures per IP" would lock the whole front desk out on a
+      bad Monday. See `docs/architecture.md`. Worth revisiting the threshold
+      (ten accounts in ten minutes) once Domi's headcount is bigger.
+- [x] ~~Schedule `SessionService.purgeExpired()`.~~ Done, as a daily Vercel
+      cron hitting `GET /api/maintenance/purge`, which also clears stale
+      throttle rows, expired kiosk pairing codes and orphaned file bytes.
+      Needs `CRON_SECRET` set on the deployment — without it the route refuses
+      everything rather than falling open.
 - [ ] **Two-factor authentication** — worth considering given the app holds
-      staff location history, but not started.
+      staff location history and now I-9s, but not started.
+- [ ] **Confirm the Content-Security-Policy survives the real deployment.** It
+      is set in `vercel.json` and verified locally against the production
+      bundle (`npm run preview` serves the same headers, and the browser suites
+      pass under them), but Vercel's own header handling is not identical to
+      Vite's. Load the site once after deploying and check the browser console
+      for CSP violations.
 - [ ] **Tune the GPS accuracy tolerance** (currently 2× the geofence radius)
       against real readings from both offices — indoor fixes are often poor.
 - [x] ~~Decide the hosted Postgres provider.~~ Neon, as written up in
       `DEPLOY.md` — a free tier that is enough for a practice this size, and it
       hands out both a pooled and a direct connection string, which Prisma
       migrations need.
-- [ ] **Integration tests against a real database.** Unit tests cover the
-      verification rules; the service layer is currently only covered by manual
-      end-to-end checks.
+- [ ] **Integration tests against a real database at the service layer.** The
+      browser suites in `tests/browser` now cover the service layer end to end
+      against real Postgres, which was the gap. What is still missing is the
+      awkward middle: a service-level test that can force a race or a partial
+      failure (two clock-ins at once, an upload that dies between the storage
+      write and the metadata row) without driving a browser.
 - [ ] **Generate the frontend's API types from the server** instead of
       hand-maintaining `apps/web/src/lib/types.ts`. Today a server-side rename
       compiles fine and breaks at runtime.

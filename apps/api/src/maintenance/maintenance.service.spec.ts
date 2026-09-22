@@ -1,0 +1,72 @@
+import { MaintenanceService } from './maintenance.service';
+
+describe('MaintenanceService', () => {
+  function build(options: { documents?: { storageKey: string }[] } = {}) {
+    const prisma = {
+      kioskDevice: { updateMany: jest.fn().mockResolvedValue({ count: 2 }) },
+      checklistDocument: {
+        findMany: jest.fn().mockResolvedValue(options.documents ?? []),
+      },
+      storedFile: { deleteMany: jest.fn().mockResolvedValue({ count: 1 }) },
+    };
+    const sessions = { purgeExpired: jest.fn().mockResolvedValue(7) };
+    const throttle = { purgeOld: jest.fn().mockResolvedValue(3) };
+
+    return {
+      service: new MaintenanceService(prisma as never, sessions as never, throttle as never),
+      prisma,
+      sessions,
+      throttle,
+    };
+  }
+
+  it('reports what it removed', async () => {
+    const { service } = build();
+    await expect(service.purge()).resolves.toEqual({
+      expiredSessions: 7,
+      staleLoginAttempts: 3,
+      expiredPairingCodes: 2,
+      orphanedFiles: 1,
+    });
+  });
+
+  it('clears only pairing codes that expired unused, and keeps the device', async () => {
+    const { service, prisma } = build();
+    await service.purge();
+
+    const call = prisma.kioskDevice.updateMany.mock.calls[0][0];
+    expect(call.where.pairedAt).toBeNull();
+    expect(call.where.pairingExpiresAt.lt).toBeInstanceOf(Date);
+    expect(call.data).toEqual({ pairingCodeHash: null, pairingExpiresAt: null });
+  });
+
+  it('leaves bytes that a document still points at', async () => {
+    const { service, prisma } = build({
+      documents: [{ storageKey: 'a' }, { storageKey: 'b' }],
+    });
+    await service.purge();
+
+    const where = prisma.storedFile.deleteMany.mock.calls[0][0].where;
+    expect(where.storageKey).toEqual({ notIn: ['a', 'b'] });
+  });
+
+  it('does not build an empty notIn when nothing is referenced', async () => {
+    // `notIn: []` matches nothing in some engines and everything in others.
+    // Leaving the clause out entirely is unambiguous.
+    const { service, prisma } = build({ documents: [] });
+    await service.purge();
+
+    const where = prisma.storedFile.deleteMany.mock.calls[0][0].where;
+    expect(where.storageKey).toBeUndefined();
+  });
+
+  it('gives an in-flight upload an hour before calling it an orphan', async () => {
+    const { service, prisma } = build();
+    await service.purge();
+
+    const cutoff = prisma.storedFile.deleteMany.mock.calls[0][0].where.createdAt.lt as Date;
+    const minutesAgo = (Date.now() - cutoff.getTime()) / 60_000;
+    expect(minutesAgo).toBeGreaterThanOrEqual(59);
+    expect(minutesAgo).toBeLessThanOrEqual(61);
+  });
+});

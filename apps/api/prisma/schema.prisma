@@ -671,3 +671,27 @@ model StoredFile {
 
   @@map("stored_files")
 }
+
+// ---------------------------------------------------------------------------
+// Login attempts (per-address throttling)
+// ---------------------------------------------------------------------------
+
+/// One row per *failed* sign-in, used to throttle an address that is guessing.
+///
+/// In the database rather than in memory because the production deployment is
+/// serverless: an in-memory counter lives in one instance and an attacker's
+/// next request lands in another, so it would count almost nothing.
+///
+/// The email is stored hashed. The throttle needs to know how many *different*
+/// accounts an address has gone after, not which — and a plaintext column here
+/// would be a standing list of who somebody tried to sign in as.
+model LoginAttempt {
+  id        String   @id @default(uuid()) @db.Uuid
+  ipAddress String
+  emailHash String
+  at        DateTime @default(now())
+
+  @@index([ipAddress, at])
+  @@index([at])
+  @@map("login_attempts")
+}

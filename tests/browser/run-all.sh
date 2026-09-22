@@ -23,7 +23,8 @@ reset_state() {
     -c "update employees set \"failedLoginAttempts\"=0, \"lockedUntil\"=null, \"pinFailedAttempts\"=0, \"pinLockedUntil\"=null;" \
     -c "delete from shifts where \"startsAt\" >= '2027-01-01';" \
     -c "delete from employee_checklists;" \
-    -c "delete from stored_files;"
+    -c "delete from stored_files;" \
+    -c "delete from login_attempts;"
 }
 
 # The scheduler suite builds its rotas in February 2027 so that clearing them

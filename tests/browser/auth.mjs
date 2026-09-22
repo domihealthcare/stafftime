@@ -3,6 +3,9 @@ import { mkdirSync } from 'node:fs';
 // Screenshots go wherever the caller says, or into ./shots (gitignored).
 const OUT = process.argv[2] || new URL('./shots/', import.meta.url).pathname;
 mkdirSync(OUT, { recursive: true });
+// Defaults to the dev server; point at `vite preview` to test the built bundle
+// with the deployed security headers applied.
+const BASE = process.env.BASE_URL || 'http://127.0.0.1:5173';
 const browser = await chromium.launch(
   // Fall back to whatever Playwright downloaded when CHROMIUM_PATH is unset.
   process.env.CHROMIUM_PATH ? { executablePath: process.env.CHROMIUM_PATH } : {},
@@ -17,7 +20,7 @@ const newPage = async (opts = {}) => {
   const ctx = await browser.newContext({ viewport: { width: 420, height: 900 }, ...opts });
   const page = await ctx.newPage();
   page.on('pageerror', (e) => errors.push(`pageerror: ${e.message}`));
-  await page.goto('http://127.0.0.1:5173/', { waitUntil: 'networkidle' });
+  await page.goto(`${BASE}/`, { waitUntil: 'networkidle' });
   return page;
 };
 
@@ -136,6 +139,38 @@ await step('the new password works on a fresh sign-in, the old one does not', as
   await page.reload({ waitUntil: 'networkidle' });
   await signIn(page, 'ma@domihealthcare.com', 'harbour lantern tuesday');
   await page.getByText('Not clocked in').waitFor({ timeout: 15000 });
+});
+
+// Left until last on purpose: it throttles this address, which would break
+// every sign-in after it. The runner clears login_attempts between suites.
+await step('an address working through a list of accounts gets throttled', async () => {
+  const fresh = await browser.newContext({ viewport: { width: 1280, height: 900 } });
+  const spray = await fresh.newPage();
+  await spray.goto(`${BASE}/`, { waitUntil: 'networkidle' });
+
+  // Ten different addresses, one guess each — far fewer attempts than the
+  // per-account lockout allows, and a shape account lockout cannot see.
+  for (let i = 1; i <= 10; i += 1) {
+    await spray.getByLabel('Email').fill(`person${i}@domihealthcare.com`);
+    await spray.getByLabel('Password', { exact: true }).fill('summer2026!');
+    await spray.getByRole('button', { name: 'Sign in' }).click();
+    await spray.getByRole('alert').waitFor({ timeout: 10000 });
+  }
+
+  await spray.getByLabel('Email').fill('person11@domihealthcare.com');
+  await spray.getByLabel('Password', { exact: true }).fill('summer2026!');
+  await spray.getByRole('button', { name: 'Sign in' }).click();
+  await spray
+    .getByText(/Too many failed sign-ins from this connection/)
+    .waitFor({ timeout: 10000 });
+
+  // And it says nothing about which of those addresses were real.
+  const shown = await spray.getByRole('alert').innerText();
+  if (/exist|unknown|no such/i.test(shown))
+    throw new Error(`the refusal leaked something: ${shown}`);
+
+  await spray.screenshot({ path: `${OUT}/45-throttled.png`, fullPage: true });
+  await fresh.close();
 });
 
 await browser.close();

@@ -24,6 +24,7 @@
     "dev:api": "npm run start:dev --workspace @stafftime/api",
     "dev:web": "npm run dev --workspace @stafftime/web",
     "typecheck": "npm run typecheck --workspace @stafftime/web",
+    "preview": "npm run build --workspace @stafftime/web && npm run preview --workspace @stafftime/web",
     "vercel-build": "npm run prisma:generate --workspace @stafftime/api && npm run prisma:deploy --workspace @stafftime/api && npm run build --workspace @stafftime/web"
   },
   "devDependencies": {

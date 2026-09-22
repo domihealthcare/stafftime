@@ -44,7 +44,7 @@ a pooler and use the direct one.
 2. **Add New → Project**, and import `domihealthcare/stafftime`
 3. Leave every build setting alone. The repository already tells Vercel what to
    do
-4. Expand **Environment Variables** and add these eleven:
+4. Expand **Environment Variables** and add these twelve:
 
 | Name | Value |
 | --- | --- |
@@ -60,11 +60,18 @@ a pooler and use the direct one.
 | `PIN_LOCKOUT_MINUTES` | `10` |
 | `PUNCH_GRACE_MINUTES` | `5` |
 | `MAX_UPLOAD_MB` | `10` |
+| `CRON_SECRET` | another long random phrase — see below |
 
 **`SETUP_TOKEN`** is a one-time password that lets you create the first
 administrator account. Make it long and unguessable — four or five random words
 is ideal, for example `copper-lantern-harbour-tuesday-49`. You will type it once
 and then delete it.
+
+**`CRON_SECRET`** authorises the nightly housekeeping job — clearing expired
+sessions, stale sign-in counters and kiosk pairing codes that were never used.
+Make it long and random, the same way as `SETUP_TOKEN`, and keep it: unlike
+`SETUP_TOKEN` this one stays. If it is missing the job simply refuses to run,
+which is safe but means nothing gets tidied up.
 
 **`MAX_UPLOAD_MB`** is the largest checklist document anybody can attach. A
 scanned form is well under 10MB; the cap is there so one person cannot fill the

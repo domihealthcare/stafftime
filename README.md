@@ -83,6 +83,7 @@ Run them separately with `npm run dev:api` and `npm run dev:web` if you prefer.
 | `npm run test:browser` | Run the end-to-end browser checks (see [tests/browser](./tests/browser)) |
 | `npm run lint` | Check code style |
 | `npm run build` | Build both apps for production |
+| `npm run preview` | Serve the built web app with the deployed security headers, at http://localhost:4173 |
 | `npm run db:studio` | Open a visual database browser |
 | `npm run db:down` | Stop the local database |
 
@@ -183,6 +184,7 @@ placeholders, so do not run it after setting real values.
 | `PATCH` | `/api/checklists/tasks/:id` | manager, or the employee for their own tasks |
 | `POST` | `/api/checklists/tasks/:id/documents` | admin, or the employee for their own tasks |
 | `GET`/`DELETE` | `/api/checklists/documents/:id` | admin, or the person it is about |
+| `GET` | `/api/maintenance/purge` | the scheduled housekeeping job, with `CRON_SECRET` |
 | `POST` | `/api/time-entries/clock-in` | anyone |
 | `POST` | `/api/time-entries/clock-out` | anyone |
 | `GET` | `/api/time-entries/current` | anyone |

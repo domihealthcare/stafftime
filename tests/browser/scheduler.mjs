@@ -3,6 +3,9 @@ import { mkdirSync } from 'node:fs';
 // Screenshots go wherever the caller says, or into ./shots (gitignored).
 const OUT = process.argv[2] || new URL('./shots/', import.meta.url).pathname;
 mkdirSync(OUT, { recursive: true });
+// Defaults to the dev server; point at `vite preview` to test the built bundle
+// with the deployed security headers applied.
+const BASE = process.env.BASE_URL || 'http://127.0.0.1:5173';
 const browser = await chromium.launch(
   // Fall back to whatever Playwright downloaded when CHROMIUM_PATH is unset.
   process.env.CHROMIUM_PATH ? { executablePath: process.env.CHROMIUM_PATH } : {},
@@ -15,7 +18,7 @@ const step = async (name, fn) => {
 
 const page = await browser.newPage({ viewport: { width: 1280, height: 1100 } });
 page.on('pageerror', (e) => errors.push(`pageerror: ${e.message}`));
-await page.goto('http://127.0.0.1:5173/', { waitUntil: 'networkidle' });
+await page.goto(`${BASE}/`, { waitUntil: 'networkidle' });
 await page.getByLabel('Email').fill('manager@domihealthcare.com');
 await page.getByLabel('Password', { exact: true }).fill('shift-change-2026');
 await page.getByRole('button', { name: 'Sign in' }).click();
@@ -87,7 +90,7 @@ await step('running the same rota again reports every day as skipped', async () 
 await step('the created shifts show on the week grid', async () => {
   await page.getByRole('button', { name: 'Dismiss' }).click();
   // Navigate to the first week of February 2027.
-  await page.goto('http://127.0.0.1:5173/schedule', { waitUntil: 'networkidle' });
+  await page.goto(`${BASE}/schedule`, { waitUntil: 'networkidle' });
   for (let i = 0; i < 20; i += 1) {
     const label = await page.locator('main').innerText();
     if (/Feb 1|Feb 2/.test(label)) break;
@@ -109,7 +112,7 @@ await page.screenshot({ path: `${OUT}/39-copy-week.png`, fullPage: true });
 await step('an employee sees neither the planning tools nor coverage', async () => {
   const empCtx = await browser.newContext({ viewport: { width: 1280, height: 900 } });
   const emp = await empCtx.newPage();
-  await emp.goto('http://127.0.0.1:5173/', { waitUntil: 'networkidle' });
+  await emp.goto(`${BASE}/`, { waitUntil: 'networkidle' });
   await emp.getByLabel('Email').fill('frontdesk@domihealthcare.com');
   await emp.getByLabel('Password', { exact: true }).fill('shift-change-2026');
   await emp.getByRole('button', { name: 'Sign in' }).click();

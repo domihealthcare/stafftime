@@ -3,6 +3,9 @@ import { mkdirSync } from 'node:fs';
 // Screenshots go wherever the caller says, or into ./shots (gitignored).
 const OUT = process.argv[2] || new URL('./shots/', import.meta.url).pathname;
 mkdirSync(OUT, { recursive: true });
+// Defaults to the dev server; point at `vite preview` to test the built bundle
+// with the deployed security headers applied.
+const BASE = process.env.BASE_URL || 'http://127.0.0.1:5173';
 const browser = await chromium.launch(
   // Fall back to whatever Playwright downloaded when CHROMIUM_PATH is unset.
   process.env.CHROMIUM_PATH ? { executablePath: process.env.CHROMIUM_PATH } : {},
@@ -23,7 +26,7 @@ const ctx = await browser.newContext({
 const page = await ctx.newPage();
 page.on('pageerror', (e) => errors.push(`pageerror: ${e.message}`));
 
-await page.goto('http://127.0.0.1:5173/', { waitUntil: 'networkidle' });
+await page.goto(`${BASE}/`, { waitUntil: 'networkidle' });
 await page.getByLabel('Email').fill('admin@domihealthcare.com');
 await page.getByLabel('Password', { exact: true }).fill('shift-change-2026');
 await page.getByRole('button', { name: 'Sign in' }).click();
@@ -64,7 +67,7 @@ await step('it reports how far that is from the saved position', async () => {
 });
 
 await step('nothing is saved until Save is pressed', async () => {
-  const response = await page.request.get('http://127.0.0.1:5173/api/locations');
+  const response = await page.request.get(`${BASE}/api/locations`);
   const saved = (await response.json()).find((l) => l.slug === 'north-bergen');
   if (Number(saved.latitude).toFixed(5) === '40.80472')
     throw new Error('the capture was persisted without pressing Save');
@@ -76,7 +79,7 @@ await step('saving persists the coordinates and the radius', async () => {
   await page.getByRole('button', { name: 'Save North Bergen' }).click();
   await page.getByText('Saved.').waitFor({ timeout: 15000 });
 
-  const response = await page.request.get('http://127.0.0.1:5173/api/locations');
+  const response = await page.request.get(`${BASE}/api/locations`);
   const saved = (await response.json()).find((l) => l.slug === 'north-bergen');
   if (Number(saved.latitude).toFixed(5) !== '40.80472')
     throw new Error(`latitude not saved: ${saved.latitude}`);
@@ -93,7 +96,7 @@ await step('the new geofence actually governs clock-in', async () => {
     geolocation: { latitude: 40.80742, longitude: -74.012, accuracy: 10 },
   });
   const far = await farCtx.newPage();
-  await far.goto('http://127.0.0.1:5173/', { waitUntil: 'networkidle' });
+  await far.goto(`${BASE}/`, { waitUntil: 'networkidle' });
   await far.getByLabel('Email').fill('frontdesk@domihealthcare.com');
   await far.getByLabel('Password', { exact: true }).fill('shift-change-2026');
   await far.getByRole('button', { name: 'Sign in' }).click();
@@ -112,7 +115,7 @@ await step('an IP allow-list entry round-trips', async () => {
   await page.getByRole('button', { name: 'Save North Bergen' }).click();
   await page.getByText('Saved.').waitFor({ timeout: 15000 });
 
-  const response = await page.request.get('http://127.0.0.1:5173/api/locations');
+  const response = await page.request.get(`${BASE}/api/locations`);
   const saved = (await response.json()).find((l) => l.slug === 'north-bergen');
   if (JSON.stringify(saved.allowedIps) !== JSON.stringify(['203.0.113.0/24', '198.51.100.7']))
     throw new Error(`allow-list not saved: ${JSON.stringify(saved.allowedIps)}`);

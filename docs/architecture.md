@@ -788,3 +788,81 @@ loss; this order leaves unreferenced bytes, which is recoverable garbage.
 The database stops being sensible somewhere around a few gigabytes, or the day
 someone wants to attach video. That is what the interface is for — S3 or a blob
 store is one class.
+
+## Hardening
+
+### Per-address sign-in throttling
+
+Account lockout (8 failures, then 15 minutes) stops someone grinding away at one
+person's password. It does nothing about the other shape of attack: one common
+password tried against every address in turn, which never reaches any single
+account's limit.
+
+The obvious fix — "N failures per IP" — is wrong for this practice, because both
+offices sit behind one address each. Twenty people fumbling their passwords on a
+Monday morning are one address with a lot of failures, and locking the whole
+front desk out of the clock is a worse outage than the attack it prevents.
+
+So `auth/login-throttle.service.ts` counts **how many different accounts** an
+address has failed against, inside a rolling window. Spraying is many accounts
+with few attempts each. A bad Monday is few accounts with many attempts each,
+which account lockout already handles. A deliberately high raw-failure ceiling
+sits behind it for degenerate cases.
+
+The defaults — ten accounts inside ten minutes — sit above what a practice of
+twenty could plausibly fumble and below what working through a staff list looks
+like. Two properties make the tradeoff acceptable:
+
+- **The kiosk is unaffected.** Punches go through `/api/kiosk/punch` with a PIN
+  and never touch the sign-in route, so a throttled office can still clock
+  people in at the front desk.
+- **The refusal reveals nothing.** A 429 saying "too many failed sign-ins from
+  this connection" says nothing about whether any of those addresses exist.
+
+The counters live in `login_attempts` in the database, not in memory, because
+production is serverless: an in-memory counter lives in one instance and the
+attacker's next request lands in another. The email is stored hashed — the
+throttle needs to know how many different accounts were targeted, not which, and
+a plaintext column would be a standing list of who somebody tried to sign in as.
+
+### Scheduled housekeeping
+
+`GET /api/maintenance/purge`, called daily by Vercel Cron (`vercel.json`). It
+removes expired sessions, throttle rows past the window, kiosk pairing codes
+that expired unused (an unused code is still a live credential), and file bytes
+that no document references any more.
+
+There is nobody signed in when a cron fires, so the route cannot sit behind the
+session guard. It is authorised with `CRON_SECRET` compared in constant time,
+the way Vercel sends it (`Authorization: Bearer …`). **With no `CRON_SECRET`
+configured the route refuses everything**, rather than falling open — a
+maintenance endpoint that opens when a variable is missing is worse than not
+having one.
+
+The orphaned-file sweep leaves anything younger than an hour alone, since it may
+belong to an upload that is mid-flight between the storage write and the
+metadata row.
+
+### Response headers
+
+The web app's headers are set in `vercel.json`: `nosniff`, `X-Frame-Options:
+DENY`, `Referrer-Policy: no-referrer`, a `Permissions-Policy` that keeps
+geolocation (clock-in needs it) and drops camera, microphone and payment, and a
+Content-Security-Policy that allows scripts, styles and images only from the
+app's own origin.
+
+`no-referrer` is not the usual default and is deliberate: the app puts a
+calendar subscription URL on screen, and that URL is a credential. A referrer
+header is a quiet way for one to end up in somebody else's logs.
+
+The API sets its own equivalents in `main.ts`, because Vercel's header rules do
+not apply once a request is inside the function.
+
+A wrong CSP turns the whole app into a blank page, and the deployment is the
+worst place to find that out. So `vite.config.ts` **reads the headers out of
+`vercel.json`** and serves them from `vite preview`, which serves the real
+production bundle. `npm run preview` then gives a local copy of the deployed
+configuration, and the browser suites can be pointed at it with
+`BASE_URL=http://127.0.0.1:4173` — which is how the policy was checked, rather
+than by reading it and hoping. Downloads (blob URLs), geolocation and the kiosk
+all work under it.
