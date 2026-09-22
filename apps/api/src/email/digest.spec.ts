@@ -359,14 +359,47 @@ describe('DigestService — what is going wrong at the office', () => {
       onThursday();
       const { attention } = build({
         leaverShifts: [
-          { startsAt: day('2026-09-28'), employee: { firstName: 'Max', lastName: 'Medical' } },
-          { startsAt: day('2026-09-29'), employee: { firstName: 'Max', lastName: 'Medical' } },
+          {
+            startsAt: day('2026-09-28'),
+            employeeId: 'emp-1',
+            employee: { firstName: 'Max', lastName: 'Medical' },
+          },
+          {
+            startsAt: day('2026-09-29'),
+            employeeId: 'emp-1',
+            employee: { firstName: 'Max', lastName: 'Medical' },
+          },
         ],
       });
 
       expect((await attention.gather()).shiftsForLeavers).toEqual([
         'Max Medical — 2 shifts from Sep 28, 2026, but marked as no longer employed',
       ]);
+    });
+
+    it('keeps two people with the same name apart', async () => {
+      // Grouping by display name merged them into one line with a combined
+      // count: a wrong number in an email that names somebody. Unlikely in a
+      // practice of twenty, and not the sort of thing to leave to chance.
+      onThursday();
+      const { attention } = build({
+        leaverShifts: [
+          {
+            startsAt: day('2026-09-28'),
+            employeeId: 'emp-1',
+            employee: { firstName: 'Max', lastName: 'Medical' },
+          },
+          {
+            startsAt: day('2026-09-29'),
+            employeeId: 'emp-2',
+            employee: { firstName: 'Max', lastName: 'Medical' },
+          },
+        ],
+      });
+
+      const { shiftsForLeavers } = await attention.gather();
+      expect(shiftsForLeavers).toHaveLength(2);
+      for (const line of shiftsForLeavers) expect(line).toMatch(/1 shift from/);
     });
 
     it('looks forward only — a shift they actually worked is not a mistake', async () => {

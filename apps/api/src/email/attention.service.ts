@@ -222,6 +222,7 @@ export class AttentionService {
         },
         select: {
           startsAt: true,
+          employeeId: true,
           employee: { select: { firstName: true, lastName: true } },
         },
         orderBy: { startsAt: 'asc' },
@@ -243,11 +244,16 @@ export class AttentionService {
       });
 
     // Also grouped: three shifts for one leaver is one conversation.
-    const byLeaver = new Map<string, { first: Date; count: number }>();
+    //
+    // Keyed by id rather than by name. Two people called the same thing is
+    // unlikely in a practice of twenty and not impossible anywhere, and the
+    // failure would be a line naming one of them with the other's shifts
+    // counted in — a wrong number in an email that accuses somebody.
+    const byLeaver = new Map<string, { name: string; first: Date; count: number }>();
     for (const shift of leaverShifts) {
-      const name = who(shift.employee);
-      const seen = byLeaver.get(name);
-      byLeaver.set(name, {
+      const seen = byLeaver.get(shift.employeeId);
+      byLeaver.set(shift.employeeId, {
+        name: who(shift.employee),
         first: seen ? seen.first : shift.startsAt,
         count: (seen?.count ?? 0) + 1,
       });
@@ -263,8 +269,8 @@ export class AttentionService {
       ),
       unpublishedRota: await this.unpublishedRota(today, day),
       unapprovedHours,
-      shiftsForLeavers: [...byLeaver.entries()].map(
-        ([name, { first, count }]) =>
+      shiftsForLeavers: [...byLeaver.values()].map(
+        ({ name, first, count }) =>
           `${name} — ${count} shift${count === 1 ? '' : 's'} from ${day(
             first,
           )}, but marked as no longer employed`,

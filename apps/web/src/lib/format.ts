@@ -116,8 +116,10 @@ export function monthGrid(monthStart: Date): Date[] {
   const days: Date[] = [];
   for (let day = first; day < monthEnd || days.length % 7 !== 0; day = addDays(day, 1)) {
     days.push(day);
-    // A runaway loop here would hang the browser rather than fail loudly.
-    if (days.length > 42) break;
+    // A runaway loop here would hang the browser rather than fail loudly. Six
+    // rows is the most any month needs; breaking at exactly 42 keeps the whole
+    // -weeks promise that the grid's layout depends on.
+    if (days.length === 42) break;
   }
   return days;
 }
