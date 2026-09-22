@@ -4,9 +4,11 @@ import { api } from '../lib/api';
 import { AccountMenu } from './AccountMenu';
 import { useIsAdmin, useIsManager } from '../lib/session';
 
-/// Tighter padding on a phone, so more of the nav fits per row before it wraps.
+/// On a phone each link is a cell in an even grid, so the text is centred and
+/// the padding is small — the cell, not the padding, sets the width. From `sm`
+/// up they are ordinary inline pills again.
 const linkClasses = ({ isActive }: { isActive: boolean }) =>
-  `whitespace-nowrap rounded-lg px-2.5 py-2 text-sm font-medium transition sm:px-3 ${
+  `whitespace-nowrap rounded-lg px-1 py-2 text-center text-sm font-medium transition sm:px-3 sm:text-left ${
     isActive ? 'bg-brand-50 text-brand-800' : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'
   }`;
 
@@ -33,20 +35,38 @@ export function Layout() {
   return (
     <div className="min-h-screen bg-slate-100">
       <header className="border-b border-slate-200 bg-white">
-        {/* Two columns, and the outer row deliberately does not wrap: the
-            navigation wraps *inside* its own column while the account menu
-            stays pinned to the top right. Letting the whole row wrap put the
-            account on a second line at the left — which is both worse to reach
-            and, because the dropdown is right-aligned, pushed the menu off the
-            left edge of a phone screen entirely. */}
-        <div className="mx-auto flex max-w-6xl items-start justify-between gap-2 px-4 py-3">
-          {/* Everything here wraps. An admin has nine destinations, which do
-              not fit on one line on a phone — and this app is used on phones,
-              standing at the front desk. Wrapping keeps every screen one tap
-              away rather than hiding half of them behind a menu. */}
-          <div className="flex min-w-0 flex-wrap items-center gap-x-1 gap-y-0.5">
-            <span className="mr-1 font-semibold text-slate-900 sm:mr-3">Domi</span>
-            <nav className="flex flex-wrap items-center gap-x-1 gap-y-0.5">
+        {/* One layout, two shapes, and every element appears exactly once so
+            that a link or the account button is never ambiguous to a test or a
+            screen reader.
+
+            On a phone this is a two-column grid: brand and account share the
+            top row, and the nav spans the full width beneath them. Letting the
+            links free-wrap next to the account instead gave three ragged rows
+            two pixels apart, ending at x=260, x=299 and then a lone "Export" —
+            163px of header, a fifth of the screen, on the app people open
+            standing at the front desk.
+
+            From `sm` up it is a single flex row again — brand, nav, then the
+            account pushed right — which already fitted on one line. */}
+        <div className="mx-auto grid max-w-6xl grid-cols-[1fr_auto] items-center gap-x-2 gap-y-2 px-4 py-3 sm:flex sm:justify-start sm:gap-3">
+          <span className="font-semibold text-slate-900">Domi</span>
+
+          {/* Second in the DOM so it lands in the grid's top-right cell; sent
+              to the end of the flex row on wider screens. */}
+          <div className="shrink-0 sm:order-last sm:ml-auto">
+            <AccountMenu />
+          </div>
+
+          {/* An admin has ten destinations. They stay visible rather than
+              hiding behind a menu — this is a front-desk app, and a punch
+              should never be two taps away — but as an even grid they line up
+              in columns instead of ending wherever the words happen to stop.
+
+              The column count is computed, not fixed: a hard `grid-cols-4`
+              fitted a 390px phone and then clipped "Timesheet" and pushed the
+              whole page into horizontal scroll on a 320px one. `auto-fit` with
+              a 5.25rem floor drops to three columns there instead. */}
+          <nav className="col-span-2 grid grid-cols-[repeat(auto-fit,minmax(5.25rem,1fr))] gap-1 sm:col-span-1 sm:flex sm:flex-wrap sm:items-center sm:gap-x-1 sm:gap-y-1">
               <NavLink to="/" end className={linkClasses}>
                 Clock
               </NavLink>
@@ -88,12 +108,7 @@ export function Layout() {
                   </NavLink>
                 </>
               )}
-            </nav>
-          </div>
-
-          <div className="shrink-0">
-            <AccountMenu />
-          </div>
+          </nav>
         </div>
       </header>
 

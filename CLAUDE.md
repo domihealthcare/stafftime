@@ -128,10 +128,11 @@ sits on every screen.
 
 Still to do on the deployment, in `DEPLOY.md`:
 
-- **`staff.domihealthcare.com` does not exist yet** — no DNS record, so the
-  address in this brief is not live. The apex is on Wix (`server: Pepyaka`),
-  so the CNAME is added there, using the per-project value Vercel prints on
-  the project's Settings → Domains page. There is no generic value to copy.
+- ~~`staff.domihealthcare.com` does not exist yet~~ — **done, 22 September
+  2026.** The CNAME points at `6eb32dbe408d7769.vercel-dns-017.com`, the
+  certificate is issued, and the app answers on the real address: `/api/health`
+  OK, `/api/config` reporting the test environment, sign-in returning 200. The
+  Vercel URL `stafftime-ap.vercel.app` still works alongside it.
 - **The geofence pins are still the seeded placeholders** (North Bergen
   40.804/-74.012, West New York 40.7878/-74.0143), carried straight from
   `prisma/seed.ts` — the addresses were typed in but the coordinates were
