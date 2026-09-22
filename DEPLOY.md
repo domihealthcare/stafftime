@@ -46,7 +46,41 @@ a pooler and use the direct one.
 2. **Add New → Project**, and import `domihealthcare/stafftime`
 3. Leave every build setting alone. The repository already tells Vercel what to
    do
-4. Expand **Environment Variables** and add these thirteen:
+4. Expand **Environment Variables**.
+
+Vercel reads `apps/api/.env.example` and offers you a list of keys with blank
+values. Two things to know about that list:
+
+- **Delete any row you are not filling in.** A key that is present but blank is
+  not the same as a key that is absent: absent means "use the built-in default",
+  blank means "the value is an empty string", and the app refuses to start
+  rather than guess which you meant.
+- **`SETUP_TOKEN` and `CRON_SECRET` are not on it**, because they are commented
+  out in the example file. Add them by hand.
+
+The quickest way is the **paste the .env contents** option, with these eleven —
+the two database ones come from Neon in step 1 and are added afterwards:
+
+```
+APP_ENVIRONMENT=test
+APP_URL=https://staff.domihealthcare.com
+SETUP_TOKEN=<four random words and a number>
+CRON_SECRET=<four different random words and a number>
+SESSION_TTL_HOURS=12
+SESSION_IDLE_TIMEOUT_HOURS=8
+MAX_LOGIN_ATTEMPTS=8
+LOCKOUT_MINUTES=15
+MAX_PIN_ATTEMPTS=5
+PIN_LOCKOUT_MINUTES=10
+PUNCH_GRACE_MINUTES=5
+```
+
+Leave out `PORT` (meaningless on serverless), `FILE_STORAGE` and
+`FILE_STORAGE_DIR` (the default, `database`, is the one that works on Vercel),
+and the three `LOGIN_THROTTLE_*` values (the defaults already match the example
+file).
+
+In full, the thirteen are:
 
 | Name | Value |
 | --- | --- |
