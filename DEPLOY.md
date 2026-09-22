@@ -8,19 +8,21 @@ one for hosting ([Vercel](https://vercel.com)). Both are free at this size.
 
 ---
 
-## Before you start: get the code onto `main`
+## Before you start
 
-Vercel deploys whatever is on the repository's `main` branch. The app currently
-lives on a branch called `claude/brave-ride-wupefn`, so **merge it into `main`
-first** or Vercel will deploy an empty repository.
+**The code is already on `main`** — nothing to merge. Vercel deploys whatever is
+on that branch, so everything below just works from it.
 
-1. Go to <https://github.com/domihealthcare/stafftime>
-2. GitHub will show a banner about the recently pushed branch — click
-   **Compare & pull request**. (No banner? Click **Pull requests → New pull
-   request**, and set `base: main`, `compare: claude/brave-ride-wupefn`.)
-3. Click **Create pull request**, then **Merge pull request**
+### One thing to decide first: which Vercel plan
 
-`main` now has the app. Everything below deploys from it.
+Vercel's free **Hobby** plan is for personal, non-commercial projects. This is a
+business app for a medical practice, which means **Pro** (around $20 a month) is
+the honest answer. It is not a technical limit — Hobby would run this fine — it
+is their licence terms, and worth being right about rather than discovering
+later. Check the current terms at
+<https://vercel.com/pricing> before you sign up; they do change.
+
+Neon's free tier is fine for a practice this size and has no such restriction.
 
 ---
 
@@ -155,6 +157,17 @@ either refuse people or accept the car park.
 **e. Kiosks, if you want them** — *Kiosks*. Add a tablet per location, open
 `/kiosk` on that tablet, and type the pairing code. Set each person's PIN on the
 same screen.
+
+**f. Check the two practice settings** — *Settings*, in the top right. Overtime
+starts after 40 hours a week, and the app chases you about an unpublished rota 4
+days before the week starts. Both are defaults you confirmed rather than
+measured — once you have used it for a fortnight, change them if they are wrong
+rather than working around them.
+
+**g. Decide who gets the nightly email** — *Notifications*, next to Settings.
+Each manager sets their own. It only sends on nights when there is something to
+say, and nothing is lost by turning it off: everything in it is also on the
+screen it belongs to.
 
 ## Turning email on
 
