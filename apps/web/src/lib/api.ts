@@ -1,4 +1,5 @@
 import type {
+  Announcement,
   Attention,
   Checklist,
   Credential,
@@ -618,6 +619,22 @@ export const api = {
     request<Credential>(`/credentials/${id}/archive`, { method: 'POST' }),
   deleteCredential: (id: string) =>
     request<{ deleted: boolean }>(`/credentials/${id}`, { method: 'DELETE' }),
+
+  announcements: () => request<Announcement[]>('/announcements'),
+  primaryAnnouncement: () =>
+    request<{ announcement: Announcement | null }>('/announcements/primary'),
+  createAnnouncement: (body: { title: string; body: string; isPrimary?: boolean }) =>
+    request<Announcement>('/announcements', { method: 'POST', body: JSON.stringify(body) }),
+  updateAnnouncement: (
+    id: string,
+    body: Partial<{ title: string; body: string; isPrimary: boolean }>,
+  ) =>
+    request<Announcement>(`/announcements/${id}`, {
+      method: 'PATCH',
+      body: JSON.stringify(body),
+    }),
+  deleteAnnouncement: (id: string) =>
+    request<{ deleted: boolean }>(`/announcements/${id}`, { method: 'DELETE' }),
 
   checklistTemplates: (kind?: ChecklistKind) =>
     request<ChecklistTemplate[]>(`/checklists/templates${toQuery({ kind })}`),

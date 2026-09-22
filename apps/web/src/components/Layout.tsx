@@ -50,6 +50,9 @@ export function Layout() {
               <NavLink to="/" end className={linkClasses}>
                 Clock
               </NavLink>
+              <NavLink to="/news" className={linkClasses}>
+                News
+              </NavLink>
               <NavLink to="/timesheet" className={linkClasses}>
                 Timesheet
               </NavLink>

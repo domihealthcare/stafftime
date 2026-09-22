@@ -7,6 +7,7 @@ import { Layout } from './components/Layout';
 import { Spinner } from './components/ui';
 import { SessionProvider, useSession } from './lib/session';
 import { ChangePasswordPage } from './pages/ChangePasswordPage';
+import { NewsPage } from './pages/NewsPage';
 import { NotificationsPage } from './pages/NotificationsPage';
 import { SettingsPage } from './pages/SettingsPage';
 import { ClockPage } from './pages/ClockPage';
@@ -71,6 +72,7 @@ function Routed() {
     <Routes>
       <Route element={<Layout />}>
         <Route index element={<ClockPage />} />
+        <Route path="news" element={<NewsPage />} />
         <Route path="timesheet" element={<TimesheetPage />} />
         <Route path="schedule" element={<SchedulePage />} />
         <Route path="password" element={<ChangePasswordPage forced={false} />} />

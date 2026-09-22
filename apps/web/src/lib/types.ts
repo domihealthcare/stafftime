@@ -414,3 +414,15 @@ export interface Credential {
   };
   recordedBy: { id: string; firstName: string; lastName: string } | null;
 }
+
+export interface Announcement {
+  id: string;
+  title: string;
+  /// Plain text; line breaks are meaningful.
+  body: string;
+  /// Exactly one post is primary while any exist.
+  isPrimary: boolean;
+  editedAt: string | null;
+  createdAt: string;
+  author: { id: string; firstName: string; lastName: string; preferredName: string | null } | null;
+}
