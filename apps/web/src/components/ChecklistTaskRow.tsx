@@ -80,7 +80,7 @@ export function ChecklistTaskRow({
 
   return (
     <li className="px-4 py-3">
-      <div className="flex flex-wrap items-start justify-between gap-3">
+      <div className="flex flex-wrap items-start justify-between gap-2 sm:gap-3">
         <div className="min-w-0 flex-1">
           <div className="flex flex-wrap items-center gap-2">
             <span
@@ -151,7 +151,7 @@ export function ChecklistTaskRow({
         </div>
 
         {canComplete && (
-          <div className="flex shrink-0 flex-wrap items-center gap-2">
+          <div className="flex w-full flex-wrap items-center gap-2 sm:w-auto sm:shrink-0">
             {task.status === 'PENDING' ? (
               <>
                 {task.requiresDocument || attaching ? (
@@ -160,7 +160,7 @@ export function ChecklistTaskRow({
                     type="file"
                     aria-label={`Attach a document to “${task.title}”`}
                     accept="application/pdf,image/png,image/jpeg"
-                    className="w-44 text-xs text-slate-600"
+                    className="max-w-full text-xs text-slate-600 sm:w-44"
                     onChange={(event) => {
                       const file = event.target.files?.[0];
                       if (file) void attach(file);

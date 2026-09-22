@@ -80,3 +80,17 @@ BASE_URL=http://127.0.0.1:4173 npm run test:browser
 
 That is how the policy is checked rather than assumed. Blob-URL downloads,
 geolocation and the kiosk all work under it.
+
+## The phone suite
+
+`phone.mjs` runs the whole app at 390px and fails on any screen where the page
+itself scrolls sideways. It makes its own data — a punch, a checklist — rather
+than depending on whichever suite ran before it, so it can be run on its own:
+
+```bash
+node phone.mjs
+```
+
+Note that the timesheet renders both a table and a card list, one hidden by CSS
+depending on width. `getByText(...).first()` will resolve to the hidden copy and
+time out; use `.locator('visible=true').first()`.

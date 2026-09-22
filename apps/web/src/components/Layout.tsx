@@ -3,8 +3,9 @@ import { NavLink, Outlet } from 'react-router-dom';
 import { api } from '../lib/api';
 import { useIsAdmin, useIsManager, useSession } from '../lib/session';
 
+/// Tighter padding on a phone, so more of the nav fits per row before it wraps.
 const linkClasses = ({ isActive }: { isActive: boolean }) =>
-  `rounded-lg px-3 py-2 text-sm font-medium transition ${
+  `whitespace-nowrap rounded-lg px-2.5 py-2 text-sm font-medium transition sm:px-3 ${
     isActive ? 'bg-brand-50 text-brand-800' : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'
   }`;
 
@@ -43,9 +44,13 @@ export function Layout() {
     <div className="min-h-screen bg-slate-100">
       <header className="border-b border-slate-200 bg-white">
         <div className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-2 px-4 py-3">
-          <div className="flex items-center gap-1">
-            <span className="mr-3 font-semibold text-slate-900">Domi</span>
-            <nav className="flex items-center gap-1">
+          {/* Everything here wraps. An admin has nine destinations, which do
+              not fit on one line on a phone — and this app is used on phones,
+              standing at the front desk. Wrapping keeps every screen one tap
+              away rather than hiding half of them behind a menu. */}
+          <div className="flex min-w-0 flex-wrap items-center gap-x-1 gap-y-0.5">
+            <span className="mr-1 font-semibold text-slate-900 sm:mr-3">Domi</span>
+            <nav className="flex flex-wrap items-center gap-x-1 gap-y-0.5">
               <NavLink to="/" end className={linkClasses}>
                 Clock
               </NavLink>
@@ -87,7 +92,7 @@ export function Layout() {
             </nav>
           </div>
 
-          <div className="flex items-center gap-3">
+          <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
             <span className="text-sm text-slate-600">
               {employee?.firstName} {employee?.lastName}
               {isManager && (

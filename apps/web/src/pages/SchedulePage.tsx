@@ -189,12 +189,19 @@ export function SchedulePage() {
         </div>
       )}
 
+      {/* The week grid is one column on a phone, so it reads as a list of days
+          rather than seven squeezed columns. Its test id is how the phone
+          checks tell it apart from the coverage strip above, which also shows
+          weekday names. */}
       {loading ? (
         <Card className="p-6">
           <Spinner label="Loading schedule" />
         </Card>
       ) : (
-        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-7">
+        <div
+          data-testid="week-grid"
+          className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-7"
+        >
           {days.map((day) => {
             const dayShifts = shiftsByDay.get(day.toDateString()) ?? [];
             const isToday = day.toDateString() === new Date().toDateString();

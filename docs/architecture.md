@@ -923,3 +923,40 @@ recorded. The whole point is to see what the flagged cases look like.
 
 `docs/manager-review.md` is the walkthrough that goes with it, written for the
 managers rather than for a developer.
+
+## Phones
+
+Half of this app is used on a phone: clocking in at the desk, a manager
+approving hours between patients, an admin setting a geofence while standing at
+the front door. `tests/browser/phone.mjs` runs the whole app at 390px wide — the
+narrowest phone anyone at the practice is likely to have.
+
+The check that matters is **horizontal overflow**. A page wider than the window
+means the entire layout slides sideways under a thumb, which makes everything
+feel broken even where it works. A table that scrolls inside its own box is
+fine; the page itself scrolling is not. The suite measures
+`documentElement.scrollWidth` against `clientWidth` on every screen and names
+the offending elements when it finds a difference.
+
+Two things it caught:
+
+- **The navigation ran off the edge of every signed-in screen.** An admin has
+  nine destinations in a single non-wrapping flex row, so every page scrolled to
+  807px in a 390px window. It now wraps onto two or three rows. A hamburger menu
+  would be tidier and worse: this is an app where "Clock" should be one tap, and
+  hiding eight of nine destinations behind a button to save a few pixels of
+  header is the wrong trade.
+- **The checklist task actions could not shrink**, because the block holding the
+  file picker was `shrink-0`. On a phone the actions now sit under the task
+  rather than beside it.
+
+### The timesheet is a table or a list, depending on room
+
+Below `sm` the timesheet renders each entry as a card instead of a row. Eight
+columns do not fit on a phone, and the alternative — a sideways-scrolling table
+— puts **Approve** furthest from the thumb when approving is the entire job.
+
+Both layouts are always in the DOM, one hidden by CSS. That matters when writing
+a check against this screen: `getByText(...).first()` resolves to the hidden
+copy, which never becomes visible and times out. Ask for
+`.locator('visible=true').first()` instead.

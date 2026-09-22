@@ -67,16 +67,30 @@ await step('elapsed timer is running', async () => {
   if (!/\d+m/.test(shown)) throw new Error(`expected a duration, got "${shown}"`);
 });
 
-await step('timesheet shows the open punch', async () => {
+await step('timesheet shows the open punch, stacked rather than as a table', async () => {
   await page.getByRole('link', { name: 'Timesheet' }).click();
-  await page.getByRole('table').waitFor({ timeout: 10000 });
-  await page.getByText('On-site GPS').first().waitFor({ timeout: 5000 });
+  // The wide table is still in the DOM at this width, just hidden, so ask for
+  // the badge that is actually on screen rather than the first in document
+  // order.
+  await page.getByText('On-site GPS').locator('visible=true').first().waitFor({ timeout: 10000 });
+
+  // At this width the entries are cards, not a table: eight columns do not fit
+  // on a phone, and sideways-scrolling to reach a button is miserable.
+  if (await page.getByRole('table').isVisible().catch(() => false))
+    throw new Error('the eight-column table is still being shown at phone width');
+});
+
+await step('employee does NOT see the manager tools, on a phone either', async () => {
+  const text = await page.locator('main').innerText();
+  if (/\bApprove\b/.test(text)) throw new Error('employee was offered Approve');
+  if (/\bCorrect\b/.test(text)) throw new Error('employee was offered Correct');
 });
 
 await page.setViewportSize({ width: 1280, height: 900 });
 await page.screenshot({ path: `${OUT}/03-timesheet.png`, fullPage: true });
 
-await step('employee does NOT see an approve column', async () => {
+await step('the same timesheet becomes a table once there is room for one', async () => {
+  await page.getByRole('table').waitFor({ timeout: 10000 });
   const headers = await page.locator('thead th').allInnerTexts();
   if (headers.some((h) => /action/i.test(h))) throw new Error(`employee saw manager column: ${headers}`);
   if (headers.some((h) => /employee/i.test(h))) throw new Error(`employee saw other staff column: ${headers}`);
