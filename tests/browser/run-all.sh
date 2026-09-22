@@ -21,12 +21,14 @@ reset_state() {
     -c "delete from pto_policy;" \
     -c "update employees set \"calendarToken\" = null, \"calendarTokenSetAt\" = null;" \
     -c "update employees set \"failedLoginAttempts\"=0, \"lockedUntil\"=null, \"pinFailedAttempts\"=0, \"pinLockedUntil\"=null;" \
-    -c "delete from shifts where \"startsAt\" >= '2027-01-01';"
+    -c "delete from shifts where \"startsAt\" >= '2027-01-01';" \
+    -c "delete from employee_checklists;" \
+    -c "delete from stored_files;"
 }
 
 # The scheduler suite builds its rotas in February 2027 so that clearing them
 # cannot touch the shift the seed puts on today's date.
-SUITES="drive refusals correct auth kiosk export locations pto pto-policy presets calendar scheduler"
+SUITES="drive refusals correct auth kiosk export locations pto pto-policy presets calendar scheduler checklists"
 
 failed=0
 for suite in ${SUITES}; do

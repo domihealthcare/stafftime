@@ -17,6 +17,12 @@ export enum AppEnvironment {
   Test = 'test',
 }
 
+/// Where uploaded documents live. See src/storage.
+export enum FileStorageBackend {
+  Database = 'database',
+  Disk = 'disk',
+}
+
 export enum NodeEnv {
   Development = 'development',
   Test = 'test',
@@ -80,6 +86,23 @@ class EnvironmentVariables {
   @IsInt()
   @Min(0)
   PUNCH_GRACE_MINUTES = 5;
+
+  /// Where uploaded checklist documents are kept: "database" (the default, and
+  /// the only one that works on Vercel) or "disk" for local work.
+  @IsEnum(FileStorageBackend)
+  FILE_STORAGE: FileStorageBackend = FileStorageBackend.Database;
+
+  /// Only read when FILE_STORAGE is "disk".
+  @IsString()
+  FILE_STORAGE_DIR = './var/uploads';
+
+  /// Largest document that may be uploaded, in megabytes. A signed PDF is well
+  /// under this; the cap is here so one person cannot fill the database.
+  @Type(() => Number)
+  @IsInt()
+  @Min(1)
+  @Max(50)
+  MAX_UPLOAD_MB = 10;
 
   /// Enables the one-time, browser-based creation of the first administrator.
   /// Unset it once that account exists — the route then disappears.

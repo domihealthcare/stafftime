@@ -647,3 +647,144 @@ is wrong for times near a transition.
 No timezone library is pulled in for this. The whole file is under 150 lines,
 `Intl` is already in Node, and a dependency here would be carrying a database of
 every zone's history to answer "what is 9am in America/New_York".
+
+## Onboarding and offboarding checklists
+
+Phase 3. A `ChecklistTemplate` is a reusable list of tasks; an
+`EmployeeChecklist` is one person's copy of it, with documents attached to the
+tasks that need them.
+
+### Instances are snapshots, not references
+
+Starting a checklist copies the template's tasks — title, description, owner,
+whether a document is needed — into `EmployeeChecklistTask` rows. The template
+is kept as `templateId` for provenance and nothing else.
+
+Referencing the template instead would be less data and much worse: reword "sign
+the 2026 handbook" to say 2027 and you have silently rewritten what forty people
+already acknowledged. A signed acknowledgement of a document nobody can name any
+more is worth nothing in an audit, and these are records the practice is legally
+required to keep. So the template is editable precisely because the copies are
+not affected.
+
+The checklist's `name` is copied for the same reason: retiring a template must
+not leave someone's finished onboarding pointing at nothing.
+
+### One open checklist of each kind per person
+
+A second unfinished onboarding checklist for the same employee is refused. Two
+lists means two people ticking off the same I-9 with neither knowing the other
+did it, which is exactly the failure a checklist exists to prevent. Finished
+ones do not block a new one — a rehire gets a fresh list.
+
+### Due dates hang off an anchor
+
+Each template task carries `dueOffsetDays` relative to an anchor: the hire date
+for onboarding, the last day for offboarding. An offer letter is -7, an I-9 is
++3, a 30-day check-in is +30. The anchor can be given explicitly when the
+record's own dates are not right yet — a start date that has not been entered.
+
+Offboarding refuses to guess: no termination date and no explicit anchor means
+an error saying to set one, rather than quietly anchoring to today.
+
+All of this arithmetic is UTC-midnight dates via
+`common/util/calendar-date.util.ts`, so a due date cannot drift a day when the
+clocks change or when the server is in a different zone from the practice.
+
+### Three task states, not two
+
+`PENDING`, `DONE`, `NOT_APPLICABLE`. The third exists because "CPR card on file"
+does not apply to the receptionist, and leaving it pending forever means the
+checklist never completes and nobody can tell an unfinished list from a finished
+one. Marking something not applicable **requires** a reason — a skipped
+compliance task with no explanation is worse than an unfinished one.
+
+A task marked as needing a document cannot be ticked off until one is attached.
+That is the one rule the whole feature exists for.
+
+Completion is derived, not set: the checklist is stamped `completedAt` exactly
+when nothing is left `PENDING`, and un-stamped if a task is reopened.
+
+### Who may see a document
+
+This is the most sensitive data in the app. An I-9 or a W-4 carries a social
+security number.
+
+- **Reading** a document: an admin, or the person it is about. Your own
+  personnel file is yours to see, including the parts the practice filled in.
+- **Attaching or removing** one: an admin, or the person it is about for the
+  tasks that are theirs to do. An employee hands in their own handbook
+  acknowledgement; they do not touch what the practice filed.
+- **Managers cannot see the bytes at all.** They run the checklist, and they can
+  see that a form was collected and by whom, which is what running it needs. The
+  form itself is an HR record. Whoever at Domi should see them gets the admin
+  role — that is the practice's decision to make, not one baked in here.
+
+Managers also cannot attach documents, deliberately: allowing an upload while
+forbidding a download would be theatre, since anyone attaching a form has read
+it.
+
+This is a defensible default rather than an obvious one, and it is written down
+in `docs/open-questions.md` as something to confirm.
+
+### There is no URL for a document
+
+Every download goes through `GET /api/checklists/documents/:id`, which checks
+who is asking, then sends the bytes with `Content-Disposition: attachment`,
+`X-Content-Type-Options: nosniff` and `Cache-Control: no-store`.
+
+The alternative — a long random public URL from a blob store — makes the bytes
+reachable by anyone who ever sees the link: a forwarded email, a browser
+history, a proxy log, a screenshot. A link is a bearer token that never expires
+and cannot be revoked except by deleting the file. For a document containing an
+SSN that is not a trade worth making, so the `FileStorage` interface has no
+method that returns a URL and no backend is ever asked for one.
+
+### What may be attached
+
+An allow-list: PDF, JPEG, PNG. What people actually attach is a scanned form or
+a photo of one; anything else is a mistake or an attack.
+
+The declared content type is checked, and then the first bytes of the file are
+checked against it, so an HTML page renamed `i9.pdf` and labelled
+`application/pdf` is refused. Size is measured from the buffer rather than
+trusted from the request, and `MAX_UPLOAD_MB` caps it — with a hard ceiling in
+the interceptor as well, because the interceptor's options are fixed before
+config is available and something has to stop a 2GB POST before it reaches
+memory.
+
+### File storage is an adapter
+
+`src/storage` is the same shape as the payroll exporter the brief asks for: a
+narrow `FileStorage` interface (`put`, `get`, `delete`) with two
+implementations.
+
+**`DatabaseFileStorage` is the default**, and at this scale it is the right
+default. The documents are a handful of PDFs per employee — an I-9, a W-4, a
+signed handbook, a receipt for a returned laptop — so tens of megabytes for
+twenty-odd staff. Keeping them in Postgres means they inherit the database's
+backups, access control and encryption at rest; there is no second account to
+set up and no bucket policy to get wrong; and a database restore restores the
+documents with it, which matters for records the practice must retain. Bytes
+live in their own `stored_files` table with no foreign key back to the
+checklist, so the adapter stays a storage backend and a document listing never
+drags file contents into memory.
+
+**`LocalDiskFileStorage`** exists to prove the seam is real and is genuinely
+useful for local work — you can open the folder. It is wrong for Vercel, where
+the filesystem is ephemeral and per-instance.
+
+Keys are `2026/09/` plus 16 random bytes. Nothing from the uploaded filename
+goes into them: a key built from a filename is how you end up serving
+`../../.env`, and it would leak the contents of the file to anyone who saw the
+key ("i9-signed-dominguez.pdf"). Every backend validates the key against that
+pattern before touching anything, and the disk backend additionally confirms the
+resolved path is still inside its root.
+
+Deleting a document removes the metadata row first and the bytes second. The
+other order leaves a document row whose file has gone, which looks like data
+loss; this order leaves unreferenced bytes, which is recoverable garbage.
+
+The database stops being sensible somewhere around a few gigabytes, or the day
+someone wants to attach video. That is what the interface is for — S3 or a blob
+store is one class.

@@ -44,7 +44,7 @@ a pooler and use the direct one.
 2. **Add New → Project**, and import `domihealthcare/stafftime`
 3. Leave every build setting alone. The repository already tells Vercel what to
    do
-4. Expand **Environment Variables** and add these ten:
+4. Expand **Environment Variables** and add these eleven:
 
 | Name | Value |
 | --- | --- |
@@ -59,11 +59,22 @@ a pooler and use the direct one.
 | `MAX_PIN_ATTEMPTS` | `5` |
 | `PIN_LOCKOUT_MINUTES` | `10` |
 | `PUNCH_GRACE_MINUTES` | `5` |
+| `MAX_UPLOAD_MB` | `10` |
 
 **`SETUP_TOKEN`** is a one-time password that lets you create the first
 administrator account. Make it long and unguessable — four or five random words
 is ideal, for example `copper-lantern-harbour-tuesday-49`. You will type it once
 and then delete it.
+
+**`MAX_UPLOAD_MB`** is the largest checklist document anybody can attach. A
+scanned form is well under 10MB; the cap is there so one person cannot fill the
+database.
+
+There is deliberately nothing to configure for document storage. Uploaded
+documents go in the database, which means they are covered by Neon's backups
+and there is no second account to set up — and no public link to a file with
+somebody's social security number in it. See `docs/architecture.md` if that ever
+needs to change.
 
 **`APP_ENVIRONMENT=test`** puts a standing amber banner on every screen saying
 nothing there is real. Leave it on `test` for the review, and change it to

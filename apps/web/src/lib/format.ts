@@ -17,6 +17,29 @@ export function formatDate(iso: string): string {
   });
 }
 
+/**
+ * A calendar day — a hire date, a due date, the first day of a holiday.
+ *
+ * Rendered in UTC on purpose. The API sends these as midnight UTC, so letting
+ * the viewer's timezone apply would show "Mar 1" as "Feb 28" to everybody in
+ * New Jersey. A day is a day wherever you are reading it from.
+ *
+ * The year is included by default: a checklist due date can easily be in a
+ * different year from the one you are looking at it in.
+ */
+export function formatCalendarDate(
+  iso: string,
+  { year = true }: { year?: boolean } = {},
+): string {
+  return new Date(`${iso.slice(0, 10)}T00:00:00Z`).toLocaleDateString(undefined, {
+    timeZone: 'UTC',
+    weekday: 'short',
+    month: 'short',
+    day: 'numeric',
+    ...(year ? { year: 'numeric' } : {}),
+  });
+}
+
 export function formatDateTime(iso: string): string {
   return `${formatDate(iso)}, ${formatTime(iso)}`;
 }

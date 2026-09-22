@@ -6,6 +6,7 @@ import { RolesGuard } from './common/auth/roles.guard';
 import { AppConfigModule } from './app-config/app-config.module';
 import { AuthModule } from './auth/auth.module';
 import { CalendarModule } from './calendar/calendar.module';
+import { ChecklistsModule } from './checklists/checklists.module';
 import { SessionAuthGuard } from './common/auth/session.guard';
 import { validateEnv } from './config/env.validation';
 import { EmployeesModule } from './employees/employees.module';
@@ -32,6 +33,7 @@ import { TimeEntriesModule } from './time-entries/time-entries.module';
     KioskModule,
     ExportsModule,
     PtoModule,
+    ChecklistsModule,
     SetupModule,
   ],
   controllers: [AppController],

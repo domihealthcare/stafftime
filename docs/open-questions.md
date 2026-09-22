@@ -99,6 +99,51 @@ built. What is deliberately left open:
       approved leave. Overtime risk (someone scheduled past 40 hours) is the
       obvious next one, and easy to add.
 
+## Onboarding / offboarding checklists (Phase 3, built)
+
+Templates, per-person checklists and document upload all work. What needs a
+decision from the practice:
+
+- [ ] **Confirm who should see the documents.** Today: an admin, or the person
+      the document is about. Managers run the checklist and can see that a form
+      was collected, but cannot open it — an I-9 carries a social security
+      number, and the form itself is an HR record. If the practice manager is
+      the one collecting I-9s, give them the admin role rather than loosening
+      the rule. Worth an explicit decision, because it is the tightest sensible
+      default rather than the only one.
+- [ ] **Go through the seeded templates line by line.** They are a starting
+      point built from what a small New Jersey primary care practice generally
+      has to do, not from Domi's actual process. Things that are probably wrong
+      until someone checks: whether CPR/BLS is required for each clinical role,
+      who issues keys, whether there is a 30-day check-in at all.
+- [ ] **Record retention.** The app never deletes a document on its own. The
+      I-9 has its own rule — three years after the hire date or one year after
+      the last day, whichever is later — and the practice needs a habit for
+      acting on it. Worth deciding whether the app should flag documents that
+      are past their retention period.
+- [ ] **Licence and certification expiry.** A licence is attached as a document
+      with no expiry date recorded, so nothing can warn that it lapses next
+      month. Tracking expiry dates and warning ahead of them is a natural next
+      step and would want its own screen.
+- [ ] **Should marking somebody as no longer employed start an offboarding
+      checklist?** Today the two are separate: an admin marks them terminated on
+      the Staff screen and starts the checklist here. Linking them would mean
+      one less thing to forget, but also a checklist appearing without anyone
+      asking for one.
+- [ ] **Notifications.** Nobody is told that a task is overdue, or that a new
+      hire has something waiting. Same email decision as password reset and PTO.
+- [ ] **A template editor.** Templates are readable in the app and editable
+      through the API (`PATCH /api/checklists/templates/:id`), but there is no
+      screen for editing them yet. Worth building once the practice has settled
+      what the lists should say — editing a template is a rare act.
+- [ ] **Document storage at scale.** Bytes are in Postgres, which is right for
+      tens of megabytes and wrong for gigabytes. If the practice starts
+      attaching scans of everything, a blob store becomes worth the extra moving
+      part — that is one new class behind the existing `FileStorage` interface.
+      Note that a blob store's public URLs would need private buckets or
+      short-lived signed URLs; a long random public link is a permanent
+      unrevocable bearer token for a document with an SSN in it.
+
 ## Product decisions
 
 - [ ] **Kiosk device:** dedicated tablet per location, or a shared front-desk PC?
