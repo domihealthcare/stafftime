@@ -237,6 +237,19 @@ export interface ExportPreview {
 }
 
 export const api = {
+  // ------------------------------------------------------------- first-run setup
+  setupStatus: () => request<{ needsSetup: boolean }>('/setup/status'),
+  createFirstAdmin: (body: {
+    setupToken: string;
+    email: string;
+    firstName: string;
+    lastName: string;
+    password: string;
+  }) => request<{ created: boolean; email: string }>('/setup', {
+    method: 'POST',
+    body: JSON.stringify(body),
+  }),
+
   // ---------------------------------------------------------------- saved reports
   listReportPresets: () => request<ReportPreset[]>('/exports/presets'),
   saveReportPreset: (body: {
@@ -279,6 +292,42 @@ export const api = {
   ptoBalance: (employeeId?: string) =>
     request<PtoBalance>(`/pto/balance${employeeId ? `?employeeId=${employeeId}` : ''}`),
 
+  createEmployee: (body: {
+    firstName: string;
+    lastName: string;
+    email: string;
+    role: string;
+    payType: string;
+    hireDate: string;
+    locationIds?: string[];
+    primaryLocationId?: string;
+  }) => request<Employee>('/employees', { method: 'POST', body: JSON.stringify(body) }),
+  updateEmployee: (
+    id: string,
+    body: Partial<{
+      firstName: string;
+      lastName: string;
+      email: string;
+      role: string;
+      payType: string;
+      locationIds: string[];
+      primaryLocationId: string;
+    }>,
+  ) => request<Employee>(`/employees/${id}`, { method: 'PATCH', body: JSON.stringify(body) }),
+  terminateEmployee: (id: string) =>
+    request<Employee>(`/employees/${id}`, { method: 'DELETE' }),
+
+  createLocation: (body: {
+    name: string;
+    slug: string;
+    addressLine1: string;
+    city: string;
+    state: string;
+    postalCode: string;
+    latitude: number;
+    longitude: number;
+    geofenceRadiusMeters?: number;
+  }) => request<Location>('/locations', { method: 'POST', body: JSON.stringify(body) }),
   updateLocation: (id: string, body: UpdateLocationInput) =>
     request<Location>(`/locations/${id}`, { method: 'PATCH', body: JSON.stringify(body) }),
 

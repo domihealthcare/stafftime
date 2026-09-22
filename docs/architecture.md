@@ -471,3 +471,38 @@ connections. Two connection strings are needed: a pooled one for the app, and a
 direct one for migrations, which cannot run through a pooler.
 
 Step-by-step instructions are in `DEPLOY.md`.
+
+## First-run setup
+
+A new deployment has no accounts and no sign-up page, so the only way in would
+be a command line pointed at the production database. That is a real obstacle
+for whoever is setting the practice up, so the first administrator can be
+created from the browser instead.
+
+Three things keep it from being a back door:
+
+1. It does nothing unless `SETUP_TOKEN` is set, and the route reports itself as
+   absent when it is not. No token, no setup.
+2. It refuses the moment any administrator exists — checked **before** the token
+   is compared, so a second attempt cannot be used to probe a guess.
+3. The token is compared in constant time, and the password goes through the
+   same policy as any other.
+
+Creating the account also issues a session, because whoever just proved the
+token and chose the password should not then be asked to type it again.
+
+`npm run create-admin` still exists for anyone who prefers a terminal.
+
+## Staff administration
+
+Adding people is an admin screen rather than a seed script, because a real
+deployment needs it on day one: add someone, set their role and locations, issue
+a temporary password.
+
+Temporary passwords are **shown once, on screen, after being set** — there is no
+email to send them through, so the admin reads it out. The screen says as much,
+and says to use a different channel from the one carrying the link.
+
+Terminating is a status change, never a delete, so timesheets stay attributable.
+An admin cannot terminate themselves, which would lock the practice out of its
+own administration.

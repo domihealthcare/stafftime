@@ -12,6 +12,7 @@ import { KioskModule } from './kiosk/kiosk.module';
 import { LocationsModule } from './locations/locations.module';
 import { PrismaModule } from './prisma/prisma.module';
 import { PtoModule } from './pto/pto.module';
+import { SetupModule } from './setup/setup.module';
 import { ShiftsModule } from './shifts/shifts.module';
 import { TimeEntriesModule } from './time-entries/time-entries.module';
 
@@ -27,6 +28,7 @@ import { TimeEntriesModule } from './time-entries/time-entries.module';
     KioskModule,
     ExportsModule,
     PtoModule,
+    SetupModule,
   ],
   controllers: [AppController],
   providers: [

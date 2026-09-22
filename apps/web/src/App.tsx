@@ -1,4 +1,6 @@
+import { useEffect, useState } from 'react';
 import { BrowserRouter, Route, Routes } from 'react-router-dom';
+import { api } from './lib/api';
 import { KioskApp } from './kiosk/KioskApp';
 import { Layout } from './components/Layout';
 import { Spinner } from './components/ui';
@@ -10,18 +12,42 @@ import { LocationsPage } from './pages/LocationsPage';
 import { KiosksPage } from './pages/KiosksPage';
 import { LoginPage } from './pages/LoginPage';
 import { SchedulePage } from './pages/SchedulePage';
+import { SetupPage } from './pages/SetupPage';
+import { StaffPage } from './pages/StaffPage';
 import { TimeOffPage } from './pages/TimeOffPage';
 import { TimesheetPage } from './pages/TimesheetPage';
 
 function Routed() {
-  const { employee, loading, mustChangePassword } = useSession();
+  const { employee, loading, mustChangePassword, refresh } = useSession();
+  // On a brand-new deployment there are no accounts at all, so offer to create
+  // the first one instead of a sign-in form nobody can use.
+  const [needsSetup, setNeedsSetup] = useState<boolean | null>(null);
 
-  if (loading) {
+  useEffect(() => {
+    if (employee) {
+      setNeedsSetup(false);
+      return;
+    }
+    let cancelled = false;
+    api
+      .setupStatus()
+      .then((status) => !cancelled && setNeedsSetup(status.needsSetup))
+      .catch(() => !cancelled && setNeedsSetup(false));
+    return () => {
+      cancelled = true;
+    };
+  }, [employee]);
+
+  if (loading || (!employee && needsSetup === null)) {
     return (
       <div className="flex min-h-screen items-center justify-center">
         <Spinner />
       </div>
     );
+  }
+
+  if (!employee && needsSetup) {
+    return <SetupPage onCreated={() => void refresh().then(() => setNeedsSetup(false))} />;
   }
 
   if (!employee) {
@@ -43,6 +69,7 @@ function Routed() {
         <Route path="password" element={<ChangePasswordPage forced={false} />} />
         <Route path="time-off" element={<TimeOffPage />} />
         <Route path="export" element={<ExportPage />} />
+        <Route path="staff" element={<StaffPage />} />
         <Route path="kiosks" element={<KiosksPage />} />
         <Route path="locations" element={<LocationsPage />} />
         <Route path="*" element={<ClockPage />} />

@@ -70,6 +70,9 @@ export function Layout() {
               )}
               {isAdmin && (
                 <>
+                  <NavLink to="/staff" className={linkClasses}>
+                    Staff
+                  </NavLink>
                   <NavLink to="/kiosks" className={linkClasses}>
                     Kiosks
                   </NavLink>

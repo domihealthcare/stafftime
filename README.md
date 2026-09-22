@@ -93,20 +93,17 @@ The seed creates four accounts, all sharing the password
 
 ### On a real deployment
 
-There is no sign-up page, so the first administrator is created from the
-command line after the database is migrated:
+There is no sign-up page. The first administrator is created once, from the
+browser: set a `SETUP_TOKEN` environment variable and the site offers a setup
+screen until an admin exists. See [DEPLOY.md](./DEPLOY.md).
 
-```bash
-npm run create-admin --workspace @stafftime/api
-```
+(`npm run create-admin --workspace @stafftime/api` does the same from a terminal,
+if you would rather.)
 
-It prompts for the details and hides the password as you type, so nothing
-sensitive lands in your shell history.
-
-Everyone else is added by an admin, who sets a temporary password that the new
-hire must replace the first time they sign in. There is no self-service "forgot
-password" yet — that needs email sending, which is not set up (see
-`docs/open-questions.md`).
+Everyone else is added by an admin on the **Staff** screen, who issues a
+temporary password that the new hire must replace the first time they sign in.
+There is no self-service "forgot password" yet — that needs email sending, which
+is not set up (see `docs/open-questions.md`).
 
 ## Trying the kiosk
 
@@ -138,6 +135,8 @@ placeholders, so do not run it after setting real values.
 | Method | Path | Who |
 | --- | --- | --- |
 | `GET` | `/api/health` | anyone |
+| `GET` | `/api/setup/status` | anyone — is this a fresh deployment? |
+| `POST` | `/api/setup` | anyone with the setup token, once |
 | `POST` | `/api/auth/login` | anyone |
 | `POST` | `/api/auth/logout` | signed in |
 | `GET` | `/api/auth/me` | signed in |
@@ -182,5 +181,6 @@ placeholders, so do not run it after setting real values.
 | **Sign in** | Email and password. A temporary password lands you on a forced change screen and nothing else |
 | **Time off** | Request time off and see your balance; managers approve or deny, and can file on someone's behalf. Admins set the practice's PTO rules here |
 | **Export** (manager) | Produce a timesheet spreadsheet for a period, choosing exactly which columns go in it. Settings can be saved as named reports and shared |
+| **Staff** (admin) | Add people, set their role and locations, issue a temporary password, mark someone as no longer employed |
 | **Kiosks** (admin) | Pair and revoke tablets, and set staff PINs |
 | **Locations** (admin) | Each office's coordinates, geofence radius and IP allow-list. Has a "use my current location" button, so you can set it standing at the desk |

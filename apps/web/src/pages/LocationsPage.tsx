@@ -16,6 +16,7 @@ export function LocationsPage() {
   const [locations, setLocations] = useState<Location[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [adding, setAdding] = useState(false);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -46,6 +47,27 @@ export function LocationsPage() {
         coordinates right.
       </Alert>
 
+      <div className="mt-4 flex justify-end">
+        <button
+          type="button"
+          onClick={() => setAdding((open) => !open)}
+          className="rounded-lg bg-brand-600 px-4 py-2 text-sm font-medium text-white hover:bg-brand-700"
+        >
+          {adding ? 'Cancel' : '+ Add a location'}
+        </button>
+      </div>
+
+      {adding && (
+        <div className="mt-4">
+          <AddLocationForm
+            onCreated={() => {
+              setAdding(false);
+              void load();
+            }}
+          />
+        </div>
+      )}
+
       {error && (
         <div className="mt-4">
           <Alert>{error}</Alert>
@@ -56,6 +78,13 @@ export function LocationsPage() {
         {loading ? (
           <Card className="p-6">
             <Spinner label="Loading locations" />
+          </Card>
+        ) : locations.length === 0 ? (
+          <Card className="p-6">
+            <p className="text-sm text-slate-600">
+              No locations yet. Add North Bergen and West New York — you can put in rough
+              coordinates now and fix them precisely from your phone at each front desk.
+            </p>
           </Card>
         ) : (
           locations.map((location) => (
@@ -359,6 +388,223 @@ function LocationCard({
       >
         {busy ? 'Saving…' : `Save ${location.name}`}
       </button>
+    </Card>
+  );
+}
+
+/// A new office. Coordinates can be captured here if you are standing in it,
+/// or typed roughly now and corrected later from the front desk.
+function AddLocationForm({ onCreated }: { onCreated: () => void }) {
+  const [name, setName] = useState('');
+  const [addressLine1, setAddressLine1] = useState('');
+  const [city, setCity] = useState('');
+  const [state, setState] = useState('NJ');
+  const [postalCode, setPostalCode] = useState('');
+  const [latitude, setLatitude] = useState('');
+  const [longitude, setLongitude] = useState('');
+  const [radius, setRadius] = useState('150');
+  const [busy, setBusy] = useState(false);
+  const [locating, setLocating] = useState(false);
+  const [problem, setProblem] = useState<string | null>(null);
+
+  async function captureHere() {
+    setLocating(true);
+    setProblem(null);
+    try {
+      const position = await getCurrentPosition();
+      setLatitude(position.latitude.toFixed(6));
+      setLongitude(position.longitude.toFixed(6));
+    } catch (err) {
+      setProblem(
+        err instanceof GeolocationRefused ? err.message : 'Could not read this device position.',
+      );
+    } finally {
+      setLocating(false);
+    }
+  }
+
+  async function submit(event: React.FormEvent) {
+    event.preventDefault();
+    setBusy(true);
+    setProblem(null);
+    try {
+      await api.createLocation({
+        name: name.trim(),
+        // A url-safe identifier derived from the name, so nobody has to invent one.
+        slug: name
+          .trim()
+          .toLowerCase()
+          .replace(/[^a-z0-9]+/g, '-')
+          .replace(/(^-|-$)/g, ''),
+        addressLine1: addressLine1.trim(),
+        city: city.trim(),
+        state: state.toUpperCase(),
+        postalCode: postalCode.trim(),
+        latitude: Number(latitude),
+        longitude: Number(longitude),
+        geofenceRadiusMeters: Number(radius),
+      });
+      onCreated();
+    } catch (err) {
+      setProblem(err instanceof ApiError ? err.message : 'Could not add that location.');
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  const field =
+    'mt-1 w-full rounded-lg border-slate-300 py-2.5 text-base shadow-sm focus:border-brand-600 focus:ring-brand-600';
+  const ready =
+    name.trim() && addressLine1.trim() && city.trim() && postalCode.trim() && latitude && longitude;
+
+  return (
+    <Card className="p-5">
+      <form onSubmit={(event) => void submit(event)} className="space-y-4">
+        <div>
+          <label htmlFor="new-loc-name" className="block text-sm font-medium text-slate-700">
+            Name
+          </label>
+          <input
+            id="new-loc-name"
+            type="text"
+            required
+            placeholder="North Bergen"
+            value={name}
+            onChange={(event) => setName(event.target.value)}
+            className={field}
+          />
+        </div>
+
+        <div>
+          <label htmlFor="new-loc-address" className="block text-sm font-medium text-slate-700">
+            Street address
+          </label>
+          <input
+            id="new-loc-address"
+            type="text"
+            required
+            value={addressLine1}
+            onChange={(event) => setAddressLine1(event.target.value)}
+            className={field}
+          />
+        </div>
+
+        <div className="grid grid-cols-3 gap-3">
+          <div className="col-span-1">
+            <label htmlFor="new-loc-city" className="block text-sm font-medium text-slate-700">
+              City
+            </label>
+            <input
+              id="new-loc-city"
+              type="text"
+              required
+              value={city}
+              onChange={(event) => setCity(event.target.value)}
+              className={field}
+            />
+          </div>
+          <div>
+            <label htmlFor="new-loc-state" className="block text-sm font-medium text-slate-700">
+              State
+            </label>
+            <input
+              id="new-loc-state"
+              type="text"
+              required
+              maxLength={2}
+              value={state}
+              onChange={(event) => setState(event.target.value.toUpperCase())}
+              className={field}
+            />
+          </div>
+          <div>
+            <label htmlFor="new-loc-zip" className="block text-sm font-medium text-slate-700">
+              ZIP
+            </label>
+            <input
+              id="new-loc-zip"
+              type="text"
+              required
+              inputMode="numeric"
+              value={postalCode}
+              onChange={(event) => setPostalCode(event.target.value)}
+              className={field}
+            />
+          </div>
+        </div>
+
+        <div className="rounded-lg bg-slate-50 p-3">
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <span className="text-sm font-medium text-slate-900">Clock-in area</span>
+            <button
+              type="button"
+              onClick={() => void captureHere()}
+              disabled={locating}
+              className="rounded-lg bg-brand-600 px-3 py-2 text-sm font-medium text-white hover:bg-brand-700 disabled:opacity-60"
+            >
+              {locating ? 'Finding you…' : 'Use my current location'}
+            </button>
+          </div>
+          <div className="mt-3 grid gap-3 sm:grid-cols-3">
+            <div>
+              <label htmlFor="new-loc-lat" className="block text-sm font-medium text-slate-700">
+                Latitude
+              </label>
+              <input
+                id="new-loc-lat"
+                type="text"
+                required
+                inputMode="decimal"
+                value={latitude}
+                onChange={(event) => setLatitude(event.target.value)}
+                className={`${field} font-mono text-sm`}
+              />
+            </div>
+            <div>
+              <label htmlFor="new-loc-lng" className="block text-sm font-medium text-slate-700">
+                Longitude
+              </label>
+              <input
+                id="new-loc-lng"
+                type="text"
+                required
+                inputMode="decimal"
+                value={longitude}
+                onChange={(event) => setLongitude(event.target.value)}
+                className={`${field} font-mono text-sm`}
+              />
+            </div>
+            <div>
+              <label htmlFor="new-loc-radius" className="block text-sm font-medium text-slate-700">
+                Radius (metres)
+              </label>
+              <input
+                id="new-loc-radius"
+                type="number"
+                min={10}
+                max={5000}
+                value={radius}
+                onChange={(event) => setRadius(event.target.value)}
+                className={field}
+              />
+            </div>
+          </div>
+          <p className="mt-2 text-xs text-slate-500">
+            Rough coordinates are fine for now — correct them from your phone at the front
+            desk before anyone clocks in.
+          </p>
+        </div>
+
+        {problem && <Alert>{problem}</Alert>}
+
+        <button
+          type="submit"
+          disabled={busy || !ready}
+          className="w-full rounded-lg bg-brand-600 px-4 py-3 text-base font-semibold text-white hover:bg-brand-700 disabled:opacity-60 sm:w-auto sm:px-6"
+        >
+          {busy ? 'Adding…' : 'Add location'}
+        </button>
+      </form>
     </Card>
   );
 }

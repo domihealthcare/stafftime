@@ -1,5 +1,14 @@
 import { Type, plainToInstance } from 'class-transformer';
-import { IsEnum, IsInt, IsString, Max, Min, validateSync } from 'class-validator';
+import {
+  IsEnum,
+  IsInt,
+  IsOptional,
+  IsString,
+  Max,
+  Min,
+  MinLength,
+  validateSync,
+} from 'class-validator';
 
 export enum NodeEnv {
   Development = 'development',
@@ -59,6 +68,13 @@ class EnvironmentVariables {
   @IsInt()
   @Min(0)
   PUNCH_GRACE_MINUTES = 5;
+
+  /// Enables the one-time, browser-based creation of the first administrator.
+  /// Unset it once that account exists — the route then disappears.
+  @IsOptional()
+  @IsString()
+  @MinLength(8)
+  SETUP_TOKEN?: string;
 }
 
 export function validateEnv(raw: Record<string, unknown>) {
