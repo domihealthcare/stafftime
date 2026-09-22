@@ -33,7 +33,16 @@ const step = async (name, fn) => {
 };
 
 function latestResetLink() {
-  const log = readFileSync(API_LOG, 'utf8');
+  let log;
+  try {
+    log = readFileSync(API_LOG, 'utf8');
+  } catch {
+    // Each suite runs with tests/browser as its working directory, so a
+    // relative API_LOG resolves against that rather than the repo root.
+    throw new Error(
+      `cannot read the API log at ${API_LOG} (resolved from ${process.cwd()}). Set API_LOG to an absolute path.`,
+    );
+  }
   const links = [...log.matchAll(/\/reset-password\?token=([A-Za-z0-9_-]+)/g)];
   if (links.length === 0) throw new Error(`no reset link in ${API_LOG}`);
   return links[links.length - 1][1];

@@ -126,7 +126,10 @@ jobs:
           # With no email provider configured, reset links are written to the
           # server log. The reset suite reads them from there, which is the same
           # path a developer uses locally.
-          API_LOG: tests/browser/logs/api.log
+          #
+          # Absolute, because run-all.sh runs each suite from tests/browser —
+          # a relative path would resolve against that.
+          API_LOG: ${{ github.workspace }}/tests/browser/logs/api.log
         run: bash tests/browser/run-all.sh
 
       # Screenshots and the per-suite logs are the only way to see what a
