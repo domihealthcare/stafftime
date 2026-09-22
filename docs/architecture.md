@@ -1517,3 +1517,16 @@ that work away. Its members just stop being in it.
 
 The Team / Manage menus in the top bar are disclosures of ordinary links, not
 ARIA menus, so the links stay links to assistive tech and to the browser suites.
+
+## Staff directory
+
+Everybody signed in can read it: it is how colleagues reach each other. It
+holds work contact details — name, email, phone (Dominguez confirmed phone
+numbers should be shown, September 2026), job roles and locations — and
+nothing from the personnel side: no pay type, hire date or access level. People
+who have left, or have not started, are not listed; somebody on leave is, marked.
+
+**In now** is any open punch from the last 16 hours. Older than that is a
+forgotten clock-out, and should not tell the front desk somebody is in who went
+home yesterday — the missing punch is already chased by *What needs a look*.
+Colleagues see where somebody is; only managers see when they clocked in.

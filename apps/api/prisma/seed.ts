@@ -34,6 +34,15 @@ const DEV_PINS: Record<string, string> = {
   'frontdesk@domihealthcare.com': '4817',
   'ma@domihealthcare.com': '5063',
 };
+/// Work numbers for the staff directory. 555-01xx is reserved for fiction, so
+/// a tap in testing never rings anybody.
+const DEV_PHONES: Record<string, string> = {
+  'admin@domihealthcare.com': '(201) 555-0101',
+  'manager@domihealthcare.com': '(201) 555-0102',
+  'frontdesk@domihealthcare.com': '(201) 555-0103',
+  'ma@domihealthcare.com': '(201) 555-0104',
+};
+
 /// The starting job roles, as the migration inserts them, and who holds which.
 /// Frankie covers as an MA too, which is the case that made roles plural.
 const JOB_ROLES = ['Front Desk', 'Medical Assistant', 'Provider', 'Administrative', 'Manager'];
@@ -174,6 +183,7 @@ async function main() {
       // the next run behave differently for no visible reason.
       update: {
         role: person.role,
+        phone: DEV_PHONES[person.email],
         employmentStatus: EmploymentStatus.ACTIVE,
         payType: PayType.HOURLY,
         terminationDate: null,
@@ -193,6 +203,7 @@ async function main() {
         lastName: person.lastName,
         email: person.email,
         role: person.role,
+        phone: DEV_PHONES[person.email],
         employmentStatus: EmploymentStatus.ACTIVE,
         payType: PayType.HOURLY,
         hireDate: new Date('2025-01-06'),

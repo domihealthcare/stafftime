@@ -16,6 +16,7 @@ const linkClasses = ({ isActive }: { isActive: boolean }) =>
 /// The practice's shared screens: what is going on, and where things are.
 const TEAM = [
   { to: '/news', label: 'News' },
+  { to: '/directory', label: 'Directory' },
   { to: '/resources', label: 'Resources' },
 ];
 

@@ -465,3 +465,17 @@ export interface ResourceSection {
   yours: boolean;
   resources: Resource[];
 }
+
+export interface DirectoryEntry {
+  id: string;
+  firstName: string;
+  lastName: string;
+  preferredName: string | null;
+  email: string;
+  phone: string | null;
+  onLeave: boolean;
+  jobRoles: { id: string; name: string }[];
+  locations: { id: string; name: string; isPrimary: boolean }[];
+  /// Clocked in now. `since` is only sent to managers.
+  onNow: { location: { id: string; name: string }; since?: string } | null;
+}

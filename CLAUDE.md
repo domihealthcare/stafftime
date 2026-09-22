@@ -134,8 +134,10 @@ Build this as an **adapter/plugin pattern**, not a hardcoded ADP integration:
      written in the app**. No uploads for now; uploads may come later, but that
      would be a deliberate reversal of *Data this app does not hold*, not a
      quiet addition.
-   - **Staff directory and who's on now** — work contact details, job role and
-     location only. "On now" comes from live clock-ins.
+   - **Staff directory and who's on now** — name, work email, **phone number**
+     (confirmed fine to show colleagues), job roles and locations; nothing from
+     the personnel side. "In now" comes from live clock-ins; colleagues see
+     where somebody is, managers also see since when.
    - **Availability** — staff mark when they cannot work each week; the
      scheduler warns when a shift conflicts, next to the overtime warning.
    - **Pulse surveys and anonymous feedback** — **truly anonymous**: the app

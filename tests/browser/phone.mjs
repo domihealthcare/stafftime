@@ -100,6 +100,7 @@ await page.screenshot({ path: `${OUT}/50-phone-clock.png`, fullPage: true });
 /// Which top-bar menu a screen sits under, if any.
 const MENU = {
   News: 'Team',
+  Directory: 'Team',
   Resources: 'Team',
   'Job roles': 'Manage',
   Export: 'Manage',
@@ -117,7 +118,7 @@ await step('every navigation link is reachable without scrolling sideways', asyn
   // Manage. Either way, nothing may run off the edge of the phone.
   for (const name of [
     'Clock', 'Timesheet', 'Schedule', 'Time off', 'Checklists', 'Licences',
-    'News', 'Resources', 'Job roles', 'Export', 'Staff', 'Kiosks', 'Locations',
+    'News', 'Directory', 'Resources', 'Job roles', 'Export', 'Staff', 'Kiosks', 'Locations',
   ]) {
     await openMenuFor(page, name);
     const link = page.getByRole('navigation').getByRole('link', { name: new RegExp(`^${name}`) }).first();
@@ -137,6 +138,7 @@ for (const [label, screen] of [
   ['Checklists', 'Checklists'],
   ['Licences', 'Licences'],
   ['News', 'News'],
+  ['Directory', 'Directory'],
   ['Resources', 'Resources'],
   ['Job roles', 'Job roles'],
   ['Export', 'Export'],

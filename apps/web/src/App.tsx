@@ -7,6 +7,7 @@ import { Layout } from './components/Layout';
 import { Spinner } from './components/ui';
 import { SessionProvider, useSession } from './lib/session';
 import { ChangePasswordPage } from './pages/ChangePasswordPage';
+import { DirectoryPage } from './pages/DirectoryPage';
 import { JobRolesPage } from './pages/JobRolesPage';
 import { NewsPage } from './pages/NewsPage';
 import { ResourcePage } from './pages/ResourcePage';
@@ -76,6 +77,7 @@ function Routed() {
       <Route element={<Layout />}>
         <Route index element={<ClockPage />} />
         <Route path="news" element={<NewsPage />} />
+        <Route path="directory" element={<DirectoryPage />} />
         <Route path="resources" element={<ResourcesPage />} />
         <Route path="resources/:id" element={<ResourcePage />} />
         <Route path="job-roles" element={<JobRolesPage />} />

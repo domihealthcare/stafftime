@@ -12,6 +12,7 @@ import type {
   ConflictingShift,
   Coverage,
   DemoSummary,
+  DirectoryEntry,
   PlanResult,
   PracticeSettings,
   Employee,
@@ -639,6 +640,8 @@ export const api = {
     }),
   deleteAnnouncement: (id: string) =>
     request<{ deleted: boolean }>(`/announcements/${id}`, { method: 'DELETE' }),
+
+  directory: () => request<DirectoryEntry[]>('/directory'),
 
   jobRoles: () => request<JobRole[]>('/job-roles'),
   createJobRole: (body: { name: string; description?: string }) =>
