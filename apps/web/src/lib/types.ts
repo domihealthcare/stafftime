@@ -26,7 +26,7 @@ export interface Location extends LocationSummary {
   /// Prisma sends Decimal columns as strings, to avoid float rounding.
   latitude: string;
   longitude: string;
-  geofenceRadiusMeters: number;
+  geofenceRadiusFeet: number;
   allowedIps: string[];
   kioskEnabled: boolean;
   isActive: boolean;
@@ -42,7 +42,7 @@ export interface UpdateLocationInput {
   timezone?: string;
   latitude?: number;
   longitude?: number;
-  geofenceRadiusMeters?: number;
+  geofenceRadiusFeet?: number;
   allowedIps?: string[];
   kioskEnabled?: boolean;
   isActive?: boolean;

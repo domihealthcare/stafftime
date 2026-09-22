@@ -39,10 +39,14 @@ async function main() {
     where: { slug: 'north-bergen' },
     // Reset the geofence too, so seeding always gives a known starting point —
     // otherwise an experiment on the Locations screen quietly persists.
+    //
+    // 500 *feet*. This was 150 metres before the unit changed, and 150 is the
+    // number a careless rename leaves behind — which would shrink the geofence
+    // to under a third and refuse people at their own front desk.
     update: {
       latitude: 40.804,
       longitude: -74.012,
-      geofenceRadiusMeters: 150,
+      geofenceRadiusFeet: 500,
       allowedIps: [],
       kioskEnabled: true,
       isActive: true,
@@ -57,7 +61,7 @@ async function main() {
       timezone: 'America/New_York',
       latitude: 40.804,
       longitude: -74.012,
-      geofenceRadiusMeters: 150,
+      geofenceRadiusFeet: 500,
       allowedIps: [],
       kioskEnabled: true,
     },
@@ -68,7 +72,7 @@ async function main() {
     update: {
       latitude: 40.7878,
       longitude: -74.0143,
-      geofenceRadiusMeters: 150,
+      geofenceRadiusFeet: 500,
       allowedIps: [],
       kioskEnabled: true,
       isActive: true,
@@ -83,7 +87,7 @@ async function main() {
       timezone: 'America/New_York',
       latitude: 40.7878,
       longitude: -74.0143,
-      geofenceRadiusMeters: 150,
+      geofenceRadiusFeet: 500,
       allowedIps: [],
       kioskEnabled: true,
     },

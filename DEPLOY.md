@@ -181,9 +181,15 @@ so note it down.
 sick days, 5 carried over. Change it if your handbook says otherwise.
 
 **d. Fix the geofences — on your phone.** Open *Locations* on your phone, stand
-at each front desk, press **Use my current location**, set a radius, save. Then
-walk to the far corner of the office and try clocking in. If it refuses you, the
-radius is too tight.
+at each front desk, press **Use my current location**, save. Then walk to the
+far corner of the office and try clocking in. If it refuses you, the radius is
+too tight.
+
+The radius is in **feet** and starts at **500**, which is a sensible default:
+wide enough that a poor indoor GPS fix still lands inside it, tight enough that
+somebody clocking in from home is refused. Going much below 300 ft tends to
+backfire — the app distrusts a fix whose accuracy is wider than twice the
+radius, so a small radius mostly produces refusals rather than precision.
 
 This step cannot be done from a desk, and until it is done browser clock-in will
 either refuse people or accept the car park.

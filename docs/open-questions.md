@@ -12,10 +12,16 @@ phone**, open **Locations**, and set them standing at each front desk. Note that
 - [ ] **Real street addresses and surveyed coordinates for both offices.** The
       seed uses approximate town-centre points and `TODO` addresses. The
       **Use my current location** button captures them from the device.
-- [ ] **Geofence radius per location.** Currently 150m everywhere, a placeholder.
-      Too tight and staff cannot clock in at their own desk; too loose and the
-      parking lot across the street counts. Try clocking in from the far corner
-      of the office before settling on a number.
+- [ ] **Geofence radius per location.** Now **500 feet** everywhere, which is a
+      considered default rather than a measured one. The reasoning: a GPS fix
+      indoors is commonly accurate to 100–300 ft and sometimes much worse, and
+      the app rejects any fix whose own reported accuracy is wider than twice
+      the radius — so tightening below a few hundred feet does not make
+      clock-in stricter, it makes it fail and fall through to the IP check.
+      500 ft is also tight enough for the threat that actually matters, which
+      is somebody clocking in from home rather than from the car park.
+      **Still needs confirming on site:** stand at the far corner of each office
+      and try to clock in. If it refuses you, the radius is too tight.
 - [ ] **Office IP addresses** for the allow-list fallback — and whether they are
       static. A dynamic residential-style IP would make this check unreliable.
 - [ ] **Geolocation consent disclosure.** Draft wording is written, in

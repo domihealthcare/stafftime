@@ -57,11 +57,15 @@ export class CreateLocationDto {
   @Type(() => Number)
   longitude!: number;
 
+  /// Feet. The floor is not arbitrary: a fix indoors is commonly accurate to a
+  /// hundred feet or worse, and the check rejects a fix whose own accuracy is
+  /// wider than twice the radius — so a very small radius does not make
+  /// clocking in stricter, it makes it fail.
   @IsOptional()
   @IsInt()
-  @Min(10)
-  @Max(5000)
-  geofenceRadiusMeters?: number;
+  @Min(50)
+  @Max(16000)
+  geofenceRadiusFeet?: number;
 
   @IsOptional()
   @IsArray()

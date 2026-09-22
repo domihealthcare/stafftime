@@ -107,8 +107,15 @@ model Location {
   /// Geofence centre. Decimal(9,6) gives ~11cm precision — plenty for a radius check.
   latitude             Decimal @db.Decimal(9, 6)
   longitude            Decimal @db.Decimal(9, 6)
-  /// How far from the centre a web/mobile punch may be and still count as "at work".
-  geofenceRadiusMeters Int     @default(150)
+  /// How far from the centre a web/mobile punch may be and still count as "at
+  /// work".
+  ///
+  /// Feet, because the people setting it are in New Jersey and think in feet.
+  /// The distance maths is metric underneath — a great-circle calculation
+  /// returns metres — and converts once, at the comparison. Storing the unit
+  /// somebody types avoids the alternative, where 500 feet is saved as 152
+  /// metres and read back as 499, which looks like the app losing their input.
+  geofenceRadiusFeet Int @default(500)
 
   /// Fallback verification for web punches: exact IPv4/IPv6 addresses or IPv4 CIDR
   /// blocks (e.g. "203.0.113.7", "203.0.113.0/24") belonging to this office.

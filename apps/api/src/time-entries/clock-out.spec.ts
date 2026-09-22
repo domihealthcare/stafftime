@@ -42,7 +42,7 @@ function build(updatedCount: number) {
         // Prisma hands these back as Decimal, and the service converts them.
         latitude: { toNumber: () => 40.804 },
         longitude: { toNumber: () => -74.012 },
-        geofenceRadiusMeters: 150,
+        geofenceRadiusFeet: 492,
         allowedIps: [],
       }),
     },

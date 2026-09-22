@@ -25,8 +25,8 @@ records without a messy migration.
 - Auth: role-based (Employee / Manager / Admin)
 
 ## Core data model
-- **Location** — North Bergen, West New York; each has a geofence radius and/or
-  allow-listed IP(s) for clock-in verification
+- **Location** — North Bergen, West New York; each has a geofence radius (in
+  **feet**, default 500) and/or allow-listed IP(s) for clock-in verification
 - **Employee** — name, role, assigned location(s), employment status, pay type,
   hire date, `external_id` (nullable, for future EMR linkage)
 - **Shift** — employee, date, start/end time, location — built by managers in the
@@ -176,4 +176,5 @@ surprising. `docs/open-questions.md` is what is still waiting on a decision, and
 - Get ADP TotalSource company/client code and pay/earning codes from ADP before
   finalizing the CSV export column mapping.
 - Kiosk device: dedicated tablet per location, or a shared front-desk PC?
-- Geofence radius per location (how tight should "at work" be)?
+- Geofence radius per location (how tight should "at work" be)? Defaults to
+  500 ft; needs confirming by standing at the far corner of each office.

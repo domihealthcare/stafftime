@@ -456,7 +456,7 @@ export class TimeEntriesService {
       // Prisma returns Decimal for these columns; the geofence maths wants numbers.
       latitude: location.latitude.toNumber(),
       longitude: location.longitude.toNumber(),
-      geofenceRadiusMeters: location.geofenceRadiusMeters,
+      geofenceRadiusFeet: location.geofenceRadiusFeet,
       allowedIps: location.allowedIps,
       kioskEnabled: location.kioskEnabled,
       isActive: location.isActive,

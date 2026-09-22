@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
 import { ApiError, api } from '../lib/api';
+import { metresToWholeFeet } from '../lib/distance';
 import { distanceInMeters } from '../lib/geo';
 import { GeolocationRefused, getCurrentPosition } from '../lib/geolocation';
 import type { Location, UpdateLocationInput } from '../lib/types';
@@ -121,7 +122,7 @@ function LocationCard({
     postalCode: location.postalCode,
     latitude: location.latitude,
     longitude: location.longitude,
-    geofenceRadiusMeters: String(location.geofenceRadiusMeters),
+    geofenceRadiusFeet: String(location.geofenceRadiusFeet),
     allowedIps: location.allowedIps.join(', '),
     kioskEnabled: location.kioskEnabled,
   });
@@ -151,7 +152,7 @@ function LocationCard({
       set('latitude', position.latitude.toFixed(6));
       set('longitude', position.longitude.toFixed(6));
       setMessage(
-        `Position captured, accurate to about ${position.accuracyMeters}m. Check it, then save.`,
+        `Position captured, accurate to about ${metresToWholeFeet(position.accuracyMeters)} feet. Check it, then save.`,
       );
     } catch (err) {
       setProblem(
@@ -176,7 +177,7 @@ function LocationCard({
         postalCode: form.postalCode,
         latitude: Number(form.latitude),
         longitude: Number(form.longitude),
-        geofenceRadiusMeters: Number(form.geofenceRadiusMeters),
+        geofenceRadiusFeet: Number(form.geofenceRadiusFeet),
         allowedIps: form.allowedIps
           .split(',')
           .map((ip) => ip.trim())
@@ -314,15 +315,15 @@ function LocationCard({
               htmlFor={`radius-${location.id}`}
               className="block text-sm font-medium text-slate-700"
             >
-              Radius (metres)
+              Radius (feet)
             </label>
             <input
               id={`radius-${location.id}`}
               type="number"
               min={10}
               max={5000}
-              value={form.geofenceRadiusMeters}
-              onChange={(event) => set('geofenceRadiusMeters', event.target.value)}
+              value={form.geofenceRadiusFeet}
+              onChange={(event) => set('geofenceRadiusFeet', event.target.value)}
               className={field}
             />
           </div>
@@ -330,7 +331,7 @@ function LocationCard({
 
         {distance !== null && (
           <p className="mt-2 text-xs text-slate-600">
-            That is {Math.round(distance)}m from the position currently saved.
+            That is {metresToWholeFeet(distance)} feet from the position currently saved.
           </p>
         )}
 
@@ -402,7 +403,9 @@ function AddLocationForm({ onCreated }: { onCreated: () => void }) {
   const [postalCode, setPostalCode] = useState('');
   const [latitude, setLatitude] = useState('');
   const [longitude, setLongitude] = useState('');
-  const [radius, setRadius] = useState('150');
+  // Feet. 500 ft ≈ 150 m, which is what this was before the unit changed —
+  // leaving "150" here would have made every new office a third of the size.
+  const [radius, setRadius] = useState('500');
   const [busy, setBusy] = useState(false);
   const [locating, setLocating] = useState(false);
   const [problem, setProblem] = useState<string | null>(null);
@@ -442,7 +445,7 @@ function AddLocationForm({ onCreated }: { onCreated: () => void }) {
         postalCode: postalCode.trim(),
         latitude: Number(latitude),
         longitude: Number(longitude),
-        geofenceRadiusMeters: Number(radius),
+        geofenceRadiusFeet: Number(radius),
       });
       onCreated();
     } catch (err) {
@@ -576,13 +579,13 @@ function AddLocationForm({ onCreated }: { onCreated: () => void }) {
             </div>
             <div>
               <label htmlFor="new-loc-radius" className="block text-sm font-medium text-slate-700">
-                Radius (metres)
+                Radius (feet)
               </label>
               <input
                 id="new-loc-radius"
                 type="number"
-                min={10}
-                max={5000}
+                min={50}
+                max={16000}
                 value={radius}
                 onChange={(event) => setRadius(event.target.value)}
                 className={field}

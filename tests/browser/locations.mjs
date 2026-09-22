@@ -61,9 +61,9 @@ await step('"Use my current location" fills in this device position', async () =
 
 await step('it reports how far that is from the saved position', async () => {
   const text = await page.getByText(/from the position currently saved/).innerText();
-  const metres = Number(/(\d+)m/.exec(text)?.[1]);
-  // ~80m north of the seeded pin.
-  if (!(metres > 60 && metres < 100)) throw new Error(`unexpected distance: "${text}"`);
+  const feet = Number(/(\d+) feet/.exec(text)?.[1]);
+  // ~80 m north of the seeded pin, which is about 262 feet.
+  if (!(feet > 200 && feet < 330)) throw new Error(`unexpected distance: "${text}"`);
 });
 
 await step('nothing is saved until Save is pressed', async () => {
@@ -75,7 +75,10 @@ await step('nothing is saved until Save is pressed', async () => {
 await page.screenshot({ path: `${OUT}/25-locations-captured.png`, fullPage: true });
 
 await step('saving persists the coordinates and the radius', async () => {
-  await page.locator('input[id^="radius-"]').first().fill('120');
+  // Feet. 400 ft is about 122 m — tight enough that the point 300 m away below
+  // is outside it, and wide enough that the accuracy rule does not reject the
+  // fix before the distance is even considered.
+  await page.locator('input[id^="radius-"]').first().fill('400');
   await page.getByRole('button', { name: 'Save North Bergen' }).click();
   await page.getByText('Saved.').waitFor({ timeout: 15000 });
 
@@ -83,12 +86,12 @@ await step('saving persists the coordinates and the radius', async () => {
   const saved = (await response.json()).find((l) => l.slug === 'north-bergen');
   if (Number(saved.latitude).toFixed(5) !== '40.80472')
     throw new Error(`latitude not saved: ${saved.latitude}`);
-  if (saved.geofenceRadiusMeters !== 120)
-    throw new Error(`radius not saved: ${saved.geofenceRadiusMeters}`);
+  if (saved.geofenceRadiusFeet !== 400)
+    throw new Error(`radius not saved: ${saved.geofenceRadiusFeet}`);
 });
 
 await step('the new geofence actually governs clock-in', async () => {
-  // Sign in as an employee from a point outside the tightened 120m radius.
+  // Sign in as an employee from a point outside the tightened 400 ft radius.
   const farCtx = await browser.newContext({
     viewport: { width: 420, height: 900 },
     permissions: ['geolocation'],
@@ -105,8 +108,8 @@ await step('the new geofence actually governs clock-in', async () => {
   const alert = far.getByRole('alert');
   await alert.waitFor({ timeout: 15000 });
   const text = await alert.innerText();
-  if (!/outside the 120m clock-in area/.test(text))
-    throw new Error(`expected the new 120m radius in the message, got: "${text}"`);
+  if (!/outside the 400 foot clock-in area/.test(text))
+    throw new Error(`expected the new 400 ft radius in the message, got: "${text}"`);
   await farCtx.close();
 });
 

@@ -1,5 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { ClockMethod, VerificationMethod } from '@prisma/client';
+import { feetToMetres, metresToWholeFeet } from '../common/util/distance.util';
 import { distanceInMeters, isValidLatitude, isValidLongitude } from '../common/util/geo.util';
 import { isIpAllowed } from '../common/util/ip.util';
 
@@ -10,7 +11,7 @@ export interface VerifiableLocation {
   name: string;
   latitude: number;
   longitude: number;
-  geofenceRadiusMeters: number;
+  geofenceRadiusFeet: number;
   allowedIps: string[];
   kioskEnabled: boolean;
   isActive: boolean;
@@ -131,8 +132,12 @@ export class LocationVerificationService {
       { latitude: location.latitude, longitude: location.longitude },
     );
 
+    // Both sides in metres. The radius is stored in feet, so converting it here
+    // is not optional tidiness: comparing a metre accuracy against a foot radius
+    // would silently make this check three times stricter than intended.
     const accuracyLimit =
-      location.geofenceRadiusMeters * LocationVerificationService.ACCURACY_TOLERANCE_MULTIPLIER;
+      feetToMetres(location.geofenceRadiusFeet) *
+      LocationVerificationService.ACCURACY_TOLERANCE_MULTIPLIER;
     if (
       accuracyMeters !== null &&
       accuracyMeters !== undefined &&
@@ -146,14 +151,14 @@ export class LocationVerificationService {
       };
     }
 
-    if (distance <= location.geofenceRadiusMeters) {
+    if (distance <= feetToMetres(location.geofenceRadiusFeet)) {
       return { insideFence: true, distanceMeters: distance, reason: '' };
     }
 
     return {
       insideFence: false,
       distanceMeters: distance,
-      reason: `You appear to be about ${Math.round(distance)}m from ${location.name}, outside the ${location.geofenceRadiusMeters}m clock-in area.`,
+      reason: `You appear to be about ${metresToWholeFeet(distance)} feet from ${location.name}, outside the ${location.geofenceRadiusFeet} foot clock-in area.`,
     };
   }
 }

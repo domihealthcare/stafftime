@@ -414,7 +414,7 @@ export const api = {
     postalCode: string;
     latitude: number;
     longitude: number;
-    geofenceRadiusMeters?: number;
+    geofenceRadiusFeet?: number;
   }) => request<Location>('/locations', { method: 'POST', body: JSON.stringify(body) }),
   updateLocation: (id: string, body: UpdateLocationInput) =>
     request<Location>(`/locations/${id}`, { method: 'PATCH', body: JSON.stringify(body) }),

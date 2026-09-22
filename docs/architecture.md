@@ -64,10 +64,26 @@ A kiosk punch needs neither: the device is bound to the location.
 
 Two rules worth knowing about:
 
+**The radius is stored and entered in feet**; the distance maths is metric
+underneath and converts once, at the comparison
+(`common/util/distance.util.ts`). Storing the unit somebody types avoids the
+alternative, where 500 feet is saved as 152 metres and read back as 499, which
+looks like the app losing their input. The migration that introduced this
+*converted* the existing values rather than relabelling them — a rename alone
+would have reinterpreted 150 metres as 150 feet and shrunk every geofence to
+under a third, refusing staff at their own front desk. There is a test that
+fails if the radius is ever compared against metres again; the other geofence
+tests all pass either way, which is why it had to be written deliberately.
+
 - **A GPS fix reporting accuracy wider than twice the geofence is not trusted.**
-  A "±400m" fix cannot prove presence inside a 150m circle. Such a punch falls
-  through to the IP check. The multiplier is a guess and is flagged for tuning
-  once there are real readings from both offices.
+  A "±1300 ft" fix cannot prove presence inside a 500 ft circle. Such a punch
+  falls through to the IP check. The multiplier is a guess and is flagged for
+  tuning once there are real readings from both offices.
+
+  This is why the radius has a floor of 50 ft and why tightening it below a few
+  hundred feet is counterproductive: a smaller radius does not make clock-in
+  stricter, it makes the accuracy rule reject more fixes, and a rejected fix
+  falls through to the IP check rather than failing closed.
 - **A failed clock-OUT never blocks the punch.** It is recorded, marked `MANUAL`
   and flagged `NEEDS_REVIEW` for a manager. Trapping someone on the clock because
   their phone lost GPS in the parking lot would be worse than an entry to review.

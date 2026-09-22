@@ -43,7 +43,7 @@ await step('clocking in from home is refused, and says how far away you are', as
   const alert = page.getByRole('alert');
   await alert.waitFor({ timeout: 15000 });
   const text = await alert.innerText();
-  if (!/outside the \d+m clock-in area/i.test(text)) throw new Error(`unhelpful: "${text}"`);
+  if (!/outside the \d+ foot clock-in area/i.test(text)) throw new Error(`unhelpful: "${text}"`);
   if (!/front-desk kiosk/i.test(text)) throw new Error(`did not offer the kiosk: "${text}"`);
   await page.screenshot({ path: `${OUT}/08-refused-offsite.png`, fullPage: true });
   // And they must still be clocked out, not half-punched.
