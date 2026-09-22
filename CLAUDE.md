@@ -115,6 +115,30 @@ Build this as an **adapter/plugin pattern**, not a hardcoded ADP integration:
 2. **Phase 2:** PTO requests + manager approval workflow.
 3. **Phase 3:** onboarding/offboarding checklists (task tracking only — no
    document upload; see *Data this app does not hold*).
+4. **Phase 4 — from timeclock to staff platform** (confirmed by Dominguez,
+   September 2026). Timekeeping stays the main job; these sit around it:
+   - **Announcements** — admins write, edit and remove posts. Seen only after
+     sign-in, never on the public login page. There is **always exactly one
+     primary** post while any exist: it is shown at the top of the home screen,
+     ticking another moves it, it cannot be unticked without choosing another,
+     and if it is deleted the newest remaining post takes over. All posts are
+     listed on a **News** page, newest first, like a blog.
+   - **Job roles and resources** — admins define job roles (Front Desk, Medical
+     Assistant, Provider, Billing…) and assign staff to them. This is separate
+     from the Employee / Manager / Admin access level. Each job role has a
+     resources section: **links** (Drive, ADP, vendor portals) and **pages
+     written in the app**. No uploads for now; uploads may come later, but that
+     would be a deliberate reversal of *Data this app does not hold*, not a
+     quiet addition.
+   - **Staff directory and who's on now** — work contact details, job role and
+     location only. "On now" comes from live clock-ins.
+   - **Availability** — staff mark when they cannot work each week; the
+     scheduler warns when a shift conflicts, next to the overtime warning.
+   - **Pulse surveys and anonymous feedback** — **truly anonymous**: the app
+     never records who answered, so nobody (admins included) can find out.
+     Results appear only once at least 3 people have answered.
+   - **Manager dashboard** — hours, overtime, lateness and time off by location
+     and week, from data the app already holds.
 
 ## Where it has got to (September 2026)
 

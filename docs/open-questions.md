@@ -174,6 +174,20 @@ practice:
       few. `FileStorage` stays an adapter, so a blob store remains one class if
       that ever changes.
 
+## Staff platform (Phase 4, confirmed September 2026)
+
+Scope is in `CLAUDE.md` under *Build phasing*. Still to settle:
+
+- [ ] **The list of job roles.** Seeded with Front Desk, Medical Assistant,
+      Provider, Billing and Practice Manager as a starting point; admins can
+      rename, add and remove them.
+- [ ] **Uploads for resources.** Links and written pages only for now. Adding
+      uploads later reverses *Data this app does not hold* and needs deciding
+      out loud, with limits on what may be uploaded.
+- [ ] **The anonymity threshold** for survey results — 3 answers by default.
+      With five providers and a small front desk, a question sent to one job
+      role can have fewer than three people who could answer it.
+
 ## Product decisions
 
 - [ ] **Kiosk device:** dedicated tablet per location, or a shared front-desk PC?
