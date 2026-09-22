@@ -1,6 +1,7 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { APP_GUARD } from '@nestjs/core';
+import { AnnouncementsModule } from './announcements/announcements.module';
 import { AppController } from './app.controller';
 import { RolesGuard } from './common/auth/roles.guard';
 import { AppConfigModule } from './app-config/app-config.module';
@@ -10,9 +11,11 @@ import { ChecklistsModule } from './checklists/checklists.module';
 import { SessionAuthGuard } from './common/auth/session.guard';
 import { validateEnv } from './config/env.validation';
 import { CredentialsModule } from './credentials/credentials.module';
+import { DirectoryModule } from './directory/directory.module';
 import { EmailModule } from './email/email.module';
 import { EmployeesModule } from './employees/employees.module';
 import { ExportsModule } from './exports/exports.module';
+import { JobRolesModule } from './job-roles/job-roles.module';
 import { KioskModule } from './kiosk/kiosk.module';
 import { LocationsModule } from './locations/locations.module';
 import { MaintenanceModule } from './maintenance/maintenance.module';
@@ -43,6 +46,9 @@ import { TimeEntriesModule } from './time-entries/time-entries.module';
     PtoModule,
     ChecklistsModule,
     CredentialsModule,
+    AnnouncementsModule,
+    JobRolesModule,
+    DirectoryModule,
     MaintenanceModule,
     SetupModule,
   ],

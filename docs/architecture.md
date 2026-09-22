@@ -1479,3 +1479,54 @@ opening the app.
 It cannot fail the job it runs inside. Tidying up and telling people are
 separate concerns, and a mail provider having a bad night must not stop expired
 sessions being cleared.
+
+## Announcements
+
+Admins post; everyone signed in reads. None of it is public — the login page
+can be opened by anyone on the internet, so the endpoints need a session like
+everything else, and the home screen shows the primary post only after sign-in.
+
+While any post exists, **exactly one is primary**. "At most one" is a partial
+unique index in the migration (Prisma cannot declare one). "At least one" is
+the service's job: the first post is primary whatever the form said, the flag
+is moved rather than cleared, unticking the primary is refused, and deleting
+the primary hands it to the newest post left.
+
+## Job roles and resources
+
+`JobRole` is what somebody does (Front Desk, Medical Assistant…); `Employee.role`
+is what they may do in the app (Employee / Manager / Admin). They are kept
+apart on purpose. Managers keep the job-role list, and one of the starting
+roles is literally called "Manager" — if job roles granted anything, tidying
+that list would be a way to hand somebody the payroll export. So a job role
+decides which resources somebody sees and nothing else.
+
+Somebody can hold several (`EmployeeJobRole` is a plain join table). Staff see
+the Everyone section plus their roles'; managers see every role, their own
+marked. Opening another role's page by its address is refused by the API, not
+just hidden by the screen.
+
+A resource is a link or a short written page, **never a file** — see *Data this
+app does not hold* in `CLAUDE.md`, and the guard in `no-sensitive-data.spec.ts`.
+Links must be http(s): a `javascript:` link would run in a colleague's session.
+An address pasted without a scheme is taken as https.
+
+A job role with resources cannot be deleted until they are moved or removed:
+they were written for somebody, and deleting a role should not quietly throw
+that work away. Its members just stop being in it.
+
+The Team / Manage menus in the top bar are disclosures of ordinary links, not
+ARIA menus, so the links stay links to assistive tech and to the browser suites.
+
+## Staff directory
+
+Everybody signed in can read it: it is how colleagues reach each other. It
+holds work contact details — name, email, phone (Dominguez confirmed phone
+numbers should be shown, September 2026), job roles and locations — and
+nothing from the personnel side: no pay type, hire date or access level. People
+who have left, or have not started, are not listed; somebody on leave is, marked.
+
+**In now** is any open punch from the last 16 hours. Older than that is a
+forgotten clock-out, and should not tell the front desk somebody is in who went
+home yesterday — the missing punch is already chased by *What needs a look*.
+Colleagues see where somebody is; only managers see when they clocked in.

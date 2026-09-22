@@ -31,6 +31,7 @@ const mgrCtx = await browser.newContext({ viewport: { width: 1280, height: 1000 
 const mgr = await mgrCtx.newPage();
 mgr.on('pageerror', (e) => errors.push(`pageerror: ${e.message}`));
 await signIn(mgr, 'manager@domihealthcare.com');
+await mgr.getByRole('button', { name: 'Manage', exact: true }).click();
 await mgr.getByRole('link', { name: 'Export' }).click();
 await mgr.getByText('Export timesheets').waitFor({ timeout: 10000 });
 
@@ -97,6 +98,7 @@ await step('the saved report still produces a working file', async () => {
 const admCtx = await browser.newContext({ viewport: { width: 1280, height: 1000 } });
 const adm = await admCtx.newPage();
 await signIn(adm, 'admin@domihealthcare.com');
+await adm.getByRole('button', { name: 'Manage', exact: true }).click();
 await adm.getByRole('link', { name: 'Export' }).click();
 
 await step('a shared report is visible to another manager, attributed to its owner', async () => {

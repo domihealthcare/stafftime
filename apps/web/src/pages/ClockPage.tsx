@@ -4,6 +4,7 @@ import { formatDuration, formatTime } from '../lib/format';
 import { GeolocationRefused, detectClockMethod, getCurrentPosition } from '../lib/geolocation';
 import { useSession } from '../lib/session';
 import type { Shift, TimeEntry } from '../lib/types';
+import { PrimaryAnnouncement } from '../components/PrimaryAnnouncement';
 import { Alert, Badge, Card, Spinner } from '../components/ui';
 
 type Status = 'loading' | 'ready' | 'working';
@@ -118,6 +119,8 @@ export function ClockPage() {
 
   return (
     <div className="mx-auto max-w-md space-y-4">
+      <PrimaryAnnouncement />
+
       <Card className="p-6 text-center">
         <p className="text-sm text-slate-500">
           {greeting()}, {employee.preferredName ?? employee.firstName}

@@ -1,4 +1,5 @@
 import type {
+  Announcement,
   Attention,
   Checklist,
   Credential,
@@ -11,14 +12,19 @@ import type {
   ConflictingShift,
   Coverage,
   DemoSummary,
+  DirectoryEntry,
   PlanResult,
   PracticeSettings,
   Employee,
+  JobRole,
   Location,
   PtoBalance,
   PtoPolicy,
   PtoRequest,
   ReportPreset,
+  Resource,
+  ResourceKind,
+  ResourceSection,
   Shift,
   TemplateTaskInput,
   TimeEntry,
@@ -618,6 +624,56 @@ export const api = {
     request<Credential>(`/credentials/${id}/archive`, { method: 'POST' }),
   deleteCredential: (id: string) =>
     request<{ deleted: boolean }>(`/credentials/${id}`, { method: 'DELETE' }),
+
+  announcements: () => request<Announcement[]>('/announcements'),
+  primaryAnnouncement: () =>
+    request<{ announcement: Announcement | null }>('/announcements/primary'),
+  createAnnouncement: (body: { title: string; body: string; isPrimary?: boolean }) =>
+    request<Announcement>('/announcements', { method: 'POST', body: JSON.stringify(body) }),
+  updateAnnouncement: (
+    id: string,
+    body: Partial<{ title: string; body: string; isPrimary: boolean }>,
+  ) =>
+    request<Announcement>(`/announcements/${id}`, {
+      method: 'PATCH',
+      body: JSON.stringify(body),
+    }),
+  deleteAnnouncement: (id: string) =>
+    request<{ deleted: boolean }>(`/announcements/${id}`, { method: 'DELETE' }),
+
+  directory: () => request<DirectoryEntry[]>('/directory'),
+
+  jobRoles: () => request<JobRole[]>('/job-roles'),
+  createJobRole: (body: { name: string; description?: string }) =>
+    request<JobRole>('/job-roles', { method: 'POST', body: JSON.stringify(body) }),
+  updateJobRole: (id: string, body: Partial<{ name: string; description: string }>) =>
+    request<JobRole>(`/job-roles/${id}`, { method: 'PATCH', body: JSON.stringify(body) }),
+  deleteJobRole: (id: string) =>
+    request<{ deleted: boolean }>(`/job-roles/${id}`, { method: 'DELETE' }),
+  addJobRoleMember: (id: string, employeeId: string) =>
+    request<JobRole>(`/job-roles/${id}/members`, {
+      method: 'POST',
+      body: JSON.stringify({ employeeId }),
+    }),
+  removeJobRoleMember: (id: string, employeeId: string) =>
+    request<JobRole>(`/job-roles/${id}/members/${employeeId}`, { method: 'DELETE' }),
+
+  resources: () => request<{ sections: ResourceSection[] }>('/resources'),
+  resource: (id: string) =>
+    request<Resource & { jobRole: { id: string; name: string } | null }>(`/resources/${id}`),
+  createResource: (body: {
+    jobRoleId: string | null;
+    kind: ResourceKind;
+    title: string;
+    url?: string;
+    body?: string;
+  }) => request<Resource>('/resources', { method: 'POST', body: JSON.stringify(body) }),
+  updateResource: (
+    id: string,
+    body: Partial<{ jobRoleId: string | null; title: string; url: string; body: string }>,
+  ) => request<Resource>(`/resources/${id}`, { method: 'PATCH', body: JSON.stringify(body) }),
+  deleteResource: (id: string) =>
+    request<{ deleted: boolean }>(`/resources/${id}`, { method: 'DELETE' }),
 
   checklistTemplates: (kind?: ChecklistKind) =>
     request<ChecklistTemplate[]>(`/checklists/templates${toQuery({ kind })}`),

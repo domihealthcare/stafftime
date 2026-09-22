@@ -414,3 +414,68 @@ export interface Credential {
   };
   recordedBy: { id: string; firstName: string; lastName: string } | null;
 }
+
+export interface Announcement {
+  id: string;
+  title: string;
+  /// Plain text; line breaks are meaningful.
+  body: string;
+  /// Exactly one post is primary while any exist.
+  isPrimary: boolean;
+  editedAt: string | null;
+  createdAt: string;
+  author: { id: string; firstName: string; lastName: string; preferredName: string | null } | null;
+}
+
+export interface PersonName {
+  id: string;
+  firstName: string;
+  lastName: string;
+  preferredName: string | null;
+}
+
+/// What somebody does at the practice. Decides which resources they see —
+/// never what they may do in the app, which is `Employee.role`.
+export interface JobRole {
+  id: string;
+  name: string;
+  description: string | null;
+  sortOrder: number;
+  resourceCount: number;
+  members: PersonName[];
+}
+
+export type ResourceKind = 'LINK' | 'PAGE';
+
+export interface Resource {
+  id: string;
+  jobRoleId: string | null;
+  kind: ResourceKind;
+  title: string;
+  url: string | null;
+  body: string | null;
+  sortOrder: number;
+  updatedAt: string;
+}
+
+export interface ResourceSection {
+  /// Null is the section everybody sees.
+  jobRole: { id: string; name: string; description: string | null } | null;
+  /// Whether the viewer is in this role.
+  yours: boolean;
+  resources: Resource[];
+}
+
+export interface DirectoryEntry {
+  id: string;
+  firstName: string;
+  lastName: string;
+  preferredName: string | null;
+  email: string;
+  phone: string | null;
+  onLeave: boolean;
+  jobRoles: { id: string; name: string }[];
+  locations: { id: string; name: string; isPrimary: boolean }[];
+  /// Clocked in now. `since` is only sent to managers.
+  onNow: { location: { id: string; name: string }; since?: string } | null;
+}
