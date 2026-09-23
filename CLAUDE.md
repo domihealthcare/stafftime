@@ -234,7 +234,9 @@ Beyond the phases, the parts worth knowing about before picking up work:
   ("Nobody yet", with how many each day), flagged on the rota, in the banner
   and the nightly round-up (next 14 days) until somebody is put in them, and
   left out of scheduled hours, overtime and the dashboard. Staff see only
-  their own row. Chosen by Dominguez from three renderings.
+  their own row — **only managers see open shifts** (confirmed by
+  Dominguez, September 2026; no staff pick-up). Chosen by Dominguez from
+  three renderings.
 - **The scheduler** does a week (for building, on a laptop) and a month (for
   staff checking when they are on, often on a phone), warns when the rota puts
   somebody past the overtime threshold in a week, and syncs to Google, Apple or

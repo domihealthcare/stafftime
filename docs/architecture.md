@@ -1640,6 +1640,8 @@ not hours anybody is down for:
   `openShifts` in the attention round-up (next 14 days), which feeds both the
   banner and the nightly email.
 - Staff never see one: the API scopes a staff member's shifts to their own.
+  That is a decision, not a gap (Dominguez, September 2026): open shifts are
+  the managers' to fill, and there is no staff pick-up.
 
 Assigning is an ordinary update (`employeeId`), with the usual refusals —
 somebody not at that office, or already on at that time; the dialog greys

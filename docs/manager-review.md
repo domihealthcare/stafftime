@@ -146,8 +146,8 @@ at the top; make them one at a time or repeating (choose "Nobody yet"), and
 they stay flagged — on the rota, in the banner and in the nightly email —
 until you click one and put somebody in it. The demo data has a few.
 
-- **Tell us:** should staff be able to see open shifts and offer to take one?
-  Today only managers see them.
+Only managers see open shifts — decided September 2026. Staff see their own
+shifts and nothing else.
 
 Plus four things that save the tedious part:
 
