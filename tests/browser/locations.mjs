@@ -80,8 +80,16 @@ await step('saving persists the coordinates and the radius', async () => {
   // is outside it, and wide enough that the accuracy rule does not reject the
   // fix before the distance is even considered.
   await page.locator('input[id^="radius-"]').first().fill('400');
+  // Wait for the save itself, then for the confirmation by its exact words.
+  // A loose match on "Saved." also matches "…from the position currently
+  // saved.", which is on screen before the request has even been sent.
+  const saving = page.waitForResponse(
+    (r) => r.url().includes('/api/locations/') && r.request().method() !== 'GET',
+  );
   await page.getByRole('button', { name: 'Save North Bergen' }).click();
-  await page.getByText('Saved.').waitFor({ timeout: 15000 });
+  const saveResponse = await saving;
+  if (!saveResponse.ok()) throw new Error(`the save answered ${saveResponse.status()}`);
+  await page.getByText('Saved.', { exact: true }).waitFor({ timeout: 15000 });
 
   const response = await page.request.get(`${BASE}/api/locations`);
   const saved = (await response.json()).find((l) => l.slug === 'north-bergen');
@@ -116,13 +124,41 @@ await step('the new geofence actually governs clock-in', async () => {
 
 await step('an IP allow-list entry round-trips', async () => {
   await page.locator('input[id^="ips-"]').first().fill('203.0.113.0/24, 198.51.100.7');
+  // Wait for the save itself, then for the confirmation by its exact words.
+  // A loose match on "Saved." also matches "…from the position currently
+  // saved.", which is on screen before the request has even been sent.
+  const saving = page.waitForResponse(
+    (r) => r.url().includes('/api/locations/') && r.request().method() !== 'GET',
+  );
   await page.getByRole('button', { name: 'Save North Bergen' }).click();
-  await page.getByText('Saved.').waitFor({ timeout: 15000 });
+  const saveResponse = await saving;
+  if (!saveResponse.ok()) throw new Error(`the save answered ${saveResponse.status()}`);
+  await page.getByText('Saved.', { exact: true }).waitFor({ timeout: 15000 });
 
   const response = await page.request.get(`${BASE}/api/locations`);
   const saved = (await response.json()).find((l) => l.slug === 'north-bergen');
   if (JSON.stringify(saved.allowedIps) !== JSON.stringify(['203.0.113.0/24', '198.51.100.7']))
     throw new Error(`allow-list not saved: ${JSON.stringify(saved.allowedIps)}`);
+});
+
+await step('adding a location leaves an unsaved edit in another card alone', async () => {
+  // Adding a location reloads the list. That reload must not rebuild the other
+  // cards from the server and throw away what somebody has typed or captured
+  // but not yet saved — at the front desk, that is a pin they walked over to get.
+  await latField().fill('40.805555');
+
+  await page.getByRole('button', { name: '+ Add a location' }).click();
+  await page.locator('#new-loc-name').fill('Test Annex');
+  await page.locator('#new-loc-address').fill('1 Test Street');
+  await page.locator('#new-loc-city').fill('Secaucus');
+  await page.locator('#new-loc-zip').fill('07094');
+  await page.locator('#new-loc-lat').fill('40.7895');
+  await page.locator('#new-loc-lng').fill('-74.0565');
+  await page.getByRole('button', { name: 'Add location' }).click();
+  await page.getByRole('heading', { name: 'Test Annex' }).waitFor({ timeout: 15000 });
+
+  const kept = await latField().inputValue();
+  if (kept !== '40.805555') throw new Error(`North Bergen's unsaved latitude was replaced with ${kept}`);
 });
 
 await browser.close();

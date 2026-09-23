@@ -76,7 +76,11 @@ export function LocationsPage() {
       )}
 
       <div className="mt-4 space-y-4">
-        {loading ? (
+        {/* The spinner is for the first load only. A reload — after adding a
+            location — keeps the cards mounted: swapping them for a spinner
+            rebuilt every card from the server and silently threw away a
+            position somebody had captured at the front desk but not saved. */}
+        {loading && locations.length === 0 ? (
           <Card className="p-6">
             <Spinner label="Loading locations" />
           </Card>

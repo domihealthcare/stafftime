@@ -46,6 +46,13 @@ await step('an unauthenticated visit shows the sign-in screen, not the app', asy
   if (await page.getByRole('button', { name: /Your account/ }).count() > 0)
     throw new Error('app header was reachable without signing in');
 });
+await step('the sign-in screen names the staff platform, not just a timeclock', async () => {
+  await page.getByRole('heading', { name: 'Domi Staff', exact: true }).waitFor({ timeout: 5000 });
+  await page
+    .getByText('Sign in to clock in, check your schedule and keep up with the team.', { exact: true })
+    .waitFor({ timeout: 5000 });
+  if ((await page.title()) !== 'Domi Staff') throw new Error(`tab title is "${await page.title()}"`);
+});
 await page.screenshot({ path: `${OUT}/12-login.png`, fullPage: true });
 
 await step('a wrong password is refused without revealing whether the account exists', async () => {

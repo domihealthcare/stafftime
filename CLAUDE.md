@@ -116,7 +116,11 @@ Build this as an **adapter/plugin pattern**, not a hardcoded ADP integration:
 3. **Phase 3:** onboarding/offboarding checklists (task tracking only — no
    document upload; see *Data this app does not hold*).
 4. **Phase 4 — from timeclock to staff platform** (confirmed by Dominguez,
-   September 2026). Timekeeping stays the main job; these sit around it:
+   September 2026). Timekeeping stays the main job; these sit around it.
+   Staff now see it as **"Domi Staff"** — "Sign in to clock in, check your
+   schedule and keep up with the team." on the sign-in screen and in the tab
+   title. Emails, the calendar feed, the export spreadsheet and the first-run
+   setup page still say "Domi Time & Scheduling"; renaming those is not done.
    - **Announcements** — admins write, edit and remove posts. Seen only after
      sign-in, never on the public login page. There is **always exactly one
      primary** post while any exist: it is shown at the top of the home screen,

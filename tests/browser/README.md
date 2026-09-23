@@ -51,6 +51,13 @@ first argument.
 
 ## Things worth knowing
 
+- **`getByText('…')` is a case-insensitive substring match.** Waiting for a
+  short confirmation like `'Saved.'` also matches "…from the position currently
+  saved." — which was already on the Locations screen, so the wait finished
+  before the save request did and the check that followed read the old value,
+  failing only when CI happened to be slow. After an action that writes, wait
+  for the write itself (`page.waitForResponse(...)`, set up *before* the click)
+  and then for the confirmation with `{ exact: true }`.
 - **State is reset between suites, not trusted.** Suites leave an open time
   entry, a changed password, a paired kiosk or a rota behind on purpose. The
   runner re-seeds and clears that between suites instead of depending on which
