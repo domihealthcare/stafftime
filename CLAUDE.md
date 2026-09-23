@@ -138,8 +138,11 @@ Build this as an **adapter/plugin pattern**, not a hardcoded ADP integration:
      (confirmed fine to show colleagues), job roles and locations; nothing from
      the personnel side. "In now" comes from live clock-ins; colleagues see
      where somebody is, managers also see since when.
-   - **Availability** — staff mark when they cannot work each week; the
-     scheduler warns when a shift conflicts, next to the overtime warning.
+   - **Availability** — staff set their own, **every week** (a weekday, all day
+     or between two times) or **on one date**; no approval. A change only
+     reaches weeks whose rota is **not yet published** — a published week is
+     fixed. The scheduler warns (never refuses) when a shift lands on one, next
+     to the overtime warning. Managers read everybody's but do not change it.
    - **Pulse surveys and anonymous feedback** — **truly anonymous**: the app
      never records who answered, so nobody (admins included) can find out.
      Results appear only once at least 3 people have answered.

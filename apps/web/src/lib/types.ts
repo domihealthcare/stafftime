@@ -198,6 +198,9 @@ export interface CoverageShift {
   status: ShiftStatus;
   /// Scheduled while on approved leave — nearly always a mistake.
   conflictsWithLeave: boolean;
+  /// Scheduled when they said they cannot work, described ("Not available
+  /// Tuesdays, 5:00 PM–9:00 PM"). A warning, not a refusal.
+  unavailable: string | null;
 }
 
 export interface CoverageDay {
@@ -478,4 +481,33 @@ export interface DirectoryEntry {
   locations: { id: string; name: string; isPrimary: boolean }[];
   /// Clocked in now. `since` is only sent to managers.
   onNow: { location: { id: string; name: string }; since?: string } | null;
+}
+
+export type UnavailabilityKind = 'WEEKLY' | 'ONE_OFF';
+
+export interface UnavailabilityRule {
+  id: string;
+  kind: UnavailabilityKind;
+  /// ISO weekday, 1 = Monday. WEEKLY only.
+  weekday: number | null;
+  /// YYYY-MM-DD. ONE_OFF only.
+  date: string | null;
+  startTime: string | null;
+  endTime: string | null;
+  note: string | null;
+  effectiveFrom: string;
+  effectiveUntil: string | null;
+  description: string;
+  /// A one-off inside a published week: fixed.
+  locked: boolean;
+}
+
+export interface MyAvailability {
+  /// The first day a change can touch — the weeks before it are published.
+  firstOpenDate: string;
+  rules: UnavailabilityRule[];
+}
+
+export interface TeamAvailability extends PersonName {
+  rules: UnavailabilityRule[];
 }

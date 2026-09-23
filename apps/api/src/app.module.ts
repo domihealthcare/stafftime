@@ -6,6 +6,7 @@ import { AppController } from './app.controller';
 import { RolesGuard } from './common/auth/roles.guard';
 import { AppConfigModule } from './app-config/app-config.module';
 import { AuthModule } from './auth/auth.module';
+import { AvailabilityModule } from './availability/availability.module';
 import { CalendarModule } from './calendar/calendar.module';
 import { ChecklistsModule } from './checklists/checklists.module';
 import { SessionAuthGuard } from './common/auth/session.guard';
@@ -49,6 +50,7 @@ import { TimeEntriesModule } from './time-entries/time-entries.module';
     AnnouncementsModule,
     JobRolesModule,
     DirectoryModule,
+    AvailabilityModule,
     MaintenanceModule,
     SetupModule,
   ],

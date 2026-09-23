@@ -226,6 +226,7 @@ model Employee {
   announcements             Announcement[]          @relation("AnnouncementAuthor")
   jobRoles                  EmployeeJobRole[]
   createdResources          Resource[]              @relation("ResourceCreatedBy")
+  unavailability            Unavailability[]
 
   @@index([employmentStatus])
   @@map("employees")
@@ -1011,4 +1012,57 @@ model Resource {
 
   @@index([jobRoleId, sortOrder])
   @@map("resources")
+}
+
+// ---------------------------------------------------------------------------
+// Availability (Phase 4)
+// ---------------------------------------------------------------------------
+
+enum UnavailabilityKind {
+  /// Every week on one weekday: "never Saturdays", "not Tuesdays after 5".
+  WEEKLY
+  /// One date: "not on 14 October".
+  ONE_OFF
+}
+
+/// When somebody cannot work. Staff set their own; the scheduler warns when a
+/// shift lands on it, but does not refuse — a manager sometimes has to ask.
+///
+/// Times are wall-clock times at the shift's location ("17:00"), not instants:
+/// "after 5" means after 5 in North Bergen whatever the clocks did. Both null
+/// means the whole day.
+///
+/// **A published week is fixed.** Staff may change their availability any time,
+/// but a change only reaches weeks whose rota is not yet published — confirmed
+/// by Dominguez, September 2026. So a weekly rule carries the dates it applies
+/// between: a new one starts at the first open week, and removing one ends it
+/// there rather than rewriting weeks people are already working to. A one-off
+/// date inside a published week cannot be added or removed at all.
+model Unavailability {
+  id         String             @id @default(uuid()) @db.Uuid
+  employeeId String             @db.Uuid
+  kind       UnavailabilityKind
+
+  /// WEEKLY only. ISO weekday: 1 = Monday … 7 = Sunday.
+  weekday Int?
+  /// ONE_OFF only.
+  date    DateTime? @db.Date
+
+  /// "HH:MM", local to the shift's location. Both null = all day.
+  startTime String?
+  endTime   String?
+  note      String?
+
+  /// The first day this counts. For a ONE_OFF, its date.
+  effectiveFrom  DateTime  @db.Date
+  /// The last day a WEEKLY rule counts, once somebody has removed it.
+  effectiveUntil DateTime? @db.Date
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  employee Employee @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+
+  @@index([employeeId, effectiveFrom])
+  @@map("unavailability")
 }

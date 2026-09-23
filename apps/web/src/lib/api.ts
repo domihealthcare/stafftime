@@ -18,6 +18,7 @@ import type {
   Employee,
   JobRole,
   Location,
+  MyAvailability,
   PtoBalance,
   PtoPolicy,
   PtoRequest,
@@ -26,6 +27,8 @@ import type {
   ResourceKind,
   ResourceSection,
   Shift,
+  TeamAvailability,
+  UnavailabilityKind,
   TemplateTaskInput,
   TimeEntry,
   UpdateLocationInput,
@@ -642,6 +645,22 @@ export const api = {
     request<{ deleted: boolean }>(`/announcements/${id}`, { method: 'DELETE' }),
 
   directory: () => request<DirectoryEntry[]>('/directory'),
+
+  availability: (employeeId?: string) =>
+    request<MyAvailability>(`/availability${toQuery({ employeeId })}`),
+  teamAvailability: () => request<TeamAvailability[]>('/availability/team'),
+  addUnavailability: (body: {
+    kind: UnavailabilityKind;
+    weekday?: number;
+    date?: string;
+    startTime?: string;
+    endTime?: string;
+    note?: string;
+  }) => request<unknown>('/availability', { method: 'POST', body: JSON.stringify(body) }),
+  removeUnavailability: (id: string) =>
+    request<{ removed: boolean; endsAfter: string | null }>(`/availability/${id}`, {
+      method: 'DELETE',
+    }),
 
   jobRoles: () => request<JobRole[]>('/job-roles'),
   createJobRole: (body: { name: string; description?: string }) =>

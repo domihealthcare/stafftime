@@ -1530,3 +1530,29 @@ who have left, or have not started, are not listed; somebody on leave is, marked
 forgotten clock-out, and should not tell the front desk somebody is in who went
 home yesterday — the missing punch is already chased by *What needs a look*.
 Colleagues see where somebody is; only managers see when they clocked in.
+
+## Availability
+
+Staff say when they cannot work: a weekday every week, or one date, either all
+day or between two wall-clock times at the shift's location. They set it
+themselves and nobody approves it; managers can read everybody's, and cannot
+change it — it is each person's statement about their own time.
+
+**A published week is fixed** (Dominguez, September 2026). The first date a
+change can touch is the day after the last week with a published shift at any
+of the person's locations, and never before today. So:
+
+- a new weekly rule starts there (`effectiveFrom`), not today;
+- removing a weekly rule that has already covered a published week *ends* it
+  there (`effectiveUntil`) instead of deleting it, so the published weeks keep
+  saying what they said;
+- a one-off date inside a published week cannot be added or removed.
+
+"Published" is per location, not per person: somebody not on this week's rota
+may still be about to be added to it.
+
+The scheduler **warns, never refuses**, when a shift overlaps one — a manager
+sometimes has to ask. The check is in `availability.rules.ts`, a pure function
+over local dates and "HH:MM" times: overlap rather than containment, touching
+ends allowed (a shift ending at 17:00 fits "not after 5"), and a shift past
+midnight counted against its first day only.
