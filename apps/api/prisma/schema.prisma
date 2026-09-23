@@ -60,6 +60,9 @@ enum VerificationMethod {
   IP_ALLOWLIST
   KIOSK
   MANUAL
+  /// Clocked in or out during a work-from-home shift: no office check, and
+  /// no location or IP recorded.
+  REMOTE
 }
 
 enum TimeEntryStatus {
@@ -541,6 +544,9 @@ model Shift {
   /// should be filled from Front Desk. Optional: most assigned shifts are
   /// simply "Rosa, 8 to 5".
   jobRoleId  String?     @db.Uuid
+  /// Worked from home. The location stays — it is the office the hours
+  /// belong to — but clocking in during the shift needs no office check.
+  isRemote   Boolean     @default(false)
   startsAt   DateTime
   endsAt     DateTime
   status     ShiftStatus @default(DRAFT)

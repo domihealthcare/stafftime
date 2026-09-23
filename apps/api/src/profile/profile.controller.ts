@@ -14,7 +14,7 @@ import type { Response } from 'express';
 import { AuthUser } from '../common/auth/auth-user';
 import { CurrentUser } from '../common/auth/current-user.decorator';
 import { Roles } from '../common/auth/roles.decorator';
-import { UpdateProfileDto, UploadPhotoDto } from './dto/profile.dto';
+import { SetOwnPinDto, UpdateProfileDto, UploadPhotoDto } from './dto/profile.dto';
 import { ProfileService } from './profile.service';
 
 @Controller('profile')
@@ -29,6 +29,11 @@ export class ProfileController {
   @Patch()
   update(@CurrentUser() user: AuthUser, @Body() dto: UpdateProfileDto) {
     return this.profiles.update(user.id, dto);
+  }
+
+  @Put('pin')
+  setPin(@CurrentUser() user: AuthUser, @Body() dto: SetOwnPinDto) {
+    return this.profiles.setOwnPin(user.id, dto.currentPassword, dto.pin);
   }
 
   @Put('photo')

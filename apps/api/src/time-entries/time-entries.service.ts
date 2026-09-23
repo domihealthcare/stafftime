@@ -26,10 +26,7 @@ import { ClockInDto } from './dto/clock-in.dto';
 import { ClockOutDto } from './dto/clock-out.dto';
 import { EditTimeEntryDto } from './dto/edit-time-entry.dto';
 import { QueryTimeEntriesDto } from './dto/query-time-entries.dto';
-import {
-  LocationVerificationService,
-  VerifiableLocation,
-} from './location-verification.service';
+import { LocationVerificationService, VerifiableLocation } from './location-verification.service';
 
 /**
  * What a time entry looks like when it leaves the server.
@@ -86,6 +83,11 @@ const TIME_ENTRY_SELECT = {
 /// How far from a punch we will look for a scheduled shift to attach it to.
 const SHIFT_MATCH_WINDOW_MINUTES = 240;
 
+/// How early somebody may clock in to a work-from-home shift. Unlike an office
+/// punch, nothing else proves they are working, so the shift itself is the
+/// permission — and it is kept close to the shift.
+const REMOTE_EARLY_MINUTES = 30;
+
 @Injectable()
 export class TimeEntriesService {
   private readonly logger = new Logger(TimeEntriesService.name);
@@ -114,6 +116,21 @@ export class TimeEntriesService {
       );
     }
 
+    // Working from home: a published remote shift covering now is the
+    // permission. No office check, and — as promised to staff — no location
+    // or IP recorded. The kiosk is always an office punch.
+    const remoteShift =
+      dto.method === ClockMethod.KIOSK ? null : await this.findRemoteShift(employeeId, new Date());
+    if (remoteShift) {
+      return this.createEntry({
+        employeeId,
+        locationId: remoteShift.locationId,
+        shift: remoteShift,
+        method: dto.method,
+        verification: VerificationMethod.REMOTE,
+      });
+    }
+
     const location = await this.loadVerifiableLocation(dto.locationId);
     const isAssignedToLocation = await this.isAssigned(employeeId, dto.locationId);
     const ip = ipAddress ? normalizeIp(ipAddress) : null;
@@ -131,8 +148,33 @@ export class TimeEntriesService {
       throw new ForbiddenException(outcome.reason);
     }
 
+    const shift = await this.findMatchingShift(employeeId, dto.locationId, new Date());
+    return this.createEntry({
+      employeeId,
+      locationId: dto.locationId,
+      shift,
+      method: dto.method,
+      verification: outcome.verificationMethod,
+      latitude: dto.latitude,
+      longitude: dto.longitude,
+      accuracyMeters: dto.accuracyMeters,
+      ip,
+    });
+  }
+
+  private async createEntry(input: {
+    employeeId: string;
+    locationId: string;
+    shift: { id: string; startsAt: Date } | null;
+    method: ClockMethod;
+    verification: VerificationMethod;
+    latitude?: number;
+    longitude?: number;
+    accuracyMeters?: number;
+    ip?: string | null;
+  }) {
+    const { employeeId, shift } = input;
     const clockInAt = new Date();
-    const shift = await this.findMatchingShift(employeeId, dto.locationId, clockInAt);
 
     // Checking for an existing open punch and inserting the new one must be atomic,
     // or a double-tapped button leaves the employee clocked in twice. Serializable
@@ -153,16 +195,16 @@ export class TimeEntriesService {
           return tx.timeEntry.create({
             data: {
               employeeId,
-              locationId: dto.locationId,
+              locationId: input.locationId,
               shiftId: shift?.id,
-              method: dto.method,
+              method: input.method,
               status: TimeEntryStatus.OPEN,
               clockInAt,
-              clockInLatitude: dto.latitude,
-              clockInLongitude: dto.longitude,
-              clockInAccuracyMeters: dto.accuracyMeters,
-              clockInIp: ip,
-              clockInVerification: outcome.verificationMethod,
+              clockInLatitude: input.latitude,
+              clockInLongitude: input.longitude,
+              clockInAccuracyMeters: input.accuracyMeters,
+              clockInIp: input.ip ?? null,
+              clockInVerification: input.verification,
               isLate: shift ? this.isLate(clockInAt, shift.startsAt) : false,
             },
             select: TIME_ENTRY_SELECT,
@@ -179,7 +221,12 @@ export class TimeEntriesService {
     }
   }
 
-  async clockOut(dto: ClockOutDto, actor: AuthUser, ipAddress: string | undefined, employeeIdOverride?: string) {
+  async clockOut(
+    dto: ClockOutDto,
+    actor: AuthUser,
+    ipAddress: string | undefined,
+    employeeIdOverride?: string,
+  ) {
     const employeeId = employeeIdOverride ?? actor.id;
     if (employeeIdOverride && employeeIdOverride !== actor.id && actor.role === Role.EMPLOYEE) {
       throw new ForbiddenException('You may only clock yourself out.');
@@ -188,6 +235,28 @@ export class TimeEntriesService {
     const open = await this.findOpenEntry(employeeId);
     if (!open) {
       throw new ConflictException('No open time entry to clock out of.');
+    }
+
+    // A work-from-home punch ends the way it started: no office check, and
+    // nothing about where they are recorded.
+    if (open.clockInVerification === VerificationMethod.REMOTE) {
+      const clockOutAt = new Date();
+      const closed = await this.prisma.timeEntry.updateMany({
+        where: { id: open.id, clockOutAt: null },
+        data: {
+          clockOutAt,
+          clockOutVerification: VerificationMethod.REMOTE,
+          status: TimeEntryStatus.COMPLETED,
+          isEarlyDeparture: open.shift
+            ? this.isEarlyDeparture(clockOutAt, open.shift.endsAt)
+            : false,
+        },
+      });
+      if (closed.count === 0) throw new ConflictException('No open time entry to clock out of.');
+      return this.prisma.timeEntry.findUniqueOrThrow({
+        where: { id: open.id },
+        select: TIME_ENTRY_SELECT,
+      });
     }
 
     const location = await this.loadVerifiableLocation(open.locationId);
@@ -464,6 +533,22 @@ export class TimeEntriesService {
   }
 
   /// Attach the punch to the nearest scheduled shift, so "late" means something.
+  /// A published work-from-home shift that covers `at` — from half an hour
+  /// before it starts to when it ends.
+  private findRemoteShift(employeeId: string, at: Date) {
+    return this.prisma.shift.findFirst({
+      where: {
+        employeeId,
+        isRemote: true,
+        status: ShiftStatus.PUBLISHED,
+        startsAt: { lte: new Date(at.getTime() + REMOTE_EARLY_MINUTES * 60_000) },
+        endsAt: { gt: at },
+      },
+      select: { id: true, locationId: true, startsAt: true, endsAt: true },
+      orderBy: { startsAt: 'asc' },
+    });
+  }
+
   private findMatchingShift(employeeId: string, locationId: string, at: Date) {
     const windowMs = SHIFT_MATCH_WINDOW_MINUTES * 60_000;
     return this.prisma.shift.findFirst({

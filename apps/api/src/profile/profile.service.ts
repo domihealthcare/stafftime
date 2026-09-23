@@ -1,4 +1,12 @@
-import { BadRequestException, Injectable, Logger, NotFoundException } from '@nestjs/common';
+import {
+  BadRequestException,
+  ForbiddenException,
+  Injectable,
+  Logger,
+  NotFoundException,
+} from '@nestjs/common';
+import { PasswordService } from '../auth/password.service';
+import { PinService } from '../kiosk/pin.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { UpdateProfileDto } from './dto/profile.dto';
 import { checkPhoto, PhotoError } from './photo';
@@ -13,6 +21,8 @@ const PROFILE_SELECT = {
   phone: true,
   about: true,
   photoUpdatedAt: true,
+  pinUpdatedAt: true,
+  pinHash: true,
   role: true,
   jobRoles: { select: { jobRole: { select: { id: true, name: true, colour: true } } } },
   locations: { select: { isPrimary: true, location: { select: { id: true, name: true } } } },
@@ -29,16 +39,50 @@ const PROFILE_SELECT = {
 export class ProfileService {
   private readonly logger = new Logger(ProfileService.name);
 
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly passwords: PasswordService,
+    private readonly pins: PinService,
+  ) {}
+
+  /// Choose the PIN you clock in with at the front-desk tablet.
+  async setOwnPin(employeeId: string, currentPassword: string, pin: string) {
+    const person = await this.prisma.employee.findUniqueOrThrow({
+      where: { id: employeeId },
+      select: { passwordHash: true },
+    });
+    if (
+      !person.passwordHash ||
+      !(await this.passwords.verify(currentPassword, person.passwordHash))
+    ) {
+      throw new ForbiddenException('That password is not right.');
+    }
+    const verdict = this.pins.check(pin);
+    if (!verdict.ok) throw new BadRequestException(verdict.reason);
+    await this.prisma.employee.update({
+      where: { id: employeeId },
+      data: {
+        pinHash: await this.pins.hash(pin),
+        pinUpdatedAt: new Date(),
+        pinFailedAttempts: 0,
+        pinLockedUntil: null,
+      },
+    });
+    this.logger.log(`Tablet PIN changed by ${employeeId} themselves`);
+    return this.get(employeeId);
+  }
 
   async get(employeeId: string) {
     const row = await this.prisma.employee.findUniqueOrThrow({
       where: { id: employeeId },
       select: PROFILE_SELECT,
     });
-    const { jobRoles, locations, ...rest } = row;
+    const { jobRoles, locations, pinHash, ...rest } = row;
     return {
       ...rest,
+      // Whether a PIN is set, and when — never the PIN, which is only ever
+      // stored hashed and so cannot be shown to anybody.
+      hasPin: pinHash !== null,
       jobRoles: jobRoles.map((entry) => entry.jobRole),
       locations: locations.map((entry) => ({ ...entry.location, isPrimary: entry.isPrimary })),
     };

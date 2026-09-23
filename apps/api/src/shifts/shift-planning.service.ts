@@ -119,6 +119,7 @@ export class ShiftPlanningService {
     return this.createAll(candidates, {
       employeeId: dto.employeeId ?? null,
       jobRoleId: dto.jobRoleId ?? null,
+      isRemote: dto.isRemote ?? false,
       openCount: perDay,
       locationId: dto.locationId,
       status: dto.status ?? ShiftStatus.DRAFT,
@@ -160,6 +161,7 @@ export class ShiftPlanningService {
       select: {
         employeeId: true,
         jobRoleId: true,
+        isRemote: true,
         locationId: true,
         startsAt: true,
         endsAt: true,
@@ -195,6 +197,7 @@ export class ShiftPlanningService {
         // person is not decided yet.
         employeeId: shift.employeeId,
         jobRoleId: shift.jobRoleId,
+        isRemote: shift.isRemote,
         openCount: 1,
         locationId: shift.locationId,
         status: dto.status ?? ShiftStatus.DRAFT,
@@ -450,6 +453,7 @@ export class ShiftPlanningService {
     common: {
       employeeId: string | null;
       jobRoleId: string | null;
+      isRemote: boolean;
       /// Open shifts only: how many identical slots each day.
       openCount: number;
       locationId: string;
@@ -471,6 +475,7 @@ export class ShiftPlanningService {
           data: Array.from({ length: common.openCount }, () => ({
             employeeId: null,
             jobRoleId: common.jobRoleId,
+            isRemote: common.isRemote,
             locationId: common.locationId,
             startsAt: candidate.startsAt,
             endsAt: candidate.endsAt,
@@ -526,6 +531,7 @@ export class ShiftPlanningService {
         data: {
           employeeId: common.employeeId,
           jobRoleId: common.jobRoleId,
+          isRemote: common.isRemote,
           locationId: common.locationId,
           startsAt: candidate.startsAt,
           endsAt: candidate.endsAt,

@@ -1,5 +1,6 @@
 import { ShiftStatus } from '@prisma/client';
 import {
+  IsBoolean,
   IsDateString,
   IsEnum,
   IsOptional,
@@ -25,6 +26,11 @@ export class CreateShiftDto {
   @ValidateIf((_, value) => value !== null)
   @IsUUID('4')
   jobRoleId?: string | null;
+
+  /// Worked from home: clocking in during it needs no office check.
+  @IsOptional()
+  @IsBoolean()
+  isRemote?: boolean;
 
   @IsDateString()
   startsAt!: string;

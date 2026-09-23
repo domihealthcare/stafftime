@@ -44,7 +44,11 @@ export class DirectoryService {
         },
         timeEntries: {
           where: { clockOutAt: null, clockInAt: { gte: since } },
-          select: { clockInAt: true, location: { select: { id: true, name: true } } },
+          select: {
+            clockInAt: true,
+            clockInVerification: true,
+            location: { select: { id: true, name: true } },
+          },
           orderBy: { clockInAt: 'desc' },
           take: 1,
         },
@@ -69,7 +73,12 @@ export class DirectoryService {
           .sort((a, b) => Number(b.isPrimary) - Number(a.isPrimary))
           .map((row) => ({ ...row.location, isPrimary: row.isPrimary })),
         onNow: open
-          ? { location: open.location, ...(showSince ? { since: open.clockInAt } : {}) }
+          ? {
+              location: open.location,
+              // Clocked in to a work-from-home shift: in, but not at the office.
+              remote: open.clockInVerification === 'REMOTE',
+              ...(showSince ? { since: open.clockInAt } : {}),
+            }
           : null,
       };
     });

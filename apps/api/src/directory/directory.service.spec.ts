@@ -70,13 +70,33 @@ describe('DirectoryService', () => {
   it('tells a colleague somebody is in, and where, but not since when', async () => {
     const { service } = build();
     const [row] = await service.list(employee, NOW);
-    expect(row.onNow).toEqual({ location: { id: 'nb', name: 'North Bergen' } });
+    expect(row.onNow).toEqual({ location: { id: 'nb', name: 'North Bergen' }, remote: false });
   });
 
   it('tells a manager since when', async () => {
     const { service } = build();
     const [row] = await service.list(manager, NOW);
-    expect(row.onNow).toEqual({ location: { id: 'nb', name: 'North Bergen' }, since: clockedIn });
+    expect(row.onNow).toEqual({
+      location: { id: 'nb', name: 'North Bergen' },
+      remote: false,
+      since: clockedIn,
+    });
+  });
+
+  it('says when somebody is on from home', async () => {
+    const { service } = build([
+      person({
+        timeEntries: [
+          {
+            clockInAt: clockedIn,
+            clockInVerification: 'REMOTE',
+            location: { id: 'nb', name: 'North Bergen' },
+          },
+        ],
+      }),
+    ]);
+    const [row] = await service.list(employee, NOW);
+    expect(row.onNow).toEqual({ location: { id: 'nb', name: 'North Bergen' }, remote: true });
   });
 
   it('says nobody is on when there is no open punch', async () => {

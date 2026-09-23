@@ -33,3 +33,15 @@ export class UploadPhotoDto {
   @MaxLength(300_000)
   image!: string;
 }
+
+export class SetOwnPinDto {
+  /// Your password, so somebody at a computer you left signed in cannot
+  /// quietly change the PIN you clock in with.
+  @IsString()
+  @MaxLength(200)
+  currentPassword!: string;
+
+  @IsString()
+  @MaxLength(8)
+  pin!: string;
+}

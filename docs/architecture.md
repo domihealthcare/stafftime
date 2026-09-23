@@ -62,6 +62,24 @@ Order of proof for a web/mobile punch:
 
 A kiosk punch needs neither: the device is bound to the location.
 
+### Working from home
+
+A manager can mark a shift **work from home** (`Shift.isRemote`). While the
+person has a *published* one on — from `REMOTE_EARLY_MINUTES` (30) before it
+starts until it ends — `TimeEntriesService.clockIn` skips the office check
+altogether and records the punch as `REMOTE`: the shift's location (so reports
+and payroll still attribute it to an office), and **no coordinates and no IP**,
+even if the browser sent them. Clocking out of a `REMOTE` entry is likewise
+unchecked and unrecorded. Chosen by Dominguez in September 2026 over a
+standing per-person "may work from home" flag, because it keeps the rule to
+one place a manager already looks: the rota. Outside such a shift the ordinary
+geofence/IP rules apply, so a remote punch cannot be claimed on a day somebody
+is due in. The kiosk never takes this path — it is at an office by definition.
+
+The web page asks for no position during a work-from-home shift
+(`ClockPage`), and says so under the button; `tests/browser/wfh.mjs` fails if
+it does.
+
 Two rules worth knowing about:
 
 **The radius is stored and entered in feet**; the distance maths is metric
@@ -351,6 +369,13 @@ A PIN has almost no entropy, so it gets three layers rather than one:
 3. **Lockout** after 5 wrong attempts for 10 minutes — tighter than the
    password limits, and tracked in separate columns so fumbling the keypad at
    the front desk never locks someone out of the web app.
+
+**Who sets it** (Dominguez, September 2026): the person, on their profile
+(`PUT /profile/pin`), confirming with their current password so a session left
+open on a shared computer cannot be used to change it. Managers and admins can
+set a replacement for somebody who has forgotten theirs (`PUT
+/kiosk/employees/:id/pin`, from the Directory), never read one. The profile
+answers only `hasPin` and `pinUpdatedAt`; the hash never leaves the service.
 
 ### What the keypad will not tell you
 
@@ -1642,6 +1667,15 @@ not hours anybody is down for:
 - Staff never see one: the API scopes a staff member's shifts to their own.
   That is a decision, not a gap (Dominguez, September 2026): open shifts are
   the managers' to fill, and there is no staff pick-up.
+
+**Colour** carries both things a manager scans for (Dominguez asked for
+"both"): the chip is tinted in its office's colour (`LOCATION_COLOURS`, in
+the order offices are listed) and has a 4px stripe on the left in the job
+role's colour — the shift's own role, or else the person's first. Work from
+home is violet, open shifts amber, drafts a dashed outline. A key above the
+table spells it out, roles included, because colour alone should never be the
+only way to tell: the chip also says the office (or Home) in text, and its
+accessible name says the rest.
 
 Assigning is an ordinary update (`employeeId`), with the usual refusals —
 somebody not at that office, or already on at that time; the dialog greys
