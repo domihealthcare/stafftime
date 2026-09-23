@@ -61,8 +61,8 @@ await step('a rota can be created in one go', async () => {
   }
   await page.getByLabel('Starts').fill('09:00');
   await page.getByLabel('Ends').fill('17:00');
-  await page.getByLabel('From').fill('2027-02-01');
-  await page.getByLabel('Until').fill('2027-02-28');
+  await page.getByLabel('From', { exact: true }).fill('2027-02-01');
+  await page.getByLabel('Until', { exact: true }).fill('2027-02-28');
   await page.getByLabel(/Publish straight away/).check();
   await page.getByRole('button', { name: 'Create the shifts' }).click();
 
@@ -78,8 +78,8 @@ await step('running the same rota again reports every day as skipped', async () 
   for (const day of ['Mon', 'Wed', 'Fri']) {
     await page.getByRole('button', { name: day, exact: true }).click();
   }
-  await page.getByLabel('From').fill('2027-02-01');
-  await page.getByLabel('Until').fill('2027-02-28');
+  await page.getByLabel('From', { exact: true }).fill('2027-02-01');
+  await page.getByLabel('Until', { exact: true }).fill('2027-02-28');
   await page.getByRole('button', { name: 'Create the shifts' }).click();
 
   await page.getByText('No shifts were created.').waitFor({ timeout: 20000 });
@@ -166,8 +166,8 @@ await step('a rota that crosses 40 hours is called out, in hours', async () => {
   }
   await page.getByLabel('Starts').fill('08:00');
   await page.getByLabel('Ends').fill('17:00');
-  await page.getByLabel('From').fill('2027-02-01');
-  await page.getByLabel('Until').fill('2027-02-07');
+  await page.getByLabel('From', { exact: true }).fill('2027-02-01');
+  await page.getByLabel('Until', { exact: true }).fill('2027-02-07');
   await page.getByLabel(/Publish straight away/).check();
   await page.getByRole('button', { name: 'Create the shifts' }).click();
   await page.getByText(/shifts created/).waitFor({ timeout: 20000 });
