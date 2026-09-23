@@ -32,8 +32,10 @@ export function LoginPage() {
     <div className="flex min-h-screen flex-col justify-center bg-slate-100 px-4 py-12">
       <div className="mx-auto w-full max-w-sm">
         <div className="mb-6 text-center">
-          <h1 className="text-2xl font-semibold text-slate-900">Domi Time &amp; Scheduling</h1>
-          <p className="mt-1 text-sm text-slate-600">Sign in to clock in and see your schedule.</p>
+          <h1 className="text-2xl font-semibold text-slate-900">Domi Staff</h1>
+          <p className="mt-1 text-sm text-slate-600">
+            Sign in to clock in, check your schedule and keep up with the team.
+          </p>
         </div>
 
         <Card className="p-6">
