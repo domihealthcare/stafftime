@@ -60,6 +60,18 @@ describe('what this app deliberately does not store', () => {
     }
   });
 
+  /// The one upload the app takes (September 2026): a small photo of
+  /// yourself. It must stay just that — the picture and when it changed —
+  /// and never grow a caption, a file name or anything read from the camera.
+  it('keeps a profile photo to the picture and nothing else', () => {
+    const fields = model('EmployeePhoto')
+      .split('\n')
+      .map((line) => line.trim())
+      .filter((line) => line && !line.startsWith('//') && !line.startsWith('@@'))
+      .map((line) => line.split(/\s+/)[0]);
+    expect(fields.sort()).toEqual(['bytes', 'contentType', 'employee', 'employeeId', 'updatedAt']);
+  });
+
   it('records a credential by its date, not its number', () => {
     const body = model('EmployeeCredential');
     expect(body).toContain('expiresOn');

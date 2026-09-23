@@ -1,3 +1,4 @@
+import { Avatar } from '../components/Avatar';
 import { JobRoleTag } from '../components/JobRoleTag';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Alert, Badge, Card, EmptyState, PageHeading, Spinner } from '../components/ui';
@@ -166,45 +167,57 @@ function PersonCard({ person, isYou }: { person: DirectoryEntry; isYou: boolean 
   const name = displayName(person);
   return (
     <Card className="p-4" testId={`person-${name}`}>
-      <div className="flex flex-wrap items-center gap-2">
-        <h2 className="font-semibold text-slate-900">
-          {name}
-          {isYou && <span className="ml-1 font-normal text-slate-500">(you)</span>}
-        </h2>
-        {person.onNow && (
-          <Badge tone="success">
-            In now · {person.onNow.location.name}
-            {person.onNow.since && ` since ${formatTime(person.onNow.since)}`}
-          </Badge>
-        )}
-        {person.onLeave && <Badge tone="warning">On leave</Badge>}
-      </div>
+      <div className="flex gap-3">
+        <Avatar person={person} size="lg" />
+        <div className="min-w-0 flex-1">
+          <div className="flex flex-wrap items-center gap-2">
+            <h2 className="font-semibold text-slate-900">
+              {name}
+              {person.pronouns && (
+                <span className="ml-1 text-sm font-normal text-slate-500">({person.pronouns})</span>
+              )}
+              {isYou && <span className="ml-1 font-normal text-slate-500">(you)</span>}
+            </h2>
+            {person.onNow && (
+              <Badge tone="success">
+                In now · {person.onNow.location.name}
+                {person.onNow.since && ` since ${formatTime(person.onNow.since)}`}
+              </Badge>
+            )}
+            {person.onLeave && <Badge tone="warning">On leave</Badge>}
+          </div>
 
-      {person.jobRoles.length > 0 && (
-        <p className="mt-1 flex flex-wrap gap-1">
-          {person.jobRoles.map((role) => (
-            <JobRoleTag key={role.id} name={role.name} colour={role.colour} />
-          ))}
-        </p>
-      )}
-      {person.locations.length > 0 && (
-        <p className="text-xs text-slate-500">
-          {person.locations.map((place) => place.name).join(', ')}
-        </p>
-      )}
+          {person.jobRoles.length > 0 && (
+            <p className="mt-1 flex flex-wrap gap-1">
+              {person.jobRoles.map((role) => (
+                <JobRoleTag key={role.id} name={role.name} colour={role.colour} />
+              ))}
+            </p>
+          )}
+          {person.locations.length > 0 && (
+            <p className="text-xs text-slate-500">
+              {person.locations.map((place) => place.name).join(', ')}
+            </p>
+          )}
+          {person.about && <p className="mt-1 text-sm text-slate-700">{person.about}</p>}
 
-      <div className="mt-2 flex flex-col gap-0.5 text-sm">
-        <a href={`mailto:${person.email}`} className="truncate text-brand-700 hover:text-brand-900">
-          {person.email}
-        </a>
-        {person.phone && (
-          <a
-            href={`tel:${person.phone.replace(/[^\d+]/g, '')}`}
-            className="text-brand-700 hover:text-brand-900"
-          >
-            {person.phone}
-          </a>
-        )}
+          <div className="mt-2 flex flex-col gap-0.5 text-sm">
+            <a
+              href={`mailto:${person.email}`}
+              className="truncate text-brand-700 hover:text-brand-900"
+            >
+              {person.email}
+            </a>
+            {person.phone && (
+              <a
+                href={`tel:${person.phone.replace(/[^\d+]/g, '')}`}
+                className="text-brand-700 hover:text-brand-900"
+              >
+                {person.phone}
+              </a>
+            )}
+          </div>
+        </div>
       </div>
     </Card>
   );

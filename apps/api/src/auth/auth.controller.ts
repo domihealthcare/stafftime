@@ -198,6 +198,8 @@ export class AuthController {
         firstName: true,
         lastName: true,
         preferredName: true,
+        pronouns: true,
+        photoUpdatedAt: true,
         email: true,
         role: true,
         employmentStatus: true,

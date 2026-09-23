@@ -6,21 +6,36 @@ import { QueryShiftsDto } from './dto/query-shifts.dto';
 import { UpdateShiftDto } from './dto/update-shift.dto';
 
 const SHIFT_INCLUDE = {
-  employee: { select: { id: true, firstName: true, lastName: true, preferredName: true } },
+  employee: {
+    select: {
+      id: true,
+      firstName: true,
+      lastName: true,
+      preferredName: true,
+      photoUpdatedAt: true,
+    },
+  },
   location: { select: { id: true, name: true, slug: true, timezone: true } },
+  jobRole: { select: { id: true, name: true, colour: true } },
 } satisfies Prisma.ShiftInclude;
 
 @Injectable()
 export class ShiftsService {
   constructor(private readonly prisma: PrismaService) {}
 
+  /// A shift for somebody, or — with no employee — an open shift that still
+  /// needs filling.
   async create(dto: CreateShiftDto, createdById: string) {
     const { startsAt, endsAt } = this.parseWindow(dto.startsAt, dto.endsAt);
-    await this.assertEmployeeWorksAtLocation(dto.employeeId, dto.locationId);
-    await this.assertNoOverlap(dto.employeeId, startsAt, endsAt);
+    const employeeId = dto.employeeId ?? null;
+    if (employeeId) {
+      await this.assertEmployeeWorksAtLocation(employeeId, dto.locationId);
+      await this.assertNoOverlap(employeeId, startsAt, endsAt);
+    }
+    if (dto.jobRoleId) await this.assertJobRole(dto.jobRoleId);
 
     return this.prisma.shift.create({
-      data: { ...dto, startsAt, endsAt, createdById },
+      data: { ...dto, employeeId, jobRoleId: dto.jobRoleId ?? null, startsAt, endsAt, createdById },
       include: SHIFT_INCLUDE,
     });
   }
@@ -56,12 +71,17 @@ export class ShiftsService {
       throw new BadRequestException('endsAt must be after startsAt.');
     }
 
-    const employeeId = dto.employeeId ?? existing.employeeId;
+    // `employeeId: null` takes somebody off the shift, leaving it open;
+    // absent leaves whoever is on it.
+    const employeeId = dto.employeeId === undefined ? existing.employeeId : dto.employeeId;
     const locationId = dto.locationId ?? existing.locationId;
-    if (dto.employeeId || dto.locationId) {
-      await this.assertEmployeeWorksAtLocation(employeeId, locationId);
+    if (employeeId) {
+      if (dto.employeeId || dto.locationId) {
+        await this.assertEmployeeWorksAtLocation(employeeId, locationId);
+      }
+      await this.assertNoOverlap(employeeId, startsAt, endsAt, id);
     }
-    await this.assertNoOverlap(employeeId, startsAt, endsAt, id);
+    if (dto.jobRoleId) await this.assertJobRole(dto.jobRoleId);
 
     return this.prisma.shift.update({
       where: { id },
@@ -101,6 +121,14 @@ export class ShiftsService {
         'Employee is not assigned to that location. Assign the location first.',
       );
     }
+  }
+
+  private async assertJobRole(jobRoleId: string) {
+    const role = await this.prisma.jobRole.findUnique({
+      where: { id: jobRoleId },
+      select: { id: true },
+    });
+    if (!role) throw new BadRequestException('That job role does not exist.');
   }
 
   private async assertNoOverlap(

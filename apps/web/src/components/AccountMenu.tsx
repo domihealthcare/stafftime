@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
+import { Avatar } from './Avatar';
 import { NavLink } from 'react-router-dom';
 import { useIsManager, useSession } from '../lib/session';
 
@@ -39,7 +40,6 @@ export function AccountMenu() {
   }, [open]);
 
   const name = employee?.preferredName ?? employee?.firstName ?? '';
-  const initials = `${employee?.firstName?.[0] ?? ''}${employee?.lastName?.[0] ?? ''}`;
 
   const item =
     'block w-full rounded-lg px-3 py-2 text-left text-sm text-slate-700 hover:bg-slate-100';
@@ -58,12 +58,7 @@ export function AccountMenu() {
         aria-label={`Your account — ${employee?.firstName ?? ''} ${employee?.lastName ?? ''}`.trim()}
         className="flex items-center gap-2 rounded-lg px-2 py-1.5 text-sm text-slate-700 hover:bg-slate-100"
       >
-        <span
-          aria-hidden
-          className="flex h-7 w-7 items-center justify-center rounded-full bg-brand-100 text-xs font-semibold text-brand-800"
-        >
-          {initials}
-        </span>
+        {employee && <Avatar person={employee} size="md" />}
         {/* The name is the useful part on a laptop and the first thing to go on
             a phone, where the initials alone identify who is signed in. */}
         <span className="hidden sm:inline">{name}</span>
@@ -75,24 +70,35 @@ export function AccountMenu() {
       {open && (
         <div
           role="menu"
-          className="absolute right-0 z-20 mt-1 w-56 rounded-xl border border-slate-200 bg-white p-1 shadow-lg"
+          className="absolute right-0 z-20 mt-1 w-64 rounded-xl border border-slate-200 bg-white p-1 shadow-lg"
         >
-          <div className="border-b border-slate-100 px-3 py-2">
-            <p className="truncate text-sm font-medium text-slate-900">
-              {employee?.firstName} {employee?.lastName}
-            </p>
-            <p className="truncate text-xs text-slate-500">{employee?.email}</p>
-            {isManager && (
-              <span className="mt-1 inline-block rounded-full bg-slate-100 px-2 py-0.5 text-xs text-slate-600">
-                {employee?.role.toLowerCase()}
-              </span>
-            )}
+          <div className="flex items-center gap-3 border-b border-slate-100 px-3 py-2">
+            {employee && <Avatar person={employee} size="lg" />}
+            <div className="min-w-0">
+              <p className="truncate text-sm font-medium text-slate-900">
+                {employee?.firstName} {employee?.lastName}
+              </p>
+              <p className="truncate text-xs text-slate-500">{employee?.email}</p>
+              {isManager && (
+                <span className="mt-1 inline-block rounded-full bg-slate-100 px-2 py-0.5 text-xs text-slate-600">
+                  {employee?.role.toLowerCase()}
+                </span>
+              )}
+            </div>
           </div>
 
           <div className="py-1">
+            <NavLink to="/profile" role="menuitem" className={item} onClick={() => setOpen(false)}>
+              Your profile
+            </NavLink>
             {isManager && (
               <>
-                <NavLink to="/settings" role="menuitem" className={item} onClick={() => setOpen(false)}>
+                <NavLink
+                  to="/settings"
+                  role="menuitem"
+                  className={item}
+                  onClick={() => setOpen(false)}
+                >
                   Practice settings
                 </NavLink>
                 <NavLink

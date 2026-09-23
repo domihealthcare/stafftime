@@ -134,7 +134,22 @@ nothing when somebody disputes their pay.
 
 ### 4. Building the week (**Schedule**)
 
-The week grid, plus four things that save the tedious part:
+The week is now a **rota**: one row per person, one column per day, the
+hours and head-count for each day in its heading. Click ＋ in any cell to add
+a shift there; click a shift to change who works it, publish it, or remove it
+(it asks first). Show it for everyone, **by location** or **by job role**,
+and filter to one office or one role.
+
+**Open shifts** are shifts an office needs covered that nobody is on yet —
+two Front Desk on a Saturday morning, say. Each office has an Open shifts row
+at the top; make them one at a time or repeating (choose "Nobody yet"), and
+they stay flagged — on the rota, in the banner and in the nightly email —
+until you click one and put somebody in it. The demo data has a few.
+
+- **Tell us:** should staff be able to see open shifts and offer to take one?
+  Today only managers see them.
+
+Plus four things that save the tedious part:
 
 - **Repeating shifts** — one form makes a month of Tuesdays and Thursdays.
 - **Copy last week into this one** — because most weeks look like the last one.
@@ -367,7 +382,17 @@ export, so the numbers agree.
 - **Tell us:** what would you look at first on a Monday morning that is not
   here?
 
-### 15. The look
+### 15. Profiles
+
+Menu under your name → **Your profile**. Everybody can add a photo of
+themselves, the name they go by, pronouns, a phone number and one line about
+themselves — all of which colleagues see in the Directory. The photo is the
+one thing anyone uploads to the app; it is cropped and shrunk on the phone,
+and anyone can take theirs down (an admin can take down anybody's).
+
+- **Tell us:** anything else people would want on their profile?
+
+### 16. The look
 
 The app now uses the Domi Healthcare colours from the website, and says
 **Domi Staff** everywhere: the sign-in screen, the browser tab, emails, the

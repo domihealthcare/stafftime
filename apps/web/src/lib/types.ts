@@ -61,6 +61,9 @@ export interface Employee extends EmployeeSummary {
   /// Whether a kiosk PIN is set. The PIN itself is never sent to the client.
   hasKioskPin?: boolean;
   preferredName: string | null;
+  pronouns?: string | null;
+  /// When their profile photo last changed; null for none.
+  photoUpdatedAt?: string | null;
   externalId?: string | null;
   /// ADP TotalSource's File # — needed before their hours can go in the ADP
   /// import file.
@@ -76,14 +79,24 @@ export interface Employee extends EmployeeSummary {
 
 export interface Shift {
   id: string;
-  employeeId: string;
+  /// Null for an open shift: a slot nobody is on yet.
+  employeeId: string | null;
   locationId: string;
+  /// What job the shift is for, when that matters.
+  jobRoleId?: string | null;
   startsAt: string;
   endsAt: string;
   status: ShiftStatus;
   notes: string | null;
-  employee?: { id: string; firstName: string; lastName: string };
+  employee?: {
+    id: string;
+    firstName: string;
+    lastName: string;
+    preferredName?: string | null;
+    photoUpdatedAt?: string | null;
+  } | null;
   location?: LocationSummary;
+  jobRole?: { id: string; name: string; colour: string } | null;
 }
 
 export interface TimeEntry {
@@ -193,8 +206,10 @@ export interface PlanResult {
 
 export interface CoverageShift {
   id: string;
-  employeeId: string;
-  employeeName: string;
+  /// Null for an open shift.
+  employeeId: string | null;
+  employeeName: string | null;
+  jobRoleName: string | null;
   locationName: string;
   startsAt: string;
   endsAt: string;
@@ -212,6 +227,8 @@ export interface CoverageDay {
   shifts: CoverageShift[];
   staffedHours: number;
   peopleScheduled: number;
+  /// Shifts that day nobody is on yet.
+  openShifts: number;
   away: { employeeId: string; employeeName: string; type: PtoType }[];
 }
 
@@ -283,6 +300,7 @@ export interface Attention {
   unpublishedRota: string[];
   unapprovedHours: string[];
   shiftsForLeavers: string[];
+  openShifts: string[];
 }
 
 // ---------------------------------------------------------------------------
@@ -496,6 +514,9 @@ export interface DirectoryEntry {
   firstName: string;
   lastName: string;
   preferredName: string | null;
+  pronouns: string | null;
+  about: string | null;
+  photoUpdatedAt: string | null;
   email: string;
   phone: string | null;
   onLeave: boolean;
@@ -616,4 +637,20 @@ export interface Dashboard {
     clashes: { date: string; employeeName: string; locationName: string; reason: string }[];
     overtime: OvertimeWarning[];
   };
+}
+
+/// Your own profile, as the Profile screen shows it.
+export interface Profile {
+  id: string;
+  firstName: string;
+  lastName: string;
+  preferredName: string | null;
+  pronouns: string | null;
+  email: string;
+  phone: string | null;
+  about: string | null;
+  photoUpdatedAt: string | null;
+  role: Role;
+  jobRoles: { id: string; name: string; colour: string }[];
+  locations: { id: string; name: string; isPrimary: boolean }[];
 }

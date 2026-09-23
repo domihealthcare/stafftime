@@ -66,11 +66,14 @@ interface Person {
   /// Job roles by name — several for those who cover more than one job, which
   /// is the case the directory's colours are there to show.
   jobRoles: string[];
+  /// 555-01xx: reserved for fiction, so nobody is ever dialled by accident.
+  phone: string;
 }
 
 const PEOPLE: Person[] = [
   {
     email: 'r.alvarez@domihealthcare.com',
+    phone: '(201) 555-0110',
     firstName: 'Rosa',
     lastName: 'Alvarez',
     role: Role.MANAGER,
@@ -85,6 +88,7 @@ const PEOPLE: Person[] = [
   },
   {
     email: 'd.okafor@domihealthcare.com',
+    phone: '(201) 555-0111',
     firstName: 'Daniel',
     lastName: 'Okafor',
     role: Role.EMPLOYEE,
@@ -99,6 +103,7 @@ const PEOPLE: Person[] = [
   },
   {
     email: 'p.nguyen@domihealthcare.com',
+    phone: '(201) 555-0112',
     firstName: 'Phuong',
     lastName: 'Nguyen',
     role: Role.EMPLOYEE,
@@ -113,6 +118,7 @@ const PEOPLE: Person[] = [
   },
   {
     email: 'j.santos@domihealthcare.com',
+    phone: '(201) 555-0113',
     firstName: 'Julia',
     lastName: 'Santos',
     role: Role.EMPLOYEE,
@@ -127,6 +133,7 @@ const PEOPLE: Person[] = [
   },
   {
     email: 'k.brennan@domihealthcare.com',
+    phone: '(201) 555-0114',
     firstName: 'Kevin',
     lastName: 'Brennan',
     role: Role.EMPLOYEE,
@@ -141,6 +148,7 @@ const PEOPLE: Person[] = [
   },
   {
     email: 'a.haddad@domihealthcare.com',
+    phone: '(201) 555-0115',
     firstName: 'Amal',
     lastName: 'Haddad',
     role: Role.EMPLOYEE,
@@ -155,6 +163,7 @@ const PEOPLE: Person[] = [
   },
   {
     email: 't.lindqvist@domihealthcare.com',
+    phone: '(201) 555-0116',
     firstName: 'Tove',
     lastName: 'Lindqvist',
     role: Role.EMPLOYEE,
@@ -169,6 +178,7 @@ const PEOPLE: Person[] = [
   },
   {
     email: 'b.oyelaran@domihealthcare.com',
+    phone: '(201) 555-0117',
     firstName: 'Bola',
     lastName: 'Oyelaran',
     role: Role.EMPLOYEE,
@@ -214,6 +224,7 @@ export async function loadDemoData(prisma: PrismaClient) {
       update: {
         firstName: person.firstName,
         lastName: person.lastName,
+        phone: person.phone,
         role: person.role,
         payType: person.payType,
         employmentStatus: EmploymentStatus.ACTIVE,
@@ -231,6 +242,7 @@ export async function loadDemoData(prisma: PrismaClient) {
         email: person.email,
         firstName: person.firstName,
         lastName: person.lastName,
+        phone: person.phone,
         role: person.role,
         payType: person.payType,
         employmentStatus: EmploymentStatus.ACTIVE,
@@ -391,6 +403,7 @@ export async function loadDemoData(prisma: PrismaClient) {
     });
   }
 
+  const openShifts = await seedOpenShifts(prisma, office, manager.id);
   const pto = await seedTimeOff(prisma, created, manager.id);
   const checklists = await seedChecklists(prisma, created, manager.id);
 
@@ -417,6 +430,7 @@ export async function loadDemoData(prisma: PrismaClient) {
     shifts: finalShifts,
     timeEntries: finalEntries,
     flaggedEntries: finalFlagged,
+    openShifts,
     timeOffRequests: pto,
     checklists,
     /// Said out loud rather than buried: every demo account shares this, which
@@ -468,6 +482,50 @@ async function clearPreviousDemoData(prisma: PrismaClient) {
   console.log(
     `Cleared ${staff.count} demo staff, ${entries.count} time entries, ${shifts.count} shifts, ${requests.count} time off requests and ${checklists.count} checklists.`,
   );
+}
+
+/**
+ * A few **open shifts** — slots nobody is on yet — so a reviewer sees what one
+ * looks like and how it is flagged: Saturday-morning front desk at both
+ * offices this week and next, and an extra MA at North Bergen next Thursday,
+ * still a draft.
+ */
+async function seedOpenShifts(
+  prisma: PrismaClient,
+  office: Map<string, string>,
+  createdById: string,
+): Promise<number> {
+  const roles = await prisma.jobRole.findMany({
+    where: { name: { in: ['Front Desk', 'Medical Assistant'] } },
+    select: { id: true, name: true },
+  });
+  const role = (name: string) => roles.find((r) => r.name === name)?.id ?? null;
+  const thisWeek = startOfWeekUtc(new Date());
+  const day = (week: number, weekday: number) =>
+    new Date(thisWeek.getTime() + (week * 7 + (weekday - 1)) * 86_400_000);
+
+  const rows = [
+    ...[0, 1].flatMap((week) =>
+      ['north-bergen', 'west-new-york'].map((slug) => ({
+        locationId: office.get(slug)!,
+        jobRoleId: role('Front Desk'),
+        startsAt: easternWallClock(day(week, 6), 9),
+        endsAt: easternWallClock(day(week, 6), 13),
+        status: ShiftStatus.PUBLISHED,
+      })),
+    ),
+    {
+      locationId: office.get('north-bergen')!,
+      jobRoleId: role('Medical Assistant'),
+      startsAt: easternWallClock(day(1, 4), 10),
+      endsAt: easternWallClock(day(1, 4), 18),
+      status: ShiftStatus.DRAFT,
+    },
+  ];
+  await prisma.shift.createMany({
+    data: rows.map((row) => ({ ...row, employeeId: null, createdById, notes: `${DEMO_TAG}open` })),
+  });
+  return rows.length;
 }
 
 async function seedTimeOff(

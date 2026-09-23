@@ -1618,6 +1618,60 @@ kiosk and as `favicon.png`. They are served from the app itself because the
 deployed CSP only allows images from `'self'`; linking the website's image
 host would be blocked, and would break the day the website changes.
 
+## The rota and open shifts
+
+The Schedule week is a rota table (`components/RotaTable.tsx`), chosen by
+Dominguez from three renderings (a time-slot calendar, a rota table, tighter
+day columns). The same week can be shown for everyone, by location (a section
+per office) or by job role (a section per role, a person appearing under each
+of theirs), and filtered to one office or role. Coverage sits in the day
+headings rather than a box of its own.
+
+An **open shift** is a `Shift` with no `employeeId`: a slot an office needs
+covered, optionally for a job role. Making `employeeId` nullable touched every
+reader of shifts, deliberately in one direction — an open shift is a *need*,
+not hours anybody is down for:
+
+- It is left out of scheduled hours (coverage, the dashboard), overtime and
+  availability warnings, and nobody can clash with it or be on leave for it,
+  so repeating open shifts skips those checks and can make several a day.
+- Copying a week copies it open: the need recurs, the person is undecided.
+- It is flagged three ways from one source: the rota's own row and count, and
+  `openShifts` in the attention round-up (next 14 days), which feeds both the
+  banner and the nightly email.
+- Staff never see one: the API scopes a staff member's shifts to their own.
+
+Assigning is an ordinary update (`employeeId`), with the usual refusals —
+somebody not at that office, or already on at that time; the dialog greys
+those people out rather than letting the server say no. `employeeId: null`
+makes a shift open again.
+
+## Profiles and photos
+
+"Your profile" (account menu, `/profile`) is where somebody sets how
+colleagues see them: the name they go by, pronouns, a phone number, one line
+about themselves, and a photo. It is the only way a phone number gets into the
+app for most staff, which is why the Directory used to show so few.
+
+**Photos are the one upload the app takes**, and a deliberate reversal of
+*Data this app does not hold* (Dominguez, September 2026), kept as narrow as
+it can be:
+
+- The browser crops the picture to its centre square, draws it at 256 px and
+  re-encodes it as a JPEG before it is sent. Re-encoding throws away
+  everything a camera attaches — where the photo was taken included — on the
+  device, not on our server.
+- The server has no image library and accepts nothing it would need one for:
+  a JPEG (checked by its signature and its start-of-frame marker, not its
+  name), no bigger than 150 KB, between 32 and 1024 px a side
+  (`profile/photo.ts`).
+- It is stored in its own table, `EmployeePhoto`, which a schema test holds
+  to the bytes and when they changed, and goes with the person.
+- It is served only to somebody signed in, from the app's own origin (the CSP
+  allows images from `'self'` only), at a URL carrying `photoUpdatedAt`, so it
+  can be cached without a stale face ever showing.
+- Its owner can remove it any time; an admin can remove anybody's.
+
 ## Help
 
 `/help`, from the account menu: a guide for everyone and, for managers and

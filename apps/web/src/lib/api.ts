@@ -1,4 +1,5 @@
 import type {
+  Profile,
   Announcement,
   Attention,
   Checklist,
@@ -588,7 +589,11 @@ export const api = {
   ) => request<TimeEntry>(`/time-entries/${id}`, { method: 'PATCH', body: JSON.stringify(body) }),
 
   repeatShifts: (body: {
-    employeeId: string;
+    /// Absent for open shifts.
+    employeeId?: string;
+    jobRoleId?: string;
+    /// Open shifts only: how many each day.
+    openCount?: number;
     locationId: string;
     startTime: string;
     endTime: string;
@@ -610,12 +615,26 @@ export const api = {
   listShifts: (params: Record<string, string | undefined> = {}) =>
     request<Shift[]>(`/shifts${toQuery(params)}`),
   createShift: (body: {
-    employeeId: string;
+    /// Null for an open shift.
+    employeeId: string | null;
     locationId: string;
+    jobRoleId?: string | null;
     startsAt: string;
     endsAt: string;
     status?: string;
   }) => request<Shift>('/shifts', { method: 'POST', body: JSON.stringify(body) }),
+  /// Put somebody on a shift, take them off it (`employeeId: null` leaves it
+  /// open), or change its times or job role.
+  updateShift: (
+    id: string,
+    body: {
+      employeeId?: string | null;
+      jobRoleId?: string | null;
+      startsAt?: string;
+      endsAt?: string;
+      status?: string;
+    },
+  ) => request<Shift>(`/shifts/${id}`, { method: 'PATCH', body: JSON.stringify(body) }),
   deleteShift: (id: string) => request<unknown>(`/shifts/${id}`, { method: 'DELETE' }),
 
   listChecklists: (params: Record<string, string | undefined> = {}) =>
@@ -680,6 +699,16 @@ export const api = {
 
   dashboard: (weeks: number) => request<Dashboard>(`/dashboard?weeks=${weeks}`),
   directory: () => request<DirectoryEntry[]>('/directory'),
+  profile: () => request<Profile>('/profile'),
+  updateProfile: (body: {
+    preferredName?: string;
+    pronouns?: string;
+    phone?: string;
+    about?: string;
+  }) => request<Profile>('/profile', { method: 'PATCH', body: JSON.stringify(body) }),
+  setPhoto: (image: string) =>
+    request<Profile>('/profile/photo', { method: 'PUT', body: JSON.stringify({ image }) }),
+  removePhoto: () => request<Profile>('/profile/photo', { method: 'DELETE' }),
 
   surveys: () => request<Survey[]>('/surveys'),
   survey: (id: string) => request<Survey>(`/surveys/${id}`),

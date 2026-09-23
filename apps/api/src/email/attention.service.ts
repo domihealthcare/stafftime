@@ -34,6 +34,10 @@ const ROTA_RECENTLY_USED_DAYS = 28;
 /// still true.
 const UNAPPROVED_HOURS_DAYS = 7;
 
+/// How far ahead an open shift — one nobody is on yet — gets flagged. Two
+/// weeks: the rota being built and the one after it.
+const OPEN_SHIFT_HORIZON_DAYS = 14;
+
 export interface DigestContents {
   expiredCredentials: string[];
   expiringCredentials: string[];
@@ -44,6 +48,7 @@ export interface DigestContents {
   unpublishedRota: string[];
   unapprovedHours: string[];
   shiftsForLeavers: string[];
+  openShifts: string[];
 }
 
 /**
@@ -179,7 +184,7 @@ export class AttentionService {
   ) {
     const now = new Date();
 
-    const [kiosks, unapproved, leaverShifts] = await Promise.all([
+    const [kiosks, unapproved, leaverShifts, openShifts] = await Promise.all([
       this.prisma.kioskDevice.findMany({
         where: {
           pairedAt: { not: null },
@@ -226,6 +231,22 @@ export class AttentionService {
         },
         orderBy: { startsAt: 'asc' },
       }),
+
+      // Shifts nobody is on yet, in the next fortnight.
+      this.prisma.shift.findMany({
+        where: {
+          employeeId: null,
+          status: { not: ShiftStatus.CANCELLED },
+          startsAt: { gte: now, lt: addUtcDays(today, OPEN_SHIFT_HORIZON_DAYS + 1) },
+        },
+        select: {
+          startsAt: true,
+          locationId: true,
+          location: { select: { name: true } },
+          jobRole: { select: { name: true } },
+        },
+        orderBy: { startsAt: 'asc' },
+      }),
     ]);
 
     const names = await this.namesFor(unapproved.map((row) => row.employeeId));
@@ -250,6 +271,8 @@ export class AttentionService {
     // counted in — a wrong number in an email that accuses somebody.
     const byLeaver = new Map<string, { name: string; first: Date; count: number }>();
     for (const shift of leaverShifts) {
+      // The query asks for a terminated employee, so there always is one.
+      if (!shift.employeeId || !shift.employee) continue;
       const seen = byLeaver.get(shift.employeeId);
       byLeaver.set(shift.employeeId, {
         name: who(shift.employee),
@@ -258,7 +281,31 @@ export class AttentionService {
       });
     }
 
+    // One line per location: "3 open shifts, the first Mon 28 Sep (Front Desk ×2, MA)".
+    const openByLocation = new Map<
+      string,
+      { name: string; first: Date; roles: Map<string, number>; count: number }
+    >();
+    for (const shift of openShifts) {
+      const entry = openByLocation.get(shift.locationId) ?? {
+        name: shift.location.name,
+        first: shift.startsAt,
+        roles: new Map<string, number>(),
+        count: 0,
+      };
+      entry.count += 1;
+      const role = shift.jobRole?.name ?? 'any role';
+      entry.roles.set(role, (entry.roles.get(role) ?? 0) + 1);
+      openByLocation.set(shift.locationId, entry);
+    }
+
     return {
+      openShifts: [...openByLocation.values()].map(({ name, first, roles, count }) => {
+        const mix = [...roles.entries()]
+          .map(([role, n]) => (n > 1 ? `${role} ×${n}` : role))
+          .join(', ');
+        return `${name} — ${count} open shift${count === 1 ? '' : 's'} nobody is on yet, the first ${day(first)} (${mix})`;
+      }),
       silentKiosks: kiosks.map((device) =>
         device.lastSeenAt
           ? `${device.location.name} — the ${device.name} tablet was last used ${day(device.lastSeenAt)}`

@@ -61,7 +61,13 @@ export class DashboardService {
         },
       }),
       this.prisma.shift.findMany({
-        where: { status: { not: ShiftStatus.CANCELLED }, startsAt: { gte: from, lt: until } },
+        // Scheduled means somebody is down for it; an open shift is a need,
+        // not hours anyone is expected to work.
+        where: {
+          status: { not: ShiftStatus.CANCELLED },
+          employeeId: { not: null },
+          startsAt: { gte: from, lt: until },
+        },
         select: {
           locationId: true,
           startsAt: true,

@@ -160,7 +160,16 @@ model Employee {
   lastName      String
   preferredName String?
   email         String  @unique
+  /// A number colleagues can reach them on, shown in the Directory. Their own
+  /// to set on their profile; an admin can set it too.
   phone         String?
+  /// Optional, shown beside their name in the Directory ("she/her").
+  pronouns      String?
+  /// One line about themselves for the Directory, e.g. "Spanish speaker".
+  about         String?
+  /// When their profile photo last changed, or null for none. Doubles as the
+  /// photo URL's version, so a new photo is never served from a stale cache.
+  photoUpdatedAt DateTime?
 
   role             Role             @default(EMPLOYEE)
   employmentStatus EmploymentStatus @default(PENDING)
@@ -190,6 +199,8 @@ model Employee {
   /// an unwanted daily email is one that gets filtered, taking the one that
   /// mattered with it. Ignored for employees, who never receive it.
   wantsDailyDigest Boolean @default(true)
+
+  photo EmployeePhoto?
 
   /// Secret used to build this employee's calendar subscription URL. Null until
   /// they ask for one. Rotating it invalidates the old link everywhere.
@@ -520,8 +531,16 @@ model Session {
 /// A scheduled shift, built by a manager in the scheduler.
 model Shift {
   id         String      @id @default(uuid()) @db.Uuid
-  employeeId String      @db.Uuid
+  /// Who works it — or null for an **open shift**: a slot the practice needs
+  /// filled (say Front Desk at North Bergen, 8 to 4) that nobody is on yet.
+  /// Open shifts are flagged on the schedule and in the nightly round-up until
+  /// somebody is put in them.
+  employeeId String?     @db.Uuid
   locationId String      @db.Uuid
+  /// What job the shift is for, when it matters — an open Front Desk shift
+  /// should be filled from Front Desk. Optional: most assigned shifts are
+  /// simply "Rosa, 8 to 5".
+  jobRoleId  String?     @db.Uuid
   startsAt   DateTime
   endsAt     DateTime
   status     ShiftStatus @default(DRAFT)
@@ -532,13 +551,15 @@ model Shift {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  employee    Employee    @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+  employee    Employee?   @relation(fields: [employeeId], references: [id], onDelete: Cascade)
   location    Location    @relation(fields: [locationId], references: [id], onDelete: Restrict)
+  jobRole     JobRole?    @relation(fields: [jobRoleId], references: [id], onDelete: SetNull)
   createdBy   Employee?   @relation("ShiftCreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
   timeEntries TimeEntry[]
 
   @@index([employeeId, startsAt])
   @@index([locationId, startsAt])
+  @@index([jobRoleId, startsAt])
   @@map("shifts")
 }
 
@@ -1009,6 +1030,7 @@ model JobRole {
   members   EmployeeJobRole[]
   resources Resource[]
   surveys   Survey[]
+  shifts    Shift[]
 
   @@map("job_roles")
 }
@@ -1249,4 +1271,24 @@ model Feedback {
 
   @@index([archivedAt, receivedOn])
   @@map("feedback")
+}
+
+/// A person's profile photo — the one thing staff upload to the app.
+///
+/// A deliberate, narrow exception to *Data this app does not hold* (decided
+/// by Dominguez, September 2026): a picture of themselves that they choose,
+/// that colleagues see in the Directory and the header. The browser crops it
+/// square, shrinks it and re-encodes it as a small JPEG before it is sent —
+/// which also drops the camera's metadata, location included — and the server
+/// accepts nothing else. It is removable at any time, and goes with them if
+/// the person is deleted.
+model EmployeePhoto {
+  employeeId  String   @id @db.Uuid
+  bytes       Bytes
+  contentType String
+  updatedAt   DateTime @updatedAt
+
+  employee Employee @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+
+  @@map("employee_photos")
 }

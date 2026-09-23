@@ -30,7 +30,7 @@ await signIn(admin, 'admin@domihealthcare.com');
 await admin.getByRole('link', { name: 'Checklists' }).click();
 
 await step('an admin starts with nothing on the go', async () => {
-  await admin.getByText('Onboarding & offboarding').waitFor({ timeout: 15000 });
+  await admin.getByText('Onboarding & Offboarding').waitFor({ timeout: 15000 });
   await admin.getByText(/Nothing on the go/).waitFor({ timeout: 10000 });
 });
 

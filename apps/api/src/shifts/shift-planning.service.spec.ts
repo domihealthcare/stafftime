@@ -38,7 +38,12 @@ describe('ShiftPlanningService', () => {
           created.push(data);
           return { id: `sh-${created.length}`, ...data };
         }),
+        createMany: jest.fn().mockImplementation(({ data }) => {
+          created.push(...data);
+          return { count: data.length };
+        }),
       },
+      jobRole: { findUnique: jest.fn().mockResolvedValue({ id: 'fd' }) },
       ptoRequest: {
         findFirst: jest.fn().mockResolvedValue(options.leave ?? null),
         findMany: jest.fn().mockResolvedValue([]),
@@ -194,6 +199,47 @@ describe('ShiftPlanningService', () => {
         location: { id: 'loc-1', name: 'Old Office', timezone: NJ, isActive: false },
       });
       await expect(service.repeat(repeat(), 'mgr-1')).rejects.toThrow(/not an active/);
+    });
+  });
+
+  describe('open shifts — slots nobody is on yet', () => {
+    const open = (overrides: Record<string, unknown> = {}) =>
+      repeat({ employeeId: undefined, jobRoleId: 'fd', ...overrides });
+
+    it('makes one open shift per matching day, for the job role', async () => {
+      const { service, created } = build();
+      const result = await service.repeat(open(), 'mgr-1');
+      expect(result.created).toBe(4);
+      for (const row of created) expect(row).toMatchObject({ employeeId: null, jobRoleId: 'fd' });
+    });
+
+    it('makes as many as are needed each day', async () => {
+      const { service, created } = build();
+      const result = await service.repeat(open({ openCount: 2 }), 'mgr-1');
+      expect(result.created).toBe(8);
+      expect(created).toHaveLength(8);
+    });
+
+    it('does not check leave or clashes — nobody is on it to clash', async () => {
+      const { service, prisma } = build({ clash: { id: 'x' }, leave: { type: 'VACATION' } });
+      const result = await service.repeat(open(), 'mgr-1');
+      expect(result.skipped).toEqual([]);
+      expect(prisma.shift.findFirst).not.toHaveBeenCalled();
+    });
+
+    it('needs no one assigned to the location', async () => {
+      const { service } = build({ assigned: false });
+      await expect(service.repeat(open(), 'mgr-1')).resolves.toMatchObject({ created: 4 });
+    });
+
+    it('counts every slot against the cap on one plan', async () => {
+      const { service } = build();
+      await expect(
+        service.repeat(
+          open({ openCount: 10, daysOfWeek: [1, 2, 3, 4, 5], until: '2026-12-31' }),
+          'mgr-1',
+        ),
+      ).rejects.toThrow(/Plan at most/);
     });
   });
 

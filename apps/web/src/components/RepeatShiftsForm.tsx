@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { ApiError, api } from '../lib/api';
-import type { Employee, Location, PlanResult } from '../lib/types';
+import type { Employee, JobRole, Location, PlanResult } from '../lib/types';
 import { Alert, Card } from './ui';
 
 const WEEKDAYS = [
@@ -15,18 +15,25 @@ const WEEKDAYS = [
 
 /// Builds a rota in one go — the alternative being a manager creating forty
 /// shifts by hand.
+/// The Employee list's value for open shifts — slots nobody is on yet.
+const OPEN = 'open';
+
 export function RepeatShiftsForm({
   employees,
   locations,
+  jobRoles,
   defaultFrom,
   onCreated,
 }: {
   employees: Employee[];
   locations: Location[];
+  jobRoles: JobRole[];
   defaultFrom: string;
   onCreated: (result: PlanResult) => void;
 }) {
   const [employeeId, setEmployeeId] = useState('');
+  const [jobRoleId, setJobRoleId] = useState('');
+  const [openCount, setOpenCount] = useState(1);
   const [locationId, setLocationId] = useState('');
   const [startTime, setStartTime] = useState('09:00');
   const [endTime, setEndTime] = useState('17:00');
@@ -38,7 +45,8 @@ export function RepeatShiftsForm({
   const [problem, setProblem] = useState<string | null>(null);
 
   // Only the locations this person is assigned to — the API rejects the rest.
-  const selected = employees.find((employee) => employee.id === employeeId);
+  const selected =
+    employeeId === OPEN ? undefined : employees.find((employee) => employee.id === employeeId);
   const available = selected
     ? locations.filter((location) =>
         selected.locations.some((assignment) => assignment.locationId === location.id),
@@ -67,7 +75,8 @@ export function RepeatShiftsForm({
     try {
       onCreated(
         await api.repeatShifts({
-          employeeId,
+          ...(employeeId === OPEN ? { openCount } : { employeeId }),
+          jobRoleId: jobRoleId || undefined,
           locationId,
           startTime,
           endTime,
@@ -109,6 +118,7 @@ export function RepeatShiftsForm({
               className={field}
             >
               <option value="">Choose someone…</option>
+              <option value={OPEN}>Nobody yet — open shifts to fill</option>
               {employees
                 .filter((employee) => employee.employmentStatus === 'ACTIVE')
                 .map((employee) => (
@@ -136,6 +146,48 @@ export function RepeatShiftsForm({
               ))}
             </select>
           </div>
+        </div>
+
+        <div className="grid gap-3 sm:grid-cols-2">
+          <div>
+            <label htmlFor="repeat-role" className="block text-sm font-medium text-slate-700">
+              Job role{' '}
+              <span className="font-normal text-slate-400">
+                {employeeId === OPEN ? '(who should fill them)' : '(optional)'}
+              </span>
+            </label>
+            <select
+              id="repeat-role"
+              value={jobRoleId}
+              onChange={(event) => setJobRoleId(event.target.value)}
+              className={field}
+            >
+              <option value="">{employeeId === OPEN ? 'Any role' : 'Not specified'}</option>
+              {jobRoles.map((role) => (
+                <option key={role.id} value={role.id}>
+                  {role.name}
+                </option>
+              ))}
+            </select>
+          </div>
+          {employeeId === OPEN && (
+            <div>
+              <label htmlFor="repeat-count" className="block text-sm font-medium text-slate-700">
+                How many each day
+              </label>
+              <input
+                id="repeat-count"
+                type="number"
+                min={1}
+                max={10}
+                value={openCount}
+                onChange={(event) =>
+                  setOpenCount(Math.max(1, Math.min(10, Number(event.target.value) || 1)))
+                }
+                className={field}
+              />
+            </div>
+          )}
         </div>
 
         <fieldset>

@@ -49,6 +49,7 @@ export interface PlanResult {
 const SHIFT_INCLUDE = {
   employee: { select: { id: true, firstName: true, lastName: true, preferredName: true } },
   location: { select: { id: true, name: true, slug: true, timezone: true } },
+  jobRole: { select: { id: true, name: true } },
 } satisfies Prisma.ShiftInclude;
 
 /**
@@ -89,13 +90,12 @@ export class ShiftPlanningService {
     }
 
     const location = await this.requireLocation(dto.locationId);
-    await this.requireAssignment(dto.employeeId, dto.locationId);
+    if (dto.employeeId) await this.requireAssignment(dto.employeeId, dto.locationId);
+    if (dto.jobRoleId) await this.requireJobRole(dto.jobRoleId);
 
     const wanted = dates.filter((date) => dto.daysOfWeek.includes(isoWeekdayOf(date)));
     if (wanted.length === 0) {
-      throw new BadRequestException(
-        'None of those weekdays fall inside that date range.',
-      );
+      throw new BadRequestException('None of those weekdays fall inside that date range.');
     }
     if (wanted.length > MAX_GENERATED_SHIFTS) {
       throw new BadRequestException(
@@ -109,8 +109,17 @@ export class ShiftPlanningService {
       endsAt: zonedTimeToUtc(date, dto.endTime, location.timezone),
     }));
 
+    const perDay = dto.employeeId ? 1 : (dto.openCount ?? 1);
+    if (wanted.length * perDay > MAX_GENERATED_SHIFTS) {
+      throw new BadRequestException(
+        `That would create ${wanted.length * perDay} shifts. Plan at most ${MAX_GENERATED_SHIFTS} at a time.`,
+      );
+    }
+
     return this.createAll(candidates, {
-      employeeId: dto.employeeId,
+      employeeId: dto.employeeId ?? null,
+      jobRoleId: dto.jobRoleId ?? null,
+      openCount: perDay,
       locationId: dto.locationId,
       status: dto.status ?? ShiftStatus.DRAFT,
       notes: dto.notes,
@@ -134,8 +143,7 @@ export class ShiftPlanningService {
     }
 
     const offsetDays = Math.round(
-      (new Date(`${toStart}T00:00:00Z`).getTime() -
-        new Date(`${fromStart}T00:00:00Z`).getTime()) /
+      (new Date(`${toStart}T00:00:00Z`).getTime() - new Date(`${fromStart}T00:00:00Z`).getTime()) /
         86_400_000,
     );
 
@@ -151,6 +159,7 @@ export class ShiftPlanningService {
       },
       select: {
         employeeId: true,
+        jobRoleId: true,
         locationId: true,
         startsAt: true,
         endsAt: true,
@@ -181,17 +190,18 @@ export class ShiftPlanningService {
       const startsAt = zonedTimeToUtc(targetDate, localStart, zone);
       const endsAt = zonedTimeToUtc(addDaysTo(targetDate, endOffset), localEnd, zone);
 
-      const result = await this.createAll(
-        [{ date: targetDate, startsAt, endsAt }],
-        {
-          employeeId: shift.employeeId,
-          locationId: shift.locationId,
-          status: dto.status ?? ShiftStatus.DRAFT,
-          notes: shift.notes ?? undefined,
-          createdById,
-          timezone: zone,
-        },
-      );
+      const result = await this.createAll([{ date: targetDate, startsAt, endsAt }], {
+        // An open shift is copied open: the need is the same next week, the
+        // person is not decided yet.
+        employeeId: shift.employeeId,
+        jobRoleId: shift.jobRoleId,
+        openCount: 1,
+        locationId: shift.locationId,
+        status: dto.status ?? ShiftStatus.DRAFT,
+        notes: shift.notes ?? undefined,
+        createdById,
+        timezone: zone,
+      });
 
       created += result.created;
       skipped.push(...result.skipped);
@@ -250,7 +260,9 @@ export class ShiftPlanningService {
     // What each person has said they cannot do, for the shifts in view.
     const unavailability = await this.prisma.unavailability.findMany({
       where: {
-        employeeId: { in: [...new Set(shifts.map((shift) => shift.employeeId))] },
+        employeeId: {
+          in: [...new Set(shifts.flatMap((shift) => (shift.employeeId ? [shift.employeeId] : [])))],
+        },
         effectiveFrom: { lt: windowEnd },
         OR: [{ effectiveUntil: null }, { effectiveUntil: { gte: windowStart } }],
       },
@@ -272,6 +284,7 @@ export class ShiftPlanningService {
       );
 
       const awayIds = new Set(away.map((request) => request.employeeId));
+      const assigned = onThisDay.filter((shift) => shift.employeeId !== null);
 
       return {
         date,
@@ -279,16 +292,17 @@ export class ShiftPlanningService {
         shifts: onThisDay.map((shift) => ({
           id: shift.id,
           employeeId: shift.employeeId,
-          employeeName: displayName(shift.employee),
+          employeeName: shift.employee ? displayName(shift.employee) : null,
+          jobRoleName: shift.jobRole?.name ?? null,
           locationName: shift.location.name,
           startsAt: shift.startsAt.toISOString(),
           endsAt: shift.endsAt.toISOString(),
           status: shift.status,
           // The thing a manager needs to see: scheduled while on leave.
-          conflictsWithLeave: awayIds.has(shift.employeeId),
+          conflictsWithLeave: shift.employeeId !== null && awayIds.has(shift.employeeId),
           // And scheduled when they said they could not work — a warning, not
           // a refusal, because sometimes a manager has to ask anyway.
-          unavailable: clashFor(rulesFor.get(shift.employeeId) ?? [], {
+          unavailable: clashFor((shift.employeeId && rulesFor.get(shift.employeeId)) || [], {
             date,
             startTime: localTimeIn(shift.startsAt, shift.location.timezone),
             endTime:
@@ -297,15 +311,17 @@ export class ShiftPlanningService {
                 : '24:00',
           }),
         })),
+        // Hours somebody is actually down for; open shifts are counted apart,
+        // because a need is not cover.
         staffedHours:
           Math.round(
-            onThisDay.reduce(
-              (sum, shift) =>
-                sum + (shift.endsAt.getTime() - shift.startsAt.getTime()) / 3_600_000,
+            assigned.reduce(
+              (sum, shift) => sum + (shift.endsAt.getTime() - shift.startsAt.getTime()) / 3_600_000,
               0,
             ) * 100,
           ) / 100,
-        peopleScheduled: new Set(onThisDay.map((shift) => shift.employeeId)).size,
+        peopleScheduled: new Set(assigned.map((shift) => shift.employeeId)).size,
+        openShifts: onThisDay.length - assigned.length,
         away: away.map((request) => ({
           employeeId: request.employeeId,
           employeeName: displayName(request.employee),
@@ -382,6 +398,9 @@ export class ShiftPlanningService {
     >();
 
     for (const shift of shifts) {
+      // The query already asks for hourly staff, which no open shift has; this
+      // is for the type checker as much as anything.
+      if (!shift.employeeId || !shift.employee) continue;
       const weekStart = weekStartIn(shift.startsAt, shift.location.timezone);
       const key = `${shift.employeeId}:${weekStart}`;
 
@@ -429,7 +448,10 @@ export class ShiftPlanningService {
   private async createAll(
     candidates: { date: string; startsAt: Date; endsAt: Date }[],
     common: {
-      employeeId: string;
+      employeeId: string | null;
+      jobRoleId: string | null;
+      /// Open shifts only: how many identical slots each day.
+      openCount: number;
       locationId: string;
       status: ShiftStatus;
       notes?: string;
@@ -442,6 +464,26 @@ export class ShiftPlanningService {
     let created = 0;
 
     for (const candidate of candidates) {
+      // An open shift belongs to nobody yet, so nobody can clash with it or be
+      // on leave for it.
+      if (!common.employeeId) {
+        await this.prisma.shift.createMany({
+          data: Array.from({ length: common.openCount }, () => ({
+            employeeId: null,
+            jobRoleId: common.jobRoleId,
+            locationId: common.locationId,
+            startsAt: candidate.startsAt,
+            endsAt: candidate.endsAt,
+            status: common.status,
+            notes: common.notes,
+            createdById: common.createdById,
+          })),
+        });
+        created += common.openCount;
+        dates.push(candidate.date);
+        continue;
+      }
+
       const clash = await this.prisma.shift.findFirst({
         where: {
           employeeId: common.employeeId,
@@ -483,6 +525,7 @@ export class ShiftPlanningService {
       await this.prisma.shift.create({
         data: {
           employeeId: common.employeeId,
+          jobRoleId: common.jobRoleId,
           locationId: common.locationId,
           startsAt: candidate.startsAt,
           endsAt: candidate.endsAt,
@@ -513,6 +556,14 @@ export class ShiftPlanningService {
     return location;
   }
 
+  private async requireJobRole(jobRoleId: string) {
+    const role = await this.prisma.jobRole.findUnique({
+      where: { id: jobRoleId },
+      select: { id: true },
+    });
+    if (!role) throw new BadRequestException('That job role does not exist.');
+  }
+
   private async requireAssignment(employeeId: string, locationId: string) {
     const assignment = await this.prisma.employeeLocation.findUnique({
       where: { employeeId_locationId: { employeeId, locationId } },
@@ -538,8 +589,7 @@ function displayName(person: {
 
 function daysBetween(from: string, to: string): number {
   return Math.round(
-    (new Date(`${to}T00:00:00Z`).getTime() - new Date(`${from}T00:00:00Z`).getTime()) /
-      86_400_000,
+    (new Date(`${to}T00:00:00Z`).getTime() - new Date(`${from}T00:00:00Z`).getTime()) / 86_400_000,
   );
 }
 
