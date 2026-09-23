@@ -136,8 +136,10 @@ export class KioskController {
     return { revoked: true };
   }
 
+  /// Managers too, not only admins: resetting a forgotten PIN is a front-desk
+  /// job, and a manager is who somebody asks. They can set one, never read one.
   @Put('employees/:id/pin')
-  @Roles(Role.ADMIN)
+  @Roles(Role.MANAGER)
   @HttpCode(HttpStatus.OK)
   async setPin(@Param('id', ParseUUIDPipe) id: string, @Body() dto: SetKioskPinDto) {
     const verdict = this.pins.check(dto.pin);
@@ -149,7 +151,7 @@ export class KioskController {
   }
 
   @Delete('employees/:id/pin')
-  @Roles(Role.ADMIN)
+  @Roles(Role.MANAGER)
   @HttpCode(HttpStatus.OK)
   async clearPin(@Param('id', ParseUUIDPipe) id: string) {
     await this.punches.clearPin(id);

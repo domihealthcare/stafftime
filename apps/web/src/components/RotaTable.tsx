@@ -2,6 +2,7 @@ import { useMemo, useState } from 'react';
 import { ApiError, api } from '../lib/api';
 import { formatTime, formatTimeCompact, localDate, toLocalInputValue } from '../lib/format';
 import type { CoverageDay, Employee, JobRole, Location, Shift } from '../lib/types';
+import { jobRoleHex } from '../lib/job-role-colours';
 import { Avatar } from './Avatar';
 import { Alert } from './ui';
 
@@ -102,6 +103,11 @@ export function RotaTable({
     for (const role of jobRoles) map.set(role.id, new Set(role.members.map((member) => member.id)));
     return map;
   }, [jobRoles]);
+  const roleColourOfPerson = (id: string | null) => {
+    if (!id) return null;
+    const first = jobRoles.find((role) => membersOf.get(role.id)?.has(id));
+    return first ? jobRoleHex(first.colour) : null;
+  };
   const rolesOfPerson = (id: string) =>
     jobRoles.filter((role) => membersOf.get(role.id)?.has(id)).map((role) => role.name);
 
@@ -251,6 +257,7 @@ export function RotaTable({
         </div>
       )}
 
+      <RotaLegend locations={locations} colourOf={colourOf} jobRoles={jobRoles} />
       <div
         className="overflow-x-auto rounded-xl border border-slate-200 bg-white shadow-sm"
         data-testid="week-grid"
@@ -382,6 +389,11 @@ export function RotaTable({
                                 key={shift.id}
                                 shift={shift}
                                 colour={colourOf(shift.locationId)}
+                                roleColour={
+                                  shift.jobRole
+                                    ? jobRoleHex(shift.jobRole.colour)
+                                    : roleColourOfPerson(shift.employeeId)
+                                }
                                 warning={warnings.get(shift.id)}
                                 showLocation={grouping !== 'location'}
                                 onOpen={canEdit ? () => setMenu(shift) : undefined}
@@ -460,26 +472,38 @@ export function RotaTable({
   );
 }
 
+/// Working from home wears the palette's violet, apart from both offices.
+const REMOTE_COLOUR = '#4a3aa7';
+
+/// A colour at low strength, as a background tint behind dark text.
+const tint = (hex: string, alpha: string) => `${hex}${alpha}`;
+
 function ShiftChip({
   shift,
   colour,
+  roleColour,
   warning,
   showLocation,
   onOpen,
 }: {
   shift: Shift;
+  /// The office's colour: the chip's tint.
   colour: string;
+  /// The job role's colour, as a stripe down the left edge — the shift's own
+  /// role, or the person's first.
+  roleColour: string | null;
   warning?: string;
   showLocation: boolean;
   onOpen?: () => void;
 }) {
   const open = shift.employeeId === null;
   const draft = shift.status === 'DRAFT';
+  const remote = Boolean(shift.isRemote);
   const label = `${formatTimeCompact(shift.startsAt)}–${formatTimeCompact(shift.endsAt)}`;
   const describe = [
     open ? 'Open shift' : shift.employee ? `${shift.employee.firstName}’s shift` : 'Shift',
     `${formatTime(shift.startsAt)}–${formatTime(shift.endsAt)}`,
-    shift.location?.name,
+    remote ? 'work from home' : shift.location?.name,
     shift.jobRole?.name,
     draft ? 'draft' : null,
     warning ? `warning: ${warning}` : null,
@@ -487,51 +511,130 @@ function ShiftChip({
     .filter(Boolean)
     .join(', ');
 
+  const place = remote ? 'Home' : shift.location?.name;
   const body = (
     <>
       <span className="flex items-center gap-1.5">
-        <span
-          className="inline-block h-2 w-2 shrink-0 rounded-full"
-          style={{ backgroundColor: colour }}
-          aria-hidden="true"
-        />
-        <span className="tabular-nums">{label}</span>
+        <span className="font-medium tabular-nums">{label}</span>
         {warning && (
           <span aria-hidden="true" className="text-rose-600">
             ⚠
           </span>
         )}
       </span>
-      {(open || showLocation) && (
-        <span className="mt-0.5 flex items-center gap-1 truncate text-[11px] text-slate-500">
-          {open ? (shift.jobRole?.name ?? 'Any role') : shift.location?.name}
+      {(open || showLocation || remote) && (
+        <span className="mt-0.5 block truncate text-[11px] text-slate-600">
+          {open
+            ? [shift.jobRole?.name ?? 'Any role', remote ? 'Home' : null]
+                .filter(Boolean)
+                .join(' · ')
+            : place}
         </span>
       )}
     </>
   );
 
-  const className = `block w-full rounded-md px-1.5 py-1 text-left text-xs ${
+  const base = remote ? REMOTE_COLOUR : colour;
+  const style: React.CSSProperties = open
+    ? { borderLeftColor: roleColour ?? '#d97706' }
+    : {
+        backgroundColor: draft ? '#ffffff' : tint(base, '1f'),
+        borderLeftColor: roleColour ?? base,
+        ...(draft ? { borderColor: tint(base, '99') } : {}),
+      };
+  const className = `block w-full rounded-md border-l-4 px-1.5 py-1 text-left text-xs text-slate-900 ${
     open
       ? 'bg-amber-100 text-amber-950 ring-1 ring-inset ring-amber-300'
       : draft
-        ? 'border border-dashed border-slate-300 bg-white text-slate-800'
-        : 'bg-slate-100 text-slate-900'
-  } ${warning ? 'ring-1 ring-inset ring-rose-300' : ''}`;
+        ? 'border border-l-4 border-dashed'
+        : ''
+  } ${warning ? 'ring-1 ring-inset ring-rose-400' : ''}`;
 
   return onOpen ? (
     <button
       type="button"
       onClick={onOpen}
       aria-label={describe}
+      style={style}
       className={`${className} hover:brightness-95`}
       data-testid={open ? 'open-shift' : 'shift-chip'}
+      data-remote={remote ? 'true' : undefined}
     >
       {body}
     </button>
   ) : (
-    <span className={className} title={describe} data-testid={open ? 'open-shift' : 'shift-chip'}>
+    <span
+      className={className}
+      style={style}
+      title={describe}
+      data-testid={open ? 'open-shift' : 'shift-chip'}
+      data-remote={remote ? 'true' : undefined}
+    >
       {body}
     </span>
+  );
+}
+
+/// What the colours mean, once, above the rota.
+function RotaLegend({
+  locations,
+  colourOf,
+  jobRoles,
+}: {
+  locations: Location[];
+  colourOf: (id: string) => string;
+  jobRoles: JobRole[];
+}) {
+  const swatch = (hex: string) => (
+    <span
+      aria-hidden="true"
+      className="inline-block h-3 w-5 rounded-sm border-l-4"
+      style={{ backgroundColor: tint(hex, '1f'), borderLeftColor: hex }}
+    />
+  );
+  return (
+    <div
+      className="mb-2 flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-slate-600"
+      data-testid="rota-legend"
+    >
+      {locations
+        .filter((location) => location.isActive !== false)
+        .map((location) => (
+          <span key={location.id} className="inline-flex items-center gap-1.5">
+            {swatch(colourOf(location.id))}
+            {location.name}
+          </span>
+        ))}
+      <span className="inline-flex items-center gap-1.5">
+        {swatch(REMOTE_COLOUR)}
+        Work from home
+      </span>
+      <span className="inline-flex items-center gap-1.5">
+        <span
+          aria-hidden="true"
+          className="inline-block h-3 w-5 rounded-sm bg-amber-100 ring-1 ring-inset ring-amber-300"
+        />
+        Open shift
+      </span>
+      <span className="inline-flex items-center gap-1.5">
+        <span
+          aria-hidden="true"
+          className="inline-block h-3 w-5 rounded-sm border border-dashed border-slate-400 bg-white"
+        />
+        Draft
+      </span>
+      <span className="basis-full sm:basis-auto">Stripe on the left, the job role:</span>
+      {jobRoles.map((role) => (
+        <span key={role.id} className="inline-flex items-center gap-1.5">
+          <span
+            aria-hidden="true"
+            className="inline-block h-3 w-1 rounded-sm"
+            style={{ backgroundColor: jobRoleHex(role.colour) }}
+          />
+          {role.name}
+        </span>
+      ))}
+    </div>
   );
 }
 
@@ -657,7 +760,7 @@ function ShiftDialog({
     >
       <p className="text-sm text-slate-700">{when}</p>
       <p className="text-sm text-slate-500">
-        {shift.location?.name}
+        {shift.isRemote ? `Work from home (${shift.location?.name ?? ''})` : shift.location?.name}
         {shift.jobRole && ` · ${shift.jobRole.name}`}
         {shift.status === 'DRAFT' && ' · draft'}
       </p>
@@ -716,6 +819,14 @@ function ShiftDialog({
             Make it an open shift
           </button>
         )}
+        <button
+          type="button"
+          disabled={busy}
+          onClick={() => void act(() => api.updateShift(shift.id, { isRemote: !shift.isRemote }))}
+          className="rounded-lg border border-slate-300 px-3 py-1.5 text-sm font-medium text-slate-700 hover:bg-slate-50 disabled:opacity-60"
+        >
+          {shift.isRemote ? 'Make it at the office' : 'Make it work from home'}
+        </button>
         {shift.status === 'DRAFT' && (
           <button
             type="button"
@@ -800,6 +911,7 @@ function QuickAddDialog({
   const [start, setStart] = useState('09:00');
   const [end, setEnd] = useState('17:00');
   const [publish, setPublish] = useState(true);
+  const [remote, setRemote] = useState(false);
   const [busy, setBusy] = useState(false);
   const [problem, setProblem] = useState<string | null>(null);
 
@@ -819,6 +931,7 @@ function QuickAddDialog({
         employeeId: row.person?.id ?? null,
         locationId,
         jobRoleId: jobRoleId || null,
+        isRemote: remote,
         startsAt: at(start).toISOString(),
         endsAt: at(end).toISOString(),
         status: publish ? 'PUBLISHED' : 'DRAFT',
@@ -897,6 +1010,23 @@ function QuickAddDialog({
             ))}
           </select>
         </label>
+        <div className="col-span-2">
+          <label className="flex items-start gap-2 text-sm text-slate-700" htmlFor="quick-remote">
+            <input
+              id="quick-remote"
+              type="checkbox"
+              checked={remote}
+              onChange={(event) => setRemote(event.target.checked)}
+              className="mt-0.5 rounded border-slate-300 text-brand-600 focus:ring-brand-600"
+            />
+            <span>
+              Work from home
+              <span className="block text-xs text-slate-500">
+                They can clock in from anywhere during it; no location is recorded.
+              </span>
+            </span>
+          </label>
+        </div>
         <label className="col-span-2 flex items-center gap-2 text-sm text-slate-700">
           <input
             type="checkbox"

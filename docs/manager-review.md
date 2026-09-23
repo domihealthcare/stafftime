@@ -80,12 +80,18 @@ handbook before this goes live.
 ### 2. The front-desk tablet (**/kiosk**)
 
 This is the one we expect to be used most. A tablet at the desk, bound to one
-office, and staff tap their name and type a four-digit PIN. No signing in, no
+office, and staff tap their name and type their PIN. No signing in, no
 geolocation, nothing to forget.
+
+**Staff choose their own PIN** (4 to 8 digits) on **Your profile**, confirming
+with their password. Nobody can read a PIN back — the profile says only that
+one is set, and since when. If somebody forgets theirs, a manager sets a new
+one from **Team → Directory** and tells them in person; they can then change
+it to their own.
 
 An admin pairs it once from **Kiosks** and it stays paired.
 
-On the demo data the PINs are:
+On the demo data the PINs start as:
 
 | Person | PIN | Office |
 | --- | --- | --- |
@@ -146,8 +152,24 @@ at the top; make them one at a time or repeating (choose "Nobody yet"), and
 they stay flagged — on the rota, in the banner and in the nightly email —
 until you click one and put somebody in it. The demo data has a few.
 
-- **Tell us:** should staff be able to see open shifts and offer to take one?
-  Today only managers see them.
+Only managers see open shifts — decided September 2026. Staff see their own
+shifts and nothing else.
+
+**Colour.** Each shift is tinted in its office's colour, with a stripe down
+the left in the job role's colour — both at once, so a glance tells you where
+and as what. A key above the rota says which colour is which. Open shifts are
+amber, drafts a dashed outline.
+
+**Work from home.** Tick "Work from home" when you make a shift, or click one
+and choose "Make it work from home"; it shows violet and says Home. Once it is
+published, that person can clock in from anywhere from half an hour before it
+starts until it ends — no location asked for, none recorded — and the punch,
+the timesheet and the Directory all say Work from home. At any other time the
+usual office check applies, so nobody can clock in from home on a day they
+are due in.
+
+- **Tell us:** is half an hour early the right window for clocking in from
+  home? It matches nothing else in particular and is easy to change.
 
 Plus four things that save the tedious part:
 

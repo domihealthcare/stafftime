@@ -5,7 +5,7 @@
 export type Role = 'EMPLOYEE' | 'MANAGER' | 'ADMIN';
 export type EmploymentStatus = 'PENDING' | 'ACTIVE' | 'ON_LEAVE' | 'TERMINATED';
 export type ClockMethod = 'WEB' | 'MOBILE' | 'KIOSK';
-export type VerificationMethod = 'GEOFENCE' | 'IP_ALLOWLIST' | 'KIOSK' | 'MANUAL';
+export type VerificationMethod = 'GEOFENCE' | 'IP_ALLOWLIST' | 'KIOSK' | 'MANUAL' | 'REMOTE';
 export type TimeEntryStatus = 'OPEN' | 'COMPLETED' | 'NEEDS_REVIEW' | 'APPROVED';
 export type ShiftStatus = 'DRAFT' | 'PUBLISHED' | 'CANCELLED';
 
@@ -84,6 +84,8 @@ export interface Shift {
   locationId: string;
   /// What job the shift is for, when that matters.
   jobRoleId?: string | null;
+  /// Worked from home: clocking in during it needs no office check.
+  isRemote?: boolean;
   startsAt: string;
   endsAt: string;
   status: ShiftStatus;
@@ -523,7 +525,7 @@ export interface DirectoryEntry {
   jobRoles: { id: string; name: string; colour: string }[];
   locations: { id: string; name: string; isPrimary: boolean }[];
   /// Clocked in now. `since` is only sent to managers.
-  onNow: { location: { id: string; name: string }; since?: string } | null;
+  onNow: { location: { id: string; name: string }; remote?: boolean; since?: string } | null;
 }
 
 export type UnavailabilityKind = 'WEEKLY' | 'ONE_OFF';
@@ -650,6 +652,10 @@ export interface Profile {
   phone: string | null;
   about: string | null;
   photoUpdatedAt: string | null;
+  /// Whether a tablet PIN is set, and when it last changed. The PIN itself is
+  /// never sent: it is only ever stored hashed.
+  hasPin: boolean;
+  pinUpdatedAt: string | null;
   role: Role;
   jobRoles: { id: string; name: string; colour: string }[];
   locations: { id: string; name: string; isPrimary: boolean }[];

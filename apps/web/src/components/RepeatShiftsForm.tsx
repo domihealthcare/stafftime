@@ -34,6 +34,7 @@ export function RepeatShiftsForm({
   const [employeeId, setEmployeeId] = useState('');
   const [jobRoleId, setJobRoleId] = useState('');
   const [openCount, setOpenCount] = useState(1);
+  const [remote, setRemote] = useState(false);
   const [locationId, setLocationId] = useState('');
   const [startTime, setStartTime] = useState('09:00');
   const [endTime, setEndTime] = useState('17:00');
@@ -77,6 +78,7 @@ export function RepeatShiftsForm({
         await api.repeatShifts({
           ...(employeeId === OPEN ? { openCount } : { employeeId }),
           jobRoleId: jobRoleId || undefined,
+          isRemote: remote,
           locationId,
           startTime,
           endTime,
@@ -284,6 +286,22 @@ export function RepeatShiftsForm({
             />
           </div>
         </div>
+
+        <label className="flex items-start gap-2 text-sm text-slate-700" htmlFor="repeat-remote">
+          <input
+            id="repeat-remote"
+            type="checkbox"
+            checked={remote}
+            onChange={(event) => setRemote(event.target.checked)}
+            className="mt-0.5 rounded border-slate-300 text-brand-600 focus:ring-brand-600"
+          />
+          <span>
+            Work from home
+            <span className="block text-xs text-slate-500">
+              They can clock in from anywhere during it; no location is recorded.
+            </span>
+          </span>
+        </label>
 
         <label className="flex items-start gap-2 text-sm text-slate-700">
           <input

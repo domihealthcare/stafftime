@@ -4,7 +4,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Alert, Badge, Card, EmptyState, PageHeading, Spinner } from '../components/ui';
 import { ApiError, api } from '../lib/api';
 import { displayName, formatTime } from '../lib/format';
-import { useSession } from '../lib/session';
+import { useIsManager, useSession } from '../lib/session';
 import type { DirectoryEntry } from '../lib/types';
 
 /// Long enough that the list is not a stale picture of the morning, short
@@ -19,6 +19,7 @@ const REFRESH_MS = 60_000;
  */
 export function DirectoryPage() {
   const { employee } = useSession();
+  const isManager = useIsManager();
   const [people, setPeople] = useState<DirectoryEntry[]>([]);
   const [search, setSearch] = useState('');
   const [jobRole, setJobRole] = useState('');
@@ -90,7 +91,10 @@ export function DirectoryPage() {
 
       <section aria-label="In now" className="mb-6 grid gap-3 sm:grid-cols-2">
         {locations.map((place) => {
-          const here = people.filter((person) => person.onNow?.location.id === place.id);
+          // At the office — somebody on a work-from-home shift is listed apart.
+          const here = people.filter(
+            (person) => person.onNow?.location.id === place.id && !person.onNow.remote,
+          );
           return (
             <Card key={place.id} className="p-4" testId={`in-now-${place.name}`}>
               <p className="text-xs font-medium uppercase tracking-wide text-slate-500">
@@ -111,6 +115,23 @@ export function DirectoryPage() {
             </Card>
           );
         })}
+        {people.some((person) => person.onNow?.remote) && (
+          <Card className="p-4 sm:col-span-2" testId="in-now-home">
+            <p className="text-xs font-medium uppercase tracking-wide text-slate-500">
+              Working from home now
+            </p>
+            <ul className="mt-1 flex flex-wrap gap-x-3 gap-y-1 text-sm text-slate-800">
+              {people
+                .filter((person) => person.onNow?.remote)
+                .map((person) => (
+                  <li key={person.id} className="flex items-center gap-1.5">
+                    <span aria-hidden className="h-2 w-2 rounded-full bg-violet-500" />
+                    {displayName(person)}
+                  </li>
+                ))}
+            </ul>
+          </Card>
+        )}
       </section>
 
       <div className="mb-4 grid gap-2 sm:grid-cols-3">
@@ -155,7 +176,12 @@ export function DirectoryPage() {
       ) : (
         <div className="grid gap-3 sm:grid-cols-2">
           {shown.map((person) => (
-            <PersonCard key={person.id} person={person} isYou={person.id === employee?.id} />
+            <PersonCard
+              key={person.id}
+              person={person}
+              isYou={person.id === employee?.id}
+              canResetPin={isManager && person.id !== employee?.id}
+            />
           ))}
         </div>
       )}
@@ -163,7 +189,15 @@ export function DirectoryPage() {
   );
 }
 
-function PersonCard({ person, isYou }: { person: DirectoryEntry; isYou: boolean }) {
+function PersonCard({
+  person,
+  isYou,
+  canResetPin,
+}: {
+  person: DirectoryEntry;
+  isYou: boolean;
+  canResetPin: boolean;
+}) {
   const name = displayName(person);
   return (
     <Card className="p-4" testId={`person-${name}`}>
@@ -180,7 +214,7 @@ function PersonCard({ person, isYou }: { person: DirectoryEntry; isYou: boolean 
             </h2>
             {person.onNow && (
               <Badge tone="success">
-                In now · {person.onNow.location.name}
+                In now · {person.onNow.remote ? 'Working from home' : person.onNow.location.name}
                 {person.onNow.since && ` since ${formatTime(person.onNow.since)}`}
               </Badge>
             )}
@@ -219,6 +253,7 @@ function PersonCard({ person, isYou }: { person: DirectoryEntry; isYou: boolean 
           </div>
         </div>
       </div>
+      {canResetPin && <PinReset person={person} />}
     </Card>
   );
 }
@@ -227,4 +262,88 @@ function uniqueById<T extends { id: string; name: string }>(items: T[]): T[] {
   const seen = new Map<string, T>();
   for (const item of items) if (!seen.has(item.id)) seen.set(item.id, item);
   return [...seen.values()].sort((a, b) => a.name.localeCompare(b.name));
+}
+
+/// For a manager: give somebody who has forgotten their tablet PIN a new one
+/// to use until they choose their own. A manager can set a PIN, never read one.
+function PinReset({ person }: { person: DirectoryEntry }) {
+  const [open, setOpen] = useState(false);
+  const [pin, setPin] = useState('');
+  const [busy, setBusy] = useState(false);
+  const [message, setMessage] = useState<{ ok: boolean; text: string } | null>(null);
+
+  async function save() {
+    setBusy(true);
+    setMessage(null);
+    try {
+      await api.setKioskPin(person.id, pin);
+      setMessage({
+        ok: true,
+        text: `New PIN set. Tell ${person.preferredName ?? person.firstName} in person; they can change it on their profile.`,
+      });
+      setPin('');
+      setOpen(false);
+    } catch (err) {
+      setMessage({
+        ok: false,
+        text: err instanceof ApiError ? err.message : 'Could not set that PIN.',
+      });
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  return (
+    <div className="mt-2 border-t border-slate-100 pt-2 text-sm">
+      {open ? (
+        <div className="flex flex-wrap items-center gap-2">
+          <label htmlFor={`pin-${person.id}`} className="sr-only">
+            New tablet PIN for {person.firstName}
+          </label>
+          <input
+            id={`pin-${person.id}`}
+            type="password"
+            inputMode="numeric"
+            autoComplete="off"
+            maxLength={8}
+            placeholder="New PIN"
+            value={pin}
+            onChange={(event) => setPin(event.target.value.replace(/\D/g, ''))}
+            className="w-28 rounded-lg border border-slate-300 px-2 py-1 text-sm"
+          />
+          <button
+            type="button"
+            disabled={busy || pin.length < 4}
+            onClick={() => void save()}
+            className="rounded-lg bg-brand-600 px-3 py-1 text-sm font-semibold text-white hover:bg-brand-700 disabled:opacity-60"
+          >
+            {busy ? 'Saving…' : 'Set PIN'}
+          </button>
+          <button
+            type="button"
+            onClick={() => setOpen(false)}
+            className="text-sm text-slate-500 hover:text-slate-800"
+          >
+            Cancel
+          </button>
+        </div>
+      ) : (
+        <button
+          type="button"
+          onClick={() => setOpen(true)}
+          className="text-sm font-medium text-slate-500 hover:text-slate-800"
+        >
+          Set a new tablet PIN
+        </button>
+      )}
+      {message && (
+        <p
+          role="status"
+          className={`mt-1 text-xs ${message.ok ? 'text-emerald-700' : 'text-rose-700'}`}
+        >
+          {message.text}
+        </p>
+      )}
+    </div>
+  );
 }

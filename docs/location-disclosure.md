@@ -77,6 +77,11 @@ coordinate at the moment of a punch is the entire record.
 > location at all, because the tablet is already assigned to an office. Choosing
 > the tablet is not treated differently in any way.
 >
+> **Working from home.** When your manager has scheduled you to work from
+> home, you clock in from wherever you are during that shift, and no location
+> or network address is asked for or recorded. The punch only says it was from
+> home.
+>
 > **What it is for.** Confirming that a punch was made at work, which is what
 > makes a remote clock-in trustworthy for everybody. It is not used to monitor
 > where staff are, and it cannot be used that way.

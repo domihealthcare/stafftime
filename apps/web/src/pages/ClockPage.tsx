@@ -27,7 +27,8 @@ export function ClockPage() {
     try {
       const [current, shifts] = await Promise.all([
         api.currentEntry(),
-        api.listShifts({ from: startOfToday(), to: endOfToday() }),
+        // Your own shifts: a manager's list would otherwise be everybody's.
+        api.listShifts({ from: startOfToday(), to: endOfToday(), employeeId: employee?.id }),
       ]);
       setEntry(current);
       setTodaysShift(shifts[0] ?? null);
@@ -37,7 +38,7 @@ export function ClockPage() {
     } finally {
       setStatus('ready');
     }
-  }, []);
+  }, [employee?.id]);
 
   useEffect(() => {
     void load();
@@ -63,6 +64,18 @@ export function ClockPage() {
 
   const isClockedIn = entry !== null && entry.clockOutAt === null;
 
+  // A work-from-home shift on now (from half an hour before it starts, as the
+  // server allows): no location needed, and none is asked for or sent.
+  const now = Date.now();
+  const remoteShift =
+    todaysShift?.isRemote &&
+    todaysShift.status === 'PUBLISHED' &&
+    new Date(todaysShift.startsAt).getTime() - 30 * 60_000 <= now &&
+    now < new Date(todaysShift.endsAt).getTime()
+      ? todaysShift
+      : null;
+  const remote = isClockedIn ? entry?.clockInVerification === 'REMOTE' : remoteShift !== null;
+
   async function punch(direction: 'in' | 'out') {
     setStatus('working');
     setError(null);
@@ -71,7 +84,8 @@ export function ClockPage() {
     let position: Awaited<ReturnType<typeof getCurrentPosition>> | null = null;
     try {
       // Must run inside the click handler — the browser prompt needs the gesture.
-      position = await getCurrentPosition();
+      // Working from home, it is never asked for.
+      position = remote ? null : await getCurrentPosition();
     } catch (err) {
       if (err instanceof GeolocationRefused) {
         // Not fatal: the server may still accept the punch from an office IP.
@@ -91,7 +105,11 @@ export function ClockPage() {
 
       const updated =
         direction === 'in'
-          ? await api.clockIn({ locationId, method: detectClockMethod(), ...coords })
+          ? await api.clockIn({
+              locationId: remoteShift?.locationId ?? locationId,
+              method: detectClockMethod(),
+              ...coords,
+            })
           : await api.clockOut(coords);
 
       setEntry(direction === 'in' ? updated : null);
@@ -137,7 +155,7 @@ export function ClockPage() {
             </p>
             <p className="mt-1 text-sm text-slate-600">
               Clocked in at {formatTime(entry.clockInAt)}
-              {entry.location ? ` · ${entry.location.name}` : ''}
+              {remote ? ' · Working from home' : entry.location ? ` · ${entry.location.name}` : ''}
             </p>
             <div className="mt-3 flex justify-center gap-2">
               <Badge tone="success">On the clock</Badge>
@@ -151,7 +169,11 @@ export function ClockPage() {
               <p className="mt-1 text-sm text-slate-600">
                 Today&rsquo;s shift: {formatTime(todaysShift.startsAt)} –{' '}
                 {formatTime(todaysShift.endsAt)}
-                {todaysShift.location ? ` · ${todaysShift.location.name}` : ''}
+                {todaysShift.isRemote
+                  ? ' · Work from home'
+                  : todaysShift.location
+                    ? ` · ${todaysShift.location.name}`
+                    : ''}
               </p>
             ) : (
               <p className="mt-1 text-sm text-slate-500">No shift scheduled today.</p>
@@ -160,7 +182,7 @@ export function ClockPage() {
         )}
       </Card>
 
-      {!isClockedIn && assignedLocations.length > 1 && (
+      {!isClockedIn && !remote && assignedLocations.length > 1 && (
         <Card className="p-4">
           <label htmlFor="location" className="block text-sm font-medium text-slate-700">
             Location
@@ -193,8 +215,8 @@ export function ClockPage() {
 
       {assignedLocations.length === 0 ? (
         <Alert tone="warning">
-          You are not assigned to a location yet, so you cannot clock in. Ask a manager to
-          assign you to North Bergen or West New York.
+          You are not assigned to a location yet, so you cannot clock in. Ask a manager to assign
+          you to North Bergen or West New York.
         </Alert>
       ) : (
         <button
@@ -207,13 +229,22 @@ export function ClockPage() {
               : 'bg-brand-600 hover:bg-brand-700 active:bg-brand-800'
           }`}
         >
-          {busy ? 'Checking your location…' : isClockedIn ? 'Clock out' : 'Clock in'}
+          {busy
+            ? remote
+              ? 'Working…'
+              : 'Checking your location…'
+            : isClockedIn
+              ? 'Clock out'
+              : remote
+                ? 'Clock in — working from home'
+                : 'Clock in'}
         </button>
       )}
 
       <p className="px-2 text-center text-xs text-slate-500">
-        Clocking in from a browser shares your location with Domi Healthcare to confirm you
-        are on site. It is recorded with your time entry.
+        {remote
+          ? 'Working from home: no location is asked for or recorded.'
+          : 'Clocking in from a browser shares your location with Domi Healthcare to confirm you are on site. It is recorded with your time entry.'}
       </p>
     </div>
   );

@@ -299,6 +299,14 @@ export function ProfilePage() {
         </form>
       </Card>
 
+      <PinCard
+        profile={profile}
+        onSaved={(next) => {
+          show(next);
+          setNotice('Tablet PIN saved.');
+        }}
+      />
+
       <Card className="p-5">
         <h2 className="mb-3 text-sm font-semibold uppercase tracking-wide text-slate-500">
           Set by the practice
@@ -344,5 +352,112 @@ export function ProfilePage() {
         </p>
       </Card>
     </div>
+  );
+}
+
+/**
+ * The PIN you clock in with at the front-desk tablet.
+ *
+ * Yours to choose, and never shown — not here, not to a manager. It is stored
+ * the way a password is, so nobody can read it back; somebody who forgets it
+ * chooses a new one, or asks a manager to set one.
+ */
+function PinCard({ profile, onSaved }: { profile: Profile; onSaved: (next: Profile) => void }) {
+  const [pin, setPin] = useState('');
+  const [again, setAgain] = useState('');
+  const [password, setPassword] = useState('');
+  const [busy, setBusy] = useState(false);
+  const [problem, setProblem] = useState<string | null>(null);
+
+  const mismatch = again.length > 0 && pin !== again;
+  const ready = /^\d{4,8}$/.test(pin) && pin === again && password.length > 0;
+
+  async function save(event: React.FormEvent) {
+    event.preventDefault();
+    setBusy(true);
+    setProblem(null);
+    try {
+      const next = await api.setOwnPin(password, pin);
+      setPin('');
+      setAgain('');
+      setPassword('');
+      onSaved(next);
+    } catch (err) {
+      setProblem(err instanceof ApiError ? err.message : 'Could not save that PIN.');
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  const field = 'mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm';
+
+  return (
+    <Card className="mb-4 p-5" testId="pin-card">
+      <h2 className="text-base font-semibold text-slate-900">Tablet PIN</h2>
+      <p className="mt-1 text-sm text-slate-600" data-testid="pin-status">
+        {profile.hasPin && profile.pinUpdatedAt
+          ? `Set on ${new Date(profile.pinUpdatedAt).toLocaleDateString(undefined, { month: 'long', day: 'numeric', year: 'numeric' })}. It is never shown — choose a new one below if you have forgotten it.`
+          : 'Not set yet. You need one to clock in at the front-desk tablet.'}
+      </p>
+      <form onSubmit={(event) => void save(event)} className="mt-3 grid gap-3 sm:grid-cols-3">
+        <label className="text-sm" htmlFor="newPin">
+          <span className="font-medium text-slate-800">New PIN</span>
+          <input
+            id="newPin"
+            type="password"
+            inputMode="numeric"
+            autoComplete="off"
+            maxLength={8}
+            value={pin}
+            onChange={(event) => setPin(event.target.value.replace(/\D/g, ''))}
+            className={field}
+          />
+        </label>
+        <label className="text-sm" htmlFor="newPinAgain">
+          <span className="font-medium text-slate-800">Same again</span>
+          <input
+            id="newPinAgain"
+            type="password"
+            inputMode="numeric"
+            autoComplete="off"
+            maxLength={8}
+            value={again}
+            onChange={(event) => setAgain(event.target.value.replace(/\D/g, ''))}
+            className={field}
+          />
+        </label>
+        <label className="text-sm" htmlFor="pinPassword">
+          <span className="font-medium text-slate-800">Your password</span>
+          <input
+            id="pinPassword"
+            type="password"
+            autoComplete="current-password"
+            value={password}
+            onChange={(event) => setPassword(event.target.value)}
+            className={field}
+          />
+        </label>
+        <p className="text-xs text-slate-500 sm:col-span-3">
+          4 to 8 digits. Not a run like 1234, not one digit repeated, not a year.
+          {mismatch && (
+            <span className="ml-1 font-medium text-rose-700">Those PINs do not match.</span>
+          )}
+        </p>
+        {problem && (
+          <div className="sm:col-span-3">
+            <Alert>{problem}</Alert>
+          </div>
+        )}
+        <div className="sm:col-span-3">
+          <button
+            type="submit"
+            disabled={busy || !ready}
+            className="rounded-lg bg-brand-600 px-4 py-2 text-sm font-semibold text-white hover:bg-brand-700 disabled:opacity-60"
+          >
+            {busy ? 'Saving…' : profile.hasPin ? 'Change PIN' : 'Set PIN'}
+          </button>
+        </div>
+      </form>
+    </Card>
   );
 }

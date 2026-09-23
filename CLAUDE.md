@@ -68,7 +68,9 @@ spreadsheets it generates itself.
 punch, but on a short leash: never returned with a timesheet, readable one entry
 at a time by an admin and logged when it is, and deleted by the nightly job
 after 90 days. Staff-facing wording is drafted in `docs/location-disclosure.md`
-and still needs a read by whoever advises on employment matters.
+and still needs a read by whoever advises on employment matters. A punch during
+a **work-from-home shift** records no location and no IP at all — only that it
+was from home.
 
 The reasoning: this is the app people open on their phones and on a shared
 front-desk tablet. Putting the practice's most sensitive records behind that is
@@ -234,7 +236,20 @@ Beyond the phases, the parts worth knowing about before picking up work:
   ("Nobody yet", with how many each day), flagged on the rota, in the banner
   and the nightly round-up (next 14 days) until somebody is put in them, and
   left out of scheduled hours, overtime and the dashboard. Staff see only
-  their own row. Chosen by Dominguez from three renderings.
+  their own row — **only managers see open shifts** (confirmed by
+  Dominguez, September 2026; no staff pick-up). Chosen by Dominguez from
+  three renderings. Each shift is tinted in its **office's colour** with a
+  stripe in its **job role's colour** (both, as asked), with a key above.
+- **Work from home** (September 2026): a manager marks a shift work from home
+  (`Shift.isRemote`). While a published one is on — from 30 minutes before it
+  starts until it ends — the person clocks in from anywhere, no location asked
+  for or recorded; the punch is `REMOTE` ("Work from home" on the timesheet
+  and in the Directory). Otherwise the usual office check applies. Chosen over
+  a standing per-person permission.
+- **Tablet PINs are chosen by staff** on their profile (confirmed with their
+  password); the profile shows only that one is set and since when, never the
+  PIN. Managers and admins can set a replacement from the Directory, never
+  read one (decided September 2026).
 - **The scheduler** does a week (for building, on a laptop) and a month (for
   staff checking when they are on, often on a phone), warns when the rota puts
   somebody past the overtime threshold in a week, and syncs to Google, Apple or

@@ -320,6 +320,7 @@ function VerificationBadge({ entry }: { entry: TimeEntry }) {
   const label: Record<string, string> = {
     GEOFENCE: 'On-site GPS',
     IP_ALLOWLIST: 'Office network',
+    REMOTE: 'Work from home',
     KIOSK: 'Kiosk',
     MANUAL: 'Manual',
   };

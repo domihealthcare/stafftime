@@ -1,8 +1,13 @@
-import { BadRequestException } from '@nestjs/common';
+import { BadRequestException, ForbiddenException } from '@nestjs/common';
+import { PasswordService } from '../auth/password.service';
+import { PinService } from '../kiosk/pin.service';
 import { ProfileService } from './profile.service';
 
-function build() {
+function build(passwordHash: string | null = null) {
   let row: Record<string, unknown> = {
+    pinHash: null,
+    pinUpdatedAt: null,
+    passwordHash,
     id: 'e1',
     firstName: 'Frankie',
     lastName: 'Front-Desk',
@@ -39,7 +44,12 @@ function build() {
     },
     $transaction: jest.fn(async (ops: Promise<unknown>[]) => Promise.all(ops)),
   };
-  return { service: new ProfileService(prisma as never), prisma, photos, row: () => row };
+  return {
+    service: new ProfileService(prisma as never, new PasswordService(), new PinService()),
+    prisma,
+    photos,
+    row: () => row,
+  };
 }
 
 describe('your profile', () => {
@@ -73,5 +83,30 @@ describe('your profile', () => {
     await service.removePhoto('e1', 'e1');
     expect(photos.has('e1')).toBe(false);
     expect(row().photoUpdatedAt).toBeNull();
+  });
+
+  describe('your own tablet PIN', () => {
+    const passwords = new PasswordService();
+
+    it('is set after your password is confirmed, and never shown', async () => {
+      const { service, row } = build(await passwords.hash('harbour lantern 7'));
+      const profile = await service.setOwnPin('e1', 'harbour lantern 7', '4817');
+      expect(profile.hasPin).toBe(true);
+      expect(JSON.stringify(profile)).not.toContain('4817');
+      expect(profile).not.toHaveProperty('pinHash');
+      expect(String(row().pinHash)).not.toContain('4817');
+    });
+
+    it('is refused with the wrong password', async () => {
+      const { service } = build(await passwords.hash('harbour lantern 7'));
+      await expect(service.setOwnPin('e1', 'guess', '4817')).rejects.toThrow(ForbiddenException);
+    });
+
+    it('is held to the same rules as any PIN', async () => {
+      const { service } = build(await passwords.hash('harbour lantern 7'));
+      await expect(service.setOwnPin('e1', 'harbour lantern 7', '1234')).rejects.toThrow(
+        BadRequestException,
+      );
+    });
   });
 });

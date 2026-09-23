@@ -3,6 +3,7 @@ import {
   ArrayNotEmpty,
   ArrayUnique,
   IsArray,
+  IsBoolean,
   IsDateString,
   IsEnum,
   IsInt,
@@ -25,6 +26,11 @@ export class RepeatShiftsDto {
   @IsOptional()
   @IsUUID('4')
   jobRoleId?: string;
+
+  /// Worked from home.
+  @IsOptional()
+  @IsBoolean()
+  isRemote?: boolean;
 
   /// For open shifts: how many people are needed each time, e.g. two on the
   /// front desk. Ignored when a person is named.

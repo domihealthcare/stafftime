@@ -495,6 +495,7 @@ function NewShiftForm({
 }) {
   const [employeeId, setEmployeeId] = useState('');
   const [jobRoleId, setJobRoleId] = useState('');
+  const [remote, setRemote] = useState(false);
   const [locationId, setLocationId] = useState('');
   const [startsAt, setStartsAt] = useState(() => defaultInput(defaultDate, 9));
   const [endsAt, setEndsAt] = useState(() => defaultInput(defaultDate, 17));
@@ -526,6 +527,7 @@ function NewShiftForm({
         employeeId: employeeId === OPEN_SHIFT ? null : employeeId,
         locationId,
         jobRoleId: jobRoleId || null,
+        isRemote: remote,
         // datetime-local gives local wall-clock time; the API stores UTC.
         startsAt: new Date(startsAt).toISOString(),
         endsAt: new Date(endsAt).toISOString(),
@@ -642,6 +644,24 @@ function NewShiftForm({
             onChange={(event) => setEndsAt(event.target.value)}
             className="mt-1 w-full rounded-lg border-slate-300 text-sm shadow-sm focus:border-brand-600 focus:ring-brand-600"
           />
+        </div>
+
+        <div className="sm:col-span-2">
+          <label className="flex items-start gap-2 text-sm text-slate-700" htmlFor="shift-remote">
+            <input
+              id="shift-remote"
+              type="checkbox"
+              checked={remote}
+              onChange={(event) => setRemote(event.target.checked)}
+              className="mt-0.5 rounded border-slate-300 text-brand-600 focus:ring-brand-600"
+            />
+            <span>
+              Work from home
+              <span className="block text-xs text-slate-500">
+                They can clock in from anywhere during it; no location is recorded.
+              </span>
+            </span>
+          </label>
         </div>
 
         <div className="flex gap-2 sm:col-span-2">

@@ -39,11 +39,35 @@ const STAFF: Section[] = [
       {
         question: 'How do I use the front-desk tablet?',
         answer: (
-          <p>
-            Tap your name, type your four-digit PIN, and it clocks you in or out. The tablet only
-            shows the people who work at that office. If you have forgotten your PIN, ask a manager
-            — do not share somebody else's.
-          </p>
+          <>
+            <p>
+              Tap your name, type your PIN, and it clocks you in or out. The tablet only shows the
+              people who work at that office.
+            </p>
+            <p>
+              You choose your own PIN under <Screen>Your profile</Screen> in the account menu: 4 to
+              8 digits, with your password to show it is you. Nobody can see it, managers included.
+              Forgotten it? Choose a new one there, or ask a manager to set one for you — and do not
+              use somebody else&rsquo;s.
+            </p>
+          </>
+        ),
+      },
+      {
+        question: 'I am working from home. How do I clock in?',
+        answer: (
+          <>
+            <p>
+              When a manager has put you down for a <strong>work-from-home shift</strong>,{' '}
+              <Screen>Clock</Screen> says <strong>Clock in — working from home</strong> from half an
+              hour before it starts until it ends. No location is asked for or recorded, and the
+              punch is marked &ldquo;Work from home&rdquo;.
+            </p>
+            <p>
+              Any other time, the usual office check applies. If you are working from home and your
+              shift does not say so, ask a manager to change it.
+            </p>
+          </>
         ),
       },
       {
@@ -250,8 +274,9 @@ const STAFF: Section[] = [
           <p>
             Your name, contact details, job roles, offices, shifts, punches and time off. Where you
             were when you clocked in on your phone is kept for 90 days and then deleted; it is not
-            shown on timesheets. It holds no social security number, no ID numbers and no personnel
-            documents — those stay in your personnel file.
+            shown on timesheets. Clocking in from home records nothing about where you are. Your
+            tablet PIN is stored scrambled, so nobody can read it back. It holds no social security
+            number, no ID numbers and no personnel documents — those stay in your personnel file.
           </p>
         ),
       },
@@ -332,6 +357,11 @@ const MANAGERS: Section[] = [
               Show it for <strong>everyone</strong>, <strong>by location</strong> or{' '}
               <strong>by job role</strong>, and filter to one office or one role.
             </li>
+            <li>
+              Each shift is tinted in its office&rsquo;s colour, with a stripe down the left in the
+              job role&rsquo;s colour; the key above the rota says which is which. Work from home is
+              violet, open shifts amber, drafts a dashed outline.
+            </li>
           </ul>
         ),
       },
@@ -345,6 +375,30 @@ const MANAGERS: Section[] = [
             office&rsquo;s Open shifts row. They are flagged on the rota, in the banner and in the
             nightly email until you click one and put somebody in it. Anybody already on at that
             time is greyed out.
+          </p>
+        ),
+      },
+      {
+        question: 'Work from home',
+        answer: (
+          <p>
+            Tick <strong>Work from home</strong> when you make a shift, or click a shift and choose{' '}
+            <strong>Make it work from home</strong>. Once it is published, that person can clock in
+            from anywhere from half an hour before it starts until it ends, with no location asked
+            for or recorded. The shift still belongs to an office, for the rota and the reports.
+            Outside a work-from-home shift the usual office check applies, so nobody can clock in
+            from home on a day they are due in.
+          </p>
+        ),
+      },
+      {
+        question: 'Somebody has forgotten their tablet PIN',
+        answer: (
+          <p>
+            In <Screen>Team → Directory</Screen>, under their name, choose{' '}
+            <strong>Set a new tablet PIN</strong> and tell them it in person. They can change it to
+            one of their own on their profile. Nobody can see a PIN once it is set — you can only
+            replace it.
           </p>
         ),
       },

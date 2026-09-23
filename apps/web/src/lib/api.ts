@@ -594,6 +594,7 @@ export const api = {
     jobRoleId?: string;
     /// Open shifts only: how many each day.
     openCount?: number;
+    isRemote?: boolean;
     locationId: string;
     startTime: string;
     endTime: string;
@@ -619,6 +620,7 @@ export const api = {
     employeeId: string | null;
     locationId: string;
     jobRoleId?: string | null;
+    isRemote?: boolean;
     startsAt: string;
     endsAt: string;
     status?: string;
@@ -630,6 +632,7 @@ export const api = {
     body: {
       employeeId?: string | null;
       jobRoleId?: string | null;
+      isRemote?: boolean;
       startsAt?: string;
       endsAt?: string;
       status?: string;
@@ -709,6 +712,11 @@ export const api = {
   setPhoto: (image: string) =>
     request<Profile>('/profile/photo', { method: 'PUT', body: JSON.stringify({ image }) }),
   removePhoto: () => request<Profile>('/profile/photo', { method: 'DELETE' }),
+  setOwnPin: (currentPassword: string, pin: string) =>
+    request<Profile>('/profile/pin', {
+      method: 'PUT',
+      body: JSON.stringify({ currentPassword, pin }),
+    }),
 
   surveys: () => request<Survey[]>('/surveys'),
   survey: (id: string) => request<Survey>(`/surveys/${id}`),
