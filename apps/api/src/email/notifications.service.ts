@@ -42,9 +42,7 @@ export class NotificationsService {
   /// A test deployment's mail must be obviously not real, in the subject line,
   /// where somebody sees it before opening anything.
   private prefixed(subject: string): string {
-    return this.config.get<string>('APP_ENVIRONMENT') === 'test'
-      ? `[Test] ${subject}`
-      : subject;
+    return this.config.get<string>('APP_ENVIRONMENT') === 'test' ? `[Test] ${subject}` : subject;
   }
 
   /// "Your time off was approved" / "…was not approved".
@@ -131,6 +129,7 @@ export class NotificationsService {
       ...section('Kiosk tablets that have gone quiet:', contents.silentKiosks),
       ...section('Next week is not published yet:', contents.unpublishedRota),
       ...section('Shifts for people who have left:', contents.shiftsForLeavers),
+      ...section('Open shifts nobody is on yet:', contents.openShifts),
       ...section('Credentials that have already lapsed:', contents.expiredCredentials),
       ...section('Credentials expiring soon:', contents.expiringCredentials),
       ...section('Hours not approved yet:', contents.unapprovedHours),

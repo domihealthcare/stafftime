@@ -79,14 +79,24 @@ export interface Employee extends EmployeeSummary {
 
 export interface Shift {
   id: string;
-  employeeId: string;
+  /// Null for an open shift: a slot nobody is on yet.
+  employeeId: string | null;
   locationId: string;
+  /// What job the shift is for, when that matters.
+  jobRoleId?: string | null;
   startsAt: string;
   endsAt: string;
   status: ShiftStatus;
   notes: string | null;
-  employee?: { id: string; firstName: string; lastName: string };
+  employee?: {
+    id: string;
+    firstName: string;
+    lastName: string;
+    preferredName?: string | null;
+    photoUpdatedAt?: string | null;
+  } | null;
   location?: LocationSummary;
+  jobRole?: { id: string; name: string; colour: string } | null;
 }
 
 export interface TimeEntry {
@@ -196,8 +206,10 @@ export interface PlanResult {
 
 export interface CoverageShift {
   id: string;
-  employeeId: string;
-  employeeName: string;
+  /// Null for an open shift.
+  employeeId: string | null;
+  employeeName: string | null;
+  jobRoleName: string | null;
   locationName: string;
   startsAt: string;
   endsAt: string;
@@ -215,6 +227,8 @@ export interface CoverageDay {
   shifts: CoverageShift[];
   staffedHours: number;
   peopleScheduled: number;
+  /// Shifts that day nobody is on yet.
+  openShifts: number;
   away: { employeeId: string; employeeName: string; type: PtoType }[];
 }
 
@@ -286,6 +300,7 @@ export interface Attention {
   unpublishedRota: string[];
   unapprovedHours: string[];
   shiftsForLeavers: string[];
+  openShifts: string[];
 }
 
 // ---------------------------------------------------------------------------

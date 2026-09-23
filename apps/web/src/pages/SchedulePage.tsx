@@ -4,7 +4,6 @@ import { api } from '../lib/api';
 import {
   addDays,
   addMonths,
-  formatTime,
   formatTimeCompact,
   localDate,
   monthGrid,
@@ -12,11 +11,12 @@ import {
   startOfWeek,
   toLocalInputValue,
 } from '../lib/format';
-import { useIsManager } from '../lib/session';
+import { useIsManager, useSession } from '../lib/session';
 import type {
   Coverage,
   CoverageDay,
   Employee,
+  JobRole,
   Location,
   OvertimeWarning,
   PlanResult,
@@ -25,15 +25,31 @@ import type {
 import { CalendarLinkCard } from '../components/CalendarLinkCard';
 import { PlanResultNotice } from '../components/PlanResultNotice';
 import { RepeatShiftsForm } from '../components/RepeatShiftsForm';
-import { Alert, Badge, Card, EmptyState, PageHeading, Spinner } from '../components/ui';
+import { RotaTable, type RotaGrouping } from '../components/RotaTable';
+import { Alert, Card, EmptyState, PageHeading, Spinner } from '../components/ui';
 import { NeedsAttention } from '../components/NeedsAttention';
 
 /// Where the week/month choice is remembered. Per browser, per person on that
 /// browser — it never leaves the device and nothing depends on it.
 const VIEW_KEY = 'domi.schedule.view';
+const GROUPING_KEY = 'domi.schedule.grouping';
 
 export function SchedulePage() {
   const isManager = useIsManager();
+  const { employee: me } = useSession();
+  /// Everyone together, by office, or by job role — remembered like the view.
+  const [grouping, setGrouping] = useState<RotaGrouping>(() => {
+    try {
+      const saved = window.localStorage.getItem(GROUPING_KEY);
+      return saved === 'location' || saved === 'role' ? saved : 'person';
+    } catch {
+      return 'person';
+    }
+  });
+  const [locationFilter, setLocationFilter] = useState('');
+  const [roleFilter, setRoleFilter] = useState('');
+  const [jobRoles, setJobRoles] = useState<JobRole[]>([]);
+  const [adding, setAdding] = useState(false);
   /// A week at a time to build a rota, a month at a time to see the shape of
   /// one. The week view is where shifts are added and removed; the month view
   /// is an overview, and a day in it is a way back to that week.
@@ -88,15 +104,17 @@ export function SchedulePage() {
 
       // Only managers may list staff or read coverage.
       if (isManager) {
-        const [staff, weekCoverage] = await Promise.all([
+        const [staff, weekCoverage, roles] = await Promise.all([
           api.listEmployees(),
           api.coverage({
             from: localDate(rangeStart),
             to: localDate(days[days.length - 1]),
           }),
+          api.jobRoles(),
         ]);
         setEmployees(staff);
         setCoverage(weekCoverage);
+        setJobRoles(roles);
       }
       setError(null);
     } catch (err) {
@@ -145,20 +163,7 @@ export function SchedulePage() {
         subtitle={isManager ? 'Build the week for both locations.' : 'Your upcoming shifts.'}
       />
 
-      <NeedsAttention sections={['unpublishedRota', 'shiftsForLeavers']} />
-
-      <div className="mb-4">
-        <CalendarLinkCard />
-      </div>
-
-      <div className="mb-4">
-        <Link
-          to="/availability"
-          className="inline-block rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50"
-        >
-          {isManager ? 'Availability — yours and the team’s' : 'When you can’t work'}
-        </Link>
-      </div>
+      <NeedsAttention sections={['openShifts', 'unpublishedRota', 'shiftsForLeavers']} />
 
       <div className="mb-4 flex flex-wrap items-center gap-2">
         <button
@@ -251,11 +256,76 @@ export function SchedulePage() {
       )}
 
       {isManager && (
-        <div className="mb-4 flex flex-wrap gap-2">
+        <div className="mb-4 flex flex-wrap items-center gap-2">
+          {view === 'week' && (
+            <>
+              <div
+                className="flex rounded-lg border border-slate-300 bg-white p-0.5"
+                role="group"
+                aria-label="Show the rota"
+              >
+                {(
+                  [
+                    ['person', 'Everyone'],
+                    ['location', 'By location'],
+                    ['role', 'By job role'],
+                  ] as const
+                ).map(([option, label]) => (
+                  <button
+                    key={option}
+                    type="button"
+                    aria-pressed={grouping === option}
+                    onClick={() => {
+                      setGrouping(option);
+                      try {
+                        window.localStorage.setItem(GROUPING_KEY, option);
+                      } catch {
+                        // A remembered preference is a convenience, not a feature.
+                      }
+                    }}
+                    className={`rounded-md px-3 py-1 text-sm font-medium ${
+                      grouping === option
+                        ? 'bg-brand-50 text-brand-800'
+                        : 'text-slate-600 hover:text-slate-900'
+                    }`}
+                  >
+                    {label}
+                  </button>
+                ))}
+              </div>
+              <select
+                aria-label="Show location"
+                value={locationFilter}
+                onChange={(event) => setLocationFilter(event.target.value)}
+                className="rounded-lg border border-slate-300 bg-white px-2 py-1.5 text-sm"
+              >
+                <option value="">All locations</option>
+                {locations.map((location) => (
+                  <option key={location.id} value={location.id}>
+                    {location.name}
+                  </option>
+                ))}
+              </select>
+              <select
+                aria-label="Show job role"
+                value={roleFilter}
+                onChange={(event) => setRoleFilter(event.target.value)}
+                className="rounded-lg border border-slate-300 bg-white px-2 py-1.5 text-sm"
+              >
+                <option value="">All job roles</option>
+                {jobRoles.map((role) => (
+                  <option key={role.id} value={role.id}>
+                    {role.name}
+                  </option>
+                ))}
+              </select>
+            </>
+          )}
+          <span className="flex-1" />
           <button
             type="button"
             onClick={() => setPlanning((open) => !open)}
-            className="rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50"
+            className="rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-sm font-medium text-slate-700 hover:bg-slate-50"
           >
             {planning ? 'Close' : 'Repeating shifts'}
           </button>
@@ -263,9 +333,16 @@ export function SchedulePage() {
             type="button"
             disabled={copying}
             onClick={() => void copyPreviousWeek()}
-            className="rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50 disabled:opacity-60"
+            className="rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-sm font-medium text-slate-700 hover:bg-slate-50 disabled:opacity-60"
           >
             {copying ? 'Copying…' : 'Copy last week into this one'}
+          </button>
+          <button
+            type="button"
+            onClick={() => setAdding((open) => !open)}
+            className="rounded-lg bg-brand-600 px-3 py-1.5 text-sm font-semibold text-white hover:bg-brand-700"
+          >
+            + Add shift
           </button>
         </div>
       )}
@@ -275,6 +352,7 @@ export function SchedulePage() {
           <RepeatShiftsForm
             employees={employees}
             locations={locations}
+            jobRoles={jobRoles}
             defaultFrom={weekStart.toISOString().slice(0, 10)}
             onCreated={(result) => {
               setPlanResult(result);
@@ -285,44 +363,18 @@ export function SchedulePage() {
         </div>
       )}
 
-      {/* The day-by-day strip is a week's worth of squares and only reads as
-          one; a month of them would be a second, worse calendar next to the
-          real one. The overtime warning is per-week either way, so it stays in
-          both views — it is the part a manager acts on. */}
-      {isManager && coverage && coverage.days.length > 0 && (
-        <div className="mb-6">
-          {view === 'week' ? (
-            <CoverageStrip
-              days={coverage.days}
-              overtime={coverage.overtime}
-              overtimeThresholdHours={coverage.overtimeThresholdHours}
-            />
-          ) : (
-            (coverage.overtime.length > 0 || unavailableShifts(coverage.days).length > 0) && (
-              <Card className="space-y-3 p-4">
-                <h2 className="text-sm font-semibold text-slate-900">Worth a look this month</h2>
-                {unavailableShifts(coverage.days).length > 0 && (
-                  <AvailabilityNotice clashes={unavailableShifts(coverage.days)} />
-                )}
-                {coverage.overtime.length > 0 && (
-                  <OvertimeNotice
-                    overtime={coverage.overtime}
-                    thresholdHours={coverage.overtimeThresholdHours}
-                  />
-                )}
-              </Card>
-            )
-          )}
-        </div>
-      )}
-
-      {isManager && (
+      {isManager && adding && (
         <div className="mb-6">
           <NewShiftForm
             employees={employees}
             locations={locations}
+            jobRoles={jobRoles}
             defaultDate={weekStart}
-            onCreated={() => void load()}
+            onCreated={() => {
+              setAdding(false);
+              void load();
+            }}
+            onCancel={() => setAdding(false)}
             onError={setError}
           />
         </div>
@@ -353,41 +405,52 @@ export function SchedulePage() {
           }}
         />
       ) : (
-        <div
-          data-testid="week-grid"
-          className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-7"
-        >
-          {days.map((day) => {
-            const dayShifts = shiftsByDay.get(day.toDateString()) ?? [];
-            const isToday = day.toDateString() === new Date().toDateString();
-            return (
-              <Card key={day.toISOString()} className={isToday ? 'ring-2 ring-brand-500' : ''}>
-                <div className="border-b border-slate-100 px-3 py-2">
-                  <p className="text-xs font-medium uppercase tracking-wide text-slate-500">
-                    {day.toLocaleDateString(undefined, { weekday: 'short' })}
-                  </p>
-                  <p className="text-sm font-semibold text-slate-900">
-                    {day.toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}
-                  </p>
-                </div>
-                <div className="space-y-2 p-2">
-                  {dayShifts.length === 0 ? (
-                    <p className="px-1 py-3 text-center text-xs text-slate-400">No shifts</p>
-                  ) : (
-                    dayShifts.map((shift) => (
-                      <ShiftCard
-                        key={shift.id}
-                        shift={shift}
-                        canDelete={isManager}
-                        onDeleted={() => void load()}
-                        onError={setError}
-                      />
-                    ))
-                  )}
-                </div>
+        <RotaTable
+          days={days}
+          shifts={shifts}
+          employees={isManager ? employees : me ? [me] : []}
+          locations={locations}
+          jobRoles={jobRoles}
+          coverage={isManager ? (coverage?.days ?? null) : null}
+          overtimeThresholdHours={coverage?.overtimeThresholdHours ?? 40}
+          grouping={grouping}
+          locationFilter={locationFilter}
+          roleFilter={roleFilter}
+          canEdit={isManager}
+          selfId={isManager ? undefined : me?.id}
+          onChanged={() => void load()}
+          onError={setError}
+        />
+      )}
+
+      {/* The day-by-day strip is a week's worth of squares and only reads as
+          one; a month of them would be a second, worse calendar next to the
+          real one. The overtime warning is per-week either way, so it stays in
+          both views — it is the part a manager acts on. */}
+      {isManager && coverage && coverage.days.length > 0 && (
+        <div className="mt-4">
+          {view === 'week' ? (
+            <CoverageStrip
+              days={coverage.days}
+              overtime={coverage.overtime}
+              overtimeThresholdHours={coverage.overtimeThresholdHours}
+            />
+          ) : (
+            (coverage.overtime.length > 0 || unavailableShifts(coverage.days).length > 0) && (
+              <Card className="space-y-3 p-4">
+                <h2 className="text-sm font-semibold text-slate-900">Worth a look this month</h2>
+                {unavailableShifts(coverage.days).length > 0 && (
+                  <AvailabilityNotice clashes={unavailableShifts(coverage.days)} />
+                )}
+                {coverage.overtime.length > 0 && (
+                  <OvertimeNotice
+                    overtime={coverage.overtime}
+                    thresholdHours={coverage.overtimeThresholdHours}
+                  />
+                )}
               </Card>
-            );
-          })}
+            )
+          )}
         </div>
       )}
 
@@ -396,119 +459,42 @@ export function SchedulePage() {
           <EmptyState>Nothing scheduled for you this week.</EmptyState>
         </div>
       )}
-    </div>
-  );
-}
 
-function ShiftCard({
-  shift,
-  canDelete,
-  onDeleted,
-  onError,
-}: {
-  shift: Shift;
-  canDelete: boolean;
-  onDeleted: () => void;
-  onError: (message: string) => void;
-}) {
-  const [busy, setBusy] = useState(false);
-  // Removing is one tap away from a slip of the thumb, and a removed shift is
-  // somebody's day gone from their calendar — so it asks first.
-  const [confirming, setConfirming] = useState(false);
-
-  async function remove() {
-    setBusy(true);
-    try {
-      await api.deleteShift(shift.id);
-      onDeleted();
-    } catch (err) {
-      onError(err instanceof Error ? err.message : 'Could not remove that shift.');
-    } finally {
-      setBusy(false);
-      setConfirming(false);
-    }
-  }
-
-  const who = shift.employee ? `${shift.employee.firstName}’s` : 'this';
-
-  return (
-    <div className="rounded-lg bg-slate-50 p-2 text-xs">
-      <p className="font-medium tabular-nums text-slate-900">
-        {formatTime(shift.startsAt)}–{formatTime(shift.endsAt)}
-      </p>
-      {shift.employee && (
-        <p className="mt-0.5 truncate text-slate-700">
-          {shift.employee.firstName} {shift.employee.lastName}
-        </p>
-      )}
-      {shift.location && <p className="truncate text-slate-500">{shift.location.name}</p>}
-      <div className="mt-1.5 flex items-center justify-between gap-1">
-        <Badge tone={shift.status === 'PUBLISHED' ? 'success' : 'neutral'}>
-          {shift.status === 'PUBLISHED' ? 'Published' : shift.status.toLowerCase()}
-        </Badge>
-        {canDelete && shift.status !== 'CANCELLED' && !confirming && (
-          <button
-            type="button"
-            onClick={() => setConfirming(true)}
-            aria-label={`Remove ${who} shift, ${formatTime(shift.startsAt)}–${formatTime(shift.endsAt)}`}
-            className="text-xs font-medium text-rose-600 hover:text-rose-800"
-          >
-            Remove
-          </button>
-        )}
-      </div>
-      {confirming && (
-        <div
-          role="alertdialog"
-          aria-label="Remove this shift?"
-          className="mt-2 rounded-md bg-rose-50 p-2 ring-1 ring-inset ring-rose-200"
+      <div className="mt-6 grid gap-3 sm:grid-cols-[1fr_auto] sm:items-start">
+        <CalendarLinkCard />
+        <Link
+          to="/availability"
+          className="inline-block rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50"
         >
-          <p className="font-medium text-rose-900">Remove this shift?</p>
-          {shift.status === 'PUBLISHED' && (
-            <p className="mt-0.5 text-rose-800">
-              It is published, so {shift.employee ? shift.employee.firstName : 'they'} may already
-              be counting on it.
-            </p>
-          )}
-          <div className="mt-1.5 flex flex-wrap gap-2">
-            <button
-              type="button"
-              onClick={() => void remove()}
-              disabled={busy}
-              className="rounded bg-rose-600 px-2 py-1 font-semibold text-white hover:bg-rose-700 disabled:opacity-60"
-            >
-              {busy ? 'Removing…' : 'Yes, remove'}
-            </button>
-            <button
-              type="button"
-              onClick={() => setConfirming(false)}
-              disabled={busy}
-              className="rounded px-2 py-1 font-medium text-slate-700 hover:bg-slate-100"
-            >
-              Keep it
-            </button>
-          </div>
-        </div>
-      )}
+          {isManager ? 'Availability — yours and the team’s' : 'When you can’t work'}
+        </Link>
+      </div>
     </div>
   );
 }
+
+/// The value the Employee list uses for "nobody yet — an open shift".
+const OPEN_SHIFT = 'open';
 
 function NewShiftForm({
   employees,
   locations,
+  jobRoles,
   defaultDate,
   onCreated,
+  onCancel,
   onError,
 }: {
   employees: Employee[];
   locations: Location[];
+  jobRoles: JobRole[];
   defaultDate: Date;
   onCreated: () => void;
+  onCancel: () => void;
   onError: (message: string) => void;
 }) {
-  const [open, setOpen] = useState(false);
   const [employeeId, setEmployeeId] = useState('');
+  const [jobRoleId, setJobRoleId] = useState('');
   const [locationId, setLocationId] = useState('');
   const [startsAt, setStartsAt] = useState(() => defaultInput(defaultDate, 9));
   const [endsAt, setEndsAt] = useState(() => defaultInput(defaultDate, 17));
@@ -516,7 +502,10 @@ function NewShiftForm({
 
   // Only offer locations the chosen employee is actually assigned to — the API
   // rejects anything else, and a disabled option explains why better than a 400.
-  const selectedEmployee = employees.find((employee) => employee.id === employeeId);
+  const selectedEmployee =
+    employeeId === OPEN_SHIFT
+      ? undefined
+      : employees.find((employee) => employee.id === employeeId);
   const availableLocations = selectedEmployee
     ? locations.filter((location) =>
         selectedEmployee.locations.some((assignment) => assignment.locationId === location.id),
@@ -534,32 +523,20 @@ function NewShiftForm({
     setBusy(true);
     try {
       await api.createShift({
-        employeeId,
+        employeeId: employeeId === OPEN_SHIFT ? null : employeeId,
         locationId,
+        jobRoleId: jobRoleId || null,
         // datetime-local gives local wall-clock time; the API stores UTC.
         startsAt: new Date(startsAt).toISOString(),
         endsAt: new Date(endsAt).toISOString(),
         status: 'PUBLISHED',
       });
       onCreated();
-      setOpen(false);
     } catch (err) {
       onError(err instanceof Error ? err.message : 'Could not create that shift.');
     } finally {
       setBusy(false);
     }
-  }
-
-  if (!open) {
-    return (
-      <button
-        type="button"
-        onClick={() => setOpen(true)}
-        className="rounded-lg bg-brand-600 px-4 py-2 text-sm font-medium text-white hover:bg-brand-700"
-      >
-        + Add shift
-      </button>
-    );
   }
 
   return (
@@ -577,6 +554,7 @@ function NewShiftForm({
             className="mt-1 w-full rounded-lg border-slate-300 text-sm shadow-sm focus:border-brand-600 focus:ring-brand-600"
           >
             <option value="">Choose someone…</option>
+            <option value={OPEN_SHIFT}>Nobody yet — an open shift to fill</option>
             {employees
               .filter((employee) => employee.employmentStatus === 'ACTIVE')
               .map((employee) => (
@@ -584,6 +562,33 @@ function NewShiftForm({
                   {employee.firstName} {employee.lastName}
                 </option>
               ))}
+          </select>
+          {employeeId === OPEN_SHIFT && (
+            <p className="mt-1 text-xs text-amber-800">
+              It shows on the rota as an open shift, flagged until somebody is put in it.
+            </p>
+          )}
+        </div>
+
+        <div className="sm:col-span-2">
+          <label htmlFor="shift-role" className="block text-sm font-medium text-slate-700">
+            Job role{' '}
+            <span className="font-normal text-slate-400">
+              {employeeId === OPEN_SHIFT ? '(who should fill it)' : '(optional)'}
+            </span>
+          </label>
+          <select
+            id="shift-role"
+            value={jobRoleId}
+            onChange={(event) => setJobRoleId(event.target.value)}
+            className="mt-1 w-full rounded-lg border-slate-300 text-sm shadow-sm focus:border-brand-600 focus:ring-brand-600"
+          >
+            <option value="">{employeeId === OPEN_SHIFT ? 'Any role' : 'Not specified'}</option>
+            {jobRoles.map((role) => (
+              <option key={role.id} value={role.id}>
+                {role.name}
+              </option>
+            ))}
           </select>
         </div>
 
@@ -649,7 +654,7 @@ function NewShiftForm({
           </button>
           <button
             type="button"
-            onClick={() => setOpen(false)}
+            onClick={onCancel}
             className="rounded-lg border border-slate-300 px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50"
           >
             Cancel
@@ -677,7 +682,9 @@ function CoverageStrip({
   overtimeThresholdHours: number;
 }) {
   const totalHours = Math.round(days.reduce((sum, day) => sum + day.staffedHours, 0) * 10) / 10;
-  const emptyDays = days.filter((day) => day.shifts.length === 0);
+  const openShifts = days.reduce((sum, day) => sum + day.openShifts, 0);
+  // A day with only open shifts still has nobody on.
+  const emptyDays = days.filter((day) => day.peopleScheduled === 0);
   const conflicts = days.flatMap((day) =>
     day.shifts.filter((shift) => shift.conflictsWithLeave).map((shift) => ({ day, shift })),
   );
@@ -689,41 +696,15 @@ function CoverageStrip({
         <h2 className="text-sm font-semibold text-slate-900">Coverage this week</h2>
         <span className="text-sm text-slate-600">
           <span className="font-semibold text-slate-900">{totalHours}</span> hours scheduled
+          {openShifts > 0 && (
+            <>
+              {' · '}
+              <span className="font-semibold text-amber-800">
+                {openShifts} open shift{openShifts === 1 ? '' : 's'}
+              </span>
+            </>
+          )}
         </span>
-      </div>
-
-      <div className="mt-3 grid grid-cols-7 gap-1">
-        {days.map((day) => {
-          const empty = day.shifts.length === 0;
-          return (
-            <div
-              key={day.date}
-              className={`rounded-lg px-1 py-2 text-center ${
-                empty ? 'bg-amber-50 ring-1 ring-inset ring-amber-200' : 'bg-slate-50'
-              }`}
-            >
-              <p className="text-xs font-medium uppercase tracking-wide text-slate-500">
-                {new Date(`${day.date}T00:00:00Z`).toLocaleDateString(undefined, {
-                  timeZone: 'UTC',
-                  weekday: 'short',
-                })}
-              </p>
-              <p
-                className={`mt-0.5 text-lg font-semibold tabular-nums ${
-                  empty ? 'text-amber-800' : 'text-slate-900'
-                }`}
-              >
-                {day.staffedHours || '—'}
-              </p>
-              <p className="text-xs text-slate-500">
-                {day.peopleScheduled > 0 ? `${day.peopleScheduled} on` : 'nobody'}
-              </p>
-              {day.away.length > 0 && (
-                <p className="mt-0.5 text-xs text-slate-500">{day.away.length} off</p>
-              )}
-            </div>
-          );
-        })}
       </div>
 
       {emptyDays.length > 0 && (
@@ -953,13 +934,11 @@ function MonthGrid({
           // at one — and the rest is one tap away in the week.
           const described = dayShifts.map((shift) =>
             showNames
-              ? (shift.employee?.firstName ?? 'Someone')
+              ? (shift.employee?.firstName ?? 'Open')
               : `${formatTimeCompact(shift.startsAt)}–${formatTimeCompact(shift.endsAt)}`,
           );
           const shortened = dayShifts.map((shift) =>
-            showNames
-              ? (shift.employee?.firstName ?? 'Someone')
-              : formatTimeCompact(shift.startsAt),
+            showNames ? (shift.employee?.firstName ?? 'Open') : formatTimeCompact(shift.startsAt),
           );
 
           return (

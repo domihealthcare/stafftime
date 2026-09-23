@@ -13,6 +13,7 @@ const HEADINGS: Record<keyof Attention, string> = {
   silentKiosks: 'A tablet has stopped being used',
   unpublishedRota: 'Next week is not published yet',
   shiftsForLeavers: 'Shifts for people who have left',
+  openShifts: 'Open shifts nobody is on yet',
   unapprovedHours: 'Hours nobody has approved yet',
   missingPunches: 'Punches with no clock-out',
   expiredCredentials: 'Already lapsed',

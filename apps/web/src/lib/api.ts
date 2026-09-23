@@ -589,7 +589,11 @@ export const api = {
   ) => request<TimeEntry>(`/time-entries/${id}`, { method: 'PATCH', body: JSON.stringify(body) }),
 
   repeatShifts: (body: {
-    employeeId: string;
+    /// Absent for open shifts.
+    employeeId?: string;
+    jobRoleId?: string;
+    /// Open shifts only: how many each day.
+    openCount?: number;
     locationId: string;
     startTime: string;
     endTime: string;
@@ -611,12 +615,26 @@ export const api = {
   listShifts: (params: Record<string, string | undefined> = {}) =>
     request<Shift[]>(`/shifts${toQuery(params)}`),
   createShift: (body: {
-    employeeId: string;
+    /// Null for an open shift.
+    employeeId: string | null;
     locationId: string;
+    jobRoleId?: string | null;
     startsAt: string;
     endsAt: string;
     status?: string;
   }) => request<Shift>('/shifts', { method: 'POST', body: JSON.stringify(body) }),
+  /// Put somebody on a shift, take them off it (`employeeId: null` leaves it
+  /// open), or change its times or job role.
+  updateShift: (
+    id: string,
+    body: {
+      employeeId?: string | null;
+      jobRoleId?: string | null;
+      startsAt?: string;
+      endsAt?: string;
+      status?: string;
+    },
+  ) => request<Shift>(`/shifts/${id}`, { method: 'PATCH', body: JSON.stringify(body) }),
   deleteShift: (id: string) => request<unknown>(`/shifts/${id}`, { method: 'DELETE' }),
 
   listChecklists: (params: Record<string, string | undefined> = {}) =>

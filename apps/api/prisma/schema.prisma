@@ -531,8 +531,16 @@ model Session {
 /// A scheduled shift, built by a manager in the scheduler.
 model Shift {
   id         String      @id @default(uuid()) @db.Uuid
-  employeeId String      @db.Uuid
+  /// Who works it — or null for an **open shift**: a slot the practice needs
+  /// filled (say Front Desk at North Bergen, 8 to 4) that nobody is on yet.
+  /// Open shifts are flagged on the schedule and in the nightly round-up until
+  /// somebody is put in them.
+  employeeId String?     @db.Uuid
   locationId String      @db.Uuid
+  /// What job the shift is for, when it matters — an open Front Desk shift
+  /// should be filled from Front Desk. Optional: most assigned shifts are
+  /// simply "Rosa, 8 to 5".
+  jobRoleId  String?     @db.Uuid
   startsAt   DateTime
   endsAt     DateTime
   status     ShiftStatus @default(DRAFT)
@@ -543,13 +551,15 @@ model Shift {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  employee    Employee    @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+  employee    Employee?   @relation(fields: [employeeId], references: [id], onDelete: Cascade)
   location    Location    @relation(fields: [locationId], references: [id], onDelete: Restrict)
+  jobRole     JobRole?    @relation(fields: [jobRoleId], references: [id], onDelete: SetNull)
   createdBy   Employee?   @relation("ShiftCreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
   timeEntries TimeEntry[]
 
   @@index([employeeId, startsAt])
   @@index([locationId, startsAt])
+  @@index([jobRoleId, startsAt])
   @@map("shifts")
 }
 
@@ -1020,6 +1030,7 @@ model JobRole {
   members   EmployeeJobRole[]
   resources Resource[]
   surveys   Survey[]
+  shifts    Shift[]
 
   @@map("job_roles")
 }

@@ -1618,6 +1618,34 @@ kiosk and as `favicon.png`. They are served from the app itself because the
 deployed CSP only allows images from `'self'`; linking the website's image
 host would be blocked, and would break the day the website changes.
 
+## The rota and open shifts
+
+The Schedule week is a rota table (`components/RotaTable.tsx`), chosen by
+Dominguez from three renderings (a time-slot calendar, a rota table, tighter
+day columns). The same week can be shown for everyone, by location (a section
+per office) or by job role (a section per role, a person appearing under each
+of theirs), and filtered to one office or role. Coverage sits in the day
+headings rather than a box of its own.
+
+An **open shift** is a `Shift` with no `employeeId`: a slot an office needs
+covered, optionally for a job role. Making `employeeId` nullable touched every
+reader of shifts, deliberately in one direction — an open shift is a *need*,
+not hours anybody is down for:
+
+- It is left out of scheduled hours (coverage, the dashboard), overtime and
+  availability warnings, and nobody can clash with it or be on leave for it,
+  so repeating open shifts skips those checks and can make several a day.
+- Copying a week copies it open: the need recurs, the person is undecided.
+- It is flagged three ways from one source: the rota's own row and count, and
+  `openShifts` in the attention round-up (next 14 days), which feeds both the
+  banner and the nightly email.
+- Staff never see one: the API scopes a staff member's shifts to their own.
+
+Assigning is an ordinary update (`employeeId`), with the usual refusals —
+somebody not at that office, or already on at that time; the dialog greys
+those people out rather than letting the server say no. `employeeId: null`
+makes a shift open again.
+
 ## Profiles and photos
 
 "Your profile" (account menu, `/profile`) is where somebody sets how

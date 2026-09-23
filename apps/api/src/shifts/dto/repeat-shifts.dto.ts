@@ -16,8 +16,23 @@ import {
 
 /// "Every Tuesday and Thursday, 9 to 5, until March."
 export class RepeatShiftsDto {
+  /// Who works them. Absent makes **open shifts** — slots still to fill.
+  @IsOptional()
   @IsUUID('4')
-  employeeId!: string;
+  employeeId?: string;
+
+  /// What job they are for, when that matters.
+  @IsOptional()
+  @IsUUID('4')
+  jobRoleId?: string;
+
+  /// For open shifts: how many people are needed each time, e.g. two on the
+  /// front desk. Ignored when a person is named.
+  @IsOptional()
+  @IsInt()
+  @Min(1)
+  @Max(10)
+  openCount?: number;
 
   @IsUUID('4')
   locationId!: string;

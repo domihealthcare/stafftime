@@ -110,26 +110,29 @@ await step('copy-last-week pulls a rota forward', async () => {
 await page.screenshot({ path: `${OUT}/39-copy-week.png`, fullPage: true });
 
 await step('removing a shift asks first, and Keep it keeps it', async () => {
-  const removeButtons = page.getByRole('button', { name: /^Remove .* shift, / });
-  await removeButtons.first().waitFor({ timeout: 10000 });
-  const before = await removeButtons.count();
+  const chips = page.getByTestId('shift-chip');
+  await chips.first().waitFor({ timeout: 10000 });
+  const before = await chips.count();
 
-  await removeButtons.first().click();
+  await chips.first().click();
+  const dialog = page.getByRole('dialog');
+  await dialog.getByRole('button', { name: /^Remove .* shift, / }).click();
   const confirm = page.getByRole('alertdialog', { name: 'Remove this shift?' });
   await confirm.waitFor({ timeout: 5000 });
-  await confirm.getByText(/may already be counting on it/).waitFor({ timeout: 5000 });
   await confirm.getByRole('button', { name: 'Keep it' }).click();
   await confirm.waitFor({ state: 'detached', timeout: 5000 });
-  if ((await removeButtons.count()) !== before) throw new Error('Keep it removed the shift');
+  await dialog.getByRole('button', { name: 'Close' }).click();
+  if ((await chips.count()) !== before) throw new Error('Keep it removed the shift');
 
-  await removeButtons.first().click();
+  await chips.first().click();
+  await dialog.getByRole('button', { name: /^Remove .* shift, / }).click();
   const deleted = page.waitForResponse(
     (r) => r.url().includes('/api/shifts/') && r.request().method() === 'DELETE',
   );
   await confirm.getByRole('button', { name: 'Yes, remove' }).click();
   if (!(await deleted).ok()) throw new Error('the removal was refused');
   await page.waitForFunction(
-    (n) => document.querySelectorAll('button[aria-label^="Remove "]').length === n - 1,
+    (n) => document.querySelectorAll('[data-testid="shift-chip"]').length === n - 1,
     before,
     { timeout: 10000 },
   );

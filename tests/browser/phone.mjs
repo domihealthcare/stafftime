@@ -169,19 +169,23 @@ await step('a manager can approve hours without scrolling sideways to find the b
 });
 await page.screenshot({ path: `${OUT}/51-phone-timesheet.png`, fullPage: true });
 
-await step('the week grid stacks day by day instead of squeezing seven columns', async () => {
+await step('the rota scrolls inside itself on a phone, keeping names in view', async () => {
   await page.getByRole('link', { name: /^Schedule/ }).first().click();
   await page.getByText('Coverage this week').waitFor({ timeout: 15000 });
+  // The page itself never scrolls sideways; the rota is a table that does,
+  // in its own box, with the name column pinned.
   await assertNoSidewaysScroll(page, 'Schedule');
 
-  const days = page.getByTestId('week-grid').locator('> div');
-  if ((await days.count()) !== 7) throw new Error('the week grid does not have seven days in it');
+  const grid = page.getByTestId('week-grid');
+  const scrolls = await grid.evaluate((el) => el.scrollWidth > el.clientWidth);
+  if (!scrolls) throw new Error('the rota does not scroll within its own box');
 
-  const monday = await days.first().boundingBox();
-  const sunday = await days.last().boundingBox();
-  if (!monday || !sunday) throw new Error('the day cards are not visible');
-  if (sunday.y <= monday.y)
-    throw new Error('the week is still laid out side by side on a phone');
+  const firstName = grid.locator('tbody th[scope=row]').first();
+  const before = await firstName.boundingBox();
+  await grid.evaluate((el) => el.scrollBy({ left: 400 }));
+  const after = await firstName.boundingBox();
+  if (!before || !after || Math.abs(after.x - before.x) > 1)
+    throw new Error('the name column scrolls away with the days');
 });
 await page.screenshot({ path: `${OUT}/52-phone-schedule.png`, fullPage: true });
 

@@ -227,6 +227,14 @@ Beyond the phases, the parts worth knowing about before picking up work:
   screens where each thing gets fixed, from one service, so the email and the
   app cannot disagree. Managers can turn the email off; nothing is lost by it.
   **Needs an email provider configured before any of it sends.**
+- **The rota** (September 2026): the Schedule week is a table — a row per
+  person, a column per day — shown for everyone, by location or by job role,
+  with filters. **Open shifts** (`Shift.employeeId` null, optional
+  `jobRoleId`) are slots an office needs covered: made singly or repeating
+  ("Nobody yet", with how many each day), flagged on the rota, in the banner
+  and the nightly round-up (next 14 days) until somebody is put in them, and
+  left out of scheduled hours, overtime and the dashboard. Staff see only
+  their own row. Chosen by Dominguez from three renderings.
 - **The scheduler** does a week (for building, on a laptop) and a month (for
   staff checking when they are on, often on a phone), warns when the rota puts
   somebody past the overtime threshold in a week, and syncs to Google, Apple or

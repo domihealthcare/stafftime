@@ -134,7 +134,22 @@ nothing when somebody disputes their pay.
 
 ### 4. Building the week (**Schedule**)
 
-The week grid, plus four things that save the tedious part:
+The week is now a **rota**: one row per person, one column per day, the
+hours and head-count for each day in its heading. Click ＋ in any cell to add
+a shift there; click a shift to change who works it, publish it, or remove it
+(it asks first). Show it for everyone, **by location** or **by job role**,
+and filter to one office or one role.
+
+**Open shifts** are shifts an office needs covered that nobody is on yet —
+two Front Desk on a Saturday morning, say. Each office has an Open shifts row
+at the top; make them one at a time or repeating (choose "Nobody yet"), and
+they stay flagged — on the rota, in the banner and in the nightly email —
+until you click one and put somebody in it. The demo data has a few.
+
+- **Tell us:** should staff be able to see open shifts and offer to take one?
+  Today only managers see them.
+
+Plus four things that save the tedious part:
 
 - **Repeating shifts** — one form makes a month of Tuesdays and Thursdays.
 - **Copy last week into this one** — because most weeks look like the last one.

@@ -324,10 +324,28 @@ const MANAGERS: Section[] = [
               in one go.
             </li>
             <li>
-              Add single shifts on the week grid. <strong>Coverage</strong> shows hours per day, who
-              is away and any day with nobody on.
+              The week is a <strong>rota</strong>: a row per person, a column per day. Click ＋ in a
+              cell to add a shift there, or click a shift to change who works it, publish it or
+              remove it. Each day&rsquo;s heading shows its hours and how many are on.
+            </li>
+            <li>
+              Show it for <strong>everyone</strong>, <strong>by location</strong> or{' '}
+              <strong>by job role</strong>, and filter to one office or one role.
             </li>
           </ul>
+        ),
+      },
+      {
+        question: 'What is an open shift?',
+        answer: (
+          <p>
+            A shift the office needs covered that nobody is on yet — say two Front Desk on Saturday
+            morning. Make them with <strong>+ Add shift</strong> or{' '}
+            <strong>Repeating shifts</strong> by choosing &ldquo;Nobody yet&rdquo;, or with ＋ in an
+            office&rsquo;s Open shifts row. They are flagged on the rota, in the banner and in the
+            nightly email until you click one and put somebody in it. Anybody already on at that
+            time is greyed out.
+          </p>
         ),
       },
       {

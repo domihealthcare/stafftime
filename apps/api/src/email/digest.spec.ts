@@ -14,6 +14,7 @@ function build(
     kiosks?: unknown[];
     unapproved?: unknown[];
     leaverShifts?: unknown[];
+    openShifts?: unknown[];
     locations?: unknown[];
     staff?: { id: string; firstName: string; lastName: string }[];
     settings?: { rotaWarningDays?: number; overtimeThresholdHours?: number };
@@ -33,16 +34,21 @@ function build(
     },
     ptoRequest: { findMany: jest.fn().mockResolvedValue(data.timeOff ?? []) },
     kioskDevice: { findMany: jest.fn().mockResolvedValue(data.kiosks ?? []) },
-    shift: { findMany: jest.fn().mockResolvedValue(data.leaverShifts ?? []) },
+    // Two different questions of the same table: the open-shift one is the
+    // one that asks for nobody.
+    shift: {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      findMany: jest.fn(async (args: any) =>
+        args.where.employeeId === null ? (data.openShifts ?? []) : (data.leaverShifts ?? []),
+      ),
+    },
     location: { findMany: jest.fn().mockResolvedValue(data.locations ?? []) },
     employee: {
       // Two different questions go through this one method: who should be
       // emailed, and what a handful of employee ids are called. Answering both
       // with the same list is how a test passes for the wrong reason.
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      findMany: jest.fn(async (args: any) =>
-        args?.where?.id?.in ? (data.staff ?? []) : managers,
-      ),
+      findMany: jest.fn(async (args: any) => (args?.where?.id?.in ? (data.staff ?? []) : managers)),
     },
   };
   const notifications = { dailyDigest: jest.fn() };
@@ -310,7 +316,7 @@ describe('DigestService — what is going wrong at the office', () => {
       expect((await attention.gather()).unpublishedRota).toEqual([]);
     });
 
-    it('only chases locations that are actually rota\'d through the app', async () => {
+    it("only chases locations that are actually rota'd through the app", async () => {
       // A location scheduled some other way should not complain every night
       // forever, so the query requires recent published shifts.
       onThursday();
@@ -429,5 +435,42 @@ describe('DigestService — what is going wrong at the office', () => {
       expect(where.status).toEqual({ not: 'CANCELLED' });
     });
   });
-});
 
+  describe('open shifts', () => {
+    const open = (date: string, location: string, role: string | null) => ({
+      startsAt: day(date),
+      locationId: location === 'North Bergen' ? 'nb' : 'wny',
+      location: { name: location },
+      jobRole: role ? { name: role } : null,
+    });
+
+    it('gives one line per office, with the first date and what is needed', async () => {
+      onThursday();
+      const { attention } = build({
+        openShifts: [
+          open('2026-09-28', 'North Bergen', 'Front Desk'),
+          open('2026-09-28', 'North Bergen', 'Front Desk'),
+          open('2026-09-30', 'North Bergen', 'Medical Assistant'),
+          open('2026-10-01', 'West New York', null),
+        ],
+      });
+      expect((await attention.gather()).openShifts).toEqual([
+        'North Bergen — 3 open shifts nobody is on yet, the first Sep 28, 2026 (Front Desk ×2, Medical Assistant)',
+        'West New York — 1 open shift nobody is on yet, the first Oct 1, 2026 (any role)',
+      ]);
+    });
+
+    it('asks only for shifts with nobody on them, not cancelled, in the next fortnight', async () => {
+      onThursday();
+      const { attention, prisma } = build();
+      await attention.gather();
+      const call = prisma.shift.findMany.mock.calls.find(
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        ([args]: any[]) => args.where.employeeId === null,
+      )!;
+      expect(call).toBeDefined();
+      expect(call[0].where.status).toEqual({ not: 'CANCELLED' });
+      expect(call[0].where.startsAt.lt).toEqual(day('2026-10-09'));
+    });
+  });
+});
