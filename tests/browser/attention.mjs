@@ -197,7 +197,7 @@ await step('changing the threshold changes what the rota warns about', async () 
   const saving = admin.waitForResponse(
     (r) => r.url().includes('/api/settings') && r.request().method() !== 'GET',
   );
-  await admin.getByRole('button', { name: 'Save' }).click();
+  await admin.getByRole('button', { name: 'Save', exact: true }).click();
   const saveResponse = await saving;
   if (!saveResponse.ok()) throw new Error(`the save answered ${saveResponse.status()}`);
   await admin.getByText('Saved.', { exact: true }).waitFor({ timeout: 15000 });
@@ -248,7 +248,7 @@ await step('putting it back makes the warning go away again', async () => {
   const saving = admin.waitForResponse(
     (r) => r.url().includes('/api/settings') && r.request().method() !== 'GET',
   );
-  await admin.getByRole('button', { name: 'Save' }).click();
+  await admin.getByRole('button', { name: 'Save', exact: true }).click();
   const saveResponse = await saving;
   if (!saveResponse.ok()) throw new Error(`the save answered ${saveResponse.status()}`);
   await admin.getByText('Saved.', { exact: true }).waitFor({ timeout: 15000 });
