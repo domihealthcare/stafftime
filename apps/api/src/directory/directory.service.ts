@@ -33,7 +33,7 @@ export class DirectoryService {
         phone: true,
         employmentStatus: true,
         jobRoles: {
-          select: { jobRole: { select: { id: true, name: true, sortOrder: true } } },
+          select: { jobRole: { select: { id: true, name: true, sortOrder: true, colour: true } } },
         },
         locations: {
           where: { location: { isActive: true } },
@@ -61,7 +61,7 @@ export class DirectoryService {
         jobRoles: jobRoles
           .map((row) => row.jobRole)
           .sort((a, b) => a.sortOrder - b.sortOrder || a.name.localeCompare(b.name))
-          .map(({ id, name }) => ({ id, name })),
+          .map(({ id, name, colour }) => ({ id, name, colour })),
         locations: locations
           .sort((a, b) => Number(b.isPrimary) - Number(a.isPrimary))
           .map((row) => ({ ...row.location, isPrimary: row.isPrimary })),

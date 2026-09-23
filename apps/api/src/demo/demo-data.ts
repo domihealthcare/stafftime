@@ -63,6 +63,9 @@ interface Person {
   pin: string;
   /// Which weekdays they work (1 = Monday).
   days: number[];
+  /// Job roles by name — several for those who cover more than one job, which
+  /// is the case the directory's colours are there to show.
+  jobRoles: string[];
 }
 
 const PEOPLE: Person[] = [
@@ -78,6 +81,7 @@ const PEOPLE: Person[] = [
     hireDate: '2022-03-14',
     pin: '2914',
     days: [1, 2, 3, 4, 5],
+    jobRoles: ['Manager', 'Administrative'],
   },
   {
     email: 'd.okafor@domihealthcare.com',
@@ -91,6 +95,7 @@ const PEOPLE: Person[] = [
     hireDate: '2023-06-05',
     pin: '3827',
     days: [1, 2, 3, 4, 5],
+    jobRoles: ['Front Desk', 'Medical Assistant'],
   },
   {
     email: 'p.nguyen@domihealthcare.com',
@@ -104,6 +109,7 @@ const PEOPLE: Person[] = [
     hireDate: '2024-02-12',
     pin: '5140',
     days: [1, 2, 3, 4, 5],
+    jobRoles: ['Medical Assistant'],
   },
   {
     email: 'j.santos@domihealthcare.com',
@@ -117,6 +123,7 @@ const PEOPLE: Person[] = [
     hireDate: '2024-09-03',
     pin: '6472',
     days: [1, 2, 3, 4],
+    jobRoles: ['Front Desk'],
   },
   {
     email: 'k.brennan@domihealthcare.com',
@@ -130,6 +137,7 @@ const PEOPLE: Person[] = [
     hireDate: '2023-11-06',
     pin: '7358',
     days: [1, 2, 3, 4, 5],
+    jobRoles: ['Front Desk'],
   },
   {
     email: 'a.haddad@domihealthcare.com',
@@ -143,6 +151,7 @@ const PEOPLE: Person[] = [
     hireDate: '2025-04-21',
     pin: '8291',
     days: [1, 2, 3, 4, 5],
+    jobRoles: ['Medical Assistant'],
   },
   {
     email: 't.lindqvist@domihealthcare.com',
@@ -156,6 +165,7 @@ const PEOPLE: Person[] = [
     hireDate: '2025-08-11',
     pin: '9043',
     days: [2, 3, 4, 5],
+    jobRoles: ['Front Desk', 'Medical Assistant'],
   },
   {
     email: 'b.oyelaran@domihealthcare.com',
@@ -169,6 +179,7 @@ const PEOPLE: Person[] = [
     hireDate: '2021-07-19',
     pin: '1586',
     days: [1, 2, 3, 4, 5],
+    jobRoles: ['Provider', 'Administrative'],
   },
 ];
 
@@ -240,11 +251,21 @@ export async function loadDemoData(prisma: PrismaClient) {
       create: { employeeId: employee.id, locationId, isPrimary: true },
     });
 
+    // Only roles that exist: a manager may have renamed or removed one, and
+    // the demo should not quietly put it back.
+    const roles = await prisma.jobRole.findMany({
+      where: { name: { in: person.jobRoles } },
+      select: { id: true },
+    });
+    await prisma.employeeJobRole.createMany({
+      data: roles.map((role) => ({ employeeId: employee.id, jobRoleId: role.id })),
+      skipDuplicates: true,
+    });
+
     created.push({ id: employee.id, person });
   }
 
   const manager = created.find((entry) => entry.person.role === Role.MANAGER)!;
-
 
   for (const { id, person } of created) {
     const locationId = office.get(person.office)!;
@@ -272,8 +293,10 @@ export async function loadDemoData(prisma: PrismaClient) {
       // A punch is usually a few minutes either side of the shift. Occasionally
       // it is not, and that is the interesting case.
       const roll = random();
-      const lateMinutes = roll > 0.88 ? 12 + Math.floor(random() * 20) : Math.floor(random() * 5) - 2;
-      const earlyMinutes = roll < 0.06 ? 18 + Math.floor(random() * 15) : Math.floor(random() * 4) - 2;
+      const lateMinutes =
+        roll > 0.88 ? 12 + Math.floor(random() * 20) : Math.floor(random() * 5) - 2;
+      const earlyMinutes =
+        roll < 0.06 ? 18 + Math.floor(random() * 15) : Math.floor(random() * 4) - 2;
 
       const clockInAt = addMinutes(startsAt, lateMinutes);
       const forgotToClockOut = roll > 0.965;
@@ -298,9 +321,7 @@ export async function loadDemoData(prisma: PrismaClient) {
               ? TimeEntryStatus.APPROVED
               : TimeEntryStatus.COMPLETED,
           clockInAt,
-          clockInVerification: viaKiosk
-            ? VerificationMethod.KIOSK
-            : VerificationMethod.GEOFENCE,
+          clockInVerification: viaKiosk ? VerificationMethod.KIOSK : VerificationMethod.GEOFENCE,
           clockInAccuracyMeters: viaKiosk ? null : 18 + Math.floor(random() * 30),
           clockOutAt,
           clockOutVerification: forgotToClockOut
@@ -321,7 +342,9 @@ export async function loadDemoData(prisma: PrismaClient) {
 
   // Somebody covering a sixth day, so one week goes past forty hours and the
   // export's overtime split has something in it.
-  const overtimeFor = created.find((entry) => entry.person.email === 'd.okafor@domihealthcare.com')!;
+  const overtimeFor = created.find(
+    (entry) => entry.person.email === 'd.okafor@domihealthcare.com',
+  )!;
   const saturday = lastSaturday();
   const otStart = easternWallClock(saturday, 9);
   const otEnd = easternWallClock(saturday, 15);
@@ -601,14 +624,7 @@ async function seedChecklists(
 /// Eastern is UTC-4 in summer and UTC-5 in winter. Measuring the offset rather
 /// than assuming one keeps a 9am shift at 9am across the clock change.
 function easternWallClock(date: Date, hour: number): Date {
-  const naive = Date.UTC(
-    date.getUTCFullYear(),
-    date.getUTCMonth(),
-    date.getUTCDate(),
-    hour,
-    0,
-    0,
-  );
+  const naive = Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate(), hour, 0, 0);
   const guess = new Date(naive - offsetMinutes(new Date(naive)) * 60_000);
   return new Date(naive - offsetMinutes(guess) * 60_000);
 }
@@ -638,9 +654,7 @@ function workingDates(days: number[]): Date[] {
 
   for (let week = -WEEKS_BACK; week <= WEEKS_FORWARD; week += 1) {
     for (const weekday of days) {
-      dates.push(
-        new Date(thisWeek.getTime() + (week * 7 + (weekday - 1)) * 86_400_000),
-      );
+      dates.push(new Date(thisWeek.getTime() + (week * 7 + (weekday - 1)) * 86_400_000));
     }
   }
   return dates;
@@ -663,9 +677,7 @@ function lastSaturday(): Date {
 
 function daysFromToday(days: number): Date {
   const today = new Date();
-  return new Date(
-    Date.UTC(today.getUTCFullYear(), today.getUTCMonth(), today.getUTCDate() + days),
-  );
+  return new Date(Date.UTC(today.getUTCFullYear(), today.getUTCMonth(), today.getUTCDate() + days));
 }
 
 /// Nobody at Domi works weekends, so a request that starts on a Saturday reads

@@ -964,6 +964,9 @@ model JobRole {
   name        String  @unique
   description String?
   sortOrder   Int     @default(0)
+  /// A key from JOB_ROLE_COLOURS (src/job-roles/job-role-colours.ts), not a
+  /// free hex: the set is validated for colour-blind readers as a whole.
+  colour      String  @default("blue")
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt

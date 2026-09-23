@@ -9,12 +9,14 @@ import { EmploymentStatus, Prisma } from '@prisma/client';
 import { AuthUser } from '../common/auth/auth-user';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateJobRoleDto, UpdateJobRoleDto } from './dto/job-role.dto';
+import { nextFreeColour } from './job-role-colours';
 
 const JOB_ROLE_SELECT = {
   id: true,
   name: true,
   description: true,
   sortOrder: true,
+  colour: true,
   _count: { select: { resources: true } },
   members: {
     // Somebody who has left is not "in" Front Desk any more, even if nobody
@@ -64,12 +66,19 @@ export class JobRolesService {
 
     // New roles go to the end of the list; managers can reorder afterwards.
     const last = await this.prisma.jobRole.aggregate({ _max: { sortOrder: true } });
+    // Unless the manager picked one, a new role gets a colour nobody else has.
+    const colour =
+      dto.colour ??
+      nextFreeColour(
+        (await this.prisma.jobRole.findMany({ select: { colour: true } })).map((row) => row.colour),
+      );
 
     const row = await this.prisma.jobRole.create({
       data: {
         name,
         description: dto.description?.trim() || null,
         sortOrder: (last._max.sortOrder ?? 0) + 10,
+        colour,
       },
       select: JOB_ROLE_SELECT,
     });
@@ -88,6 +97,7 @@ export class JobRolesService {
         name,
         description: dto.description === undefined ? undefined : dto.description.trim() || null,
         sortOrder: dto.sortOrder,
+        colour: dto.colour,
       },
       select: JOB_ROLE_SELECT,
     });

@@ -17,8 +17,8 @@ function person(over: Record<string, unknown> = {}) {
     phone: '201-555-0100',
     employmentStatus: 'ACTIVE',
     jobRoles: [
-      { jobRole: { id: 'ma', name: 'Medical Assistant', sortOrder: 20 } },
-      { jobRole: { id: 'fd', name: 'Front Desk', sortOrder: 10 } },
+      { jobRole: { id: 'ma', name: 'Medical Assistant', sortOrder: 20, colour: 'orange' } },
+      { jobRole: { id: 'fd', name: 'Front Desk', sortOrder: 10, colour: 'blue' } },
     ],
     locations: [
       { isPrimary: false, location: { id: 'wny', name: 'West New York' } },
@@ -90,8 +90,8 @@ describe('DirectoryService', () => {
     const [row] = await service.list(employee, NOW);
 
     expect(row.jobRoles).toEqual([
-      { id: 'fd', name: 'Front Desk' },
-      { id: 'ma', name: 'Medical Assistant' },
+      { id: 'fd', name: 'Front Desk', colour: 'blue' },
+      { id: 'ma', name: 'Medical Assistant', colour: 'orange' },
     ]);
     expect(row.locations.map((l: { name: string }) => l.name)).toEqual([
       'North Bergen',
