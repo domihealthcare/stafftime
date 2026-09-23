@@ -31,6 +31,11 @@ phone**, open **Locations**, and set them standing at each front desk. Note that
       them whether the kiosk is genuinely available on every shift, since the
       opt-out depends on it.
 
+- [ ] **The pay period start date.** Pay is every two weeks; the app needs to
+      know the first day of any one pay period to work out the rest. Until an
+      admin enters it (account menu → Practice settings → Pay period start),
+      the "This pay period" and "Last pay period" shortcuts stay greyed out.
+
 ## Needed for the ADP export (still blocked on ADP)
 
 The generic Excel/CSV export is built and usable for payroll in the meantime.

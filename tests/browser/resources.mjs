@@ -80,11 +80,44 @@ await step('a manager creates a role, and a near-duplicate is refused', async ()
   await mgr.getByRole('button', { name: 'Cancel' }).click();
 });
 
-await step('a manager renames a role', async () => {
-  await role(mgr, 'Billing').getByRole('button', { name: 'Rename' }).click();
+/// The colour a role card wears, read from its dot.
+const dotColour = (card) =>
+  card.getByTestId('job-role-dot').first().evaluate((el) => getComputedStyle(el).backgroundColor);
+
+await step('each starting role wears its own colour, and a new one gets a free colour', async () => {
+  const colours = [];
+  for (const name of ['Front Desk', 'Medical Assistant', 'Provider', 'Administrative', 'Manager', 'Billing']) {
+    colours.push(await dotColour(role(mgr, name)));
+  }
+  if (new Set(colours).size !== colours.length)
+    throw new Error(`two roles share a colour: ${colours.join(', ')}`);
+});
+
+await step('a manager renames a role and changes its colour', async () => {
+  await role(mgr, 'Billing').getByRole('button', { name: 'Edit', exact: true }).click();
   await mgr.getByLabel('Name').fill('Billing & Coding');
+  await mgr.getByText('Violet', { exact: true }).click();
+  const saved = mgr.waitForResponse((r) => r.url().includes('/api/job-roles/') && r.request().method() === 'PATCH');
   await mgr.getByRole('button', { name: 'Save', exact: true }).click();
+  if (!(await saved).ok()) throw new Error('the save was refused');
   await role(mgr, 'Billing & Coding').waitFor({ timeout: 10000 });
+  // #4a3aa7, the palette's violet.
+  const colour = await dotColour(role(mgr, 'Billing & Coding'));
+  if (colour !== 'rgb(74, 58, 167)') throw new Error(`the role is ${colour}, not violet`);
+});
+
+await step('a colour outside the palette is refused by the server', async () => {
+  const status = await mgr.evaluate(async () => {
+    const roles = await fetch('/api/job-roles').then((r) => r.json());
+    const target = roles.find((r) => r.name === 'Billing & Coding');
+    const res = await fetch(`/api/job-roles/${target.id}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ colour: '#ff00ff' }),
+    });
+    return res.status;
+  });
+  if (status !== 400) throw new Error(`expected 400, got ${status}`);
 });
 
 await step('a manager puts somebody in a role and takes them out again', async () => {

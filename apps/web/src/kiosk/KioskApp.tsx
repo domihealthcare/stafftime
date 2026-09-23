@@ -10,6 +10,7 @@ import {
 import { Alert, Spinner } from '../components/ui';
 import { Keypad } from './Keypad';
 import { KioskPairing } from './KioskPairing';
+import { BrandMark } from '../components/Brand';
 
 const MAX_PIN_LENGTH = 8;
 /// How long the confirmation stays up before returning to the staff list. Long
@@ -120,9 +121,10 @@ export function KioskApp() {
 
   return (
     <div className="flex min-h-screen flex-col bg-slate-100">
-      <header className="border-b border-slate-200 bg-white px-6 py-4">
-        <div className="mx-auto flex max-w-3xl items-baseline justify-between">
-          <span className="text-lg font-semibold text-slate-900">
+      <header className="border-b border-slate-200 border-t-4 border-t-brand-600 bg-white px-6 py-4">
+        <div className="mx-auto flex max-w-3xl items-center justify-between">
+          <span className="flex items-center gap-2 text-lg font-semibold text-slate-900">
+            <BrandMark />
             {session?.locationName ?? 'Kiosk'}
           </span>
           <Clock />

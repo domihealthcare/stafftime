@@ -108,6 +108,9 @@ export function AccountMenu() {
             <NavLink to="/password" role="menuitem" className={item} onClick={() => setOpen(false)}>
               Change password
             </NavLink>
+            <NavLink to="/help" role="menuitem" className={item} onClick={() => setOpen(false)}>
+              Help
+            </NavLink>
           </div>
 
           <div className="border-t border-slate-100 pt-1">

@@ -155,6 +155,12 @@ Build this as an **adapter/plugin pattern**, not a hardcoded ADP integration:
      write surveys (1–5 rating, pick one, written answer) for everyone, one job
      role or one location. The suggestion box is always open and keeps only
      the message and the day it arrived.
+   - **Look and help** (September 2026) — Domi Healthcare's blue (#3A6888)
+     throughout; job roles each wear a colour managers pick from a fixed,
+     colour-blind-checked set of eight; a **Help** page (account menu) with a
+     staff guide and a managers guide. The header mark is a stand-in: the real
+     logo could not be fetched from the website's image host, so it needs
+     adding to the repo by hand.
    - **Manager dashboard** (Manage → Dashboard, managers and admins) — this
      week's hours worked against scheduled, overtime, late clock-ins and time
      off; hours worked per week by location as a chart; a week-by-week table;
@@ -217,7 +223,10 @@ Beyond the phases, the parts worth knowing about before picking up work:
 - **`PracticeSettings`** holds the numbers the practice sets for itself: the
   overtime threshold (40) and how many days before a week starts an unpublished
   rota gets chased (4). Both were constants until Dominguez asked for them to be
-  adjustable; the defaults are confirmed.
+  adjustable; the defaults are confirmed. It also holds the **pay period
+  start** — pay is every two weeks, confirmed September 2026 — which drives
+  the "this / last pay period" shortcuts on the Timesheet and Export. **Not
+  entered yet**: an admin sets it under Practice settings.
 - **Tests**: ~540 unit tests, and ~220 end-to-end checks in `tests/browser`
   driven against a real API, a real Postgres and a real Chromium. Both run in CI
   on every push. The convention is to run the browser suites twice — once

@@ -1,7 +1,8 @@
 import { useEffect, useState } from 'react';
-import { NavLink, Outlet } from 'react-router-dom';
+import { Link, NavLink, Outlet } from 'react-router-dom';
 import { api } from '../lib/api';
 import { AccountMenu } from './AccountMenu';
+import { Wordmark } from './Brand';
 import { NavMenu } from './NavMenu';
 import { useIsAdmin, useIsManager } from '../lib/session';
 
@@ -58,7 +59,7 @@ export function Layout() {
 
   return (
     <div className="min-h-screen bg-slate-100">
-      <header className="border-b border-slate-200 bg-white">
+      <header className="border-b border-slate-200 border-t-4 border-t-brand-600 bg-white">
         {/* One layout, two shapes, and every element appears exactly once so
             that a link or the account button is never ambiguous to a test or a
             screen reader.
@@ -73,7 +74,9 @@ export function Layout() {
             From `sm` up it is a single flex row again — brand, nav, then the
             account pushed right — which already fitted on one line. */}
         <div className="mx-auto grid max-w-6xl grid-cols-[1fr_auto] items-center gap-x-2 gap-y-2 px-4 py-3 sm:flex sm:justify-start sm:gap-3">
-          <span className="font-semibold text-slate-900">Domi</span>
+          <Link to="/" className="shrink-0 rounded-lg focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-600">
+            <Wordmark />
+          </Link>
 
           {/* Second in the DOM so it lands in the grid's top-right cell; sent
               to the end of the flex row on wider screens. */}

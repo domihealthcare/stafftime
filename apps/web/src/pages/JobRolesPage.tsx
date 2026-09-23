@@ -3,6 +3,8 @@ import { Link } from 'react-router-dom';
 import { Alert, Card, EmptyState, PageHeading, Spinner } from '../components/ui';
 import { ApiError, api } from '../lib/api';
 import { displayName } from '../lib/format';
+import { JOB_ROLE_COLOURS, JOB_ROLE_COLOUR_KEYS, jobRoleHex as jobRoleHexFor } from '../lib/job-role-colours';
+import { JobRoleDot } from '../components/JobRoleTag';
 import type { Employee, JobRole } from '../lib/types';
 
 /**
@@ -72,6 +74,7 @@ export function JobRolesPage() {
       <div className="mb-4">
         {adding ? (
           <RoleForm
+            used={roles.map((role) => role.colour)}
             onSaved={() => {
               setAdding(false);
               void load();
@@ -145,6 +148,7 @@ function RoleCard({
     return (
       <RoleForm
         role={role}
+        used={[]}
         onSaved={(updated) => {
           setEditing(false);
           if (updated) onChanged(updated);
@@ -155,10 +159,17 @@ function RoleCard({
   }
 
   return (
-    <Card className="p-4" testId={`job-role-${role.name}`}>
+    <Card
+      className="border-l-4 p-4"
+      testId={`job-role-${role.name}`}
+      style={{ borderLeftColor: jobRoleHexFor(role.colour) }}
+    >
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div className="min-w-0">
-          <h2 className="font-semibold text-slate-900">{role.name}</h2>
+          <h2 className="flex items-center gap-2 font-semibold text-slate-900">
+            <JobRoleDot colour={role.colour} />
+            {role.name}
+          </h2>
           {role.description && <p className="text-sm text-slate-600">{role.description}</p>}
           <p className="mt-0.5 text-xs text-slate-500">
             {role.members.length === 1 ? '1 person' : `${role.members.length} people`} ·{' '}
@@ -171,7 +182,7 @@ function RoleCard({
             onClick={() => setEditing(true)}
             className="rounded-lg border border-slate-300 px-3 py-1.5 font-medium text-slate-700 hover:bg-slate-50"
           >
-            Rename
+            Edit
           </button>
           {confirming ? (
             <span className="flex items-center gap-2">
@@ -270,15 +281,21 @@ function RoleCard({
 
 function RoleForm({
   role,
+  used,
   onSaved,
   onCancel,
 }: {
   role?: JobRole;
+  /// Colours other roles already wear, so a new one starts on a free colour.
+  used: string[];
   onSaved: (role?: JobRole) => void;
   onCancel: () => void;
 }) {
   const [name, setName] = useState(role?.name ?? '');
   const [description, setDescription] = useState(role?.description ?? '');
+  const [colour, setColour] = useState(
+    role?.colour ?? JOB_ROLE_COLOUR_KEYS.find((key) => !used.includes(key)) ?? JOB_ROLE_COLOUR_KEYS[0],
+  );
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -286,7 +303,7 @@ function RoleForm({
     setBusy(true);
     setError(null);
     try {
-      const body = { name: name.trim(), description: description.trim() };
+      const body = { name: name.trim(), description: description.trim(), colour };
       onSaved(role ? await api.updateJobRole(role.id, body) : await api.createJobRole(body));
     } catch (cause) {
       setError(cause instanceof ApiError ? cause.message : 'Could not save that.');
@@ -322,6 +339,37 @@ function RoleForm({
           />
         </label>
       </div>
+
+      <fieldset className="mt-3">
+        <legend className="mb-1 text-sm font-medium text-slate-700">Colour</legend>
+        <div className="flex flex-wrap gap-2">
+          {JOB_ROLE_COLOUR_KEYS.map((key) => (
+            <label
+              key={key}
+              className={`flex cursor-pointer items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-medium ring-1 ring-inset ${
+                colour === key
+                  ? 'bg-slate-900 text-white ring-slate-900'
+                  : 'bg-white text-slate-700 ring-slate-300 hover:bg-slate-50'
+              }`}
+            >
+              <input
+                type="radio"
+                name={`colour-${role?.id ?? 'new'}`}
+                value={key}
+                checked={colour === key}
+                onChange={() => setColour(key)}
+                className="sr-only"
+              />
+              <span
+                aria-hidden="true"
+                className="inline-block h-3 w-3 rounded-full ring-1 ring-white"
+                style={{ backgroundColor: JOB_ROLE_COLOURS[key].hex }}
+              />
+              {JOB_ROLE_COLOURS[key].label}
+            </label>
+          ))}
+        </div>
+      </fieldset>
 
       {error && (
         <div className="mt-3">

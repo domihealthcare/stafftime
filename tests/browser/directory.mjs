@@ -99,6 +99,20 @@ await step('someone in two job roles turns up under either', async () => {
   await frankie.getByLabel('Job role').selectOption({ label: 'Every job role' });
 });
 
+await step('each job role is labelled, and wears its own colour', async () => {
+  const card = person(frankie, 'Frankie Front-Desk');
+  await card.getByText('Front Desk', { exact: true }).waitFor({ timeout: 5000 });
+  await card.getByText('Medical Assistant', { exact: true }).waitFor({ timeout: 5000 });
+  const dots = await card
+    .getByTestId('job-role-dot')
+    .evaluateAll((els) => els.map((el) => getComputedStyle(el).backgroundColor));
+  if (dots.length !== 2) throw new Error(`expected two role colours, saw ${dots.length}`);
+  if (dots[0] === dots[1]) throw new Error('two different roles share a colour');
+  // The colour is a mark beside the name; the name itself stays dark.
+  const text = await card.getByText('Front Desk', { exact: true }).evaluate((el) => getComputedStyle(el).color);
+  if (text !== 'rgb(51, 65, 85)') throw new Error(`the role name is coloured ${text}`);
+});
+
 await step('search finds people by name', async () => {
   await frankie.getByLabel('Search').fill('ada');
   await person(frankie, 'Ada Admin').waitFor({ timeout: 5000 });

@@ -1,3 +1,4 @@
+import { JobRoleDot } from '../components/JobRoleTag';
 import { useCallback, useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Alert, Badge, Card, EmptyState, PageHeading, Spinner } from '../components/ui';
@@ -114,7 +115,10 @@ function SectionBlock({
   return (
     <section aria-label={name} data-testid={`section-${name}`}>
       <div className="mb-2 flex flex-wrap items-center gap-2">
-        <h2 className="text-sm font-semibold uppercase tracking-wide text-slate-600">{name}</h2>
+        <h2 className="flex items-center gap-2 text-sm font-semibold uppercase tracking-wide text-slate-600">
+          {section.jobRole && <JobRoleDot colour={section.jobRole.colour} />}
+          {name}
+        </h2>
         {canManage && section.jobRole && section.yours && <Badge tone="info">Yours</Badge>}
         {canManage && !adding && (
           <button

@@ -1,3 +1,4 @@
+import { JobRoleTag } from '../components/JobRoleTag';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Alert, Badge, Card, EmptyState, PageHeading, Spinner } from '../components/ui';
 import { ApiError, api } from '../lib/api';
@@ -180,8 +181,10 @@ function PersonCard({ person, isYou }: { person: DirectoryEntry; isYou: boolean 
       </div>
 
       {person.jobRoles.length > 0 && (
-        <p className="mt-0.5 text-sm text-slate-700">
-          {person.jobRoles.map((role) => role.name).join(' · ')}
+        <p className="mt-1 flex flex-wrap gap-1">
+          {person.jobRoles.map((role) => (
+            <JobRoleTag key={role.id} name={role.name} colour={role.colour} />
+          ))}
         </p>
       )}
       {person.locations.length > 0 && (

@@ -1387,7 +1387,8 @@ fails if the columns come back.
 `PtoPolicy` and for the same reason — see the note on `PtoPolicyService.get`,
 where a read-then-create race produced eighteen policy rows in testing.
 
-It holds two numbers, both of which started life as constants:
+It holds two numbers, both of which started life as constants, and the pay
+period (below):
 
 - **`overtimeThresholdHours`** (40) — where the rota warns and the payroll
   export splits.
@@ -1407,6 +1408,33 @@ off, which is not what somebody adjusting a number expects to have done.
 
 Managers read them — the numbers explain what their screens are telling them —
 and only an admin changes them.
+
+### The pay period
+
+A third setting, **`payPeriodStart`**, is a date rather than a number: the
+first day of any one pay period. Domi is paid **every two weeks**, so every
+other pay period follows from it by counting fortnights forwards or backwards
+(`settings/pay-period.ts`). It is null until an admin enters it, and the
+pay-period shortcuts stay greyed out until then, saying why — the app does not
+guess which Monday a fortnight starts on, because a guess that is a week out
+would put every export one week wrong.
+
+The server works out the current and previous pay period (`GET
+/settings/pay-period`, in the practice's time zone) rather than each screen
+doing the sum, so the Timesheet and the Export cannot disagree about which
+fortnight "last pay period" means. The length is a constant, not a setting:
+nobody has asked for weekly or twice-monthly, and twice-monthly is not a fixed
+number of days anyway.
+
+### Date shortcuts
+
+Screens that show a period — Timesheet and Export — share one picker
+(`components/DateRangePicker.tsx`): this week, last week, this or last pay
+period, this or last month, and Custom for two dates. The arrows step by the
+same kind of period — a month moves a month, anything else moves by its own
+length, so stepping back from a pay period lands on the one before. The
+Timesheet opens on this week, as it always has; the Export opens on the last
+pay period once one is set, since that is what gets exported.
 
 ## What needs a look
 
@@ -1523,6 +1551,43 @@ that work away. Its members just stop being in it.
 
 The Team / Manage menus in the top bar are disclosures of ordinary links, not
 ARIA menus, so the links stay links to assistive tech and to the browser suites.
+
+### Job-role colours
+
+Each job role wears a colour, chosen by managers, so the directory and the
+resources page can be scanned by eye. The colour is stored as a **key from a
+fixed set of eight** (`job-roles/job-role-colours.ts`), not a free hex. The
+eight are a categorical palette checked for colour-blind readers in that order
+— the first five, which the starting roles wear, stay distinguishable when they
+sit side by side — and a free picker would let two roles end up as near-twins.
+A new role takes the first colour nobody is wearing.
+
+The colour is only ever a dot or a stripe beside the name; the name stays in
+slate. Three of the eight are below 3:1 against white, which is fine for a mark
+next to a label and not for the label itself, and a colour on its own tells a
+colour-blind reader nothing.
+
+## Branding
+
+The app uses Domi Healthcare's blue from domihealthcare.com — `#3A6888` — as
+the `brand` 600 step in `tailwind.config.js`; the other steps keep its hue and
+chroma and move only lightness. White on 600 is 6.0:1. Type is Avenir where the
+device has it (every Apple device), as on the website, and the system face
+elsewhere: Avenir is not a font the app may serve itself.
+
+The mark in the header is a clock face in that blue, **not the Domi Healthcare
+logo**. The logo lives on the website's image host, which this build
+environment cannot reach; once a copy of the file is in the repo it replaces
+`BrandMark` in `components/Brand.tsx` and `public/favicon.svg`.
+
+## Help
+
+`/help`, from the account menu: a guide for everyone and, for managers and
+admins, a second tab for running the practice. It is plain text in the bundle,
+not pages in the database, so it ships with the feature it describes and cannot
+drift from it between releases — when a screen changes, change its answer in
+`pages/HelpPage.tsx` in the same commit. The password answer reads the rule
+from `lib/password.ts` rather than restating it.
 
 ## Staff directory
 
