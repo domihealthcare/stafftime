@@ -109,6 +109,32 @@ await step('copy-last-week pulls a rota forward', async () => {
 });
 await page.screenshot({ path: `${OUT}/39-copy-week.png`, fullPage: true });
 
+await step('removing a shift asks first, and Keep it keeps it', async () => {
+  const removeButtons = page.getByRole('button', { name: /^Remove .* shift, / });
+  await removeButtons.first().waitFor({ timeout: 10000 });
+  const before = await removeButtons.count();
+
+  await removeButtons.first().click();
+  const confirm = page.getByRole('alertdialog', { name: 'Remove this shift?' });
+  await confirm.waitFor({ timeout: 5000 });
+  await confirm.getByText(/may already be counting on it/).waitFor({ timeout: 5000 });
+  await confirm.getByRole('button', { name: 'Keep it' }).click();
+  await confirm.waitFor({ state: 'detached', timeout: 5000 });
+  if ((await removeButtons.count()) !== before) throw new Error('Keep it removed the shift');
+
+  await removeButtons.first().click();
+  const deleted = page.waitForResponse(
+    (r) => r.url().includes('/api/shifts/') && r.request().method() === 'DELETE',
+  );
+  await confirm.getByRole('button', { name: 'Yes, remove' }).click();
+  if (!(await deleted).ok()) throw new Error('the removal was refused');
+  await page.waitForFunction(
+    (n) => document.querySelectorAll('button[aria-label^="Remove "]').length === n - 1,
+    before,
+    { timeout: 10000 },
+  );
+});
+
 // --- overtime ---
 //
 // Against real Postgres, so the query's own filters do the work rather than a

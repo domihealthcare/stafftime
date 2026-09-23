@@ -352,7 +352,7 @@ const MANAGERS: Section[] = [
     ],
   },
   {
-    title: 'Time off, checklists and licences',
+    title: 'Time off, checklists and licenses',
     topics: [
       {
         question: 'How do I decide a time-off request?',
@@ -374,10 +374,10 @@ const MANAGERS: Section[] = [
         ),
       },
       {
-        question: 'Licence renewals',
+        question: 'License renewals',
         answer: (
           <p>
-            <Screen>Licences</Screen> opens on what lapses in the next 60 days. Record the expiry
+            <Screen>Licenses</Screen> opens on what lapses in the next 60 days. Record the expiry
             date only; press <strong>Renew</strong> to put in the new date.
           </p>
         ),
@@ -433,7 +433,7 @@ const MANAGERS: Section[] = [
         answer: (
           <p>
             Banners on each screen list what needs attention there — unapproved hours, missing
-            punches, lapsing licences, next week unpublished, and so on. The same list is emailed
+            punches, lapsing licenses, next week unpublished, and so on. The same list is emailed
             each night; turn that off under the menu → <strong>Notifications</strong>.
           </p>
         ),

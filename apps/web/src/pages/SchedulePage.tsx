@@ -412,6 +412,9 @@ function ShiftCard({
   onError: (message: string) => void;
 }) {
   const [busy, setBusy] = useState(false);
+  // Removing is one tap away from a slip of the thumb, and a removed shift is
+  // somebody's day gone from their calendar — so it asks first.
+  const [confirming, setConfirming] = useState(false);
 
   async function remove() {
     setBusy(true);
@@ -422,8 +425,11 @@ function ShiftCard({
       onError(err instanceof Error ? err.message : 'Could not remove that shift.');
     } finally {
       setBusy(false);
+      setConfirming(false);
     }
   }
+
+  const who = shift.employee ? `${shift.employee.firstName}’s` : 'this';
 
   return (
     <div className="rounded-lg bg-slate-50 p-2 text-xs">
@@ -440,17 +446,50 @@ function ShiftCard({
         <Badge tone={shift.status === 'PUBLISHED' ? 'success' : 'neutral'}>
           {shift.status === 'PUBLISHED' ? 'Published' : shift.status.toLowerCase()}
         </Badge>
-        {canDelete && shift.status !== 'CANCELLED' && (
+        {canDelete && shift.status !== 'CANCELLED' && !confirming && (
           <button
             type="button"
-            onClick={() => void remove()}
-            disabled={busy}
-            className="text-xs font-medium text-rose-600 hover:text-rose-800 disabled:opacity-50"
+            onClick={() => setConfirming(true)}
+            aria-label={`Remove ${who} shift, ${formatTime(shift.startsAt)}–${formatTime(shift.endsAt)}`}
+            className="text-xs font-medium text-rose-600 hover:text-rose-800"
           >
-            {busy ? '…' : 'Remove'}
+            Remove
           </button>
         )}
       </div>
+      {confirming && (
+        <div
+          role="alertdialog"
+          aria-label="Remove this shift?"
+          className="mt-2 rounded-md bg-rose-50 p-2 ring-1 ring-inset ring-rose-200"
+        >
+          <p className="font-medium text-rose-900">Remove this shift?</p>
+          {shift.status === 'PUBLISHED' && (
+            <p className="mt-0.5 text-rose-800">
+              It is published, so {shift.employee ? shift.employee.firstName : 'they'} may already
+              be counting on it.
+            </p>
+          )}
+          <div className="mt-1.5 flex flex-wrap gap-2">
+            <button
+              type="button"
+              onClick={() => void remove()}
+              disabled={busy}
+              className="rounded bg-rose-600 px-2 py-1 font-semibold text-white hover:bg-rose-700 disabled:opacity-60"
+            >
+              {busy ? 'Removing…' : 'Yes, remove'}
+            </button>
+            <button
+              type="button"
+              onClick={() => setConfirming(false)}
+              disabled={busy}
+              className="rounded px-2 py-1 font-medium text-slate-700 hover:bg-slate-100"
+            >
+              Keep it
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

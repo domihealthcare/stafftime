@@ -119,7 +119,7 @@ await step('every navigation link is reachable without scrolling sideways', asyn
   // The everyday screens sit in the top bar; the rest open from Team and
   // Manage. Either way, nothing may run off the edge of the phone.
   for (const name of [
-    'Clock', 'Timesheet', 'Schedule', 'Time off', 'Checklists', 'Licences',
+    'Clock', 'Timesheet', 'Schedule', 'Time off', 'Checklists', 'Licenses',
     'News', 'Directory', 'Resources', 'Surveys', 'Dashboard', 'Job roles', 'Export', 'Staff', 'Kiosks', 'Locations',
   ]) {
     await openMenuFor(page, name);
@@ -138,7 +138,7 @@ for (const [label, screen] of [
   ['Schedule', 'Schedule'],
   ['Time off', 'Time off'],
   ['Checklists', 'Checklists'],
-  ['Licences', 'Licences'],
+  ['Licenses', 'Licenses'],
   ['News', 'News'],
   ['Directory', 'Directory'],
   ['Resources', 'Resources'],

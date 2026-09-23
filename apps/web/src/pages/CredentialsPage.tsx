@@ -6,7 +6,7 @@ import { useIsAdmin, useIsManager } from '../lib/session';
 import type { Credential, CredentialKind, Employee } from '../lib/types';
 
 const KINDS: { value: CredentialKind; label: string }[] = [
-  { value: 'LICENSE', label: 'Professional licence' },
+  { value: 'LICENSE', label: 'Professional license' },
   { value: 'CERTIFICATION', label: 'Certification' },
   { value: 'LIFE_SUPPORT', label: 'CPR / BLS / ACLS' },
   { value: 'REGISTRATION', label: 'Registration (DEA, NPI…)' },
@@ -20,10 +20,10 @@ const KIND_LABEL = Object.fromEntries(KINDS.map((kind) => [kind.value, kind.labe
 type Horizon = '30' | '60' | '180' | 'all';
 
 /**
- * Licences, certifications and anything else that has to be renewed.
+ * Licenses, certifications and anything else that has to be renewed.
  *
  * The compliance risk this screen exists for is a quiet one: nobody notices a
- * lapsed licence until somebody asks to see it. So the default view is what is
+ * lapsed license until somebody asks to see it. So the default view is what is
  * about to lapse, soonest first, rather than everything the practice holds.
  */
 export function CredentialsPage() {
@@ -65,10 +65,10 @@ export function CredentialsPage() {
   return (
     <div>
       <PageHeading
-        title={isManager ? 'Licences and certifications' : 'Your licences'}
+        title={isManager ? 'Licenses and Certifications' : 'Your Licenses and Certifications'}
         subtitle={
           isManager
-            ? 'What has to be renewed, and when. Nobody notices a lapsed licence until somebody asks to see it.'
+            ? 'What has to be renewed, and when. Nobody notices a lapsed license until somebody asks to see it.'
             : 'What the practice holds for you, and when it runs out.'
         }
       />
@@ -424,7 +424,7 @@ function CredentialForm({
             aria-label="What it is"
             value={name}
             onChange={(event) => setName(event.target.value)}
-            placeholder="NJ Registered Nurse licence"
+            placeholder="NJ Registered Nurse license"
             className="w-full rounded-lg border border-slate-300 px-2 py-1.5"
           />
         </label>
@@ -454,7 +454,7 @@ function CredentialForm({
       </div>
 
       <p className="mt-3 text-xs text-slate-500">
-        Dates only. The licence number and the document itself belong in the personnel
+        Dates only. The license number and the document itself belong in the personnel
         file — this screen exists so nothing lapses unnoticed, not to hold the paperwork.
       </p>
 

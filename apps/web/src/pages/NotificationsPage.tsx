@@ -11,7 +11,7 @@ const CONTENTS = [
   'Kiosk tablets that have stopped being used',
   'Next week’s rota, when it is close and still unpublished',
   'Shifts still scheduled for people who have left',
-  'Licences and certifications about to lapse, or already lapsed',
+  'Licenses and certifications about to lapse, or already lapsed',
   'Hours nobody has approved yet',
   'Checklist tasks past their due date',
   'Punches with no clock-out',

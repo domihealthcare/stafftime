@@ -37,7 +37,7 @@ const admin = await signIn('admin@domihealthcare.com');
 const employee = await signIn('frontdesk@domihealthcare.com');
 
 await step('the round-up is not an employee’s to read', async () => {
-  // Every line in it names somebody. A colleague's lapsed licence is not theirs.
+  // Every line in it names somebody. A colleague's lapsed license is not theirs.
   const response = await employee.request.get(`${BASE}/api/attention`);
   if (response.status() !== 403) throw new Error(`employee got ${response.status()}, not 403`);
 });
