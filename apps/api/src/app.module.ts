@@ -22,6 +22,7 @@ import { LocationsModule } from './locations/locations.module';
 import { MaintenanceModule } from './maintenance/maintenance.module';
 import { PrismaModule } from './prisma/prisma.module';
 import { PtoModule } from './pto/pto.module';
+import { DashboardModule } from './dashboard/dashboard.module';
 import { DemoModule } from './demo/demo.module';
 import { SettingsModule } from './settings/settings.module';
 import { SetupModule } from './setup/setup.module';
@@ -53,6 +54,7 @@ import { TimeEntriesModule } from './time-entries/time-entries.module';
     DirectoryModule,
     AvailabilityModule,
     SurveysModule,
+    DashboardModule,
     MaintenanceModule,
     SetupModule,
   ],

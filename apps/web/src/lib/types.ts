@@ -567,3 +567,31 @@ export interface FeedbackMessage {
   receivedOn: string;
   archivedAt: string | null;
 }
+
+export interface DashboardFigures {
+  workedHours: number;
+  scheduledHours: number;
+  punches: number;
+  late: number;
+  earlyDepartures: number;
+  timeOffDays: number;
+}
+
+export interface DashboardWeek {
+  weekStart: string;
+  byLocation: (DashboardFigures & { locationId: string })[];
+  total: DashboardFigures & { overtimeHours: number };
+  timeOffByType: Partial<Record<PtoType, number>>;
+  overtime: { name: string; hours: number; overtimeHours: number }[];
+}
+
+export interface Dashboard {
+  today: string;
+  overtimeThresholdHours: number;
+  locations: { id: string; name: string }[];
+  weeks: DashboardWeek[];
+  upcoming: {
+    clashes: { date: string; employeeName: string; locationName: string; reason: string }[];
+    overtime: OvertimeWarning[];
+  };
+}

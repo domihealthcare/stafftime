@@ -26,6 +26,7 @@ const TEAM = [
 
 /// Running the practice.
 const MANAGE = [
+  { to: '/dashboard', label: 'Dashboard' },
   { to: '/job-roles', label: 'Job roles' },
   { to: '/export', label: 'Export' },
 ];

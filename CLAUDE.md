@@ -151,8 +151,12 @@ Build this as an **adapter/plugin pattern**, not a hardcoded ADP integration:
      write surveys (1–5 rating, pick one, written answer) for everyone, one job
      role or one location. The suggestion box is always open and keeps only
      the message and the day it arrived.
-   - **Manager dashboard** — hours, overtime, lateness and time off by location
-     and week, from data the app already holds.
+   - **Manager dashboard** (Manage → Dashboard, managers and admins) — this
+     week's hours worked against scheduled, overtime, late clock-ins and time
+     off; hours worked per week by location as a chart; a week-by-week table;
+     and, looking ahead, shifts in the next two weeks that clash with somebody's
+     availability or push them into overtime. Built from data the app already
+     holds, by the same rules as the timesheet, scheduler and payroll export.
 
 ## Where it has got to (September 2026)
 

@@ -8,6 +8,7 @@ import { Spinner } from './components/ui';
 import { SessionProvider, useSession } from './lib/session';
 import { ChangePasswordPage } from './pages/ChangePasswordPage';
 import { AvailabilityPage } from './pages/AvailabilityPage';
+import { DashboardPage } from './pages/DashboardPage';
 import { DirectoryPage } from './pages/DirectoryPage';
 import { JobRolesPage } from './pages/JobRolesPage';
 import { NewsPage } from './pages/NewsPage';
@@ -83,6 +84,7 @@ function Routed() {
         <Route path="surveys" element={<SurveysPage />} />
         <Route path="resources" element={<ResourcesPage />} />
         <Route path="resources/:id" element={<ResourcePage />} />
+        <Route path="dashboard" element={<DashboardPage />} />
         <Route path="job-roles" element={<JobRolesPage />} />
         <Route path="timesheet" element={<TimesheetPage />} />
         <Route path="schedule" element={<SchedulePage />} />

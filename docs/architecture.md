@@ -1594,3 +1594,30 @@ Limits worth knowing: somebody with direct database access could in principle
 correlate rows by their physical order. The promise is about the app — no
 screen, report, export or log connects a person to what they said — and the
 service logs "answered" without the person for the same reason.
+
+## Manager dashboard
+
+Read-only, managers and admins, built from punches, the rota, approved leave
+and availability. The arithmetic is a pure function (`dashboard.summary.ts`)
+so it can be tested without a database, and every rule in it is one the rest
+of the app already uses — a number here must never disagree with the
+timesheet, the scheduler or the payroll export:
+
+- a week is Monday–Sunday **in the location's timezone**;
+- hours worked come from **completed** punches; an open punch counts as a punch
+  but not as hours (it is somebody still at work, or a missing clock-out that
+  *What needs a look* chases);
+- overtime is per person per week **across both locations**, hourly staff only,
+  against the practice's own threshold — so it does not change with the
+  location filter, and the screen says so;
+- time off counts **weekdays**, a half day as half, and is attributed to the
+  person's primary location.
+
+"Next two weeks" reuses the scheduler's own coverage check, so availability
+clashes and scheduled overtime read the same on both screens.
+
+The chart follows the data-viz method: two series (one per location) in
+categorical slots 1 and 2, validated on the white card surface; the colour is
+fixed to the location, not its position, so filtering never repaints a line;
+one axis; a legend always, end labels only when they would not collide; a hover
+tooltip; and the week-by-week table as its table view.

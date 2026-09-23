@@ -11,6 +11,7 @@ import type {
   ChecklistTemplate,
   ConflictingShift,
   Coverage,
+  Dashboard,
   DemoSummary,
   DirectoryEntry,
   PlanResult,
@@ -649,6 +650,7 @@ export const api = {
   deleteAnnouncement: (id: string) =>
     request<{ deleted: boolean }>(`/announcements/${id}`, { method: 'DELETE' }),
 
+  dashboard: (weeks: number) => request<Dashboard>(`/dashboard?weeks=${weeks}`),
   directory: () => request<DirectoryEntry[]>('/directory'),
 
   surveys: () => request<Survey[]>('/surveys'),
