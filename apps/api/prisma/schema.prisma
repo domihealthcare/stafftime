@@ -323,6 +323,11 @@ model PracticeSettings {
   /// Four days by default: close enough to be urgent, far enough to fix.
   rotaWarningDays Int @default(4)
 
+  /// Any day a pay period began. Domi is paid every two weeks (confirmed
+  /// September 2026), so every period is this date plus a multiple of 14 days.
+  /// Null until an admin sets it; the "pay period" date shortcuts wait for it.
+  payPeriodStart DateTime? @db.Date
+
   updatedById String?  @db.Uuid
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt

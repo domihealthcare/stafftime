@@ -18,6 +18,13 @@ export class SettingsController {
     return this.settings.get();
   }
 
+  /// This pay period and the last, for the date shortcuts on the Timesheet and
+  /// Export screens. Any signed-in person: staff pick "this pay period" too.
+  @Get('pay-period')
+  payPeriod() {
+    return this.settings.payPeriod();
+  }
+
   @Patch()
   @Roles(Role.ADMIN)
   update(@Body() dto: UpdatePracticeSettingsDto, @CurrentUser() user: AuthUser) {

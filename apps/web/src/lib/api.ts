@@ -19,6 +19,7 @@ import type {
   Employee,
   JobRole,
   Location,
+  PayPeriodInfo,
   FeedbackMessage,
   Survey,
   SurveyAudience,
@@ -508,6 +509,7 @@ export const api = {
   loadDemoData: () => request<DemoSummary>('/demo/load', { method: 'POST' }),
 
   practiceSettings: () => request<PracticeSettings>('/settings'),
+  payPeriod: () => request<PayPeriodInfo>('/settings/pay-period'),
   updatePracticeSettings: (body: Partial<Omit<PracticeSettings, 'updatedAt'>>) =>
     request<PracticeSettings>('/settings', {
       method: 'PATCH',

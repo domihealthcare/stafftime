@@ -7,14 +7,9 @@ import {
   type TimesheetExportOptions,
 } from '../lib/api';
 import type { ReportPreset } from '../lib/types';
-import {
-  addDays,
-  formatCalendarDate,
-  formatDateTime,
-  startOfWeek,
-  toLocalInputValue,
-} from '../lib/format';
-import type { Location, PayrollExportRecord, PayrollTarget } from '../lib/types';
+import { formatCalendarDate, formatDateTime } from '../lib/format';
+import type { DayRange, Location, PayrollExportRecord, PayrollTarget } from '../lib/types';
+import { DateRangePicker, presetRanges, usePresetRange } from '../components/DateRangePicker';
 import { Alert, Badge, Card, EmptyState, PageHeading, Spinner } from '../components/ui';
 
 const STATUS_CHOICES = [
@@ -32,8 +27,15 @@ export function ExportPage() {
   const [locations, setLocations] = useState<Location[]>([]);
   const [loading, setLoading] = useState(true);
 
-  const [from, setFrom] = useState(() => isoDate(startOfWeek(addDays(new Date(), -7))));
-  const [to, setTo] = useState(() => isoDate(addDays(startOfWeek(new Date()), -1)));
+  // Opens on last week, then on the last pay period as soon as the server says
+  // which fortnight that is — unless somebody has already picked a period.
+  const [range, setRange] = useState<DayRange>(() => presetRanges(new Date(), null)[1].range!);
+  const [rangeTouched, setRangeTouched] = useState(false);
+  const lastPayPeriod = usePresetRange('last-pay-period', 'last-week');
+  useEffect(() => {
+    if (lastPayPeriod && !rangeTouched) setRange(lastPayPeriod);
+  }, [lastPayPeriod, rangeTouched]);
+  const { from, to } = range;
   const [locationId, setLocationId] = useState('');
   const [statuses, setStatuses] = useState<string[]>(['APPROVED', 'COMPLETED']);
   const [includeOpen, setIncludeOpen] = useState(false);
@@ -87,7 +89,9 @@ export function ExportPage() {
 
   const options: TimesheetExportOptions = useMemo(
     () => ({
-      // The end date is inclusive on screen, so send the following midnight.
+      // The end date is inclusive on screen. `to` here is its start; the
+      // preview and the download both replace it with the following midnight
+      // (endExclusive), so the last day's punches are included.
       from: new Date(`${from}T00:00:00`).toISOString(),
       to: new Date(`${to}T00:00:00`).toISOString(),
       locationId: locationId || undefined,
@@ -138,9 +142,7 @@ export function ExportPage() {
       setFormat(options.format === 'csv' ? 'csv' : 'xlsx');
       setActivePresetId(id);
     } catch (err) {
-      setPresetError(
-        err instanceof ApiError ? err.message : 'Could not open that saved report.',
-      );
+      setPresetError(err instanceof ApiError ? err.message : 'Could not open that saved report.');
     }
   }
 
@@ -253,8 +255,8 @@ export function ExportPage() {
 
         {presets.length === 0 && !savingPreset ? (
           <p className="mt-2 text-sm text-slate-500">
-            None yet. Set up an export the way you want it, then save it here so the next
-            one is a single tap.
+            None yet. Set up an export the way you want it, then save it here so the next one is a
+            single tap.
           </p>
         ) : (
           <div className="mt-3 flex flex-wrap gap-2">
@@ -341,51 +343,15 @@ export function ExportPage() {
 
       <Card className="mt-4 p-5">
         <h2 className="text-sm font-semibold text-slate-900">Period</h2>
-        <div className="mt-2 grid gap-3 sm:grid-cols-2">
-          <div>
-            <label htmlFor="from" className="block text-sm font-medium text-slate-700">
-              From
-            </label>
-            <input
-              id="from"
-              type="date"
-              value={from}
-              onChange={(event) => setFrom(event.target.value)}
-              className={field}
-            />
-          </div>
-          <div>
-            <label htmlFor="to" className="block text-sm font-medium text-slate-700">
-              To (included)
-            </label>
-            <input
-              id="to"
-              type="date"
-              value={to}
-              onChange={(event) => setTo(event.target.value)}
-              className={field}
-            />
-          </div>
-        </div>
-
-        <div className="mt-3 flex flex-wrap gap-2">
-          {[
-            { label: 'Last week', days: 7 },
-            { label: 'Last two weeks', days: 14 },
-            { label: 'Last month', days: 30 },
-          ].map((choice) => (
-            <button
-              key={choice.label}
-              type="button"
-              onClick={() => {
-                setFrom(isoDate(addDays(new Date(), -choice.days)));
-                setTo(isoDate(addDays(new Date(), -1)));
-              }}
-              className="rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-xs font-medium text-slate-700 hover:bg-slate-50"
-            >
-              {choice.label}
-            </button>
-          ))}
+        <div className="mt-2">
+          <DateRangePicker
+            value={range}
+            onChange={(next) => {
+              setRangeTouched(true);
+              setRange(next);
+            }}
+            label="Export period"
+          />
         </div>
 
         <div className="mt-4">
@@ -445,9 +411,7 @@ export function ExportPage() {
             />
             <span>
               <span className="font-medium text-slate-800">Entries still open</span>
-              <span className="ml-2 text-slate-500">
-                No clock-out, so they count as zero hours
-              </span>
+              <span className="ml-2 text-slate-500">No clock-out, so they count as zero hours</span>
             </span>
           </label>
 
@@ -496,9 +460,7 @@ export function ExportPage() {
         <div className="mt-3 space-y-4">
           {grouped.map(([group, groupColumns]) => (
             <div key={group}>
-              <p className="text-xs font-medium uppercase tracking-wide text-slate-500">
-                {group}
-              </p>
+              <p className="text-xs font-medium uppercase tracking-wide text-slate-500">{group}</p>
               <div className="mt-1 grid gap-1 sm:grid-cols-2">
                 {groupColumns.map((column) => (
                   <label key={column.key} className="flex items-start gap-2 text-sm">
@@ -574,9 +536,8 @@ export function ExportPage() {
             </p>
             {preview.flaggedCount > 0 && (
               <p className="mt-1 text-sm text-amber-700">
-                {preview.flaggedCount} flagged{' '}
-                {preview.flaggedCount === 1 ? 'entry' : 'entries'} — worth reviewing before
-                this goes to payroll.
+                {preview.flaggedCount} flagged {preview.flaggedCount === 1 ? 'entry' : 'entries'} —
+                worth reviewing before this goes to payroll.
               </p>
             )}
             {preview.openEntryCount > 0 && (
@@ -594,8 +555,8 @@ export function ExportPage() {
             {preview.alreadyExportedCount > 0 &&
               preview.alreadyExportedCount === preview.entryCount && (
                 <p className="mt-1 text-sm text-slate-600">
-                  All of these hours have been exported before. Running it again is fine — every
-                  run is recorded below.
+                  All of these hours have been exported before. Running it again is fine — every run
+                  is recorded below.
                 </p>
               )}
           </div>
@@ -645,14 +606,10 @@ export function ExportPage() {
         <button
           type="button"
           onClick={() => void download()}
-          disabled={
-            downloading || !preview || preview.entryCount === 0 || selected.length === 0
-          }
+          disabled={downloading || !preview || preview.entryCount === 0 || selected.length === 0}
           className="mt-4 w-full rounded-lg bg-brand-600 px-4 py-3 text-base font-semibold text-white hover:bg-brand-700 disabled:opacity-60"
         >
-          {downloading
-            ? 'Preparing…'
-            : `Download ${format === 'xlsx' ? 'Excel file' : 'CSV'}`}
+          {downloading ? 'Preparing…' : `Download ${format === 'xlsx' ? 'Excel file' : 'CSV'}`}
         </button>
       </Card>
 
@@ -661,8 +618,8 @@ export function ExportPage() {
           Past exports
         </h2>
         <p className="mb-3 text-sm text-slate-600">
-          Every run is kept, with the file exactly as it went out — so a disagreement with
-          payroll can be settled by looking rather than by guessing.
+          Every run is kept, with the file exactly as it went out — so a disagreement with payroll
+          can be settled by looking rather than by guessing.
         </p>
         <ExportHistory
           history={history}
@@ -767,10 +724,6 @@ function ExportHistory({
       ))}
     </div>
   );
-}
-
-function isoDate(date: Date): string {
-  return toLocalInputValue(date).slice(0, 10);
 }
 
 /// The screen shows an inclusive end date; the API takes an exclusive one.

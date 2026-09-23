@@ -14,6 +14,7 @@ export function fakeSettings(over: Partial<PracticeSettings> = {}): PracticeSett
     singleton: 1,
     overtimeThresholdHours: 40,
     rotaWarningDays: 4,
+    payPeriodStart: null,
     updatedById: null,
     createdAt: new Date(),
     updatedAt: new Date(),

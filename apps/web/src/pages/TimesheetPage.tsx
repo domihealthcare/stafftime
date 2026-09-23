@@ -1,14 +1,9 @@
-import { Fragment, useCallback, useEffect, useMemo, useState } from 'react';
+import { Fragment, useCallback, useEffect, useState } from 'react';
 import { api } from '../lib/api';
-import {
-  addDays,
-  durationHours,
-  formatDate,
-  formatTime,
-  startOfWeek,
-} from '../lib/format';
+import { durationHours, formatDate, formatTime } from '../lib/format';
 import { useIsManager, useSession } from '../lib/session';
-import type { TimeEntry } from '../lib/types';
+import type { DayRange, TimeEntry } from '../lib/types';
+import { DateRangePicker, presetRanges, toInstants } from '../components/DateRangePicker';
 import { EditEntryDialog } from '../components/EditEntryDialog';
 import { Alert, Badge, Card, EmptyState, PageHeading, Spinner } from '../components/ui';
 import { NeedsAttention } from '../components/NeedsAttention';
@@ -16,22 +11,19 @@ import { NeedsAttention } from '../components/NeedsAttention';
 export function TimesheetPage() {
   const { employee } = useSession();
   const isManager = useIsManager();
-  const [weekStart, setWeekStart] = useState(() => startOfWeek(new Date()));
+  // Opens on this week, as it always has; the shortcuts reach pay periods and
+  // months, and Custom anything else.
+  const [range, setRange] = useState<DayRange>(() => presetRanges(new Date(), null)[0].range!);
   const [entries, setEntries] = useState<TimeEntry[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [busyId, setBusyId] = useState<string | null>(null);
   const [editing, setEditing] = useState<TimeEntry | null>(null);
 
-  const weekEnd = useMemo(() => addDays(weekStart, 7), [weekStart]);
-
   const load = useCallback(async () => {
     setLoading(true);
     try {
-      const data = await api.listTimeEntries({
-        from: weekStart.toISOString(),
-        to: weekEnd.toISOString(),
-      });
+      const data = await api.listTimeEntries(toInstants(range));
       setEntries(data);
       setError(null);
     } catch (err) {
@@ -39,7 +31,7 @@ export function TimesheetPage() {
     } finally {
       setLoading(false);
     }
-  }, [weekStart, weekEnd]);
+  }, [range]);
 
   useEffect(() => {
     void load();
@@ -75,26 +67,8 @@ export function TimesheetPage() {
 
       <NeedsAttention sections={['unapprovedHours', 'missingPunches']} />
 
-      <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
-        <div className="flex items-center gap-2">
-          <button
-            type="button"
-            onClick={() => setWeekStart((current) => addDays(current, -7))}
-            className="rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-sm font-medium text-slate-700 hover:bg-slate-50"
-          >
-            ← Previous
-          </button>
-          <span className="text-sm font-medium text-slate-700">
-            {formatDate(weekStart.toISOString())} – {formatDate(addDays(weekStart, 6).toISOString())}
-          </span>
-          <button
-            type="button"
-            onClick={() => setWeekStart((current) => addDays(current, 7))}
-            className="rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-sm font-medium text-slate-700 hover:bg-slate-50"
-          >
-            Next →
-          </button>
-        </div>
+      <div className="mb-4 flex flex-wrap items-end justify-between gap-3">
+        <DateRangePicker value={range} onChange={setRange} label="Timesheet period" />
         <p className="text-sm text-slate-600">
           <span className="font-semibold text-slate-900">{totalHours.toFixed(2)}</span> hours
           {!loading && ` · ${entries.length} ${entries.length === 1 ? 'entry' : 'entries'}`}
@@ -114,76 +88,96 @@ export function TimesheetPage() {
           </div>
         ) : entries.length === 0 ? (
           <div className="p-6">
-            <EmptyState>No time entries this week.</EmptyState>
+            <EmptyState>No time entries in this period.</EmptyState>
           </div>
         ) : (
           <div className="hidden overflow-x-auto sm:block">
             <table className="min-w-full divide-y divide-slate-200 text-sm">
               <thead className="bg-slate-50 text-left text-xs uppercase tracking-wide text-slate-500">
                 <tr>
-                  <th scope="col" className="px-4 py-3 font-medium">Date</th>
-                  {isManager && <th scope="col" className="px-4 py-3 font-medium">Employee</th>}
-                  <th scope="col" className="px-4 py-3 font-medium">In</th>
-                  <th scope="col" className="px-4 py-3 font-medium">Out</th>
-                  <th scope="col" className="px-4 py-3 font-medium">Hours</th>
-                  <th scope="col" className="px-4 py-3 font-medium">Verified</th>
-                  <th scope="col" className="px-4 py-3 font-medium">Flags</th>
-                  {isManager && <th scope="col" className="px-4 py-3 font-medium">Action</th>}
+                  <th scope="col" className="px-4 py-3 font-medium">
+                    Date
+                  </th>
+                  {isManager && (
+                    <th scope="col" className="px-4 py-3 font-medium">
+                      Employee
+                    </th>
+                  )}
+                  <th scope="col" className="px-4 py-3 font-medium">
+                    In
+                  </th>
+                  <th scope="col" className="px-4 py-3 font-medium">
+                    Out
+                  </th>
+                  <th scope="col" className="px-4 py-3 font-medium">
+                    Hours
+                  </th>
+                  <th scope="col" className="px-4 py-3 font-medium">
+                    Verified
+                  </th>
+                  <th scope="col" className="px-4 py-3 font-medium">
+                    Flags
+                  </th>
+                  {isManager && (
+                    <th scope="col" className="px-4 py-3 font-medium">
+                      Action
+                    </th>
+                  )}
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100">
                 {entries.map((entry) => (
                   <Fragment key={entry.id}>
-                  <tr className="hover:bg-slate-50">
-                    <td className="whitespace-nowrap px-4 py-3 text-slate-700">
-                      {formatDate(entry.clockInAt)}
-                    </td>
-                    {isManager && (
+                    <tr className="hover:bg-slate-50">
                       <td className="whitespace-nowrap px-4 py-3 text-slate-700">
-                        {entry.employee
-                          ? `${entry.employee.firstName} ${entry.employee.lastName}`
+                        {formatDate(entry.clockInAt)}
+                      </td>
+                      {isManager && (
+                        <td className="whitespace-nowrap px-4 py-3 text-slate-700">
+                          {entry.employee
+                            ? `${entry.employee.firstName} ${entry.employee.lastName}`
+                            : '—'}
+                        </td>
+                      )}
+                      <td className="whitespace-nowrap px-4 py-3 tabular-nums text-slate-700">
+                        {formatTime(entry.clockInAt)}
+                      </td>
+                      <td className="whitespace-nowrap px-4 py-3 tabular-nums text-slate-700">
+                        {entry.clockOutAt ? formatTime(entry.clockOutAt) : '—'}
+                      </td>
+                      <td className="whitespace-nowrap px-4 py-3 tabular-nums font-medium text-slate-900">
+                        {entry.clockOutAt
+                          ? durationHours(entry.clockInAt, entry.clockOutAt).toFixed(2)
                           : '—'}
                       </td>
-                    )}
-                    <td className="whitespace-nowrap px-4 py-3 tabular-nums text-slate-700">
-                      {formatTime(entry.clockInAt)}
-                    </td>
-                    <td className="whitespace-nowrap px-4 py-3 tabular-nums text-slate-700">
-                      {entry.clockOutAt ? formatTime(entry.clockOutAt) : '—'}
-                    </td>
-                    <td className="whitespace-nowrap px-4 py-3 tabular-nums font-medium text-slate-900">
-                      {entry.clockOutAt
-                        ? durationHours(entry.clockInAt, entry.clockOutAt).toFixed(2)
-                        : '—'}
-                    </td>
-                    <td className="whitespace-nowrap px-4 py-3">
-                      <VerificationBadge entry={entry} />
-                    </td>
-                    <td className="whitespace-nowrap px-4 py-3">
-                      <Flags entry={entry} />
-                    </td>
-                    {isManager && (
                       <td className="whitespace-nowrap px-4 py-3">
-                        <EntryActions
-                          entry={entry}
-                          busy={busyId === entry.id}
-                          onApprove={() => void approve(entry.id)}
-                          onCorrect={() => setEditing(entry)}
-                        />
+                        <VerificationBadge entry={entry} />
                       </td>
-                    )}
-                  </tr>
-                  {/* The reason for a correction is a sentence, so it gets a
-                      line rather than being squeezed into the flags column. */}
-                  {entry.editReason && (
-                    <tr className="border-none">
-                      <td colSpan={isManager ? 8 : 6} className="px-4 pb-3 pt-0">
-                        <p className="text-xs text-slate-500">
-                          <span className="font-medium">Corrected:</span> {entry.editReason}
-                        </p>
+                      <td className="whitespace-nowrap px-4 py-3">
+                        <Flags entry={entry} />
                       </td>
+                      {isManager && (
+                        <td className="whitespace-nowrap px-4 py-3">
+                          <EntryActions
+                            entry={entry}
+                            busy={busyId === entry.id}
+                            onApprove={() => void approve(entry.id)}
+                            onCorrect={() => setEditing(entry)}
+                          />
+                        </td>
+                      )}
                     </tr>
-                  )}
+                    {/* The reason for a correction is a sentence, so it gets a
+                      line rather than being squeezed into the flags column. */}
+                    {entry.editReason && (
+                      <tr className="border-none">
+                        <td colSpan={isManager ? 8 : 6} className="px-4 pb-3 pt-0">
+                          <p className="text-xs text-slate-500">
+                            <span className="font-medium">Corrected:</span> {entry.editReason}
+                          </p>
+                        </td>
+                      </tr>
+                    )}
                   </Fragment>
                 ))}
               </tbody>
@@ -264,8 +258,8 @@ export function TimesheetPage() {
 
       {employee && !isManager && (
         <p className="mt-3 text-xs text-slate-500">
-          Something look wrong? Ask a manager to correct it — every correction is recorded
-          with a reason.
+          Something look wrong? Ask a manager to correct it — every correction is recorded with a
+          reason.
         </p>
       )}
     </div>

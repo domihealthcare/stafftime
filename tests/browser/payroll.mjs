@@ -52,6 +52,7 @@ await step('nothing has been exported yet', async () => {
 await step('the period can be set to cover today’s punch', async () => {
   // The screen defaults to last week, which is before the punch just made.
   const today = new Date().toISOString().slice(0, 10);
+  await page.getByRole('button', { name: 'Custom', exact: true }).click();
   await page.getByLabel('From').fill(today);
   await page.getByLabel('To (included)').fill(today);
   await page.getByText(/\d+ (entry|entries) · \d+ (person|people)/).first().waitFor({
@@ -135,6 +136,7 @@ await step('the export screen warns that the correction has not reached payroll'
   await page.getByRole('link', { name: /^Export/ }).first().click();
   // The screen opens on last week again, so point it back at today.
   const today = new Date().toISOString().slice(0, 10);
+  await page.getByRole('button', { name: 'Custom', exact: true }).click();
   await page.getByLabel('From').fill(today);
   await page.getByLabel('To (included)').fill(today);
 
