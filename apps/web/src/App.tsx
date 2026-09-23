@@ -7,6 +7,8 @@ import { Layout } from './components/Layout';
 import { Spinner } from './components/ui';
 import { SessionProvider, useSession } from './lib/session';
 import { ChangePasswordPage } from './pages/ChangePasswordPage';
+import { AvailabilityPage } from './pages/AvailabilityPage';
+import { DashboardPage } from './pages/DashboardPage';
 import { DirectoryPage } from './pages/DirectoryPage';
 import { JobRolesPage } from './pages/JobRolesPage';
 import { NewsPage } from './pages/NewsPage';
@@ -24,6 +26,7 @@ import { SetupPage } from './pages/SetupPage';
 import { StaffPage } from './pages/StaffPage';
 import { ChecklistsPage } from './pages/ChecklistsPage';
 import { CredentialsPage } from './pages/CredentialsPage';
+import { SurveysPage } from './pages/SurveysPage';
 import { TimeOffPage } from './pages/TimeOffPage';
 import { ForgotPasswordPage } from './pages/ForgotPasswordPage';
 import { ResetPasswordPage } from './pages/ResetPasswordPage';
@@ -78,11 +81,14 @@ function Routed() {
         <Route index element={<ClockPage />} />
         <Route path="news" element={<NewsPage />} />
         <Route path="directory" element={<DirectoryPage />} />
+        <Route path="surveys" element={<SurveysPage />} />
         <Route path="resources" element={<ResourcesPage />} />
         <Route path="resources/:id" element={<ResourcePage />} />
+        <Route path="dashboard" element={<DashboardPage />} />
         <Route path="job-roles" element={<JobRolesPage />} />
         <Route path="timesheet" element={<TimesheetPage />} />
         <Route path="schedule" element={<SchedulePage />} />
+        <Route path="availability" element={<AvailabilityPage />} />
         <Route path="password" element={<ChangePasswordPage forced={false} />} />
         <Route path="notifications" element={<NotificationsPage />} />
         <Route path="settings" element={<SettingsPage />} />

@@ -21,10 +21,12 @@ const TEAM = [
   { to: '/news', label: 'News' },
   { to: '/directory', label: 'Directory' },
   { to: '/resources', label: 'Resources' },
+  { to: '/surveys', label: 'Surveys' },
 ];
 
 /// Running the practice.
 const MANAGE = [
+  { to: '/dashboard', label: 'Dashboard' },
   { to: '/job-roles', label: 'Job roles' },
   { to: '/export', label: 'Export' },
 ];

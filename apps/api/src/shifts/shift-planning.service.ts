@@ -5,9 +5,12 @@ import {
   datesBetween,
   isoWeekdayOf,
   localDateIn,
+  localTimeIn,
   weekStartIn,
   zonedTimeToUtc,
 } from '../common/util/zoned-time.util';
+import { clashFor, Rule } from '../availability/availability.rules';
+import { toRule } from '../availability/availability.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { PracticeSettingsService } from '../settings/practice-settings.service';
 import { CopyWeekDto, QueryCoverageDto, RepeatShiftsDto } from './dto/repeat-shifts.dto';
@@ -244,6 +247,19 @@ export class ShiftPlanningService {
       }),
     ]);
 
+    // What each person has said they cannot do, for the shifts in view.
+    const unavailability = await this.prisma.unavailability.findMany({
+      where: {
+        employeeId: { in: [...new Set(shifts.map((shift) => shift.employeeId))] },
+        effectiveFrom: { lt: windowEnd },
+        OR: [{ effectiveUntil: null }, { effectiveUntil: { gte: windowStart } }],
+      },
+    });
+    const rulesFor = new Map<string, Rule[]>();
+    for (const row of unavailability) {
+      rulesFor.set(row.employeeId, [...(rulesFor.get(row.employeeId) ?? []), toRule(row)]);
+    }
+
     const days = dates.map((date) => {
       const onThisDay = shifts.filter(
         (shift) => localDateIn(shift.startsAt, shift.location.timezone) === date,
@@ -270,6 +286,16 @@ export class ShiftPlanningService {
           status: shift.status,
           // The thing a manager needs to see: scheduled while on leave.
           conflictsWithLeave: awayIds.has(shift.employeeId),
+          // And scheduled when they said they could not work — a warning, not
+          // a refusal, because sometimes a manager has to ask anyway.
+          unavailable: clashFor(rulesFor.get(shift.employeeId) ?? [], {
+            date,
+            startTime: localTimeIn(shift.startsAt, shift.location.timezone),
+            endTime:
+              localDateIn(shift.endsAt, shift.location.timezone) === date
+                ? localTimeIn(shift.endsAt, shift.location.timezone)
+                : '24:00',
+          }),
         })),
         staffedHours:
           Math.round(
@@ -508,22 +534,6 @@ function displayName(person: {
   preferredName?: string | null;
 }): string {
   return `${person.preferredName ?? person.firstName} ${person.lastName}`;
-}
-
-/// "HH:MM" on the wall clock in `zone`.
-function localTimeIn(instant: Date, zone: string): string {
-  const parts = Object.fromEntries(
-    new Intl.DateTimeFormat('en-GB', {
-      timeZone: zone,
-      hour: '2-digit',
-      minute: '2-digit',
-      hour12: false,
-    })
-      .formatToParts(instant)
-      .map((part) => [part.type, part.value]),
-  );
-  const hour = parts.hour === '24' ? '00' : parts.hour;
-  return `${hour}:${parts.minute}`;
 }
 
 function daysBetween(from: string, to: string): number {

@@ -6,6 +6,7 @@ import { AppController } from './app.controller';
 import { RolesGuard } from './common/auth/roles.guard';
 import { AppConfigModule } from './app-config/app-config.module';
 import { AuthModule } from './auth/auth.module';
+import { AvailabilityModule } from './availability/availability.module';
 import { CalendarModule } from './calendar/calendar.module';
 import { ChecklistsModule } from './checklists/checklists.module';
 import { SessionAuthGuard } from './common/auth/session.guard';
@@ -21,10 +22,12 @@ import { LocationsModule } from './locations/locations.module';
 import { MaintenanceModule } from './maintenance/maintenance.module';
 import { PrismaModule } from './prisma/prisma.module';
 import { PtoModule } from './pto/pto.module';
+import { DashboardModule } from './dashboard/dashboard.module';
 import { DemoModule } from './demo/demo.module';
 import { SettingsModule } from './settings/settings.module';
 import { SetupModule } from './setup/setup.module';
 import { ShiftsModule } from './shifts/shifts.module';
+import { SurveysModule } from './surveys/surveys.module';
 import { TimeEntriesModule } from './time-entries/time-entries.module';
 
 @Module({
@@ -49,6 +52,9 @@ import { TimeEntriesModule } from './time-entries/time-entries.module';
     AnnouncementsModule,
     JobRolesModule,
     DirectoryModule,
+    AvailabilityModule,
+    SurveysModule,
+    DashboardModule,
     MaintenanceModule,
     SetupModule,
   ],

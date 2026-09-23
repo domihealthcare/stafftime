@@ -138,13 +138,25 @@ Build this as an **adapter/plugin pattern**, not a hardcoded ADP integration:
      (confirmed fine to show colleagues), job roles and locations; nothing from
      the personnel side. "In now" comes from live clock-ins; colleagues see
      where somebody is, managers also see since when.
-   - **Availability** — staff mark when they cannot work each week; the
-     scheduler warns when a shift conflicts, next to the overtime warning.
-   - **Pulse surveys and anonymous feedback** — **truly anonymous**: the app
-     never records who answered, so nobody (admins included) can find out.
-     Results appear only once at least 3 people have answered.
-   - **Manager dashboard** — hours, overtime, lateness and time off by location
-     and week, from data the app already holds.
+   - **Availability** — staff set their own, **every week** (a weekday, all day
+     or between two times) or **on one date**; no approval. A change only
+     reaches weeks whose rota is **not yet published** — a published week is
+     fixed. The scheduler warns (never refuses) when a shift lands on one, next
+     to the overtime warning. Managers read everybody's but do not change it.
+   - **Pulse surveys and anonymous feedback** — **truly anonymous**: answers
+     are stored with no person and no time, so nobody (admins included) can
+     find out who said what. The app does record *that* somebody took part,
+     separately and unlinked, so nobody answers twice. Results appear only
+     once a survey is **closed** and at least **3** people answered. Managers
+     write surveys (1–5 rating, pick one, written answer) for everyone, one job
+     role or one location. The suggestion box is always open and keeps only
+     the message and the day it arrived.
+   - **Manager dashboard** (Manage → Dashboard, managers and admins) — this
+     week's hours worked against scheduled, overtime, late clock-ins and time
+     off; hours worked per week by location as a chart; a week-by-week table;
+     and, looking ahead, shifts in the next two weeks that clash with somebody's
+     availability or push them into overtime. Built from data the app already
+     holds, by the same rules as the timesheet, scheduler and payroll export.
 
 ## Where it has got to (September 2026)
 

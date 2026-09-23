@@ -18,11 +18,13 @@ describe('ShiftPlanningService', () => {
     const created: Record<string, unknown>[] = [];
     const prisma = {
       location: {
-        findUnique: jest.fn().mockResolvedValue(
-          'location' in options
-            ? options.location
-            : { id: 'loc-1', name: 'North Bergen', timezone: NJ, isActive: true },
-        ),
+        findUnique: jest
+          .fn()
+          .mockResolvedValue(
+            'location' in options
+              ? options.location
+              : { id: 'loc-1', name: 'North Bergen', timezone: NJ, isActive: true },
+          ),
       },
       employeeLocation: {
         findUnique: jest
@@ -70,7 +72,10 @@ describe('ShiftPlanningService', () => {
 
     it('uses the location wall-clock time, not the server timezone', async () => {
       const { service, created } = build();
-      await service.repeat(repeat({ from: '2026-09-22', until: '2026-09-22', daysOfWeek: [2] }), 'mgr-1');
+      await service.repeat(
+        repeat({ from: '2026-09-22', until: '2026-09-22', daysOfWeek: [2] }),
+        'mgr-1',
+      );
 
       // 9am Eastern in September is 13:00 UTC.
       expect((created[0].startsAt as Date).toISOString()).toBe('2026-09-22T13:00:00.000Z');
@@ -134,9 +139,7 @@ describe('ShiftPlanningService', () => {
     it('only counts approved leave as a reason to skip', async () => {
       const { service, prisma } = build();
       await service.repeat(repeat(), 'mgr-1');
-      expect(prisma.ptoRequest.findFirst.mock.calls[0][0].where.status).toBe(
-        PtoStatus.APPROVED,
-      );
+      expect(prisma.ptoRequest.findFirst.mock.calls[0][0].where.status).toBe(PtoStatus.APPROVED);
     });
 
     it('refuses an end time before the start', async () => {
@@ -229,10 +232,7 @@ describe('ShiftPlanningService', () => {
           },
         ],
       });
-      await service.copyWeek(
-        { fromWeekStart: '2026-10-26', toWeekStart: '2026-11-02' },
-        'mgr-1',
-      );
+      await service.copyWeek({ fromWeekStart: '2026-10-26', toWeekStart: '2026-11-02' }, 'mgr-1');
 
       // Friday 6 November is standard time: 9am is now 14:00 UTC.
       expect((created[0].startsAt as Date).toISOString()).toBe('2026-11-06T14:00:00.000Z');
@@ -241,19 +241,13 @@ describe('ShiftPlanningService', () => {
 
     it('carries the notes across', async () => {
       const { service, created } = build({ sourceShifts: [sourceShift] });
-      await service.copyWeek(
-        { fromWeekStart: '2026-09-21', toWeekStart: '2026-09-28' },
-        'mgr-1',
-      );
+      await service.copyWeek({ fromWeekStart: '2026-09-21', toWeekStart: '2026-09-28' }, 'mgr-1');
       expect(created[0].notes).toBe('Front desk');
     });
 
     it('copies as drafts by default', async () => {
       const { service, created } = build({ sourceShifts: [sourceShift] });
-      await service.copyWeek(
-        { fromWeekStart: '2026-09-21', toWeekStart: '2026-09-28' },
-        'mgr-1',
-      );
+      await service.copyWeek({ fromWeekStart: '2026-09-21', toWeekStart: '2026-09-28' }, 'mgr-1');
       expect(created[0].status).toBe(ShiftStatus.DRAFT);
     });
 
@@ -268,10 +262,7 @@ describe('ShiftPlanningService', () => {
           },
         ],
       });
-      await service.copyWeek(
-        { fromWeekStart: '2026-09-21', toWeekStart: '2026-09-28' },
-        'mgr-1',
-      );
+      await service.copyWeek({ fromWeekStart: '2026-09-21', toWeekStart: '2026-09-28' }, 'mgr-1');
 
       const start = created[0].startsAt as Date;
       const end = created[0].endsAt as Date;
@@ -284,29 +275,20 @@ describe('ShiftPlanningService', () => {
     it('refuses copying a week onto itself', async () => {
       const { service } = build({ sourceShifts: [sourceShift] });
       await expect(
-        service.copyWeek(
-          { fromWeekStart: '2026-09-21', toWeekStart: '2026-09-21' },
-          'mgr-1',
-        ),
+        service.copyWeek({ fromWeekStart: '2026-09-21', toWeekStart: '2026-09-21' }, 'mgr-1'),
       ).rejects.toThrow(/same week/);
     });
 
     it('says so when the source week is empty', async () => {
       const { service } = build({ sourceShifts: [] });
       await expect(
-        service.copyWeek(
-          { fromWeekStart: '2026-09-21', toWeekStart: '2026-09-28' },
-          'mgr-1',
-        ),
+        service.copyWeek({ fromWeekStart: '2026-09-21', toWeekStart: '2026-09-28' }, 'mgr-1'),
       ).rejects.toThrow(/no shifts in that week/);
     });
 
     it('ignores cancelled shifts in the source week', async () => {
       const { service, prisma } = build({ sourceShifts: [sourceShift] });
-      await service.copyWeek(
-        { fromWeekStart: '2026-09-21', toWeekStart: '2026-09-28' },
-        'mgr-1',
-      );
+      await service.copyWeek({ fromWeekStart: '2026-09-21', toWeekStart: '2026-09-28' }, 'mgr-1');
       expect(prisma.shift.findMany.mock.calls[0][0].where.status).toEqual({
         not: ShiftStatus.CANCELLED,
       });
@@ -327,11 +309,16 @@ describe('ShiftPlanningService', () => {
     /// The mock returns the same shifts for both of coverage's queries — the
     /// day grid and the week totals — which is what a real database would do
     /// when the window is a whole week at one location.
-    function coveragePrisma(shifts: unknown[], leave: unknown[] = []) {
+    function coveragePrisma(shifts: unknown[], leave: unknown[] = [], unavailable: unknown[] = []) {
       return {
+        unavailability: { findMany: jest.fn().mockResolvedValue(unavailable) },
         location: { findUnique: jest.fn() },
         employeeLocation: { findUnique: jest.fn() },
-        shift: { findMany: jest.fn().mockResolvedValue(shifts), findFirst: jest.fn(), create: jest.fn() },
+        shift: {
+          findMany: jest.fn().mockResolvedValue(shifts),
+          findFirst: jest.fn(),
+          create: jest.fn(),
+        },
         ptoRequest: { findMany: jest.fn().mockResolvedValue(leave), findFirst: jest.fn() },
       };
     }
@@ -340,10 +327,11 @@ describe('ShiftPlanningService', () => {
       shifts: unknown[],
       leave: unknown[] = [],
       settings: { overtimeThresholdHours?: number } = {},
+      unavailable: unknown[] = [],
     ) {
       return new ShiftPlanningService(
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        coveragePrisma(shifts, leave) as any,
+        coveragePrisma(shifts, leave, unavailable) as any,
         fakeSettings(settings),
       );
     }
@@ -358,6 +346,78 @@ describe('ShiftPlanningService', () => {
       employee: { id: 'emp-1', firstName: 'Frankie', lastName: 'Front-Desk', preferredName: null },
       location: { id: 'loc-1', name: 'North Bergen', slug: 'north-bergen', timezone: NJ },
     };
+
+    /// Availability: a warning on the shift, never a refusal.
+    describe('availability', () => {
+      const d = (value: string) => new Date(`${value}T00:00:00.000Z`);
+      const weekly = (over: Record<string, unknown> = {}) => ({
+        id: 'u-1',
+        employeeId: 'emp-1',
+        kind: 'WEEKLY',
+        weekday: 2, // Tuesday — the shift above is Tuesday 22 September, 9–5 Eastern
+        date: null,
+        startTime: null,
+        endTime: null,
+        note: null,
+        effectiveFrom: d('2026-09-01'),
+        effectiveUntil: null,
+        ...over,
+      });
+      const coverageWith = async (rules: unknown[]) => {
+        const result = await coverageSetup([shift], [], {}, rules).coverage({
+          from: '2026-09-21',
+          to: '2026-09-27',
+        });
+        return result.days.find((day) => day.date === '2026-09-22')!.shifts[0].unavailable;
+      };
+
+      it('flags a shift on a weekday somebody never works', async () => {
+        await expect(coverageWith([weekly()])).resolves.toBe('Not available Tuesdays (all day)');
+      });
+
+      it('reads the hours on the location’s own clock', async () => {
+        // 9–5 Eastern is 13:00–21:00 UTC. "Not after 4pm" must catch it; a
+        // check done in UTC would think the shift ended at 9pm and still catch
+        // it, so test the other side too: "not before 8am" must not.
+        await expect(
+          coverageWith([weekly({ startTime: '16:00', endTime: '23:59' })]),
+        ).resolves.toBe('Not available Tuesdays, 4:00 PM–11:59 PM');
+        await expect(
+          coverageWith([weekly({ startTime: '00:00', endTime: '08:00' })]),
+        ).resolves.toBeNull();
+      });
+
+      it('lets a shift that ends exactly when somebody stops being free through', async () => {
+        await expect(
+          coverageWith([weekly({ startTime: '17:00', endTime: '23:00' })]),
+        ).resolves.toBeNull();
+      });
+
+      it('ignores a weekly rule outside the dates it applies between', async () => {
+        await expect(
+          coverageWith([weekly({ effectiveFrom: d('2026-09-28') })]),
+        ).resolves.toBeNull();
+        await expect(
+          coverageWith([weekly({ effectiveUntil: d('2026-09-21') })]),
+        ).resolves.toBeNull();
+      });
+
+      it('flags a one-off date', async () => {
+        const oneOff = weekly({
+          kind: 'ONE_OFF',
+          weekday: null,
+          date: d('2026-09-22'),
+          effectiveFrom: d('2026-09-22'),
+        });
+        await expect(coverageWith([oneOff])).resolves.toBe(
+          'Not available on Tue, Sep 22 (all day)',
+        );
+      });
+
+      it('says nothing when nothing clashes', async () => {
+        await expect(coverageWith([weekly({ weekday: 3 })])).resolves.toBeNull();
+      });
+    });
 
     /**
      * The overtime warning.
@@ -407,10 +467,10 @@ describe('ShiftPlanningService', () => {
         });
         expect(exactly40.overtime).toEqual([]);
 
-        const { overtime } = await withShifts([
-          ...five8s,
-          shiftOn('2026-09-26', 4),
-        ]).coverage({ from: '2026-09-21', to: '2026-09-27' });
+        const { overtime } = await withShifts([...five8s, shiftOn('2026-09-26', 4)]).coverage({
+          from: '2026-09-21',
+          to: '2026-09-27',
+        });
 
         expect(overtime).toHaveLength(1);
         expect(overtime[0]).toMatchObject({
@@ -599,15 +659,18 @@ describe('ShiftPlanningService', () => {
     });
 
     it('lists who is away, with the leave type', async () => {
-      const service = coverageSetup([], [
-        {
-          employeeId: 'emp-2',
-          type: 'VACATION',
-          startDate: new Date('2026-09-22T00:00:00.000Z'),
-          endDate: new Date('2026-09-24T00:00:00.000Z'),
-          employee: { firstName: 'Max', lastName: 'Assistant', preferredName: null },
-        },
-      ]);
+      const service = coverageSetup(
+        [],
+        [
+          {
+            employeeId: 'emp-2',
+            type: 'VACATION',
+            startDate: new Date('2026-09-22T00:00:00.000Z'),
+            endDate: new Date('2026-09-24T00:00:00.000Z'),
+            employee: { firstName: 'Max', lastName: 'Assistant', preferredName: null },
+          },
+        ],
+      );
       const { days } = await service.coverage({ from: '2026-09-21', to: '2026-09-27' });
 
       expect(days.find((day) => day.date === '2026-09-21')!.away).toHaveLength(0);
@@ -620,15 +683,18 @@ describe('ShiftPlanningService', () => {
     });
 
     it('flags somebody scheduled while on approved leave', async () => {
-      const service = coverageSetup([shift], [
-        {
-          employeeId: 'emp-1',
-          type: 'SICK',
-          startDate: new Date('2026-09-22T00:00:00.000Z'),
-          endDate: new Date('2026-09-22T00:00:00.000Z'),
-          employee: { firstName: 'Frankie', lastName: 'Front-Desk', preferredName: null },
-        },
-      ]);
+      const service = coverageSetup(
+        [shift],
+        [
+          {
+            employeeId: 'emp-1',
+            type: 'SICK',
+            startDate: new Date('2026-09-22T00:00:00.000Z'),
+            endDate: new Date('2026-09-22T00:00:00.000Z'),
+            employee: { firstName: 'Frankie', lastName: 'Front-Desk', preferredName: null },
+          },
+        ],
+      );
       const { days } = await service.coverage({ from: '2026-09-21', to: '2026-09-27' });
       expect(days.find((day) => day.date === '2026-09-22')!.shifts[0].conflictsWithLeave).toBe(
         true,
@@ -645,9 +711,9 @@ describe('ShiftPlanningService', () => {
 
     it('refuses a window longer than two months', async () => {
       const service = coverageSetup([]);
-      await expect(
-        service.coverage({ from: '2026-01-01', to: '2026-06-01' }),
-      ).rejects.toThrow(/one day and two months/);
+      await expect(service.coverage({ from: '2026-01-01', to: '2026-06-01' })).rejects.toThrow(
+        /one day and two months/,
+      );
     });
   });
 });

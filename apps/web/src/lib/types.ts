@@ -198,6 +198,9 @@ export interface CoverageShift {
   status: ShiftStatus;
   /// Scheduled while on approved leave — nearly always a mistake.
   conflictsWithLeave: boolean;
+  /// Scheduled when they said they cannot work, described ("Not available
+  /// Tuesdays, 5:00 PM–9:00 PM"). A warning, not a refusal.
+  unavailable: string | null;
 }
 
 export interface CoverageDay {
@@ -478,4 +481,117 @@ export interface DirectoryEntry {
   locations: { id: string; name: string; isPrimary: boolean }[];
   /// Clocked in now. `since` is only sent to managers.
   onNow: { location: { id: string; name: string }; since?: string } | null;
+}
+
+export type UnavailabilityKind = 'WEEKLY' | 'ONE_OFF';
+
+export interface UnavailabilityRule {
+  id: string;
+  kind: UnavailabilityKind;
+  /// ISO weekday, 1 = Monday. WEEKLY only.
+  weekday: number | null;
+  /// YYYY-MM-DD. ONE_OFF only.
+  date: string | null;
+  startTime: string | null;
+  endTime: string | null;
+  note: string | null;
+  effectiveFrom: string;
+  effectiveUntil: string | null;
+  description: string;
+  /// A one-off inside a published week: fixed.
+  locked: boolean;
+}
+
+export interface MyAvailability {
+  /// The first day a change can touch — the weeks before it are published.
+  firstOpenDate: string;
+  rules: UnavailabilityRule[];
+}
+
+export interface TeamAvailability extends PersonName {
+  rules: UnavailabilityRule[];
+}
+
+export type SurveyAudience = 'EVERYONE' | 'JOB_ROLE' | 'LOCATION';
+export type SurveyStatus = 'DRAFT' | 'OPEN' | 'CLOSED';
+export type SurveyQuestionKind = 'RATING' | 'CHOICE' | 'TEXT';
+
+export interface SurveyQuestion {
+  id: string;
+  position: number;
+  kind: SurveyQuestionKind;
+  prompt: string;
+  options: string[];
+}
+
+export interface Survey {
+  id: string;
+  title: string;
+  intro: string | null;
+  audience: SurveyAudience;
+  status: SurveyStatus;
+  openedAt: string | null;
+  closedAt?: string | null;
+  jobRole: { id: string; name: string } | null;
+  location: { id: string; name: string } | null;
+  questions: SurveyQuestion[];
+  answered: boolean;
+  /// Managers only.
+  responses?: number;
+  audienceSize?: number;
+  canAnswer?: boolean;
+}
+
+export interface SurveyInputQuestion {
+  kind: SurveyQuestionKind;
+  prompt: string;
+  options?: string[];
+}
+
+export type SurveyResults =
+  | { available: false; reason: string; responses: number }
+  | {
+      available: true;
+      responses: number;
+      questions: (SurveyQuestion & {
+        answered: number;
+        average?: number | null;
+        counts?: number[];
+        texts?: string[];
+      })[];
+    };
+
+export interface FeedbackMessage {
+  id: string;
+  message: string;
+  receivedOn: string;
+  archivedAt: string | null;
+}
+
+export interface DashboardFigures {
+  workedHours: number;
+  scheduledHours: number;
+  punches: number;
+  late: number;
+  earlyDepartures: number;
+  timeOffDays: number;
+}
+
+export interface DashboardWeek {
+  weekStart: string;
+  byLocation: (DashboardFigures & { locationId: string })[];
+  total: DashboardFigures & { overtimeHours: number };
+  timeOffByType: Partial<Record<PtoType, number>>;
+  overtime: { name: string; hours: number; overtimeHours: number }[];
+}
+
+export interface Dashboard {
+  today: string;
+  overtimeThresholdHours: number;
+  locations: { id: string; name: string }[];
+  weeks: DashboardWeek[];
+  upcoming: {
+    clashes: { date: string; employeeName: string; locationName: string; reason: string }[];
+    overtime: OvertimeWarning[];
+  };
 }
