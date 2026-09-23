@@ -65,4 +65,33 @@ describe('what this app deliberately does not store', () => {
     expect(body).toContain('expiresOn');
     expect(body).not.toMatch(/^\s*reference\s/m);
   });
+
+  /// Surveys and the suggestion box were promised to be truly anonymous: the
+  /// easiest way to break that is a harmless-looking `employeeId` or
+  /// `createdAt` on the wrong table.
+  it.each(['SurveyResponse', 'SurveyAnswer', 'Feedback'])(
+    'keeps %s free of anything that says who, or exactly when',
+    (name) => {
+      const body = model(name);
+      for (const field of [
+        'employee',
+        'author',
+        'createdBy',
+        'submittedBy',
+        'createdAt',
+        'updatedAt',
+        'ip',
+        'userAgent',
+        'session',
+      ]) {
+        expect(body).not.toMatch(new RegExp(`^\\s*${field}\\w*\\s`, 'im'));
+      }
+    },
+  );
+
+  it('records that somebody took part, and nothing that links them to their answers', () => {
+    const body = model('SurveyParticipant');
+    expect(body).not.toMatch(/response/i);
+    expect(body).not.toMatch(/createdAt|answeredAt/);
+  });
 });

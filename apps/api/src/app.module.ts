@@ -26,6 +26,7 @@ import { DemoModule } from './demo/demo.module';
 import { SettingsModule } from './settings/settings.module';
 import { SetupModule } from './setup/setup.module';
 import { ShiftsModule } from './shifts/shifts.module';
+import { SurveysModule } from './surveys/surveys.module';
 import { TimeEntriesModule } from './time-entries/time-entries.module';
 
 @Module({
@@ -51,6 +52,7 @@ import { TimeEntriesModule } from './time-entries/time-entries.module';
     JobRolesModule,
     DirectoryModule,
     AvailabilityModule,
+    SurveysModule,
     MaintenanceModule,
     SetupModule,
   ],

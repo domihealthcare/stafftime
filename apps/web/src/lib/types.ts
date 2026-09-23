@@ -511,3 +511,59 @@ export interface MyAvailability {
 export interface TeamAvailability extends PersonName {
   rules: UnavailabilityRule[];
 }
+
+export type SurveyAudience = 'EVERYONE' | 'JOB_ROLE' | 'LOCATION';
+export type SurveyStatus = 'DRAFT' | 'OPEN' | 'CLOSED';
+export type SurveyQuestionKind = 'RATING' | 'CHOICE' | 'TEXT';
+
+export interface SurveyQuestion {
+  id: string;
+  position: number;
+  kind: SurveyQuestionKind;
+  prompt: string;
+  options: string[];
+}
+
+export interface Survey {
+  id: string;
+  title: string;
+  intro: string | null;
+  audience: SurveyAudience;
+  status: SurveyStatus;
+  openedAt: string | null;
+  closedAt?: string | null;
+  jobRole: { id: string; name: string } | null;
+  location: { id: string; name: string } | null;
+  questions: SurveyQuestion[];
+  answered: boolean;
+  /// Managers only.
+  responses?: number;
+  audienceSize?: number;
+  canAnswer?: boolean;
+}
+
+export interface SurveyInputQuestion {
+  kind: SurveyQuestionKind;
+  prompt: string;
+  options?: string[];
+}
+
+export type SurveyResults =
+  | { available: false; reason: string; responses: number }
+  | {
+      available: true;
+      responses: number;
+      questions: (SurveyQuestion & {
+        answered: number;
+        average?: number | null;
+        counts?: number[];
+        texts?: string[];
+      })[];
+    };
+
+export interface FeedbackMessage {
+  id: string;
+  message: string;
+  receivedOn: string;
+  archivedAt: string | null;
+}

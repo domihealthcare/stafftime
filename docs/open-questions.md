@@ -187,6 +187,12 @@ Scope is in `CLAUDE.md` under *Build phasing*. Still to settle:
 - [ ] **Uploads for resources.** Links and written pages only for now. Adding
       uploads later reverses *Data this app does not hold* and needs deciding
       out loud, with limits on what may be uploaded.
+- [ ] **Confirm recording *that* somebody answered a survey.** Answers are
+      stored with no person and no time. What *is* stored, separately and
+      with no link to the answers, is that Frankie has taken part — without
+      it anybody could answer the same survey ten times. Managers see a count
+      ("5 of 12 answered"), never names. If even that is too much, the
+      alternative is to allow repeat answers.
 - [ ] **The anonymity threshold** for survey results — 3 answers by default.
       With five providers and a small front desk, a question sent to one job
       role can have fewer than three people who could answer it.

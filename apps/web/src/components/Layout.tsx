@@ -21,6 +21,7 @@ const TEAM = [
   { to: '/news', label: 'News' },
   { to: '/directory', label: 'Directory' },
   { to: '/resources', label: 'Resources' },
+  { to: '/surveys', label: 'Surveys' },
 ];
 
 /// Running the practice.

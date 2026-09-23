@@ -18,6 +18,11 @@ import type {
   Employee,
   JobRole,
   Location,
+  FeedbackMessage,
+  Survey,
+  SurveyAudience,
+  SurveyInputQuestion,
+  SurveyResults,
   MyAvailability,
   PtoBalance,
   PtoPolicy,
@@ -645,6 +650,43 @@ export const api = {
     request<{ deleted: boolean }>(`/announcements/${id}`, { method: 'DELETE' }),
 
   directory: () => request<DirectoryEntry[]>('/directory'),
+
+  surveys: () => request<Survey[]>('/surveys'),
+  survey: (id: string) => request<Survey>(`/surveys/${id}`),
+  surveyResults: (id: string) => request<SurveyResults>(`/surveys/${id}/results`),
+  saveSurvey: (
+    id: string | null,
+    body: {
+      title: string;
+      intro?: string;
+      audience: SurveyAudience;
+      jobRoleId?: string;
+      locationId?: string;
+      questions: SurveyInputQuestion[];
+    },
+  ) =>
+    request<Survey>(id ? `/surveys/${id}` : '/surveys', {
+      method: id ? 'PATCH' : 'POST',
+      body: JSON.stringify(body),
+    }),
+  openSurvey: (id: string) => request<Survey>(`/surveys/${id}/open`, { method: 'POST' }),
+  closeSurvey: (id: string) => request<Survey>(`/surveys/${id}/close`, { method: 'POST' }),
+  deleteSurvey: (id: string) => request<{ deleted: boolean }>(`/surveys/${id}`, { method: 'DELETE' }),
+  answerSurvey: (
+    id: string,
+    answers: { questionId: string; rating?: number; choice?: string; text?: string }[],
+  ) =>
+    request<{ answered: boolean }>(`/surveys/${id}/responses`, {
+      method: 'POST',
+      body: JSON.stringify({ answers }),
+    }),
+
+  sendFeedback: (message: string) =>
+    request<{ received: boolean }>('/feedback', { method: 'POST', body: JSON.stringify({ message }) }),
+  feedback: (archived = false) =>
+    request<FeedbackMessage[]>(`/feedback${archived ? '?archived=true' : ''}`),
+  archiveFeedback: (id: string) =>
+    request<FeedbackMessage>(`/feedback/${id}/archive`, { method: 'POST' }),
 
   availability: (employeeId?: string) =>
     request<MyAvailability>(`/availability${toQuery({ employeeId })}`),

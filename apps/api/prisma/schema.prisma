@@ -135,6 +135,8 @@ model Location {
   payrollExports PayrollExport[]
 
   @@map("locations")
+
+  surveys Survey[]
 }
 
 // ---------------------------------------------------------------------------
@@ -227,6 +229,8 @@ model Employee {
   jobRoles                  EmployeeJobRole[]
   createdResources          Resource[]              @relation("ResourceCreatedBy")
   unavailability            Unavailability[]
+  createdSurveys            Survey[]                @relation("SurveyCreatedBy")
+  surveysTaken              SurveyParticipant[]
 
   @@index([employmentStatus])
   @@map("employees")
@@ -961,6 +965,7 @@ model JobRole {
 
   members   EmployeeJobRole[]
   resources Resource[]
+  surveys   Survey[]
 
   @@map("job_roles")
 }
@@ -1065,4 +1070,140 @@ model Unavailability {
 
   @@index([employeeId, effectiveFrom])
   @@map("unavailability")
+}
+
+// ---------------------------------------------------------------------------
+// Pulse surveys and anonymous feedback (Phase 4)
+// ---------------------------------------------------------------------------
+//
+// Truly anonymous, as Dominguez asked: nothing in these tables can connect a
+// person to what they said. Answers carry no person and no time. Who has taken
+// part is kept apart (so nobody answers twice, and a manager can see how many
+// have), with no link to which answers were theirs. Results appear only once a
+// survey is closed and at least three people answered — see
+// docs/architecture.md for why "closed" as well as "three".
+//
+// `no-sensitive-data.spec.ts` fails if a person or a timestamp is ever added
+// to the anonymous tables.
+
+enum SurveyAudience {
+  EVERYONE
+  JOB_ROLE
+  LOCATION
+}
+
+enum SurveyStatus {
+  /// Being written. Nobody can see it but managers.
+  DRAFT
+  /// Can be answered. Its questions are frozen.
+  OPEN
+  /// Finished. Results show, if enough people answered.
+  CLOSED
+}
+
+enum SurveyQuestionKind {
+  /// 1 to 5.
+  RATING
+  /// One of a list.
+  CHOICE
+  /// Free text.
+  TEXT
+}
+
+model Survey {
+  id       String         @id @default(uuid()) @db.Uuid
+  title    String
+  intro    String?
+  audience SurveyAudience @default(EVERYONE)
+  /// For JOB_ROLE. Null after the role is deleted, which leaves nobody to ask.
+  jobRoleId  String?      @db.Uuid
+  /// For LOCATION.
+  locationId String?      @db.Uuid
+  status     SurveyStatus @default(DRAFT)
+  openedAt   DateTime?
+  closedAt   DateTime?
+
+  createdById String?  @db.Uuid
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  jobRole      JobRole?            @relation(fields: [jobRoleId], references: [id], onDelete: SetNull)
+  location     Location?           @relation(fields: [locationId], references: [id], onDelete: SetNull)
+  createdBy    Employee?           @relation("SurveyCreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
+  questions    SurveyQuestion[]
+  responses    SurveyResponse[]
+  participants SurveyParticipant[]
+
+  @@index([status])
+  @@map("surveys")
+}
+
+model SurveyQuestion {
+  id       String             @id @default(uuid()) @db.Uuid
+  surveyId String             @db.Uuid
+  position Int
+  kind     SurveyQuestionKind
+  prompt   String
+  /// For CHOICE.
+  options  String[]           @default([])
+
+  survey  Survey         @relation(fields: [surveyId], references: [id], onDelete: Cascade)
+  answers SurveyAnswer[]
+
+  @@index([surveyId, position])
+  @@map("survey_questions")
+}
+
+/// One person's answers — with no person, and no time.
+model SurveyResponse {
+  id       String @id @default(uuid()) @db.Uuid
+  surveyId String @db.Uuid
+
+  survey  Survey         @relation(fields: [surveyId], references: [id], onDelete: Cascade)
+  answers SurveyAnswer[]
+
+  @@index([surveyId])
+  @@map("survey_responses")
+}
+
+model SurveyAnswer {
+  id         String  @id @default(uuid()) @db.Uuid
+  responseId String  @db.Uuid
+  questionId String  @db.Uuid
+  rating     Int?
+  choice     String?
+  text       String?
+
+  response SurveyResponse @relation(fields: [responseId], references: [id], onDelete: Cascade)
+  question SurveyQuestion @relation(fields: [questionId], references: [id], onDelete: Cascade)
+
+  @@index([questionId])
+  @@map("survey_answers")
+}
+
+/// That somebody has answered — not what, and not when. Keeps anybody from
+/// answering twice, and gives the manager a response count.
+model SurveyParticipant {
+  surveyId   String @db.Uuid
+  employeeId String @db.Uuid
+
+  survey   Survey   @relation(fields: [surveyId], references: [id], onDelete: Cascade)
+  employee Employee @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+
+  @@id([surveyId, employeeId])
+  @@map("survey_participants")
+}
+
+/// The suggestion box. The message and the day it arrived; nothing else.
+model Feedback {
+  id         String    @id @default(uuid()) @db.Uuid
+  message    String
+  /// A day, not a time: to the minute, a timestamp says who was on their
+  /// break when it arrived.
+  receivedOn DateTime  @db.Date
+  /// A manager has dealt with it.
+  archivedAt DateTime?
+
+  @@index([archivedAt, receivedOn])
+  @@map("feedback")
 }

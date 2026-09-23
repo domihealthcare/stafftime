@@ -1556,3 +1556,41 @@ sometimes has to ask. The check is in `availability.rules.ts`, a pure function
 over local dates and "HH:MM" times: overlap rather than containment, touching
 ends allowed (a shift ending at 17:00 fits "not after 5"), and a shift past
 midnight counted against its first day only.
+
+## Surveys and the suggestion box
+
+Promised to staff as **truly anonymous**: nobody, admins included, can find out
+what a person said. Four things keep that true, and each exists because the
+obvious version quietly breaks it:
+
+- **Answers carry no person and no time.** `SurveyResponse` is an id and a
+  survey; `SurveyAnswer` hangs off it. A `createdAt` would let anybody line the
+  answers up against who was on their break. `no-sensitive-data.spec.ts` fails
+  if a person, a timestamp, an IP or a user agent is added to either table, or
+  to `Feedback`.
+- **Who took part is kept apart.** `SurveyParticipant` records that Frankie has
+  answered (so nobody answers twice, and managers get a count) with no link to
+  the response and no time. It is written in its own transaction before the
+  answers, so the two rows never share one; if saving the answers fails, the
+  participation is taken back so they can try again.
+- **Results wait for the survey to close, as well as for three answers.** Three
+  alone is not enough: a live average that moves just after somebody says
+  "done" tells a manager what they said. Closing first means nobody watches it
+  move. Free-text answers come back shuffled, so their order is not a clue.
+- **Staff never see the count.** A number ticking up while you watch a
+  colleague put their phone down is its own clue; only managers see it.
+
+Deleting an open survey is refused (people may be answering); a question
+cannot change once a survey is sent, because the answers already given would
+then mean something else.
+
+The **suggestion box** keeps the message and the *day* it arrived — a time to
+the minute says who was at the front desk. A session is needed to post, so the
+box is not open to the internet, and nothing from the session is kept. The UI
+warns that a very specific detail can still give somebody away; no design can
+fix that.
+
+Limits worth knowing: somebody with direct database access could in principle
+correlate rows by their physical order. The promise is about the app — no
+screen, report, export or log connects a person to what they said — and the
+service logs "answered" without the person for the same reason.

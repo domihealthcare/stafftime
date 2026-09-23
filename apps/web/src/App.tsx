@@ -25,6 +25,7 @@ import { SetupPage } from './pages/SetupPage';
 import { StaffPage } from './pages/StaffPage';
 import { ChecklistsPage } from './pages/ChecklistsPage';
 import { CredentialsPage } from './pages/CredentialsPage';
+import { SurveysPage } from './pages/SurveysPage';
 import { TimeOffPage } from './pages/TimeOffPage';
 import { ForgotPasswordPage } from './pages/ForgotPasswordPage';
 import { ResetPasswordPage } from './pages/ResetPasswordPage';
@@ -79,6 +80,7 @@ function Routed() {
         <Route index element={<ClockPage />} />
         <Route path="news" element={<NewsPage />} />
         <Route path="directory" element={<DirectoryPage />} />
+        <Route path="surveys" element={<SurveysPage />} />
         <Route path="resources" element={<ResourcesPage />} />
         <Route path="resources/:id" element={<ResourcePage />} />
         <Route path="job-roles" element={<JobRolesPage />} />
