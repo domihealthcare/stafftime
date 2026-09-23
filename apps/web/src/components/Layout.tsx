@@ -120,7 +120,7 @@ export function Layout() {
               Checklists
             </NavLink>
             <NavLink to="/credentials" className={linkClasses}>
-              Licences
+              Licenses
             </NavLink>
             <NavMenu label="Team" items={TEAM} className={linkClasses} />
             <NavMenu

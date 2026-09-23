@@ -219,23 +219,23 @@ them. Editing a template never touches a checklist already under way.
 - **Tell us:** does keeping the paperwork out of here cause you a problem in
   practice? If a step only makes sense with the form to hand, say which one.
 
-### 7. Licences and certifications (**Licences**)
+### 7. Licenses and Certifications (**Licenses**)
 
-Anything with a renewal date — a state licence, a BLS card, a DEA registration.
+Anything with a renewal date — a state license, a BLS card, a DEA registration.
 The screen opens on what lapses in the next 60 days, with anything already
 expired at the top in red.
 
 Record one against a person and put the expiry date on it. When it renews, press
 **Renew** and put the new date in — you do not fill the whole form again.
 
-**Dates only**, deliberately: no licence numbers and no scans. What this screen
+**Dates only**, deliberately: no license numbers and no scans. What this screen
 is for is the 13th of March turning up early enough to chase.
 
 You will also get an email about anything lapsing, as part of the nightly
 round-up (see the note about email below).
 
 - **Tell us:** is 60 days the right amount of warning?
-- **Tell us:** should a lapsed licence actually stop somebody being put on the
+- **Tell us:** should a lapsed license actually stop somebody being put on the
   rota, or is telling you enough? Today it tells you.
 
 ### 8. Payroll: the spreadsheet and the ADP file (**Manage → Export**)
@@ -384,7 +384,7 @@ that rename is not done yet.
 Worth knowing so you do not report these as faults:
 
 - **The nightly round-up.** Once email is on, managers get one email a day
-  listing anything that needs a look: licences lapsing, checklist tasks overdue,
+  listing anything that needs a look: licenses lapsing, checklist tasks overdue,
   punches with no clock-out, time off nobody has decided. On a day when there is
   nothing, it sends nothing — deliberately, so it stays worth reading.
 - **Email may not be switched on yet.** Password reset and the time-off
@@ -415,7 +415,7 @@ Worth knowing so you do not report these as faults:
   stops working immediately.
 - **Anything you type in here is throwaway.** It is a test copy and the data may
   be wiped without warning. Do not put anything real in it — not a real
-  employee's address, not a real licence number.
+  employee's address, not a real license number.
 
 ---
 

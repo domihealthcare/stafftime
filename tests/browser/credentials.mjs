@@ -33,35 +33,35 @@ async function signIn(page, email) {
 const admin = await browser.newPage({ viewport: { width: 1280, height: 1100 } });
 admin.on('pageerror', (e) => errors.push(`pageerror: ${e.message}`));
 await signIn(admin, 'admin@domihealthcare.com');
-await admin.getByRole('link', { name: /^Licences/ }).first().click();
+await admin.getByRole('link', { name: /^Licenses/ }).first().click();
 
 await step('the screen opens on what is about to lapse', async () => {
-  await admin.getByText('Licences and certifications').waitFor({ timeout: 15000 });
+  await admin.getByText('Licenses and Certifications').waitFor({ timeout: 15000 });
   await admin.getByRole('button', { name: 'Next 60 days' }).waitFor({ timeout: 5000 });
   await admin.getByText(/Nothing lapses in that window|Nothing recorded yet/).waitFor({
     timeout: 10000,
   });
 });
 
-await step('a licence is recorded by its date', async () => {
+await step('a license is recorded by its date', async () => {
   await admin.getByRole('button', { name: '+ Record one' }).click();
   await admin.getByLabel('Who').selectOption({ label: 'Frankie Front-Desk' });
-  await admin.getByLabel('Kind').selectOption({ label: 'Professional licence' });
-  await admin.getByLabel('What it is').fill('NJ Registered Nurse licence');
+  await admin.getByLabel('Kind').selectOption({ label: 'Professional license' });
+  await admin.getByLabel('What it is').fill('NJ Registered Nurse license');
   await admin.getByLabel('Issued by').fill('NJ Board of Nursing');
   await admin.getByLabel('Expires').fill(dayOffset(21));
   await admin.getByRole('button', { name: 'Record it' }).click();
 
-  await admin.getByText('NJ Registered Nurse licence').first().waitFor({ timeout: 20000 });
+  await admin.getByText('NJ Registered Nurse license').first().waitFor({ timeout: 20000 });
   await admin.getByText('21 days left').waitFor({ timeout: 10000 });
 });
 
 await step('the form asks for nothing but the date', async () => {
-  // A licence number and a scan of the licence are what an HR system holds.
+  // A license number and a scan of the license are what an HR system holds.
   // This one holds the expiry so nothing lapses unnoticed, and stops there.
   await admin.getByRole('button', { name: '+ Record one' }).click();
   if ((await admin.getByLabel('Number').count()) > 0)
-    throw new Error('the form asked for a licence number');
+    throw new Error('the form asked for a license number');
   if ((await admin.locator('input[type=file]').count()) > 0)
     throw new Error('the form offered to take a scan');
   await admin.getByRole('button', { name: 'Cancel' }).click();
@@ -84,7 +84,7 @@ await step('a shorter window hides what is further out', async () => {
   await admin.getByRole('button', { name: 'Next 30 days' }).click();
   await admin.getByText('BLS card').first().waitFor({ timeout: 10000 });
 
-  // The nurse licence is 21 days out, so it stays; add one a year away and it
+  // The nurse license is 21 days out, so it stays; add one a year away and it
   // should not appear.
   await admin.getByRole('button', { name: '+ Record one' }).click();
   await admin.getByLabel('Who').selectOption({ label: 'Frankie Front-Desk' });
@@ -116,11 +116,11 @@ const mgrCtx = await browser.newContext({ viewport: { width: 1280, height: 1000 
 const manager = await mgrCtx.newPage();
 manager.on('pageerror', (e) => errors.push(`manager pageerror: ${e.message}`));
 await signIn(manager, 'manager@domihealthcare.com');
-await manager.getByRole('link', { name: /^Licences/ }).first().click();
+await manager.getByRole('link', { name: /^Licenses/ }).first().click();
 await manager.getByRole('button', { name: 'Everything' }).click();
 
 await step('a manager sees what is current, and nothing to open', async () => {
-  await manager.getByText('NJ Registered Nurse licence').first().waitFor({ timeout: 15000 });
+  await manager.getByText('NJ Registered Nurse license').first().waitFor({ timeout: 15000 });
   await manager.getByText('21 days left').waitFor({ timeout: 10000 });
 
   // There is no document to withhold, because there is no document.
@@ -133,11 +133,11 @@ await step('an employee sees their own and cannot record one', async () => {
   const empCtx = await browser.newContext({ viewport: { width: 1280, height: 1000 } });
   const emp = await empCtx.newPage();
   await signIn(emp, 'frontdesk@domihealthcare.com');
-  await emp.getByRole('link', { name: /^Licences/ }).first().click();
+  await emp.getByRole('link', { name: /^Licenses/ }).first().click();
   await emp.getByRole('button', { name: 'Everything' }).click();
 
-  await emp.getByText('Your licences').waitFor({ timeout: 15000 });
-  await emp.getByText('NJ Registered Nurse licence').first().waitFor({ timeout: 10000 });
+  await emp.getByText('Your Licenses and Certifications').waitFor({ timeout: 15000 });
+  await emp.getByText('NJ Registered Nurse license').first().waitFor({ timeout: 10000 });
 
   if ((await emp.getByRole('button', { name: '+ Record one' }).count()) > 0)
     throw new Error('an employee was offered the record form');

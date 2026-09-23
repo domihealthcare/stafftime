@@ -403,7 +403,7 @@ export interface PayrollState {
 }
 
 // ---------------------------------------------------------------------------
-// Licences and certifications
+// Licenses and certifications
 // ---------------------------------------------------------------------------
 
 export type CredentialKind =
