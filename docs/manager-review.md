@@ -1,10 +1,13 @@
 # Domi Time & Scheduling — what to look at, and what to tell us
 
 This is a first working version of the clock-in and scheduling app for the
-practice. It is **not live**. Nothing in it is real: the staff are invented, the
-hours are invented, and none of it reaches payroll. There is an amber banner
-across the top of every screen saying exactly that, and it stays there until we
-decide the thing is ready.
+practice, at **https://staff.domihealthcare.com**.
+
+It is at a real address, but it is **not in use**: nothing in it is real. The
+staff are invented, the hours are invented, and none of it reaches payroll. No
+real member of staff has an account, and nobody is clocking in on it. There is
+an amber banner across the top of every screen saying so, and it stays there
+until we decide the thing is ready.
 
 What we need from you is the part software cannot work out on its own: whether
 this matches how the front desk actually runs, and where it would get in the
@@ -18,17 +21,22 @@ using it.
 
 ## Signing in
 
-You will be sent a web address and your own temporary password. The first time
-you sign in it will make you pick a new one.
+Go to **https://staff.domihealthcare.com** and sign in as one of the invented
+staff below. They all use the password **`shift-change-2026`**.
 
-If you are trying it on the shared demo data, every demo account uses the
-password **`shift-change-2026`**, and these are the ones worth trying:
+Start as Rosa — she is the one whose job this app is meant to make easier.
 
 | Sign in as | To see |
 | --- | --- |
 | `r.alvarez@domihealthcare.com` | a manager's view — everybody's hours, the schedule, approvals |
 | `d.okafor@domihealthcare.com` | what an ordinary member of staff sees, which is much less |
-| `admin@domihealthcare.com` | the admin screens — staff, kiosks, locations, policy |
+
+Sign out and back in to swap between them; the two views are genuinely
+different, and the difference is worth seeing.
+
+The admin screens — staff, kiosks, locations, policy — sit behind a separate
+account that Anthony holds, so ask him to show you those rather than looking
+for a login. They are settings rather than daily work.
 
 It works on a phone. Please try it on a phone, because that is where half of
 this will actually be used.
@@ -51,8 +59,9 @@ handbook before this goes live.
   coordinates while standing at the front desk (**Locations** → *Use my current
   location*).
 - **Tell us:** how far from the door should still count as "at work"? The
-  parking lot? The pharmacy next door? We have guessed 150 metres and that guess
-  is probably wrong.
+  parking lot? The pharmacy next door? We have guessed **500 feet**, and that
+  guess is probably wrong — it is a setting, not something baked in, so say what
+  it should be and it changes.
 
 ### 2. The front-desk tablet (**/kiosk**)
 
