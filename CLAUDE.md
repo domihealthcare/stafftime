@@ -198,8 +198,14 @@ Beyond the phases, the parts worth knowing about before picking up work:
 
 - **Payroll export** is an adapter (`PayrollExporter`). The spreadsheet exporter
   works and every run is recorded so it can be re-downloaded exactly as it went
-  out. The ADP TotalSource adapter is registered but refuses, naming what it is
-  waiting for — see *Payroll export*, above, for what to get from ADP.
+  out. **The ADP TotalSource import file is built** (September 2026) to ADP's
+  instructions: an admin pastes a worksheet exported from TotalSource into
+  Practice settings (only its `!` header/footer rows and column names are
+  kept), enters the company code, picks the regular/overtime columns, and
+  gives each person their ADP File # on the Staff screen; the export then
+  writes `PRcccEPI.csv`. **Not set up on the live site yet**, and one test
+  import checked in TotalSource should come before anybody is paid from it —
+  see `docs/open-questions.md`.
 - **Hours already sent to payroll are protected** from a careless edit: a
   correction is allowed but has to be deliberate, and is then flagged until it
   reaches a later run.

@@ -18,6 +18,15 @@ const STATUS_CHOICES = [
   { value: 'NEEDS_REVIEW', label: 'Needs review', hint: 'Flagged for a manager to check' },
 ];
 
+const ADP = 'adp-totalsource';
+
+/// ADP's Batch ID when none is typed: the last day as MMDDYYYY, the shape of
+/// ADP's own example. The server applies the same default.
+function defaultBatchId(lastDay: string): string {
+  const [year, month, day] = lastDay.split('-');
+  return `${month}${day}${year}`;
+}
+
 /// Manager screen for producing a timesheet file. Everything is optional except
 /// the period, and the preview says what the download will contain before it is
 /// produced.
@@ -54,6 +63,9 @@ export function ExportPage() {
 
   const [targets, setTargets] = useState<PayrollTarget[]>([]);
   const [target, setTarget] = useState('spreadsheet');
+  const [batchId, setBatchId] = useState('');
+  const [includeSalaried, setIncludeSalaried] = useState(false);
+  const isAdp = target === ADP;
   const [history, setHistory] = useState<PayrollExportRecord[]>([]);
 
   const [preview, setPreview] = useState<ExportPreview | null>(null);
@@ -99,10 +111,22 @@ export function ExportPage() {
       includeOpen,
       columns: selected,
       includeSummary,
-      splitOvertime,
+      // ADP's import always has overtime split out; the preview says so too.
+      splitOvertime: splitOvertime || isAdp,
       format,
     }),
-    [from, to, locationId, statuses, includeOpen, selected, includeSummary, splitOvertime, format],
+    [
+      from,
+      to,
+      locationId,
+      statuses,
+      includeOpen,
+      selected,
+      includeSummary,
+      splitOvertime,
+      isAdp,
+      format,
+    ],
   );
 
   const refreshPreview = useCallback(async () => {
@@ -193,6 +217,7 @@ export function ExportPage() {
         ...options,
         to: endExclusive(to),
         target,
+        ...(isAdp ? { batchId: batchId.trim() || undefined, includeSalaried } : {}),
       });
       const url = URL.createObjectURL(blob);
       const link = document.createElement('a');
@@ -530,7 +555,7 @@ export function ExportPage() {
               <span className="font-semibold text-slate-900">{preview.employeeCount}</span>{' '}
               {preview.employeeCount === 1 ? 'person' : 'people'} ·{' '}
               <span className="font-semibold text-slate-900">{preview.totalHours}</span> hours
-              {splitOvertime && preview.overtimeHours > 0 && (
+              {(splitOvertime || isAdp) && preview.overtimeHours > 0 && (
                 <> (including {preview.overtimeHours} overtime)</>
               )}
             </p>
@@ -581,12 +606,16 @@ export function ExportPage() {
                     type="radio"
                     name="payroll-target"
                     className="mt-1"
+                    // Named by the target alone: the description and any reason
+                    // it is not ready are read as its description, not its name.
+                    aria-label={option.label}
+                    aria-describedby={`target-${option.key}-about`}
                     value={option.key}
                     checked={target === option.key}
                     disabled={!option.available}
                     onChange={() => setTarget(option.key)}
                   />
-                  <span className="min-w-0">
+                  <span className="min-w-0" id={`target-${option.key}-about`}>
                     <span className="font-medium text-slate-900">{option.label}</span>
                     <span className="mt-0.5 block text-xs text-slate-600">
                       {option.description}
@@ -603,13 +632,54 @@ export function ExportPage() {
           </div>
         )}
 
+        {isAdp && (
+          <div className="mt-4 rounded-lg border border-slate-200 p-3" data-testid="adp-options">
+            <div className="flex flex-wrap items-end gap-4">
+              <label className="text-sm">
+                <span className="mb-1 block font-medium text-slate-700">Batch ID</span>
+                <input
+                  aria-label="Batch ID"
+                  value={batchId}
+                  onChange={(event) => setBatchId(event.target.value.toUpperCase())}
+                  maxLength={8}
+                  placeholder={defaultBatchId(to)}
+                  autoComplete="off"
+                  className="w-32 rounded-lg border border-slate-300 px-2 py-1.5 text-sm uppercase"
+                />
+              </label>
+              <label className="flex items-center gap-2 pb-1.5 text-sm text-slate-700">
+                <input
+                  type="checkbox"
+                  checked={includeSalaried}
+                  onChange={(event) => setIncludeSalaried(event.target.checked)}
+                  className="rounded border-slate-300 text-brand-600 focus:ring-brand-600"
+                />
+                Include salaried staff
+              </label>
+            </div>
+            <p className="mt-2 text-xs text-slate-500">
+              Up to 8 letters or numbers — the pay date is usual. Left empty, it is the last day of
+              the period ({defaultBatchId(to)}). The file has one row per person, regular and
+              overtime hours split by week; the columns and file type above do not apply. Upload it
+              in TotalSource under Process → Payroll Dashboard → Manage Payroll → Worksheets →
+              Import File, and check the imported worksheet before you submit.
+            </p>
+          </div>
+        )}
+
         <button
           type="button"
           onClick={() => void download()}
-          disabled={downloading || !preview || preview.entryCount === 0 || selected.length === 0}
+          disabled={
+            downloading || !preview || preview.entryCount === 0 || (!isAdp && selected.length === 0)
+          }
           className="mt-4 w-full rounded-lg bg-brand-600 px-4 py-3 text-base font-semibold text-white hover:bg-brand-700 disabled:opacity-60"
         >
-          {downloading ? 'Preparing…' : `Download ${format === 'xlsx' ? 'Excel file' : 'CSV'}`}
+          {downloading
+            ? 'Preparing…'
+            : isAdp
+              ? 'Download ADP import file'
+              : `Download ${format === 'xlsx' ? 'Excel file' : 'CSV'}`}
         </button>
       </Card>
 

@@ -11,6 +11,7 @@ import {
   IsOptional,
   IsString,
   IsUUID,
+  Matches,
   MaxLength,
 } from 'class-validator';
 import { ALL_COLUMN_KEYS, type TimesheetColumnKey } from '../columns';
@@ -76,4 +77,19 @@ export class ExportTimesheetDto {
   @IsString()
   @MaxLength(60)
   target?: string;
+
+  /// ADP's Batch ID: letters and numbers, 8 at most. Only the ADP target
+  /// uses it, and it defaults to the last day of the period as MMDDYYYY.
+  @IsOptional()
+  @IsString()
+  @Matches(/^[A-Za-z0-9]{0,8}$/, {
+    message:
+      'The Batch ID is letters and numbers only, 8 at most — for example the pay date, 07312023.',
+  })
+  batchId?: string;
+
+  /// Whether a payroll import includes salaried staff. Off unless ticked.
+  @IsOptional()
+  @IsBoolean()
+  includeSalaried?: boolean;
 }

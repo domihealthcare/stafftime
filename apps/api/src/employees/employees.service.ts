@@ -23,13 +23,14 @@ export class EmployeesService {
   constructor(private readonly prisma: PrismaService) {}
 
   async create(dto: CreateEmployeeDto) {
-    const { locationIds, primaryLocationId, ...employee } = dto;
+    const { locationIds, primaryLocationId, adpFileNumber, ...employee } = dto;
     this.assertPrimaryIsAssigned(locationIds, primaryLocationId);
 
     try {
       const created = await this.prisma.employee.create({
         data: {
           ...employee,
+          adpFileNumber: adpFileNumber?.trim() || null,
           hireDate: new Date(employee.hireDate),
           terminationDate: employee.terminationDate
             ? new Date(employee.terminationDate)
@@ -76,7 +77,7 @@ export class EmployeesService {
 
   async update(id: string, dto: UpdateEmployeeDto) {
     await this.findOne(id);
-    const { locationIds, primaryLocationId, ...employee } = dto;
+    const { locationIds, primaryLocationId, adpFileNumber, ...employee } = dto;
     this.assertPrimaryIsAssigned(locationIds, primaryLocationId);
 
     try {
@@ -84,6 +85,7 @@ export class EmployeesService {
         where: { id },
         data: {
           ...employee,
+          adpFileNumber: adpFileNumber === undefined ? undefined : adpFileNumber?.trim() || null,
           hireDate: employee.hireDate ? new Date(employee.hireDate) : undefined,
           terminationDate: employee.terminationDate
             ? new Date(employee.terminationDate)
@@ -131,9 +133,7 @@ export class EmployeesService {
 
   private assertPrimaryIsAssigned(locationIds?: string[], primaryLocationId?: string) {
     if (primaryLocationId && !locationIds?.includes(primaryLocationId)) {
-      throw new BadRequestException(
-        'primaryLocationId must be one of the assigned locationIds.',
-      );
+      throw new BadRequestException('primaryLocationId must be one of the assigned locationIds.');
     }
   }
 
@@ -141,6 +141,9 @@ export class EmployeesService {
     if (error instanceof Prisma.PrismaClientKnownRequestError) {
       if (error.code === 'P2002') {
         const target = (error.meta?.target as string[] | undefined)?.join(', ') ?? 'field';
+        if (target.includes('adpFileNumber')) {
+          return new ConflictException('Somebody else already has that ADP File #.');
+        }
         return new ConflictException(`An employee with that ${target} already exists.`);
       }
       if (error.code === 'P2003' || error.code === 'P2025') {

@@ -238,16 +238,32 @@ round-up (see the note about email below).
 - **Tell us:** should a lapsed licence actually stop somebody being put on the
   rota, or is telling you enough? Today it tells you.
 
-### 8. The payroll spreadsheet (**Manage → Export**)
+### 8. Payroll: the spreadsheet and the ADP file (**Manage → Export**)
 
-Pick a period (it opens on the last pay period once that is set up), tick the columns you want, download an Excel file. It tells you
-how many entries are flagged before you download, so nothing surprising lands in
-payroll.
+Pick a period (it opens on the last pay period once that is set up), tick the
+columns you want, download an Excel file. It tells you how many entries are
+flagged before you download, so nothing surprising lands in payroll.
 
-**The ADP TotalSource export is not built yet.** It cannot be: it needs the
-client code and the exact pay codes from ADP, and guessing them would produce a
-file ADP rejects. You will see it listed on the screen, greyed out, saying what
-it is waiting for. Until then this spreadsheet is the payroll route.
+**The ADP TotalSource import file is now built**, following ADP's own
+instructions for importing payroll: choose **ADP TotalSource** under *Send to*,
+check the Batch ID (it defaults to the last day of the period), and download
+`PR…EPI.csv` — one row per person with regular and overtime hours — to upload
+in TotalSource under Manage Payroll → Worksheets → Import File.
+
+It needs setting up once, by an admin, under **Practice settings → ADP
+TotalSource**: the company code, a worksheet exported from TotalSource pasted
+in (the app keeps only ADP's header and footer rows from it), and which columns
+take regular and overtime hours. Each person also needs their **ADP File #** on
+the Staff screen. Until that is done it shows greyed out, saying what is
+missing. On the test site the demo staff have no File # — it is there to try,
+not to pay anyone.
+
+- **Tell us:** ask the ADP Payroll Representative which columns Domi uses for
+  regular and overtime hours, whether paid leave should go in the file too,
+  and what they want as the Batch ID. Then do **one test import** and check the
+  imported worksheet in TotalSource before submitting anything.
+- **Tell us:** should salaried staff's hours go in the file? They are left out
+  unless you tick them in, since TotalSource normally pays them without hours.
 
 **Every export is kept.** Under the download button is a list of every run —
 when, by whom, how many hours — with the file exactly as it went out. If payroll
@@ -378,7 +394,8 @@ Worth knowing so you do not report these as faults:
   nothing arrives, that is why — tell us and we will check whether it has been
   set up.
 - **No badge tap**, only PINs.
-- **No ADP integration**, only the spreadsheet — see above.
+- **No direct connection to ADP.** The ADP file is downloaded and uploaded by
+  hand — ADP offers no way to push hours into TotalSource automatically.
 - **No text messages or phone notifications.** Emails only, once email is
   switched on (above); otherwise the banners on each screen are where you find
   out.

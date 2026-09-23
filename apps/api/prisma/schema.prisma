@@ -150,6 +150,12 @@ model Employee {
   /// so staff records can be matched later without a messy migration.
   externalId String? @unique
 
+  /// ADP TotalSource's "File #" for this person — ADP's own staff number,
+  /// which every row of the payroll import file needs. Not an identity number:
+  /// it means nothing outside the practice's ADP account. Null until an admin
+  /// enters it; the ADP export names anybody still missing one.
+  adpFileNumber String? @unique
+
   firstName     String
   lastName      String
   preferredName String?
@@ -335,6 +341,35 @@ model PracticeSettings {
   updatedBy Employee? @relation("PracticeSettingsEditor", fields: [updatedById], references: [id], onDelete: SetNull)
 
   @@map("practice_settings")
+}
+
+/// What the ADP TotalSource import file is built from. One row, like
+/// PracticeSettings, and apart from it because it is payroll's business.
+///
+/// The header and footer rows are copied from a worksheet the practice exported
+/// out of its own TotalSource account — ADP's instructions say the import must
+/// keep them. The employee rows of that worksheet are never stored. See
+/// exports/payroll/adp-worksheet.ts.
+model AdpSettings {
+  id        String @id @default(uuid()) @db.Uuid
+  singleton Int    @unique @default(1)
+
+  /// ADP's company code, the "ccc" in PRcccEPI and the Co Code on every row.
+  companyCode String?
+
+  /// Verbatim, newline-separated, from the exported worksheet.
+  headerRows String?
+  footerRows String?
+
+  /// Which of the worksheet's columns take regular and overtime hours.
+  regularColumn  String?
+  overtimeColumn String?
+
+  updatedById String?  @db.Uuid
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@map("adp_settings")
 }
 
 /// A request for time off.

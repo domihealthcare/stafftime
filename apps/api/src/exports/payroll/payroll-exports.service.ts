@@ -1,10 +1,4 @@
-import {
-  BadRequestException,
-  Inject,
-  Injectable,
-  Logger,
-  NotFoundException,
-} from '@nestjs/common';
+import { BadRequestException, Inject, Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { PayrollExportStatus, Prisma } from '@prisma/client';
 import { AuthUser } from '../../common/auth/auth-user';
 import { PrismaService } from '../../prisma/prisma.service';
@@ -52,14 +46,19 @@ export class PayrollExportsService {
 
   /// What the export screen offers, including the ones that are not ready and
   /// why.
-  targets() {
-    return this.exporters.map((exporter) => ({
-      key: exporter.key,
-      label: exporter.label,
-      description: exporter.description,
-      available: exporter.available,
-      unavailableReason: exporter.available ? undefined : exporter.unavailableReason,
-    }));
+  async targets() {
+    return Promise.all(
+      this.exporters.map(async (exporter) => {
+        const { available, reason } = await exporter.readiness();
+        return {
+          key: exporter.key,
+          label: exporter.label,
+          description: exporter.description,
+          available,
+          unavailableReason: available ? undefined : reason,
+        };
+      }),
+    );
   }
 
   /**
@@ -72,15 +71,23 @@ export class PayrollExportsService {
    */
   async run(dto: ExportTimesheetDto, target: string, actor: AuthUser) {
     const exporter = this.exporterFor(target);
+    dto = exporter.adjust ? exporter.adjust(dto) : dto;
     const data = await this.timesheets.build(dto);
 
     let file: PayrollFile;
     try {
-      file = await exporter.export(data, { format: dto.format });
+      file = await exporter.export(data, {
+        format: dto.format,
+        batchId: dto.batchId,
+        includeSalaried: dto.includeSalaried,
+      });
     } catch (error) {
       // A refusal is still part of the audit trail: somebody tried to send
-      // these hours to this system on this day and could not.
-      await this.recordFailure(dto, exporter, actor, error);
+      // these hours to this system on this day and could not. Recording it
+      // must never replace the reason with a failure of its own.
+      await this.recordFailure(dto, exporter, actor, error).catch((recordError: unknown) =>
+        this.logger.error(`Could not record a failed ${exporter.key} export`, recordError),
+      );
       throw error;
     }
 
@@ -187,8 +194,12 @@ export class PayrollExportsService {
       data: {
         target: exporter.key,
         status: PayrollExportStatus.FAILED,
-        periodStart: new Date(`${dto.from}T00:00:00.000Z`),
-        periodEnd: lastDayOf(new Date(`${dto.to}T00:00:00.000Z`)),
+        // The screen sends instants ("2026-09-14T04:00:00.000Z"); a bare date is
+        // also valid. Appending a time to either, as this once did, gave an
+        // invalid date — and the refusal the manager needed to read was lost
+        // behind the crash it caused.
+        periodStart: new Date(dto.from),
+        periodEnd: lastDayOf(new Date(dto.to)),
         locationId: dto.locationId ?? null,
         filename: '',
         contentType: '',

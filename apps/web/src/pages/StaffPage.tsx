@@ -136,6 +136,7 @@ function StaffCard({
   const [editing, setEditing] = useState(false);
   const [role, setRole] = useState<Role>(person.role);
   const [assigned, setAssigned] = useState<string[]>(person.locations.map((l) => l.locationId));
+  const [fileNumber, setFileNumber] = useState(person.adpFileNumber ?? '');
 
   const terminated = person.employmentStatus === 'TERMINATED';
 
@@ -162,6 +163,7 @@ function StaffCard({
         role,
         locationIds: assigned,
         primaryLocationId: assigned[0],
+        adpFileNumber: fileNumber.trim() || null,
       });
       setEditing(false);
       onChanged();
@@ -203,6 +205,11 @@ function StaffCard({
           <p className="mt-1 text-xs text-slate-500">
             {person.locations.map((l) => l.location.name).join(', ') || 'No location assigned'}
           </p>
+          {!terminated && (
+            <p className="text-xs text-slate-500">
+              {person.adpFileNumber ? `ADP File # ${person.adpFileNumber}` : 'No ADP File # yet'}
+            </p>
+          )}
         </div>
 
         <div className="flex flex-wrap items-center gap-2">
@@ -228,7 +235,7 @@ function StaffCard({
             onClick={() => setEditing((open) => !open)}
             className="font-medium text-slate-600 hover:text-slate-900"
           >
-            {editing ? 'Cancel' : 'Role and locations'}
+            {editing ? 'Cancel' : 'Role, locations and ADP'}
           </button>
           {/* Terminating yourself would lock you out of your own practice. */}
           {!isMe && (
@@ -323,6 +330,26 @@ function StaffCard({
               </option>
             ))}
           </select>
+
+          <label
+            htmlFor={`adp-${person.id}`}
+            className="mt-3 block text-sm font-medium text-slate-700"
+          >
+            ADP File #
+          </label>
+          <input
+            id={`adp-${person.id}`}
+            value={fileNumber}
+            onChange={(event) => setFileNumber(event.target.value)}
+            maxLength={10}
+            inputMode="text"
+            autoComplete="off"
+            className="mt-1 w-full max-w-[10rem] rounded-lg border-slate-300 text-sm shadow-sm focus:border-brand-600 focus:ring-brand-600"
+          />
+          <p className="mt-1 text-xs text-slate-500">
+            Their number in ADP TotalSource — on the worksheet you export from ADP. Their hours
+            cannot go in the ADP import file without it.
+          </p>
 
           <fieldset className="mt-3">
             <legend className="text-sm font-medium text-slate-700">Locations</legend>

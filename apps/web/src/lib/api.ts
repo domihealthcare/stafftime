@@ -286,6 +286,25 @@ export interface TimesheetExportOptions {
   format?: 'xlsx' | 'csv';
   /// Which payroll target. Defaults to the spreadsheet.
   target?: string;
+  /// ADP only: the Batch ID (8 characters at most) and whether salaried staff
+  /// go in the file.
+  batchId?: string;
+  includeSalaried?: boolean;
+}
+
+/// What the ADP TotalSource import needs and what it has.
+export interface AdpStatus {
+  companyCode: string | null;
+  columns: string[];
+  headerRowCount: number;
+  footerRowCount: number;
+  regularColumn: string | null;
+  overtimeColumn: string | null;
+  missing: string[];
+  staffWithoutFileNumber: string[];
+  updatedAt: string | null;
+  /// Only after a worksheet was pasted: how many employee rows were left out.
+  employeeRowsDropped?: number;
 }
 
 export interface ExportColumn {
@@ -327,8 +346,7 @@ export const api = {
   // ------------------------------------------------------------------- calendar
   calendarLink: () => request<CalendarLink>('/calendar/link'),
   issueCalendarLink: () => request<{ token: string }>('/calendar/link', { method: 'POST' }),
-  revokeCalendarLink: () =>
-    request<{ revoked: boolean }>('/calendar/link', { method: 'DELETE' }),
+  revokeCalendarLink: () => request<{ revoked: boolean }>('/calendar/link', { method: 'DELETE' }),
 
   // ------------------------------------------------------------- first-run setup
   requestPasswordReset: (email: string) =>
@@ -349,10 +367,11 @@ export const api = {
     firstName: string;
     lastName: string;
     password: string;
-  }) => request<{ created: boolean; email: string }>('/setup', {
-    method: 'POST',
-    body: JSON.stringify(body),
-  }),
+  }) =>
+    request<{ created: boolean; email: string }>('/setup', {
+      method: 'POST',
+      body: JSON.stringify(body),
+    }),
 
   // ---------------------------------------------------------------- saved reports
   listReportPresets: () => request<ReportPreset[]>('/exports/presets'),
@@ -364,7 +383,11 @@ export const api = {
   updateReportPreset: (
     id: string,
     body: { name?: string; isShared?: boolean; options?: Partial<TimesheetExportOptions> },
-  ) => request<ReportPreset>(`/exports/presets/${id}`, { method: 'PATCH', body: JSON.stringify(body) }),
+  ) =>
+    request<ReportPreset>(`/exports/presets/${id}`, {
+      method: 'PATCH',
+      body: JSON.stringify(body),
+    }),
   deleteReportPreset: (id: string) =>
     request<{ deleted: boolean }>(`/exports/presets/${id}`, { method: 'DELETE' }),
   reportPresetOptions: (id: string) =>
@@ -387,8 +410,7 @@ export const api = {
       method: 'PATCH',
       body: JSON.stringify({ decision, reviewNote }),
     }),
-  cancelPto: (id: string) =>
-    request<PtoRequest>(`/pto/${id}/cancel`, { method: 'PATCH' }),
+  cancelPto: (id: string) => request<PtoRequest>(`/pto/${id}/cancel`, { method: 'PATCH' }),
   ptoConflicts: (id: string) => request<ConflictingShift[]>(`/pto/${id}/conflicts`),
   ptoPolicy: () => request<PtoPolicy>('/pto/policy'),
   updatePtoPolicy: (body: Partial<Omit<PtoPolicy, 'id'>>) =>
@@ -416,10 +438,10 @@ export const api = {
       payType: string;
       locationIds: string[];
       primaryLocationId: string;
+      adpFileNumber: string | null;
     }>,
   ) => request<Employee>(`/employees/${id}`, { method: 'PATCH', body: JSON.stringify(body) }),
-  terminateEmployee: (id: string) =>
-    request<Employee>(`/employees/${id}`, { method: 'DELETE' }),
+  terminateEmployee: (id: string) => request<Employee>(`/employees/${id}`, { method: 'DELETE' }),
 
   createLocation: (body: {
     name: string;
@@ -435,10 +457,16 @@ export const api = {
   updateLocation: (id: string, body: UpdateLocationInput) =>
     request<Location>(`/locations/${id}`, { method: 'PATCH', body: JSON.stringify(body) }),
 
-  exportColumns: () =>
-    request<{ columns: ExportColumn[]; defaults: string[] }>('/exports/columns'),
+  exportColumns: () => request<{ columns: ExportColumn[]; defaults: string[] }>('/exports/columns'),
   payrollTargets: () => request<PayrollTarget[]>('/exports/targets'),
   exportHistory: () => request<PayrollExportRecord[]>('/exports/history'),
+  adpStatus: () => request<AdpStatus>('/exports/adp'),
+  updateAdp: (body: {
+    companyCode?: string;
+    worksheet?: string;
+    regularColumn?: string | null;
+    overtimeColumn?: string | null;
+  }) => request<AdpStatus>('/exports/adp', { method: 'PATCH', body: JSON.stringify(body) }),
   /// The file exactly as it went out, not a fresh build of the same period.
   downloadPastExport: (id: string) => download(`/exports/history/${id}/file`),
   voidExport: (id: string) =>
@@ -520,8 +548,7 @@ export const api = {
       method: 'PATCH',
       body: JSON.stringify({ wantsDailyDigest }),
     }),
-  revokeOtherSessions: () =>
-    request<{ signedOut: number }>('/auth/sessions', { method: 'DELETE' }),
+  revokeOtherSessions: () => request<{ signedOut: number }>('/auth/sessions', { method: 'DELETE' }),
   setTemporaryPassword: (employeeId: string, temporaryPassword: string) =>
     request<{ set: boolean }>(`/auth/employees/${employeeId}/password`, {
       method: 'PUT',
@@ -558,8 +585,7 @@ export const api = {
       /// already gone to payroll.
       acknowledgeExported?: boolean;
     },
-  ) =>
-    request<TimeEntry>(`/time-entries/${id}`, { method: 'PATCH', body: JSON.stringify(body) }),
+  ) => request<TimeEntry>(`/time-entries/${id}`, { method: 'PATCH', body: JSON.stringify(body) }),
 
   repeatShifts: (body: {
     employeeId: string;
@@ -675,7 +701,8 @@ export const api = {
     }),
   openSurvey: (id: string) => request<Survey>(`/surveys/${id}/open`, { method: 'POST' }),
   closeSurvey: (id: string) => request<Survey>(`/surveys/${id}/close`, { method: 'POST' }),
-  deleteSurvey: (id: string) => request<{ deleted: boolean }>(`/surveys/${id}`, { method: 'DELETE' }),
+  deleteSurvey: (id: string) =>
+    request<{ deleted: boolean }>(`/surveys/${id}`, { method: 'DELETE' }),
   answerSurvey: (
     id: string,
     answers: { questionId: string; rating?: number; choice?: string; text?: string }[],
@@ -686,7 +713,10 @@ export const api = {
     }),
 
   sendFeedback: (message: string) =>
-    request<{ received: boolean }>('/feedback', { method: 'POST', body: JSON.stringify({ message }) }),
+    request<{ received: boolean }>('/feedback', {
+      method: 'POST',
+      body: JSON.stringify({ message }),
+    }),
   feedback: (archived = false) =>
     request<FeedbackMessage[]>(`/feedback${archived ? '?archived=true' : ''}`),
   archiveFeedback: (id: string) =>

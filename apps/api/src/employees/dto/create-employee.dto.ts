@@ -9,6 +9,8 @@ import {
   IsString,
   IsUUID,
   Length,
+  Matches,
+  ValidateIf,
 } from 'class-validator';
 
 export class CreateEmployeeDto {
@@ -57,6 +59,15 @@ export class CreateEmployeeDto {
   @IsString()
   @Length(1, 120)
   externalId?: string;
+
+  /// ADP TotalSource's File # — ADP's own staff number, needed on every row of
+  /// the payroll import. Empty or null clears it.
+  @IsOptional()
+  @ValidateIf((_, value) => value !== null && value !== '')
+  @Matches(/^[A-Za-z0-9]{1,10}$/, {
+    message: 'The ADP File # is letters and numbers only, 10 at most.',
+  })
+  adpFileNumber?: string | null;
 
   @IsOptional()
   @IsString()

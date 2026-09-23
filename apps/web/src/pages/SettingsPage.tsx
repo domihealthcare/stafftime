@@ -3,6 +3,7 @@ import { ApiError, api } from '../lib/api';
 import { useIsAdmin } from '../lib/session';
 import type { PracticeSettings } from '../lib/types';
 import { refreshPayPeriod } from '../components/DateRangePicker';
+import { AdpSettingsCard } from '../components/AdpSettingsCard';
 import { DemoDataCard } from '../components/DemoDataCard';
 import { Alert, Card, PageHeading, Spinner } from '../components/ui';
 
@@ -173,6 +174,8 @@ export function SettingsPage() {
           )}
         </Card>
       )}
+
+      {!loading && <AdpSettingsCard isAdmin={isAdmin} />}
 
       {isAdmin && <DemoDataCard />}
     </div>

@@ -67,7 +67,7 @@ await step('the targets say which are ready and which are not', async () => {
   // A provider the practice is waiting on is easier to chase when the app says
   // what it is waiting for.
   await page.getByText('ADP TotalSource').waitFor({ timeout: 5000 });
-  await page.getByText(/Waiting on ADP/).waitFor({ timeout: 5000 });
+  await page.getByText(/Not set up yet/).waitFor({ timeout: 5000 });
 
   const adp = page.getByRole('radio', { name: /ADP TotalSource/ });
   if (!(await adp.isDisabled())) throw new Error('ADP was offered as if it were ready');

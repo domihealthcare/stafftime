@@ -1,7 +1,7 @@
 import { Module } from '@nestjs/common';
-import { ConfigService } from '@nestjs/config';
 import { StorageModule } from '../storage/storage.module';
 import { ExportsController } from './exports.controller';
+import { AdpSettingsService } from './payroll/adp-settings.service';
 import { AdpTotalSourceExporter } from './payroll/adp-totalsource.exporter';
 import { PAYROLL_EXPORTERS, PayrollExporter } from './payroll/payroll-exporter';
 import { PayrollExportsService } from './payroll/payroll-exports.service';
@@ -18,14 +18,15 @@ import { TimesheetExportService } from './timesheet-export.service';
     TimesheetExportService,
     ReportPresetsService,
     PayrollExportsService,
+    AdpSettingsService,
     {
       // The registry of payroll targets. Adding a provider is a class and one
       // line here — nothing in the timesheet logic changes.
       provide: PAYROLL_EXPORTERS,
-      inject: [ConfigService],
-      useFactory: (config: ConfigService): PayrollExporter[] => [
+      inject: [AdpSettingsService],
+      useFactory: (adp: AdpSettingsService): PayrollExporter[] => [
         new SpreadsheetExporter(),
-        new AdpTotalSourceExporter(config),
+        new AdpTotalSourceExporter(adp),
       ],
     },
   ],

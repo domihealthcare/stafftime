@@ -62,6 +62,9 @@ export interface Employee extends EmployeeSummary {
   hasKioskPin?: boolean;
   preferredName: string | null;
   externalId?: string | null;
+  /// ADP TotalSource's File # — needed before their hours can go in the ADP
+  /// import file.
+  adpFileNumber?: string | null;
   /// True while an admin-set temporary password is still in force.
   mustChangePassword?: boolean;
   /// Whether this manager gets the nightly round-up. Ignored for employees,

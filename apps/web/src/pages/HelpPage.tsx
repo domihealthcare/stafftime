@@ -32,9 +32,7 @@ const STAFF: Section[] = [
               whether the app may use your location — say yes. It checks you are at one of your
               offices, and only at the moment you press the button.
             </p>
-            <p>
-              If you are on the office wi-fi, that can count instead of your location.
-            </p>
+            <p>If you are on the office wi-fi, that can count instead of your location.</p>
           </>
         ),
       },
@@ -129,10 +127,10 @@ const STAFF: Section[] = [
         question: 'How do I say when I cannot work?',
         answer: (
           <p>
-            Open <Screen>Schedule</Screen> → <strong>When you can’t work</strong>. Add a weekday you are never free (all day or between two times), or a single date. Nobody
-            has to approve it. It only affects weeks whose schedule has not been published yet — a
-            published week is fixed, so for a date inside one, talk to your manager or ask for time
-            off.
+            Open <Screen>Schedule</Screen> → <strong>When you can’t work</strong>. Add a weekday you
+            are never free (all day or between two times), or a single date. Nobody has to approve
+            it. It only affects weeks whose schedule has not been published yet — a published week
+            is fixed, so for a date inside one, talk to your manager or ask for time off.
           </p>
         ),
       },
@@ -145,9 +143,9 @@ const STAFF: Section[] = [
         question: 'How do I ask for time off?',
         answer: (
           <p>
-            Open <Screen>Time off</Screen>, choose the type and the dates, and send it. Your
-            balance is shown on the same screen. You get an email when a manager decides, with
-            their reason if they give one.
+            Open <Screen>Time off</Screen>, choose the type and the dates, and send it. Your balance
+            is shown on the same screen. You get an email when a manager decides, with their reason
+            if they give one.
           </p>
         ),
       },
@@ -190,9 +188,9 @@ const STAFF: Section[] = [
         answer: (
           <>
             <p>
-              Yes. Your answers are saved with no name and no time on them, so nobody — managers
-              and admins included — can tell who said what. The app does note, separately, that
-              you have taken part, so you cannot answer twice.
+              Yes. Your answers are saved with no name and no time on them, so nobody — managers and
+              admins included — can tell who said what. The app does note, separately, that you have
+              taken part, so you cannot answer twice.
             </p>
             <p>
               Results only appear once a survey is closed and at least three people have answered.
@@ -211,8 +209,8 @@ const STAFF: Section[] = [
         question: 'How do I change my password?',
         answer: (
           <p>
-            Open the menu under your name → <strong>Change password</strong>. {PASSWORD_RULE}{' '}
-            Avoid anything easy to guess, like the practice name or your own.
+            Open the menu under your name → <strong>Change password</strong>. {PASSWORD_RULE} Avoid
+            anything easy to guess, like the practice name or your own.
           </p>
         ),
       },
@@ -259,8 +257,8 @@ const MANAGERS: Section[] = [
         answer: (
           <p>
             <Screen>Timesheet</Screen> shows everybody's punches. Press <strong>Approve</strong> on
-            each one that is right. Flagged entries — late, left early, missing punch — are worth
-            a look first. The banner at the top lists what is still unapproved.
+            each one that is right. Flagged entries — late, left early, missing punch — are worth a
+            look first. The banner at the top lists what is still unapproved.
           </p>
         ),
       },
@@ -280,14 +278,20 @@ const MANAGERS: Section[] = [
         answer: (
           <>
             <p>
-              <Screen>Manage → Export</Screen> opens on the last pay period. Check the summary —
-              it says how many entries are flagged — then download the Excel file and upload it to
+              <Screen>Manage → Export</Screen> opens on the last pay period. Check the summary — it
+              says how many entries are flagged — then download the Excel file and upload it to
               payroll. Save the columns you use as a report so next time is one tap.
             </p>
             <p>
+              For ADP, choose <strong>ADP TotalSource</strong> under <em>Send to</em>, check the
+              Batch ID, and download the import file. In TotalSource, go to Process → Payroll
+              Dashboard → Manage Payroll → Worksheets → Import File, upload it, and check the
+              imported worksheet before you submit. If ADP is greyed out, it says what an admin
+              still has to set up.
+            </p>
+            <p>
               Every export is kept under <strong>Past exports</strong>, with the file exactly as it
-              went out. The ADP TotalSource format is waiting on details from ADP; until then use
-              the spreadsheet.
+              went out.
             </p>
           </>
         ),
@@ -309,8 +313,8 @@ const MANAGERS: Section[] = [
               in one go.
             </li>
             <li>
-              Add single shifts on the week grid. <strong>Coverage</strong> shows hours per day,
-              who is away and any day with nobody on.
+              Add single shifts on the week grid. <strong>Coverage</strong> shows hours per day, who
+              is away and any day with nobody on.
             </li>
           </ul>
         ),
@@ -445,15 +449,15 @@ const MANAGERS: Section[] = [
           <ul>
             <li>
               <Screen>Manage → Staff</Screen> — add people, set their access (Employee, Manager or
-              Admin), offices and PIN, and issue a temporary password.
+              Admin), offices, PIN and ADP File #, and issue a temporary password.
             </li>
             <li>
               <Screen>Manage → Kiosks</Screen> — pair a front-desk tablet to an office.
             </li>
             <li>
               <Screen>Manage → Locations</Screen> — the office addresses, the geofence and office
-              network. Stand at the front desk and press <strong>Use my current location</strong>{' '}
-              to set the pin.
+              network. Stand at the front desk and press <strong>Use my current location</strong> to
+              set the pin.
             </li>
           </ul>
         ),
@@ -464,7 +468,10 @@ const MANAGERS: Section[] = [
           <p>
             Under the menu → <strong>Practice settings</strong>: the overtime threshold, how early
             an unpublished week is chased, and the <strong>pay period start</strong> — the first day
-            of any one pay period. The pay-period shortcuts stay greyed out until it is set.
+            of any one pay period. The pay-period shortcuts stay greyed out until it is set. The{' '}
+            <strong>ADP TotalSource</strong> section there sets up the ADP import file: the company
+            code, a worksheet exported from ADP pasted in, and which columns take which hours. Each
+            person&rsquo;s ADP File # goes on the Staff screen.
           </p>
         ),
       },
@@ -557,7 +564,10 @@ export function HelpPage() {
 
       {!isManager && (
         <p className="mt-8 text-sm text-slate-500">
-          Something not working? <Link to="/" className="font-medium text-brand-700 underline">Back to Clock</Link>{' '}
+          Something not working?{' '}
+          <Link to="/" className="font-medium text-brand-700 underline">
+            Back to Clock
+          </Link>{' '}
           and tell a manager what the screen said.
         </p>
       )}
