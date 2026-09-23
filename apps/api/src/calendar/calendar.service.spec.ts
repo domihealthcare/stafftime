@@ -219,7 +219,7 @@ describe('CalendarService', () => {
         },
       });
       expect(await service.feedForToken('token', NOW)).toContain(
-        'X-WR-CALNAME:Frank Front-Desk — Domi',
+        'X-WR-CALNAME:Frank Front-Desk — Domi Staff',
       );
     });
 

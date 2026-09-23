@@ -1,4 +1,4 @@
-// Domi Time & Scheduling — core data model (Phase 1)
+// Domi Staff (formerly Domi Time & Scheduling) — core data model
 //
 // Conventions (kept aligned with Domi EMR so a future merge is cheap):
 //  - UUID primary keys

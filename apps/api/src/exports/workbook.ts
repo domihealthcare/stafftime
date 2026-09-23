@@ -14,7 +14,7 @@ const BORDER_COLOUR = 'FFE2E8F0';
  */
 export async function buildTimesheetWorkbook(data: TimesheetData): Promise<Buffer> {
   const workbook = new Workbook();
-  workbook.creator = 'Domi Time & Scheduling';
+  workbook.creator = 'Domi Staff';
   workbook.created = data.meta.generatedAt;
   // Without this, a formula written by a library sits blank until the viewer
   // happens to recalculate. Belt and braces with the cached results below.

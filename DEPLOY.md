@@ -138,7 +138,7 @@ cookie secure.
 
 Open the URL Vercel gives you (something like `stafftime-xxxx.vercel.app`).
 
-You will see **Set up Domi Time**. Fill in your setup token, your name, your
+You will see **Set up Domi Staff**. Fill in your setup token, your name, your
 email and a password of at least twelve characters. Three unrelated words make a
 good one.
 
@@ -229,7 +229,7 @@ It is two variables, and the fiddly part is DNS rather than code:
 | Name | Value |
 | --- | --- |
 | `RESEND_API_KEY` | the key from step 3 |
-| `EMAIL_FROM` | `Domi Time & Scheduling <no-reply@domihealthcare.com>` |
+| `EMAIL_FROM` | `Domi Staff <no-reply@domihealthcare.com>` |
 
 5. Redeploy, then use **Forgotten your password?** on the sign-in screen with
    your own address. If the email arrives, it is working. If it does not, the

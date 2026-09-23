@@ -370,9 +370,8 @@ export, so the numbers agree.
 ### 15. The look
 
 The app now uses the Domi Healthcare colours from the website, and says
-**Domi Staff** on the sign-in screen and in the browser tab. Emails, the
-calendar feed and the export spreadsheet still say "Domi Time & Scheduling";
-that rename is not done yet.
+**Domi Staff** everywhere: the sign-in screen, the browser tab, emails, the
+calendar feed and the export spreadsheet.
 
 - **Tell us:** anything that looks off-brand, or that should match the website
   and does not.

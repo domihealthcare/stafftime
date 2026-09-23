@@ -37,7 +37,7 @@ export interface CalendarOptions {
   now?: Date;
 }
 
-const PRODID = '-//Domi Healthcare//Domi Time & Scheduling//EN';
+const PRODID = '-//Domi Healthcare//Domi Staff//EN';
 
 export function buildCalendar(events: CalendarEvent[], options: CalendarOptions): string {
   const stamp = formatUtc(options.now ?? new Date());

@@ -28,7 +28,7 @@ export class NotificationsService {
 
   /// Fire and forget. Never awaited by a request handler.
   private dispatch(to: string, subject: string, body: string[]): void {
-    const text = [...body, '', '—', 'Domi Time & Scheduling', this.appUrl].join('\n');
+    const text = [...body, '', '—', 'Domi Staff', this.appUrl].join('\n');
 
     void this.email
       .send({ to, subject: this.prefixed(subject), text })
@@ -148,7 +148,7 @@ export class NotificationsService {
     this.dispatch(to, 'Reset your Domi password', [
       `Hello ${firstName},`,
       '',
-      'Somebody asked to reset the password on your Domi Time & Scheduling account.',
+      'Somebody asked to reset the password on your Domi Staff account.',
       '',
       link,
       '',

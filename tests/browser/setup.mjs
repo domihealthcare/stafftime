@@ -18,7 +18,7 @@ page.on('pageerror', (e) => errors.push(`pageerror: ${e.message}`));
 await page.goto('http://127.0.0.1:5174/', { waitUntil: 'networkidle' });
 
 await step('a brand-new deployment shows the setup screen, not sign-in', async () => {
-  await page.getByText('Set up Domi Time').waitFor({ timeout: 15000 });
+  await page.getByText('Set up Domi Staff').waitFor({ timeout: 15000 });
   if (await page.getByRole('button', { name: 'Sign in' }).count() > 0)
     throw new Error('the sign-in form was shown on an empty database');
 });
@@ -55,7 +55,7 @@ await page.screenshot({ path: `${OUT}/33-setup-done.png`, fullPage: true });
 // From here on: the journey an administrator actually takes on day one.
 await step('a fresh practice is told it has no locations yet', async () => {
   await page.getByRole('button', { name: 'Manage', exact: true }).click();
-  await page.getByRole('link', { name: 'Locations' }).click();
+  await page.getByRole('link', { name: 'Locations', exact: true }).click();
   await page.getByText(/No locations yet/).waitFor({ timeout: 10000 });
 });
 
@@ -73,7 +73,7 @@ await step('an admin can add the first office', async () => {
 
 await step('an admin can add their first manager', async () => {
   await page.getByRole('button', { name: 'Manage', exact: true }).click();
-  await page.getByRole('link', { name: 'Staff' }).click();
+  await page.getByRole('link', { name: 'Staff', exact: true }).click();
   await page.getByRole('button', { name: '+ Add someone' }).click();
   await page.getByLabel('First name').fill('Morgan');
   await page.getByLabel('Last name').fill('Manager');
@@ -118,7 +118,7 @@ await step('the new manager can sign in, and must change that password', async (
 
   // A manager, not an admin: no Staff or Kiosks tabs.
   for (const name of ['Staff', 'Kiosks', 'Locations']) {
-    if (await mgr.getByRole('link', { name }).count() > 0)
+    if (await mgr.getByRole('link', { name, exact: true }).count() > 0)
       throw new Error(`a manager was shown the ${name} tab`);
   }
   await mgrCtx.close();
@@ -129,7 +129,7 @@ await step('the setup screen does not come back', async () => {
   const visitor = await fresh.newPage();
   await visitor.goto('http://127.0.0.1:5174/', { waitUntil: 'networkidle' });
   await visitor.getByRole('button', { name: 'Sign in' }).waitFor({ timeout: 15000 });
-  if (await visitor.getByText('Set up Domi Time').count() > 0)
+  if (await visitor.getByText('Set up Domi Staff').count() > 0)
     throw new Error('setup was still offered after an admin existed');
 });
 
