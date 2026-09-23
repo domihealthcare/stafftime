@@ -236,7 +236,10 @@ await step('an empty day is visibly empty rather than blank', async () => {
 await step('overtime is still called out a month at a time', async () => {
   // It is a per-week question either way, and the month view would be worse
   // than useless if it quietly used a different rule.
-  await page.getByText('Overtime this month').waitFor({ timeout: 10000 });
+  // The card is "Worth a look this month" now that availability clashes sit
+  // beside overtime; the overtime warning inside it is what this checks.
+  await page.getByText('Worth a look this month').waitFor({ timeout: 10000 });
+  await page.getByText(/scheduled past \d+ hours/).waitFor({ timeout: 10000 });
   const text = await page.locator('main').innerText();
   if (!/61 hours in the week of/.test(text))
     throw new Error('the month view lost the overtime warning');

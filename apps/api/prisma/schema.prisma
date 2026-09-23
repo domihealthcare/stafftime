@@ -135,6 +135,8 @@ model Location {
   payrollExports PayrollExport[]
 
   @@map("locations")
+
+  surveys Survey[]
 }
 
 // ---------------------------------------------------------------------------
@@ -223,6 +225,12 @@ model Employee {
   payrollExports            PayrollExport[]         @relation("PayrollExportGeneratedBy")
   credentials               EmployeeCredential[]    @relation("CredentialSubject")
   recordedCredentials       EmployeeCredential[]    @relation("CredentialRecordedBy")
+  announcements             Announcement[]          @relation("AnnouncementAuthor")
+  jobRoles                  EmployeeJobRole[]
+  createdResources          Resource[]              @relation("ResourceCreatedBy")
+  unavailability            Unavailability[]
+  createdSurveys            Survey[]                @relation("SurveyCreatedBy")
+  surveysTaken              SurveyParticipant[]
 
   @@index([employmentStatus])
   @@map("employees")
@@ -898,4 +906,304 @@ model EmployeeCredential {
   /// The query the whole feature exists for: what expires next.
   @@index([expiresOn, archivedAt])
   @@map("employee_credentials")
+}
+
+// ---------------------------------------------------------------------------
+// Announcements (Phase 4)
+// ---------------------------------------------------------------------------
+
+/// A post on the staff noticeboard. Written by an admin, read by everyone who
+/// is signed in — never shown on the public login page, which anyone on the
+/// internet can open.
+///
+/// While any post exists, exactly one is primary: it is the first thing on the
+/// home screen after sign-in. Prisma cannot express "at most one row where
+/// isPrimary", so the migration adds a partial unique index for it, and the
+/// service keeps "at least one" by moving the flag rather than clearing it.
+model Announcement {
+  id        String  @id @default(uuid()) @db.Uuid
+  title     String
+  /// Plain text. Line breaks are kept; nothing is interpreted as markup.
+  body      String
+  isPrimary Boolean @default(false)
+
+  authorId String?  @db.Uuid
+  /// Set when the words change after posting, so readers can tell.
+  editedAt DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  author Employee? @relation("AnnouncementAuthor", fields: [authorId], references: [id], onDelete: SetNull)
+
+  @@index([createdAt])
+  @@map("announcements")
+}
+
+// ---------------------------------------------------------------------------
+// Job roles and resources (Phase 4)
+// ---------------------------------------------------------------------------
+
+/// What somebody does at the practice: Front Desk, Medical Assistant,
+/// Provider… Managers keep the list and decide who is in each.
+///
+/// Not the same thing as `Employee.role`, which is what somebody may *do in
+/// this app* (Employee / Manager / Admin). A job role called "Administrative"
+/// decides which resources a person sees and nothing else — it grants no
+/// access. The two are kept apart so that tidying the job list can never
+/// quietly hand somebody the payroll export.
+///
+/// A person may hold several: some front desk staff also work as MAs.
+model JobRole {
+  id          String  @id @default(uuid()) @db.Uuid
+  name        String  @unique
+  description String?
+  sortOrder   Int     @default(0)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  members   EmployeeJobRole[]
+  resources Resource[]
+  surveys   Survey[]
+
+  @@map("job_roles")
+}
+
+model EmployeeJobRole {
+  employeeId String   @db.Uuid
+  jobRoleId  String   @db.Uuid
+  createdAt  DateTime @default(now())
+
+  employee Employee @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+  jobRole  JobRole  @relation(fields: [jobRoleId], references: [id], onDelete: Cascade)
+
+  @@id([employeeId, jobRoleId])
+  @@index([jobRoleId])
+  @@map("employee_job_roles")
+}
+
+enum ResourceKind {
+  /// Somewhere else: a Drive folder, ADP, a vendor portal.
+  LINK
+  /// Written here, in plain text: "How to open the North Bergen office".
+  PAGE
+}
+
+/// Something a job role needs to hand: a link or a short written page.
+///
+/// Never a file. Nothing is uploaded to this app (see *Data this app does not
+/// hold* in CLAUDE.md); a document lives where the practice already keeps it,
+/// and a resource links to it.
+///
+/// `jobRoleId` null means everybody sees it.
+model Resource {
+  id        String       @id @default(uuid()) @db.Uuid
+  jobRoleId String?      @db.Uuid
+  kind      ResourceKind
+  title     String
+  /// For a LINK. Only http(s) — checked in the service.
+  url       String?
+  /// For a PAGE, or a line of explanation under a LINK.
+  body      String?
+  sortOrder Int          @default(0)
+
+  createdById String?  @db.Uuid
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  jobRole   JobRole?  @relation(fields: [jobRoleId], references: [id], onDelete: Restrict)
+  createdBy Employee? @relation("ResourceCreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
+
+  @@index([jobRoleId, sortOrder])
+  @@map("resources")
+}
+
+// ---------------------------------------------------------------------------
+// Availability (Phase 4)
+// ---------------------------------------------------------------------------
+
+enum UnavailabilityKind {
+  /// Every week on one weekday: "never Saturdays", "not Tuesdays after 5".
+  WEEKLY
+  /// One date: "not on 14 October".
+  ONE_OFF
+}
+
+/// When somebody cannot work. Staff set their own; the scheduler warns when a
+/// shift lands on it, but does not refuse — a manager sometimes has to ask.
+///
+/// Times are wall-clock times at the shift's location ("17:00"), not instants:
+/// "after 5" means after 5 in North Bergen whatever the clocks did. Both null
+/// means the whole day.
+///
+/// **A published week is fixed.** Staff may change their availability any time,
+/// but a change only reaches weeks whose rota is not yet published — confirmed
+/// by Dominguez, September 2026. So a weekly rule carries the dates it applies
+/// between: a new one starts at the first open week, and removing one ends it
+/// there rather than rewriting weeks people are already working to. A one-off
+/// date inside a published week cannot be added or removed at all.
+model Unavailability {
+  id         String             @id @default(uuid()) @db.Uuid
+  employeeId String             @db.Uuid
+  kind       UnavailabilityKind
+
+  /// WEEKLY only. ISO weekday: 1 = Monday … 7 = Sunday.
+  weekday Int?
+  /// ONE_OFF only.
+  date    DateTime? @db.Date
+
+  /// "HH:MM", local to the shift's location. Both null = all day.
+  startTime String?
+  endTime   String?
+  note      String?
+
+  /// The first day this counts. For a ONE_OFF, its date.
+  effectiveFrom  DateTime  @db.Date
+  /// The last day a WEEKLY rule counts, once somebody has removed it.
+  effectiveUntil DateTime? @db.Date
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  employee Employee @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+
+  @@index([employeeId, effectiveFrom])
+  @@map("unavailability")
+}
+
+// ---------------------------------------------------------------------------
+// Pulse surveys and anonymous feedback (Phase 4)
+// ---------------------------------------------------------------------------
+//
+// Truly anonymous, as Dominguez asked: nothing in these tables can connect a
+// person to what they said. Answers carry no person and no time. Who has taken
+// part is kept apart (so nobody answers twice, and a manager can see how many
+// have), with no link to which answers were theirs. Results appear only once a
+// survey is closed and at least three people answered — see
+// docs/architecture.md for why "closed" as well as "three".
+//
+// `no-sensitive-data.spec.ts` fails if a person or a timestamp is ever added
+// to the anonymous tables.
+
+enum SurveyAudience {
+  EVERYONE
+  JOB_ROLE
+  LOCATION
+}
+
+enum SurveyStatus {
+  /// Being written. Nobody can see it but managers.
+  DRAFT
+  /// Can be answered. Its questions are frozen.
+  OPEN
+  /// Finished. Results show, if enough people answered.
+  CLOSED
+}
+
+enum SurveyQuestionKind {
+  /// 1 to 5.
+  RATING
+  /// One of a list.
+  CHOICE
+  /// Free text.
+  TEXT
+}
+
+model Survey {
+  id       String         @id @default(uuid()) @db.Uuid
+  title    String
+  intro    String?
+  audience SurveyAudience @default(EVERYONE)
+  /// For JOB_ROLE. Null after the role is deleted, which leaves nobody to ask.
+  jobRoleId  String?      @db.Uuid
+  /// For LOCATION.
+  locationId String?      @db.Uuid
+  status     SurveyStatus @default(DRAFT)
+  openedAt   DateTime?
+  closedAt   DateTime?
+
+  createdById String?  @db.Uuid
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  jobRole      JobRole?            @relation(fields: [jobRoleId], references: [id], onDelete: SetNull)
+  location     Location?           @relation(fields: [locationId], references: [id], onDelete: SetNull)
+  createdBy    Employee?           @relation("SurveyCreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
+  questions    SurveyQuestion[]
+  responses    SurveyResponse[]
+  participants SurveyParticipant[]
+
+  @@index([status])
+  @@map("surveys")
+}
+
+model SurveyQuestion {
+  id       String             @id @default(uuid()) @db.Uuid
+  surveyId String             @db.Uuid
+  position Int
+  kind     SurveyQuestionKind
+  prompt   String
+  /// For CHOICE.
+  options  String[]           @default([])
+
+  survey  Survey         @relation(fields: [surveyId], references: [id], onDelete: Cascade)
+  answers SurveyAnswer[]
+
+  @@index([surveyId, position])
+  @@map("survey_questions")
+}
+
+/// One person's answers — with no person, and no time.
+model SurveyResponse {
+  id       String @id @default(uuid()) @db.Uuid
+  surveyId String @db.Uuid
+
+  survey  Survey         @relation(fields: [surveyId], references: [id], onDelete: Cascade)
+  answers SurveyAnswer[]
+
+  @@index([surveyId])
+  @@map("survey_responses")
+}
+
+model SurveyAnswer {
+  id         String  @id @default(uuid()) @db.Uuid
+  responseId String  @db.Uuid
+  questionId String  @db.Uuid
+  rating     Int?
+  choice     String?
+  text       String?
+
+  response SurveyResponse @relation(fields: [responseId], references: [id], onDelete: Cascade)
+  question SurveyQuestion @relation(fields: [questionId], references: [id], onDelete: Cascade)
+
+  @@index([questionId])
+  @@map("survey_answers")
+}
+
+/// That somebody has answered — not what, and not when. Keeps anybody from
+/// answering twice, and gives the manager a response count.
+model SurveyParticipant {
+  surveyId   String @db.Uuid
+  employeeId String @db.Uuid
+
+  survey   Survey   @relation(fields: [surveyId], references: [id], onDelete: Cascade)
+  employee Employee @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+
+  @@id([surveyId, employeeId])
+  @@map("survey_participants")
+}
+
+/// The suggestion box. The message and the day it arrived; nothing else.
+model Feedback {
+  id         String    @id @default(uuid()) @db.Uuid
+  message    String
+  /// A day, not a time: to the minute, a timestamp says who was on their
+  /// break when it arrived.
+  receivedOn DateTime  @db.Date
+  /// A manager has dealt with it.
+  archivedAt DateTime?
+
+  @@index([archivedAt, receivedOn])
+  @@map("feedback")
 }

@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
+import { Link } from 'react-router-dom';
 import { api } from '../lib/api';
 import {
   addDays,
@@ -150,6 +151,15 @@ export function SchedulePage() {
         <CalendarLinkCard />
       </div>
 
+      <div className="mb-4">
+        <Link
+          to="/availability"
+          className="inline-block rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50"
+        >
+          {isManager ? 'Availability — yours and the team’s' : 'When you can’t work'}
+        </Link>
+      </div>
+
       <div className="mb-4 flex flex-wrap items-center gap-2">
         <button
           type="button"
@@ -288,15 +298,18 @@ export function SchedulePage() {
               overtimeThresholdHours={coverage.overtimeThresholdHours}
             />
           ) : (
-            coverage.overtime.length > 0 && (
-              <Card className="p-4">
-                <h2 className="mb-2 text-sm font-semibold text-slate-900">
-                  Overtime this month
-                </h2>
-                <OvertimeNotice
-                  overtime={coverage.overtime}
-                  thresholdHours={coverage.overtimeThresholdHours}
-                />
+            (coverage.overtime.length > 0 || unavailableShifts(coverage.days).length > 0) && (
+              <Card className="space-y-3 p-4">
+                <h2 className="text-sm font-semibold text-slate-900">Worth a look this month</h2>
+                {unavailableShifts(coverage.days).length > 0 && (
+                  <AvailabilityNotice clashes={unavailableShifts(coverage.days)} />
+                )}
+                {coverage.overtime.length > 0 && (
+                  <OvertimeNotice
+                    overtime={coverage.overtime}
+                    thresholdHours={coverage.overtimeThresholdHours}
+                  />
+                )}
               </Card>
             )
           )}
@@ -629,6 +642,7 @@ function CoverageStrip({
   const conflicts = days.flatMap((day) =>
     day.shifts.filter((shift) => shift.conflictsWithLeave).map((shift) => ({ day, shift })),
   );
+  const unavailable = unavailableShifts(days);
 
   return (
     <Card className="p-4">
@@ -663,9 +677,7 @@ function CoverageStrip({
                 {day.staffedHours || '—'}
               </p>
               <p className="text-xs text-slate-500">
-                {day.peopleScheduled > 0
-                  ? `${day.peopleScheduled} on`
-                  : 'nobody'}
+                {day.peopleScheduled > 0 ? `${day.peopleScheduled} on` : 'nobody'}
               </p>
               {day.away.length > 0 && (
                 <p className="mt-0.5 text-xs text-slate-500">{day.away.length} off</p>
@@ -693,8 +705,8 @@ function CoverageStrip({
       {conflicts.length > 0 && (
         <div className="mt-3 rounded-lg bg-rose-50 p-3 text-sm text-rose-900 ring-1 ring-inset ring-rose-200">
           <p className="font-medium">
-            {conflicts.length} shift{conflicts.length === 1 ? '' : 's'} scheduled during
-            approved leave
+            {conflicts.length} shift{conflicts.length === 1 ? '' : 's'} scheduled during approved
+            leave
           </p>
           <ul className="mt-1 space-y-0.5 text-xs">
             {conflicts.slice(0, 5).map(({ day, shift }) => (
@@ -712,6 +724,12 @@ function CoverageStrip({
         </div>
       )}
 
+      {unavailable.length > 0 && (
+        <div className="mt-3">
+          <AvailabilityNotice clashes={unavailable} />
+        </div>
+      )}
+
       {overtime.length > 0 && (
         <div className="mt-3">
           <OvertimeNotice overtime={overtime} thresholdHours={overtimeThresholdHours} />
@@ -721,12 +739,60 @@ function CoverageStrip({
       {days.some((day) => day.away.length > 0) && (
         <p className="mt-3 text-xs text-slate-500">
           Away this week:{' '}
-          {[
-            ...new Set(days.flatMap((day) => day.away.map((person) => person.employeeName))),
-          ].join(', ')}
+          {[...new Set(days.flatMap((day) => day.away.map((person) => person.employeeName)))].join(
+            ', ',
+          )}
         </p>
       )}
     </Card>
+  );
+}
+
+function unavailableShifts(days: CoverageDay[]) {
+  return days.flatMap((day) =>
+    day.shifts
+      .filter((shift) => shift.unavailable)
+      .map((shift) => ({ day, shift, reason: shift.unavailable! })),
+  );
+}
+
+/**
+ * Shifts on a time somebody said they cannot work.
+ *
+ * A warning, like overtime, not a refusal like a clash: the manager may have
+ * asked, and the rota is theirs. What it must not be is silent.
+ */
+function AvailabilityNotice({
+  clashes,
+}: {
+  clashes: { day: CoverageDay; shift: CoverageDay['shifts'][number]; reason: string }[];
+}) {
+  return (
+    <div
+      data-testid="availability-notice"
+      className="rounded-lg bg-amber-50 p-3 text-sm text-amber-900 ring-1 ring-inset ring-amber-200"
+    >
+      <p className="font-medium">
+        {clashes.length === 1
+          ? '1 shift is at a time someone said they can’t work'
+          : `${clashes.length} shifts are at times people said they can’t work`}
+      </p>
+      <ul className="mt-1 space-y-0.5 text-xs">
+        {clashes.slice(0, 8).map(({ day, shift, reason }) => (
+          <li key={shift.id}>
+            <span className="font-medium">{shift.employeeName}</span> —{' '}
+            {new Date(`${day.date}T00:00:00Z`).toLocaleDateString(undefined, {
+              timeZone: 'UTC',
+              weekday: 'short',
+              month: 'short',
+              day: 'numeric',
+            })}
+            : {reason.replace(/^Not available/, 'not available')}
+          </li>
+        ))}
+        {clashes.length > 8 && <li>…and {clashes.length - 8} more</li>}
+      </ul>
+    </div>
   );
 }
 
@@ -758,8 +824,8 @@ function OvertimeNotice({
       <ul className="mt-1 space-y-0.5 text-xs">
         {overtime.map((warning) => (
           <li key={`${warning.employeeId}-${warning.weekStart}`}>
-            <span className="font-medium">{warning.employeeName}</span> —{' '}
-            {warning.scheduledHours} hours in the week of{' '}
+            <span className="font-medium">{warning.employeeName}</span> — {warning.scheduledHours}{' '}
+            hours in the week of{' '}
             {new Date(`${warning.weekStart}T00:00:00Z`).toLocaleDateString(undefined, {
               timeZone: 'UTC',
               month: 'short',

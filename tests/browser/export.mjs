@@ -47,6 +47,7 @@ mgr.on('pageerror', (e) => errors.push(`pageerror: ${e.message}`));
 await signIn(mgr, 'manager@domihealthcare.com');
 
 await step('a manager can open the export screen', async () => {
+  await mgr.getByRole('button', { name: 'Manage', exact: true }).click();
   await mgr.getByRole('link', { name: 'Export' }).click();
   await mgr.getByText('Export timesheets').waitFor({ timeout: 10000 });
 });

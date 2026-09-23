@@ -33,6 +33,7 @@ await page.getByRole('button', { name: 'Sign in' }).click();
 await page.getByText('Not clocked in').waitFor({ timeout: 15000 });
 
 await step('an admin can open Locations and sees both offices', async () => {
+  await page.getByRole('button', { name: 'Manage', exact: true }).click();
   await page.getByRole('link', { name: 'Locations' }).click();
   await page.getByRole('heading', { name: 'North Bergen' }).waitFor({ timeout: 10000 });
   await page.getByRole('heading', { name: 'West New York' }).waitFor({ timeout: 5000 });

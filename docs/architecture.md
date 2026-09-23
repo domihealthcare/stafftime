@@ -1479,3 +1479,145 @@ opening the app.
 It cannot fail the job it runs inside. Tidying up and telling people are
 separate concerns, and a mail provider having a bad night must not stop expired
 sessions being cleared.
+
+## Announcements
+
+Admins post; everyone signed in reads. None of it is public — the login page
+can be opened by anyone on the internet, so the endpoints need a session like
+everything else, and the home screen shows the primary post only after sign-in.
+
+While any post exists, **exactly one is primary**. "At most one" is a partial
+unique index in the migration (Prisma cannot declare one). "At least one" is
+the service's job: the first post is primary whatever the form said, the flag
+is moved rather than cleared, unticking the primary is refused, and deleting
+the primary hands it to the newest post left.
+
+## Job roles and resources
+
+`JobRole` is what somebody does (Front Desk, Medical Assistant…); `Employee.role`
+is what they may do in the app (Employee / Manager / Admin). They are kept
+apart on purpose. Managers keep the job-role list, and one of the starting
+roles is literally called "Manager" — if job roles granted anything, tidying
+that list would be a way to hand somebody the payroll export. So a job role
+decides which resources somebody sees and nothing else.
+
+Somebody can hold several (`EmployeeJobRole` is a plain join table). Staff see
+the Everyone section plus their roles'; managers see every role, their own
+marked. Opening another role's page by its address is refused by the API, not
+just hidden by the screen.
+
+A resource is a link or a short written page, **never a file** — see *Data this
+app does not hold* in `CLAUDE.md`, and the guard in `no-sensitive-data.spec.ts`.
+Links must be http(s): a `javascript:` link would run in a colleague's session.
+An address pasted without a scheme is taken as https.
+
+A job role with resources cannot be deleted until they are moved or removed:
+they were written for somebody, and deleting a role should not quietly throw
+that work away. Its members just stop being in it.
+
+The Team / Manage menus in the top bar are disclosures of ordinary links, not
+ARIA menus, so the links stay links to assistive tech and to the browser suites.
+
+## Staff directory
+
+Everybody signed in can read it: it is how colleagues reach each other. It
+holds work contact details — name, email, phone (Dominguez confirmed phone
+numbers should be shown, September 2026), job roles and locations — and
+nothing from the personnel side: no pay type, hire date or access level. People
+who have left, or have not started, are not listed; somebody on leave is, marked.
+
+**In now** is any open punch from the last 16 hours. Older than that is a
+forgotten clock-out, and should not tell the front desk somebody is in who went
+home yesterday — the missing punch is already chased by *What needs a look*.
+Colleagues see where somebody is; only managers see when they clocked in.
+
+## Availability
+
+Staff say when they cannot work: a weekday every week, or one date, either all
+day or between two wall-clock times at the shift's location. They set it
+themselves and nobody approves it; managers can read everybody's, and cannot
+change it — it is each person's statement about their own time.
+
+**A published week is fixed** (Dominguez, September 2026). The first date a
+change can touch is the day after the last week with a published shift at any
+of the person's locations, and never before today. So:
+
+- a new weekly rule starts there (`effectiveFrom`), not today;
+- removing a weekly rule that has already covered a published week *ends* it
+  there (`effectiveUntil`) instead of deleting it, so the published weeks keep
+  saying what they said;
+- a one-off date inside a published week cannot be added or removed.
+
+"Published" is per location, not per person: somebody not on this week's rota
+may still be about to be added to it.
+
+The scheduler **warns, never refuses**, when a shift overlaps one — a manager
+sometimes has to ask. The check is in `availability.rules.ts`, a pure function
+over local dates and "HH:MM" times: overlap rather than containment, touching
+ends allowed (a shift ending at 17:00 fits "not after 5"), and a shift past
+midnight counted against its first day only.
+
+## Surveys and the suggestion box
+
+Promised to staff as **truly anonymous**: nobody, admins included, can find out
+what a person said. Four things keep that true, and each exists because the
+obvious version quietly breaks it:
+
+- **Answers carry no person and no time.** `SurveyResponse` is an id and a
+  survey; `SurveyAnswer` hangs off it. A `createdAt` would let anybody line the
+  answers up against who was on their break. `no-sensitive-data.spec.ts` fails
+  if a person, a timestamp, an IP or a user agent is added to either table, or
+  to `Feedback`.
+- **Who took part is kept apart.** `SurveyParticipant` records that Frankie has
+  answered (so nobody answers twice, and managers get a count) with no link to
+  the response and no time. It is written in its own transaction before the
+  answers, so the two rows never share one; if saving the answers fails, the
+  participation is taken back so they can try again.
+- **Results wait for the survey to close, as well as for three answers.** Three
+  alone is not enough: a live average that moves just after somebody says
+  "done" tells a manager what they said. Closing first means nobody watches it
+  move. Free-text answers come back shuffled, so their order is not a clue.
+- **Staff never see the count.** A number ticking up while you watch a
+  colleague put their phone down is its own clue; only managers see it.
+
+Deleting an open survey is refused (people may be answering); a question
+cannot change once a survey is sent, because the answers already given would
+then mean something else.
+
+The **suggestion box** keeps the message and the *day* it arrived — a time to
+the minute says who was at the front desk. A session is needed to post, so the
+box is not open to the internet, and nothing from the session is kept. The UI
+warns that a very specific detail can still give somebody away; no design can
+fix that.
+
+Limits worth knowing: somebody with direct database access could in principle
+correlate rows by their physical order. The promise is about the app — no
+screen, report, export or log connects a person to what they said — and the
+service logs "answered" without the person for the same reason.
+
+## Manager dashboard
+
+Read-only, managers and admins, built from punches, the rota, approved leave
+and availability. The arithmetic is a pure function (`dashboard.summary.ts`)
+so it can be tested without a database, and every rule in it is one the rest
+of the app already uses — a number here must never disagree with the
+timesheet, the scheduler or the payroll export:
+
+- a week is Monday–Sunday **in the location's timezone**;
+- hours worked come from **completed** punches; an open punch counts as a punch
+  but not as hours (it is somebody still at work, or a missing clock-out that
+  *What needs a look* chases);
+- overtime is per person per week **across both locations**, hourly staff only,
+  against the practice's own threshold — so it does not change with the
+  location filter, and the screen says so;
+- time off counts **weekdays**, a half day as half, and is attributed to the
+  person's primary location.
+
+"Next two weeks" reuses the scheduler's own coverage check, so availability
+clashes and scheduled overtime read the same on both screens.
+
+The chart follows the data-viz method: two series (one per location) in
+categorical slots 1 and 2, validated on the white card surface; the colour is
+fixed to the location, not its position, so filtering never repaints a line;
+one axis; a legend always, end labels only when they would not collide; a hover
+tooltip; and the week-by-week table as its table view.

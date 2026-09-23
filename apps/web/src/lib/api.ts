@@ -1,4 +1,5 @@
 import type {
+  Announcement,
   Attention,
   Checklist,
   Credential,
@@ -10,16 +11,30 @@ import type {
   ChecklistTemplate,
   ConflictingShift,
   Coverage,
+  Dashboard,
   DemoSummary,
+  DirectoryEntry,
   PlanResult,
   PracticeSettings,
   Employee,
+  JobRole,
   Location,
+  FeedbackMessage,
+  Survey,
+  SurveyAudience,
+  SurveyInputQuestion,
+  SurveyResults,
+  MyAvailability,
   PtoBalance,
   PtoPolicy,
   PtoRequest,
   ReportPreset,
+  Resource,
+  ResourceKind,
+  ResourceSection,
   Shift,
+  TeamAvailability,
+  UnavailabilityKind,
   TemplateTaskInput,
   TimeEntry,
   UpdateLocationInput,
@@ -618,6 +633,110 @@ export const api = {
     request<Credential>(`/credentials/${id}/archive`, { method: 'POST' }),
   deleteCredential: (id: string) =>
     request<{ deleted: boolean }>(`/credentials/${id}`, { method: 'DELETE' }),
+
+  announcements: () => request<Announcement[]>('/announcements'),
+  primaryAnnouncement: () =>
+    request<{ announcement: Announcement | null }>('/announcements/primary'),
+  createAnnouncement: (body: { title: string; body: string; isPrimary?: boolean }) =>
+    request<Announcement>('/announcements', { method: 'POST', body: JSON.stringify(body) }),
+  updateAnnouncement: (
+    id: string,
+    body: Partial<{ title: string; body: string; isPrimary: boolean }>,
+  ) =>
+    request<Announcement>(`/announcements/${id}`, {
+      method: 'PATCH',
+      body: JSON.stringify(body),
+    }),
+  deleteAnnouncement: (id: string) =>
+    request<{ deleted: boolean }>(`/announcements/${id}`, { method: 'DELETE' }),
+
+  dashboard: (weeks: number) => request<Dashboard>(`/dashboard?weeks=${weeks}`),
+  directory: () => request<DirectoryEntry[]>('/directory'),
+
+  surveys: () => request<Survey[]>('/surveys'),
+  survey: (id: string) => request<Survey>(`/surveys/${id}`),
+  surveyResults: (id: string) => request<SurveyResults>(`/surveys/${id}/results`),
+  saveSurvey: (
+    id: string | null,
+    body: {
+      title: string;
+      intro?: string;
+      audience: SurveyAudience;
+      jobRoleId?: string;
+      locationId?: string;
+      questions: SurveyInputQuestion[];
+    },
+  ) =>
+    request<Survey>(id ? `/surveys/${id}` : '/surveys', {
+      method: id ? 'PATCH' : 'POST',
+      body: JSON.stringify(body),
+    }),
+  openSurvey: (id: string) => request<Survey>(`/surveys/${id}/open`, { method: 'POST' }),
+  closeSurvey: (id: string) => request<Survey>(`/surveys/${id}/close`, { method: 'POST' }),
+  deleteSurvey: (id: string) => request<{ deleted: boolean }>(`/surveys/${id}`, { method: 'DELETE' }),
+  answerSurvey: (
+    id: string,
+    answers: { questionId: string; rating?: number; choice?: string; text?: string }[],
+  ) =>
+    request<{ answered: boolean }>(`/surveys/${id}/responses`, {
+      method: 'POST',
+      body: JSON.stringify({ answers }),
+    }),
+
+  sendFeedback: (message: string) =>
+    request<{ received: boolean }>('/feedback', { method: 'POST', body: JSON.stringify({ message }) }),
+  feedback: (archived = false) =>
+    request<FeedbackMessage[]>(`/feedback${archived ? '?archived=true' : ''}`),
+  archiveFeedback: (id: string) =>
+    request<FeedbackMessage>(`/feedback/${id}/archive`, { method: 'POST' }),
+
+  availability: (employeeId?: string) =>
+    request<MyAvailability>(`/availability${toQuery({ employeeId })}`),
+  teamAvailability: () => request<TeamAvailability[]>('/availability/team'),
+  addUnavailability: (body: {
+    kind: UnavailabilityKind;
+    weekday?: number;
+    date?: string;
+    startTime?: string;
+    endTime?: string;
+    note?: string;
+  }) => request<unknown>('/availability', { method: 'POST', body: JSON.stringify(body) }),
+  removeUnavailability: (id: string) =>
+    request<{ removed: boolean; endsAfter: string | null }>(`/availability/${id}`, {
+      method: 'DELETE',
+    }),
+
+  jobRoles: () => request<JobRole[]>('/job-roles'),
+  createJobRole: (body: { name: string; description?: string }) =>
+    request<JobRole>('/job-roles', { method: 'POST', body: JSON.stringify(body) }),
+  updateJobRole: (id: string, body: Partial<{ name: string; description: string }>) =>
+    request<JobRole>(`/job-roles/${id}`, { method: 'PATCH', body: JSON.stringify(body) }),
+  deleteJobRole: (id: string) =>
+    request<{ deleted: boolean }>(`/job-roles/${id}`, { method: 'DELETE' }),
+  addJobRoleMember: (id: string, employeeId: string) =>
+    request<JobRole>(`/job-roles/${id}/members`, {
+      method: 'POST',
+      body: JSON.stringify({ employeeId }),
+    }),
+  removeJobRoleMember: (id: string, employeeId: string) =>
+    request<JobRole>(`/job-roles/${id}/members/${employeeId}`, { method: 'DELETE' }),
+
+  resources: () => request<{ sections: ResourceSection[] }>('/resources'),
+  resource: (id: string) =>
+    request<Resource & { jobRole: { id: string; name: string } | null }>(`/resources/${id}`),
+  createResource: (body: {
+    jobRoleId: string | null;
+    kind: ResourceKind;
+    title: string;
+    url?: string;
+    body?: string;
+  }) => request<Resource>('/resources', { method: 'POST', body: JSON.stringify(body) }),
+  updateResource: (
+    id: string,
+    body: Partial<{ jobRoleId: string | null; title: string; url: string; body: string }>,
+  ) => request<Resource>(`/resources/${id}`, { method: 'PATCH', body: JSON.stringify(body) }),
+  deleteResource: (id: string) =>
+    request<{ deleted: boolean }>(`/resources/${id}`, { method: 'DELETE' }),
 
   checklistTemplates: (kind?: ChecklistKind) =>
     request<ChecklistTemplate[]>(`/checklists/templates${toQuery({ kind })}`),

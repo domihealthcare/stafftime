@@ -34,6 +34,43 @@ const DEV_PINS: Record<string, string> = {
   'frontdesk@domihealthcare.com': '4817',
   'ma@domihealthcare.com': '5063',
 };
+/// Work numbers for the staff directory. 555-01xx is reserved for fiction, so
+/// a tap in testing never rings anybody.
+const DEV_PHONES: Record<string, string> = {
+  'admin@domihealthcare.com': '(201) 555-0101',
+  'manager@domihealthcare.com': '(201) 555-0102',
+  'frontdesk@domihealthcare.com': '(201) 555-0103',
+  'ma@domihealthcare.com': '(201) 555-0104',
+};
+
+/// The starting job roles, as the migration inserts them, and who holds which.
+/// Frankie covers as an MA too, which is the case that made roles plural.
+const JOB_ROLES = ['Front Desk', 'Medical Assistant', 'Provider', 'Administrative', 'Manager'];
+const DEV_JOB_ROLES: Record<string, string[]> = {
+  'admin@domihealthcare.com': ['Administrative'],
+  'manager@domihealthcare.com': ['Manager'],
+  'frontdesk@domihealthcare.com': ['Front Desk', 'Medical Assistant'],
+  'ma@domihealthcare.com': ['Medical Assistant'],
+};
+
+async function seedJobRoles() {
+  for (const [index, name] of JOB_ROLES.entries()) {
+    await prisma.jobRole.upsert({
+      where: { name },
+      update: {},
+      create: { name, sortOrder: (index + 1) * 10 },
+    });
+  }
+  for (const [email, names] of Object.entries(DEV_JOB_ROLES)) {
+    const employee = await prisma.employee.findUniqueOrThrow({ where: { email } });
+    await prisma.employeeJobRole.deleteMany({ where: { employeeId: employee.id } });
+    const roles = await prisma.jobRole.findMany({ where: { name: { in: names } } });
+    await prisma.employeeJobRole.createMany({
+      data: roles.map((role) => ({ employeeId: employee.id, jobRoleId: role.id })),
+    });
+  }
+}
+
 async function main() {
   const northBergen = await prisma.location.upsert({
     where: { slug: 'north-bergen' },
@@ -146,6 +183,7 @@ async function main() {
       // the next run behave differently for no visible reason.
       update: {
         role: person.role,
+        phone: DEV_PHONES[person.email],
         employmentStatus: EmploymentStatus.ACTIVE,
         payType: PayType.HOURLY,
         terminationDate: null,
@@ -165,6 +203,7 @@ async function main() {
         lastName: person.lastName,
         email: person.email,
         role: person.role,
+        phone: DEV_PHONES[person.email],
         employmentStatus: EmploymentStatus.ACTIVE,
         payType: PayType.HOURLY,
         hireDate: new Date('2025-01-06'),
@@ -216,6 +255,7 @@ async function main() {
   }
 
   const templates = await seedChecklistTemplates();
+  await seedJobRoles();
 
   const employees = await prisma.employee.findMany({
     select: { email: true, role: true, mustChangePassword: true },

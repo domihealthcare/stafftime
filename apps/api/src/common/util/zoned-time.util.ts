@@ -128,3 +128,18 @@ export function weekStartIn(instant: Date, zone: string): string {
   return local.toISOString().slice(0, 10);
 }
 
+/// "HH:MM" on the wall clock in `zone`.
+export function localTimeIn(instant: Date, zone: string): string {
+  const parts = Object.fromEntries(
+    new Intl.DateTimeFormat('en-GB', {
+      timeZone: zone,
+      hour: '2-digit',
+      minute: '2-digit',
+      hour12: false,
+    })
+      .formatToParts(instant)
+      .map((part) => [part.type, part.value]),
+  );
+  const hour = parts.hour === '24' ? '00' : parts.hour;
+  return `${hour}:${parts.minute}`;
+}

@@ -115,6 +115,48 @@ Build this as an **adapter/plugin pattern**, not a hardcoded ADP integration:
 2. **Phase 2:** PTO requests + manager approval workflow.
 3. **Phase 3:** onboarding/offboarding checklists (task tracking only — no
    document upload; see *Data this app does not hold*).
+4. **Phase 4 — from timeclock to staff platform** (confirmed by Dominguez,
+   September 2026). Timekeeping stays the main job; these sit around it:
+   - **Announcements** — admins write, edit and remove posts. Seen only after
+     sign-in, never on the public login page. There is **always exactly one
+     primary** post while any exist: it is shown at the top of the home screen,
+     ticking another moves it, it cannot be unticked without choosing another,
+     and if it is deleted the newest remaining post takes over. All posts are
+     listed on a **News** page, newest first, like a blog.
+   - **Job roles and resources** — **managers** (and admins) keep the list of
+     job roles and who is in each; the starting list is Front Desk, Medical
+     Assistant, Provider, Administrative, Manager. Somebody can hold **several**
+     (front desk staff who also work as MAs; providers who also do admin work).
+     A job role decides which resources somebody sees and **nothing else** — it
+     is separate from the Employee / Manager / Admin access level, so being in
+     "Administrative" or "Manager" grants no power in the app. Each job role has a
+     resources section: **links** (Drive, ADP, vendor portals) and **pages
+     written in the app**. No uploads for now; uploads may come later, but that
+     would be a deliberate reversal of *Data this app does not hold*, not a
+     quiet addition.
+   - **Staff directory and who's on now** — name, work email, **phone number**
+     (confirmed fine to show colleagues), job roles and locations; nothing from
+     the personnel side. "In now" comes from live clock-ins; colleagues see
+     where somebody is, managers also see since when.
+   - **Availability** — staff set their own, **every week** (a weekday, all day
+     or between two times) or **on one date**; no approval. A change only
+     reaches weeks whose rota is **not yet published** — a published week is
+     fixed. The scheduler warns (never refuses) when a shift lands on one, next
+     to the overtime warning. Managers read everybody's but do not change it.
+   - **Pulse surveys and anonymous feedback** — **truly anonymous**: answers
+     are stored with no person and no time, so nobody (admins included) can
+     find out who said what. The app does record *that* somebody took part,
+     separately and unlinked, so nobody answers twice. Results appear only
+     once a survey is **closed** and at least **3** people answered. Managers
+     write surveys (1–5 rating, pick one, written answer) for everyone, one job
+     role or one location. The suggestion box is always open and keeps only
+     the message and the day it arrived.
+   - **Manager dashboard** (Manage → Dashboard, managers and admins) — this
+     week's hours worked against scheduled, overtime, late clock-ins and time
+     off; hours worked per week by location as a chart; a week-by-week table;
+     and, looking ahead, shifts in the next two weeks that clash with somebody's
+     availability or push them into overtime. Built from data the app already
+     holds, by the same rules as the timesheet, scheduler and payroll export.
 
 ## Where it has got to (September 2026)
 

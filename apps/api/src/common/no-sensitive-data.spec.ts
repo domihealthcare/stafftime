@@ -15,10 +15,7 @@ import { join } from 'node:path';
  * up, so the decision has to be made again out loud rather than by accident.
  */
 describe('what this app deliberately does not store', () => {
-  const schema = readFileSync(
-    join(__dirname, '..', '..', 'prisma', 'schema.prisma'),
-    'utf8',
-  );
+  const schema = readFileSync(join(__dirname, '..', '..', 'prisma', 'schema.prisma'), 'utf8');
 
   /// Everything between `model X {` and the closing brace at column 0.
   function model(name: string): string {
@@ -54,9 +51,47 @@ describe('what this app deliberately does not store', () => {
     expect(model('EmployeeChecklistTask')).not.toContain('requiresDocument');
   });
 
+  it('files resources as links and written pages, never uploads', () => {
+    // Uploads for resources may come one day, but as a decision made out loud
+    // — see docs/open-questions.md — not as a column that slipped in.
+    const body = model('Resource');
+    for (const field of ['storageKey', 'fileId', 'mimeType', 'StoredFile', 'bytes']) {
+      expect(body).not.toContain(field);
+    }
+  });
+
   it('records a credential by its date, not its number', () => {
     const body = model('EmployeeCredential');
     expect(body).toContain('expiresOn');
     expect(body).not.toMatch(/^\s*reference\s/m);
+  });
+
+  /// Surveys and the suggestion box were promised to be truly anonymous: the
+  /// easiest way to break that is a harmless-looking `employeeId` or
+  /// `createdAt` on the wrong table.
+  it.each(['SurveyResponse', 'SurveyAnswer', 'Feedback'])(
+    'keeps %s free of anything that says who, or exactly when',
+    (name) => {
+      const body = model(name);
+      for (const field of [
+        'employee',
+        'author',
+        'createdBy',
+        'submittedBy',
+        'createdAt',
+        'updatedAt',
+        'ip',
+        'userAgent',
+        'session',
+      ]) {
+        expect(body).not.toMatch(new RegExp(`^\\s*${field}\\w*\\s`, 'im'));
+      }
+    },
+  );
+
+  it('records that somebody took part, and nothing that links them to their answers', () => {
+    const body = model('SurveyParticipant');
+    expect(body).not.toMatch(/response/i);
+    expect(body).not.toMatch(/createdAt|answeredAt/);
   });
 });
