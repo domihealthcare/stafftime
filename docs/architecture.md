@@ -1618,6 +1618,32 @@ kiosk and as `favicon.png`. They are served from the app itself because the
 deployed CSP only allows images from `'self'`; linking the website's image
 host would be blocked, and would break the day the website changes.
 
+## Profiles and photos
+
+"Your profile" (account menu, `/profile`) is where somebody sets how
+colleagues see them: the name they go by, pronouns, a phone number, one line
+about themselves, and a photo. It is the only way a phone number gets into the
+app for most staff, which is why the Directory used to show so few.
+
+**Photos are the one upload the app takes**, and a deliberate reversal of
+*Data this app does not hold* (Dominguez, September 2026), kept as narrow as
+it can be:
+
+- The browser crops the picture to its centre square, draws it at 256 px and
+  re-encodes it as a JPEG before it is sent. Re-encoding throws away
+  everything a camera attaches — where the photo was taken included — on the
+  device, not on our server.
+- The server has no image library and accepts nothing it would need one for:
+  a JPEG (checked by its signature and its start-of-frame marker, not its
+  name), no bigger than 150 KB, between 32 and 1024 px a side
+  (`profile/photo.ts`).
+- It is stored in its own table, `EmployeePhoto`, which a schema test holds
+  to the bytes and when they changed, and goes with the person.
+- It is served only to somebody signed in, from the app's own origin (the CSP
+  allows images from `'self'` only), at a URL carrying `photoUpdatedAt`, so it
+  can be cached without a stale face ever showing.
+- Its owner can remove it any time; an admin can remove anybody's.
+
 ## Help
 
 `/help`, from the account menu: a guide for everyone and, for managers and

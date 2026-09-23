@@ -74,7 +74,7 @@ export function ChecklistsPage() {
   return (
     <div>
       <PageHeading
-        title={isManager ? 'Onboarding & offboarding' : 'Your checklist'}
+        title={isManager ? 'Onboarding & Offboarding' : 'Your checklist'}
         subtitle={
           isManager
             ? 'Every step of bringing someone on and seeing them off, with the paperwork attached to it.'

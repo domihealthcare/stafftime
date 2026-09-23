@@ -1,4 +1,5 @@
 import type {
+  Profile,
   Announcement,
   Attention,
   Checklist,
@@ -680,6 +681,16 @@ export const api = {
 
   dashboard: (weeks: number) => request<Dashboard>(`/dashboard?weeks=${weeks}`),
   directory: () => request<DirectoryEntry[]>('/directory'),
+  profile: () => request<Profile>('/profile'),
+  updateProfile: (body: {
+    preferredName?: string;
+    pronouns?: string;
+    phone?: string;
+    about?: string;
+  }) => request<Profile>('/profile', { method: 'PATCH', body: JSON.stringify(body) }),
+  setPhoto: (image: string) =>
+    request<Profile>('/profile/photo', { method: 'PUT', body: JSON.stringify({ image }) }),
+  removePhoto: () => request<Profile>('/profile/photo', { method: 'DELETE' }),
 
   surveys: () => request<Survey[]>('/surveys'),
   survey: (id: string) => request<Survey>(`/surveys/${id}`),

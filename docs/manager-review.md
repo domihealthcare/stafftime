@@ -367,7 +367,17 @@ export, so the numbers agree.
 - **Tell us:** what would you look at first on a Monday morning that is not
   here?
 
-### 15. The look
+### 15. Profiles
+
+Menu under your name → **Your profile**. Everybody can add a photo of
+themselves, the name they go by, pronouns, a phone number and one line about
+themselves — all of which colleagues see in the Directory. The photo is the
+one thing anyone uploads to the app; it is cropped and shrunk on the phone,
+and anyone can take theirs down (an admin can take down anybody's).
+
+- **Tell us:** anything else people would want on their profile?
+
+### 16. The look
 
 The app now uses the Domi Healthcare colours from the website, and says
 **Domi Staff** everywhere: the sign-in screen, the browser tab, emails, the

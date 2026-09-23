@@ -56,8 +56,13 @@ This is a timekeeping app, not a payroll or HR system. It deliberately stores:
 - **no licence numbers** — the credential screen holds the expiry date, which is
   the thing a manager actually needs to act on
 
-Nothing is uploaded to the app at all. The only files it stores are the payroll
-export spreadsheets it generates itself.
+Nothing is uploaded to the app, with **one deliberate exception**: a
+**profile photo** of yourself (confirmed by Dominguez, September 2026). The
+browser crops it square, shrinks it to 256 px and re-encodes it as a small
+JPEG — which drops the camera's metadata, location included — and the server
+accepts nothing else. It is removable by its owner any time, and by an admin.
+Apart from that, the only files the app stores are the payroll export
+spreadsheets it generates itself.
 
 **Captured clock-in location** is kept, because it is the point of a browser
 punch, but on a short leash: never returned with a timesheet, readable one entry
@@ -161,6 +166,10 @@ Build this as an **adapter/plugin pattern**, not a hardcoded ADP integration:
      colour-blind-checked set of eight; a **Help** page (account menu) with a
      staff guide and a managers guide. The practice's logo, from the website,
      is on the sign-in screen, in the header, on the kiosk and as the favicon.
+   - **Profiles** (September 2026) — "Your profile" in the account menu:
+     photo, the name you go by, pronouns, phone and a one-line "about you",
+     all shown to colleagues in the Directory. Legal name, email, access,
+     job roles and offices are shown but are the practice's to change.
    - **Manager dashboard** (Manage → Dashboard, managers and admins) — this
      week's hours worked against scheduled, overtime, late clock-ins and time
      off; hours worked per week by location as a chart; a week-by-week table;

@@ -13,6 +13,7 @@ import { DirectoryPage } from './pages/DirectoryPage';
 import { JobRolesPage } from './pages/JobRolesPage';
 import { NewsPage } from './pages/NewsPage';
 import { HelpPage } from './pages/HelpPage';
+import { ProfilePage } from './pages/ProfilePage';
 import { ResourcePage } from './pages/ResourcePage';
 import { ResourcesPage } from './pages/ResourcesPage';
 import { NotificationsPage } from './pages/NotificationsPage';
@@ -82,6 +83,7 @@ function Routed() {
         <Route index element={<ClockPage />} />
         <Route path="news" element={<NewsPage />} />
         <Route path="help" element={<HelpPage />} />
+        <Route path="profile" element={<ProfilePage />} />
         <Route path="directory" element={<DirectoryPage />} />
         <Route path="surveys" element={<SurveysPage />} />
         <Route path="resources" element={<ResourcesPage />} />

@@ -61,6 +61,9 @@ export interface Employee extends EmployeeSummary {
   /// Whether a kiosk PIN is set. The PIN itself is never sent to the client.
   hasKioskPin?: boolean;
   preferredName: string | null;
+  pronouns?: string | null;
+  /// When their profile photo last changed; null for none.
+  photoUpdatedAt?: string | null;
   externalId?: string | null;
   /// ADP TotalSource's File # — needed before their hours can go in the ADP
   /// import file.
@@ -496,6 +499,9 @@ export interface DirectoryEntry {
   firstName: string;
   lastName: string;
   preferredName: string | null;
+  pronouns: string | null;
+  about: string | null;
+  photoUpdatedAt: string | null;
   email: string;
   phone: string | null;
   onLeave: boolean;
@@ -616,4 +622,20 @@ export interface Dashboard {
     clashes: { date: string; employeeName: string; locationName: string; reason: string }[];
     overtime: OvertimeWarning[];
   };
+}
+
+/// Your own profile, as the Profile screen shows it.
+export interface Profile {
+  id: string;
+  firstName: string;
+  lastName: string;
+  preferredName: string | null;
+  pronouns: string | null;
+  email: string;
+  phone: string | null;
+  about: string | null;
+  photoUpdatedAt: string | null;
+  role: Role;
+  jobRoles: { id: string; name: string; colour: string }[];
+  locations: { id: string; name: string; isPrimary: boolean }[];
 }

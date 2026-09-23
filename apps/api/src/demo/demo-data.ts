@@ -66,11 +66,14 @@ interface Person {
   /// Job roles by name — several for those who cover more than one job, which
   /// is the case the directory's colours are there to show.
   jobRoles: string[];
+  /// 555-01xx: reserved for fiction, so nobody is ever dialled by accident.
+  phone: string;
 }
 
 const PEOPLE: Person[] = [
   {
     email: 'r.alvarez@domihealthcare.com',
+    phone: '(201) 555-0110',
     firstName: 'Rosa',
     lastName: 'Alvarez',
     role: Role.MANAGER,
@@ -85,6 +88,7 @@ const PEOPLE: Person[] = [
   },
   {
     email: 'd.okafor@domihealthcare.com',
+    phone: '(201) 555-0111',
     firstName: 'Daniel',
     lastName: 'Okafor',
     role: Role.EMPLOYEE,
@@ -99,6 +103,7 @@ const PEOPLE: Person[] = [
   },
   {
     email: 'p.nguyen@domihealthcare.com',
+    phone: '(201) 555-0112',
     firstName: 'Phuong',
     lastName: 'Nguyen',
     role: Role.EMPLOYEE,
@@ -113,6 +118,7 @@ const PEOPLE: Person[] = [
   },
   {
     email: 'j.santos@domihealthcare.com',
+    phone: '(201) 555-0113',
     firstName: 'Julia',
     lastName: 'Santos',
     role: Role.EMPLOYEE,
@@ -127,6 +133,7 @@ const PEOPLE: Person[] = [
   },
   {
     email: 'k.brennan@domihealthcare.com',
+    phone: '(201) 555-0114',
     firstName: 'Kevin',
     lastName: 'Brennan',
     role: Role.EMPLOYEE,
@@ -141,6 +148,7 @@ const PEOPLE: Person[] = [
   },
   {
     email: 'a.haddad@domihealthcare.com',
+    phone: '(201) 555-0115',
     firstName: 'Amal',
     lastName: 'Haddad',
     role: Role.EMPLOYEE,
@@ -155,6 +163,7 @@ const PEOPLE: Person[] = [
   },
   {
     email: 't.lindqvist@domihealthcare.com',
+    phone: '(201) 555-0116',
     firstName: 'Tove',
     lastName: 'Lindqvist',
     role: Role.EMPLOYEE,
@@ -169,6 +178,7 @@ const PEOPLE: Person[] = [
   },
   {
     email: 'b.oyelaran@domihealthcare.com',
+    phone: '(201) 555-0117',
     firstName: 'Bola',
     lastName: 'Oyelaran',
     role: Role.EMPLOYEE,
@@ -214,6 +224,7 @@ export async function loadDemoData(prisma: PrismaClient) {
       update: {
         firstName: person.firstName,
         lastName: person.lastName,
+        phone: person.phone,
         role: person.role,
         payType: person.payType,
         employmentStatus: EmploymentStatus.ACTIVE,
@@ -231,6 +242,7 @@ export async function loadDemoData(prisma: PrismaClient) {
         email: person.email,
         firstName: person.firstName,
         lastName: person.lastName,
+        phone: person.phone,
         role: person.role,
         payType: person.payType,
         employmentStatus: EmploymentStatus.ACTIVE,

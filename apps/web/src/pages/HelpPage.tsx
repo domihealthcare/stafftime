@@ -206,6 +206,17 @@ const STAFF: Section[] = [
     title: 'Your account',
     topics: [
       {
+        question: 'How do I add my photo or phone number?',
+        answer: (
+          <p>
+            Menu under your name → <strong>Your profile</strong>. Add a photo, the name you go by,
+            pronouns, your phone number and a line about yourself. Colleagues see them in the
+            Directory. Your photo is cropped square and shrunk on your phone before it is sent;
+            remove it whenever you like.
+          </p>
+        ),
+      },
+      {
         question: 'How do I change my password?',
         answer: (
           <p>

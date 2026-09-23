@@ -13,6 +13,7 @@ import { SessionAuthGuard } from './common/auth/session.guard';
 import { validateEnv } from './config/env.validation';
 import { CredentialsModule } from './credentials/credentials.module';
 import { DirectoryModule } from './directory/directory.module';
+import { ProfileModule } from './profile/profile.module';
 import { EmailModule } from './email/email.module';
 import { EmployeesModule } from './employees/employees.module';
 import { ExportsModule } from './exports/exports.module';
@@ -52,6 +53,7 @@ import { TimeEntriesModule } from './time-entries/time-entries.module';
     AnnouncementsModule,
     JobRolesModule,
     DirectoryModule,
+    ProfileModule,
     AvailabilityModule,
     SurveysModule,
     DashboardModule,

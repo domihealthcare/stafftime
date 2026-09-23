@@ -160,7 +160,16 @@ model Employee {
   lastName      String
   preferredName String?
   email         String  @unique
+  /// A number colleagues can reach them on, shown in the Directory. Their own
+  /// to set on their profile; an admin can set it too.
   phone         String?
+  /// Optional, shown beside their name in the Directory ("she/her").
+  pronouns      String?
+  /// One line about themselves for the Directory, e.g. "Spanish speaker".
+  about         String?
+  /// When their profile photo last changed, or null for none. Doubles as the
+  /// photo URL's version, so a new photo is never served from a stale cache.
+  photoUpdatedAt DateTime?
 
   role             Role             @default(EMPLOYEE)
   employmentStatus EmploymentStatus @default(PENDING)
@@ -190,6 +199,8 @@ model Employee {
   /// an unwanted daily email is one that gets filtered, taking the one that
   /// mattered with it. Ignored for employees, who never receive it.
   wantsDailyDigest Boolean @default(true)
+
+  photo EmployeePhoto?
 
   /// Secret used to build this employee's calendar subscription URL. Null until
   /// they ask for one. Rotating it invalidates the old link everywhere.
@@ -1249,4 +1260,24 @@ model Feedback {
 
   @@index([archivedAt, receivedOn])
   @@map("feedback")
+}
+
+/// A person's profile photo — the one thing staff upload to the app.
+///
+/// A deliberate, narrow exception to *Data this app does not hold* (decided
+/// by Dominguez, September 2026): a picture of themselves that they choose,
+/// that colleagues see in the Directory and the header. The browser crops it
+/// square, shrinks it and re-encodes it as a small JPEG before it is sent —
+/// which also drops the camera's metadata, location included — and the server
+/// accepts nothing else. It is removable at any time, and goes with them if
+/// the person is deleted.
+model EmployeePhoto {
+  employeeId  String   @id @db.Uuid
+  bytes       Bytes
+  contentType String
+  updatedAt   DateTime @updatedAt
+
+  employee Employee @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+
+  @@map("employee_photos")
 }
