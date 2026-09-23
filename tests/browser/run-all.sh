@@ -40,6 +40,7 @@ reset_state() {
     -c "delete from unavailability;" \
     -c "delete from surveys;" \
     -c "delete from feedback;" \
+    -c "delete from locations where slug not in ('north-bergen', 'west-new-york');" \
     -c "delete from shifts where notes = 'availability-suite';" \
     -c "delete from job_roles where name not in ('Front Desk', 'Medical Assistant', 'Provider', 'Administrative', 'Manager');"
 }

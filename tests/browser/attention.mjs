@@ -191,8 +191,16 @@ await step('changing the threshold changes what the rota warns about', async () 
   // The real test of a setting is whether anything downstream notices.
   const threshold = admin.getByLabel('Overtime starts after');
   await threshold.fill('20');
+  // Wait for the save itself, then for the confirmation by its exact words:
+  // the Schedule check below is only meaningful once the new line is stored,
+  // and a loose "Saved." matches any sentence that happens to end in "saved."
+  const saving = admin.waitForResponse(
+    (r) => r.url().includes('/api/settings') && r.request().method() !== 'GET',
+  );
   await admin.getByRole('button', { name: 'Save' }).click();
-  await admin.getByText('Saved.').waitFor({ timeout: 15000 });
+  const saveResponse = await saving;
+  if (!saveResponse.ok()) throw new Error(`the save answered ${saveResponse.status()}`);
+  await admin.getByText('Saved.', { exact: true }).waitFor({ timeout: 15000 });
 
   // The seeded rota is a single 8-hour shift today, which is over 20 for
   // nobody — so build a week that clears the new line but not the old one.
@@ -234,8 +242,16 @@ await admin.screenshot({ path: `${OUT}/74-settings.png`, fullPage: true });
 await step('putting it back makes the warning go away again', async () => {
   await pickFromAccountMenu(admin, 'Practice settings');
   await admin.getByLabel('Overtime starts after').fill('40');
+  // Wait for the save itself, then for the confirmation by its exact words:
+  // the Schedule check below is only meaningful once the new line is stored,
+  // and a loose "Saved." matches any sentence that happens to end in "saved."
+  const saving = admin.waitForResponse(
+    (r) => r.url().includes('/api/settings') && r.request().method() !== 'GET',
+  );
   await admin.getByRole('button', { name: 'Save' }).click();
-  await admin.getByText('Saved.').waitFor({ timeout: 15000 });
+  const saveResponse = await saving;
+  if (!saveResponse.ok()) throw new Error(`the save answered ${saveResponse.status()}`);
+  await admin.getByText('Saved.', { exact: true }).waitFor({ timeout: 15000 });
 
   await admin.getByRole('link', { name: /^Schedule/ }).first().click();
   await admin.getByTestId('month-grid').waitFor({ timeout: 15000 });

@@ -120,13 +120,14 @@ export function AvailabilityPage() {
         title="Every week"
         rules={weekly}
         empty="Nothing every week."
-        onRemoved={(endsAfter) => {
+        onRemoved={async (endsAfter) => {
+          // Reload first, so "Removed." never sits above a list still showing it.
+          await load();
           setNotice(
             endsAfter
               ? `Removed. The weeks already published up to ${formatCalendarDate(endsAfter)} stay as they are.`
               : 'Removed.',
           );
-          void load();
         }}
         onError={setError}
       />
@@ -134,9 +135,9 @@ export function AvailabilityPage() {
         title="Particular dates"
         rules={oneOff}
         empty="No particular dates."
-        onRemoved={() => {
+        onRemoved={async () => {
+          await load();
           setNotice('Removed.');
-          void load();
         }}
         onError={setError}
       />
@@ -156,7 +157,7 @@ function RuleList({
   title: string;
   rules: UnavailabilityRule[];
   empty: string;
-  onRemoved: (endsAfter: string | null) => void;
+  onRemoved: (endsAfter: string | null) => void | Promise<void>;
   onError: (message: string) => void;
 }) {
   return (
@@ -181,7 +182,7 @@ function RuleRow({
   onError,
 }: {
   rule: UnavailabilityRule;
-  onRemoved: (endsAfter: string | null) => void;
+  onRemoved: (endsAfter: string | null) => void | Promise<void>;
   onError: (message: string) => void;
 }) {
   const [busy, setBusy] = useState(false);

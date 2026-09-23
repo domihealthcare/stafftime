@@ -164,7 +164,11 @@ await step('removing a weekly rule that has not started just deletes it', async 
   const card = frankie.getByTestId('rule-Not available Saturdays (all day)');
   await card.getByRole('button', { name: 'Remove' }).click();
   await frankie.getByText('Removed.', { exact: true }).waitFor({ timeout: 10000 });
-  if ((await card.count()) > 0) throw new Error('the rule is still listed');
+  // Gone from the list — waited for, not sampled once, so a slow reload
+  // cannot pass or fail this by timing alone.
+  await card.waitFor({ state: 'detached', timeout: 10000 });
+  const rules = (await json(frankie, '/availability')).body.rules;
+  if (rules.some((rule) => rule.weekday === 6)) throw new Error('the rule is still stored');
 });
 
 await frankieCtx.close();
