@@ -40,11 +40,12 @@ const WEAK_STEMS = new Set([
 ]);
 
 /// Keyboard runs and counting sequences, which survive stem-stripping.
-const SEQUENCES = [
-  '1234567890',
-  'qwertyuiopasdfghjklzxcvbnm',
-  'abcdefghijklmnopqrstuvwxyz',
-];
+const SEQUENCES = ['1234567890', 'qwertyuiopasdfghjklzxcvbnm', 'abcdefghijklmnopqrstuvwxyz'];
+
+export const MIN_LENGTH = 8;
+
+/// The rule in words, for every screen and error that states it.
+export const PASSWORD_RULE = 'Use at least 8 characters, including a number.';
 
 export interface PasswordProblem {
   ok: false;
@@ -75,15 +76,20 @@ export class PasswordService {
   }
 
   /**
-   * Length first, and no composition rules.
+   * At least 8 characters and at least one number — the rule Dominguez chose
+   * in September 2026, replacing a 12-character minimum whose advice ("three
+   * unrelated words") did not suit the practice.
    *
-   * Forced symbol/digit mixes push people toward "Password1!" and sticky notes.
-   * NIST dropped them for exactly that reason; length plus a blocklist of the
-   * obvious guesses does more real work.
+   * The blocklist below still does the real work: "password1", the practice's
+   * name, somebody's own name and keyboard runs are refused however they are
+   * padded, which is what stops the guesses an attacker would actually try.
    */
-  check(plain: string, context: { email?: string; firstName?: string; lastName?: string } = {}): PasswordCheck {
-    if (plain.length < 12) {
-      return { ok: false, reason: 'Use at least 12 characters. A short phrase works well.' };
+  check(
+    plain: string,
+    context: { email?: string; firstName?: string; lastName?: string } = {},
+  ): PasswordCheck {
+    if (plain.length < MIN_LENGTH) {
+      return { ok: false, reason: PASSWORD_RULE };
     }
     if (plain.length > 200) {
       return { ok: false, reason: 'That password is too long (200 characters maximum).' };
@@ -96,8 +102,7 @@ export class PasswordService {
     if (WEAK_STEMS.has(stem)) {
       return {
         ok: false,
-        reason:
-          'That is a common password with padding added. Try three unrelated words instead.',
+        reason: 'That is a common password with a number added. Choose something less obvious.',
       };
     }
 
@@ -105,7 +110,11 @@ export class PasswordService {
       return { ok: false, reason: 'A password of only digits is too easy to guess.' };
     }
 
-    // A long run straight off the keyboard is not a passphrase.
+    if (!/[0-9]/.test(plain)) {
+      return { ok: false, reason: 'Include at least one number.' };
+    }
+
+    // A long run straight off the keyboard is not a password.
     if (SEQUENCES.some((sequence) => containsRun(sequence, normalised, 8))) {
       return { ok: false, reason: 'That password is too easy to guess. Choose something else.' };
     }

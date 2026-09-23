@@ -19,7 +19,7 @@ export class FirstRunSetupDto {
   lastName!: string;
 
   @IsString()
-  @MinLength(12, { message: 'Use at least 12 characters. A short phrase works well.' })
+  @MinLength(8, { message: 'Use at least 8 characters, including a number.' })
   @MaxLength(200)
   password!: string;
 }

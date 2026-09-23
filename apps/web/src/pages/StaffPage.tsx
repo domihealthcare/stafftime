@@ -3,6 +3,7 @@ import { ApiError, api } from '../lib/api';
 import { useSession } from '../lib/session';
 import type { Employee, Location, Role } from '../lib/types';
 import { Alert, Badge, Card, EmptyState, PageHeading, Spinner } from '../components/ui';
+import { PASSWORD_RULE, meetsPasswordRule } from '../lib/password';
 
 const ROLE_LABELS: Record<Role, string> = {
   EMPLOYEE: 'Employee',
@@ -134,9 +135,7 @@ function StaffCard({
   const [problem, setProblem] = useState<string | null>(null);
   const [editing, setEditing] = useState(false);
   const [role, setRole] = useState<Role>(person.role);
-  const [assigned, setAssigned] = useState<string[]>(
-    person.locations.map((l) => l.locationId),
-  );
+  const [assigned, setAssigned] = useState<string[]>(person.locations.map((l) => l.locationId));
 
   const terminated = person.employmentStatus === 'TERMINATED';
 
@@ -249,13 +248,11 @@ function StaffCard({
         <div className="mt-3">
           <Alert tone="success">
             <p className="font-medium">
-              Temporary password for {person.firstName}:{' '}
-              <span className="font-mono">{issued}</span>
+              Temporary password for {person.firstName}: <span className="font-mono">{issued}</span>
             </p>
             <p className="mt-1 text-xs">
-              Give it to them by phone or in person, not in the same message as the link.
-              They must change it the first time they sign in. This is the only time it is
-              shown.
+              Give it to them by phone or in person, not in the same message as the link. They must
+              change it the first time they sign in. This is the only time it is shown.
             </p>
             <button
               type="button"
@@ -270,10 +267,7 @@ function StaffCard({
 
       {settingPassword && (
         <div className="mt-3 border-t border-slate-100 pt-3">
-          <label
-            htmlFor={`temp-${person.id}`}
-            className="block text-sm font-medium text-slate-700"
-          >
+          <label htmlFor={`temp-${person.id}`} className="block text-sm font-medium text-slate-700">
             Temporary password
           </label>
           <div className="mt-1 flex flex-wrap gap-2">
@@ -294,7 +288,7 @@ function StaffCard({
             </button>
             <button
               type="button"
-              disabled={busy || temporary.length < 12}
+              disabled={busy || !meetsPasswordRule(temporary)}
               onClick={() => void issuePassword()}
               className="rounded-lg bg-brand-600 px-3 py-2 text-sm font-medium text-white hover:bg-brand-700 disabled:opacity-60"
             >
@@ -302,8 +296,7 @@ function StaffCard({
             </button>
           </div>
           <p className="mt-1 text-xs text-slate-500">
-            At least 12 characters. Signs them out everywhere and forces a change at next
-            sign-in.
+            {PASSWORD_RULE} Signs them out everywhere and forces a change at next sign-in.
           </p>
           {problem && (
             <div className="mt-2">
@@ -377,13 +370,7 @@ function StaffCard({
   );
 }
 
-function AddStaffForm({
-  locations,
-  onCreated,
-}: {
-  locations: Location[];
-  onCreated: () => void;
-}) {
+function AddStaffForm({ locations, onCreated }: { locations: Location[]; onCreated: () => void }) {
   const [firstName, setFirstName] = useState('');
   const [lastName, setLastName] = useState('');
   const [email, setEmail] = useState('');
@@ -513,9 +500,7 @@ function AddStaffForm({
             onChange={(event) => setHireDate(event.target.value)}
             className={field}
           />
-          <p className="mt-1 text-xs text-slate-500">
-            Used to work out their first-year PTO.
-          </p>
+          <p className="mt-1 text-xs text-slate-500">Used to work out their first-year PTO.</p>
         </div>
 
         <fieldset>
@@ -565,15 +550,29 @@ function AddStaffForm({
 }
 
 const WORDS = [
-  'harbour', 'lantern', 'copper', 'tuesday', 'meadow', 'pebble', 'anchor',
-  'willow', 'cinder', 'marble', 'thicket', 'quarry', 'saffron', 'drifting',
+  'harbour',
+  'lantern',
+  'copper',
+  'tuesday',
+  'meadow',
+  'pebble',
+  'anchor',
+  'willow',
+  'cinder',
+  'marble',
+  'thicket',
+  'quarry',
+  'saffron',
+  'drifting',
 ];
 
-/// A temporary password the admin can read aloud over the phone.
+/// A temporary password the admin can read aloud over the phone: two words and
+/// a number, e.g. "copper-meadow-42" — which meets the 8-characters-and-a-number
+/// rule with room to spare.
 function suggestPassword(): string {
   const picked: string[] = [];
   const pool = [...WORDS];
-  for (let i = 0; i < 3; i += 1) {
+  for (let i = 0; i < 2; i += 1) {
     const index = Math.floor(Math.random() * pool.length);
     picked.push(pool.splice(index, 1)[0]);
   }

@@ -39,16 +39,31 @@ describe('PasswordService', () => {
     const ok = (password: string, context = {}) => service.check(password, context).ok;
 
     it('accepts a reasonable passphrase', () => {
-      expect(ok('breakfast tuesday lamp')).toBe(true);
+      expect(ok('breakfast lamp 7')).toBe(true);
     });
 
-    it('requires at least 12 characters', () => {
-      expect(ok('short1234')).toBe(false);
-      expect(ok('exactly12chr')).toBe(true);
+    // The rule Dominguez chose in September 2026: 8 characters and a number.
+    it('requires at least 8 characters', () => {
+      expect(ok('tulip7x')).toBe(false);
+      expect(ok('tulip7xz')).toBe(true);
     });
 
-    // Every case below is at least 12 characters, so it must be the policy
-    // rejecting it rather than the length check firing first.
+    it('requires a number', () => {
+      expect(ok('breakfast lamp')).toBe(false);
+      expect(ok('correct horse battery staple')).toBe(false);
+      expect(service.check('breakfast lamp')).toEqual({
+        ok: false,
+        reason: 'Include at least one number.',
+      });
+    });
+
+    it('lets a short password through when it has a number and no obvious base', () => {
+      expect(ok('Sunflowr8')).toBe(true);
+      expect(ok('blue7kite')).toBe(true);
+    });
+
+    // Every case below meets the length and has a number, so it must be the
+    // blocklist rejecting it rather than the rule firing first.
     it('rejects a weak base padded out to reach the length limit', () => {
       for (const padded of [
         'password1234',
@@ -57,8 +72,11 @@ describe('PasswordService', () => {
         'letmein12345',
         'changeme1234',
         'welcome12345',
+        'password1',
+        'Password1',
+        'qwerty12',
       ]) {
-        expect(padded.length).toBeGreaterThanOrEqual(12);
+        expect(padded.length).toBeGreaterThanOrEqual(8);
         expect(ok(padded)).toBe(false);
       }
     });
@@ -92,14 +110,14 @@ describe('PasswordService', () => {
         firstName: 'Frankie',
         lastName: 'Front-Desk',
       };
-      expect(ok('frankie-loves-cats', context)).toBe(false);
-      expect(ok('my front-desk chair', context)).toBe(false);
-      expect(ok('breakfast tuesday lamp', context)).toBe(true);
+      expect(ok('frankie-loves-cats-4', context)).toBe(false);
+      expect(ok('my front-desk chair 4', context)).toBe(false);
+      expect(ok('breakfast lamp 7', context)).toBe(true);
     });
 
     it('ignores a name fragment too short to be meaningful', () => {
       // "ma" would otherwise reject half the dictionary.
-      expect(ok('tomato marmalade jar', { email: 'ma@domihealthcare.com' })).toBe(true);
+      expect(ok('tomato marmalade 3', { email: 'ma@domihealthcare.com' })).toBe(true);
     });
 
     it('rejects an absurdly long password rather than hashing it', () => {
@@ -108,10 +126,11 @@ describe('PasswordService', () => {
 
     it('accepts ordinary strong passphrases', () => {
       for (const good of [
-        'breakfast tuesday lamp',
-        'harbour lantern tuesday',
+        'breakfast lamp 7',
+        'harbour lantern 7',
         'Th3 Quick Br0wn Fox!',
-        'correct horse battery staple',
+        'correct horse battery 42',
+        'blue7kite',
       ]) {
         expect(ok(good)).toBe(true);
       }
@@ -121,7 +140,7 @@ describe('PasswordService', () => {
       const verdict = service.check('short');
       expect(verdict.ok).toBe(false);
       if (!verdict.ok) {
-        expect(verdict.reason).toMatch(/12 characters/);
+        expect(verdict.reason).toBe('Use at least 8 characters, including a number.');
       }
     });
   });

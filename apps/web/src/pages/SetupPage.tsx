@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { ApiError, api } from '../lib/api';
 import { PasswordField } from '../components/PasswordField';
 import { Alert, Card } from '../components/ui';
+import { PASSWORD_RULE, meetsPasswordRule } from '../lib/password';
 
 /**
  * Shown only on a brand-new deployment, when no administrator exists yet and a
@@ -24,7 +25,7 @@ export function SetupPage({ onCreated }: { onCreated: () => void }) {
     email.includes('@') &&
     firstName.trim().length > 0 &&
     lastName.trim().length > 0 &&
-    password.length >= 12 &&
+    meetsPasswordRule(password) &&
     confirmation === password;
 
   async function submit(event: React.FormEvent) {
@@ -79,8 +80,7 @@ export function SetupPage({ onCreated }: { onCreated: () => void }) {
                 className={`${field} font-mono text-sm`}
               />
               <p className="mt-1 text-xs text-slate-500">
-                The <code className="font-mono">SETUP_TOKEN</code> you set in your hosting
-                settings.
+                The <code className="font-mono">SETUP_TOKEN</code> you set in your hosting settings.
               </p>
             </div>
 
@@ -135,8 +135,8 @@ export function SetupPage({ onCreated }: { onCreated: () => void }) {
               onChange={setPassword}
               autoComplete="new-password"
               requirement={{
-                label: 'At least 12 characters. Three unrelated words work well.',
-                met: password.length >= 12,
+                label: PASSWORD_RULE,
+                met: meetsPasswordRule(password),
               }}
             />
 

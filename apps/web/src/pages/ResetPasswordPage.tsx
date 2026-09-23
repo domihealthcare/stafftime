@@ -3,6 +3,7 @@ import { Link, useSearchParams } from 'react-router-dom';
 import { PasswordField } from '../components/PasswordField';
 import { Alert, Card } from '../components/ui';
 import { ApiError, api } from '../lib/api';
+import { PASSWORD_RULE, meetsPasswordRule } from '../lib/password';
 
 /**
  * Spending a reset link.
@@ -42,8 +43,8 @@ export function ResetPasswordPage() {
     return (
       <Shell title="That link is not complete">
         <Alert>
-          The address is missing its token. Open the link from the email itself, or ask
-          for a new one.
+          The address is missing its token. Open the link from the email itself, or ask for a new
+          one.
         </Alert>
         <p className="mt-4 text-center text-sm">
           <Link to="/forgot-password" className="font-medium text-brand-700 hover:text-brand-900">
@@ -58,8 +59,7 @@ export function ResetPasswordPage() {
     return (
       <Shell title="Your password is set">
         <Alert tone="success">
-          You have been signed out everywhere, on every device. Sign in again with the
-          new password.
+          You have been signed out everywhere, on every device. Sign in again with the new password.
         </Alert>
         <p className="mt-4 text-center text-sm">
           <Link to="/" className="font-medium text-brand-700 hover:text-brand-900">
@@ -75,7 +75,7 @@ export function ResetPasswordPage() {
       <form onSubmit={(event) => void submit(event)} className="space-y-4">
         {/* The hint sits outside the label and is tied on with
             aria-describedby. Inside it, it would become part of the field's
-            name — "New password At least 12 characters…" — which is both wrong
+            name — "New password At least 8 characters…" — which is both wrong
             for a screen reader and impossible to address in a test. */}
         <PasswordField
           id="new"
@@ -85,8 +85,8 @@ export function ResetPasswordPage() {
           autoComplete="new-password"
           autoFocus
           requirement={{
-            label: 'At least 12 characters. Three unrelated words work well.',
-            met: password.length >= 12,
+            label: PASSWORD_RULE,
+            met: meetsPasswordRule(password),
           }}
         />
 

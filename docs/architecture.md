@@ -196,12 +196,18 @@ an admin. An admin can reset it sooner by issuing a temporary password.
 
 ### The password policy
 
-Length, plus a blocklist. No forced symbol-and-digit mixes: those produce
-`Password1!` and sticky notes, which is why NIST dropped them.
+**At least 8 characters, including a number** — Dominguez's choice in
+September 2026. It replaced a 12-character minimum whose advice ("three
+unrelated words") did not suit the practice. No symbol or capital is required:
+those produce `Password1!` and sticky notes, which is why NIST dropped them.
 
-The blocklist works on the **stem** — digits and punctuation are stripped before
-comparison — because a 12-character minimum does not prevent `password1234`, it
-invites it. Also rejected: keyboard and counting runs, digits alone, too few
+The rule lives in `PasswordService` (`PASSWORD_RULE`, `MIN_LENGTH`) and, for the
+screens' "not yet" hint only, in `apps/web/src/lib/password.ts`; the server
+always decides. `create-admin` uses the same check.
+
+The blocklist does the real work, on the **stem** — digits and punctuation are
+stripped before comparison — because a minimum length does not prevent
+`password1`, it invites it. Also rejected: keyboard and counting runs, digits alone, too few
 distinct characters, the practice and location names, and the user's own name or
 email.
 

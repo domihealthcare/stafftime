@@ -116,13 +116,22 @@ await step('a weak replacement is refused with a reason', async () => {
   const alert = page.getByRole('alert');
   await alert.waitFor({ timeout: 10000 });
   const text = await alert.innerText();
-  if (!/common password|12 characters|easy to guess/i.test(text))
+  if (!/common password|8 characters|easy to guess/i.test(text))
     throw new Error(`unhelpful reason: "${text}"`);
 });
 
+await step('a password with no number is refused, and the hint says why before sending', async () => {
+  // The rule Dominguez chose: at least 8 characters, including a number.
+  await page.getByLabel('New password', { exact: true }).fill('harbour lantern');
+  await page.getByLabel('Confirm new password').fill('harbour lantern');
+  if (await page.getByRole('button', { name: 'Change password' }).isEnabled())
+    throw new Error('submit was enabled for a password with no number');
+  await page.getByText('At least 8 characters, including a number.').waitFor({ timeout: 5000 });
+});
+
 await step('mismatched confirmation blocks submission before any request', async () => {
-  await page.getByLabel('New password', { exact: true }).fill('harbour lantern tuesday');
-  await page.getByLabel('Confirm new password').fill('harbour lantern wednesday');
+  await page.getByLabel('New password', { exact: true }).fill('harbour lantern 7');
+  await page.getByLabel('Confirm new password').fill('harbour lantern 8');
   await page.getByText('Those passwords do not match').waitFor({ timeout: 5000 });
   if (await page.getByRole('button', { name: 'Change password' }).isEnabled())
     throw new Error('submit was enabled with mismatched passwords');
@@ -130,8 +139,8 @@ await step('mismatched confirmation blocks submission before any request', async
 
 await step('a good password is accepted and the app unlocks', async () => {
   await page.getByLabel('Temporary password').fill('shift-change-2026');
-  await page.getByLabel('New password', { exact: true }).fill('harbour lantern tuesday');
-  await page.getByLabel('Confirm new password').fill('harbour lantern tuesday');
+  await page.getByLabel('New password', { exact: true }).fill('harbour lantern 7');
+  await page.getByLabel('Confirm new password').fill('harbour lantern 7');
   await page.getByRole('button', { name: 'Change password' }).click();
   await page.getByText('Not clocked in').waitFor({ timeout: 15000 });
 });
@@ -145,7 +154,7 @@ await step('the new password works on a fresh sign-in, the old one does not', as
   await page.getByRole('alert').waitFor({ timeout: 10000 });
 
   await page.reload({ waitUntil: 'networkidle' });
-  await signIn(page, 'ma@domihealthcare.com', 'harbour lantern tuesday');
+  await signIn(page, 'ma@domihealthcare.com', 'harbour lantern 7');
   await page.getByText('Not clocked in').waitFor({ timeout: 15000 });
 });
 

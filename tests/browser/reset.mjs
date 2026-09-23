@@ -95,8 +95,8 @@ await step('the emailed link opens the new-password screen', async () => {
 });
 
 await step('mismatched confirmation blocks submission before any request', async () => {
-  await page.getByLabel('New password', { exact: true }).fill('harbour lantern tuesday');
-  await page.getByLabel('Confirm new password').fill('harbour lantern wednesday');
+  await page.getByLabel('New password', { exact: true }).fill('harbour lantern 7');
+  await page.getByLabel('Confirm new password').fill('harbour lantern 8');
   await page.getByText('Those passwords do not match').waitFor({ timeout: 5000 });
   if (await page.getByRole('button', { name: 'Set my password' }).isEnabled())
     throw new Error('submit was enabled with mismatched passwords');
@@ -106,12 +106,13 @@ await step('a weak password is refused with a reason', async () => {
   await page.getByLabel('New password', { exact: true }).fill('password123');
   await page.getByLabel('Confirm new password').fill('password123');
   await page.getByRole('button', { name: 'Set my password' }).click();
-  await page.getByText(/at least 12 characters/).waitFor({ timeout: 15000 });
+  // Long enough and has a number, so it is the blocklist refusing it.
+  await page.getByText(/common password with a number added/).waitFor({ timeout: 15000 });
 });
 
 await step('a good password is accepted, and it says you are signed out everywhere', async () => {
-  await page.getByLabel('New password', { exact: true }).fill('harbour lantern tuesday');
-  await page.getByLabel('Confirm new password').fill('harbour lantern tuesday');
+  await page.getByLabel('New password', { exact: true }).fill('harbour lantern 7');
+  await page.getByLabel('Confirm new password').fill('harbour lantern 7');
   await page.getByRole('button', { name: 'Set my password' }).click();
   await page.getByText('Your password is set').waitFor({ timeout: 20000 });
   await page.getByText(/signed out everywhere/).waitFor({ timeout: 5000 });
@@ -127,7 +128,7 @@ await step('the new password signs in and the old one does not', async () => {
 
   await page.reload({ waitUntil: 'networkidle' });
   await page.getByLabel('Email').fill('frontdesk@domihealthcare.com');
-  await page.getByLabel('Password', { exact: true }).fill('harbour lantern tuesday');
+  await page.getByLabel('Password', { exact: true }).fill('harbour lantern 7');
   await page.getByRole('button', { name: 'Sign in' }).click();
   await page.getByText('Not clocked in').waitFor({ timeout: 20000 });
 });
@@ -137,8 +138,8 @@ await step('the same link cannot be spent twice', async () => {
   const second = await fresh.newPage();
   await second.goto(`${BASE}/reset-password?token=${token}`, { waitUntil: 'networkidle' });
 
-  await second.getByLabel('New password', { exact: true }).fill('another good phrase here');
-  await second.getByLabel('Confirm new password').fill('another good phrase here');
+  await second.getByLabel('New password', { exact: true }).fill('another phrase 9');
+  await second.getByLabel('Confirm new password').fill('another phrase 9');
   await second.getByRole('button', { name: 'Set my password' }).click();
   await second.getByText(/expired or has already been used/).waitFor({ timeout: 15000 });
   await fresh.close();
@@ -152,8 +153,8 @@ await step('a made-up token is refused in the same words', async () => {
     { waitUntil: 'networkidle' },
   );
 
-  await guesser.getByLabel('New password', { exact: true }).fill('another good phrase here');
-  await guesser.getByLabel('Confirm new password').fill('another good phrase here');
+  await guesser.getByLabel('New password', { exact: true }).fill('another phrase 9');
+  await guesser.getByLabel('Confirm new password').fill('another phrase 9');
   await guesser.getByRole('button', { name: 'Set my password' }).click();
   await guesser.getByText(/expired or has already been used/).waitFor({ timeout: 15000 });
   await fresh.close();
