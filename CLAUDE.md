@@ -158,9 +158,8 @@ Build this as an **adapter/plugin pattern**, not a hardcoded ADP integration:
    - **Look and help** (September 2026) — Domi Healthcare's blue (#3A6888)
      throughout; job roles each wear a colour managers pick from a fixed,
      colour-blind-checked set of eight; a **Help** page (account menu) with a
-     staff guide and a managers guide. The header mark is a stand-in: the real
-     logo could not be fetched from the website's image host, so it needs
-     adding to the repo by hand.
+     staff guide and a managers guide. The practice's logo, from the website,
+     is on the sign-in screen, in the header, on the kiosk and as the favicon.
    - **Manager dashboard** (Manage → Dashboard, managers and admins) — this
      week's hours worked against scheduled, overtime, late clock-ins and time
      off; hours worked per week by location as a chart; a week-by-week table;

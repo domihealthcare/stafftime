@@ -32,7 +32,11 @@ visitor.on('pageerror', (e) => errors.push(`pageerror: ${e.message}`));
 
 await step('the sign-in screen carries the Domi Healthcare name and blue', async () => {
   await visitor.goto(`${BASE}/`, { waitUntil: 'networkidle' });
-  await visitor.getByText('Domi Healthcare', { exact: true }).waitFor({ timeout: 10000 });
+  const logo = visitor.getByRole('img', { name: 'Domi Healthcare' });
+  await logo.waitFor({ timeout: 10000 });
+  // Loaded, not a broken image — the deployed CSP allows images from the app itself only.
+  if (!(await logo.evaluate((img) => img.complete && img.naturalWidth > 0)))
+    throw new Error('the Domi Healthcare logo did not load');
   // #3A6888, the blue on domihealthcare.com.
   const background = await visitor
     .getByRole('button', { name: 'Sign in' })

@@ -1610,10 +1610,13 @@ chroma and move only lightness. White on 600 is 6.0:1. Type is Avenir where the
 device has it (every Apple device), as on the website, and the system face
 elsewhere: Avenir is not a font the app may serve itself.
 
-The mark in the header is a clock face in that blue, **not the Domi Healthcare
-logo**. The logo lives on the website's image host, which this build
-environment cannot reach; once a copy of the file is in the repo it replaces
-`BrandMark` in `components/Brand.tsx` and `public/favicon.svg`.
+The logo is the practice's own, from domihealthcare.com ("Original on
+Transparent", 5000 px square), cropped into `apps/web/public/brand/`:
+`domi-healthcare.png` (roof and name) on the sign-in screen, and
+`domi-mark.png` (the roof alone) beside "Domi Staff" in the header, on the
+kiosk and as `favicon.png`. They are served from the app itself because the
+deployed CSP only allows images from `'self'`; linking the website's image
+host would be blocked, and would break the day the website changes.
 
 ## Help
 

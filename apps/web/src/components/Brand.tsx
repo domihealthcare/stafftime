@@ -1,24 +1,16 @@
-/// The app's mark: a clock face in the practice's blue. Not the Domi
-/// Healthcare logo — that belongs to the website and should replace this once
-/// a copy of the file is in the repo.
-export function BrandMark({ className = 'h-7 w-7' }: { className?: string }) {
-  return (
-    <svg viewBox="0 0 32 32" className={className} aria-hidden="true">
-      <circle cx="16" cy="16" r="14" className="fill-brand-600" />
-      <path
-        d="M16 8v8.5l5.5 3.2"
-        fill="none"
-        stroke="#fff"
-        strokeWidth="2.5"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
-    </svg>
-  );
+/// Domi Healthcare's roof mark, cropped from the practice's logo on
+/// domihealthcare.com. Decorative: the name always sits beside it in text.
+export function BrandMark({ className = 'h-6 w-auto' }: { className?: string }) {
+  return <img src="/brand/domi-mark.png" alt="" aria-hidden="true" className={className} />;
 }
 
-/// "Domi Staff" as it appears in the header: the practice's name in its blue,
-/// the app's in grey.
+/// The full logo — roof and "Domi Healthcare" — for the sign-in screen.
+export function BrandLogo({ className = 'h-16 w-auto' }: { className?: string }) {
+  return <img src="/brand/domi-healthcare.png" alt="Domi Healthcare" className={className} />;
+}
+
+/// "Domi Staff" as it appears in the header: the roof mark, the practice's
+/// name in its blue, the app's in grey.
 export function Wordmark() {
   return (
     <span className="flex items-center gap-2">
