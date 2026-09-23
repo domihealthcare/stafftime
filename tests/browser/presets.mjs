@@ -80,6 +80,7 @@ await step('changing the settings then applying the report restores them', async
 });
 
 await step('the saved report still produces a working file', async () => {
+  await mgr.getByRole('button', { name: 'Custom', exact: true }).click();
   await mgr.getByLabel('From').fill('2026-09-01');
   await mgr.getByLabel('To (included)').fill('2026-09-30');
   await mgr.getByText(/entries ·/).waitFor({ timeout: 15000 });

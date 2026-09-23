@@ -3,6 +3,7 @@ import { ApiError, api } from '../lib/api';
 import { useSession } from '../lib/session';
 import { PasswordField } from '../components/PasswordField';
 import { Alert, Card } from '../components/ui';
+import { PASSWORD_RULE, meetsPasswordRule } from '../lib/password';
 
 /**
  * Shown on its own when a temporary password is still in force — the server
@@ -22,7 +23,7 @@ export function ChangePasswordPage({ forced }: { forced: boolean }) {
   // The length rule is now shown live by the field itself, rather than as a
   // separate line that only turned red after the fact.
   const canSubmit =
-    currentPassword.length > 0 && newPassword.length >= 12 && confirmation === newPassword;
+    currentPassword.length > 0 && meetsPasswordRule(newPassword) && confirmation === newPassword;
 
   async function submit(event: React.FormEvent) {
     event.preventDefault();
@@ -50,9 +51,7 @@ export function ChangePasswordPage({ forced }: { forced: boolean }) {
 
   return (
     <div
-      className={
-        forced ? 'flex min-h-screen flex-col justify-center bg-slate-100 px-4 py-12' : ''
-      }
+      className={forced ? 'flex min-h-screen flex-col justify-center bg-slate-100 px-4 py-12' : ''}
     >
       <div className="mx-auto w-full max-w-sm">
         <div className="mb-6">
@@ -84,9 +83,8 @@ export function ChangePasswordPage({ forced }: { forced: boolean }) {
               onChange={setNewPassword}
               autoComplete="new-password"
               requirement={{
-                label:
-                  'At least 12 characters. Three unrelated words make a strong, memorable password.',
-                met: newPassword.length >= 12,
+                label: PASSWORD_RULE,
+                met: meetsPasswordRule(newPassword),
               }}
             />
 

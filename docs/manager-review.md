@@ -1,7 +1,10 @@
-# Domi Time & Scheduling — what to look at, and what to tell us
+# Domi Staff — what to look at, and what to tell us
 
-This is a first working version of the clock-in and scheduling app for the
-practice, at **https://staff.domihealthcare.com**.
+This is a working version of **Domi Staff**, the practice's staff app, at
+**https://staff.domihealthcare.com**. It started as a clock-in and scheduling
+app, and that is still its main job; around it now sit practice news, a staff
+directory, resources for each job role, availability, anonymous surveys and a
+dashboard for managers.
 
 It is at a real address, but it is **not in use**: nothing in it is real. The
 staff are invented, the hours are invented, and none of it reaches payroll. No
@@ -33,6 +36,17 @@ Start as Rosa — she is the one whose job this app is meant to make easier.
 
 Sign out and back in to swap between them; the two views are genuinely
 different, and the difference is worth seeing.
+
+There are six more ordinary staff accounts, with the same password, if you want
+to see the directory or a survey from somebody else's side:
+`p.nguyen@`, `j.santos@`, `k.brennan@`, `a.haddad@`, `t.lindqvist@` and
+`b.oyelaran@domihealthcare.com`.
+
+**Stuck?** The menu under your name has **Help**: a short guide for everyone,
+and a second one for managers.
+
+**Passwords** are now at least 8 characters with a number in them — the old
+"three words" rule is gone. A few very common passwords are still refused.
 
 The admin screens — staff, kiosks, locations, policy — sit behind a separate
 account that Anthony holds, so ask him to show you those rather than looking
@@ -93,7 +107,19 @@ Bergen tablet will not show the West New York names.
 
 ### 3. The timesheet (**Timesheet**)
 
-A week at a time. You will see punches that are fine and a few that are not:
+It opens on this week. Along the top are shortcuts — **this week, last week,
+this pay period, last pay period, this month, last month** — and **Custom** for
+any two dates; the arrows step back and forward by the same kind of period. The
+same picker is on **Export**, which opens on the last pay period.
+
+**The pay-period shortcuts are greyed out until an admin sets the pay period
+start** (menu under your name → Practice settings). Pay is every two weeks, so
+the app needs the first day of any one pay period and works out the rest.
+
+- **Tell us:** which day does a Domi pay period start on? One real date is all
+  it needs.
+
+You will see punches that are fine and a few that are not:
 somebody late, somebody who left early, somebody who forgot to clock out
 entirely, and one entry a manager had to correct — with the reason recorded
 underneath it, because a corrected timesheet with no explanation is worth
@@ -130,8 +156,8 @@ everybody, or your own start times if you are looking at your own shifts. On a
 phone it shows the start time only, because a column that narrow cannot fit
 "1pm–9pm" without cutting it in half. Whichever view you pick is remembered.
 
-Both numbers behind the schedule warnings are now yours, on the **Settings**
-screen: how many hours a week counts as overtime (40), and how many days before
+Both numbers behind the schedule warnings are now yours, under **Practice
+settings** in the menu under your name: how many hours a week counts as overtime (40), and how many days before
 a week starts the app chases you for an unpublished rota (4). An admin changes
 them; managers can see them.
 
@@ -212,16 +238,32 @@ round-up (see the note about email below).
 - **Tell us:** should a lapsed licence actually stop somebody being put on the
   rota, or is telling you enough? Today it tells you.
 
-### 8. The payroll spreadsheet (**Export**)
+### 8. Payroll: the spreadsheet and the ADP file (**Manage → Export**)
 
-Pick a period, tick the columns you want, download an Excel file. It tells you
-how many entries are flagged before you download, so nothing surprising lands in
-payroll.
+Pick a period (it opens on the last pay period once that is set up), tick the
+columns you want, download an Excel file. It tells you how many entries are
+flagged before you download, so nothing surprising lands in payroll.
 
-**The ADP TotalSource export is not built yet.** It cannot be: it needs the
-client code and the exact pay codes from ADP, and guessing them would produce a
-file ADP rejects. You will see it listed on the screen, greyed out, saying what
-it is waiting for. Until then this spreadsheet is the payroll route.
+**The ADP TotalSource import file is now built**, following ADP's own
+instructions for importing payroll: choose **ADP TotalSource** under *Send to*,
+check the Batch ID (it defaults to the last day of the period), and download
+`PR…EPI.csv` — one row per person with regular and overtime hours — to upload
+in TotalSource under Manage Payroll → Worksheets → Import File.
+
+It needs setting up once, by an admin, under **Practice settings → ADP
+TotalSource**: the company code, a worksheet exported from TotalSource pasted
+in (the app keeps only ADP's header and footer rows from it), and which columns
+take regular and overtime hours. Each person also needs their **ADP File #** on
+the Staff screen. Until that is done it shows greyed out, saying what is
+missing. On the test site the demo staff have no File # — it is there to try,
+not to pay anyone.
+
+- **Tell us:** ask the ADP Payroll Representative which columns Domi uses for
+  regular and overtime hours, whether paid leave should go in the file too,
+  and what they want as the Batch ID. Then do **one test import** and check the
+  imported worksheet in TotalSource before submitting anything.
+- **Tell us:** should salaried staff's hours go in the file? They are left out
+  unless you tick them in, since TotalSource normally pays them without hours.
 
 **Every export is kept.** Under the download button is a list of every run —
 when, by whom, how many hours — with the file exactly as it went out. If payroll
@@ -242,6 +284,101 @@ flags the correction so the next export tells you it still has to reach payroll.
 
 ---
 
+## The staff platform — the newer part
+
+These sit around the clock rather than replacing it. They are under **Team**
+(everybody) and **Manage** (managers) in the top bar.
+
+### 9. News (**Team → News**)
+
+Posts from the practice, newest first, like a blog. One post is always the
+**primary** one and sits at the top of everybody's home screen after they sign
+in — never on the sign-in page, which anyone can see. Only an admin writes
+posts, so ask Anthony to show you that side.
+
+- **Tell us:** who should be able to post — admins only, or managers too?
+
+### 10. The directory and who is in (**Team → Directory**)
+
+Everybody's work email, phone number, job roles and offices, with **In now**
+beside whoever is clocked in. Colleagues see where somebody is; managers also
+see since when. Nothing from the personnel side is shown.
+
+**Each job role has its own colour** — the dot beside "Front Desk", "Medical
+Assistant" and so on — so you can tell at a glance who does what. The colours
+are set on the Job roles screen (below).
+
+- **Tell us:** is showing phone numbers to everyone still right once you see it?
+
+### 11. Job roles and resources (**Manage → Job roles**, **Team → Resources**)
+
+The job roles are Front Desk, Medical Assistant, Provider, Administrative and
+Manager. **Managers** keep the list: add, rename, remove, choose each one's
+colour, and put people in them. Somebody can be in more than one — front desk
+staff who also work as MAs, providers who also do admin.
+
+A job role decides **which resources somebody sees, and nothing else.** Being
+in "Manager" or "Administrative" gives no extra power in the app; that is the
+separate Employee / Manager / Admin access level, which only an admin sets.
+
+**Resources** are links (Drive, ADP, vendor portals) and short pages written in
+the app, for everybody or for one job role. There are no uploads.
+
+- **Tell us:** put the real staff in their roles when the real staff list is
+  in — only the demo people are in one now.
+- **Tell us:** what should each role's resources section hold on day one?
+
+### 12. Availability (**Schedule → Availability — yours and the team's**)
+
+Staff say when they cannot work: a weekday every week (all day or between two
+times), or a single date. Nobody approves it. It only reaches weeks whose rota
+is **not yet published** — a published week is fixed. When you put somebody on
+a shift that lands on it, the scheduler **warns but does not refuse**, next to
+the overtime warning. Managers can read everyone's but not change it.
+
+- **Tell us:** is "warn, never refuse" right, or should some clashes stop the
+  shift being saved?
+
+### 13. Surveys and the suggestion box (**Team → Surveys**)
+
+Short check-ins — a 1–5 rating, pick one, or a written answer — for everyone,
+one job role or one office. **Truly anonymous**: answers are stored with no
+name and no time, so nobody, admins included, can find out who said what. The
+app records separately *that* somebody has taken part, so nobody answers twice;
+you see "5 of 12 answered", never names. Results only appear once a survey is
+**closed** and at least **3** people answered.
+
+The **suggestion box** is always open and keeps only the message and the day it
+arrived.
+
+- **Tell us:** is recording *that* somebody answered acceptable? The
+  alternative is allowing repeat answers.
+- **Tell us:** is 3 the right minimum? A question sent to a small job role may
+  never reach it.
+
+### 14. The dashboard (**Manage → Dashboard**)
+
+This week's hours worked against scheduled, overtime, late clock-ins and time
+off; hours per week by office as a chart and a table; and, looking ahead,
+shifts in the next two weeks that clash with somebody's availability or push
+them into overtime. It uses the same rules as the timesheet, schedule and
+export, so the numbers agree.
+
+- **Tell us:** what would you look at first on a Monday morning that is not
+  here?
+
+### 15. The look
+
+The app now uses the Domi Healthcare colours from the website, and says
+**Domi Staff** on the sign-in screen and in the browser tab. Emails, the
+calendar feed and the export spreadsheet still say "Domi Time & Scheduling";
+that rename is not done yet.
+
+- **Tell us:** anything that looks off-brand, or that should match the website
+  and does not.
+
+---
+
 ## What is deliberately missing
 
 Worth knowing so you do not report these as faults:
@@ -257,9 +394,13 @@ Worth knowing so you do not report these as faults:
   nothing arrives, that is why — tell us and we will check whether it has been
   set up.
 - **No badge tap**, only PINs.
-- **No ADP integration**, only the spreadsheet — see above.
-- **No notifications.** Nobody is emailed or texted when a request is decided or
-  a task is overdue. You have to look.
+- **No direct connection to ADP.** The ADP file is downloaded and uploaded by
+  hand — ADP offers no way to push hours into TotalSource automatically.
+- **No text messages or phone notifications.** Emails only, once email is
+  switched on (above); otherwise the banners on each screen are where you find
+  out.
+- **No uploads** anywhere — not on checklists, not on resources. Deliberate; see
+  the checklists section.
 - **No two-way calendar sync.** Staff can subscribe to their shifts in Google,
   Apple or Outlook calendar and it updates itself, but they cannot move a shift
   from their phone's calendar app.

@@ -1,3 +1,4 @@
+import { ExportTimesheetDto } from '../dto/export-timesheet.dto';
 import { TimesheetData } from '../timesheet-export.service';
 
 /**
@@ -22,23 +23,32 @@ export interface PayrollExporter {
   readonly description: string;
 
   /**
-   * Whether it can actually be used yet.
-   *
-   * ADP TotalSource is implemented as far as it can be without the client code
-   * and pay codes, and it says so rather than being absent: a provider the
-   * practice is waiting on is easier to chase when the app names it.
+   * Whether it can actually be used yet, and why not when not — shown to the
+   * manager verbatim. ADP TotalSource waits on settings an admin enters, and
+   * says so rather than being absent: a target that is not set up is easier
+   * to finish when the app names what is missing.
    */
-  readonly available: boolean;
+  readiness(): Promise<PayrollReadiness>;
 
-  /// Why not, when not. Shown to the manager verbatim.
-  readonly unavailableReason?: string;
+  /// Options this target insists on, applied before the hours are added up —
+  /// a payroll import needs overtime split, whatever the form said.
+  adjust?(dto: ExportTimesheetDto): ExportTimesheetDto;
 
   export(data: TimesheetData, options: PayrollExportOptions): Promise<PayrollFile>;
+}
+
+export interface PayrollReadiness {
+  available: boolean;
+  reason?: string;
 }
 
 export interface PayrollExportOptions {
   /// "xlsx" or "csv", where an exporter offers a choice. Ignored otherwise.
   format?: string;
+  /// ADP's Batch ID, 8 characters at most. Defaults to the last day, MMDDYYYY.
+  batchId?: string;
+  /// Whether salaried staff's hours go in a payroll import. Off by default.
+  includeSalaried?: boolean;
 }
 
 export interface PayrollFile {

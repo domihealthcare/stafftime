@@ -1,7 +1,12 @@
 import { Injectable } from '@nestjs/common';
 import { PracticeSettings, Prisma } from '@prisma/client';
+import { localDateIn } from '../common/util/zoned-time.util';
 import { PrismaService } from '../prisma/prisma.service';
 import { UpdatePracticeSettingsDto } from './dto/practice-settings.dto';
+import { PAY_PERIOD_DAYS, payPeriods } from './pay-period';
+
+/// Both offices are in New Jersey; "today" for a pay period is New Jersey's.
+const PRACTICE_ZONE = 'America/New_York';
 
 /// The only value `PracticeSettings.singleton` ever takes. See the model.
 const SINGLETON = 1;
@@ -53,14 +58,35 @@ export class PracticeSettingsService {
     }
   }
 
-  async update(
-    dto: UpdatePracticeSettingsDto,
-    updatedById: string,
-  ): Promise<PracticeSettings> {
+  async update(dto: UpdatePracticeSettingsDto, updatedById: string): Promise<PracticeSettings> {
     await this.get();
+    const { payPeriodStart, ...numbers } = dto;
     return this.prisma.practiceSettings.update({
       where: { singleton: SINGLETON },
-      data: { ...dto, updatedById },
+      data: {
+        ...numbers,
+        ...(payPeriodStart === undefined
+          ? {}
+          : {
+              payPeriodStart:
+                payPeriodStart === null
+                  ? null
+                  : new Date(`${payPeriodStart.slice(0, 10)}T00:00:00Z`),
+            }),
+        updatedById,
+      },
     });
+  }
+
+  /// The pay periods either side of today, for the date shortcuts. Anybody
+  /// signed in may know when the pay period runs: it is on their payslip.
+  async payPeriod(now = new Date()) {
+    const { payPeriodStart } = await this.get();
+    const anchor = payPeriodStart ? payPeriodStart.toISOString().slice(0, 10) : null;
+    return {
+      lengthDays: PAY_PERIOD_DAYS,
+      anchor,
+      ...payPeriods(localDateIn(now, PRACTICE_ZONE), anchor),
+    };
   }
 }

@@ -1,12 +1,14 @@
-import type { ReactNode } from 'react';
+import type { CSSProperties, ReactNode } from 'react';
 
 export function Card({
   children,
   className = '',
   testId,
+  style,
 }: {
   children: ReactNode;
   className?: string;
+  style?: CSSProperties;
   /// A handle for the browser suites. Worth having where a screen shows one
   /// card per person: "the card containing this text" matches whatever else
   /// happens to contain it too, and a loose match there means a test that
@@ -16,6 +18,7 @@ export function Card({
   return (
     <div
       data-testid={testId}
+      style={style}
       className={`rounded-xl border border-slate-200 bg-white shadow-sm ${className}`}
     >
       {children}

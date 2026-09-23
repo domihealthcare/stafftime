@@ -145,7 +145,7 @@ describe('PasswordResetService', () => {
   describe('spending a link', () => {
     it('sets the password and signs every session out', async () => {
       const { service, prisma, sessions } = build({ token: validToken() });
-      await expect(service.complete('a-token', 'harbour lantern tuesday')).resolves.toEqual({
+      await expect(service.complete('a-token', 'harbour lantern 7')).resolves.toEqual({
         email: 'frankie@domihealthcare.com',
       });
 
@@ -158,7 +158,7 @@ describe('PasswordResetService', () => {
 
     it('looks the token up by its hash, never by the value in the link', async () => {
       const { service, prisma } = build({ token: validToken() });
-      await service.complete('a-token', 'harbour lantern tuesday');
+      await service.complete('a-token', 'harbour lantern 7');
 
       expect(prisma.passwordResetToken.findUnique).toHaveBeenCalledWith(
         expect.objectContaining({
@@ -169,7 +169,7 @@ describe('PasswordResetService', () => {
 
     it('spends every other outstanding link for that account at the same time', async () => {
       const { service, prisma } = build({ token: validToken() });
-      await service.complete('a-token', 'harbour lantern tuesday');
+      await service.complete('a-token', 'harbour lantern 7');
 
       expect(prisma.passwordResetToken.updateMany).toHaveBeenCalledWith(
         expect.objectContaining({ where: { employeeId: 'emp-1', usedAt: null } }),
@@ -189,7 +189,7 @@ describe('PasswordResetService', () => {
       ];
 
       for (const { service } of cases) {
-        await expect(service.complete('a-token', 'harbour lantern tuesday')).rejects.toThrow(
+        await expect(service.complete('a-token', 'harbour lantern 7')).rejects.toThrow(
           'That link has expired or has already been used. Ask for a new one.',
         );
       }

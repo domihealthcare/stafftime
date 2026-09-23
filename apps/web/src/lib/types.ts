@@ -62,6 +62,9 @@ export interface Employee extends EmployeeSummary {
   hasKioskPin?: boolean;
   preferredName: string | null;
   externalId?: string | null;
+  /// ADP TotalSource's File # — needed before their hours can go in the ADP
+  /// import file.
+  adpFileNumber?: string | null;
   /// True while an admin-set temporary password is still in force.
   mustChangePassword?: boolean;
   /// Whether this manager gets the nightly round-up. Ignored for employees,
@@ -239,7 +242,24 @@ export interface DemoSummary {
 export interface PracticeSettings {
   overtimeThresholdHours: number;
   rotaWarningDays: number;
+  /// Any day a pay period began (YYYY-MM-DD). Null until an admin sets it.
+  payPeriodStart: string | null;
   updatedAt: string;
+}
+
+/// An inclusive range of calendar days, as YYYY-MM-DD.
+export interface DayRange {
+  from: string;
+  to: string;
+}
+
+/// This pay period and the last, worked out by the server from the practice's
+/// pay-period start. Both null until an admin sets that start.
+export interface PayPeriodInfo {
+  lengthDays: number;
+  anchor: string | null;
+  current: DayRange | null;
+  previous: DayRange | null;
 }
 
 export interface Coverage {
@@ -443,6 +463,8 @@ export interface JobRole {
   id: string;
   name: string;
   description: string | null;
+  /// A key from JOB_ROLE_COLOURS.
+  colour: string;
   sortOrder: number;
   resourceCount: number;
   members: PersonName[];
@@ -463,7 +485,7 @@ export interface Resource {
 
 export interface ResourceSection {
   /// Null is the section everybody sees.
-  jobRole: { id: string; name: string; description: string | null } | null;
+  jobRole: { id: string; name: string; description: string | null; colour: string } | null;
   /// Whether the viewer is in this role.
   yours: boolean;
   resources: Resource[];
@@ -477,7 +499,7 @@ export interface DirectoryEntry {
   email: string;
   phone: string | null;
   onLeave: boolean;
-  jobRoles: { id: string; name: string }[];
+  jobRoles: { id: string; name: string; colour: string }[];
   locations: { id: string; name: string; isPrimary: boolean }[];
   /// Clocked in now. `since` is only sent to managers.
   onNow: { location: { id: string; name: string }; since?: string } | null;

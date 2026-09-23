@@ -1,5 +1,5 @@
 import { Type } from 'class-transformer';
-import { IsInt, IsOptional, Max, Min } from 'class-validator';
+import { IsInt, IsISO8601, IsOptional, Max, Min, ValidateIf } from 'class-validator';
 
 export class UpdatePracticeSettingsDto {
   /**
@@ -26,4 +26,10 @@ export class UpdatePracticeSettingsDto {
   @Min(1)
   @Max(7)
   rotaWarningDays?: number;
+
+  /// Any day a pay period began, as YYYY-MM-DD. Null clears it.
+  @IsOptional()
+  @ValidateIf((_, value) => value !== null)
+  @IsISO8601({ strict: true }, { message: 'Give the pay period start as a date.' })
+  payPeriodStart?: string | null;
 }

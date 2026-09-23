@@ -196,12 +196,18 @@ an admin. An admin can reset it sooner by issuing a temporary password.
 
 ### The password policy
 
-Length, plus a blocklist. No forced symbol-and-digit mixes: those produce
-`Password1!` and sticky notes, which is why NIST dropped them.
+**At least 8 characters, including a number** — Dominguez's choice in
+September 2026. It replaced a 12-character minimum whose advice ("three
+unrelated words") did not suit the practice. No symbol or capital is required:
+those produce `Password1!` and sticky notes, which is why NIST dropped them.
 
-The blocklist works on the **stem** — digits and punctuation are stripped before
-comparison — because a 12-character minimum does not prevent `password1234`, it
-invites it. Also rejected: keyboard and counting runs, digits alone, too few
+The rule lives in `PasswordService` (`PASSWORD_RULE`, `MIN_LENGTH`) and, for the
+screens' "not yet" hint only, in `apps/web/src/lib/password.ts`; the server
+always decides. `create-admin` uses the same check.
+
+The blocklist does the real work, on the **stem** — digits and punctuation are
+stripped before comparison — because a minimum length does not prevent
+`password1`, it invites it. Also rejected: keyboard and counting runs, digits alone, too few
 distinct characters, the practice and location names, and the user's own name or
 email.
 
@@ -1270,17 +1276,49 @@ handed over already done. An exporter's whole job is layout: which columns, in
 what order, with which pay codes. Adding Gusto or Paychex later is one class and
 one line in the module.
 
-Two are registered. `SpreadsheetExporter` is the general-purpose one the
-practice runs payroll on today. `AdpTotalSourceExporter` is **registered but
-refuses**, and says exactly what it is waiting for: the Domi client code, the
-earning codes for regular, overtime and paid leave, and confirmation of which
-import layout TotalSource uses.
+Two are registered. `SpreadsheetExporter` is the general-purpose one.
+`AdpTotalSourceExporter` builds TotalSource's payroll import file — see below.
+Each says whether it is ready (`readiness()`), and one that is not is shown on
+the screen greyed out with its reason rather than left out: a target the
+practice still has to set up is easier to finish when the app names what is
+missing where it would be used.
 
-Refusing is the right behaviour. A guessed layout is worse than none — ADP
-rejects the file and wastes an afternoon, or accepts it against the wrong pay
-codes and pays people wrong. Showing it on the screen, greyed out with its
-reason, is better than leaving it out: a provider the practice is chasing is
-easier to chase when the app names it where it would be used.
+### ADP TotalSource
+
+Built to ADP's instructions, *Importing Payroll into ADP TotalSource*. Those are
+unusual: the import is not a CSV we lay out ourselves but one that **starts
+from a worksheet exported out of the practice's own TotalSource account**. The
+export's first three rows are headers marked with `!` — among them the row of
+field names, which must begin Co Code, Batch ID, File # — then one row per
+employee, then footer rows from the next `!`. Only the rows between the markers
+may be edited. The file is named `PRcccEPI` after the company code.
+
+So an admin pastes that exported worksheet into Practice settings once
+(`AdpSettings`, one row). The server keeps the header and footer rows verbatim
+and learns the column names from them; the employee rows are dropped before
+anything is written — they are ADP's copy of the staff list and can carry pay
+details this app has no business holding. It is a paste, not an upload: the
+app takes no files (*Data this app does not hold*).
+
+The admin then picks which columns take regular and overtime hours, from the
+worksheet's own list, so nothing about Domi's paydata grid is guessed. Each
+employee needs their ADP **File #** (`Employee.adpFileNumber` — ADP's staff
+number, meaningless outside the account, not an identity number).
+
+Each export writes the stored header rows, one row per person — Co Code, a
+Batch ID (8 characters at most; defaults to the last day as MMDDYYYY, the shape
+of ADP's example), File #, and hours in the chosen columns, every other cell
+empty — then the footer rows. CRLF, no byte-order mark (ADP's first row starts
+with `!`, and a BOM in front of it would hide the marker). Overtime is always
+split per week for ADP, whatever the form says, and salaried staff are left out
+unless the manager ticks them in. Anybody with hours and no File # stops the
+export with their name: dropping their hours silently would underpay them.
+
+The layout lives in `adp-worksheet.ts` (pure functions, unit-tested); the
+exporter decides what goes in it. What ADP has not told us — which columns Domi
+uses for which hours, and whether paid leave should go too — is in
+`docs/open-questions.md`, and one test import checked in TotalSource before it
+is submitted is the last step.
 
 ### What gets recorded
 
@@ -1293,7 +1331,10 @@ use *today's* data, which is the one thing an audit must not do — the whole
 reason to look is usually that something has since changed.
 
 A run that fails is recorded too, with its reason. "We tried to send these hours
-and could not" is part of the trail.
+and could not" is part of the trail. Recording it can never replace the reason:
+the screen sends instants, and until September 2026 the failure record appended
+a time to one, got an invalid date, and crashed — so the manager saw "could not
+produce that file" instead of, say, whose File # was missing.
 
 Runs are **voided**, never deleted. A voided run stays readable; it is simply no
 longer the one that counts.
@@ -1381,7 +1422,8 @@ fails if the columns come back.
 `PtoPolicy` and for the same reason — see the note on `PtoPolicyService.get`,
 where a read-then-create race produced eighteen policy rows in testing.
 
-It holds two numbers, both of which started life as constants:
+It holds two numbers, both of which started life as constants, and the pay
+period (below):
 
 - **`overtimeThresholdHours`** (40) — where the rota warns and the payroll
   export splits.
@@ -1401,6 +1443,33 @@ off, which is not what somebody adjusting a number expects to have done.
 
 Managers read them — the numbers explain what their screens are telling them —
 and only an admin changes them.
+
+### The pay period
+
+A third setting, **`payPeriodStart`**, is a date rather than a number: the
+first day of any one pay period. Domi is paid **every two weeks**, so every
+other pay period follows from it by counting fortnights forwards or backwards
+(`settings/pay-period.ts`). It is null until an admin enters it, and the
+pay-period shortcuts stay greyed out until then, saying why — the app does not
+guess which Monday a fortnight starts on, because a guess that is a week out
+would put every export one week wrong.
+
+The server works out the current and previous pay period (`GET
+/settings/pay-period`, in the practice's time zone) rather than each screen
+doing the sum, so the Timesheet and the Export cannot disagree about which
+fortnight "last pay period" means. The length is a constant, not a setting:
+nobody has asked for weekly or twice-monthly, and twice-monthly is not a fixed
+number of days anyway.
+
+### Date shortcuts
+
+Screens that show a period — Timesheet and Export — share one picker
+(`components/DateRangePicker.tsx`): this week, last week, this or last pay
+period, this or last month, and Custom for two dates. The arrows step by the
+same kind of period — a month moves a month, anything else moves by its own
+length, so stepping back from a pay period lands on the one before. The
+Timesheet opens on this week, as it always has; the Export opens on the last
+pay period once one is set, since that is what gets exported.
 
 ## What needs a look
 
@@ -1517,6 +1586,43 @@ that work away. Its members just stop being in it.
 
 The Team / Manage menus in the top bar are disclosures of ordinary links, not
 ARIA menus, so the links stay links to assistive tech and to the browser suites.
+
+### Job-role colours
+
+Each job role wears a colour, chosen by managers, so the directory and the
+resources page can be scanned by eye. The colour is stored as a **key from a
+fixed set of eight** (`job-roles/job-role-colours.ts`), not a free hex. The
+eight are a categorical palette checked for colour-blind readers in that order
+— the first five, which the starting roles wear, stay distinguishable when they
+sit side by side — and a free picker would let two roles end up as near-twins.
+A new role takes the first colour nobody is wearing.
+
+The colour is only ever a dot or a stripe beside the name; the name stays in
+slate. Three of the eight are below 3:1 against white, which is fine for a mark
+next to a label and not for the label itself, and a colour on its own tells a
+colour-blind reader nothing.
+
+## Branding
+
+The app uses Domi Healthcare's blue from domihealthcare.com — `#3A6888` — as
+the `brand` 600 step in `tailwind.config.js`; the other steps keep its hue and
+chroma and move only lightness. White on 600 is 6.0:1. Type is Avenir where the
+device has it (every Apple device), as on the website, and the system face
+elsewhere: Avenir is not a font the app may serve itself.
+
+The mark in the header is a clock face in that blue, **not the Domi Healthcare
+logo**. The logo lives on the website's image host, which this build
+environment cannot reach; once a copy of the file is in the repo it replaces
+`BrandMark` in `components/Brand.tsx` and `public/favicon.svg`.
+
+## Help
+
+`/help`, from the account menu: a guide for everyone and, for managers and
+admins, a second tab for running the practice. It is plain text in the bundle,
+not pages in the database, so it ships with the feature it describes and cannot
+drift from it between releases — when a screen changes, change its answer in
+`pages/HelpPage.tsx` in the same commit. The password answer reads the rule
+from `lib/password.ts` rather than restating it.
 
 ## Staff directory
 

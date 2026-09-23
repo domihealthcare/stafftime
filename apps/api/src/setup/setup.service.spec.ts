@@ -28,7 +28,7 @@ describe('SetupService', () => {
     email: 'Dominguez@DomiHealthcare.com',
     firstName: 'Anthony',
     lastName: 'Dominguez',
-    password: 'harbour lantern tuesday',
+    password: 'harbour lantern 7',
   };
 
   describe('status', () => {

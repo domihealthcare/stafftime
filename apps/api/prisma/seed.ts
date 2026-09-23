@@ -8,6 +8,7 @@ import {
   ShiftStatus,
   TaskOwner,
 } from '@prisma/client';
+import { JOB_ROLE_COLOURS } from '../src/job-roles/job-role-colours';
 
 const prisma = new PrismaClient();
 
@@ -58,7 +59,7 @@ async function seedJobRoles() {
     await prisma.jobRole.upsert({
       where: { name },
       update: {},
-      create: { name, sortOrder: (index + 1) * 10 },
+      create: { name, sortOrder: (index + 1) * 10, colour: JOB_ROLE_COLOURS[index] },
     });
   }
   for (const [email, names] of Object.entries(DEV_JOB_ROLES)) {
@@ -444,8 +445,7 @@ const OFFBOARDING_TASKS: TemplateTaskSeed[] = [
   },
   {
     title: 'Final pay issued',
-    description:
-      'New Jersey requires the final wages by the next regular payday. Note the date.',
+    description: 'New Jersey requires the final wages by the next regular payday. Note the date.',
     owner: TaskOwner.ADMIN,
     dueOffsetDays: 7,
   },
@@ -512,7 +512,12 @@ interface TemplateTaskSeed {
 /// so `db:seed` gives a known starting state rather than a pile of copies.
 /// Checklists already started are snapshots, so this cannot disturb them.
 async function seedChecklistTemplates() {
-  const defaults: { kind: ChecklistKind; name: string; description: string; tasks: TemplateTaskSeed[] }[] = [
+  const defaults: {
+    kind: ChecklistKind;
+    name: string;
+    description: string;
+    tasks: TemplateTaskSeed[];
+  }[] = [
     {
       kind: ChecklistKind.ONBOARDING,
       name: 'New hire — Domi Healthcare',
@@ -523,8 +528,7 @@ async function seedChecklistTemplates() {
     {
       kind: ChecklistKind.OFFBOARDING,
       name: 'Departure — Domi Healthcare',
-      description:
-        'Final pay, equipment back, and every system the person had access to.',
+      description: 'Final pay, equipment back, and every system the person had access to.',
       tasks: OFFBOARDING_TASKS,
     },
   ];

@@ -20,7 +20,9 @@ import { attachmentHeader } from '../storage/download-headers';
 import { SaveReportPresetDto, UpdateReportPresetDto } from './dto/report-preset.dto';
 import { ReportPresetsService } from './report-presets.service';
 import { DEFAULT_COLUMN_KEYS, TIMESHEET_COLUMNS } from './columns';
+import { UpdateAdpSettingsDto } from './dto/adp-settings.dto';
 import { ExportTimesheetDto } from './dto/export-timesheet.dto';
+import { AdpSettingsService } from './payroll/adp-settings.service';
 import { PayrollExportsService } from './payroll/payroll-exports.service';
 import { TimesheetExportService } from './timesheet-export.service';
 
@@ -31,7 +33,21 @@ export class ExportsController {
     private readonly timesheets: TimesheetExportService,
     private readonly presets: ReportPresetsService,
     private readonly payroll: PayrollExportsService,
+    private readonly adp: AdpSettingsService,
   ) {}
+
+  /// What the ADP import needs and what it has. Managers read it, so the
+  /// Export screen can say what is missing; only an admin changes it.
+  @Get('adp')
+  adpStatus() {
+    return this.adp.status();
+  }
+
+  @Patch('adp')
+  @Roles(Role.ADMIN)
+  updateAdp(@Body() dto: UpdateAdpSettingsDto, @CurrentUser() user: AuthUser) {
+    return this.adp.update(dto, user.id);
+  }
 
   /// Where hours can be sent, including the targets that are not ready yet and
   /// why — a provider the practice is waiting on is easier to chase when the
@@ -147,4 +163,3 @@ export class ExportsController {
     return this.presets.resolveOptions(id, user);
   }
 }
-

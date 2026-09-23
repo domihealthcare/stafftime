@@ -13,6 +13,7 @@ import { hash } from '@node-rs/argon2';
 import { EmploymentStatus, PayType, PrismaClient, Role } from '@prisma/client';
 import { createInterface } from 'node:readline/promises';
 import { stdin, stdout } from 'node:process';
+import { PASSWORD_RULE, PasswordService } from '../src/auth/password.service';
 
 const prisma = new PrismaClient();
 
@@ -78,9 +79,14 @@ async function main() {
     throw new Error('First and last name are both required.');
   }
 
-  const password = await askSecret('Password (at least 12 characters): ');
-  if (password.length < 12) {
-    throw new Error('Password must be at least 12 characters.');
+  const password = await askSecret(
+    `Password (${PASSWORD_RULE.toLowerCase().replace(/\.$/, '')}): `,
+  );
+  // The same check the app applies, so the first admin cannot be given a
+  // password the app itself would refuse.
+  const verdict = new PasswordService().check(password, { email, firstName, lastName });
+  if (!verdict.ok) {
+    throw new Error(verdict.reason);
   }
   const confirmation = await askSecret('Confirm password: ');
   if (password !== confirmation) {

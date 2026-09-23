@@ -50,7 +50,7 @@ export class ResourcesService {
 
     const roles = await this.prisma.jobRole.findMany({
       where: isManager ? {} : { id: { in: mine } },
-      select: { id: true, name: true, description: true },
+      select: { id: true, name: true, description: true, colour: true },
       orderBy: [{ sortOrder: 'asc' }, { name: 'asc' }],
     });
 
@@ -79,7 +79,7 @@ export class ResourcesService {
   async findOne(id: string, actor: AuthUser) {
     const row = await this.prisma.resource.findUnique({
       where: { id },
-      select: { ...RESOURCE_SELECT, jobRole: { select: { id: true, name: true } } },
+      select: { ...RESOURCE_SELECT, jobRole: { select: { id: true, name: true, colour: true } } },
     });
     if (!row) throw new NotFoundException('That resource does not exist.');
 

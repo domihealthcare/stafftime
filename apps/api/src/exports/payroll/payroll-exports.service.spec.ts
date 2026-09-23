@@ -1,5 +1,8 @@
-import { BadRequestException, NotFoundException, ServiceUnavailableException } from '@nestjs/common';
-import { ConfigService } from '@nestjs/config';
+import {
+  BadRequestException,
+  NotFoundException,
+  ServiceUnavailableException,
+} from '@nestjs/common';
 import { Role } from '@prisma/client';
 import { TimesheetData } from '../timesheet-export.service';
 import { AdpTotalSourceExporter } from './adp-totalsource.exporter';
@@ -61,7 +64,10 @@ function build(options: { exporters?: unknown[]; record?: unknown } = {}) {
 
   const exporters = options.exporters ?? [
     new SpreadsheetExporter(),
-    new AdpTotalSourceExporter(new ConfigService({})),
+    // ADP with nothing entered yet, as on a fresh deployment.
+    new AdpTotalSourceExporter({
+      status: jest.fn().mockResolvedValue({ missing: ['Enter the ADP company code.'] }),
+    } as never),
   ];
 
   return {
@@ -78,9 +84,9 @@ function build(options: { exporters?: unknown[]; record?: unknown } = {}) {
 }
 
 describe('the targets on offer', () => {
-  it('names the ones that are not ready and why', () => {
+  it('names the ones that are not ready and why', async () => {
     const { service } = build();
-    const [spreadsheet, adp] = service.targets();
+    const [spreadsheet, adp] = await service.targets();
 
     expect(spreadsheet).toMatchObject({ key: 'spreadsheet', available: true });
     expect(spreadsheet.unavailableReason).toBeUndefined();
@@ -88,7 +94,7 @@ describe('the targets on offer', () => {
     // A provider the practice is waiting on is easier to chase when the app
     // says what it is waiting for.
     expect(adp).toMatchObject({ key: 'adp-totalsource', available: false });
-    expect(adp.unavailableReason).toMatch(/client code/);
+    expect(adp.unavailableReason).toMatch(/company code/);
   });
 });
 
@@ -159,7 +165,30 @@ describe('running an export', () => {
     ).rejects.toThrow(ServiceUnavailableException);
 
     expect(created[0]).toMatchObject({ target: 'adp-totalsource', status: 'FAILED' });
-    expect(created[0].failureReason).toMatch(/client code/);
+    expect(created[0].failureReason).toMatch(/company code/);
+  });
+
+  it('records a refusal for the period the screen sent, as instants', async () => {
+    // The Export screen sends local midnights as ISO instants, not bare dates.
+    const { service, created } = build();
+    await expect(
+      service.run(
+        { from: '2026-09-14T04:00:00.000Z', to: '2026-09-28T04:00:00.000Z' } as never,
+        'adp-totalsource',
+        manager,
+      ),
+    ).rejects.toThrow(ServiceUnavailableException);
+
+    expect((created[0].periodStart as Date).toISOString()).toBe('2026-09-14T04:00:00.000Z');
+    expect(Number.isNaN((created[0].periodEnd as Date).getTime())).toBe(false);
+  });
+
+  it('still gives the reason when recording the refusal fails', async () => {
+    const { service, prisma } = build();
+    prisma.payrollExport.create.mockRejectedValueOnce(new Error('database is down'));
+    await expect(
+      service.run({ from: '2026-09-07', to: '2026-09-21' } as never, 'adp-totalsource', manager),
+    ).rejects.toThrow(/company code/);
   });
 
   it('refuses a target nobody has implemented', async () => {

@@ -31,22 +31,39 @@ phone**, open **Locations**, and set them standing at each front desk. Note that
       them whether the kiosk is genuinely available on every shift, since the
       opt-out depends on it.
 
-## Needed for the ADP export (still blocked on ADP)
+- [ ] **The pay period start date.** Pay is every two weeks; the app needs to
+      know the first day of any one pay period to work out the rest. Until an
+      admin enters it (account menu → Practice settings → Pay period start),
+      the "This pay period" and "Last pay period" shortcuts stay greyed out.
 
-The generic Excel/CSV export is built and usable for payroll in the meantime.
-What is still missing is ADP-specific, and none of it can be guessed:
+## ADP TotalSource import (built September 2026 — needs setting up)
 
-- [ ] ADP TotalSource company/client code.
-- [ ] Activate the "Time Sheet Import" feature on the Domi Healthcare account.
-- [ ] The specific earning/pay codes ADP expects, so hours map correctly.
-- [ ] Confirm whether TotalSource (PEO) uses a different file spec than
-      standalone ADP Run / Workforce Now — it sometimes does.
+Built from ADP's own instructions, *Importing Payroll into ADP TotalSource*:
+the import file starts from a worksheet exported out of the practice's
+TotalSource account, keeps its `!` header and footer rows, and every row starts
+Co Code, Batch ID (8 characters at most), File #. It is named `PRcccEPI.csv`.
+Nothing about Domi's layout is guessed — the app learns the columns from the
+pasted worksheet. Before the first real run:
 
-When those arrive, the work is **one file**:
-`apps/api/src/exports/payroll/adp-totalsource.exporter.ts`. The adapter is
-already registered and appears on the export screen, greyed out, saying what it
-is waiting for. The hours reach it already aggregated, so only the column layout
-and the pay-code mapping remain.
+- [ ] **Company code** — enter it under Practice settings → ADP TotalSource.
+- [ ] **Paste a worksheet exported from ADP** there (Manage Payroll → Add
+      Worksheet → All Employees → Export to File, opened in Notepad).
+- [ ] **Confirm with the Payroll Representative which columns take regular and
+      overtime hours.** The app suggests "Reg Hours" and "O/T Hours" when the
+      worksheet has them; ADP's instructions say additional fields depend on
+      the data and to ask them. Paid leave hours are not sent yet — say if they
+      should be, and under which column/code.
+- [ ] **Each person's ADP File #** on the Staff screen. The export refuses, and
+      names them, if anybody with hours has none.
+- [ ] **Salaried staff** are left out by default (TotalSource normally pays them
+      without hours); there is a tick box to include them. Confirm which is
+      right.
+- [ ] **Batch ID** defaults to the last day of the period as MMDDYYYY. ADP's
+      example uses the pay date — confirm what payroll wants there.
+- [ ] **One test import**, checked in TotalSource's imported worksheet before
+      it is submitted, before anybody is paid from it.
+
+The spreadsheet export stays as the fallback.
 
 ## PTO (Phase 2, requests and approval are built)
 

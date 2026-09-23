@@ -61,6 +61,7 @@ await step('columns come from the server, grouped', async () => {
 
 await step('the preview reports what the file will contain', async () => {
   // Widen the period so the seeded entries are certainly inside it.
+  await mgr.getByRole('button', { name: 'Custom', exact: true }).click();
   await mgr.getByLabel('From').fill('2026-09-01');
   await mgr.getByLabel('To (included)').fill('2026-09-30');
   await mgr.getByText(/entries ·/).waitFor({ timeout: 15000 });

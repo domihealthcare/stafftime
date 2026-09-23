@@ -14,7 +14,7 @@ describe('AuthService', () => {
 
   let goodHash: string;
   beforeAll(async () => {
-    goodHash = await passwords.hash('breakfast tuesday lamp');
+    goodHash = await passwords.hash('breakfast lamp 7');
   });
 
   function build(employee: Record<string, unknown> | null) {
@@ -60,13 +60,13 @@ describe('AuthService', () => {
   describe('login', () => {
     it('issues a session for the right password', async () => {
       const { service, sessions } = build(active());
-      await service.login('frankie@domihealthcare.com', 'breakfast tuesday lamp', {});
+      await service.login('frankie@domihealthcare.com', 'breakfast lamp 7', {});
       expect(sessions.issue).toHaveBeenCalledWith('emp-1', {});
     });
 
     it('normalises the email, so case and stray spaces still sign in', async () => {
       const { service, prisma } = build(active());
-      await service.login('  Frankie@DomiHealthcare.com ', 'breakfast tuesday lamp', {});
+      await service.login('  Frankie@DomiHealthcare.com ', 'breakfast lamp 7', {});
       expect(prisma.employee.findUnique.mock.calls[0][0].where.email).toBe(
         'frankie@domihealthcare.com',
       );
@@ -74,7 +74,7 @@ describe('AuthService', () => {
 
     it('clears the failure counter on success', async () => {
       const { service, prisma } = build({ ...active(), failedLoginAttempts: 2 });
-      await service.login('frankie@domihealthcare.com', 'breakfast tuesday lamp', {});
+      await service.login('frankie@domihealthcare.com', 'breakfast lamp 7', {});
       expect(prisma.employee.update.mock.calls[0][0].data).toMatchObject({
         failedLoginAttempts: 0,
         lockedUntil: null,
@@ -152,7 +152,7 @@ describe('AuthService', () => {
       throttle.assertNotThrottled.mockRejectedValue(new Error('throttled'));
 
       await expect(
-        service.login('frankie@domihealthcare.com', 'breakfast tuesday lamp', {
+        service.login('frankie@domihealthcare.com', 'breakfast lamp 7', {
           ipAddress: '203.0.113.7',
         }),
       ).rejects.toThrow('throttled');
@@ -173,7 +173,7 @@ describe('AuthService', () => {
         lockedUntil: new Date(Date.now() + 10 * 60_000),
       });
       await expect(
-        service.login('frankie@domihealthcare.com', 'breakfast tuesday lamp', {}),
+        service.login('frankie@domihealthcare.com', 'breakfast lamp 7', {}),
       ).rejects.toThrow(/Too many failed attempts/);
       expect(sessions.issue).not.toHaveBeenCalled();
     });
@@ -183,7 +183,7 @@ describe('AuthService', () => {
         ...active(),
         lockedUntil: new Date(Date.now() - 1000),
       });
-      await service.login('frankie@domihealthcare.com', 'breakfast tuesday lamp', {});
+      await service.login('frankie@domihealthcare.com', 'breakfast lamp 7', {});
       expect(sessions.issue).toHaveBeenCalled();
     });
 
@@ -192,7 +192,7 @@ describe('AuthService', () => {
 
       // Correct password: told the account is closed.
       await expect(
-        service.login('frankie@domihealthcare.com', 'breakfast tuesday lamp', {}),
+        service.login('frankie@domihealthcare.com', 'breakfast lamp 7', {}),
       ).rejects.toThrow(ForbiddenException);
 
       // Wrong password: indistinguishable from any other failure, so the status
@@ -214,8 +214,8 @@ describe('AuthService', () => {
     it('refuses a new password that fails the policy', async () => {
       const { service } = build(active());
       await expect(
-        service.changePassword('emp-1', 'breakfast tuesday lamp', 'short', 'tok'),
-      ).rejects.toThrow(/12 characters/);
+        service.changePassword('emp-1', 'breakfast lamp 7', 'short', 'tok'),
+      ).rejects.toThrow('Use at least 8 characters, including a number.');
     });
 
     it('refuses reusing the current password', async () => {
@@ -223,8 +223,8 @@ describe('AuthService', () => {
       await expect(
         service.changePassword(
           'emp-1',
-          'breakfast tuesday lamp',
-          'breakfast tuesday lamp',
+          'breakfast lamp 7',
+          'breakfast lamp 7',
           'tok',
         ),
       ).rejects.toThrow(/different from the current one/);
@@ -232,7 +232,7 @@ describe('AuthService', () => {
 
     it('stores a new hash and clears the must-change flag', async () => {
       const { service, prisma } = build(active());
-      await service.changePassword('emp-1', 'breakfast tuesday lamp', 'a whole new phrase', 'tok');
+      await service.changePassword('emp-1', 'breakfast lamp 7', 'a whole new phrase 9', 'tok');
 
       const data = prisma.employee.update.mock.calls[0][0].data;
       expect(data.passwordHash).toMatch(/^\$argon2id\$/);
@@ -244,8 +244,8 @@ describe('AuthService', () => {
       const { service, sessions } = build(active());
       const result = await service.changePassword(
         'emp-1',
-        'breakfast tuesday lamp',
-        'a whole new phrase',
+        'breakfast lamp 7',
+        'a whole new phrase 9',
         'current-token',
       );
       expect(sessions.revokeAllForEmployee).toHaveBeenCalledWith('emp-1', 'current-token');
@@ -256,13 +256,13 @@ describe('AuthService', () => {
   describe('setTemporaryPassword', () => {
     it('forces a change at next sign-in', async () => {
       const { service, prisma } = build(active());
-      await service.setTemporaryPassword('emp-1', 'temporary welcome phrase');
+      await service.setTemporaryPassword('emp-1', 'temporary welcome 42');
       expect(prisma.employee.update.mock.calls[0][0].data.mustChangePassword).toBe(true);
     });
 
     it('signs out every existing session', async () => {
       const { service, sessions } = build(active());
-      await service.setTemporaryPassword('emp-1', 'temporary welcome phrase');
+      await service.setTemporaryPassword('emp-1', 'temporary welcome 42');
       expect(sessions.revokeAllForEmployee).toHaveBeenCalledWith('emp-1');
     });
 

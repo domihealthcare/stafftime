@@ -29,18 +29,18 @@ await step('a wrong token is refused with a clear message', async () => {
   await page.getByLabel('First name').fill('Anthony');
   await page.getByLabel('Last name').fill('Dominguez');
   await page.getByLabel('Email').fill('dominguez@domihealthcare.com');
-  await page.getByLabel('Password', { exact: true }).fill('harbour lantern tuesday');
-  await page.getByLabel('Confirm password').fill('harbour lantern tuesday');
+  await page.getByLabel('Password', { exact: true }).fill('harbour lantern 7');
+  await page.getByLabel('Confirm password').fill('harbour lantern 7');
   await page.getByRole('button', { name: 'Create administrator' }).click();
   await page.getByText(/setup token is not correct/).waitFor({ timeout: 15000 });
 });
 
 await step('mismatched passwords block submission before any request', async () => {
-  await page.getByLabel('Confirm password').fill('harbour lantern wednesday');
+  await page.getByLabel('Confirm password').fill('harbour lantern 8');
   await page.getByText('Those passwords do not match').waitFor({ timeout: 5000 });
   if (await page.getByRole('button', { name: 'Create administrator' }).isEnabled())
     throw new Error('submit was enabled with mismatched passwords');
-  await page.getByLabel('Confirm password').fill('harbour lantern tuesday');
+  await page.getByLabel('Confirm password').fill('harbour lantern 7');
 });
 
 await step('the right token creates the account and signs you straight in', async () => {
@@ -93,7 +93,8 @@ await step('a temporary password can be issued and is shown once', async () => {
 
   const input = card.getByLabel('Temporary password');
   tempPassword = await input.inputValue();
-  if (tempPassword.length < 12) throw new Error(`suggested password too short: ${tempPassword}`);
+  if (tempPassword.length < 8 || !/[0-9]/.test(tempPassword))
+    throw new Error(`suggested password does not meet the rule: ${tempPassword}`);
 
   await card.getByRole('button', { name: 'Set it' }).click();
   await card.getByText(/Temporary password for Morgan/).waitFor({ timeout: 15000 });
@@ -110,8 +111,8 @@ await step('the new manager can sign in, and must change that password', async (
   await mgr.getByText('Choose a new password').waitFor({ timeout: 20000 });
 
   await mgr.getByLabel('Temporary password').fill(tempPassword);
-  await mgr.getByLabel('New password', { exact: true }).fill('meadow anchor tuesday');
-  await mgr.getByLabel('Confirm new password').fill('meadow anchor tuesday');
+  await mgr.getByLabel('New password', { exact: true }).fill('meadow anchor 5');
+  await mgr.getByLabel('Confirm new password').fill('meadow anchor 5');
   await mgr.getByRole('button', { name: 'Change password' }).click();
   await mgr.getByText('Not clocked in').waitFor({ timeout: 20000 });
 

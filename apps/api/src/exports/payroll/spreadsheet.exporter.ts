@@ -1,7 +1,12 @@
 import { Injectable } from '@nestjs/common';
 import { TimesheetData } from '../timesheet-export.service';
 import { buildTimesheetCsv, buildTimesheetWorkbook } from '../workbook';
-import { PayrollExportOptions, PayrollExporter, PayrollFile } from './payroll-exporter';
+import {
+  PayrollExportOptions,
+  PayrollExporter,
+  PayrollFile,
+  PayrollReadiness,
+} from './payroll-exporter';
 
 /**
  * A spreadsheet for a person to read, check and upload by hand.
@@ -16,7 +21,10 @@ export class SpreadsheetExporter implements PayrollExporter {
   readonly label = 'Spreadsheet';
   readonly description =
     'Excel or CSV, with the columns you choose. Check it, then upload it to payroll yourself.';
-  readonly available = true;
+
+  readiness(): Promise<PayrollReadiness> {
+    return Promise.resolve({ available: true });
+  }
 
   async export(data: TimesheetData, options: PayrollExportOptions): Promise<PayrollFile> {
     const stem = filenameFor(data);
@@ -32,8 +40,7 @@ export class SpreadsheetExporter implements PayrollExporter {
 
     return {
       filename: `${stem}.xlsx`,
-      contentType:
-        'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+      contentType: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
       bytes: Buffer.from(await buildTimesheetWorkbook(data)),
     };
   }

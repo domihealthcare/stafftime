@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { ApiError } from '../lib/api';
 import { useSession } from '../lib/session';
+import { BrandMark } from '../components/Brand';
 import { PasswordField } from '../components/PasswordField';
 import { Alert, Card } from '../components/ui';
 
@@ -31,8 +32,12 @@ export function LoginPage() {
   return (
     <div className="flex min-h-screen flex-col justify-center bg-slate-100 px-4 py-12">
       <div className="mx-auto w-full max-w-sm">
-        <div className="mb-6 text-center">
-          <h1 className="text-2xl font-semibold text-slate-900">Domi Staff</h1>
+        <div className="mb-6 flex flex-col items-center text-center">
+          <BrandMark className="mb-3 h-12 w-12" />
+          <p className="text-xs font-semibold uppercase tracking-[0.18em] text-brand-700">
+            Domi Healthcare
+          </p>
+          <h1 className="mt-1 text-2xl font-semibold text-slate-900">Domi Staff</h1>
           <p className="mt-1 text-sm text-slate-600">
             Sign in to clock in, check your schedule and keep up with the team.
           </p>

@@ -8,10 +8,7 @@ import { DEFAULT_COLUMN_KEYS, type TimesheetColumnKey } from './columns';
 import { ExportTimesheetDto } from './dto/export-timesheet.dto';
 
 /// Finished work that has been signed off, which is what payroll runs on.
-const DEFAULT_STATUSES: TimeEntryStatus[] = [
-  TimeEntryStatus.COMPLETED,
-  TimeEntryStatus.APPROVED,
-];
+const DEFAULT_STATUSES: TimeEntryStatus[] = [TimeEntryStatus.COMPLETED, TimeEntryStatus.APPROVED];
 
 /// Longest period we will build in one go, to keep a mis-typed date range from
 /// pulling years of entries into memory.
@@ -24,10 +21,13 @@ export interface TimesheetRow {
 }
 
 export interface EmployeeTotal {
+  employeeId: string;
   employee: string;
   email: string;
   externalId: string | null;
   payType: PayType;
+  /// ADP's File # for them, for the ADP import. Null until an admin enters it.
+  adpFileNumber: string | null;
   entries: number;
   hours: number;
   regularHours: number;
@@ -77,6 +77,7 @@ const ENTRY_INCLUDE = {
       preferredName: true,
       email: true,
       externalId: true,
+      adpFileNumber: true,
       payType: true,
     },
   },
@@ -137,11 +138,7 @@ export class TimesheetExportService {
     // The same threshold the rota warns on. If these two ever disagreed, the
     // schedule would promise one thing and the payslip say another.
     const { overtimeThresholdHours } = await this.settings.get();
-    const totals = this.buildTotals(
-      entries,
-      dto.splitOvertime ?? false,
-      overtimeThresholdHours,
-    );
+    const totals = this.buildTotals(entries, dto.splitOvertime ?? false, overtimeThresholdHours);
 
     const location = dto.locationId
       ? await this.prisma.location.findUnique({
@@ -167,8 +164,7 @@ export class TimesheetExportService {
         overtimeThresholdHours,
         generatedAt: new Date(),
         alreadyExportedCount: payrollStates.filter((state) => state.exported).length,
-        correctedSinceExportCount: payrollStates.filter((state) => state.changedSinceExport)
-          .length,
+        correctedSinceExportCount: payrollStates.filter((state) => state.changedSinceExport).length,
       },
     };
   }
@@ -229,7 +225,8 @@ export class TimesheetExportService {
       case 'method':
         return entry.method;
       case 'verification':
-        return entry.clockOutVerification && entry.clockOutVerification !== entry.clockInVerification
+        return entry.clockOutVerification &&
+          entry.clockOutVerification !== entry.clockInVerification
           ? `${entry.clockInVerification} / ${entry.clockOutVerification}`
           : entry.clockInVerification;
       case 'shift':
@@ -290,10 +287,7 @@ export class TimesheetExportService {
         const weeks = new Map<string, number>();
         for (const entry of employeeEntries) {
           const key = weekStartIn(entry.clockInAt, entry.location.timezone);
-          weeks.set(
-            key,
-            (weeks.get(key) ?? 0) + hoursBetween(entry.clockInAt, entry.clockOutAt),
-          );
+          weeks.set(key, (weeks.get(key) ?? 0) + hoursBetween(entry.clockInAt, entry.clockOutAt));
         }
         regularHours = 0;
         for (const weekHours of weeks.values()) {
@@ -303,10 +297,12 @@ export class TimesheetExportService {
       }
 
       totals.push({
+        employeeId: employee.id,
         employee: displayName(employee),
         email: employee.email,
         externalId: employee.externalId,
         payType: employee.payType,
+        adpFileNumber: employee.adpFileNumber,
         entries: employeeEntries.length,
         hours: round2(hours),
         regularHours: round2(regularHours),

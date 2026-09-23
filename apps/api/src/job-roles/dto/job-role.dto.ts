@@ -1,4 +1,6 @@
+import { JOB_ROLE_COLOURS } from '../job-role-colours';
 import {
+  IsIn,
   IsInt,
   IsOptional,
   IsString,
@@ -19,6 +21,10 @@ export class CreateJobRoleDto {
   @IsString()
   @MaxLength(300)
   description?: string;
+
+  @IsOptional()
+  @IsIn(JOB_ROLE_COLOURS, { message: `Colour must be one of: ${JOB_ROLE_COLOURS.join(', ')}.` })
+  colour?: string;
 }
 
 export class UpdateJobRoleDto {
@@ -38,6 +44,10 @@ export class UpdateJobRoleDto {
   @Min(0)
   @Max(10_000)
   sortOrder?: number;
+
+  @IsOptional()
+  @IsIn(JOB_ROLE_COLOURS, { message: `Colour must be one of: ${JOB_ROLE_COLOURS.join(', ')}.` })
+  colour?: string;
 }
 
 export class AddMemberDto {
