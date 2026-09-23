@@ -211,8 +211,8 @@ await step('changing the threshold changes what the rota warns about', async () 
   await admin.getByLabel('Employee').selectOption({ label: 'Max Assistant' });
   await admin.getByLabel('Starts').fill('09:00');
   await admin.getByLabel('Ends').fill('15:00');
-  await admin.getByLabel('From').fill('2027-03-01');
-  await admin.getByLabel('Until').fill('2027-03-05');
+  await admin.getByLabel('From', { exact: true }).fill('2027-03-01');
+  await admin.getByLabel('Until', { exact: true }).fill('2027-03-05');
   await admin.getByLabel(/Publish straight away/).check();
   await admin.getByRole('button', { name: 'Create the shifts' }).click();
   await admin.getByText(/shifts created/).waitFor({ timeout: 20000 });
