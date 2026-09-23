@@ -1,4 +1,4 @@
-# Domi Time & Scheduling — Project Brief
+# Domi Staff (formerly Domi Time & Scheduling) — Project Brief
 
 ## Purpose
 A standalone web app for Domi Healthcare staff to clock in/out and for managers to
@@ -119,8 +119,9 @@ Build this as an **adapter/plugin pattern**, not a hardcoded ADP integration:
    September 2026). Timekeeping stays the main job; these sit around it.
    Staff now see it as **"Domi Staff"** — "Sign in to clock in, check your
    schedule and keep up with the team." on the sign-in screen and in the tab
-   title. Emails, the calendar feed, the export spreadsheet and the first-run
-   setup page still say "Domi Time & Scheduling"; renaming those is not done.
+   title, and — since September 2026 — in emails, the calendar feed, the
+   export spreadsheet and the first-run setup page too. The repo, the
+   `@stafftime/*` packages and the Vercel project keep their old names.
    - **Announcements** — admins write, edit and remove posts. Seen only after
      sign-in, never on the public login page. There is **always exactly one
      primary** post while any exist: it is shown at the top of the home screen,

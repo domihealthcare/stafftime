@@ -363,7 +363,7 @@ const ONBOARDING_TASKS: TemplateTaskSeed[] = [
     dueOffsetDays: 1,
   },
   {
-    title: 'Time & Scheduling account created, with locations assigned',
+    title: 'Domi Staff account created, with locations assigned',
     owner: TaskOwner.ADMIN,
     dueOffsetDays: -1,
   },
@@ -465,7 +465,7 @@ const OFFBOARDING_TASKS: TemplateTaskSeed[] = [
     dueOffsetDays: 0,
   },
   {
-    title: 'Time & Scheduling access revoked',
+    title: 'Domi Staff access revoked',
     description:
       'Marking them as no longer employed on the Staff screen signs them out everywhere and stops them clocking in.',
     owner: TaskOwner.ADMIN,

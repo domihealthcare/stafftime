@@ -148,8 +148,8 @@ export class CalendarService {
     ];
 
     return buildCalendar(events, {
-      name: `${displayName} ${employee.lastName} — Domi`,
-      description: 'Shifts and approved time off from Domi Time & Scheduling.',
+      name: `${displayName} ${employee.lastName} — Domi Staff`,
+      description: 'Shifts and approved time off from Domi Staff.',
       refreshMinutes: 60,
       now,
     });

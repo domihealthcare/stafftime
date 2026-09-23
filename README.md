@@ -1,4 +1,4 @@
-# Domi Time & Scheduling
+# Domi Staff
 
 [![CI](https://github.com/domihealthcare/stafftime/actions/workflows/ci.yml/badge.svg)](https://github.com/domihealthcare/stafftime/actions/workflows/ci.yml)
 

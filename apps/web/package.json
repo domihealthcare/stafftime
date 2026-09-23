@@ -3,7 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "type": "module",
-  "description": "Domi Time & Scheduling web app (React + Vite + Tailwind)",
+  "description": "Domi Staff web app (React + Vite + Tailwind)",
   "scripts": {
     "dev": "vite",
     "build": "tsc -b && vite build",
