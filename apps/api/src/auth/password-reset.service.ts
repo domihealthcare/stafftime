@@ -74,7 +74,7 @@ export class PasswordResetService {
       },
     });
 
-    this.notifications.passwordReset(
+    await this.notifications.passwordReset(
       employee.email,
       employee.firstName,
       `${this.appUrl}/reset-password?token=${token}`,

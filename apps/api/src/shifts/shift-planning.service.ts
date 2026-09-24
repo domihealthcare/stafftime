@@ -144,8 +144,8 @@ export class ShiftPlanningService {
     });
 
     if (before && dto.employeeId) {
-      this.overtime.announceNewOvertime(before, [dto.employeeId], weeks);
-      this.tellAboutNewShifts(dto.employeeId, result.created, result.dates);
+      await this.overtime.announceNewOvertime(before, [dto.employeeId], weeks);
+      await this.tellAboutNewShifts(dto.employeeId, result.created, result.dates);
     }
     return {
       ...result,
@@ -253,12 +253,12 @@ export class ShiftPlanningService {
 
     if (dto.status === ShiftStatus.PUBLISHED) {
       for (const [employeeId, theirDates] of madeFor) {
-        this.tellAboutNewShifts(employeeId, theirDates.length, theirDates);
+        await this.tellAboutNewShifts(employeeId, theirDates.length, theirDates);
       }
     }
 
     this.logger.log(`Copied ${created} shifts from week ${fromStart} to ${toStart}`);
-    if (before) this.overtime.announceNewOvertime(before, people, weeks);
+    if (before) await this.overtime.announceNewOvertime(before, people, weeks);
     const copied = [...new Set(dates)].sort();
     return {
       created,
@@ -497,7 +497,7 @@ export class ShiftPlanningService {
 
   /// One notice for a batch of published shifts, not one per shift: a month
   /// of Tuesdays is one thing to know.
-  private tellAboutNewShifts(employeeId: string, count: number, dates: string[]) {
+  private async tellAboutNewShifts(employeeId: string, count: number, dates: string[]) {
     if (count === 0) return;
     const sorted = [...dates].sort();
     const day = (date: string) =>
@@ -509,7 +509,7 @@ export class ShiftPlanningService {
       });
     const first = sorted[0];
     const last = sorted[sorted.length - 1];
-    this.inbox.notify([employeeId], {
+    await this.inbox.notify([employeeId], {
       kind: NotificationKind.SCHEDULE_CHANGED,
       title: count === 1 ? 'A new shift on your schedule' : `${count} new shifts on your schedule`,
       body: first === last ? `${day(first)}.` : `${day(first)} to ${day(last)}.`,

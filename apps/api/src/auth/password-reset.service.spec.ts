@@ -67,6 +67,19 @@ describe('PasswordResetService', () => {
   });
 
   describe('asking for a link', () => {
+    it('does not answer until the email has actually gone', async () => {
+      // On Vercel the function is frozen once it has answered, so a send left
+      // running in the background never reaches the provider. That is how
+      // reset emails silently failed to arrive.
+      const { service, notifications } = build();
+      let sent = false;
+      notifications.passwordReset.mockImplementation(
+        () => new Promise<void>((resolve) => setTimeout(() => ((sent = true), resolve()), 20)),
+      );
+      await service.request('frankie@domihealthcare.com');
+      expect(sent).toBe(true);
+    });
+
     it('emails a single-use link built on the deployment address', async () => {
       const { service, notifications, prisma } = build();
       await service.request('frankie@domihealthcare.com', '203.0.113.7');
@@ -197,9 +210,7 @@ describe('PasswordResetService', () => {
 
     it('applies the same password policy as everywhere else', async () => {
       const { service, sessions } = build({ token: validToken() });
-      await expect(service.complete('a-token', 'password123')).rejects.toThrow(
-        BadRequestException,
-      );
+      await expect(service.complete('a-token', 'password123')).rejects.toThrow(BadRequestException);
       expect(sessions.revokeAllForEmployee).not.toHaveBeenCalled();
     });
   });

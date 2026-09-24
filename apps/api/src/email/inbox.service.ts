@@ -38,11 +38,14 @@ export class InboxService {
   constructor(private readonly prisma: PrismaService) {}
 
   /// One row per person. Never awaited by a request handler.
-  notify(employeeIds: string[], notification: NewNotification): void {
+  async notify(employeeIds: string[], notification: NewNotification): Promise<void> {
     const ids = [...new Set(employeeIds)];
     if (ids.length === 0) return;
-    void this.prisma.notification
-      .createMany({
+    // Awaited by every caller, and never throws: on a serverless host anything
+    // still running after the response is sent may simply never finish, and a
+    // bell entry that failed to save must not fail the change it is about.
+    try {
+      await this.prisma.notification.createMany({
         data: ids.map((employeeId) => ({
           employeeId,
           kind: notification.kind,
@@ -50,12 +53,12 @@ export class InboxService {
           body: notification.body ?? null,
           link: notification.link ?? null,
         })),
-      })
-      .catch((error: unknown) =>
-        this.logger.error(
-          `Could not record a ${notification.kind} notification: ${error instanceof Error ? error.message : error}`,
-        ),
+      });
+    } catch (error: unknown) {
+      this.logger.error(
+        `Could not record a ${notification.kind} notification: ${error instanceof Error ? error.message : error}`,
       );
+    }
   }
 
   /// Everybody still working here, for practice-wide news.
@@ -67,7 +70,7 @@ export class InboxService {
       },
       select: { id: true },
     });
-    this.notify(
+    await this.notify(
       people.map((person) => person.id),
       notification,
     );

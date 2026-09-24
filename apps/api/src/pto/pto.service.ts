@@ -7,18 +7,10 @@ import {
 } from '@nestjs/common';
 import { EmploymentStatus, Prisma, PtoStatus, Role, ShiftStatus } from '@prisma/client';
 import { AuthUser } from '../common/auth/auth-user';
-import {
-  countDays,
-  isoDate,
-  toUtcDate,
-} from '../common/util/calendar-date.util';
+import { countDays, isoDate, toUtcDate } from '../common/util/calendar-date.util';
 import { NotificationsService } from '../email/notifications.service';
 import { PrismaService } from '../prisma/prisma.service';
-import {
-  CreatePtoRequestDto,
-  QueryPtoRequestsDto,
-  ReviewPtoRequestDto,
-} from './dto/pto.dto';
+import { CreatePtoRequestDto, QueryPtoRequestsDto, ReviewPtoRequestDto } from './dto/pto.dto';
 
 const REQUEST_INCLUDE = {
   employee: { select: { id: true, firstName: true, lastName: true, preferredName: true } },
@@ -72,9 +64,9 @@ export class PtoService {
 
     this.logger.log(`PTO request ${request.id} created for employee ${employeeId}`);
 
-    // Not awaited: nobody's request should fail because a mail server is slow,
-    // and until now a request could sit for a week because nobody looked.
-    this.notifyQuietly(() => this.notifications.ptoRequested(request.id));
+    // Awaited so it is not lost on a serverless host, but never allowed to fail
+    // the request: until now a request could sit for a week because nobody looked.
+    await this.notifyQuietly(() => this.notifications.ptoRequested(request.id));
 
     return this.decorate(request);
   }
@@ -157,7 +149,7 @@ export class PtoService {
     });
 
     this.logger.log(`PTO request ${id} ${dto.decision.toLowerCase()} by ${actor.id}`);
-    this.notifyQuietly(() => this.notifications.ptoDecided(updated.id));
+    await this.notifyQuietly(() => this.notifications.ptoDecided(updated.id));
 
     return this.decorate(updated);
   }
@@ -170,12 +162,14 @@ export class PtoService {
    * practice clocking in. The rejection has to be caught here, where the only
    * sensible response is a line in the log.
    */
-  private notifyQuietly(send: () => Promise<void>): void {
-    send().catch((error: unknown) =>
+  private async notifyQuietly(send: () => Promise<void>): Promise<void> {
+    try {
+      await send();
+    } catch (error: unknown) {
       this.logger.error(
         `Could not send a time-off notification: ${error instanceof Error ? error.message : error}`,
-      ),
-    );
+      );
+    }
   }
 
   /**
@@ -313,9 +307,7 @@ export class PtoService {
   }
 
   /// Adds the derived facts every screen wants, so neither has to work them out.
-  private decorate<T extends { startDate: Date; endDate: Date; isHalfDay: boolean }>(
-    request: T,
-  ) {
+  private decorate<T extends { startDate: Date; endDate: Date; isHalfDay: boolean }>(request: T) {
     const days = countDays(request.startDate, request.endDate);
     return {
       ...request,

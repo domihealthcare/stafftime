@@ -49,8 +49,8 @@ export class ShiftsService {
       data: { ...dto, employeeId, jobRoleId: dto.jobRoleId ?? null, startsAt, endsAt, createdById },
       include: SHIFT_INCLUDE,
     });
-    watch?.();
-    this.tell(null, shift);
+    await watch?.();
+    await this.tell(null, shift);
     return shift;
   }
 
@@ -109,8 +109,8 @@ export class ShiftsService {
       data: { ...dto, startsAt, endsAt },
       include: SHIFT_INCLUDE,
     });
-    watch?.();
-    this.tell(existing, shift);
+    await watch?.();
+    await this.tell(existing, shift);
     return shift;
   }
 
@@ -122,7 +122,7 @@ export class ShiftsService {
   private async watchOvertime(
     employeeId: string,
     touched: { startsAt: Date; locationId: string }[],
-  ): Promise<() => void> {
+  ): Promise<() => Promise<void>> {
     const zones = new Map(
       (
         await this.prisma.location.findMany({
@@ -149,14 +149,14 @@ export class ShiftsService {
       return { deleted: true };
     }
     await this.prisma.shift.update({ where: { id }, data: { status: ShiftStatus.CANCELLED } });
-    this.tell(shift, null);
+    await this.tell(shift, null);
     return { deleted: false, status: ShiftStatus.CANCELLED };
   }
 
   /// Tells the people a published change affects, under the bell.
-  private tell(before: NoticeShift | null, after: NoticeShift | null) {
+  private async tell(before: NoticeShift | null, after: NoticeShift | null) {
     for (const { employeeId, notice } of shiftNotices(before, after)) {
-      this.inbox.notify([employeeId], notice);
+      await this.inbox.notify([employeeId], notice);
     }
   }
 

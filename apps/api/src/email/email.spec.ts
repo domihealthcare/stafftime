@@ -6,9 +6,7 @@ import { ResendEmailSender } from './resend-email.sender';
 describe('LogEmailSender', () => {
   it('reports that nothing was sent, rather than pretending', async () => {
     const sender = new LogEmailSender();
-    await expect(
-      sender.send({ to: 'a@b.com', subject: 'Hello', text: 'Body' }),
-    ).resolves.toEqual({
+    await expect(sender.send({ to: 'a@b.com', subject: 'Hello', text: 'Body' })).resolves.toEqual({
       delivered: false,
       reason: 'no email provider configured',
     });
@@ -105,6 +103,33 @@ describe('NotificationsService', () => {
     employee: { id: 'emp-frankie', email: 'frankie@domihealthcare.com', firstName: 'Frankie' },
     reviewedBy: { firstName: 'Morgan', lastName: 'Manager' },
   };
+
+  it('waits for the email to go, and a failed send never throws', async () => {
+    const { service } = build();
+    let finished = false;
+    const slow = new NotificationsService(
+      {} as never,
+      new ConfigService({ APP_URL: 'https://staff.domihealthcare.com' }),
+      {
+        send: () =>
+          new Promise((resolve) =>
+            setTimeout(() => ((finished = true), resolve({ delivered: true })), 20),
+          ),
+      } as never,
+      { notify: jest.fn() } as never,
+    );
+    await slow.passwordReset('a@b.com', 'A', 'https://x/reset', 30);
+    expect(finished).toBe(true);
+
+    const failing = new NotificationsService(
+      {} as never,
+      new ConfigService({}),
+      { send: () => Promise.reject(new Error('provider down')) } as never,
+      { notify: jest.fn() } as never,
+    );
+    await expect(failing.passwordReset('a@b.com', 'A', 'https://x', 30)).resolves.toBeUndefined();
+    expect(service).toBeDefined();
+  });
 
   it('tells somebody their rota has put them into overtime, in hours', async () => {
     const { service, prisma, sent, inbox } = build();
@@ -209,10 +234,7 @@ describe('NotificationsService', () => {
 
     await service.ptoRequested('pto-1');
 
-    expect(sent.map((m) => m.to)).toEqual([
-      'morgan@domihealthcare.com',
-      'ada@domihealthcare.com',
-    ]);
+    expect(sent.map((m) => m.to)).toEqual(['morgan@domihealthcare.com', 'ada@domihealthcare.com']);
     expect(sent[0].subject).toBe('Frankie Front-Desk has asked for time off');
     expect(sent[0].text).toContain('Flights already booked.');
     expect(sent[0].text).toContain('https://staff.domihealthcare.com/time-off');
