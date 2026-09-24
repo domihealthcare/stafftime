@@ -5,7 +5,7 @@ import { AccountMenu } from './AccountMenu';
 import { Wordmark } from './Brand';
 import { NavMenu } from './NavMenu';
 import { NotificationBell } from './NotificationBell';
-import { useIsAdmin, useIsManager } from '../lib/session';
+import { useIsAdmin, useIsManager, useSession } from '../lib/session';
 
 /// On a phone each link grows to share out its row, so the text is centred and
 /// the padding is small — the row, not the padding, sets the width. From `sm`
@@ -28,8 +28,18 @@ const TEAM = [
 /// Running the practice.
 const MANAGE = [
   { to: '/dashboard', label: 'Dashboard' },
+  { to: '/closing', label: 'Closing checklists' },
+  { to: '/checklists', label: 'Onboarding & Offboarding' },
+  { to: '/credentials', label: 'Licenses' },
   { to: '/job-roles', label: 'Job roles' },
   { to: '/export', label: 'Export' },
+];
+/// Their own licenses and onboarding, for people whose job role keeps them
+/// (Providers). Front Desk and MAs do not see these at all — decided with
+/// Dominguez, September 2026; a manager keeps theirs.
+const OWN_PERSONNEL = [
+  { to: '/credentials', label: 'Your licenses' },
+  { to: '/checklists', label: 'Your onboarding' },
 ];
 const ADMINISTER = [
   { to: '/staff', label: 'Staff' },
@@ -40,6 +50,7 @@ const ADMINISTER = [
 export function Layout() {
   const isManager = useIsManager();
   const isAdmin = useIsAdmin();
+  const { employee } = useSession();
   const [pendingPto, setPendingPto] = useState(0);
 
   // A badge on the tab, so a manager does not have to go looking for requests.
@@ -126,13 +137,14 @@ export function Layout() {
                 </span>
               )}
             </NavLink>
-            <NavLink to="/checklists" className={linkClasses}>
-              Checklists
-            </NavLink>
-            <NavLink to="/credentials" className={linkClasses}>
-              Licenses
-            </NavLink>
-            <NavMenu label="Team" items={TEAM} className={linkClasses} />
+            <NavMenu
+              label="Team"
+              items={[
+                ...TEAM,
+                ...(!isManager && employee?.seesOwnPersonnelTabs ? OWN_PERSONNEL : []),
+              ]}
+              className={linkClasses}
+            />
             <NavMenu
               label="Manage"
               items={[...(isManager ? MANAGE : []), ...(isAdmin ? ADMINISTER : [])]}

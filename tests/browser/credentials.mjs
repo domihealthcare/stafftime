@@ -33,7 +33,9 @@ async function signIn(page, email) {
 const admin = await browser.newPage({ viewport: { width: 1280, height: 1100 } });
 admin.on('pageerror', (e) => errors.push(`pageerror: ${e.message}`));
 await signIn(admin, 'admin@domihealthcare.com');
-await admin.getByRole('link', { name: /^Licenses/ }).first().click();
+// Under Manage since September 2026, not on the top bar.
+await admin.getByRole('button', { name: 'Manage', exact: true }).click();
+await admin.getByRole('navigation').getByRole('link', { name: 'Licenses', exact: true }).click();
 
 await step('the screen opens on what is about to lapse', async () => {
   await admin.getByText('Licenses and Certifications').waitFor({ timeout: 15000 });
@@ -116,7 +118,8 @@ const mgrCtx = await browser.newContext({ viewport: { width: 1280, height: 1000 
 const manager = await mgrCtx.newPage();
 manager.on('pageerror', (e) => errors.push(`manager pageerror: ${e.message}`));
 await signIn(manager, 'manager@domihealthcare.com');
-await manager.getByRole('link', { name: /^Licenses/ }).first().click();
+await manager.getByRole('button', { name: 'Manage', exact: true }).click();
+await manager.getByRole('navigation').getByRole('link', { name: 'Licenses', exact: true }).click();
 await manager.getByRole('button', { name: 'Everything' }).click();
 
 await step('a manager sees what is current, and nothing to open', async () => {
@@ -133,7 +136,8 @@ await step('an employee sees their own and cannot record one', async () => {
   const empCtx = await browser.newContext({ viewport: { width: 1280, height: 1000 } });
   const emp = await empCtx.newPage();
   await signIn(emp, 'frontdesk@domihealthcare.com');
-  await emp.getByRole('link', { name: /^Licenses/ }).first().click();
+  // Not in Front Desk's menus any more; their own records are still theirs.
+  await emp.goto(`${BASE}/credentials`, { waitUntil: 'networkidle' });
   await emp.getByRole('button', { name: 'Everything' }).click();
 
   await emp.getByText('Your Licenses and Certifications').waitFor({ timeout: 15000 });

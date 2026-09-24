@@ -81,9 +81,7 @@ describe('clocking out', () => {
     // their punch landed when it did not.
     const { service } = build(0);
 
-    await expect(service.clockOut({}, employee, '203.0.113.7')).rejects.toThrow(
-      ConflictException,
-    );
+    await expect(service.clockOut({}, employee, '203.0.113.7')).rejects.toThrow(ConflictException);
   });
 
   it('gives the loser the same answer a late second tap gets', async () => {

@@ -1,9 +1,4 @@
-import {
-  KioskService,
-  formatPairingCode,
-  hashSecret,
-  normalisePairingCode,
-} from './kiosk.service';
+import { KioskService, formatPairingCode, hashSecret, normalisePairingCode } from './kiosk.service';
 import { createHash } from 'node:crypto';
 
 describe('pairing code helpers', () => {
@@ -29,10 +24,12 @@ describe('KioskService', () => {
     isActive: true,
   };
 
-  function build(overrides: {
-    location?: unknown;
-    device?: unknown;
-  } = {}) {
+  function build(
+    overrides: {
+      location?: unknown;
+      device?: unknown;
+    } = {},
+  ) {
     const prisma = {
       location: { findUnique: jest.fn().mockResolvedValue(overrides.location ?? activeLocation) },
       kioskDevice: {

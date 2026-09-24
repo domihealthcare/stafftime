@@ -108,8 +108,8 @@ model Location {
   timezone     String  @default("America/New_York")
 
   /// Geofence centre. Decimal(9,6) gives ~11cm precision — plenty for a radius check.
-  latitude             Decimal @db.Decimal(9, 6)
-  longitude            Decimal @db.Decimal(9, 6)
+  latitude           Decimal @db.Decimal(9, 6)
+  longitude          Decimal @db.Decimal(9, 6)
   /// How far from the centre a web/mobile punch may be and still count as "at
   /// work".
   ///
@@ -118,7 +118,7 @@ model Location {
   /// returns metres — and converts once, at the comparison. Storing the unit
   /// somebody types avoids the alternative, where 500 feet is saved as 152
   /// metres and read back as 499, which looks like the app losing their input.
-  geofenceRadiusFeet Int @default(500)
+  geofenceRadiusFeet Int     @default(500)
 
   /// Fallback verification for web punches: exact IPv4/IPv6 addresses or IPv4 CIDR
   /// blocks (e.g. "203.0.113.7", "203.0.113.0/24") belonging to this office.
@@ -136,10 +136,13 @@ model Location {
   timeEntries    TimeEntry[]
   kioskDevices   KioskDevice[]
   payrollExports PayrollExport[]
-
-  @@map("locations")
+  closingItems   ClosingItem[]
+  closingRecords ClosingRecord[]
+  supplyRequests SupplyRequest[]
 
   surveys Survey[]
+
+  @@map("locations")
 }
 
 // ---------------------------------------------------------------------------
@@ -159,17 +162,17 @@ model Employee {
   /// enters it; the ADP export names anybody still missing one.
   adpFileNumber String? @unique
 
-  firstName     String
-  lastName      String
-  preferredName String?
-  email         String  @unique
+  firstName      String
+  lastName       String
+  preferredName  String?
+  email          String    @unique
   /// A number colleagues can reach them on, shown in the Directory. Their own
   /// to set on their profile; an admin can set it too.
-  phone         String?
+  phone          String?
   /// Optional, shown beside their name in the Directory ("she/her").
-  pronouns      String?
+  pronouns       String?
   /// One line about themselves for the Directory, e.g. "Spanish speaker".
-  about         String?
+  about          String?
   /// When their profile photo last changed, or null for none. Doubles as the
   /// photo URL's version, so a new photo is never served from a stale cache.
   photoUpdatedAt DateTime?
@@ -222,10 +225,11 @@ model Employee {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  locations   EmployeeLocation[]
-  shifts      Shift[]
-  timeEntries TimeEntry[]
-  sessions    Session[]
+  locations      EmployeeLocation[]
+  shifts         Shift[]
+  timeEntries    TimeEntry[]
+  closingRecords ClosingRecord[]
+  sessions       Session[]
 
   createdShifts       Shift[]            @relation("ShiftCreatedBy")
   createdKiosks       KioskDevice[]      @relation("KioskCreatedBy")
@@ -622,6 +626,8 @@ model TimeEntry {
 
   payrollExports PayrollExportEntry[]
 
+  closingRecord ClosingRecord?
+
   @@index([employeeId, clockInAt])
   @@index([locationId, clockInAt])
   @@index([shiftId])
@@ -995,7 +1001,7 @@ model Announcement {
   body      String
   isPrimary Boolean @default(false)
 
-  authorId String?  @db.Uuid
+  authorId String?   @db.Uuid
   /// Set when the words change after posting, so readers can tell.
   editedAt DateTime?
 
@@ -1034,10 +1040,15 @@ model JobRole {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  members   EmployeeJobRole[]
-  resources Resource[]
-  surveys   Survey[]
-  shifts    Shift[]
+  members              EmployeeJobRole[]
+  resources            Resource[]
+  surveys              Survey[]
+  shifts               Shift[]
+  /// Its closing checklist, shown at clock-out.
+  closingSections      ClosingSection[]
+  /// People in this role see their own licenses and onboarding under Team.
+  /// Starts true for Provider only (September 2026).
+  seesOwnPersonnelTabs Boolean           @default(false)
 
   @@map("job_roles")
 }
@@ -1183,15 +1194,15 @@ enum SurveyQuestionKind {
 }
 
 model Survey {
-  id       String         @id @default(uuid()) @db.Uuid
-  title    String
-  intro    String?
-  audience SurveyAudience @default(EVERYONE)
+  id         String         @id @default(uuid()) @db.Uuid
+  title      String
+  intro      String?
+  audience   SurveyAudience @default(EVERYONE)
   /// For JOB_ROLE. Null after the role is deleted, which leaves nobody to ask.
-  jobRoleId  String?      @db.Uuid
+  jobRoleId  String?        @db.Uuid
   /// For LOCATION.
-  locationId String?      @db.Uuid
-  status     SurveyStatus @default(DRAFT)
+  locationId String?        @db.Uuid
+  status     SurveyStatus   @default(DRAFT)
   openedAt   DateTime?
   closedAt   DateTime?
 
@@ -1336,4 +1347,139 @@ model Notification {
 
   @@index([employeeId, createdAt])
   @@map("notifications")
+}
+
+// ---------------------------------------------------------------------------
+// Closing checklists — what Front Desk and Medical Assistants confirm at
+// clock-out (September 2026). The template belongs to a job role and is the
+// managers' to edit; each clock-out keeps its own copy of the wording, so a
+// later edit never rewrites what somebody ticked.
+//
+// Never anything about a patient: ticks, numbers and supplies only. There is
+// deliberately no free-text box — see "Data this app does not hold".
+// ---------------------------------------------------------------------------
+
+enum ClosingItemKind {
+  /// Ticked at clock-out; left unticked, it is flagged to managers.
+  TASK
+  /// A standing rule shown as a reminder, never ticked ("notify the doctor if
+  /// vitals are out of range").
+  REMINDER
+  /// A number ("calls answered"); below its target, it is flagged.
+  COUNT
+  /// A supply ticked when more is needed; it goes on the office's restock list.
+  SUPPLY
+}
+
+/// A heading in a role's closing checklist. A **position** section ("Check In
+/// Desk", "Outdesk") is only shown when the person says they worked it today;
+/// the rest are shown every time.
+model ClosingSection {
+  id         String  @id @default(uuid()) @db.Uuid
+  jobRoleId  String  @db.Uuid
+  title      String
+  isPosition Boolean @default(false)
+  sortOrder  Int     @default(0)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  jobRole JobRole       @relation(fields: [jobRoleId], references: [id], onDelete: Cascade)
+  items   ClosingItem[]
+
+  @@index([jobRoleId, sortOrder])
+  @@map("closing_sections")
+}
+
+model ClosingItem {
+  id         String          @id @default(uuid()) @db.Uuid
+  sectionId  String          @db.Uuid
+  kind       ClosingItemKind @default(TASK)
+  text       String
+  /// COUNT only: at or above this is fine, below it is flagged.
+  target     Int?
+  /// ISO weekdays it applies on (1 = Monday … 7 = Sunday); empty is every day.
+  weekdays   Int[]           @default([])
+  /// One office only ("North Bergen office"); null is every office.
+  locationId String?         @db.Uuid
+  sortOrder  Int             @default(0)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  section  ClosingSection @relation(fields: [sectionId], references: [id], onDelete: Cascade)
+  location Location?      @relation(fields: [locationId], references: [id], onDelete: SetNull)
+
+  @@index([sectionId, sortOrder])
+  @@map("closing_items")
+}
+
+/// One clock-out's checklist. Written even when nothing was filled in — a
+/// clock-out that skipped the checklist is itself worth a manager knowing.
+model ClosingRecord {
+  id          String   @id @default(uuid()) @db.Uuid
+  timeEntryId String   @unique @db.Uuid
+  employeeId  String   @db.Uuid
+  locationId  String   @db.Uuid
+  /// The working day, in the office's time zone.
+  day         DateTime @db.Date
+  /// Position sections they said they worked, by title as it was then.
+  positions   String[] @default([])
+  /// False when they clocked out without filling it in (a manager clocking
+  /// them out, an old browser, a tablet that lost its connection).
+  submitted   Boolean  @default(true)
+  /// How many ticked tasks were missed and counts fell short — kept so the
+  /// round-up does not have to reread every answer.
+  gaps        Int      @default(0)
+  createdAt   DateTime @default(now())
+
+  timeEntry TimeEntry       @relation(fields: [timeEntryId], references: [id], onDelete: Cascade)
+  employee  Employee        @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+  location  Location        @relation(fields: [locationId], references: [id], onDelete: Restrict)
+  answers   ClosingAnswer[]
+
+  @@index([day])
+  @@index([employeeId, day])
+  @@map("closing_records")
+}
+
+/// One line of one clock-out's checklist, with the wording as it was.
+model ClosingAnswer {
+  id        String          @id @default(uuid()) @db.Uuid
+  recordId  String          @db.Uuid
+  itemId    String?         @db.Uuid
+  section   String
+  kind      ClosingItemKind
+  text      String
+  target    Int?
+  done      Boolean?
+  count     Int?
+  needed    Boolean?
+  sortOrder Int             @default(0)
+
+  record ClosingRecord @relation(fields: [recordId], references: [id], onDelete: Cascade)
+
+  @@index([recordId])
+  @@map("closing_answers")
+}
+
+/// A supply somebody ticked as needed, on its office's restock list until a
+/// manager marks it ordered. One open line per supply per office: ticking it
+/// again the next day adds a name, not a second line.
+model SupplyRequest {
+  id            String    @id @default(uuid()) @db.Uuid
+  locationId    String    @db.Uuid
+  itemId        String?   @db.Uuid
+  text          String
+  firstAskedAt  DateTime  @default(now())
+  lastAskedAt   DateTime  @default(now())
+  timesAsked    Int       @default(1)
+  lastAskedById String?   @db.Uuid
+  orderedAt     DateTime?
+  orderedById   String?   @db.Uuid
+
+  location Location @relation(fields: [locationId], references: [id], onDelete: Cascade)
+
+  @@index([locationId, orderedAt])
+  @@map("supply_requests")
 }

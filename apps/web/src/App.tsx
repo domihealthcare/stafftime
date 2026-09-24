@@ -24,6 +24,7 @@ import { ExportPage } from './pages/ExportPage';
 import { LocationsPage } from './pages/LocationsPage';
 import { KiosksPage } from './pages/KiosksPage';
 import { LoginPage } from './pages/LoginPage';
+import { ClosingPage } from './pages/ClosingPage';
 import { SchedulePage } from './pages/SchedulePage';
 import { RotaPrintPage } from './pages/RotaPrintPage';
 import { SetupPage } from './pages/SetupPage';
@@ -102,6 +103,7 @@ function Routed() {
         <Route path="settings" element={<SettingsPage />} />
         <Route path="time-off" element={<TimeOffPage />} />
         <Route path="checklists" element={<ChecklistsPage />} />
+        <Route path="closing" element={<ClosingPage />} />
         <Route path="credentials" element={<CredentialsPage />} />
         <Route path="export" element={<ExportPage />} />
         <Route path="staff" element={<StaffPage />} />

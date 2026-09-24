@@ -1,4 +1,5 @@
 import { Module } from '@nestjs/common';
+import { ClosingModule } from '../closing/closing.module';
 import { TimeEntriesModule } from '../time-entries/time-entries.module';
 import { KioskController } from './kiosk.controller';
 import { KioskDeviceGuard } from './kiosk.guard';
@@ -7,7 +8,7 @@ import { KioskService } from './kiosk.service';
 import { PinService } from './pin.service';
 
 @Module({
-  imports: [TimeEntriesModule],
+  imports: [TimeEntriesModule, ClosingModule],
   controllers: [KioskController],
   providers: [KioskService, KioskPunchService, PinService, KioskDeviceGuard],
   exports: [KioskService, PinService],

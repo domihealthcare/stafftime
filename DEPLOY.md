@@ -211,6 +211,11 @@ screen it belongs to.
 
 ## Turning email on
 
+**Done on the live site, 24 September 2026**: Resend, with the domain's DNS
+at Wix (Settings → Domains → Manage DNS records): a TXT `resend._domainkey`
+and CNAMEs `send` and `rsend`, alongside — not replacing — Google
+Workspace's MX and SPF records. The steps below are for a new deployment.
+
 Until this is done, the app still works — but **nothing is emailed**. Password
 resets and time-off notifications get written to the server log instead, where
 only you can see them, and the log says so on every message.

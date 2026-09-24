@@ -1,4 +1,5 @@
 import { chromium } from 'playwright';
+import { clockOut } from './clock-out.mjs';
 import { mkdirSync } from 'node:fs';
 
 const OUT = process.argv[2] || new URL('./shots/', import.meta.url).pathname;
@@ -138,7 +139,7 @@ await step('a manager sees since when', async () => {
 
 await step('clocking out takes them off In now', async () => {
   await frankie.getByRole('link', { name: 'Clock', exact: true }).click();
-  await frankie.getByRole('button', { name: 'Clock out' }).click();
+  await clockOut(frankie);
   await frankie.getByText('Not clocked in').waitFor({ timeout: 20000 });
   await openDirectory(frankie);
   await inNow(frankie, 'North Bergen').getByText('Nobody is clocked in.').waitFor({ timeout: 10000 });

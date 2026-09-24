@@ -5,6 +5,7 @@ import {
   Injectable,
   Logger,
   NotFoundException,
+  Optional,
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import {
@@ -17,6 +18,7 @@ import {
   TimeEntryStatus,
   VerificationMethod,
 } from '@prisma/client';
+import { ClosingService } from '../closing/closing.service';
 import { AuthUser } from '../common/auth/auth-user';
 import { normalizeIp } from '../common/util/ip.util';
 import { PrismaService } from '../prisma/prisma.service';
@@ -97,6 +99,9 @@ export class TimeEntriesService {
     private readonly prisma: PrismaService,
     private readonly verification: LocationVerificationService,
     config: ConfigService,
+    /// Optional so the many punch tests that are not about checklists need
+    /// not build one.
+    @Optional() private readonly closing?: ClosingService,
   ) {
     this.graceMinutes = config.get<number>('PUNCH_GRACE_MINUTES', 5);
   }
@@ -221,7 +226,32 @@ export class TimeEntriesService {
     }
   }
 
+  /**
+   * Closes the open punch, then records its closing checklist. The punch comes
+   * first and stands on its own: nothing about the checklist — missing,
+   * skipped, or failing to save — can stop somebody clocking out.
+   */
   async clockOut(
+    dto: ClockOutDto,
+    actor: AuthUser,
+    ipAddress: string | undefined,
+    employeeIdOverride?: string,
+  ) {
+    const entry = await this.closeOpenEntry(dto, actor, ipAddress, employeeIdOverride);
+    await this.closing?.recordForClockOut(
+      {
+        id: entry.id,
+        employeeId: employeeIdOverride ?? actor.id,
+        locationId: entry.locationId,
+        clockInAt: entry.clockInAt,
+      },
+      dto.closing,
+      actor.id,
+    );
+    return entry;
+  }
+
+  private async closeOpenEntry(
     dto: ClockOutDto,
     actor: AuthUser,
     ipAddress: string | undefined,

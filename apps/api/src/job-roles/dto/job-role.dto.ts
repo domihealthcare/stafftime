@@ -1,5 +1,6 @@
 import { JOB_ROLE_COLOURS } from '../job-role-colours';
 import {
+  IsBoolean,
   IsIn,
   IsInt,
   IsOptional,
@@ -12,6 +13,10 @@ import {
 } from 'class-validator';
 
 export class CreateJobRoleDto {
+  @IsOptional()
+  @IsBoolean()
+  seesOwnPersonnelTabs?: boolean;
+
   @IsString()
   @MinLength(2)
   @MaxLength(60)
@@ -28,6 +33,12 @@ export class CreateJobRoleDto {
 }
 
 export class UpdateJobRoleDto {
+  /// Whether people in this role see their own licenses and onboarding under
+  /// Team. It shows them their own records and nothing more — no power.
+  @IsOptional()
+  @IsBoolean()
+  seesOwnPersonnelTabs?: boolean;
+
   @IsOptional()
   @IsString()
   @MinLength(2)

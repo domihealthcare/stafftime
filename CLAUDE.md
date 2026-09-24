@@ -139,9 +139,11 @@ Build this as an **adapter/plugin pattern**, not a hardcoded ADP integration:
      job roles and who is in each; the starting list is Front Desk, Medical
      Assistant, Provider, Administrative, Manager. Somebody can hold **several**
      (front desk staff who also work as MAs; providers who also do admin work).
-     A job role decides which resources somebody sees and **nothing else** — it
-     is separate from the Employee / Manager / Admin access level, so being in
-     "Administrative" or "Manager" grants no power in the app. Each job role has a
+     A job role decides which resources somebody sees, which **closing
+     checklist** they get at clock-out, and whether they see their own
+     licenses and onboarding (Provider) — and **no power**: it is separate
+     from the Employee / Manager / Admin access level, so being in
+     "Administrative" or "Manager" grants nothing in the app. Each job role has a
      resources section: **links** (Drive, ADP, vendor portals) and **pages
      written in the app**. No uploads for now; uploads may come later, but that
      would be a deliberate reversal of *Data this app does not hold*, not a
@@ -196,12 +198,12 @@ Still to do on the deployment, in `DEPLOY.md`:
   certificate is issued, and the app answers on the real address: `/api/health`
   OK, `/api/config` reporting the test environment, sign-in returning 200. The
   Vercel URL `stafftime-ap.vercel.app` still works alongside it.
-- **The geofence pins are still the seeded placeholders** (North Bergen
-  40.804/-74.012, West New York 40.7878/-74.0143), carried straight from
-  `prisma/seed.ts` — the addresses were typed in but the coordinates were
-  never captured. With a 500 ft radius an approximate pin can refuse somebody
-  standing at their own front desk. Fix by standing at each office and
-  pressing **Use my current location** on the Locations screen.
+- ~~The geofence pins are still the seeded placeholders~~ — **done, 24
+  September 2026.** Both offices' coordinates were typed in from Google Maps
+  (the phone's indoor fix was only good to ~315 ft, too loose to save). Still
+  to do: **clock in from the far corner of each office** to confirm the
+  500 ft radius reaches it. Never run `npm run db:seed` against the live
+  database — it resets the pins to the old placeholders.
 - **`SETUP_TOKEN` should be deleted** from the Vercel environment variables
   now that the first admin exists, and the Neon password rotated.
 
@@ -225,10 +227,15 @@ Beyond the phases, the parts worth knowing about before picking up work:
 - **A nightly round-up** of what needs a look — lapsing licences, overdue
   checklist tasks, undecided time off, punches with no clock-out, kiosk tablets
   that have gone quiet, next week still unpublished, hours nobody has approved,
-  shifts for people who have left. The same nine lists appear as banners on the
+  shifts for people who have left, open shifts, closing checklists with
+  something missed, supplies to order. The same lists appear as banners on the
   screens where each thing gets fixed, from one service, so the email and the
   app cannot disagree. Managers can turn the email off; nothing is lost by it.
-  **Needs an email provider configured before any of it sends.**
+  **Email is live** (24 September 2026): Resend, sending as
+  `Domi Staff <no-reply@domihealthcare.com>`, with its DKIM and `send`/`rsend`
+  records in the domain's DNS at **Wix**; a password reset was received.
+  Sends are awaited, never fire-and-forget — on Vercel anything left running
+  after the response is frozen, which is why the first attempt never left.
 - **The rota** (September 2026): the Schedule week is a table — a row per
   person, a column per day — shown for everyone, by location or by job role,
   with filters. **Open shifts** (`Shift.employeeId` null, optional
@@ -246,6 +253,21 @@ Beyond the phases, the parts worth knowing about before picking up work:
   managers) gives the week on paper, one landscape page per office:
   published shifts only, no open shifts, and time off as a bare "Off" — the
   kind of leave never goes on the wall.
+- **Closing checklists** (September 2026, from the practice's Front Desk
+  Checklist 2026 and MA Responsibilities): Front Desk and Medical Assistants
+  get their role's checklist when they clock out, on the phone and at the
+  kiosk (PIN, checklist, PIN again — nothing held on the server between).
+  Front Desk picks the desk(s) worked (Check In / Outdesk); rules are shown as
+  reminders, not ticked; calls answered is a number flagged under 20; supply
+  ticks build a per-office **restock list** managers mark ordered. **Anybody
+  can always clock out** — unticked lines and skipped checklists are recorded
+  and flagged (Manage → Closing checklists, banner, nightly email), never a
+  gate. Ticks and numbers only, no free text (schema guard enforces it).
+  Managers edit the lists in the app; `src/closing/default-checklists.ts` is
+  only the starting point. **Licenses and Onboarding & Offboarding** moved off
+  the top bar: under Manage for managers/admins, under Team ("Your licenses",
+  "Your onboarding") for roles with `seesOwnPersonnelTabs` (Provider); Front
+  Desk and MA staff do not see them.
 - **Work from home** (September 2026): a manager marks a shift work from home
   (`Shift.isRemote`). While a published one is on — from 30 minutes before it
   starts until it ends — the person clocks in from anywhere, no location asked

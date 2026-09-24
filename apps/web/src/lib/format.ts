@@ -37,10 +37,7 @@ export function formatDate(iso: string): string {
  * The year is included by default: a checklist due date can easily be in a
  * different year from the one you are looking at it in.
  */
-export function formatCalendarDate(
-  iso: string,
-  { year = true }: { year?: boolean } = {},
-): string {
+export function formatCalendarDate(iso: string, { year = true }: { year?: boolean } = {}): string {
   return new Date(`${iso.slice(0, 10)}T00:00:00Z`).toLocaleDateString(undefined, {
     timeZone: 'UTC',
     weekday: 'short',
@@ -144,7 +141,6 @@ export function localDate(date: Date): string {
   const pad = (n: number) => String(n).padStart(2, '0');
   return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`;
 }
-
 
 /// What colleagues call somebody: the name they go by, then their surname.
 export function displayName(person: {

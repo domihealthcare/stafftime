@@ -42,6 +42,14 @@ import type {
   UpdateLocationInput,
   OvertimeCheck,
   OwnOvertimeWeek,
+  ApplicableSection,
+  ClosingItemKind,
+  ClosingRecord,
+  ClosingSubmission,
+  ClosingTemplateItem,
+  ClosingTemplateRole,
+  ClosingTemplateSection,
+  SupplyRequest,
 } from './types';
 
 /**
@@ -203,6 +211,7 @@ export interface ClockOutPayload {
   latitude?: number;
   longitude?: number;
   accuracyMeters?: number;
+  closing?: ClosingSubmission;
 }
 
 export interface AuthSession {
@@ -227,7 +236,10 @@ export interface KioskEmployee {
 }
 
 export interface KioskPunchResult {
-  action: 'CLOCKED_IN' | 'CLOCKED_OUT';
+  /// CHECKLIST: nothing punched yet — fill in the closing checklist, then send
+  /// the PIN again with it.
+  action: 'CLOCKED_IN' | 'CLOCKED_OUT' | 'CHECKLIST';
+  checklist?: ApplicableSection[];
   employeeName: string;
   at: string;
   locationName: string;
@@ -262,10 +274,10 @@ export const kioskApi = {
     }),
   session: () => request<KioskSession>('/kiosk/session'),
   employees: () => request<KioskEmployee[]>('/kiosk/employees'),
-  punch: (employeeId: string, pin: string) =>
+  punch: (employeeId: string, pin: string, closing?: ClosingSubmission) =>
     request<KioskPunchResult>('/kiosk/punch', {
       method: 'POST',
-      body: JSON.stringify({ employeeId, pin }),
+      body: JSON.stringify({ employeeId, pin, closing }),
     }),
   unpair: () => request<{ unpaired: boolean }>('/kiosk/unpair', { method: 'POST' }),
 };
@@ -601,6 +613,61 @@ export const api = {
       method: 'POST',
       body: JSON.stringify(payload),
     }),
+  // ------------------------------------------------------------ closing checklists
+  closingMine: () => request<{ sections: ApplicableSection[] }>('/closing/mine'),
+  closingRecords: (date: string, locationId?: string) =>
+    request<ClosingRecord[]>(`/closing/records${toQuery({ date, locationId })}`),
+  supplies: () => request<SupplyRequest[]>('/closing/supplies'),
+  markSupplyOrdered: (id: string) =>
+    request<{ ordered: boolean }>(`/closing/supplies/${id}/ordered`, { method: 'POST' }),
+  closingTemplates: () => request<ClosingTemplateRole[]>('/closing/templates'),
+  createClosingSection: (body: { jobRoleId: string; title: string; isPosition?: boolean }) =>
+    request<ClosingTemplateSection>('/closing/sections', {
+      method: 'POST',
+      body: JSON.stringify(body),
+    }),
+  updateClosingSection: (id: string, body: { title?: string; isPosition?: boolean }) =>
+    request<ClosingTemplateSection>(`/closing/sections/${id}`, {
+      method: 'PATCH',
+      body: JSON.stringify(body),
+    }),
+  deleteClosingSection: (id: string) =>
+    request<{ deleted: boolean }>(`/closing/sections/${id}`, { method: 'DELETE' }),
+  moveClosingSection: (id: string, direction: 'up' | 'down') =>
+    request<{ moved: boolean }>(`/closing/sections/${id}/move`, {
+      method: 'POST',
+      body: JSON.stringify({ direction }),
+    }),
+  createClosingItem: (body: {
+    sectionId: string;
+    kind: ClosingItemKind;
+    text: string;
+    target?: number | null;
+    weekdays?: number[];
+    locationId?: string | null;
+  }) =>
+    request<ClosingTemplateItem>('/closing/items', { method: 'POST', body: JSON.stringify(body) }),
+  updateClosingItem: (
+    id: string,
+    body: {
+      kind?: ClosingItemKind;
+      text?: string;
+      target?: number | null;
+      weekdays?: number[];
+      locationId?: string | null;
+    },
+  ) =>
+    request<ClosingTemplateItem>(`/closing/items/${id}`, {
+      method: 'PATCH',
+      body: JSON.stringify(body),
+    }),
+  deleteClosingItem: (id: string) =>
+    request<{ deleted: boolean }>(`/closing/items/${id}`, { method: 'DELETE' }),
+  moveClosingItem: (id: string, direction: 'up' | 'down') =>
+    request<{ moved: boolean }>(`/closing/items/${id}/move`, {
+      method: 'POST',
+      body: JSON.stringify({ direction }),
+    }),
   clockOut: (payload: ClockOutPayload) =>
     request<TimeEntry>('/time-entries/clock-out', {
       method: 'POST',
@@ -821,10 +888,21 @@ export const api = {
     }),
 
   jobRoles: () => request<JobRole[]>('/job-roles'),
-  createJobRole: (body: { name: string; description?: string }) =>
-    request<JobRole>('/job-roles', { method: 'POST', body: JSON.stringify(body) }),
-  updateJobRole: (id: string, body: Partial<{ name: string; description: string }>) =>
-    request<JobRole>(`/job-roles/${id}`, { method: 'PATCH', body: JSON.stringify(body) }),
+  createJobRole: (body: {
+    name: string;
+    description?: string;
+    colour?: string;
+    seesOwnPersonnelTabs?: boolean;
+  }) => request<JobRole>('/job-roles', { method: 'POST', body: JSON.stringify(body) }),
+  updateJobRole: (
+    id: string,
+    body: Partial<{
+      name: string;
+      description: string;
+      colour: string;
+      seesOwnPersonnelTabs: boolean;
+    }>,
+  ) => request<JobRole>(`/job-roles/${id}`, { method: 'PATCH', body: JSON.stringify(body) }),
   deleteJobRole: (id: string) =>
     request<{ deleted: boolean }>(`/job-roles/${id}`, { method: 'DELETE' }),
   addJobRoleMember: (id: string, employeeId: string) =>

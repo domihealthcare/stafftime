@@ -9,7 +9,9 @@ There is now a screen for all three of these: sign in as an admin **on your
 phone**, open **Locations**, and set them standing at each front desk. Note that
 `npm run db:seed` resets them back to placeholders.
 
-- [ ] **Real street addresses and surveyed coordinates for both offices.** The
+- [x] **Coordinates for both offices** — typed in from Google Maps, 24
+      September 2026. Street addresses: check they are filled in on Locations.
+- [ ] ~~Real street addresses and surveyed coordinates for both offices.~~ The
       seed uses approximate town-centre points and `TODO` addresses. The
       **Use my current location** button captures them from the device.
 - [ ] **Geofence radius per location.** Now **500 feet** everywhere, which is a
@@ -89,7 +91,7 @@ The spreadsheet export stays as the fallback.
       cancellation would be easy to add but hard to undo.
 - [x] ~~Notifications when a request is decided.~~ Built — the requester is
       emailed the decision and the reason, and every manager is emailed when a
-      request comes in. Needs an email provider configured to actually send.
+      request comes in. Email is set up (Resend, September 2026).
 - [x] ~~Anything else worth emailing about?~~ The nightly digest now chases
       lapsed and expiring credentials, overdue checklist tasks, punches with no
       clock-out, and undecided time off. It stays quiet on days when there is

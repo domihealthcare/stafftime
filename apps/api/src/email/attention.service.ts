@@ -49,6 +49,8 @@ export interface DigestContents {
   unapprovedHours: string[];
   shiftsForLeavers: string[];
   openShifts: string[];
+  closingGaps: string[];
+  suppliesNeeded: string[];
 }
 
 /**
@@ -168,6 +170,7 @@ export class AttentionService {
           }`,
       ),
       ...(await this.gatherOperational(today, who, day)),
+      ...(await this.gatherClosing(today, day)),
     };
   }
 
@@ -322,6 +325,76 @@ export class AttentionService {
           )}, but marked as no longer employed`,
       ),
     };
+  }
+
+  /**
+   * Closing checklists from yesterday and today with something missed — a
+   * task left unticked, a count short of its target, or no checklist at all —
+   * and the supplies still waiting to be ordered, one line per office.
+   *
+   * Two days rather than "since a manager last looked": there is no "seen"
+   * mark to keep, and a missed lock-up step is worth hearing about the next
+   * morning, not a fortnight of mornings.
+   */
+  private async gatherClosing(today: Date, day: (date: Date) => string) {
+    const [records, supplies] = await Promise.all([
+      this.prisma.closingRecord.findMany({
+        where: {
+          day: { gte: addUtcDays(today, -1) },
+          OR: [{ gaps: { gt: 0 } }, { submitted: false }],
+        },
+        orderBy: [{ day: 'asc' }, { createdAt: 'asc' }],
+        include: {
+          employee: { select: { firstName: true, preferredName: true, lastName: true } },
+          location: { select: { name: true } },
+          answers: { orderBy: { sortOrder: 'asc' } },
+        },
+        take: 50,
+      }),
+      this.prisma.supplyRequest.findMany({
+        where: { orderedAt: null },
+        orderBy: { firstAskedAt: 'asc' },
+        include: { location: { select: { name: true } } },
+      }),
+    ]);
+
+    const closingGaps = records.map((record) => {
+      const name = `${record.employee.preferredName ?? record.employee.firstName} ${record.employee.lastName}`;
+      const where = `${name} — ${record.location.name}, ${day(record.day)}`;
+      if (!record.submitted) return `${where}: clocked out without the closing checklist`;
+      const missed = record.answers
+        .filter(
+          (answer) =>
+            (answer.kind === 'TASK' && !answer.done) ||
+            (answer.kind === 'COUNT' &&
+              (answer.count === null || (answer.target !== null && answer.count < answer.target))),
+        )
+        .map((answer) =>
+          answer.kind === 'COUNT'
+            ? answer.count === null
+              ? `${answer.text} left blank`
+              : `${answer.text} ${answer.count} of ${answer.target}`
+            : answer.text,
+        );
+      const shown = missed.slice(0, 3).join('; ');
+      const more = missed.length > 3 ? ` and ${missed.length - 3} more` : '';
+      return `${where}: ${shown}${more}`;
+    });
+
+    const byLocation = new Map<string, string[]>();
+    for (const supply of supplies) {
+      const label =
+        supply.timesAsked > 1 ? `${supply.text} (asked ${supply.timesAsked} times)` : supply.text;
+      byLocation.set(supply.location.name, [
+        ...(byLocation.get(supply.location.name) ?? []),
+        label,
+      ]);
+    }
+    const suppliesNeeded = [...byLocation.entries()].map(
+      ([place, items]) => `${place} — ${items.length} to order: ${items.join(', ')}`,
+    );
+
+    return { closingGaps, suppliesNeeded };
   }
 
   /**
