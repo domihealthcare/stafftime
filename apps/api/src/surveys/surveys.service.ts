@@ -8,6 +8,7 @@ import {
 } from '@nestjs/common';
 import {
   EmploymentStatus,
+  NotificationKind,
   Prisma,
   Role,
   SurveyAudience,
@@ -16,6 +17,7 @@ import {
 } from '@prisma/client';
 import { randomInt } from 'node:crypto';
 import { AuthUser } from '../common/auth/auth-user';
+import { InboxService } from '../email/inbox.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { AnswerInput, ResponseInput, SurveyInput } from './dto/survey.dto';
 
@@ -65,7 +67,10 @@ const ACTIVE = { in: [EmploymentStatus.ACTIVE, EmploymentStatus.ON_LEAVE] };
 export class SurveysService {
   private readonly logger = new Logger(SurveysService.name);
 
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly inbox: InboxService,
+  ) {}
 
   /// Managers: every survey. Staff: the open ones meant for them.
   async list(actor: AuthUser) {
@@ -170,6 +175,21 @@ export class SurveysService {
       select: SURVEY_SELECT,
     });
     this.logger.log(`Survey ${id} opened by ${actor.id}`);
+
+    // Everybody it is meant for hears about it once, under the bell.
+    const audience = await this.prisma.employee.findMany({
+      where: this.audienceWhere(row),
+      select: { id: true },
+    });
+    this.inbox.notify(
+      audience.map((person) => person.id),
+      {
+        kind: NotificationKind.SURVEY_OPEN,
+        title: `New survey: ${row.title}`,
+        body: 'Anonymous — nobody can see who answered what.',
+        link: '/surveys',
+      },
+    );
     return this.forManager(row);
   }
 

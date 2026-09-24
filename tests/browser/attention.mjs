@@ -43,7 +43,7 @@ await step('the round-up is not an employee’s to read', async () => {
 });
 
 await step('an employee is not offered the notification settings', async () => {
-  if (await accountMenuHas(employee, 'Notifications'))
+  if (await accountMenuHas(employee, 'Email settings'))
     throw new Error('an employee was offered the notification settings');
 });
 
@@ -107,7 +107,7 @@ await step('the banner goes to the screen where it would be fixed', async () => 
 });
 
 await step('the nightly email can be turned off, and stays off', async () => {
-  await pickFromAccountMenu(admin, 'Notifications');
+  await pickFromAccountMenu(admin, 'Email settings');
   const toggle = admin.getByRole('switch', { name: 'The nightly round-up' });
   await toggle.waitFor({ timeout: 15000 });
 

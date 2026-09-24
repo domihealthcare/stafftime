@@ -1,9 +1,10 @@
 import { Inject, Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { EmploymentStatus, PtoStatus, PtoType, Role } from '@prisma/client';
+import { EmploymentStatus, NotificationKind, PtoStatus, PtoType, Role } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import type { DigestContents } from './digest.service';
 import { EMAIL_SENDER, EmailSender } from './email-sender';
+import { InboxService } from './inbox.service';
 
 /**
  * The messages this app actually sends, and who gets them.
@@ -22,6 +23,7 @@ export class NotificationsService {
     private readonly prisma: PrismaService,
     private readonly config: ConfigService,
     @Inject(EMAIL_SENDER) private readonly email: EmailSender,
+    private readonly inbox: InboxService,
   ) {
     this.appUrl = (config.get<string>('APP_URL') ?? 'http://localhost:5173').replace(/\/$/, '');
   }
@@ -50,7 +52,7 @@ export class NotificationsService {
     const request = await this.prisma.ptoRequest.findUnique({
       where: { id: requestId },
       include: {
-        employee: { select: { email: true, firstName: true } },
+        employee: { select: { id: true, email: true, firstName: true } },
         reviewedBy: { select: { firstName: true, lastName: true } },
       },
     });
@@ -60,6 +62,13 @@ export class NotificationsService {
     const decider = request.reviewedBy
       ? `${request.reviewedBy.firstName} ${request.reviewedBy.lastName}`
       : 'A manager';
+
+    this.inbox.notify([request.employee.id], {
+      kind: NotificationKind.TIME_OFF_DECIDED,
+      title: approved ? 'Your time off is approved' : 'Your time off request was not approved',
+      body: `${capitalise(describeType(request.type))}, ${describeRange(request.startDate, request.endDate, request.isHalfDay)} — ${decider}${request.reviewNote ? `: “${request.reviewNote}”` : ''}`,
+      link: '/time-off',
+    });
 
     this.dispatch(
       request.employee.email,
@@ -95,10 +104,19 @@ export class NotificationsService {
         // Nobody needs an email about their own request.
         id: { not: request.employeeId },
       },
-      select: { email: true, firstName: true },
+      select: { id: true, email: true, firstName: true },
     });
 
     const who = `${request.employee.firstName} ${request.employee.lastName}`;
+    this.inbox.notify(
+      deciders.map((decider) => decider.id),
+      {
+        kind: NotificationKind.TIME_OFF_REQUESTED,
+        title: `${who} has asked for time off`,
+        body: `${capitalise(describeType(request.type))}, ${describeRange(request.startDate, request.endDate, request.isHalfDay)}`,
+        link: '/time-off',
+      },
+    );
     for (const decider of deciders) {
       this.dispatch(decider.email, `${who} has asked for time off`, [
         `Hello ${decider.firstName},`,
@@ -133,6 +151,13 @@ export class NotificationsService {
       day: 'numeric',
     });
     const over = Math.round((scheduledHours - thresholdHours) * 100) / 100;
+
+    this.inbox.notify([employeeId], {
+      kind: NotificationKind.OVERTIME,
+      title: 'Your schedule puts you into overtime',
+      body: `${scheduledHours} hours in the week starting ${week} — ${over} past the ${thresholdHours}-hour line.`,
+      link: '/schedule',
+    });
 
     this.dispatch(employee.email, 'Your schedule puts you into overtime', [
       `Hello ${employee.preferredName ?? employee.firstName},`,
@@ -190,6 +215,10 @@ export class NotificationsService {
       'If this was not you, you can ignore this — your password has not changed. Tell an administrator if it keeps happening.',
     ]);
   }
+}
+
+function capitalise(text: string): string {
+  return text.charAt(0).toUpperCase() + text.slice(1);
 }
 
 function describeType(type: PtoType): string {

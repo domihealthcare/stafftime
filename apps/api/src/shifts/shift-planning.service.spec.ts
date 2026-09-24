@@ -60,7 +60,9 @@ describe('ShiftPlanningService', () => {
     };
     return {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      service: new ShiftPlanningService(prisma as any, fakeSettings(), fakeOvertime()),
+      service: new ShiftPlanningService(prisma as any, fakeSettings(), fakeOvertime(), {
+        notify: jest.fn(),
+      } as never),
       prisma,
       created,
     };
@@ -393,6 +395,7 @@ describe('ShiftPlanningService', () => {
         coveragePrisma(shifts, leave, unavailable) as any,
         fakeSettings(settings),
         fakeOvertime(),
+        { notify: jest.fn() } as never,
       );
     }
 
@@ -596,7 +599,9 @@ describe('ShiftPlanningService', () => {
         // so the filters that matter have to be asserted on the query itself.
         const prisma = coveragePrisma([]);
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        await new ShiftPlanningService(prisma as any, fakeSettings(), fakeOvertime()).coverage({
+        await new ShiftPlanningService(prisma as any, fakeSettings(), fakeOvertime(), {
+          notify: jest.fn(),
+        } as never).coverage({
           from: '2026-09-24',
           to: '2026-09-25',
           locationId: 'loc-1',

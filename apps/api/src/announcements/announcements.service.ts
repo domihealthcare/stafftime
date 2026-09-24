@@ -1,6 +1,7 @@
 import { BadRequestException, Injectable, Logger, NotFoundException } from '@nestjs/common';
-import { Prisma } from '@prisma/client';
+import { NotificationKind, Prisma } from '@prisma/client';
 import { AuthUser } from '../common/auth/auth-user';
+import { InboxService } from '../email/inbox.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateAnnouncementDto, UpdateAnnouncementDto } from './dto/announcement.dto';
 
@@ -26,7 +27,10 @@ const ANNOUNCEMENT_SELECT = {
 export class AnnouncementsService {
   private readonly logger = new Logger(AnnouncementsService.name);
 
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly inbox: InboxService,
+  ) {}
 
   /// Newest first, the primary among them where it falls — the News page reads
   /// like a blog, and the home screen shows the primary separately.
@@ -82,6 +86,14 @@ export class AnnouncementsService {
     this.logger.log(
       `Announcement ${row.id} posted by ${actor.id}${row.isPrimary ? ' (primary)' : ''}`,
     );
+    // Everybody but whoever wrote it. Edits do not notify again: a fixed typo
+    // is not news.
+    void this.inbox
+      .notifyEveryone(
+        { kind: NotificationKind.ANNOUNCEMENT, title: `New post: ${row.title}`, link: '/news' },
+        actor.id,
+      )
+      .catch(() => undefined);
     return row;
   }
 

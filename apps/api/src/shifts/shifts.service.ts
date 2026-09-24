@@ -1,11 +1,13 @@
 import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import { Prisma, ShiftStatus } from '@prisma/client';
 import { weekStartIn } from '../common/util/zoned-time.util';
+import { InboxService } from '../email/inbox.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateShiftDto } from './dto/create-shift.dto';
 import { QueryShiftsDto } from './dto/query-shifts.dto';
 import { UpdateShiftDto } from './dto/update-shift.dto';
 import { OvertimeService } from './overtime.service';
+import { NoticeShift, shiftNotices } from './shift-notices';
 
 const SHIFT_INCLUDE = {
   employee: {
@@ -26,6 +28,7 @@ export class ShiftsService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly overtime: OvertimeService,
+    private readonly inbox: InboxService,
   ) {}
 
   /// A shift for somebody, or — with no employee — an open shift that still
@@ -47,6 +50,7 @@ export class ShiftsService {
       include: SHIFT_INCLUDE,
     });
     watch?.();
+    this.tell(null, shift);
     return shift;
   }
 
@@ -106,6 +110,7 @@ export class ShiftsService {
       include: SHIFT_INCLUDE,
     });
     watch?.();
+    this.tell(existing, shift);
     return shift;
   }
 
@@ -144,7 +149,15 @@ export class ShiftsService {
       return { deleted: true };
     }
     await this.prisma.shift.update({ where: { id }, data: { status: ShiftStatus.CANCELLED } });
+    this.tell(shift, null);
     return { deleted: false, status: ShiftStatus.CANCELLED };
+  }
+
+  /// Tells the people a published change affects, under the bell.
+  private tell(before: NoticeShift | null, after: NoticeShift | null) {
+    for (const { employeeId, notice } of shiftNotices(before, after)) {
+      this.inbox.notify([employeeId], notice);
+    }
   }
 
   private parseWindow(startsAtRaw: string, endsAtRaw: string) {

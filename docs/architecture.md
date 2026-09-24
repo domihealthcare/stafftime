@@ -1855,3 +1855,46 @@ categorical slots 1 and 2, validated on the white card surface; the colour is
 fixed to the location, not its position, so filtering never repaints a line;
 one axis; a legend always, end labels only when they would not collide; a hover
 tooltip; and the week-by-week table as its table view.
+
+## Notifications (the bell)
+
+A `Notification` row per person per event, written by `InboxService` (in the
+email module, because it is told the same things at the same moments as the
+emails — `NotificationsService` writes both). It stores the words as they were
+at the time, a link to the screen the thing is on, and whether it has been
+read. It is a record of being told, not a live view: a shift that changes again
+later gets a second notice rather than rewriting the first.
+
+What writes one:
+
+- **Schedule changes** (`shifts/shift-notices.ts`): a published shift added
+  to, changed on or taken off somebody's schedule, worked out by comparing the
+  shift before and after — so publishing a draft reads as a new shift, moving a
+  shift to somebody else tells both people, and a change nobody would notice
+  (a job role, a note) says nothing. Drafts never notify. A repeating or copied
+  rota published straight away sends one summary per person, not one per
+  shift.
+- **Time off** decided (to the person) and requested (to managers and admins),
+  and **overtime** — the same events as the emails.
+- **A survey opened** for somebody's audience, **their checklist started**
+  (only when some tasks are theirs), and **a new News post** (to everybody but
+  its author; edits do not notify again).
+
+Like the emails it is fire and forget — a failed write is logged, never
+surfaced — and unlike them it works with no email provider configured. Every
+route is scoped to the signed-in person: marking by id includes the owner in
+the `where`, so an id is not enough to touch somebody else's. The nightly job
+deletes rows older than 90 days, read or not. The badge polls an unread count
+every minute and on each screen change; the list is fetched when the bell
+opens.
+
+## Version on the Help page
+
+`vite.config.ts` bakes `{ commit, builtAt }` into the bundle as `__BUILD__`:
+the commit from `VERCEL_GIT_COMMIT_SHA` on Vercel or `git rev-parse` locally,
+left out rather than guessed when neither is there. The Help page shows it as
+"2026.09.24 (feda444)" — the build date for people, the commit for matching to
+a merge. `/api/config` reports the commit the server runs (again from
+`VERCEL_GIT_COMMIT_SHA`), so the page can tell a tab opened before the latest
+deploy and offer a reload; with no commit on either side it simply does not
+compare.

@@ -41,9 +41,10 @@ export function NotificationsPage() {
 
   return (
     <div className="mx-auto max-w-2xl">
-      <h1 className="mb-1 text-xl font-semibold text-slate-900">Notifications</h1>
+      <h1 className="mb-1 text-xl font-semibold text-slate-900">Email settings</h1>
       <p className="mb-4 text-sm text-slate-600">
-        What the app emails you, and how often.
+        What the app emails you, and how often. Everything that is just for you is also under the
+        bell at the top of the screen.
       </p>
 
       {error && (

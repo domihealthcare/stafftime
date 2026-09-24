@@ -107,7 +107,7 @@ export function AccountMenu() {
                   className={item}
                   onClick={() => setOpen(false)}
                 >
-                  Notifications
+                  Email settings
                 </NavLink>
               </>
             )}

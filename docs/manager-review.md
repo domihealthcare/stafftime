@@ -333,7 +333,7 @@ flags the correction so the next export tells you it still has to reach payroll.
 These sit around the clock rather than replacing it. They are under **Team**
 (everybody) and **Manage** (managers) in the top bar.
 
-### 9. News (**Team → News**)
+### 9. News (its own tab in the top bar)
 
 Posts from the practice, newest first, like a blog. One post is always the
 **primary** one and sits at the top of everybody's home screen after they sign
@@ -482,3 +482,22 @@ things we are waiting on before this can go live.
 The most valuable feedback is the thing you would have to work around. If you
 find yourself thinking "I would just keep doing it on paper for that bit", that
 is the bit we need to hear about.
+
+### Notifications, News and the version (September 2026)
+
+- **The bell** beside your name shows things that are just for you, with a red
+  count of unread ones: a shift of yours added, changed or removed (once
+  published), your time off decided — or, for managers, somebody asking for
+  time off — overtime on your schedule, a survey waiting for you, your
+  checklist starting, and new News posts. Choose one to go to it; "Mark all as
+  read" clears the count. Kept for 90 days. It works even though email is not
+  set up yet.
+  - **Tell us:** is there anything else you would want to hear about there — or
+    anything on the list you would rather not?
+- **News** now has its own tab in the top bar.
+- **Help → About this version** says which version you are on and when it went
+  out, whether you are on the test or the live site, and offers a reload if a
+  newer version has gone out since you opened the page.
+- The menu item that used to be called **Notifications** (the nightly email for
+  managers) is now **Email settings**.
+

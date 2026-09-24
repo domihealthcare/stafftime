@@ -4,6 +4,8 @@ import { AttentionController } from './attention.controller';
 import { AttentionService } from './attention.service';
 import { DigestService } from './digest.service';
 import { EMAIL_SENDER, EmailSender } from './email-sender';
+import { InboxController } from './inbox.controller';
+import { InboxService } from './inbox.service';
 import { LogEmailSender } from './log-email.sender';
 import { NotificationsService } from './notifications.service';
 import { ResendEmailSender } from './resend-email.sender';
@@ -42,10 +44,11 @@ import { ResendEmailSender } from './resend-email.sender';
       },
     },
     NotificationsService,
+    InboxService,
     AttentionService,
     DigestService,
   ],
-  controllers: [AttentionController],
-  exports: [EMAIL_SENDER, NotificationsService, AttentionService, DigestService],
+  controllers: [AttentionController, InboxController],
+  exports: [EMAIL_SENDER, NotificationsService, InboxService, AttentionService, DigestService],
 })
 export class EmailModule {}
