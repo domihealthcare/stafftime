@@ -112,7 +112,12 @@ await step('saving it asks first, and Go back saves nothing', async () => {
   if (posts !== 0) throw new Error('Go back created the shift anyway');
 });
 
+// The API log is shared by every suite, and earlier ones rightly email Frankie
+// about their own overtime; only what is written after this save counts.
+let logOffset = 0;
+
 await step('confirming saves it, and the week says so at the top and beside their total', async () => {
+  logOffset = readFileSync(API_LOG, 'utf8').length;
   const dialog = mgr.getByRole('dialog', { name: 'Shift for Frankie Front-Desk' });
   await dialog.getByRole('button', { name: 'Add shift' }).click();
   const created = mgr.waitForResponse((r) => /\/api\/shifts$/.test(r.url()) && r.request().method() === 'POST');
@@ -134,11 +139,14 @@ await mgr.screenshot({ path: `${OUT}/112-overtime-rota.png`, fullPage: true });
 await step('Frankie is emailed once, when the week first goes over', async () => {
   let mentions = 0;
   for (let i = 0; i < 20 && mentions === 0; i += 1) {
-    const log = readFileSync(API_LOG, 'utf8');
+    const log = readFileSync(API_LOG, 'utf8').slice(logOffset);
     mentions = [...log.matchAll(/To:\s+frontdesk@domihealthcare\.com\s+Subject: (\[Test\] )?Your schedule puts you into overtime/g)].length;
     if (mentions === 0) await mgr.waitForTimeout(250);
   }
-  if (mentions !== 1) throw new Error(`${mentions} overtime emails to Frankie in ${API_LOG}`);
+  // A moment more, so a second email would have had time to arrive.
+  await mgr.waitForTimeout(1000);
+  mentions = [...readFileSync(API_LOG, 'utf8').slice(logOffset).matchAll(/To:\s+frontdesk@domihealthcare\.com\s+Subject: (\[Test\] )?Your schedule puts you into overtime/g)].length;
+  if (mentions !== 1) throw new Error(`${mentions} overtime emails to Frankie since the save, in ${API_LOG}`);
 });
 
 const staffCtx = await browser.newContext({ viewport: { width: 390, height: 844 }, isMobile: true });
