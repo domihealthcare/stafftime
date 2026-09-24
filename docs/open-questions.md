@@ -89,7 +89,7 @@ The spreadsheet export stays as the fallback.
       cancellation would be easy to add but hard to undo.
 - [x] ~~Notifications when a request is decided.~~ Built — the requester is
       emailed the decision and the reason, and every manager is emailed when a
-      request comes in. Needs an email provider configured to actually send.
+      request comes in. Email is set up (Resend, September 2026).
 - [x] ~~Anything else worth emailing about?~~ The nightly digest now chases
       lapsed and expiring credentials, overdue checklist tasks, punches with no
       clock-out, and undecided time off. It stays quiet on days when there is
