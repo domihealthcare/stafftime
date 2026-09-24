@@ -8,8 +8,10 @@ import type {
   Location,
   OvertimeWarning,
   OwnOvertimeWeek,
+  PtoRequest,
   Shift,
 } from '../lib/types';
+import { PTO_TYPE_LABELS, timeOffOn } from '../lib/time-off';
 import { jobRoleHex } from '../lib/job-role-colours';
 import { useConfirm } from './ConfirmDialog';
 import { confirmOvertime, OvertimePreview, useOvertimeCheck } from './OvertimeAlerts';
@@ -60,6 +62,7 @@ export function RotaTable({
   locations,
   jobRoles,
   coverage,
+  timeOff = [],
   overtimeThresholdHours,
   overtime,
   ownWeeks,
@@ -77,6 +80,9 @@ export function RotaTable({
   locations: Location[];
   jobRoles: JobRole[];
   coverage: CoverageDay[] | null;
+  /// Time off in the week: approved blocks a day, a request waiting on a
+  /// manager is flagged. Staff get only their own from the API.
+  timeOff?: PtoRequest[];
   overtimeThresholdHours: number;
   /// From the server, per person per week and across every location — so a
   /// row filtered to one office still shows the week as a whole.
@@ -342,6 +348,9 @@ export function RotaTable({
                             {cov.openShifts} open
                           </span>
                         )}
+                        {cov.away.length > 0 && (
+                          <span className="block text-slate-500">{cov.away.length} off</span>
+                        )}
                       </span>
                     )}
                   </th>
@@ -425,9 +434,18 @@ export function RotaTable({
                       const inCell = row.shifts
                         .filter((shift) => dayOf(shift) === dayKeys[index])
                         .sort((a, b) => a.startsAt.localeCompare(b.startsAt));
+                      const off =
+                        row.kind === 'person'
+                          ? timeOffOn(timeOff, row.person?.id, dayKeys[index])
+                          : null;
                       return (
-                        <td key={dayKeys[index]} className="group relative px-1.5 py-1.5 align-top">
+                        <td
+                          key={dayKeys[index]}
+                          className="group relative px-1.5 py-1.5 align-top"
+                          style={off?.status === 'APPROVED' ? OFF_HATCH : undefined}
+                        >
                           <div className="flex flex-col gap-1">
+                            {off && <TimeOffChip request={off} />}
                             {inCell.map((shift) => (
                               <ShiftChip
                                 key={shift.id}
@@ -507,6 +525,11 @@ export function RotaTable({
         <QuickAddDialog
           row={adding.row}
           day={adding.day}
+          off={
+            adding.row.kind === 'person'
+              ? timeOffOn(timeOff, adding.row.person?.id, localDate(adding.day))
+              : null
+          }
           locations={locations}
           jobRoles={jobRoles}
           onClose={() => setAdding(null)}
@@ -517,6 +540,42 @@ export function RotaTable({
         />
       )}
     </div>
+  );
+}
+
+/// A booked-off day, hatched so it reads as blocked even in black and white.
+const OFF_HATCH: React.CSSProperties = {
+  backgroundImage:
+    'repeating-linear-gradient(135deg, rgba(100,116,139,0.10) 0 6px, transparent 6px 12px)',
+};
+
+/// Time off in somebody's day. Approved is plain fact; a request nobody has
+/// answered yet is a question, so it looks like one.
+function TimeOffChip({ request }: { request: PtoRequest }) {
+  const approved = request.status === 'APPROVED';
+  const kind = PTO_TYPE_LABELS[request.type];
+  const half = request.isHalfDay ? ' · half day' : '';
+  return (
+    <span
+      data-testid="time-off"
+      data-status={request.status}
+      title={
+        approved
+          ? `Time off (${kind})${half}`
+          : `Asked for time off (${kind})${half}, not decided yet`
+      }
+      className={`block rounded-md px-1.5 py-1 text-xs ${
+        approved
+          ? 'bg-slate-200/80 font-medium text-slate-700'
+          : 'border border-dashed border-amber-400 bg-amber-50 text-amber-900'
+      }`}
+    >
+      <span className="block">{approved ? 'Time off' : 'Asked off'}</span>
+      <span className="block text-[11px] font-normal text-slate-600">
+        {kind}
+        {half}
+      </span>
+    </span>
   );
 }
 
@@ -670,6 +729,14 @@ function RotaLegend({
           className="inline-block h-3 w-5 rounded-sm border border-dashed border-slate-400 bg-white"
         />
         Draft
+      </span>
+      <span className="inline-flex items-center gap-1.5">
+        <span
+          aria-hidden="true"
+          className="inline-block h-3 w-5 rounded-sm ring-1 ring-inset ring-slate-300"
+          style={OFF_HATCH}
+        />
+        Time off
       </span>
       <span className="basis-full sm:basis-auto">Stripe on the left, the job role:</span>
       {jobRoles.map((role) => (
@@ -967,6 +1034,7 @@ function ShiftDialog({
 function QuickAddDialog({
   row,
   day,
+  off,
   locations,
   jobRoles,
   onClose,
@@ -974,6 +1042,8 @@ function QuickAddDialog({
 }: {
   row: Row;
   day: Date;
+  /// Their time off that day, if any — said before the shift is made.
+  off: PtoRequest | null;
   locations: Location[];
   jobRoles: JobRole[];
   onClose: () => void;
@@ -1045,6 +1115,17 @@ function QuickAddDialog({
         {day.toLocaleDateString(undefined, { weekday: 'long', month: 'long', day: 'numeric' })}
         <span className="sr-only"> {toLocalInputValue(day)}</span>
       </p>
+      {off && (
+        <p
+          role="note"
+          data-testid="quick-time-off"
+          className="mb-3 rounded-lg bg-amber-50 px-3 py-2 text-sm text-amber-900 ring-1 ring-inset ring-amber-200"
+        >
+          {off.status === 'APPROVED'
+            ? `${row.label} has approved time off this day.`
+            : `${row.label} has asked for this day off; it is not decided yet.`}
+        </p>
+      )}
       <form onSubmit={(event) => void submit(event)} className="grid grid-cols-2 gap-3">
         <label className="text-sm" htmlFor="quick-start">
           <span className="font-medium text-slate-800">Starts</span>

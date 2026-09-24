@@ -29,7 +29,7 @@ export function EnvironmentBanner() {
   return (
     <div
       role="status"
-      className="bg-amber-400 px-4 py-2 text-center text-sm font-medium text-amber-950"
+      className="bg-amber-400 px-4 py-2 text-center text-sm font-medium text-amber-950 print:hidden"
     >
       Test environment — nothing here is real. Hours recorded will not be paid, and the data
       may be wiped at any time.

@@ -1712,6 +1712,24 @@ table spells it out, roles included, because colour alone should never be the
 only way to tell: the chip also says the office (or Home) in text, and its
 accessible name says the rest.
 
+**Time off** comes from the ordinary time-off list (`GET /pto?from&to`),
+which already scopes staff to their own — so staff see their own days off in
+their row and nobody else's, with no new endpoint. Approved leave hatches the
+cell; a pending request is shown apart ("Asked off"), because the point is to
+not book somebody on a day they have asked for before anyone has answered.
+Denied and withdrawn requests are nothing. The quick-add dialog says so before
+a shift goes on a day off; it warns rather than refuses, as the coverage
+check always has.
+
+**The printed rota** (`RotaPrintPage`, `/schedule/print?week=&location=`)
+sits outside the app layout so paper gets no header or menus, and the test
+banner is `print:hidden`. It prints what staff may rely on: published shifts
+only (drafts are counted on screen, so a half-built week is not pinned up by
+accident), never open shifts (managers only), and time off as "Off" without
+its kind — a wall in a break room is not where to say who is off sick. One
+office per landscape letter page, via `@page` and `break-after`; the browser
+suite prints it to PDF and counts the pages.
+
 Assigning is an ordinary update (`employeeId`), with the usual refusals —
 somebody not at that office, or already on at that time; the dialog greys
 those people out rather than letting the server say no. `employeeId: null`

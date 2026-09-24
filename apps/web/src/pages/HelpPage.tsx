@@ -141,10 +141,11 @@ const STAFF: Section[] = [
         question: 'When am I working?',
         answer: (
           <p>
-            <Screen>Schedule</Screen> shows your shifts by week or by month. To have them appear in
-            Google, Apple or Outlook calendar, use the calendar link on that screen — it keeps
-            itself up to date. Treat the link like a password: anyone who has it can see your
-            shifts.
+            <Screen>Schedule</Screen> shows your shifts by week or by month, and in the week your
+            time off too: &ldquo;Time off&rdquo; once it is approved, &ldquo;Asked off&rdquo; while
+            it is waiting. To have your shifts appear in Google, Apple or Outlook calendar, use the
+            calendar link on that screen — it keeps itself up to date. Treat the link like a
+            password: anyone who has it can see your shifts.
           </p>
         ),
       },
@@ -396,6 +397,16 @@ const MANAGERS: Section[] = [
               Each shift is tinted in its office&rsquo;s colour, with a stripe down the left in the
               job role&rsquo;s colour; the key above the rota says which is which. Work from home is
               violet, open shifts amber, drafts a dashed outline.
+            </li>
+            <li>
+              Time off is in each person&rsquo;s row: hatched grey once approved, &ldquo;Asked
+              off&rdquo; while you have not decided it yet. Adding a shift on somebody&rsquo;s day
+              off warns you first, and each day&rsquo;s heading says how many are off.
+            </li>
+            <li>
+              <strong>Print</strong> gives the week on paper, one page per office, for the
+              break-room wall. Only published shifts are printed, open shifts never, and time off
+              just says &ldquo;Off&rdquo; — never sick or vacation.
             </li>
           </ul>
         ),

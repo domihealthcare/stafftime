@@ -21,6 +21,7 @@ import type {
   OvertimeWarning,
   OwnOvertimeWeek,
   PlanResult,
+  PtoRequest,
   Shift,
 } from '../lib/types';
 import { CalendarLinkCard } from '../components/CalendarLinkCard';
@@ -80,6 +81,7 @@ export function SchedulePage() {
   const [employees, setEmployees] = useState<Employee[]>([]);
   const [locations, setLocations] = useState<Location[]>([]);
   const [coverage, setCoverage] = useState<Coverage | null>(null);
+  const [timeOff, setTimeOff] = useState<PtoRequest[]>([]);
   /// Your own weeks over or close to the overtime line (staff).
   const [ownWeeks, setOwnWeeks] = useState<OwnOvertimeWeek[] | null>(null);
   const [loading, setLoading] = useState(true);
@@ -105,12 +107,15 @@ export function SchedulePage() {
   const load = useCallback(async () => {
     setLoading(true);
     try {
-      const [shiftData, locationData] = await Promise.all([
+      const [shiftData, locationData, timeOffData] = await Promise.all([
         api.listShifts({ from: rangeStart.toISOString(), to: rangeEnd.toISOString() }),
         api.listLocations(),
+        // Staff get only their own; managers everybody's. Both see it in the rota.
+        api.listPto({ from: localDate(rangeStart), to: localDate(days[days.length - 1]) }),
       ]);
       setShifts(shiftData);
       setLocations(locationData);
+      setTimeOff(timeOffData);
 
       // Only managers may list staff or read coverage.
       if (isManager) {
@@ -352,6 +357,14 @@ export function SchedulePage() {
             </>
           )}
           <span className="flex-1" />
+          {view === 'week' && (
+            <Link
+              to={`/schedule/print?week=${localDate(weekStart)}${locationFilter ? `&location=${locationFilter}` : ''}`}
+              className="rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-sm font-medium text-slate-700 hover:bg-slate-50"
+            >
+              Print
+            </Link>
+          )}
           <button
             type="button"
             onClick={() => setPlanning((open) => !open)}
@@ -442,6 +455,7 @@ export function SchedulePage() {
           locations={locations}
           jobRoles={jobRoles}
           coverage={isManager ? (coverage?.days ?? null) : null}
+          timeOff={timeOff}
           overtimeThresholdHours={coverage?.overtimeThresholdHours ?? 40}
           overtime={coverage?.overtime}
           ownWeeks={ownWeeks ?? undefined}

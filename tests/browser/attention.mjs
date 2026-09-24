@@ -54,7 +54,9 @@ await step('a quiet practice shows no banner at all', async () => {
   await admin.waitForTimeout(1000);
 
   if ((await admin.getByTestId('needs-attention').count()) > 0)
-    throw new Error('a banner appeared with nothing to say');
+    throw new Error(
+      `a banner appeared with nothing to say: "${(await admin.getByTestId('needs-attention').first().innerText()).replace(/\s+/g, ' ')}"`,
+    );
 });
 
 await step('marking somebody as left raises it on the schedule', async () => {
