@@ -42,6 +42,14 @@ import type {
   UpdateLocationInput,
   OvertimeCheck,
   OwnOvertimeWeek,
+  ApplicableSection,
+  ClosingItemKind,
+  ClosingRecord,
+  ClosingSubmission,
+  ClosingTemplateItem,
+  ClosingTemplateRole,
+  ClosingTemplateSection,
+  SupplyRequest,
 } from './types';
 
 /**
