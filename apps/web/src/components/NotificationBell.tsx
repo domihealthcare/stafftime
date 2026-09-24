@@ -23,10 +23,19 @@ export function NotificationBell() {
   const [error, setError] = useState(false);
   const panel = useRef<HTMLDivElement>(null);
 
+  // Bumped whenever something is marked read, here or by the server's answer
+  // to it. A count fetched before that is out of date and must not overwrite
+  // the newer one: clicking an item both marks it read and changes screen,
+  // which re-fetches the count, and whichever answer lands last used to win.
+  const generation = useRef(0);
+
   const refreshCount = useCallback(() => {
+    const asked = generation.current;
     api
       .unreadNotifications()
-      .then((result) => setUnread(result.unread))
+      .then((result) => {
+        if (asked === generation.current) setUnread(result.unread);
+      })
       .catch(() => undefined);
   }, []);
 
@@ -50,12 +59,13 @@ export function NotificationBell() {
     if (!open) return;
     let cancelled = false;
     setError(false);
+    const asked = generation.current;
     api
       .notifications()
       .then((result) => {
         if (cancelled) return;
         setItems(result.items);
-        setUnread(result.unread);
+        if (asked === generation.current) setUnread(result.unread);
       })
       .catch(() => !cancelled && setError(true));
     return () => {
@@ -87,9 +97,14 @@ export function NotificationBell() {
       const now = new Date().toISOString();
       setItems((list) => list?.map((n) => (n.id === item.id ? { ...n, readAt: now } : n)) ?? null);
       setUnread((count) => Math.max(0, count - 1));
+      generation.current += 1;
       api
         .markNotificationRead(item.id)
-        .then((result) => setUnread(result.unread))
+        .then((result) => {
+          // The server's count after the write is the one to trust.
+          generation.current += 1;
+          setUnread(result.unread);
+        })
         .catch(() => undefined);
     }
     setOpen(false);
@@ -100,7 +115,13 @@ export function NotificationBell() {
     const now = new Date().toISOString();
     setItems((list) => list?.map((n) => ({ ...n, readAt: n.readAt ?? now })) ?? null);
     setUnread(0);
-    api.markAllNotificationsRead().catch(() => refreshCount());
+    generation.current += 1;
+    api
+      .markAllNotificationsRead()
+      .then(() => {
+        generation.current += 1;
+      })
+      .catch(() => refreshCount());
   }
 
   return (
