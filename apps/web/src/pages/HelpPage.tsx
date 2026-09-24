@@ -3,6 +3,7 @@ import { Link, useSearchParams } from 'react-router-dom';
 import { useIsManager } from '../lib/session';
 import { PASSWORD_RULE } from '../lib/password';
 import { PageHeading } from '../components/ui';
+import { VersionCard } from '../components/VersionCard';
 
 interface Topic {
   question: string;
@@ -194,7 +195,7 @@ const STAFF: Section[] = [
         answer: (
           <p>
             The most important post is at the top of <Screen>Clock</Screen> when you sign in. All
-            posts are under <Screen>Team → News</Screen>, newest first.
+            posts are under <Screen>News</Screen>, newest first.
           </p>
         ),
       },
@@ -276,6 +277,28 @@ const STAFF: Section[] = [
           <p>
             Sign out when you are done — menu under your name → <strong>Sign out</strong>. The
             front-desk tablet does not need this: it never signs anybody in.
+          </p>
+        ),
+      },
+      {
+        question: 'What is the bell at the top?',
+        answer: (
+          <p>
+            Your notifications — things that are just for you: a shift added to, changed on or taken
+            off your schedule, your time off decided, overtime on your schedule, a survey waiting
+            for you, your checklist starting, and new posts on <Screen>News</Screen>. The red number
+            is how many you have not read. Choose one to go straight to it; they are kept for 90
+            days.
+          </p>
+        ),
+      },
+      {
+        question: 'Which version am I using?',
+        answer: (
+          <p>
+            It is at the bottom of this page, under <strong>About this version</strong>, and changes
+            by itself every time a new version goes out. If it says a newer version is live, reload
+            the page to get it.
           </p>
         ),
       },
@@ -584,8 +607,8 @@ const MANAGERS: Section[] = [
         question: 'Announcements',
         answer: (
           <p>
-            On <Screen>Team → News</Screen>, write, edit or remove posts. One post is always the
-            primary one shown at the top of everybody's home screen; tick another to move it.
+            On <Screen>News</Screen>, write, edit or remove posts. One post is always the primary
+            one shown at the top of everybody's home screen; tick another to move it.
           </p>
         ),
       },
@@ -666,6 +689,8 @@ export function HelpPage() {
           </section>
         ))}
       </div>
+
+      <VersionCard />
 
       {!isManager && (
         <p className="mt-8 text-sm text-slate-500">

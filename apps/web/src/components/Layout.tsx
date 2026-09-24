@@ -4,6 +4,7 @@ import { api } from '../lib/api';
 import { AccountMenu } from './AccountMenu';
 import { Wordmark } from './Brand';
 import { NavMenu } from './NavMenu';
+import { NotificationBell } from './NotificationBell';
 import { useIsAdmin, useIsManager } from '../lib/session';
 
 /// On a phone each link is a cell in an even grid, so the text is centred and
@@ -16,10 +17,9 @@ const linkClasses = ({ isActive }: { isActive: boolean }) =>
       : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'
   }`;
 
-/// The practice's shared screens: what is going on, who is here, and where
-/// things are.
+/// The practice's shared screens: who is here, and where things are. News has
+/// its own tab in the bar (asked for by Dominguez, September 2026).
 const TEAM = [
-  { to: '/news', label: 'News' },
   { to: '/directory', label: 'Directory' },
   { to: '/resources', label: 'Resources' },
   { to: '/surveys', label: 'Surveys' },
@@ -74,13 +74,18 @@ export function Layout() {
             From `sm` up it is a single flex row again — brand, nav, then the
             account pushed right — which already fitted on one line. */}
         <div className="mx-auto grid max-w-6xl grid-cols-[1fr_auto] items-center gap-x-2 gap-y-2 px-4 py-3 sm:flex sm:justify-start sm:gap-3">
-          <Link to="/" className="shrink-0 rounded-lg focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-600">
+          <Link
+            to="/"
+            className="shrink-0 rounded-lg focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-600"
+          >
             <Wordmark />
           </Link>
 
           {/* Second in the DOM so it lands in the grid's top-right cell; sent
-              to the end of the flex row on wider screens. */}
-          <div className="shrink-0 sm:order-last sm:ml-auto">
+              to the end of the flex row on wider screens. The bell sits just
+              before the account, as it does in most apps people already use. */}
+          <div className="relative flex shrink-0 items-center gap-1 sm:order-last sm:ml-auto">
+            <NotificationBell />
             <AccountMenu />
           </div>
 
@@ -101,6 +106,9 @@ export function Layout() {
           <nav className="relative col-span-2 grid grid-cols-[repeat(auto-fit,minmax(5.25rem,1fr))] gap-1 sm:col-span-1 sm:flex sm:flex-wrap sm:items-center sm:gap-x-1 sm:gap-y-1">
             <NavLink to="/" end className={linkClasses}>
               Clock
+            </NavLink>
+            <NavLink to="/news" className={linkClasses}>
+              News
             </NavLink>
             <NavLink to="/timesheet" className={linkClasses}>
               Timesheet

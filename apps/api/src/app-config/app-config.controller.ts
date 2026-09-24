@@ -24,6 +24,9 @@ export class AppConfigController {
     return {
       environment,
       isTestEnvironment: environment === AppEnvironment.Test,
+      // The commit this server was deployed from, so the Help page can tell a
+      // stale browser tab from what is live. Null where the host does not say.
+      version: this.config.get<string>('VERCEL_GIT_COMMIT_SHA')?.slice(0, 7) ?? null,
     };
   }
 }

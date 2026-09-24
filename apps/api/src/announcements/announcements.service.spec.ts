@@ -36,7 +36,13 @@ function build(options: { primaryCount?: number; one?: unknown; next?: unknown }
     announcement,
     $transaction: jest.fn(async (fn: (tx: unknown) => unknown) => fn({ announcement })),
   };
-  return { service: new AnnouncementsService(prisma as never), announcement };
+  return {
+    service: new AnnouncementsService(
+      prisma as never,
+      { notify: jest.fn(), notifyEveryone: jest.fn().mockResolvedValue(undefined) } as never,
+    ),
+    announcement,
+  };
 }
 
 describe('AnnouncementsService', () => {

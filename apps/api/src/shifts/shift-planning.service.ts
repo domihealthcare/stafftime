@@ -1,5 +1,5 @@
 import { BadRequestException, Injectable, Logger, NotFoundException } from '@nestjs/common';
-import { PayType, Prisma, PtoStatus, ShiftStatus } from '@prisma/client';
+import { NotificationKind, PayType, Prisma, PtoStatus, ShiftStatus } from '@prisma/client';
 import {
   addDaysTo,
   datesBetween,
@@ -11,6 +11,7 @@ import {
 } from '../common/util/zoned-time.util';
 import { clashFor, Rule } from '../availability/availability.rules';
 import { toRule } from '../availability/availability.service';
+import { InboxService } from '../email/inbox.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { PracticeSettingsService } from '../settings/practice-settings.service';
 import { CopyWeekDto, QueryCoverageDto, RepeatShiftsDto } from './dto/repeat-shifts.dto';
@@ -76,6 +77,7 @@ export class ShiftPlanningService {
     private readonly prisma: PrismaService,
     private readonly settings: PracticeSettingsService,
     private readonly overtime: OvertimeService,
+    private readonly inbox: InboxService,
   ) {}
 
   async repeat(dto: RepeatShiftsDto, createdById: string): Promise<PlanResult> {
@@ -141,8 +143,10 @@ export class ShiftPlanningService {
       timezone: location.timezone,
     });
 
-    if (before && dto.employeeId)
+    if (before && dto.employeeId) {
       this.overtime.announceNewOvertime(before, [dto.employeeId], weeks);
+      this.tellAboutNewShifts(dto.employeeId, result.created, result.dates);
+    }
     return {
       ...result,
       overtime: dto.employeeId
@@ -209,6 +213,8 @@ export class ShiftPlanningService {
     const skipped: PlannedSkip[] = [];
     const dates: string[] = [];
     let created = 0;
+    /// employeeId → the dates they got a shift on, for one notice each.
+    const madeFor = new Map<string, string[]>();
 
     for (const shift of source) {
       const zone = shift.location.timezone;
@@ -240,6 +246,15 @@ export class ShiftPlanningService {
       created += result.created;
       skipped.push(...result.skipped);
       dates.push(...result.dates);
+      if (shift.employeeId && result.created > 0) {
+        madeFor.set(shift.employeeId, [...(madeFor.get(shift.employeeId) ?? []), ...result.dates]);
+      }
+    }
+
+    if (dto.status === ShiftStatus.PUBLISHED) {
+      for (const [employeeId, theirDates] of madeFor) {
+        this.tellAboutNewShifts(employeeId, theirDates.length, theirDates);
+      }
     }
 
     this.logger.log(`Copied ${created} shifts from week ${fromStart} to ${toStart}`);
@@ -478,6 +493,28 @@ export class ShiftPlanningService {
           b.overtimeHours - a.overtimeHours ||
           a.employeeName.localeCompare(b.employeeName),
       );
+  }
+
+  /// One notice for a batch of published shifts, not one per shift: a month
+  /// of Tuesdays is one thing to know.
+  private tellAboutNewShifts(employeeId: string, count: number, dates: string[]) {
+    if (count === 0) return;
+    const sorted = [...dates].sort();
+    const day = (date: string) =>
+      new Date(`${date}T00:00:00Z`).toLocaleDateString('en-US', {
+        timeZone: 'UTC',
+        weekday: 'short',
+        month: 'short',
+        day: 'numeric',
+      });
+    const first = sorted[0];
+    const last = sorted[sorted.length - 1];
+    this.inbox.notify([employeeId], {
+      kind: NotificationKind.SCHEDULE_CHANGED,
+      title: count === 1 ? 'A new shift on your schedule' : `${count} new shifts on your schedule`,
+      body: first === last ? `${day(first)}.` : `${day(first)} to ${day(last)}.`,
+      link: '/schedule',
+    });
   }
 
   /// Who a batch of new shifts leaves past the line, in the weeks it touched.

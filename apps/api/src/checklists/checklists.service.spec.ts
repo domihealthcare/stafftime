@@ -129,7 +129,14 @@ function build(
     },
   };
 
-  return { service: new ChecklistsService(prisma as never), prisma, created };
+  return {
+    service: new ChecklistsService(
+      prisma as never,
+      { notify: jest.fn(), notifyEveryone: jest.fn().mockResolvedValue(undefined) } as never,
+    ),
+    prisma,
+    created,
+  };
 }
 
 describe('ChecklistsService — starting one', () => {

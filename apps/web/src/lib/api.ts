@@ -332,9 +332,33 @@ export interface ExportPreview {
   correctedSinceExportCount: number;
 }
 
+export interface AppNotification {
+  id: string;
+  kind:
+    | 'TIME_OFF_DECIDED'
+    | 'TIME_OFF_REQUESTED'
+    | 'OVERTIME'
+    | 'SCHEDULE_CHANGED'
+    | 'SURVEY_OPEN'
+    | 'CHECKLIST_STARTED'
+    | 'ANNOUNCEMENT';
+  title: string;
+  body: string | null;
+  link: string | null;
+  readAt: string | null;
+  createdAt: string;
+}
+
+export interface NotificationList {
+  items: AppNotification[];
+  unread: number;
+}
+
 export interface AppConfig {
   environment: 'production' | 'test';
   isTestEnvironment: boolean;
+  /// The commit the server is running, when the host says (Vercel does).
+  version: string | null;
 }
 
 export interface CalendarLink {
@@ -345,6 +369,15 @@ export interface CalendarLink {
 
 export const api = {
   appConfig: () => request<AppConfig>('/config'),
+
+  // ---------------------------------------------------------- notifications
+  /// The bell: your own notifications, newest first.
+  notifications: () => request<NotificationList>('/notifications'),
+  unreadNotifications: () => request<{ unread: number }>('/notifications/unread-count'),
+  markNotificationRead: (id: string) =>
+    request<{ unread: number }>(`/notifications/${id}/read`, { method: 'POST' }),
+  markAllNotificationsRead: () =>
+    request<{ unread: number }>('/notifications/read-all', { method: 'POST' }),
 
   // ------------------------------------------------------------------- calendar
   calendarLink: () => request<CalendarLink>('/calendar/link'),

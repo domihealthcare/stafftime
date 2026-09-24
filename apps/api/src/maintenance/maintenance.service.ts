@@ -2,6 +2,7 @@ import { Injectable, Logger } from '@nestjs/common';
 import { LoginThrottleService } from '../auth/login-throttle.service';
 import { PasswordResetService } from '../auth/password-reset.service';
 import { DigestService } from '../email/digest.service';
+import { InboxService } from '../email/inbox.service';
 import { SessionService } from '../auth/session.service';
 import { PrismaService } from '../prisma/prisma.service';
 import {
@@ -22,6 +23,8 @@ export interface PurgeReport {
   orphanedFiles: number;
   /// Punches whose captured coordinates and IP were cleared for age.
   clearedLocations: number;
+  /// Bell notifications past their 90 days.
+  oldNotifications: number;
   /// How many managers were told about something that needs a look. Zero when
   /// there was nothing to say, which is most days.
   digestSentTo: number;
@@ -48,6 +51,7 @@ export class MaintenanceService {
     private readonly throttle: LoginThrottleService,
     private readonly resets: PasswordResetService,
     private readonly digest: DigestService,
+    private readonly inbox: InboxService,
   ) {}
 
   async purge(): Promise<PurgeReport> {
@@ -58,11 +62,12 @@ export class MaintenanceService {
       expiredPairingCodes: await this.clearExpiredPairingCodes(),
       orphanedFiles: await this.deleteOrphanedFiles(),
       clearedLocations: await this.clearOldPunchLocations(),
+      oldNotifications: await this.inbox.purgeOld(),
       digestSentTo: await this.sendDigest(),
     };
 
     this.logger.log(
-      `Purged ${report.expiredSessions} session(s), ${report.staleLoginAttempts} login attempt(s), ${report.spentResetTokens} reset token(s), ${report.expiredPairingCodes} pairing code(s), ${report.orphanedFiles} orphaned file(s), ${report.clearedLocations} punch location(s)`,
+      `Purged ${report.expiredSessions} session(s), ${report.staleLoginAttempts} login attempt(s), ${report.spentResetTokens} reset token(s), ${report.expiredPairingCodes} pairing code(s), ${report.orphanedFiles} orphaned file(s), ${report.clearedLocations} punch location(s), ${report.oldNotifications} notification(s)`,
     );
     return report;
   }
