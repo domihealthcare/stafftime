@@ -27,7 +27,9 @@ async function signIn(page, email) {
 const admin = await browser.newPage({ viewport: { width: 1280, height: 1200 } });
 admin.on('pageerror', (e) => errors.push(`pageerror: ${e.message}`));
 await signIn(admin, 'admin@domihealthcare.com');
-await admin.getByRole('link', { name: 'Checklists' }).click();
+// Under Manage since September 2026, not on the top bar.
+await admin.getByRole('button', { name: 'Manage', exact: true }).click();
+await admin.getByRole('link', { name: 'Onboarding & Offboarding', exact: true }).click();
 
 await step('an admin starts with nothing on the go', async () => {
   await admin.getByText('Onboarding & Offboarding').waitFor({ timeout: 15000 });
@@ -108,7 +110,9 @@ const emp = await browser.newContext({ viewport: { width: 1280, height: 1000 } }
 const employee = await emp.newPage();
 employee.on('pageerror', (e) => errors.push(`pageerror: ${e.message}`));
 await signIn(employee, 'frontdesk@domihealthcare.com');
-await employee.getByRole('link', { name: 'Checklists' }).click();
+// Front Desk staff no longer have it in the menus; their own checklist is
+// still theirs to open.
+await employee.goto(`${BASE}/checklists`, { waitUntil: 'networkidle' });
 
 // Checklist cards are found inside `main` rather than anywhere on the page:
 // the account button in the header is labelled with the signed-in person's
@@ -151,7 +155,8 @@ const mgrCtx = await browser.newContext({ viewport: { width: 1280, height: 1000 
 const manager = await mgrCtx.newPage();
 manager.on('pageerror', (e) => errors.push(`pageerror: ${e.message}`));
 await signIn(manager, 'manager@domihealthcare.com');
-await manager.getByRole('link', { name: 'Checklists' }).click();
+await manager.getByRole('button', { name: 'Manage', exact: true }).click();
+await manager.getByRole('link', { name: 'Onboarding & Offboarding', exact: true }).click();
 
 await step('a manager runs the checklist', async () => {
   await manager.locator('main').getByRole('button', { name: /Frankie/ }).first().click();

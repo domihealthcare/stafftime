@@ -91,7 +91,8 @@ await step('a punch can be made and closed from a phone', async () => {
 });
 
 await step('a checklist can be started from a phone', async () => {
-  await page.getByRole('link', { name: /^Checklists/ }).first().click();
+  await page.getByRole('button', { name: 'Manage', exact: true }).click();
+  await page.getByRole('navigation').getByRole('link', { name: 'Onboarding & Offboarding', exact: true }).click();
   await page.getByRole('button', { name: 'Start a checklist' }).click();
   await assertNoSidewaysScroll(page, 'Start a checklist');
 
@@ -107,6 +108,9 @@ const MENU = {
   Resources: 'Team',
   Surveys: 'Team',
   Dashboard: 'Manage',
+  'Closing checklists': 'Manage',
+  'Onboarding & Offboarding': 'Manage',
+  Licenses: 'Manage',
   'Job roles': 'Manage',
   Export: 'Manage',
   Staff: 'Manage',
@@ -122,8 +126,9 @@ await step('every navigation link is reachable without scrolling sideways', asyn
   // The everyday screens sit in the top bar; the rest open from Team and
   // Manage. Either way, nothing may run off the edge of the phone.
   for (const name of [
-    'Clock', 'News', 'Timesheet', 'Schedule', 'Time off', 'Checklists', 'Licenses',
-    'Directory', 'Resources', 'Surveys', 'Dashboard', 'Job roles', 'Export', 'Staff', 'Kiosks', 'Locations',
+    'Clock', 'News', 'Timesheet', 'Schedule', 'Time off',
+    'Directory', 'Resources', 'Surveys', 'Dashboard', 'Closing checklists',
+    'Onboarding & Offboarding', 'Licenses', 'Job roles', 'Export', 'Staff', 'Kiosks', 'Locations',
   ]) {
     await openMenuFor(page, name);
     const link = page.getByRole('navigation').getByRole('link', { name: new RegExp(`^${name}`) }).first();
@@ -140,7 +145,8 @@ for (const [label, screen] of [
   ['Timesheet', 'Timesheet'],
   ['Schedule', 'Schedule'],
   ['Time off', 'Time off'],
-  ['Checklists', 'Checklists'],
+  ['Closing checklists', 'Closing checklists'],
+  ['Onboarding & Offboarding', 'Onboarding'],
   ['Licenses', 'Licenses'],
   ['News', 'News'],
   ['Directory', 'Directory'],
@@ -218,7 +224,8 @@ await step('the month view fits a phone', async () => {
 await page.screenshot({ path: `${OUT}/53a-phone-month.png`, fullPage: true });
 
 await step('an open checklist fits a phone', async () => {
-  await page.getByRole('link', { name: /^Checklists/ }).first().click();
+  await page.getByRole('button', { name: 'Manage', exact: true }).click();
+  await page.getByRole('navigation').getByRole('link', { name: 'Onboarding & Offboarding', exact: true }).click();
   await page.getByRole('button', { name: /onboarding/ }).first().click();
   await page.getByText('Form I-9 completed and verified').first().waitFor({ timeout: 15000 });
   // A task row carries a title, a due date and two buttons on one line, which
@@ -255,7 +262,8 @@ await step('an employee sees a phone-sized app too', async () => {
   emp.on('pageerror', (e) => errors.push(`employee pageerror: ${e.message}`));
   await signIn(emp, 'frontdesk@domihealthcare.com');
 
-  for (const name of ['Timesheet', 'Schedule', 'Time off', 'Checklists']) {
+  // Onboarding and Licenses are not theirs to see (September 2026).
+  for (const name of ['Timesheet', 'Schedule', 'Time off']) {
     await emp.getByRole('link', { name: new RegExp(`^${name}`) }).first().click();
     await assertNoSidewaysScroll(emp, `${name} (employee)`);
   }
