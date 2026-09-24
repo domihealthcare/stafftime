@@ -148,14 +148,13 @@ const STAFF: Section[] = [
         ),
       },
       {
-        question: 'Why does it say I am close to, or in, overtime?',
+        question: 'Why does it say I am in overtime?',
         answer: (
           <p>
             If your published schedule puts you past the practice&rsquo;s weekly overtime line (40
             hours, both offices together), a red notice appears on <Screen>Clock</Screen> and{' '}
-            <Screen>Schedule</Screen>, and you get an email when it first happens. An amber notice
-            means you are within four hours of the line — staying late that week could take you
-            over. If it is not what you agreed, talk to your manager before the week starts.
+            <Screen>Schedule</Screen>, and you get an email when it first happens. If it is not what
+            you agreed, talk to your manager before the week starts.
           </p>
         ),
       },
@@ -424,8 +423,9 @@ const MANAGERS: Section[] = [
               hours, across both offices). It shows in red at the top of the schedule and beside
               their weekly total. Adding or assigning a shift checks first: the form warns as you
               fill it in, and saving asks you to confirm. Once a shift that puts them over is
-              published, the person sees it too and is emailed. <strong>Close to overtime</strong>{' '}
-              (amber) means within four hours of the line.
+              published, the person sees it too and is emailed. While you are adding or assigning a
+              shift, an amber <strong>close to overtime</strong> note means it brings them within
+              four hours of the line; once saved, only going over is flagged.
             </p>
             <p>
               <strong>Unavailable</strong> — the shift lands on time they have said they cannot

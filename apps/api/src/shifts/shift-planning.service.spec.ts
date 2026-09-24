@@ -58,8 +58,8 @@ describe('ShiftPlanningService', () => {
         findMany: jest.fn().mockResolvedValue([]),
       },
     };
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     return {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       service: new ShiftPlanningService(prisma as any, fakeSettings(), fakeOvertime()),
       prisma,
       created,
@@ -541,27 +541,15 @@ describe('ShiftPlanningService', () => {
         });
       });
 
-      it('lists who is close to the line separately from who is over it', async () => {
+      it('leaves nothing standing for somebody close to the line but not over it', async () => {
+        // "Close to overtime" is said while a shift is being added, not left on
+        // the week once it is saved.
         const five8s = ['21', '22', '23', '24', '25'].map((d) => shiftOn(`2026-09-${d}`, 8));
 
         const atForty = await withShifts(five8s).coverage({ from: '2026-09-21', to: '2026-09-27' });
+
         expect(atForty.overtime).toEqual([]);
-        expect(atForty.nearOvertime).toEqual([
-          expect.objectContaining({ scheduledHours: 40, overtimeHours: 0 }),
-        ]);
-
-        const four8s = await withShifts(five8s.slice(0, 4)).coverage({
-          from: '2026-09-21',
-          to: '2026-09-27',
-        });
-        expect(four8s.nearOvertime).toEqual([]);
-
-        const over = await withShifts([...five8s, shiftOn('2026-09-26', 4)]).coverage({
-          from: '2026-09-21',
-          to: '2026-09-27',
-        });
-        expect(over.nearOvertime).toEqual([]);
-        expect(over.overtime).toHaveLength(1);
+        expect(atForty).not.toHaveProperty('nearOvertime');
       });
 
       it('uses the threshold the practice set, not a constant', async () => {

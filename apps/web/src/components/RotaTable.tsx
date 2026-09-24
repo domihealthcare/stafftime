@@ -62,7 +62,6 @@ export function RotaTable({
   coverage,
   overtimeThresholdHours,
   overtime,
-  nearOvertime,
   ownWeeks,
   grouping,
   locationFilter,
@@ -82,7 +81,6 @@ export function RotaTable({
   /// From the server, per person per week and across every location — so a
   /// row filtered to one office still shows the week as a whole.
   overtime?: OvertimeWarning[];
-  nearOvertime?: OvertimeWarning[];
   /// For staff: their own weeks, from their published shifts.
   ownWeeks?: OwnOvertimeWeek[];
   grouping: RotaGrouping;
@@ -114,12 +112,10 @@ export function RotaTable({
     const over = overtime?.find((w) => w.employeeId === personId && w.weekStart === weekStart);
     if (over)
       return { level: 'over' as const, hours: over.scheduledHours, overBy: over.overtimeHours };
-    const near = nearOvertime?.find((w) => w.employeeId === personId && w.weekStart === weekStart);
-    if (near) return { level: 'near' as const, hours: near.scheduledHours, overBy: 0 };
     if (selfId) {
       const own = ownWeeks?.find((w) => w.weekStart === weekStart);
       return own
-        ? { level: own.level, hours: own.scheduledHours, overBy: own.overtimeHours }
+        ? { level: 'over' as const, hours: own.scheduledHours, overBy: own.overtimeHours }
         : null;
     }
     // No figures from the server (still loading): the row's own sum is better
@@ -478,17 +474,9 @@ export function RotaTable({
                         <span
                           data-testid={`week-standing-${standing.level}`}
                           title={`${standing.hours} hours this week, every location — the overtime line is ${overtimeThresholdHours}`}
-                          className={`mt-1 block whitespace-nowrap rounded-full px-2 py-0.5 text-center text-xs font-semibold ${
-                            standing.level === 'over'
-                              ? 'bg-rose-600 text-white'
-                              : 'bg-amber-100 text-amber-900 ring-1 ring-inset ring-amber-300'
-                          }`}
+                          className="mt-1 block whitespace-nowrap rounded-full bg-rose-600 px-2 py-0.5 text-center text-xs font-semibold text-white"
                         >
-                          {standing.level === 'over'
-                            ? `⚠ ${standing.overBy} h overtime`
-                            : standing.hours >= overtimeThresholdHours
-                              ? 'At the limit'
-                              : `${round1(overtimeThresholdHours - standing.hours)} h to overtime`}
+                          ⚠ {standing.overBy} h overtime
                         </span>
                       )}
                     </td>

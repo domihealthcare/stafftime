@@ -122,9 +122,10 @@ export async function confirmOvertime(
 }
 
 /**
- * Your own coming weeks that your published rota puts over, or close to, the
- * overtime line — on the home screen and the schedule, so nobody finds out
- * from their payslip.
+ * Your own coming weeks that your published rota puts past the overtime line
+ * — on the home screen and the schedule, so nobody finds out from their
+ * payslip. Only past it: "close" is the manager's warning while scheduling,
+ * not something to carry once the rota is agreed.
  */
 export function MyOvertimeNotice({ weeks: given }: { weeks?: OwnOvertimeWeek[] } = {}) {
   const [fetched, setFetched] = useState<OwnOvertimeWeek[]>([]);
@@ -143,45 +144,27 @@ export function MyOvertimeNotice({ weeks: given }: { weeks?: OwnOvertimeWeek[] }
     };
   }, [given]);
 
-  const over = weeks.filter((week) => week.level === 'over');
-  const near = weeks.filter((week) => week.level === 'near');
   if (weeks.length === 0) return null;
 
   return (
-    <section aria-label="Your overtime" data-testid="my-overtime" className="space-y-2">
-      {over.length > 0 && (
-        <div className="rounded-xl border-l-4 border-rose-600 bg-rose-50 p-4 text-sm text-rose-900 shadow-sm ring-1 ring-inset ring-rose-200">
-          <p className="font-semibold">⚠ Your schedule puts you into overtime</p>
-          <ul className="mt-1 space-y-0.5">
-            {over.map((week) => (
-              <li key={week.weekStart}>
-                Week of {formatCalendarDate(week.weekStart, { year: false })}:{' '}
-                <span className="font-semibold">{hoursWord(week.scheduledHours)}</span> —{' '}
-                {hoursWord(week.overtimeHours)} past the {week.thresholdHours}-hour line.
-              </li>
-            ))}
-          </ul>
-          <p className="mt-1.5 text-xs text-rose-800">
-            If that is not what you agreed, talk to your manager before the week starts.
-          </p>
-        </div>
-      )}
-      {near.length > 0 && (
-        <div className="rounded-xl border-l-4 border-amber-500 bg-amber-50 p-4 text-sm text-amber-900 shadow-sm ring-1 ring-inset ring-amber-200">
-          <p className="font-semibold">You are close to overtime</p>
-          <ul className="mt-1 space-y-0.5">
-            {near.map((week) => (
-              <li key={week.weekStart}>
-                Week of {formatCalendarDate(week.weekStart, { year: false })}:{' '}
-                {round1(week.scheduledHours)} of {week.thresholdHours} hours scheduled.
-              </li>
-            ))}
-          </ul>
-          <p className="mt-1.5 text-xs text-amber-800">
-            Staying late or picking up extra time those weeks could take you into overtime.
-          </p>
-        </div>
-      )}
+    <section
+      aria-label="Your overtime"
+      data-testid="my-overtime"
+      className="rounded-xl border-l-4 border-rose-600 bg-rose-50 p-4 text-sm text-rose-900 shadow-sm ring-1 ring-inset ring-rose-200"
+    >
+      <p className="font-semibold">⚠ Your schedule puts you into overtime</p>
+      <ul className="mt-1 space-y-0.5">
+        {weeks.map((week) => (
+          <li key={week.weekStart}>
+            Week of {formatCalendarDate(week.weekStart, { year: false })}:{' '}
+            <span className="font-semibold">{hoursWord(week.scheduledHours)}</span> —{' '}
+            {hoursWord(week.overtimeHours)} past the {week.thresholdHours}-hour line.
+          </li>
+        ))}
+      </ul>
+      <p className="mt-1.5 text-xs text-rose-800">
+        If that is not what you agreed, talk to your manager before the week starts.
+      </p>
     </section>
   );
 }

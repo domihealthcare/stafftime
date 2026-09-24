@@ -72,13 +72,19 @@ const setup = await mgr.evaluate(async () => {
 
 const frankieRow = () => mgr.getByTestId('rota-row-Frankie Front-Desk');
 
-await step('close to the line shows on the rota before anything is added', async () => {
+await step('a week close to the line but not over it leaves nothing standing on the rota', async () => {
+  // "Close" is for the moment of scheduling; once a rota is agreed, only
+  // actually going over is worth a warning.
   await mgr.getByRole('link', { name: /^Schedule/ }).first().click();
   await mgr.getByRole('button', { name: 'Next →' }).click();
-  await frankieRow().getByTestId('week-standing-near').getByText('4 h to overtime').waitFor({ timeout: 15000 });
-  await mgr.getByTestId('overtime-notice').getByText(/Close to overtime/).waitFor({ timeout: 10000 });
-  if ((await mgr.getByText(/scheduled past 40 hours/).count()) > 0)
-    throw new Error('36 hours was called overtime');
+  await frankieRow().getByText('36 h').waitFor({ timeout: 15000 });
+  await mgr.waitForTimeout(1000);
+  if ((await frankieRow().locator('[data-testid^="week-standing"]').count()) > 0)
+    throw new Error('the rota flagged a week that is under the line');
+  if ((await mgr.getByTestId('overtime-notice').count()) > 0)
+    throw new Error('the schedule showed an overtime banner for a week nobody is over');
+  if ((await mgr.getByText(/close to overtime/i).count()) > 0)
+    throw new Error('"close to overtime" stayed on the rota after scheduling');
 });
 
 let posts = 0;
@@ -86,11 +92,21 @@ mgr.on('request', (r) => {
   if (r.method() === 'POST' && /\/api\/shifts$/.test(r.url())) posts += 1;
 });
 
-await step('adding a shift that tips somebody over warns while the form is open', async () => {
+await step('while adding a shift, landing close to the line says so in the form', async () => {
   await frankieRow().getByRole('button', { name: /^Add a shift for Frankie Front-Desk on Friday/ }).click();
   const dialog = mgr.getByRole('dialog', { name: 'Shift for Frankie Front-Desk' });
   await dialog.waitFor({ timeout: 10000 });
-  // 9 to 5 by default: eight hours on top of thirty-six.
+  // Three hours on top of thirty-six: 39, one short of the line.
+  await dialog.getByLabel('Ends').fill('12:00');
+  const preview = dialog.getByTestId('overtime-preview');
+  await preview.getByText('Close to overtime').waitFor({ timeout: 10000 });
+  await preview.getByText(/39 of 40 hours/).waitFor({ timeout: 5000 });
+});
+
+await step('adding a shift that tips somebody over warns while the form is open', async () => {
+  const dialog = mgr.getByRole('dialog', { name: 'Shift for Frankie Front-Desk' });
+  // Back to 9 to 5: eight hours on top of thirty-six.
+  await dialog.getByLabel('Ends').fill('17:00');
   const preview = dialog.getByTestId('overtime-preview');
   await preview.getByText('This puts Frankie Front-Desk into overtime').waitFor({ timeout: 10000 });
   await preview.getByText(/44 hours in the week of .* 4 hours past the 40-hour line/).waitFor({ timeout: 5000 });

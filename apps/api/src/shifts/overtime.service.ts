@@ -8,6 +8,10 @@ import { PracticeSettingsService } from '../settings/practice-settings.service';
 /// How close to the overtime line counts as "close". Four hours is half a
 /// normal day: a late finish or a swapped shift away from going over. A
 /// constant for now, like the threshold was, until the practice asks to move it.
+///
+/// Only ever said while a shift is being added or assigned — never left
+/// standing on the rota or on the person's screens once the shift is saved
+/// (Dominguez, September 2026).
 export const NEAR_OVERTIME_HOURS = 4;
 
 /// Past the line; within {@link NEAR_OVERTIME_HOURS} of it; or neither.
@@ -32,13 +36,12 @@ export interface OvertimeCheck {
   level: OvertimeLevel;
 }
 
-/// A week of somebody's own published rota that is over or close to the line.
+/// A week of somebody's own published rota that goes past the line.
 export interface OwnOvertimeWeek {
   weekStart: string;
   scheduledHours: number;
   thresholdHours: number;
   overtimeHours: number;
-  level: Exclude<OvertimeLevel, 'ok'>;
 }
 
 /// `employeeId:weekStart` → scheduled hours.
@@ -106,8 +109,9 @@ export class OvertimeService {
   }
 
   /// The signed-in person's own weeks, from this one on, that their published
-  /// rota puts over or close to the line. Drafts are left out: they are the
-  /// manager's workings, not the rota yet.
+  /// rota puts past the line. Drafts are left out: they are the manager's
+  /// workings, not the rota yet. "Close to the line" is not listed — once a
+  /// rota is agreed, only actually going over is worth a warning.
   async mine(employeeId: string): Promise<OwnOvertimeWeek[]> {
     const employee = await this.prisma.employee.findUnique({
       where: { id: employeeId },
@@ -139,14 +143,12 @@ export class OvertimeService {
     for (const [weekStart, week] of weeks) {
       // A week that has already finished is the timesheet's business now.
       if (addDaysTo(weekStart, 7) <= localDateIn(now, week.zone)) continue;
-      const level = overtimeLevel(week.hours, overtimeThresholdHours);
-      if (level === 'ok') continue;
+      if (week.hours <= overtimeThresholdHours) continue;
       result.push({
         weekStart,
         scheduledHours: round2(week.hours),
         thresholdHours: overtimeThresholdHours,
-        overtimeHours: round2(Math.max(0, week.hours - overtimeThresholdHours)),
-        level,
+        overtimeHours: round2(week.hours - overtimeThresholdHours),
       });
     }
     return result.sort((a, b) => a.weekStart.localeCompare(b.weekStart));

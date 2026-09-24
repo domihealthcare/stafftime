@@ -492,18 +492,21 @@ coverage squares at the foot of the page, it is now:
   box inside the form. Pressing save asks again, fresh, and if the shift puts
   somebody over, a confirmation pop-up asks the manager to say so. A warning
   with a way through, never a refusal, like the availability warning.
-- **On the week.** A red banner above the rota (not below it), and a badge in
-  each person's Week total — red "4 h overtime", amber "2 h to overtime". The
-  badge uses the server's per-person figure, so a row filtered to one office
-  still shows the week as a whole.
+- **On the week.** A red banner above the rota (not below it), and a red
+  "4 h overtime" badge in the person's Week total. The badge uses the server's
+  per-person figure, so a row filtered to one office still shows the week as
+  a whole.
 - **Close to overtime** is within `NEAR_OVERTIME_HOURS` (4) of the line,
   inclusive — one late finish away. A constant for now, as the threshold was
-  before somebody asked to move it. Coverage returns these as `nearOvertime`,
-  separately from `overtime`, and the screens say them more quietly.
+  before somebody asked to move it. It is said **only in the form**, while a
+  shift that lands there is being added or assigned. Once shifts are saved,
+  nothing amber stays on the rota or on the person's screens: only actually
+  going over is flagged from then on (Dominguez: "once scheduled/accepted, no
+  need to warn user/admin unless the user actually is going over hours").
 - **Repeating shifts and Copy last week** report anybody they put over with
   their result, since a month of Tuesdays reaches weeks nobody is looking at.
 - **The person is told.** `GET /shifts/my-overtime` lists their own coming
-  weeks (six ahead) that their **published** shifts put over or close;
+  weeks (six ahead) that their **published** shifts put over the line;
   it shows on Clock and Schedule. And when a published change first takes a
   week over the line — a new shift, an assignment, a move, publishing a draft,
   a repeating or copied rota published straight away — they are emailed once.

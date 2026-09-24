@@ -270,17 +270,14 @@ export function SchedulePage() {
       {/* Up here, above the rota, rather than under the coverage squares at the
           foot of the page: overtime is the warning a manager has to act on
           before the week is published, so it is the first thing on screen. */}
-      {isManager &&
-        coverage &&
-        (coverage.overtime.length > 0 || coverage.nearOvertime.length > 0) && (
-          <div className="mb-4">
-            <OvertimeNotice
-              overtime={coverage.overtime}
-              nearOvertime={coverage.nearOvertime}
-              thresholdHours={coverage.overtimeThresholdHours}
-            />
-          </div>
-        )}
+      {isManager && coverage && coverage.overtime.length > 0 && (
+        <div className="mb-4">
+          <OvertimeNotice
+            overtime={coverage.overtime}
+            thresholdHours={coverage.overtimeThresholdHours}
+          />
+        </div>
+      )}
 
       {isManager && planResult && (
         <div className="mb-4">
@@ -447,7 +444,6 @@ export function SchedulePage() {
           coverage={isManager ? (coverage?.days ?? null) : null}
           overtimeThresholdHours={coverage?.overtimeThresholdHours ?? 40}
           overtime={coverage?.overtime}
-          nearOvertime={coverage?.nearOvertime}
           ownWeeks={ownWeeks ?? undefined}
           grouping={grouping}
           locationFilter={locationFilter}
@@ -872,8 +868,11 @@ function AvailabilityNotice({
 }
 
 /**
- * Who the rota puts past the overtime line, and by how much — and, more
- * quietly, who it leaves within a few hours of it.
+ * Who the rota puts past the overtime line, and by how much.
+ *
+ * Only people actually over it. "Close to overtime" is said inside the form
+ * while a shift is being added or assigned, and not left standing here once
+ * it is saved (Dominguez, September 2026).
  *
  * Shown at the top of the schedule in both views. Overtime is a per-week
  * question either way, which is why one component serves both — a month view
@@ -881,11 +880,9 @@ function AvailabilityNotice({
  */
 function OvertimeNotice({
   overtime,
-  nearOvertime,
   thresholdHours,
 }: {
   overtime: OvertimeWarning[];
-  nearOvertime: OvertimeWarning[];
   /// From the server, not a constant here. The practice can move this line, and
   /// a warning that names the wrong number in confident words is worse than one
   /// that says nothing.
@@ -925,23 +922,6 @@ function OvertimeNotice({
             Hours as scheduled, not as worked. Hourly staff only. Staff are told when a published
             rota puts them over.
           </p>
-        </div>
-      )}
-      {nearOvertime.length > 0 && (
-        <div className="rounded-xl border-l-4 border-amber-500 bg-amber-50 p-3 text-sm text-amber-900 ring-1 ring-inset ring-amber-200">
-          <p className="font-semibold">
-            Close to overtime (
-            {nearOvertime.length === 1 ? '1 person' : `${nearOvertime.length} people`})
-          </p>
-          <ul className="mt-1 space-y-0.5 text-xs">
-            {nearOvertime.map((warning) => (
-              <li key={`${warning.employeeId}-${warning.weekStart}`}>
-                <span className="font-medium">{warning.employeeName}</span> —{' '}
-                {warning.scheduledHours} of {thresholdHours} hours in the week of{' '}
-                {week(warning.weekStart)}
-              </li>
-            ))}
-          </ul>
         </div>
       )}
     </div>

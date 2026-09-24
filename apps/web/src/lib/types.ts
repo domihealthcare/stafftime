@@ -262,14 +262,13 @@ export interface OvertimeCheck {
   level: OvertimeLevel;
 }
 
-/// One of your own coming weeks that your published rota puts over, or close
-/// to, the overtime line.
+/// One of your own coming weeks that your published rota puts past the
+/// overtime line.
 export interface OwnOvertimeWeek {
   weekStart: string;
   scheduledHours: number;
   thresholdHours: number;
   overtimeHours: number;
-  level: Exclude<OvertimeLevel, 'ok'>;
 }
 
 /// What loading the demo data produced.
@@ -310,8 +309,6 @@ export interface PayPeriodInfo {
 export interface Coverage {
   days: CoverageDay[];
   overtime: OvertimeWarning[];
-  /// Within a few hours of the line but not past it (overtimeHours is 0).
-  nearOvertime: OvertimeWarning[];
   /// The line these warnings were worked out against. Sent rather than assumed,
   /// because the practice can change it.
   overtimeThresholdHours: number;

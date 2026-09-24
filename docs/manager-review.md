@@ -182,10 +182,11 @@ Plus four things that save the tedious part:
   you can still move a shift. It counts the whole week even if you are only
   looking at two days of it, and hours at both offices, not just the one on
   screen. It is in red at the top of the schedule and beside the person's
-  weekly total; amber means within four hours of the line. Adding or
-  assigning a shift warns as you fill it in, and saving one that puts
-  somebody over asks you to confirm. Once it is published, the person sees
-  it on their own Clock and Schedule screens and gets an email.
+  weekly total. Adding or assigning a shift warns as you fill it in — amber
+  if it brings them within four hours of the line, red if it takes them over
+  — and saving one that puts somebody over asks you to confirm. Once saved,
+  only going over stays flagged. Once it is published, the person sees it on
+  their own Clock and Schedule screens and gets an email.
   - **Tell us:** is four hours the right distance for "close to overtime"?
 
 There is a **Week / Month** switch at the top right. The month view is an

@@ -256,11 +256,13 @@ Beyond the phases, the parts worth knowing about before picking up work:
   Outlook calendars by private subscription URL.
 - **Overtime alerts made hard to miss** (asked for by Dominguez, September
   2026): red banner above the rota and a badge on each person's weekly total;
-  amber for "close" (within 4 hours — a constant, `NEAR_OVERTIME_HOURS`); a
-  warning inside the add/assign forms as they are filled in, and a pop-up to
-  confirm before saving a shift that puts somebody over. The person is told
-  too — a notice on their Clock and Schedule screens for their published
-  weeks, and one email when a published change first takes a week over.
+  a warning inside the add/assign forms as they are filled in, and a pop-up to
+  confirm before saving a shift that puts somebody over. Amber "close" (within
+  4 hours — a constant, `NEAR_OVERTIME_HOURS`) shows **only in those forms**,
+  for a shift that lands there; once saved, only actually going over stays
+  flagged (Dominguez). The person is told too — a notice on their Clock and
+  Schedule screens for published weeks that go over, and one email when a
+  published change first takes a week over.
 - **Every removal asks first**, in one confirmation pop-up (`useConfirm()` in
   `components/ConfirmDialog.tsx`), never the browser's `confirm()` box or an
   inline "are you sure?" link: shifts, taking somebody off a shift, staff,

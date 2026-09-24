@@ -14,7 +14,7 @@ import { toRule } from '../availability/availability.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { PracticeSettingsService } from '../settings/practice-settings.service';
 import { CopyWeekDto, QueryCoverageDto, RepeatShiftsDto } from './dto/repeat-shifts.dto';
-import { OvertimeService, overtimeLevel } from './overtime.service';
+import { OvertimeService } from './overtime.service';
 
 /// Guards against a mis-typed year turning into three thousand shifts.
 const MAX_GENERATED_SHIFTS = 200;
@@ -372,14 +372,13 @@ export class ShiftPlanningService {
     });
 
     const { overtimeThresholdHours } = await this.settings.get();
-    const weekly = await this.weeklyHoursTouching(dates, query.locationId);
 
     return {
       days,
-      overtime: weekly.filter((week) => week.level === 'over').map(withoutLevel),
-      // Within a few hours of the line: one late finish or swapped shift away.
-      // Said separately, and more quietly, than the people already over it.
-      nearOvertime: weekly.filter((week) => week.level === 'near').map(withoutLevel),
+      // Only people past the line. "Close to it" is said while a shift is
+      // being added (see OvertimeService.check), not left standing afterwards
+      // — asked for by Dominguez, September 2026.
+      overtime: await this.overtimeForWeeksTouching(dates, query.locationId),
       // The response says which line it applied. Without it the screen has to
       // guess, and a screen that guesses "40" while the practice has set 20
       // tells people the wrong rule in confident words.
@@ -388,8 +387,7 @@ export class ShiftPlanningService {
   }
 
   /**
-   * Who the rota puts over forty hours — or within a few hours of it — for
-   * every week the window touches.
+   * Who the rota puts over forty hours, for every week the window touches.
    *
    * Two things here are easy to get wrong and both would make the warning
    * useless in exactly the cases it exists for:
@@ -413,10 +411,10 @@ export class ShiftPlanningService {
    * The threshold is the practice's, not a constant: forty is the federal line
    * and a sensible default, but it is theirs to move.
    */
-  private async weeklyHoursTouching(
+  private async overtimeForWeeksTouching(
     dates: string[],
     viewingLocationId?: string,
-  ): Promise<(OvertimeWarning & { level: 'over' | 'near' })[]> {
+  ): Promise<OvertimeWarning[]> {
     const { overtimeThresholdHours } = await this.settings.get();
     const firstMonday = mondayOnOrBefore(dates[0]);
     const lastSunday = addDaysTo(mondayOnOrBefore(dates[dates.length - 1]), 6);
@@ -463,15 +461,13 @@ export class ShiftPlanningService {
     }
 
     return [...weeks.values()]
-      .map((week) => ({ ...week, level: overtimeLevel(week.hours, overtimeThresholdHours) }))
-      .filter((week): week is typeof week & { level: 'over' | 'near' } => week.level !== 'ok')
+      .filter((week) => week.hours > overtimeThresholdHours)
       .map((week) => ({
         employeeId: week.employeeId,
         employeeName: week.employeeName,
         weekStart: week.weekStart,
         scheduledHours: round2(week.hours),
-        overtimeHours: round2(Math.max(0, week.hours - overtimeThresholdHours)),
-        level: week.level,
+        overtimeHours: round2(week.hours - overtimeThresholdHours),
         spansLocations:
           viewingLocationId !== undefined &&
           (week.locationIds.size > 1 || !week.locationIds.has(viewingLocationId)),
@@ -491,9 +487,9 @@ export class ShiftPlanningService {
   ): Promise<OvertimeWarning[]> {
     if (dates.length === 0 || employeeIds.length === 0) return [];
     const people = new Set(employeeIds);
-    return (await this.weeklyHoursTouching([...dates].sort()))
-      .filter((week) => week.level === 'over' && people.has(week.employeeId))
-      .map(withoutLevel);
+    return (await this.overtimeForWeeksTouching([...dates].sort())).filter((week) =>
+      people.has(week.employeeId),
+    );
   }
 
   // -------------------------------------------------------------------------
@@ -661,12 +657,6 @@ function daysBetween(from: string, to: string): number {
 /// a local calendar day.
 function mondayOnOrBefore(date: string): string {
   return addDaysTo(date, -((isoWeekdayOf(date) + 6) % 7));
-}
-
-function withoutLevel<T extends { level: unknown }>(week: T): Omit<T, 'level'> {
-  const rest: Partial<T> = { ...week };
-  delete rest.level;
-  return rest as Omit<T, 'level'>;
 }
 
 function round2(value: number): number {
