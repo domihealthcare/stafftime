@@ -47,6 +47,29 @@ export function PlanResultNotice({
         </div>
       )}
 
+      {result.overtime?.length > 0 && (
+        <div
+          data-testid="plan-overtime"
+          className="mt-2 rounded-md border-l-4 border-rose-600 bg-rose-50 px-2 py-1.5 text-rose-900"
+        >
+          <p className="text-sm font-semibold">⚠ This puts people into overtime:</p>
+          <ul className="mt-1 space-y-0.5 text-xs">
+            {result.overtime.slice(0, 8).map((week) => (
+              <li key={`${week.employeeId}-${week.weekStart}`}>
+                <span className="font-medium">{week.employeeName}</span> — week of{' '}
+                {new Date(`${week.weekStart}T00:00:00Z`).toLocaleDateString(undefined, {
+                  timeZone: 'UTC',
+                  month: 'short',
+                  day: 'numeric',
+                })}
+                : {week.scheduledHours} h, {week.overtimeHours} h over
+              </li>
+            ))}
+            {result.overtime.length > 8 && <li>…and {result.overtime.length - 8} more</li>}
+          </ul>
+        </div>
+      )}
+
       <button
         type="button"
         onClick={onDismiss}

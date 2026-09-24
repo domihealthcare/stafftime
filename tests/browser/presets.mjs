@@ -115,8 +115,8 @@ await step('someone else cannot delete a report they do not own', async () => {
 });
 
 await step('the owner can delete their own report', async () => {
-  mgr.once('dialog', (d) => d.accept());
   await mgr.getByRole('button', { name: 'Delete Biweekly payroll' }).click();
+  await mgr.getByRole('alertdialog', { name: /Delete the saved report/ }).getByRole('button', { name: 'Yes, delete it' }).click();
   await mgr.getByText(/None yet/).waitFor({ timeout: 15000 });
 });
 

@@ -254,6 +254,20 @@ Beyond the phases, the parts worth knowing about before picking up work:
   staff checking when they are on, often on a phone), warns when the rota puts
   somebody past the overtime threshold in a week, and syncs to Google, Apple or
   Outlook calendars by private subscription URL.
+- **Overtime alerts made hard to miss** (asked for by Dominguez, September
+  2026): red banner above the rota and a badge on each person's weekly total;
+  amber for "close" (within 4 hours — a constant, `NEAR_OVERTIME_HOURS`); a
+  warning inside the add/assign forms as they are filled in, and a pop-up to
+  confirm before saving a shift that puts somebody over. The person is told
+  too — a notice on their Clock and Schedule screens for their published
+  weeks, and one email when a published change first takes a week over.
+- **Every removal asks first**, in one confirmation pop-up (`useConfirm()` in
+  `components/ConfirmDialog.tsx`), never the browser's `confirm()` box or an
+  inline "are you sure?" link: shifts, taking somebody off a shift, staff,
+  kiosks and PINs, posts, surveys, job roles and members, resources,
+  credentials, checklists and templates, availability, time off, saved
+  reports, voiding an export, calendar sync, your photo. Anything new that
+  removes something should use it too.
 - **Demo data** loads from a button (account menu → Practice settings), not
   only from a terminal — whoever sets a deployment up is in a browser. Admin
   only, and refuses unless `APP_ENVIRONMENT` is `test`: it replaces every shift

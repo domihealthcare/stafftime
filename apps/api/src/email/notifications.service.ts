@@ -111,6 +111,40 @@ export class NotificationsService {
     }
   }
 
+  /// "Your rota puts you into overtime". Sent once, when a published change
+  /// first takes somebody's week over the line — so they hear it from the app
+  /// before they hear it from their payslip, and can say so if it is a mistake.
+  async scheduledIntoOvertime(
+    employeeId: string,
+    weekStart: string,
+    scheduledHours: number,
+    thresholdHours: number,
+  ): Promise<void> {
+    const employee = await this.prisma.employee.findUnique({
+      where: { id: employeeId },
+      select: { email: true, firstName: true, preferredName: true, employmentStatus: true },
+    });
+    if (!employee || employee.employmentStatus === EmploymentStatus.TERMINATED) return;
+
+    const week = new Date(`${weekStart}T00:00:00Z`).toLocaleDateString('en-US', {
+      timeZone: 'UTC',
+      weekday: 'long',
+      month: 'long',
+      day: 'numeric',
+    });
+    const over = Math.round((scheduledHours - thresholdHours) * 100) / 100;
+
+    this.dispatch(employee.email, 'Your schedule puts you into overtime', [
+      `Hello ${employee.preferredName ?? employee.firstName},`,
+      '',
+      `You are now scheduled for ${scheduledHours} hours in the week starting ${week}. That is ${over} ${over === 1 ? 'hour' : 'hours'} past the ${thresholdHours}-hour overtime line.`,
+      '',
+      'If that is not what you agreed, talk to your manager before the week starts.',
+      '',
+      `Your schedule: ${this.appUrl}/schedule`,
+    ]);
+  }
+
   /**
    * The nightly round-up of what nobody has got to yet.
    *

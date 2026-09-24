@@ -16,9 +16,11 @@ import { AuthUser } from '../common/auth/auth-user';
 import { CurrentUser } from '../common/auth/current-user.decorator';
 import { Roles } from '../common/auth/roles.decorator';
 import { CreateShiftDto } from './dto/create-shift.dto';
+import { OvertimeCheckDto } from './dto/overtime-check.dto';
 import { QueryShiftsDto } from './dto/query-shifts.dto';
 import { CopyWeekDto, QueryCoverageDto, RepeatShiftsDto } from './dto/repeat-shifts.dto';
 import { UpdateShiftDto } from './dto/update-shift.dto';
+import { OvertimeService } from './overtime.service';
 import { ShiftPlanningService } from './shift-planning.service';
 import { ShiftsService } from './shifts.service';
 
@@ -27,6 +29,7 @@ export class ShiftsController {
   constructor(
     private readonly shifts: ShiftsService,
     private readonly planning: ShiftPlanningService,
+    private readonly overtime: OvertimeService,
   ) {}
 
   /// "Every Tuesday and Thursday, 9 to 5, until March."
@@ -49,6 +52,27 @@ export class ShiftsController {
   @Roles(Role.MANAGER)
   coverage(@Query() query: QueryCoverageDto) {
     return this.planning.coverage(query);
+  }
+
+  /// What one shift would do to somebody's week — asked before saving it, so
+  /// the scheduler can warn first rather than after.
+  @Get('overtime-check')
+  @Roles(Role.MANAGER)
+  overtimeCheck(@Query() query: OvertimeCheckDto) {
+    return this.overtime.check({
+      employeeId: query.employeeId,
+      locationId: query.locationId,
+      startsAt: new Date(query.startsAt),
+      endsAt: new Date(query.endsAt),
+      shiftId: query.shiftId,
+    });
+  }
+
+  /// Your own coming weeks that your published rota puts over, or close to,
+  /// the overtime line. Anyone signed in, about themselves only.
+  @Get('my-overtime')
+  myOvertime(@CurrentUser() user: AuthUser) {
+    return this.overtime.mine(user.id);
   }
 
   @Post()

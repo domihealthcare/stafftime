@@ -1,6 +1,7 @@
 import { JobRoleDot } from '../components/JobRoleTag';
 import { useCallback, useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
+import { useConfirm } from '../components/ConfirmDialog';
 import { Alert, Badge, Card, EmptyState, PageHeading, Spinner } from '../components/ui';
 import { ApiError, api } from '../lib/api';
 import { useIsManager } from '../lib/session';
@@ -182,8 +183,8 @@ function ResourceRow({
   onError: (message: string) => void;
 }) {
   const [editing, setEditing] = useState(false);
-  const [confirming, setConfirming] = useState(false);
   const [busy, setBusy] = useState(false);
+  const confirm = useConfirm();
 
   if (editing) {
     return (
@@ -239,43 +240,31 @@ function ResourceRow({
             >
               Edit
             </button>
-            {confirming ? (
-              <span className="flex items-center gap-2">
-                <button
-                  type="button"
-                  disabled={busy}
-                  onClick={async () => {
-                    setBusy(true);
-                    try {
-                      await api.deleteResource(resource.id);
-                      onChanged();
-                    } catch (cause) {
-                      onError(cause instanceof ApiError ? cause.message : 'Could not delete that.');
-                    } finally {
-                      setBusy(false);
-                    }
-                  }}
-                  className="font-semibold text-rose-700"
-                >
-                  Delete it
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setConfirming(false)}
-                  className="text-slate-500"
-                >
-                  Keep
-                </button>
-              </span>
-            ) : (
-              <button
-                type="button"
-                onClick={() => setConfirming(true)}
-                className="font-medium text-slate-400 hover:text-rose-700"
-              >
-                Delete
-              </button>
-            )}
+            <button
+              type="button"
+              disabled={busy}
+              onClick={async () => {
+                const sure = await confirm({
+                  title: `Delete “${resource.title}”?`,
+                  body: 'Nobody will see it in Resources any more.',
+                  confirmLabel: 'Delete it',
+                  cancelLabel: 'Keep it',
+                });
+                if (!sure) return;
+                setBusy(true);
+                try {
+                  await api.deleteResource(resource.id);
+                  onChanged();
+                } catch (cause) {
+                  onError(cause instanceof ApiError ? cause.message : 'Could not delete that.');
+                } finally {
+                  setBusy(false);
+                }
+              }}
+              className="font-medium text-slate-400 hover:text-rose-700"
+            >
+              Delete
+            </button>
           </div>
         )}
       </div>

@@ -152,8 +152,10 @@ await step('deleting the primary hands it to the newest post left', async () => 
   await admin.getByRole('link', { name: 'News', exact: true }).click();
   const parking = card(admin, 'Parking');
   await parking.getByRole('button', { name: 'Delete', exact: true }).click();
-  await parking.getByText('The newest other post becomes primary.').waitFor({ timeout: 5000 });
-  await parking.getByRole('button', { name: 'Delete it' }).click();
+  // Asked in a pop-up, which says what happens to the primary.
+  const asked = admin.getByRole('alertdialog', { name: 'Delete “Parking”?' });
+  await asked.getByText('The newest other post becomes primary.').waitFor({ timeout: 5000 });
+  await asked.getByRole('button', { name: 'Delete it' }).click();
   await admin.getByRole('heading', { name: 'Parking' }).waitFor({ state: 'detached', timeout: 10000 });
 
   // Snow closure is the newest of the two left.

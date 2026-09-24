@@ -77,7 +77,7 @@ describe('NotificationsService', () => {
     };
     const prisma = {
       ptoRequest: { findUnique: jest.fn() },
-      employee: { findMany: jest.fn().mockResolvedValue([]) },
+      employee: { findMany: jest.fn().mockResolvedValue([]), findUnique: jest.fn() },
     };
     const config = new ConfigService({
       APP_URL: 'https://staff.domihealthcare.com',
@@ -102,6 +102,39 @@ describe('NotificationsService', () => {
     employee: { email: 'frankie@domihealthcare.com', firstName: 'Frankie' },
     reviewedBy: { firstName: 'Morgan', lastName: 'Manager' },
   };
+
+  it('tells somebody their rota has put them into overtime, in hours', async () => {
+    const { service, prisma, sent } = build();
+    prisma.employee.findUnique.mockResolvedValue({
+      email: 'frankie@domihealthcare.com',
+      firstName: 'Francesca',
+      preferredName: 'Frankie',
+      employmentStatus: 'ACTIVE',
+    });
+
+    await service.scheduledIntoOvertime('emp-1', '2026-10-05', 44.5, 40);
+
+    expect(sent[0].to).toBe('frankie@domihealthcare.com');
+    expect(sent[0].subject).toBe('Your schedule puts you into overtime');
+    expect(sent[0].text).toContain('Hello Frankie,');
+    expect(sent[0].text).toContain('44.5 hours in the week starting Monday, October 5');
+    expect(sent[0].text).toContain('4.5 hours past the 40-hour overtime line');
+    expect(sent[0].text).toContain('https://staff.domihealthcare.com/schedule');
+  });
+
+  it('says nothing about overtime to somebody who has left', async () => {
+    const { service, prisma, sent } = build();
+    prisma.employee.findUnique.mockResolvedValue({
+      email: 'gone@domihealthcare.com',
+      firstName: 'Gone',
+      preferredName: null,
+      employmentStatus: 'TERMINATED',
+    });
+
+    await service.scheduledIntoOvertime('emp-2', '2026-10-05', 44, 40);
+
+    expect(sent).toHaveLength(0);
+  });
 
   it('tells somebody their time off was approved, and who approved it', async () => {
     const { service, prisma, sent } = build();

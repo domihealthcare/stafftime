@@ -113,8 +113,8 @@ await step('regenerating the link breaks the old address', async () => {
 
 await step('turning syncing off stops the feed entirely', async () => {
   const current = await page.getByLabel('Your private calendar address').inputValue();
-  page.once('dialog', (d) => d.accept());
   await page.getByRole('button', { name: 'Turn off syncing' }).click();
+  await page.getByRole('alertdialog', { name: 'Turn off calendar syncing?' }).getByRole('button', { name: 'Yes, turn it off' }).click();
   await page.getByRole('button', { name: 'Turn on syncing' }).waitFor({ timeout: 15000 });
 
   const anon = await browser.newContext();

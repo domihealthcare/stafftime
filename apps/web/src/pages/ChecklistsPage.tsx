@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { ChecklistTaskRow } from '../components/ChecklistTaskRow';
 import { ChecklistTemplateEditor } from '../components/ChecklistTemplateEditor';
+import { useConfirm } from '../components/ConfirmDialog';
 import { Alert, Badge, Card, EmptyState, PageHeading, Spinner } from '../components/ui';
 import { ApiError, api } from '../lib/api';
 import { formatCalendarDate } from '../lib/format';
@@ -266,7 +267,7 @@ function ChecklistCard({
 }) {
   const { employee } = useSession();
   const isManager = useIsManager();
-  const [confirming, setConfirming] = useState(false);
+  const confirm = useConfirm();
 
   const name =
     checklist.employee.preferredName ??
@@ -337,38 +338,23 @@ function ChecklistCard({
 
           {canDelete && (
             <div className="border-t border-slate-100 px-4 py-3">
-              {confirming ? (
-                <div className="flex flex-wrap items-center gap-2 text-sm">
-                  <span className="text-rose-800">
-                    Delete this checklist and the record of what was done?
-                  </span>
-                  <button
-                    type="button"
-                    onClick={async () => {
-                      await api.deleteChecklist(checklist.id);
-                      onDeleted();
-                    }}
-                    className="rounded-lg bg-rose-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-rose-700"
-                  >
-                    Yes, delete it
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setConfirming(false)}
-                    className="text-xs font-medium text-slate-600 hover:text-slate-900"
-                  >
-                    Keep it
-                  </button>
-                </div>
-              ) : (
-                <button
-                  type="button"
-                  onClick={() => setConfirming(true)}
-                  className="text-xs font-medium text-slate-500 hover:text-rose-700"
-                >
-                  Delete this checklist
-                </button>
-              )}
+              <button
+                type="button"
+                onClick={async () => {
+                  const sure = await confirm({
+                    title: 'Delete this checklist?',
+                    body: `${name}’s ${checklist.name}, and the record of what was done.`,
+                    confirmLabel: 'Yes, delete it',
+                    cancelLabel: 'Keep it',
+                  });
+                  if (!sure) return;
+                  await api.deleteChecklist(checklist.id);
+                  onDeleted();
+                }}
+                className="text-xs font-medium text-slate-500 hover:text-rose-700"
+              >
+                Delete this checklist
+              </button>
             </div>
           )}
         </>
@@ -557,7 +543,7 @@ function TemplateCard({
 }) {
   const [expanded, setExpanded] = useState(false);
   const [editing, setEditing] = useState(false);
-  const [confirmingArchive, setConfirmingArchive] = useState(false);
+  const confirm = useConfirm();
 
   return (
     <Card>
@@ -610,38 +596,23 @@ function TemplateCard({
             Edit this template
           </button>
 
-          {confirmingArchive ? (
-            <div className="flex flex-wrap items-center gap-2 text-sm">
-              <span className="text-slate-700">
-                Retire it? Checklists already started keep working.
-              </span>
-              <button
-                type="button"
-                onClick={async () => {
-                  await api.archiveChecklistTemplate(template.id);
-                  onArchived(template.id);
-                }}
-                className="rounded-lg bg-slate-800 px-3 py-1.5 text-xs font-semibold text-white"
-              >
-                Retire it
-              </button>
-              <button
-                type="button"
-                onClick={() => setConfirmingArchive(false)}
-                className="text-xs font-medium text-slate-600 hover:text-slate-900"
-              >
-                Keep it
-              </button>
-            </div>
-          ) : (
-            <button
-              type="button"
-              onClick={() => setConfirmingArchive(true)}
-              className="text-sm font-medium text-slate-500 hover:text-rose-700"
-            >
-              Retire this template
-            </button>
-          )}
+          <button
+            type="button"
+            onClick={async () => {
+              const sure = await confirm({
+                title: `Retire “${template.name}”?`,
+                body: 'It can no longer be started. Checklists already started keep working.',
+                confirmLabel: 'Retire it',
+                cancelLabel: 'Keep it',
+              });
+              if (!sure) return;
+              await api.archiveChecklistTemplate(template.id);
+              onArchived(template.id);
+            }}
+            className="text-sm font-medium text-slate-500 hover:text-rose-700"
+          >
+            Retire this template
+          </button>
         </div>
       )}
 

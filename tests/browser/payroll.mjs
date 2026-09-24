@@ -147,6 +147,7 @@ await step('the export screen warns that the correction has not reached payroll'
 
 await step('a run can be voided without losing it', async () => {
   await page.getByRole('button', { name: 'Void' }).first().click();
+  await page.getByRole('alertdialog', { name: 'Void this export?' }).getByRole('button', { name: 'Yes, void it' }).click();
   await page.getByText('voided').first().waitFor({ timeout: 15000 });
 
   // Voided, not deleted: the file is still there.

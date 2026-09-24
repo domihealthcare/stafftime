@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
+import { useConfirm } from '../components/ConfirmDialog';
 import { Alert, Badge, Card, EmptyState, PageHeading, Spinner } from '../components/ui';
 import { ApiError, api } from '../lib/api';
 import { displayName, formatCalendarDate, localDate } from '../lib/format';
@@ -186,6 +187,7 @@ function RuleRow({
   onError: (message: string) => void;
 }) {
   const [busy, setBusy] = useState(false);
+  const confirm = useConfirm();
 
   return (
     <Card className="p-3" testId={`rule-${rule.description}`}>
@@ -211,6 +213,13 @@ function RuleRow({
             type="button"
             disabled={busy}
             onClick={async () => {
+              const sure = await confirm({
+                title: 'Remove this?',
+                body: `${rule.description}. Managers will no longer be warned about it when they build the rota; weeks already published stay as they are.`,
+                confirmLabel: 'Yes, remove',
+                cancelLabel: 'Keep it',
+              });
+              if (!sure) return;
               setBusy(true);
               try {
                 const result = await api.removeUnavailability(rule.id);

@@ -127,8 +127,8 @@ await step('the kiosk offers no way into the rest of the app', async () => {
 });
 
 await step('revoking the device stops the tablet working', async () => {
-  admin.once('dialog', (d) => d.accept());
   await admin.getByRole('button', { name: 'Revoke' }).first().click();
+  await admin.getByRole('alertdialog', { name: /^Revoke / }).getByRole('button', { name: 'Yes, revoke it' }).click();
   await admin.getByText('No kiosks yet').waitFor({ timeout: 10000 });
 
   await tablet.reload({ waitUntil: 'networkidle' });

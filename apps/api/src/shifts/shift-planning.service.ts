@@ -14,6 +14,7 @@ import { toRule } from '../availability/availability.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { PracticeSettingsService } from '../settings/practice-settings.service';
 import { CopyWeekDto, QueryCoverageDto, RepeatShiftsDto } from './dto/repeat-shifts.dto';
+import { OvertimeService, overtimeLevel } from './overtime.service';
 
 /// Guards against a mis-typed year turning into three thousand shifts.
 const MAX_GENERATED_SHIFTS = 200;
@@ -44,6 +45,10 @@ export interface PlanResult {
   skipped: PlannedSkip[];
   /// The dates that now have a shift, for the UI to jump to.
   dates: string[];
+  /// Anyone these shifts leave past the overtime line, week by week — said
+  /// with the result, because a repeating rota can reach weeks nobody is
+  /// looking at yet.
+  overtime: OvertimeWarning[];
 }
 
 const SHIFT_INCLUDE = {
@@ -70,6 +75,7 @@ export class ShiftPlanningService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly settings: PracticeSettingsService,
+    private readonly overtime: OvertimeService,
   ) {}
 
   async repeat(dto: RepeatShiftsDto, createdById: string): Promise<PlanResult> {
@@ -116,17 +122,33 @@ export class ShiftPlanningService {
       );
     }
 
-    return this.createAll(candidates, {
+    const status = dto.status ?? ShiftStatus.DRAFT;
+    const weeks = [...new Set(wanted.map(mondayOnOrBefore))];
+    const before =
+      dto.employeeId && status === ShiftStatus.PUBLISHED
+        ? await this.overtime.snapshot([dto.employeeId], weeks)
+        : null;
+
+    const result = await this.createAll(candidates, {
       employeeId: dto.employeeId ?? null,
       jobRoleId: dto.jobRoleId ?? null,
       isRemote: dto.isRemote ?? false,
       openCount: perDay,
       locationId: dto.locationId,
-      status: dto.status ?? ShiftStatus.DRAFT,
+      status,
       notes: dto.notes,
       createdById,
       timezone: location.timezone,
     });
+
+    if (before && dto.employeeId)
+      this.overtime.announceNewOvertime(before, [dto.employeeId], weeks);
+    return {
+      ...result,
+      overtime: dto.employeeId
+        ? await this.overtimeAfterPlanning(result.dates, [dto.employeeId])
+        : [],
+    };
   }
 
   /**
@@ -175,6 +197,15 @@ export class ShiftPlanningService {
       throw new BadRequestException('There are no shifts in that week to copy.');
     }
 
+    const people = [
+      ...new Set(source.flatMap((shift) => (shift.employeeId ? [shift.employeeId] : []))),
+    ];
+    // The target week, with a week either side for an office whose Monday
+    // falls on a different UTC date than the one given.
+    const weeks = [-7, 0, 7].map((offset) => mondayOnOrBefore(addDaysTo(toStart, offset)));
+    const before =
+      dto.status === ShiftStatus.PUBLISHED ? await this.overtime.snapshot(people, weeks) : null;
+
     const skipped: PlannedSkip[] = [];
     const dates: string[] = [];
     let created = 0;
@@ -212,7 +243,14 @@ export class ShiftPlanningService {
     }
 
     this.logger.log(`Copied ${created} shifts from week ${fromStart} to ${toStart}`);
-    return { created, skipped, dates: [...new Set(dates)].sort() };
+    if (before) this.overtime.announceNewOvertime(before, people, weeks);
+    const copied = [...new Set(dates)].sort();
+    return {
+      created,
+      skipped,
+      dates: copied,
+      overtime: await this.overtimeAfterPlanning(copied, people),
+    };
   }
 
   /**
@@ -334,10 +372,14 @@ export class ShiftPlanningService {
     });
 
     const { overtimeThresholdHours } = await this.settings.get();
+    const weekly = await this.weeklyHoursTouching(dates, query.locationId);
 
     return {
       days,
-      overtime: await this.overtimeForWeeksTouching(dates, query.locationId),
+      overtime: weekly.filter((week) => week.level === 'over').map(withoutLevel),
+      // Within a few hours of the line: one late finish or swapped shift away.
+      // Said separately, and more quietly, than the people already over it.
+      nearOvertime: weekly.filter((week) => week.level === 'near').map(withoutLevel),
       // The response says which line it applied. Without it the screen has to
       // guess, and a screen that guesses "40" while the practice has set 20
       // tells people the wrong rule in confident words.
@@ -346,7 +388,8 @@ export class ShiftPlanningService {
   }
 
   /**
-   * Who the rota puts over forty hours, for every week the window touches.
+   * Who the rota puts over forty hours — or within a few hours of it — for
+   * every week the window touches.
    *
    * Two things here are easy to get wrong and both would make the warning
    * useless in exactly the cases it exists for:
@@ -370,10 +413,10 @@ export class ShiftPlanningService {
    * The threshold is the practice's, not a constant: forty is the federal line
    * and a sensible default, but it is theirs to move.
    */
-  private async overtimeForWeeksTouching(
+  private async weeklyHoursTouching(
     dates: string[],
     viewingLocationId?: string,
-  ): Promise<OvertimeWarning[]> {
+  ): Promise<(OvertimeWarning & { level: 'over' | 'near' })[]> {
     const { overtimeThresholdHours } = await this.settings.get();
     const firstMonday = mondayOnOrBefore(dates[0]);
     const lastSunday = addDaysTo(mondayOnOrBefore(dates[dates.length - 1]), 6);
@@ -420,13 +463,15 @@ export class ShiftPlanningService {
     }
 
     return [...weeks.values()]
-      .filter((week) => week.hours > overtimeThresholdHours)
+      .map((week) => ({ ...week, level: overtimeLevel(week.hours, overtimeThresholdHours) }))
+      .filter((week): week is typeof week & { level: 'over' | 'near' } => week.level !== 'ok')
       .map((week) => ({
         employeeId: week.employeeId,
         employeeName: week.employeeName,
         weekStart: week.weekStart,
         scheduledHours: round2(week.hours),
-        overtimeHours: round2(week.hours - overtimeThresholdHours),
+        overtimeHours: round2(Math.max(0, week.hours - overtimeThresholdHours)),
+        level: week.level,
         spansLocations:
           viewingLocationId !== undefined &&
           (week.locationIds.size > 1 || !week.locationIds.has(viewingLocationId)),
@@ -437,6 +482,18 @@ export class ShiftPlanningService {
           b.overtimeHours - a.overtimeHours ||
           a.employeeName.localeCompare(b.employeeName),
       );
+  }
+
+  /// Who a batch of new shifts leaves past the line, in the weeks it touched.
+  private async overtimeAfterPlanning(
+    dates: string[],
+    employeeIds: string[],
+  ): Promise<OvertimeWarning[]> {
+    if (dates.length === 0 || employeeIds.length === 0) return [];
+    const people = new Set(employeeIds);
+    return (await this.weeklyHoursTouching([...dates].sort()))
+      .filter((week) => week.level === 'over' && people.has(week.employeeId))
+      .map(withoutLevel);
   }
 
   // -------------------------------------------------------------------------
@@ -462,7 +519,7 @@ export class ShiftPlanningService {
       createdById: string;
       timezone: string;
     },
-  ): Promise<PlanResult> {
+  ): Promise<Omit<PlanResult, 'overtime'>> {
     const skipped: PlannedSkip[] = [];
     const dates: string[] = [];
     let created = 0;
@@ -604,6 +661,12 @@ function daysBetween(from: string, to: string): number {
 /// a local calendar day.
 function mondayOnOrBefore(date: string): string {
   return addDaysTo(date, -((isoWeekdayOf(date) + 6) % 7));
+}
+
+function withoutLevel<T extends { level: unknown }>(week: T): Omit<T, 'level'> {
+  const rest: Partial<T> = { ...week };
+  delete rest.level;
+  return rest as Omit<T, 'level'>;
 }
 
 function round2(value: number): number {

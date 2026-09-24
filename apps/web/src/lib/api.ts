@@ -40,6 +40,8 @@ import type {
   TemplateTaskInput,
   TimeEntry,
   UpdateLocationInput,
+  OvertimeCheck,
+  OwnOvertimeWeek,
 } from './types';
 
 /**
@@ -612,6 +614,16 @@ export const api = {
   }) => request<PlanResult>('/shifts/copy-week', { method: 'POST', body: JSON.stringify(body) }),
   coverage: (params: { from: string; to: string; locationId?: string }) =>
     request<Coverage>(`/shifts/coverage${toQuery(params)}`),
+  /// Where somebody's week would land with this shift in it — asked before saving.
+  overtimeCheck: (params: {
+    employeeId: string;
+    locationId: string;
+    startsAt: string;
+    endsAt: string;
+    shiftId?: string;
+  }) => request<OvertimeCheck>(`/shifts/overtime-check${toQuery(params)}`),
+  /// Your own coming weeks that are over, or close to, the overtime line.
+  myOvertime: () => request<OwnOvertimeWeek[]>('/shifts/my-overtime'),
 
   listShifts: (params: Record<string, string | undefined> = {}) =>
     request<Shift[]>(`/shifts${toQuery(params)}`),

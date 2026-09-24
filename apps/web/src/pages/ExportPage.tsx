@@ -10,6 +10,7 @@ import type { ReportPreset } from '../lib/types';
 import { formatCalendarDate, formatDateTime } from '../lib/format';
 import type { DayRange, Location, PayrollExportRecord, PayrollTarget } from '../lib/types';
 import { DateRangePicker, presetRanges, usePresetRange } from '../components/DateRangePicker';
+import { useConfirm } from '../components/ConfirmDialog';
 import { Alert, Badge, Card, EmptyState, PageHeading, Spinner } from '../components/ui';
 
 const STATUS_CHOICES = [
@@ -55,6 +56,7 @@ export function ExportPage() {
   const [presets, setPresets] = useState<ReportPreset[]>([]);
   const [activePresetId, setActivePresetId] = useState<string | null>(null);
   const [savingPreset, setSavingPreset] = useState(false);
+  const confirm = useConfirm();
   // Its own error, not the page's: the preview refreshes on a timer and clears
   // the page error, which would silently wipe a message about a saved report.
   const [presetError, setPresetError] = useState<string | null>(null);
@@ -197,9 +199,13 @@ export function ExportPage() {
   }
 
   async function deletePreset(id: string, name: string) {
-    if (!window.confirm(`Delete the saved report "${name}"?`)) {
-      return;
-    }
+    const sure = await confirm({
+      title: `Delete the saved report “${name}”?`,
+      body: 'Only the saved settings go. Exports already made are kept.',
+      confirmLabel: 'Yes, delete it',
+      cancelLabel: 'Keep it',
+    });
+    if (!sure) return;
     try {
       await api.deleteReportPreset(id);
       if (activePresetId === id) setActivePresetId(null);
@@ -711,6 +717,7 @@ function ExportHistory({
   onError: (message: string) => void;
 }) {
   const [busyId, setBusyId] = useState<string | null>(null);
+  const confirm = useConfirm();
 
   if (history.length === 0) {
     return <EmptyState>Nothing has been exported yet.</EmptyState>;
@@ -773,6 +780,13 @@ function ExportHistory({
                   type="button"
                   disabled={busyId === record.id}
                   onClick={async () => {
+                    const sure = await confirm({
+                      title: 'Void this export?',
+                      body: `${formatCalendarDate(record.periodStart, { year: false })} – ${formatCalendarDate(record.periodEnd, { year: false })}. It stops being the run that counts; the record and its file are kept. This cannot be undone.`,
+                      confirmLabel: 'Yes, void it',
+                      cancelLabel: 'Keep it',
+                    });
+                    if (!sure) return;
                     setBusyId(record.id);
                     try {
                       await api.voidExport(record.id);

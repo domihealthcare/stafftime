@@ -204,6 +204,8 @@ export interface PlanResult {
   created: number;
   skipped: PlannedSkip[];
   dates: string[];
+  /// Anyone the new shifts leave past the overtime line, in the weeks touched.
+  overtime: OvertimeWarning[];
 }
 
 export interface CoverageShift {
@@ -246,6 +248,30 @@ export interface OvertimeWarning {
   spansLocations: boolean;
 }
 
+/// Past the overtime line; within a few hours of it; or neither.
+export type OvertimeLevel = 'over' | 'near' | 'ok';
+
+/// What one shift would do to somebody's week, asked before it is saved.
+export interface OvertimeCheck {
+  /// Salaried staff are never warned about.
+  hourly: boolean;
+  weekStart: string;
+  hoursBefore: number;
+  hoursAfter: number;
+  thresholdHours: number;
+  level: OvertimeLevel;
+}
+
+/// One of your own coming weeks that your published rota puts over, or close
+/// to, the overtime line.
+export interface OwnOvertimeWeek {
+  weekStart: string;
+  scheduledHours: number;
+  thresholdHours: number;
+  overtimeHours: number;
+  level: Exclude<OvertimeLevel, 'ok'>;
+}
+
 /// What loading the demo data produced.
 export interface DemoSummary {
   staffAdded: number;
@@ -284,6 +310,8 @@ export interface PayPeriodInfo {
 export interface Coverage {
   days: CoverageDay[];
   overtime: OvertimeWarning[];
+  /// Within a few hours of the line but not past it (overtimeHours is 0).
+  nearOvertime: OvertimeWarning[];
   /// The line these warnings were worked out against. Sent rather than assumed,
   /// because the practice can change it.
   overtimeThresholdHours: number;

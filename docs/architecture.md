@@ -439,9 +439,9 @@ private window — and the default stands if it fails.
 
 **The day-by-day coverage strip stays a week thing.** A month of those squares
 would be a second, worse calendar next to the real one. The overtime warning
-appears in both views, from the same component: overtime is a per-week question
-either way, and a month view that quietly used a different rule would be worse
-than one that said nothing.
+appears in both views, from the same component, at the top of the page:
+overtime is a per-week question either way, and a month view that quietly used
+a different rule would be worse than one that said nothing.
 
 `monthGrid` in `lib/format.ts` builds the range. It is worth reading the note on
 `addMonths` next to it: `setMonth` on the 31st rolls into the month after next,
@@ -478,6 +478,38 @@ Forty is the federal line and a sensible default, but it was a default nobody
 had been asked about. The payroll export splits at the same number and the
 spreadsheet's notes sheet states it, so the rota, the export and the file cannot
 say three different things.
+
+#### Making it hard to miss (September 2026)
+
+Dominguez asked for the overtime alerts to be more visible, and for the person
+being scheduled to be told as well. Where it used to be one amber box under the
+coverage squares at the foot of the page, it is now:
+
+- **Before saving.** `GET /shifts/overtime-check` answers "where does this
+  person's week land with this shift in it?" — same counting rules as above,
+  in `OvertimeService`. The add-shift form, the rota's quick-add and the Assign
+  control call it as they are filled in and show a red (over) or amber (close)
+  box inside the form. Pressing save asks again, fresh, and if the shift puts
+  somebody over, a confirmation pop-up asks the manager to say so. A warning
+  with a way through, never a refusal, like the availability warning.
+- **On the week.** A red banner above the rota (not below it), and a badge in
+  each person's Week total — red "4 h overtime", amber "2 h to overtime". The
+  badge uses the server's per-person figure, so a row filtered to one office
+  still shows the week as a whole.
+- **Close to overtime** is within `NEAR_OVERTIME_HOURS` (4) of the line,
+  inclusive — one late finish away. A constant for now, as the threshold was
+  before somebody asked to move it. Coverage returns these as `nearOvertime`,
+  separately from `overtime`, and the screens say them more quietly.
+- **Repeating shifts and Copy last week** report anybody they put over with
+  their result, since a month of Tuesdays reaches weeks nobody is looking at.
+- **The person is told.** `GET /shifts/my-overtime` lists their own coming
+  weeks (six ahead) that their **published** shifts put over or close;
+  it shows on Clock and Schedule. And when a published change first takes a
+  week over the line — a new shift, an assignment, a move, publishing a draft,
+  a repeating or copied rota published straight away — they are emailed once.
+  The check compares published hours before and after the change
+  (`snapshot` / `announceNewOvertime`), so a week already over does not email
+  again and drafts email nobody. Fire and forget, like every notification.
 
 The coverage response carries the threshold it applied, rather than the screen
 assuming one. That is not theoretical tidiness: the warning text hardcoded
