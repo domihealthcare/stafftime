@@ -154,9 +154,14 @@ await step('manager creates a shift', async () => {
   createdDay = `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
   await page.getByLabel('Starts').fill(`${createdDay}T09:00`);
   await page.getByLabel('Ends').fill(`${createdDay}T17:00`);
+  // Wait for the save itself before moving on. Saving checks overtime first,
+  // so the POST comes a round trip after the click — navigating away on the
+  // strength of a button that is always visible could abandon it unsent.
+  const saved = page.waitForResponse(
+    (r) => r.url().endsWith('/api/shifts') && r.request().method() === 'POST',
+  );
   await page.getByRole('button', { name: 'Create shift' }).click();
-  // The form closes on success; navigate to that week to see the shift.
-  await page.getByRole('button', { name: '+ Add shift' }).waitFor({ timeout: 10000 });
+  if ((await saved).status() !== 201) throw new Error('the shift was not created');
   await page.goto(`${BASE}/schedule`, { waitUntil: 'networkidle' });
 });
 

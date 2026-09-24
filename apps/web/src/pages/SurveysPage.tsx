@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
+import { useConfirm } from '../components/ConfirmDialog';
 import { Alert, Badge, Card, EmptyState, PageHeading, Spinner } from '../components/ui';
 import { ApiError, api } from '../lib/api';
 import { formatCalendarDate } from '../lib/format';
@@ -398,7 +399,7 @@ function ManagedSurvey({
 }) {
   const [busy, setBusy] = useState(false);
   const [results, setResults] = useState<SurveyResults | null>(null);
-  const [confirming, setConfirming] = useState(false);
+  const confirm = useConfirm();
 
   async function act(action: () => Promise<unknown>) {
     setBusy(true);
@@ -473,34 +474,27 @@ function ManagedSurvey({
               {results ? 'Hide results' : 'Results'}
             </button>
           )}
-          {survey.status !== 'OPEN' &&
-            (confirming ? (
-              <span className="flex items-center gap-2 text-xs">
-                <button
-                  type="button"
-                  disabled={busy}
-                  onClick={() => void act(() => api.deleteSurvey(survey.id))}
-                  className="font-semibold text-rose-700"
-                >
-                  Delete it
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setConfirming(false)}
-                  className="text-slate-500"
-                >
-                  Keep
-                </button>
-              </span>
-            ) : (
-              <button
-                type="button"
-                onClick={() => setConfirming(true)}
-                className="text-xs font-medium text-slate-400 hover:text-rose-700"
-              >
-                Delete
-              </button>
-            ))}
+          {survey.status !== 'OPEN' && (
+            <button
+              type="button"
+              disabled={busy}
+              onClick={async () => {
+                const sure = await confirm({
+                  title: `Delete “${survey.title}”?`,
+                  body:
+                    survey.status === 'CLOSED'
+                      ? 'Its answers and results go with it.'
+                      : 'It has not been sent, so nobody has answered it.',
+                  confirmLabel: 'Delete it',
+                  cancelLabel: 'Keep it',
+                });
+                if (sure) await act(() => api.deleteSurvey(survey.id));
+              }}
+              className="text-xs font-medium text-slate-400 hover:text-rose-700"
+            >
+              Delete
+            </button>
+          )}
         </div>
       </div>
       {results && <ResultsView results={results} />}

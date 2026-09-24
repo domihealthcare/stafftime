@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
+import { useConfirm } from '../components/ConfirmDialog';
 import { Alert, Badge, Card, EmptyState, PageHeading, Spinner } from '../components/ui';
 import { ApiError, api } from '../lib/api';
 import { useIsAdmin } from '../lib/session';
@@ -105,8 +106,8 @@ function PostCard({
   onError: (message: string) => void;
 }) {
   const [editing, setEditing] = useState(false);
-  const [confirming, setConfirming] = useState(false);
   const [busy, setBusy] = useState(false);
+  const confirm = useConfirm();
 
   async function act(action: () => Promise<unknown>, failure: string) {
     setBusy(true);
@@ -176,36 +177,24 @@ function PostCard({
           >
             Edit
           </button>
-          {confirming ? (
-            <span className="flex items-center gap-2">
-              <span className="text-slate-600">
-                {post.isPrimary
-                  ? 'Delete it? The newest other post becomes primary.'
-                  : 'Delete it?'}
-              </span>
-              <button
-                type="button"
-                disabled={busy}
-                onClick={() =>
-                  void act(() => api.deleteAnnouncement(post.id), 'Could not delete that.')
-                }
-                className="font-semibold text-rose-700"
-              >
-                Delete it
-              </button>
-              <button type="button" onClick={() => setConfirming(false)} className="text-slate-500">
-                Keep
-              </button>
-            </span>
-          ) : (
-            <button
-              type="button"
-              onClick={() => setConfirming(true)}
-              className="font-medium text-slate-400 hover:text-rose-700"
-            >
-              Delete
-            </button>
-          )}
+          <button
+            type="button"
+            disabled={busy}
+            onClick={async () => {
+              const sure = await confirm({
+                title: `Delete “${post.title}”?`,
+                body: post.isPrimary
+                  ? 'It is the primary post. The newest other post becomes primary.'
+                  : 'Nobody will see it on the News page any more.',
+                confirmLabel: 'Delete it',
+                cancelLabel: 'Keep it',
+              });
+              if (sure) await act(() => api.deleteAnnouncement(post.id), 'Could not delete that.');
+            }}
+            className="font-medium text-slate-400 hover:text-rose-700"
+          >
+            Delete
+          </button>
         </div>
       )}
     </Card>

@@ -260,6 +260,38 @@ Beyond the phases, the parts worth knowing about before picking up work:
   staff checking when they are on, often on a phone), warns when the rota puts
   somebody past the overtime threshold in a week, and syncs to Google, Apple or
   Outlook calendars by private subscription URL.
+- **Overtime alerts made hard to miss** (asked for by Dominguez, September
+  2026): red banner above the rota and a badge on each person's weekly total;
+  a warning inside the add/assign forms as they are filled in, and a pop-up to
+  confirm before saving a shift that puts somebody over. Amber "close" (within
+  4 hours — a constant, `NEAR_OVERTIME_HOURS`) shows **only in those forms**,
+  for a shift that lands there; once saved, only actually going over stays
+  flagged (Dominguez). The person is told too — a notice on their Clock and
+  Schedule screens for published weeks that go over, and one email when a
+  published change first takes a week over.
+- **Every removal asks first**, in one confirmation pop-up (`useConfirm()` in
+  `components/ConfirmDialog.tsx`), never the browser's `confirm()` box or an
+  inline "are you sure?" link: shifts, taking somebody off a shift, staff,
+  kiosks and PINs, posts, surveys, job roles and members, resources,
+  credentials, checklists and templates, availability, time off, saved
+  reports, voiding an export, calendar sync, your photo. Anything new that
+  removes something should use it too.
+- **Notifications bell** (September 2026, asked for by Dominguez): beside the
+  avatar, with an unread count. A `Notification` row per person per event
+  (`InboxService`, in the email module): shifts of theirs added, changed or
+  removed once published (one summary for a repeating or copied rota), time
+  off decided (to them) or requested (to managers), overtime, a survey opened
+  for them, their checklist started (when some tasks are theirs), and new
+  News posts. Written at the same moments as the emails and works without an
+  email provider. Your own only; deleted by the nightly job after 90 days.
+  The old "Notifications" menu item (the nightly email) is now **Email
+  settings**.
+- **News** is its own tab in the top bar, no longer under Team.
+- **Version on the Help page** — "About this version": the build date and
+  commit baked in when the bundle is built (`VERCEL_GIT_COMMIT_SHA` on Vercel,
+  git locally), whether it is the test or live site, and — because
+  `/api/config` reports the commit the server runs — a "newer version is live,
+  reload" prompt when a tab is out of date.
 - **Demo data** loads from a button (account menu → Practice settings), not
   only from a terminal — whoever sets a deployment up is in a browser. Admin
   only, and refuses unless `APP_ENVIRONMENT` is `test`: it replaces every shift

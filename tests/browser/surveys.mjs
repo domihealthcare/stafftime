@@ -189,7 +189,7 @@ await step('an open survey cannot be deleted; a closed one can', async () => {
   if (answer.status !== 400) throw new Error(`deleting an open survey answered ${answer.status}`);
   await card.getByRole('button', { name: 'Close it' }).click();
   await card.getByRole('button', { name: 'Delete' }).click();
-  await card.getByRole('button', { name: 'Delete it' }).click();
+  await mgr.getByRole('alertdialog', { name: 'Delete “Short-lived”?' }).getByRole('button', { name: 'Delete it' }).click();
   await card.waitFor({ state: 'detached', timeout: 10000 });
 });
 

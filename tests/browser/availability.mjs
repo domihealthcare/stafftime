@@ -163,6 +163,7 @@ await step('removing a weekly rule that has not started just deletes it', async 
   await frankie.reload({ waitUntil: 'networkidle' });
   const card = frankie.getByTestId('rule-Not available Saturdays (all day)');
   await card.getByRole('button', { name: 'Remove' }).click();
+  await frankie.getByRole('alertdialog', { name: 'Remove this?' }).getByRole('button', { name: 'Yes, remove' }).click();
   await frankie.getByText('Removed.', { exact: true }).waitFor({ timeout: 10000 });
   // Gone from the list — waited for, not sampled once, so a slow reload
   // cannot pass or fail this by timing alone.

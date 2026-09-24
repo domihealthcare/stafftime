@@ -62,8 +62,6 @@ await step('the home screen has no gap before anything is posted', async () => {
   if ((await primaryCard(admin).count()) > 0) throw new Error('an empty announcement showed');
 });
 
-await admin.getByRole('button', { name: 'Team', exact: true }).click();
-
 await admin.getByRole('link', { name: 'News', exact: true }).click();
 
 await step('the first post is primary whether ticked or not', async () => {
@@ -148,12 +146,13 @@ await step('the home screen leads with the primary post', async () => {
 await admin.screenshot({ path: `${OUT}/71-home-announcement.png`, fullPage: true });
 
 await step('deleting the primary hands it to the newest post left', async () => {
-  await admin.getByRole('button', { name: 'Team', exact: true }).click();
   await admin.getByRole('link', { name: 'News', exact: true }).click();
   const parking = card(admin, 'Parking');
   await parking.getByRole('button', { name: 'Delete', exact: true }).click();
-  await parking.getByText('The newest other post becomes primary.').waitFor({ timeout: 5000 });
-  await parking.getByRole('button', { name: 'Delete it' }).click();
+  // Asked in a pop-up, which says what happens to the primary.
+  const asked = admin.getByRole('alertdialog', { name: 'Delete “Parking”?' });
+  await asked.getByText('The newest other post becomes primary.').waitFor({ timeout: 5000 });
+  await asked.getByRole('button', { name: 'Delete it' }).click();
   await admin.getByRole('heading', { name: 'Parking' }).waitFor({ state: 'detached', timeout: 10000 });
 
   // Snow closure is the newest of the two left.
@@ -198,7 +197,6 @@ await step('a manager can read but not write', async () => {
   const ctx = await browser.newContext({ viewport: { width: 1280, height: 1000 } });
   const mgr = await ctx.newPage();
   await signIn(mgr, 'manager@domihealthcare.com');
-  await mgr.getByRole('button', { name: 'Team', exact: true }).click();
   await mgr.getByRole('link', { name: 'News', exact: true }).click();
   await mgr.getByRole('heading', { name: 'Snow closure' }).waitFor({ timeout: 15000 });
   if ((await mgr.getByRole('button', { name: '+ New post' }).count()) > 0)

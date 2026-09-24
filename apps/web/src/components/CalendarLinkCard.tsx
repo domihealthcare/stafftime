@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
 import { ApiError, api } from '../lib/api';
+import { useConfirm } from './ConfirmDialog';
 import { Alert, Card } from './ui';
 
 /**
@@ -15,6 +16,7 @@ export function CalendarLinkCard() {
   const [hasLink, setHasLink] = useState(false);
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState(false);
+  const confirm = useConfirm();
   const [copied, setCopied] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [open, setOpen] = useState(false);
@@ -53,13 +55,13 @@ export function CalendarLinkCard() {
   }
 
   async function revoke() {
-    if (
-      !window.confirm(
-        'Turn off calendar syncing? Your shifts will disappear from any calendar subscribed to the old link.',
-      )
-    ) {
-      return;
-    }
+    const sure = await confirm({
+      title: 'Turn off calendar syncing?',
+      body: 'Your shifts will disappear from any calendar subscribed to the old link.',
+      confirmLabel: 'Yes, turn it off',
+      cancelLabel: 'Keep syncing',
+    });
+    if (!sure) return;
     setBusy(true);
     try {
       await api.revokeCalendarLink();

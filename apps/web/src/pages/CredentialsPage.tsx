@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useConfirm } from '../components/ConfirmDialog';
 import { Alert, Badge, Card, EmptyState, PageHeading, Spinner } from '../components/ui';
 import { ApiError, api } from '../lib/api';
 import { formatCalendarDate } from '../lib/format';
@@ -195,8 +196,8 @@ function CredentialCard({
   onError: (message: string) => void;
 }) {
   const [renewing, setRenewing] = useState(false);
-  const [confirming, setConfirming] = useState(false);
   const [busy, setBusy] = useState(false);
+  const confirm = useConfirm();
 
   const name =
     credential.employee.preferredName ??
@@ -232,41 +233,33 @@ function CredentialCard({
             </button>
           )}
           {canDelete &&
-            (confirming ? (
-              <span className="flex items-center gap-2 text-xs">
-                <button
-                  type="button"
-                  disabled={busy}
-                  onClick={async () => {
-                    setBusy(true);
-                    try {
-                      await api.deleteCredential(credential.id);
-                      onChanged();
-                    } catch (cause) {
-                      onError(
-                        cause instanceof ApiError ? cause.message : 'Could not delete that.',
-                      );
-                    } finally {
-                      setBusy(false);
-                    }
-                  }}
-                  className="font-semibold text-rose-700"
-                >
-                  Delete it
-                </button>
-                <button type="button" onClick={() => setConfirming(false)} className="text-slate-500">
-                  Keep
-                </button>
-              </span>
-            ) : (
+            (
               <button
                 type="button"
-                onClick={() => setConfirming(true)}
+                disabled={busy}
+                onClick={async () => {
+                  const sure = await confirm({
+                    title: `Delete ${name}’s ${credential.name}?`,
+                    body: 'Its expiry date will no longer be tracked or chased.',
+                    confirmLabel: 'Delete it',
+                    cancelLabel: 'Keep it',
+                  });
+                  if (!sure) return;
+                  setBusy(true);
+                  try {
+                    await api.deleteCredential(credential.id);
+                    onChanged();
+                  } catch (cause) {
+                    onError(cause instanceof ApiError ? cause.message : 'Could not delete that.');
+                  } finally {
+                    setBusy(false);
+                  }
+                }}
                 className="text-xs font-medium text-slate-400 hover:text-rose-700"
               >
                 Delete
               </button>
-            ))}
+            )}
         </div>
       </div>
 

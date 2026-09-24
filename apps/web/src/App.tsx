@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { BrowserRouter, Route, Routes } from 'react-router-dom';
 import { api } from './lib/api';
+import { ConfirmProvider } from './components/ConfirmDialog';
 import { EnvironmentBanner } from './components/EnvironmentBanner';
 import { KioskApp } from './kiosk/KioskApp';
 import { Layout } from './components/Layout';
@@ -136,7 +137,9 @@ export function App() {
           path="*"
           element={
             <SessionProvider>
-              <Routed />
+              <ConfirmProvider>
+                <Routed />
+              </ConfirmProvider>
             </SessionProvider>
           }
         />

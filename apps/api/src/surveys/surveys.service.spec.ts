@@ -90,7 +90,13 @@ function build(
     surveyAnswer: { findMany: jest.fn().mockResolvedValue(options.answers ?? []) },
     surveyQuestion: { deleteMany: jest.fn() },
   };
-  return { service: new SurveysService(prisma as never), prisma };
+  return {
+    service: new SurveysService(
+      prisma as never,
+      { notify: jest.fn(), notifyEveryone: jest.fn().mockResolvedValue(undefined) } as never,
+    ),
+    prisma,
+  };
 }
 
 describe('SurveysService', () => {

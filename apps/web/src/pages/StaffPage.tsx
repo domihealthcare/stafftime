@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { ApiError, api } from '../lib/api';
 import { useSession } from '../lib/session';
 import type { Employee, Location, Role } from '../lib/types';
+import { useConfirm } from '../components/ConfirmDialog';
 import { Alert, Badge, Card, EmptyState, PageHeading, Spinner } from '../components/ui';
 import { PASSWORD_RULE, meetsPasswordRule } from '../lib/password';
 
@@ -139,6 +140,7 @@ function StaffCard({
   const [fileNumber, setFileNumber] = useState(person.adpFileNumber ?? '');
 
   const terminated = person.employmentStatus === 'TERMINATED';
+  const confirm = useConfirm();
 
   async function issuePassword() {
     setBusy(true);
@@ -175,13 +177,13 @@ function StaffCard({
   }
 
   async function terminate() {
-    if (
-      !window.confirm(
-        `Mark ${person.firstName} ${person.lastName} as no longer employed? Their sign-in stops working immediately. Their timesheets are kept.`,
-      )
-    ) {
-      return;
-    }
+    const sure = await confirm({
+      title: `Mark ${person.firstName} ${person.lastName} as no longer employed?`,
+      body: 'Their sign-in stops working immediately and they come off the rota. Their timesheets are kept.',
+      confirmLabel: 'Yes, no longer employed',
+      cancelLabel: 'Keep them',
+    });
+    if (!sure) return;
     setBusy(true);
     try {
       await api.terminateEmployee(person.id);

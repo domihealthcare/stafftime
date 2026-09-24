@@ -439,9 +439,9 @@ private window — and the default stands if it fails.
 
 **The day-by-day coverage strip stays a week thing.** A month of those squares
 would be a second, worse calendar next to the real one. The overtime warning
-appears in both views, from the same component: overtime is a per-week question
-either way, and a month view that quietly used a different rule would be worse
-than one that said nothing.
+appears in both views, from the same component, at the top of the page:
+overtime is a per-week question either way, and a month view that quietly used
+a different rule would be worse than one that said nothing.
 
 `monthGrid` in `lib/format.ts` builds the range. It is worth reading the note on
 `addMonths` next to it: `setMonth` on the 31st rolls into the month after next,
@@ -478,6 +478,41 @@ Forty is the federal line and a sensible default, but it was a default nobody
 had been asked about. The payroll export splits at the same number and the
 spreadsheet's notes sheet states it, so the rota, the export and the file cannot
 say three different things.
+
+#### Making it hard to miss (September 2026)
+
+Dominguez asked for the overtime alerts to be more visible, and for the person
+being scheduled to be told as well. Where it used to be one amber box under the
+coverage squares at the foot of the page, it is now:
+
+- **Before saving.** `GET /shifts/overtime-check` answers "where does this
+  person's week land with this shift in it?" — same counting rules as above,
+  in `OvertimeService`. The add-shift form, the rota's quick-add and the Assign
+  control call it as they are filled in and show a red (over) or amber (close)
+  box inside the form. Pressing save asks again, fresh, and if the shift puts
+  somebody over, a confirmation pop-up asks the manager to say so. A warning
+  with a way through, never a refusal, like the availability warning.
+- **On the week.** A red banner above the rota (not below it), and a red
+  "4 h overtime" badge in the person's Week total. The badge uses the server's
+  per-person figure, so a row filtered to one office still shows the week as
+  a whole.
+- **Close to overtime** is within `NEAR_OVERTIME_HOURS` (4) of the line,
+  inclusive — one late finish away. A constant for now, as the threshold was
+  before somebody asked to move it. It is said **only in the form**, while a
+  shift that lands there is being added or assigned. Once shifts are saved,
+  nothing amber stays on the rota or on the person's screens: only actually
+  going over is flagged from then on (Dominguez: "once scheduled/accepted, no
+  need to warn user/admin unless the user actually is going over hours").
+- **Repeating shifts and Copy last week** report anybody they put over with
+  their result, since a month of Tuesdays reaches weeks nobody is looking at.
+- **The person is told.** `GET /shifts/my-overtime` lists their own coming
+  weeks (six ahead) that their **published** shifts put over the line;
+  it shows on Clock and Schedule. And when a published change first takes a
+  week over the line — a new shift, an assignment, a move, publishing a draft,
+  a repeating or copied rota published straight away — they are emailed once.
+  The check compares published hours before and after the change
+  (`snapshot` / `announceNewOvertime`), so a week already over does not email
+  again and drafts email nobody. Fire and forget, like every notification.
 
 The coverage response carries the threshold it applied, rather than the screen
 assuming one. That is not theoretical tidiness: the warning text hardcoded
@@ -1838,3 +1873,46 @@ categorical slots 1 and 2, validated on the white card surface; the colour is
 fixed to the location, not its position, so filtering never repaints a line;
 one axis; a legend always, end labels only when they would not collide; a hover
 tooltip; and the week-by-week table as its table view.
+
+## Notifications (the bell)
+
+A `Notification` row per person per event, written by `InboxService` (in the
+email module, because it is told the same things at the same moments as the
+emails — `NotificationsService` writes both). It stores the words as they were
+at the time, a link to the screen the thing is on, and whether it has been
+read. It is a record of being told, not a live view: a shift that changes again
+later gets a second notice rather than rewriting the first.
+
+What writes one:
+
+- **Schedule changes** (`shifts/shift-notices.ts`): a published shift added
+  to, changed on or taken off somebody's schedule, worked out by comparing the
+  shift before and after — so publishing a draft reads as a new shift, moving a
+  shift to somebody else tells both people, and a change nobody would notice
+  (a job role, a note) says nothing. Drafts never notify. A repeating or copied
+  rota published straight away sends one summary per person, not one per
+  shift.
+- **Time off** decided (to the person) and requested (to managers and admins),
+  and **overtime** — the same events as the emails.
+- **A survey opened** for somebody's audience, **their checklist started**
+  (only when some tasks are theirs), and **a new News post** (to everybody but
+  its author; edits do not notify again).
+
+Like the emails it is fire and forget — a failed write is logged, never
+surfaced — and unlike them it works with no email provider configured. Every
+route is scoped to the signed-in person: marking by id includes the owner in
+the `where`, so an id is not enough to touch somebody else's. The nightly job
+deletes rows older than 90 days, read or not. The badge polls an unread count
+every minute and on each screen change; the list is fetched when the bell
+opens.
+
+## Version on the Help page
+
+`vite.config.ts` bakes `{ commit, builtAt }` into the bundle as `__BUILD__`:
+the commit from `VERCEL_GIT_COMMIT_SHA` on Vercel or `git rev-parse` locally,
+left out rather than guessed when neither is there. The Help page shows it as
+"2026.09.24 (feda444)" — the build date for people, the commit for matching to
+a merge. `/api/config` reports the commit the server runs (again from
+`VERCEL_GIT_COMMIT_SHA`), so the page can tell a tab opened before the latest
+deploy and offer a reload; with no commit on either side it simply does not
+compare.

@@ -3,6 +3,7 @@ import { Link, useSearchParams } from 'react-router-dom';
 import { useIsManager } from '../lib/session';
 import { PASSWORD_RULE } from '../lib/password';
 import { PageHeading } from '../components/ui';
+import { VersionCard } from '../components/VersionCard';
 
 interface Topic {
   question: string;
@@ -149,6 +150,17 @@ const STAFF: Section[] = [
         ),
       },
       {
+        question: 'Why does it say I am in overtime?',
+        answer: (
+          <p>
+            If your published schedule puts you past the practice&rsquo;s weekly overtime line (40
+            hours, both offices together), a red notice appears on <Screen>Clock</Screen> and{' '}
+            <Screen>Schedule</Screen>, and you get an email when it first happens. If it is not what
+            you agreed, talk to your manager before the week starts.
+          </p>
+        ),
+      },
+      {
         question: 'How do I say when I cannot work?',
         answer: (
           <p>
@@ -184,7 +196,7 @@ const STAFF: Section[] = [
         answer: (
           <p>
             The most important post is at the top of <Screen>Clock</Screen> when you sign in. All
-            posts are under <Screen>Team → News</Screen>, newest first.
+            posts are under <Screen>News</Screen>, newest first.
           </p>
         ),
       },
@@ -266,6 +278,28 @@ const STAFF: Section[] = [
           <p>
             Sign out when you are done — menu under your name → <strong>Sign out</strong>. The
             front-desk tablet does not need this: it never signs anybody in.
+          </p>
+        ),
+      },
+      {
+        question: 'What is the bell at the top?',
+        answer: (
+          <p>
+            Your notifications — things that are just for you: a shift added to, changed on or taken
+            off your schedule, your time off decided, overtime on your schedule, a survey waiting
+            for you, your checklist starting, and new posts on <Screen>News</Screen>. The red number
+            is how many you have not read. Choose one to go straight to it; they are kept for 90
+            days.
+          </p>
+        ),
+      },
+      {
+        question: 'Which version am I using?',
+        answer: (
+          <p>
+            It is at the bottom of this page, under <strong>About this version</strong>, and changes
+            by itself every time a new version goes out. If it says a newer version is live, reload
+            the page to get it.
           </p>
         ),
       },
@@ -352,7 +386,8 @@ const MANAGERS: Section[] = [
             <li>
               The week is a <strong>rota</strong>: a row per person, a column per day. Click ＋ in a
               cell to add a shift there, or click a shift to change who works it, publish it or
-              remove it. Each day&rsquo;s heading shows its hours and how many are on.
+              remove it. Removing a shift, or taking somebody off one, asks you to confirm first.
+              Each day&rsquo;s heading shows its hours and how many are on.
             </li>
             <li>
               Show it for <strong>everyone</strong>, <strong>by location</strong> or{' '}
@@ -416,11 +451,21 @@ const MANAGERS: Section[] = [
       {
         question: 'What do the warnings mean?',
         answer: (
-          <p>
-            <strong>Overtime</strong> — the rota puts somebody past the weekly threshold (40 hours,
-            across both offices). <strong>Unavailable</strong> — the shift lands on time they have
-            said they cannot work. Both are warnings: the shift is still saved, and you decide.
-          </p>
+          <>
+            <p>
+              <strong>Overtime</strong> — the rota puts somebody past the weekly threshold (40
+              hours, across both offices). It shows in red at the top of the schedule and beside
+              their weekly total. Adding or assigning a shift checks first: the form warns as you
+              fill it in, and saving asks you to confirm. Once a shift that puts them over is
+              published, the person sees it too and is emailed. While you are adding or assigning a
+              shift, an amber <strong>close to overtime</strong> note means it brings them within
+              four hours of the line; once saved, only going over is flagged.
+            </p>
+            <p>
+              <strong>Unavailable</strong> — the shift lands on time they have said they cannot
+              work. Both are warnings: the shift is still saved, and you decide.
+            </p>
+          </>
         ),
       },
       {
@@ -573,8 +618,8 @@ const MANAGERS: Section[] = [
         question: 'Announcements',
         answer: (
           <p>
-            On <Screen>Team → News</Screen>, write, edit or remove posts. One post is always the
-            primary one shown at the top of everybody's home screen; tick another to move it.
+            On <Screen>News</Screen>, write, edit or remove posts. One post is always the primary
+            one shown at the top of everybody's home screen; tick another to move it.
           </p>
         ),
       },
@@ -655,6 +700,8 @@ export function HelpPage() {
           </section>
         ))}
       </div>
+
+      <VersionCard />
 
       {!isManager && (
         <p className="mt-8 text-sm text-slate-500">

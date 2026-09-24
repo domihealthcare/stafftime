@@ -251,6 +251,7 @@ model Employee {
   unavailability            Unavailability[]
   createdSurveys            Survey[]                @relation("SurveyCreatedBy")
   surveysTaken              SurveyParticipant[]
+  notifications             Notification[]
 
   @@index([employmentStatus])
   @@map("employees")
@@ -1297,4 +1298,42 @@ model EmployeePhoto {
   employee Employee @relation(fields: [employeeId], references: [id], onDelete: Cascade)
 
   @@map("employee_photos")
+}
+
+/// What happened that a notification is about. The words shown are stored with
+/// it; this says which kind, for the icon and for tests.
+enum NotificationKind {
+  TIME_OFF_DECIDED
+  TIME_OFF_REQUESTED
+  OVERTIME
+  SCHEDULE_CHANGED
+  SURVEY_OPEN
+  CHECKLIST_STARTED
+  ANNOUNCEMENT
+}
+
+/// Something the app wants one person to know, shown under the bell in the
+/// header — "your time off was approved", "your schedule changed".
+///
+/// One row per person per event, written at the moment it happens, with the
+/// words as they were then: a notification is a record of being told, not a
+/// live view, and reads the same tomorrow. It links to the screen where the
+/// thing is. Nothing sensitive goes in it — the same wording an email would
+/// carry, and often the same moment. Deleted by the nightly job after 90 days,
+/// read or not.
+model Notification {
+  id         String           @id @default(uuid()) @db.Uuid
+  employeeId String           @db.Uuid
+  kind       NotificationKind
+  title      String
+  body       String?
+  /// A path inside the app, e.g. "/time-off".
+  link       String?
+  readAt     DateTime?
+  createdAt  DateTime         @default(now())
+
+  employee Employee @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+
+  @@index([employeeId, createdAt])
+  @@map("notifications")
 }

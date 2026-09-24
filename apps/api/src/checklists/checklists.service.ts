@@ -8,12 +8,14 @@ import {
 import {
   ChecklistKind,
   ChecklistTaskStatus,
+  NotificationKind,
   Prisma,
   Role,
   TaskOwner,
 } from '@prisma/client';
 import { AuthUser } from '../common/auth/auth-user';
 import { addUtcDays, isoDate, toUtcDate } from '../common/util/calendar-date.util';
+import { InboxService } from '../email/inbox.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { QueryChecklistsDto, StartChecklistDto, UpdateTaskDto } from './dto/checklist.dto';
 
@@ -45,7 +47,10 @@ type ChecklistRow = Prisma.EmployeeChecklistGetPayload<{
 export class ChecklistsService {
   private readonly logger = new Logger(ChecklistsService.name);
 
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly inbox: InboxService,
+  ) {}
 
   /// Copies a template into a checklist for one person.
   ///
@@ -133,6 +138,17 @@ export class ChecklistsService {
     this.logger.log(
       `${label(dto.kind)} checklist ${checklist.id} started for employee ${employee.id}`,
     );
+
+    // Only worth telling them when some of it is theirs to do.
+    const theirs = template.tasks.filter((task) => task.owner === TaskOwner.EMPLOYEE).length;
+    if (theirs > 0) {
+      this.inbox.notify([employee.id], {
+        kind: NotificationKind.CHECKLIST_STARTED,
+        title: `Your ${label(dto.kind)} checklist has started`,
+        body: `${theirs} ${theirs === 1 ? 'task is' : 'tasks are'} yours to do.`,
+        link: '/checklists',
+      });
+    }
     return this.decorate(checklist);
   }
 

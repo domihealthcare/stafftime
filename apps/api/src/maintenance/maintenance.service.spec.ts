@@ -14,6 +14,7 @@ describe('MaintenanceService', () => {
     const throttle = { purgeOld: jest.fn().mockResolvedValue(3) };
     const resets = { purgeExpired: jest.fn().mockResolvedValue(4) };
     const digest = { send: jest.fn().mockResolvedValue({ sent: 2, contents: {} }) };
+    const inbox = { purgeOld: jest.fn().mockResolvedValue(6) };
 
     return {
       service: new MaintenanceService(
@@ -22,6 +23,7 @@ describe('MaintenanceService', () => {
         throttle as never,
         resets as never,
         digest as never,
+        inbox as never,
       ),
       prisma,
       sessions,
@@ -40,6 +42,7 @@ describe('MaintenanceService', () => {
       expiredPairingCodes: 2,
       orphanedFiles: 1,
       clearedLocations: 5,
+      oldNotifications: 6,
       digestSentTo: 2,
     });
   });

@@ -4,22 +4,22 @@ import { api } from '../lib/api';
 import { AccountMenu } from './AccountMenu';
 import { Wordmark } from './Brand';
 import { NavMenu } from './NavMenu';
+import { NotificationBell } from './NotificationBell';
 import { useIsAdmin, useIsManager } from '../lib/session';
 
-/// On a phone each link is a cell in an even grid, so the text is centred and
-/// the padding is small — the cell, not the padding, sets the width. From `sm`
+/// On a phone each link grows to share out its row, so the text is centred and
+/// the padding is small — the row, not the padding, sets the width. From `sm`
 /// up they are ordinary inline pills again.
 const linkClasses = ({ isActive }: { isActive: boolean }) =>
-  `whitespace-nowrap rounded-lg px-1 py-2 text-center text-sm font-medium transition sm:px-3 sm:text-left ${
+  `flex-auto whitespace-nowrap rounded-lg px-1 py-2 text-center text-sm font-medium transition sm:flex-none sm:px-3 sm:text-left ${
     isActive
       ? 'bg-brand-50 text-brand-800'
       : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'
   }`;
 
-/// The practice's shared screens: what is going on, who is here, and where
-/// things are.
+/// The practice's shared screens: who is here, and where things are. News has
+/// its own tab in the bar (asked for by Dominguez, September 2026).
 const TEAM = [
-  { to: '/news', label: 'News' },
   { to: '/directory', label: 'Directory' },
   { to: '/resources', label: 'Resources' },
   { to: '/surveys', label: 'Surveys' },
@@ -74,33 +74,43 @@ export function Layout() {
             From `sm` up it is a single flex row again — brand, nav, then the
             account pushed right — which already fitted on one line. */}
         <div className="mx-auto grid max-w-6xl grid-cols-[1fr_auto] items-center gap-x-2 gap-y-2 px-4 py-3 sm:flex sm:justify-start sm:gap-3">
-          <Link to="/" className="shrink-0 rounded-lg focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-600">
+          <Link
+            to="/"
+            className="shrink-0 rounded-lg focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-600"
+          >
             <Wordmark />
           </Link>
 
           {/* Second in the DOM so it lands in the grid's top-right cell; sent
-              to the end of the flex row on wider screens. */}
-          <div className="shrink-0 sm:order-last sm:ml-auto">
+              to the end of the flex row on wider screens. The bell sits just
+              before the account, as it does in most apps people already use. */}
+          <div className="relative flex shrink-0 items-center gap-1 sm:order-last sm:ml-auto">
+            <NotificationBell />
             <AccountMenu />
           </div>
 
-          {/* The everyday screens are links of their own, in an even grid on
-              a phone so they line up in columns instead of ending wherever the
-              words stop. The practice-wide ones sit under Team and Manage:
-              laid out flat, an admin's fifteen destinations would fill a
-              phone's first screen before the page even started. The Clock
-              link is always first, so a punch is never behind a menu.
+          {/* The everyday screens are links of their own. The practice-wide
+              ones sit under Team and Manage: laid out flat, an admin's fifteen
+              destinations would fill a phone's first screen before the page
+              even started. The Clock link is always first, so a punch is never
+              behind a menu.
 
-              The column count is computed, not fixed: a hard `grid-cols-4`
-              fitted a 390px phone and then clipped "Timesheet" and pushed the
-              whole page into horizontal scroll on a 320px one. `auto-fit` with
-              a 5.25rem floor drops to three columns there instead.
+              On a phone the links wrap onto rows and each grows to share out
+              its row, so every row runs edge to edge instead of ending wherever
+              the words stop. This was an even grid of equal columns until News
+              became a tab of its own: nine equal cells need three rows at 390px,
+              but the words themselves fit in two (about 330px and 290px of the
+              358 available) once each is only as wide as it needs to be. On a
+              320px phone it drops to three rows rather than clipping a word.
 
               `relative` so that on a phone a menu opens across the whole nav,
-              wherever in the grid its button landed. */}
-          <nav className="relative col-span-2 grid grid-cols-[repeat(auto-fit,minmax(5.25rem,1fr))] gap-1 sm:col-span-1 sm:flex sm:flex-wrap sm:items-center sm:gap-x-1 sm:gap-y-1">
+              wherever its button landed. */}
+          <nav className="relative col-span-2 flex flex-wrap gap-1 sm:col-span-1 sm:items-center sm:gap-x-1 sm:gap-y-1">
             <NavLink to="/" end className={linkClasses}>
               Clock
+            </NavLink>
+            <NavLink to="/news" className={linkClasses}>
+              News
             </NavLink>
             <NavLink to="/timesheet" className={linkClasses}>
               Timesheet

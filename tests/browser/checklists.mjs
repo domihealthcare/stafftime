@@ -172,8 +172,9 @@ await step('an admin can delete the checklist', async () => {
   await admin.reload({ waitUntil: 'networkidle' });
   await admin.locator('main').getByRole('button', { name: /Frankie/ }).first().click();
   await admin.getByRole('button', { name: 'Delete this checklist' }).click();
-  await admin.getByText(/the record of what was done/).waitFor({ timeout: 5000 });
-  await admin.getByRole('button', { name: 'Yes, delete it' }).click();
+  const asked = admin.getByRole('alertdialog', { name: 'Delete this checklist?' });
+  await asked.getByText(/the record of what was done/).waitFor({ timeout: 5000 });
+  await asked.getByRole('button', { name: 'Yes, delete it' }).click();
   await admin.getByText(/Nothing on the go/).waitFor({ timeout: 15000 });
 });
 

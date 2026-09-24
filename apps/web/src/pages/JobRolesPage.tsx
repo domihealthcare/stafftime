@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
+import { useConfirm } from '../components/ConfirmDialog';
 import { Alert, Card, EmptyState, PageHeading, Spinner } from '../components/ui';
 import { ApiError, api } from '../lib/api';
 import { displayName } from '../lib/format';
@@ -126,9 +127,9 @@ function RoleCard({
   onError: (message: string) => void;
 }) {
   const [editing, setEditing] = useState(false);
-  const [confirming, setConfirming] = useState(false);
   const [busy, setBusy] = useState(false);
   const [choice, setChoice] = useState('');
+  const confirm = useConfirm();
 
   async function act<T>(action: () => Promise<T>, then: (result: T) => void, failure: string) {
     setBusy(true);
@@ -184,31 +185,26 @@ function RoleCard({
           >
             Edit
           </button>
-          {confirming ? (
-            <span className="flex items-center gap-2">
-              <button
-                type="button"
-                disabled={busy}
-                onClick={() =>
-                  void act(() => api.deleteJobRole(role.id), onDeleted, 'Could not delete that.')
-                }
-                className="font-semibold text-rose-700"
-              >
-                Delete it
-              </button>
-              <button type="button" onClick={() => setConfirming(false)} className="text-slate-500">
-                Keep
-              </button>
-            </span>
-          ) : (
-            <button
-              type="button"
-              onClick={() => setConfirming(true)}
-              className="font-medium text-slate-400 hover:text-rose-700"
-            >
-              Delete
-            </button>
-          )}
+          <button
+            type="button"
+            disabled={busy}
+            onClick={async () => {
+              const sure = await confirm({
+                title: `Delete the ${role.name} job role?`,
+                body:
+                  role.members.length > 0
+                    ? `${role.members.length} ${role.members.length === 1 ? 'person is' : 'people are'} in it; they come out of it. Their access and shifts do not change.`
+                    : 'Nobody is in it.',
+                confirmLabel: 'Delete it',
+                cancelLabel: 'Keep it',
+              });
+              if (sure)
+                await act(() => api.deleteJobRole(role.id), onDeleted, 'Could not delete that.');
+            }}
+            className="font-medium text-slate-400 hover:text-rose-700"
+          >
+            Delete
+          </button>
         </div>
       </div>
 
@@ -223,13 +219,20 @@ function RoleCard({
               type="button"
               disabled={busy}
               aria-label={`Take ${displayName(member)} out of ${role.name}`}
-              onClick={() =>
-                void act(
+              onClick={async () => {
+                const sure = await confirm({
+                  title: `Take ${displayName(member)} out of ${role.name}?`,
+                  body: `They stop seeing ${role.name}’s resources. Their access and shifts do not change.`,
+                  confirmLabel: 'Take them out',
+                  cancelLabel: 'Keep them in',
+                });
+                if (!sure) return;
+                await act(
                   () => api.removeJobRoleMember(role.id, member.id),
                   onChanged,
                   'Could not take them out.',
-                )
-              }
+                );
+              }}
               className="flex h-6 w-6 items-center justify-center rounded-full text-slate-500 hover:bg-slate-200 hover:text-slate-900"
             >
               ×
