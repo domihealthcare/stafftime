@@ -196,12 +196,12 @@ Still to do on the deployment, in `DEPLOY.md`:
   certificate is issued, and the app answers on the real address: `/api/health`
   OK, `/api/config` reporting the test environment, sign-in returning 200. The
   Vercel URL `stafftime-ap.vercel.app` still works alongside it.
-- **The geofence pins are still the seeded placeholders** (North Bergen
-  40.804/-74.012, West New York 40.7878/-74.0143), carried straight from
-  `prisma/seed.ts` — the addresses were typed in but the coordinates were
-  never captured. With a 500 ft radius an approximate pin can refuse somebody
-  standing at their own front desk. Fix by standing at each office and
-  pressing **Use my current location** on the Locations screen.
+- ~~The geofence pins are still the seeded placeholders~~ — **done, 24
+  September 2026.** Both offices' coordinates were typed in from Google Maps
+  (the phone's indoor fix was only good to ~315 ft, too loose to save). Still
+  to do: **clock in from the far corner of each office** to confirm the
+  500 ft radius reaches it. Never run `npm run db:seed` against the live
+  database — it resets the pins to the old placeholders.
 - **`SETUP_TOKEN` should be deleted** from the Vercel environment variables
   now that the first admin exists, and the Neon password rotated.
 

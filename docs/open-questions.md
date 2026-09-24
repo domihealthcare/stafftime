@@ -9,7 +9,9 @@ There is now a screen for all three of these: sign in as an admin **on your
 phone**, open **Locations**, and set them standing at each front desk. Note that
 `npm run db:seed` resets them back to placeholders.
 
-- [ ] **Real street addresses and surveyed coordinates for both offices.** The
+- [x] **Coordinates for both offices** — typed in from Google Maps, 24
+      September 2026. Street addresses: check they are filled in on Locations.
+- [ ] ~~Real street addresses and surveyed coordinates for both offices.~~ The
       seed uses approximate town-centre points and `TODO` addresses. The
       **Use my current location** button captures them from the device.
 - [ ] **Geofence radius per location.** Now **500 feet** everywhere, which is a
