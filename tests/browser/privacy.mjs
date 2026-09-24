@@ -5,6 +5,7 @@
 // directly — through the browser's own request context, so the session, the
 // cookie flags and the CSP all apply exactly as they do in the app.
 import { chromium } from 'playwright';
+import { clockOut } from './clock-out.mjs';
 import { mkdirSync } from 'node:fs';
 
 const OUT = process.argv[2] || new URL('./shots/', import.meta.url).pathname;
@@ -103,7 +104,7 @@ await step('the employee cannot look up their own, either', async () => {
 });
 
 await step('clocking out leaves the punch just as quiet', async () => {
-  await employee.getByRole('button', { name: /Clock out/ }).click();
+  await clockOut(employee);
   await employee.getByText(/Not clocked in/).waitFor({ timeout: 25000 });
 
   const rows = await (await admin.request.get(`${BASE}/api/time-entries`)).json();

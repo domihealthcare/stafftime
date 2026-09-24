@@ -109,9 +109,34 @@ await step('the confirmation returns to the staff list by itself', async () => {
   await tablet.getByText('Tap your name to clock in or out').waitFor({ timeout: 10000 });
 });
 
-await step('the same PIN again clocks out and reports time worked', async () => {
+// Frankie works Front Desk and MA, so clocking out starts with the closing
+// checklist — shown after the PIN, with nothing punched until the PIN is given
+// again.
+await step('the same PIN again shows the closing checklist first, and punches nothing yet', async () => {
   await tablet.getByRole('button', { name: /Frankie/ }).click();
+  const answered = tablet.waitForResponse((r) => r.url().endsWith('/api/kiosk/punch'));
   await typePin('4817');
+  const body = await (await answered).json();
+  if (body.action !== 'CHECKLIST') throw new Error(`the tablet answered ${body.action}`);
+  const form = tablet.getByTestId('closing-form');
+  await form.waitFor({ timeout: 10000 });
+  await form.getByRole('button', { name: 'Check In Desk' }).click();
+  await form.getByTestId('closing-section-Check In Desk').waitFor({ timeout: 5000 });
+  await form.getByLabel('Calls answered').fill('22');
+  await form.getByLabel('Calls placed').fill('5');
+  await form.getByText('TVs and scanners powered off').click();
+});
+await tablet.screenshot({ path: `${OUT}/21a-kiosk-checklist.png`, fullPage: true });
+
+await step('Clock out asks for the PIN again, then clocks out and reports time worked', async () => {
+  await tablet.getByTestId('closing-form').getByRole('button', { name: 'Clock out', exact: true }).click();
+  await tablet.getByText('Enter your PIN again to clock out').waitFor({ timeout: 5000 });
+  const sent = tablet.waitForRequest((r) => r.url().endsWith('/api/kiosk/punch'));
+  await typePin('4817');
+  const payload = JSON.parse((await sent).postData() ?? '{}');
+  if (!payload.closing?.done?.length) throw new Error('the checklist was not sent with the PIN');
+  if (payload.closing.counts?.find((c) => c.value === 22) === undefined)
+    throw new Error('the call count was not sent');
   await tablet.getByText('Clocked out').waitFor({ timeout: 15000 });
   await tablet.getByText(/on the clock/).waitFor({ timeout: 5000 });
 });

@@ -75,6 +75,9 @@ export interface Employee extends EmployeeSummary {
   wantsDailyDigest?: boolean;
   lastLoginAt?: string | null;
   locations: { locationId: string; isPrimary: boolean; location: LocationSummary }[];
+  /// Signed-in person only: their job role shows them their own licenses and
+  /// onboarding under Team (Providers).
+  seesOwnPersonnelTabs?: boolean;
 }
 
 export interface Shift {
@@ -328,6 +331,97 @@ export interface Attention {
   unapprovedHours: string[];
   shiftsForLeavers: string[];
   openShifts: string[];
+  closingGaps: string[];
+  suppliesNeeded: string[];
+}
+
+// ---------------------------------------------------------------------------
+// Closing checklists — what Front Desk and MAs confirm at clock-out
+// ---------------------------------------------------------------------------
+
+export type ClosingItemKind = 'TASK' | 'REMINDER' | 'COUNT' | 'SUPPLY';
+
+export interface ClosingItem {
+  id: string;
+  kind: ClosingItemKind;
+  text: string;
+  target: number | null;
+}
+
+/// A section as it applies to one clock-out: today's weekday and this office.
+export interface ApplicableSection {
+  id: string;
+  title: string;
+  isPosition: boolean;
+  jobRole: string;
+  items: ClosingItem[];
+}
+
+/// What gets sent with a clock-out. Ids and numbers only — nowhere to type.
+export interface ClosingSubmission {
+  skipped?: boolean;
+  positions?: string[];
+  done?: string[];
+  counts?: { itemId: string; value: number }[];
+  needed?: string[];
+}
+
+export interface ClosingTemplateItem extends ClosingItem {
+  weekdays: number[];
+  locationId: string | null;
+  location: { id: string; name: string } | null;
+  sortOrder: number;
+}
+
+export interface ClosingTemplateSection {
+  id: string;
+  title: string;
+  isPosition: boolean;
+  sortOrder: number;
+  items: ClosingTemplateItem[];
+}
+
+export interface ClosingTemplateRole {
+  id: string;
+  name: string;
+  colour: string;
+  closingSections: ClosingTemplateSection[];
+}
+
+export interface ClosingAnswer {
+  id: string;
+  section: string;
+  kind: ClosingItemKind;
+  text: string;
+  target: number | null;
+  done: boolean | null;
+  count: number | null;
+  needed: boolean | null;
+}
+
+export interface ClosingRecord {
+  id: string;
+  day: string;
+  employee: { id: string; firstName: string; preferredName: string | null; lastName: string };
+  location: { id: string; name: string };
+  clockInAt: string;
+  clockOutAt: string | null;
+  positions: string[];
+  submitted: boolean;
+  gaps: number;
+  answers: ClosingAnswer[];
+}
+
+export interface SupplyRequest {
+  id: string;
+  text: string;
+  location: { id: string; name: string };
+  firstAskedAt: string;
+  lastAskedAt: string;
+  timesAsked: number;
+  lastAskedBy: string | null;
+  orderedAt: string | null;
+  orderedBy: string | null;
 }
 
 // ---------------------------------------------------------------------------
@@ -513,6 +607,8 @@ export interface JobRole {
   sortOrder: number;
   resourceCount: number;
   members: PersonName[];
+  /// People in it see their own licenses and onboarding under Team.
+  seesOwnPersonnelTabs?: boolean;
 }
 
 export type ResourceKind = 'LINK' | 'PAGE';

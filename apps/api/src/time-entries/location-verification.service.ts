@@ -138,11 +138,7 @@ export class LocationVerificationService {
     const accuracyLimit =
       feetToMetres(location.geofenceRadiusFeet) *
       LocationVerificationService.ACCURACY_TOLERANCE_MULTIPLIER;
-    if (
-      accuracyMeters !== null &&
-      accuracyMeters !== undefined &&
-      accuracyMeters > accuracyLimit
-    ) {
+    if (accuracyMeters !== null && accuracyMeters !== undefined && accuracyMeters > accuracyLimit) {
       return {
         insideFence: false,
         distanceMeters: distance,

@@ -4,7 +4,11 @@ import { useConfirm } from '../components/ConfirmDialog';
 import { Alert, Card, EmptyState, PageHeading, Spinner } from '../components/ui';
 import { ApiError, api } from '../lib/api';
 import { displayName } from '../lib/format';
-import { JOB_ROLE_COLOURS, JOB_ROLE_COLOUR_KEYS, jobRoleHex as jobRoleHexFor } from '../lib/job-role-colours';
+import {
+  JOB_ROLE_COLOURS,
+  JOB_ROLE_COLOUR_KEYS,
+  jobRoleHex as jobRoleHexFor,
+} from '../lib/job-role-colours';
 import { JobRoleDot } from '../components/JobRoleTag';
 import type { Employee, JobRole } from '../lib/types';
 
@@ -297,8 +301,11 @@ function RoleForm({
   const [name, setName] = useState(role?.name ?? '');
   const [description, setDescription] = useState(role?.description ?? '');
   const [colour, setColour] = useState(
-    role?.colour ?? JOB_ROLE_COLOUR_KEYS.find((key) => !used.includes(key)) ?? JOB_ROLE_COLOUR_KEYS[0],
+    role?.colour ??
+      JOB_ROLE_COLOUR_KEYS.find((key) => !used.includes(key)) ??
+      JOB_ROLE_COLOUR_KEYS[0],
   );
+  const [seesOwn, setSeesOwn] = useState(role?.seesOwnPersonnelTabs ?? false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -306,7 +313,12 @@ function RoleForm({
     setBusy(true);
     setError(null);
     try {
-      const body = { name: name.trim(), description: description.trim(), colour };
+      const body = {
+        name: name.trim(),
+        description: description.trim(),
+        colour,
+        seesOwnPersonnelTabs: seesOwn,
+      };
       onSaved(role ? await api.updateJobRole(role.id, body) : await api.createJobRole(body));
     } catch (cause) {
       setError(cause instanceof ApiError ? cause.message : 'Could not save that.');
@@ -373,6 +385,21 @@ function RoleForm({
           ))}
         </div>
       </fieldset>
+
+      <label className="mt-3 flex items-start gap-2 text-sm text-slate-700">
+        <input
+          type="checkbox"
+          checked={seesOwn}
+          onChange={(event) => setSeesOwn(event.target.checked)}
+          className="mt-0.5 rounded border-slate-300"
+        />
+        <span>
+          People in this role see their own licenses and onboarding, under Team
+          <span className="block text-xs text-slate-500">
+            On for Provider. Their own records only — it gives no extra access.
+          </span>
+        </span>
+      </label>
 
       {error && (
         <div className="mt-3">

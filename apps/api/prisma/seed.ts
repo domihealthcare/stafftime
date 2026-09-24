@@ -8,6 +8,7 @@ import {
   ShiftStatus,
   TaskOwner,
 } from '@prisma/client';
+import { ClosingService } from '../src/closing/closing.service';
 import { JOB_ROLE_COLOURS } from '../src/job-roles/job-role-colours';
 
 const prisma = new PrismaClient();
@@ -56,10 +57,18 @@ const DEV_JOB_ROLES: Record<string, string[]> = {
 
 async function seedJobRoles() {
   for (const [index, name] of JOB_ROLES.entries()) {
+    // Providers see their own licenses and onboarding under Team; nobody else
+    // does by job role (September 2026).
+    const seesOwnPersonnelTabs = name === 'Provider';
     await prisma.jobRole.upsert({
       where: { name },
-      update: {},
-      create: { name, sortOrder: (index + 1) * 10, colour: JOB_ROLE_COLOURS[index] },
+      update: { seesOwnPersonnelTabs },
+      create: {
+        name,
+        sortOrder: (index + 1) * 10,
+        colour: JOB_ROLE_COLOURS[index],
+        seesOwnPersonnelTabs,
+      },
     });
   }
   for (const [email, names] of Object.entries(DEV_JOB_ROLES)) {
@@ -257,6 +266,9 @@ async function main() {
 
   const templates = await seedChecklistTemplates();
   await seedJobRoles();
+  // Back to the starting closing checklists, like the pins above: a seed is a
+  // known starting point. Never run it against the live database.
+  await ClosingService.resetToDefaults(prisma as never);
 
   const employees = await prisma.employee.findMany({
     select: { email: true, role: true, mustChangePassword: true },

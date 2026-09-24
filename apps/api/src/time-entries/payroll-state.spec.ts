@@ -40,7 +40,10 @@ describe('payrollStateOf', () => {
     expect(
       payrollStateOf({
         editedAt: new Date('2026-09-09T10:00:00Z'),
-        payrollExports: [run('exp-2', '2026-09-10T09:00:00Z'), run('exp-1', '2026-09-08T09:00:00Z')],
+        payrollExports: [
+          run('exp-2', '2026-09-10T09:00:00Z'),
+          run('exp-1', '2026-09-08T09:00:00Z'),
+        ],
       }),
     ).toMatchObject({ exportId: 'exp-2', changedSinceExport: false });
   });

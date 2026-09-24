@@ -1,4 +1,5 @@
 import { chromium } from 'playwright';
+import { clockOut } from './clock-out.mjs';
 import { mkdirSync, readFileSync } from 'node:fs';
 import { pickFromAccountMenu } from './account-menu.mjs';
 
@@ -65,7 +66,7 @@ frankie.on('pageerror', (e) => errors.push(`frankie pageerror: ${e.message}`));
 await signIn(frankie, 'frontdesk@domihealthcare.com');
 await frankie.getByRole('button', { name: 'Clock in' }).click();
 await frankie.getByText('On the clock').waitFor({ timeout: 20000 });
-await frankie.getByRole('button', { name: 'Clock out' }).click();
+await clockOut(frankie);
 await frankie.getByText('Not clocked in').waitFor({ timeout: 20000 });
 await frankieCtx.close();
 

@@ -11,6 +11,8 @@ import { Alert, Spinner } from '../components/ui';
 import { Keypad } from './Keypad';
 import { KioskPairing } from './KioskPairing';
 import { BrandMark } from '../components/Brand';
+import { ClosingChecklistForm } from '../components/ClosingChecklistForm';
+import type { ApplicableSection, ClosingSubmission } from '../lib/types';
 
 const MAX_PIN_LENGTH = 8;
 /// How long the confirmation stays up before returning to the staff list. Long
@@ -19,12 +21,17 @@ const CONFIRMATION_MS = 4000;
 /// An abandoned PIN entry clears itself, so nobody walks up to a screen with
 /// someone else's name and half a PIN on it.
 const IDLE_RESET_MS = 30_000;
+/// A closing checklist takes longer than a PIN, but one walked away from still
+/// clears itself — nobody should find somebody else's half-ticked list.
+const CHECKLIST_IDLE_RESET_MS = 5 * 60_000;
 
 type Screen =
   | { name: 'loading' }
   | { name: 'pairing' }
   | { name: 'staff' }
-  | { name: 'pin'; employee: KioskEmployee }
+  /// `closing` is set on the second PIN of a clock-out with a checklist.
+  | { name: 'pin'; employee: KioskEmployee; closing?: ClosingSubmission }
+  | { name: 'checklist'; employee: KioskEmployee; sections: ApplicableSection[] }
   | { name: 'done'; result: KioskPunchResult };
 
 /**
@@ -75,6 +82,9 @@ export function KioskApp() {
     if (screen.name === 'pin') {
       idleTimer.current = window.setTimeout(backToStaff, IDLE_RESET_MS);
     }
+    if (screen.name === 'checklist') {
+      idleTimer.current = window.setTimeout(backToStaff, CHECKLIST_IDLE_RESET_MS);
+    }
     return () => window.clearTimeout(idleTimer.current);
   }, [screen, pin, backToStaff]);
 
@@ -87,12 +97,17 @@ export function KioskApp() {
     return () => window.clearTimeout(timer);
   }, [screen, backToStaff]);
 
-  async function submitPin(employee: KioskEmployee) {
+  async function submitPin(employee: KioskEmployee, closing?: ClosingSubmission) {
     setBusy(true);
     setError(null);
     try {
-      const result = await kioskApi.punch(employee.id, pin);
+      const result = await kioskApi.punch(employee.id, pin, closing);
       setPin('');
+      if (result.action === 'CHECKLIST') {
+        // Nothing punched yet: the checklist first, then the PIN again.
+        setScreen({ name: 'checklist', employee, sections: result.checklist ?? [] });
+        return;
+      }
       setScreen({ name: 'done', result });
     } catch (err) {
       // The PIN is cleared on any failure — never left on screen to retry blind.
@@ -133,18 +148,41 @@ export function KioskApp() {
 
       <main className="mx-auto flex w-full max-w-3xl flex-1 flex-col justify-center p-6">
         {screen.name === 'staff' && (
-          <StaffList staff={staff} error={error} onPick={(employee) => setScreen({ name: 'pin', employee })} />
+          <StaffList
+            staff={staff}
+            error={error}
+            onPick={(employee) => setScreen({ name: 'pin', employee })}
+          />
+        )}
+
+        {screen.name === 'checklist' && (
+          <div className="rounded-2xl bg-white p-6 shadow-sm">
+            <p className="mb-3 text-sm font-medium text-slate-500">
+              {screen.employee.firstName} {screen.employee.lastName}
+            </p>
+            <ClosingChecklistForm
+              large
+              sections={screen.sections}
+              busy={busy}
+              onSubmit={(closing) => setScreen({ name: 'pin', employee: screen.employee, closing })}
+              onSkip={() =>
+                setScreen({ name: 'pin', employee: screen.employee, closing: { skipped: true } })
+              }
+              onCancel={backToStaff}
+            />
+          </div>
         )}
 
         {screen.name === 'pin' && (
           <PinEntry
+            confirming={Boolean(screen.closing)}
             employee={screen.employee}
             pin={pin}
             busy={busy}
             error={error}
             onDigit={(digit) => setPin((current) => current + digit)}
             onBackspace={() => setPin((current) => current.slice(0, -1))}
-            onSubmit={() => void submitPin(screen.employee)}
+            onSubmit={() => void submitPin(screen.employee, screen.closing)}
             onCancel={backToStaff}
           />
         )}
@@ -178,8 +216,8 @@ function StaffList({
 
       {staff.length === 0 ? (
         <Alert tone="warning">
-          Nobody at this location has a kiosk PIN yet. An administrator can set them from
-          Kiosks in the web app.
+          Nobody at this location has a kiosk PIN yet. An administrator can set them from Kiosks in
+          the web app.
         </Alert>
       ) : (
         <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
@@ -191,9 +229,7 @@ function StaffList({
               className="rounded-2xl bg-white px-4 py-6 text-lg font-medium text-slate-900 shadow-sm transition hover:bg-slate-50 active:scale-95"
             >
               <span className="block">{employee.firstName}</span>
-              <span className="block text-sm font-normal text-slate-500">
-                {employee.lastName}
-              </span>
+              <span className="block text-sm font-normal text-slate-500">{employee.lastName}</span>
             </button>
           ))}
         </div>
@@ -203,6 +239,7 @@ function StaffList({
 }
 
 function PinEntry({
+  confirming = false,
   employee,
   pin,
   busy,
@@ -212,6 +249,8 @@ function PinEntry({
   onSubmit,
   onCancel,
 }: {
+  /// The second PIN of a clock-out, after the closing checklist.
+  confirming?: boolean;
   employee: KioskEmployee;
   pin: string;
   busy: boolean;
@@ -227,7 +266,9 @@ function PinEntry({
         <h1 className="text-2xl font-semibold text-slate-900">
           {employee.firstName} {employee.lastName}
         </h1>
-        <p className="mt-1 text-sm text-slate-600">Enter your PIN</p>
+        <p className="mt-1 text-sm text-slate-600">
+          {confirming ? 'Enter your PIN again to clock out' : 'Enter your PIN'}
+        </p>
       </div>
 
       {error && (
@@ -256,13 +297,7 @@ function PinEntry({
   );
 }
 
-function Confirmation({
-  result,
-  onDone,
-}: {
-  result: KioskPunchResult;
-  onDone: () => void;
-}) {
+function Confirmation({ result, onDone }: { result: KioskPunchResult; onDone: () => void }) {
   const clockedIn = result.action === 'CLOCKED_IN';
   const time = new Date(result.at).toLocaleTimeString(undefined, {
     hour: 'numeric',

@@ -27,10 +27,7 @@ import { AuthService } from './auth.service';
 import { SESSION_COOKIE, clearSessionCookie, sessionCookieOptions } from './cookie';
 import { ChangePasswordDto } from './dto/change-password.dto';
 import { UpdatePreferencesDto } from './dto/preferences.dto';
-import {
-  CompletePasswordResetDto,
-  RequestPasswordResetDto,
-} from './dto/password-reset.dto';
+import { CompletePasswordResetDto, RequestPasswordResetDto } from './dto/password-reset.dto';
 import { LoginDto } from './dto/login.dto';
 import { SetPasswordDto } from './dto/set-password.dto';
 import { PasswordResetService } from './password-reset.service';
@@ -144,10 +141,7 @@ export class AuthController {
    * filtered folder is where the one that mattered ends up too.
    */
   @Patch('preferences')
-  async updatePreferences(
-    @Body() dto: UpdatePreferencesDto,
-    @CurrentUser() user: AuthUser,
-  ) {
+  async updatePreferences(@Body() dto: UpdatePreferencesDto, @CurrentUser() user: AuthUser) {
     await this.prisma.employee.update({
       where: { id: user.id },
       data: { wantsDailyDigest: dto.wantsDailyDigest },
@@ -174,10 +168,7 @@ export class AuthController {
   @Put('employees/:id/password')
   @Roles(Role.ADMIN)
   @HttpCode(HttpStatus.OK)
-  async setTemporaryPassword(
-    @Param('id', ParseUUIDPipe) id: string,
-    @Body() dto: SetPasswordDto,
-  ) {
+  async setTemporaryPassword(@Param('id', ParseUUIDPipe) id: string, @Body() dto: SetPasswordDto) {
     await this.auth.setTemporaryPassword(id, dto.temporaryPassword);
     return { set: true, mustChangeAtNextSignIn: true };
   }
@@ -191,7 +182,7 @@ export class AuthController {
   }
 
   private async describeCurrentUser(employeeId: string) {
-    return this.prisma.employee.findUniqueOrThrow({
+    const { jobRoles, ...employee } = await this.prisma.employee.findUniqueOrThrow({
       where: { id: employeeId },
       select: {
         id: true,
@@ -213,7 +204,14 @@ export class AuthController {
             location: { select: { id: true, name: true, slug: true, timezone: true } },
           },
         },
+        jobRoles: { select: { jobRole: { select: { seesOwnPersonnelTabs: true } } } },
       },
     });
+    return {
+      ...employee,
+      /// Whether their own licenses and onboarding are under Team — Providers,
+      /// as the practice has it. Managers and admins have them under Manage.
+      seesOwnPersonnelTabs: jobRoles.some((membership) => membership.jobRole.seesOwnPersonnelTabs),
+    };
   }
 }

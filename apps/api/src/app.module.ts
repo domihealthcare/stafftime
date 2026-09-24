@@ -23,6 +23,7 @@ import { LocationsModule } from './locations/locations.module';
 import { MaintenanceModule } from './maintenance/maintenance.module';
 import { PrismaModule } from './prisma/prisma.module';
 import { PtoModule } from './pto/pto.module';
+import { ClosingModule } from './closing/closing.module';
 import { DashboardModule } from './dashboard/dashboard.module';
 import { DemoModule } from './demo/demo.module';
 import { SettingsModule } from './settings/settings.module';
@@ -45,6 +46,7 @@ import { TimeEntriesModule } from './time-entries/time-entries.module';
     EmployeesModule,
     ShiftsModule,
     TimeEntriesModule,
+    ClosingModule,
     KioskModule,
     ExportsModule,
     PtoModule,

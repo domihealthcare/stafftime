@@ -1,4 +1,5 @@
 import { chromium } from 'playwright';
+import { clockOut } from './clock-out.mjs';
 
 import { mkdirSync } from 'node:fs';
 import { pickFromAccountMenu } from './account-menu.mjs';
@@ -110,7 +111,7 @@ await step('employee cannot add shifts', async () => {
 
 await step('clock out', async () => {
   await page.getByRole('link', { name: 'Clock' }).click();
-  await page.getByRole('button', { name: 'Clock out' }).click({ timeout: 10000 });
+  await clockOut(page);
   await page.getByText('Not clocked in').waitFor({ timeout: 15000 });
 });
 

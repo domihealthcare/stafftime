@@ -135,7 +135,11 @@ describe('LocationVerificationService', () => {
 
     it('does not trust a fix whose accuracy is wider than twice the geofence', () => {
       const result = service.verify(
-        attempt({ ...insideFence, accuracyMeters: 400, location: { ...northBergen, allowedIps: [] } }),
+        attempt({
+          ...insideFence,
+          accuracyMeters: 400,
+          location: { ...northBergen, allowedIps: [] },
+        }),
       );
       expect(result.allowed).toBe(false);
       if (!result.allowed) {

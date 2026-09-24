@@ -94,6 +94,25 @@ const STAFF: Section[] = [
         ),
       },
       {
+        question: 'What is the checklist when I clock out?',
+        answer: (
+          <>
+            <p>
+              Front Desk and Medical Assistants get their closing checklist when they press{' '}
+              <strong>Clock out</strong> — on your phone or at the front-desk tablet. Front Desk
+              first picks which desk they worked (Check In, Outdesk, or both). Tick what you did,
+              enter the call counts, and tick any supplies we need more of; then clock out.
+            </p>
+            <p>
+              You can always clock out, even with lines unticked — anything left is passed to a
+              manager, not held against the punch. At the tablet you enter your PIN once to see the
+              list and again to clock out. There is nowhere to type: never put a patient&rsquo;s
+              details anywhere in it.
+            </p>
+          </>
+        ),
+      },
+      {
         question: 'I forgot to clock out.',
         answer: (
           <p>
@@ -507,17 +526,42 @@ const MANAGERS: Section[] = [
         question: 'Starting or leaving',
         answer: (
           <p>
-            <Screen>Checklists</Screen> tracks each step for a new hire or a leaver — who did it and
-            when. The paperwork itself stays in the personnel file; nothing is uploaded here.
+            <Screen>Manage → Onboarding &amp; Offboarding</Screen> tracks each step for a new hire
+            or a leaver — who did it and when. The paperwork itself stays in the personnel file;
+            nothing is uploaded here. Front Desk and MA staff do not see it, so tick their own tasks
+            for them; Providers see theirs under Team.
           </p>
+        ),
+      },
+      {
+        question: 'Closing checklists',
+        answer: (
+          <ul>
+            <li>
+              <Screen>Manage → Closing checklists</Screen> → <strong>Clock-outs</strong>: each
+              day&rsquo;s clock-outs, with what was missed, call counts under target, and anybody
+              who clocked out without the checklist. The same shows in the banner there and in the
+              nightly email.
+            </li>
+            <li>
+              <strong>Restock</strong>: supplies ticked as needed, per office. Asking again for the
+              same thing adds to its count rather than a second line. Press{' '}
+              <strong>Mark ordered</strong> once it is ordered.
+            </li>
+            <li>
+              <strong>Edit lists</strong>: add, reword, reorder or remove lines; limit a line to
+              certain days or one office; make a section a desk that only shows when somebody worked
+              it. Any job role can have a list — somebody in two roles gets both.
+            </li>
+          </ul>
         ),
       },
       {
         question: 'License renewals',
         answer: (
           <p>
-            <Screen>Licenses</Screen> opens on what lapses in the next 60 days. Record the expiry
-            date only; press <strong>Renew</strong> to put in the new date.
+            <Screen>Manage → Licenses</Screen> opens on what lapses in the next 60 days. Record the
+            expiry date only; press <strong>Renew</strong> to put in the new date.
           </p>
         ),
       },

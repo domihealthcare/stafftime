@@ -1735,6 +1735,46 @@ somebody not at that office, or already on at that time; the dialog greys
 those people out rather than letting the server say no. `employeeId: null`
 makes a shift open again.
 
+## Closing checklists
+
+What Front Desk and Medical Assistants confirm at clock-out (`src/closing/`).
+A template is `ClosingSection`s of `ClosingItem`s per job role: TASK (ticked),
+REMINDER (shown, never ticked — standing rules like "notify the doctor if
+vitals are out of range"), COUNT (a number, flagged below `target`) and SUPPLY
+(ticked when more is needed). Items can be limited to ISO weekdays and to one
+office ("trash out, Tue/Thu, North Bergen"); a section can be a **position**
+("Check In Desk"), shown only when the person says they worked it.
+
+**It never blocks a clock-out.** `TimeEntriesService.clockOut` closes the punch
+first, then `ClosingService.recordForClockOut`, which never throws. A missing
+or skipped checklist is recorded as `submitted: false`, so a manager clocking
+somebody out, an old browser or a dropped tablet still leaves a trace rather
+than a silent gap. Each `ClosingRecord` copies the wording into its
+`ClosingAnswer`s, so editing a template never rewrites history, and keeps a
+`gaps` count so the round-up does not reread every answer. Ticked supplies
+upsert one open `SupplyRequest` per item per office (asking again increments
+`timesAsked`).
+
+**The kiosk** keeps its rule that there is no "PIN accepted" state on the
+server: `POST /kiosk/punch` without `closing` answers `CHECKLIST` with the list
+and punches nothing; the tablet shows it, then sends the PIN again with the
+answers. The tablet clears an abandoned checklist after five minutes. The web
+Clock screen fetches the checklist when the page loads, so pressing Clock out
+opens it (or asks for the location) inside the same tap.
+
+**No free text, on purpose.** The submission is ids and integers; the schema
+guard pins `ClosingRecord` and `ClosingAnswer` to their fields, because a
+"notes" column at the front desk is where a patient's name would end up.
+
+The starting lists live in `default-checklists.ts`; the migration that
+introduced them wrote the same content into the live database, and the seed
+resets them. From then on they are the managers' (Manage → Closing
+checklists → Edit lists).
+
+`JobRole.seesOwnPersonnelTabs` (true for Provider) puts "Your licenses" and
+"Your onboarding" under Team. It is visibility of one's own records, not
+access: the endpoints were already scoped to the caller.
+
 ## Profiles and photos
 
 "Your profile" (account menu, `/profile`) is where somebody sets how

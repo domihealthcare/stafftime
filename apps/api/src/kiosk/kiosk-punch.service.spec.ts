@@ -22,7 +22,7 @@ describe('KioskPunchService', () => {
 
   function build(
     employee: Record<string, unknown> | null,
-    options: { openEntry?: unknown } = {},
+    options: { openEntry?: unknown; checklist?: unknown[] } = {},
   ) {
     const prisma = {
       employee: {
@@ -42,6 +42,7 @@ describe('KioskPunchService', () => {
         isLate: false,
       }),
     };
+    const closing = { applicableFor: jest.fn().mockResolvedValue(options.checklist ?? []) };
     const service = new KioskPunchService(
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       prisma as any,
@@ -49,8 +50,9 @@ describe('KioskPunchService', () => {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       timeEntries as any,
       config,
+      closing as never,
     );
-    return { service, prisma, timeEntries };
+    return { service, prisma, timeEntries, closing };
   }
 
   const active = () => ({
@@ -95,6 +97,52 @@ describe('KioskPunchService', () => {
       expect(timeEntries.clockOut).toHaveBeenCalled();
     });
 
+    it('with a closing checklist, shows it first and punches nothing', async () => {
+      const checklist = [
+        { id: 'sec-1', title: 'Everyone', isPosition: false, jobRole: 'Front Desk', items: [] },
+      ];
+      const { service, timeEntries, closing } = build(active(), {
+        openEntry: {
+          id: 'te-1',
+          clockInAt: new Date('2026-09-21T13:00:00Z'),
+          locationId: 'loc-nb',
+        },
+        checklist,
+      });
+      const result = await service.punch(device, 'emp-1', '4817');
+
+      expect(result.action).toBe('CHECKLIST');
+      expect(result.checklist).toEqual(checklist);
+      expect(closing.applicableFor).toHaveBeenCalledWith('emp-1', 'loc-nb');
+      expect(timeEntries.clockOut).not.toHaveBeenCalled();
+    });
+
+    it('with the answers, clocks out and passes them on', async () => {
+      const { service, timeEntries, closing } = build(active(), {
+        openEntry: {
+          id: 'te-1',
+          clockInAt: new Date('2026-09-21T13:00:00Z'),
+          locationId: 'loc-nb',
+        },
+        checklist: [{ id: 'sec-1' }],
+      });
+      const answers = { done: ['7e1b2c3d-0000-4000-8000-000000000001'] };
+      const result = await service.punch(device, 'emp-1', '4817', answers);
+
+      expect(result.action).toBe('CLOCKED_OUT');
+      expect(timeEntries.clockOut.mock.calls[0][0]).toEqual({ closing: answers });
+      expect(closing.applicableFor).not.toHaveBeenCalled();
+    });
+
+    it('a wrong PIN never reveals the checklist', async () => {
+      const { service, closing } = build(active(), {
+        openEntry: { id: 'te-1', clockInAt: new Date(), locationId: 'loc-nb' },
+        checklist: [{ id: 'sec-1' }],
+      });
+      await expect(service.punch(device, 'emp-1', '0000')).rejects.toThrow();
+      expect(closing.applicableFor).not.toHaveBeenCalled();
+    });
+
     it('prefers a preferred name on the confirmation screen', async () => {
       const { service } = build({ ...active(), preferredName: 'Frank' });
       const result = await service.punch(device, 'emp-1', '4817');
@@ -115,9 +163,7 @@ describe('KioskPunchService', () => {
   describe('a wrong PIN', () => {
     it('is refused', async () => {
       const { service } = build(active());
-      await expect(service.punch(device, 'emp-1', '9999')).rejects.toThrow(
-        UnauthorizedException,
-      );
+      await expect(service.punch(device, 'emp-1', '9999')).rejects.toThrow(UnauthorizedException);
     });
 
     it('never punches the clock', async () => {
@@ -185,9 +231,7 @@ describe('KioskPunchService', () => {
 
     it('treats an employee with no PIN set as an ordinary failure', async () => {
       const { service } = build({ ...active(), pinHash: null });
-      await expect(service.punch(device, 'emp-1', '4817')).rejects.toThrow(
-        /not recognised/,
-      );
+      await expect(service.punch(device, 'emp-1', '4817')).rejects.toThrow(/not recognised/);
     });
 
     it('checks employment status only after the PIN is proven', async () => {
@@ -196,9 +240,7 @@ describe('KioskPunchService', () => {
       // Right PIN: told the account is inactive.
       await expect(service.punch(device, 'emp-1', '4817')).rejects.toThrow(ForbiddenException);
       // Wrong PIN: indistinguishable from any other failure.
-      await expect(service.punch(device, 'emp-1', '9999')).rejects.toThrow(
-        UnauthorizedException,
-      );
+      await expect(service.punch(device, 'emp-1', '9999')).rejects.toThrow(UnauthorizedException);
     });
   });
 

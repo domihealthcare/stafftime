@@ -20,6 +20,8 @@ const HEADINGS: Record<keyof Attention, string> = {
   expiringCredentials: 'Lapsing soon',
   overdueTasks: 'Checklist tasks past their due date',
   undecidedTimeOff: 'Time off waiting on a decision',
+  closingGaps: 'Closing checklists with something missed',
+  suppliesNeeded: 'Supplies to order',
 };
 
 /**

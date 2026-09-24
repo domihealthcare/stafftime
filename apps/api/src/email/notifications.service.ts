@@ -192,6 +192,8 @@ export class NotificationsService {
       ...section('Next week is not published yet:', contents.unpublishedRota),
       ...section('Shifts for people who have left:', contents.shiftsForLeavers),
       ...section('Open shifts nobody is on yet:', contents.openShifts),
+      ...section('Closing checklists with something missed:', contents.closingGaps),
+      ...section('Supplies to order:', contents.suppliesNeeded),
       ...section('Credentials that have already lapsed:', contents.expiredCredentials),
       ...section('Credentials expiring soon:', contents.expiringCredentials),
       ...section('Hours not approved yet:', contents.unapprovedHours),

@@ -434,7 +434,30 @@ and anyone can take theirs down (an admin can take down anybody's).
 
 - **Tell us:** anything else people would want on their profile?
 
-### 16. The look
+### 16. Closing checklists (**Manage → Closing checklists**)
+
+Front Desk and MAs get their closing checklist when they press **Clock out**,
+on their phone or at the tablet — the Front Desk Checklist 2026 and MA
+Responsibilities you sent, lightly reworded for a phone. Front Desk picks the
+desk they worked; rules ("notify the doctor if vitals are out of range") are
+shown as reminders rather than ticks; calls answered is a number, flagged
+under 20; the MA inventory ticks go on a **restock list** per office.
+
+Nobody is ever kept on the clock by it: anything unticked, and anybody who
+clocks out without it, shows up on this screen, in its banner and in the
+nightly email. **Edit lists** is where you change the wording, add lines,
+limit a line to certain days or one office.
+
+Licenses and Onboarding & Offboarding have moved to the **Manage** menu.
+Front Desk and MA staff no longer see them — tick their onboarding tasks for
+them — and Providers see their own under **Team**.
+
+- **Tell us:** "Table Paper 21 in x" was cut off in the PDF — what is the full
+  size? Change it under Edit lists.
+- **Tell us:** anything on the lists that should only apply at one office or
+  on certain days, beyond the North Bergen trash and thermometer lines.
+
+### 17. The look
 
 The app now uses the Domi Healthcare colours from the website, and says
 **Domi Staff** everywhere: the sign-in screen, the browser tab, emails, the

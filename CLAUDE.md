@@ -139,9 +139,11 @@ Build this as an **adapter/plugin pattern**, not a hardcoded ADP integration:
      job roles and who is in each; the starting list is Front Desk, Medical
      Assistant, Provider, Administrative, Manager. Somebody can hold **several**
      (front desk staff who also work as MAs; providers who also do admin work).
-     A job role decides which resources somebody sees and **nothing else** — it
-     is separate from the Employee / Manager / Admin access level, so being in
-     "Administrative" or "Manager" grants no power in the app. Each job role has a
+     A job role decides which resources somebody sees, which **closing
+     checklist** they get at clock-out, and whether they see their own
+     licenses and onboarding (Provider) — and **no power**: it is separate
+     from the Employee / Manager / Admin access level, so being in
+     "Administrative" or "Manager" grants nothing in the app. Each job role has a
      resources section: **links** (Drive, ADP, vendor portals) and **pages
      written in the app**. No uploads for now; uploads may come later, but that
      would be a deliberate reversal of *Data this app does not hold*, not a
@@ -225,7 +227,8 @@ Beyond the phases, the parts worth knowing about before picking up work:
 - **A nightly round-up** of what needs a look — lapsing licences, overdue
   checklist tasks, undecided time off, punches with no clock-out, kiosk tablets
   that have gone quiet, next week still unpublished, hours nobody has approved,
-  shifts for people who have left. The same nine lists appear as banners on the
+  shifts for people who have left, open shifts, closing checklists with
+  something missed, supplies to order. The same lists appear as banners on the
   screens where each thing gets fixed, from one service, so the email and the
   app cannot disagree. Managers can turn the email off; nothing is lost by it.
   **Email is live** (24 September 2026): Resend, sending as
@@ -250,6 +253,21 @@ Beyond the phases, the parts worth knowing about before picking up work:
   managers) gives the week on paper, one landscape page per office:
   published shifts only, no open shifts, and time off as a bare "Off" — the
   kind of leave never goes on the wall.
+- **Closing checklists** (September 2026, from the practice's Front Desk
+  Checklist 2026 and MA Responsibilities): Front Desk and Medical Assistants
+  get their role's checklist when they clock out, on the phone and at the
+  kiosk (PIN, checklist, PIN again — nothing held on the server between).
+  Front Desk picks the desk(s) worked (Check In / Outdesk); rules are shown as
+  reminders, not ticked; calls answered is a number flagged under 20; supply
+  ticks build a per-office **restock list** managers mark ordered. **Anybody
+  can always clock out** — unticked lines and skipped checklists are recorded
+  and flagged (Manage → Closing checklists, banner, nightly email), never a
+  gate. Ticks and numbers only, no free text (schema guard enforces it).
+  Managers edit the lists in the app; `src/closing/default-checklists.ts` is
+  only the starting point. **Licenses and Onboarding & Offboarding** moved off
+  the top bar: under Manage for managers/admins, under Team ("Your licenses",
+  "Your onboarding") for roles with `seesOwnPersonnelTabs` (Provider); Front
+  Desk and MA staff do not see them.
 - **Work from home** (September 2026): a manager marks a shift work from home
   (`Shift.isRemote`). While a published one is on — from 30 minutes before it
   starts until it ends — the person clocks in from anywhere, no location asked

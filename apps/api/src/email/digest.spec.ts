@@ -15,6 +15,8 @@ function build(
     unapproved?: unknown[];
     leaverShifts?: unknown[];
     openShifts?: unknown[];
+    closingRecords?: unknown[];
+    supplies?: unknown[];
     locations?: unknown[];
     staff?: { id: string; firstName: string; lastName: string }[];
     settings?: { rotaWarningDays?: number; overtimeThresholdHours?: number };
@@ -43,6 +45,8 @@ function build(
       ),
     },
     location: { findMany: jest.fn().mockResolvedValue(data.locations ?? []) },
+    closingRecord: { findMany: jest.fn().mockResolvedValue(data.closingRecords ?? []) },
+    supplyRequest: { findMany: jest.fn().mockResolvedValue(data.supplies ?? []) },
     employee: {
       // Two different questions go through this one method: who should be
       // emailed, and what a handful of employee ids are called. Answering both
@@ -471,6 +475,60 @@ describe('DigestService — what is going wrong at the office', () => {
       expect(call).toBeDefined();
       expect(call[0].where.status).toEqual({ not: 'CANCELLED' });
       expect(call[0].where.startsAt.lt).toEqual(day('2026-10-09'));
+    });
+  });
+  describe('closing checklists', () => {
+    const answer = (kind: string, text: string, extra: Record<string, unknown> = {}) => ({
+      kind,
+      text,
+      done: null,
+      count: null,
+      target: null,
+      ...extra,
+    });
+
+    it('says who missed what at clock-out, a line each, and when nothing was filled in', async () => {
+      const { attention } = build({
+        closingRecords: [
+          {
+            day: new Date('2026-09-24T00:00:00Z'),
+            submitted: true,
+            employee: { firstName: 'Frankie', preferredName: null, lastName: 'Front-Desk' },
+            location: { name: 'North Bergen' },
+            answers: [
+              answer('TASK', 'TVs off', { done: false }),
+              answer('TASK', 'Forms available', { done: true }),
+              answer('COUNT', 'Calls answered', { count: 12, target: 20 }),
+              answer('COUNT', 'Calls placed', { count: 3 }),
+            ],
+          },
+          {
+            day: new Date('2026-09-24T00:00:00Z'),
+            submitted: false,
+            employee: { firstName: 'Maxwell', preferredName: 'Max', lastName: 'Assistant' },
+            location: { name: 'West New York' },
+            answers: [],
+          },
+        ],
+      });
+      expect((await attention.gather()).closingGaps).toEqual([
+        'Frankie Front-Desk — North Bergen, Sep 24, 2026: TVs off; Calls answered 12 of 20',
+        'Max Assistant — West New York, Sep 24, 2026: clocked out without the closing checklist',
+      ]);
+    });
+
+    it('lists supplies to order, one line per office, saying how often each was asked for', async () => {
+      const { attention } = build({
+        supplies: [
+          { text: 'Gloves S/M/L', timesAsked: 3, location: { name: 'North Bergen' } },
+          { text: 'Lidocaine', timesAsked: 1, location: { name: 'North Bergen' } },
+          { text: 'Electrodes', timesAsked: 1, location: { name: 'West New York' } },
+        ],
+      });
+      expect((await attention.gather()).suppliesNeeded).toEqual([
+        'North Bergen — 2 to order: Gloves S/M/L (asked 3 times), Lidocaine',
+        'West New York — 1 to order: Electrodes',
+      ]);
     });
   });
 });

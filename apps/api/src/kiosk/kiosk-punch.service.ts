@@ -1,6 +1,8 @@
 import { ForbiddenException, Injectable, Logger, UnauthorizedException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { ClockMethod, EmploymentStatus } from '@prisma/client';
+import { ApplicableSection, ClosingService } from '../closing/closing.service';
+import type { ClosingSubmissionDto } from '../closing/dto/closing.dto';
 import { PrismaService } from '../prisma/prisma.service';
 import { TimeEntriesService } from '../time-entries/time-entries.service';
 import { PinService } from './pin.service';
@@ -11,7 +13,10 @@ import type { PairedDevice } from './kiosk.service';
 /// be able to learn.
 const PIN_REJECTED = 'That PIN was not recognised. Try again or ask a manager.';
 
-export type PunchAction = 'CLOCKED_IN' | 'CLOCKED_OUT';
+/// CHECKLIST: nothing was punched — this person is clocking out and has a
+/// closing checklist to fill in first. The tablet shows it, then sends the PIN
+/// again with the answers.
+export type PunchAction = 'CLOCKED_IN' | 'CLOCKED_OUT' | 'CHECKLIST';
 
 export interface PunchResult {
   action: PunchAction;
@@ -21,6 +26,8 @@ export interface PunchResult {
   /// Present on a clock-out: how long the shift ran.
   workedMinutes?: number;
   isLate: boolean;
+  /// Present with CHECKLIST.
+  checklist?: ApplicableSection[];
 }
 
 @Injectable()
@@ -34,6 +41,7 @@ export class KioskPunchService {
     private readonly pins: PinService,
     private readonly timeEntries: TimeEntriesService,
     config: ConfigService,
+    private readonly closing: ClosingService,
   ) {
     this.maxAttempts = config.get<number>('MAX_PIN_ATTEMPTS', 5);
     this.lockoutMinutes = config.get<number>('PIN_LOCKOUT_MINUTES', 10);
@@ -45,7 +53,12 @@ export class KioskPunchService {
    * One call does both on purpose: there is no intermediate "PIN accepted"
    * state for someone to walk up to and inherit at a shared tablet.
    */
-  async punch(device: PairedDevice, employeeId: string, pin: string): Promise<PunchResult> {
+  async punch(
+    device: PairedDevice,
+    employeeId: string,
+    pin: string,
+    closing?: ClosingSubmissionDto,
+  ): Promise<PunchResult> {
     const employee = await this.prisma.employee.findUnique({
       where: { id: employeeId },
       select: {
@@ -102,7 +115,7 @@ export class KioskPunchService {
     const displayName = employee.preferredName ?? employee.firstName;
     const open = await this.prisma.timeEntry.findFirst({
       where: { employeeId: employee.id, clockOutAt: null },
-      select: { id: true, clockInAt: true },
+      select: { id: true, clockInAt: true, locationId: true },
     });
 
     // The kiosk acts for the employee, so it is its own actor: it can punch for
@@ -110,7 +123,24 @@ export class KioskPunchService {
     const actor = { id: employee.id, email: '', role: 'EMPLOYEE' as const };
 
     if (open) {
-      const entry = await this.timeEntries.clockOut({}, actor, undefined, employee.id);
+      // The checklist comes before the punch, not after: a person walking away
+      // from a shared tablet mid-checklist leaves nothing half-done behind.
+      // Nothing is held on the server between the two calls — the second one
+      // proves the PIN again.
+      if (!closing) {
+        const checklist = await this.closing.applicableFor(employee.id, open.locationId);
+        if (checklist.length > 0) {
+          return {
+            action: 'CHECKLIST',
+            employeeName: displayName,
+            at: new Date().toISOString(),
+            locationName: device.locationName,
+            isLate: false,
+            checklist,
+          };
+        }
+      }
+      const entry = await this.timeEntries.clockOut({ closing }, actor, undefined, employee.id);
       this.logger.log(`Kiosk ${device.deviceId}: ${employee.id} clocked out`);
       return {
         action: 'CLOCKED_OUT',

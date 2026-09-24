@@ -1,4 +1,5 @@
 import { chromium } from 'playwright';
+import { clockOut } from './clock-out.mjs';
 import { mkdirSync } from 'node:fs';
 // Screenshots go wherever the caller says, or into ./shots (gitignored).
 const OUT = process.argv[2] || new URL('./shots/', import.meta.url).pathname;
@@ -82,7 +83,10 @@ await step('a punch can be made and closed from a phone', async () => {
   await page.getByRole('button', { name: 'Clock in' }).click();
   await page.getByRole('button', { name: 'Clock out' }).waitFor({ timeout: 20000 });
   await assertNoSidewaysScroll(page, 'Clock (on the clock)');
-  await page.getByRole('button', { name: 'Clock out' }).click();
+  // The closing checklist is long; it has to fit a phone too.
+  await clockOut(page, {
+    onChecklist: () => assertNoSidewaysScroll(page, 'Clock (closing checklist)'),
+  });
   await page.getByRole('button', { name: 'Clock in' }).waitFor({ timeout: 20000 });
 });
 

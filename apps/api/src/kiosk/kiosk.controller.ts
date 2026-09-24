@@ -93,7 +93,7 @@ export class KioskController {
   @UseGuards(KioskDeviceGuard)
   @HttpCode(HttpStatus.OK)
   punch(@Body() dto: KioskPunchDto, @Req() request: Request) {
-    return this.punches.punch(request.kiosk!, dto.employeeId, dto.pin);
+    return this.punches.punch(request.kiosk!, dto.employeeId, dto.pin, dto.closing);
   }
 
   /// Unpairs this tablet — for a device being retired or handed on.

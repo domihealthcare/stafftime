@@ -72,6 +72,53 @@ describe('what this app deliberately does not store', () => {
     expect(fields.sort()).toEqual(['bytes', 'contentType', 'employee', 'employeeId', 'updatedAt']);
   });
 
+  /// Closing checklists are filled in at the front desk at the end of a day
+  /// with patients. What somebody records is ticks and numbers — the wording
+  /// is copied from the template, never typed — so a "notes" column here is
+  /// exactly where a patient's name would end up.
+  it('keeps a closing checklist to ticks and numbers, with nowhere to type', () => {
+    const fieldsOf = (name: string) =>
+      model(name)
+        .split('\n')
+        .map((line) => line.trim())
+        .filter((line) => line && !line.startsWith('//') && !line.startsWith('@@'))
+        .map((line) => line.split(/\s+/)[0])
+        .sort();
+    expect(fieldsOf('ClosingRecord')).toEqual(
+      [
+        'answers',
+        'createdAt',
+        'day',
+        'employee',
+        'employeeId',
+        'gaps',
+        'id',
+        'location',
+        'locationId',
+        'positions',
+        'submitted',
+        'timeEntry',
+        'timeEntryId',
+      ].sort(),
+    );
+    expect(fieldsOf('ClosingAnswer')).toEqual(
+      [
+        'count',
+        'done',
+        'id',
+        'itemId',
+        'kind',
+        'needed',
+        'record',
+        'recordId',
+        'section',
+        'sortOrder',
+        'target',
+        'text',
+      ].sort(),
+    );
+  });
+
   it('records a credential by its date, not its number', () => {
     const body = model('EmployeeCredential');
     expect(body).toContain('expiresOn');

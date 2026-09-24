@@ -3,7 +3,8 @@ import { ApiError, api } from '../lib/api';
 import { formatDuration, formatTime } from '../lib/format';
 import { GeolocationRefused, detectClockMethod, getCurrentPosition } from '../lib/geolocation';
 import { useSession } from '../lib/session';
-import type { Shift, TimeEntry } from '../lib/types';
+import type { ApplicableSection, ClosingSubmission, Shift, TimeEntry } from '../lib/types';
+import { ClosingChecklistForm } from '../components/ClosingChecklistForm';
 import { PrimaryAnnouncement } from '../components/PrimaryAnnouncement';
 import { MyOvertimeNotice } from '../components/OvertimeAlerts';
 import { Alert, Badge, Card, Spinner } from '../components/ui';
@@ -18,6 +19,10 @@ export function ClockPage() {
   const [status, setStatus] = useState<Status>('loading');
   const [error, setError] = useState<string | null>(null);
   const [offerKiosk, setOfferKiosk] = useState(false);
+  /// Their closing checklist for the punch they are in, fetched ahead so that
+  /// pressing Clock out can open it — or ask for the location — at once.
+  const [checklist, setChecklist] = useState<ApplicableSection[]>([]);
+  const [closing, setClosing] = useState(false);
   const [, forceTick] = useState(0);
 
   // Memoised: a fresh [] each render would re-run the default-location effect forever.
@@ -32,6 +37,14 @@ export function ClockPage() {
         api.listShifts({ from: startOfToday(), to: endOfToday(), employeeId: employee?.id }),
       ]);
       setEntry(current);
+      setChecklist(
+        current && !current.clockOutAt
+          ? await api
+              .closingMine()
+              .then((result) => result.sections)
+              .catch(() => [])
+          : [],
+      );
       setTodaysShift(shifts[0] ?? null);
       setError(null);
     } catch (err) {
@@ -77,7 +90,7 @@ export function ClockPage() {
       : null;
   const remote = isClockedIn ? entry?.clockInVerification === 'REMOTE' : remoteShift !== null;
 
-  async function punch(direction: 'in' | 'out') {
+  async function punch(direction: 'in' | 'out', closingAnswers?: ClosingSubmission) {
     setStatus('working');
     setError(null);
     setOfferKiosk(false);
@@ -111,9 +124,10 @@ export function ClockPage() {
               method: detectClockMethod(),
               ...coords,
             })
-          : await api.clockOut(coords);
+          : await api.clockOut({ ...coords, closing: closingAnswers });
 
       setEntry(direction === 'in' ? updated : null);
+      setClosing(false);
       setError(null);
       setOfferKiosk(false);
       await load();
@@ -215,7 +229,17 @@ export function ClockPage() {
         </Alert>
       )}
 
-      {assignedLocations.length === 0 ? (
+      {closing && isClockedIn ? (
+        <Card className="p-4">
+          <ClosingChecklistForm
+            sections={checklist}
+            busy={busy}
+            onSubmit={(answers) => void punch('out', answers)}
+            onSkip={() => void punch('out', { skipped: true })}
+            onCancel={() => setClosing(false)}
+          />
+        </Card>
+      ) : assignedLocations.length === 0 ? (
         <Alert tone="warning">
           You are not assigned to a location yet, so you cannot clock in. Ask a manager to assign
           you to North Bergen or West New York.
@@ -223,7 +247,11 @@ export function ClockPage() {
       ) : (
         <button
           type="button"
-          onClick={() => void punch(isClockedIn ? 'out' : 'in')}
+          onClick={() =>
+            isClockedIn && checklist.length > 0
+              ? setClosing(true)
+              : void punch(isClockedIn ? 'out' : 'in')
+          }
           disabled={busy || status === 'loading'}
           className={`w-full rounded-xl px-6 py-5 text-lg font-semibold text-white shadow-sm transition disabled:cursor-not-allowed disabled:opacity-60 ${
             isClockedIn
