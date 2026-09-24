@@ -54,7 +54,7 @@ export class DigestService {
     }
 
     for (const recipient of recipients) {
-      this.notifications.dailyDigest(recipient.email, recipient.firstName, contents);
+      await this.notifications.dailyDigest(recipient.email, recipient.firstName, contents);
     }
 
     this.logger.log(`Digest of ${itemCount} item(s) sent to ${recipients.length} manager(s)`);

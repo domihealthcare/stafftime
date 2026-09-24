@@ -9,10 +9,13 @@ import { InboxService } from './inbox.service';
 /**
  * The messages this app actually sends, and who gets them.
  *
- * Every method here is **fire and forget**. Nothing in the app waits for an
- * email, and nothing fails because one did not send: a time-off approval that
- * errored because a mail server hiccuped would be a far worse bug than a
- * missing notification.
+ * Every method here is awaited by its caller and **never throws**. Awaited,
+ * because the app runs as a serverless function: work left running after the
+ * response is sent can be frozen and never finish, which is how reset emails
+ * silently failed to leave on Vercel. Never throws, because nothing should fail
+ * because an email did not send: a time-off approval that errored because a
+ * mail server hiccuped would be a far worse bug than a missing notification.
+ * The provider call has its own deadline, so waiting is bounded.
  */
 @Injectable()
 export class NotificationsService {
@@ -28,17 +31,17 @@ export class NotificationsService {
     this.appUrl = (config.get<string>('APP_URL') ?? 'http://localhost:5173').replace(/\/$/, '');
   }
 
-  /// Fire and forget. Never awaited by a request handler.
-  private dispatch(to: string, subject: string, body: string[]): void {
+  /// Sends and waits; failures are logged, never thrown.
+  private async dispatch(to: string, subject: string, body: string[]): Promise<void> {
     const text = [...body, '', '—', 'Domi Staff', this.appUrl].join('\n');
 
-    void this.email
-      .send({ to, subject: this.prefixed(subject), text })
-      .catch((error: unknown) =>
-        this.logger.error(
-          `Notification to ${to} failed: ${error instanceof Error ? error.message : error}`,
-        ),
+    try {
+      await this.email.send({ to, subject: this.prefixed(subject), text });
+    } catch (error: unknown) {
+      this.logger.error(
+        `Notification to ${to} failed: ${error instanceof Error ? error.message : error}`,
       );
+    }
   }
 
   /// A test deployment's mail must be obviously not real, in the subject line,
@@ -63,14 +66,14 @@ export class NotificationsService {
       ? `${request.reviewedBy.firstName} ${request.reviewedBy.lastName}`
       : 'A manager';
 
-    this.inbox.notify([request.employee.id], {
+    await this.inbox.notify([request.employee.id], {
       kind: NotificationKind.TIME_OFF_DECIDED,
       title: approved ? 'Your time off is approved' : 'Your time off request was not approved',
       body: `${capitalise(describeType(request.type))}, ${describeRange(request.startDate, request.endDate, request.isHalfDay)} — ${decider}${request.reviewNote ? `: “${request.reviewNote}”` : ''}`,
       link: '/time-off',
     });
 
-    this.dispatch(
+    await this.dispatch(
       request.employee.email,
       approved ? 'Your time off is approved' : 'Your time off request was not approved',
       [
@@ -108,7 +111,7 @@ export class NotificationsService {
     });
 
     const who = `${request.employee.firstName} ${request.employee.lastName}`;
-    this.inbox.notify(
+    await this.inbox.notify(
       deciders.map((decider) => decider.id),
       {
         kind: NotificationKind.TIME_OFF_REQUESTED,
@@ -118,7 +121,7 @@ export class NotificationsService {
       },
     );
     for (const decider of deciders) {
-      this.dispatch(decider.email, `${who} has asked for time off`, [
+      await this.dispatch(decider.email, `${who} has asked for time off`, [
         `Hello ${decider.firstName},`,
         '',
         `${who} has asked for ${describeType(request.type)} for ${describeRange(request.startDate, request.endDate, request.isHalfDay)}.`,
@@ -152,14 +155,14 @@ export class NotificationsService {
     });
     const over = Math.round((scheduledHours - thresholdHours) * 100) / 100;
 
-    this.inbox.notify([employeeId], {
+    await this.inbox.notify([employeeId], {
       kind: NotificationKind.OVERTIME,
       title: 'Your schedule puts you into overtime',
       body: `${scheduledHours} hours in the week starting ${week} — ${over} past the ${thresholdHours}-hour line.`,
       link: '/schedule',
     });
 
-    this.dispatch(employee.email, 'Your schedule puts you into overtime', [
+    await this.dispatch(employee.email, 'Your schedule puts you into overtime', [
       `Hello ${employee.preferredName ?? employee.firstName},`,
       '',
       `You are now scheduled for ${scheduledHours} hours in the week starting ${week}. That is ${over} ${over === 1 ? 'hour' : 'hours'} past the ${thresholdHours}-hour overtime line.`,
@@ -177,11 +180,11 @@ export class NotificationsService {
    * empty. An email that is mostly "nothing to report" teaches people to skim
    * past it, and then they skim past the one that matters.
    */
-  dailyDigest(to: string, firstName: string, contents: DigestContents): void {
+  async dailyDigest(to: string, firstName: string, contents: DigestContents): Promise<void> {
     const section = (heading: string, lines: string[]) =>
       lines.length === 0 ? [] : ['', heading, ...lines.map((line) => `  · ${line}`)];
 
-    this.dispatch(to, 'What needs a look today', [
+    await this.dispatch(to, 'What needs a look today', [
       `Hello ${firstName},`,
       // Roughly in the order somebody would act: the things that are broken
       // right now, then the things with a deadline, then the paperwork.
@@ -202,8 +205,13 @@ export class NotificationsService {
 
   /// The reset link itself. Sent to an address that may not belong to anyone —
   /// the caller decides that, and never says either way.
-  passwordReset(to: string, firstName: string, link: string, validMinutes: number): void {
-    this.dispatch(to, 'Reset your Domi password', [
+  async passwordReset(
+    to: string,
+    firstName: string,
+    link: string,
+    validMinutes: number,
+  ): Promise<void> {
+    await this.dispatch(to, 'Reset your Domi password', [
       `Hello ${firstName},`,
       '',
       'Somebody asked to reset the password on your Domi Staff account.',

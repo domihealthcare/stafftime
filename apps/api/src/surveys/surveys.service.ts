@@ -181,7 +181,7 @@ export class SurveysService {
       where: this.audienceWhere(row),
       select: { id: true },
     });
-    this.inbox.notify(
+    await this.inbox.notify(
       audience.map((person) => person.id),
       {
         kind: NotificationKind.SURVEY_OPEN,

@@ -215,11 +215,15 @@ export class OvertimeService {
    *
    * Only on the crossing — a week that was already over and gets one more
    * shift does not send a second email, and drafts send nothing until they are
-   * published. Fire and forget, like every other notification: a rota change
+   * published. Awaited but never thrown, like every other notification: a rota change
    * must never fail because an email could not be sent.
    */
-  announceNewOvertime(before: WeekTotals, employeeIds: string[], weekStarts: string[]): void {
-    void (async () => {
+  async announceNewOvertime(
+    before: WeekTotals,
+    employeeIds: string[],
+    weekStarts: string[],
+  ): Promise<void> {
+    await (async () => {
       const [after, { overtimeThresholdHours }] = await Promise.all([
         this.snapshot(employeeIds, weekStarts),
         this.settings.get(),

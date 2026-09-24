@@ -88,7 +88,7 @@ export class AnnouncementsService {
     );
     // Everybody but whoever wrote it. Edits do not notify again: a fixed typo
     // is not news.
-    void this.inbox
+    await this.inbox
       .notifyEveryone(
         { kind: NotificationKind.ANNOUNCEMENT, title: `New post: ${row.title}`, link: '/news' },
         actor.id,

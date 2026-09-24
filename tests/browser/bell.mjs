@@ -112,8 +112,8 @@ await step('things that happen to you arrive under the bell', async () => {
   });
   if (review.status !== 200) throw new Error(`approving answered ${review.status}`);
 
-  // Notifications are written in the background, so the last may land just
-  // after a screen change has asked for the count. The badge asks again on
+  // The badge only asks for the count on arrival, on a screen change and
+  // every minute, so it can be a request behind what has just happened. The badge asks again on
   // every screen change (and every minute): move between two screens until it
   // has caught up, rather than trusting a single look.
   const count = frankie.getByTestId('notification-count');
@@ -149,6 +149,11 @@ await step('choosing one goes to its screen and marks it read', async () => {
   await panel(frankie).getByTestId('notification').filter({ hasText: 'New post' }).click();
   await frankie.getByRole('heading', { name: 'Bell suite post' }).waitFor({ timeout: 10000 });
   await frankie.getByTestId('notification-count').getByText('2').waitFor({ timeout: 10000 });
+  // And stays there: a count fetched before the read was saved, answering
+  // late, used to put the old number back until the next minute's poll.
+  await frankie.waitForTimeout(2000);
+  const settled = await frankie.getByTestId('notification-count').innerText();
+  if (settled !== '2') throw new Error(`the badge went back to ${settled}`);
 });
 
 await step('nobody can read or mark somebody else’s', async () => {

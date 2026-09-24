@@ -125,10 +125,7 @@ export class ChecklistsService {
             title: task.title,
             description: task.description,
             owner: task.owner,
-            dueAt:
-              task.dueOffsetDays === null
-                ? null
-                : addUtcDays(anchorDate, task.dueOffsetDays),
+            dueAt: task.dueOffsetDays === null ? null : addUtcDays(anchorDate, task.dueOffsetDays),
           })),
         },
       },
@@ -142,7 +139,7 @@ export class ChecklistsService {
     // Only worth telling them when some of it is theirs to do.
     const theirs = template.tasks.filter((task) => task.owner === TaskOwner.EMPLOYEE).length;
     if (theirs > 0) {
-      this.inbox.notify([employee.id], {
+      await this.inbox.notify([employee.id], {
         kind: NotificationKind.CHECKLIST_STARTED,
         title: `Your ${label(dto.kind)} checklist has started`,
         body: `${theirs} ${theirs === 1 ? 'task is' : 'tasks are'} yours to do.`,
@@ -154,8 +151,7 @@ export class ChecklistsService {
 
   async findAll(query: QueryChecklistsDto, actor: AuthUser) {
     // An employee's own checklist is theirs to see. Everybody else's is not.
-    const employeeId =
-      actor.role === Role.EMPLOYEE ? actor.id : query.employeeId;
+    const employeeId = actor.role === Role.EMPLOYEE ? actor.id : query.employeeId;
     const state = query.state ?? 'open';
 
     const rows = await this.prisma.employeeChecklist.findMany({
@@ -272,9 +268,7 @@ export class ChecklistsService {
       throw new ForbiddenException('That checklist is not yours.');
     }
     if (task.owner !== TaskOwner.EMPLOYEE) {
-      throw new ForbiddenException(
-        'That one is for a manager to complete, not you.',
-      );
+      throw new ForbiddenException('That one is for a manager to complete, not you.');
     }
   }
 
@@ -304,9 +298,7 @@ export class ChecklistsService {
     const today = toUtcDate(isoDate(new Date()));
     const overdue = checklist.tasks.filter(
       (task) =>
-        task.status === ChecklistTaskStatus.PENDING &&
-        task.dueAt !== null &&
-        task.dueAt < today,
+        task.status === ChecklistTaskStatus.PENDING && task.dueAt !== null && task.dueAt < today,
     );
 
     return {
@@ -321,9 +313,7 @@ export class ChecklistsService {
       /// The soonest thing still outstanding, so a list of checklists can say
       /// what is actually holding each one up.
       nextTask:
-        checklist.tasks.find(
-          (task) => task.status === ChecklistTaskStatus.PENDING,
-        )?.title ?? null,
+        checklist.tasks.find((task) => task.status === ChecklistTaskStatus.PENDING)?.title ?? null,
     };
   }
 }
