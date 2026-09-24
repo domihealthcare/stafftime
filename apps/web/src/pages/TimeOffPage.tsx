@@ -11,18 +11,12 @@ import type {
   PtoStatus,
   PtoType,
 } from '../lib/types';
+import { PTO_TYPE_LABELS } from '../lib/time-off';
 import { PtoBalanceCard } from '../components/PtoBalanceCard';
 import { PtoPolicyEditor } from '../components/PtoPolicyEditor';
 import { Alert, Badge, Card, EmptyState, PageHeading, Spinner } from '../components/ui';
 
-const TYPE_LABELS: Record<PtoType, string> = {
-  VACATION: 'Vacation',
-  SICK: 'Sick',
-  PERSONAL: 'Personal',
-  BEREAVEMENT: 'Bereavement',
-  UNPAID: 'Unpaid',
-  OTHER: 'Other',
-};
+const TYPE_LABELS: Record<PtoType, string> = PTO_TYPE_LABELS;
 
 const STATUS_TONE: Record<PtoStatus, 'warning' | 'success' | 'danger' | 'neutral'> = {
   PENDING: 'warning',
@@ -84,11 +78,7 @@ export function TimeOffPage() {
     <div className="mx-auto max-w-3xl">
       <PageHeading
         title="Time off"
-        subtitle={
-          isManager
-            ? 'Requests from the team, and your own.'
-            : 'Your time off requests.'
-        }
+        subtitle={isManager ? 'Requests from the team, and your own.' : 'Your time off requests.'}
       />
 
       {balance && (
@@ -171,9 +161,7 @@ export function TimeOffPage() {
         </Card>
       ) : visible.length === 0 ? (
         <EmptyState>
-          {filter === 'PENDING'
-            ? 'Nothing waiting on a decision.'
-            : 'No requests to show.'}
+          {filter === 'PENDING' ? 'Nothing waiting on a decision.' : 'No requests to show.'}
         </EmptyState>
       ) : (
         <div className="space-y-3">
@@ -240,8 +228,7 @@ function RequestCard({
 
   // A manager may decide anyone's request but their own.
   const canDecide = isManager && !isMine && request.status === 'PENDING';
-  const canCancel =
-    (isMine || isManager) && ['PENDING', 'APPROVED'].includes(request.status);
+  const canCancel = (isMine || isManager) && ['PENDING', 'APPROVED'].includes(request.status);
 
   return (
     <Card className="p-4">
@@ -258,8 +245,11 @@ function RequestCard({
           <p className="mt-1 text-sm text-slate-600">
             {TYPE_LABELS[request.type]} · {request.days} day{request.days === 1 ? '' : 's'}
             {request.employee && !isMine && (
-              <> · {request.employee.preferredName ?? request.employee.firstName}{' '}
-                {request.employee.lastName}</>
+              <>
+                {' '}
+                · {request.employee.preferredName ?? request.employee.firstName}{' '}
+                {request.employee.lastName}
+              </>
             )}
           </p>
           {request.notes && (
@@ -315,8 +305,8 @@ function RequestCard({
       {conflicts && conflicts.length > 0 && request.status === 'PENDING' && (
         <div className="mt-3 rounded-lg bg-amber-50 p-3 text-sm text-amber-900 ring-1 ring-inset ring-amber-200">
           <p className="font-medium">
-            {conflicts.length} shift{conflicts.length === 1 ? '' : 's'} already scheduled in
-            those dates
+            {conflicts.length} shift{conflicts.length === 1 ? '' : 's'} already scheduled in those
+            dates
           </p>
           <ul className="mt-1 space-y-0.5 text-xs">
             {conflicts.slice(0, 4).map((shift) => (
@@ -420,15 +410,14 @@ function RequestForm({
         ) + 1
     : 0;
 
-  const bucket = type === 'SICK' ? 'sick' : type === 'VACATION' || type === 'PERSONAL' ? 'vacation' : null;
+  const bucket =
+    type === 'SICK' ? 'sick' : type === 'VACATION' || type === 'PERSONAL' ? 'vacation' : null;
 
   // The balance on screen is for one policy year, so it can only speak to a
   // request inside that year. Booking next June against this year's remaining
   // days would be plainly wrong.
   const inBalanceYear =
-    balance !== null &&
-    startDate >= balance.yearStart &&
-    effectiveEnd <= balance.yearEnd;
+    balance !== null && startDate >= balance.yearStart && effectiveEnd <= balance.yearEnd;
 
   // Only for the person's own request: a manager filing for someone else is
   // looking at their own balance, which would mislead.
@@ -543,9 +532,7 @@ function RequestForm({
               onChange={(event) => setEndDate(event.target.value)}
               className={field}
             />
-            <p className="mt-1 text-xs text-slate-500">
-              Leave empty for a single day.
-            </p>
+            <p className="mt-1 text-xs text-slate-500">Leave empty for a single day.</p>
           </div>
         </div>
 
@@ -586,13 +573,13 @@ function RequestForm({
           (remainingAfter < 0 ? (
             <Alert tone="warning">
               That is {requestedDays} day{requestedDays === 1 ? '' : 's'}, which puts you{' '}
-              {Math.abs(remainingAfter)} over your {bucket === 'sick' ? 'sick' : 'PTO'}{' '}
-              allowance. You can still ask — a manager decides.
+              {Math.abs(remainingAfter)} over your {bucket === 'sick' ? 'sick' : 'PTO'} allowance.
+              You can still ask — a manager decides.
             </Alert>
           ) : (
             <p className="text-sm text-slate-600">
-              {requestedDays} day{requestedDays === 1 ? '' : 's'} ·{' '}
-              {remainingAfter} left afterwards.
+              {requestedDays} day{requestedDays === 1 ? '' : 's'} · {remainingAfter} left
+              afterwards.
             </p>
           ))}
 

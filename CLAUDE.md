@@ -240,6 +240,12 @@ Beyond the phases, the parts worth knowing about before picking up work:
   Dominguez, September 2026; no staff pick-up). Chosen by Dominguez from
   three renderings. Each shift is tinted in its **office's colour** with a
   stripe in its **job role's colour** (both, as asked), with a key above.
+  **Time off is in the rota** (September 2026): approved leave hatches the
+  day in the person's row, an undecided request shows as "Asked off", and
+  adding a shift on a day off warns first. **Print** (`/schedule/print`,
+  managers) gives the week on paper, one landscape page per office:
+  published shifts only, no open shifts, and time off as a bare "Off" — the
+  kind of leave never goes on the wall.
 - **Work from home** (September 2026): a manager marks a shift work from home
   (`Shift.isRemote`). While a published one is on — from 30 minutes before it
   starts until it ends — the person clocks in from anywhere, no location asked

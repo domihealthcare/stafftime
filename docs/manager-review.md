@@ -171,6 +171,19 @@ are due in.
 - **Tell us:** is half an hour early the right window for clocking in from
   home? It matches nothing else in particular and is easy to change.
 
+**Time off is on the rota.** Approved time off hatches that day in the
+person's row; a request you have not answered yet shows as "Asked off". Each
+day's heading says how many are off, and adding a shift on somebody's day off
+warns you first.
+
+**Print** (next to Repeating shifts) gives the week on paper, one page per
+office, for the break-room wall. Only published shifts are printed — it tells
+you if drafts were left off — open shifts never, and time off just says
+"Off", never sick or vacation.
+
+- **Tell us:** anything missing from the printout you would want on the wall
+  — phone numbers, the office's opening hours, a space for notes?
+
 Plus four things that save the tedious part:
 
 - **Repeating shifts** — one form makes a month of Tuesdays and Thursdays.

@@ -24,6 +24,7 @@ import { LocationsPage } from './pages/LocationsPage';
 import { KiosksPage } from './pages/KiosksPage';
 import { LoginPage } from './pages/LoginPage';
 import { SchedulePage } from './pages/SchedulePage';
+import { RotaPrintPage } from './pages/RotaPrintPage';
 import { SetupPage } from './pages/SetupPage';
 import { StaffPage } from './pages/StaffPage';
 import { ChecklistsPage } from './pages/ChecklistsPage';
@@ -79,6 +80,8 @@ function Routed() {
 
   return (
     <Routes>
+      {/* Paper has no header or menus, so the printable rota sits outside the layout. */}
+      <Route path="schedule/print" element={<RotaPrintPage />} />
       <Route element={<Layout />}>
         <Route index element={<ClockPage />} />
         <Route path="news" element={<NewsPage />} />
