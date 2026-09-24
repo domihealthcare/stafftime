@@ -112,9 +112,18 @@ await step('things that happen to you arrive under the bell', async () => {
   });
   if (review.status !== 200) throw new Error(`approving answered ${review.status}`);
 
-  // The badge catches up on the next screen change.
-  await frankie.getByRole('navigation').getByRole('link', { name: /^Schedule/ }).click();
-  await frankie.getByTestId('notification-count').getByText('3').waitFor({ timeout: 15000 });
+  // Notifications are written in the background, so the last may land just
+  // after a screen change has asked for the count. The badge asks again on
+  // every screen change (and every minute): move between two screens until it
+  // has caught up, rather than trusting a single look.
+  const count = frankie.getByTestId('notification-count');
+  for (let i = 0; i < 10; i += 1) {
+    const screen = i % 2 === 0 ? /^Schedule/ : /^News/;
+    await frankie.getByRole('navigation').getByRole('link', { name: screen }).click();
+    await frankie.waitForTimeout(500);
+    if ((await count.count()) > 0 && (await count.innerText()) === '3') break;
+  }
+  await count.getByText('3').waitFor({ timeout: 5000 });
 });
 
 await step('the bell lists them, newest first, in words that say what happened', async () => {
