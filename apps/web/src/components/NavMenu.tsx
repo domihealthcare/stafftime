@@ -54,7 +54,7 @@ export function NavMenu({
   return (
     // Positioned against the nav on a phone, so the list spans its width and
     // cannot run off either edge; against its own button from `sm` up.
-    <div className="sm:relative" ref={container}>
+    <div className="flex flex-auto sm:relative sm:block sm:flex-none" ref={container}>
       <button
         type="button"
         aria-expanded={open}
