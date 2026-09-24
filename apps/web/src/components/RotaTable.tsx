@@ -1,8 +1,18 @@
 import { useMemo, useState } from 'react';
 import { ApiError, api } from '../lib/api';
 import { formatTime, formatTimeCompact, localDate, toLocalInputValue } from '../lib/format';
-import type { CoverageDay, Employee, JobRole, Location, Shift } from '../lib/types';
+import type {
+  CoverageDay,
+  Employee,
+  JobRole,
+  Location,
+  OvertimeWarning,
+  OwnOvertimeWeek,
+  Shift,
+} from '../lib/types';
 import { jobRoleHex } from '../lib/job-role-colours';
+import { useConfirm } from './ConfirmDialog';
+import { confirmOvertime, OvertimePreview, useOvertimeCheck } from './OvertimeAlerts';
 import { Avatar } from './Avatar';
 import { Alert } from './ui';
 
@@ -51,6 +61,8 @@ export function RotaTable({
   jobRoles,
   coverage,
   overtimeThresholdHours,
+  overtime,
+  ownWeeks,
   grouping,
   locationFilter,
   roleFilter,
@@ -66,6 +78,11 @@ export function RotaTable({
   jobRoles: JobRole[];
   coverage: CoverageDay[] | null;
   overtimeThresholdHours: number;
+  /// From the server, per person per week and across every location — so a
+  /// row filtered to one office still shows the week as a whole.
+  overtime?: OvertimeWarning[];
+  /// For staff: their own weeks, from their published shifts.
+  ownWeeks?: OwnOvertimeWeek[];
   grouping: RotaGrouping;
   locationFilter: string;
   roleFilter: string;
@@ -87,6 +104,31 @@ export function RotaTable({
   }, [locations]);
 
   const live = shifts.filter((shift) => shift.status !== 'CANCELLED');
+
+  /// Where each person's week stands against the overtime line. The week on
+  /// screen starts on dayKeys[0], a Monday, as the server's weeks do.
+  const weekStanding = (personId: string, rowTotal: number) => {
+    const weekStart = dayKeys[0];
+    const over = overtime?.find((w) => w.employeeId === personId && w.weekStart === weekStart);
+    if (over)
+      return { level: 'over' as const, hours: over.scheduledHours, overBy: over.overtimeHours };
+    if (selfId) {
+      const own = ownWeeks?.find((w) => w.weekStart === weekStart);
+      return own
+        ? { level: 'over' as const, hours: own.scheduledHours, overBy: own.overtimeHours }
+        : null;
+    }
+    // No figures from the server (still loading): the row's own sum is better
+    // than nothing, and never shows a warning the server would not.
+    if (!overtime && rowTotal > overtimeThresholdHours) {
+      return {
+        level: 'over' as const,
+        hours: rowTotal,
+        overBy: round1(rowTotal - overtimeThresholdHours),
+      };
+    }
+    return null;
+  };
   const warnings = useMemo(() => {
     const map = new Map<string, string>();
     for (const day of coverage ?? []) {
@@ -338,7 +380,9 @@ export function RotaTable({
               )}
               {section.rows.map((row) => {
                 const total = round1(row.shifts.reduce((sum, shift) => sum + hoursOf(shift), 0));
-                const over = row.kind === 'person' && !selfId && total > overtimeThresholdHours;
+                const standing =
+                  row.kind === 'person' && row.person ? weekStanding(row.person.id, total) : null;
+                const over = standing?.level === 'over';
                 if (row.kind === 'open' && row.shifts.length === 0 && !canEdit) return null;
                 return (
                   <tr
@@ -346,11 +390,11 @@ export function RotaTable({
                     data-testid={
                       row.kind === 'open' ? `open-row-${row.sublabel}` : `rota-row-${row.label}`
                     }
-                    className={`border-b border-slate-100 ${row.kind === 'open' ? (row.shifts.length > 0 ? 'bg-amber-50/60' : 'bg-slate-50/40') : 'hover:bg-slate-50/60'}`}
+                    className={`border-b border-slate-100 ${row.kind === 'open' ? (row.shifts.length > 0 ? 'bg-amber-50/60' : 'bg-slate-50/40') : over ? 'bg-rose-50/60' : 'hover:bg-slate-50/60'}`}
                   >
                     <th
                       scope="row"
-                      className={`sticky left-0 z-10 px-3 py-2 text-left font-normal ${row.kind === 'open' ? (row.shifts.length > 0 ? 'bg-amber-50' : 'bg-slate-50') : 'bg-white'}`}
+                      className={`sticky left-0 z-10 px-3 py-2 text-left font-normal ${row.kind === 'open' ? (row.shifts.length > 0 ? 'bg-amber-50' : 'bg-slate-50') : over ? 'border-l-4 border-rose-600 bg-rose-50' : 'bg-white'}`}
                     >
                       <span className="flex items-center gap-2">
                         {row.person ? (
@@ -419,16 +463,20 @@ export function RotaTable({
                       );
                     })}
                     <td
-                      className={`px-3 py-2 text-right tabular-nums ${over ? 'font-semibold text-amber-800' : 'text-slate-700'}`}
+                      className={`px-3 py-2 text-right tabular-nums ${over ? 'font-semibold text-rose-800' : 'text-slate-700'}`}
                     >
                       {row.kind === 'open'
                         ? row.shifts.length > 0
                           ? `${row.shifts.length} open`
                           : ''
                         : `${total} h`}
-                      {over && (
-                        <span className="block text-xs font-normal">
-                          over {overtimeThresholdHours}
+                      {standing && (
+                        <span
+                          data-testid={`week-standing-${standing.level}`}
+                          title={`${standing.hours} hours this week, every location — the overtime line is ${overtimeThresholdHours}`}
+                          className="mt-1 block whitespace-nowrap rounded-full bg-rose-600 px-2 py-0.5 text-center text-xs font-semibold text-white"
+                        >
+                          ⚠ {standing.overBy} h overtime
                         </span>
                       )}
                     </td>
@@ -699,7 +747,7 @@ function ShiftDialog({
   const [person, setPerson] = useState(shift.employeeId ?? '');
   const [busy, setBusy] = useState(false);
   const [problem, setProblem] = useState<string | null>(null);
-  const [confirmingRemove, setConfirmingRemove] = useState(false);
+  const confirm = useConfirm();
   const open = shift.employeeId === null;
 
   const members = new Set(
@@ -748,6 +796,64 @@ function ShiftDialog({
 
   const who = shift.employee ? `${shift.employee.firstName}’s` : 'this';
   const when = `${new Date(shift.startsAt).toLocaleDateString(undefined, { weekday: 'long', month: 'short', day: 'numeric' })}, ${formatTime(shift.startsAt)}–${formatTime(shift.endsAt)}`;
+  const firstName = shift.employee?.preferredName ?? shift.employee?.firstName ?? 'they';
+
+  // Checked as soon as somebody is picked, before Assign is pressed.
+  const chosen = employees.find((p) => p.id === person);
+  const chosenName = chosen ? `${chosen.preferredName ?? chosen.firstName} ${chosen.lastName}` : '';
+  const proposed =
+    chosen && person !== shift.employeeId
+      ? {
+          employeeId: person,
+          locationId: shift.locationId,
+          startsAt: shift.startsAt,
+          endsAt: shift.endsAt,
+          shiftId: shift.id,
+        }
+      : null;
+  const overtimeCheck = useOvertimeCheck(proposed);
+
+  async function assign() {
+    if (!proposed) return;
+    if (!(await confirmOvertime(confirm, proposed, chosenName))) return;
+    await act(() => api.updateShift(shift.id, { employeeId: person }));
+  }
+
+  async function remove() {
+    const sure = await confirm({
+      title: 'Remove this shift?',
+      body: (
+        <>
+          <p>
+            {open ? 'The open shift' : `${who} shift`} on {when}.
+          </p>
+          {shift.status === 'PUBLISHED' && !open && (
+            <p className="mt-1">It is published, so {firstName} may already be counting on it.</p>
+          )}
+        </>
+      ),
+      confirmLabel: 'Yes, remove',
+      cancelLabel: 'Keep it',
+    });
+    if (sure) await act(() => api.deleteShift(shift.id));
+  }
+
+  async function takeOff() {
+    const sure = await confirm({
+      title: `Take ${firstName} off this shift?`,
+      body: (
+        <>
+          <p>{when}.</p>
+          <p className="mt-1">
+            The shift stays on the rota as an open shift until somebody else is put in it.
+          </p>
+        </>
+      ),
+      confirmLabel: 'Take them off',
+      cancelLabel: 'Keep them on',
+    });
+    if (sure) await act(() => api.updateShift(shift.id, { employeeId: null }));
+  }
 
   return (
     <Dialog
@@ -791,7 +897,7 @@ function ShiftDialog({
           <button
             type="button"
             disabled={busy || !person || person === shift.employeeId}
-            onClick={() => void act(() => api.updateShift(shift.id, { employeeId: person }))}
+            onClick={() => void assign()}
             className="rounded-lg bg-brand-600 px-3 py-1.5 text-sm font-semibold text-white hover:bg-brand-700 disabled:opacity-60"
           >
             {open ? 'Assign' : 'Change'}
@@ -799,6 +905,11 @@ function ShiftDialog({
         </div>
         {candidates.length === 0 && (
           <p className="mt-1 text-xs text-slate-500">Nobody works at this office yet.</p>
+        )}
+        {proposed && (
+          <div className="mt-2">
+            <OvertimePreview check={overtimeCheck} name={chosenName} />
+          </div>
         )}
       </div>
 
@@ -813,7 +924,7 @@ function ShiftDialog({
           <button
             type="button"
             disabled={busy}
-            onClick={() => void act(() => api.updateShift(shift.id, { employeeId: null }))}
+            onClick={() => void takeOff()}
             className="rounded-lg border border-slate-300 px-3 py-1.5 text-sm font-medium text-slate-700 hover:bg-slate-50 disabled:opacity-60"
           >
             Make it an open shift
@@ -837,48 +948,15 @@ function ShiftDialog({
             Publish
           </button>
         )}
-        {!confirmingRemove ? (
-          <button
-            type="button"
-            onClick={() => setConfirmingRemove(true)}
-            aria-label={`Remove ${who} shift, ${formatTime(shift.startsAt)}–${formatTime(shift.endsAt)}`}
-            className="ml-auto rounded-lg px-3 py-1.5 text-sm font-medium text-rose-700 hover:bg-rose-50"
-          >
-            Remove
-          </button>
-        ) : (
-          <div
-            role="alertdialog"
-            aria-label="Remove this shift?"
-            className="w-full rounded-md bg-rose-50 p-2 text-sm ring-1 ring-inset ring-rose-200"
-          >
-            <p className="font-medium text-rose-900">Remove this shift?</p>
-            {shift.status === 'PUBLISHED' && !open && (
-              <p className="mt-0.5 text-rose-800">
-                It is published, so {shift.employee?.firstName ?? 'they'} may already be counting on
-                it.
-              </p>
-            )}
-            <div className="mt-1.5 flex gap-2">
-              <button
-                type="button"
-                disabled={busy}
-                onClick={() => void act(() => api.deleteShift(shift.id))}
-                className="rounded bg-rose-600 px-2 py-1 font-semibold text-white hover:bg-rose-700 disabled:opacity-60"
-              >
-                {busy ? 'Removing…' : 'Yes, remove'}
-              </button>
-              <button
-                type="button"
-                disabled={busy}
-                onClick={() => setConfirmingRemove(false)}
-                className="rounded px-2 py-1 font-medium text-slate-700 hover:bg-slate-100"
-              >
-                Keep it
-              </button>
-            </div>
-          </div>
-        )}
+        <button
+          type="button"
+          disabled={busy}
+          onClick={() => void remove()}
+          aria-label={`Remove ${who} shift, ${formatTime(shift.startsAt)}–${formatTime(shift.endsAt)}`}
+          className="ml-auto rounded-lg px-3 py-1.5 text-sm font-medium text-rose-700 hover:bg-rose-50 disabled:opacity-60"
+        >
+          Remove
+        </button>
       </div>
     </Dialog>
   );
@@ -914,6 +992,7 @@ function QuickAddDialog({
   const [remote, setRemote] = useState(false);
   const [busy, setBusy] = useState(false);
   const [problem, setProblem] = useState<string | null>(null);
+  const confirm = useConfirm();
 
   const at = (time: string) => {
     const [h, m] = time.split(':').map(Number);
@@ -922,8 +1001,21 @@ function QuickAddDialog({
     return date;
   };
 
+  // Only a shift for somebody can put somebody into overtime.
+  const proposed =
+    row.person && locationId && /^\d\d:\d\d$/.test(start) && /^\d\d:\d\d$/.test(end) && end > start
+      ? {
+          employeeId: row.person.id,
+          locationId,
+          startsAt: at(start).toISOString(),
+          endsAt: at(end).toISOString(),
+        }
+      : null;
+  const overtimeCheck = useOvertimeCheck(proposed);
+
   async function submit(event: React.FormEvent) {
     event.preventDefault();
+    if (proposed && !(await confirmOvertime(confirm, proposed, row.label))) return;
     setBusy(true);
     setProblem(null);
     try {
@@ -1036,6 +1128,11 @@ function QuickAddDialog({
           />
           Publish it now
         </label>
+        {proposed && overtimeCheck && overtimeCheck.level !== 'ok' && (
+          <div className="col-span-2">
+            <OvertimePreview check={overtimeCheck} name={row.label} />
+          </div>
+        )}
         {problem && (
           <div className="col-span-2">
             <Alert>{problem}</Alert>

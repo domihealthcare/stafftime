@@ -13,6 +13,7 @@ import type {
 } from '../lib/types';
 import { PtoBalanceCard } from '../components/PtoBalanceCard';
 import { PtoPolicyEditor } from '../components/PtoPolicyEditor';
+import { useConfirm } from '../components/ConfirmDialog';
 import { Alert, Badge, Card, EmptyState, PageHeading, Spinner } from '../components/ui';
 
 const TYPE_LABELS: Record<PtoType, string> = {
@@ -210,6 +211,7 @@ function RequestCard({
   const [denying, setDenying] = useState(false);
   const [reason, setReason] = useState('');
   const [conflicts, setConflicts] = useState<ConflictingShift[] | null>(null);
+  const confirm = useConfirm();
 
   // A manager deciding on a request needs to know what is already scheduled.
   useEffect(() => {
@@ -303,7 +305,18 @@ function RequestCard({
             <button
               type="button"
               disabled={busy}
-              onClick={() => void act(() => api.cancelPto(request.id))}
+              onClick={async () => {
+                const range = formatRange(request.startDate, request.endDate, request.isHalfDay);
+                const sure = await confirm({
+                  title: isMine ? 'Withdraw this request?' : 'Cancel this time off?',
+                  body: isMine
+                    ? `${TYPE_LABELS[request.type]}, ${range}. You would need to ask again.`
+                    : `${request.employee ? `${request.employee.preferredName ?? request.employee.firstName}’s ` : ''}${TYPE_LABELS[request.type].toLowerCase()}, ${range}.${request.status === 'APPROVED' ? ' It is already approved, so they may be counting on it.' : ''}`,
+                  confirmLabel: isMine ? 'Yes, withdraw it' : 'Yes, cancel it',
+                  cancelLabel: 'Keep it',
+                });
+                if (sure) await act(() => api.cancelPto(request.id));
+              }}
               className="text-sm font-medium text-slate-500 hover:text-slate-900 disabled:opacity-50"
             >
               {isMine ? 'Withdraw' : 'Cancel'}

@@ -1,9 +1,11 @@
 import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import { Prisma, ShiftStatus } from '@prisma/client';
+import { weekStartIn } from '../common/util/zoned-time.util';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateShiftDto } from './dto/create-shift.dto';
 import { QueryShiftsDto } from './dto/query-shifts.dto';
 import { UpdateShiftDto } from './dto/update-shift.dto';
+import { OvertimeService } from './overtime.service';
 
 const SHIFT_INCLUDE = {
   employee: {
@@ -21,7 +23,10 @@ const SHIFT_INCLUDE = {
 
 @Injectable()
 export class ShiftsService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly overtime: OvertimeService,
+  ) {}
 
   /// A shift for somebody, or — with no employee — an open shift that still
   /// needs filling.
@@ -34,10 +39,15 @@ export class ShiftsService {
     }
     if (dto.jobRoleId) await this.assertJobRole(dto.jobRoleId);
 
-    return this.prisma.shift.create({
+    const watch = employeeId
+      ? await this.watchOvertime(employeeId, [{ startsAt, locationId: dto.locationId }])
+      : null;
+    const shift = await this.prisma.shift.create({
       data: { ...dto, employeeId, jobRoleId: dto.jobRoleId ?? null, startsAt, endsAt, createdById },
       include: SHIFT_INCLUDE,
     });
+    watch?.();
+    return shift;
   }
 
   findAll(query: QueryShiftsDto) {
@@ -83,11 +93,46 @@ export class ShiftsService {
     }
     if (dto.jobRoleId) await this.assertJobRole(dto.jobRoleId);
 
-    return this.prisma.shift.update({
+    // Assigning, moving or publishing can each put the person on it over.
+    const watch = employeeId
+      ? await this.watchOvertime(employeeId, [
+          { startsAt: existing.startsAt, locationId: existing.locationId },
+          { startsAt, locationId },
+        ])
+      : null;
+    const shift = await this.prisma.shift.update({
       where: { id },
       data: { ...dto, startsAt, endsAt },
       include: SHIFT_INCLUDE,
     });
+    watch?.();
+    return shift;
+  }
+
+  /**
+   * Takes the person's published hours for the weeks a change touches, and
+   * returns what to call once the change is saved: it looks again and emails
+   * them if their week has just gone past the overtime line.
+   */
+  private async watchOvertime(
+    employeeId: string,
+    touched: { startsAt: Date; locationId: string }[],
+  ): Promise<() => void> {
+    const zones = new Map(
+      (
+        await this.prisma.location.findMany({
+          where: { id: { in: [...new Set(touched.map((t) => t.locationId))] } },
+          select: { id: true, timezone: true },
+        })
+      ).map((location) => [location.id, location.timezone]),
+    );
+    const weeks = [
+      ...new Set(
+        touched.map((t) => weekStartIn(t.startsAt, zones.get(t.locationId) ?? 'America/New_York')),
+      ),
+    ];
+    const before = await this.overtime.snapshot([employeeId], weeks);
+    return () => this.overtime.announceNewOvertime(before, [employeeId], weeks);
   }
 
   /// Published shifts are cancelled rather than deleted so staff who already saw

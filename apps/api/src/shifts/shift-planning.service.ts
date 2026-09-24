@@ -14,6 +14,7 @@ import { toRule } from '../availability/availability.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { PracticeSettingsService } from '../settings/practice-settings.service';
 import { CopyWeekDto, QueryCoverageDto, RepeatShiftsDto } from './dto/repeat-shifts.dto';
+import { OvertimeService } from './overtime.service';
 
 /// Guards against a mis-typed year turning into three thousand shifts.
 const MAX_GENERATED_SHIFTS = 200;
@@ -44,6 +45,10 @@ export interface PlanResult {
   skipped: PlannedSkip[];
   /// The dates that now have a shift, for the UI to jump to.
   dates: string[];
+  /// Anyone these shifts leave past the overtime line, week by week — said
+  /// with the result, because a repeating rota can reach weeks nobody is
+  /// looking at yet.
+  overtime: OvertimeWarning[];
 }
 
 const SHIFT_INCLUDE = {
@@ -70,6 +75,7 @@ export class ShiftPlanningService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly settings: PracticeSettingsService,
+    private readonly overtime: OvertimeService,
   ) {}
 
   async repeat(dto: RepeatShiftsDto, createdById: string): Promise<PlanResult> {
@@ -116,17 +122,33 @@ export class ShiftPlanningService {
       );
     }
 
-    return this.createAll(candidates, {
+    const status = dto.status ?? ShiftStatus.DRAFT;
+    const weeks = [...new Set(wanted.map(mondayOnOrBefore))];
+    const before =
+      dto.employeeId && status === ShiftStatus.PUBLISHED
+        ? await this.overtime.snapshot([dto.employeeId], weeks)
+        : null;
+
+    const result = await this.createAll(candidates, {
       employeeId: dto.employeeId ?? null,
       jobRoleId: dto.jobRoleId ?? null,
       isRemote: dto.isRemote ?? false,
       openCount: perDay,
       locationId: dto.locationId,
-      status: dto.status ?? ShiftStatus.DRAFT,
+      status,
       notes: dto.notes,
       createdById,
       timezone: location.timezone,
     });
+
+    if (before && dto.employeeId)
+      this.overtime.announceNewOvertime(before, [dto.employeeId], weeks);
+    return {
+      ...result,
+      overtime: dto.employeeId
+        ? await this.overtimeAfterPlanning(result.dates, [dto.employeeId])
+        : [],
+    };
   }
 
   /**
@@ -175,6 +197,15 @@ export class ShiftPlanningService {
       throw new BadRequestException('There are no shifts in that week to copy.');
     }
 
+    const people = [
+      ...new Set(source.flatMap((shift) => (shift.employeeId ? [shift.employeeId] : []))),
+    ];
+    // The target week, with a week either side for an office whose Monday
+    // falls on a different UTC date than the one given.
+    const weeks = [-7, 0, 7].map((offset) => mondayOnOrBefore(addDaysTo(toStart, offset)));
+    const before =
+      dto.status === ShiftStatus.PUBLISHED ? await this.overtime.snapshot(people, weeks) : null;
+
     const skipped: PlannedSkip[] = [];
     const dates: string[] = [];
     let created = 0;
@@ -212,7 +243,14 @@ export class ShiftPlanningService {
     }
 
     this.logger.log(`Copied ${created} shifts from week ${fromStart} to ${toStart}`);
-    return { created, skipped, dates: [...new Set(dates)].sort() };
+    if (before) this.overtime.announceNewOvertime(before, people, weeks);
+    const copied = [...new Set(dates)].sort();
+    return {
+      created,
+      skipped,
+      dates: copied,
+      overtime: await this.overtimeAfterPlanning(copied, people),
+    };
   }
 
   /**
@@ -337,6 +375,9 @@ export class ShiftPlanningService {
 
     return {
       days,
+      // Only people past the line. "Close to it" is said while a shift is
+      // being added (see OvertimeService.check), not left standing afterwards
+      // — asked for by Dominguez, September 2026.
       overtime: await this.overtimeForWeeksTouching(dates, query.locationId),
       // The response says which line it applied. Without it the screen has to
       // guess, and a screen that guesses "40" while the practice has set 20
@@ -439,6 +480,18 @@ export class ShiftPlanningService {
       );
   }
 
+  /// Who a batch of new shifts leaves past the line, in the weeks it touched.
+  private async overtimeAfterPlanning(
+    dates: string[],
+    employeeIds: string[],
+  ): Promise<OvertimeWarning[]> {
+    if (dates.length === 0 || employeeIds.length === 0) return [];
+    const people = new Set(employeeIds);
+    return (await this.overtimeForWeeksTouching([...dates].sort())).filter((week) =>
+      people.has(week.employeeId),
+    );
+  }
+
   // -------------------------------------------------------------------------
 
   /**
@@ -462,7 +515,7 @@ export class ShiftPlanningService {
       createdById: string;
       timezone: string;
     },
-  ): Promise<PlanResult> {
+  ): Promise<Omit<PlanResult, 'overtime'>> {
     const skipped: PlannedSkip[] = [];
     const dates: string[] = [];
     let created = 0;

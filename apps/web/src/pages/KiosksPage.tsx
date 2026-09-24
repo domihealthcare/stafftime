@@ -4,6 +4,7 @@ import { formatDateTime } from '../lib/format';
 import type { Employee, Location } from '../lib/types';
 import { Alert, Badge, Card, EmptyState, PageHeading, Spinner } from '../components/ui';
 import { NeedsAttention } from '../components/NeedsAttention';
+import { useConfirm } from '../components/ConfirmDialog';
 
 /// Admin-only. Two jobs in one place, because they are the two halves of making
 /// a kiosk usable: pair the tablet, and give staff a PIN to use on it.
@@ -273,10 +274,19 @@ function DeviceRow({
   onError: (message: string) => void;
 }) {
   const [busy, setBusy] = useState(false);
+  const confirm = useConfirm();
   const awaitingPairing = device.pairedAt === null;
 
   async function run(action: 'code' | 'revoke') {
-    if (action === 'revoke' && !window.confirm(`Revoke "${device.name}"? It will stop working immediately.`)) {
+    if (
+      action === 'revoke' &&
+      !(await confirm({
+        title: `Revoke “${device.name}”?`,
+        body: 'The tablet stops working immediately. Pairing it again needs a new code.',
+        confirmLabel: 'Yes, revoke it',
+        cancelLabel: 'Keep it',
+      }))
+    ) {
       return;
     }
     setBusy(true);
@@ -345,6 +355,7 @@ function PinRow({
   const [editing, setEditing] = useState(false);
   const [pin, setPin] = useState('');
   const [busy, setBusy] = useState(false);
+  const confirm = useConfirm();
   const [problem, setProblem] = useState<string | null>(null);
 
   async function save() {
@@ -364,9 +375,13 @@ function PinRow({
   }
 
   async function clear() {
-    if (!window.confirm(`Remove ${employee.firstName}'s kiosk PIN? They will no longer appear on the kiosk.`)) {
-      return;
-    }
+    const sure = await confirm({
+      title: `Remove ${employee.firstName}’s kiosk PIN?`,
+      body: 'They will no longer appear on the kiosk until a new PIN is set.',
+      confirmLabel: 'Yes, remove it',
+      cancelLabel: 'Keep it',
+    });
+    if (!sure) return;
     setBusy(true);
     try {
       await api.clearKioskPin(employee.id);

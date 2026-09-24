@@ -1,7 +1,16 @@
 import { BadRequestException } from '@nestjs/common';
 import { PtoStatus, ShiftStatus } from '@prisma/client';
 import { fakeSettings } from '../settings/practice-settings.test-double';
+import { OvertimeService } from './overtime.service';
 import { ShiftPlanningService } from './shift-planning.service';
+
+/// Overtime emails are the overtime service's own business, tested there.
+function fakeOvertime() {
+  return {
+    snapshot: jest.fn().mockResolvedValue(new Map()),
+    announceNewOvertime: jest.fn(),
+  } as unknown as OvertimeService;
+}
 
 const NJ = 'America/New_York';
 
@@ -49,8 +58,12 @@ describe('ShiftPlanningService', () => {
         findMany: jest.fn().mockResolvedValue([]),
       },
     };
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    return { service: new ShiftPlanningService(prisma as any, fakeSettings()), prisma, created };
+    return {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      service: new ShiftPlanningService(prisma as any, fakeSettings(), fakeOvertime()),
+      prisma,
+      created,
+    };
   }
 
   const repeat = (overrides: Record<string, unknown> = {}) => ({
@@ -379,6 +392,7 @@ describe('ShiftPlanningService', () => {
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         coveragePrisma(shifts, leave, unavailable) as any,
         fakeSettings(settings),
+        fakeOvertime(),
       );
     }
 
@@ -527,6 +541,17 @@ describe('ShiftPlanningService', () => {
         });
       });
 
+      it('leaves nothing standing for somebody close to the line but not over it', async () => {
+        // "Close to overtime" is said while a shift is being added, not left on
+        // the week once it is saved.
+        const five8s = ['21', '22', '23', '24', '25'].map((d) => shiftOn(`2026-09-${d}`, 8));
+
+        const atForty = await withShifts(five8s).coverage({ from: '2026-09-21', to: '2026-09-27' });
+
+        expect(atForty.overtime).toEqual([]);
+        expect(atForty).not.toHaveProperty('nearOvertime');
+      });
+
       it('uses the threshold the practice set, not a constant', async () => {
         // Forty is the federal line and a sensible default. A practice that
         // wants to hear about it sooner should not need a deploy.
@@ -571,7 +596,7 @@ describe('ShiftPlanningService', () => {
         // so the filters that matter have to be asserted on the query itself.
         const prisma = coveragePrisma([]);
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        await new ShiftPlanningService(prisma as any, fakeSettings()).coverage({
+        await new ShiftPlanningService(prisma as any, fakeSettings(), fakeOvertime()).coverage({
           from: '2026-09-24',
           to: '2026-09-25',
           locationId: 'loc-1',

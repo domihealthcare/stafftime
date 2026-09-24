@@ -148,6 +148,17 @@ const STAFF: Section[] = [
         ),
       },
       {
+        question: 'Why does it say I am in overtime?',
+        answer: (
+          <p>
+            If your published schedule puts you past the practice&rsquo;s weekly overtime line (40
+            hours, both offices together), a red notice appears on <Screen>Clock</Screen> and{' '}
+            <Screen>Schedule</Screen>, and you get an email when it first happens. If it is not what
+            you agreed, talk to your manager before the week starts.
+          </p>
+        ),
+      },
+      {
         question: 'How do I say when I cannot work?',
         answer: (
           <p>
@@ -351,7 +362,8 @@ const MANAGERS: Section[] = [
             <li>
               The week is a <strong>rota</strong>: a row per person, a column per day. Click ＋ in a
               cell to add a shift there, or click a shift to change who works it, publish it or
-              remove it. Each day&rsquo;s heading shows its hours and how many are on.
+              remove it. Removing a shift, or taking somebody off one, asks you to confirm first.
+              Each day&rsquo;s heading shows its hours and how many are on.
             </li>
             <li>
               Show it for <strong>everyone</strong>, <strong>by location</strong> or{' '}
@@ -405,11 +417,21 @@ const MANAGERS: Section[] = [
       {
         question: 'What do the warnings mean?',
         answer: (
-          <p>
-            <strong>Overtime</strong> — the rota puts somebody past the weekly threshold (40 hours,
-            across both offices). <strong>Unavailable</strong> — the shift lands on time they have
-            said they cannot work. Both are warnings: the shift is still saved, and you decide.
-          </p>
+          <>
+            <p>
+              <strong>Overtime</strong> — the rota puts somebody past the weekly threshold (40
+              hours, across both offices). It shows in red at the top of the schedule and beside
+              their weekly total. Adding or assigning a shift checks first: the form warns as you
+              fill it in, and saving asks you to confirm. Once a shift that puts them over is
+              published, the person sees it too and is emailed. While you are adding or assigning a
+              shift, an amber <strong>close to overtime</strong> note means it brings them within
+              four hours of the line; once saved, only going over is flagged.
+            </p>
+            <p>
+              <strong>Unavailable</strong> — the shift lands on time they have said they cannot
+              work. Both are warnings: the shift is still saved, and you decide.
+            </p>
+          </>
         ),
       },
       {

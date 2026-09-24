@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Avatar } from '../components/Avatar';
 import { JobRoleTag } from '../components/JobRoleTag';
+import { useConfirm } from '../components/ConfirmDialog';
 import { Alert, Card, PageHeading, Spinner } from '../components/ui';
 import { ApiError, api } from '../lib/api';
 import { useSession } from '../lib/session';
@@ -75,6 +76,7 @@ export function ProfilePage() {
   const [form, setForm] = useState({ preferredName: '', pronouns: '', phone: '', about: '' });
   const [busy, setBusy] = useState(false);
   const [photoBusy, setPhotoBusy] = useState(false);
+  const confirm = useConfirm();
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
   const fileInput = useRef<HTMLInputElement>(null);
@@ -148,6 +150,13 @@ export function ProfilePage() {
   }
 
   async function removePhoto() {
+    const sure = await confirm({
+      title: 'Remove your photo?',
+      body: 'Colleagues will see your initials in the Directory instead.',
+      confirmLabel: 'Yes, remove it',
+      cancelLabel: 'Keep it',
+    });
+    if (!sure) return;
     setPhotoBusy(true);
     setError(null);
     setNotice(null);

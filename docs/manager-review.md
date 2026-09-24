@@ -143,7 +143,8 @@ nothing when somebody disputes their pay.
 The week is now a **rota**: one row per person, one column per day, the
 hours and head-count for each day in its heading. Click ＋ in any cell to add
 a shift there; click a shift to change who works it, publish it, or remove it
-(it asks first). Show it for everyone, **by location** or **by job role**,
+(it asks first — anything that removes something, anywhere in the app,
+asks in a pop-up before it happens). Show it for everyone, **by location** or **by job role**,
 and filter to one office or one role.
 
 **Open shifts** are shifts an office needs covered that nobody is on yet —
@@ -180,7 +181,13 @@ Plus four things that save the tedious part:
 - **Overtime warning** — anybody the rota puts past 40 hours in a week, while
   you can still move a shift. It counts the whole week even if you are only
   looking at two days of it, and hours at both offices, not just the one on
-  screen.
+  screen. It is in red at the top of the schedule and beside the person's
+  weekly total. Adding or assigning a shift warns as you fill it in — amber
+  if it brings them within four hours of the line, red if it takes them over
+  — and saving one that puts somebody over asks you to confirm. Once saved,
+  only going over stays flagged. Once it is published, the person sees it on
+  their own Clock and Schedule screens and gets an email.
+  - **Tell us:** is four hours the right distance for "close to overtime"?
 
 There is a **Week / Month** switch at the top right. The month view is an
 overview — how many people are on each day and for how long — and a day in it

@@ -19,6 +19,7 @@ import type {
   JobRole,
   Location,
   OvertimeWarning,
+  OwnOvertimeWeek,
   PlanResult,
   Shift,
 } from '../lib/types';
@@ -28,6 +29,13 @@ import { RepeatShiftsForm } from '../components/RepeatShiftsForm';
 import { RotaTable, type RotaGrouping } from '../components/RotaTable';
 import { Alert, Card, EmptyState, PageHeading, Spinner } from '../components/ui';
 import { NeedsAttention } from '../components/NeedsAttention';
+import { useConfirm } from '../components/ConfirmDialog';
+import {
+  confirmOvertime,
+  MyOvertimeNotice,
+  OvertimePreview,
+  useOvertimeCheck,
+} from '../components/OvertimeAlerts';
 
 /// Where the week/month choice is remembered. Per browser, per person on that
 /// browser — it never leaves the device and nothing depends on it.
@@ -72,6 +80,8 @@ export function SchedulePage() {
   const [employees, setEmployees] = useState<Employee[]>([]);
   const [locations, setLocations] = useState<Location[]>([]);
   const [coverage, setCoverage] = useState<Coverage | null>(null);
+  /// Your own weeks over or close to the overtime line (staff).
+  const [ownWeeks, setOwnWeeks] = useState<OwnOvertimeWeek[] | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [planning, setPlanning] = useState(false);
@@ -115,6 +125,8 @@ export function SchedulePage() {
         setEmployees(staff);
         setCoverage(weekCoverage);
         setJobRoles(roles);
+      } else {
+        setOwnWeeks(await api.myOvertime().catch(() => []));
       }
       setError(null);
     } catch (err) {
@@ -164,6 +176,12 @@ export function SchedulePage() {
       />
 
       <NeedsAttention sections={['openShifts', 'unpublishedRota', 'shiftsForLeavers']} />
+
+      {!isManager && ownWeeks && ownWeeks.length > 0 && (
+        <div className="mb-4">
+          <MyOvertimeNotice weeks={ownWeeks} />
+        </div>
+      )}
 
       <div className="mb-4 flex flex-wrap items-center gap-2">
         <button
@@ -246,6 +264,18 @@ export function SchedulePage() {
       {error && (
         <div className="mb-4">
           <Alert>{error}</Alert>
+        </div>
+      )}
+
+      {/* Up here, above the rota, rather than under the coverage squares at the
+          foot of the page: overtime is the warning a manager has to act on
+          before the week is published, so it is the first thing on screen. */}
+      {isManager && coverage && coverage.overtime.length > 0 && (
+        <div className="mb-4">
+          <OvertimeNotice
+            overtime={coverage.overtime}
+            thresholdHours={coverage.overtimeThresholdHours}
+          />
         </div>
       )}
 
@@ -413,6 +443,8 @@ export function SchedulePage() {
           jobRoles={jobRoles}
           coverage={isManager ? (coverage?.days ?? null) : null}
           overtimeThresholdHours={coverage?.overtimeThresholdHours ?? 40}
+          overtime={coverage?.overtime}
+          ownWeeks={ownWeeks ?? undefined}
           grouping={grouping}
           locationFilter={locationFilter}
           roleFilter={roleFilter}
@@ -425,29 +457,17 @@ export function SchedulePage() {
 
       {/* The day-by-day strip is a week's worth of squares and only reads as
           one; a month of them would be a second, worse calendar next to the
-          real one. The overtime warning is per-week either way, so it stays in
-          both views — it is the part a manager acts on. */}
+          real one. Overtime is per-week either way and sits at the top of the
+          page in both views. */}
       {isManager && coverage && coverage.days.length > 0 && (
         <div className="mt-4">
           {view === 'week' ? (
-            <CoverageStrip
-              days={coverage.days}
-              overtime={coverage.overtime}
-              overtimeThresholdHours={coverage.overtimeThresholdHours}
-            />
+            <CoverageStrip days={coverage.days} />
           ) : (
-            (coverage.overtime.length > 0 || unavailableShifts(coverage.days).length > 0) && (
+            unavailableShifts(coverage.days).length > 0 && (
               <Card className="space-y-3 p-4">
                 <h2 className="text-sm font-semibold text-slate-900">Worth a look this month</h2>
-                {unavailableShifts(coverage.days).length > 0 && (
-                  <AvailabilityNotice clashes={unavailableShifts(coverage.days)} />
-                )}
-                {coverage.overtime.length > 0 && (
-                  <OvertimeNotice
-                    overtime={coverage.overtime}
-                    thresholdHours={coverage.overtimeThresholdHours}
-                  />
-                )}
+                <AvailabilityNotice clashes={unavailableShifts(coverage.days)} />
               </Card>
             )
           )}
@@ -500,6 +520,7 @@ function NewShiftForm({
   const [startsAt, setStartsAt] = useState(() => defaultInput(defaultDate, 9));
   const [endsAt, setEndsAt] = useState(() => defaultInput(defaultDate, 17));
   const [busy, setBusy] = useState(false);
+  const confirm = useConfirm();
 
   // Only offer locations the chosen employee is actually assigned to — the API
   // rejects anything else, and a disabled option explains why better than a 400.
@@ -519,8 +540,20 @@ function NewShiftForm({
     }
   }, [availableLocations, locationId]);
 
+  // Checked while the form is filled in, so the warning is there before
+  // Create is pressed; checked again, fresh, when it is.
+  const startsIso = isoOrEmpty(startsAt);
+  const endsIso = isoOrEmpty(endsAt);
+  const proposed =
+    selectedEmployee && locationId && startsIso && endsIso && endsIso > startsIso
+      ? { employeeId: selectedEmployee.id, locationId, startsAt: startsIso, endsAt: endsIso }
+      : null;
+  const overtimeCheck = useOvertimeCheck(proposed);
+  const who = selectedEmployee ? `${selectedEmployee.firstName} ${selectedEmployee.lastName}` : '';
+
   async function submit(event: React.FormEvent) {
     event.preventDefault();
+    if (proposed && !(await confirmOvertime(confirm, proposed, who))) return;
     setBusy(true);
     try {
       await api.createShift({
@@ -664,6 +697,12 @@ function NewShiftForm({
           </label>
         </div>
 
+        {proposed && overtimeCheck && overtimeCheck.level !== 'ok' && (
+          <div className="sm:col-span-2">
+            <OvertimePreview check={overtimeCheck} name={who} />
+          </div>
+        )}
+
         <div className="flex gap-2 sm:col-span-2">
           <button
             type="submit"
@@ -685,6 +724,12 @@ function NewShiftForm({
   );
 }
 
+/// A half-typed datetime-local value is not a date yet; say nothing until it is.
+function isoOrEmpty(value: string): string {
+  const date = new Date(value);
+  return value && !Number.isNaN(date.getTime()) ? date.toISOString() : '';
+}
+
 function defaultInput(day: Date, hour: number): string {
   const date = new Date(day);
   date.setHours(hour, 0, 0, 0);
@@ -692,15 +737,7 @@ function defaultInput(day: Date, hour: number): string {
 }
 
 /// A week at a glance: hours covered, who is off, and the days with nobody on.
-function CoverageStrip({
-  days,
-  overtime,
-  overtimeThresholdHours,
-}: {
-  days: CoverageDay[];
-  overtime: OvertimeWarning[];
-  overtimeThresholdHours: number;
-}) {
+function CoverageStrip({ days }: { days: CoverageDay[] }) {
   const totalHours = Math.round(days.reduce((sum, day) => sum + day.staffedHours, 0) * 10) / 10;
   const openShifts = days.reduce((sum, day) => sum + day.openShifts, 0);
   // A day with only open shifts still has nobody on.
@@ -770,12 +807,6 @@ function CoverageStrip({
         </div>
       )}
 
-      {overtime.length > 0 && (
-        <div className="mt-3">
-          <OvertimeNotice overtime={overtime} thresholdHours={overtimeThresholdHours} />
-        </div>
-      )}
-
       {days.some((day) => day.away.length > 0) && (
         <p className="mt-3 text-xs text-slate-500">
           Away this week:{' '}
@@ -837,12 +868,15 @@ function AvailabilityNotice({
 }
 
 /**
- * Who the rota puts past forty hours, and by how much.
+ * Who the rota puts past the overtime line, and by how much.
  *
- * Shared by both views: the week strip shows it under the coverage squares, the
- * month view on its own. Overtime is a per-week question in either case, which
- * is why the same component serves both — a month view that quietly used a
- * different rule would be worse than one that said nothing.
+ * Only people actually over it. "Close to overtime" is said inside the form
+ * while a shift is being added or assigned, and not left standing here once
+ * it is saved (Dominguez, September 2026).
+ *
+ * Shown at the top of the schedule in both views. Overtime is a per-week
+ * question either way, which is why one component serves both — a month view
+ * that quietly used a different rule would be worse than one that said nothing.
  */
 function OvertimeNotice({
   overtime,
@@ -854,34 +888,42 @@ function OvertimeNotice({
   /// that says nothing.
   thresholdHours: number;
 }) {
+  const week = (weekStart: string) =>
+    new Date(`${weekStart}T00:00:00Z`).toLocaleDateString(undefined, {
+      timeZone: 'UTC',
+      month: 'short',
+      day: 'numeric',
+    });
+
   return (
-    <div className="rounded-lg bg-amber-50 p-3 text-sm text-amber-900 ring-1 ring-inset ring-amber-200">
-      <p className="font-medium">
-        {overtime.length === 1
-          ? `1 person is scheduled past ${thresholdHours} hours`
-          : `${overtime.length} people are scheduled past ${thresholdHours} hours`}
-      </p>
-      <ul className="mt-1 space-y-0.5 text-xs">
-        {overtime.map((warning) => (
-          <li key={`${warning.employeeId}-${warning.weekStart}`}>
-            <span className="font-medium">{warning.employeeName}</span> — {warning.scheduledHours}{' '}
-            hours in the week of{' '}
-            {new Date(`${warning.weekStart}T00:00:00Z`).toLocaleDateString(undefined, {
-              timeZone: 'UTC',
-              month: 'short',
-              day: 'numeric',
-            })}
-            , so {warning.overtimeHours} at overtime
-            {/* The hours are totalled across the practice, so say when some of
-                them are somewhere this screen is not showing — otherwise the
-                number looks wrong to whoever is reading it. */}
-            {warning.spansLocations && ' (including hours at another location)'}
-          </li>
-        ))}
-      </ul>
-      <p className="mt-1.5 text-xs text-amber-800">
-        Hours as scheduled, not as worked. Hourly staff only.
-      </p>
+    <div data-testid="overtime-notice" className="space-y-2">
+      {overtime.length > 0 && (
+        <div className="rounded-xl border-l-4 border-rose-600 bg-rose-50 p-4 text-sm text-rose-900 shadow-sm ring-1 ring-inset ring-rose-200">
+          <p className="text-base font-semibold">
+            ⚠{' '}
+            {overtime.length === 1
+              ? `1 person is scheduled past ${thresholdHours} hours`
+              : `${overtime.length} people are scheduled past ${thresholdHours} hours`}
+          </p>
+          <ul className="mt-1 space-y-0.5">
+            {overtime.map((warning) => (
+              <li key={`${warning.employeeId}-${warning.weekStart}`}>
+                <span className="font-semibold">{warning.employeeName}</span> —{' '}
+                {warning.scheduledHours} hours in the week of {week(warning.weekStart)}, so{' '}
+                <span className="font-semibold">{warning.overtimeHours} at overtime</span>
+                {/* The hours are totalled across the practice, so say when some of
+                    them are somewhere this screen is not showing — otherwise the
+                    number looks wrong to whoever is reading it. */}
+                {warning.spansLocations && ' (including hours at another location)'}
+              </li>
+            ))}
+          </ul>
+          <p className="mt-1.5 text-xs text-rose-800">
+            Hours as scheduled, not as worked. Hourly staff only. Staff are told when a published
+            rota puts them over.
+          </p>
+        </div>
+      )}
     </div>
   );
 }

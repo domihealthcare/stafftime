@@ -128,6 +128,7 @@ await step('a manager puts somebody in a role and takes them out again', async (
   await card.getByText('1 person').waitFor({ timeout: 5000 });
 
   await card.getByRole('button', { name: 'Take Max Assistant out of Billing & Coding' }).click();
+  await mgr.getByRole('alertdialog', { name: 'Take Max Assistant out of Billing & Coding?' }).getByRole('button', { name: 'Take them out' }).click();
   await card.getByText('Nobody is in this role yet.').waitFor({ timeout: 10000 });
 });
 await mgr.screenshot({ path: `${OUT}/80-job-roles.png`, fullPage: true });
@@ -210,11 +211,11 @@ await mgr.screenshot({ path: `${OUT}/81-resources-manager.png`, fullPage: true }
 await step('a role with resources cannot be deleted; an empty one can', async () => {
   await go(mgr, 'Manage', 'Job roles');
   await role(mgr, 'Provider').getByRole('button', { name: 'Delete', exact: true }).click();
-  await role(mgr, 'Provider').getByRole('button', { name: 'Delete it' }).click();
+  await mgr.getByRole('alertdialog', { name: 'Delete the Provider job role?' }).getByRole('button', { name: 'Delete it' }).click();
   await mgr.getByText('Provider still has 1 resource. Move or delete it first.').waitFor({ timeout: 10000 });
 
   await role(mgr, 'Billing & Coding').getByRole('button', { name: 'Delete', exact: true }).click();
-  await role(mgr, 'Billing & Coding').getByRole('button', { name: 'Delete it' }).click();
+  await mgr.getByRole('alertdialog', { name: 'Delete the Billing & Coding job role?' }).getByRole('button', { name: 'Delete it' }).click();
   await role(mgr, 'Billing & Coding').waitFor({ state: 'detached', timeout: 10000 });
 });
 

@@ -235,6 +235,7 @@ await step('a manager cannot take down somebody else’s photo; that is an admin
 
 await step('removing your photo goes back to initials', async () => {
   await frankie.getByRole('button', { name: 'Remove photo' }).click();
+  await frankie.getByRole('alertdialog', { name: 'Remove your photo?' }).getByRole('button', { name: 'Yes, remove it' }).click();
   await frankie.getByText('Photo removed.', { exact: true }).waitFor({ timeout: 10000 });
   await frankie.getByRole('button', { name: /Your account/ }).getByTestId('avatar-initials').waitFor({ timeout: 5000 });
   const status = await frankie.evaluate(async () => {

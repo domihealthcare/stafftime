@@ -92,7 +92,10 @@ mgr.on('pageerror', (e) => errors.push(`manager pageerror: ${e.message}`));
 await signIn(mgr, 'manager@domihealthcare.com');
 
 await step('the Time off tab carries a badge of pending requests', async () => {
+  // The count arrives just after the page does, so wait for it rather than
+  // reading the tab the instant sign-in finishes.
   const link = mgr.getByRole('link', { name: /Time off/ });
+  await link.filter({ hasText: /\d/ }).waitFor({ timeout: 10000 }).catch(() => undefined);
   const text = await link.innerText();
   if (!/\d/.test(text)) throw new Error(`expected a count in the tab, got "${text}"`);
 });

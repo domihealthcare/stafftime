@@ -70,8 +70,11 @@ await step('marking somebody as left raises it on the schedule', async () => {
   const card = admin.getByTestId('staff-frontdesk@domihealthcare.com');
   await card.waitFor({ timeout: 15000 });
 
-  admin.once('dialog', (dialog) => void dialog.accept());
   await card.getByRole('button', { name: 'No longer employed' }).click();
+  await admin
+    .getByRole('alertdialog', { name: /as no longer employed\?/ })
+    .getByRole('button', { name: 'Yes, no longer employed' })
+    .click();
 
   // The screen hides former staff by default, so the card going away is what
   // success looks like here — not a badge appearing on it.

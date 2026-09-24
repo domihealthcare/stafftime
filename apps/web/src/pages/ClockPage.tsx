@@ -5,6 +5,7 @@ import { GeolocationRefused, detectClockMethod, getCurrentPosition } from '../li
 import { useSession } from '../lib/session';
 import type { Shift, TimeEntry } from '../lib/types';
 import { PrimaryAnnouncement } from '../components/PrimaryAnnouncement';
+import { MyOvertimeNotice } from '../components/OvertimeAlerts';
 import { Alert, Badge, Card, Spinner } from '../components/ui';
 
 type Status = 'loading' | 'ready' | 'working';
@@ -138,6 +139,7 @@ export function ClockPage() {
   return (
     <div className="mx-auto max-w-md space-y-4">
       <PrimaryAnnouncement />
+      <MyOvertimeNotice />
 
       <Card className="p-6 text-center">
         <p className="text-sm text-slate-500">

@@ -107,6 +107,8 @@ await step('taking somebody off makes it open again', async () => {
   await mgr.getByTestId('rota-row-Frankie Front-Desk').getByTestId('shift-chip').click();
   const saved = mgr.waitForResponse((r) => r.url().includes('/api/shifts/') && r.request().method() === 'PATCH');
   await mgr.getByRole('dialog').getByRole('button', { name: 'Make it an open shift' }).click();
+  // Taking somebody off a shift asks first.
+  await mgr.getByRole('alertdialog', { name: /^Take .* off this shift\?$/ }).getByRole('button', { name: 'Take them off' }).click();
   if (!(await saved).ok()) throw new Error('unassigning was refused');
   await mgr.getByTestId('open-shift-flag').getByText(/2 open shifts/).waitFor({ timeout: 10000 });
 });
