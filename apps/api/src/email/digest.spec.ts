@@ -20,6 +20,8 @@ function build(
     locations?: unknown[];
     staff?: { id: string; firstName: string; lastName: string }[];
     settings?: { rotaWarningDays?: number; overtimeThresholdHours?: number };
+    /// Published shifts at a quiet time clock's office since it was last seen.
+    shiftsMissed?: number;
   } = {},
 ) {
   const managers = data.managers ?? [
@@ -43,6 +45,7 @@ function build(
       findMany: jest.fn(async (args: any) =>
         args.where.employeeId === null ? (data.openShifts ?? []) : (data.leaverShifts ?? []),
       ),
+      count: jest.fn().mockResolvedValue(data.shiftsMissed ?? 1),
     },
     location: { findMany: jest.fn().mockResolvedValue(data.locations ?? []) },
     closingRecord: { findMany: jest.fn().mockResolvedValue(data.closingRecords ?? []) },
@@ -242,6 +245,34 @@ describe('DigestService — what is going wrong at the office', () => {
       expect(silentKiosks[0]).toBe(
         'West New York — the Front desk tablet has not been used since it was paired on Sep 18, 2026',
       );
+    });
+
+    it('says nothing about a time clock that was only switched off while nobody was working', async () => {
+      // The front-desk computer as the time clock: off from Friday night to
+      // Monday morning, a day and a half of silence with nothing wrong.
+      onThursday();
+      const { attention, prisma } = build({
+        kiosks: [
+          {
+            name: 'Front desk PC',
+            pairedAt: day('2026-09-01'),
+            lastSeenAt: day('2026-09-20'),
+            locationId: 'loc-nb',
+            location: { name: 'North Bergen' },
+          },
+        ],
+        shiftsMissed: 0,
+      });
+
+      expect((await attention.gather()).silentKiosks).toEqual([]);
+      const where = prisma.shift.count.mock.calls[0][0].where;
+      expect(where).toMatchObject({
+        locationId: 'loc-nb',
+        status: 'PUBLISHED',
+        startsAt: { gt: day('2026-09-20') },
+      });
+      // Only shifts that have finished: one under way now has not been missed.
+      expect(where.endsAt.lt.getTime()).toBeLessThanOrEqual(Date.now());
     });
 
     it('asks only about paired, unrevoked tablets at a live kiosk location', async () => {

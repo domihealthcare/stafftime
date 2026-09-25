@@ -24,8 +24,11 @@ phone**, open **Locations**, and set them standing at each front desk. Note that
       is somebody clocking in from home rather than from the car park.
       **Still needs confirming on site:** stand at the far corner of each office
       and try to clock in. If it refuses you, the radius is too tight.
-- [ ] **Office IP addresses** for the allow-list fallback — and whether they are
-      static. A dynamic residential-style IP would make this check unreliable.
+- [x] ~~**Office IP addresses** for the allow-list fallback.~~ Set aside for
+      now (Dominguez, 25 September 2026). The feature stays built; with no
+      addresses entered it simply does nothing, and location is the check.
+- [x] ~~**The far-corner clock-in test.**~~ Not being done (Dominguez, 25
+      September 2026): the 500 ft radius stands as set.
 - [ ] **Geolocation consent disclosure.** Draft wording is written, in
       `docs/location-disclosure.md`, along with exactly what the app captures
       and for how long. It needs a read by whoever advises Domi on employment
@@ -33,7 +36,8 @@ phone**, open **Locations**, and set them standing at each front desk. Note that
       them whether the kiosk is genuinely available on every shift, since the
       opt-out depends on it.
 
-- [ ] **The pay period start date.** Pay is every two weeks; the app needs to
+- [x] **The pay period start date** — entered, 25 September 2026.
+- [ ] ~~The pay period start date.~~ Pay is every two weeks; the app needs to
       know the first day of any one pay period to work out the rest. Until an
       admin enters it (account menu → Practice settings → Pay period start),
       the "This pay period" and "Last pay period" shortcuts stay greyed out.
@@ -266,11 +270,8 @@ Built and working with PINs. What is left:
       domain verified with Resend. Without them, messages are written to the
       server log instead — fine locally, useless in production, and warned about
       on every message.
-- [ ] **Choose the email provider and verify a sending domain.** Resend is
-      implemented; SendGrid or SES would each be one new class. Somebody has to
-      pick one, make an account, and add the DNS records that let mail from
-      `domihealthcare.com` past a spam filter. That is the remaining blocker for
-      password resets and every notification.
+- [x] ~~**Choose the email provider and verify a sending domain.**~~ Done, 24
+      September 2026: Resend, with its DNS records at Wix.
 - [x] ~~Rate limiting and lockout on kiosk PIN entry.~~ Done — 5 attempts then
       10 minutes, tracked separately from password lockout.
 - [x] ~~Per-address rate limiting on the login endpoint.~~ Done, and it counts

@@ -1,3 +1,4 @@
+import type { ImportedPerson } from './staff-import';
 import type {
   Profile,
   Announcement,
@@ -14,6 +15,8 @@ import type {
   Coverage,
   Dashboard,
   DemoSummary,
+  TestDataCounts,
+  TestDataPreview,
   DirectoryEntry,
   PlanResult,
   PracticeSettings,
@@ -476,6 +479,19 @@ export const api = {
     locationIds?: string[];
     primaryLocationId?: string;
   }) => request<Employee>('/employees', { method: 'POST', body: JSON.stringify(body) }),
+  sendWelcome: (id: string) =>
+    request<{ welcomeSentAt: string }>(`/employees/${id}/welcome`, { method: 'POST' }),
+  sendWelcomeToEveryone: () =>
+    request<{
+      sent: number;
+      failed: { name: string; email: string; reason: string }[];
+      remaining: number;
+    }>('/employees/welcome', { method: 'POST' }),
+  importEmployees: (people: ImportedPerson[]) =>
+    request<{ created: number; ids: string[] }>('/employees/import', {
+      method: 'POST',
+      body: JSON.stringify({ people }),
+    }),
   updateEmployee: (
     id: string,
     body: Partial<{
@@ -583,6 +599,12 @@ export const api = {
   attention: () => request<Attention>('/attention'),
 
   loadDemoData: () => request<DemoSummary>('/demo/load', { method: 'POST' }),
+  testData: () => request<TestDataPreview>('/demo/test-data'),
+  clearTestData: () =>
+    request<TestDataCounts>('/demo/clear', {
+      method: 'POST',
+      body: JSON.stringify({ confirm: 'clear-test-data' }),
+    }),
 
   practiceSettings: () => request<PracticeSettings>('/settings'),
   payPeriod: () => request<PayPeriodInfo>('/settings/pay-period'),

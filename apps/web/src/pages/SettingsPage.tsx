@@ -5,6 +5,7 @@ import type { PracticeSettings } from '../lib/types';
 import { refreshPayPeriod } from '../components/DateRangePicker';
 import { AdpSettingsCard } from '../components/AdpSettingsCard';
 import { DemoDataCard } from '../components/DemoDataCard';
+import { GoLiveCard } from '../components/GoLiveCard';
 import { Alert, Card, PageHeading, Spinner } from '../components/ui';
 
 /// The two rules the practice sets for itself. Both arrived as defaults in the
@@ -176,6 +177,8 @@ export function SettingsPage() {
       )}
 
       {!loading && <AdpSettingsCard isAdmin={isAdmin} />}
+
+      {isAdmin && <GoLiveCard />}
 
       {isAdmin && <DemoDataCard />}
     </div>

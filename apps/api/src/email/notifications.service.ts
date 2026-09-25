@@ -3,8 +3,9 @@ import { ConfigService } from '@nestjs/config';
 import { EmploymentStatus, NotificationKind, PtoStatus, PtoType, Role } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import type { DigestContents } from './digest.service';
-import { EMAIL_SENDER, EmailSender } from './email-sender';
+import { EMAIL_SENDER, EmailResult, EmailSender } from './email-sender';
 import { InboxService } from './inbox.service';
+import { type WelcomeDetails, welcomeEmail } from './welcome-email';
 
 /**
  * The messages this app actually sends, and who gets them.
@@ -207,6 +208,27 @@ export class NotificationsService {
 
   /// The reset link itself. Sent to an address that may not belong to anyone —
   /// the caller decides that, and never says either way.
+  /**
+   * The welcome email, with the link to choose a first password. Unlike the
+   * other messages the caller needs to know whether it went — the Staff screen
+   * records who has been sent one — so this reports it, still without throwing.
+   */
+  async welcome(details: WelcomeDetails, to: string): Promise<EmailResult> {
+    const message = welcomeEmail(details);
+    try {
+      return await this.email.send({
+        to,
+        subject: this.prefixed(message.subject),
+        text: message.text,
+        html: message.html,
+      });
+    } catch (error: unknown) {
+      const reason = error instanceof Error ? error.message : String(error);
+      this.logger.error(`Welcome email to ${to} failed: ${reason}`);
+      return { delivered: false, reason };
+    }
+  }
+
   async passwordReset(
     to: string,
     firstName: string,

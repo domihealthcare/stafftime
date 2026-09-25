@@ -3,6 +3,7 @@ import { ApiError, api } from '../lib/api';
 import { useSession } from '../lib/session';
 import type { Employee, Location, Role } from '../lib/types';
 import { useConfirm } from '../components/ConfirmDialog';
+import { ImportStaff } from '../components/ImportStaff';
 import { Alert, Badge, Card, EmptyState, PageHeading, Spinner } from '../components/ui';
 import { PASSWORD_RULE, meetsPasswordRule } from '../lib/password';
 
@@ -21,6 +22,13 @@ export function StaffPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [adding, setAdding] = useState(false);
+  const [importing, setImporting] = useState(false);
+  const [imported, setImported] = useState<number | null>(null);
+  const [welcoming, setWelcoming] = useState(false);
+  const [welcomeReport, setWelcomeReport] = useState<{ sent: number; failed: string[] } | null>(
+    null,
+  );
+  const confirm = useConfirm();
   const [showTerminated, setShowTerminated] = useState(false);
 
   const load = useCallback(async () => {
@@ -43,6 +51,44 @@ export function StaffPage() {
   useEffect(() => {
     void load();
   }, [load]);
+
+  const waiting = staff.filter(
+    (person) =>
+      person.employmentStatus !== 'TERMINATED' &&
+      person.hasPassword === false &&
+      !person.welcomeSentAt &&
+      !person.externalId?.startsWith('demo:'),
+  );
+
+  async function welcomeEveryone() {
+    const sure = await confirm({
+      title: `Send welcome emails to ${waiting.length} ${waiting.length === 1 ? 'person' : 'people'}?`,
+      body: 'Each gets a link to choose their password — good for a week — with how to put Domi Staff on their phone and answers to the usual first-day questions. People who already have a password or have already been sent one are left out.',
+      confirmLabel: 'Send them',
+      cancelLabel: 'Not yet',
+      tone: 'neutral',
+    });
+    if (!sure) return;
+    setWelcoming(true);
+    setWelcomeReport(null);
+    let sent = 0;
+    const failed: string[] = [];
+    try {
+      // The server sends in batches, so a big list is a few calls.
+      for (let round = 0; round < 20; round += 1) {
+        const result = await api.sendWelcomeToEveryone();
+        sent += result.sent;
+        failed.push(...result.failed.map((f) => `${f.name} (${f.email}): ${f.reason}`));
+        if (result.remaining === 0 || result.sent === 0) break;
+      }
+      setWelcomeReport({ sent, failed });
+    } catch (err) {
+      setError(err instanceof ApiError ? err.message : 'Could not send the welcome emails.');
+    } finally {
+      setWelcoming(false);
+      void load();
+    }
+  }
 
   const visible = staff.filter(
     (person) => showTerminated || person.employmentStatus !== 'TERMINATED',
@@ -71,14 +117,92 @@ export function StaffPage() {
           />
           Show former staff
         </label>
-        <button
-          type="button"
-          onClick={() => setAdding((open) => !open)}
-          className="rounded-lg bg-brand-600 px-4 py-2 text-sm font-medium text-white hover:bg-brand-700"
-        >
-          {adding ? 'Cancel' : '+ Add someone'}
-        </button>
+        <div className="flex flex-wrap gap-2">
+          <button
+            type="button"
+            onClick={() => {
+              setImporting((open) => !open);
+              setAdding(false);
+            }}
+            className="rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50"
+          >
+            {importing ? 'Cancel' : 'Add several people'}
+          </button>
+          <button
+            type="button"
+            onClick={() => {
+              setAdding((open) => !open);
+              setImporting(false);
+            }}
+            className="rounded-lg bg-brand-600 px-4 py-2 text-sm font-medium text-white hover:bg-brand-700"
+          >
+            {adding ? 'Cancel' : '+ Add someone'}
+          </button>
+        </div>
       </div>
+
+      {imported !== null && (
+        <div className="mb-4">
+          <Alert tone="success">
+            {imported} {imported === 1 ? 'person' : 'people'} added. Nobody has been emailed yet
+            — send the welcome emails when you are ready.
+          </Alert>
+        </div>
+      )}
+
+      {waiting.length > 0 && !loading && (
+        <Card className="mb-4 flex flex-wrap items-center justify-between gap-3 p-4" testId="welcome-everyone">
+          <p className="text-sm text-slate-700">
+            <strong>
+              {waiting.length} {waiting.length === 1 ? 'person has' : 'people have'}
+            </strong>{' '}
+            not been sent a welcome email — the link to choose their password, with how to put
+            Domi Staff on their phone.
+          </p>
+          <button
+            type="button"
+            disabled={welcoming}
+            onClick={() => void welcomeEveryone()}
+            className="rounded-lg bg-brand-600 px-4 py-2 text-sm font-semibold text-white hover:bg-brand-700 disabled:opacity-60"
+          >
+            {welcoming ? 'Sending…' : 'Send welcome emails'}
+          </button>
+        </Card>
+      )}
+
+      {welcomeReport && (
+        <div className="mb-4">
+          <Alert tone={welcomeReport.failed.length > 0 ? 'warning' : 'success'}>
+            <p>
+              {welcomeReport.sent} welcome {welcomeReport.sent === 1 ? 'email' : 'emails'} sent.
+            </p>
+            {welcomeReport.failed.length > 0 && (
+              <>
+                <p className="mt-1 font-medium">Not sent:</p>
+                <ul className="mt-1 list-disc pl-5 text-xs">
+                  {welcomeReport.failed.map((line) => (
+                    <li key={line}>{line}</li>
+                  ))}
+                </ul>
+              </>
+            )}
+          </Alert>
+        </div>
+      )}
+
+      {importing && (
+        <div className="mb-4">
+          <ImportStaff
+            locations={locations}
+            existingEmails={staff.map((person) => person.email)}
+            onImported={(count) => {
+              setImporting(false);
+              setImported(count);
+              void load();
+            }}
+          />
+        </div>
+      )}
 
       {adding && (
         <div className="mb-4">
@@ -141,6 +265,20 @@ function StaffCard({
 
   const terminated = person.employmentStatus === 'TERMINATED';
   const confirm = useConfirm();
+  const [welcomedAt, setWelcomedAt] = useState(person.welcomeSentAt ?? null);
+
+  async function sendWelcome() {
+    setBusy(true);
+    setProblem(null);
+    try {
+      const result = await api.sendWelcome(person.id);
+      setWelcomedAt(result.welcomeSentAt);
+    } catch (err) {
+      setProblem(err instanceof ApiError ? err.message : 'Could not send it.');
+    } finally {
+      setBusy(false);
+    }
+  }
 
   async function issuePassword() {
     setBusy(true);
@@ -212,6 +350,17 @@ function StaffCard({
               {person.adpFileNumber ? `ADP File # ${person.adpFileNumber}` : 'No ADP File # yet'}
             </p>
           )}
+          {!terminated && person.hasPassword === false && (
+            <p className="mt-1 text-xs text-amber-800" data-testid="welcome-status">
+              Has not chosen a password yet
+              {welcomedAt
+                ? ` · welcome email sent ${new Date(welcomedAt).toLocaleDateString('en-US', {
+                    month: 'short',
+                    day: 'numeric',
+                  })}`
+                : ' · not sent a welcome email'}
+            </p>
+          )}
         </div>
 
         <div className="flex flex-wrap items-center gap-2">
@@ -225,6 +374,16 @@ function StaffCard({
 
       {!terminated && (
         <div className="mt-3 flex flex-wrap gap-3 border-t border-slate-100 pt-3 text-sm">
+          {person.hasPassword === false && (
+            <button
+              type="button"
+              disabled={busy}
+              onClick={() => void sendWelcome()}
+              className="font-medium text-brand-700 hover:text-brand-900 disabled:opacity-50"
+            >
+              {welcomedAt ? 'Send the welcome email again' : 'Send welcome email'}
+            </button>
+          )}
           <button
             type="button"
             onClick={() => setSettingPassword((open) => !open)}

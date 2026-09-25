@@ -76,12 +76,13 @@ const STAFF: Section[] = [
         ),
       },
       {
-        question: 'How do I use the front-desk tablet?',
+        question: 'How do I use the front-desk time clock?',
         answer: (
           <>
             <p>
-              Tap your name, type your PIN, and it clocks you in or out. The tablet only shows the
-              people who work at that office.
+              The time clock is the Domi Staff screen at the front desk — on the office computer or
+              a tablet. Pick your name, type your PIN, and it clocks you in or out. It only shows
+              the people who work at that office.
             </p>
             <p>
               You choose your own PIN under <Screen>Your profile</Screen> in the account menu: 4 to
@@ -669,11 +670,13 @@ const MANAGERS: Section[] = [
         answer: (
           <ul>
             <li>
-              <Screen>Manage → Staff</Screen> — add people, set their access (Employee, Manager or
-              Admin), offices, PIN and ADP File #, and issue a temporary password.
+              <Screen>Manage → Staff</Screen> — add people one at a time or several at once, set
+              their access (Employee, Manager or Admin), offices, PIN and ADP File #, and send
+              welcome emails.
             </li>
             <li>
-              <Screen>Manage → Kiosks</Screen> — pair a front-desk tablet to an office.
+              <Screen>Manage → Kiosks</Screen> — make a computer or tablet at the front desk the
+              office&rsquo;s time clock.
             </li>
             <li>
               <Screen>Manage → Locations</Screen> — the office addresses, the geofence and office
@@ -681,6 +684,64 @@ const MANAGERS: Section[] = [
               set the pin.
             </li>
           </ul>
+        ),
+      },
+      {
+        question: 'Adding everybody at once',
+        answer: (
+          <>
+            <p>
+              <Screen>Manage → Staff → Add several people</Screen>. In Excel or Google Sheets,
+              select the list <strong>with its row of column names</strong>, copy, and paste it into
+              the box. It needs a name, email, office (North Bergen, West New York or Both) and hire
+              date; phone, job roles, access and ADP File # are optional. Any other column — a
+              social security number, say — is ignored and never kept.
+            </p>
+            <p>
+              Every line is checked and shown first. Anything marked in red is fixed in the
+              spreadsheet and pasted again; nobody is added until every line is ready.
+            </p>
+            <p>
+              Then <strong>Send welcome emails</strong>: each person gets a link to choose their
+              password, good for a week, with how to put Domi Staff on their phone and answers to
+              the usual first-day questions. Somebody who lost theirs can be sent it again from
+              their card; after they have chosen a password, <strong>Forgotten your password?</strong>{' '}
+              on the sign-in screen is the way back in.
+            </p>
+          </>
+        ),
+      },
+      {
+        question: 'Using the office computer as the time clock',
+        answer: (
+          <>
+            <p>
+              Any computer or tablet at the front desk can be the office&rsquo;s time clock — no
+              special device needed.
+            </p>
+            <ol className="list-decimal space-y-1 pl-5">
+              <li>
+                On any device, open <Screen>Manage → Kiosks</Screen>, add one for that office and
+                note the pairing code. It works for 15 minutes.
+              </li>
+              <li>
+                On the front-desk computer, open <strong>{window.location.host}/kiosk</strong> in
+                Chrome and type the code.
+              </li>
+              <li>
+                That browser is now the time clock, for a year, through restarts. Keep it in its
+                own window, or pin the tab, so the desk can use the computer for other work.
+                Clearing the browser&rsquo;s history or cookies unpairs it — pair it again the same
+                way.
+              </li>
+            </ol>
+            <p>
+              Turning the computer off at night is fine. The time clock is only reported as quiet
+              if a whole shift at that office goes by without it being open. After ten wrong PINs
+              in a quarter of an hour it stops taking PINs for five minutes, so nobody can sit and
+              guess colleagues&rsquo; PINs.
+            </p>
+          </>
         ),
       },
       {

@@ -188,6 +188,10 @@ model Employee {
   /// hire's account exists before they can sign in.
   passwordHash       String?
   passwordUpdatedAt  DateTime?
+  /// When a welcome email — a link to choose a first password — last went
+  /// out. Null until one is sent; the Staff screen shows it so an admin knows
+  /// who has been invited and who still needs to be.
+  welcomeSentAt      DateTime?
   /// True for an admin-set temporary password: the holder must replace it before
   /// they can do anything else.
   mustChangePassword Boolean   @default(true)
@@ -491,6 +495,14 @@ model KioskDevice {
   lastSeenAt  DateTime?
   revokedAt   DateTime?
   createdById String?   @db.Uuid
+
+  /// Wrong PINs at this time clock, whoever they were typed against, counted
+  /// from `pinFailuresSince`. Each person has their own lockout too; this stops
+  /// somebody at the desk trying a few PINs against every name in turn.
+  pinFailures      Int       @default(0)
+  pinFailuresSince DateTime?
+  /// While set and in the future, the time clock takes no PINs at all.
+  pinPausedUntil   DateTime?
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
