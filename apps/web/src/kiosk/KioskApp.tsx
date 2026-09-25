@@ -70,6 +70,20 @@ export function KioskApp() {
     void loadSession();
   }, [loadSession]);
 
+  // Every ten minutes, fetch the staff list again: somebody added today shows
+  // up without anybody reloading the page, and the server hears the time
+  // clock is still open — which is what "gone quiet" is judged by.
+  useEffect(() => {
+    if (!session) return;
+    const timer = window.setInterval(() => {
+      kioskApi
+        .employees()
+        .then(setStaff)
+        .catch(() => undefined);
+    }, 10 * 60_000);
+    return () => window.clearInterval(timer);
+  }, [session]);
+
   const backToStaff = useCallback(() => {
     setPin('');
     setError(null);

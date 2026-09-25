@@ -188,25 +188,7 @@ export class AttentionService {
     const now = new Date();
 
     const [kiosks, unapproved, leaverShifts, openShifts] = await Promise.all([
-      this.prisma.kioskDevice.findMany({
-        where: {
-          pairedAt: { not: null },
-          revokedAt: null,
-          location: { isActive: true, kioskEnabled: true },
-          OR: [
-            { lastSeenAt: null },
-            { lastSeenAt: { lt: new Date(now.getTime() - KIOSK_SILENT_HOURS * 3_600_000) } },
-          ],
-        },
-        select: {
-          name: true,
-          pairedAt: true,
-          lastSeenAt: true,
-          location: { select: { name: true } },
-        },
-        orderBy: { lastSeenAt: 'asc' },
-        take: 20,
-      }),
+      this.silentKiosks(now),
 
       // Grouped rather than listed: six unapproved shifts for one person is one
       // thing to do, not six lines of email.
@@ -455,6 +437,53 @@ export class AttentionService {
           ? `${location.name} — ${drafts} shift${drafts === 1 ? '' : 's'} drafted but not published for ${when}`
           : `${location.name} — nothing scheduled for ${when}`;
       });
+  }
+
+  /**
+   * Time clocks that have gone quiet — not opened for a day, **and** a whole
+   * published shift at their office has come and gone since.
+   *
+   * The second half is there because the time clock may be the front-desk
+   * computer rather than a tablet left on (September 2026): switched off at
+   * night and over the weekend, silent for a day and a half every Sunday
+   * without anything being wrong. What matters is whether it was open when
+   * people were working.
+   */
+  private async silentKiosks(now: Date) {
+    const quiet = await this.prisma.kioskDevice.findMany({
+      where: {
+        pairedAt: { not: null },
+        revokedAt: null,
+        location: { isActive: true, kioskEnabled: true },
+        OR: [
+          { lastSeenAt: null },
+          { lastSeenAt: { lt: new Date(now.getTime() - KIOSK_SILENT_HOURS * 3_600_000) } },
+        ],
+      },
+      select: {
+        name: true,
+        pairedAt: true,
+        lastSeenAt: true,
+        locationId: true,
+        location: { select: { name: true } },
+      },
+      orderBy: { lastSeenAt: 'asc' },
+      take: 20,
+    });
+
+    const missed = await Promise.all(
+      quiet.map((device) =>
+        this.prisma.shift.count({
+          where: {
+            locationId: device.locationId,
+            status: ShiftStatus.PUBLISHED,
+            startsAt: { gt: device.lastSeenAt ?? device.pairedAt ?? now },
+            endsAt: { lt: now },
+          },
+        }),
+      ),
+    );
+    return quiet.filter((_, index) => missed[index] > 0);
   }
 
   private async namesFor(ids: string[]): Promise<Map<string, string>> {

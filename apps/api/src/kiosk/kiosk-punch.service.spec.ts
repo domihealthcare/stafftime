@@ -22,9 +22,16 @@ describe('KioskPunchService', () => {
 
   function build(
     employee: Record<string, unknown> | null,
-    options: { openEntry?: unknown; checklist?: unknown[] } = {},
+    options: { openEntry?: unknown; checklist?: unknown[]; kiosk?: Record<string, unknown> } = {},
   ) {
+    const kiosk = { pinFailures: 0, pinFailuresSince: null, pinPausedUntil: null, ...options.kiosk };
     const prisma = {
+      kioskDevice: {
+        findUnique: jest.fn(async () => kiosk),
+        update: jest.fn(async ({ data }: { data: Record<string, unknown> }) =>
+          Object.assign(kiosk, data),
+        ),
+      },
       employee: {
         findUnique: jest.fn().mockResolvedValue(employee),
         update: jest.fn().mockResolvedValue({}),
@@ -65,6 +72,56 @@ describe('KioskPunchService', () => {
     pinFailedAttempts: 0,
     pinLockedUntil: null,
     locations: [{ locationId: 'loc-nb' }],
+  });
+
+  describe('the time clock itself', () => {
+    const wrong = async (service: KioskPunchService, employeeId = 'emp-1') =>
+      service.punch(device, employeeId, '0000').catch(() => undefined);
+
+    it('pauses after ten wrong PINs in a quarter of an hour, whoever they were typed against', async () => {
+      const { service, prisma } = build({ ...active(), pinFailedAttempts: 0 });
+      // Keep the person's own lockout out of the way: a fresh count each time.
+      prisma.employee.findUnique.mockImplementation(async () => ({ ...active() }));
+      for (let i = 0; i < 9; i += 1) await wrong(service);
+      await expect(service.punch(device, 'emp-1', '4817')).resolves.toMatchObject({
+        action: 'CLOCKED_IN',
+      });
+
+      await wrong(service);
+      await expect(service.punch(device, 'emp-1', '4817')).rejects.toThrow(
+        /Too many wrong PINs at this time clock\. It takes PINs again in 5 minutes/,
+      );
+    });
+
+    it('does not let a correct PIN in between wipe the count', async () => {
+      const { service, prisma } = build(active());
+      prisma.employee.findUnique.mockImplementation(async () => ({ ...active() }));
+      for (let i = 0; i < 5; i += 1) await wrong(service);
+      await service.punch(device, 'emp-1', '4817');
+      for (let i = 0; i < 5; i += 1) await wrong(service);
+      await expect(service.punch(device, 'emp-1', '4817')).rejects.toThrow(/at this time clock/);
+    });
+
+    it('counts guesses against names with no PIN too', async () => {
+      const { service, prisma } = build(null);
+      for (let i = 0; i < 10; i += 1) await wrong(service, 'nobody');
+      expect(prisma.kioskDevice.update).toHaveBeenLastCalledWith(
+        expect.objectContaining({
+          data: expect.objectContaining({ pinPausedUntil: expect.any(Date) }),
+        }),
+      );
+    });
+
+    it('starts counting afresh once a quarter of an hour has passed', async () => {
+      const { service, prisma } = build(active(), {
+        kiosk: { pinFailures: 9, pinFailuresSince: new Date(Date.now() - 16 * 60_000) },
+      });
+      prisma.employee.findUnique.mockImplementation(async () => ({ ...active() }));
+      await wrong(service);
+      expect(prisma.kioskDevice.update).toHaveBeenLastCalledWith(
+        expect.objectContaining({ data: expect.objectContaining({ pinFailures: 1 }) }),
+      );
+    });
   });
 
   describe('a correct PIN', () => {

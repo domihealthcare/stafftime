@@ -13,6 +13,16 @@ import type { PairedDevice } from './kiosk.service';
 /// be able to learn.
 const PIN_REJECTED = 'That PIN was not recognised. Try again or ask a manager.';
 
+/// Wrong PINs at one time clock, against anybody, before it pauses. Each person
+/// is also locked after MAX_PIN_ATTEMPTS of their own; this is the other half —
+/// somebody at the desk trying a few PINs against every name in turn, which the
+/// per-person limit never sees. Generous enough that a busy morning of typos
+/// never trips it (decided September 2026, with the front-desk computer as the
+/// time clock).
+const DEVICE_MAX_FAILURES = 10;
+const DEVICE_WINDOW_MINUTES = 15;
+const DEVICE_PAUSE_MINUTES = 5;
+
 /// CHECKLIST: nothing was punched — this person is clocking out and has a
 /// closing checklist to fill in first. The tablet shows it, then sends the PIN
 /// again with the answers.
@@ -59,6 +69,8 @@ export class KioskPunchService {
     pin: string,
     closing?: ClosingSubmissionDto,
   ): Promise<PunchResult> {
+    await this.assertDeviceTakingPins(device.deviceId);
+
     const employee = await this.prisma.employee.findUnique({
       where: { id: employeeId },
       select: {
@@ -78,6 +90,7 @@ export class KioskPunchService {
     // a PIN, so the keypad cannot be used to enumerate staff.
     if (!employee?.pinHash) {
       await this.pins.verify(pin, DUMMY_PIN_HASH);
+      await this.recordDeviceFailure(device.deviceId);
       throw new UnauthorizedException(PIN_REJECTED);
     }
 
@@ -94,6 +107,7 @@ export class KioskPunchService {
     const correct = await this.pins.verify(pin, employee.pinHash);
     if (!correct) {
       await this.recordPinFailure(employee.id, employee.pinFailedAttempts);
+      await this.recordDeviceFailure(device.deviceId);
       throw new UnauthorizedException(PIN_REJECTED);
     }
 
@@ -195,6 +209,58 @@ export class KioskPunchService {
       },
     });
     this.logger.log(`Kiosk PIN cleared for employee ${employeeId}`);
+  }
+
+  private async assertDeviceTakingPins(deviceId: string): Promise<void> {
+    const state = await this.prisma.kioskDevice.findUnique({
+      where: { id: deviceId },
+      select: { pinPausedUntil: true },
+    });
+    const until = state?.pinPausedUntil;
+    if (until && until > new Date()) {
+      const minutes = Math.max(1, Math.ceil((until.getTime() - Date.now()) / 60_000));
+      throw new UnauthorizedException(
+        `Too many wrong PINs at this time clock. It takes PINs again in ${minutes} minute${
+          minutes === 1 ? '' : 's'
+        } — or clock in on your phone.`,
+      );
+    }
+  }
+
+  /// Counts a wrong PIN against the time clock, in a window that a correct PIN
+  /// does not reset — otherwise somebody could slip their own PIN in between
+  /// guesses and never be stopped.
+  private async recordDeviceFailure(deviceId: string): Promise<void> {
+    const state = await this.prisma.kioskDevice.findUnique({
+      where: { id: deviceId },
+      select: { pinFailures: true, pinFailuresSince: true },
+    });
+    if (!state) return;
+    const now = new Date();
+    const windowOpen =
+      state.pinFailuresSince &&
+      now.getTime() - state.pinFailuresSince.getTime() < DEVICE_WINDOW_MINUTES * 60_000;
+    const failures = windowOpen ? state.pinFailures + 1 : 1;
+
+    if (failures >= DEVICE_MAX_FAILURES) {
+      await this.prisma.kioskDevice.update({
+        where: { id: deviceId },
+        data: {
+          pinFailures: 0,
+          pinFailuresSince: null,
+          pinPausedUntil: new Date(now.getTime() + DEVICE_PAUSE_MINUTES * 60_000),
+        },
+      });
+      this.logger.warn(`Kiosk ${deviceId} paused after ${failures} wrong PINs`);
+      return;
+    }
+    await this.prisma.kioskDevice.update({
+      where: { id: deviceId },
+      data: {
+        pinFailures: failures,
+        pinFailuresSince: windowOpen ? state.pinFailuresSince : now,
+      },
+    });
   }
 
   private async recordPinFailure(employeeId: string, previousFailures: number): Promise<void> {

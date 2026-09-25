@@ -17,6 +17,7 @@ import { CurrentUser } from '../common/auth/current-user.decorator';
 import { AuthUser } from '../common/auth/auth-user';
 import { Roles } from '../common/auth/roles.decorator';
 import { CreateEmployeeDto } from './dto/create-employee.dto';
+import { ImportEmployeesDto } from './dto/import-employees.dto';
 import { UpdateEmployeeDto } from './dto/update-employee.dto';
 import { EmployeesService } from './employees.service';
 
@@ -28,6 +29,13 @@ export class EmployeesController {
   @Roles(Role.ADMIN)
   create(@Body() dto: CreateEmployeeDto) {
     return this.employees.create(dto);
+  }
+
+  /// Several people at once, from a pasted staff list. All or nothing.
+  @Post('import')
+  @Roles(Role.ADMIN)
+  importMany(@Body() dto: ImportEmployeesDto) {
+    return this.employees.importMany(dto.people);
   }
 
   @Get()

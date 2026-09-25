@@ -1,12 +1,14 @@
 import {
   BadRequestException,
   ConflictException,
+  HttpException,
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
 import { EmploymentStatus, Prisma } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateEmployeeDto } from './dto/create-employee.dto';
+import { ImportedEmployeeDto } from './dto/import-employees.dto';
 import { UpdateEmployeeDto } from './dto/update-employee.dto';
 
 const EMPLOYEE_INCLUDE = {
@@ -17,6 +19,12 @@ const EMPLOYEE_INCLUDE = {
 
 /// Never return credential columns to a client.
 const HIDDEN_FIELDS = ['pinHash', 'passwordHash'] as const;
+
+/// Sign-in looks addresses up in lower case, so they are stored that way: an
+/// address typed as "Jane.Doe@…" would otherwise never sign in.
+function normaliseEmail(email: string): string {
+  return email.trim().toLowerCase();
+}
 
 @Injectable()
 export class EmployeesService {
@@ -30,6 +38,7 @@ export class EmployeesService {
       const created = await this.prisma.employee.create({
         data: {
           ...employee,
+          email: normaliseEmail(employee.email),
           adpFileNumber: adpFileNumber?.trim() || null,
           hireDate: new Date(employee.hireDate),
           terminationDate: employee.terminationDate
@@ -49,6 +58,85 @@ export class EmployeesService {
       return this.strip(created);
     } catch (error) {
       throw this.translateWriteError(error, dto);
+    }
+  }
+
+  /**
+   * A whole staff list at once — the first day's set-up, pasted from a
+   * spreadsheet. All or nothing: a list half-loaded is harder to finish than
+   * one refused with the reason, so one bad row stops the lot and says which.
+   */
+  async importMany(people: ImportedEmployeeDto[]) {
+    const seen = new Map<string, number>();
+    people.forEach((person, index) => {
+      this.assertPrimaryIsAssigned(person.locationIds, person.primaryLocationId);
+      const email = normaliseEmail(person.email);
+      const earlier = seen.get(email);
+      if (earlier !== undefined) {
+        throw new BadRequestException(
+          `Rows ${earlier + 1} and ${index + 1} have the same email, ${email}.`,
+        );
+      }
+      seen.set(email, index);
+    });
+
+    const existing = await this.prisma.employee.findMany({
+      where: { email: { in: [...seen.keys()] } },
+      select: { email: true },
+    });
+    if (existing.length > 0) {
+      throw new ConflictException(
+        `Already in the app: ${existing.map((e) => e.email).join(', ')}. Take ${
+          existing.length === 1 ? 'that row' : 'those rows'
+        } out and try again.`,
+      );
+    }
+
+    let row = 0;
+    try {
+      const created = await this.prisma.$transaction(async (tx) => {
+        const ids: string[] = [];
+        for (const [index, person] of people.entries()) {
+          row = index;
+          const { locationIds, primaryLocationId, adpFileNumber, jobRoleIds, ...employee } =
+            person;
+          const made = await tx.employee.create({
+            data: {
+              ...employee,
+              email: normaliseEmail(employee.email),
+              adpFileNumber: adpFileNumber?.trim() || null,
+              hireDate: new Date(employee.hireDate),
+              terminationDate: employee.terminationDate
+                ? new Date(employee.terminationDate)
+                : undefined,
+              locations: locationIds
+                ? {
+                    create: locationIds.map((locationId) => ({
+                      locationId,
+                      isPrimary: locationId === primaryLocationId,
+                    })),
+                  }
+                : undefined,
+              jobRoles: jobRoleIds?.length
+                ? { create: jobRoleIds.map((jobRoleId) => ({ jobRoleId })) }
+                : undefined,
+            },
+            select: { id: true },
+          });
+          ids.push(made.id);
+        }
+        return ids;
+      });
+      return { created: created.length, ids: created };
+    } catch (error) {
+      const translated = this.translateWriteError(error, people[row]);
+      if (translated instanceof HttpException) {
+        const where = `Row ${row + 1} (${people[row].email}): `;
+        throw translated instanceof ConflictException
+          ? new ConflictException(where + translated.message)
+          : new BadRequestException(where + translated.message);
+      }
+      throw translated;
     }
   }
 
@@ -85,6 +173,7 @@ export class EmployeesService {
         where: { id },
         data: {
           ...employee,
+          email: employee.email === undefined ? undefined : normaliseEmail(employee.email),
           adpFileNumber: adpFileNumber === undefined ? undefined : adpFileNumber?.trim() || null,
           hireDate: employee.hireDate ? new Date(employee.hireDate) : undefined,
           terminationDate: employee.terminationDate
@@ -162,8 +251,14 @@ export class EmployeesService {
    */
   private strip<T extends Record<string, unknown>>(
     employee: T,
-  ): Omit<T, 'pinHash' | 'passwordHash'> & { hasKioskPin: boolean } {
-    const copy = { ...employee, hasKioskPin: employee.pinHash !== null };
+  ): Omit<T, 'pinHash' | 'passwordHash'> & { hasKioskPin: boolean; hasPassword: boolean } {
+    const copy = {
+      ...employee,
+      hasKioskPin: employee.pinHash !== null,
+      // Whether they have chosen a password yet — i.e. whether a welcome email
+      // is still worth sending. The hash itself never leaves.
+      hasPassword: employee.passwordHash !== null && employee.passwordHash !== undefined,
+    };
     for (const field of HIDDEN_FIELDS) {
       delete copy[field];
     }

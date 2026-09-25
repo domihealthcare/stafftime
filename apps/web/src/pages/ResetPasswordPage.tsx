@@ -17,6 +17,9 @@ import { PASSWORD_RULE, meetsPasswordRule } from '../lib/password';
 export function ResetPasswordPage() {
   const [params] = useSearchParams();
   const token = params.get('token') ?? '';
+  /// A new starter's first password, from the welcome email: same link
+  /// underneath, friendlier words on top.
+  const welcome = params.get('welcome') === '1';
 
   const [password, setPassword] = useState('');
   const [confirm, setConfirm] = useState('');
@@ -58,9 +61,11 @@ export function ResetPasswordPage() {
 
   if (done) {
     return (
-      <Shell title="Your password is set">
+      <Shell title={welcome ? 'You are all set' : 'Your password is set'}>
         <Alert tone="success">
-          You have been signed out everywhere, on every device. Sign in again with the new password.
+          {welcome
+            ? 'Sign in with your email address and the password you just chose.'
+            : 'You have been signed out everywhere, on every device. Sign in again with the new password.'}
         </Alert>
         <p className="mt-4 text-center text-sm">
           <Link to="/" className="font-medium text-brand-700 hover:text-brand-900">
@@ -72,7 +77,12 @@ export function ResetPasswordPage() {
   }
 
   return (
-    <Shell title="Choose a new password">
+    <Shell title={welcome ? 'Welcome to Domi Staff' : 'Choose a new password'}>
+      {welcome && (
+        <p className="-mt-3 mb-4 text-center text-sm text-slate-600">
+          Choose the password you will sign in with.
+        </p>
+      )}
       <form onSubmit={(event) => void submit(event)} className="space-y-4">
         {/* The hint sits outside the label and is tied on with
             aria-describedby. Inside it, it would become part of the field's
@@ -102,9 +112,11 @@ export function ResetPasswordPage() {
         {mismatch && <p className="text-sm text-rose-700">Those passwords do not match</p>}
         {error && <Alert>{error}</Alert>}
 
-        <p className="text-xs text-slate-500">
-          Setting a new password signs you out everywhere, on every device.
-        </p>
+        {!welcome && (
+          <p className="text-xs text-slate-500">
+            Setting a new password signs you out everywhere, on every device.
+          </p>
+        )}
 
         <button
           type="submit"

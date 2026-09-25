@@ -74,9 +74,9 @@ await step('an employee gets the staff guide only, with no managers tab', async 
 });
 
 await step('a question opens to its answer', async () => {
-  const answer = emp.getByText(/Tap your name, type your PIN/);
+  const answer = emp.getByText(/Pick your name, type your PIN/);
   if (await answer.isVisible()) throw new Error('answers should start closed');
-  await emp.getByText('How do I use the front-desk tablet?').click();
+  await emp.getByText('How do I use the front-desk time clock?').click();
   await answer.waitFor({ state: 'visible', timeout: 5000 });
 });
 

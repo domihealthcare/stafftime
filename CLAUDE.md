@@ -204,8 +204,10 @@ Still to do on the deployment, in `DEPLOY.md`:
   far-corner test was waived (Dominguez, 25 September 2026); 500 ft stands.
   Never run `npm run db:seed` against the live
   database — it resets the pins to the old placeholders.
-- **`SETUP_TOKEN` should be deleted** from the Vercel environment variables
-  now that the first admin exists, and the Neon password rotated.
+- ~~`SETUP_TOKEN` should be deleted~~ — **done, 25 September 2026.** Still to
+  do: **rotate the Neon password** (Dominguez to find time; steps given in
+  chat: reset in Neon, paste the new pooled and direct strings into
+  `DATABASE_URL` / `DIRECT_DATABASE_URL`, redeploy).
 
 Beyond the phases, the parts worth knowing about before picking up work:
 
@@ -322,6 +324,36 @@ Beyond the phases, the parts worth knowing about before picking up work:
   slogan** is on every signed-out screen, in black on the printed rota; the
   roof alone stays in the header and favicon. **No service worker, no offline mode**, on
   purpose: a punch with no signal must plainly fail, not seem to work.
+- **Going live** (September 2026): Practice settings → **Start using it for
+  real** (admins, test deployments only) shows what goes and which accounts
+  stay, then clears the demo staff and everything made while testing —
+  shifts, punches, time off, checklists, closing records, restock requests,
+  licenses, availability, News posts, surveys, suggestions, notifications,
+  exports, saved reports. It keeps the set-up (Dominguez's choice): offices and
+  pins, settings, ADP set-up, job roles, closing checklists, templates,
+  resources, kiosks and real accounts. After it: add the staff, set
+  `APP_ENVIRONMENT=production` in Vercel and redeploy, send welcome emails.
+- **Adding staff in bulk**: Staff → **Add several people** — paste rows from
+  a spreadsheet (tabs or commas, column names first, matched loosely: "Work
+  Email", "Position", "Start Date", "NB"/"WNY"/"Both", "MA"…). Every line is
+  checked and shown first; all or nothing (`POST /employees/import`). Other
+  columns are named as ignored and never kept — a pasted SSN goes nowhere.
+  Pasting is not an upload: no file is taken or stored. Emails are stored in
+  lower case (sign-in looks them up that way; a mixed-case address used to be
+  unable to sign in).
+- **Welcome emails**: from the Staff screen, to one person or everyone who has
+  not had one and has no password (never demo staff). A 7-day, single-use link
+  to choose a password (`/reset-password?token=…&welcome=1`, same token table
+  as resets), plus how to put the app on a phone and day-one FAQs
+  (`email/welcome-email.ts`, text and HTML). `Employee.welcomeSentAt` records
+  it; a failed send takes the link back and says so.
+- **The office computer as the time clock** (no tablet yet, September 2026):
+  any browser pairs as a kiosk at `/kiosk`. It re-fetches its staff list every
+  10 minutes, and is only reported quiet if a whole published shift at its
+  office passes without it being open — so switching the computer off at
+  night is fine. **Per-kiosk PIN pause**: 10 wrong PINs within 15 minutes, on
+  any names, stops that time clock taking PINs for 5 minutes; a correct PIN in
+  between does not reset the count.
 - **Demo data** loads from a button (account menu → Practice settings), not
   only from a terminal — whoever sets a deployment up is in a browser. Admin
   only, and refuses unless `APP_ENVIRONMENT` is `test`: it replaces every shift
@@ -355,6 +387,6 @@ surprising. `docs/open-questions.md` is what is still waiting on a decision, and
 ## Open questions to confirm before/during Phase 1
 - Get ADP TotalSource company/client code and pay/earning codes from ADP before
   finalizing the CSV export column mapping.
-- Kiosk device: no tablet yet (September 2026) — the front-desk desktop is
-  being considered as the kiosk.
+- Kiosk device: no tablet yet (September 2026) — the front-desk computer is
+  the time clock (see *The office computer as the time clock*).
 - IP allow-listing: set aside for now (Dominguez, 25 September 2026).

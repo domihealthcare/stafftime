@@ -1995,3 +1995,49 @@ the ⋮ menu route. It is never shown on a computer or inside the installed app,
 and "Not now" is remembered in the browser. Help has the same steps under "Put
 Domi Staff on your phone", for Safari and Chrome on an iPhone, Chrome on
 Android, and Chrome on a computer (installed as its own window).
+
+## Going live, adding staff, welcome emails
+
+The move from the test deployment to real use happens in a browser, in three
+steps an admin can do alone (September 2026).
+
+**Clearing the test data** (`demo/test-data.ts`, `POST /demo/clear`) exists
+only on a test deployment, like loading the demo — on a live one it would
+delete real hours — and the body has to spell out `clear-test-data`. It
+removes the demo staff, who share one well-known password, and all activity;
+it keeps what the practice set up. The preview lists the accounts that stay,
+so a made-up tester account is noticed before real staff arrive.
+
+**Adding staff in bulk** is a paste, not an upload. A staff list kept for HR
+may carry social security numbers or dates of birth; the importer
+(`lib/staff-import.ts`) matches columns it knows by loose name, names every
+other column as ignored, and sends the server only the fields an Employee has.
+It is all or nothing: a half-loaded list is harder to finish than one refused
+with the line to fix. Hire date is required, as it is one at a time.
+
+**Welcome emails** reuse the password-reset token table: a welcome link is a
+reset link that lasts 7 days rather than 30 minutes, for somebody who has no
+password yet. For anybody with a password it would be a reset they did not
+ask for, so it is refused and "Forgotten your password?" is the way. Sent
+emails are paced (Resend's free plan allows two a second) and batched to stay
+inside a serverless function's time limit; the Staff screen calls again until
+nobody is left. With no email provider on a test deployment the message goes
+to the server log and counts as sent, so the flow can be tried locally.
+
+## The office computer as the time clock
+
+The kiosk was designed for a tablet left on the counter, but any browser pairs
+the same way, and the practice had no tablet (September 2026). Two things
+changed for a computer that is switched off at night and used for other work
+by day. "Gone quiet" used to mean 24 hours unseen, which a computer turned off
+on Friday evening trips every Sunday; now it also needs a whole published
+shift at that office to have come and gone since the time clock was last
+seen. The page re-fetches its staff list every 10 minutes, which keeps it seen
+while open and puts a new hire on the list without a reload.
+
+Each person is locked after 5 wrong PINs of their own; that never sees
+somebody trying 4 PINs against each of twenty names. The time clock itself now
+counts wrong PINs, against anybody, in a 15-minute window a correct PIN does
+not reset, and stops taking PINs for 5 minutes after 10. That is generous for
+honest typos and useless for guessing a colleague's PIN.
+

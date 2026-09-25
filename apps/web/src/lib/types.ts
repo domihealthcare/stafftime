@@ -60,6 +60,9 @@ export interface EmployeeSummary {
 export interface Employee extends EmployeeSummary {
   /// Whether a kiosk PIN is set. The PIN itself is never sent to the client.
   hasKioskPin?: boolean;
+  /// Whether they have chosen a password yet; if not, a welcome email is still worth sending.
+  hasPassword?: boolean;
+  welcomeSentAt?: string | null;
   preferredName: string | null;
   pronouns?: string | null;
   /// When their profile photo last changed; null for none.
@@ -275,6 +278,29 @@ export interface OwnOvertimeWeek {
 }
 
 /// What loading the demo data produced.
+export interface TestDataCounts {
+  demoStaff: number;
+  shifts: number;
+  timeEntries: number;
+  timeOffRequests: number;
+  checklists: number;
+  closingChecklists: number;
+  restockRequests: number;
+  licenses: number;
+  availability: number;
+  posts: number;
+  surveys: number;
+  suggestions: number;
+  notifications: number;
+  payrollExports: number;
+  savedReports: number;
+}
+
+export interface TestDataPreview {
+  removing: TestDataCounts;
+  keepingAccounts: { firstName: string; lastName: string; email: string; role: Role }[];
+}
+
 export interface DemoSummary {
   staffAdded: number;
   shifts: number;

@@ -1,6 +1,8 @@
 import {
+  Body,
   Controller,
   ForbiddenException,
+  Get,
   HttpCode,
   HttpStatus,
   Logger,
@@ -13,6 +15,8 @@ import { CurrentUser } from '../common/auth/current-user.decorator';
 import { Roles } from '../common/auth/roles.decorator';
 import { PrismaService } from '../prisma/prisma.service';
 import { loadDemoData } from './demo-data';
+import { ClearTestDataDto } from './clear-test-data.dto';
+import { clearTestData, previewTestData } from './test-data';
 
 /**
  * Fills a fresh deployment with something to look at.
@@ -58,5 +62,41 @@ export class DemoController {
     );
 
     return summary;
+  }
+
+  /** What "Clear the test data" would remove, and which accounts it keeps. */
+  @Get('test-data')
+  @Roles(Role.ADMIN)
+  async testData() {
+    this.assertTest();
+    return previewTestData(this.prisma);
+  }
+
+  /**
+   * The step between trying the app out and using it for real: the demo staff
+   * and everything made while testing go; the practice's set-up stays (see
+   * `test-data.ts`). Test deployments only, like loading the demo — on a live
+   * one this would delete real hours — and the body has to spell out the
+   * confirmation, so no stray request can set it off.
+   */
+  @Post('clear')
+  @Roles(Role.ADMIN)
+  @HttpCode(HttpStatus.OK)
+  async clear(@CurrentUser() user: AuthUser, @Body() body: ClearTestDataDto) {
+    this.assertTest();
+    // The DTO has already refused anything but the spelled-out confirmation.
+    this.logger.warn(`Test data cleared by ${user.id} (${body.confirm})`);
+    const cleared = await clearTestData(this.prisma);
+    this.logger.warn(`Test data cleared: ${JSON.stringify(cleared)}`);
+    return cleared;
+  }
+
+  private assertTest() {
+    if (this.config.get<string>('APP_ENVIRONMENT') !== 'test') {
+      throw new ForbiddenException(
+        'This is the live site. Test data can only be cleared on a test deployment — ' +
+          'here it would delete real hours.',
+      );
+    }
   }
 }
