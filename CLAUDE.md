@@ -200,9 +200,9 @@ Still to do on the deployment, in `DEPLOY.md`:
   Vercel URL `stafftime-ap.vercel.app` still works alongside it.
 - ~~The geofence pins are still the seeded placeholders~~ — **done, 24
   September 2026.** Both offices' coordinates were typed in from Google Maps
-  (the phone's indoor fix was only good to ~315 ft, too loose to save). Still
-  to do: **clock in from the far corner of each office** to confirm the
-  500 ft radius reaches it. Never run `npm run db:seed` against the live
+  (the phone's indoor fix was only good to ~315 ft, too loose to save). The
+  far-corner test was waived (Dominguez, 25 September 2026); 500 ft stands.
+  Never run `npm run db:seed` against the live
   database — it resets the pins to the old placeholders.
 - **`SETUP_TOKEN` should be deleted** from the Vercel environment variables
   now that the first admin exists, and the Neon password rotated.
@@ -331,8 +331,8 @@ Beyond the phases, the parts worth knowing about before picking up work:
   rota gets chased (4). Both were constants until Dominguez asked for them to be
   adjustable; the defaults are confirmed. It also holds the **pay period
   start** — pay is every two weeks, confirmed September 2026 — which drives
-  the "this / last pay period" shortcuts on the Timesheet and Export. **Not
-  entered yet**: an admin sets it under Practice settings.
+  the "this / last pay period" shortcuts on the Timesheet and Export. Entered on
+  the live site, 25 September 2026.
 - **Tests**: ~540 unit tests, and ~220 end-to-end checks in `tests/browser`
   driven against a real API, a real Postgres and a real Chromium. Both run in CI
   on every push. The convention is to run the browser suites twice — once
@@ -355,6 +355,6 @@ surprising. `docs/open-questions.md` is what is still waiting on a decision, and
 ## Open questions to confirm before/during Phase 1
 - Get ADP TotalSource company/client code and pay/earning codes from ADP before
   finalizing the CSV export column mapping.
-- Kiosk device: dedicated tablet per location, or a shared front-desk PC?
-- Geofence radius per location (how tight should "at work" be)? Defaults to
-  500 ft; needs confirming by standing at the far corner of each office.
+- Kiosk device: no tablet yet (September 2026) — the front-desk desktop is
+  being considered as the kiosk.
+- IP allow-listing: set aside for now (Dominguez, 25 September 2026).
