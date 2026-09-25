@@ -24,7 +24,7 @@ export interface ImportedPerson {
   phone?: string;
   role: Role;
   payType: 'HOURLY' | 'SALARY';
-  hireDate: string;
+  hireDate?: string;
   adpFileNumber?: string;
   birthdayMonth?: number;
   birthdayDay?: number;
@@ -327,10 +327,16 @@ export function readStaffList(
     const phone = cell('phone');
     if (phone && phone.replace(/\D/g, '').length < 7) problems.push(`"${phone}" is not a phone number`);
 
+    // Optional (September 2026): left blank, it can be filled in later on the
+    // Staff screen. "7/2026" — a month and year — means the 1st of the month.
     const hireText = cell('hireDate');
-    const hireDate = hireText ? readDate(hireText) : null;
-    if (!hireText) problems.push('No hire date');
-    else if (!hireDate) problems.push(`Cannot read the hire date "${hireText}" — use 3/1/2024`);
+    const monthYear = /^(\d{1,2})[/.-](\d{4})$/.exec(hireText);
+    const hireDate = hireText
+      ? monthYear
+        ? readDate(`${monthYear[1]}/1/${monthYear[2]}`)
+        : readDate(hireText)
+      : null;
+    if (hireText && !hireDate) problems.push(`Cannot read the hire date "${hireText}" — use 3/1/2024`);
 
     const accessText = squash(cell('role'));
     let role: Role = 'EMPLOYEE';
@@ -398,7 +404,7 @@ export function readStaffList(
               phone: phone || undefined,
               role,
               payType,
-              hireDate: hireDate!,
+              hireDate: hireDate ?? undefined,
               adpFileNumber: adp || undefined,
               birthdayMonth: birthday?.month,
               birthdayDay: birthday?.day,

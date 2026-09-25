@@ -112,7 +112,7 @@ export class PtoPolicyService {
     const policy = await this.get();
     const employee = await this.prisma.employee.findUniqueOrThrow({
       where: { id: employeeId },
-      select: { id: true, hireDate: true },
+      select: { id: true, hireDate: true, createdAt: true },
     });
 
     const policyYear = year ?? this.policyYearOf(new Date(), policy);
@@ -139,10 +139,14 @@ export class PtoPolicyService {
         .filter((r) => TYPE_BUCKET[r.type] === bucket && r.status === status)
         .reduce((sum, r) => sum + daysWithin(r, start, end), 0);
 
+    // With no hire date on record, carry-over is counted from when they were
+    // added to the app — nothing before that was booked here anyway.
+    const since = employee.hireDate ?? employee.createdAt;
     const carriedVacation = await this.carryOverInto(
       employeeId,
       policyYear,
       policy,
+      since,
       employee.hireDate,
       'vacation',
     );
@@ -150,6 +154,7 @@ export class PtoPolicyService {
       employeeId,
       policyYear,
       policy,
+      since,
       employee.hireDate,
       'sick',
     );
@@ -200,13 +205,15 @@ export class PtoPolicyService {
   }
 
   /// A mid-year starter gets the share of the year they are present for, if the
-  /// policy says to prorate.
+  /// policy says to prorate. With no hire date on record there is nothing to
+  /// prorate from, so the whole year's allowance.
   private entitlementFor(
     policyYear: number,
     policy: PtoPolicy,
-    hireDate: Date,
+    hireDate: Date | null,
     fullEntitlement: number,
   ): number {
+    if (!hireDate) return fullEntitlement;
     const { start, end } = this.yearBounds(policyYear, policy);
 
     if (hireDate >= end) {
@@ -225,7 +232,8 @@ export class PtoPolicyService {
     employeeId: string,
     policyYear: number,
     policy: PtoPolicy,
-    hireDate: Date,
+    since: Date,
+    hireDate: Date | null,
     bucket: 'vacation' | 'sick',
   ): Promise<number> {
     const cap = bucket === 'vacation' ? policy.maxCarryoverDays : policy.sickCarryoverDays;
@@ -233,7 +241,7 @@ export class PtoPolicyService {
       return 0;
     }
 
-    const hireYear = this.policyYearOf(hireDate, policy);
+    const hireYear = this.policyYearOf(since, policy);
     let carried = 0;
 
     // Oldest year first, so each year's carry-over feeds the next.

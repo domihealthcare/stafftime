@@ -70,11 +70,11 @@ export function ImportStaff({
         <summary className="cursor-pointer font-medium text-brand-700">Which columns?</summary>
         <div className="mt-2 space-y-1">
           <p>
-            <strong>Needed:</strong> a name (or First name and Last name), Email, Office (North
-            Bergen, West New York, or Both) and Hire date.
+            <strong>Needed:</strong> a name (or First name and Last name), Email and Office (North
+            Bergen, West New York, or Both).
           </p>
           <p>
-            <strong>Optional:</strong> Phone, Job role (several separated by commas), Access
+            <strong>Optional:</strong> Hire date (7/2026 means the 1st of July), Phone, Job role (several separated by commas), Access
             (Employee, Manager or Admin — Employee if left blank), Pay type (Hourly or Salaried),
             Goes by, ADP File #, Birthday (only the month and day are kept — the year is dropped).
           </p>

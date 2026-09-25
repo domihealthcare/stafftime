@@ -50,8 +50,11 @@ export class CreateEmployeeDto {
   @IsEnum(PayType)
   payType?: PayType;
 
+  /// Optional: without it, time off is not prorated for a first part-year.
+  @IsOptional()
+  @ValidateIf((_, value) => value !== null)
   @IsDateString()
-  hireDate!: string;
+  hireDate?: string | null;
 
   @IsOptional()
   @IsDateString()

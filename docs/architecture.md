@@ -2061,3 +2061,14 @@ the practice" on Your profile. `birthdaysBetween` walks the requested days
 rather than comparing month/day pairs, which keeps ranges that cross a year
 end correct and puts a 29 February birthday on the 28th in other years.
 
+## When the hire date is not known
+
+Hire date became optional in September 2026: the practice's staff list had
+gaps, and holding up somebody's first day for one is worse than doing without
+it. It matters in two places. Time off: a first part-year is prorated from the
+hire date, so without one the whole year's allowance applies, and carry-over is
+counted from when the person was added to the app (nothing earlier was booked
+here). Onboarding: a checklist's due dates hang off the hire date, so without
+one they count from the day the checklist is started. It can be filled in any
+time on the Staff screen; the import reads "7/2026" as the 1st of July.
+
