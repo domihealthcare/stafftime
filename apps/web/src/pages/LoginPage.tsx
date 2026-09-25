@@ -34,7 +34,7 @@ export function LoginPage() {
     <div className="flex min-h-screen flex-col justify-center bg-slate-100 px-4 py-12">
       <div className="mx-auto w-full max-w-sm">
         <div className="mb-6 flex flex-col items-center text-center">
-          <BrandLogo className="mb-4 h-16 w-auto" />
+          <BrandLogo className="mb-4 h-24 w-auto" />
           <h1 className="text-2xl font-semibold text-slate-900">Domi Staff</h1>
           <p className="mt-1 text-sm text-slate-600">
             Sign in to clock in, check your schedule and keep up with the team.

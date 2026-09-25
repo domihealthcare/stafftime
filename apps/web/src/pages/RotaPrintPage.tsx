@@ -5,7 +5,7 @@ import { addDays, displayName, formatTimeCompact, localDate, startOfWeek } from 
 import { useIsManager, useSession } from '../lib/session';
 import { timeOffOn } from '../lib/time-off';
 import type { Employee, JobRole, Location, PtoRequest, Shift } from '../lib/types';
-import { BrandMark } from '../components/Brand';
+import { BrandLogoForPrint } from '../components/Brand';
 import { Alert, Spinner } from '../components/ui';
 
 /// "2026-09-28" as a local midnight, not UTC — a week that starts on Monday
@@ -249,11 +249,11 @@ export function RotaPrintPage() {
                 className="rota-page mb-6 rounded-xl bg-white p-6 shadow-sm print:mb-0 print:rounded-none print:p-0 print:shadow-none"
               >
                 <header className="mb-4 flex items-end justify-between gap-4 border-b-2 border-slate-800 pb-2">
-                  <div className="flex items-center gap-3">
-                    <BrandMark className="h-8 w-auto" />
+                  <div className="flex items-end gap-4">
+                    <BrandLogoForPrint className="h-16 w-auto" />
                     <div>
                       <p className="text-xs font-semibold uppercase tracking-wider text-slate-500">
-                        Domi Healthcare · {office.name}
+                        {office.name}
                       </p>
                       <h1 className="text-xl font-bold text-slate-900">Rota: {weekLabel}</h1>
                     </div>

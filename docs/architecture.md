@@ -1672,9 +1672,19 @@ elsewhere: Avenir is not a font the app may serve itself.
 
 The logo is the practice's own, from domihealthcare.com ("Original on
 Transparent", 5000 px square), cropped into `apps/web/public/brand/`:
-`domi-healthcare.png` (roof and name) on the sign-in screen, and
 `domi-mark.png` (the roof alone) beside "Domi Staff" in the header, on the
-kiosk and as `favicon.png`. They are served from the app itself because the
+kiosk and as `favicon.png` — the one place the full logo would be unreadable.
+
+Since September 2026 Dominguez wants the logo **with its slogan** ("Your
+Health. Your Family. Your Home.") wherever it appears whole, and sent the
+practice's versions of it (colour, black, and two greys, as 2000 px PNGs):
+`domi-healthcare-slogan.png` (colour, cut from inside the round badge) on
+every screen seen before signing in — sign-in, forgotten and reset password,
+first-run setup and kiosk setup — and `domi-healthcare-slogan-black.png` on
+the printed rota, because the light blues wash out on a black-and-white
+office printer. The round colour badge itself is the home-screen icon (see
+"Domi Staff on a phone"). The grey versions are not used: nothing in the app
+sits on a grey or dark background. They are served from the app itself because the
 deployed CSP only allows images from `'self'`; linking the website's image
 host would be blocked, and would break the day the website changes.
 
@@ -1962,11 +1972,12 @@ compare.
 Staff can put the app on their home screen and open it full screen, with the
 roof logo as its icon — an installable web app, not an App Store or Play Store
 app (September 2026, chosen by Dominguez over wrapping it for the stores).
-`public/manifest.webmanifest` names it and points at the icons, which were cut
-from the logo on the website: 192 and 512 for Android, a "maskable" 512 with
-the roof inside the safe circle so Android's round and squircle masks do not
-clip it, and a 180 `apple-touch-icon.png` for iPhones, which ignore the
-manifest's icons. The CSP needs nothing extra: `default-src 'self'` covers the
+`public/manifest.webmanifest` names it and points at the icons: the practice's
+round colour badge — roof, name and slogan, as Dominguez asked — on white. 192
+and 512 for Android, a "maskable" 512 with the badge inside the safe circle so
+Android's round and squircle masks do not clip its ring, and a 180
+`apple-touch-icon.png` for iPhones, which ignore the manifest's icons. The
+slogan is small at home-screen size; that was the choice made. The CSP needs nothing extra: `default-src 'self'` covers the
 manifest.
 
 There is **deliberately no service worker**, so no offline mode. A timeclock
@@ -1976,9 +1987,11 @@ worker a lost signal is the usual "Could not reach the server" and the punch
 plainly did not happen. The browser suite asserts none is registered.
 
 The sign-in screen shows a one-time tip on phones (`InstallTip`): Share → Add to
-Home Screen on an iPhone, and on Android the browser's own install prompt when
+Home Screen on an iPhone (Share at the bottom in Safari, in the address bar in
+Chrome — told apart by `CriOS` in the user agent), and on Android the browser's own install prompt when
 Chrome offers one (`beforeinstallprompt`, caught at start-up in
 `lib/install.ts` because it fires before the sign-in screen mounts), otherwise
 the ⋮ menu route. It is never shown on a computer or inside the installed app,
 and "Not now" is remembered in the browser. Help has the same steps under "Put
-Domi Staff on your phone".
+Domi Staff on your phone", for Safari and Chrome on an iPhone, Chrome on
+Android, and Chrome on a computer (installed as its own window).

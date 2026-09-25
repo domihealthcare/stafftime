@@ -28,6 +28,11 @@ const step = async (name, fn) => {
  */
 const IPHONE = devices['iPhone 13'];
 const ANDROID = devices['Pixel 7'];
+// Chrome on an iPhone: Safari's engine underneath, with CriOS in the name.
+const IPHONE_CHROME = {
+  ...IPHONE,
+  userAgent: IPHONE.userAgent.replace('Version/', 'CriOS/126.0.6478.54 Version/'),
+};
 const DESKTOP = { viewport: { width: 1280, height: 800 } };
 
 /** Width and height from a PNG's header. */
@@ -126,7 +131,7 @@ await step('an iPhone is told Share, then Add to Home Screen — and once closed
   await page.goto(`${BASE}/`, { waitUntil: 'networkidle' });
   await tip(page).waitFor({ timeout: 10000 });
   const text = await tip(page).innerText();
-  for (const words of ['Add Domi Staff to your home screen', 'Share', 'Add to Home Screen']) {
+  for (const words of ['Add Domi Staff to your home screen', 'Share', 'Add to Home Screen', 'Safari']) {
     if (!text.includes(words)) throw new Error(`the tip does not say "${words}": ${text}`);
   }
   if (await tip(page).getByRole('button', { name: 'Install' }).count()) {
@@ -139,6 +144,31 @@ await step('an iPhone is told Share, then Add to Home Screen — and once closed
   await page.reload({ waitUntil: 'networkidle' });
   await page.getByRole('button', { name: 'Sign in' }).waitFor();
   if (await tip(page).count()) throw new Error('the tip came back after "Not now"');
+  await ctx.close();
+});
+
+await step('Chrome on an iPhone is sent to the Share button in its address bar, not Safari’s', async () => {
+  const { ctx, page } = await context(IPHONE_CHROME);
+  await page.goto(`${BASE}/`, { waitUntil: 'networkidle' });
+  await tip(page).waitFor({ timeout: 10000 });
+  const text = await tip(page).innerText();
+  for (const words of ['address bar', 'Share', 'Add to Home Screen']) {
+    if (!text.includes(words)) throw new Error(`the tip does not say "${words}": ${text}`);
+  }
+  if (text.includes('Safari')) throw new Error(`Chrome was told about Safari: ${text}`);
+  await page.screenshot({ path: `${OUT}/install-iphone-chrome.png`, fullPage: true });
+  await ctx.close();
+});
+
+await step('the signed-out screens carry the logo with its slogan', async () => {
+  const { ctx, page } = await context(IPHONE);
+  for (const path of ['/', '/forgot-password', '/reset-password?token=x']) {
+    await page.goto(`${BASE}${path}`, { waitUntil: 'networkidle' });
+    const logo = page.getByRole('img', { name: /Your Health\. Your Family\. Your Home\./ });
+    await logo.waitFor({ timeout: 10000 });
+    const loaded = await logo.evaluate((img) => img.complete && img.naturalWidth > 0);
+    if (!loaded) throw new Error(`the logo did not load on ${path}`);
+  }
   await ctx.close();
 });
 
@@ -208,6 +238,9 @@ await step('Help explains how to put it on a phone', async () => {
   await page.getByText('Put Domi Staff on your phone').click();
   await page.getByText('Add to Home Screen', { exact: false }).first().waitFor();
   await page.getByText(/nothing is saved on the phone/).waitFor();
+  for (const heading of ['iPhone, in Safari:', 'iPhone, in Chrome:', 'Android, in Chrome:', 'A computer, in Chrome:']) {
+    await page.getByText(heading, { exact: true }).waitFor({ timeout: 5000 });
+  }
   await ctx.close();
 });
 

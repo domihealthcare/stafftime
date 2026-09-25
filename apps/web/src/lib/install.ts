@@ -9,7 +9,8 @@
  * `beforeinstallprompt`, which fires once, early — often before the sign-in
  * screen has mounted — so it is caught here, at start-up, and held until the
  * tip asks for it. iPhones have no such event; there the tip explains Share →
- * Add to Home Screen instead.
+ * Add to Home Screen instead — in Safari at the bottom of the screen, in
+ * Chrome in the address bar.
  */
 
 interface InstallPromptEvent extends Event {
@@ -63,6 +64,11 @@ export function isInstalled(): boolean {
 }
 
 export type PhoneKind = 'ios' | 'android' | null;
+
+/** Chrome on an iPhone, whose Share button is in the address bar, not at the bottom. */
+export function isChromeOnIos(): boolean {
+  return /CriOS/.test(navigator.userAgent);
+}
 
 export function phoneKind(): PhoneKind {
   const agent = navigator.userAgent;

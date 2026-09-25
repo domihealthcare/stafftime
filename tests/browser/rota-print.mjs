@@ -142,6 +142,15 @@ await step('Print on the schedule opens the printable week, one page per office'
 });
 
 const nbPage = () => mgr.getByTestId('print-page-North Bergen');
+await step('each page is headed by the black logo with the slogan, which prints cleanly', async () => {
+  const logo = nbPage().getByRole('img', { name: /Your Health\. Your Family\. Your Home\./ });
+  await logo.waitFor({ timeout: 5000 });
+  const src = await logo.getAttribute('src');
+  if (!src.includes('black')) throw new Error(`the printed rota uses ${src}`);
+  if (!(await logo.evaluate((img) => img.complete && img.naturalWidth > 0)))
+    throw new Error('the logo did not load');
+});
+
 await step('published shifts print; drafts are left off and counted', async () => {
   const row = nbPage().getByTestId('print-row-Frankie Front-Desk');
   await row.waitFor({ timeout: 5000 });

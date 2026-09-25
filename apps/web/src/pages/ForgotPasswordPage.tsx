@@ -1,3 +1,4 @@
+import { BrandLogo } from '../components/Brand';
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Alert, Card } from '../components/ui';
@@ -35,6 +36,7 @@ export function ForgotPasswordPage() {
   return (
     <div className="flex min-h-screen items-center justify-center bg-slate-100 px-4 py-10">
       <div className="w-full max-w-sm">
+        <BrandLogo className="mx-auto mb-6 h-24 w-auto" />
         <h1 className="mb-1 text-center text-2xl font-semibold text-slate-900">
           Reset your password
         </h1>

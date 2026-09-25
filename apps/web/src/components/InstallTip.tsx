@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import {
   canPromptInstall,
+  isChromeOnIos,
   isInstalled,
   onInstallAvailabilityChange,
   phoneKind,
@@ -54,7 +55,15 @@ export function InstallTip() {
         <img src="/icon-192.png" alt="" className="h-10 w-10 shrink-0 rounded-lg ring-1 ring-slate-200" />
         <div className="min-w-0 flex-1">
           <p className="font-semibold text-slate-900">Add Domi Staff to your home screen</p>
-          {kind === 'ios' ? (
+          {kind === 'ios' && isChromeOnIos() ? (
+            <p className="mt-1">
+              Tap <strong>Share</strong>{' '}
+              <ShareIcon />
+              {' '}in Chrome&rsquo;s address bar at the top (or <strong>⋯</strong>, then{' '}
+              <strong>Share</strong>), then <strong>Add to Home Screen</strong>. It opens like an
+              app — no app store needed.
+            </p>
+          ) : kind === 'ios' ? (
             <p className="mt-1">
               Tap <strong>Share</strong>{' '}
               <ShareIcon />
