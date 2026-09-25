@@ -1,6 +1,8 @@
 import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
 import { App } from './App';
+// Catches Android's install prompt before any screen has mounted.
+import './lib/install';
 import './index.css';
 
 const container = document.getElementById('root');

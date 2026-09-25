@@ -49,6 +49,7 @@ reset_state() {
     -c "delete from shifts where notes = 'availability-suite';" \
     -c "delete from shifts where notes = 'overtime-suite';" \
     -c "delete from shifts where notes = 'bell-suite';" \
+    -c "delete from shifts where notes = 'attention-suite';" \
     -c "delete from notifications;" \
     -c "delete from shifts where \"employeeId\" is null;" \
     -c "delete from adp_settings;" \
@@ -61,7 +62,7 @@ reset_state() {
 
 # The scheduler suite builds its rotas in February 2027 so that clearing them
 # cannot touch the shift the seed puts on today's date.
-SUITES="drive refusals correct auth kiosk export locations pto pto-policy presets calendar scheduler checklists phone reset payroll credentials privacy race attention announcements resources directory availability surveys dashboard date-ranges help adp profile rota wfh overtime bell rota-print closing"
+SUITES="drive refusals correct auth kiosk export locations pto pto-policy presets calendar scheduler checklists phone reset payroll credentials privacy race attention announcements resources directory availability surveys dashboard date-ranges help adp profile rota wfh overtime bell rota-print closing install"
 
 # Full output per suite goes to a file, and only the step lines are printed, so
 # a failure's detail is still there to read rather than truncated away.

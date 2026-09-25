@@ -314,6 +314,11 @@ Beyond the phases, the parts worth knowing about before picking up work:
   git locally), whether it is the test or live site, and — because
   `/api/config` reports the commit the server runs — a "newer version is live,
   reload" prompt when a tab is out of date.
+- **On a phone's home screen** (September 2026): an installable web app —
+  manifest, the roof logo as its icon, opens full screen as "Domi Staff" — not
+  a store app. A one-time tip on the sign-in screen of a phone, and "Put Domi
+  Staff on your phone" in Help. **No service worker, no offline mode**, on
+  purpose: a punch with no signal must plainly fail, not seem to work.
 - **Demo data** loads from a button (account menu → Practice settings), not
   only from a terminal — whoever sets a deployment up is in a browser. Admin
   only, and refuses unless `APP_ENVIRONMENT` is `test`: it replaces every shift
