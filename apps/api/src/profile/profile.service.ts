@@ -21,6 +21,8 @@ const PROFILE_SELECT = {
   phone: true,
   about: true,
   photoUpdatedAt: true,
+  birthdayMonth: true,
+  birthdayDay: true,
   pinUpdatedAt: true,
   pinHash: true,
   role: true,
@@ -31,8 +33,8 @@ const PROFILE_SELECT = {
 /**
  * Your own profile: how colleagues see you in the Directory.
  *
- * Legal name, email, access level, job roles and offices are shown but are an
- * admin's or manager's to change — payroll and sign-in depend on them. The
+ * Legal name, email, access level, job roles, offices and birthday are shown
+ * but are an admin's or manager's to change — payroll and sign-in depend on them. The
  * rest is yours.
  */
 @Injectable()

@@ -173,7 +173,7 @@ await step('an admin gives Frankie a File # on the Staff screen', async () => {
   await admin.goto(`${BASE}/staff`, { waitUntil: 'networkidle' });
   const staffCard = admin.getByTestId('staff-frontdesk@domihealthcare.com');
   await staffCard.getByText('No ADP File # yet').waitFor({ timeout: 15000 });
-  await staffCard.getByRole('button', { name: 'Role, locations and ADP' }).click();
+  await staffCard.getByRole('button', { name: 'Role, locations, birthday and ADP' }).click();
   await staffCard.getByLabel('ADP File #').fill('001234');
   const saved = admin.waitForResponse((r) => r.url().includes('/api/employees/') && r.request().method() === 'PATCH');
   await staffCard.getByRole('button', { name: 'Save', exact: true }).click();

@@ -1,7 +1,9 @@
 import { useMemo, useState } from 'react';
+import { birthdayName } from '../lib/birthday';
 import { ApiError, api } from '../lib/api';
 import { formatTime, formatTimeCompact, localDate, toLocalInputValue } from '../lib/format';
 import type {
+  BirthdayEntry,
   CoverageDay,
   Employee,
   JobRole,
@@ -63,6 +65,7 @@ export function RotaTable({
   jobRoles,
   coverage,
   timeOff = [],
+  birthdays = [],
   overtimeThresholdHours,
   overtime,
   ownWeeks,
@@ -83,6 +86,9 @@ export function RotaTable({
   /// Time off in the week: approved blocks a day, a request waiting on a
   /// manager is flagged. Staff get only their own from the API.
   timeOff?: PtoRequest[];
+  /// Colleagues' birthdays this week: a cake under the day, for everybody,
+  /// and on the person's own row.
+  birthdays?: BirthdayEntry[];
   overtimeThresholdHours: number;
   /// From the server, per person per week and across every location — so a
   /// row filtered to one office still shows the week as a whole.
@@ -333,6 +339,17 @@ export function RotaTable({
                       {day.toLocaleDateString(undefined, { weekday: 'short' })}{' '}
                       {day.toLocaleDateString(undefined, { day: 'numeric' })}
                     </span>
+                    {birthdays
+                      .filter((entry) => entry.date === dayKeys[index])
+                      .map((entry) => (
+                        <span
+                          key={entry.id}
+                          data-testid={`birthday-${dayKeys[index]}`}
+                          className="block text-xs font-normal text-amber-800"
+                        >
+                          <span aria-hidden="true">🎂</span> {birthdayName(entry)}
+                        </span>
+                      ))}
                     {cov && !selfId && (
                       <span
                         className="block text-xs font-normal tabular-nums text-slate-500"
@@ -445,6 +462,18 @@ export function RotaTable({
                           style={off?.status === 'APPROVED' ? OFF_HATCH : undefined}
                         >
                           <div className="flex flex-col gap-1">
+                            {row.kind === 'person' &&
+                              birthdays.some(
+                                (entry) =>
+                                  entry.id === row.person?.id && entry.date === dayKeys[index],
+                              ) && (
+                                <span
+                                  data-testid="birthday-chip"
+                                  className="rounded-md bg-amber-50 px-1.5 py-0.5 text-xs font-medium text-amber-900 ring-1 ring-inset ring-amber-200"
+                                >
+                                  <span aria-hidden="true">🎂</span> Birthday
+                                </span>
+                              )}
                             {off && <TimeOffChip request={off} />}
                             {inCell.map((shift) => (
                               <ShiftChip

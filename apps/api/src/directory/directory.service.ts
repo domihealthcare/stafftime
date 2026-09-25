@@ -1,6 +1,7 @@
-import { Injectable } from '@nestjs/common';
+import { BadRequestException, Injectable } from '@nestjs/common';
 import { EmploymentStatus, Role } from '@prisma/client';
 import { AuthUser } from '../common/auth/auth-user';
+import { birthdaysBetween } from '../common/birthday';
 import { PrismaService } from '../prisma/prisma.service';
 
 /// An open punch older than this is a forgotten clock-out, not somebody at
@@ -14,10 +15,52 @@ export const ON_NOW_WINDOW_HOURS = 16;
  * Work contact details only: name, email, phone (confirmed as fine to share
  * with colleagues, September 2026), job roles and locations. Nothing from the
  * personnel side — pay type, hire date, status — and nobody who has left.
+ * Birthdays (month and day, no year) are here too, since September 2026, so
+ * colleagues can wish each other a happy birthday.
  */
 @Injectable()
 export class DirectoryService {
   constructor(private readonly prisma: PrismaService) {}
+
+  /**
+   * Whose birthday falls between two dates — this week on the home screen,
+   * the days on screen in the Schedule. Everybody still here; no year, so no
+   * ages, because none is stored.
+   */
+  async birthdays(from: string, to: string) {
+    const day = /^\d{4}-\d{2}-\d{2}$/;
+    if (!day.test(from) || !day.test(to) || Number.isNaN(Date.parse(from)) || Number.isNaN(Date.parse(to))) {
+      throw new BadRequestException('from and to are dates, YYYY-MM-DD.');
+    }
+    const span = (Date.parse(to) - Date.parse(from)) / 86_400_000;
+    if (span < 0 || span > 62) {
+      throw new BadRequestException('Ask for birthdays up to two months at a time.');
+    }
+    const people = await this.prisma.employee.findMany({
+      where: {
+        employmentStatus: { in: [EmploymentStatus.ACTIVE, EmploymentStatus.ON_LEAVE] },
+        birthdayMonth: { not: null },
+      },
+      select: {
+        id: true,
+        firstName: true,
+        lastName: true,
+        preferredName: true,
+        photoUpdatedAt: true,
+        birthdayMonth: true,
+        birthdayDay: true,
+      },
+      orderBy: [{ firstName: 'asc' }, { lastName: 'asc' }],
+    });
+    return birthdaysBetween(people, from, to).map(({ person, date }) => ({
+      id: person.id,
+      firstName: person.firstName,
+      lastName: person.lastName,
+      preferredName: person.preferredName,
+      photoUpdatedAt: person.photoUpdatedAt,
+      date,
+    }));
+  }
 
   async list(actor: AuthUser, now = new Date()) {
     const since = new Date(now.getTime() - ON_NOW_WINDOW_HOURS * 3_600_000);
@@ -34,6 +77,8 @@ export class DirectoryService {
         photoUpdatedAt: true,
         email: true,
         phone: true,
+        birthdayMonth: true,
+        birthdayDay: true,
         employmentStatus: true,
         jobRoles: {
           select: { jobRole: { select: { id: true, name: true, sortOrder: true, colour: true } } },

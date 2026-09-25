@@ -5,6 +5,7 @@ import { GeolocationRefused, detectClockMethod, getCurrentPosition } from '../li
 import { useSession } from '../lib/session';
 import type { ApplicableSection, ClosingSubmission, Shift, TimeEntry } from '../lib/types';
 import { ClosingChecklistForm } from '../components/ClosingChecklistForm';
+import { BirthdaysThisWeek } from '../components/BirthdaysThisWeek';
 import { PrimaryAnnouncement } from '../components/PrimaryAnnouncement';
 import { MyOvertimeNotice } from '../components/OvertimeAlerts';
 import { Alert, Badge, Card, Spinner } from '../components/ui';
@@ -276,6 +277,8 @@ export function ClockPage() {
           ? 'Working from home: no location is asked for or recorded.'
           : 'Clocking in from a browser shares your location with Domi Healthcare to confirm you are on site. It is recorded with your time entry.'}
       </p>
+
+      <BirthdaysThisWeek />
     </div>
   );
 }

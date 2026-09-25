@@ -9,8 +9,10 @@
  *
  * Columns the app does not keep are named back and ignored — never stored.
  * That matters because a list kept for HR purposes may well have a social
- * security number or a date of birth on it, which this app deliberately does
- * not hold (see "Data this app does not hold" in CLAUDE.md).
+ * security number on it, which this app deliberately does not hold (see "Data
+ * this app does not hold" in CLAUDE.md). A birthday column is read for its
+ * month and day only; the year is dropped here, in the browser, and never
+ * sent.
  */
 import type { JobRole, LocationSummary, Role } from './types';
 
@@ -24,6 +26,8 @@ export interface ImportedPerson {
   payType: 'HOURLY' | 'SALARY';
   hireDate: string;
   adpFileNumber?: string;
+  birthdayMonth?: number;
+  birthdayDay?: number;
   locationIds: string[];
   primaryLocationId?: string;
   jobRoleIds: string[];
@@ -60,6 +64,7 @@ type Field =
   | 'payType'
   | 'hireDate'
   | 'adpFileNumber'
+  | 'birthday'
   | 'offices'
   | 'jobRoles';
 
@@ -74,6 +79,7 @@ const FIELD_NAMES: Record<Field, string> = {
   payType: 'Pay type',
   hireDate: 'Hire date',
   adpFileNumber: 'ADP File #',
+  birthday: 'Birthday (month and day — the year is dropped)',
   offices: 'Offices',
   jobRoles: 'Job roles',
 };
@@ -90,11 +96,22 @@ const HEADINGS: [Field, string[]][] = [
   ['payType', ['paytype', 'pay', 'hourlysalary', 'salaryhourly', 'flsa', 'paybasis']],
   ['hireDate', ['hiredate', 'startdate', 'datehired', 'dateofhire', 'hired', 'started']],
   ['adpFileNumber', ['adpfile', 'adpfilenumber', 'fileno', 'filenumber', 'adp', 'adpid']],
+  ['birthday', ['birthday', 'birthdate', 'dateofbirth', 'dob', 'bday', 'born']],
   ['offices', ['office', 'offices', 'location', 'locations', 'site', 'sites', 'worksat']],
   [
     'jobRoles',
     ['jobrole', 'jobroles', 'position', 'positions', 'title', 'jobtitle', 'role', 'roles', 'department'],
   ],
+];
+
+/// Second chance for headings phrased another way — "Employment Start
+/// Date", "Mobile Phone Number", "E-mail Address (work)".
+const LOOSE: [Field, (key: string) => boolean][] = [
+  ['email', (key) => key.includes('email')],
+  ['birthday', (key) => key.includes('birth')],
+  ['hireDate', (key) => key.includes('hire') || (key.includes('start') && key.includes('date'))],
+  ['phone', (key) => /phone|mobile|cell/.test(key)],
+  ['adpFileNumber', (key) => key.includes('adp') || key.includes('fileno')],
 ];
 
 const squash = (text: string) => text.toLowerCase().replace(/[^a-z0-9]/g, '');
@@ -185,6 +202,43 @@ export function readDate(value: string): string | null {
   return null;
 }
 
+/// A birthday as month and day, from "11/09/1997", "11/9", "1997-11-09" or
+/// "Nov 9". The year, if any, is read past and thrown away.
+export function readBirthday(value: string): { month: number; day: number } | null {
+  const text = value.trim();
+  const full = readDate(text);
+  if (full) return { month: Number(full.slice(5, 7)), day: Number(full.slice(8, 10)) };
+  const short = /^(\d{1,2})[/.-](\d{1,2})$/.exec(text);
+  if (short) {
+    // Checked against a leap year, so 2/29 is allowed.
+    const iso = readDate(`2000-${short[1]}-${short[2]}`);
+    if (iso) return { month: Number(short[1]), day: Number(short[2]) };
+  }
+  const named = /^([a-z]+)\.?\s+(\d{1,2})$/i.exec(text);
+  if (named) {
+    const month = MONTH_NAMES.findIndex((name) => name.startsWith(named[1].toLowerCase().slice(0, 3))) + 1;
+    if (month > 0 && named[1].length >= 3 && readDate(`2000-${month}-${named[2]}`)) {
+      return { month, day: Number(named[2]) };
+    }
+  }
+  return null;
+}
+
+const MONTH_NAMES = [
+  'january',
+  'february',
+  'march',
+  'april',
+  'may',
+  'june',
+  'july',
+  'august',
+  'september',
+  'october',
+  'november',
+  'december',
+];
+
 export function readStaffList(
   text: string,
   offices: LocationSummary[],
@@ -203,9 +257,9 @@ export function readStaffList(
   const ignored: string[] = [];
   headings.forEach((heading, index) => {
     const key = squash(heading);
-    const match = HEADINGS.find(
-      ([field, names]) => names.includes(key) && !columns.has(field),
-    );
+    const match =
+      HEADINGS.find(([field, names]) => names.includes(key) && !columns.has(field)) ??
+      LOOSE.find(([field, test]) => test(key) && !columns.has(field));
     if (match && key) {
       columns.set(match[0], index);
       used.push({ heading, field: FIELD_NAMES[match[0]] });
@@ -293,6 +347,12 @@ export function readStaffList(
       problems.push(`Pay type "${cell('payType')}" should be Hourly or Salaried`);
     }
 
+    const birthdayText = cell('birthday');
+    const birthday = birthdayText ? readBirthday(birthdayText) : null;
+    if (birthdayText && !birthday) {
+      problems.push(`Cannot read the birthday "${birthdayText}" — use 11/9 or Nov 9`);
+    }
+
     const adp = cell('adpFileNumber');
     if (adp && !/^[A-Za-z0-9]{1,10}$/.test(adp)) {
       problems.push(`ADP File # "${adp}" should be letters and numbers only, 10 at most`);
@@ -340,6 +400,8 @@ export function readStaffList(
               payType,
               hireDate: hireDate!,
               adpFileNumber: adp || undefined,
+              birthdayMonth: birthday?.month,
+              birthdayDay: birthday?.day,
               locationIds: matchedOffices.map((office) => office.id),
               // The first office named is where they mostly work.
               primaryLocationId: matchedOffices[0]?.id,

@@ -1,6 +1,9 @@
 import { EmploymentStatus, PayType, Role } from '@prisma/client';
 import {
   ArrayUnique,
+  IsInt,
+  Max,
+  Min,
   IsArray,
   IsDateString,
   IsEmail,
@@ -73,6 +76,21 @@ export class CreateEmployeeDto {
   @IsString()
   @Length(1, 60)
   badgeId?: string;
+
+  /// Birthday, month and day only — never the year. Null clears it.
+  @IsOptional()
+  @ValidateIf((_, value) => value !== null)
+  @IsInt()
+  @Min(1)
+  @Max(12)
+  birthdayMonth?: number | null;
+
+  @IsOptional()
+  @ValidateIf((_, value) => value !== null)
+  @IsInt()
+  @Min(1)
+  @Max(31)
+  birthdayDay?: number | null;
 
   /// Locations this employee may work — and therefore clock in at.
   @IsOptional()

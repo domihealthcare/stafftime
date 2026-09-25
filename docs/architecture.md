@@ -2041,3 +2041,23 @@ counts wrong PINs, against anybody, in a 15-minute window a correct PIN does
 not reset, and stops taking PINs for 5 minutes after 10. That is generous for
 honest typos and useless for guessing a colleague's PIN.
 
+## Birthdays
+
+Asked for by Dominguez (September 2026) so colleagues can wish each other a
+happy birthday. It is a deliberate, narrow exception to "no date of birth":
+two small integers, `birthdayMonth` and `birthdayDay`, both or neither
+(checked in the service and by a database constraint), and never a year —
+an age is identifying and a discrimination risk at work, and nothing on the
+screens needs it. The pasted staff import reads a full date of birth if that
+is what the spreadsheet has, and drops the year in the browser, so it is
+never sent; the browser suite asserts the request carries no year. The
+schema guard allows exactly those two birth fields.
+
+Dominguez chose for birthdays to be always shown, with no opt-out, on the
+Clock screen (the coming seven days), in the Schedule (under the day in the
+week table, on the person's own row, and in the month grid) and on the
+Directory card. They are set by an admin, like the other things on "Set by
+the practice" on Your profile. `birthdaysBetween` walks the requested days
+rather than comparing month/day pairs, which keeps ranges that cross a year
+end correct and puts a 29 February birthday on the 28th in other years.
+

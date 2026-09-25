@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
+import { MONTHS } from '../lib/birthday';
 import { ApiError, api } from '../lib/api';
 import { useSession } from '../lib/session';
 import type { Employee, Location, Role } from '../lib/types';
@@ -262,6 +263,8 @@ function StaffCard({
   const [role, setRole] = useState<Role>(person.role);
   const [assigned, setAssigned] = useState<string[]>(person.locations.map((l) => l.locationId));
   const [fileNumber, setFileNumber] = useState(person.adpFileNumber ?? '');
+  const [birthMonth, setBirthMonth] = useState(person.birthdayMonth ? String(person.birthdayMonth) : '');
+  const [birthDay, setBirthDay] = useState(person.birthdayDay ? String(person.birthdayDay) : '');
 
   const terminated = person.employmentStatus === 'TERMINATED';
   const confirm = useConfirm();
@@ -304,6 +307,8 @@ function StaffCard({
         locationIds: assigned,
         primaryLocationId: assigned[0],
         adpFileNumber: fileNumber.trim() || null,
+        birthdayMonth: birthMonth && birthDay ? Number(birthMonth) : null,
+        birthdayDay: birthMonth && birthDay ? Number(birthDay) : null,
       });
       setEditing(false);
       onChanged();
@@ -396,7 +401,7 @@ function StaffCard({
             onClick={() => setEditing((open) => !open)}
             className="font-medium text-slate-600 hover:text-slate-900"
           >
-            {editing ? 'Cancel' : 'Role, locations and ADP'}
+            {editing ? 'Cancel' : 'Role, locations, birthday and ADP'}
           </button>
           {/* Terminating yourself would lock you out of your own practice. */}
           {!isMe && (
@@ -511,6 +516,39 @@ function StaffCard({
             Their number in ADP TotalSource — on the worksheet you export from ADP. Their hours
             cannot go in the ADP import file without it.
           </p>
+
+          <fieldset className="mt-3">
+            <legend className="text-sm font-medium text-slate-700">Birthday</legend>
+            <div className="mt-1 flex gap-2">
+              <select
+                aria-label="Birthday month"
+                value={birthMonth}
+                onChange={(event) => setBirthMonth(event.target.value)}
+                className="rounded-lg border-slate-300 text-sm shadow-sm focus:border-brand-600 focus:ring-brand-600"
+              >
+                <option value="">Not set</option>
+                {MONTHS.map((name, index) => (
+                  <option key={name} value={index + 1}>
+                    {name}
+                  </option>
+                ))}
+              </select>
+              <input
+                aria-label="Birthday day"
+                type="number"
+                inputMode="numeric"
+                min={1}
+                max={31}
+                value={birthDay}
+                onChange={(event) => setBirthDay(event.target.value)}
+                className="w-20 rounded-lg border-slate-300 text-sm shadow-sm focus:border-brand-600 focus:ring-brand-600"
+              />
+            </div>
+            <p className="mt-1 text-xs text-slate-500">
+              Month and day only — colleagues see it that week, on the Schedule and in the
+              Directory.
+            </p>
+          </fieldset>
 
           <fieldset className="mt-3">
             <legend className="text-sm font-medium text-slate-700">Locations</legend>

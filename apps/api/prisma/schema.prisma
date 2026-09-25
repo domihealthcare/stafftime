@@ -169,6 +169,13 @@ model Employee {
   /// A number colleagues can reach them on, shown in the Directory. Their own
   /// to set on their profile; an admin can set it too.
   phone          String?
+  /// Birthday — month and day only, never the year (decided with Dominguez,
+  /// September 2026): enough for colleagues to wish somebody a happy
+  /// birthday, without an age or a date of birth in the app. Shown on the
+  /// home screen that week, on the Schedule and in the Directory. Set by an
+  /// admin; both or neither.
+  birthdayMonth Int?
+  birthdayDay   Int?
   /// Optional, shown beside their name in the Directory ("she/her").
   pronouns       String?
   /// One line about themselves for the Directory, e.g. "Spanish speaker".

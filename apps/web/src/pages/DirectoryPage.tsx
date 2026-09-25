@@ -1,4 +1,5 @@
 import { Avatar } from '../components/Avatar';
+import { formatBirthday } from '../lib/birthday';
 import { JobRoleTag } from '../components/JobRoleTag';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Alert, Badge, Card, EmptyState, PageHeading, Spinner } from '../components/ui';
@@ -249,6 +250,12 @@ function PersonCard({
               >
                 {person.phone}
               </a>
+            )}
+            {formatBirthday(person.birthdayMonth, person.birthdayDay) && (
+              <span className="text-slate-600" data-testid="directory-birthday">
+                <span aria-hidden="true">🎂</span> Birthday{' '}
+                {formatBirthday(person.birthdayMonth, person.birthdayDay)}
+              </span>
             )}
           </div>
         </div>

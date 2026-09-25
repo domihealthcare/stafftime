@@ -55,6 +55,11 @@ This is a timekeeping app, not a payroll or HR system. It deliberately stores:
   personnel file, where the practice already keeps it and already controls it
 - **no licence numbers** — the credential screen holds the expiry date, which is
   the thing a manager actually needs to act on
+- **no date of birth** — a **birthday** is kept as a **month and day only**,
+  never the year (decided with Dominguez, September 2026), so colleagues can
+  celebrate it without an age in the app. The staff import drops the year in
+  the browser, before anything is sent, and the schema guard fails on any
+  other birth field
 
 Nothing is uploaded to the app, with **one deliberate exception**: a
 **profile photo** of yourself (confirmed by Dominguez, September 2026). The
@@ -354,6 +359,14 @@ Beyond the phases, the parts worth knowing about before picking up work:
   night is fine. **Per-kiosk PIN pause**: 10 wrong PINs within 15 minutes, on
   any names, stops that time clock taking PINs for 5 minutes; a correct PIN in
   between does not reset the count.
+- **Birthdays** (September 2026, Dominguez): `Employee.birthdayMonth` /
+  `birthdayDay`, set by an admin (Staff → Role, locations, birthday and ADP)
+  or from a Birthday column in the import. Always shown — Dominguez chose no
+  opt-out: "Birthdays this week" on the Clock screen, a cake under the day
+  and on the person's own row in the Schedule week, a line in the month view,
+  and on their Directory card. Read-only on Your profile. `GET
+  /directory/birthdays?from&to` (any signed-in person, two months at most); a
+  29 February birthday shows on the 28th in other years.
 - **Demo data** loads from a button (account menu → Practice settings), not
   only from a terminal — whoever sets a deployment up is in a browser. Admin
   only, and refuses unless `APP_ENVIRONMENT` is `test`: it replaces every shift

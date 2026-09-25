@@ -1,5 +1,6 @@
 import type { ImportedPerson } from './staff-import';
 import type {
+  BirthdayEntry,
   Profile,
   Announcement,
   Attention,
@@ -479,6 +480,8 @@ export const api = {
     locationIds?: string[];
     primaryLocationId?: string;
   }) => request<Employee>('/employees', { method: 'POST', body: JSON.stringify(body) }),
+  birthdays: (from: string, to: string) =>
+    request<BirthdayEntry[]>(`/directory/birthdays?from=${from}&to=${to}`),
   sendWelcome: (id: string) =>
     request<{ welcomeSentAt: string }>(`/employees/${id}/welcome`, { method: 'POST' }),
   sendWelcomeToEveryone: () =>
@@ -503,6 +506,8 @@ export const api = {
       locationIds: string[];
       primaryLocationId: string;
       adpFileNumber: string | null;
+      birthdayMonth: number | null;
+      birthdayDay: number | null;
     }>,
   ) => request<Employee>(`/employees/${id}`, { method: 'PATCH', body: JSON.stringify(body) }),
   terminateEmployee: (id: string) => request<Employee>(`/employees/${id}`, { method: 'DELETE' }),
