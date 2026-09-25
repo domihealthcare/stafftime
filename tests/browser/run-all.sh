@@ -49,6 +49,7 @@ reset_state() {
     -c "delete from shifts where notes = 'availability-suite';" \
     -c "delete from shifts where notes = 'overtime-suite';" \
     -c "delete from shifts where notes = 'bell-suite';" \
+    -c "delete from shifts where notes = 'attention-suite';" \
     -c "delete from notifications;" \
     -c "delete from shifts where \"employeeId\" is null;" \
     -c "delete from adp_settings;" \

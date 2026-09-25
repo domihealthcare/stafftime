@@ -47,6 +47,37 @@ await step('an employee is not offered the notification settings', async () => {
     throw new Error('an employee was offered the notification settings');
 });
 
+// A quiet practice has next week's rota out. From Thursday to Sunday the
+// round-up rightly chases an office with nothing published for next week, and
+// whether an office counts as "rota'd here recently" depends on what earlier
+// suites left behind — so without this the check below passed or failed by the
+// day of the week and the suite order. Removed again by run-all's reset.
+await step('next week is published at every office', () => admin.evaluate(async () => {
+  const ok = async (r) => { if (!r.ok) throw new Error(await r.text()); return r.json(); };
+  const monday = new Date();
+  monday.setDate(monday.getDate() + (((8 - monday.getDay()) % 7) || 7));
+  const at = (hour) => { const d = new Date(monday); d.setHours(hour, 0, 0, 0); return d.toISOString(); };
+  // Morning at one office, afternoon at the next: one person may work at both.
+  let hour = 8;
+  for (const location of await fetch('/api/locations').then(ok)) {
+    const [person] = await fetch(`/api/employees?locationId=${location.id}`).then(ok);
+    if (!person) continue;
+    await fetch('/api/shifts', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        employeeId: person.id,
+        locationId: location.id,
+        startsAt: at(hour),
+        endsAt: at(hour + 4),
+        status: 'PUBLISHED',
+        notes: 'attention-suite',
+      }),
+    }).then(ok);
+    hour += 5;
+  }
+}));
+
 await step('a quiet practice shows no banner at all', async () => {
   // Worth asserting: a banner that is always there is wallpaper within a week.
   await admin.getByRole('link', { name: /^Schedule/ }).first().click();
