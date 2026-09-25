@@ -1956,3 +1956,29 @@ a merge. `/api/config` reports the commit the server runs (again from
 `VERCEL_GIT_COMMIT_SHA`), so the page can tell a tab opened before the latest
 deploy and offer a reload; with no commit on either side it simply does not
 compare.
+
+## Domi Staff on a phone
+
+Staff can put the app on their home screen and open it full screen, with the
+roof logo as its icon — an installable web app, not an App Store or Play Store
+app (September 2026, chosen by Dominguez over wrapping it for the stores).
+`public/manifest.webmanifest` names it and points at the icons, which were cut
+from the logo on the website: 192 and 512 for Android, a "maskable" 512 with
+the roof inside the safe circle so Android's round and squircle masks do not
+clip it, and a 180 `apple-touch-icon.png` for iPhones, which ignore the
+manifest's icons. The CSP needs nothing extra: `default-src 'self'` covers the
+manifest.
+
+There is **deliberately no service worker**, so no offline mode. A timeclock
+that appeared to work with no signal would either take a punch it could not
+keep or hold one to send later with a time nobody can check. With no service
+worker a lost signal is the usual "Could not reach the server" and the punch
+plainly did not happen. The browser suite asserts none is registered.
+
+The sign-in screen shows a one-time tip on phones (`InstallTip`): Share → Add to
+Home Screen on an iPhone, and on Android the browser's own install prompt when
+Chrome offers one (`beforeinstallprompt`, caught at start-up in
+`lib/install.ts` because it fires before the sign-in screen mounts), otherwise
+the ⋮ menu route. It is never shown on a computer or inside the installed app,
+and "Not now" is remembered in the browser. Help has the same steps under "Put
+Domi Staff on your phone".

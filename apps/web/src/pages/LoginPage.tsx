@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { ApiError } from '../lib/api';
 import { useSession } from '../lib/session';
 import { BrandLogo } from '../components/Brand';
+import { InstallTip } from '../components/InstallTip';
 import { PasswordField } from '../components/PasswordField';
 import { Alert, Card } from '../components/ui';
 
@@ -87,6 +88,8 @@ export function LoginPage() {
             Forgotten your password?
           </Link>
         </p>
+
+        <InstallTip />
       </div>
     </div>
   );

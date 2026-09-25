@@ -38,6 +38,32 @@ const STAFF: Section[] = [
         ),
       },
       {
+        question: 'Put Domi Staff on your phone',
+        answer: (
+          <>
+            <p>
+              It can sit on your home screen like any other app, and opens straight to it, full
+              screen. There is nothing to download from an app store.
+            </p>
+            <p>
+              <strong>iPhone:</strong> open {window.location.host} in <strong>Safari</strong>, tap{' '}
+              <strong>Share</strong> (the square with an arrow, at the bottom), scroll down and
+              tap <strong>Add to Home Screen</strong>, then <strong>Add</strong>.
+            </p>
+            <p>
+              <strong>Android:</strong> open it in <strong>Chrome</strong>, tap the{' '}
+              <strong>⋮</strong> menu at the top right, then <strong>Add to Home screen</strong>{' '}
+              or <strong>Install app</strong>. The sign-in screen may offer an{' '}
+              <strong>Install</strong> button that does the same.
+            </p>
+            <p>
+              It still needs a signal to clock in or out — nothing is saved on the phone to send
+              later, so if it says it could not reach the server, the punch did not happen.
+            </p>
+          </>
+        ),
+      },
+      {
         question: 'How do I use the front-desk tablet?',
         answer: (
           <>
