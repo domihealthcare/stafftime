@@ -46,15 +46,27 @@ const STAFF: Section[] = [
               screen. There is nothing to download from an app store.
             </p>
             <p>
-              <strong>iPhone:</strong> open {window.location.host} in <strong>Safari</strong>, tap{' '}
+              <strong>iPhone, in Safari:</strong> open {window.location.host}, tap{' '}
               <strong>Share</strong> (the square with an arrow, at the bottom), scroll down and
               tap <strong>Add to Home Screen</strong>, then <strong>Add</strong>.
             </p>
             <p>
-              <strong>Android:</strong> open it in <strong>Chrome</strong>, tap the{' '}
-              <strong>⋮</strong> menu at the top right, then <strong>Add to Home screen</strong>{' '}
-              or <strong>Install app</strong>. The sign-in screen may offer an{' '}
-              <strong>Install</strong> button that does the same.
+              <strong>iPhone, in Chrome:</strong> open {window.location.host}, tap{' '}
+              <strong>Share</strong> in the address bar at the top (on older versions,{' '}
+              <strong>⋯</strong> at the bottom right, then <strong>Share</strong>), then{' '}
+              <strong>Add to Home Screen</strong> and <strong>Add</strong>.
+            </p>
+            <p>
+              <strong>Android, in Chrome:</strong> tap the <strong>⋮</strong> menu at the top
+              right, then <strong>Add to Home screen</strong> or <strong>Install app</strong>. The
+              sign-in screen may offer an <strong>Install</strong> button that does the same.
+            </p>
+            <p>
+              <strong>A computer, in Chrome:</strong> click the install icon at the right
+              of the address bar (a screen with a down arrow), or open the <strong>⋮</strong>{' '}
+              menu, then <strong>Cast, save and share</strong> →{' '}
+              <strong>Install page as app</strong>. It then opens in its own window from the
+              Start menu, Dock or desktop.
             </p>
             <p>
               It still needs a signal to clock in or out — nothing is saved on the phone to send

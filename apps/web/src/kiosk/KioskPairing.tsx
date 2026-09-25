@@ -1,3 +1,4 @@
+import { BrandLogo } from '../components/Brand';
 import { useState } from 'react';
 import { ApiError, kioskApi } from '../lib/api';
 import { Alert } from '../components/ui';
@@ -27,6 +28,7 @@ export function KioskPairing({ onPaired }: { onPaired: () => void }) {
     <div className="flex min-h-screen items-center justify-center bg-slate-100 p-6">
       <div className="w-full max-w-md">
         <div className="mb-6 text-center">
+          <BrandLogo className="mx-auto mb-4 h-24 w-auto" />
           <h1 className="text-2xl font-semibold text-slate-900">Set up this kiosk</h1>
           <p className="mt-2 text-sm text-slate-600">
             An administrator can generate a pairing code from Kiosks in the web app. It is

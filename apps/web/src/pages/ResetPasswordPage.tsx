@@ -1,3 +1,4 @@
+import { BrandLogo } from '../components/Brand';
 import { useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { PasswordField } from '../components/PasswordField';
@@ -121,6 +122,7 @@ function Shell({ title, children }: { title: string; children: React.ReactNode }
   return (
     <div className="flex min-h-screen items-center justify-center bg-slate-100 px-4 py-10">
       <div className="w-full max-w-sm">
+        <BrandLogo className="mx-auto mb-6 h-24 w-auto" />
         <h1 className="mb-6 text-center text-2xl font-semibold text-slate-900">{title}</h1>
         <Card className="p-6">{children}</Card>
       </div>
