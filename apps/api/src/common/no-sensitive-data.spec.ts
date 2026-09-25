@@ -43,6 +43,20 @@ describe('what this app deliberately does not store', () => {
     }
   });
 
+  /// Birthdays arrived in September 2026 so colleagues can celebrate them —
+  /// as a month and a day, deliberately never a year or a whole date of birth.
+  it('keeps a birthday to the month and day, never the year', () => {
+    const fields = model('Employee')
+      .split('\n')
+      .map((line) => line.trim())
+      .filter((line) => line && !line.startsWith('//'))
+      .map((line) => line.split(/\s+/)[0]);
+    const birthdayFields = fields.filter((field) => /birth/i.test(field));
+    expect(birthdayFields.sort()).toEqual(['birthdayDay', 'birthdayMonth']);
+    expect(model('Employee')).toMatch(/\n\s*birthdayMonth\s+Int\?/);
+    expect(model('Employee')).toMatch(/\n\s*birthdayDay\s+Int\?/);
+  });
+
   it('holds no personnel documents', () => {
     // StoredFile and PayrollExport keep bytes on purpose: a generated timesheet
     // is a file this app made, not a document somebody handed over.

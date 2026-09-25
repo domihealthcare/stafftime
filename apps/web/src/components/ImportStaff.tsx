@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { ApiError, api } from '../lib/api';
+import { formatBirthday } from '../lib/birthday';
 import { readStaffList } from '../lib/staff-import';
 import type { JobRole, LocationSummary } from '../lib/types';
 import { Alert, Card } from './ui';
@@ -75,11 +76,11 @@ export function ImportStaff({
           <p>
             <strong>Optional:</strong> Phone, Job role (several separated by commas), Access
             (Employee, Manager or Admin — Employee if left blank), Pay type (Hourly or Salaried),
-            Goes by, ADP File #.
+            Goes by, ADP File #, Birthday (only the month and day are kept — the year is dropped).
           </p>
           <p>
-            Any other column is ignored and not kept — leave social security numbers, dates of
-            birth and pay rates out of it anyway.
+            Any other column is ignored and not kept — leave social security numbers and pay
+            rates out of it anyway.
           </p>
           <div className="overflow-x-auto">
             <table className="mt-1 text-xs">
@@ -154,6 +155,8 @@ export function ImportStaff({
                         </span>
                         <span className="block text-xs text-slate-500">
                           {row.person.email}
+                          {row.person.birthdayMonth &&
+                            ` · 🎂 ${formatBirthday(row.person.birthdayMonth, row.person.birthdayDay)}`}
                           {row.person.role !== 'EMPLOYEE' &&
                             ` · ${row.person.role === 'ADMIN' ? 'Admin' : 'Manager'}`}
                         </span>

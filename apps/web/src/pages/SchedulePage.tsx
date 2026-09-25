@@ -11,8 +11,10 @@ import {
   startOfWeek,
   toLocalInputValue,
 } from '../lib/format';
+import { birthdayName, birthdaysByDay } from '../lib/birthday';
 import { useIsManager, useSession } from '../lib/session';
 import type {
+  BirthdayEntry,
   Coverage,
   CoverageDay,
   Employee,
@@ -82,6 +84,7 @@ export function SchedulePage() {
   const [locations, setLocations] = useState<Location[]>([]);
   const [coverage, setCoverage] = useState<Coverage | null>(null);
   const [timeOff, setTimeOff] = useState<PtoRequest[]>([]);
+  const [birthdays, setBirthdays] = useState<BirthdayEntry[]>([]);
   /// Your own weeks over or close to the overtime line (staff).
   const [ownWeeks, setOwnWeeks] = useState<OwnOvertimeWeek[] | null>(null);
   const [loading, setLoading] = useState(true);
@@ -116,6 +119,12 @@ export function SchedulePage() {
       setShifts(shiftData);
       setLocations(locationData);
       setTimeOff(timeOffData);
+      // Colleagues' birthdays, for everybody: a cake on the day. Not worth
+      // failing the schedule over.
+      api
+        .birthdays(localDate(rangeStart), localDate(days[days.length - 1]))
+        .then(setBirthdays)
+        .catch(() => setBirthdays([]));
 
       // Only managers may list staff or read coverage.
       if (isManager) {
@@ -436,6 +445,7 @@ export function SchedulePage() {
           days={days}
           monthStart={monthStart}
           shiftsByDay={shiftsByDay}
+          birthdays={birthdaysByDay(birthdays)}
           showNames={isManager}
           onPickDay={(day) => {
             setWeekStart(startOfWeek(day));
@@ -456,6 +466,7 @@ export function SchedulePage() {
           jobRoles={jobRoles}
           coverage={isManager ? (coverage?.days ?? null) : null}
           timeOff={timeOff}
+          birthdays={birthdays}
           overtimeThresholdHours={coverage?.overtimeThresholdHours ?? 40}
           overtime={coverage?.overtime}
           ownWeeks={ownWeeks ?? undefined}
@@ -959,12 +970,15 @@ function MonthGrid({
   days,
   monthStart,
   shiftsByDay,
+  birthdays,
   showNames,
   onPickDay,
 }: {
   days: Date[];
   monthStart: Date;
   shiftsByDay: Map<string, Shift[]>;
+  /// YYYY-MM-DD → whose birthday it is.
+  birthdays: Map<string, BirthdayEntry[]>;
   /// A manager sees whose shift it is; an employee is only ever shown their
   /// own, so the name would be their own name forty times.
   showNames: boolean;
@@ -995,6 +1009,7 @@ function MonthGrid({
       <div className="grid grid-cols-7 gap-1">
         {days.map((day) => {
           const dayShifts = shiftsByDay.get(day.toDateString()) ?? [];
+          const cakes = (birthdays.get(localDate(day)) ?? []).map(birthdayName);
 
           // The days either side of the month are there to square off the grid.
           // They are shown, because a shift on the 1st matters whichever row it
@@ -1030,7 +1045,7 @@ function MonthGrid({
                 dayShifts.length === 0
                   ? 'no shifts'
                   : `${dayShifts.length} shift${dayShifts.length === 1 ? '' : 's'}: ${described.join(', ')}`
-              }`}
+              }${cakes.length > 0 ? ` — birthday: ${cakes.join(', ')}` : ''}`}
               className={`min-h-[72px] rounded-lg border p-1.5 text-left align-top transition hover:border-brand-400 hover:bg-brand-50 sm:min-h-[104px] sm:p-2 ${
                 isToday ? 'border-brand-500 ring-1 ring-brand-500' : 'border-slate-200'
               } ${outside ? 'bg-slate-50 opacity-60' : 'bg-white'}`}
@@ -1042,6 +1057,15 @@ function MonthGrid({
               >
                 {day.getDate()}
               </span>
+              {cakes.length > 0 && (
+                <span
+                  data-testid={`month-birthday-${localDate(day)}`}
+                  className="block truncate text-[10px] leading-4 text-amber-800 sm:text-[11px]"
+                >
+                  <span aria-hidden="true">🎂</span>{' '}
+                  <span className="hidden sm:inline">{cakes.join(', ')}</span>
+                </span>
+              )}
 
               {dayShifts.length === 0 ? (
                 <span className="mt-1 block text-[11px] text-slate-300 sm:text-xs">—</span>

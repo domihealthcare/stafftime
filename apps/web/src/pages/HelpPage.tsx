@@ -270,6 +270,17 @@ const STAFF: Section[] = [
         ),
       },
       {
+        question: 'Whose birthday is it?',
+        answer: (
+          <p>
+            Birthdays in the coming week are on the <Screen>Clock</Screen> screen, with a cake on
+            the day in the <Screen>Schedule</Screen> and on each person&rsquo;s card in the{' '}
+            <Screen>Directory</Screen>. Only the month and day are kept — never the year. Yours is
+            on <Screen>Your profile</Screen>; if it is wrong or missing, ask a manager.
+          </p>
+        ),
+      },
+      {
         question: 'Where are the links and guides for my job?',
         answer: (
           <p>
@@ -694,7 +705,8 @@ const MANAGERS: Section[] = [
               <Screen>Manage → Staff → Add several people</Screen>. In Excel or Google Sheets,
               select the list <strong>with its row of column names</strong>, copy, and paste it into
               the box. It needs a name, email, office (North Bergen, West New York or Both) and hire
-              date; phone, job roles, access and ADP File # are optional. Any other column — a
+              date; phone, job roles, access, birthday and ADP File # are optional. From a birthday
+              only the month and day are kept — the year is dropped before anything is sent. Any other column — a
               social security number, say — is ignored and never kept.
             </p>
             <p>

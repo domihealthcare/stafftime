@@ -62,6 +62,9 @@ export interface Employee extends EmployeeSummary {
   hasKioskPin?: boolean;
   /// Whether they have chosen a password yet; if not, a welcome email is still worth sending.
   hasPassword?: boolean;
+  /// Month and day only; never a year.
+  birthdayMonth?: number | null;
+  birthdayDay?: number | null;
   welcomeSentAt?: string | null;
   preferredName: string | null;
   pronouns?: string | null;
@@ -668,11 +671,24 @@ export interface DirectoryEntry {
   photoUpdatedAt: string | null;
   email: string;
   phone: string | null;
+  /// Month and day only; never a year.
+  birthdayMonth: number | null;
+  birthdayDay: number | null;
   onLeave: boolean;
   jobRoles: { id: string; name: string; colour: string }[];
   locations: { id: string; name: string; isPrimary: boolean }[];
   /// Clocked in now. `since` is only sent to managers.
   onNow: { location: { id: string; name: string }; remote?: boolean; since?: string } | null;
+}
+
+/// Somebody's birthday falling on `date` (YYYY-MM-DD) in the range asked for.
+export interface BirthdayEntry {
+  id: string;
+  firstName: string;
+  lastName: string;
+  preferredName: string | null;
+  photoUpdatedAt: string | null;
+  date: string;
 }
 
 export type UnavailabilityKind = 'WEEKLY' | 'ONE_OFF';
@@ -799,6 +815,8 @@ export interface Profile {
   phone: string | null;
   about: string | null;
   photoUpdatedAt: string | null;
+  birthdayMonth: number | null;
+  birthdayDay: number | null;
   /// Whether a tablet PIN is set, and when it last changed. The PIN itself is
   /// never sent: it is only ever stored hashed.
   hasPin: boolean;

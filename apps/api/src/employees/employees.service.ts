@@ -6,6 +6,7 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { EmploymentStatus, Prisma } from '@prisma/client';
+import { assertBirthday } from '../common/birthday';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateEmployeeDto } from './dto/create-employee.dto';
 import { ImportedEmployeeDto } from './dto/import-employees.dto';
@@ -33,6 +34,7 @@ export class EmployeesService {
   async create(dto: CreateEmployeeDto) {
     const { locationIds, primaryLocationId, adpFileNumber, ...employee } = dto;
     this.assertPrimaryIsAssigned(locationIds, primaryLocationId);
+    assertBirthday(dto.birthdayMonth, dto.birthdayDay);
 
     try {
       const created = await this.prisma.employee.create({
@@ -70,6 +72,13 @@ export class EmployeesService {
     const seen = new Map<string, number>();
     people.forEach((person, index) => {
       this.assertPrimaryIsAssigned(person.locationIds, person.primaryLocationId);
+      try {
+        assertBirthday(person.birthdayMonth, person.birthdayDay);
+      } catch (error) {
+        throw new BadRequestException(
+          `Row ${index + 1} (${person.email}): ${(error as Error).message}`,
+        );
+      }
       const email = normaliseEmail(person.email);
       const earlier = seen.get(email);
       if (earlier !== undefined) {
@@ -167,6 +176,7 @@ export class EmployeesService {
     await this.findOne(id);
     const { locationIds, primaryLocationId, adpFileNumber, ...employee } = dto;
     this.assertPrimaryIsAssigned(locationIds, primaryLocationId);
+    assertBirthday(dto.birthdayMonth, dto.birthdayDay);
 
     try {
       const updated = await this.prisma.employee.update({

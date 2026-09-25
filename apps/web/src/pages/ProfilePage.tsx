@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
+import { formatBirthday } from '../lib/birthday';
 import { Link } from 'react-router-dom';
 import { Avatar } from '../components/Avatar';
 import { JobRoleTag } from '../components/JobRoleTag';
@@ -349,6 +350,16 @@ export function ProfilePage() {
             <dt className="text-slate-500">Offices</dt>
             <dd className="font-medium text-slate-900">
               {profile.locations.map((place) => place.name).join(', ') || 'None yet'}
+            </dd>
+          </div>
+          <div>
+            <dt className="text-slate-500">Birthday</dt>
+            <dd className="font-medium text-slate-900" data-testid="profile-birthday">
+              {formatBirthday(profile.birthdayMonth, profile.birthdayDay) ?? 'Not set'}
+              <span className="block text-xs font-normal text-slate-500">
+                Shown to colleagues in the week, on the Schedule and in the Directory. Month and day
+                only.
+              </span>
             </dd>
           </div>
         </dl>
