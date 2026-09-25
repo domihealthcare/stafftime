@@ -67,7 +67,9 @@ describe('daysWithin', () => {
 });
 
 describe('PtoPolicyService', () => {
-  function build(options: { policy?: unknown; requests?: unknown[]; hireDate?: Date } = {}) {
+  function build(
+    options: { policy?: unknown; requests?: unknown[]; hireDate?: Date | null; createdAt?: Date } = {},
+  ) {
     const requests = options.requests ?? [];
     const prisma = {
       ptoPolicy: {
@@ -82,7 +84,8 @@ describe('PtoPolicyService', () => {
       employee: {
         findUniqueOrThrow: jest.fn().mockResolvedValue({
           id: 'emp-1',
-          hireDate: options.hireDate ?? day('2020-01-01'),
+          hireDate: options.hireDate === undefined ? day('2020-01-01') : options.hireDate,
+          createdAt: options.createdAt ?? day('2026-09-25'),
         }),
       },
       ptoRequest: {
@@ -176,6 +179,22 @@ describe('PtoPolicyService', () => {
       const fiscal = { ...DEFAULT_POLICY, yearStartMonth: 7, yearStartDay: 1 };
       expect(service.policyYearOf(day('2026-06-30'), fiscal)).toBe(2025);
       expect(service.policyYearOf(day('2026-07-01'), fiscal)).toBe(2026);
+    });
+  });
+
+  describe('somebody with no hire date on record', () => {
+    it('gets the whole year’s allowance, since there is nothing to prorate from', async () => {
+      const { service } = build({ hireDate: null, createdAt: day('2026-09-25') });
+      const balance = await service.balanceFor('emp-1', 2026);
+      expect(balance.vacation).toMatchObject({ entitled: 15, remaining: 15 });
+      expect(balance.sick).toMatchObject({ entitled: 5 });
+    });
+
+    it('counts carry-over only from when they were added to the app', async () => {
+      const { service, prisma } = build({ hireDate: null, createdAt: day('2026-09-25') });
+      await service.balanceFor('emp-1', 2026);
+      // Added this year: no earlier years walked, so nothing asked about them.
+      expect(prisma.ptoRequest.findMany).toHaveBeenCalledTimes(1);
     });
   });
 

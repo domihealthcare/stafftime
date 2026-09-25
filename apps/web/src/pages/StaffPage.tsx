@@ -263,6 +263,7 @@ function StaffCard({
   const [role, setRole] = useState<Role>(person.role);
   const [assigned, setAssigned] = useState<string[]>(person.locations.map((l) => l.locationId));
   const [fileNumber, setFileNumber] = useState(person.adpFileNumber ?? '');
+  const [hired, setHired] = useState(person.hireDate ? person.hireDate.slice(0, 10) : '');
   const [birthMonth, setBirthMonth] = useState(person.birthdayMonth ? String(person.birthdayMonth) : '');
   const [birthDay, setBirthDay] = useState(person.birthdayDay ? String(person.birthdayDay) : '');
 
@@ -307,6 +308,7 @@ function StaffCard({
         locationIds: assigned,
         primaryLocationId: assigned[0],
         adpFileNumber: fileNumber.trim() || null,
+        hireDate: hired || null,
         birthdayMonth: birthMonth && birthDay ? Number(birthMonth) : null,
         birthdayDay: birthMonth && birthDay ? Number(birthDay) : null,
       });
@@ -517,6 +519,23 @@ function StaffCard({
             cannot go in the ADP import file without it.
           </p>
 
+          <label
+            htmlFor={`hired-${person.id}`}
+            className="mt-3 block text-sm font-medium text-slate-700"
+          >
+            Hire date
+          </label>
+          <input
+            id={`hired-${person.id}`}
+            type="date"
+            value={hired}
+            onChange={(event) => setHired(event.target.value)}
+            className="mt-1 rounded-lg border-slate-300 text-sm shadow-sm focus:border-brand-600 focus:ring-brand-600"
+          />
+          <p className="mt-1 text-xs text-slate-500">
+            Optional — used for first-year time off. Without it they get the whole year&rsquo;s.
+          </p>
+
           <fieldset className="mt-3">
             <legend className="text-sm font-medium text-slate-700">Birthday</legend>
             <div className="mt-1 flex gap-2">
@@ -618,7 +637,7 @@ function AddStaffForm({ locations, onCreated }: { locations: Location[]; onCreat
         email: email.trim().toLowerCase(),
         role,
         payType,
-        hireDate,
+        hireDate: hireDate || undefined,
         locationIds: assigned,
         primaryLocationId: assigned[0],
       });
@@ -721,12 +740,14 @@ function AddStaffForm({ locations, onCreated }: { locations: Location[]; onCreat
           <input
             id="new-hire"
             type="date"
-            required
             value={hireDate}
             onChange={(event) => setHireDate(event.target.value)}
             className={field}
           />
-          <p className="mt-1 text-xs text-slate-500">Used to work out their first-year PTO.</p>
+          <p className="mt-1 text-xs text-slate-500">
+            Optional. Used to work out their first-year time off; without it they get the whole
+            year&rsquo;s.
+          </p>
         </div>
 
         <fieldset>

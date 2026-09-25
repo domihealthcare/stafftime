@@ -28,7 +28,9 @@ records without a messy migration.
 - **Location** — North Bergen, West New York; each has a geofence radius (in
   **feet**, default 500) and/or allow-listed IP(s) for clock-in verification
 - **Employee** — name, role, assigned location(s), employment status, pay type,
-  hire date, `external_id` (nullable, for future EMR linkage)
+  hire date (optional since September 2026 — without it time off is not
+  prorated and onboarding counts from the day it starts), `external_id`
+  (nullable, for future EMR linkage)
 - **Shift** — employee, date, start/end time, location — built by managers in the
   scheduler
 - **TimeEntry** — clock in/out timestamps, method (web / mobile / kiosk), captured

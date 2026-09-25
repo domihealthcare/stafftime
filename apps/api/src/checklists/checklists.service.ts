@@ -274,11 +274,14 @@ export class ChecklistsService {
 
   private resolveAnchor(
     dto: StartChecklistDto,
-    employee: { hireDate: Date; terminationDate: Date | null },
+    employee: { hireDate: Date | null; terminationDate: Date | null },
   ): Date {
     if (dto.anchorDate) return toUtcDate(dto.anchorDate);
 
-    if (dto.kind === ChecklistKind.ONBOARDING) return employee.hireDate;
+    // No hire date on record: the checklist counts from today.
+    if (dto.kind === ChecklistKind.ONBOARDING) {
+      return employee.hireDate ?? toUtcDate(new Date().toISOString().slice(0, 10));
+    }
 
     if (!employee.terminationDate) {
       throw new BadRequestException(

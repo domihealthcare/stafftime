@@ -65,6 +65,8 @@ export interface Employee extends EmployeeSummary {
   /// Month and day only; never a year.
   birthdayMonth?: number | null;
   birthdayDay?: number | null;
+  /// YYYY-MM-DD (as an ISO timestamp from the API), or null when not known.
+  hireDate?: string | null;
   welcomeSentAt?: string | null;
   preferredName: string | null;
   pronouns?: string | null;
@@ -506,7 +508,7 @@ export interface Checklist {
     firstName: string;
     lastName: string;
     preferredName: string | null;
-    hireDate: string;
+    hireDate: string | null;
     terminationDate: string | null;
     employmentStatus: string;
   };

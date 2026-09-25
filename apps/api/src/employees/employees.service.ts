@@ -42,7 +42,7 @@ export class EmployeesService {
           ...employee,
           email: normaliseEmail(employee.email),
           adpFileNumber: adpFileNumber?.trim() || null,
-          hireDate: new Date(employee.hireDate),
+          hireDate: employee.hireDate ? new Date(employee.hireDate) : null,
           terminationDate: employee.terminationDate
             ? new Date(employee.terminationDate)
             : undefined,
@@ -114,7 +114,7 @@ export class EmployeesService {
               ...employee,
               email: normaliseEmail(employee.email),
               adpFileNumber: adpFileNumber?.trim() || null,
-              hireDate: new Date(employee.hireDate),
+              hireDate: employee.hireDate ? new Date(employee.hireDate) : null,
               terminationDate: employee.terminationDate
                 ? new Date(employee.terminationDate)
                 : undefined,
@@ -185,7 +185,12 @@ export class EmployeesService {
           ...employee,
           email: employee.email === undefined ? undefined : normaliseEmail(employee.email),
           adpFileNumber: adpFileNumber === undefined ? undefined : adpFileNumber?.trim() || null,
-          hireDate: employee.hireDate ? new Date(employee.hireDate) : undefined,
+          hireDate:
+            employee.hireDate === undefined
+              ? undefined
+              : employee.hireDate
+                ? new Date(employee.hireDate)
+                : null,
           terminationDate: employee.terminationDate
             ? new Date(employee.terminationDate)
             : undefined,

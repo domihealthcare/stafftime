@@ -138,8 +138,9 @@ await step('a pasted staff list brings birthdays in, keeping only the month and 
   await panel.getByLabel('Staff list').fill(
     [
       ['First name', 'Last name', 'Email', 'Birthday', 'Office', 'Employment Start Date'].join('\t'),
-      ['Bea', 'Day', 'imp-bea@example.com', '11/09/1997', 'Both', '05/22/2022'].join('\t'),
-      ['Cal', 'Day', 'imp-cal@example.com', '', 'Both', '05/22/2022'].join('\t'),
+      ['Bea', 'Day', 'imp-bea@example.com', '11/09/1997', 'Both', '7/2026'].join('\t'),
+      // No hire date: optional since September 2026.
+      ['Cal', 'Day', 'imp-cal@example.com', '', 'Both', ''].join('\t'),
     ].join('\n'),
   );
   const columns = await panel.getByTestId('import-columns').innerText();
@@ -152,12 +153,15 @@ await step('a pasted staff list brings birthdays in, keeping only the month and 
   const sent = (await request).postData();
   if (sent.includes('1997')) throw new Error('the year of birth was sent to the server');
   await admin.getByText('2 people added.').waitFor({ timeout: 15000 });
-  const bea = await admin.evaluate(async () =>
-    (await fetch('/api/employees').then((r) => r.json())).find((p) => p.email === 'imp-bea@example.com'),
-  );
+  const [bea, cal] = await admin.evaluate(async () => {
+    const staff = await fetch('/api/employees').then((r) => r.json());
+    return ['imp-bea@example.com', 'imp-cal@example.com'].map((email) => staff.find((p) => p.email === email));
+  });
   if (bea.birthdayMonth !== 11 || bea.birthdayDay !== 9) {
     throw new Error(`Bea: ${bea.birthdayMonth}/${bea.birthdayDay}`);
   }
+  if (bea.hireDate?.slice(0, 10) !== '2026-07-01') throw new Error(`"7/2026" became ${bea.hireDate}`);
+  if (cal.hireDate !== null) throw new Error(`a blank hire date became ${cal.hireDate}`);
 });
 
 await step('clearing a birthday takes it off everywhere', async () => {

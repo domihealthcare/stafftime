@@ -476,7 +476,7 @@ export const api = {
     email: string;
     role: string;
     payType: string;
-    hireDate: string;
+    hireDate?: string;
     locationIds?: string[];
     primaryLocationId?: string;
   }) => request<Employee>('/employees', { method: 'POST', body: JSON.stringify(body) }),
@@ -506,6 +506,7 @@ export const api = {
       locationIds: string[];
       primaryLocationId: string;
       adpFileNumber: string | null;
+      hireDate: string | null;
       birthdayMonth: number | null;
       birthdayDay: number | null;
     }>,

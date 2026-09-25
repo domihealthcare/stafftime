@@ -188,7 +188,10 @@ model Employee {
   employmentStatus EmploymentStatus @default(PENDING)
   payType          PayType          @default(HOURLY)
 
-  hireDate        DateTime  @db.Date
+  /// Optional since September 2026 (Dominguez): not every start date was to
+  /// hand on the first day. Without one, time off is not prorated and an
+  /// onboarding checklist counts from the day it starts.
+  hireDate        DateTime? @db.Date
   terminationDate DateTime? @db.Date
 
   /// Login credentials. Null until an admin sets a password, which is how a new
