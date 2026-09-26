@@ -194,9 +194,11 @@ All three phases are built, and **deployed and live** on Vercel against a Neon
 Postgres, at `https://stafftime-ap.vercel.app` — verified 22 September 2026:
 health endpoint OK, demo data loaded, sign-in working, and the deployed
 security headers (CSP, HSTS, `X-Frame-Options`) all present on the production
-bundle. `main` is the test environment for manager review; `APP_ENVIRONMENT` is
-`test`, so `/config` reports `isTestEnvironment: true` and a standing banner
-sits on every screen.
+bundle. **Live since 26 September 2026**: the test data was cleared and
+`APP_ENVIRONMENT` set to `production` in Vercel (`/config` reports
+`isTestEnvironment: false`; no banner; demo data and "Start using it for
+real" refuse). `main` deploys straight to the real practice now — every
+merge is a release.
 
 Still to do on the deployment, in `DEPLOY.md`:
 
