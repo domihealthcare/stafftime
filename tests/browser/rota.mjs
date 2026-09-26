@@ -78,7 +78,10 @@ await step('the round-up flags open shifts in the next fortnight', async () => {
   // The banner is read when the screen opens, like every other banner.
   await mgr.reload({ waitUntil: 'networkidle' });
   await mgr.getByText('Open shifts nobody is on yet', { exact: true }).waitFor({ timeout: 10000 });
-  await mgr.getByText(/North Bergen — 2 open shifts nobody is on yet/).waitFor({ timeout: 5000 });
+  // Two a Saturday, and how many Saturdays land in the fortnight depends on
+  // today's weekday — two of them from a Saturday on. The count itself is unit
+  // tested; here it is the line that matters.
+  await mgr.getByText(/North Bergen — (2|4) open shifts nobody is on yet/).waitFor({ timeout: 5000 });
   await mgr.getByRole('button', { name: 'Next →' }).click();
   await openRow('North Bergen').getByTestId('open-shift').nth(1).waitFor({ timeout: 10000 });
 });
