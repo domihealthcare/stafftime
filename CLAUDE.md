@@ -329,7 +329,9 @@ Beyond the phases, the parts worth knowing about before picking up work:
   phone (Safari and Chrome on iPhone, Chrome on Android), and "Put Domi Staff
   on your phone" in Help, computer Chrome included. The logo **with its
   slogan** is on every signed-out screen, in black on the printed rota; the
-  roof alone stays in the header and favicon. **No service worker, no offline mode**, on
+  roof alone stays in the header and favicon. Signed in, the header's
+  "**Domi** Staff" is bolder and the slogan runs on a thin blue strip under
+  it on every screen (chosen by Dominguez from three renderings). **No service worker, no offline mode**, on
   purpose: a punch with no signal must plainly fail, not seem to work.
 - **Going live** (September 2026): Practice settings → **Start using it for
   real** (admins, test deployments only) shows what goes and which accounts

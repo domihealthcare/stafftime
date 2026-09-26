@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { Link, NavLink, Outlet } from 'react-router-dom';
 import { api } from '../lib/api';
 import { AccountMenu } from './AccountMenu';
-import { Wordmark } from './Brand';
+import { SloganStrip, Wordmark } from './Brand';
 import { NavMenu } from './NavMenu';
 import { NotificationBell } from './NotificationBell';
 import { useIsAdmin, useIsManager, useSession } from '../lib/session';
@@ -153,6 +153,7 @@ export function Layout() {
           </nav>
         </div>
       </header>
+      <SloganStrip />
 
       <main className="mx-auto max-w-6xl px-4 py-6">
         <Outlet />

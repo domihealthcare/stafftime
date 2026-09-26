@@ -234,6 +234,13 @@ await step('Help explains how to put it on a phone', async () => {
   await page.getByLabel('Password', { exact: true }).fill('shift-change-2026');
   await page.getByRole('button', { name: 'Sign in' }).click();
   await page.getByText('Not clocked in').waitFor({ timeout: 20000 });
+  // Signed in, the slogan runs under the header on one line, even on a phone.
+  const strip = page.getByTestId('slogan-strip');
+  if ((await strip.innerText()).trim() !== 'Your Health. Your Family. Your Home.') {
+    throw new Error(`the slogan strip reads: ${await strip.innerText()}`);
+  }
+  const { height } = await strip.boundingBox();
+  if (height > 30) throw new Error(`the slogan wraps on a phone (${height}px tall)`);
   await page.goto(`${BASE}/help`, { waitUntil: 'networkidle' });
   await page.getByText('Put Domi Staff on your phone').click();
   await page.getByText('Add to Home Screen', { exact: false }).first().waitFor();
