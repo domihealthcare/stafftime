@@ -2,9 +2,10 @@ import { useCallback, useEffect, useState } from 'react';
 import { MONTHS } from '../lib/birthday';
 import { ApiError, api } from '../lib/api';
 import { useSession } from '../lib/session';
-import type { Employee, Location, Role } from '../lib/types';
+import type { Employee, JobRole, Location, Role } from '../lib/types';
 import { useConfirm } from '../components/ConfirmDialog';
 import { ImportStaff } from '../components/ImportStaff';
+import { JobRoleTag } from '../components/JobRoleTag';
 import { Alert, Badge, Card, EmptyState, PageHeading, Spinner } from '../components/ui';
 import { PASSWORD_RULE, meetsPasswordRule } from '../lib/password';
 
@@ -20,6 +21,7 @@ export function StaffPage() {
   const { employee: me } = useSession();
   const [staff, setStaff] = useState<Employee[]>([]);
   const [locations, setLocations] = useState<Location[]>([]);
+  const [jobRoles, setJobRoles] = useState<JobRole[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [adding, setAdding] = useState(false);
@@ -35,12 +37,14 @@ export function StaffPage() {
   const load = useCallback(async () => {
     setLoading(true);
     try {
-      const [staffData, locationData] = await Promise.all([
+      const [staffData, locationData, roleData] = await Promise.all([
         api.listEmployees(),
         api.listLocations(),
+        api.jobRoles(),
       ]);
       setStaff(staffData);
       setLocations(locationData);
+      setJobRoles(roleData);
       setError(null);
     } catch (err) {
       setError(err instanceof ApiError ? err.message : 'Could not load staff.');
@@ -230,6 +234,7 @@ export function StaffPage() {
               key={person.id}
               person={person}
               locations={locations}
+              jobRoles={jobRoles}
               isMe={person.id === me?.id}
               onChanged={() => void load()}
               onError={setError}
@@ -244,12 +249,15 @@ export function StaffPage() {
 function StaffCard({
   person,
   locations,
+  jobRoles,
   isMe,
   onChanged,
   onError,
 }: {
   person: Employee;
   locations: Location[];
+  /// Every job role, with its members — which of them this person is in.
+  jobRoles: JobRole[];
   isMe: boolean;
   onChanged: () => void;
   onError: (message: string) => void;
@@ -261,6 +269,10 @@ function StaffCard({
   const [problem, setProblem] = useState<string | null>(null);
   const [editing, setEditing] = useState(false);
   const [role, setRole] = useState<Role>(person.role);
+  const heldRoles = jobRoles.filter((jobRole) =>
+    jobRole.members.some((member) => member.id === person.id),
+  );
+  const [picked, setPicked] = useState<string[]>(heldRoles.map((jobRole) => jobRole.id));
   const [assigned, setAssigned] = useState<string[]>(person.locations.map((l) => l.locationId));
   const [fileNumber, setFileNumber] = useState(person.adpFileNumber ?? '');
   const [hired, setHired] = useState(person.hireDate ? person.hireDate.slice(0, 10) : '');
@@ -312,6 +324,14 @@ function StaffCard({
         birthdayMonth: birthMonth && birthDay ? Number(birthMonth) : null,
         birthdayDay: birthMonth && birthDay ? Number(birthDay) : null,
       });
+      // Job roles live on the roles themselves; add and take off the difference.
+      const held = new Set(heldRoles.map((jobRole) => jobRole.id));
+      for (const id of picked.filter((id) => !held.has(id))) {
+        await api.addJobRoleMember(id, person.id);
+      }
+      for (const id of [...held].filter((id) => !picked.includes(id))) {
+        await api.removeJobRoleMember(id, person.id);
+      }
       setEditing(false);
       onChanged();
     } catch (err) {
@@ -349,6 +369,13 @@ function StaffCard({
             {isMe && <span className="ml-2 text-xs font-normal text-slate-500">(you)</span>}
           </p>
           <p className="text-sm text-slate-600">{person.email}</p>
+          {heldRoles.length > 0 && (
+            <p className="mt-1 flex flex-wrap gap-1" data-testid="staff-job-roles">
+              {heldRoles.map((jobRole) => (
+                <JobRoleTag key={jobRole.id} name={jobRole.name} colour={jobRole.colour} />
+              ))}
+            </p>
+          )}
           <p className="mt-1 text-xs text-slate-500">
             {person.locations.map((l) => l.location.name).join(', ') || 'No location assigned'}
           </p>
@@ -372,7 +399,7 @@ function StaffCard({
 
         <div className="flex flex-wrap items-center gap-2">
           <Badge tone={person.role === 'EMPLOYEE' ? 'neutral' : 'info'}>
-            {ROLE_LABELS[person.role]}
+            {ROLE_LABELS[person.role]} access
           </Badge>
           {terminated && <Badge tone="danger">Former</Badge>}
           {person.hasKioskPin && <Badge tone="success">PIN</Badge>}
@@ -400,10 +427,14 @@ function StaffCard({
           </button>
           <button
             type="button"
-            onClick={() => setEditing((open) => !open)}
+            onClick={() => {
+              // Fresh from the roles each time it opens, in case they changed elsewhere.
+              if (!editing) setPicked(heldRoles.map((jobRole) => jobRole.id));
+              setEditing((open) => !open);
+            }}
             className="font-medium text-slate-600 hover:text-slate-900"
           >
-            {editing ? 'Cancel' : 'Role, locations, birthday and ADP'}
+            {editing ? 'Cancel' : 'Edit details'}
           </button>
           {/* Terminating yourself would lock you out of your own practice. */}
           {!isMe && (
@@ -484,7 +515,7 @@ function StaffCard({
       {editing && (
         <div className="mt-3 border-t border-slate-100 pt-3">
           <label htmlFor={`role-${person.id}`} className="block text-sm font-medium text-slate-700">
-            Role
+            Access
           </label>
           <select
             id={`role-${person.id}`}
@@ -498,6 +529,37 @@ function StaffCard({
               </option>
             ))}
           </select>
+          <p className="mt-1 text-xs text-slate-500">
+            What they can do in the app — one of these. Manager: schedules, time off and hours.
+            Admin: also staff and settings.
+          </p>
+
+          <fieldset className="mt-3">
+            <legend className="text-sm font-medium text-slate-700">Job roles</legend>
+            <p className="text-xs text-slate-500">
+              What they do at the practice — tick all that apply. Decides their resources and
+              closing checklist, not what they can do in the app.
+            </p>
+            <div className="mt-1 grid gap-1 sm:grid-cols-2">
+              {jobRoles.map((jobRole) => (
+                <label key={jobRole.id} className="flex items-center gap-2 text-sm">
+                  <input
+                    type="checkbox"
+                    checked={picked.includes(jobRole.id)}
+                    onChange={() =>
+                      setPicked((current) =>
+                        current.includes(jobRole.id)
+                          ? current.filter((id) => id !== jobRole.id)
+                          : [...current, jobRole.id],
+                      )
+                    }
+                    className="rounded border-slate-300 text-brand-600 focus:ring-brand-600"
+                  />
+                  {jobRole.name}
+                </label>
+              ))}
+            </div>
+          </fieldset>
 
           <label
             htmlFor={`adp-${person.id}`}
@@ -702,7 +764,7 @@ function AddStaffForm({ locations, onCreated }: { locations: Location[]; onCreat
         <div className="grid grid-cols-2 gap-3">
           <div>
             <label htmlFor="new-role" className="block text-sm font-medium text-slate-700">
-              Role
+              Access
             </label>
             <select
               id="new-role"

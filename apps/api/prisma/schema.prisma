@@ -185,7 +185,10 @@ model Employee {
   photoUpdatedAt DateTime?
 
   role             Role             @default(EMPLOYEE)
-  employmentStatus EmploymentStatus @default(PENDING)
+  /// ACTIVE from the start (September 2026): nothing ever moved anybody out of
+  /// PENDING, and clocking in, the scheduler and the Directory all want ACTIVE —
+  /// so the first imported staff could not clock in at all.
+  employmentStatus EmploymentStatus @default(ACTIVE)
   payType          PayType          @default(HOURLY)
 
   /// Optional since September 2026 (Dominguez): not every start date was to

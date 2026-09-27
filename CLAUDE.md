@@ -352,6 +352,16 @@ Beyond the phases, the parts worth knowing about before picking up work:
   Pasting is not an upload: no file is taken or stored. Emails are stored in
   lower case (sign-in looks them up that way; a mixed-case address used to be
   unable to sign in).
+- **New staff start ACTIVE** (fixed 27 September 2026): the schema used to
+  default to `PENDING`, which nothing ever changed — and clocking in (phone
+  and time clock), the scheduler's lists and the Directory all want `ACTIVE`,
+  so the first 23 imported staff could not clock in. The default is `ACTIVE`
+  and a migration moved everybody left in `PENDING` over.
+- **The Staff card** (Manage → Staff) shows **Access** (Employee / Manager /
+  Admin — one, what they can do in the app) as a badge and **job roles** as
+  tags, and **Edit details** sets access, job roles (tick several), offices,
+  hire date, birthday and ADP File # in one place. Job roles are still also
+  managed per role under Manage → Job roles.
 - **Welcome emails**: from the Staff screen, to one person or everyone who has
   not had one and has no password (never demo staff). A 7-day, single-use link
   to choose a password (`/reset-password?token=…&welcome=1`, same token table
