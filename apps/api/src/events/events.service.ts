@@ -1,7 +1,20 @@
 import { BadRequestException, Injectable, Logger, NotFoundException } from '@nestjs/common';
-import { EmploymentStatus, EventAudience, NotificationKind, Prisma, Role } from '@prisma/client';
+import {
+  EmploymentStatus,
+  EventAudience,
+  NotificationKind,
+  PracticeEventKind,
+  Prisma,
+  Role,
+} from '@prisma/client';
 import { AuthUser } from '../common/auth/auth-user';
-import { localDateIn, PRACTICE_ZONE } from '../common/util/zoned-time.util';
+import {
+  addDaysTo,
+  localDateIn,
+  localTimeIn,
+  PRACTICE_ZONE,
+  zonedTimeToUtc,
+} from '../common/util/zoned-time.util';
 import { InboxService } from '../email/inbox.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { EventInput } from './dto/event.dto';
@@ -16,6 +29,7 @@ const MAX_WINDOW_DAYS = 400;
 
 const EVENT_SELECT = {
   id: true,
+  kind: true,
   title: true,
   description: true,
   place: true,
@@ -36,12 +50,15 @@ const WORKING: { in: EmploymentStatus[] } = {
 };
 
 /**
- * Events: office meetings, provider meetings, a wellness day.
+ * Events: office meetings, provider meetings, a wellness day — and closures:
+ * Christmas, Christmas Eve from 1pm, one office shut for a burst pipe.
  *
  * On the schedule and on people's phones, and nowhere near the hours. An event
  * is not a shift — it adds nothing to scheduled hours, overtime or payroll
  * (decided with Dominguez, September 2026). Somebody paid to be there clocks
- * in as usual.
+ * in as usual. A closure is for both offices or one; a shift that lands in it
+ * is warned about on the rota, in its forms and in the round-up, never
+ * refused, and pay is untouched (holiday pay is an open question).
  *
  * Managers and admins see every event, so they can look after them; everybody
  * else sees the ones for them — everyone's, their job roles', their offices'.
@@ -103,12 +120,7 @@ export class EventsService {
     if (row.endsAt > new Date()) {
       await this.inbox.notify(
         (await this.invited(row)).filter((id) => id !== actor.id),
-        {
-          kind: NotificationKind.EVENT,
-          title: `New event: ${row.title}`,
-          body: whenAndWhere(row),
-          link: scheduleLink(row),
-        },
+        notice(row, 'added'),
       );
     }
     return present(row);
@@ -144,27 +156,21 @@ export class EventsService {
       const notMe = (person: string) => person !== actor.id;
 
       // New to it: as if it had just been made.
-      await this.inbox.notify(now.filter((p) => !wasIn.has(p)).filter(notMe), {
-        kind: NotificationKind.EVENT,
-        title: `New event: ${after.title}`,
-        body: whenAndWhere(after),
-        link: scheduleLink(after),
-      });
+      await this.inbox.notify(
+        now.filter((p) => !wasIn.has(p)).filter(notMe),
+        notice(after, 'added'),
+      );
       if (moved) {
-        await this.inbox.notify(now.filter((p) => wasIn.has(p)).filter(notMe), {
-          kind: NotificationKind.EVENT,
-          title: `Event changed: ${after.title}`,
-          body: whenAndWhere(after),
-          link: scheduleLink(after),
-        });
+        await this.inbox.notify(
+          now.filter((p) => wasIn.has(p)).filter(notMe),
+          notice(after, 'changed'),
+        );
       }
       // No longer for them: it leaves their schedule, so say so.
-      await this.inbox.notify(was.filter((p) => !nowIn.has(p)).filter(notMe), {
-        kind: NotificationKind.EVENT,
-        title: `No longer on your schedule: ${before.title}`,
-        body: whenAndWhere(before),
-        link: scheduleLink(before),
-      });
+      await this.inbox.notify(
+        was.filter((p) => !nowIn.has(p)).filter(notMe),
+        notice(before, 'dropped'),
+      );
     }
     return present(after);
   }
@@ -177,14 +183,125 @@ export class EventsService {
 
     await this.inbox.notify(
       invited.filter((person) => person !== actor.id),
-      {
-        kind: NotificationKind.EVENT,
-        title: `Cancelled: ${row.title}`,
-        body: whenAndWhere(row),
-        link: scheduleLink(row),
-      },
+      notice(row, 'cancelled'),
     );
     return { deleted: true };
+  }
+
+  /**
+   * "Copy last year's holidays": every closure that started in `fromYear`,
+   * put on the same date the year after — same times, same offices — for a
+   * manager to check. Holidays that move (Thanksgiving) land on the wrong
+   * day and are fixed by hand; that is why nothing repeats by itself.
+   *
+   * A closure already there (same name, same start) is skipped, so pressing
+   * it twice does nothing the second time. A 29 February is skipped too,
+   * rather than guessed.
+   */
+  async copyClosures(fromYear: number, actor: AuthUser) {
+    const toYear = fromYear + 1;
+    const rows = await this.prisma.practiceEvent.findMany({
+      where: {
+        kind: PracticeEventKind.CLOSURE,
+        startsAt: {
+          gte: zonedTimeToUtc(`${fromYear}-01-01`, '00:00', PRACTICE_ZONE),
+          lt: zonedTimeToUtc(`${toYear}-01-01`, '00:00', PRACTICE_ZONE),
+        },
+      },
+      select: { ...EVENT_SELECT, jobRoleId: true, locationId: true },
+      orderBy: { startsAt: 'asc' },
+    });
+
+    const created: EventRow[] = [];
+    const skipped: string[] = [];
+    for (const row of rows) {
+      const firstDay = localDateIn(row.startsAt, PRACTICE_ZONE);
+      if (firstDay.slice(5) === '02-29') {
+        skipped.push(`${row.title} — 29 February has no date in ${toYear}`);
+        continue;
+      }
+      const nextFirst = `${toYear}${firstDay.slice(4)}`;
+      let startsAt: Date;
+      let endsAt: Date;
+      if (row.allDay) {
+        const { startDate, endDate } = allDayDates(row);
+        ({ startsAt, endsAt } = allDayRange(
+          nextFirst,
+          addDaysTo(nextFirst, daysBetween(startDate, endDate)),
+        ));
+      } else {
+        // The same wall-clock times, whatever the clocks are doing that year.
+        const lastDay = localDateIn(row.endsAt, PRACTICE_ZONE);
+        startsAt = zonedTimeToUtc(
+          nextFirst,
+          localTimeIn(row.startsAt, PRACTICE_ZONE),
+          PRACTICE_ZONE,
+        );
+        endsAt = zonedTimeToUtc(
+          addDaysTo(nextFirst, daysBetween(firstDay, lastDay)),
+          localTimeIn(row.endsAt, PRACTICE_ZONE),
+          PRACTICE_ZONE,
+        );
+      }
+
+      const already = await this.prisma.practiceEvent.count({
+        where: {
+          kind: PracticeEventKind.CLOSURE,
+          startsAt,
+          title: { equals: row.title, mode: 'insensitive' },
+        },
+      });
+      if (already) {
+        skipped.push(`${row.title} — already on ${toYear}'s calendar`);
+        continue;
+      }
+
+      created.push(
+        await this.prisma.practiceEvent.create({
+          data: {
+            kind: PracticeEventKind.CLOSURE,
+            title: row.title,
+            description: row.description,
+            place: null,
+            allDay: row.allDay,
+            startsAt,
+            endsAt,
+            audience: row.audience,
+            jobRoleId: null,
+            locationId: row.locationId,
+            createdById: actor.id,
+          },
+          select: EVENT_SELECT,
+        }),
+      );
+    }
+    this.logger.log(`${created.length} closures copied into ${toYear} by ${actor.id}`);
+
+    // One notification each, not one per holiday: a year's worth of "Office
+    // closed" arriving at once would bury everything else under the bell.
+    const perPerson = new Map<string, string[]>();
+    for (const row of created) {
+      for (const person of await this.invited(row)) {
+        if (person === actor.id) continue;
+        perPerson.set(person, [...(perPerson.get(person) ?? []), row.title]);
+      }
+    }
+    const byList = new Map<string, string[]>();
+    for (const [person, titles] of perPerson) {
+      const key = titles.join('\n');
+      byList.set(key, [...(byList.get(key) ?? []), person]);
+    }
+    for (const [key, people] of byList) {
+      const titles = key.split('\n');
+      await this.inbox.notify(people, {
+        kind: NotificationKind.EVENT,
+        title: `${toYear} holidays are on the schedule`,
+        body: `${titles.length} closure${titles.length === 1 ? '' : 's'}: ${titles.join(', ')}`,
+        link: `/schedule?week=${toYear}-01-01`,
+      });
+    }
+
+    return { copied: created.length, skipped, toYear };
   }
 
   private async require(id: string): Promise<EventRow> {
@@ -234,8 +351,17 @@ export class EventsService {
   }
 
   private async checkInput(dto: EventInput) {
+    const kind = dto.kind ?? PracticeEventKind.EVENT;
+    const closure = kind === PracticeEventKind.CLOSURE;
     const title = dto.title.trim();
-    if (title.length < 2) throw new BadRequestException('Give the event a name.');
+    if (title.length < 2) {
+      throw new BadRequestException(
+        closure ? 'Name the holiday or closure.' : 'Give the event a name.',
+      );
+    }
+    if (closure && dto.audience === EventAudience.JOB_ROLE) {
+      throw new BadRequestException('A closure is for both offices or one office, not a job role.');
+    }
 
     let startsAt: Date;
     let endsAt: Date;
@@ -275,15 +401,21 @@ export class EventsService {
       if (!exists) throw new BadRequestException('That job role no longer exists.');
     }
     if (dto.audience === EventAudience.LOCATION) {
-      if (!dto.locationId) throw new BadRequestException('Choose which location it is for.');
+      if (!dto.locationId) {
+        throw new BadRequestException(
+          closure ? 'Choose which office is closed.' : 'Choose which location it is for.',
+        );
+      }
       const exists = await this.prisma.location.count({ where: { id: dto.locationId } });
       if (!exists) throw new BadRequestException('That location no longer exists.');
     }
 
     return {
+      kind,
       title,
       description: dto.description?.trim() || null,
-      place: dto.place?.trim() || null,
+      // A closure is where the office is: it has no other place.
+      place: closure ? null : dto.place?.trim() || null,
       allDay: dto.allDay,
       startsAt,
       endsAt,
@@ -311,11 +443,20 @@ export function audienceWhere(
   return { employmentStatus: WORKING };
 }
 
+/// Whether a closure shuts the office a shift is at.
+export function closureCovers(
+  closure: { audience: EventAudience; locationId: string | null },
+  locationId: string,
+): boolean {
+  return closure.audience === EventAudience.EVERYONE || closure.locationId === locationId;
+}
+
 /// What the screens get. An all-day event also carries its days, worked out
 /// here on the practice's clock so no browser has to.
 function present(row: EventRow) {
   return {
     id: row.id,
+    kind: row.kind,
     title: row.title,
     description: row.description,
     place: row.place,
@@ -330,7 +471,51 @@ function present(row: EventRow) {
 }
 
 function whenAndWhere(row: EventRow): string {
+  if (row.kind === PracticeEventKind.CLOSURE) {
+    const where =
+      row.audience === EventAudience.LOCATION
+        ? (row.location?.name ?? 'One office')
+        : 'Both offices';
+    return `${describeWhen(row)} · ${where}`;
+  }
   return [describeWhen(row), row.place].filter(Boolean).join(' · ');
+}
+
+/// What goes under the bell, in the words that fit an event or a closure.
+function notice(
+  row: EventRow,
+  what: 'added' | 'changed' | 'dropped' | 'cancelled',
+): { kind: NotificationKind; title: string; body: string; link: string } {
+  const closed =
+    row.audience === EventAudience.LOCATION ? `${row.location?.name ?? 'Office'} closed` : 'Closed';
+  const titles =
+    row.kind === PracticeEventKind.CLOSURE
+      ? {
+          added: `${closed}: ${row.title}`,
+          changed: `Closure changed: ${row.title}`,
+          // Your office is no longer the one shut, or it is not shut at all.
+          dropped: `Open as usual: ${row.title}`,
+          cancelled: `Open as usual: ${row.title}`,
+        }
+      : {
+          added: `New event: ${row.title}`,
+          changed: `Event changed: ${row.title}`,
+          dropped: `No longer on your schedule: ${row.title}`,
+          cancelled: `Cancelled: ${row.title}`,
+        };
+  return {
+    kind: NotificationKind.EVENT,
+    title: titles[what],
+    body: whenAndWhere(row),
+    link: scheduleLink(row),
+  };
+}
+
+/// Whole days from one "YYYY-MM-DD" to another.
+function daysBetween(from: string, to: string): number {
+  return Math.round(
+    (new Date(`${to}T00:00:00Z`).getTime() - new Date(`${from}T00:00:00Z`).getTime()) / 86_400_000,
+  );
 }
 
 /// The schedule, open on the week the event is in.

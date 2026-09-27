@@ -862,6 +862,12 @@ export const api = {
     request<PracticeEvent>('/events', { method: 'POST', body: JSON.stringify(body) }),
   updateEvent: (id: string, body: EventInput) =>
     request<PracticeEvent>(`/events/${id}`, { method: 'PATCH', body: JSON.stringify(body) }),
+  /// Every closure in `fromYear`, put on the same date the year after.
+  copyClosures: (fromYear: number) =>
+    request<{ copied: number; skipped: string[]; toYear: number }>('/events/closures/copy', {
+      method: 'POST',
+      body: JSON.stringify({ fromYear }),
+    }),
   deleteEvent: (id: string) => request<{ deleted: boolean }>(`/events/${id}`, { method: 'DELETE' }),
 
   announcements: () => request<Announcement[]>('/announcements'),

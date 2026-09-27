@@ -1,13 +1,16 @@
-import { EventAudience } from '@prisma/client';
+import { EventAudience, PracticeEventKind } from '@prisma/client';
 import {
   IsBoolean,
   IsDateString,
   IsEnum,
+  IsInt,
   IsOptional,
   IsString,
   IsUUID,
   Matches,
+  Max,
   MaxLength,
+  Min,
   MinLength,
   ValidateIf,
 } from 'class-validator';
@@ -17,6 +20,11 @@ const DATE_ONLY = /^\d{4}-\d{2}-\d{2}$/;
 /// Making or changing an event. A change sends the whole event again, so what
 /// is saved is exactly what the form showed.
 export class EventInput {
+  /// An event (the default) or a closure — a holiday, or an office shut.
+  @IsOptional()
+  @IsEnum(PracticeEventKind)
+  kind?: PracticeEventKind;
+
   @IsString()
   @MinLength(2)
   @MaxLength(120)
@@ -73,4 +81,12 @@ export class QueryEventsDto {
   /// Exclusive end of the window.
   @IsDateString()
   to!: string;
+}
+
+export class CopyClosuresDto {
+  /// The year to copy from; the closures land in the year after.
+  @IsInt()
+  @Min(2020)
+  @Max(2100)
+  fromYear!: number;
 }

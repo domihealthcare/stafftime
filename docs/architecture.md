@@ -2169,6 +2169,46 @@ calendar carry it.
 
 Going live clears events with the rest of the test data.
 
+### Holidays and closures
+
+Asked for straight after events (Dominguez, September 2026): Christmas,
+Christmas Eve from 1pm, and one office shut while the other stays open. A
+closure is a `PracticeEvent` with `kind: CLOSURE` rather than a table of its
+own, because everything about showing it — on the rota, the month, the
+phone, under the bell — is already how an event works. What differs:
+
+- **For both offices or one** (`EVERYONE` or `LOCATION`); never a job role
+  (the service refuses, a database check backs it up). Staff see the closures
+  of their own offices, so West New York never hears about North Bergen's
+  early close.
+- **No place** — it is where the office is. On the phone it reads "Closed:
+  Christmas Day" or "North Bergen closed: Christmas Eve", and is
+  `TRANSPARENT` so it never makes anybody look busy.
+- **Part of a day** is an ordinary timed closure, from 1pm to midnight.
+- **Warn, never refuse** (Dominguez's choice, like overtime and
+  availability). A shift that overlaps a closure of its office gets a warning
+  in the add-shift and quick-add forms as they are filled in, a pop-up before
+  saving ("Yes, add it anyway"), ⚠ on the shift in the rota, and a line in
+  the Schedule banner and nightly email (`shiftsInClosures` in
+  `AttentionService`, 60 days ahead, open shifts included) until the shift
+  moves. Somebody may genuinely be doing admin on the day. Repeating rotas
+  are not stopped either; what they land in a closure is flagged the same way.
+- **Pay is untouched.** A closure adds no hours; the export still counts
+  punches only. Holiday pay needs a policy and an ADP earning code first — see
+  `docs/open-questions.md`.
+- **Entered each year, with a copy button** (Dominguez's choice over a
+  closure that repeats by itself). "Copy these into next year"
+  (`POST /events/closures/copy`) puts every closure of one year on the same
+  date the next, at the same wall-clock times and offices; one already there
+  (same name, same start) is skipped, so pressing it twice adds nothing, and a
+  29 February is skipped rather than guessed. Holidays that move —
+  Thanksgiving, Memorial Day, Labor Day — land on the wrong date and are
+  corrected by hand; the confirmation says so. Staff get one notification for
+  the lot, not one per holiday.
+- On the rota, a day both offices are shut all day reads "Closed" rather than
+  an amber "Nobody on", and the printed wall rota puts "Closed all day" /
+  "Closed from 1pm" under the day on each office's page.
+
 While wiring events into the feed, `escapeText` in `calendar/ical.ts` turned
 out never to have escaped `;` — `'\;'` in JavaScript is just `';'`, and the
 test had the same slip, so it passed. Harmless while the feed only carried

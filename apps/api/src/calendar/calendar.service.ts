@@ -1,8 +1,14 @@
 import { Injectable, Logger, NotFoundException } from '@nestjs/common';
-import { EmploymentStatus, PtoStatus, ShiftStatus } from '@prisma/client';
+import {
+  EmploymentStatus,
+  EventAudience,
+  PracticeEventKind,
+  PtoStatus,
+  ShiftStatus,
+} from '@prisma/client';
 import { randomBytes } from 'node:crypto';
 import { allDayDates } from '../events/event-time';
-import { EventsService } from '../events/events.service';
+import { EventsService, type EventRow } from '../events/events.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { buildCalendar, type CalendarEvent } from './ical';
 
@@ -157,12 +163,19 @@ export class CalendarService {
         const common = {
           uid: `event-${event.id}@staff.domihealthcare.com`,
           sequence: secondsSinceEpoch(event.updatedAt),
-          summary: event.title,
+          summary: summaryOf(event),
           description: event.description ?? undefined,
           location: event.place ?? undefined,
         };
         if (!event.allDay) {
-          return { ...common, start: event.startsAt, end: event.endsAt };
+          // A closure is time off the rota, not an appointment: it should not
+          // make anybody look busy.
+          return {
+            ...common,
+            start: event.startsAt,
+            end: event.endsAt,
+            transparent: event.kind === PracticeEventKind.CLOSURE,
+          };
         }
         // Whole days on the practice's clock, so a wellness day on the 15th
         // is the 15th on the phone too.
@@ -184,6 +197,15 @@ export class CalendarService {
       now,
     });
   }
+}
+
+/// "Office meeting", or for a closure "Closed: Christmas Day" /
+/// "North Bergen closed: Burst pipe".
+function summaryOf(event: EventRow): string {
+  if (event.kind !== PracticeEventKind.CLOSURE) return event.title;
+  return event.audience === EventAudience.LOCATION && event.location
+    ? `${event.location.name} closed: ${event.title}`
+    : `Closed: ${event.title}`;
 }
 
 /// iCalendar SEQUENCE must be a non-negative integer that only increases.

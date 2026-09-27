@@ -28,7 +28,16 @@ import type {
   Shift,
 } from '../lib/types';
 import { CalendarLinkCard } from '../components/CalendarLinkCard';
-import { EventDialog, EventForm, eventsOnDay } from '../components/PracticeEvents';
+import {
+  ClosuresCard,
+  ClosureWarning,
+  confirmClosure,
+  EventDialog,
+  EventForm,
+  eventsOnDay,
+  isClosure,
+  useClosureCheck,
+} from '../components/PracticeEvents';
 import { PlanResultNotice } from '../components/PlanResultNotice';
 import { RepeatShiftsForm } from '../components/RepeatShiftsForm';
 import { RotaTable, type RotaGrouping } from '../components/RotaTable';
@@ -101,9 +110,14 @@ export function SchedulePage() {
   const [birthdays, setBirthdays] = useState<BirthdayEntry[]>([]);
   const [events, setEvents] = useState<PracticeEvent[]>([]);
   /// The event whose details are open, and the one being added or changed
-  /// (`{}` for a new one).
+  /// (no `event` for a new one, which starts as `kind`).
   const [openEvent, setOpenEvent] = useState<PracticeEvent | null>(null);
-  const [eventForm, setEventForm] = useState<{ event?: PracticeEvent } | null>(null);
+  const [eventForm, setEventForm] = useState<{
+    event?: PracticeEvent;
+    kind?: PracticeEvent['kind'];
+  } | null>(null);
+  /// Bumped on every load, so the holidays card re-reads after a change.
+  const [eventsVersion, setEventsVersion] = useState(0);
   /// Your own weeks over or close to the overtime line (staff).
   const [ownWeeks, setOwnWeeks] = useState<OwnOvertimeWeek[] | null>(null);
   const [loading, setLoading] = useState(true);
@@ -141,6 +155,7 @@ export function SchedulePage() {
       setLocations(locationData);
       setTimeOff(timeOffData);
       setEvents(eventData);
+      setEventsVersion((version) => version + 1);
       // Colleagues' birthdays, for everybody: a cake on the day. Not worth
       // failing the schedule over.
       api
@@ -211,7 +226,9 @@ export function SchedulePage() {
         subtitle={isManager ? 'Build the week for both locations.' : 'Your upcoming shifts.'}
       />
 
-      <NeedsAttention sections={['openShifts', 'unpublishedRota', 'shiftsForLeavers']} />
+      <NeedsAttention
+        sections={['shiftsInClosures', 'openShifts', 'unpublishedRota', 'shiftsForLeavers']}
+      />
 
       {!isManager && ownWeeks && ownWeeks.length > 0 && (
         <div className="mb-4">
@@ -431,8 +448,9 @@ export function SchedulePage() {
       {isManager && eventForm && (
         <div className="mb-6">
           <EventForm
-            key={eventForm.event?.id ?? 'new'}
+            key={eventForm.event?.id ?? `new-${eventForm.kind ?? 'EVENT'}`}
             event={eventForm.event}
+            initialKind={eventForm.kind}
             locations={locations}
             jobRoles={jobRoles}
             defaultDate={newEventDay(view === 'week' ? weekStart : monthStart)}
@@ -571,7 +589,21 @@ export function SchedulePage() {
         </div>
       )}
 
-      <div className="mt-6 grid gap-3 sm:grid-cols-[1fr_auto] sm:items-start">
+      <div className="mt-6">
+        <ClosuresCard
+          initialYear={(view === 'week' ? weekStart : monthStart).getFullYear()}
+          canEdit={isManager}
+          version={eventsVersion}
+          onAdd={() => {
+            setEventForm({ kind: 'CLOSURE' });
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+          }}
+          onOpen={setOpenEvent}
+          onChanged={() => void load()}
+        />
+      </div>
+
+      <div className="mt-3 grid gap-3 sm:grid-cols-[1fr_auto] sm:items-start">
         <CalendarLinkCard />
         <Link
           to="/availability"
@@ -641,9 +673,16 @@ function NewShiftForm({
       : null;
   const overtimeCheck = useOvertimeCheck(proposed);
   const who = selectedEmployee ? `${selectedEmployee.firstName} ${selectedEmployee.lastName}` : '';
+  // Open shifts too: nobody should be wanted while the office is shut.
+  const place =
+    locationId && startsIso && endsIso && endsIso > startsIso
+      ? { locationId, startsAt: startsIso, endsAt: endsIso }
+      : null;
+  const closures = useClosureCheck(place);
 
   async function submit(event: React.FormEvent) {
     event.preventDefault();
+    if (place && !(await confirmClosure(confirm, place))) return;
     if (proposed && !(await confirmOvertime(confirm, proposed, who))) return;
     setBusy(true);
     try {
@@ -788,6 +827,11 @@ function NewShiftForm({
           </label>
         </div>
 
+        {closures.length > 0 && (
+          <div className="sm:col-span-2">
+            <ClosureWarning closures={closures} />
+          </div>
+        )}
         {proposed && overtimeCheck && overtimeCheck.level !== 'ok' && (
           <div className="sm:col-span-2">
             <OvertimePreview check={overtimeCheck} name={who} />
@@ -1144,10 +1188,14 @@ function MonthGrid({
               {dayEvents.map((event) => (
                 <span
                   key={event.id}
-                  data-testid={`month-event-${localDate(day)}`}
-                  className="mt-0.5 block truncate rounded bg-indigo-50 px-1 text-[10px] font-medium leading-4 text-indigo-950 ring-1 ring-inset ring-indigo-200 sm:text-[11px] sm:leading-5"
+                  data-testid={`month-${isClosure(event) ? 'closure' : 'event'}-${localDate(day)}`}
+                  className={`mt-0.5 block truncate rounded px-1 text-[10px] font-medium leading-4 ring-1 ring-inset sm:text-[11px] sm:leading-5 ${
+                    isClosure(event)
+                      ? 'bg-slate-200 text-slate-900 ring-slate-400'
+                      : 'bg-indigo-50 text-indigo-950 ring-indigo-200'
+                  }`}
                 >
-                  <span aria-hidden="true">📅</span>
+                  <span aria-hidden="true">{isClosure(event) ? '🔒' : '📅'}</span>
                   <span className="hidden sm:inline"> {event.title}</span>
                 </span>
               ))}

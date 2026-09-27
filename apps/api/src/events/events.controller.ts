@@ -3,6 +3,8 @@ import {
   Controller,
   Delete,
   Get,
+  HttpCode,
+  HttpStatus,
   Param,
   ParseUUIDPipe,
   Patch,
@@ -13,7 +15,7 @@ import { Role } from '@prisma/client';
 import { AuthUser } from '../common/auth/auth-user';
 import { CurrentUser } from '../common/auth/current-user.decorator';
 import { Roles } from '../common/auth/roles.decorator';
-import { EventInput, QueryEventsDto } from './dto/event.dto';
+import { CopyClosuresDto, EventInput, QueryEventsDto } from './dto/event.dto';
 import { EventsService } from './events.service';
 
 /// Anybody signed in reads the events that are for them (managers read all);
@@ -31,6 +33,14 @@ export class EventsController {
   @Roles(Role.MANAGER)
   create(@Body() dto: EventInput, @CurrentUser() user: AuthUser) {
     return this.events.create(dto, user);
+  }
+
+  /// "Copy last year's holidays" — every closure in one year, a year on.
+  @Post('closures/copy')
+  @Roles(Role.MANAGER)
+  @HttpCode(HttpStatus.OK)
+  copyClosures(@Body() dto: CopyClosuresDto, @CurrentUser() user: AuthUser) {
+    return this.events.copyClosures(dto.fromYear, user);
   }
 
   @Patch(':id')

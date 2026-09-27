@@ -19,7 +19,15 @@ import { jobRoleHex } from '../lib/job-role-colours';
 import { useConfirm } from './ConfirmDialog';
 import { confirmOvertime, OvertimePreview, useOvertimeCheck } from './OvertimeAlerts';
 import { Avatar } from './Avatar';
-import { EventChip, eventsOnDay } from './PracticeEvents';
+import {
+  ClosureWarning,
+  closuresCovering,
+  confirmClosure,
+  EventChip,
+  eventsOnDay,
+  isClosure,
+  useClosureCheck,
+} from './PracticeEvents';
 import { Alert } from './ui';
 
 export type RotaGrouping = 'person' | 'location' | 'role';
@@ -160,8 +168,14 @@ export function RotaTable({
         else if (shift.unavailable) map.set(shift.id, shift.unavailable);
       }
     }
+    // A shift while its office is closed says so first: it is the likelier
+    // mistake — a repeating rota running straight through Christmas.
+    for (const shift of shifts) {
+      const [closure] = closuresCovering(events, shift);
+      if (closure) map.set(shift.id, `Office closed: ${closure.title}`);
+    }
     return map;
-  }, [coverage]);
+  }, [coverage, shifts, events]);
 
   const membersOf = useMemo(() => {
     const map = new Map<string, Set<string>>();
@@ -338,7 +352,11 @@ export function RotaTable({
               </th>
               {days.map((day, index) => {
                 const cov = coverage?.find((entry) => entry.date === dayKeys[index]);
-                const empty = cov && cov.peopleScheduled === 0;
+                // Nobody on a day both offices are shut is the plan, not a gap.
+                const shut = eventsOnDay(events, dayKeys[index]).some(
+                  (event) => isClosure(event) && event.allDay && event.audience === 'EVERYONE',
+                );
+                const empty = cov && cov.peopleScheduled === 0 && !shut;
                 const isToday = localDate(new Date()) === dayKeys[index];
                 return (
                   <th
@@ -368,6 +386,8 @@ export function RotaTable({
                       >
                         {cov.peopleScheduled > 0 ? (
                           `${cov.staffedHours} h · ${cov.peopleScheduled} on`
+                        ) : shut ? (
+                          <span className="font-semibold text-slate-600">Closed</span>
                         ) : (
                           <span className="font-semibold text-amber-800">Nobody on</span>
                         )}
@@ -1147,9 +1167,16 @@ function QuickAddDialog({
         }
       : null;
   const overtimeCheck = useOvertimeCheck(proposed);
+  // Open shifts too: nobody should be wanted while the office is shut.
+  const place =
+    locationId && /^\d\d:\d\d$/.test(start) && /^\d\d:\d\d$/.test(end) && end > start
+      ? { locationId, startsAt: at(start).toISOString(), endsAt: at(end).toISOString() }
+      : null;
+  const closures = useClosureCheck(place);
 
   async function submit(event: React.FormEvent) {
     event.preventDefault();
+    if (place && !(await confirmClosure(confirm, place))) return;
     if (proposed && !(await confirmOvertime(confirm, proposed, row.label))) return;
     setBusy(true);
     setProblem(null);
@@ -1274,6 +1301,11 @@ function QuickAddDialog({
           />
           Publish it now
         </label>
+        {closures.length > 0 && (
+          <div className="col-span-2">
+            <ClosureWarning closures={closures} />
+          </div>
+        )}
         {proposed && overtimeCheck && overtimeCheck.level !== 'ok' && (
           <div className="col-span-2">
             <OvertimePreview check={overtimeCheck} name={row.label} />

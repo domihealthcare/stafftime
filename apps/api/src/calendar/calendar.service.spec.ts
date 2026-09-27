@@ -307,5 +307,27 @@ describe('CalendarService', () => {
       expect(feed).toContain('TRANSP:TRANSPARENT');
       expect(feed).not.toContain('LOCATION:');
     });
+
+    it('names a closure as one, and does not make anybody look busy', async () => {
+      const { service } = build({
+        events: [
+          {
+            ...meeting,
+            id: 'ev-3',
+            kind: 'CLOSURE',
+            title: 'Christmas Eve',
+            place: null,
+            description: null,
+            audience: 'LOCATION',
+            location: { id: 'loc-nb', name: 'North Bergen' },
+            startsAt: new Date('2026-12-24T18:00:00.000Z'),
+            endsAt: new Date('2026-12-25T05:00:00.000Z'),
+          },
+        ],
+      });
+      const feed = await service.feedForToken('token', NOW);
+      expect(feed).toContain('SUMMARY:North Bergen closed: Christmas Eve');
+      expect(feed).toContain('TRANSP:TRANSPARENT');
+    });
   });
 });

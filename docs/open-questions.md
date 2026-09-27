@@ -150,6 +150,19 @@ built. What is deliberately left open:
 - [x] ~~Should it stop anything, or only say so?~~ Confirmed: it warns. Refusing
       to schedule past the threshold would be wrong for a practice that
       sometimes needs the cover.
+- [ ] **Holiday pay.** Holidays and closures are built (September 2026) but,
+      as Dominguez chose, change nothing about pay: the export still counts
+      only real punches. Before holidays can reach payroll: which holidays are
+      paid, who gets holiday pay (full-time only? after how long?), how many
+      hours a paid holiday is worth (the usual shift, 8, pro rata?), whether
+      somebody who works on a holiday gets a premium, and the **ADP earning
+      code** for holiday hours. Then the export could add holiday hours per
+      eligible person for each all-day closure of their office.
+- [ ] **Should repeating rotas skip closures?** Today a repeating rota runs
+      straight through Christmas and every shift it lands there is flagged
+      (banner, email, ⚠ on the shift). Skipping them automatically would be
+      tidier, but quietly leaves days unscheduled if the closure is later
+      removed. Worth asking once a real Christmas rota has been built.
 
 ## Onboarding / offboarding checklists (Phase 3, built)
 

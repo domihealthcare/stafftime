@@ -1195,7 +1195,19 @@ model Unavailability {
 //   pay still comes from punches alone.
 // - **Managers and admins** make, change and remove them.
 // - **No replies** (going / can't go) for now.
+//
+// A **closure** — Christmas, Christmas Eve from 1pm, a burst pipe at one
+// office — is the same record with `kind: CLOSURE`, for both offices or one.
+// It warns wherever a shift lands in it and never refuses one, and changes
+// nothing about pay: how holidays are paid is not settled
+// (docs/open-questions.md).
 // ---------------------------------------------------------------------------
+
+/// A meeting or day out, or a time an office is shut.
+enum PracticeEventKind {
+  EVENT
+  CLOSURE
+}
 
 /// Who an event is for. The same three choices as a survey.
 enum EventAudience {
@@ -1210,20 +1222,21 @@ enum EventAudience {
 /// range query. An all-day event runs from midnight in New Jersey on its first
 /// day to midnight after its last, and is shown and synced as whole days.
 model PracticeEvent {
-  id          String        @id @default(uuid()) @db.Uuid
+  id          String            @id @default(uuid()) @db.Uuid
+  kind        PracticeEventKind @default(EVENT)
   title       String
   /// Plain text. Line breaks are kept; nothing is interpreted as markup.
   description String?
   /// Where it is, as typed: "North Bergen office — break room", "Zoom".
   place       String?
-  allDay      Boolean       @default(false)
+  allDay      Boolean           @default(false)
   startsAt    DateTime
   endsAt      DateTime
 
   audience   EventAudience @default(EVERYONE)
   /// For JOB_ROLE. Null after the role is deleted, which leaves nobody invited.
   jobRoleId  String?       @db.Uuid
-  /// For LOCATION.
+  /// For LOCATION — and for a closure, the one office that is shut.
   locationId String?       @db.Uuid
 
   createdById String?  @db.Uuid
@@ -1235,6 +1248,7 @@ model PracticeEvent {
   createdBy Employee? @relation("EventCreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
 
   @@index([startsAt])
+  @@index([kind, startsAt])
   @@map("practice_events")
 }
 

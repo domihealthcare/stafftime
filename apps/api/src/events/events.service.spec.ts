@@ -1,5 +1,5 @@
 import { BadRequestException, NotFoundException } from '@nestjs/common';
-import { EventAudience, NotificationKind, Role } from '@prisma/client';
+import { EventAudience, NotificationKind, PracticeEventKind, Role } from '@prisma/client';
 import { EventInput } from './dto/event.dto';
 import { describeWhen } from './event-time';
 import { EventsService } from './events.service';
@@ -14,6 +14,7 @@ const FUTURE_END = '2099-10-14T17:30:00.000Z';
 function row(over: Record<string, unknown> = {}) {
   return {
     id: 'ev-1',
+    kind: PracticeEventKind.EVENT,
     title: 'Office meeting',
     description: null,
     place: 'Break room',
@@ -59,6 +60,7 @@ function build(
     create: jest.fn(async ({ data }) => row({ ...data })),
     update: jest.fn(async ({ data }) => row({ ...data })),
     delete: jest.fn().mockResolvedValue(row()),
+    count: jest.fn().mockResolvedValue(0),
   };
   const prisma = {
     practiceEvent,
@@ -356,6 +358,178 @@ describe('EventsService', () => {
       });
       await service.remove('ev-1', manager);
       expect(inbox.notify.mock.calls[0][0]).toEqual([]);
+    });
+  });
+});
+
+describe('closures', () => {
+  const christmasInput = (over: Partial<EventInput> = {}): EventInput => ({
+    kind: PracticeEventKind.CLOSURE,
+    title: 'Christmas Day',
+    allDay: true,
+    startDate: '2099-12-25',
+    endDate: '2099-12-25',
+    audience: EventAudience.EVERYONE,
+    ...over,
+  });
+
+  it('is for both offices or one, never a job role', async () => {
+    const { service } = build();
+    await expect(
+      service.create(
+        christmasInput({ audience: EventAudience.JOB_ROLE, jobRoleId: 'role-pr' }),
+        manager,
+      ),
+    ).rejects.toThrow('A closure is for both offices or one office, not a job role.');
+  });
+
+  it('keeps no place: it is where the office is', async () => {
+    const { service, practiceEvent } = build();
+    await service.create(christmasInput({ place: 'Somewhere' }), manager);
+    expect(practiceEvent.create.mock.calls[0][0].data).toMatchObject({
+      kind: PracticeEventKind.CLOSURE,
+      place: null,
+    });
+  });
+
+  it('tells people their office is closed, in those words', async () => {
+    const { service, inbox, practiceEvent } = build();
+    practiceEvent.create.mockImplementation(async ({ data }) =>
+      row({ ...data, location: { id: 'loc-nb', name: 'North Bergen' } }),
+    );
+    await service.create(
+      christmasInput({
+        title: 'Burst pipe',
+        audience: EventAudience.LOCATION,
+        locationId: 'loc-nb',
+        allDay: false,
+        startsAt: '2099-12-10T18:00:00.000Z',
+        endsAt: '2099-12-10T22:00:00.000Z',
+      }),
+      manager,
+    );
+    const [, notice] = inbox.notify.mock.calls[0];
+    expect(notice.title).toBe('North Bergen closed: Burst pipe');
+    expect(notice.body).toMatch(/North Bergen$/);
+  });
+
+  it('says "open as usual" when a closure is removed', async () => {
+    const { service, inbox } = build({
+      existing: row({ kind: PracticeEventKind.CLOSURE, title: 'Christmas Eve', place: null }),
+    });
+    await service.remove('ev-1', manager);
+    expect(inbox.notify.mock.calls[0][1].title).toBe('Open as usual: Christmas Eve');
+    expect(inbox.notify.mock.calls[0][1].body).toMatch(/Both offices$/);
+  });
+
+  describe('copying a year', () => {
+    const lastYear = [
+      // Christmas Day 2026, all day.
+      row({
+        id: 'c-1',
+        kind: PracticeEventKind.CLOSURE,
+        title: 'Christmas Day',
+        place: null,
+        allDay: true,
+        startsAt: new Date('2026-12-25T05:00:00.000Z'),
+        endsAt: new Date('2026-12-26T05:00:00.000Z'),
+        locationId: null,
+        jobRoleId: null,
+      }),
+      // Christmas Eve 2026 from 1pm to midnight, North Bergen only.
+      row({
+        id: 'c-2',
+        kind: PracticeEventKind.CLOSURE,
+        title: 'Christmas Eve',
+        place: null,
+        startsAt: new Date('2026-12-24T18:00:00.000Z'),
+        endsAt: new Date('2026-12-25T05:00:00.000Z'),
+        audience: EventAudience.LOCATION,
+        locationId: 'loc-nb',
+        location: { id: 'loc-nb', name: 'North Bergen' },
+        jobRoleId: null,
+      }),
+    ];
+
+    it('puts each closure on the same date a year on, at the same wall-clock times', async () => {
+      const { service, practiceEvent } = build();
+      practiceEvent.findMany.mockResolvedValue(lastYear);
+      const result = await service.copyClosures(2026, manager);
+
+      expect(result).toMatchObject({ copied: 2, skipped: [], toYear: 2027 });
+      const [day, eve] = practiceEvent.create.mock.calls.map(([args]) => args.data);
+      expect(day).toMatchObject({
+        kind: PracticeEventKind.CLOSURE,
+        title: 'Christmas Day',
+        allDay: true,
+        startsAt: new Date('2027-12-25T05:00:00.000Z'),
+        endsAt: new Date('2027-12-26T05:00:00.000Z'),
+        audience: EventAudience.EVERYONE,
+        locationId: null,
+        createdById: 'mgr-1',
+      });
+      expect(eve).toMatchObject({
+        title: 'Christmas Eve',
+        allDay: false,
+        startsAt: new Date('2027-12-24T18:00:00.000Z'),
+        endsAt: new Date('2027-12-25T05:00:00.000Z'),
+        audience: EventAudience.LOCATION,
+        locationId: 'loc-nb',
+      });
+    });
+
+    it('only looks at closures in the year asked for, on the practice clock', async () => {
+      const { service, practiceEvent } = build();
+      practiceEvent.findMany.mockResolvedValue([]);
+      await service.copyClosures(2026, manager);
+      expect(practiceEvent.findMany.mock.calls[0][0].where).toEqual({
+        kind: PracticeEventKind.CLOSURE,
+        startsAt: {
+          gte: new Date('2026-01-01T05:00:00.000Z'),
+          lt: new Date('2027-01-01T05:00:00.000Z'),
+        },
+      });
+    });
+
+    it('skips what is already there, so pressing it twice does nothing more', async () => {
+      const { service, practiceEvent } = build();
+      practiceEvent.findMany.mockResolvedValue(lastYear);
+      practiceEvent.count.mockResolvedValue(1);
+      const result = await service.copyClosures(2026, manager);
+      expect(result.copied).toBe(0);
+      expect(result.skipped).toEqual([
+        "Christmas Day — already on 2027's calendar",
+        "Christmas Eve — already on 2027's calendar",
+      ]);
+      expect(practiceEvent.create).not.toHaveBeenCalled();
+    });
+
+    it('does not guess where 29 February goes', async () => {
+      const { service, practiceEvent } = build();
+      practiceEvent.findMany.mockResolvedValue([
+        row({
+          kind: PracticeEventKind.CLOSURE,
+          title: 'Leap day',
+          allDay: true,
+          startsAt: new Date('2028-02-29T05:00:00.000Z'),
+          endsAt: new Date('2028-03-01T05:00:00.000Z'),
+        }),
+      ]);
+      const result = await service.copyClosures(2028, manager);
+      expect(result.skipped).toEqual(['Leap day — 29 February has no date in 2029']);
+    });
+
+    it('sends each person one notification for the lot, not one per holiday', async () => {
+      const { service, practiceEvent, inbox } = build({ invited: ['emp-1', 'mgr-1'] });
+      practiceEvent.findMany.mockResolvedValue(lastYear);
+      await service.copyClosures(2026, manager);
+      expect(inbox.notify).toHaveBeenCalledTimes(1);
+      const [who, notice] = inbox.notify.mock.calls[0];
+      expect(who).toEqual(['emp-1']);
+      expect(notice).toMatchObject({
+        title: '2027 holidays are on the schedule',
+        body: '2 closures: Christmas Day, Christmas Eve',
+      });
     });
   });
 });

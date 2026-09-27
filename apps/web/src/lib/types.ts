@@ -363,6 +363,7 @@ export interface Attention {
   unapprovedHours: string[];
   shiftsForLeavers: string[];
   openShifts: string[];
+  shiftsInClosures: string[];
   closingGaps: string[];
   suppliesNeeded: string[];
 }
@@ -725,13 +726,18 @@ export interface TeamAvailability extends PersonName {
 
 export type SurveyAudience = 'EVERYONE' | 'JOB_ROLE' | 'LOCATION';
 
-/// Who a practice event is for — the same three choices as a survey.
+/// Who a practice event is for — the same three choices as a survey. A
+/// closure is for both offices (EVERYONE) or one (LOCATION).
 export type EventAudience = 'EVERYONE' | 'JOB_ROLE' | 'LOCATION';
+
+/// A meeting or day out, or a time an office is shut (a holiday).
+export type EventKind = 'EVENT' | 'CLOSURE';
 
 /// An office meeting, a provider meeting, a wellness day. On the schedule and
 /// in the calendar feed; never counted as hours.
 export interface PracticeEvent {
   id: string;
+  kind: EventKind;
   title: string;
   description: string | null;
   place: string | null;
@@ -748,6 +754,7 @@ export interface PracticeEvent {
 }
 
 export interface EventInput {
+  kind?: EventKind;
   title: string;
   description?: string;
   place?: string;

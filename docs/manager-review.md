@@ -557,3 +557,24 @@ is the bit we need to hear about.
     go"? Should anything else about an event — a reminder the day before, an
     email — be added?
 
+### Holidays and closures (September 2026)
+
+- **Schedule → + Add event → The office is closed (holiday)**, or **+ Add
+  closure** in **Holidays and closures** near the bottom of the Schedule.
+  Close **both offices or just one** — for Christmas Day, for several days, or
+  for part of a day: Christmas Eve from 1pm (put midnight as when it opens
+  again).
+- Staff at that office see it with a 🔒, are told under the bell, and have it
+  on their phone if they sync their calendar. The other office hears nothing
+  about it.
+- It **never stops you scheduling** somebody during a closure — they may be
+  doing admin that day — but it warns you in the shift form, asks before
+  saving, marks the shift with ⚠, and lists it in the banner and the nightly
+  email until it is moved.
+- **Copy these into next year** puts the whole year's closures on the same
+  dates the following year. Check the ones that move (Thanksgiving, Memorial
+  Day, Labor Day) and fix their dates.
+- **Pay is not changed** by a closure yet.
+  - **Tell us:** how does the practice pay holidays — which ones, who gets
+    them, and how many hours? We need that (and ADP's code for holiday pay)
+    before holidays can go on the payroll export.

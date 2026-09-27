@@ -1,4 +1,7 @@
 -- CreateEnum
+CREATE TYPE "PracticeEventKind" AS ENUM ('EVENT', 'CLOSURE');
+
+-- CreateEnum
 CREATE TYPE "EventAudience" AS ENUM ('EVERYONE', 'JOB_ROLE', 'LOCATION');
 
 -- AlterEnum
@@ -7,6 +10,7 @@ ALTER TYPE "NotificationKind" ADD VALUE 'EVENT';
 -- CreateTable
 CREATE TABLE "practice_events" (
     "id" UUID NOT NULL,
+    "kind" "PracticeEventKind" NOT NULL DEFAULT 'EVENT',
     "title" TEXT NOT NULL,
     "description" TEXT,
     "place" TEXT,
@@ -25,6 +29,9 @@ CREATE TABLE "practice_events" (
 
 -- CreateIndex
 CREATE INDEX "practice_events_startsAt_idx" ON "practice_events"("startsAt");
+
+-- CreateIndex
+CREATE INDEX "practice_events_kind_startsAt_idx" ON "practice_events"("kind", "startsAt");
 
 -- AddForeignKey
 ALTER TABLE "practice_events" ADD CONSTRAINT "practice_events_jobRoleId_fkey" FOREIGN KEY ("jobRoleId") REFERENCES "job_roles"("id") ON DELETE SET NULL ON UPDATE CASCADE;
@@ -45,4 +52,9 @@ ALTER TABLE "practice_events" ADD CONSTRAINT "practice_events_audience_check" CH
   ("audience" = 'EVERYONE' AND "jobRoleId" IS NULL AND "locationId" IS NULL)
   OR ("audience" = 'JOB_ROLE' AND "locationId" IS NULL)
   OR ("audience" = 'LOCATION' AND "jobRoleId" IS NULL)
+);
+
+-- A closure shuts an office, or both: never a job role.
+ALTER TABLE "practice_events" ADD CONSTRAINT "practice_events_closure_check" CHECK (
+  "kind" = 'EVENT' OR "audience" IN ('EVERYONE', 'LOCATION')
 );

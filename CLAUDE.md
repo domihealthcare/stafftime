@@ -331,6 +331,16 @@ Beyond the phases, the parts worth knowing about before picking up work:
   anybody paid to attend clocks in as usual. **No replies** (going / can't
   go) for now. All four choices confirmed by Dominguez. `PracticeEvent`,
   `src/events/`.
+- **Holidays and closures** (September 2026, Dominguez): a `PracticeEvent`
+  with `kind: CLOSURE` — Christmas all day, Christmas Eve from 1pm — for
+  **both offices or one** (never a job role). Shown with a 🔒 to that office's
+  staff, on phones and under the bell. **Warns, never refuses**: a shift inside
+  one is flagged in the shift forms (with a pop-up before saving), with ⚠ on
+  the rota, and in the banner and nightly email. **Pay is untouched** — holiday
+  pay is an open question. **Entered each year** with **Copy these into next
+  year** on the Schedule's *Holidays and closures* card; moving holidays
+  (Thanksgiving) are fixed by hand. The printed rota says when an office is
+  closed.
 - **Version on the Help page** — "About this version": the build date and
   commit baked in when the bundle is built (`VERCEL_GIT_COMMIT_SHA` on Vercel,
   git locally), whether it is the test or live site, and — because
@@ -412,7 +422,7 @@ Beyond the phases, the parts worth knowing about before picking up work:
   overtime counts the whole week at every office; a repeat PIN within
   `KIOSK_REPEAT_SECONDS` (120) is not a clock-out; screens load when first
   opened and `/assets` is cached for a year.
-- **Tests**: ~850 unit tests, and ~480 end-to-end checks in `tests/browser`
+- **Tests**: ~870 unit tests, and ~495 end-to-end checks in `tests/browser`
   driven against a real API, a real Postgres and a real Chromium. Both run in CI
   on every push. The convention is to run the browser suites twice — once
   against the dev server, once against `vite preview`, which applies the

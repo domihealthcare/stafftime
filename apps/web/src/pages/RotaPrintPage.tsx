@@ -4,8 +4,9 @@ import { api } from '../lib/api';
 import { addDays, displayName, formatTimeCompact, localDate, startOfWeek } from '../lib/format';
 import { useIsManager, useSession } from '../lib/session';
 import { timeOffOn } from '../lib/time-off';
-import type { Employee, JobRole, Location, PtoRequest, Shift } from '../lib/types';
+import type { Employee, JobRole, Location, PracticeEvent, PtoRequest, Shift } from '../lib/types';
 import { BrandLogoForPrint } from '../components/Brand';
+import { eventsOnDay, eventTimeLabel, isClosure } from '../components/PracticeEvents';
 import { Alert, Spinner } from '../components/ui';
 
 /// "2026-09-28" as a local midnight, not UTC — a week that starts on Monday
@@ -47,6 +48,8 @@ export function RotaPrintPage() {
   const [locations, setLocations] = useState<Location[]>([]);
   const [jobRoles, setJobRoles] = useState<JobRole[]>([]);
   const [timeOff, setTimeOff] = useState<PtoRequest[]>([]);
+  /// Closures this week, so the wall says when an office is shut.
+  const [closures, setClosures] = useState<PracticeEvent[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -67,14 +70,16 @@ export function RotaPrintPage() {
         from: localDate(weekStart),
         to: localDate(addDays(weekStart, 6)),
       }),
+      api.events(weekStart.toISOString(), addDays(weekStart, 7).toISOString()),
     ])
-      .then(([shiftData, staff, places, roles, off]) => {
+      .then(([shiftData, staff, places, roles, off, events]) => {
         if (cancelled) return;
         setShifts(shiftData);
         setEmployees(staff);
         setLocations(places);
         setJobRoles(roles);
         setTimeOff(off);
+        setClosures(events.filter(isClosure));
         setError(null);
       })
       .catch((err: unknown) => {
@@ -291,6 +296,25 @@ export function RotaPrintPage() {
                                 day: 'numeric',
                               })}
                             </span>
+                            {eventsOnDay(
+                              closures.filter(
+                                (closure) =>
+                                  closure.audience === 'EVERYONE' ||
+                                  closure.location?.id === office.id,
+                              ),
+                              dayKeys[index],
+                            ).map((closure) => (
+                              <span
+                                key={closure.id}
+                                data-testid="print-closure"
+                                className="block text-xs font-bold uppercase tracking-wide"
+                              >
+                                {eventTimeLabel(closure, dayKeys[index])}
+                                <span className="block font-normal normal-case tracking-normal">
+                                  {closure.title}
+                                </span>
+                              </span>
+                            ))}
                           </th>
                         ))}
                       </tr>
