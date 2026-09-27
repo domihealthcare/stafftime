@@ -132,6 +132,15 @@ class EnvironmentVariables {
   @Min(1)
   PIN_LOCKOUT_MINUTES = 10;
 
+  /// A PIN entered again this soon after a time-clock punch repeats that punch
+  /// instead of reversing it — the answer to the first was lost and somebody
+  /// tried again. The browser suites clock people in and out within seconds,
+  /// so they set it to 0.
+  @Type(() => Number)
+  @IsInt()
+  @Min(0)
+  KIOSK_REPEAT_SECONDS = 120;
+
   @Type(() => Number)
   @IsInt()
   @Min(0)

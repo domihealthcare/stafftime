@@ -49,12 +49,16 @@ export function KioskApp() {
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const idleTimer = useRef<number | undefined>(undefined);
+  const screenRef = useRef<string>('loading');
 
+  const retryTimer = useRef<number | undefined>(undefined);
   const loadSession = useCallback(async () => {
+    window.clearTimeout(retryTimer.current);
     try {
       const current = await kioskApi.session();
       setSession(current);
       setStaff(await kioskApi.employees());
+      setError(null);
       setScreen({ name: 'staff' });
     } catch (err) {
       if (isKioskUnpaired(err)) {
@@ -62,12 +66,21 @@ export function KioskApp() {
       } else {
         setError(err instanceof ApiError ? err.message : 'Could not reach the server.');
         setScreen({ name: 'staff' });
+        // The computer often starts before its Wi-Fi does: keep trying, rather
+        // than sitting dead until somebody thinks to reload the page.
+        retryTimer.current = window.setTimeout(() => void loadSession(), 15_000);
       }
     }
   }, []);
 
   useEffect(() => {
     void loadSession();
+    const online = () => void loadSession();
+    window.addEventListener('online', online);
+    return () => {
+      window.removeEventListener('online', online);
+      window.clearTimeout(retryTimer.current);
+    };
   }, [loadSession]);
 
   // Every ten minutes, fetch the staff list again: somebody added today shows
@@ -78,11 +91,18 @@ export function KioskApp() {
     const timer = window.setInterval(() => {
       kioskApi
         .employees()
-        .then(setStaff)
+        .then((list) => {
+          setStaff(list);
+          if (screenRef.current === 'staff') setError(null);
+        })
         .catch(() => undefined);
     }, 10 * 60_000);
     return () => window.clearInterval(timer);
   }, [session]);
+
+  useEffect(() => {
+    screenRef.current = screen.name;
+  }, [screen]);
 
   const backToStaff = useCallback(() => {
     setPin('');
@@ -90,9 +110,11 @@ export function KioskApp() {
     setScreen({ name: 'staff' });
   }, []);
 
-  // Clear an abandoned PIN screen.
+  // Clear an abandoned PIN screen — but never while a PIN is being checked, or
+  // the answer would land on whoever is next.
   useEffect(() => {
     window.clearTimeout(idleTimer.current);
+    if (busy) return;
     if (screen.name === 'pin') {
       idleTimer.current = window.setTimeout(backToStaff, IDLE_RESET_MS);
     }
@@ -100,7 +122,15 @@ export function KioskApp() {
       idleTimer.current = window.setTimeout(backToStaff, CHECKLIST_IDLE_RESET_MS);
     }
     return () => window.clearTimeout(idleTimer.current);
-  }, [screen, pin, backToStaff]);
+  }, [screen, pin, busy, backToStaff]);
+
+  /// Somebody ticking the closing checklist is still there: start its
+  /// five minutes again.
+  const stillHere = useCallback(() => {
+    if (screen.name !== 'checklist') return;
+    window.clearTimeout(idleTimer.current);
+    idleTimer.current = window.setTimeout(backToStaff, CHECKLIST_IDLE_RESET_MS);
+  }, [screen, backToStaff]);
 
   // Return to the staff list after a confirmation.
   useEffect(() => {
@@ -170,7 +200,11 @@ export function KioskApp() {
         )}
 
         {screen.name === 'checklist' && (
-          <div className="rounded-2xl bg-white p-6 shadow-sm">
+          <div
+            className="rounded-2xl bg-white p-6 shadow-sm"
+            onPointerDown={stillHere}
+            onKeyDown={stillHere}
+          >
             <p className="mb-3 text-sm font-medium text-slate-500">
               {screen.employee.firstName} {screen.employee.lastName}
             </p>
@@ -228,12 +262,12 @@ function StaffList({
         </div>
       )}
 
-      {staff.length === 0 ? (
+      {staff.length === 0 && !error ? (
         <Alert tone="warning">
           Nobody at this location has a kiosk PIN yet. An administrator can set them from Kiosks in
           the web app.
         </Alert>
-      ) : (
+      ) : staff.length === 0 ? null : (
         <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
           {staff.map((employee) => (
             <button
@@ -303,7 +337,8 @@ function PinEntry({
       <button
         type="button"
         onClick={onCancel}
-        className="mt-6 w-full py-3 text-center text-sm font-medium text-slate-500 hover:text-slate-900"
+        disabled={busy}
+        className="mt-6 w-full py-3 text-center text-sm font-medium text-slate-500 hover:text-slate-900 disabled:opacity-60"
       >
         {busy ? 'Checking…' : 'Cancel'}
       </button>

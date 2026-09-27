@@ -45,6 +45,11 @@ export class KioskPunchService {
   private readonly logger = new Logger(KioskPunchService.name);
   private readonly maxAttempts: number;
   private readonly lockoutMinutes: number;
+  /// A PIN entered again this soon after a punch is taken as the same punch —
+  /// the answer to the first was lost on the way back and the person tried
+  /// again — rather than as its reverse, which would clock them straight back
+  /// out (or in). Nobody means to clock out two minutes after clocking in.
+  private readonly repeatWindowMs: number;
 
   constructor(
     private readonly prisma: PrismaService,
@@ -55,6 +60,7 @@ export class KioskPunchService {
   ) {
     this.maxAttempts = config.get<number>('MAX_PIN_ATTEMPTS', 5);
     this.lockoutMinutes = config.get<number>('PIN_LOCKOUT_MINUTES', 10);
+    this.repeatWindowMs = Number(config.get('KIOSK_REPEAT_SECONDS', 120)) * 1000;
   }
 
   /**
@@ -135,6 +141,38 @@ export class KioskPunchService {
     // The kiosk acts for the employee, so it is its own actor: it can punch for
     // this person and nothing else.
     const actor = { id: employee.id, email: '', role: 'EMPLOYEE' as const };
+
+    const now = Date.now();
+    if (open && now - open.clockInAt.getTime() < this.repeatWindowMs) {
+      this.logger.log(`Kiosk ${device.deviceId}: ${employee.id} repeated a clock-in; not reversed`);
+      return {
+        action: 'CLOCKED_IN',
+        employeeName: displayName,
+        at: open.clockInAt.toISOString(),
+        locationName: device.locationName,
+        isLate: false,
+      };
+    }
+    if (!open && this.repeatWindowMs > 0) {
+      const justLeft = await this.prisma.timeEntry.findFirst({
+        where: { employeeId: employee.id, clockOutAt: { gte: new Date(now - this.repeatWindowMs) } },
+        select: { clockInAt: true, clockOutAt: true },
+        orderBy: { clockOutAt: 'desc' },
+      });
+      if (justLeft?.clockOutAt) {
+        this.logger.log(`Kiosk ${device.deviceId}: ${employee.id} repeated a clock-out; not reversed`);
+        return {
+          action: 'CLOCKED_OUT',
+          employeeName: displayName,
+          at: justLeft.clockOutAt.toISOString(),
+          locationName: device.locationName,
+          workedMinutes: Math.round(
+            (justLeft.clockOutAt.getTime() - justLeft.clockInAt.getTime()) / 60_000,
+          ),
+          isLate: false,
+        };
+      }
+    }
 
     if (open) {
       // The checklist comes before the punch, not after: a person walking away

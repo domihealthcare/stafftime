@@ -98,8 +98,10 @@ await step('a wrong PIN is refused and the entry is cleared', async () => {
 });
 await tablet.screenshot({ path: `${OUT}/19-kiosk-wrong-pin.png`, fullPage: true });
 
-await step('the correct PIN clocks in and confirms', async () => {
-  await typePin('4817');
+await step('the correct PIN, typed on a keyboard, clocks in and confirms', async () => {
+  // The time clock is often the front-desk computer: digits and Enter work.
+  await tablet.keyboard.type('4817');
+  await tablet.keyboard.press('Enter');
   await tablet.getByText('Clocked in').waitFor({ timeout: 15000 });
   await tablet.getByText('Frankie').first().waitFor({ timeout: 5000 });
 });

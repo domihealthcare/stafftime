@@ -76,11 +76,18 @@ export class ApiError extends Error {
   }
 }
 
+/// Long enough for a slow phone signal and a cold server; short enough that a
+/// punch on a dead connection says so instead of spinning for minutes.
+const REQUEST_TIMEOUT_MS = 20_000;
+
 async function request<T>(path: string, init: RequestInit = {}): Promise<T> {
   let response: Response;
+  const abort = new AbortController();
+  const timer = window.setTimeout(() => abort.abort(), REQUEST_TIMEOUT_MS);
   try {
     response = await fetch(`/api${path}`, {
       credentials: 'include',
+      signal: abort.signal,
       ...init,
       headers: {
         'Content-Type': 'application/json',
@@ -88,7 +95,14 @@ async function request<T>(path: string, init: RequestInit = {}): Promise<T> {
       },
     });
   } catch {
-    throw new ApiError(0, 'Could not reach the server. Check your connection and try again.');
+    throw new ApiError(
+      0,
+      abort.signal.aborted
+        ? 'The server took too long to answer. Check whether it went through before trying again.'
+        : 'Could not reach the server. Check your connection and try again.',
+    );
+  } finally {
+    window.clearTimeout(timer);
   }
 
   if (response.status === 204) {
