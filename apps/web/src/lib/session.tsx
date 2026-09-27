@@ -1,6 +1,6 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
 import type { ReactNode } from 'react';
-import { ApiError, api, isPasswordChangeRequired } from './api';
+import { ApiError, SESSION_ENDED, api, isPasswordChangeRequired } from './api';
 import type { Employee } from './types';
 
 interface SessionValue {
@@ -38,6 +38,13 @@ export function SessionProvider({ children }: { children: ReactNode }) {
     // who we are before deciding to show the sign-in screen.
     void refresh().finally(() => setLoading(false));
   }, [refresh]);
+
+  // The session ended while the app was open: back to the sign-in screen.
+  useEffect(() => {
+    const ended = () => setEmployee(null);
+    window.addEventListener(SESSION_ENDED, ended);
+    return () => window.removeEventListener(SESSION_ENDED, ended);
+  }, []);
 
   const signIn = useCallback(async (email: string, password: string) => {
     setEmployee(await api.login(email, password));

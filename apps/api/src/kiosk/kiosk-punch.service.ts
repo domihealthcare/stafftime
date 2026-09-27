@@ -154,7 +154,13 @@ export class KioskPunchService {
           };
         }
       }
-      const entry = await this.timeEntries.clockOut({ closing }, actor, undefined, employee.id);
+      const entry = await this.timeEntries.clockOut(
+        { closing },
+        actor,
+        undefined,
+        employee.id,
+        ClockMethod.KIOSK,
+      );
       this.logger.log(`Kiosk ${device.deviceId}: ${employee.id} clocked out`);
       return {
         action: 'CLOCKED_OUT',

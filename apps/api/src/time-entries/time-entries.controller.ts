@@ -1,6 +1,7 @@
 import {
   Body,
   Controller,
+  ForbiddenException,
   Get,
   Ip,
   Param,
@@ -9,7 +10,7 @@ import {
   Post,
   Query,
 } from '@nestjs/common';
-import { Role } from '@prisma/client';
+import { ClockMethod, Role } from '@prisma/client';
 import { AuthUser } from '../common/auth/auth-user';
 import { CurrentUser } from '../common/auth/current-user.decorator';
 import { Roles } from '../common/auth/roles.decorator';
@@ -25,6 +26,14 @@ export class TimeEntriesController {
 
   @Post('clock-in')
   clockIn(@Body() dto: ClockInDto, @CurrentUser() user: AuthUser, @Ip() ip: string) {
+    // A kiosk punch skips the location check, because the time clock is bound
+    // to its office. It must therefore only ever come from the time clock
+    // itself (KioskPunchService calls the service directly) — never from this
+    // route, where anybody signed in could claim to be one, from anywhere and
+    // on anybody's behalf. Found in the September 2026 review.
+    if (dto.method === ClockMethod.KIOSK) {
+      throw new ForbiddenException('Time clock punches can only be made at the time clock.');
+    }
     return this.timeEntries.clockIn(dto, user, ip);
   }
 

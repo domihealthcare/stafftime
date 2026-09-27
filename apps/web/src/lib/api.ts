@@ -98,11 +98,23 @@ async function request<T>(path: string, init: RequestInit = {}): Promise<T> {
   const body = await response.json().catch(() => null);
 
   if (!response.ok) {
+    // A 401 anywhere but signing in or checking a password means the session
+    // has ended — eight hours idle on a phone, typically. Say so to the app,
+    // which goes back to the sign-in screen instead of leaving an error on a
+    // screen that can do nothing about it.
+    if (response.status === 401 && !NOT_A_SESSION_ANSWER.some((p) => path.startsWith(p))) {
+      window.dispatchEvent(new Event(SESSION_ENDED));
+    }
     throw new ApiError(response.status, extractMessage(body, response.status), extractCode(body));
   }
 
   return body as T;
 }
+
+/// Fired when the server says the session is over.
+export const SESSION_ENDED = 'domi-staff:session-ended';
+/// Where a 401 is an answer about a password, not about the session.
+const NOT_A_SESSION_ANSWER = ['/auth/login', '/auth/change-password', '/auth/me', '/kiosk'];
 
 /**
  * Fetches a file and hands back a blob. There is no URL a browser could open

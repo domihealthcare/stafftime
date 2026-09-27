@@ -24,10 +24,10 @@ const OPEN_ENTRY = {
  * that losing is a plain refusal rather than a silent no-op returning a punch
  * that says it is still open.
  */
-function build(updatedCount: number) {
+function build(updatedCount: number, openMethod = 'WEB') {
   const prisma = {
     timeEntry: {
-      findFirst: jest.fn().mockResolvedValue(OPEN_ENTRY),
+      findFirst: jest.fn().mockResolvedValue({ ...OPEN_ENTRY, method: openMethod }),
       updateMany: jest.fn().mockResolvedValue({ count: updatedCount }),
       findUniqueOrThrow: jest.fn().mockResolvedValue({
         ...OPEN_ENTRY,
@@ -63,8 +63,25 @@ function build(updatedCount: number) {
       new ConfigService({ PUNCH_GRACE_MINUTES: 5 }),
     ),
     prisma,
+    verification,
   };
 }
+
+describe('how a clock-out is judged', () => {
+  it('checks a phone clock-out as a phone one, even when the shift began at the time clock', async () => {
+    // Clocked in at the front desk, clocked out later from home: without this
+    // the kiosk method carried over and the location was never looked at.
+    const { service, verification } = build(1, 'KIOSK');
+    await service.clockOut({ latitude: 40.9, longitude: -74.1 }, employee, '203.0.113.7');
+    expect(verification.verify.mock.calls[0][0].method).toBe('WEB');
+  });
+
+  it('lets the time clock close any shift as a time-clock punch', async () => {
+    const { service, verification } = build(1, 'WEB');
+    await service.clockOut({}, employee, undefined, 'emp-1', 'KIOSK' as never);
+    expect(verification.verify.mock.calls[0][0].method).toBe('KIOSK');
+  });
+});
 
 describe('clocking out', () => {
   it('will only close a punch that is still open', async () => {

@@ -17,6 +17,8 @@ export function ClockPage() {
   const [entry, setEntry] = useState<TimeEntry | null>(null);
   const [todaysShift, setTodaysShift] = useState<Shift | null>(null);
   const [locationId, setLocationId] = useState<string>('');
+  /// Once somebody picks an office themselves, the defaults below leave it alone.
+  const [pickedByHand, setPickedByHand] = useState(false);
   const [status, setStatus] = useState<Status>('loading');
   const [error, setError] = useState<string | null>(null);
   const [offerKiosk, setOfferKiosk] = useState(false);
@@ -59,14 +61,29 @@ export function ClockPage() {
     void load();
   }, [load]);
 
-  // Default to the primary location, else the only one they have.
+  // An installed app can sit in the background all day. Coming back to it —
+  // after clocking in at the front desk, say — it must show the truth, not
+  // what it knew this morning.
   useEffect(() => {
-    if (locationId || assignedLocations.length === 0) {
+    const refresh = () => {
+      if (document.visibilityState === 'visible') void load();
+    };
+    document.addEventListener('visibilitychange', refresh);
+    return () => document.removeEventListener('visibilitychange', refresh);
+  }, [load]);
+
+  // Default to the office of today's shift, else the primary office, else the
+  // only one they have. Everybody works at both offices, so "primary" alone
+  // sent people at West New York to North Bergen (and the server now finds the
+  // right one anyway, if they are standing at the other).
+  useEffect(() => {
+    if (pickedByHand || assignedLocations.length === 0) {
       return;
     }
+    const shiftOffice = assignedLocations.find((l) => l.locationId === todaysShift?.locationId);
     const primary = assignedLocations.find((l) => l.isPrimary) ?? assignedLocations[0];
-    setLocationId(primary.locationId);
-  }, [assignedLocations, locationId]);
+    setLocationId((shiftOffice ?? primary).locationId);
+  }, [assignedLocations, todaysShift, pickedByHand]);
 
   // Keep the elapsed-time readout ticking while clocked in.
   useEffect(() => {
@@ -97,6 +114,7 @@ export function ClockPage() {
     setOfferKiosk(false);
 
     let position: Awaited<ReturnType<typeof getCurrentPosition>> | null = null;
+    let locationProblem: string | null = null;
     try {
       // Must run inside the click handler — the browser prompt needs the gesture.
       // Working from home, it is never asked for.
@@ -106,6 +124,7 @@ export function ClockPage() {
         // Not fatal: the server may still accept the punch from an office IP.
         setOfferKiosk(err.needsPermissionChange);
         setError(err.message);
+        locationProblem = err.message;
       }
     }
 
@@ -134,7 +153,9 @@ export function ClockPage() {
       await load();
     } catch (err) {
       if (err instanceof ApiError) {
-        setError(err.message);
+        // When the phone could not say where they are, that is the real reason
+        // — the server's "allow location access" would only hide it.
+        setError(err.status === 403 && locationProblem ? locationProblem : err.message);
         // 403 here means verification failed, and the kiosk is the way around it.
         setOfferKiosk(err.status === 403);
       } else {
@@ -207,7 +228,10 @@ export function ClockPage() {
           <select
             id="location"
             value={locationId}
-            onChange={(event) => setLocationId(event.target.value)}
+            onChange={(event) => {
+              setPickedByHand(true);
+              setLocationId(event.target.value);
+            }}
             className="mt-1 w-full rounded-lg border-slate-300 py-2.5 text-base shadow-sm focus:border-brand-600 focus:ring-brand-600"
           >
             {assignedLocations.map((assignment) => (
