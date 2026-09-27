@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
+import { localDate } from '../lib/format';
 import { MONTHS } from '../lib/birthday';
 import { ApiError, api } from '../lib/api';
 import { useSession } from '../lib/session';
@@ -683,7 +684,7 @@ function AddStaffForm({ locations, onCreated }: { locations: Location[]; onCreat
   const [email, setEmail] = useState('');
   const [role, setRole] = useState<Role>('EMPLOYEE');
   const [payType, setPayType] = useState('HOURLY');
-  const [hireDate, setHireDate] = useState(() => new Date().toISOString().slice(0, 10));
+  const [hireDate, setHireDate] = useState(() => localDate(new Date()));
   const [assigned, setAssigned] = useState<string[]>([]);
   const [busy, setBusy] = useState(false);
   const [problem, setProblem] = useState<string | null>(null);

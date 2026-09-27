@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { ApiError, api } from '../lib/api';
-import { formatCalendarDate, formatDate } from '../lib/format';
+import { formatCalendarDate, formatDate, localDate } from '../lib/format';
 import type { Checklist, ChecklistTask, ChecklistTaskStatus } from '../lib/types';
 import { Badge } from './ui';
 
@@ -144,6 +144,8 @@ export function ChecklistTaskRow({
   );
 }
 
+/// Today where the person is — not in UTC, which is already tomorrow after
+/// 8pm in New Jersey and marked things due today as overdue.
 function today(): string {
-  return new Date().toISOString().slice(0, 10);
+  return localDate(new Date());
 }

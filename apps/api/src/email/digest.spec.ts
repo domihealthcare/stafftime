@@ -2,7 +2,11 @@ import { fakeSettings } from '../settings/practice-settings.test-double';
 import { AttentionService } from './attention.service';
 import { DigestService } from './digest.service';
 
-const day = (value: string) => new Date(`${value}T00:00:00.000Z`);
+/// Midday UTC — morning in New Jersey — so a date means the same day on the server's
+/// clock and at the practice, as real punches and the 5am round-up do.
+const day = (value: string) => new Date(`${value}T12:00:00.000Z`);
+/// A date-only value, as the round-up's "today" is: midnight UTC of the date.
+const date = (value: string) => new Date(`${value}T00:00:00.000Z`);
 
 function build(
   data: {
@@ -362,7 +366,7 @@ describe('DigestService — what is going wrong at the office', () => {
       expect(where.isActive).toBe(true);
       expect(where.shifts.some.status).toBe('PUBLISHED');
       const since = where.shifts.some.startsAt.gte;
-      expect((day('2026-09-24').getTime() - since.getTime()) / 86_400_000).toBe(28);
+      expect((date('2026-09-24').getTime() - since.getTime()) / 86_400_000).toBe(28);
     });
   });
 
@@ -407,7 +411,7 @@ describe('DigestService — what is going wrong at the office', () => {
       const where = prisma.timeEntry.groupBy.mock.calls[0][0].where;
       expect(where.status).toBe('COMPLETED');
       expect(where.clockOutAt).toEqual({ not: null });
-      expect((day('2026-09-24').getTime() - where.clockInAt.lt.getTime()) / 86_400_000).toBe(7);
+      expect((date('2026-09-24').getTime() - where.clockInAt.lt.getTime()) / 86_400_000).toBe(7);
     });
   });
 
@@ -465,7 +469,7 @@ describe('DigestService — what is going wrong at the office', () => {
       await attention.gather();
 
       const where = prisma.shift.findMany.mock.calls[0][0].where;
-      expect(where.startsAt.gte).toEqual(day('2026-09-24'));
+      expect(where.startsAt.gte).toEqual(date('2026-09-24'));
       expect(where.employee).toEqual({ employmentStatus: 'TERMINATED' });
       expect(where.status).toEqual({ not: 'CANCELLED' });
     });
@@ -505,7 +509,7 @@ describe('DigestService — what is going wrong at the office', () => {
       )!;
       expect(call).toBeDefined();
       expect(call[0].where.status).toEqual({ not: 'CANCELLED' });
-      expect(call[0].where.startsAt.lt).toEqual(day('2026-10-09'));
+      expect(call[0].where.startsAt.lt).toEqual(date('2026-10-09'));
     });
   });
   describe('closing checklists', () => {
