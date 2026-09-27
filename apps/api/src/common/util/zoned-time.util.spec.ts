@@ -5,6 +5,8 @@ import {
   localDateIn,
   offsetMinutesAt,
   zonedTimeToUtc,
+  practiceDayStart,
+  practiceToday,
 } from './zoned-time.util';
 
 const NJ = 'America/New_York';
@@ -170,5 +172,24 @@ describe('addDaysTo', () => {
 
   it('crosses a clock change without drifting', () => {
     expect(addDaysTo('2026-10-30', 7)).toBe('2026-11-06');
+  });
+});
+
+describe("the practice's today", () => {
+  // 9pm on Sunday 27 September in New Jersey is already Monday in UTC.
+  const sundayEvening = new Date('2026-09-28T01:00:00Z');
+
+  it('is still Sunday at 9pm in New Jersey, whatever the server clock says', () => {
+    expect(practiceToday(sundayEvening).toISOString()).toBe('2026-09-27T00:00:00.000Z');
+  });
+
+  it('began at midnight New Jersey time', () => {
+    expect(practiceDayStart(sundayEvening).toISOString()).toBe('2026-09-27T04:00:00.000Z');
+  });
+
+  it('turns over at midnight there, not at 8pm', () => {
+    expect(practiceToday(new Date('2026-09-28T04:30:00Z')).toISOString()).toBe(
+      '2026-09-28T00:00:00.000Z',
+    );
   });
 });

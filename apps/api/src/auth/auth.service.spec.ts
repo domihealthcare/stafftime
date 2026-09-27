@@ -147,6 +147,17 @@ describe('AuthService', () => {
       );
     });
 
+    it('does not count an account with no password yet against the connection', async () => {
+      // New starters trying before they open their welcome email must not
+      // lock the office out; there is no password there to guess.
+      const { service, throttle } = build({ ...active(), passwordHash: null });
+      await service
+        .login('frankie@domihealthcare.com', 'whatever', { ipAddress: '203.0.113.7' })
+        .catch(() => undefined);
+
+      expect(throttle.recordFailure).not.toHaveBeenCalled();
+    });
+
     it('checks the address throttle before doing any password work', async () => {
       const { service, prisma, throttle } = build(active());
       throttle.assertNotThrottled.mockRejectedValue(new Error('throttled'));

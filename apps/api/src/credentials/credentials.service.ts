@@ -1,3 +1,4 @@
+import { practiceToday } from '../common/util/zoned-time.util';
 import {
   BadRequestException,
   ForbiddenException,
@@ -7,7 +8,7 @@ import {
 } from '@nestjs/common';
 import { EmploymentStatus, Prisma, Role } from '@prisma/client';
 import { AuthUser } from '../common/auth/auth-user';
-import { addUtcDays, isoDate, toUtcDate } from '../common/util/calendar-date.util';
+import { addUtcDays, toUtcDate } from '../common/util/calendar-date.util';
 import { PrismaService } from '../prisma/prisma.service';
 import {
   CreateCredentialDto,
@@ -212,8 +213,9 @@ export class CredentialsService {
   }
 }
 
+/// The practice's today — in New Jersey, not on the server's UTC clock.
 function today(): Date {
-  return toUtcDate(isoDate(new Date()));
+  return practiceToday();
 }
 
 /// Negative once it has lapsed. Zero means it expires today, which still counts

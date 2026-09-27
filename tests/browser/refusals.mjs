@@ -62,6 +62,109 @@ await step('blocked location permission explains what to do', async () => {
   await page.screenshot({ path: `${OUT}/09-refused-blocked.png`, fullPage: true });
 });
 
+// 3. Claiming to be the time clock. A kiosk punch skips the location check, so
+// only the time clock itself may make one — never an ordinary signed-in call,
+// from home, for yourself or a colleague.
+await step('a punch that claims to come from the time clock is refused', async () => {
+  const page = await signedInPage({});
+  const answers = await page.evaluate(async () => {
+    const places = await fetch('/api/locations').then((r) => r.json());
+    const me = await fetch('/api/employees/me').then((r) => r.json());
+    const colleague = (await fetch('/api/directory').then((r) => r.json())).find((p) => p.id !== me.id);
+    const punch = (body) =>
+      fetch('/api/time-entries/clock-in', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body),
+      }).then((r) => r.status);
+    return [
+      await punch({ locationId: places[0].id, method: 'KIOSK' }),
+      await punch({ locationId: places[0].id, method: 'KIOSK', employeeId: colleague.id }),
+    ];
+  });
+  if (answers.some((status) => status !== 403)) throw new Error(`answered ${answers.join(', ')}`);
+  await page.reload({ waitUntil: 'networkidle' });
+  await page.getByText('Not clocked in').waitFor({ timeout: 5000 });
+});
+
+// Not a refusal, but the other side of one: somebody who works at both offices,
+// standing at West New York with North Bergen picked, is clocked in where they
+// are — not turned away as "outside North Bergen".
+let managersPunch;
+let managersShift;
+let managersPage;
+await step('standing at the other office clocks you in there, not a refusal', async () => {
+  const probe = await signedInPage({});
+  const places = await probe.evaluate(() => fetch('/api/locations').then((r) => r.json()));
+  await probe.context().close();
+  const wny = places.find((p) => p.name === 'West New York');
+  const nb = places.find((p) => p.name === 'North Bergen');
+  const ctx = await browser.newContext({
+    viewport: { width: 420, height: 900 },
+    permissions: ['geolocation'],
+    geolocation: { latitude: Number(wny.latitude), longitude: Number(wny.longitude), accuracy: 15 },
+  });
+  const page = await ctx.newPage();
+  await page.goto(`${BASE}/`, { waitUntil: 'networkidle' });
+  await signInAs(page, 'manager@domihealthcare.com');
+  await page.getByText('Not clocked in').waitFor({ timeout: 10000 });
+  await page.getByLabel('Location').selectOption(nb.id);
+  await page.getByRole('button', { name: 'Clock in' }).click();
+  await page.getByRole('button', { name: /Clock out/ }).waitFor({ timeout: 15000 });
+  const entry = await page.evaluate(() => fetch('/api/time-entries/current').then((r) => r.json()));
+  managersPunch = entry.id;
+  // A draft shift of Morgan's, removed again at the end.
+  managersShift = await page.evaluate(async ({ employeeId, locationId }) => {
+    const start = new Date(Date.now() + 30 * 86_400_000);
+    const r = await fetch('/api/shifts', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        employeeId,
+        locationId,
+        startsAt: start.toISOString(),
+        endsAt: new Date(start.getTime() + 4 * 3_600_000).toISOString(),
+      }),
+    });
+    return (await r.json()).id;
+  }, { employeeId: entry.employeeId, locationId: wny.id });
+  managersPage = page;
+  if (entry.locationId !== wny.id) throw new Error(`clocked in at ${entry.location?.name ?? entry.locationId}`);
+  await page.evaluate(() => fetch('/api/time-entries/clock-out', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: '{}' }));
+});
+
+await step('staff cannot read somebody else’s punch or shift by its id', async () => {
+  if (!managersPunch || !managersShift) throw new Error('nothing to try it on');
+  const page = await signedInPage({});
+  const answers = await page.evaluate(async ([punch, shift]) => {
+    return {
+      punch: (await fetch(`/api/time-entries/${punch}`)).status,
+      shift: (await fetch(`/api/shifts/${shift}`)).status,
+    };
+  }, [managersPunch, managersShift]);
+  if (answers.punch !== 404) throw new Error(`somebody else’s punch answered ${answers.punch}`);
+  if (answers.shift !== 404) throw new Error(`somebody else’s shift answered ${answers.shift}`);
+  await page.context().close();
+});
+if (managersPage) {
+  await managersPage.evaluate((id) => id && fetch(`/api/shifts/${id}`, { method: 'DELETE' }), managersShift);
+  await managersPage.context().close();
+}
+
+// 4. A session that ends while the app is open — eight hours idle on a phone —
+// goes back to the sign-in screen, rather than leaving errors on a screen that
+// can do nothing about them.
+await step('an ended session goes back to sign-in on the next tap', async () => {
+  const stale = await signedInPage({});
+  const other = await signedInPage({});
+  const ended = await other.evaluate(async () =>
+    fetch('/api/auth/sessions', { method: 'DELETE' }).then((r) => r.json()),
+  );
+  if (!ended.signedOut) throw new Error('nothing was signed out');
+  await stale.getByRole('link', { name: 'Timesheet' }).first().click();
+  await stale.getByRole('button', { name: 'Sign in' }).waitFor({ timeout: 10000 });
+});
+
 await browser.close();
 console.log(`\n${errors.length === 0 ? 'ALL REFUSAL CHECKS PASSED' : `PROBLEMS (${errors.length}):`}`);
 errors.forEach((e) => console.log(' - ' + e));

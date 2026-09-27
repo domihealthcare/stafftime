@@ -1,3 +1,4 @@
+import { practiceToday } from '../common/util/zoned-time.util';
 import {
   BadRequestException,
   ForbiddenException,
@@ -14,7 +15,7 @@ import {
   TaskOwner,
 } from '@prisma/client';
 import { AuthUser } from '../common/auth/auth-user';
-import { addUtcDays, isoDate, toUtcDate } from '../common/util/calendar-date.util';
+import { addUtcDays, toUtcDate } from '../common/util/calendar-date.util';
 import { InboxService } from '../email/inbox.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { QueryChecklistsDto, StartChecklistDto, UpdateTaskDto } from './dto/checklist.dto';
@@ -280,7 +281,7 @@ export class ChecklistsService {
 
     // No hire date on record: the checklist counts from today.
     if (dto.kind === ChecklistKind.ONBOARDING) {
-      return employee.hireDate ?? toUtcDate(new Date().toISOString().slice(0, 10));
+      return employee.hireDate ?? practiceToday();
     }
 
     if (!employee.terminationDate) {
@@ -298,7 +299,7 @@ export class ChecklistsService {
       (task) => task.status !== ChecklistTaskStatus.PENDING,
     ).length;
 
-    const today = toUtcDate(isoDate(new Date()));
+    const today = practiceToday();
     const overdue = checklist.tasks.filter(
       (task) =>
         task.status === ChecklistTaskStatus.PENDING && task.dueAt !== null && task.dueAt < today,

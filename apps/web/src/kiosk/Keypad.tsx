@@ -1,3 +1,4 @@
+import { useEffect } from 'react';
 interface KeypadProps {
   length: number;
   maxLength: number;
@@ -24,6 +25,26 @@ export function Keypad({
   onBackspace,
   onSubmit,
 }: KeypadProps) {
+  // The time clock is often the front-desk computer, with a keyboard: digits,
+  // Backspace and Enter work as on the keypad.
+  useEffect(() => {
+    const onKey = (event: KeyboardEvent) => {
+      if (disabled || event.metaKey || event.ctrlKey || event.altKey) return;
+      if (/^[0-9]$/.test(event.key) && length < maxLength) {
+        event.preventDefault();
+        onDigit(event.key);
+      } else if (event.key === 'Backspace' && length > 0) {
+        event.preventDefault();
+        onBackspace();
+      } else if (event.key === 'Enter' && length >= 4) {
+        event.preventDefault();
+        onSubmit();
+      }
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [disabled, length, maxLength, onDigit, onBackspace, onSubmit]);
+
   const buttonClass =
     'flex h-20 items-center justify-center rounded-2xl text-3xl font-medium transition active:scale-95 disabled:opacity-40';
 

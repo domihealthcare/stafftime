@@ -6,7 +6,12 @@ import {
   PtoStatus,
   TimeEntryStatus,
 } from '@prisma/client';
-import { addUtcDays, isoDate, toUtcDate } from '../common/util/calendar-date.util';
+import { addUtcDays } from '../common/util/calendar-date.util';
+import {
+  PRACTICE_ZONE,
+  practiceDayStart,
+  practiceToday,
+} from '../common/util/zoned-time.util';
 import { PrismaService } from '../prisma/prisma.service';
 import { PracticeSettingsService } from '../settings/practice-settings.service';
 
@@ -71,7 +76,10 @@ export class AttentionService {
   ) {}
 
   async gather(): Promise<DigestContents> {
-    const today = toUtcDate(isoDate(new Date()));
+    // The practice's today, not the server's: after 8pm in New Jersey the
+    // server is already on tomorrow.
+    const today = practiceToday();
+    const dayStart = practiceDayStart();
 
     const [credentials, tasks, punches, timeOff] = await Promise.all([
       this.prisma.employeeCredential.findMany({
@@ -111,7 +119,7 @@ export class AttentionService {
       this.prisma.timeEntry.findMany({
         where: {
           clockOutAt: null,
-          clockInAt: { lt: today, gte: addUtcDays(today, -MISSING_PUNCH_DAYS) },
+          clockInAt: { lt: dayStart, gte: addUtcDays(dayStart, -MISSING_PUNCH_DAYS) },
           status: { not: TimeEntryStatus.APPROVED },
         },
         select: {
@@ -136,9 +144,18 @@ export class AttentionService {
 
     const who = (person: { firstName: string; lastName: string }) =>
       `${person.firstName} ${person.lastName}`;
+    /// A date column (an expiry, a due date, a day off): the date as stored.
     const day = (date: Date) =>
       date.toLocaleDateString('en-US', {
         timeZone: 'UTC',
+        month: 'short',
+        day: 'numeric',
+        year: 'numeric',
+      });
+    /// A moment (a punch, a shift's start): the date it was in New Jersey.
+    const on = (instant: Date) =>
+      instant.toLocaleDateString('en-US', {
+        timeZone: PRACTICE_ZONE,
         month: 'short',
         day: 'numeric',
         year: 'numeric',
@@ -161,7 +178,7 @@ export class AttentionService {
           }`,
       ),
       missingPunches: punches.map(
-        (row) => `${who(row.employee)} — clocked in ${day(row.clockInAt)} and never out`,
+        (row) => `${who(row.employee)} — clocked in ${on(row.clockInAt)} and never out`,
       ),
       undecidedTimeOff: timeOff.map(
         (row) =>
@@ -169,7 +186,7 @@ export class AttentionService {
             row.startDate.getTime() === row.endDate.getTime() ? '' : ` to ${day(row.endDate)}`
           }`,
       ),
-      ...(await this.gatherOperational(today, who, day)),
+      ...(await this.gatherOperational(today, who, day, on)),
       ...(await this.gatherClosing(today, day)),
     };
   }
@@ -184,6 +201,7 @@ export class AttentionService {
     today: Date,
     who: (person: { firstName: string; lastName: string }) => string,
     day: (date: Date) => string,
+    on: (instant: Date) => string,
   ) {
     const now = new Date();
 
@@ -245,7 +263,7 @@ export class AttentionService {
         const count = row._count._all;
         return `${names.get(row.employeeId) ?? 'Somebody'} — ${count} shift${
           count === 1 ? '' : 's'
-        } not approved, oldest ${day(row._min.clockInAt!)}`;
+        } not approved, oldest ${on(row._min.clockInAt!)}`;
       });
 
     // Also grouped: three shifts for one leaver is one conversation.
@@ -289,20 +307,20 @@ export class AttentionService {
         const mix = [...roles.entries()]
           .map(([role, n]) => (n > 1 ? `${role} ×${n}` : role))
           .join(', ');
-        return `${name} — ${count} open shift${count === 1 ? '' : 's'} nobody is on yet, the first ${day(first)} (${mix})`;
+        return `${name} — ${count} open shift${count === 1 ? '' : 's'} nobody is on yet, the first ${on(first)} (${mix})`;
       }),
       silentKiosks: kiosks.map((device) =>
         device.lastSeenAt
-          ? `${device.location.name} — the ${device.name} tablet was last used ${day(device.lastSeenAt)}`
+          ? `${device.location.name} — the ${device.name} tablet was last used ${on(device.lastSeenAt)}`
           : `${device.location.name} — the ${device.name} tablet has not been used since it was paired${
-              device.pairedAt ? ` on ${day(device.pairedAt)}` : ''
+              device.pairedAt ? ` on ${on(device.pairedAt)}` : ''
             }`,
       ),
       unpublishedRota: await this.unpublishedRota(today, day),
       unapprovedHours,
       shiftsForLeavers: [...byLeaver.values()].map(
         ({ name, first, count }) =>
-          `${name} — ${count} shift${count === 1 ? '' : 's'} from ${day(
+          `${name} — ${count} shift${count === 1 ? '' : 's'} from ${on(
             first,
           )}, but marked as no longer employed`,
       ),

@@ -29,7 +29,10 @@ const WELCOME_VALID_DAYS = 7;
 /// emails keeps a whole-practice send inside it. Bulk sends go in batches small
 /// enough to finish well inside a serverless function's time limit.
 const WELCOME_PACE_MS = 600;
-const WELCOME_BATCH = 20;
+/// Ten, at up to a second or two each with the pause, stays well inside the
+/// 30-second limit in vercel.json even when the email provider is slow; the
+/// Staff screen calls again until nobody is left.
+const WELCOME_BATCH = 10;
 
 /// The same answer whether or not the address belongs to anybody. Telling an
 /// unauthenticated caller "no such account" hands them a list of who works here.

@@ -41,7 +41,11 @@ function build(remoteShift: unknown) {
         isActive: true,
       }),
     },
-    employeeLocation: { findUnique: jest.fn().mockResolvedValue({ employeeId: 'emp-1' }) },
+    employeeLocation: {
+      findUnique: jest.fn().mockResolvedValue({ employeeId: 'emp-1' }),
+      // Assigned to this office only, so there is no other one to try.
+      findMany: jest.fn().mockResolvedValue([]),
+    },
     $transaction: jest.fn(async (fn: (t: typeof tx) => unknown) => fn(tx)),
   };
   const verification = {

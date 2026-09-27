@@ -139,24 +139,40 @@ export class TimeEntriesService {
     const location = await this.loadVerifiableLocation(dto.locationId);
     const isAssignedToLocation = await this.isAssigned(employeeId, dto.locationId);
     const ip = ipAddress ? normalizeIp(ipAddress) : null;
+    const check = (place: typeof location, assigned: boolean) =>
+      this.verification.verify({
+        method: dto.method,
+        location: place,
+        isAssignedToLocation: assigned,
+        latitude: dto.latitude,
+        longitude: dto.longitude,
+        accuracyMeters: dto.accuracyMeters,
+        ipAddress: ip,
+      });
 
-    const outcome = this.verification.verify({
-      method: dto.method,
-      location,
-      isAssignedToLocation,
-      latitude: dto.latitude,
-      longitude: dto.longitude,
-      accuracyMeters: dto.accuracyMeters,
-      ipAddress: ip,
-    });
+    let locationId = dto.locationId;
+    let outcome = check(location, isAssignedToLocation);
+    if (!outcome.allowed && dto.method !== ClockMethod.KIOSK) {
+      // Everybody at the practice works at both offices, and the phone picks
+      // one before it knows where they are. If they are standing at their
+      // other office, that is where they clocked in — not a refusal.
+      for (const other of await this.otherAssignedLocations(employeeId, dto.locationId)) {
+        const attempt = check(await this.loadVerifiableLocation(other), true);
+        if (attempt.allowed) {
+          locationId = other;
+          outcome = attempt;
+          break;
+        }
+      }
+    }
     if (!outcome.allowed) {
       throw new ForbiddenException(outcome.reason);
     }
 
-    const shift = await this.findMatchingShift(employeeId, dto.locationId, new Date());
+    const shift = await this.findMatchingShift(employeeId, locationId, new Date());
     return this.createEntry({
       employeeId,
-      locationId: dto.locationId,
+      locationId,
       shift,
       method: dto.method,
       verification: outcome.verificationMethod,
@@ -231,13 +247,20 @@ export class TimeEntriesService {
    * first and stands on its own: nothing about the checklist — missing,
    * skipped, or failing to save — can stop somebody clocking out.
    */
+  /**
+   * `via` is how this clock-out is being made — the time clock passes KIOSK;
+   * everything else is a phone or browser. It is judged on that, not on how the
+   * shift was clocked in: a shift started at the time clock and ended from a
+   * phone at home is a phone clock-out, checked (and flagged if away) as one.
+   */
   async clockOut(
     dto: ClockOutDto,
     actor: AuthUser,
     ipAddress: string | undefined,
     employeeIdOverride?: string,
+    via: ClockMethod = ClockMethod.WEB,
   ) {
-    const entry = await this.closeOpenEntry(dto, actor, ipAddress, employeeIdOverride);
+    const entry = await this.closeOpenEntry(dto, actor, ipAddress, employeeIdOverride, via);
     await this.closing?.recordForClockOut(
       {
         id: entry.id,
@@ -255,7 +278,8 @@ export class TimeEntriesService {
     dto: ClockOutDto,
     actor: AuthUser,
     ipAddress: string | undefined,
-    employeeIdOverride?: string,
+    employeeIdOverride: string | undefined,
+    via: ClockMethod,
   ) {
     const employeeId = employeeIdOverride ?? actor.id;
     if (employeeIdOverride && employeeIdOverride !== actor.id && actor.role === Role.EMPLOYEE) {
@@ -292,8 +316,15 @@ export class TimeEntriesService {
     const location = await this.loadVerifiableLocation(open.locationId);
     const ip = ipAddress ? normalizeIp(ipAddress) : null;
 
+    // Never a kiosk punch unless it is being made at the time clock.
+    const method =
+      via === ClockMethod.KIOSK
+        ? ClockMethod.KIOSK
+        : open.method === ClockMethod.KIOSK
+          ? ClockMethod.WEB
+          : open.method;
     const outcome = this.verification.verify({
-      method: open.method,
+      method,
       location,
       isAssignedToLocation: await this.isAssigned(employeeId, open.locationId),
       latitude: dto.latitude,
@@ -525,6 +556,14 @@ export class TimeEntriesService {
       throw new ForbiddenException('You may only clock yourself in.');
     }
     return dto.employeeId;
+  }
+
+  private async otherAssignedLocations(employeeId: string, except: string): Promise<string[]> {
+    const rows = await this.prisma.employeeLocation.findMany({
+      where: { employeeId, locationId: { not: except }, location: { isActive: true } },
+      select: { locationId: true },
+    });
+    return rows.map((row) => row.locationId);
   }
 
   private findOpenEntry(employeeId: string) {

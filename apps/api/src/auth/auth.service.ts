@@ -60,7 +60,11 @@ export class AuthService {
     // time does not reveal which emails exist.
     if (!employee?.passwordHash) {
       await this.passwords.verify(password, DUMMY_HASH);
-      await this.throttle.recordFailure(email, context.ipAddress);
+      // A real account with no password yet has nothing to guess, so it does
+      // not count toward throttling the connection — otherwise a morning of
+      // new starters trying before they open their welcome email could lock
+      // the whole office out of signing in.
+      if (!employee) await this.throttle.recordFailure(email, context.ipAddress);
       throw new UnauthorizedException(SIGN_IN_FAILED);
     }
 

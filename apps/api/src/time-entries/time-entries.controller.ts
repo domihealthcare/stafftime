@@ -1,15 +1,17 @@
 import {
   Body,
   Controller,
+  ForbiddenException,
   Get,
   Ip,
+  NotFoundException,
   Param,
   ParseUUIDPipe,
   Patch,
   Post,
   Query,
 } from '@nestjs/common';
-import { Role } from '@prisma/client';
+import { ClockMethod, Role } from '@prisma/client';
 import { AuthUser } from '../common/auth/auth-user';
 import { CurrentUser } from '../common/auth/current-user.decorator';
 import { Roles } from '../common/auth/roles.decorator';
@@ -25,6 +27,14 @@ export class TimeEntriesController {
 
   @Post('clock-in')
   clockIn(@Body() dto: ClockInDto, @CurrentUser() user: AuthUser, @Ip() ip: string) {
+    // A kiosk punch skips the location check, because the time clock is bound
+    // to its office. It must therefore only ever come from the time clock
+    // itself (KioskPunchService calls the service directly) — never from this
+    // route, where anybody signed in could claim to be one, from anywhere and
+    // on anybody's behalf. Found in the September 2026 review.
+    if (dto.method === ClockMethod.KIOSK) {
+      throw new ForbiddenException('Time clock punches can only be made at the time clock.');
+    }
     return this.timeEntries.clockIn(dto, user, ip);
   }
 
@@ -52,9 +62,15 @@ export class TimeEntriesController {
     return this.timeEntries.findAll(scoped);
   }
 
+  /// Staff may read their own punches only; to anybody else's the answer is
+  /// the same as for one that does not exist.
   @Get(':id')
-  findOne(@Param('id', ParseUUIDPipe) id: string) {
-    return this.timeEntries.findOne(id);
+  async findOne(@Param('id', ParseUUIDPipe) id: string, @CurrentUser() user: AuthUser) {
+    const entry = await this.timeEntries.findOne(id);
+    if (user.role === Role.EMPLOYEE && entry.employeeId !== user.id) {
+      throw new NotFoundException(`Time entry ${id} not found`);
+    }
+    return entry;
   }
 
   /// Where a punch was made from. The only route that returns coordinates, and

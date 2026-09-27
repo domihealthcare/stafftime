@@ -76,11 +76,18 @@ export class ApiError extends Error {
   }
 }
 
+/// Long enough for a slow phone signal and a cold server; short enough that a
+/// punch on a dead connection says so instead of spinning for minutes.
+const REQUEST_TIMEOUT_MS = 20_000;
+
 async function request<T>(path: string, init: RequestInit = {}): Promise<T> {
   let response: Response;
+  const abort = new AbortController();
+  const timer = window.setTimeout(() => abort.abort(), REQUEST_TIMEOUT_MS);
   try {
     response = await fetch(`/api${path}`, {
       credentials: 'include',
+      signal: abort.signal,
       ...init,
       headers: {
         'Content-Type': 'application/json',
@@ -88,7 +95,14 @@ async function request<T>(path: string, init: RequestInit = {}): Promise<T> {
       },
     });
   } catch {
-    throw new ApiError(0, 'Could not reach the server. Check your connection and try again.');
+    throw new ApiError(
+      0,
+      abort.signal.aborted
+        ? 'The server took too long to answer. Check whether it went through before trying again.'
+        : 'Could not reach the server. Check your connection and try again.',
+    );
+  } finally {
+    window.clearTimeout(timer);
   }
 
   if (response.status === 204) {
@@ -98,11 +112,23 @@ async function request<T>(path: string, init: RequestInit = {}): Promise<T> {
   const body = await response.json().catch(() => null);
 
   if (!response.ok) {
+    // A 401 anywhere but signing in or checking a password means the session
+    // has ended — eight hours idle on a phone, typically. Say so to the app,
+    // which goes back to the sign-in screen instead of leaving an error on a
+    // screen that can do nothing about it.
+    if (response.status === 401 && !NOT_A_SESSION_ANSWER.some((p) => path.startsWith(p))) {
+      window.dispatchEvent(new Event(SESSION_ENDED));
+    }
     throw new ApiError(response.status, extractMessage(body, response.status), extractCode(body));
   }
 
   return body as T;
 }
+
+/// Fired when the server says the session is over.
+export const SESSION_ENDED = 'domi-staff:session-ended';
+/// Where a 401 is an answer about a password, not about the session.
+const NOT_A_SESSION_ANSWER = ['/auth/login', '/auth/change-password', '/auth/me', '/kiosk'];
 
 /**
  * Fetches a file and hands back a blob. There is no URL a browser could open

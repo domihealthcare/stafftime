@@ -394,6 +394,13 @@ Beyond the phases, the parts worth knowing about before picking up work:
   start** — pay is every two weeks, confirmed September 2026 — which drives
   the "this / last pay period" shortcuts on the Timesheet and Export. Entered on
   the live site, 25 September 2026.
+- **Review fixes** (27 September 2026, see *Review fixes* in
+  `docs/architecture.md`): only the time clock makes time-clock punches; a
+  phone clocks in at whichever of the person's offices it is standing at;
+  "today" is New Jersey's (`PRACTICE_ZONE`) not the server's UTC; export
+  overtime counts the whole week at every office; a repeat PIN within
+  `KIOSK_REPEAT_SECONDS` (120) is not a clock-out; screens load when first
+  opened and `/assets` is cached for a year.
 - **Tests**: ~540 unit tests, and ~220 end-to-end checks in `tests/browser`
   driven against a real API, a real Postgres and a real Chromium. Both run in CI
   on every push. The convention is to run the browser suites twice — once

@@ -124,6 +124,42 @@ describe('KioskPunchService', () => {
     });
   });
 
+  describe('the same PIN again, straight after a punch', () => {
+    // The answer to the first punch was lost on the way back, so the person
+    // tried again. Toggling would clock them straight back out (or in).
+    it('repeats a clock-in made under two minutes ago instead of clocking out', async () => {
+      const { service, timeEntries } = build(active(), {
+        openEntry: { id: 'e-1', clockInAt: new Date(Date.now() - 30_000), locationId: 'loc-nb' },
+      });
+      const result = await service.punch(device, 'emp-1', '4817');
+      expect(result.action).toBe('CLOCKED_IN');
+      expect(timeEntries.clockOut).not.toHaveBeenCalled();
+    });
+
+    it('repeats a clock-out made under two minutes ago instead of clocking in', async () => {
+      const { service, timeEntries, prisma } = build(active());
+      prisma.timeEntry.findFirst
+        .mockResolvedValueOnce(null)
+        .mockResolvedValueOnce({
+          clockInAt: new Date(Date.now() - 8 * 3_600_000),
+          clockOutAt: new Date(Date.now() - 20_000),
+        });
+      const result = await service.punch(device, 'emp-1', '4817');
+      expect(result.action).toBe('CLOCKED_OUT');
+      expect(result.workedMinutes).toBe(480);
+      expect(timeEntries.clockIn).not.toHaveBeenCalled();
+    });
+
+    it('clocks out as usual once the two minutes are up', async () => {
+      const { service, timeEntries } = build(active(), {
+        openEntry: { id: 'e-1', clockInAt: new Date(Date.now() - 3 * 60_000), locationId: 'loc-nb' },
+      });
+      const result = await service.punch(device, 'emp-1', '4817');
+      expect(result.action).toBe('CLOCKED_OUT');
+      expect(timeEntries.clockOut).toHaveBeenCalled();
+    });
+  });
+
   describe('a correct PIN', () => {
     it('clocks in when there is no open entry', async () => {
       const { service, timeEntries } = build(active());

@@ -143,3 +143,20 @@ export function localTimeIn(instant: Date, zone: string): string {
   const hour = parts.hour === '24' ? '00' : parts.hour;
   return `${hour}:${parts.minute}`;
 }
+
+/// Where the practice is. Both offices are in New Jersey; the server runs in
+/// UTC, where "today" turns over at 8pm (7pm in winter) — which put this
+/// evening's punches in tomorrow and marked things due today as overdue.
+export const PRACTICE_ZONE = 'America/New_York';
+
+/// Today at the practice, as a date-only value (UTC midnight of that date),
+/// for comparing with DATE columns.
+export function practiceToday(now: Date = new Date()): Date {
+  return new Date(`${localDateIn(now, PRACTICE_ZONE)}T00:00:00.000Z`);
+}
+
+/// The instant today began at the practice, for comparing with timestamps.
+export function practiceDayStart(now: Date = new Date()): Date {
+  return zonedTimeToUtc(localDateIn(now, PRACTICE_ZONE), '00:00', PRACTICE_ZONE);
+}
+

@@ -2072,3 +2072,42 @@ here). Onboarding: a checklist's due dates hang off the hire date, so without
 one they count from the day the checklist is started. It can be filled in any
 time on the Staff screen; the import reads "7/2026" as the 1st of July.
 
+
+## Review fixes (27 September 2026)
+
+A read-through of the live app for bugs and speed. What changed, and why:
+
+- **Only the time clock makes time-clock punches.** The phone route
+  (`POST /time-entries/clock-in`) refuses `method: KIOSK`, which skipped the
+  location check. A phone clock-out is checked against the phone's location
+  even when the clock-in was at the time clock; the time clock's own
+  clock-out passes `ClockMethod.KIOSK`.
+- **The right office.** The Clock screen starts on the office of today's
+  shift, else the person's first office. If the check fails for the office
+  picked, the server tries the person's other offices and clocks them in at
+  the one they are standing at, instead of refusing.
+- **An ended session** (a 401 on anything but sign-in and the time clock)
+  goes back to the sign-in screen. The Clock screen refreshes when the phone
+  comes back to it.
+- **A sturdier time clock.** It retries loading every 15 seconds and when the
+  connection returns; the same person twice within `KIOSK_REPEAT_SECONDS`
+  (default 120) is a repeat, not a clock-out; Cancel is off while a punch is
+  in flight; the PIN can be typed on a keyboard. Every request gives up after
+  20 seconds and says to check whether it went through.
+- **"Today" is New Jersey's** (`PRACTICE_ZONE`, `practiceToday()` in
+  `zoned-time.util.ts`) in the round-up, banners, licences and checklists —
+  Vercel's clock is UTC, which made "today" tomorrow from 8 pm.
+- **Overtime in the export is a whole week's, at any office.** The weeks the
+  file touches are read in full, and each entry in it carries its share of
+  regular and overtime hours in time order — so exporting one office, or a
+  pay period that starts mid-week, neither loses overtime nor counts it twice.
+- **Staff read only their own** punches and shifts by id.
+- **Sign-in throttling** does not count a real account with no password yet,
+  so new starters trying before they open the welcome email cannot lock the
+  office's connection out.
+- **Welcome emails** go ten to a batch (inside the 30-second function limit).
+- **Speed.** Every screen but the Clock, sign-in and first-run loads when
+  first opened (586 KB of script down to 234 KB to clock in); a tab open
+  across a release reloads onto the new version (`vite:preloadError`, at most
+  once a minute); `/assets/*` is cached for a year, and a missing asset is a
+  404 rather than the app page.

@@ -70,9 +70,7 @@ describe('describeFlags', () => {
   });
 
   it('lists every flag that is set', () => {
-    expect(describeFlags({ ...base, isLate: true, isManuallyEdited: true })).toBe(
-      'Late, Edited',
-    );
+    expect(describeFlags({ ...base, isLate: true, isManuallyEdited: true })).toBe('Late, Edited');
   });
 });
 
@@ -125,9 +123,9 @@ describe('TimesheetExportService', () => {
   describe('period handling', () => {
     it('refuses a backwards period', async () => {
       const { service } = build([]);
-      await expect(
-        service.build({ from: period.to, to: period.from }),
-      ).rejects.toThrow(/must be after the start/);
+      await expect(service.build({ from: period.to, to: period.from })).rejects.toThrow(
+        /must be after the start/,
+      );
     });
 
     it('refuses an absurdly long period rather than loading it', async () => {
@@ -222,7 +220,11 @@ describe('TimesheetExportService', () => {
     it('sums hours per employee', async () => {
       const { service } = build([
         entry(),
-        entry({ id: 'te-2', clockInAt: new Date('2026-09-22T13:00:00Z'), clockOutAt: new Date('2026-09-22T17:00:00Z') }),
+        entry({
+          id: 'te-2',
+          clockInAt: new Date('2026-09-22T13:00:00Z'),
+          clockOutAt: new Date('2026-09-22T17:00:00Z'),
+        }),
       ]);
       const data = await service.build(period);
       expect(data.totals).toHaveLength(1);
@@ -241,10 +243,7 @@ describe('TimesheetExportService', () => {
       ]);
       const data = await service.build(period);
       // Sorted by the name as displayed, so the sheet reads alphabetically.
-      expect(data.totals.map((t) => t.employee)).toEqual([
-        'Frankie Front-Desk',
-        'Max Assistant',
-      ]);
+      expect(data.totals.map((t) => t.employee)).toEqual(['Frankie Front-Desk', 'Max Assistant']);
     });
 
     it('counts flagged entries', async () => {
@@ -275,6 +274,79 @@ describe('TimesheetExportService', () => {
       expect(data.totals[0].hours).toBe(80);
       expect(data.totals[0].regularHours).toBe(75);
       expect(data.totals[0].overtimeHours).toBe(5);
+    });
+
+    // Mon–Wed 8 hours a day at North Bergen, Thu–Fri 10 a day at West New York:
+    // 44 hours in the week, the last 4 of them overtime.
+    function twoOfficeWeek() {
+      const nb = { id: 'loc-1', name: 'North Bergen', timezone: ZONE };
+      const wny = { id: 'loc-2', name: 'West New York', timezone: ZONE };
+      return [
+        ...[21, 22, 23].map((day) =>
+          entry({
+            id: `nb-${day}`,
+            clockInAt: new Date(`2026-09-${day}T13:00:00Z`),
+            clockOutAt: new Date(`2026-09-${day}T21:00:00Z`),
+            location: nb,
+          }),
+        ),
+        ...[24, 25].map((day) =>
+          entry({
+            id: `wny-${day}`,
+            clockInAt: new Date(`2026-09-${day}T12:00:00Z`),
+            clockOutAt: new Date(`2026-09-${day}T22:00:00Z`),
+            location: wny,
+          }),
+        ),
+      ];
+    }
+
+    it('counts the week at every office when one office is exported', async () => {
+      const week = twoOfficeWeek();
+      const { service, prisma } = build([]);
+      prisma.timeEntry.findMany
+        .mockResolvedValueOnce(week.filter((e) => e.id.startsWith('wny')))
+        .mockResolvedValueOnce(week);
+      const data = await service.build({
+        ...period,
+        splitOvertime: true,
+        locationId: '22222222-2222-4222-8222-222222222222',
+      });
+      expect(data.totals[0].hours).toBe(20);
+      expect(data.totals[0].regularHours).toBe(16);
+      expect(data.totals[0].overtimeHours).toBe(4);
+      // The whole week is read, at any office.
+      expect(prisma.timeEntry.findMany.mock.calls[1][0].where.locationId).toBeUndefined();
+    });
+
+    it('does not put the other office’s overtime on the office that came first', async () => {
+      const week = twoOfficeWeek();
+      const { service, prisma } = build([]);
+      prisma.timeEntry.findMany
+        .mockResolvedValueOnce(week.filter((e) => e.id.startsWith('nb')))
+        .mockResolvedValueOnce(week);
+      const data = await service.build({
+        ...period,
+        splitOvertime: true,
+        locationId: '11111111-1111-4111-8111-111111111111',
+      });
+      expect(data.totals[0].regularHours).toBe(24);
+      expect(data.totals[0].overtimeHours).toBe(0);
+    });
+
+    it('counts the start of a week that began before the period', async () => {
+      const week = twoOfficeWeek();
+      const { service, prisma } = build([]);
+      prisma.timeEntry.findMany
+        .mockResolvedValueOnce(week.filter((e) => e.id === 'wny-25'))
+        .mockResolvedValueOnce(week);
+      const data = await service.build({
+        from: '2026-09-25T00:00:00Z',
+        to: '2026-09-28T00:00:00Z',
+        splitOvertime: true,
+      });
+      expect(data.totals[0].regularHours).toBe(6);
+      expect(data.totals[0].overtimeHours).toBe(4);
     });
 
     it('never splits salaried staff, who are treated as exempt', async () => {

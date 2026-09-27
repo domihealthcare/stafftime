@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { Suspense, useEffect, useState } from 'react';
 import { Link, NavLink, Outlet } from 'react-router-dom';
 import { api } from '../lib/api';
 import { AccountMenu } from './AccountMenu';
@@ -6,6 +6,7 @@ import { SloganStrip, Wordmark } from './Brand';
 import { NavMenu } from './NavMenu';
 import { NotificationBell } from './NotificationBell';
 import { useIsAdmin, useIsManager, useSession } from '../lib/session';
+import { Spinner } from './ui';
 
 /// On a phone each link grows to share out its row, so the text is centred and
 /// the padding is small — the row, not the padding, sets the width. From `sm`
@@ -156,7 +157,16 @@ export function Layout() {
       <SloganStrip />
 
       <main className="mx-auto max-w-6xl px-4 py-6">
-        <Outlet />
+        {/* Screens load when first opened; the header stays while they do. */}
+        <Suspense
+          fallback={
+            <div className="flex justify-center py-16">
+              <Spinner />
+            </div>
+          }
+        >
+          <Outlet />
+        </Suspense>
       </main>
     </div>
   );
