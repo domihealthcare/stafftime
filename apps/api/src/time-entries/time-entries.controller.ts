@@ -4,6 +4,7 @@ import {
   ForbiddenException,
   Get,
   Ip,
+  NotFoundException,
   Param,
   ParseUUIDPipe,
   Patch,
@@ -61,9 +62,15 @@ export class TimeEntriesController {
     return this.timeEntries.findAll(scoped);
   }
 
+  /// Staff may read their own punches only; to anybody else's the answer is
+  /// the same as for one that does not exist.
   @Get(':id')
-  findOne(@Param('id', ParseUUIDPipe) id: string) {
-    return this.timeEntries.findOne(id);
+  async findOne(@Param('id', ParseUUIDPipe) id: string, @CurrentUser() user: AuthUser) {
+    const entry = await this.timeEntries.findOne(id);
+    if (user.role === Role.EMPLOYEE && entry.employeeId !== user.id) {
+      throw new NotFoundException(`Time entry ${id} not found`);
+    }
+    return entry;
   }
 
   /// Where a punch was made from. The only route that returns coordinates, and

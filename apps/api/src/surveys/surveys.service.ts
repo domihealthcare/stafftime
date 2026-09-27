@@ -45,7 +45,9 @@ const SURVEY_SELECT = {
 
 type SurveyRow = Prisma.SurveyGetPayload<{ select: typeof SURVEY_SELECT }>;
 
-const ACTIVE = { in: [EmploymentStatus.ACTIVE, EmploymentStatus.ON_LEAVE] };
+const ACTIVE: { in: EmploymentStatus[] } = {
+  in: [EmploymentStatus.ACTIVE, EmploymentStatus.ON_LEAVE],
+};
 
 /**
  * Pulse surveys: short, anonymous, and only readable once it is safe to.
@@ -374,7 +376,9 @@ export class SurveysService {
         locations: { select: { locationId: true } },
       },
     });
-    if (!person || person.employmentStatus === EmploymentStatus.TERMINATED) {
+    // The same people the audience counts are made of, so nobody is shown a
+    // survey the results would not count them in.
+    if (!person || !ACTIVE.in.includes(person.employmentStatus)) {
       return { id: { in: [] } };
     }
     return {

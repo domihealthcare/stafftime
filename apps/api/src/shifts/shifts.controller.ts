@@ -5,6 +5,7 @@ import {
   Get,
   HttpCode,
   HttpStatus,
+  NotFoundException,
   Param,
   ParseUUIDPipe,
   Patch,
@@ -89,9 +90,15 @@ export class ShiftsController {
     return this.shifts.findAll(scoped);
   }
 
+  /// Staff may read their own shifts only, as with the list above; to anybody
+  /// else's the answer is the same as for one that does not exist.
   @Get(':id')
-  findOne(@Param('id', ParseUUIDPipe) id: string) {
-    return this.shifts.findOne(id);
+  async findOne(@Param('id', ParseUUIDPipe) id: string, @CurrentUser() user: AuthUser) {
+    const shift = await this.shifts.findOne(id);
+    if (user.role === Role.EMPLOYEE && shift.employeeId !== user.id) {
+      throw new NotFoundException(`Shift ${id} not found`);
+    }
+    return shift;
   }
 
   @Patch(':id')

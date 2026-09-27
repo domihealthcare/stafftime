@@ -90,6 +90,9 @@ await step('a punch that claims to come from the time clock is refused', async (
 // Not a refusal, but the other side of one: somebody who works at both offices,
 // standing at West New York with North Bergen picked, is clocked in where they
 // are — not turned away as "outside North Bergen".
+let managersPunch;
+let managersShift;
+let managersPage;
 await step('standing at the other office clocks you in there, not a refusal', async () => {
   const probe = await signedInPage({});
   const places = await probe.evaluate(() => fetch('/api/locations').then((r) => r.json()));
@@ -109,10 +112,44 @@ await step('standing at the other office clocks you in there, not a refusal', as
   await page.getByRole('button', { name: 'Clock in' }).click();
   await page.getByRole('button', { name: /Clock out/ }).waitFor({ timeout: 15000 });
   const entry = await page.evaluate(() => fetch('/api/time-entries/current').then((r) => r.json()));
+  managersPunch = entry.id;
+  // A draft shift of Morgan's, removed again at the end.
+  managersShift = await page.evaluate(async ({ employeeId, locationId }) => {
+    const start = new Date(Date.now() + 30 * 86_400_000);
+    const r = await fetch('/api/shifts', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        employeeId,
+        locationId,
+        startsAt: start.toISOString(),
+        endsAt: new Date(start.getTime() + 4 * 3_600_000).toISOString(),
+      }),
+    });
+    return (await r.json()).id;
+  }, { employeeId: entry.employeeId, locationId: wny.id });
+  managersPage = page;
   if (entry.locationId !== wny.id) throw new Error(`clocked in at ${entry.location?.name ?? entry.locationId}`);
   await page.evaluate(() => fetch('/api/time-entries/clock-out', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: '{}' }));
-  await ctx.close();
 });
+
+await step('staff cannot read somebody else’s punch or shift by its id', async () => {
+  if (!managersPunch || !managersShift) throw new Error('nothing to try it on');
+  const page = await signedInPage({});
+  const answers = await page.evaluate(async ([punch, shift]) => {
+    return {
+      punch: (await fetch(`/api/time-entries/${punch}`)).status,
+      shift: (await fetch(`/api/shifts/${shift}`)).status,
+    };
+  }, [managersPunch, managersShift]);
+  if (answers.punch !== 404) throw new Error(`somebody else’s punch answered ${answers.punch}`);
+  if (answers.shift !== 404) throw new Error(`somebody else’s shift answered ${answers.shift}`);
+  await page.context().close();
+});
+if (managersPage) {
+  await managersPage.evaluate((id) => id && fetch(`/api/shifts/${id}`, { method: 'DELETE' }), managersShift);
+  await managersPage.context().close();
+}
 
 // 4. A session that ends while the app is open — eight hours idle on a phone —
 // goes back to the sign-in screen, rather than leaving errors on a screen that
