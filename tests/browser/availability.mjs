@@ -89,7 +89,9 @@ await step('a date inside a published week is refused, and says why', async () =
   const today = (await json(frankie, '/availability')).body.firstOpenDate;
   const answer = await json(frankie, '/availability', {
     method: 'POST',
-    body: JSON.stringify({ kind: 'ONE_OFF', date: addDays(today, -2) }),
+    // The Sunday before the first open Monday: the last day of a published
+    // week, and never in the past (two days back was, on a Sunday).
+    body: JSON.stringify({ kind: 'ONE_OFF', date: addDays(today, -1) }),
   });
   if (answer.status !== 400 || !/already published/.test(answer.body.message))
     throw new Error(`answered ${answer.status}: ${JSON.stringify(answer.body)}`);
