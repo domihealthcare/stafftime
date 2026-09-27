@@ -78,7 +78,7 @@ await step('an admin can add their first manager', async () => {
   await page.getByLabel('First name').fill('Morgan');
   await page.getByLabel('Last name').fill('Manager');
   await page.getByLabel('Email').fill('morgan@domihealthcare.com');
-  await page.getByLabel('Role').selectOption('MANAGER');
+  await page.getByLabel('Access').selectOption('MANAGER');
   // Assign them to the office we just created, or they cannot clock in anywhere.
   await page.getByRole('checkbox', { name: 'North Bergen' }).check();
   await page.getByRole('button', { name: 'Add to staff' }).click();

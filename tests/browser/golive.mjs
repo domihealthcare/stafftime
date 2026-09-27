@@ -186,6 +186,43 @@ await step('the corrected list is read the way it was meant, and added in one go
   }
 });
 
+await step('imported people are active: in the Directory, on the scheduler, and able to clock in', async () => {
+  // They were once left "pending" by default, which nothing ever changed —
+  // and pending staff could not clock in, be scheduled or be found.
+  const found = await admin.evaluate(async () => {
+    const staff = await fetch('/api/employees').then((r) => r.json());
+    const directory = await fetch('/api/directory').then((r) => r.json());
+    const ivan = staff.find((p) => p.email === 'imp-ivan@example.com');
+    return {
+      status: ivan.employmentStatus,
+      inDirectory: directory.some((p) => p.email === 'imp-ivan@example.com'),
+    };
+  });
+  if (found.status !== 'ACTIVE') throw new Error(`imported as ${found.status}`);
+  if (!found.inDirectory) throw new Error('not in the Directory');
+});
+
+await step('the Staff card shows access and job roles, and job roles can be ticked there', async () => {
+  await admin.reload({ waitUntil: 'networkidle' });
+  const card = admin.getByTestId('staff-imp-imogen@example.com');
+  await card.getByTestId('staff-job-roles').getByText('Front Desk').waitFor({ timeout: 10000 });
+  await card.getByText('Employee access').waitFor();
+  await card.getByRole('button', { name: 'Edit details' }).click();
+  await card.getByLabel('Access').waitFor();
+  await card.getByRole('checkbox', { name: 'Medical Assistant' }).check();
+  await card.getByRole('checkbox', { name: 'Front Desk' }).uncheck();
+  await card.getByRole('button', { name: /^Save/ }).click();
+  await card.getByRole('button', { name: 'Edit details' }).waitFor({ timeout: 10000 });
+  const jobs = await admin.evaluate(async () => {
+    const roles = await fetch('/api/job-roles').then((r) => r.json());
+    const staff = await fetch('/api/employees').then((r) => r.json());
+    const id = staff.find((p) => p.email === 'imp-imogen@example.com').id;
+    return roles.filter((r) => r.members.some((m) => m.id === id)).map((r) => r.name).sort();
+  });
+  if (jobs.join() !== 'Medical Assistant') throw new Error(`job roles now: ${jobs}`);
+  await card.getByTestId('staff-job-roles').getByText('Medical Assistant').waitFor({ timeout: 10000 });
+});
+
 await step('pasting the same people again is refused, naming who is already there', async () => {
   const response = await admin.evaluate(async () => {
     const places = await fetch('/api/locations').then((r) => r.json());
