@@ -10,6 +10,7 @@ import type {
   Location,
   OvertimeWarning,
   OwnOvertimeWeek,
+  PracticeEvent,
   PtoRequest,
   Shift,
 } from '../lib/types';
@@ -18,6 +19,7 @@ import { jobRoleHex } from '../lib/job-role-colours';
 import { useConfirm } from './ConfirmDialog';
 import { confirmOvertime, OvertimePreview, useOvertimeCheck } from './OvertimeAlerts';
 import { Avatar } from './Avatar';
+import { EventChip, eventsOnDay } from './PracticeEvents';
 import { Alert } from './ui';
 
 export type RotaGrouping = 'person' | 'location' | 'role';
@@ -66,6 +68,8 @@ export function RotaTable({
   coverage,
   timeOff = [],
   birthdays = [],
+  events = [],
+  onOpenEvent,
   overtimeThresholdHours,
   overtime,
   ownWeeks,
@@ -89,6 +93,10 @@ export function RotaTable({
   /// Colleagues' birthdays this week: a cake under the day, for everybody,
   /// and on the person's own row.
   birthdays?: BirthdayEntry[];
+  /// Meetings and practice events this week: a row of their own above
+  /// everybody's shifts. Never counted as hours.
+  events?: PracticeEvent[];
+  onOpenEvent?: (event: PracticeEvent) => void;
   overtimeThresholdHours: number;
   /// From the server, per person per week and across every location — so a
   /// row filtered to one office still shows the week as a whole.
@@ -116,6 +124,9 @@ export function RotaTable({
   }, [locations]);
 
   const live = shifts.filter((shift) => shift.status !== 'CANCELLED');
+  const weekEvents = events.filter((event) =>
+    dayKeys.some((key) => eventsOnDay([event], key).length > 0),
+  );
 
   /// Where each person's week stands against the overtime line. The week on
   /// screen starts on dayKeys[0], a Monday, as the server's weeks do.
@@ -377,6 +388,31 @@ export function RotaTable({
                 Week
               </th>
             </tr>
+            {/* Their own row, above the people, because an event is for a group
+                rather than for one person — and it is not a shift. */}
+            {weekEvents.length > 0 && (
+              <tr className="border-b border-slate-200 bg-white" data-testid="rota-events-row">
+                <th
+                  scope="row"
+                  className="sticky left-0 z-10 bg-white px-3 py-2 text-left align-top text-sm font-medium text-slate-700"
+                >
+                  <span aria-hidden="true">📅</span> Events
+                </th>
+                {dayKeys.map((key) => (
+                  <td key={key} className="space-y-1 px-1.5 py-1.5 align-top">
+                    {eventsOnDay(weekEvents, key).map((event) => (
+                      <EventChip
+                        key={event.id}
+                        event={event}
+                        day={key}
+                        onOpen={(picked) => onOpenEvent?.(picked)}
+                      />
+                    ))}
+                  </td>
+                ))}
+                <td className="px-3 py-2 text-right align-top text-xs text-slate-400">Not hours</td>
+              </tr>
+            )}
           </thead>
 
           {sections.map((section) => (

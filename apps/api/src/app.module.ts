@@ -16,6 +16,7 @@ import { DirectoryModule } from './directory/directory.module';
 import { ProfileModule } from './profile/profile.module';
 import { EmailModule } from './email/email.module';
 import { EmployeesModule } from './employees/employees.module';
+import { EventsModule } from './events/events.module';
 import { ExportsModule } from './exports/exports.module';
 import { JobRolesModule } from './job-roles/job-roles.module';
 import { KioskModule } from './kiosk/kiosk.module';
@@ -45,6 +46,7 @@ import { TimeEntriesModule } from './time-entries/time-entries.module';
     LocationsModule,
     EmployeesModule,
     ShiftsModule,
+    EventsModule,
     TimeEntriesModule,
     ClosingModule,
     KioskModule,

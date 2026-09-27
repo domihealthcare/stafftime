@@ -141,6 +141,7 @@ model Location {
   supplyRequests SupplyRequest[]
 
   surveys Survey[]
+  events  PracticeEvent[]
 
   @@map("locations")
 }
@@ -273,6 +274,7 @@ model Employee {
   createdSurveys            Survey[]                @relation("SurveyCreatedBy")
   surveysTaken              SurveyParticipant[]
   notifications             Notification[]
+  createdEvents             PracticeEvent[]         @relation("EventCreatedBy")
 
   @@index([employmentStatus])
   @@map("employees")
@@ -1068,6 +1070,7 @@ model JobRole {
   members              EmployeeJobRole[]
   resources            Resource[]
   surveys              Survey[]
+  events               PracticeEvent[]
   shifts               Shift[]
   /// Its closing checklist, shown at clock-out.
   closingSections      ClosingSection[]
@@ -1178,6 +1181,61 @@ model Unavailability {
 
   @@index([employeeId, effectiveFrom])
   @@map("unavailability")
+}
+
+// ---------------------------------------------------------------------------
+// Events — office meetings, provider meetings, a wellness day (September 2026)
+//
+// Asked for by Dominguez: something on the schedule that is not a shift, for
+// everyone, one job role or one office, and on people's phones through the
+// calendar feed they already subscribe to. Decided with Dominguez:
+//
+// - **Calendar only.** An event adds nothing to scheduled hours, overtime, the
+//   dashboard or payroll. Anybody paid for being there clocks in as usual, so
+//   pay still comes from punches alone.
+// - **Managers and admins** make, change and remove them.
+// - **No replies** (going / can't go) for now.
+// ---------------------------------------------------------------------------
+
+/// Who an event is for. The same three choices as a survey.
+enum EventAudience {
+  EVERYONE
+  JOB_ROLE
+  LOCATION
+}
+
+/// "PracticeEvent" rather than "Event" so it never reads as a DOM or Node event.
+///
+/// Always a pair of instants, all-day or not, so "what is on this week" is one
+/// range query. An all-day event runs from midnight in New Jersey on its first
+/// day to midnight after its last, and is shown and synced as whole days.
+model PracticeEvent {
+  id          String        @id @default(uuid()) @db.Uuid
+  title       String
+  /// Plain text. Line breaks are kept; nothing is interpreted as markup.
+  description String?
+  /// Where it is, as typed: "North Bergen office — break room", "Zoom".
+  place       String?
+  allDay      Boolean       @default(false)
+  startsAt    DateTime
+  endsAt      DateTime
+
+  audience   EventAudience @default(EVERYONE)
+  /// For JOB_ROLE. Null after the role is deleted, which leaves nobody invited.
+  jobRoleId  String?       @db.Uuid
+  /// For LOCATION.
+  locationId String?       @db.Uuid
+
+  createdById String?  @db.Uuid
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  jobRole   JobRole?  @relation(fields: [jobRoleId], references: [id], onDelete: SetNull)
+  location  Location? @relation(fields: [locationId], references: [id], onDelete: SetNull)
+  createdBy Employee? @relation("EventCreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
+
+  @@index([startsAt])
+  @@map("practice_events")
 }
 
 // ---------------------------------------------------------------------------
@@ -1346,6 +1404,7 @@ enum NotificationKind {
   SURVEY_OPEN
   CHECKLIST_STARTED
   ANNOUNCEMENT
+  EVENT
 }
 
 /// Something the app wants one person to know, shown under the bell in the

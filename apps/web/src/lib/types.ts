@@ -295,6 +295,7 @@ export interface TestDataCounts {
   availability: number;
   posts: number;
   surveys: number;
+  events: number;
   suggestions: number;
   notifications: number;
   payrollExports: number;
@@ -723,6 +724,42 @@ export interface TeamAvailability extends PersonName {
 }
 
 export type SurveyAudience = 'EVERYONE' | 'JOB_ROLE' | 'LOCATION';
+
+/// Who a practice event is for — the same three choices as a survey.
+export type EventAudience = 'EVERYONE' | 'JOB_ROLE' | 'LOCATION';
+
+/// An office meeting, a provider meeting, a wellness day. On the schedule and
+/// in the calendar feed; never counted as hours.
+export interface PracticeEvent {
+  id: string;
+  title: string;
+  description: string | null;
+  place: string | null;
+  allDay: boolean;
+  startsAt: string;
+  endsAt: string;
+  /// All-day events only: the first and last day, "2026-10-15", on the
+  /// practice's clock. Null for a timed event.
+  startDate: string | null;
+  endDate: string | null;
+  audience: EventAudience;
+  jobRole: { id: string; name: string; colour: string } | null;
+  location: { id: string; name: string } | null;
+}
+
+export interface EventInput {
+  title: string;
+  description?: string;
+  place?: string;
+  allDay: boolean;
+  startsAt?: string;
+  endsAt?: string;
+  startDate?: string;
+  endDate?: string;
+  audience: EventAudience;
+  jobRoleId?: string;
+  locationId?: string;
+}
 export type SurveyStatus = 'DRAFT' | 'OPEN' | 'CLOSED';
 export type SurveyQuestionKind = 'RATING' | 'CHOICE' | 'TEXT';
 

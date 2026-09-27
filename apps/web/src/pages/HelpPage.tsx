@@ -208,6 +208,19 @@ const STAFF: Section[] = [
         ),
       },
       {
+        question: 'Where are the meetings and practice events?',
+        answer: (
+          <p>
+            On <Screen>Schedule</Screen>, in the <strong>Events</strong> row above your shifts (and
+            with a 📅 in the month): office meetings, meetings for your job role, events at your
+            office, and practice-wide days like a wellness event. Tap one for the time, the place
+            and the details. The bell tells you when one is added, moved or cancelled, and if you
+            use the calendar link they appear on your phone as well. An event is not a shift — if
+            you are being paid to be there, clock in as usual.
+          </p>
+        ),
+      },
+      {
         question: 'Why does it say I am in overtime?',
         answer: (
           <p>
@@ -355,8 +368,9 @@ const STAFF: Section[] = [
         answer: (
           <p>
             Your notifications — things that are just for you: a shift added to, changed on or taken
-            off your schedule, your time off decided, overtime on your schedule, a survey waiting
-            for you, your checklist starting, and new posts on <Screen>News</Screen>. The red number
+            off your schedule, a meeting or event for you added, moved or cancelled, your time off
+            decided, overtime on your schedule, a survey waiting for you, your checklist starting,
+            and new posts on <Screen>News</Screen>. The red number
             is how many you have not read. Choose one to go straight to it; they are kept for 90
             days.
           </p>
@@ -490,6 +504,20 @@ const MANAGERS: Section[] = [
             office&rsquo;s Open shifts row. They are flagged on the rota, in the banner and in the
             nightly email until you click one and put somebody in it. Anybody already on at that
             time is greyed out.
+          </p>
+        ),
+      },
+      {
+        question: 'Meetings and practice events',
+        answer: (
+          <p>
+            On <Screen>Schedule</Screen>, choose <strong>+ Add event</strong>: a name, a time (or
+            tick <strong>All day</strong>, for one day or several), where it is, and who it is for —
+            everyone, one job role (say Provider, for a provider meeting) or one office. Everybody
+            it is for sees it in the Events row, gets a notification, and has it on their phone if
+            they sync their calendar. Click an event to change or remove it; the people it is for
+            are told either way. Events never count as hours or overtime — anybody being paid to
+            attend clocks in as usual, so payroll stays with the punches.
           </p>
         ),
       },

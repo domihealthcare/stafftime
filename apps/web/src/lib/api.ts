@@ -20,8 +20,10 @@ import type {
   TestDataPreview,
   DirectoryEntry,
   PlanResult,
+  PracticeEvent,
   PracticeSettings,
   Employee,
+  EventInput,
   JobRole,
   Location,
   PayPeriodInfo,
@@ -383,7 +385,8 @@ export interface AppNotification {
     | 'SCHEDULE_CHANGED'
     | 'SURVEY_OPEN'
     | 'CHECKLIST_STARTED'
-    | 'ANNOUNCEMENT';
+    | 'ANNOUNCEMENT'
+    | 'EVENT';
   title: string;
   body: string | null;
   link: string | null;
@@ -849,6 +852,17 @@ export const api = {
     request<Credential>(`/credentials/${id}/archive`, { method: 'POST' }),
   deleteCredential: (id: string) =>
     request<{ deleted: boolean }>(`/credentials/${id}`, { method: 'DELETE' }),
+
+  /// Meetings and practice events overlapping [from, to), as ISO instants.
+  events: (from: string, to: string) =>
+    request<PracticeEvent[]>(
+      `/events?from=${encodeURIComponent(from)}&to=${encodeURIComponent(to)}`,
+    ),
+  createEvent: (body: EventInput) =>
+    request<PracticeEvent>('/events', { method: 'POST', body: JSON.stringify(body) }),
+  updateEvent: (id: string, body: EventInput) =>
+    request<PracticeEvent>(`/events/${id}`, { method: 'PATCH', body: JSON.stringify(body) }),
+  deleteEvent: (id: string) => request<{ deleted: boolean }>(`/events/${id}`, { method: 'DELETE' }),
 
   announcements: () => request<Announcement[]>('/announcements'),
   primaryAnnouncement: () =>

@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useSearchParams } from 'react-router-dom';
 import { api } from '../lib/api';
 import {
   addDays,
@@ -23,10 +23,12 @@ import type {
   OvertimeWarning,
   OwnOvertimeWeek,
   PlanResult,
+  PracticeEvent,
   PtoRequest,
   Shift,
 } from '../lib/types';
 import { CalendarLinkCard } from '../components/CalendarLinkCard';
+import { EventDialog, EventForm, eventsOnDay } from '../components/PracticeEvents';
 import { PlanResultNotice } from '../components/PlanResultNotice';
 import { RepeatShiftsForm } from '../components/RepeatShiftsForm';
 import { RotaTable, type RotaGrouping } from '../components/RotaTable';
@@ -77,14 +79,31 @@ export function SchedulePage() {
       return 'week';
     }
   });
-  const [weekStart, setWeekStart] = useState(() => startOfWeek(new Date()));
-  const [monthStart, setMonthStart] = useState(() => startOfMonth(new Date()));
+  // A notification about an event links to the week it is in: ?week=2026-10-14.
+  const [searchParams] = useSearchParams();
+  const askedWeek = searchParams.get('week');
+  const [weekStart, setWeekStart] = useState(() => startOfWeek(parseDay(askedWeek) ?? new Date()));
+  const [monthStart, setMonthStart] = useState(() =>
+    startOfMonth(parseDay(askedWeek) ?? new Date()),
+  );
+  // …and again when a notification is chosen while already on this screen.
+  useEffect(() => {
+    const day = parseDay(askedWeek);
+    if (!day) return;
+    setWeekStart(startOfWeek(day));
+    setMonthStart(startOfMonth(day));
+  }, [askedWeek]);
   const [shifts, setShifts] = useState<Shift[]>([]);
   const [employees, setEmployees] = useState<Employee[]>([]);
   const [locations, setLocations] = useState<Location[]>([]);
   const [coverage, setCoverage] = useState<Coverage | null>(null);
   const [timeOff, setTimeOff] = useState<PtoRequest[]>([]);
   const [birthdays, setBirthdays] = useState<BirthdayEntry[]>([]);
+  const [events, setEvents] = useState<PracticeEvent[]>([]);
+  /// The event whose details are open, and the one being added or changed
+  /// (`{}` for a new one).
+  const [openEvent, setOpenEvent] = useState<PracticeEvent | null>(null);
+  const [eventForm, setEventForm] = useState<{ event?: PracticeEvent } | null>(null);
   /// Your own weeks over or close to the overtime line (staff).
   const [ownWeeks, setOwnWeeks] = useState<OwnOvertimeWeek[] | null>(null);
   const [loading, setLoading] = useState(true);
@@ -110,15 +129,18 @@ export function SchedulePage() {
   const load = useCallback(async () => {
     setLoading(true);
     try {
-      const [shiftData, locationData, timeOffData] = await Promise.all([
+      const [shiftData, locationData, timeOffData, eventData] = await Promise.all([
         api.listShifts({ from: rangeStart.toISOString(), to: rangeEnd.toISOString() }),
         api.listLocations(),
         // Staff get only their own; managers everybody's. Both see it in the rota.
         api.listPto({ from: localDate(rangeStart), to: localDate(days[days.length - 1]) }),
+        // Staff get the ones for them; managers every one, to look after.
+        api.events(rangeStart.toISOString(), rangeEnd.toISOString()),
       ]);
       setShifts(shiftData);
       setLocations(locationData);
       setTimeOff(timeOffData);
+      setEvents(eventData);
       // Colleagues' birthdays, for everybody: a cake on the day. Not worth
       // failing the schedule over.
       api
@@ -391,12 +413,53 @@ export function SchedulePage() {
           </button>
           <button
             type="button"
+            onClick={() => setEventForm((open) => (open ? null : {}))}
+            className="rounded-lg border border-brand-600 bg-white px-3 py-1.5 text-sm font-semibold text-brand-700 hover:bg-brand-50"
+          >
+            + Add event
+          </button>
+          <button
+            type="button"
             onClick={() => setAdding((open) => !open)}
             className="rounded-lg bg-brand-600 px-3 py-1.5 text-sm font-semibold text-white hover:bg-brand-700"
           >
             + Add shift
           </button>
         </div>
+      )}
+
+      {isManager && eventForm && (
+        <div className="mb-6">
+          <EventForm
+            key={eventForm.event?.id ?? 'new'}
+            event={eventForm.event}
+            locations={locations}
+            jobRoles={jobRoles}
+            defaultDate={newEventDay(view === 'week' ? weekStart : monthStart)}
+            onSaved={() => {
+              setEventForm(null);
+              void load();
+            }}
+            onCancel={() => setEventForm(null)}
+          />
+        </div>
+      )}
+
+      {openEvent && (
+        <EventDialog
+          event={openEvent}
+          canEdit={isManager}
+          onClose={() => setOpenEvent(null)}
+          onEdit={() => {
+            setEventForm({ event: openEvent });
+            setOpenEvent(null);
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+          }}
+          onRemoved={() => {
+            setOpenEvent(null);
+            void load();
+          }}
+        />
       )}
 
       {isManager && planning && (
@@ -445,6 +508,7 @@ export function SchedulePage() {
           days={days}
           monthStart={monthStart}
           shiftsByDay={shiftsByDay}
+          events={events}
           birthdays={birthdaysByDay(birthdays)}
           showNames={isManager}
           onPickDay={(day) => {
@@ -467,6 +531,8 @@ export function SchedulePage() {
           coverage={isManager ? (coverage?.days ?? null) : null}
           timeOff={timeOff}
           birthdays={birthdays}
+          events={events}
+          onOpenEvent={setOpenEvent}
           overtimeThresholdHours={coverage?.overtimeThresholdHours ?? 40}
           overtime={coverage?.overtime}
           ownWeeks={ownWeeks ?? undefined}
@@ -499,7 +565,7 @@ export function SchedulePage() {
         </div>
       )}
 
-      {!loading && shifts.length === 0 && !isManager && (
+      {!loading && shifts.length === 0 && events.length === 0 && !isManager && (
         <div className="mt-4">
           <EmptyState>Nothing scheduled for you this week.</EmptyState>
         </div>
@@ -970,6 +1036,7 @@ function MonthGrid({
   days,
   monthStart,
   shiftsByDay,
+  events,
   birthdays,
   showNames,
   onPickDay,
@@ -977,6 +1044,8 @@ function MonthGrid({
   days: Date[];
   monthStart: Date;
   shiftsByDay: Map<string, Shift[]>;
+  /// Meetings and practice events: a line each above the shifts.
+  events: PracticeEvent[];
   /// YYYY-MM-DD → whose birthday it is.
   birthdays: Map<string, BirthdayEntry[]>;
   /// A manager sees whose shift it is; an employee is only ever shown their
@@ -1010,6 +1079,7 @@ function MonthGrid({
         {days.map((day) => {
           const dayShifts = shiftsByDay.get(day.toDateString()) ?? [];
           const cakes = (birthdays.get(localDate(day)) ?? []).map(birthdayName);
+          const dayEvents = eventsOnDay(events, localDate(day));
 
           // The days either side of the month are there to square off the grid.
           // They are shown, because a shift on the 1st matters whichever row it
@@ -1045,7 +1115,11 @@ function MonthGrid({
                 dayShifts.length === 0
                   ? 'no shifts'
                   : `${dayShifts.length} shift${dayShifts.length === 1 ? '' : 's'}: ${described.join(', ')}`
-              }${cakes.length > 0 ? ` — birthday: ${cakes.join(', ')}` : ''}`}
+              }${cakes.length > 0 ? ` — birthday: ${cakes.join(', ')}` : ''}${
+                dayEvents.length > 0
+                  ? ` — event${dayEvents.length === 1 ? '' : 's'}: ${dayEvents.map((event) => event.title).join(', ')}`
+                  : ''
+              }`}
               className={`min-h-[72px] rounded-lg border p-1.5 text-left align-top transition hover:border-brand-400 hover:bg-brand-50 sm:min-h-[104px] sm:p-2 ${
                 isToday ? 'border-brand-500 ring-1 ring-brand-500' : 'border-slate-200'
               } ${outside ? 'bg-slate-50 opacity-60' : 'bg-white'}`}
@@ -1066,6 +1140,17 @@ function MonthGrid({
                   <span className="hidden sm:inline">{cakes.join(', ')}</span>
                 </span>
               )}
+              {/* Tapping the day opens its week, where the event can be read in full. */}
+              {dayEvents.map((event) => (
+                <span
+                  key={event.id}
+                  data-testid={`month-event-${localDate(day)}`}
+                  className="mt-0.5 block truncate rounded bg-indigo-50 px-1 text-[10px] font-medium leading-4 text-indigo-950 ring-1 ring-inset ring-indigo-200 sm:text-[11px] sm:leading-5"
+                >
+                  <span aria-hidden="true">📅</span>
+                  <span className="hidden sm:inline"> {event.title}</span>
+                </span>
+              ))}
 
               {dayShifts.length === 0 ? (
                 <span className="mt-1 block text-[11px] text-slate-300 sm:text-xs">—</span>
@@ -1097,4 +1182,19 @@ function MonthGrid({
       </p>
     </div>
   );
+}
+
+/// "2026-10-14" as that day at local midnight, or null for anything else.
+function parseDay(value: string | null): Date | null {
+  const match = value?.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  if (!match) return null;
+  const day = new Date(Number(match[1]), Number(match[2]) - 1, Number(match[3]));
+  return Number.isNaN(day.getTime()) ? null : day;
+}
+
+/// Where a new event starts: the first day on screen, unless that has passed.
+function newEventDay(firstOnScreen: Date): Date {
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  return firstOnScreen < today ? today : firstOnScreen;
 }
