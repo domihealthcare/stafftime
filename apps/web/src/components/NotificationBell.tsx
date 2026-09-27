@@ -45,7 +45,12 @@ export function NotificationBell() {
     refreshCount();
   }, [refreshCount, pathname]);
   useEffect(() => {
-    const timer = window.setInterval(refreshCount, POLL_MS);
+    // Not while the phone is locked or the tab is in the background — that is
+    // data and battery for a badge nobody can see. Coming back refreshes it.
+    const timer = window.setInterval(
+      () => document.visibilityState === 'visible' && refreshCount(),
+      POLL_MS,
+    );
     const onVisible = () => document.visibilityState === 'visible' && refreshCount();
     document.addEventListener('visibilitychange', onVisible);
     return () => {

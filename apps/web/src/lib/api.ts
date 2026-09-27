@@ -412,8 +412,27 @@ export interface CalendarLink {
   createdAt: string | null;
 }
 
+/// Several parts of a screen want the config at once; one answer serves them
+/// for a minute, which still lets the Help page notice a new release.
+let configCache: { at: number; answer: Promise<AppConfig> } | null = null;
+
+/// Fired after anything that changes how many time-off requests wait for a
+/// decision, so the badge on the tab follows at once.
+export const TIME_OFF_CHANGED = 'domi-staff:time-off-changed';
+function timeOffChanged<T>(result: T): T {
+  window.dispatchEvent(new Event(TIME_OFF_CHANGED));
+  return result;
+}
+
 export const api = {
-  appConfig: () => request<AppConfig>('/config'),
+  appConfig: () => {
+    if (!configCache || Date.now() - configCache.at > 60_000) {
+      const answer = request<AppConfig>('/config');
+      configCache = { at: Date.now(), answer };
+      answer.catch(() => (configCache = null));
+    }
+    return configCache.answer;
+  },
 
   // ---------------------------------------------------------- notifications
   /// The bell: your own notifications, newest first.
@@ -485,13 +504,17 @@ export const api = {
     isHalfDay?: boolean;
     notes?: string;
     employeeId?: string;
-  }) => request<PtoRequest>('/pto', { method: 'POST', body: JSON.stringify(body) }),
+  }) =>
+    request<PtoRequest>('/pto', { method: 'POST', body: JSON.stringify(body) }).then(
+      timeOffChanged,
+    ),
   reviewPto: (id: string, decision: 'APPROVED' | 'DENIED', reviewNote?: string) =>
     request<PtoRequest>(`/pto/${id}/review`, {
       method: 'PATCH',
       body: JSON.stringify({ decision, reviewNote }),
-    }),
-  cancelPto: (id: string) => request<PtoRequest>(`/pto/${id}/cancel`, { method: 'PATCH' }),
+    }).then(timeOffChanged),
+  cancelPto: (id: string) =>
+    request<PtoRequest>(`/pto/${id}/cancel`, { method: 'PATCH' }).then(timeOffChanged),
   ptoConflicts: (id: string) => request<ConflictingShift[]>(`/pto/${id}/conflicts`),
   ptoPolicy: () => request<PtoPolicy>('/pto/policy'),
   updatePtoPolicy: (body: Partial<Omit<PtoPolicy, 'id'>>) =>

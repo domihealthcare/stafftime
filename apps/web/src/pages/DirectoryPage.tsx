@@ -41,8 +41,17 @@ export function DirectoryPage() {
 
   useEffect(() => {
     void load();
-    const timer = window.setInterval(() => void load(), REFRESH_MS);
-    return () => window.clearInterval(timer);
+    // Only while somebody is looking; coming back to it refreshes at once.
+    const timer = window.setInterval(
+      () => document.visibilityState === 'visible' && void load(),
+      REFRESH_MS,
+    );
+    const onVisible = () => document.visibilityState === 'visible' && void load();
+    document.addEventListener('visibilitychange', onVisible);
+    return () => {
+      window.clearInterval(timer);
+      document.removeEventListener('visibilitychange', onVisible);
+    };
   }, [load]);
 
   const jobRoles = useMemo(() => uniqueById(people.flatMap((p) => p.jobRoles)), [people]);
