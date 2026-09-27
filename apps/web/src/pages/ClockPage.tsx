@@ -85,12 +85,13 @@ export function ClockPage() {
     setLocationId((shiftOffice ?? primary).locationId);
   }, [assignedLocations, todaysShift, pickedByHand]);
 
-  // Keep the elapsed-time readout ticking while clocked in.
+  // Keep the elapsed-time readout ticking while clocked in. It shows whole
+  // minutes, so a quarter-minute keeps it right without redrawing every second.
   useEffect(() => {
     if (!entry || entry.clockOutAt) {
       return;
     }
-    const timer = window.setInterval(() => forceTick((n) => n + 1), 1000);
+    const timer = window.setInterval(() => forceTick((n) => n + 1), 15_000);
     return () => window.clearInterval(timer);
   }, [entry]);
 

@@ -496,11 +496,12 @@ export function RotaTable({
                                 data-empty={inCell.length === 0 ? 'true' : undefined}
                                 onClick={() => setAdding({ row, day })}
                                 aria-label={`Add ${row.kind === 'open' ? `an open shift at ${row.sublabel}` : `a shift for ${row.label}`} on ${day.toLocaleDateString(undefined, { weekday: 'long', month: 'short', day: 'numeric' })}`}
-                                className={
-                                  inCell.length === 0
-                                    ? 'w-full rounded-md py-1 text-center text-slate-300 hover:bg-slate-100 hover:text-slate-600 focus:text-slate-600'
-                                    : 'absolute right-0.5 top-0.5 rounded bg-white/90 px-1 text-xs leading-4 text-slate-500 opacity-0 shadow-sm ring-1 ring-slate-200 hover:text-slate-900 focus:opacity-100 group-hover:opacity-100'
-                                }
+                                // Big enough to see and to hit with a thumb, on a
+                                // phone as on a computer, and under the shifts
+                                // rather than over them.
+                                className={`flex w-full items-center justify-center rounded-md font-semibold leading-none text-slate-400 hover:bg-brand-50 hover:text-brand-700 focus:text-brand-700 ${
+                                  inCell.length === 0 ? 'min-h-10 text-2xl' : 'min-h-8 text-xl'
+                                }`}
                               >
                                 ＋
                               </button>

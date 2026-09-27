@@ -2111,3 +2111,20 @@ A read-through of the live app for bugs and speed. What changed, and why:
   across a release reloads onto the new version (`vite:preloadError`, at most
   once a minute); `/assets/*` is cached for a year, and a missing asset is a
   404 rather than the app page.
+
+### Follow-ups (27 September 2026, Dominguez)
+
+- **The Time off badge** was fetched once, at sign-in, and never again — so
+  it went on counting requests a manager had already decided, and missed
+  new ones until a reload. It now refreshes on every screen change, when the
+  app comes back into view, and straight after a request is made, decided
+  or withdrawn (`TIME_OFF_CHANGED`, fired from `api.ts`).
+- **Data and battery**: the bell and the Directory no longer poll while the
+  phone is locked or the tab is hidden (they refresh on coming back); the
+  running clock on the Clock screen redraws every 15 seconds, not every
+  second (it shows minutes); `/config` is fetched once a minute at most
+  however many parts of a screen ask. GPS is only ever read at the moment of
+  a punch (or setting a pin), never watched.
+- **The rota's ＋** is a full-width row at the foot of every day cell — bigger,
+  always visible (it used to appear only on mouse hover over a busy day, so
+  never on a phone), and under the shifts rather than over them.

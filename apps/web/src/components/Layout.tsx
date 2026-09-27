@@ -1,6 +1,6 @@
 import { Suspense, useEffect, useState } from 'react';
-import { Link, NavLink, Outlet } from 'react-router-dom';
-import { api } from '../lib/api';
+import { Link, NavLink, Outlet, useLocation } from 'react-router-dom';
+import { TIME_OFF_CHANGED, api } from '../lib/api';
 import { AccountMenu } from './AccountMenu';
 import { SloganStrip, Wordmark } from './Brand';
 import { NavMenu } from './NavMenu';
@@ -55,6 +55,22 @@ export function Layout() {
   const [pendingPto, setPendingPto] = useState(0);
 
   // A badge on the tab, so a manager does not have to go looking for requests.
+  // Fetched on every screen change, when the app comes back into view, and
+  // straight after a request is made, decided or cancelled — once at sign-in
+  // was not enough: it went on showing requests already dealt with.
+  const { pathname } = useLocation();
+  const [ptoGeneration, setPtoGeneration] = useState(0);
+  useEffect(() => {
+    if (!isManager) return;
+    const bump = () => setPtoGeneration((n) => n + 1);
+    const onVisible = () => document.visibilityState === 'visible' && bump();
+    window.addEventListener(TIME_OFF_CHANGED, bump);
+    document.addEventListener('visibilitychange', onVisible);
+    return () => {
+      window.removeEventListener(TIME_OFF_CHANGED, bump);
+      document.removeEventListener('visibilitychange', onVisible);
+    };
+  }, [isManager]);
   useEffect(() => {
     if (!isManager) {
       return;
@@ -67,7 +83,7 @@ export function Layout() {
     return () => {
       cancelled = true;
     };
-  }, [isManager]);
+  }, [isManager, pathname, ptoGeneration]);
 
   return (
     <div className="min-h-screen bg-slate-100">

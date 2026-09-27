@@ -115,12 +115,25 @@ await step('denying demands a reason before it can be sent', async () => {
   await mgr.getByRole('button', { name: 'Cancel' }).last().click();
 });
 
+const badgeCount = async () =>
+  Number((await mgr.getByRole('link', { name: /Time off/ }).first().innerText()).match(/\d+/)?.[0] ?? 0);
+
 await step('approving clears the request out of the pending queue', async () => {
+  const before = await badgeCount();
   await mgr.getByRole('button', { name: 'Approve', exact: true }).first().click();
   // The default filter is Pending, so a decided request should leave the list.
   await cards(mgr)
     .getByText('Family trip')
     .waitFor({ state: 'hidden', timeout: 15000 });
+  // And the badge on the tab follows, without a reload.
+  await mgr.waitForFunction(
+    (expected) => {
+      const link = [...document.querySelectorAll('a')].find((a) => a.textContent.startsWith('Time off'));
+      return Number(link?.textContent.match(/\d+/)?.[0] ?? 0) === expected;
+    },
+    before - 1,
+    { timeout: 10000 },
+  );
 });
 
 await step('the approved request is filed under Approved, with who decided it', async () => {
