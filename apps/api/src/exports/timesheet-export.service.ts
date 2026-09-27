@@ -1,5 +1,6 @@
 import { BadRequestException, Injectable } from '@nestjs/common';
 import { PayType, PayrollExportStatus, Prisma, TimeEntryStatus } from '@prisma/client';
+import { addUtcDays } from '../common/util/calendar-date.util';
 import { weekStartIn } from '../common/util/zoned-time.util';
 import { PrismaService } from '../prisma/prisma.service';
 import { PracticeSettingsService } from '../settings/practice-settings.service';
@@ -138,7 +139,28 @@ export class TimesheetExportService {
     // The same threshold the rota warns on. If these two ever disagreed, the
     // schedule would promise one thing and the payslip say another.
     const { overtimeThresholdHours } = await this.settings.get();
-    const totals = this.buildTotals(entries, dto.splitOvertime ?? false, overtimeThresholdHours);
+    // Overtime is a whole week's hours, at any office — whatever this file is
+    // limited to. So the weeks it touches are read in full (a day either side
+    // covers any time zone) and this file's entries take their own share.
+    const context =
+      dto.splitOvertime && entries.length > 0
+        ? await this.prisma.timeEntry.findMany({
+            where: {
+              clockInAt: { gte: addUtcDays(from, -7), lt: addUtcDays(to, 7) },
+              employeeId: { in: [...new Set(entries.map((entry) => entry.employeeId))] },
+              status: { in: statuses },
+              clockOutAt: { not: null },
+            },
+            include: ENTRY_INCLUDE,
+            orderBy: { clockInAt: 'asc' },
+          })
+        : [];
+    const totals = this.buildTotals(
+      entries,
+      dto.splitOvertime ?? false,
+      overtimeThresholdHours,
+      context,
+    );
 
     const location = dto.locationId
       ? await this.prisma.location.findUnique({
@@ -265,6 +287,12 @@ export class TimesheetExportService {
     entries: EntryWithRelations[],
     splitOvertime: boolean,
     thresholdHours: number,
+    /// Every entry in the weeks this file touches, at any office. Overtime is
+    /// the hours past the threshold in the week as a whole, in time order, and
+    /// each of this file's entries carries the part of it that fell in it —
+    /// so exporting one office, or a period that starts mid-week, neither loses
+    /// overtime nor counts it twice.
+    context: EntryWithRelations[] = entries,
   ): EmployeeTotal[] {
     const byEmployee = new Map<string, EntryWithRelations[]>();
     for (const entry of entries) {
@@ -284,15 +312,23 @@ export class TimesheetExportService {
       let overtimeHours = 0;
 
       if (splitOvertime && employee.payType === PayType.HOURLY) {
-        const weeks = new Map<string, number>();
-        for (const entry of employeeEntries) {
-          const key = weekStartIn(entry.clockInAt, entry.location.timezone);
-          weeks.set(key, (weeks.get(key) ?? 0) + hoursBetween(entry.clockInAt, entry.clockOutAt));
-        }
+        const inFile = new Set(employeeEntries.map((entry) => entry.id));
+        const worked = [
+          ...context.filter((entry) => entry.employeeId === employee.id),
+          // Open entries in the file are not in the context; they add nothing.
+          ...employeeEntries.filter((entry) => !context.some((c) => c.id === entry.id)),
+        ].sort((a, b) => a.clockInAt.getTime() - b.clockInAt.getTime());
+        const weekSoFar = new Map<string, number>();
         regularHours = 0;
-        for (const weekHours of weeks.values()) {
-          regularHours += Math.min(weekHours, thresholdHours);
-          overtimeHours += Math.max(0, weekHours - thresholdHours);
+        for (const entry of worked) {
+          const key = weekStartIn(entry.clockInAt, entry.location.timezone);
+          const before = weekSoFar.get(key) ?? 0;
+          const length = hoursBetween(entry.clockInAt, entry.clockOutAt);
+          weekSoFar.set(key, before + length);
+          if (!inFile.has(entry.id)) continue;
+          const regular = Math.max(0, Math.min(length, thresholdHours - before));
+          regularHours += regular;
+          overtimeHours += length - regular;
         }
       }
 
