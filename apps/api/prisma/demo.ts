@@ -24,8 +24,7 @@ loadDemoData(prisma)
       { what: 'time off requests', count: summary.timeOffRequests },
       { what: 'checklists', count: summary.checklists },
     ]);
-    console.log(`Every demo account signs in with: ${summary.sharedPassword}`);
-    console.log('A walkthrough for reviewers is in docs/manager-review.md.\n');
+    console.log(`Every demo account signs in with: ${summary.sharedPassword}\n`);
   })
   .catch((error) => {
     console.error(`\n${error instanceof Error ? error.message : error}\n`);

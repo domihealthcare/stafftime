@@ -98,7 +98,8 @@ file input anywhere.
    location-bound kiosk session; employees clock in via PIN or badge tap. No
    geolocation needed since the device itself is location-bound. Likely the most
    reliable method day-to-day.
-3. **IP allow-listing** per location as a secondary/fallback check for web clock-ins.
+3. **IP allow-listing** per location as a secondary/fallback check for web clock-ins
+   (built, but set aside for now — no addresses entered).
 
 ## Payroll export (ADP now, others later)
 Build this as an **adapter/plugin pattern**, not a hardcoded ADP integration:
@@ -190,29 +191,25 @@ Build this as an **adapter/plugin pattern**, not a hardcoded ADP integration:
 
 ## Where it has got to (September 2026)
 
-All three phases are built, and **deployed and live** on Vercel against a Neon
-Postgres, at `https://stafftime-ap.vercel.app` — verified 22 September 2026:
-health endpoint OK, demo data loaded, sign-in working, and the deployed
-security headers (CSP, HSTS, `X-Frame-Options`) all present on the production
-bundle. **Live since 26 September 2026**: the test data was cleared and
-`APP_ENVIRONMENT` set to `production` in Vercel (`/config` reports
-`isTestEnvironment: false`; no banner; demo data and "Start using it for
-real" refuse). `main` deploys straight to the real practice now — every
-merge is a release.
+All phases are built and **live** at `https://staff.domihealthcare.com`
+(Vercel, against a Neon Postgres; `stafftime-ap.vercel.app` still works
+alongside it). **Real use since 26 September 2026**: the test data was cleared
+and `APP_ENVIRONMENT` set to `production` in Vercel, so there is no banner and
+demo data and "Start using it for real" refuse. `main` deploys straight to the
+real practice — every merge is a release.
 
-Still to do on the deployment, in `DEPLOY.md`:
+How the live site is set up, for reference:
 
-- ~~`staff.domihealthcare.com` does not exist yet~~ — **done, 22 September
-  2026.** The CNAME points at `6eb32dbe408d7769.vercel-dns-017.com`, the
-  certificate is issued, and the app answers on the real address: `/api/health`
-  OK, `/api/config` reporting the test environment, sign-in returning 200. The
-  Vercel URL `stafftime-ap.vercel.app` still works alongside it.
-- ~~The geofence pins are still the seeded placeholders~~ — **done, 24
-  September 2026.** Both offices' coordinates were typed in from Google Maps
-  (the phone's indoor fix was only good to ~315 ft, too loose to save). The
-  far-corner test was waived (Dominguez, 25 September 2026); 500 ft stands.
-  Never run `npm run db:seed` against the live
-  database — it resets the pins to the old placeholders.
+- **Domain**: a CNAME to `6eb32dbe408d7769.vercel-dns-017.com`
+  (22 September 2026). The deployed security headers (CSP, HSTS,
+  `X-Frame-Options`) were checked on it.
+- **Geofence pins**: both offices typed in from Google Maps (24 September
+  2026 — the phone's indoor fix was only good to ~315 ft). 500 ft stands; the
+  far-corner test was waived (Dominguez). **Never run `npm run db:seed`
+  against the live database** — it resets the pins to old placeholders.
+- **IP allow-listing**: set aside (Dominguez, 25 September 2026). Built, but
+  with no addresses entered it does nothing; location is the check.
+- **`SETUP_TOKEN`**: deleted (25 September 2026).
 - **Never edit a migration once it has been pushed** (learned 28 September
   2026). A preview build runs `prisma migrate deploy`, and the previews appear
   to share the live database. So a migration reaches the live database as soon
@@ -221,10 +218,9 @@ Still to do on the deployment, in `DEPLOY.md`:
   live site, breaking the Schedule; `20260928010000_practice_events_kind`
   repaired it. A change always goes in a new migration. Worth checking in
   Vercel whether Preview should have its own database.
-- ~~`SETUP_TOKEN` should be deleted~~ — **done, 25 September 2026.** Still to
-  do: **rotate the Neon password** (Dominguez to find time; steps given in
-  chat: reset in Neon, paste the new pooled and direct strings into
-  `DATABASE_URL` / `DIRECT_DATABASE_URL`, redeploy).
+- **Still to do**: rotate the Neon password (Dominguez to find time: reset in
+  Neon, paste the new pooled and direct strings into `DATABASE_URL` /
+  `DIRECT_DATABASE_URL`, redeploy).
 
 Beyond the phases, the parts worth knowing about before picking up work:
 
@@ -461,8 +457,8 @@ Beyond the phases, the parts worth knowing about before picking up work:
   deployed security headers.
 
 `docs/architecture.md` is the long version, and explains *why* for anything
-surprising. `docs/open-questions.md` is what is still waiting on a decision, and
-`docs/manager-review.md` is written for the managers rather than for us.
+surprising, and `docs/open-questions.md` is what is still waiting on a decision.
+The guides for staff and managers are on the app's own Help page.
 
 ## Ways of working
 - Confirm scope and data accuracy before drafting deliverables — don't build ahead
@@ -473,9 +469,7 @@ surprising. `docs/open-questions.md` is what is still waiting on a decision, and
   conversationally, keep full context documented in this file (and docs/ as it
   grows) so sessions can resume without re-explanation.
 
-## Open questions to confirm before/during Phase 1
-- Get ADP TotalSource company/client code and pay/earning codes from ADP before
-  finalizing the CSV export column mapping.
-- Kiosk device: no tablet yet (September 2026) — the front-desk computer is
-  the time clock (see *The office computer as the time clock*).
-- IP allow-listing: set aside for now (Dominguez, 25 September 2026).
+## Open questions
+What is still waiting on a decision — ADP set-up, the location disclosure,
+PTO rules and the rest — is kept in `docs/open-questions.md`. Settled items
+come off that list and are written up here or in `docs/architecture.md`.

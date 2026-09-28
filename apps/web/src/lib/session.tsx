@@ -1,6 +1,6 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
 import type { ReactNode } from 'react';
-import { ApiError, SESSION_ENDED, api, isPasswordChangeRequired } from './api';
+import { ApiError, SESSION_ENDED, api } from './api';
 import type { Employee } from './types';
 
 interface SessionValue {
@@ -92,5 +92,3 @@ export function useIsAdmin(): boolean {
   const { employee } = useSession();
   return employee?.role === 'ADMIN';
 }
-
-export { isPasswordChangeRequired };
