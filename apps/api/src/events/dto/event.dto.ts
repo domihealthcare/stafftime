@@ -1,5 +1,8 @@
-import { EventAudience, PracticeEventKind } from '@prisma/client';
+import { EventAudience, MonthlyRepeat, PracticeEventKind, RepeatFrequency } from '@prisma/client';
+import { Type } from 'class-transformer';
 import {
+  ArrayMaxSize,
+  IsArray,
   IsBoolean,
   IsDateString,
   IsEnum,
@@ -13,9 +16,72 @@ import {
   Min,
   MinLength,
   ValidateIf,
+  ValidateNested,
 } from 'class-validator';
 
 const DATE_ONLY = /^\d{4}-\d{2}-\d{2}$/;
+
+/// Who a CHOSEN event is for: any mix of people, job roles and offices.
+export class InviteesInput {
+  @IsOptional()
+  @IsArray()
+  @ArrayMaxSize(200)
+  @IsUUID('all', { each: true })
+  employeeIds?: string[];
+
+  @IsOptional()
+  @IsArray()
+  @ArrayMaxSize(50)
+  @IsUUID('all', { each: true })
+  jobRoleIds?: string[];
+
+  @IsOptional()
+  @IsArray()
+  @ArrayMaxSize(20)
+  @IsUUID('all', { each: true })
+  locationIds?: string[];
+}
+
+/// How it repeats. The dates are worked out from the event's own first day.
+export class RepeatInput {
+  @IsEnum(RepeatFrequency)
+  frequency!: RepeatFrequency;
+
+  @IsInt()
+  @Min(1)
+  @Max(12)
+  interval!: number;
+
+  /// WEEKLY: 1 = Monday … 7 = Sunday.
+  @IsOptional()
+  @IsArray()
+  @ArrayMaxSize(7)
+  @IsInt({ each: true })
+  @Min(1, { each: true })
+  @Max(7, { each: true })
+  weekdays?: number[];
+
+  @IsOptional()
+  @IsEnum(MonthlyRepeat)
+  monthlyMode?: MonthlyRepeat;
+
+  /// WEEKDAY_OF_MONTH: 1–4, or -1 for the last.
+  @IsOptional()
+  @IsInt()
+  monthlyWeek?: number;
+
+  /// The last date it may land on, "2026-12-31".
+  @Matches(DATE_ONLY, { message: 'until must be a date like 2026-12-31' })
+  until!: string;
+}
+
+/// A repeating event is changed or removed one date at a time, or from one
+/// date onwards.
+export class ScopeQuery {
+  @IsOptional()
+  @IsEnum(['one', 'following'])
+  scope?: 'one' | 'following';
+}
 
 /// Making or changing an event. A change sends the whole event again, so what
 /// is saved is exactly what the form showed.
@@ -71,6 +137,18 @@ export class EventInput {
   @IsOptional()
   @IsUUID()
   locationId?: string;
+
+  /// For CHOSEN.
+  @IsOptional()
+  @ValidateNested()
+  @Type(() => InviteesInput)
+  invitees?: InviteesInput;
+
+  /// Absent or null: it happens once.
+  @IsOptional()
+  @ValidateNested()
+  @Type(() => RepeatInput)
+  repeat?: RepeatInput | null;
 }
 
 export class QueryEventsDto {

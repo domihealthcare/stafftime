@@ -15,6 +15,7 @@ describe('MaintenanceService', () => {
     const resets = { purgeExpired: jest.fn().mockResolvedValue(4) };
     const digest = { send: jest.fn().mockResolvedValue({ sent: 2, contents: {} }) };
     const inbox = { purgeOld: jest.fn().mockResolvedValue(6) };
+    const events = { sendReminders: jest.fn().mockResolvedValue(1) };
 
     return {
       service: new MaintenanceService(
@@ -24,12 +25,14 @@ describe('MaintenanceService', () => {
         resets as never,
         digest as never,
         inbox as never,
+        events as never,
       ),
       prisma,
       sessions,
       throttle,
       resets,
       digest,
+      events,
     };
   }
 
@@ -44,6 +47,16 @@ describe('MaintenanceService', () => {
       clearedLocations: 5,
       oldNotifications: 6,
       digestSentTo: 2,
+      eventReminders: 1,
+    });
+  });
+
+  it('still tidies up when the event reminders cannot be sent', async () => {
+    const { service, events } = build();
+    events.sendReminders.mockRejectedValue(new Error('database away'));
+    await expect(service.purge()).resolves.toMatchObject({
+      expiredSessions: 7,
+      eventReminders: 0,
     });
   });
 

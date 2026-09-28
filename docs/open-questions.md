@@ -122,10 +122,9 @@ What is deliberately left open:
       (banner, email, ⚠ on the shift). Skipping them automatically would be
       tidier, but quietly leaves days unscheduled if the closure is later
       removed. Worth asking once a real Christmas rota has been built.
-- [ ] **Reminders for events.** Events (meetings, wellness days) are on the
-      schedule, under the bell and in synced calendars; replies ("going" /
-      "can't go") are left out for now (Dominguez). Worth asking the managers
-      whether a reminder the day before, or an email, is wanted.
+- [ ] **When should event reminders go?** Everybody an event is for gets a
+      reminder under the bell the day before each date. Worth asking the
+      managers whether the morning of would be better.
 
 ## Onboarding / offboarding checklists (Phase 3, built)
 

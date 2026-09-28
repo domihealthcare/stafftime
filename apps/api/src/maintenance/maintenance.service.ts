@@ -2,6 +2,7 @@ import { Injectable, Logger } from '@nestjs/common';
 import { LoginThrottleService } from '../auth/login-throttle.service';
 import { PasswordResetService } from '../auth/password-reset.service';
 import { DigestService } from '../email/digest.service';
+import { EventsService } from '../events/events.service';
 import { InboxService } from '../email/inbox.service';
 import { SessionService } from '../auth/session.service';
 import { PrismaService } from '../prisma/prisma.service';
@@ -28,6 +29,8 @@ export interface PurgeReport {
   /// How many managers were told about something that needs a look. Zero when
   /// there was nothing to say, which is most days.
   digestSentTo: number;
+  /// Events and closures tomorrow that everybody they are for was reminded of.
+  eventReminders: number;
 }
 
 /**
@@ -52,6 +55,7 @@ export class MaintenanceService {
     private readonly resets: PasswordResetService,
     private readonly digest: DigestService,
     private readonly inbox: InboxService,
+    private readonly events: EventsService,
   ) {}
 
   async purge(): Promise<PurgeReport> {
@@ -64,6 +68,7 @@ export class MaintenanceService {
       clearedLocations: await this.clearOldPunchLocations(),
       oldNotifications: await this.inbox.purgeOld(),
       digestSentTo: await this.sendDigest(),
+      eventReminders: await this.remindAboutTomorrow(),
     };
 
     this.logger.log(
@@ -86,6 +91,23 @@ export class MaintenanceService {
     } catch (error) {
       this.logger.error(
         `Could not send the daily digest: ${error instanceof Error ? error.message : error}`,
+      );
+      return 0;
+    }
+  }
+
+  /**
+   * The day-before reminders for tomorrow's events and closures (asked for by
+   * Dominguez, September 2026). Here because this is the job that runs every
+   * night — at 5am in New Jersey, so "tomorrow" is the next day. Like the
+   * digest, never allowed to fail the tidying up.
+   */
+  private async remindAboutTomorrow(): Promise<number> {
+    try {
+      return await this.events.sendReminders();
+    } catch (error) {
+      this.logger.error(
+        `Could not send event reminders: ${error instanceof Error ? error.message : error}`,
       );
       return 0;
     }

@@ -7,6 +7,7 @@ import {
   Prisma,
   Role,
 } from '@prisma/client';
+import { randomUUID } from 'node:crypto';
 import { AuthUser } from '../common/auth/auth-user';
 import {
   addDaysTo,
@@ -19,6 +20,7 @@ import { InboxService } from '../email/inbox.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { EventInput } from './dto/event.dto';
 import { allDayDates, allDayRange, describeWhen } from './event-time';
+import { describeRule, occurrenceDates, RepeatRule, ruleProblem } from './recurrence';
 
 /// Long enough for a conference; short enough that a typo in the year is caught.
 const MAX_TIMED_DAYS = 7;
@@ -26,6 +28,8 @@ const MAX_ALL_DAY_DAYS = 31;
 /// The schedule asks a week or a month (with its edges) at a time; the phone
 /// calendar asks a year. Anything wider is a mistake, not a view.
 const MAX_WINDOW_DAYS = 400;
+
+const PERSON = { select: { id: true, firstName: true, lastName: true, preferredName: true } };
 
 const EVENT_SELECT = {
   id: true,
@@ -37,17 +41,61 @@ const EVENT_SELECT = {
   startsAt: true,
   endsAt: true,
   audience: true,
+  seriesId: true,
   updatedAt: true,
   jobRole: { select: { id: true, name: true, colour: true } },
   location: { select: { id: true, name: true } },
+  invitees: {
+    select: {
+      employee: PERSON,
+      jobRole: { select: { id: true, name: true, colour: true } },
+      location: { select: { id: true, name: true } },
+    },
+  },
+  series: {
+    select: {
+      id: true,
+      frequency: true,
+      interval: true,
+      weekdays: true,
+      monthlyMode: true,
+      monthlyWeek: true,
+      firstDate: true,
+      untilDate: true,
+    },
+  },
 } satisfies Prisma.PracticeEventSelect;
 
 export type EventRow = Prisma.PracticeEventGetPayload<{ select: typeof EVENT_SELECT }>;
+
+/// What decides who an event is for.
+type AudienceOf = Pick<EventRow, 'audience' | 'jobRole' | 'location' | 'invitees'>;
 
 /// Who counts as staff for an event: the same people a survey asks.
 const WORKING: { in: EmploymentStatus[] } = {
   in: [EmploymentStatus.ACTIVE, EmploymentStatus.ON_LEAVE],
 };
+
+/// Checked input, ready to write.
+interface Checked {
+  data: {
+    kind: PracticeEventKind;
+    title: string;
+    description: string | null;
+    place: string | null;
+    allDay: boolean;
+    startsAt: Date;
+    endsAt: Date;
+    audience: EventAudience;
+    jobRoleId: string | null;
+    locationId: string | null;
+  };
+  invitees: { employeeIds: string[]; jobRoleIds: string[]; locationIds: string[] };
+  /// The rule and the date it counts from, when it repeats.
+  repeat: { firstDate: string; rule: RepeatRule } | null;
+}
+
+export type Scope = 'one' | 'following';
 
 /**
  * Events: office meetings, provider meetings, a wellness day — and closures:
@@ -60,8 +108,13 @@ const WORKING: { in: EmploymentStatus[] } = {
  * is warned about on the rota, in its forms and in the round-up, never
  * refused, and pay is untouched (holiday pay is an open question).
  *
+ * An event can repeat — every 2 weeks on Friday, every week on Monday and
+ * Friday, the first Friday of the month — and be for any mix of job roles,
+ * offices and people. A series is written out one row per date, so one date
+ * can be moved or removed on its own, or everything from one date on.
+ *
  * Managers and admins see every event, so they can look after them; everybody
- * else sees the ones for them — everyone's, their job roles', their offices'.
+ * else sees the ones for them.
  */
 @Injectable()
 export class EventsService {
@@ -110,82 +163,117 @@ export class EventsService {
   }
 
   async create(dto: EventInput, actor: AuthUser) {
-    const data = await this.checkInput(dto);
-    const row = await this.prisma.practiceEvent.create({
-      data: { ...data, createdById: actor.id },
-      select: EVENT_SELECT,
-    });
-    this.logger.log(`Event ${row.id} added by ${actor.id}`);
+    const input = await this.checkInput(dto);
+    const { first, last, count } = await this.prisma.$transaction((tx) =>
+      this.write(tx, input, actor.id),
+    );
+    this.logger.log(
+      `Event ${first.id} added by ${actor.id} (${count} date${count === 1 ? '' : 's'})`,
+    );
 
-    if (row.endsAt > new Date()) {
+    // One notification for a whole series, not one per date.
+    if (last.endsAt > new Date()) {
       await this.inbox.notify(
-        (await this.invited(row)).filter((id) => id !== actor.id),
-        notice(row, 'added'),
+        (await this.invited(first)).filter((id) => id !== actor.id),
+        notice(first, 'added', input.repeat ? seriesBody(first, input.repeat) : undefined),
       );
     }
-    return present(row);
+    return { ...present(first), created: count };
   }
 
-  async update(id: string, dto: EventInput, actor: AuthUser) {
+  /**
+   * Changes one date, or — `following` — this date and every one after it in
+   * its series. Adding a repeat to a one-off event makes it the first date of
+   * a new series.
+   */
+  async update(id: string, dto: EventInput, actor: AuthUser, scope: Scope = 'one') {
     const before = await this.require(id);
-    const data = await this.checkInput(dto);
-    const after = await this.prisma.practiceEvent.update({
-      where: { id },
-      data,
-      select: EVENT_SELECT,
-    });
-    this.logger.log(`Event ${id} changed by ${actor.id}`);
+    const input = await this.checkInput(dto);
+    const following =
+      (scope === 'following' && before.seriesId) || (!before.seriesId && input.repeat);
 
-    // Only what somebody would plan around. A reworded description is not
-    // worth a notification.
-    const moved =
-      before.title !== after.title ||
-      before.place !== after.place ||
-      before.allDay !== after.allDay ||
-      before.startsAt.getTime() !== after.startsAt.getTime() ||
-      before.endsAt.getTime() !== after.endsAt.getTime();
-    const reaudienced =
-      before.audience !== after.audience ||
-      before.jobRole?.id !== after.jobRole?.id ||
-      before.location?.id !== after.location?.id;
-
-    if ((moved || reaudienced) && (before.endsAt > new Date() || after.endsAt > new Date())) {
-      const [was, now] = await Promise.all([this.invited(before), this.invited(after)]);
-      const wasIn = new Set(was);
-      const nowIn = new Set(now);
-      const notMe = (person: string) => person !== actor.id;
-
-      // New to it: as if it had just been made.
-      await this.inbox.notify(
-        now.filter((p) => !wasIn.has(p)).filter(notMe),
-        notice(after, 'added'),
-      );
-      if (moved) {
-        await this.inbox.notify(
-          now.filter((p) => wasIn.has(p)).filter(notMe),
-          notice(after, 'changed'),
-        );
-      }
-      // No longer for them: it leaves their schedule, so say so.
-      await this.inbox.notify(
-        was.filter((p) => !nowIn.has(p)).filter(notMe),
-        notice(before, 'dropped'),
-      );
+    if (!following) {
+      const after = await this.prisma.$transaction(async (tx) => {
+        await tx.practiceEvent.update({ where: { id }, data: input.data });
+        await tx.practiceEventInvitee.deleteMany({ where: { eventId: id } });
+        await tx.practiceEventInvitee.createMany({ data: inviteeRows([id], input) });
+        return tx.practiceEvent.findUniqueOrThrow({ where: { id }, select: EVENT_SELECT });
+      });
+      this.logger.log(`Event ${id} changed by ${actor.id}`);
+      await this.tellAboutChange(before, after, actor, undefined);
+      return { ...present(after), created: 1 };
     }
-    return present(after);
+
+    const { first, count } = await this.prisma.$transaction(async (tx) => {
+      await this.cutFrom(tx, before);
+      return this.write(tx, input, actor.id);
+    });
+    this.logger.log(
+      `Event ${id} and after replaced by ${actor.id} (${count} date${count === 1 ? '' : 's'})`,
+    );
+    await this.tellAboutChange(
+      before,
+      first,
+      actor,
+      input.repeat ? seriesBody(first, input.repeat) : undefined,
+    );
+    return { ...present(first), created: count };
   }
 
-  async remove(id: string, actor: AuthUser) {
+  /// Removes one date, or — `following` — this date and every one after it.
+  async remove(id: string, actor: AuthUser, scope: Scope = 'one') {
     const row = await this.require(id);
-    const invited = row.endsAt > new Date() ? await this.invited(row) : [];
-    await this.prisma.practiceEvent.delete({ where: { id } });
-    this.logger.log(`Event ${id} removed by ${actor.id}`);
+    const upcoming = row.endsAt > new Date();
+    const invited = upcoming ? await this.invited(row) : [];
+
+    let removed = 1;
+    if (scope === 'following' && row.seriesId) {
+      removed = await this.prisma.$transaction((tx) => this.cutFrom(tx, row));
+    } else {
+      await this.prisma.practiceEvent.delete({ where: { id } });
+    }
+    this.logger.log(
+      `Event ${id}${removed > 1 ? ` and ${removed - 1} after it` : ''} removed by ${actor.id}`,
+    );
 
     await this.inbox.notify(
       invited.filter((person) => person !== actor.id),
-      notice(row, 'cancelled'),
+      notice(
+        row,
+        'cancelled',
+        removed > 1 ? `From ${describeWhen(row)} on — ${removed} dates.` : undefined,
+      ),
     );
-    return { deleted: true };
+    return { deleted: removed };
+  }
+
+  /**
+   * The day-before reminder, from the nightly job: everything starting
+   * tomorrow on the practice's clock, to everybody it is for. Each is marked
+   * as sent, so running the job twice never reminds twice.
+   */
+  async sendReminders(now = new Date()): Promise<number> {
+    const tomorrow = addDaysTo(localDateIn(now, PRACTICE_ZONE), 1);
+    const rows = await this.prisma.practiceEvent.findMany({
+      where: {
+        startsAt: {
+          gte: zonedTimeToUtc(tomorrow, '00:00', PRACTICE_ZONE),
+          lt: zonedTimeToUtc(addDaysTo(tomorrow, 1), '00:00', PRACTICE_ZONE),
+        },
+        reminderSentAt: null,
+      },
+      select: EVENT_SELECT,
+      orderBy: { startsAt: 'asc' },
+    });
+    for (const row of rows) {
+      await this.inbox.notify(await this.invited(row), notice(row, 'reminder'));
+      await this.prisma.practiceEvent.update({
+        where: { id: row.id },
+        data: { reminderSentAt: now },
+      });
+    }
+    if (rows.length > 0) this.logger.log(`Reminded about ${rows.length} event(s) tomorrow`);
+    return rows.length;
   }
 
   /**
@@ -304,6 +392,136 @@ export class EventsService {
     return { copied: created.length, skipped, toYear };
   }
 
+  /**
+   * Writes an event — one row, or one row per date of its series — with its
+   * invitees. Ids are made here so the whole series goes in two statements
+   * rather than one round trip per date.
+   */
+  private async write(tx: Prisma.TransactionClient, input: Checked, actorId: string) {
+    const occurrences = input.repeat
+      ? occurrencesOf(input.data, input.repeat.firstDate, input.repeat.rule)
+      : [{ startsAt: input.data.startsAt, endsAt: input.data.endsAt }];
+    if (occurrences.length === 0) {
+      throw new BadRequestException(
+        'Those repeat settings never land on a day before it stops. Check the days and the end date.',
+      );
+    }
+
+    let seriesId: string | null = null;
+    if (input.repeat) {
+      const { rule, firstDate } = input.repeat;
+      const series = await tx.practiceEventSeries.create({
+        data: {
+          frequency: rule.frequency,
+          interval: rule.interval,
+          weekdays: rule.frequency === 'WEEKLY' ? [...new Set(rule.weekdays)].sort() : [],
+          monthlyMode: rule.frequency === 'MONTHLY' ? (rule.monthlyMode ?? null) : null,
+          monthlyWeek:
+            rule.frequency === 'MONTHLY' && rule.monthlyMode === 'WEEKDAY_OF_MONTH'
+              ? (rule.monthlyWeek ?? null)
+              : null,
+          firstDate: new Date(`${firstDate}T00:00:00.000Z`),
+          untilDate: new Date(`${rule.until}T00:00:00.000Z`),
+        },
+        select: { id: true },
+      });
+      seriesId = series.id;
+    }
+
+    const ids = occurrences.map(() => randomUUID());
+    await tx.practiceEvent.createMany({
+      data: occurrences.map((occurrence, index) => ({
+        ...input.data,
+        id: ids[index],
+        startsAt: occurrence.startsAt,
+        endsAt: occurrence.endsAt,
+        seriesId,
+        createdById: actorId,
+      })),
+    });
+    const invitees = inviteeRows(ids, input);
+    if (invitees.length > 0) await tx.practiceEventInvitee.createMany({ data: invitees });
+
+    const [first, last] = await Promise.all([
+      tx.practiceEvent.findUniqueOrThrow({ where: { id: ids[0] }, select: EVENT_SELECT }),
+      tx.practiceEvent.findUniqueOrThrow({
+        where: { id: ids[ids.length - 1] },
+        select: EVENT_SELECT,
+      }),
+    ]);
+    return { first, last, count: ids.length };
+  }
+
+  /**
+   * Takes a date and everything after it out of its series, and ends the
+   * series the day before — or removes the series if nothing is left of it.
+   * A one-off event is just removed. Returns how many dates went.
+   */
+  private async cutFrom(tx: Prisma.TransactionClient, row: EventRow): Promise<number> {
+    if (!row.seriesId) {
+      await tx.practiceEvent.delete({ where: { id: row.id } });
+      return 1;
+    }
+    const { count } = await tx.practiceEvent.deleteMany({
+      where: { seriesId: row.seriesId, startsAt: { gte: row.startsAt } },
+    });
+    const left = await tx.practiceEvent.count({ where: { seriesId: row.seriesId } });
+    if (left === 0) {
+      await tx.practiceEventSeries.delete({ where: { id: row.seriesId } });
+    } else {
+      const dayBefore = addDaysTo(localDateIn(row.startsAt, PRACTICE_ZONE), -1);
+      await tx.practiceEventSeries.update({
+        where: { id: row.seriesId },
+        data: { untilDate: new Date(`${dayBefore}T00:00:00.000Z`) },
+      });
+    }
+    return count;
+  }
+
+  /**
+   * Who hears what about a change: newcomers that it is new, people still in
+   * it that it changed (when anything they would plan around did), and people
+   * dropped that it is off their schedule.
+   */
+  private async tellAboutChange(
+    before: EventRow,
+    after: EventRow,
+    actor: AuthUser,
+    body: string | undefined,
+  ) {
+    const moved =
+      Boolean(body) ||
+      before.title !== after.title ||
+      before.place !== after.place ||
+      before.allDay !== after.allDay ||
+      before.startsAt.getTime() !== after.startsAt.getTime() ||
+      before.endsAt.getTime() !== after.endsAt.getTime();
+    const reaudienced = audienceKey(before) !== audienceKey(after);
+    if (!(moved || reaudienced) || !(before.endsAt > new Date() || after.endsAt > new Date())) {
+      return;
+    }
+
+    const [was, now] = await Promise.all([this.invited(before), this.invited(after)]);
+    const wasIn = new Set(was);
+    const nowIn = new Set(now);
+    const notMe = (person: string) => person !== actor.id;
+
+    await this.inbox.notify(
+      now.filter((p) => !wasIn.has(p)).filter(notMe),
+      notice(after, 'added', body),
+    );
+    if (moved) {
+      await this.inbox.notify(
+        now.filter((p) => wasIn.has(p)).filter(notMe),
+        notice(after, 'changed', body),
+      );
+    }
+    await this.inbox.notify(
+      was.filter((p) => !nowIn.has(p)).filter(notMe),
+      notice(before, 'dropped'),
+    );
+  }
+
   private async require(id: string): Promise<EventRow> {
     const row = await this.prisma.practiceEvent.findUnique({
       where: { id },
@@ -314,7 +532,7 @@ export class EventsService {
   }
 
   /// Everybody an event is for.
-  private async invited(row: Pick<EventRow, 'audience' | 'jobRole' | 'location'>) {
+  private async invited(row: AudienceOf) {
     const people = await this.prisma.employee.findMany({
       where: audienceWhere(row),
       select: { id: true },
@@ -335,22 +553,26 @@ export class EventsService {
     if (!person || !WORKING.in.includes(person.employmentStatus)) {
       return { id: { in: [] } };
     }
+    const roles = person.jobRoles.map((row) => row.jobRoleId);
+    const offices = person.locations.map((row) => row.locationId);
     return {
       OR: [
         { audience: EventAudience.EVERYONE },
+        { audience: EventAudience.JOB_ROLE, jobRoleId: { in: roles } },
+        { audience: EventAudience.LOCATION, locationId: { in: offices } },
         {
-          audience: EventAudience.JOB_ROLE,
-          jobRoleId: { in: person.jobRoles.map((row) => row.jobRoleId) },
-        },
-        {
-          audience: EventAudience.LOCATION,
-          locationId: { in: person.locations.map((row) => row.locationId) },
+          audience: EventAudience.CHOSEN,
+          invitees: {
+            some: {
+              OR: [{ employeeId }, { jobRoleId: { in: roles } }, { locationId: { in: offices } }],
+            },
+          },
         },
       ],
     };
   }
 
-  private async checkInput(dto: EventInput) {
+  private async checkInput(dto: EventInput): Promise<Checked> {
     const kind = dto.kind ?? PracticeEventKind.EVENT;
     const closure = kind === PracticeEventKind.CLOSURE;
     const title = dto.title.trim();
@@ -359,8 +581,13 @@ export class EventsService {
         closure ? 'Name the holiday or closure.' : 'Give the event a name.',
       );
     }
-    if (closure && dto.audience === EventAudience.JOB_ROLE) {
-      throw new BadRequestException('A closure is for both offices or one office, not a job role.');
+    if (
+      closure &&
+      (dto.audience === EventAudience.JOB_ROLE || dto.audience === EventAudience.CHOSEN)
+    ) {
+      throw new BadRequestException(
+        'A closure is for both offices or one office — not a job role or a list of people.',
+      );
     }
 
     let startsAt: Date;
@@ -386,7 +613,9 @@ export class EventsService {
       startsAt = new Date(dto.startsAt);
       endsAt = new Date(dto.endsAt);
       if (endsAt <= startsAt) {
-        throw new BadRequestException('The event must end after it starts.');
+        throw new BadRequestException(
+          closure ? 'The closure must end after it starts.' : 'The event must end after it starts.',
+        );
       }
       if (endsAt.getTime() - startsAt.getTime() > MAX_TIMED_DAYS * 86_400_000) {
         throw new BadRequestException(
@@ -410,26 +639,70 @@ export class EventsService {
       if (!exists) throw new BadRequestException('That location no longer exists.');
     }
 
+    const invitees = {
+      employeeIds: [...new Set(dto.invitees?.employeeIds ?? [])],
+      jobRoleIds: [...new Set(dto.invitees?.jobRoleIds ?? [])],
+      locationIds: [...new Set(dto.invitees?.locationIds ?? [])],
+    };
+    if (dto.audience === EventAudience.CHOSEN) {
+      const total =
+        invitees.employeeIds.length + invitees.jobRoleIds.length + invitees.locationIds.length;
+      if (total === 0) throw new BadRequestException('Add who it is for.');
+      const [people, roles, offices] = await Promise.all([
+        this.prisma.employee.count({ where: { id: { in: invitees.employeeIds } } }),
+        this.prisma.jobRole.count({ where: { id: { in: invitees.jobRoleIds } } }),
+        this.prisma.location.count({ where: { id: { in: invitees.locationIds } } }),
+      ]);
+      if (
+        people !== invitees.employeeIds.length ||
+        roles !== invitees.jobRoleIds.length ||
+        offices !== invitees.locationIds.length
+      ) {
+        throw new BadRequestException('Somebody or something on the list no longer exists.');
+      }
+    }
+
+    let repeat: Checked['repeat'] = null;
+    if (dto.repeat) {
+      const firstDate = dto.allDay ? dto.startDate! : localDateIn(startsAt, PRACTICE_ZONE);
+      const rule: RepeatRule = {
+        frequency: dto.repeat.frequency,
+        interval: dto.repeat.interval,
+        weekdays: dto.repeat.weekdays,
+        monthlyMode: dto.repeat.monthlyMode,
+        monthlyWeek: dto.repeat.monthlyWeek,
+        until: dto.repeat.until,
+      };
+      const problem = ruleProblem(firstDate, rule);
+      if (problem) throw new BadRequestException(problem);
+      repeat = { firstDate, rule };
+    }
+
     return {
-      kind,
-      title,
-      description: dto.description?.trim() || null,
-      // A closure is where the office is: it has no other place.
-      place: closure ? null : dto.place?.trim() || null,
-      allDay: dto.allDay,
-      startsAt,
-      endsAt,
-      audience: dto.audience,
-      jobRoleId: dto.audience === EventAudience.JOB_ROLE ? dto.jobRoleId! : null,
-      locationId: dto.audience === EventAudience.LOCATION ? dto.locationId! : null,
+      data: {
+        kind,
+        title,
+        description: dto.description?.trim() || null,
+        // A closure is where the office is: it has no other place.
+        place: closure ? null : dto.place?.trim() || null,
+        allDay: dto.allDay,
+        startsAt,
+        endsAt,
+        audience: dto.audience,
+        jobRoleId: dto.audience === EventAudience.JOB_ROLE ? dto.jobRoleId! : null,
+        locationId: dto.audience === EventAudience.LOCATION ? dto.locationId! : null,
+      },
+      invitees:
+        dto.audience === EventAudience.CHOSEN
+          ? invitees
+          : { employeeIds: [], jobRoleIds: [], locationIds: [] },
+      repeat,
     };
   }
 }
 
 /// Who an event is for, as an employee filter.
-export function audienceWhere(
-  row: Pick<EventRow, 'audience' | 'jobRole' | 'location'>,
-): Prisma.EmployeeWhereInput {
+export function audienceWhere(row: AudienceOf): Prisma.EmployeeWhereInput {
   if (row.audience === EventAudience.JOB_ROLE) {
     // A deleted role leaves nobody invited, rather than everybody.
     return { employmentStatus: WORKING, jobRoles: { some: { jobRoleId: row.jobRole?.id ?? '' } } };
@@ -440,7 +713,68 @@ export function audienceWhere(
       locations: { some: { locationId: row.location?.id ?? '' } },
     };
   }
+  if (row.audience === EventAudience.CHOSEN) {
+    const people = row.invitees.flatMap((i) => (i.employee ? [i.employee.id] : []));
+    const roles = row.invitees.flatMap((i) => (i.jobRole ? [i.jobRole.id] : []));
+    const offices = row.invitees.flatMap((i) => (i.location ? [i.location.id] : []));
+    const any: Prisma.EmployeeWhereInput[] = [];
+    if (people.length) any.push({ id: { in: people } });
+    if (roles.length) any.push({ jobRoles: { some: { jobRoleId: { in: roles } } } });
+    if (offices.length) any.push({ locations: { some: { locationId: { in: offices } } } });
+    // Everything on the list since removed leaves nobody, not everybody.
+    return { employmentStatus: WORKING, OR: any.length > 0 ? any : [{ id: { in: [] } }] };
+  }
   return { employmentStatus: WORKING };
+}
+
+/// The dates of a series as instants: each at the same wall-clock times on
+/// the practice's clock, whatever the clocks are doing that week.
+function occurrencesOf(
+  data: Checked['data'],
+  firstDate: string,
+  rule: RepeatRule,
+): { startsAt: Date; endsAt: Date }[] {
+  const dates = occurrenceDates(firstDate, rule);
+  if (data.allDay) {
+    const { startDate, endDate } = allDayDates(data);
+    const span = daysBetween(startDate, endDate);
+    return dates.map((date) => allDayRange(date, addDaysTo(date, span)));
+  }
+  const startTime = localTimeIn(data.startsAt, PRACTICE_ZONE);
+  const endTime = localTimeIn(data.endsAt, PRACTICE_ZONE);
+  const endOffset = daysBetween(
+    localDateIn(data.startsAt, PRACTICE_ZONE),
+    localDateIn(data.endsAt, PRACTICE_ZONE),
+  );
+  return dates.map((date) => ({
+    startsAt: zonedTimeToUtc(date, startTime, PRACTICE_ZONE),
+    endsAt: zonedTimeToUtc(addDaysTo(date, endOffset), endTime, PRACTICE_ZONE),
+  }));
+}
+
+function inviteeRows(eventIds: string[], input: Checked) {
+  return eventIds.flatMap((eventId) => [
+    ...input.invitees.employeeIds.map((employeeId) => ({ eventId, employeeId })),
+    ...input.invitees.jobRoleIds.map((jobRoleId) => ({ eventId, jobRoleId })),
+    ...input.invitees.locationIds.map((locationId) => ({ eventId, locationId })),
+  ]);
+}
+
+/// A comparable description of who an event is for.
+function audienceKey(row: AudienceOf): string {
+  return [
+    row.audience,
+    row.jobRole?.id ?? '',
+    row.location?.id ?? '',
+    ...row.invitees.map((i) => i.employee?.id ?? i.jobRole?.id ?? i.location?.id ?? '').sort(),
+  ].join('|');
+}
+
+/// "Every 2 weeks on Fri until Dec 31, 2026 · 9:00 AM–10:00 AM, from Fri, Oct 2."
+function seriesBody(first: EventRow, repeat: NonNullable<Checked['repeat']>): string {
+  return `${describeRule(repeat.firstDate, repeat.rule)}. First: ${describeWhen(first)}${
+    first.place ? ` · ${first.place}` : ''
+  }.`;
 }
 
 /// Whether a closure shuts the office a shift is at.
@@ -466,6 +800,38 @@ function present(row: EventRow) {
     audience: row.audience,
     jobRole: row.jobRole,
     location: row.location,
+    invitees: row.invitees.map((invitee) =>
+      invitee.employee
+        ? {
+            type: 'EMPLOYEE' as const,
+            id: invitee.employee.id,
+            name: `${invitee.employee.preferredName ?? invitee.employee.firstName} ${invitee.employee.lastName}`,
+            colour: null,
+          }
+        : invitee.jobRole
+          ? { type: 'JOB_ROLE' as const, ...invitee.jobRole }
+          : { type: 'LOCATION' as const, ...invitee.location!, colour: null },
+    ),
+    series: row.series
+      ? {
+          id: row.series.id,
+          frequency: row.series.frequency,
+          interval: row.series.interval,
+          weekdays: row.series.weekdays,
+          monthlyMode: row.series.monthlyMode,
+          monthlyWeek: row.series.monthlyWeek,
+          firstDate: row.series.firstDate.toISOString().slice(0, 10),
+          until: row.series.untilDate.toISOString().slice(0, 10),
+          summary: describeRule(row.series.firstDate.toISOString().slice(0, 10), {
+            frequency: row.series.frequency,
+            interval: row.series.interval,
+            weekdays: row.series.weekdays,
+            monthlyMode: row.series.monthlyMode ?? undefined,
+            monthlyWeek: row.series.monthlyWeek ?? undefined,
+            until: row.series.untilDate.toISOString().slice(0, 10),
+          }),
+        }
+      : null,
     ...(row.allDay ? allDayDates(row) : { startDate: null, endDate: null }),
   };
 }
@@ -484,7 +850,8 @@ function whenAndWhere(row: EventRow): string {
 /// What goes under the bell, in the words that fit an event or a closure.
 function notice(
   row: EventRow,
-  what: 'added' | 'changed' | 'dropped' | 'cancelled',
+  what: 'added' | 'changed' | 'dropped' | 'cancelled' | 'reminder',
+  body?: string,
 ): { kind: NotificationKind; title: string; body: string; link: string } {
   const closed =
     row.audience === EventAudience.LOCATION ? `${row.location?.name ?? 'Office'} closed` : 'Closed';
@@ -496,17 +863,19 @@ function notice(
           // Your office is no longer the one shut, or it is not shut at all.
           dropped: `Open as usual: ${row.title}`,
           cancelled: `Open as usual: ${row.title}`,
+          reminder: `Tomorrow — ${closed.toLowerCase()}: ${row.title}`,
         }
       : {
           added: `New event: ${row.title}`,
           changed: `Event changed: ${row.title}`,
           dropped: `No longer on your schedule: ${row.title}`,
           cancelled: `Cancelled: ${row.title}`,
+          reminder: `Tomorrow: ${row.title}`,
         };
   return {
     kind: NotificationKind.EVENT,
     title: titles[what],
-    body: whenAndWhere(row),
+    body: body ?? whenAndWhere(row),
     link: scheduleLink(row),
   };
 }
