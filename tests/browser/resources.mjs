@@ -166,6 +166,16 @@ await step('a pasted address without https is taken as a web link', async () => 
   await section(mgr, 'Front Desk').getByText('drive.google.com', { exact: true }).waitFor({ timeout: 5000 });
 });
 
+await step('a Drive folder link offers what is in it, and says plainly when it cannot look', async () => {
+  // Dominguez, September 2026. Google is not set up on a test machine, so
+  // the app says so instead of pretending the folder is empty.
+  const card = mgr.getByTestId('resource-Phone scripts');
+  await card.getByRole('button', { name: 'Show what’s in it' }).click();
+  await card.getByText('The app cannot look inside Drive folders yet').waitFor({ timeout: 10000 });
+  // Only ever a list of links out: still nothing on the screen takes a file.
+  if ((await mgr.locator('input[type=file]').count()) > 0) throw new Error('a file input appeared');
+});
+
 await step('a javascript: link is refused', async () => {
   await addResource(mgr, 'Provider', { title: 'Trick', url: 'javascript:alert(1)' });
   await section(mgr, 'Provider').getByText('Links have to be web addresses, starting https://.').waitFor({ timeout: 10000 });

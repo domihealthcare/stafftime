@@ -2,6 +2,7 @@ import { JobRoleDot } from '../components/JobRoleTag';
 import { useCallback, useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useConfirm } from '../components/ConfirmDialog';
+import { DriveFolderFiles, isDriveFolder } from '../components/DriveFolderFiles';
 import { Alert, Badge, Card, EmptyState, PageHeading, Spinner } from '../components/ui';
 import { ApiError, api } from '../lib/api';
 import { useIsManager } from '../lib/session';
@@ -229,6 +230,9 @@ function ResourceRow({
           {resource.kind === 'LINK' && resource.body && (
             <p className="mt-0.5 text-sm text-slate-600">{resource.body}</p>
           )}
+          {resource.kind === 'LINK' && isDriveFolder(resource.url) && (
+            <DriveFolderFiles resourceId={resource.id} />
+          )}
         </div>
 
         {canManage && (
@@ -387,6 +391,10 @@ function ResourceForm({
                 placeholder="https://drive.google.com/…"
                 className="w-full rounded-lg border border-slate-300 px-2 py-1.5"
               />
+              <span className="mt-1 block text-xs text-slate-500">
+                A Google Drive folder&rsquo;s address lists what is in it here. Set the folder to{' '}
+                <strong>Anyone with the link</strong> so staff can open the files.
+              </span>
             </label>
             <label className="text-sm sm:col-span-2">
               <span className="mb-1 block font-medium text-slate-700">

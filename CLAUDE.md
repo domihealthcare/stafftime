@@ -357,9 +357,30 @@ Beyond the phases, the parts worth knowing about before picking up work:
   personal Google accounts — Dominguez chose Open over Trusted). It works through a
   Google service account with domain-wide delegation for the one scope
   `meetings.space.created` (`events/google-meet.service.ts`, no Google
-  library). **Not set up on the live site yet**: the Workspace super admin (dominguez@ — not admin@) follows
-  `docs/google-meet-setup.md`; until then the tick box is hidden and links
-  are pasted.
+  library). **Live since 28 September 2026**, set up by the Workspace super
+  admin (dominguez@ — not admin@) from `docs/google-meet-setup.md`. The
+  Google sign-in is shared (`google/google-auth.service.ts`): as office@ for
+  delegated scopes, or as the robot itself.
+- **Calendar invites** (September 2026, Dominguez — most staff are on
+  personal Google accounts): each published shift goes to the person on it,
+  and each practice event to the people it is for, as a real invite from a
+  "Domi Staff" calendar the app makes under office@ (scope
+  `calendar.app.created`: its own calendar only). Shifts 14 days ahead,
+  events 60; closures stay on the feed. Not followed change by change: a
+  round compares what should be on calendars with `CalendarInvite` (what was
+  last sent, fingerprinted) after any save to shifts, events, staff, offices
+  or job roles (`InvitesSyncInterceptor`, awaited), nightly, and from
+  Practice settings → **Calendar invites → Send now**. Each invite is claimed
+  in the database before Google is called, so parallel saves do not email
+  twice. Once on, the feed carries only closures and approved time off.
+  **Off until `GOOGLE_CALENDAR_INVITES=on`**, after the admin adds the scope
+  (Part 5 of the guide) — not on the live site yet.
+- **Drive folders on Resources** (September 2026, Dominguez): a Resources
+  link to a Google Drive folder gets **Show what's in it**, listed by the
+  robot itself (`drive.readonly`, no delegation), cached 5 minutes. Files
+  stay in Drive and open there — the app keeps nothing. Folders are shared
+  "Anyone with the link" (Dominguez's choice, for personal accounts). Needs
+  only the Drive API enabled in the Cloud project.
 - **Holidays and closures** (September 2026, Dominguez): a `PracticeEvent`
   with `kind: CLOSURE` — Christmas all day, Christmas Eve from 1pm — for
   **both offices or one** (never a job role). Shown with a 🔒 to that office's

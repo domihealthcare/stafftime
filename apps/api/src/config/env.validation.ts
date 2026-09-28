@@ -125,6 +125,13 @@ class EnvironmentVariables {
   @IsString()
   GOOGLE_MEET_HOST?: string;
 
+  /// "on" once the Workspace admin has allowed calendar invites: shifts and
+  /// events then go out as invites from the "Domi Staff" calendar, and leave
+  /// the subscribed feed. See docs/google-meet-setup.md.
+  @IsOptional()
+  @IsString()
+  GOOGLE_CALENDAR_INVITES?: string;
+
   /// Shared secret for the scheduled maintenance route. Unset means the route
   /// refuses everything, so it is never left open by omission.
   @IsOptional()

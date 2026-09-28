@@ -11,6 +11,7 @@ import {
   Patch,
   Post,
   Query,
+  UseInterceptors,
 } from '@nestjs/common';
 import { Role } from '@prisma/client';
 import { AuthUser } from '../common/auth/auth-user';
@@ -24,7 +25,10 @@ import { UpdateShiftDto } from './dto/update-shift.dto';
 import { OvertimeService } from './overtime.service';
 import { ShiftPlanningService } from './shift-planning.service';
 import { ShiftsService } from './shifts.service';
+import { InvitesSyncInterceptor } from '../invites/invites-sync.interceptor';
 
+// A save here can change somebody's calendar invites.
+@UseInterceptors(InvitesSyncInterceptor)
 @Controller('shifts')
 export class ShiftsController {
   constructor(

@@ -682,6 +682,20 @@ export interface Resource {
   updatedAt: string;
 }
 
+/// What is in a Drive folder a link points at (September 2026).
+export interface DriveFile {
+  id: string;
+  name: string;
+  isFolder: boolean;
+  url: string;
+  modifiedAt: string | null;
+}
+
+export type DriveFolderListing =
+  | { status: 'ok'; files: DriveFile[] }
+  | { status: 'off' | 'not-a-folder' }
+  | { status: 'unreadable'; shareWith: string | null };
+
 export interface ResourceSection {
   /// Null is the section everybody sees.
   jobRole: { id: string; name: string; description: string | null; colour: string } | null;

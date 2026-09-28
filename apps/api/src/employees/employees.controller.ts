@@ -11,6 +11,7 @@ import {
   Patch,
   Post,
   Query,
+  UseInterceptors,
 } from '@nestjs/common';
 import { EmploymentStatus, Role } from '@prisma/client';
 import { CurrentUser } from '../common/auth/current-user.decorator';
@@ -20,7 +21,10 @@ import { CreateEmployeeDto } from './dto/create-employee.dto';
 import { ImportEmployeesDto } from './dto/import-employees.dto';
 import { UpdateEmployeeDto } from './dto/update-employee.dto';
 import { EmployeesService } from './employees.service';
+import { InvitesSyncInterceptor } from '../invites/invites-sync.interceptor';
 
+// A save here can change somebody's calendar invites.
+@UseInterceptors(InvitesSyncInterceptor)
 @Controller('employees')
 export class EmployeesController {
   constructor(private readonly employees: EmployeesService) {}

@@ -1,4 +1,10 @@
-# Turning on "Create a Google Meet link"
+# Google set-up: Meet links, calendar invites and Drive folders
+
+Parts 1–4 turn on Meet links (done on the live site, September 2026). Part 5
+turns on calendar invites, and Part 6 lists Drive folders on Resources; both
+reuse the same robot login.
+
+## Meet links
 
 With this done, the event form on the Schedule gets a tick box: **Create a
 Google Meet link**. Saving the event makes a new Google Meet meeting, hosted by
@@ -95,6 +101,68 @@ If it says **"Google did not make a Meet link"**, the reason is in brackets:
 - anything else: the Vercel function log has Google's own words for it.
 
 Nothing is saved when this happens, so it is safe to try again.
+
+## Part 5 — Calendar invites (shifts and events from office@)
+
+Once this is on, each published shift goes to the person on it as a real
+calendar invite, and each practice event to the people it is for — from a
+**Domi Staff** calendar the app makes under office@. Shifts go out **two
+weeks** ahead and events **two months** ahead, one invite each, and Google
+emails the person when one is new, changed or cancelled. Nobody sees who else
+is invited. Staff with Gmail see them straight away; on other calendars they
+may need to accept them.
+
+The calendar link on Schedule then carries only office closures and approved
+time off, so nobody sees a shift or a meeting twice.
+
+The permission is narrow: **make its own calendar, and manage the events on
+it**. It cannot see or change anything else on office@'s calendars.
+
+13. **console.cloud.google.com**, project **Domi Staff** → **APIs & Services →
+    Library**. Search for **Google Calendar API** → **Enable**. While there,
+    search **Google Drive API** → **Enable** too (for Part 6).
+14. **admin.google.com** → **Security → Access and data control → API
+    controls → Manage Domain Wide Delegation**. Find the entry from Part 2
+    (the same Client ID) → **Edit**. Make the **OAuth scopes** box read
+    exactly, with the comma and no spaces:
+
+    `https://www.googleapis.com/auth/meetings.space.created,https://www.googleapis.com/auth/calendar.app.created`
+
+    → **Authorize**.
+15. **Vercel** → **Settings → Environment Variables** → add
+    `GOOGLE_CALENDAR_INVITES` = `on`, **Production** only → **Deployments** →
+    latest Production → **⋯ → Redeploy**.
+16. In the app: **Practice settings → Calendar invites** should say **On**.
+    Press **Send now** to send what is already on the rota, and check your
+    own calendar.
+
+If it says **Google said: … not allowed**, step 14 is missing, has a typo, or
+has not taken effect yet — wait ten minutes and press **Send now** again.
+Nothing is lost while it fails: the app tries again after every change and
+every night.
+
+To switch it off, delete `GOOGLE_CALENDAR_INVITES` and redeploy: shifts and
+events go back on the calendar link. Invites already sent stay on people's
+calendars.
+
+## Part 6 — Google Drive folders on Resources
+
+Nothing to switch on beyond enabling the **Google Drive API** (step 13). For
+each folder:
+
+17. In **Drive**, open the folder → **Share** → under **General access**
+    choose **Anyone with the link**, **Viewer** → **Copy link** → **Done**.
+18. In the app: **Resources** → **+ Add to** the job role (or Everyone) → **A
+    link** → paste the folder's address → **Add it**.
+
+The link then has **Show what's in it**, listing the folder's files; each
+opens in Drive. The app reads the folder as its robot and keeps nothing.
+If it says it cannot see into the folder, check step 17 — or share the
+folder with the robot address it shows.
+
+"Anyone with the link" means anybody the link is forwarded to can open the
+files too, which Dominguez chose so that staff on personal Google accounts
+can open them. Keep anything sensitive out of these folders.
 
 ## Undoing it
 

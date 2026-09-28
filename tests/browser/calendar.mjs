@@ -123,6 +123,34 @@ await step('turning syncing off stops the feed entirely', async () => {
   await anon.close();
 });
 
+await step('calendar invites are off until Google is set up, and only admins see how they are going', async () => {
+  // Dominguez, September 2026: shifts and events as invites from office@.
+  // Off here, so the feed above still carried the shifts.
+  const answers = await page.evaluate(async () => ({
+    config: await fetch('/api/config').then((r) => r.json()),
+    status: (await fetch('/api/calendar-invites/status')).status,
+    send: (await fetch('/api/calendar-invites/sync', { method: 'POST' })).status,
+  }));
+  if (answers.config.calendarInvites !== false) throw new Error(`config says ${answers.config.calendarInvites}`);
+  if (answers.status !== 403 || answers.send !== 403)
+    throw new Error(`staff got ${answers.status} and ${answers.send}`);
+
+  const adminCtx = await browser.newContext({ viewport: { width: 1280, height: 1000 } });
+  const admin = await adminCtx.newPage();
+  admin.on('pageerror', (e) => errors.push(`admin pageerror: ${e.message}`));
+  await admin.goto(`${BASE}/`, { waitUntil: 'networkidle' });
+  await admin.getByLabel('Email').fill('admin@domihealthcare.com');
+  await admin.getByLabel('Password', { exact: true }).fill('shift-change-2026');
+  await admin.getByRole('button', { name: 'Sign in' }).click();
+  await admin.getByText('Not clocked in').waitFor({ timeout: 20000 });
+  await admin.goto(`${BASE}/settings`, { waitUntil: 'networkidle' });
+  const card = admin.getByTestId('calendar-invites-card');
+  await card.getByText(/^Off\./).waitFor({ timeout: 10000 });
+  if ((await card.getByRole('button', { name: 'Send now' }).count()) > 0)
+    throw new Error('offered to send invites while they are off');
+  await adminCtx.close();
+});
+
 await browser.close();
 console.log(`\n${errors.length === 0 ? 'ALL CALENDAR CHECKS PASSED' : `PROBLEMS (${errors.length}):`}`);
 errors.forEach((e) => console.log(' - ' + e));

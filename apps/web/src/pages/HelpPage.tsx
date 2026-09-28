@@ -201,9 +201,10 @@ const STAFF: Section[] = [
           <p>
             <Screen>Schedule</Screen> shows your shifts by week or by month, and in the week your
             time off too: &ldquo;Time off&rdquo; once it is approved, &ldquo;Asked off&rdquo; while
-            it is waiting. To have your shifts appear in Google, Apple or Outlook calendar, use the
-            calendar link on that screen — it keeps itself up to date. Treat the link like a
-            password: anyone who has it can see your shifts.
+            it is waiting. Your shifts reach your own calendar (Google, Apple or Outlook) either
+            as invites to your email — accept them if asked — or through the calendar link on that
+            screen, which keeps itself up to date; <strong>Your calendar</strong> on that screen
+            says which. Treat the link like a password: anyone who has it can see what is on it.
           </p>
         ),
       },
@@ -216,8 +217,8 @@ const STAFF: Section[] = [
             practice-wide days like a wellness event. A 🔁 means it repeats, a 🎥 that it is a
             video call. Tap one for the time, the place and who it is for — and a{' '}
             <strong>Join video call</strong> button when there is one. The bell tells you when one is added, moved or cancelled,
-            and reminds you the day before; if you use the calendar link they appear on your phone
-            as well. An event is not a shift — if you are being paid to be there, clock in as usual.
+            and reminds you the day before; they reach your phone&rsquo;s calendar too, as an
+            invite or through the calendar link. An event is not a shift — if you are being paid to be there, clock in as usual.
           </p>
         ),
       },

@@ -16,6 +16,12 @@ export class ResourcesController {
     return this.resources.sections(user);
   }
 
+  /// What is in the Drive folder a link points at.
+  @Get(':id/files')
+  files(@Param('id', ParseUUIDPipe) id: string, @CurrentUser() user: AuthUser) {
+    return this.resources.driveFiles(id, user);
+  }
+
   @Get(':id')
   get(@Param('id', ParseUUIDPipe) id: string, @CurrentUser() user: AuthUser) {
     return this.resources.findOne(id, user);

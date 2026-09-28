@@ -11,13 +11,17 @@ import {
   Patch,
   Post,
   Query,
+  UseInterceptors,
 } from '@nestjs/common';
 import { Role } from '@prisma/client';
 import { Roles } from '../common/auth/roles.decorator';
 import { CreateLocationDto } from './dto/create-location.dto';
 import { UpdateLocationDto } from './dto/update-location.dto';
 import { LocationsService } from './locations.service';
+import { InvitesSyncInterceptor } from '../invites/invites-sync.interceptor';
 
+// A save here can change somebody's calendar invites.
+@UseInterceptors(InvitesSyncInterceptor)
 @Controller('locations')
 export class LocationsController {
   constructor(private readonly locations: LocationsService) {}

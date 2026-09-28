@@ -9,6 +9,7 @@ import {
 import { randomBytes } from 'node:crypto';
 import { allDayDates } from '../events/event-time';
 import { EventsService, type EventRow } from '../events/events.service';
+import { CalendarInvitesService } from '../invites/invites.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { buildCalendar, type CalendarEvent } from './ical';
 
@@ -26,6 +27,7 @@ export class CalendarService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly events: EventsService,
+    private readonly invites: CalendarInvitesService,
   ) {}
 
   /// The employee's existing token, or null if they have never asked for one.
@@ -88,27 +90,34 @@ export class CalendarService {
     const from = new Date(now.getTime() - WINDOW_BEHIND_DAYS * 86_400_000);
     const to = new Date(now.getTime() + WINDOW_AHEAD_DAYS * 86_400_000);
 
-    const [shifts, timeOff, practiceEvents] = await Promise.all([
-      this.prisma.shift.findMany({
-        where: {
-          employeeId: employee.id,
-          // Drafts are a manager's working copy; publishing them would put
-          // provisional shifts on somebody's personal calendar.
-          status: ShiftStatus.PUBLISHED,
-          startsAt: { gte: from, lte: to },
-        },
-        select: {
-          id: true,
-          startsAt: true,
-          endsAt: true,
-          notes: true,
-          updatedAt: true,
-          location: {
-            select: { name: true, addressLine1: true, city: true, state: true },
-          },
-        },
-        orderBy: { startsAt: 'asc' },
-      }),
+    // Once shifts and events go out as calendar invites (Dominguez,
+    // September 2026), the feed carries only what is not invited — closures
+    // and approved time off — so nobody sees a shift or a meeting twice.
+    const invited = this.invites.enabled;
+
+    const [shifts, timeOff, allEvents] = await Promise.all([
+      invited
+        ? Promise.resolve([])
+        : this.prisma.shift.findMany({
+            where: {
+              employeeId: employee.id,
+              // Drafts are a manager's working copy; publishing them would put
+              // provisional shifts on somebody's personal calendar.
+              status: ShiftStatus.PUBLISHED,
+              startsAt: { gte: from, lte: to },
+            },
+            select: {
+              id: true,
+              startsAt: true,
+              endsAt: true,
+              notes: true,
+              updatedAt: true,
+              location: {
+                select: { name: true, addressLine1: true, city: true, state: true },
+              },
+            },
+            orderBy: { startsAt: 'asc' },
+          }),
       this.prisma.ptoRequest.findMany({
         where: {
           employeeId: employee.id,
@@ -130,6 +139,9 @@ export class CalendarService {
       // their offices'.
       this.events.forPerson(employee.id, from, to),
     ]);
+    const practiceEvents = invited
+      ? allEvents.filter((event) => event.kind === PracticeEventKind.CLOSURE)
+      : allEvents;
 
     const displayName = employee.preferredName ?? employee.firstName;
 
@@ -140,11 +152,7 @@ export class CalendarService {
         sequence: secondsSinceEpoch(shift.updatedAt),
         summary: `Work — ${shift.location.name}`,
         description: shift.notes ?? undefined,
-        location: [
-          shift.location.addressLine1,
-          shift.location.city,
-          shift.location.state,
-        ]
+        location: [shift.location.addressLine1, shift.location.city, shift.location.state]
           .filter(Boolean)
           .join(', '),
         start: shift.startsAt,
@@ -201,7 +209,9 @@ export class CalendarService {
 
     return buildCalendar(events, {
       name: `${displayName} ${employee.lastName} — Domi Staff`,
-      description: 'Shifts, approved time off and practice events from Domi Staff.',
+      description: invited
+        ? 'Office closures and approved time off from Domi Staff. Shifts and events come as invites.'
+        : 'Shifts, approved time off and practice events from Domi Staff.',
       refreshMinutes: 60,
       now,
     });

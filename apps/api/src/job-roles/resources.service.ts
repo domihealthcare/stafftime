@@ -7,6 +7,8 @@ import {
 } from '@nestjs/common';
 import { Prisma, ResourceKind, Role } from '@prisma/client';
 import { AuthUser } from '../common/auth/auth-user';
+import { GoogleProblem } from '../google/google-auth.service';
+import { driveFolderIdOf, GoogleDriveClient, type DriveFile } from '../google/google-drive.client';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateResourceDto, UpdateResourceDto } from './dto/resource.dto';
 import { JobRolesService } from './job-roles.service';
@@ -35,6 +37,7 @@ export class ResourcesService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly jobRoles: JobRolesService,
+    private readonly drive: GoogleDriveClient,
   ) {}
 
   /**
@@ -90,6 +93,42 @@ export class ResourcesService {
       }
     }
     return row;
+  }
+
+  /**
+   * What is in the Drive folder a link points at (September 2026), for
+   * whoever may see the link. Nothing is kept: each file opens in Drive.
+   *
+   * `off` until Google is set up; `unreadable` when the robot cannot see the
+   * folder — a manager is told which address to share it with.
+   */
+  async driveFiles(
+    id: string,
+    actor: AuthUser,
+  ): Promise<
+    | { status: 'ok'; files: DriveFile[] }
+    | { status: 'off' | 'not-a-folder' }
+    | { status: 'unreadable'; shareWith: string | null }
+  > {
+    const row = await this.findOne(id, actor);
+    const folderId = row.kind === ResourceKind.LINK ? driveFolderIdOf(row.url) : null;
+    if (!folderId) return { status: 'not-a-folder' };
+    if (!this.drive.available) return { status: 'off' };
+    try {
+      return { status: 'ok', files: await this.drive.list(folderId) };
+    } catch (error) {
+      if (!(error instanceof GoogleProblem)) throw error;
+      // The Drive API not yet switched on in the Cloud project is set-up,
+      // not a folder anybody can fix by sharing it.
+      if (/has not been used|is disabled|not been enabled/i.test(error.reason)) {
+        return { status: 'off' };
+      }
+      return {
+        status: 'unreadable',
+        // Only a manager can do anything about it.
+        shareWith: actor.role === Role.EMPLOYEE ? null : this.drive.robotEmail,
+      };
+    }
   }
 
   async create(dto: CreateResourceDto, actor: AuthUser) {
