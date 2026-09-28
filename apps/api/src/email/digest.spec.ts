@@ -1,3 +1,4 @@
+import { practiceToday } from '../common/util/zoned-time.util';
 import { fakeSettings } from '../settings/practice-settings.test-double';
 import { AttentionService } from './attention.service';
 import { DigestService } from './digest.service';
@@ -100,8 +101,10 @@ describe('DigestService', () => {
   });
 
   it('separates credentials that have lapsed from ones about to', async () => {
-    const yesterday = new Date(Date.now() - 86_400_000);
-    const nextMonth = new Date(Date.now() + 30 * 86_400_000);
+    // From the practice's today: in the evening in New Jersey, UTC is already on
+    // tomorrow, and "yesterday" by the server's clock would be today.
+    const yesterday = new Date(practiceToday().getTime() - 86_400_000);
+    const nextMonth = new Date(practiceToday().getTime() + 30 * 86_400_000);
 
     const { attention } = build({
       credentials: [

@@ -1,5 +1,6 @@
 import { BadRequestException, ForbiddenException, NotFoundException } from '@nestjs/common';
 import { CredentialKind, Role } from '@prisma/client';
+import { practiceToday } from '../common/util/zoned-time.util';
 import { CredentialsService, daysUntil } from './credentials.service';
 
 const manager = { id: 'mgr-1', email: 'morgan@domihealthcare.com', role: Role.MANAGER };
@@ -9,11 +10,10 @@ const other = { id: 'emp-2', email: 'mo@domihealthcare.com', role: Role.EMPLOYEE
 const day = (value: string) => new Date(`${value}T00:00:00.000Z`);
 
 /// A whole day, the way `@db.Date` stores one — UTC midnight, not "now plus N
-/// days", which carries a time of day and rounds unpredictably.
-const inDays = (n: number) => {
-  const today = new Date(`${new Date().toISOString().slice(0, 10)}T00:00:00.000Z`);
-  return new Date(today.getTime() + n * 86_400_000);
-};
+/// days", which carries a time of day and rounds unpredictably. Counted from the
+/// practice's today, as the service is: in the evening in New Jersey, UTC is
+/// already on tomorrow.
+const inDays = (n: number) => new Date(practiceToday().getTime() + n * 86_400_000);
 
 function row(over: Record<string, unknown> = {}) {
   return {
