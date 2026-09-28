@@ -10,6 +10,7 @@ describe('CalendarService', () => {
       employee?: unknown;
       shifts?: unknown[];
       timeOff?: unknown[];
+      events?: unknown[];
     } = {},
   ) {
     const prisma = {
@@ -34,8 +35,9 @@ describe('CalendarService', () => {
       shift: { findMany: jest.fn().mockResolvedValue(options.shifts ?? []) },
       ptoRequest: { findMany: jest.fn().mockResolvedValue(options.timeOff ?? []) },
     };
+    const events = { forPerson: jest.fn().mockResolvedValue(options.events ?? []) };
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    return { service: new CalendarService(prisma as any), prisma };
+    return { service: new CalendarService(prisma as any, events as any), prisma, events };
   }
 
   const shift = {
@@ -247,6 +249,85 @@ describe('CalendarService', () => {
       });
       const feed = await service.feedForToken('token', NOW);
       expect(feed.match(/BEGIN:VEVENT/g)).toHaveLength(2);
+    });
+  });
+
+  describe('practice events', () => {
+    const meeting = {
+      id: 'ev-1',
+      title: 'Office meeting',
+      description: 'Bring your questions about the new phones.',
+      place: 'North Bergen office — break room',
+      allDay: false,
+      startsAt: new Date('2026-10-14T16:30:00.000Z'),
+      endsAt: new Date('2026-10-14T17:30:00.000Z'),
+      updatedAt: new Date('2026-09-20T09:00:00.000Z'),
+    };
+
+    it('asks only for the events this person is invited to, in the same window', async () => {
+      const { service, events } = build();
+      await service.feedForToken('token', NOW);
+      const [who, from, to] = events.forPerson.mock.calls[0];
+      expect(who).toBe('emp-1');
+      expect(to.getTime() - from.getTime()).toBe((60 + 365) * 86_400_000);
+    });
+
+    it('puts a meeting on the phone as a timed event with its place', async () => {
+      const { service } = build({ events: [meeting] });
+      const feed = await service.feedForToken('token', NOW);
+      expect(feed).toContain('UID:event-ev-1@staff.domihealthcare.com');
+      expect(feed).toContain('SUMMARY:Office meeting');
+      expect(feed).toContain('DTSTART:20261014T163000Z');
+      expect(feed).toContain('DTEND:20261014T173000Z');
+      expect(feed).toContain('LOCATION:North Bergen office — break room');
+      expect(feed).toContain('DESCRIPTION:Bring your questions about the new phones.');
+      expect(feed).toContain('TRANSP:OPAQUE');
+    });
+
+    it('puts an all-day event on its own days, on the practice clock', async () => {
+      const { service } = build({
+        events: [
+          {
+            ...meeting,
+            id: 'ev-2',
+            title: 'Wellness day',
+            place: null,
+            description: null,
+            allDay: true,
+            // Midnight in New Jersey on the 15th to midnight after the 16th.
+            startsAt: new Date('2026-10-15T04:00:00.000Z'),
+            endsAt: new Date('2026-10-17T04:00:00.000Z'),
+          },
+        ],
+      });
+      const feed = await service.feedForToken('token', NOW);
+      expect(feed).toContain('DTSTART;VALUE=DATE:20261015');
+      // Exclusive, as iCalendar wants: the day after the last one.
+      expect(feed).toContain('DTEND;VALUE=DATE:20261017');
+      expect(feed).toContain('TRANSP:TRANSPARENT');
+      expect(feed).not.toContain('LOCATION:');
+    });
+
+    it('names a closure as one, and does not make anybody look busy', async () => {
+      const { service } = build({
+        events: [
+          {
+            ...meeting,
+            id: 'ev-3',
+            kind: 'CLOSURE',
+            title: 'Christmas Eve',
+            place: null,
+            description: null,
+            audience: 'LOCATION',
+            location: { id: 'loc-nb', name: 'North Bergen' },
+            startsAt: new Date('2026-12-24T18:00:00.000Z'),
+            endsAt: new Date('2026-12-25T05:00:00.000Z'),
+          },
+        ],
+      });
+      const feed = await service.feedForToken('token', NOW);
+      expect(feed).toContain('SUMMARY:North Bergen closed: Christmas Eve');
+      expect(feed).toContain('TRANSP:TRANSPARENT');
     });
   });
 });

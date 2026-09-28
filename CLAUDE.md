@@ -301,7 +301,7 @@ Beyond the phases, the parts worth knowing about before picking up work:
 - **Every removal asks first**, in one confirmation pop-up (`useConfirm()` in
   `components/ConfirmDialog.tsx`), never the browser's `confirm()` box or an
   inline "are you sure?" link: shifts, taking somebody off a shift, staff,
-  kiosks and PINs, posts, surveys, job roles and members, resources,
+  kiosks and PINs, posts, surveys, events, job roles and members, resources,
   credentials, checklists and templates, availability, time off, saved
   reports, voiding an export, calendar sync, your photo. Anything new that
   removes something should use it too.
@@ -310,12 +310,33 @@ Beyond the phases, the parts worth knowing about before picking up work:
   (`InboxService`, in the email module): shifts of theirs added, changed or
   removed once published (one summary for a repeating or copied rota), time
   off decided (to them) or requested (to managers), overtime, a survey opened
-  for them, their checklist started (when some tasks are theirs), and new
-  News posts. Written at the same moments as the emails and works without an
+  for them, their checklist started (when some tasks are theirs), new
+  News posts, and practice events for them added, moved or cancelled. Written at the same moments as the emails and works without an
   email provider. Your own only; deleted by the nightly job after 90 days.
   The old "Notifications" menu item (the nightly email) is now **Email
   settings**.
 - **News** is its own tab in the top bar, no longer under Team.
+- **Practice events** (September 2026, asked for by Dominguez): office,
+  admin and provider meetings and things like a wellness day. Managers and
+  admins add them from Schedule → **+ Add event** — timed or all day (one day
+  or several), a place, and who it is for: **everyone, one job role or one
+  office** (like surveys). They show in an **Events** row above the rota and
+  in the month, only to the people they are for (managers see all), go to
+  phones through the existing calendar feed, and ring the bell when added,
+  moved or cancelled. **Calendar only — never hours, overtime or payroll**;
+  anybody paid to attend clocks in as usual. **No replies** (going / can't
+  go) for now. All four choices confirmed by Dominguez. `PracticeEvent`,
+  `src/events/`.
+- **Holidays and closures** (September 2026, Dominguez): a `PracticeEvent`
+  with `kind: CLOSURE` — Christmas all day, Christmas Eve from 1pm — for
+  **both offices or one** (never a job role). Shown with a 🔒 to that office's
+  staff, on phones and under the bell. **Warns, never refuses**: a shift inside
+  one is flagged in the shift forms (with a pop-up before saving), with ⚠ on
+  the rota, and in the banner and nightly email. **Pay is untouched** — holiday
+  pay is an open question. **Entered each year** with **Copy these into next
+  year** on the Schedule's *Holidays and closures* card; moving holidays
+  (Thanksgiving) are fixed by hand. The printed rota says when an office is
+  closed.
 - **Version on the Help page** — "About this version": the build date and
   commit baked in when the bundle is built (`VERCEL_GIT_COMMIT_SHA` on Vercel,
   git locally), whether it is the test or live site, and — because
@@ -335,7 +356,7 @@ Beyond the phases, the parts worth knowing about before picking up work:
   real** (admins, test deployments only) shows what goes and which accounts
   stay, then clears the demo staff and everything made while testing —
   shifts, punches, time off, checklists, closing records, restock requests,
-  licenses, availability, News posts, surveys, suggestions, notifications,
+  licenses, availability, News posts, surveys, events, suggestions, notifications,
   exports, saved reports. It keeps the set-up (Dominguez's choice): offices and
   pins, settings, ADP set-up, job roles, closing checklists, templates,
   resources, kiosks and real accounts. After it: add the staff, set
@@ -397,7 +418,7 @@ Beyond the phases, the parts worth knowing about before picking up work:
   overtime counts the whole week at every office; a repeat PIN within
   `KIOSK_REPEAT_SECONDS` (120) is not a clock-out; screens load when first
   opened and `/assets` is cached for a year.
-- **Tests**: ~540 unit tests, and ~220 end-to-end checks in `tests/browser`
+- **Tests**: ~870 unit tests, and ~495 end-to-end checks in `tests/browser`
   driven against a real API, a real Postgres and a real Chromium. Both run in CI
   on every push. The convention is to run the browser suites twice — once
   against the dev server, once against `vite preview`, which applies the

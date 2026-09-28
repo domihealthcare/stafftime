@@ -766,6 +766,12 @@ nothing there.
 Approved time off appears as all-day events marked `TRANSPARENT`, so it does not
 make the person look busy to anything reading their availability.
 
+Practice events the person is invited to (see *Practice events*) go in too:
+a meeting as a timed event, an all-day event as whole days on New Jersey's
+calendar (and `TRANSPARENT`, like time off). Their `UID` is
+`event-<id>@staff.domihealthcare.com`, so a moved meeting moves on the phone
+and a removed one disappears on the next refresh.
+
 The window is bounded — 60 days back, a year forward — so the feed stays small
 for an app polling it hourly.
 
@@ -1934,6 +1940,8 @@ What writes one:
 - **A survey opened** for somebody's audience, **their checklist started**
   (only when some tasks are theirs), and **a new News post** (to everybody but
   its author; edits do not notify again).
+- **A practice event** (`EVENT`) added for them, moved, or cancelled — see
+  *Practice events*.
 
 Like the emails it is fire and forget — a failed write is logged, never
 surfaced — and unlike them it works with no email provider configured. Every
@@ -2115,3 +2123,99 @@ A read-through of the live app for bugs and speed. What changed, and why:
 - **The rota's ＋** is a full-width row at the foot of every day cell — bigger,
   always visible (it used to appear only on mouse hover over a busy day, so
   never on a phone), and under the shifts rather than over them.
+
+## Practice events
+
+Asked for by Dominguez (September 2026): office meetings, admin and provider
+meetings, and practice-wide days like a wellness event, on the schedule and on
+people's phones. Decided with Dominguez, from four questions:
+
+- **For everyone, one job role, or one office** — the same three choices as a
+  survey, so "Provider meeting" is the Provider role and a North Bergen
+  event is that office's staff. No hand-picked lists of people.
+- **Calendar only, never hours.** An event adds nothing to scheduled hours,
+  overtime, coverage, the dashboard or the payroll export. Anybody paid to
+  attend clocks in as usual, so pay still comes only from punches — the one
+  source the timesheet, the export and ADP all agree on.
+- **Managers and admins** make, change and remove them.
+- **No replies** (going / can't go) for now.
+
+`PracticeEvent` (not `Event`, which reads as a DOM or Node event) stores a
+pair of instants whether or not it is all-day, so "what is on this week" is
+one overlap query (`startsAt < to AND endsAt > from`). An all-day event runs
+from midnight in New Jersey on its first day to midnight after its last
+(`events/event-time.ts`), which keeps it whole across the clocks changing; the
+API also returns its `startDate`/`endDate` so no browser has to work the days
+out. Database checks back up the service: it ends after it starts, and the
+audience names only the one thing it is for. A job role or office that is
+deleted leaves the event for nobody rather than for everybody (`SetNull`, and
+the audience filter matches nothing).
+
+**Who sees what.** Managers and admins see every event on the Schedule, to
+look after them; everybody else — on the Schedule, and in their calendar feed
+— sees only the ones they are invited to, worked out from the same rule
+(`visibleTo` / `audienceWhere` in `events.service.ts`) as the people who are
+notified. Staff who have left see none.
+
+**On screen.** An *Events* row above the people in the week (marked "Not
+hours" where the weekly total would be), a 📅 line in the month, and a
+pop-up with when, where, who for and the details — with Edit and Remove for
+managers. Removing asks first, through `useConfirm()`. A notification links to
+`/schedule?week=<date>`, which opens the Schedule on that week.
+
+**Notifications.** Adding one tells everybody it is for, except the manager
+who made it. A change to the name, time or place tells them it changed;
+rewording the details says nothing. Changing who it is for tells newcomers it
+is new and the people dropped that it is no longer on their schedule.
+Removing one tells them it is cancelled. Nothing is sent about an event that
+is already over. There is no email for events — the bell and the phone
+calendar carry it.
+
+Going live clears events with the rest of the test data.
+
+### Holidays and closures
+
+Asked for straight after events (Dominguez, September 2026): Christmas,
+Christmas Eve from 1pm, and one office shut while the other stays open. A
+closure is a `PracticeEvent` with `kind: CLOSURE` rather than a table of its
+own, because everything about showing it — on the rota, the month, the
+phone, under the bell — is already how an event works. What differs:
+
+- **For both offices or one** (`EVERYONE` or `LOCATION`); never a job role
+  (the service refuses, a database check backs it up). Staff see the closures
+  of their own offices, so West New York never hears about North Bergen's
+  early close.
+- **No place** — it is where the office is. On the phone it reads "Closed:
+  Christmas Day" or "North Bergen closed: Christmas Eve", and is
+  `TRANSPARENT` so it never makes anybody look busy.
+- **Part of a day** is an ordinary timed closure, from 1pm to midnight.
+- **Warn, never refuse** (Dominguez's choice, like overtime and
+  availability). A shift that overlaps a closure of its office gets a warning
+  in the add-shift and quick-add forms as they are filled in, a pop-up before
+  saving ("Yes, add it anyway"), ⚠ on the shift in the rota, and a line in
+  the Schedule banner and nightly email (`shiftsInClosures` in
+  `AttentionService`, 60 days ahead, open shifts included) until the shift
+  moves. Somebody may genuinely be doing admin on the day. Repeating rotas
+  are not stopped either; what they land in a closure is flagged the same way.
+- **Pay is untouched.** A closure adds no hours; the export still counts
+  punches only. Holiday pay needs a policy and an ADP earning code first — see
+  `docs/open-questions.md`.
+- **Entered each year, with a copy button** (Dominguez's choice over a
+  closure that repeats by itself). "Copy these into next year"
+  (`POST /events/closures/copy`) puts every closure of one year on the same
+  date the next, at the same wall-clock times and offices; one already there
+  (same name, same start) is skipped, so pressing it twice adds nothing, and a
+  29 February is skipped rather than guessed. Holidays that move —
+  Thanksgiving, Memorial Day, Labor Day — land on the wrong date and are
+  corrected by hand; the confirmation says so. Staff get one notification for
+  the lot, not one per holiday.
+- On the rota, a day both offices are shut all day reads "Closed" rather than
+  an amber "Nobody on", and the printed wall rota puts "Closed all day" /
+  "Closed from 1pm" under the day on each office's page.
+
+While wiring events into the feed, `escapeText` in `calendar/ical.ts` turned
+out never to have escaped `;` — `'\;'` in JavaScript is just `';'`, and the
+test had the same slip, so it passed. Harmless while the feed only carried
+office names and time-off types; not once managers type event names. Fixed,
+with the test corrected.
+

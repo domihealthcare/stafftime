@@ -15,7 +15,7 @@ describe('formatting', () => {
 describe('escapeText', () => {
   it('escapes the characters that would otherwise end a value', () => {
     expect(escapeText('Front desk, North Bergen; suite 3')).toBe(
-      'Front desk\\, North Bergen\; suite 3',
+      'Front desk\\, North Bergen\\; suite 3',
     );
   });
 

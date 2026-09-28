@@ -20,6 +20,8 @@ function build(
     unapproved?: unknown[];
     leaverShifts?: unknown[];
     openShifts?: unknown[];
+    closures?: unknown[];
+    closureShifts?: unknown[];
     closingRecords?: unknown[];
     supplies?: unknown[];
     locations?: unknown[];
@@ -48,11 +50,16 @@ function build(
     shift: {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       findMany: jest.fn(async (args: any) =>
-        args.where.employeeId === null ? (data.openShifts ?? []) : (data.leaverShifts ?? []),
+        args.where.OR
+          ? (data.closureShifts ?? [])
+          : args.where.employeeId === null
+            ? (data.openShifts ?? [])
+            : (data.leaverShifts ?? []),
       ),
       count: jest.fn().mockResolvedValue(data.shiftsMissed ?? 1),
     },
     location: { findMany: jest.fn().mockResolvedValue(data.locations ?? []) },
+    practiceEvent: { findMany: jest.fn().mockResolvedValue(data.closures ?? []) },
     closingRecord: { findMany: jest.fn().mockResolvedValue(data.closingRecords ?? []) },
     supplyRequest: { findMany: jest.fn().mockResolvedValue(data.supplies ?? []) },
     employee: {
@@ -567,6 +574,65 @@ describe('DigestService — what is going wrong at the office', () => {
         'North Bergen — 2 to order: Gloves S/M/L (asked 3 times), Lidocaine',
         'West New York — 1 to order: Electrodes',
       ]);
+    });
+  });
+
+  describe('shifts while an office is closed', () => {
+    // Christmas Day, midnight to midnight in New Jersey.
+    const christmas = {
+      id: 'c-1',
+      title: 'Christmas Day',
+      startsAt: new Date('2026-12-25T05:00:00.000Z'),
+      endsAt: new Date('2026-12-26T05:00:00.000Z'),
+      audience: 'EVERYONE',
+      locationId: null,
+      location: null,
+    };
+    const shift = (who: typeof frankie | null, location: string, id: string) => ({
+      startsAt: new Date('2026-12-25T14:00:00.000Z'),
+      endsAt: new Date('2026-12-25T18:00:00.000Z'),
+      locationId: id,
+      location: { name: location },
+      employee: who,
+    });
+
+    it('names each closure with the shifts in it, open ones included', async () => {
+      jest.useFakeTimers().setSystemTime(day('2026-11-20'));
+      const { attention } = build({
+        closures: [christmas],
+        closureShifts: [shift(frankie, 'North Bergen', 'nb'), shift(null, 'West New York', 'wny')],
+      });
+      expect((await attention.gather()).shiftsInClosures).toEqual([
+        'Christmas Day, Dec 25, 2026 (both offices closed) — 2 shifts scheduled: Frankie Front-Desk at North Bergen, an open shift at West New York',
+      ]);
+    });
+
+    it('only counts the office that is shut when one office closes', async () => {
+      jest.useFakeTimers().setSystemTime(day('2026-11-20'));
+      const { attention, prisma } = build({
+        closures: [
+          {
+            ...christmas,
+            title: 'Burst pipe',
+            audience: 'LOCATION',
+            locationId: 'nb',
+            location: { name: 'North Bergen' },
+          },
+        ],
+        closureShifts: [
+          shift(frankie, 'North Bergen', 'nb'),
+          shift(frankie, 'West New York', 'wny'),
+        ],
+      });
+      const { shiftsInClosures } = await attention.gather();
+      expect(shiftsInClosures).toEqual([
+        'Burst pipe, Dec 25, 2026 (North Bergen closed) — 1 shift scheduled: Frankie Front-Desk at North Bergen',
+      ]);
+      const call = prisma.shift.findMany.mock.calls.find(
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        ([args]: any[]) => args.where.OR,
+      )!;
+      expect(call[0].where.OR[0].locationId).toBe('nb');
     });
   });
 });

@@ -2,6 +2,8 @@ import { Injectable } from '@nestjs/common';
 import {
   ChecklistTaskStatus,
   EmploymentStatus,
+  EventAudience,
+  PracticeEventKind,
   ShiftStatus,
   PtoStatus,
   TimeEntryStatus,
@@ -43,6 +45,10 @@ const UNAPPROVED_HOURS_DAYS = 7;
 /// weeks: the rota being built and the one after it.
 const OPEN_SHIFT_HORIZON_DAYS = 14;
 
+/// How far ahead a shift inside a closure gets flagged. Two months: holidays
+/// are put in early, and a Christmas shift is worth sorting out in November.
+const CLOSURE_HORIZON_DAYS = 60;
+
 export interface DigestContents {
   expiredCredentials: string[];
   expiringCredentials: string[];
@@ -54,6 +60,7 @@ export interface DigestContents {
   unapprovedHours: string[];
   shiftsForLeavers: string[];
   openShifts: string[];
+  shiftsInClosures: string[];
   closingGaps: string[];
   suppliesNeeded: string[];
 }
@@ -187,6 +194,7 @@ export class AttentionService {
           }`,
       ),
       ...(await this.gatherOperational(today, who, day, on)),
+      shiftsInClosures: await this.shiftsInClosures(today, on),
       ...(await this.gatherClosing(today, day)),
     };
   }
@@ -325,6 +333,79 @@ export class AttentionService {
           )}, but marked as no longer employed`,
       ),
     };
+  }
+
+  /**
+   * Shifts that land while their office is closed — somebody on the rota on
+   * Christmas Day, or at North Bergen the afternoon it shuts early. A closure
+   * never refuses a shift (Dominguez, September 2026): somebody may really be
+   * doing admin that day. So it is said here, one line per closure, until the
+   * shift is moved or removed.
+   */
+  private async shiftsInClosures(today: Date, on: (instant: Date) => string) {
+    const now = new Date();
+    const closures = await this.prisma.practiceEvent.findMany({
+      where: {
+        kind: PracticeEventKind.CLOSURE,
+        endsAt: { gt: now },
+        startsAt: { lt: addUtcDays(today, CLOSURE_HORIZON_DAYS + 1) },
+      },
+      select: {
+        id: true,
+        title: true,
+        startsAt: true,
+        endsAt: true,
+        audience: true,
+        locationId: true,
+        location: { select: { name: true } },
+      },
+      orderBy: { startsAt: 'asc' },
+    });
+    if (closures.length === 0) return [];
+
+    const shifts = await this.prisma.shift.findMany({
+      where: {
+        status: { not: ShiftStatus.CANCELLED },
+        OR: closures.map((closure) => ({
+          startsAt: { lt: closure.endsAt },
+          endsAt: { gt: closure.startsAt },
+          ...(closure.audience === EventAudience.LOCATION
+            ? { locationId: closure.locationId ?? '' }
+            : {}),
+        })),
+      },
+      select: {
+        startsAt: true,
+        endsAt: true,
+        locationId: true,
+        location: { select: { name: true } },
+        employee: { select: { firstName: true, lastName: true } },
+      },
+      orderBy: { startsAt: 'asc' },
+    });
+
+    return closures.flatMap((closure) => {
+      const inside = shifts.filter(
+        (shift) =>
+          shift.startsAt < closure.endsAt &&
+          shift.endsAt > closure.startsAt &&
+          (closure.audience !== EventAudience.LOCATION || shift.locationId === closure.locationId),
+      );
+      if (inside.length === 0) return [];
+      const where =
+        closure.audience === EventAudience.LOCATION
+          ? `${closure.location?.name ?? 'one office'} closed`
+          : 'both offices closed';
+      const people = inside.map(
+        (shift) =>
+          `${shift.employee ? `${shift.employee.firstName} ${shift.employee.lastName}` : 'an open shift'} at ${shift.location.name}`,
+      );
+      return [
+        `${closure.title}, ${on(closure.startsAt)} (${where}) — ${inside.length} shift${
+          inside.length === 1 ? '' : 's'
+        } scheduled: ${people.join(', ')}`,
+      ];
+    });
   }
 
   /**

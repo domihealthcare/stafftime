@@ -193,6 +193,7 @@ export class NotificationsService {
       ...section('Next week is not published yet:', contents.unpublishedRota),
       ...section('Shifts for people who have left:', contents.shiftsForLeavers),
       ...section('Open shifts nobody is on yet:', contents.openShifts),
+      ...section('Shifts while an office is closed:', contents.shiftsInClosures),
       ...section('Closing checklists with something missed:', contents.closingGaps),
       ...section('Supplies to order:', contents.suppliesNeeded),
       ...section('Credentials that have already lapsed:', contents.expiredCredentials),

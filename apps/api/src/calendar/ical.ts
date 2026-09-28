@@ -112,7 +112,7 @@ export function formatDate(date: Date): string {
 export function escapeText(value: string): string {
   return value
     .replace(/\\/g, '\\\\')
-    .replace(/;/g, '\;')
+    .replace(/;/g, '\\;')
     .replace(/,/g, '\\,')
     .replace(/\r\n|\r|\n/g, '\\n');
 }

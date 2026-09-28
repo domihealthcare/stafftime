@@ -100,8 +100,8 @@ export function CalendarLinkCard() {
           <h2 className="text-sm font-semibold text-slate-900">Your calendar</h2>
           <p className="mt-0.5 text-sm text-slate-600">
             {hasLink
-              ? 'Syncing is on. Your shifts and approved time off appear in your own calendar.'
-              : 'Add your shifts to Google Calendar, Apple Calendar or Outlook.'}
+              ? 'Syncing is on. Your shifts, approved time off and practice events appear in your own calendar.'
+              : 'Add your shifts and practice events to Google Calendar, Apple Calendar or Outlook.'}
           </p>
         </div>
 
