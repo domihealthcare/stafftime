@@ -15,6 +15,11 @@ taken off this list, and the answer is written into `CLAUDE.md` or
 - [ ] **Rotate the Neon database password.** Reset it in Neon, paste the new
       pooled and direct strings into `DATABASE_URL` / `DIRECT_DATABASE_URL` in
       Vercel, and redeploy.
+- [ ] **Should Vercel previews have their own database?** They appear to share
+      the live one, so a pushed branch's migration reaches the live database
+      before it is merged (see *Never edit a migration once it has been pushed*
+      in `CLAUDE.md`). Check in Vercel → Settings → Environment Variables
+      whether Preview has its own `DATABASE_URL`.
 
 ## ADP TotalSource import (built September 2026 — needs setting up)
 

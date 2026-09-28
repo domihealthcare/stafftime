@@ -10,9 +10,9 @@ const other = { id: 'emp-2', email: 'mo@domihealthcare.com', role: Role.EMPLOYEE
 const day = (value: string) => new Date(`${value}T00:00:00.000Z`);
 
 /// A whole day, the way `@db.Date` stores one — UTC midnight, not "now plus N
-/// days", which carries a time of day and rounds unpredictably. Counted from the
-/// practice's today, as the service is: in the evening in New Jersey, UTC is
-/// already on tomorrow.
+/// days", which carries a time of day and rounds unpredictably. Counted from
+/// the practice's today, as the service does: from 8pm in New Jersey the
+/// server's UTC date is already tomorrow, and these tests failed every evening.
 const inDays = (n: number) => new Date(practiceToday().getTime() + n * 86_400_000);
 
 function row(over: Record<string, unknown> = {}) {

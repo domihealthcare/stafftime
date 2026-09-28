@@ -210,6 +210,14 @@ How the live site is set up, for reference:
 - **IP allow-listing**: set aside (Dominguez, 25 September 2026). Built, but
   with no addresses entered it does nothing; location is the check.
 - **`SETUP_TOKEN`**: deleted (25 September 2026).
+- **Never edit a migration once it has been pushed** (learned 28 September
+  2026). A preview build runs `prisma migrate deploy`, and the previews appear
+  to share the live database. So a migration reaches the live database as soon
+  as its branch is pushed, not when it is merged, and an edited migration is
+  never run again. That is how the closure `kind` column went missing on the
+  live site, breaking the Schedule; `20260928010000_practice_events_kind`
+  repaired it. A change always goes in a new migration. Worth checking in
+  Vercel whether Preview should have its own database.
 - **Still to do**: rotate the Neon password (Dominguez to find time: reset in
   Neon, paste the new pooled and direct strings into `DATABASE_URL` /
   `DIRECT_DATABASE_URL`, redeploy).
