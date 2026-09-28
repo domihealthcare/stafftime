@@ -1249,6 +1249,9 @@ model PracticeEvent {
   description String?
   /// Where it is, as typed: "North Bergen office — break room", "Zoom".
   place       String?
+  /// A video call to join — pasted from Google Meet, Zoom or Teams. https only,
+  /// so it can never be a script dressed up as a link.
+  meetingUrl  String?
   allDay      Boolean           @default(false)
   startsAt    DateTime
   endsAt      DateTime

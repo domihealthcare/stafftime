@@ -30,6 +30,12 @@ import { Alert, Card } from './ui';
 
 export const isClosure = (event: PracticeEvent) => event.kind === 'CLOSURE';
 
+/// A video call link fit to open: https only. The server refuses anything
+/// else; this is the second lock on the door.
+export function joinLink(event: PracticeEvent): string | null {
+  return event.meetingUrl && /^https:\/\/\S+$/.test(event.meetingUrl) ? event.meetingUrl : null;
+}
+
 /// The days an event covers, as the viewer's "YYYY-MM-DD".
 function daysOf(event: PracticeEvent): { first: string; last: string } {
   if (event.allDay && event.startDate && event.endDate) {
@@ -144,6 +150,11 @@ export function EventChip({
             🔁
           </span>
         )}
+        {joinLink(event) && (
+          <span aria-hidden="true" title="Video call" className="ml-1 font-normal">
+            🎥
+          </span>
+        )}
       </span>
       <span
         className={`block truncate text-[11px] ${closed ? 'text-slate-700' : 'text-indigo-800'}`}
@@ -242,6 +253,24 @@ export function EventDialog({
             <div>
               <dt className="text-xs font-medium uppercase tracking-wide text-slate-500">Where</dt>
               <dd className="text-slate-800">{event.place}</dd>
+            </div>
+          )}
+          {joinLink(event) && (
+            <div>
+              <dt className="sr-only">Video call</dt>
+              <dd className="flex flex-wrap items-center gap-2">
+                <a
+                  href={joinLink(event)!}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-1.5 rounded-lg bg-brand-600 px-3 py-1.5 text-sm font-semibold text-white hover:bg-brand-700"
+                >
+                  <span aria-hidden="true">🎥</span> Join video call
+                </a>
+                <span className="truncate text-xs text-slate-500">
+                  {new URL(joinLink(event)!).host}
+                </span>
+              </dd>
             </div>
           )}
           <div>
@@ -403,6 +432,21 @@ export function EventForm({
     event?.endDate ?? (event ? localDate(new Date(event.startsAt)) : localDate(defaultDate)),
   );
   const [place, setPlace] = useState(event?.place ?? '');
+  const [meetingUrl, setMeetingUrl] = useState(event?.meetingUrl ?? '');
+  /// Offered only once Google Meet is set up (Practice settings can't: it is
+  /// two server settings — see docs/google-meet-setup.md).
+  const [meetAvailable, setMeetAvailable] = useState(false);
+  const [createMeet, setCreateMeet] = useState(false);
+  useEffect(() => {
+    let cancelled = false;
+    api
+      .appConfig()
+      .then((config) => !cancelled && setMeetAvailable(Boolean(config.googleMeet)))
+      .catch(() => undefined);
+    return () => {
+      cancelled = true;
+    };
+  }, []);
   const [audience, setAudience] = useState<EventAudience>(event?.audience ?? 'EVERYONE');
   const [jobRoleId, setJobRoleId] = useState(event?.jobRole?.id ?? '');
   const [locationId, setLocationId] = useState(event?.location?.id ?? '');
@@ -488,6 +532,10 @@ export function EventForm({
       setError('Add who it is for — Everyone, or job roles, offices and people.');
       return;
     }
+    if (!closed && !createMeet && meetingUrl.trim() && !/^https:\/\/\S+$/.test(meetingUrl.trim())) {
+      setError('Paste the whole video call link — it starts https://');
+      return;
+    }
     if (showRepeat && repeat?.frequency === 'WEEKLY' && (repeat.weekdays ?? []).length === 0) {
       setError('Choose at least one day of the week for it to repeat on.');
       return;
@@ -497,6 +545,8 @@ export function EventForm({
       title: title.trim(),
       description: description.trim() || undefined,
       place: closed ? undefined : place.trim() || undefined,
+      meetingUrl: closed || createMeet ? undefined : meetingUrl.trim() || undefined,
+      createMeetLink: !closed && createMeet ? true : undefined,
       allDay,
       ...(closed
         ? {
@@ -727,6 +777,46 @@ export function EventForm({
                 />
               ))}
             </datalist>
+          </div>
+        )}
+
+        {!closed && (
+          <div className="sm:col-span-2">
+            {meetAvailable && (
+              <label className="mb-2 flex items-center gap-2 text-sm text-slate-700">
+                <input
+                  type="checkbox"
+                  checked={createMeet}
+                  onChange={(change) => setCreateMeet(change.target.checked)}
+                  className="rounded border-slate-300 text-brand-600 focus:ring-brand-600"
+                />
+                {event?.meetingUrl ? 'Make a new Google Meet link' : 'Create a Google Meet link'}
+                <span className="text-xs text-slate-500">
+                  hosted by the practice account{showRepeat && repeat ? ', one for every date' : ''}
+                </span>
+              </label>
+            )}
+            {!createMeet && (
+              <>
+                <label htmlFor={`${id}-meeting`} className={label}>
+                  Video call link <span className="font-normal text-slate-500">(optional)</span>
+                </label>
+                <input
+                  id={`${id}-meeting`}
+                  type="url"
+                  inputMode="url"
+                  maxLength={500}
+                  value={meetingUrl}
+                  onChange={(change) => setMeetingUrl(change.target.value)}
+                  placeholder="https://meet.google.com/…"
+                  className={field}
+                />
+                <p className="mt-1 text-xs text-slate-500">
+                  {meetAvailable ? 'Or paste' : 'Paste'} a link from Google Meet, Zoom or Teams.
+                  People get a Join button here and a tappable link on their phone calendar.
+                </p>
+              </>
+            )}
           </div>
         )}
 

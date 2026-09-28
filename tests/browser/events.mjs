@@ -287,6 +287,56 @@ await step('on a phone the events row is there above the shifts', async () => {
   await phone.screenshot({ path: `${OUT}/events-phone.png`, fullPage: true });
 });
 
+await step('a video call link: refused unless it is a real link, then a Join button and on the phone', async () => {
+  await manager.goto(`${BASE}/schedule?week=${key(nextWeek)}`, { waitUntil: 'networkidle' });
+  await manager.getByRole('button', { name: 'Week', exact: true }).click();
+  await manager.getByRole('button', { name: '+ Add event' }).click();
+  const form = manager.getByRole('form', { name: 'New event' });
+  await form.getByLabel('What is it?').fill('Video check-in');
+  await form.getByLabel('Starts').fill(`${key(wednesday)}T15:00`);
+  await form.getByLabel('Ends').fill(`${key(wednesday)}T15:30`);
+  // Google Meet is not set up here, so only the paste box is offered.
+  if (await form.getByLabel(/Create a Google Meet link/).count()) throw new Error('offered Meet without it being set up');
+  const refused = await manager.evaluate(async () => {
+    const r = await fetch('/api/events', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        title: 'Trick',
+        allDay: false,
+        startsAt: '2030-01-01T15:00:00.000Z',
+        endsAt: '2030-01-01T16:00:00.000Z',
+        audience: 'EVERYONE',
+        meetingUrl: 'javascript:alert(document.cookie)',
+      }),
+    });
+    return r.status;
+  });
+  if (refused !== 400) throw new Error(`a javascript: link answered ${refused}`);
+
+  await form.getByLabel('Video call link (optional)').fill('https://meet.google.com/abc-defg-hij');
+  await form.getByRole('button', { name: 'Add event' }).click();
+  await manager.getByTestId('rota-events-row').getByText('Video check-in').waitFor({ timeout: 10000 });
+
+  await frankie.goto(`${BASE}/schedule?week=${key(nextWeek)}`, { waitUntil: 'networkidle' });
+  await frankie.getByRole('button', { name: 'Week', exact: true }).click();
+  await frankie.getByTestId('rota-events-row').getByText('Video check-in').click();
+  const join = frankie.getByRole('dialog', { name: 'Video check-in' }).getByRole('link', { name: /Join video call/ });
+  if ((await join.getAttribute('href')) !== 'https://meet.google.com/abc-defg-hij') throw new Error('the Join link goes elsewhere');
+  if ((await join.getAttribute('target')) !== '_blank' || !(await join.getAttribute('rel'))?.includes('noopener')) {
+    throw new Error('the Join link does not open safely in a new tab');
+  }
+  await frankie.screenshot({ path: `${OUT}/events-join.png` });
+  const feed = (
+    await frankie.evaluate(async () => {
+      const { token } = await fetch('/api/calendar/link').then((r) => r.json());
+      return fetch(`/api/calendar/${token}/domi.ics`, { cache: 'no-store' }).then((r) => r.text());
+    })
+  ).replace(/\r\n /g, '');
+  if (!feed.includes('URL:https://meet.google.com/abc-defg-hij')) throw new Error('no link in the phone feed');
+  if (!feed.includes('Join the video call: https://meet.google.com/abc-defg-hij')) throw new Error('the link is not in the notes');
+});
+
 await browser.close();
 console.log(`\n${errors.length === 0 ? 'ALL EVENT CHECKS PASSED' : `PROBLEMS (${errors.length}):`}`);
 errors.forEach((e) => console.log(' - ' + e));

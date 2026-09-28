@@ -773,6 +773,8 @@ export interface PracticeEvent {
   title: string;
   description: string | null;
   place: string | null;
+  /// A video call to join (Google Meet, Zoom, Teams); https only.
+  meetingUrl: string | null;
   allDay: boolean;
   startsAt: string;
   endsAt: string;
@@ -794,6 +796,9 @@ export interface EventInput {
   title: string;
   description?: string;
   place?: string;
+  meetingUrl?: string;
+  /// Have the server make a Google Meet link (hosted by the practice account).
+  createMeetLink?: boolean;
   allDay: boolean;
   startsAt?: string;
   endsAt?: string;

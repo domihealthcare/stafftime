@@ -1,5 +1,6 @@
 import { Module } from '@nestjs/common';
+import { EventsModule } from '../events/events.module';
 import { AppConfigController } from './app-config.controller';
 
-@Module({ controllers: [AppConfigController] })
+@Module({ imports: [EventsModule], controllers: [AppConfigController] })
 export class AppConfigModule {}

@@ -113,6 +113,18 @@ class EnvironmentVariables {
   @IsString()
   EMAIL_FROM?: string;
 
+  /// Google Meet links for events: the service account's key, as the whole
+  /// downloaded JSON file, and the account the meetings belong to
+  /// (office@domihealthcare.com). Both, or Meet links are simply not offered.
+  /// See docs/google-meet-setup.md.
+  @IsOptional()
+  @IsString()
+  GOOGLE_SERVICE_ACCOUNT_JSON?: string;
+
+  @IsOptional()
+  @IsString()
+  GOOGLE_MEET_HOST?: string;
+
   /// Shared secret for the scheduled maintenance route. Unset means the route
   /// refuses everything, so it is never left open by omission.
   @IsOptional()

@@ -2278,3 +2278,32 @@ pushing — which applies migrations to the live database through the preview
 build — the version then live was run against a database with both applied,
 and its events, closures, rota, bell, calendar and scheduler suites passed.
 
+### Video call links and Google Meet
+
+An event can carry `meetingUrl`: pasted, or made by Google Meet. It is
+**https only**, checked three times over (service, browser, database
+constraint), because it becomes a link people tap: in the app as a **Join
+video call** button (`target="_blank"`, `rel="noopener noreferrer"`), and on
+phones as the calendar entry's `URL`. Google Calendar ignores `URL`, so the
+link also leads the entry's notes, and stands in as its location when there is
+no place. Closures never have one. A changed link counts as a change people
+are told about.
+
+**Create a Google Meet link** (Dominguez, September 2026) makes a meeting with
+the Google Meet REST API (`POST /v2/spaces`, `accessType: TRUSTED`), hosted by
+office@domihealthcare.com, the shared account everybody already uses. The app
+signs in as a Google Cloud service account that the Workspace admin has
+allowed, through domain-wide delegation, to act for the domain with **one
+scope**, `meetings.space.created`: it can create meetings and manage the ones
+it made, and nothing in anybody's mail, calendar or files. The token request
+is a key-signed JWT built with `node:crypto`, not a Google library; the token
+is kept until five minutes before it expires. Google is asked last, after
+the rest of the form has passed, so a refused form leaves no unused meeting;
+if Google refuses, nothing is saved and the message says why in plain words.
+A series gets one meeting for all its dates, as Google Calendar does.
+
+Off unless `GOOGLE_SERVICE_ACCOUNT_JSON` and `GOOGLE_MEET_HOST` are both set;
+`/api/config` says only whether it is on (`googleMeet`), never which account
+or key, and the form shows the tick box only then. Setup, for whoever is
+admin@: `docs/google-meet-setup.md`.
+

@@ -106,6 +106,18 @@ export class EventInput {
   @MaxLength(200)
   place?: string;
 
+  /// A video call to join, pasted from Google Meet, Zoom or Teams.
+  @IsOptional()
+  @IsString()
+  @MaxLength(500)
+  meetingUrl?: string;
+
+  /// Make a new Google Meet link for it (hosted by the practice account),
+  /// instead of a pasted one. A series gets one link for all its dates.
+  @IsOptional()
+  @IsBoolean()
+  createMeetLink?: boolean;
+
   @IsBoolean()
   allDay!: boolean;
 

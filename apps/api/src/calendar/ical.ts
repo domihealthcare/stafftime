@@ -27,6 +27,8 @@ export interface CalendarEvent {
   endDate?: Date;
   status?: 'CONFIRMED' | 'TENTATIVE' | 'CANCELLED';
   transparent?: boolean;
+  /// A link to open — a video call. Already checked to be https.
+  url?: string;
 }
 
 export interface CalendarOptions {
@@ -83,6 +85,10 @@ export function buildCalendar(events: CalendarEvent[], options: CalendarOptions)
     }
     if (event.location) {
       lines.push(`LOCATION:${escapeText(event.location)}`);
+    }
+    if (event.url) {
+      // A URI value, not TEXT: its commas and semicolons are not escaped.
+      lines.push(`URL:${event.url}`);
     }
     lines.push(`STATUS:${event.status ?? 'CONFIRMED'}`);
     // Time off should not make someone look busy to a scheduler.

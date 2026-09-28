@@ -404,6 +404,8 @@ export interface AppConfig {
   isTestEnvironment: boolean;
   /// The commit the server is running, when the host says (Vercel does).
   version: string | null;
+  /// Whether events can have a Google Meet link made for them.
+  googleMeet?: boolean;
 }
 
 export interface CalendarLink {

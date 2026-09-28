@@ -596,3 +596,15 @@ is the bit we need to hear about.
   - **Tell us:** is the day-before reminder the right time, or would the
     morning of be better?
 
+### Video call links (September 2026)
+
+- An event can have a **video call link**: paste one from Google Meet, Zoom or
+  Teams. Staff get a **Join video call** button when they open the event, and
+  the link is on their phone calendar.
+- Once Google Meet is set up (a one-time job for whoever looks after
+  admin@domihealthcare.com, `docs/google-meet-setup.md`), there is a tick
+  box: **Create a Google Meet link**. The meeting belongs to
+  office@domihealthcare.com; anybody signed in with a practice Google account
+  goes straight in, and anybody else is let in from the meeting. A repeating
+  event gets one link for all its dates.
+

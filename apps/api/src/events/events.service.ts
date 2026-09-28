@@ -17,6 +17,7 @@ import {
   zonedTimeToUtc,
 } from '../common/util/zoned-time.util';
 import { InboxService } from '../email/inbox.service';
+import { GoogleMeetService } from './google-meet.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { EventInput } from './dto/event.dto';
 import { allDayDates, allDayRange, describeWhen } from './event-time';
@@ -37,6 +38,7 @@ const EVENT_SELECT = {
   title: true,
   description: true,
   place: true,
+  meetingUrl: true,
   allDay: true,
   startsAt: true,
   endsAt: true,
@@ -83,6 +85,7 @@ interface Checked {
     title: string;
     description: string | null;
     place: string | null;
+    meetingUrl: string | null;
     allDay: boolean;
     startsAt: Date;
     endsAt: Date;
@@ -123,6 +126,7 @@ export class EventsService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly inbox: InboxService,
+    private readonly meet: GoogleMeetService,
   ) {}
 
   /// Events overlapping [from, to).
@@ -493,6 +497,7 @@ export class EventsService {
       Boolean(body) ||
       before.title !== after.title ||
       before.place !== after.place ||
+      before.meetingUrl !== after.meetingUrl ||
       before.allDay !== after.allDay ||
       before.startsAt.getTime() !== after.startsAt.getTime() ||
       before.endsAt.getTime() !== after.endsAt.getTime();
@@ -662,6 +667,8 @@ export class EventsService {
       }
     }
 
+    const pastedUrl = checkMeetingUrl(dto.meetingUrl);
+
     let repeat: Checked['repeat'] = null;
     if (dto.repeat) {
       const firstDate = dto.allDay ? dto.startDate! : localDateIn(startsAt, PRACTICE_ZONE);
@@ -678,13 +685,18 @@ export class EventsService {
       repeat = { firstDate, rule };
     }
 
+    // Asked for last, once everything else is known to be fine, so a refused
+    // form never leaves an unused meeting behind at Google.
+    const meetingUrl = !closure && dto.createMeetLink ? await this.meet.createLink() : pastedUrl;
+
     return {
       data: {
         kind,
         title,
         description: dto.description?.trim() || null,
-        // A closure is where the office is: it has no other place.
+        // A closure is where the office is: it has no other place, and no call.
         place: closure ? null : dto.place?.trim() || null,
+        meetingUrl: closure ? null : meetingUrl,
         allDay: dto.allDay,
         startsAt,
         endsAt,
@@ -699,6 +711,29 @@ export class EventsService {
       repeat,
     };
   }
+}
+
+/**
+ * A pasted video call link, or null. Only a real https address is kept: the
+ * app shows it as a button and puts it on people's phones, so anything else —
+ * a javascript: address above all — must never get that far. A database check
+ * says the same.
+ */
+function checkMeetingUrl(value: string | undefined): string | null {
+  const text = value?.trim();
+  if (!text) return null;
+  let url: URL;
+  try {
+    url = new URL(text);
+  } catch {
+    throw new BadRequestException(
+      'That video call link is not a web address. Paste the whole link, starting https://',
+    );
+  }
+  if (url.protocol !== 'https:' || /\s/.test(text)) {
+    throw new BadRequestException('A video call link has to start with https://');
+  }
+  return url.toString();
 }
 
 /// Who an event is for, as an employee filter.
@@ -794,6 +829,7 @@ function present(row: EventRow) {
     title: row.title,
     description: row.description,
     place: row.place,
+    meetingUrl: row.meetingUrl,
     allDay: row.allDay,
     startsAt: row.startsAt,
     endsAt: row.endsAt,

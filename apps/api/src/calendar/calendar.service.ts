@@ -164,8 +164,17 @@ export class CalendarService {
           uid: `event-${event.id}@staff.domihealthcare.com`,
           sequence: secondsSinceEpoch(event.updatedAt),
           summary: summaryOf(event),
-          description: event.description ?? undefined,
-          location: event.place ?? undefined,
+          // Google Calendar ignores URL, so the link is also first in the
+          // notes — where every calendar app makes it tappable.
+          description:
+            [
+              event.meetingUrl ? `Join the video call: ${event.meetingUrl}` : null,
+              event.description,
+            ]
+              .filter(Boolean)
+              .join('\n\n') || undefined,
+          location: event.place ?? event.meetingUrl ?? undefined,
+          url: event.meetingUrl ?? undefined,
         };
         if (!event.allDay) {
           // A closure is time off the rota, not an appointment: it should not
