@@ -1,7 +1,7 @@
-import { Injectable } from '@nestjs/common';
-import { Prisma, PtoPolicy, PtoStatus, PtoType } from '@prisma/client';
+import { Injectable, NotFoundException } from '@nestjs/common';
+import { EmploymentStatus, Prisma, PtoPolicy, PtoStatus, PtoType } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
-import { UpdatePtoPolicyDto } from './dto/pto.dto';
+import { AdjustPtoBalanceDto, UpdatePtoPolicyDto } from './dto/pto.dto';
 
 /**
  * Which requests draw down which allowance.
@@ -9,9 +9,8 @@ import { UpdatePtoPolicyDto } from './dto/pto.dto';
  * Bereavement, unpaid and "other" are recorded but not deducted — they are not
  * what the PTO and sick allowances are for.
  *
- * TODO: confirm that personal days come out of the PTO allowance rather than
- * being their own bucket. It is the common arrangement, but it is a handbook
- * decision, not a technical one.
+ * Since September 2026 a new request is only SICK or VACATION ("PTO") —
+ * Dominguez; the others stay for requests made before then.
  */
 export const TYPE_BUCKET: Record<PtoType, 'vacation' | 'sick' | null> = {
   VACATION: 'vacation',
@@ -31,6 +30,8 @@ export interface AllowanceBalance {
   /// Booked but not yet decided — shown so nobody spends the same day twice.
   pending: number;
   remaining: number;
+  /// Of `used`, days taken before Domi Staff, as a manager entered them.
+  usedBefore: number;
 }
 
 export interface PtoBalance {
@@ -42,6 +43,26 @@ export interface PtoBalance {
   sick: AllowanceBalance;
   /// Days recorded against no allowance, for completeness.
   unpaidAndOther: number;
+}
+
+/// A row of the Time off screen's staff list, for managers.
+export interface StaffBalance {
+  employee: {
+    id: string;
+    firstName: string;
+    lastName: string;
+    preferredName: string | null;
+    email: string;
+  };
+  balance: PtoBalance;
+  /// Their own yearly allowance, or null for the practice's.
+  vacationDaysPerYear: number | null;
+  sickDaysPerYear: number | null;
+  /// This policy year's starting point.
+  vacationUsed: number;
+  sickUsed: number;
+  vacationCarriedOver: number | null;
+  sickCarriedOver: number | null;
 }
 
 /// The only value `PtoPolicy.singleton` ever takes. See the model comment.
@@ -107,16 +128,43 @@ export class PtoPolicyService {
    * year's unused days, capped by the policy, become this year's carry-over —
    * and last year's own carry-over is worked out the same way. The walk stops
    * at the hire date, so it is bounded.
+   *
+   * Two things a manager can add (the switch-over, September 2026): the
+   * person's own yearly allowance, when it is not the practice's, and a
+   * starting point for a year — days already taken before Domi Staff, and
+   * optionally what really carried into it. Both feed the walk as well.
    */
   async balanceFor(employeeId: string, year?: number): Promise<PtoBalance> {
     const policy = await this.get();
     const employee = await this.prisma.employee.findUniqueOrThrow({
       where: { id: employeeId },
-      select: { id: true, hireDate: true, createdAt: true },
+      select: {
+        id: true,
+        hireDate: true,
+        createdAt: true,
+        ptoAllowance: { select: { vacationDaysPerYear: true, sickDaysPerYear: true } },
+        ptoStartingPoints: {
+          select: {
+            policyYear: true,
+            vacationUsed: true,
+            sickUsed: true,
+            vacationCarriedOver: true,
+            sickCarriedOver: true,
+          },
+        },
+      },
     });
 
     const policyYear = year ?? this.policyYearOf(new Date(), policy);
     const { start, end } = this.yearBounds(policyYear, policy);
+    const person: PersonalTerms = {
+      hireDate: employee.hireDate,
+      allowance: employee.ptoAllowance ?? null,
+      startingPoints: new Map(
+        (employee.ptoStartingPoints ?? []).map((point) => [point.policyYear, point]),
+      ),
+    };
+    const startingPoint = person.startingPoints.get(policyYear);
 
     const requests = await this.prisma.ptoRequest.findMany({
       where: {
@@ -147,7 +195,7 @@ export class PtoPolicyService {
       policyYear,
       policy,
       since,
-      employee.hireDate,
+      person,
       'vacation',
     );
     const carriedSick = await this.carryOverInto(
@@ -155,7 +203,7 @@ export class PtoPolicyService {
       policyYear,
       policy,
       since,
-      employee.hireDate,
+      person,
       'sick',
     );
 
@@ -163,13 +211,13 @@ export class PtoPolicyService {
       policyYear,
       policy,
       employee.hireDate,
-      policy.vacationDaysPerYear,
+      yearlyDays(policy, person, 'vacation'),
     );
     const sickEntitled = this.entitlementFor(
       policyYear,
       policy,
       employee.hireDate,
-      policy.sickDaysPerYear,
+      yearlyDays(policy, person, 'sick'),
     );
 
     return {
@@ -177,11 +225,107 @@ export class PtoPolicyService {
       policyYear,
       yearStart: start.toISOString().slice(0, 10),
       yearEnd: new Date(end.getTime() - 86_400_000).toISOString().slice(0, 10),
-      vacation: this.assemble(vacationEntitled, carriedVacation, tally('vacation', PtoStatus.APPROVED), tally('vacation', PtoStatus.PENDING)),
-      sick: this.assemble(sickEntitled, carriedSick, tally('sick', PtoStatus.APPROVED), tally('sick', PtoStatus.PENDING)),
+      vacation: this.assemble(
+        vacationEntitled,
+        carriedVacation,
+        tally('vacation', PtoStatus.APPROVED),
+        tally('vacation', PtoStatus.PENDING),
+        startingPoint?.vacationUsed ?? 0,
+      ),
+      sick: this.assemble(
+        sickEntitled,
+        carriedSick,
+        tally('sick', PtoStatus.APPROVED),
+        tally('sick', PtoStatus.PENDING),
+        startingPoint?.sickUsed ?? 0,
+      ),
       unpaidAndOther: requests
         .filter((r) => TYPE_BUCKET[r.type] === null && r.status === PtoStatus.APPROVED)
         .reduce((sum, r) => sum + daysWithin(r, start, end), 0),
+    };
+  }
+
+  /**
+   * Everybody still working here, with their balance this policy year and
+   * what a manager has set for them — the Time off screen's staff list.
+   */
+  async staffBalances(): Promise<StaffBalance[]> {
+    const staff = await this.prisma.employee.findMany({
+      where: { employmentStatus: { not: EmploymentStatus.TERMINATED } },
+      orderBy: [{ firstName: 'asc' }, { lastName: 'asc' }],
+      select: { id: true, firstName: true, lastName: true, preferredName: true, email: true },
+    });
+    const rows: StaffBalance[] = [];
+    // One at a time: a practice's worth of staff, and each balance is a few
+    // small reads. Not worth holding many connections open at once.
+    for (const person of staff) {
+      rows.push(await this.staffBalance(person.id, person));
+    }
+    return rows;
+  }
+
+  /// A manager sets a person's own allowance and this year's starting point.
+  async adjust(
+    employeeId: string,
+    dto: AdjustPtoBalanceDto,
+    setById: string,
+  ): Promise<StaffBalance> {
+    const person = await this.prisma.employee.findUnique({
+      where: { id: employeeId },
+      select: { id: true, firstName: true, lastName: true, preferredName: true, email: true },
+    });
+    if (!person) throw new NotFoundException('Nobody by that id.');
+
+    const policy = await this.get();
+    const policyYear = this.policyYearOf(new Date(), policy);
+    const allowance = {
+      vacationDaysPerYear: dto.vacationDaysPerYear ?? null,
+      sickDaysPerYear: dto.sickDaysPerYear ?? null,
+      setById,
+    };
+    const startingPoint = {
+      vacationUsed: dto.vacationUsed ?? 0,
+      sickUsed: dto.sickUsed ?? 0,
+      vacationCarriedOver: dto.vacationCarriedOver ?? null,
+      sickCarriedOver: dto.sickCarriedOver ?? null,
+      setById,
+    };
+
+    await this.prisma.$transaction([
+      this.prisma.ptoAllowance.upsert({
+        where: { employeeId },
+        create: { employeeId, ...allowance },
+        update: allowance,
+      }),
+      this.prisma.ptoStartingPoint.upsert({
+        where: { employeeId_policyYear: { employeeId, policyYear } },
+        create: { employeeId, policyYear, ...startingPoint },
+        update: startingPoint,
+      }),
+    ]);
+    return this.staffBalance(employeeId, person);
+  }
+
+  private async staffBalance(
+    employeeId: string,
+    person: StaffBalance['employee'],
+  ): Promise<StaffBalance> {
+    const balance = await this.balanceFor(employeeId);
+    const [allowance, startingPoint] = await Promise.all([
+      this.prisma.ptoAllowance.findUnique({ where: { employeeId } }),
+      this.prisma.ptoStartingPoint.findUnique({
+        where: { employeeId_policyYear: { employeeId, policyYear: balance.policyYear } },
+      }),
+    ]);
+    return {
+      employee: person,
+      balance,
+      vacationDaysPerYear: allowance?.vacationDaysPerYear ?? null,
+      sickDaysPerYear: allowance?.sickDaysPerYear ?? null,
+      vacationUsed: startingPoint?.vacationUsed ?? 0,
+      sickUsed: startingPoint?.sickUsed ?? 0,
+      vacationCarriedOver: startingPoint?.vacationCarriedOver ?? null,
+      sickCarriedOver: startingPoint?.sickCarriedOver ?? null,
     };
   }
 
@@ -190,15 +334,18 @@ export class PtoPolicyService {
   private assemble(
     entitled: number,
     carriedOver: number,
-    used: number,
+    usedInApp: number,
     pending: number,
+    usedBefore: number,
   ): AllowanceBalance {
     const available = round1(entitled + carriedOver);
+    const used = round1(usedInApp + usedBefore);
     return {
       entitled: round1(entitled),
       carriedOver: round1(carriedOver),
       available,
-      used: round1(used),
+      used,
+      usedBefore: round1(usedBefore),
       pending: round1(pending),
       remaining: round1(available - used - pending),
     };
@@ -233,9 +380,13 @@ export class PtoPolicyService {
     policyYear: number,
     policy: PtoPolicy,
     since: Date,
-    hireDate: Date | null,
+    person: PersonalTerms,
     bucket: 'vacation' | 'sick',
   ): Promise<number> {
+    // What a manager said really carried in wins over any working-out.
+    const stated = carriedOverStated(person.startingPoints.get(policyYear), bucket);
+    if (stated !== null) return round1(stated);
+
     const cap = bucket === 'vacation' ? policy.maxCarryoverDays : policy.sickCarryoverDays;
     if (cap <= 0) {
       return 0;
@@ -246,12 +397,15 @@ export class PtoPolicyService {
 
     // Oldest year first, so each year's carry-over feeds the next.
     for (let year = hireYear; year < policyYear; year += 1) {
+      const point = person.startingPoints.get(year);
+      carried = carriedOverStated(point, bucket) ?? carried;
+
       const { start, end } = this.yearBounds(year, policy);
       const entitled = this.entitlementFor(
         year,
         policy,
-        hireDate,
-        bucket === 'vacation' ? policy.vacationDaysPerYear : policy.sickDaysPerYear,
+        person.hireDate,
+        yearlyDays(policy, person, bucket),
       );
 
       const requests = await this.prisma.ptoRequest.findMany({
@@ -264,9 +418,11 @@ export class PtoPolicyService {
         select: { type: true, startDate: true, endDate: true, isHalfDay: true },
       });
 
-      const used = requests
-        .filter((r) => TYPE_BUCKET[r.type] === bucket)
-        .reduce((sum, r) => sum + daysWithin(r, start, end), 0);
+      const used =
+        requests
+          .filter((r) => TYPE_BUCKET[r.type] === bucket)
+          .reduce((sum, r) => sum + daysWithin(r, start, end), 0) +
+        (bucket === 'vacation' ? (point?.vacationUsed ?? 0) : (point?.sickUsed ?? 0));
 
       carried = Math.min(cap, Math.max(0, entitled + carried - used));
     }
@@ -313,6 +469,34 @@ export function daysWithin(
 
   const days = Math.round((to.getTime() - from.getTime()) / 86_400_000) + 1;
   return request.isHalfDay && days === 1 ? 0.5 : days;
+}
+
+interface StartingPointTerms {
+  vacationUsed: number;
+  sickUsed: number;
+  vacationCarriedOver: number | null;
+  sickCarriedOver: number | null;
+}
+
+/// What is particular to one person: their own allowance and starting points.
+interface PersonalTerms {
+  hireDate: Date | null;
+  allowance: { vacationDaysPerYear: number | null; sickDaysPerYear: number | null } | null;
+  startingPoints: Map<number, StartingPointTerms>;
+}
+
+function yearlyDays(policy: PtoPolicy, person: PersonalTerms, bucket: 'vacation' | 'sick'): number {
+  return bucket === 'vacation'
+    ? (person.allowance?.vacationDaysPerYear ?? policy.vacationDaysPerYear)
+    : (person.allowance?.sickDaysPerYear ?? policy.sickDaysPerYear);
+}
+
+function carriedOverStated(
+  point: StartingPointTerms | undefined,
+  bucket: 'vacation' | 'sick',
+): number | null {
+  if (!point) return null;
+  return bucket === 'vacation' ? point.vacationCarriedOver : point.sickCarriedOver;
 }
 
 function round1(value: number): number {

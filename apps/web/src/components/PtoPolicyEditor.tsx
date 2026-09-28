@@ -101,7 +101,7 @@ export function PtoPolicyEditor({
                 className={number}
               />
               <p className="mt-1 text-xs text-slate-500">
-                Vacation and personal days come out of this.
+                Everybody&rsquo;s, unless somebody has their own under Staff balances.
               </p>
             </div>
 

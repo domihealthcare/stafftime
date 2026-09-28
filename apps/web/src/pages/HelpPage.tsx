@@ -264,8 +264,8 @@ const STAFF: Section[] = [
         question: 'How do I ask for time off?',
         answer: (
           <p>
-            Open <Screen>Time off</Screen>, choose the type and the dates, and send it. Your balance
-            is shown on the same screen. You get an email when a manager decides, with their reason
+            Open <Screen>Time off</Screen>, choose <strong>Sick</strong> or <strong>PTO</strong> and
+            the dates, and send it. Your balance is shown on the same screen. You get an email when a manager decides, with their reason
             if they give one.
           </p>
         ),
@@ -636,6 +636,18 @@ const MANAGERS: Section[] = [
             The <Screen>Time off</Screen> tab shows a count of what is waiting. Each request shows
             what is already scheduled in those dates before you decide. Approving does not cancel
             shifts — the coverage strip flags the clash, and you reassign cover.
+          </p>
+        ),
+      },
+      {
+        question: 'Putting in time off people took before Domi Staff',
+        answer: (
+          <p>
+            On <Screen>Time off</Screen>, open <strong>Staff balances</strong> and press{' '}
+            <strong>Adjust</strong> beside the person. Enter the PTO and sick days they had already
+            taken this year; anything booked in the app counts by itself. Somebody on a different
+            yearly amount (part-time, long service) gets their own there too — leave it blank for
+            the practice&rsquo;s.
           </p>
         ),
       },

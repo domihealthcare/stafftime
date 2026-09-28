@@ -68,8 +68,28 @@ describe('daysWithin', () => {
 
 describe('PtoPolicyService', () => {
   function build(
-    options: { policy?: unknown; requests?: unknown[]; hireDate?: Date | null; createdAt?: Date } = {},
+    options: {
+      policy?: unknown;
+      requests?: unknown[];
+      hireDate?: Date | null;
+      createdAt?: Date;
+      allowance?: { vacationDaysPerYear: number | null; sickDaysPerYear: number | null } | null;
+      startingPoints?: Array<{
+        policyYear: number;
+        vacationUsed?: number;
+        sickUsed?: number;
+        vacationCarriedOver?: number | null;
+        sickCarriedOver?: number | null;
+      }>;
+    } = {},
   ) {
+    const startingPoints = (options.startingPoints ?? []).map((point) => ({
+      vacationUsed: 0,
+      sickUsed: 0,
+      vacationCarriedOver: null,
+      sickCarriedOver: null,
+      ...point,
+    }));
     const requests = options.requests ?? [];
     const prisma = {
       ptoPolicy: {
@@ -86,8 +106,25 @@ describe('PtoPolicyService', () => {
           id: 'emp-1',
           hireDate: options.hireDate === undefined ? day('2020-01-01') : options.hireDate,
           createdAt: options.createdAt ?? day('2026-09-25'),
+          ptoAllowance: options.allowance ?? null,
+          ptoStartingPoints: startingPoints,
+        }),
+        findUnique: jest.fn().mockResolvedValue({
+          id: 'emp-1',
+          firstName: 'Angelica',
+          lastName: 'Dominguez',
+          preferredName: null,
         }),
       },
+      ptoAllowance: {
+        upsert: jest.fn().mockReturnValue('allowance-upsert'),
+        findUnique: jest.fn().mockResolvedValue(options.allowance ?? null),
+      },
+      ptoStartingPoint: {
+        upsert: jest.fn().mockReturnValue('starting-point-upsert'),
+        findUnique: jest.fn().mockResolvedValue(startingPoints[0] ?? null),
+      },
+      $transaction: jest.fn().mockResolvedValue([]),
       ptoRequest: {
         // Every call returns the same set; the service filters by year itself.
         findMany: jest.fn().mockResolvedValue(requests),
@@ -373,6 +410,123 @@ describe('PtoPolicyService', () => {
       const { service } = build({ policy: { ...DEFAULT_POLICY, vacationDaysPerYear: 20 } });
       const balance = await service.balanceFor('emp-1', 2026);
       expect(balance.vacation.entitled).toBe(20);
+    });
+  });
+
+  describe('the switch-over: time taken before Domi Staff', () => {
+    it('counts days already taken as taken, and says how many were', async () => {
+      const { service } = build({
+        requests: [approved(PtoType.VACATION, '2026-10-05', '2026-10-06')],
+        startingPoints: [{ policyYear: 2026, vacationUsed: 6, sickUsed: 2.5 }],
+      });
+      const balance = await service.balanceFor('emp-1', 2026);
+      expect(balance.vacation).toMatchObject({ used: 8, usedBefore: 6 });
+      expect(balance.sick).toMatchObject({ used: 2.5, usedBefore: 2.5, remaining: 2.5 });
+    });
+
+    it('leaves other years alone', async () => {
+      const { service } = build({
+        hireDate: day('2026-01-01'),
+        startingPoints: [{ policyYear: 2026, vacationUsed: 6 }],
+      });
+      const balance = await service.balanceFor('emp-1', 2027);
+      expect(balance.vacation.usedBefore).toBe(0);
+      // Nine of fifteen left in 2026, five of them carried into 2027.
+      expect(balance.vacation.carriedOver).toBe(5);
+    });
+
+    it('carries on only what was left after them', async () => {
+      const { service } = build({
+        hireDate: day('2026-01-01'),
+        startingPoints: [{ policyYear: 2026, vacationUsed: 13 }],
+      });
+      const balance = await service.balanceFor('emp-1', 2027);
+      expect(balance.vacation.carriedOver).toBe(2);
+    });
+
+    it('takes what a manager says really carried over, instead of working it out', async () => {
+      const { service } = build({
+        hireDate: day('2020-01-01'),
+        startingPoints: [{ policyYear: 2026, vacationCarriedOver: 1.5, sickCarriedOver: 2 }],
+      });
+      const balance = await service.balanceFor('emp-1', 2026);
+      expect(balance.vacation.carriedOver).toBe(1.5);
+      expect(balance.sick.carriedOver).toBe(2);
+      expect(balance.vacation.available).toBe(16.5);
+    });
+
+    it('works out later years from what a manager said carried over', async () => {
+      const { service } = build({
+        hireDate: day('2020-01-01'),
+        startingPoints: [{ policyYear: 2026, vacationCarriedOver: 0, vacationUsed: 14 }],
+      });
+      const balance = await service.balanceFor('emp-1', 2027);
+      expect(balance.vacation.carriedOver).toBe(1);
+    });
+  });
+
+  describe('somebody with their own yearly allowance', () => {
+    it('gets theirs instead of the practice’s', async () => {
+      const { service } = build({ allowance: { vacationDaysPerYear: 20, sickDaysPerYear: null } });
+      const balance = await service.balanceFor('emp-1', 2026);
+      expect(balance.vacation.entitled).toBe(20);
+      expect(balance.sick.entitled).toBe(5);
+    });
+
+    it('is prorated in a first year like anybody’s', async () => {
+      const { service } = build({
+        hireDate: day('2026-07-02'),
+        allowance: { vacationDaysPerYear: 10, sickDaysPerYear: 4 },
+      });
+      const balance = await service.balanceFor('emp-1', 2026);
+      expect(balance.vacation.entitled).toBe(5);
+      expect(balance.sick.entitled).toBe(2);
+    });
+  });
+
+  describe('a manager adjusting somebody', () => {
+    it('saves their allowance and this year’s starting point together', async () => {
+      const { service, prisma } = build();
+      jest.useFakeTimers().setSystemTime(day('2026-09-28'));
+      try {
+        await service.adjust(
+          'emp-1',
+          { vacationDaysPerYear: 20, sickDaysPerYear: null, vacationUsed: 6, sickUsed: 1 },
+          'mgr-1',
+        );
+      } finally {
+        jest.useRealTimers();
+      }
+      expect(prisma.$transaction).toHaveBeenCalledWith([
+        'allowance-upsert',
+        'starting-point-upsert',
+      ]);
+      expect(prisma.ptoAllowance.upsert).toHaveBeenCalledWith({
+        where: { employeeId: 'emp-1' },
+        create: {
+          employeeId: 'emp-1',
+          vacationDaysPerYear: 20,
+          sickDaysPerYear: null,
+          setById: 'mgr-1',
+        },
+        update: { vacationDaysPerYear: 20, sickDaysPerYear: null, setById: 'mgr-1' },
+      });
+      expect(prisma.ptoStartingPoint.upsert.mock.calls[0][0]).toMatchObject({
+        where: { employeeId_policyYear: { employeeId: 'emp-1', policyYear: 2026 } },
+        update: {
+          vacationUsed: 6,
+          sickUsed: 1,
+          vacationCarriedOver: null,
+          sickCarriedOver: null,
+          setById: 'mgr-1',
+        },
+      });
+    });
+
+    it('refuses somebody who does not exist', async () => {
+      const { service, prisma } = build();
+      prisma.employee.findUnique.mockResolvedValue(null);
+      await expect(service.adjust('nobody', {}, 'mgr-1')).rejects.toThrow('Nobody by that id');
     });
   });
 });

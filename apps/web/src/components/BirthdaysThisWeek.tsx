@@ -51,9 +51,7 @@ export function BirthdaysThisWeek() {
           <li key={`${entry.id}-${entry.date}`} className="flex items-center gap-3 text-sm">
             <Avatar person={entry} size="sm" />
             <span className="min-w-0 flex-1">
-              <span className="font-medium text-slate-900">
-                {birthdayName(entry)} {entry.lastName}
-              </span>
+              <span className="font-medium text-slate-900">{birthdayName(entry)}</span>
               <span className="block text-xs text-slate-500">{when(entry.date)}</span>
             </span>
             {entry.date === localDate(new Date()) && (

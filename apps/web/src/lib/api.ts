@@ -33,6 +33,7 @@ import type {
   SurveyInputQuestion,
   SurveyResults,
   MyAvailability,
+  PtoAdjustment,
   PtoBalance,
   PtoPolicy,
   PtoRequest,
@@ -55,6 +56,7 @@ import type {
   ClosingTemplateItem,
   ClosingTemplateRole,
   ClosingTemplateSection,
+  StaffBalance,
   SupplyRequest,
 } from './types';
 
@@ -523,6 +525,12 @@ export const api = {
     request<PtoPolicy>('/pto/policy', { method: 'PATCH', body: JSON.stringify(body) }),
   ptoBalance: (employeeId?: string) =>
     request<PtoBalance>(`/pto/balance${employeeId ? `?employeeId=${employeeId}` : ''}`),
+  staffPtoBalances: () => request<StaffBalance[]>('/pto/balances'),
+  adjustPtoBalance: (employeeId: string, body: PtoAdjustment) =>
+    request<StaffBalance>(`/pto/balances/${employeeId}`, {
+      method: 'PUT',
+      body: JSON.stringify(body),
+    }),
 
   createEmployee: (body: {
     firstName: string;

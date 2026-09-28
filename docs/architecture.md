@@ -635,8 +635,13 @@ because staff should be able to check what they are entitled to without asking.
 
 `VACATION` and `PERSONAL` come out of the PTO allowance; `SICK` has its own;
 `BEREAVEMENT`, `UNPAID` and `OTHER` are recorded but deducted from neither.
-Whether personal days *should* share the PTO allowance is a handbook decision —
-flagged in `docs/open-questions.md`.
+
+**Since September 2026 a new request is only Sick or PTO** (Dominguez: the
+other kinds were more than the practice uses). `VACATION` is shown as "PTO",
+the practice's word and the name of its allowance. The enum keeps every value,
+so requests made before then still read correctly; the create DTO refuses the
+rest (`REQUESTABLE_PTO_TYPES`) and the form offers only the two. The form
+starts on **Sick**, or on PTO once the person's own sick days are used up.
 
 ### Carry-over
 
@@ -647,6 +652,32 @@ becoming sixty days. The walk starts at the hire date, so it is bounded.
 
 Sick days do not carry by default (`sickCarryoverDays` is 0), but the practice
 can turn it on.
+
+### The switch-over: time taken before Domi Staff
+
+Domi Staff went live in September 2026, three-quarters of the way through a
+policy year, so the app had never seen most of the time people had already
+taken (Dominguez). Managers and admins put it in on Time off → **Staff
+balances** → **Adjust**, which also holds a person's own yearly allowance:
+
+- `PtoStartingPoint` — per person **and policy year**: PTO and sick days
+  already taken before the app, counted as taken in that year (and so in what
+  carries on from it), and shown on the person's card as "Taken before Domi
+  Staff". Optionally what **really** carried into that year: null means
+  worked out, as for any year. That matters because the walk below starts at
+  the hire date and the app has no requests from before it went live, so for
+  anybody hired before 2026 it assumes those years went unused and carries the
+  full cap. A stated carry-over replaces the working-out for that year and
+  feeds the years after.
+- `PtoAllowance` — per person, not per year: their own PTO and sick days a
+  year (part-time, long service — Dominguez chose "some get a different
+  amount"). Null is the practice's. Prorated for a first year like the
+  practice's, and used for earlier years in the carry-over walk too.
+
+Whole or half days only (a custom validator: class-validator's
+`IsDivisibleBy(0.5)` rounds the divisor to 0 and refuses everything). The
+list works out a balance per person, so it stays closed until opened; staff
+get 403 on both endpoints.
 
 ### Proration
 

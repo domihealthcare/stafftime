@@ -88,7 +88,7 @@ await step('colleagues see this week’s birthdays on the home screen', async ()
   const card = colleague.getByTestId('birthdays-this-week');
   await card.waitFor({ timeout: 10000 });
   const text = await card.innerText();
-  if (!text.includes('Frankie') || !text.includes('Today') || !text.includes('Happy birthday!')) {
+  if (!/Frankie F\b/.test(text) || !text.includes('Today') || !text.includes('Happy birthday!')) {
     throw new Error(`the card reads: ${text}`);
   }
   if (!text.includes('Morgan')) throw new Error(`the birthday in two days is missing: ${text}`);
@@ -107,7 +107,10 @@ await step('the Schedule has a cake on the day, for everybody, and on the person
   await frankie.getByRole('button', { name: 'Week' }).click().catch(() => undefined);
   const header = frankie.getByTestId(`birthday-${key(today)}`);
   await header.first().waitFor({ timeout: 10000 });
-  if (!(await header.first().innerText()).includes('Frankie')) throw new Error('no name under the day');
+  // "Frankie F": first name and the last name's initial, so two Angelicas
+  // are told apart (Dominguez, September 2026).
+  const under = await header.first().innerText();
+  if (!/Frankie F\b/.test(under)) throw new Error(`under the day: ${under}`);
   // Their own row carries it only on their own birthday — and Frankie's is today.
   const sameWeek = key(inTwoDays) <= key(new Date(today.getTime() + ((7 - ((today.getDay() + 6) % 7)) - 1) * 86_400_000));
   await frankie.getByTestId('birthday-chip').first().waitFor({ timeout: 5000 });
@@ -116,6 +119,12 @@ await step('the Schedule has a cake on the day, for everybody, and on the person
   await frankie.getByRole('button', { name: 'Month' }).click();
   const month = frankie.getByTestId(`month-birthday-${key(today)}`);
   await month.waitFor({ timeout: 10000 });
+  // The month is named large above the calendar.
+  const period = frankie.getByTestId('schedule-period');
+  const named = `${MONTHS[today.getMonth()]} ${today.getFullYear()}`;
+  if ((await period.innerText()).trim() !== named) throw new Error(`the heading reads ${await period.innerText()}`);
+  const size = await period.evaluate((el) => parseFloat(getComputedStyle(el).fontSize));
+  if (size < 24) throw new Error(`the month is only ${size}px`);
   await frankie.screenshot({ path: `${OUT}/birthdays-month.png`, fullPage: true });
   await frankie.getByRole('button', { name: 'Week' }).click();
   await frankie.context().close();

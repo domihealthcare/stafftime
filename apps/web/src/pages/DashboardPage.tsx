@@ -10,7 +10,7 @@ import type { Dashboard, DashboardFigures, DashboardWeek } from '../lib/types';
 const SERIES = ['#2a78d6', '#eb6834'];
 
 const PTO_LABEL: Record<string, string> = {
-  VACATION: 'vacation',
+  VACATION: 'PTO',
   SICK: 'sick',
   PERSONAL: 'personal',
   BEREAVEMENT: 'bereavement',

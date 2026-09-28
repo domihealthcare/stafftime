@@ -52,9 +52,6 @@ The spreadsheet export stays as the fallback.
 
 ## PTO (Phase 2, requests and approval are built)
 
-- [ ] **Confirm personal days come out of the PTO allowance** rather than being
-      their own bucket. It is the common arrangement, but it is a handbook
-      decision.
 - [ ] **Accrual, if Domi wants it.** Days are currently granted for the whole
       policy year up front (prorated for a new hire). If PTO should instead
       accrue per pay period, that is a different model and worth deciding before

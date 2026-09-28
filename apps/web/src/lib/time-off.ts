@@ -20,11 +20,17 @@ export function timeOffOn(
   return matching.find((request) => request.status === 'APPROVED') ?? matching[0] ?? null;
 }
 
+/// VACATION is shown as "PTO", the practice's word for it and the name of its
+/// allowance. The last four are only for requests made before September 2026,
+/// when the form offered them; a new request is Sick or PTO (Dominguez).
 export const PTO_TYPE_LABELS: Record<PtoType, string> = {
-  VACATION: 'Vacation',
+  VACATION: 'PTO',
   SICK: 'Sick',
   PERSONAL: 'Personal',
   BEREAVEMENT: 'Bereavement',
   UNPAID: 'Unpaid',
   OTHER: 'Other',
 };
+
+/// What a new request can be, in the order the form offers them.
+export const REQUESTABLE_PTO_TYPES = ['SICK', 'VACATION'] as const satisfies readonly PtoType[];

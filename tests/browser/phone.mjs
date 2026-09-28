@@ -122,11 +122,20 @@ async function openMenuFor(page, name) {
   if (MENU[name]) await page.getByRole('button', { name: MENU[name], exact: true }).click();
 }
 
+await step('the top bar reads Clock, News, Schedule, Timesheet, Time off', async () => {
+  // Schedule before Timesheet (Dominguez, September 2026): it is the one
+  // people open most.
+  const links = await page.getByRole('navigation').getByRole('link').allInnerTexts();
+  const order = links.map((text) => text.trim().split(/\s/)[0]).filter((word) => word);
+  if (order.slice(0, 5).join() !== 'Clock,News,Schedule,Timesheet,Time')
+    throw new Error(`the top bar reads ${order.join(', ')}`);
+});
+
 await step('every navigation link is reachable without scrolling sideways', async () => {
   // The everyday screens sit in the top bar; the rest open from Team and
   // Manage. Either way, nothing may run off the edge of the phone.
   for (const name of [
-    'Clock', 'News', 'Timesheet', 'Schedule', 'Time off',
+    'Clock', 'News', 'Schedule', 'Timesheet', 'Time off',
     'Directory', 'Resources', 'Surveys', 'Dashboard', 'Closing checklists',
     'Onboarding & Offboarding', 'Licenses', 'Job roles', 'Export', 'Staff', 'Kiosks', 'Locations',
   ]) {

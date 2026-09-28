@@ -429,9 +429,22 @@ Beyond the phases, the parts worth knowing about before picking up work:
   or from a Birthday column in the import. Always shown — Dominguez chose no
   opt-out: "Birthdays this week" on the Clock screen, a cake under the day
   and on the person's own row in the Schedule week, a line in the month view,
-  and on their Directory card. Read-only on Your profile. `GET
+  and on their Directory card, as **first name and last initial**
+  ("Angelica D", so two Angelicas are told apart). Read-only on Your profile. `GET
   /directory/birthdays?from&to` (any signed-in person, two months at most); a
   29 February birthday shows on the 28th in other years.
+- **Time off is Sick or PTO** (September 2026, Dominguez): a new request is
+  one or the other, starting on Sick (PTO once the person's sick days are
+  used up); `VACATION` is shown as "PTO". Older kinds stay readable. For the
+  switch-over, Time off → **Staff balances** (managers and admins) shows
+  everybody's days left, and **Adjust** takes the PTO and sick days somebody
+  had already taken this year before Domi Staff, what really carried over
+  (blank: worked out) and their own yearly amount (blank: the practice's) —
+  `PtoStartingPoint`, `PtoAllowance`; see *The switch-over* in
+  `docs/architecture.md`.
+- **Schedule layout** (September 2026, Dominguez): the top bar reads Clock,
+  News, **Schedule, Timesheet**, Time off; the month (or the week's dates) is
+  a large heading right above the calendar, under the buttons.
 - **Demo data** loads from a button (account menu → Practice settings), not
   only from a terminal — whoever sets a deployment up is in a browser. Admin
   only, and refuses unless `APP_ENVIRONMENT` is `test`: it replaces every shift

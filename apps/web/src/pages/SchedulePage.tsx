@@ -272,15 +272,6 @@ export function SchedulePage() {
           Next →
         </button>
 
-        <span className="ml-1 text-sm font-medium text-slate-700">
-          {view === 'week'
-            ? `${weekStart.toLocaleDateString(undefined, { month: 'short', day: 'numeric' })} – ${addDays(
-                weekStart,
-                6,
-              ).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}`
-            : monthStart.toLocaleDateString(undefined, { month: 'long', year: 'numeric' })}
-        </span>
-
         {/* Switching keeps you where you were: a week in March goes to March,
             and picking a day in March goes back to that week — not to today. */}
         <div className="ml-auto flex rounded-lg border border-slate-300 bg-white p-0.5">
@@ -525,6 +516,21 @@ export function SchedulePage() {
           />
         </div>
       )}
+
+      {/* Which month or week this is, large, right above the calendar and under
+          the buttons (Dominguez, September 2026) — it was a small label beside
+          Previous and Next, easy to miss. */}
+      <h2
+        className="mb-3 text-2xl font-bold text-slate-900 sm:text-3xl"
+        data-testid="schedule-period"
+      >
+        {view === 'week'
+          ? `${weekStart.toLocaleDateString(undefined, { month: 'short', day: 'numeric' })} – ${addDays(
+              weekStart,
+              6,
+            ).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}`
+          : monthStart.toLocaleDateString(undefined, { month: 'long', year: 'numeric' })}
+      </h2>
 
       {/* The week grid is one column on a phone, so it reads as a list of days
           rather than seven squeezed columns. Its test id is how the phone

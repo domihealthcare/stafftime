@@ -476,6 +476,7 @@ async function clearPreviousDemoData(prisma: PrismaClient) {
     prisma.timeEntry.deleteMany({}),
     prisma.shift.deleteMany({}),
     prisma.ptoRequest.deleteMany({}),
+    prisma.ptoStartingPoint.deleteMany({}),
     prisma.employeeChecklist.deleteMany({}),
   ]);
 
