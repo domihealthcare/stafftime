@@ -191,6 +191,8 @@ export interface AllowanceBalance {
   carriedOver: number;
   available: number;
   used: number;
+  /// Of `used`, days taken before Domi Staff, as a manager entered them.
+  usedBefore: number;
   pending: number;
   remaining: number;
 }
@@ -203,6 +205,29 @@ export interface PtoBalance {
   vacation: AllowanceBalance;
   sick: AllowanceBalance;
   unpaidAndOther: number;
+}
+
+/// The days a manager can set for one person (the switch-over, September
+/// 2026). Null allowance: the practice's. Null carry-over: worked out.
+export interface PtoAdjustment {
+  vacationDaysPerYear: number | null;
+  sickDaysPerYear: number | null;
+  vacationUsed: number;
+  sickUsed: number;
+  vacationCarriedOver: number | null;
+  sickCarriedOver: number | null;
+}
+
+/// A row of the Time off screen's staff list, for managers.
+export interface StaffBalance extends PtoAdjustment {
+  employee: {
+    id: string;
+    firstName: string;
+    lastName: string;
+    preferredName: string | null;
+    email: string;
+  };
+  balance: PtoBalance;
 }
 
 export interface PlannedSkip {

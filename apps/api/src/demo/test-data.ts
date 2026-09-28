@@ -25,6 +25,9 @@ export async function clearTestData(prisma: PrismaClient) {
     const entries = await tx.timeEntry.deleteMany({});
     const shifts = await tx.shift.deleteMany({});
     const timeOff = await tx.ptoRequest.deleteMany({});
+    // Days taken before the app, as entered while testing; allowances are
+    // set-up and stay (or go with the demo staff they belong to).
+    await tx.ptoStartingPoint.deleteMany({});
     const checklists = await tx.employeeChecklist.deleteMany({});
     const credentials = await tx.employeeCredential.deleteMany({});
     const availability = await tx.unavailability.deleteMany({});

@@ -256,6 +256,10 @@ model Employee {
   ptoRequests         PtoRequest[]       @relation("PtoRequester")
   reviewedPtoRequests PtoRequest[]       @relation("PtoReviewer")
   editedPtoPolicies   PtoPolicy[]        @relation("PtoPolicyEditor")
+  ptoAllowance        PtoAllowance?      @relation("PtoAllowanceSubject")
+  setPtoAllowances    PtoAllowance[]     @relation("PtoAllowanceSetBy")
+  ptoStartingPoints   PtoStartingPoint[] @relation("PtoStartingPointSubject")
+  setPtoStartPoints   PtoStartingPoint[] @relation("PtoStartingPointSetBy")
   editedSettings      PracticeSettings[] @relation("PracticeSettingsEditor")
   editedTimeEntries   TimeEntry[]        @relation("TimeEntryEditedBy")
   approvedTimeEntries TimeEntry[]        @relation("TimeEntryApprovedBy")
@@ -344,6 +348,54 @@ model PtoPolicy {
   updatedBy Employee? @relation("PtoPolicyEditor", fields: [updatedById], references: [id], onDelete: SetNull)
 
   @@map("pto_policy")
+}
+
+/// One person's own yearly allowance, when it is not the practice's (part-time
+/// or long-serving staff — Dominguez, September 2026). Either number may be
+/// null, meaning the practice's. Set by a manager or admin on the Time off
+/// screen. Prorated for a first year like the practice's.
+model PtoAllowance {
+  id         String @id @default(uuid()) @db.Uuid
+  employeeId String @unique @db.Uuid
+
+  vacationDaysPerYear Float?
+  sickDaysPerYear     Float?
+
+  setById   String?  @db.Uuid
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  employee Employee  @relation("PtoAllowanceSubject", fields: [employeeId], references: [id], onDelete: Cascade)
+  setBy    Employee? @relation("PtoAllowanceSetBy", fields: [setById], references: [id], onDelete: SetNull)
+
+  @@map("pto_allowances")
+}
+
+/// What the app did not see, for one person in one policy year: days of PTO
+/// and sick time already taken before Domi Staff (the switch-over, September
+/// 2026 — Dominguez), and optionally what really carried over into that year.
+/// A null carry-over means "work it out", as for any other year.
+///
+/// Counted as taken in that year's balance, and so in what carries on from it.
+model PtoStartingPoint {
+  id         String @id @default(uuid()) @db.Uuid
+  employeeId String @db.Uuid
+  policyYear Int
+
+  vacationUsed        Float  @default(0)
+  sickUsed            Float  @default(0)
+  vacationCarriedOver Float?
+  sickCarriedOver     Float?
+
+  setById   String?  @db.Uuid
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  employee Employee  @relation("PtoStartingPointSubject", fields: [employeeId], references: [id], onDelete: Cascade)
+  setBy    Employee? @relation("PtoStartingPointSetBy", fields: [setById], references: [id], onDelete: SetNull)
+
+  @@unique([employeeId, policyYear])
+  @@map("pto_starting_points")
 }
 
 /// Practice-wide scheduling rules the managers set for themselves.
@@ -1079,7 +1131,7 @@ model JobRole {
   closingSections      ClosingSection[]
   /// People in this role see their own licenses and onboarding under Team.
   /// Starts true for Provider only (September 2026).
-  seesOwnPersonnelTabs Boolean           @default(false)
+  seesOwnPersonnelTabs Boolean                @default(false)
 
   @@map("job_roles")
 }

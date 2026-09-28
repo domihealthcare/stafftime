@@ -4,17 +4,25 @@ import {
   IsBoolean,
   IsDateString,
   IsEnum,
+  IsIn,
   IsInt,
   IsOptional,
   IsString,
   IsUUID,
   Length,
   Max,
+  IsNumber,
   Min,
+  ValidateBy,
 } from 'class-validator';
 
+/// A new request is sick or PTO (VACATION), nothing else (Dominguez,
+/// September 2026). The other types stay in the database for requests made
+/// before then.
+export const REQUESTABLE_PTO_TYPES: PtoType[] = [PtoType.SICK, PtoType.VACATION];
+
 export class CreatePtoRequestDto {
-  @IsEnum(PtoType)
+  @IsIn(REQUESTABLE_PTO_TYPES, { message: 'Time off is either Sick or PTO.' })
   type!: PtoType;
 
   /// First day off, inclusive. A plain date: "2026-11-03".
@@ -119,4 +127,48 @@ export class UpdatePtoPolicyDto {
   @IsOptional()
   @IsBoolean()
   prorateFirstYear?: boolean;
+}
+
+/// Days: whole or half, from none to a year.
+function Days(what: string): PropertyDecorator {
+  return (target, key) => {
+    IsOptional()(target, key);
+    IsNumber({}, { message: `${what} must be a number of days.` })(target, key);
+    // Not IsDivisibleBy(0.5): it rounds the divisor down to 0 first.
+    ValidateBy({
+      name: 'halfDays',
+      validator: {
+        validate: (value) => typeof value !== 'number' || Number.isInteger(value * 2),
+        defaultMessage: () => `${what} must be whole or half days.`,
+      },
+    })(target, key);
+    Min(0, { message: `${what} cannot be below 0.` })(target, key);
+    Max(366, { message: `${what} cannot be more than a year.` })(target, key);
+  };
+}
+
+/**
+ * A manager's adjustment for one person (the switch-over, September 2026):
+ * their own yearly allowance, and this policy year's starting point. The
+ * whole thing is sent each time; a missing or null allowance means the
+ * practice's, a missing or null carry-over means "work it out".
+ */
+export class AdjustPtoBalanceDto {
+  @Days('Their yearly PTO')
+  vacationDaysPerYear?: number | null;
+
+  @Days('Their yearly sick days')
+  sickDaysPerYear?: number | null;
+
+  @Days('PTO already taken')
+  vacationUsed?: number | null;
+
+  @Days('Sick days already taken')
+  sickUsed?: number | null;
+
+  @Days('PTO carried over')
+  vacationCarriedOver?: number | null;
+
+  @Days('Sick days carried over')
+  sickCarriedOver?: number | null;
 }

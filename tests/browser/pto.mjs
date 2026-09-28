@@ -53,6 +53,25 @@ await step('an employee is not offered the "for someone else" picker', async () 
     throw new Error('employee was offered the on-behalf-of picker');
 });
 
+await step('a request is Sick or PTO, and starts on Sick', async () => {
+  // Dominguez, September 2026: the other kinds were more than the practice uses.
+  const type = emp.getByLabel('Type');
+  const options = await type.locator('option').allInnerTexts();
+  if (options.join() !== 'Sick,PTO') throw new Error(`the form offers: ${options.join(', ')}`);
+  if ((await type.inputValue()) !== 'SICK') throw new Error(`it starts on ${await type.inputValue()}`);
+  // And the server agrees: an old kind is refused, in words.
+  const refused = await emp.evaluate(async () => {
+    const r = await fetch('/api/pto', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ type: 'PERSONAL', startDate: '2031-01-06', endDate: '2031-01-06' }),
+    });
+    return { status: r.status, body: await r.text() };
+  });
+  if (refused.status !== 400 || !refused.body.includes('Sick or PTO'))
+    throw new Error(`a personal day was answered ${refused.status}: ${refused.body}`);
+});
+
 await step('an employee submits a request', async () => {
   await emp.getByLabel('Type').selectOption('VACATION');
   await emp.getByLabel('First day').fill(START);
@@ -169,7 +188,7 @@ await step('a single day with no end date counts as one day', async () => {
 await step('a manager cannot decide their own request', async () => {
   await mgr.getByRole('button', { name: '+ Request time off' }).click();
   await mgr.getByLabel('For').selectOption({ label: 'Myself' });
-  await mgr.getByLabel('Type').selectOption('PERSONAL');
+  await mgr.getByLabel('Type').selectOption('VACATION');
   await mgr.getByLabel('First day').fill(`${YEAR}-04-06`);
   await mgr.getByRole('button', { name: 'Send request' }).click();
   await formClosed(mgr);

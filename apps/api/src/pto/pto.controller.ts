@@ -8,6 +8,7 @@ import {
   ParseUUIDPipe,
   Patch,
   Post,
+  Put,
   Query,
 } from '@nestjs/common';
 import { Role } from '@prisma/client';
@@ -15,6 +16,7 @@ import { AuthUser } from '../common/auth/auth-user';
 import { CurrentUser } from '../common/auth/current-user.decorator';
 import { Roles } from '../common/auth/roles.decorator';
 import {
+  AdjustPtoBalanceDto,
   CreatePtoRequestDto,
   QueryPtoRequestsDto,
   ReviewPtoRequestDto,
@@ -53,6 +55,24 @@ export class PtoController {
     const target =
       user.role === Role.EMPLOYEE || !employeeId ? user.id : employeeId;
     return this.policy.balanceFor(target, year ? Number(year) : undefined);
+  }
+
+  /// Everybody's balance this policy year, with what a manager has set.
+  @Get('balances')
+  @Roles(Role.MANAGER)
+  staffBalances() {
+    return this.policy.staffBalances();
+  }
+
+  /// Days already taken before Domi Staff, and a person's own allowance.
+  @Put('balances/:employeeId')
+  @Roles(Role.MANAGER)
+  adjust(
+    @Param('employeeId', ParseUUIDPipe) employeeId: string,
+    @Body() dto: AdjustPtoBalanceDto,
+    @CurrentUser() user: AuthUser,
+  ) {
+    return this.policy.adjust(employeeId, dto, user.id);
   }
 
   /// Anyone can ask for time off.

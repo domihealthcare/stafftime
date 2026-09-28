@@ -140,11 +140,11 @@ export function Layout() {
             <NavLink to="/news" className={linkClasses}>
               News
             </NavLink>
-            <NavLink to="/timesheet" className={linkClasses}>
-              Timesheet
-            </NavLink>
             <NavLink to="/schedule" className={linkClasses}>
               Schedule
+            </NavLink>
+            <NavLink to="/timesheet" className={linkClasses}>
+              Timesheet
             </NavLink>
             <NavLink to="/time-off" className={linkClasses}>
               Time off

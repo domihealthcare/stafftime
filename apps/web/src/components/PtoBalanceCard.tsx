@@ -57,7 +57,15 @@ function Allowance({ label, allowance }: { label: string; allowance: AllowanceBa
         {allowance.carriedOver > 0 && (
           <Line term="Carried over" value={allowance.carriedOver} />
         )}
-        {allowance.used > 0 && <Line term="Taken" value={allowance.used} />}
+        {allowance.usedBefore > 0 && (
+          <Line term="Taken before Domi Staff" value={allowance.usedBefore} />
+        )}
+        {allowance.used - allowance.usedBefore > 0 && (
+          <Line
+            term="Taken"
+            value={Math.round((allowance.used - allowance.usedBefore) * 10) / 10}
+          />
+        )}
         {allowance.pending > 0 && (
           <Line term="Awaiting approval" value={allowance.pending} />
         )}

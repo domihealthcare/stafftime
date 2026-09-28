@@ -11,9 +11,10 @@ import type {
   PtoStatus,
   PtoType,
 } from '../lib/types';
-import { PTO_TYPE_LABELS } from '../lib/time-off';
+import { PTO_TYPE_LABELS, REQUESTABLE_PTO_TYPES } from '../lib/time-off';
 import { PtoBalanceCard } from '../components/PtoBalanceCard';
 import { PtoPolicyEditor } from '../components/PtoPolicyEditor';
+import { StaffPtoBalances } from '../components/StaffPtoBalances';
 import { useConfirm } from '../components/ConfirmDialog';
 import { Alert, Badge, Card, EmptyState, PageHeading, Spinner } from '../components/ui';
 
@@ -99,6 +100,12 @@ export function TimeOffPage() {
               void load();
             }}
           />
+        </div>
+      )}
+
+      {policy && isManager && (
+        <div className="mb-4">
+          <StaffPtoBalances policy={policy} onChanged={() => void load()} />
         </div>
       )}
 
@@ -398,7 +405,9 @@ function RequestForm({
   balance: PtoBalance | null;
   onCreated: () => void;
 }) {
-  const [type, setType] = useState<PtoType>('VACATION');
+  // Sick first, unless the person's own sick days are known to be used up:
+  // then PTO (Dominguez, September 2026). Once they pick, it is theirs.
+  const [chosenType, setType] = useState<PtoType | null>(null);
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
   const [isHalfDay, setIsHalfDay] = useState(false);
@@ -406,6 +415,9 @@ function RequestForm({
   const [employeeId, setEmployeeId] = useState('');
   const [busy, setBusy] = useState(false);
   const [problem, setProblem] = useState<string | null>(null);
+
+  const sickUsedUp = employeeId === '' && balance !== null && balance.sick.remaining <= 0;
+  const type: PtoType = chosenType ?? (sickUsedUp ? 'VACATION' : 'SICK');
 
   // One date is the common case; the end mirrors the start until changed.
   const effectiveEnd = endDate || startDate;
@@ -506,9 +518,9 @@ function RequestForm({
             onChange={(event) => setType(event.target.value as PtoType)}
             className={field}
           >
-            {Object.entries(TYPE_LABELS).map(([value, label]) => (
+            {REQUESTABLE_PTO_TYPES.map((value) => (
               <option key={value} value={value}>
-                {label}
+                {TYPE_LABELS[value]}
               </option>
             ))}
           </select>

@@ -131,6 +131,89 @@ await step('a request in a different policy year says so instead of misreporting
   await emp.getByText(/falls outside the \d+ policy year/).waitFor({ timeout: 10000 });
 });
 
+// --- the switch-over: time taken before Domi Staff (Dominguez, September 2026) ---
+const leftIn = async (row, label) => {
+  const text = (await row.innerText()).replace(/\n/g, ' ');
+  const match = text.match(new RegExp(`${label} (-?[\\d.]+) left`));
+  if (!match) throw new Error(`no ${label} balance in "${text}"`);
+  return Number(match[1]);
+};
+const frankieRow = () => adm.getByTestId('balance-frontdesk@domihealthcare.com');
+let before;
+
+await step('a manager sees everybody’s balance, closed until asked for', async () => {
+  await adm.reload({ waitUntil: 'networkidle' });
+  const card = adm.getByTestId('staff-pto-balances');
+  if (await card.getByTestId('balance-frontdesk@domihealthcare.com').count() > 0)
+    throw new Error('the list was worked out before anybody opened it');
+  await card.getByRole('button', { name: 'Open' }).click();
+  await frankieRow().waitFor({ timeout: 15000 });
+  before = { pto: await leftIn(frankieRow(), 'PTO'), sick: await leftIn(frankieRow(), 'Sick') };
+});
+
+await step('a manager puts in time already taken, and a yearly allowance of their own', async () => {
+  await frankieRow().getByRole('button', { name: 'Adjust' }).click();
+  const form = adm.getByRole('form', { name: /Adjust Frankie/ });
+  await form.getByLabel('PTO already taken').fill('4');
+  await form.getByLabel('Sick days already taken').fill('1.5');
+  await form.getByLabel('Their own PTO a year').fill('20');
+  await form.getByRole('button', { name: 'Save' }).click();
+  await form.waitFor({ state: 'detached', timeout: 15000 });
+  const after = { pto: await leftIn(frankieRow(), 'PTO'), sick: await leftIn(frankieRow(), 'Sick') };
+  // Four taken, five more a year: one more left than before.
+  if (after.pto !== before.pto + 1) throw new Error(`PTO went from ${before.pto} to ${after.pto}`);
+  if (after.sick !== before.sick - 1.5) throw new Error(`sick went from ${before.sick} to ${after.sick}`);
+});
+
+await step('it asks for whole or half days', async () => {
+  const answer = await adm.evaluate(async () => {
+    const staff = await fetch('/api/employees').then((r) => r.json());
+    const frankie = staff.find((p) => p.email === 'frontdesk@domihealthcare.com');
+    const r = await fetch(`/api/pto/balances/${frankie.id}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ vacationUsed: 0.3 }),
+    });
+    return { status: r.status, body: await r.text() };
+  });
+  if (answer.status !== 400 || !answer.body.includes('whole or half days'))
+    throw new Error(`answered ${answer.status}: ${answer.body}`);
+});
+
+await step('the person sees it on their own balance', async () => {
+  await emp.reload({ waitUntil: 'networkidle' });
+  const text = (await balanceCard(emp).innerText()).replace(/\n/g, ' ');
+  if (!/Taken before Domi Staff\s*4/.test(text) || !/Allowance\s*20/.test(text))
+    throw new Error(`the card reads: "${text}"`);
+});
+
+await step('staff can neither read the list nor change anybody’s', async () => {
+  const statuses = await emp.evaluate(async () => {
+    const list = await fetch('/api/pto/balances');
+    const change = await fetch('/api/pto/balances/00000000-0000-4000-8000-000000000000', {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ vacationUsed: 20 }),
+    });
+    return [list.status, change.status];
+  });
+  if (statuses.join() !== '403,403') throw new Error(`answered ${statuses}`);
+  if (await emp.getByTestId('staff-pto-balances').count() > 0)
+    throw new Error('staff were shown the list');
+});
+await adm.screenshot({ path: `${OUT}/32-pto-staff-balances.png`, fullPage: true });
+
+await step('blank puts it back to the practice’s', async () => {
+  await frankieRow().getByRole('button', { name: 'Adjust' }).click();
+  const form = adm.getByRole('form', { name: /Adjust Frankie/ });
+  for (const label of ['PTO already taken', 'Sick days already taken', 'Their own PTO a year'])
+    await form.getByLabel(label).fill('');
+  await form.getByRole('button', { name: 'Save' }).click();
+  await form.waitFor({ state: 'detached', timeout: 15000 });
+  if ((await leftIn(frankieRow(), 'PTO')) !== before.pto) throw new Error('PTO did not go back');
+  if ((await leftIn(frankieRow(), 'Sick')) !== before.sick) throw new Error('sick did not go back');
+});
+
 await browser.close();
 console.log(`\n${errors.length === 0 ? 'ALL POLICY CHECKS PASSED' : `PROBLEMS (${errors.length}):`}`);
 errors.forEach((e) => console.log(' - ' + e));

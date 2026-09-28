@@ -20,6 +20,8 @@ reset_state() {
     -c "update time_entries set \"clockOutAt\" = \"clockInAt\" + interval '1 hour', status='COMPLETED' where \"clockOutAt\" is null;" \
     -c "delete from kiosk_devices;" \
     -c "delete from pto_requests;" \
+    -c "delete from pto_starting_points;" \
+    -c "delete from pto_allowances;" \
     -c "delete from report_presets;" \
     -c "delete from pto_policy;" \
     -c "update employees set \"calendarToken\" = null, \"calendarTokenSetAt\" = null;" \

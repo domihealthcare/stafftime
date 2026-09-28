@@ -21,8 +21,15 @@ export function formatBirthday(month: number | null | undefined, day: number | n
   return `${MONTHS[month - 1].slice(0, 3)} ${day}`;
 }
 
-export const birthdayName = (entry: Pick<BirthdayEntry, 'firstName' | 'preferredName'>) =>
-  entry.preferredName || entry.firstName;
+/// "Angelica D": the name they go by and their last name's first letter, so
+/// two people with the same first name are told apart (Dominguez, September
+/// 2026).
+export const birthdayName = (
+  entry: Pick<BirthdayEntry, 'firstName' | 'lastName' | 'preferredName'>,
+) => {
+  const initial = entry.lastName.trim().charAt(0).toUpperCase();
+  return `${entry.preferredName || entry.firstName}${initial ? ` ${initial}` : ''}`;
+};
 
 /// Birthdays grouped by day, YYYY-MM-DD → people.
 export function birthdaysByDay(entries: BirthdayEntry[]): Map<string, BirthdayEntry[]> {
