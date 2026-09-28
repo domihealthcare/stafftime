@@ -18,6 +18,7 @@ function row(over: Record<string, unknown> = {}) {
     title: 'Office meeting',
     description: null,
     place: 'Break room',
+    meetingUrl: null,
     allDay: false,
     startsAt: new Date(FUTURE_START),
     endsAt: new Date(FUTURE_END),
@@ -158,8 +159,10 @@ function build(
     },
   };
   const inbox = { notify: jest.fn().mockResolvedValue(undefined) };
+  const meet = { createLink: jest.fn().mockResolvedValue('https://meet.google.com/new-meet-abc') };
   return {
-    service: new EventsService(prisma as never, inbox as never),
+    meet,
+    service: new EventsService(prisma as never, inbox as never, meet as never),
     prisma,
     practiceEvent,
     practiceEventInvitee,
@@ -621,6 +624,124 @@ describe('closures', () => {
         body: '2 closures: Christmas Day, Christmas Eve',
       });
     });
+  });
+});
+
+describe('video call link', () => {
+  it('keeps a pasted Meet link on the event', async () => {
+    const { service, practiceEvent } = build();
+    await service.create(input({ meetingUrl: '  https://meet.google.com/abc-defg-hij ' }), manager);
+    expect(practiceEvent.createMany.mock.calls[0][0].data[0].meetingUrl).toBe(
+      'https://meet.google.com/abc-defg-hij',
+    );
+  });
+
+  it('puts the same link on every date of a series', async () => {
+    const { service, practiceEvent } = build();
+    await service.create(
+      input({
+        meetingUrl: 'https://meet.google.com/abc-defg-hij',
+        repeat: { frequency: 'WEEKLY', interval: 2, weekdays: [3], until: '2099-11-30' },
+      }),
+      manager,
+    );
+    const written = practiceEvent.createMany.mock.calls[0][0].data;
+    expect(written.length).toBeGreaterThan(1);
+    expect(
+      written.every(
+        (w: { meetingUrl: string }) => w.meetingUrl === 'https://meet.google.com/abc-defg-hij',
+      ),
+    ).toBe(true);
+  });
+
+  it('refuses anything that is not an https address — a script above all', async () => {
+    const { service } = build();
+    await expect(
+      service.create(input({ meetingUrl: 'javascript:alert(1)' }), manager),
+    ).rejects.toThrow('A video call link has to start with https://');
+    await expect(
+      service.create(input({ meetingUrl: 'http://meet.google.com/abc' }), manager),
+    ).rejects.toThrow('A video call link has to start with https://');
+    await expect(service.create(input({ meetingUrl: 'meet link' }), manager)).rejects.toThrow(
+      /not a web address/,
+    );
+  });
+
+  it('keeps no link on a closure', async () => {
+    const { service, practiceEvent } = build();
+    await service.create(
+      input({
+        kind: PracticeEventKind.CLOSURE,
+        meetingUrl: 'https://meet.google.com/abc-defg-hij',
+      }),
+      manager,
+    );
+    expect(practiceEvent.createMany.mock.calls[0][0].data[0].meetingUrl).toBeNull();
+  });
+
+  it('makes a Google Meet link when asked, instead of a pasted one', async () => {
+    const { service, practiceEvent, meet } = build();
+    await service.create(
+      input({ createMeetLink: true, meetingUrl: 'https://zoom.us/j/123' }),
+      manager,
+    );
+    expect(meet.createLink).toHaveBeenCalledTimes(1);
+    expect(practiceEvent.createMany.mock.calls[0][0].data[0].meetingUrl).toBe(
+      'https://meet.google.com/new-meet-abc',
+    );
+  });
+
+  it('makes one Meet link for a whole series', async () => {
+    const { service, practiceEvent, meet } = build();
+    await service.create(
+      input({
+        createMeetLink: true,
+        repeat: { frequency: 'WEEKLY', interval: 2, weekdays: [3], until: '2099-11-30' },
+      }),
+      manager,
+    );
+    expect(meet.createLink).toHaveBeenCalledTimes(1);
+    const links = new Set(
+      practiceEvent.createMany.mock.calls[0][0].data.map(
+        (w: { meetingUrl: string }) => w.meetingUrl,
+      ),
+    );
+    expect([...links]).toEqual(['https://meet.google.com/new-meet-abc']);
+  });
+
+  it('asks Google only once the rest of the form is fine', async () => {
+    const { service, meet } = build();
+    await expect(
+      service.create(
+        input({
+          createMeetLink: true,
+          repeat: { frequency: 'WEEKLY', interval: 1, weekdays: [], until: '2099-11-30' },
+        }),
+        manager,
+      ),
+    ).rejects.toThrow('Choose at least one day of the week.');
+    expect(meet.createLink).not.toHaveBeenCalled();
+  });
+
+  it('saves nothing when Google will not make the link', async () => {
+    const { service, practiceEvent, meet } = build();
+    meet.createLink.mockRejectedValue(new Error('Google did not make a Meet link'));
+    await expect(service.create(input({ createMeetLink: true }), manager)).rejects.toThrow(
+      /Google did not make/,
+    );
+    expect(practiceEvent.createMany).not.toHaveBeenCalled();
+  });
+
+  it('tells people when the link changes', async () => {
+    const { service, inbox } = build({ invited: ['emp-1'] });
+    await service.update(
+      'ev-1',
+      input({ meetingUrl: 'https://meet.google.com/new-link-xyz' }),
+      manager,
+    );
+    expect(inbox.notify.mock.calls.map(([, notice]) => notice.title)).toContain(
+      'Event changed: Office meeting',
+    );
   });
 });
 

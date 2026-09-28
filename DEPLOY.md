@@ -250,6 +250,16 @@ It is two variables, and the fiddly part is DNS rather than code:
 Another provider (SendGrid, SES) is one new class in `apps/api/src/email` — the
 app does not care which one sends. See `docs/architecture.md`.
 
+## Turning on Google Meet links
+
+**Not done on the live site yet.** Optional: it adds a **Create a Google Meet
+link** tick box to the event form, making meetings hosted by
+office@domihealthcare.com. Without it, links can still be pasted by hand.
+
+It is two Vercel variables, `GOOGLE_SERVICE_ACCOUNT_JSON` and
+`GOOGLE_MEET_HOST`, plus a one-time permission given by the Workspace admin.
+Click-by-click steps are in [`docs/google-meet-setup.md`](docs/google-meet-setup.md).
+
 ## Showing it to your managers
 
 Send them the link and their email address. Give them the temporary password by

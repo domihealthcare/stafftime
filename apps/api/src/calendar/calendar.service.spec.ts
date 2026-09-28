@@ -124,9 +124,7 @@ describe('CalendarService', () => {
     it('publishes only approved time off', async () => {
       const { service, prisma } = build();
       await service.feedForToken('token', NOW);
-      expect(prisma.ptoRequest.findMany.mock.calls[0][0].where.status).toBe(
-        PtoStatus.APPROVED,
-      );
+      expect(prisma.ptoRequest.findMany.mock.calls[0][0].where.status).toBe(PtoStatus.APPROVED);
     });
 
     it('scopes both queries to this employee', async () => {
@@ -205,9 +203,7 @@ describe('CalendarService', () => {
           },
         ],
       });
-      expect(await service.feedForToken('token', NOW)).toContain(
-        'SUMMARY:Personal (half day)',
-      );
+      expect(await service.feedForToken('token', NOW)).toContain('SUMMARY:Personal (half day)');
     });
 
     it('names the calendar after the employee, preferring a preferred name', async () => {
@@ -306,6 +302,21 @@ describe('CalendarService', () => {
       expect(feed).toContain('DTEND;VALUE=DATE:20261017');
       expect(feed).toContain('TRANSP:TRANSPARENT');
       expect(feed).not.toContain('LOCATION:');
+    });
+
+    it('puts a video call link where every calendar app can tap it', async () => {
+      const { service } = build({
+        events: [{ ...meeting, place: null, meetingUrl: 'https://meet.google.com/abc-defg-hij' }],
+      });
+      // Unfolded: long lines are split at 75 octets, as iCalendar requires.
+      const feed = (await service.feedForToken('token', NOW)).replace(/\r\n /g, '');
+      expect(feed).toContain('URL:https://meet.google.com/abc-defg-hij');
+      // Google Calendar ignores URL, so it leads the notes too, and stands in
+      // for the place when there is none.
+      expect(feed).toContain(
+        'DESCRIPTION:Join the video call: https://meet.google.com/abc-defg-hij\\n\\nBring your',
+      );
+      expect(feed).toContain('LOCATION:https://meet.google.com/abc-defg-hij');
     });
 
     it('names a closure as one, and does not make anybody look busy', async () => {

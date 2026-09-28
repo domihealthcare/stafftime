@@ -213,8 +213,9 @@ const STAFF: Section[] = [
           <p>
             On <Screen>Schedule</Screen>, in the <strong>Events</strong> row above your shifts (and
             with a 📅 in the month): office meetings, meetings you have been added to, and
-            practice-wide days like a wellness event. A 🔁 means it repeats. Tap one for the time,
-            the place and who it is for. The bell tells you when one is added, moved or cancelled,
+            practice-wide days like a wellness event. A 🔁 means it repeats, a 🎥 that it is a
+            video call. Tap one for the time, the place and who it is for — and a{' '}
+            <strong>Join video call</strong> button when there is one. The bell tells you when one is added, moved or cancelled,
             and reminds you the day before; if you use the calendar link they appear on your phone
             as well. An event is not a shift — if you are being paid to be there, clock in as usual.
           </p>
@@ -527,7 +528,10 @@ const MANAGERS: Section[] = [
             tick <strong>All day</strong>, for one day or several), where it is, and{' '}
             <strong>who it is for</strong> — Everyone, or type into the box and add any mix of job
             roles, offices and people (say <em>Provider</em>, <em>Kayla</em>, <em>Angelina</em>).
-            To make it repeat, choose from <strong>Repeats</strong>: every week, every 2 weeks, every
+            For a call, paste its link into <strong>Video call link</strong> — or, once Google Meet
+            is set up, tick <strong>Create a Google Meet link</strong> (hosted by office@; practice
+            accounts go straight in, others are let in). To make it repeat, choose from{' '}
+            <strong>Repeats</strong>: every week, every 2 weeks, every
             month (the same date, or e.g. the first Friday), or <strong>Custom</strong> — every 2
             weeks on Monday and Friday — until a date up to a year ahead. For meetings on
             alternate Fridays, make each one every 2 weeks, starting a week apart. Everybody it is

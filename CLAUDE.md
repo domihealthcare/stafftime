@@ -347,6 +347,18 @@ Beyond the phases, the parts worth knowing about before picking up work:
   `PracticeEventInvitee`). One notification per series, plus a **reminder the
   day before** each date from the nightly job (`reminderSentAt` stops a
   second). Closures stay both offices or one.
+- **Video call links** (September 2026, Dominguez): an event can carry a
+  `meetingUrl`, https only (checked in the service, the browser and a
+  database constraint). Staff get a **Join video call** button, and phones
+  get it as the calendar entry's URL, first in its notes and, with no place,
+  as its location. **Create a Google Meet link** (a tick box, one link per
+  series) makes a Meet meeting hosted by **office@domihealthcare.com**, set to
+  *Trusted*: practice accounts walk in, others knock. It works through a
+  Google service account with domain-wide delegation for the one scope
+  `meetings.space.created` (`events/google-meet.service.ts`, no Google
+  library). **Not set up on the live site yet**: the Workspace super admin (dominguez@ — not admin@) follows
+  `docs/google-meet-setup.md`; until then the tick box is hidden and links
+  are pasted.
 - **Holidays and closures** (September 2026, Dominguez): a `PracticeEvent`
   with `kind: CLOSURE` — Christmas all day, Christmas Eve from 1pm — for
   **both offices or one** (never a job role). Shown with a 🔒 to that office's

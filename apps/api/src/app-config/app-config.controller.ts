@@ -2,6 +2,7 @@ import { Controller, Get } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { Public } from '../common/auth/public.decorator';
 import { AppEnvironment } from '../config/env.validation';
+import { GoogleMeetService } from '../events/google-meet.service';
 
 /**
  * The handful of facts the web app needs before anyone signs in.
@@ -11,7 +12,10 @@ import { AppEnvironment } from '../config/env.validation';
  */
 @Controller('config')
 export class AppConfigController {
-  constructor(private readonly config: ConfigService) {}
+  constructor(
+    private readonly config: ConfigService,
+    private readonly meet: GoogleMeetService,
+  ) {}
 
   @Get()
   @Public()
@@ -27,6 +31,9 @@ export class AppConfigController {
       // The commit this server was deployed from, so the Help page can tell a
       // stale browser tab from what is live. Null where the host does not say.
       version: this.config.get<string>('VERCEL_GIT_COMMIT_SHA')?.slice(0, 7) ?? null,
+      // Whether the event form may offer "Create a Google Meet link". Says
+      // only that it is set up — never which account or key.
+      googleMeet: this.meet.available,
     };
   }
 }
