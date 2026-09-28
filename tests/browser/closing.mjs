@@ -57,7 +57,13 @@ const frankie = await fdCtx.newPage();
 frankie.on('pageerror', (e) => errors.push(`staff pageerror: ${e.message}`));
 await signIn(frankie, 'frontdesk@domihealthcare.com');
 
-const mgrCtx = await browser.newContext({ viewport: { width: 1280, height: 1000 } });
+// The manager's browser is in New Jersey, as it is at the practice: the
+// closing screen opens on the viewer's today, which on a UTC runner is
+// already tomorrow every evening after 8pm.
+const mgrCtx = await browser.newContext({
+  viewport: { width: 1280, height: 1000 },
+  timezoneId: 'America/New_York',
+});
 const mgr = await mgrCtx.newPage();
 mgr.on('pageerror', (e) => errors.push(`manager pageerror: ${e.message}`));
 await signIn(mgr, 'manager@domihealthcare.com');
