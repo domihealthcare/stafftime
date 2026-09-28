@@ -74,13 +74,13 @@ describe('GoogleMeetService', () => {
     expect(verified).toBe(true);
   });
 
-  it('makes a Trusted meeting: practice accounts walk in, others knock', async () => {
+  it('makes an Open meeting: anybody with the link walks in, personal accounts too', async () => {
     const link = await service().createLink();
     expect(link).toBe('https://meet.google.com/abc-defg-hij');
     const [url, init] = fetchMock.mock.calls[1];
     expect(url).toBe('https://meet.googleapis.com/v2/spaces');
     expect((init.headers as Record<string, string>).Authorization).toBe('Bearer token-1');
-    expect(JSON.parse(init.body as string)).toEqual({ config: { accessType: 'TRUSTED' } });
+    expect(JSON.parse(init.body as string)).toEqual({ config: { accessType: 'OPEN' } });
   });
 
   it('signs in once and reuses it for the next link', async () => {
