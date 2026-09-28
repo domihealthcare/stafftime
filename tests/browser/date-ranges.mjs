@@ -32,17 +32,16 @@ const addDays = (date, n) => {
   d.setUTCDate(d.getUTCDate() + n);
   return d.toISOString().slice(0, 10);
 };
-const localToday = () => {
-  const d = new Date();
-  const pad = (n) => String(n).padStart(2, '0');
-  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
-};
+/// Today at the practice, which is the day the server's pay periods count from.
+/// Not this machine's: in the evening in New Jersey, UTC is already on tomorrow.
+const practiceToday = () =>
+  new Intl.DateTimeFormat('en-CA', { timeZone: 'America/New_York' }).format(new Date());
 const periodContaining = (date) => {
   const days = Math.round((Date.parse(`${date}T00:00:00Z`) - Date.parse(`${ANCHOR}T00:00:00Z`)) / 86_400_000);
   const from = addDays(ANCHOR, Math.floor(days / 14) * 14);
   return { from, to: addDays(from, 13) };
 };
-const current = periodContaining(localToday());
+const current = periodContaining(practiceToday());
 const previous = periodContaining(addDays(current.from, -1));
 
 /// The label the picker shows for a range, formatted in the page's own locale.

@@ -46,8 +46,14 @@ const menuItems = async (page, label) => {
   return names.map((n) => n.trim());
 };
 
+// Both browsers are on New Jersey time, as every device at the practice is: the
+// Closing checklists screen opens on the browser's today, and the server files a
+// clock-out under New Jersey's. On UTC they part company in the evening.
+const PRACTICE_ZONE = 'America/New_York';
+
 // Frankie works Front Desk and MA, on a phone, at the North Bergen desk.
 const fdCtx = await browser.newContext({
+  timezoneId: PRACTICE_ZONE,
   viewport: { width: 390, height: 844 },
   isMobile: true,
   permissions: ['geolocation'],
@@ -57,7 +63,7 @@ const frankie = await fdCtx.newPage();
 frankie.on('pageerror', (e) => errors.push(`staff pageerror: ${e.message}`));
 await signIn(frankie, 'frontdesk@domihealthcare.com');
 
-const mgrCtx = await browser.newContext({ viewport: { width: 1280, height: 1000 } });
+const mgrCtx = await browser.newContext({ timezoneId: PRACTICE_ZONE, viewport: { width: 1280, height: 1000 } });
 const mgr = await mgrCtx.newPage();
 mgr.on('pageerror', (e) => errors.push(`manager pageerror: ${e.message}`));
 await signIn(mgr, 'manager@domihealthcare.com');
