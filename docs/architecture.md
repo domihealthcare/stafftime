@@ -1,4 +1,4 @@
-# Architecture notes — Phase 1 backend
+# Architecture notes
 
 Running record of what was built and why. Update as the project grows.
 
@@ -263,11 +263,13 @@ echo disabled so it never lands in shell history or the process list.
 
 ## Web app (apps/web)
 
-React + Vite + Tailwind, three screens: **Clock**, **Timesheet**, **Schedule**.
+React + Vite + Tailwind. It started as three screens — **Clock**,
+**Timesheet**, **Schedule** — and the rest is written up section by section
+below.
 
 The Vite dev server proxies `/api` to the NestJS server on port 3000, so the
 browser sees a single origin and there is no CORS configuration to get wrong
-during development. That changes at deploy time — see the to-do below.
+during development. The deployment keeps it that way — see *Deployment*.
 
 ### Where the seams are
 
@@ -308,18 +310,6 @@ is only worth keeping if someone can actually read it.
 that, opening a correction dialog and saving an *untouched* field rounds the
 timestamp down to the minute, which on a short punch pushes clock-out onto
 clock-in and fails validation.
-
-## Deployment to-dos (not yet done)
-
-- **Same-origin hosting is now required, not merely convenient.** The session
-  cookie is `sameSite=lax`, which is what removes the need for CSRF tokens — but
-  it means the API must be served from the same origin as the web app (a Vercel
-  rewrite). Splitting them across domains would force `sameSite=none` and a
-  CSRF-token scheme.
-- **A session cleanup job.** `SessionService.purgeExpired()` exists but nothing
-  calls it yet; expired rows accumulate harmlessly until it is scheduled.
-- **Vercel project setup** — build commands, the hosted `DATABASE_URL`, and
-  running `prisma migrate deploy` on release.
 
 ## Kiosk mode
 
@@ -1144,9 +1134,6 @@ Three things about how it is built:
 The data is deliberately imperfect: somebody late, somebody who left early,
 somebody who forgot to clock out, one entry a manager corrected with the reason
 recorded. The whole point is to see what the flagged cases look like.
-
-`docs/manager-review.md` is the walkthrough that goes with it, written for the
-managers rather than for a developer.
 
 ## Phones
 
