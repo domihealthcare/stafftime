@@ -2308,7 +2308,7 @@ no place. Closures never have one. A changed link counts as a change people
 are told about.
 
 **Create a Google Meet link** (Dominguez, September 2026) makes a meeting with
-the Google Meet REST API (`POST /v2/spaces`, `accessType: TRUSTED`), hosted by
+the Google Meet REST API (`POST /v2/spaces`, `accessType: OPEN` — anybody with the link joins; Dominguez chose it over `TRUSTED` because most staff are on personal Google accounts and would all have knocked), hosted by
 office@domihealthcare.com, the shared account everybody already uses. The app
 signs in as a Google Cloud service account that the Workspace admin has
 allowed, through domain-wide delegation, to act for the domain with **one

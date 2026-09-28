@@ -529,8 +529,8 @@ const MANAGERS: Section[] = [
             <strong>who it is for</strong> — Everyone, or type into the box and add any mix of job
             roles, offices and people (say <em>Provider</em>, <em>Kayla</em>, <em>Angelina</em>).
             For a call, paste its link into <strong>Video call link</strong> — or, once Google Meet
-            is set up, tick <strong>Create a Google Meet link</strong> (hosted by office@; practice
-            accounts go straight in, others are let in). To make it repeat, choose from{' '}
+            is set up, tick <strong>Create a Google Meet link</strong> (hosted by office@; anybody
+            with the link goes straight in, so share it only with the people invited). To make it repeat, choose from{' '}
             <strong>Repeats</strong>: every week, every 2 weeks, every
             month (the same date, or e.g. the first Friday), or <strong>Custom</strong> — every 2
             weeks on Monday and Friday — until a date up to a year ahead. For meetings on

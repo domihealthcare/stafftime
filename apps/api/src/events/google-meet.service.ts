@@ -23,9 +23,10 @@ interface ServiceAccountKey {
  * that one account for creating meetings and nothing else (domain-wide
  * delegation, one scope). See docs/google-meet-setup.md.
  *
- * Each meeting is "Trusted": anybody signed in with a practice Google
- * account walks straight in; anybody on another account knocks and is let in
- * by somebody in the meeting — as Dominguez asked.
+ * Each meeting is "Open": anybody with the link joins without knocking.
+ * Dominguez first asked for "Trusted" (practice accounts walk in, others
+ * knock), then chose Open once it was clear most staff are on personal
+ * Google accounts and would all have been left knocking.
  *
  * Off until both settings are present; the form only offers the tick box
  * when it is on, and a pasted link always works.
@@ -64,7 +65,7 @@ export class GoogleMeetService {
         Authorization: `Bearer ${await this.accessToken()}`,
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify({ config: { accessType: 'TRUSTED' } }),
+      body: JSON.stringify({ config: { accessType: 'OPEN' } }),
     });
     const body = (await response.json().catch(() => ({}))) as {
       meetingUri?: string;

@@ -353,7 +353,8 @@ Beyond the phases, the parts worth knowing about before picking up work:
   get it as the calendar entry's URL, first in its notes and, with no place,
   as its location. **Create a Google Meet link** (a tick box, one link per
   series) makes a Meet meeting hosted by **office@domihealthcare.com**, set to
-  *Trusted*: practice accounts walk in, others knock. It works through a
+  *Open*: anybody with the link joins, no knocking (most staff are on
+  personal Google accounts — Dominguez chose Open over Trusted). It works through a
   Google service account with domain-wide delegation for the one scope
   `meetings.space.created` (`events/google-meet.service.ts`, no Google
   library). **Not set up on the live site yet**: the Workspace super admin (dominguez@ — not admin@) follows

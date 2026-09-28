@@ -22,10 +22,11 @@ meetings **as office@domihealthcare.com**. That is the scope
 office@'s mail, calendar, contacts or files, and it can only manage the
 meetings it created itself.
 
-The meetings it makes are **Trusted**: anybody signed in with a
-@domihealthcare.com Google account joins straight away; anybody on another
-account (a personal Gmail) knocks and is let in by somebody already in the
-meeting.
+The meetings it makes are **Open**: anybody with the link joins straight
+away, whatever Google account they use (most staff are on personal ones). So
+the link is only as private as the people it is given to. Meetings made
+before this was changed (September 2026) stay as they were: practice
+accounts walk in, others knock.
 
 ## Part 1 — Google Cloud (signed in as dominguez@)
 
