@@ -107,8 +107,12 @@ describe('DigestService', () => {
   });
 
   it('separates credentials that have lapsed from ones about to', async () => {
-    const yesterday = new Date(Date.now() - 86_400_000);
-    const nextMonth = new Date(Date.now() + 30 * 86_400_000);
+    // A fixed morning, and date-only expiries as the database stores them:
+    // "24 hours ago" is still today in New Jersey during the evening, which
+    // made this fail every night after 8pm.
+    jest.useFakeTimers().setSystemTime(day('2026-09-24'));
+    const yesterday = date('2026-09-23');
+    const nextMonth = date('2026-10-24');
 
     const { attention } = build({
       credentials: [
@@ -122,6 +126,7 @@ describe('DigestService', () => {
     expect(contents.expiredCredentials[0]).toMatch(/NJ RN licence, expired/);
     expect(contents.expiringCredentials).toHaveLength(1);
     expect(contents.expiringCredentials[0]).toMatch(/BLS card, expires/);
+    jest.useRealTimers();
   });
 
   it('names the person and what it is, so the email can be acted on without opening the app', async () => {
