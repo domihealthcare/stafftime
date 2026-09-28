@@ -1,20 +1,13 @@
 import { useCallback, useEffect, useState } from 'react';
 import { localDate } from '../lib/format';
-import { MONTHS } from '../lib/birthday';
 import { ApiError, api } from '../lib/api';
 import { useSession } from '../lib/session';
 import type { Employee, JobRole, Location, Role } from '../lib/types';
 import { useConfirm } from '../components/ConfirmDialog';
 import { ImportStaff } from '../components/ImportStaff';
 import { JobRoleTag } from '../components/JobRoleTag';
+import { ROLE_LABELS, StaffEditor } from '../components/StaffEditor';
 import { Alert, Badge, Card, EmptyState, PageHeading, Spinner } from '../components/ui';
-import { PASSWORD_RULE, meetsPasswordRule } from '../lib/password';
-
-const ROLE_LABELS: Record<Role, string> = {
-  EMPLOYEE: 'Employee',
-  MANAGER: 'Manager',
-  ADMIN: 'Admin',
-};
 
 /// Admin screen for adding staff and giving them a way in. Without this the
 /// only route to a second account is the API by hand.
@@ -34,6 +27,10 @@ export function StaffPage() {
   );
   const confirm = useConfirm();
   const [showTerminated, setShowTerminated] = useState(false);
+  /// Whose details are open in the editor.
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [left, setLeft] = useState<string | null>(null);
+  const editing = staff.find((person) => person.id === editingId) ?? null;
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -147,6 +144,16 @@ export function StaffPage() {
         </div>
       </div>
 
+      {left && (
+        <div className="mb-4">
+          <Alert tone="success">
+            {left} is marked as no longer employed. If that was a mistake, tick{' '}
+            <strong>Show former staff</strong>, press <strong>Edit</strong> on their card and bring
+            them back.
+          </Alert>
+        </div>
+      )}
+
       {imported !== null && (
         <div className="mb-4">
           <Alert tone="success">
@@ -234,14 +241,32 @@ export function StaffPage() {
             <StaffCard
               key={person.id}
               person={person}
-              locations={locations}
               jobRoles={jobRoles}
               isMe={person.id === me?.id}
-              onChanged={() => void load()}
-              onError={setError}
+              onEdit={() => {
+                setLeft(null);
+                setEditingId(person.id);
+              }}
             />
           ))}
         </div>
+      )}
+
+      {editing && (
+        <StaffEditor
+          key={editing.id}
+          person={editing}
+          locations={locations}
+          jobRoles={jobRoles}
+          isMe={editing.id === me?.id}
+          onClose={() => setEditingId(null)}
+          onChanged={() => void load()}
+          onLeft={() => {
+            setLeft(`${editing.firstName} ${editing.lastName}`);
+            setEditingId(null);
+            void load();
+          }}
+        />
       )}
     </div>
   );
@@ -249,127 +274,36 @@ export function StaffPage() {
 
 function StaffCard({
   person,
-  locations,
   jobRoles,
   isMe,
-  onChanged,
-  onError,
+  onEdit,
 }: {
   person: Employee;
-  locations: Location[];
   /// Every job role, with its members — which of them this person is in.
   jobRoles: JobRole[];
   isMe: boolean;
-  onChanged: () => void;
-  onError: (message: string) => void;
+  onEdit: () => void;
 }) {
-  const [busy, setBusy] = useState(false);
-  const [settingPassword, setSettingPassword] = useState(false);
-  const [temporary, setTemporary] = useState('');
-  const [issued, setIssued] = useState<string | null>(null);
-  const [problem, setProblem] = useState<string | null>(null);
-  const [editing, setEditing] = useState(false);
-  const [role, setRole] = useState<Role>(person.role);
   const heldRoles = jobRoles.filter((jobRole) =>
     jobRole.members.some((member) => member.id === person.id),
   );
-  const [picked, setPicked] = useState<string[]>(heldRoles.map((jobRole) => jobRole.id));
-  const [assigned, setAssigned] = useState<string[]>(person.locations.map((l) => l.locationId));
-  const [fileNumber, setFileNumber] = useState(person.adpFileNumber ?? '');
-  const [hired, setHired] = useState(person.hireDate ? person.hireDate.slice(0, 10) : '');
-  const [birthMonth, setBirthMonth] = useState(person.birthdayMonth ? String(person.birthdayMonth) : '');
-  const [birthDay, setBirthDay] = useState(person.birthdayDay ? String(person.birthdayDay) : '');
-
   const terminated = person.employmentStatus === 'TERMINATED';
-  const confirm = useConfirm();
-  const [welcomedAt, setWelcomedAt] = useState(person.welcomeSentAt ?? null);
-
-  async function sendWelcome() {
-    setBusy(true);
-    setProblem(null);
-    try {
-      const result = await api.sendWelcome(person.id);
-      setWelcomedAt(result.welcomeSentAt);
-    } catch (err) {
-      setProblem(err instanceof ApiError ? err.message : 'Could not send it.');
-    } finally {
-      setBusy(false);
-    }
-  }
-
-  async function issuePassword() {
-    setBusy(true);
-    setProblem(null);
-    try {
-      await api.setTemporaryPassword(person.id, temporary);
-      setIssued(temporary);
-      setTemporary('');
-      setSettingPassword(false);
-    } catch (err) {
-      setProblem(err instanceof ApiError ? err.message : 'Could not set that password.');
-    } finally {
-      setBusy(false);
-    }
-  }
-
-  async function saveChanges() {
-    setBusy(true);
-    setProblem(null);
-    try {
-      await api.updateEmployee(person.id, {
-        role,
-        locationIds: assigned,
-        primaryLocationId: assigned[0],
-        adpFileNumber: fileNumber.trim() || null,
-        hireDate: hired || null,
-        birthdayMonth: birthMonth && birthDay ? Number(birthMonth) : null,
-        birthdayDay: birthMonth && birthDay ? Number(birthDay) : null,
-      });
-      // Job roles live on the roles themselves; add and take off the difference.
-      const held = new Set(heldRoles.map((jobRole) => jobRole.id));
-      for (const id of picked.filter((id) => !held.has(id))) {
-        await api.addJobRoleMember(id, person.id);
-      }
-      for (const id of [...held].filter((id) => !picked.includes(id))) {
-        await api.removeJobRoleMember(id, person.id);
-      }
-      setEditing(false);
-      onChanged();
-    } catch (err) {
-      setProblem(err instanceof ApiError ? err.message : 'Could not save that change.');
-    } finally {
-      setBusy(false);
-    }
-  }
-
-  async function terminate() {
-    const sure = await confirm({
-      title: `Mark ${person.firstName} ${person.lastName} as no longer employed?`,
-      body: 'Their sign-in stops working immediately and they come off the rota. Their timesheets are kept.',
-      confirmLabel: 'Yes, no longer employed',
-      cancelLabel: 'Keep them',
-    });
-    if (!sure) return;
-    setBusy(true);
-    try {
-      await api.terminateEmployee(person.id);
-      onChanged();
-    } catch (err) {
-      onError(err instanceof ApiError ? err.message : 'Could not do that.');
-    } finally {
-      setBusy(false);
-    }
-  }
 
   return (
-    <Card testId={`staff-${person.email}`} className={`p-4 ${terminated ? 'opacity-60' : ''}`}>
+    <Card testId={`staff-${person.email}`} className="p-4">
       <div className="flex flex-wrap items-start justify-between gap-3">
-        <div>
+        <div className={`min-w-0 ${terminated ? 'opacity-60' : ''}`}>
           <p className="font-medium text-slate-900">
             {person.firstName} {person.lastName}
+            {person.preferredName && person.preferredName !== person.firstName && (
+              <span className="ml-1 font-normal text-slate-500">(“{person.preferredName}”)</span>
+            )}
             {isMe && <span className="ml-2 text-xs font-normal text-slate-500">(you)</span>}
           </p>
-          <p className="text-sm text-slate-600">{person.email}</p>
+          <p className="text-sm text-slate-600">
+            {person.email}
+            {person.phone && <span className="text-slate-500"> · {person.phone}</span>}
+          </p>
           {heldRoles.length > 0 && (
             <p className="mt-1 flex flex-wrap gap-1" data-testid="staff-job-roles">
               {heldRoles.map((jobRole) => (
@@ -386,13 +320,13 @@ function StaffCard({
             </p>
           )}
           {!terminated && person.hasPassword === false && (
-            <p className="mt-1 text-xs text-amber-800" data-testid="welcome-status">
+            <p className="mt-1 text-xs text-amber-800">
               Has not chosen a password yet
-              {welcomedAt
-                ? ` · welcome email sent ${new Date(welcomedAt).toLocaleDateString('en-US', {
-                    month: 'short',
-                    day: 'numeric',
-                  })}`
+              {person.welcomeSentAt
+                ? ` · welcome email sent ${new Date(person.welcomeSentAt).toLocaleDateString(
+                    'en-US',
+                    { month: 'short', day: 'numeric' },
+                  )}`
                 : ' · not sent a welcome email'}
             </p>
           )}
@@ -404,276 +338,16 @@ function StaffCard({
           </Badge>
           {terminated && <Badge tone="danger">Former</Badge>}
           {person.hasKioskPin && <Badge tone="success">PIN</Badge>}
+          <button
+            type="button"
+            onClick={onEdit}
+            aria-label={`Edit ${person.firstName} ${person.lastName}`}
+            className="rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-sm font-medium text-slate-700 hover:bg-slate-50"
+          >
+            Edit
+          </button>
         </div>
       </div>
-
-      {!terminated && (
-        <div className="mt-3 flex flex-wrap gap-3 border-t border-slate-100 pt-3 text-sm">
-          {person.hasPassword === false && (
-            <button
-              type="button"
-              disabled={busy}
-              onClick={() => void sendWelcome()}
-              className="font-medium text-brand-700 hover:text-brand-900 disabled:opacity-50"
-            >
-              {welcomedAt ? 'Send the welcome email again' : 'Send welcome email'}
-            </button>
-          )}
-          <button
-            type="button"
-            onClick={() => setSettingPassword((open) => !open)}
-            className="font-medium text-slate-600 hover:text-slate-900"
-          >
-            {settingPassword ? 'Cancel' : 'Set a temporary password'}
-          </button>
-          <button
-            type="button"
-            onClick={() => {
-              // Fresh from the roles each time it opens, in case they changed elsewhere.
-              if (!editing) setPicked(heldRoles.map((jobRole) => jobRole.id));
-              setEditing((open) => !open);
-            }}
-            className="font-medium text-slate-600 hover:text-slate-900"
-          >
-            {editing ? 'Cancel' : 'Edit details'}
-          </button>
-          {/* Terminating yourself would lock you out of your own practice. */}
-          {!isMe && (
-            <button
-              type="button"
-              disabled={busy}
-              onClick={() => void terminate()}
-              className="ml-auto font-medium text-rose-600 hover:text-rose-800 disabled:opacity-50"
-            >
-              No longer employed
-            </button>
-          )}
-        </div>
-      )}
-
-      {issued && (
-        <div className="mt-3">
-          <Alert tone="success">
-            <p className="font-medium">
-              Temporary password for {person.firstName}: <span className="font-mono">{issued}</span>
-            </p>
-            <p className="mt-1 text-xs">
-              Give it to them by phone or in person, not in the same message as the link. They must
-              change it the first time they sign in. This is the only time it is shown.
-            </p>
-            <button
-              type="button"
-              onClick={() => setIssued(null)}
-              className="mt-2 text-xs font-medium underline"
-            >
-              Got it
-            </button>
-          </Alert>
-        </div>
-      )}
-
-      {settingPassword && (
-        <div className="mt-3 border-t border-slate-100 pt-3">
-          <label htmlFor={`temp-${person.id}`} className="block text-sm font-medium text-slate-700">
-            Temporary password
-          </label>
-          <div className="mt-1 flex flex-wrap gap-2">
-            <input
-              id={`temp-${person.id}`}
-              type="text"
-              autoFocus
-              value={temporary}
-              onChange={(event) => setTemporary(event.target.value)}
-              className="w-full max-w-xs rounded-lg border-slate-300 text-sm shadow-sm focus:border-brand-600 focus:ring-brand-600"
-            />
-            <button
-              type="button"
-              onClick={() => setTemporary(suggestPassword())}
-              className="rounded-lg border border-slate-300 px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50"
-            >
-              Suggest one
-            </button>
-            <button
-              type="button"
-              disabled={busy || !meetsPasswordRule(temporary)}
-              onClick={() => void issuePassword()}
-              className="rounded-lg bg-brand-600 px-3 py-2 text-sm font-medium text-white hover:bg-brand-700 disabled:opacity-60"
-            >
-              {busy ? 'Saving…' : 'Set it'}
-            </button>
-          </div>
-          <p className="mt-1 text-xs text-slate-500">
-            {PASSWORD_RULE} Signs them out everywhere and forces a change at next sign-in.
-          </p>
-          {problem && (
-            <div className="mt-2">
-              <Alert>{problem}</Alert>
-            </div>
-          )}
-        </div>
-      )}
-
-      {editing && (
-        <div className="mt-3 border-t border-slate-100 pt-3">
-          <label htmlFor={`role-${person.id}`} className="block text-sm font-medium text-slate-700">
-            Access
-          </label>
-          <select
-            id={`role-${person.id}`}
-            value={role}
-            onChange={(event) => setRole(event.target.value as Role)}
-            className="mt-1 w-full max-w-xs rounded-lg border-slate-300 text-sm shadow-sm focus:border-brand-600 focus:ring-brand-600"
-          >
-            {Object.entries(ROLE_LABELS).map(([value, label]) => (
-              <option key={value} value={value}>
-                {label}
-              </option>
-            ))}
-          </select>
-          <p className="mt-1 text-xs text-slate-500">
-            What they can do in the app — one of these. Manager: schedules, time off and hours.
-            Admin: also staff and settings.
-          </p>
-
-          <fieldset className="mt-3">
-            <legend className="text-sm font-medium text-slate-700">Job roles</legend>
-            <p className="text-xs text-slate-500">
-              What they do at the practice — tick all that apply. Decides their resources and
-              closing checklist, not what they can do in the app.
-            </p>
-            <div className="mt-1 grid gap-1 sm:grid-cols-2">
-              {jobRoles.map((jobRole) => (
-                <label key={jobRole.id} className="flex items-center gap-2 text-sm">
-                  <input
-                    type="checkbox"
-                    checked={picked.includes(jobRole.id)}
-                    onChange={() =>
-                      setPicked((current) =>
-                        current.includes(jobRole.id)
-                          ? current.filter((id) => id !== jobRole.id)
-                          : [...current, jobRole.id],
-                      )
-                    }
-                    className="rounded border-slate-300 text-brand-600 focus:ring-brand-600"
-                  />
-                  {jobRole.name}
-                </label>
-              ))}
-            </div>
-          </fieldset>
-
-          <label
-            htmlFor={`adp-${person.id}`}
-            className="mt-3 block text-sm font-medium text-slate-700"
-          >
-            ADP File #
-          </label>
-          <input
-            id={`adp-${person.id}`}
-            value={fileNumber}
-            onChange={(event) => setFileNumber(event.target.value)}
-            maxLength={10}
-            inputMode="text"
-            autoComplete="off"
-            className="mt-1 w-full max-w-[10rem] rounded-lg border-slate-300 text-sm shadow-sm focus:border-brand-600 focus:ring-brand-600"
-          />
-          <p className="mt-1 text-xs text-slate-500">
-            Their number in ADP TotalSource — on the worksheet you export from ADP. Their hours
-            cannot go in the ADP import file without it.
-          </p>
-
-          <label
-            htmlFor={`hired-${person.id}`}
-            className="mt-3 block text-sm font-medium text-slate-700"
-          >
-            Hire date
-          </label>
-          <input
-            id={`hired-${person.id}`}
-            type="date"
-            value={hired}
-            onChange={(event) => setHired(event.target.value)}
-            className="mt-1 rounded-lg border-slate-300 text-sm shadow-sm focus:border-brand-600 focus:ring-brand-600"
-          />
-          <p className="mt-1 text-xs text-slate-500">
-            Optional — used for first-year time off. Without it they get the whole year&rsquo;s.
-          </p>
-
-          <fieldset className="mt-3">
-            <legend className="text-sm font-medium text-slate-700">Birthday</legend>
-            <div className="mt-1 flex gap-2">
-              <select
-                aria-label="Birthday month"
-                value={birthMonth}
-                onChange={(event) => setBirthMonth(event.target.value)}
-                className="rounded-lg border-slate-300 text-sm shadow-sm focus:border-brand-600 focus:ring-brand-600"
-              >
-                <option value="">Not set</option>
-                {MONTHS.map((name, index) => (
-                  <option key={name} value={index + 1}>
-                    {name}
-                  </option>
-                ))}
-              </select>
-              <input
-                aria-label="Birthday day"
-                type="number"
-                inputMode="numeric"
-                min={1}
-                max={31}
-                value={birthDay}
-                onChange={(event) => setBirthDay(event.target.value)}
-                className="w-20 rounded-lg border-slate-300 text-sm shadow-sm focus:border-brand-600 focus:ring-brand-600"
-              />
-            </div>
-            <p className="mt-1 text-xs text-slate-500">
-              Month and day only — colleagues see it that week, on the Schedule and in the
-              Directory.
-            </p>
-          </fieldset>
-
-          <fieldset className="mt-3">
-            <legend className="text-sm font-medium text-slate-700">Locations</legend>
-            <p className="text-xs text-slate-500">
-              They can only clock in where they are assigned.
-            </p>
-            <div className="mt-1 space-y-1">
-              {locations.map((location) => (
-                <label key={location.id} className="flex items-center gap-2 text-sm">
-                  <input
-                    type="checkbox"
-                    checked={assigned.includes(location.id)}
-                    onChange={() =>
-                      setAssigned((current) =>
-                        current.includes(location.id)
-                          ? current.filter((id) => id !== location.id)
-                          : [...current, location.id],
-                      )
-                    }
-                    className="rounded border-slate-300 text-brand-600 focus:ring-brand-600"
-                  />
-                  {location.name}
-                </label>
-              ))}
-            </div>
-          </fieldset>
-
-          {problem && (
-            <div className="mt-2">
-              <Alert>{problem}</Alert>
-            </div>
-          )}
-
-          <button
-            type="button"
-            disabled={busy}
-            onClick={() => void saveChanges()}
-            className="mt-3 rounded-lg bg-slate-800 px-4 py-2 text-sm font-medium text-white hover:bg-slate-900 disabled:opacity-60"
-          >
-            {busy ? 'Saving…' : 'Save'}
-          </button>
-        </div>
-      )}
     </Card>
   );
 }
@@ -857,34 +531,4 @@ function AddStaffForm({ locations, onCreated }: { locations: Location[]; onCreat
       </form>
     </Card>
   );
-}
-
-const WORDS = [
-  'harbour',
-  'lantern',
-  'copper',
-  'tuesday',
-  'meadow',
-  'pebble',
-  'anchor',
-  'willow',
-  'cinder',
-  'marble',
-  'thicket',
-  'quarry',
-  'saffron',
-  'drifting',
-];
-
-/// A temporary password the admin can read aloud over the phone: two words and
-/// a number, e.g. "copper-meadow-42" — which meets the 8-characters-and-a-number
-/// rule with room to spare.
-function suggestPassword(): string {
-  const picked: string[] = [];
-  const pool = [...WORDS];
-  for (let i = 0; i < 2; i += 1) {
-    const index = Math.floor(Math.random() * pool.length);
-    picked.push(pool.splice(index, 1)[0]);
-  }
-  return `${picked.join('-')}-${Math.floor(Math.random() * 90 + 10)}`;
 }

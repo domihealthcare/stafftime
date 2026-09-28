@@ -87,7 +87,8 @@ await step('an admin can add their first manager', async () => {
 
 let tempPassword;
 await step('a temporary password can be issued and is shown once', async () => {
-  const card = page.locator('main div.space-y-3 > div').filter({ hasText: 'Morgan Manager' }).first();
+  await page.getByRole('button', { name: 'Edit Morgan Manager' }).click();
+  const card = page.getByTestId('staff-editor');
   await card.getByRole('button', { name: 'Set a temporary password' }).click();
   await card.getByRole('button', { name: 'Suggest one' }).click();
 

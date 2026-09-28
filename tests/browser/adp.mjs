@@ -173,10 +173,11 @@ await step('an admin gives Frankie a File # on the Staff screen', async () => {
   await admin.goto(`${BASE}/staff`, { waitUntil: 'networkidle' });
   const staffCard = admin.getByTestId('staff-frontdesk@domihealthcare.com');
   await staffCard.getByText('No ADP File # yet').waitFor({ timeout: 15000 });
-  await staffCard.getByRole('button', { name: 'Edit details' }).click();
-  await staffCard.getByLabel('ADP File #').fill('001234');
+  await staffCard.getByRole('button', { name: /^Edit / }).click();
+  const editor = admin.getByTestId('staff-editor');
+  await editor.getByLabel('ADP File #').fill('001234');
   const saved = admin.waitForResponse((r) => r.url().includes('/api/employees/') && r.request().method() === 'PATCH');
-  await staffCard.getByRole('button', { name: 'Save', exact: true }).click();
+  await editor.getByRole('button', { name: 'Save changes' }).click();
   if (!(await saved).ok()) throw new Error('the File # was refused');
   await staffCard.getByText('ADP File # 001234').waitFor({ timeout: 10000 });
 });

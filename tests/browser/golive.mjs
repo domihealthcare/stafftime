@@ -207,12 +207,13 @@ await step('the Staff card shows access and job roles, and job roles can be tick
   const card = admin.getByTestId('staff-imp-imogen@example.com');
   await card.getByTestId('staff-job-roles').getByText('Front Desk').waitFor({ timeout: 10000 });
   await card.getByText('Employee access').waitFor();
-  await card.getByRole('button', { name: 'Edit details' }).click();
-  await card.getByLabel('Access').waitFor();
-  await card.getByRole('checkbox', { name: 'Medical Assistant' }).check();
-  await card.getByRole('checkbox', { name: 'Front Desk' }).uncheck();
-  await card.getByRole('button', { name: /^Save/ }).click();
-  await card.getByRole('button', { name: 'Edit details' }).waitFor({ timeout: 10000 });
+  await card.getByRole('button', { name: /^Edit / }).click();
+  const editor = admin.getByTestId('staff-editor');
+  await editor.getByLabel('Access').waitFor();
+  await editor.getByRole('checkbox', { name: 'Medical Assistant' }).check();
+  await editor.getByRole('checkbox', { name: 'Front Desk' }).uncheck();
+  await editor.getByRole('button', { name: 'Save changes' }).click();
+  await editor.waitFor({ state: 'detached', timeout: 10000 });
   const jobs = await admin.evaluate(async () => {
     const roles = await fetch('/api/job-roles').then((r) => r.json());
     const staff = await fetch('/api/employees').then((r) => r.json());
@@ -242,15 +243,19 @@ await step('pasting the same people again is refused, naming who is already ther
 
 await step('new people show as not yet sent a welcome email, with a way to send them all', async () => {
   const card = admin.getByTestId('staff-imp-imogen@example.com');
-  await card.getByTestId('welcome-status').getByText(/not sent a welcome email/).waitFor({ timeout: 10000 });
+  await card.getByText(/not sent a welcome email/).waitFor({ timeout: 10000 });
   await admin.getByTestId('welcome-everyone').getByText(/3 people have/).waitFor();
 });
 
-await step('one welcome email, sent from their card', async () => {
+await step('one welcome email, sent from their editor', async () => {
   const card = admin.getByTestId('staff-imp-imogen@example.com');
-  await card.getByRole('button', { name: 'Send welcome email' }).click();
-  await card.getByTestId('welcome-status').getByText(/welcome email sent/).waitFor({ timeout: 15000 });
-  await card.getByRole('button', { name: 'Send the welcome email again' }).waitFor();
+  await card.getByRole('button', { name: /^Edit / }).click();
+  const editor = admin.getByTestId('staff-editor');
+  await editor.getByRole('button', { name: 'Send welcome email' }).click();
+  await editor.getByTestId('welcome-status').getByText(/welcome email sent/).waitFor({ timeout: 15000 });
+  await editor.getByRole('button', { name: 'Send the welcome email again' }).waitFor();
+  await editor.getByRole('button', { name: 'Close' }).click();
+  await card.getByText(/welcome email sent/).waitFor({ timeout: 10000 });
   latestWelcomeLink('imp-imogen@example.com');
 });
 
@@ -296,10 +301,13 @@ await step('a new starter follows the link, chooses a password and signs in', as
 await step('somebody with a password is not sent a welcome email', async () => {
   await admin.reload({ waitUntil: 'networkidle' });
   const card = admin.getByTestId('staff-imp-isla@example.com');
-  await card.waitFor({ timeout: 10000 });
-  if (await card.getByRole('button', { name: /welcome email/ }).count()) {
+  await card.getByRole('button', { name: /^Edit / }).click();
+  const editor = admin.getByTestId('staff-editor');
+  await editor.getByTestId('welcome-status').getByText('Has a password').waitFor({ timeout: 10000 });
+  if (await editor.getByRole('button', { name: /welcome email/ }).count()) {
     throw new Error('offered a welcome email to somebody who has signed in');
   }
+  await editor.getByRole('button', { name: 'Close' }).click();
   const id = await admin.evaluate(async () => {
     const staff = await fetch('/api/employees').then((r) => r.json());
     return staff.find((p) => p.email === 'imp-isla@example.com').id;

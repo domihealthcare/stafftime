@@ -103,7 +103,12 @@ await step('marking somebody as left raises it on the schedule', async () => {
   const card = admin.getByTestId('staff-frontdesk@domihealthcare.com');
   await card.waitFor({ timeout: 15000 });
 
-  await card.getByRole('button', { name: 'No longer employed' }).click();
+  // Marking somebody as having left lives at the foot of their editor, behind
+  // a second step, so it cannot be pressed by accident from the list.
+  await card.getByRole('button', { name: /^Edit / }).click();
+  const editor = admin.getByTestId('staff-editor');
+  await editor.getByRole('button', { name: 'Frankie has left…' }).click();
+  await editor.getByRole('button', { name: 'Mark as no longer employed' }).click();
   await admin
     .getByRole('alertdialog', { name: /as no longer employed\?/ })
     .getByRole('button', { name: 'Yes, no longer employed' })

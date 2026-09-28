@@ -429,10 +429,19 @@ Beyond the phases, the parts worth knowing about before picking up work:
   so the first 23 imported staff could not clock in. The default is `ACTIVE`
   and a migration moved everybody left in `PENDING` over.
 - **The Staff card** (Manage → Staff) shows **Access** (Employee / Manager /
-  Admin — one, what they can do in the app) as a badge and **job roles** as
-  tags, and **Edit details** sets access, job roles (tick several), offices,
-  hire date, birthday and ADP File # in one place. Job roles are still also
-  managed per role under Manage → Job roles.
+  Admin — one, what they can do in the app) as a badge, **job roles** as
+  tags, and **one Edit button**, nothing else (September 2026, Dominguez:
+  "No longer employed" sat on every card and was too easy to press). **Edit**
+  opens one editor (`components/StaffEditor.tsx`): their details — name, the
+  name they go by, **email and phone** — then access, pay type, job roles
+  (tick several), offices, hire date, birthday and ADP File #; then
+  **Signing in** (welcome email, temporary password, tablet PIN); and last,
+  **Leaving the practice**, behind a second step: pick the **last day**
+  (offboarding counts from it), then the confirmation pop-up. A former member
+  of staff can be **brought back** from the same place (Show former staff →
+  Edit), which clears the last day. Photo, pronouns and "about you" stay the
+  person's own. Job roles are still also managed per role under Manage → Job
+  roles.
 - **Welcome emails**: from the Staff screen, to one person or everyone who has
   not had one and has no password (never demo staff). A 7-day, single-use link
   to choose a password (`/reset-password?token=…&welcome=1`, same token table

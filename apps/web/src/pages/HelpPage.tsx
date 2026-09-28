@@ -761,9 +761,16 @@ const MANAGERS: Section[] = [
         answer: (
           <ul>
             <li>
-              <Screen>Manage → Staff</Screen> — add people one at a time or several at once, set
-              their access (Employee, Manager or Admin), offices, PIN and ADP File #, and send
-              welcome emails.
+              <Screen>Manage → Staff</Screen> — add people one at a time or several at once.
+              Press <strong>Edit</strong> on somebody&rsquo;s card to change their email, phone,
+              access (Employee, Manager or Admin), job roles, offices and ADP File #, send their
+              welcome email, or give them a temporary password or tablet PIN.
+            </li>
+            <li>
+              When somebody leaves: <strong>Edit</strong>, then <strong>… has left</strong> at the
+              bottom, and pick their last day. It asks once more before anything happens. Their
+              timesheets are kept, and if it was a mistake, tick <strong>Show former staff</strong>{' '}
+              and bring them back from the same place.
             </li>
             <li>
               <Screen>Manage → Kiosks</Screen> — make a computer or tablet at the front desk the
