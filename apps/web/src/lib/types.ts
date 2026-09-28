@@ -728,7 +728,39 @@ export type SurveyAudience = 'EVERYONE' | 'JOB_ROLE' | 'LOCATION';
 
 /// Who a practice event is for — the same three choices as a survey. A
 /// closure is for both offices (EVERYONE) or one (LOCATION).
-export type EventAudience = 'EVERYONE' | 'JOB_ROLE' | 'LOCATION';
+export type EventAudience = 'EVERYONE' | 'JOB_ROLE' | 'LOCATION' | 'CHOSEN';
+
+/// One entry on a CHOSEN event's list: a person, a job role or an office.
+export interface EventInvitee {
+  type: 'EMPLOYEE' | 'JOB_ROLE' | 'LOCATION';
+  id: string;
+  name: string;
+  /// A job role's colour key; null for the rest.
+  colour: string | null;
+}
+
+export type RepeatFrequency = 'WEEKLY' | 'MONTHLY';
+export type MonthlyRepeat = 'DAY_OF_MONTH' | 'WEEKDAY_OF_MONTH';
+
+export interface RepeatInput {
+  frequency: RepeatFrequency;
+  interval: number;
+  /// WEEKLY: 1 = Monday … 7 = Sunday.
+  weekdays?: number[];
+  monthlyMode?: MonthlyRepeat;
+  /// WEEKDAY_OF_MONTH: 1–4, or -1 for the last.
+  monthlyWeek?: number;
+  /// "2026-12-31", the last date it may land on.
+  until: string;
+}
+
+/// The series a repeating event's date belongs to.
+export interface EventSeries extends RepeatInput {
+  id: string;
+  firstDate: string;
+  /// "Every 2 weeks on Fri until Dec 31, 2026".
+  summary: string;
+}
 
 /// A meeting or day out, or a time an office is shut (a holiday).
 export type EventKind = 'EVENT' | 'CLOSURE';
@@ -751,6 +783,10 @@ export interface PracticeEvent {
   audience: EventAudience;
   jobRole: { id: string; name: string; colour: string } | null;
   location: { id: string; name: string } | null;
+  /// CHOSEN: who it is for.
+  invitees: EventInvitee[];
+  /// The series this date belongs to, if it repeats.
+  series: EventSeries | null;
 }
 
 export interface EventInput {
@@ -766,6 +802,8 @@ export interface EventInput {
   audience: EventAudience;
   jobRoleId?: string;
   locationId?: string;
+  invitees?: { employeeIds?: string[]; jobRoleIds?: string[]; locationIds?: string[] };
+  repeat?: RepeatInput | null;
 }
 export type SurveyStatus = 'DRAFT' | 'OPEN' | 'CLOSED';
 export type SurveyQuestionKind = 'RATING' | 'CHOICE' | 'TEXT';

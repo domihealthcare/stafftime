@@ -31,6 +31,8 @@ export async function clearTestData(prisma: PrismaClient) {
     const posts = await tx.announcement.deleteMany({});
     const surveys = await tx.survey.deleteMany({});
     const events = await tx.practiceEvent.deleteMany({});
+    // Their invitees go with them; the rules they repeated by, here.
+    await tx.practiceEventSeries.deleteMany({});
     const feedback = await tx.feedback.deleteMany({});
     const notifications = await tx.notification.deleteMany({});
     const reports = await tx.reportPreset.deleteMany({});

@@ -578,3 +578,21 @@ is the bit we need to hear about.
   - **Tell us:** how does the practice pay holidays — which ones, who gets
     them, and how many hours? We need that (and ADP's code for holiday pay)
     before holidays can go on the payroll export.
+
+### Repeating events and choosing people (September 2026)
+
+- **Repeats** in the event form: every week, every 2 weeks, every month (the
+  same date, or e.g. "the first Friday"), or **Custom** — every 2 weeks on
+  Monday and Friday — until a date up to a year ahead. For the office and
+  admin meetings on alternate Fridays, make each one "every 2 weeks", starting
+  a week apart.
+- **Who is it for** is one box you type into: Everyone, or any mix of job
+  roles, offices and people — "Provider, Kayla, Angelina".
+- Clicking a date of a repeating event lets you change or remove **just that
+  date** (a holiday week) or **that date and all after it** (a new time from
+  now on).
+- People get **one** notification for a whole series, and a **reminder the day
+  before** each date.
+  - **Tell us:** is the day-before reminder the right time, or would the
+    morning of be better?
+

@@ -3,14 +3,18 @@ import { ApiError, api } from '../lib/api';
 import { formatCalendarDate, formatTimeCompact, localDate } from '../lib/format';
 import { jobRoleHex } from '../lib/job-role-colours';
 import type {
+  Employee,
   EventAudience,
   EventInput,
   EventKind,
   JobRole,
   Location,
   PracticeEvent,
+  RepeatInput,
 } from '../lib/types';
 import { useConfirm, type ConfirmOptions } from './ConfirmDialog';
+import { InviteePicker, NOBODY, type InviteeSelection } from './InviteePicker';
+import { RepeatPicker } from './RepeatPicker';
 import { Alert, Card } from './ui';
 
 /**
@@ -80,6 +84,13 @@ export function eventTimeLabel(event: PracticeEvent, day?: string): string {
 
 /// "Everyone", "Provider", "North Bergen" — or for a closure, which offices.
 export function audienceLabel(event: PracticeEvent): string {
+  if (event.audience === 'CHOSEN') {
+    const names = event.invitees.map((invitee) => invitee.name);
+    if (names.length === 0) return 'Nobody — everyone on the list has since gone';
+    return names.length <= 3
+      ? names.join(', ')
+      : `${names.slice(0, 2).join(', ')} and ${names.length - 2} more`;
+  }
   if (event.audience === 'JOB_ROLE') return event.jobRole?.name ?? 'A job role since removed';
   if (event.audience === 'LOCATION') return event.location?.name ?? 'An office since removed';
   return isClosure(event) ? 'Both offices' : 'Everyone';
@@ -128,6 +139,11 @@ export function EventChip({
     >
       <span className="block truncate font-semibold">
         <span aria-hidden="true">{closed ? '🔒' : '📅'}</span> {event.title}
+        {event.series && (
+          <span aria-hidden="true" title="Repeats" className="ml-1 font-normal">
+            🔁
+          </span>
+        )}
       </span>
       <span
         className={`block truncate text-[11px] ${closed ? 'text-slate-700' : 'text-indigo-800'}`}
@@ -156,12 +172,21 @@ export function EventDialog({
   const confirm = useConfirm();
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  /// For a date in a series: which dates to remove, asked before the usual
+  /// confirmation.
+  const [choosing, setChoosing] = useState(false);
   const closed = isClosure(event);
 
-  async function remove() {
+  async function remove(scope: 'one' | 'following') {
+    setChoosing(false);
     const upcoming = new Date(event.endsAt) > new Date();
     const sure = await confirm({
-      title: `Remove “${event.title}”?`,
+      title:
+        scope === 'following'
+          ? `Remove “${event.title}” from ${formatCalendarDate(localDate(new Date(event.startsAt)), { year: false })} on?`
+          : event.series
+            ? `Remove “${event.title}” on ${formatCalendarDate(localDate(new Date(event.startsAt)), { year: false })}?`
+            : `Remove “${event.title}”?`,
       body: closed
         ? `It comes off the schedule and off synced phone calendars${
             upcoming ? ', and staff are told the office is open as usual' : ''
@@ -175,7 +200,7 @@ export function EventDialog({
     if (!sure) return;
     setBusy(true);
     try {
-      await api.deleteEvent(event.id);
+      await api.deleteEvent(event.id, scope);
       onRemoved();
     } catch (err) {
       setError(err instanceof ApiError ? err.message : 'Could not remove that event.');
@@ -235,6 +260,16 @@ export function EventDialog({
               {!closed && event.audience === 'LOCATION' && ' staff'}
             </dd>
           </div>
+          {event.series && (
+            <div>
+              <dt className="text-xs font-medium uppercase tracking-wide text-slate-500">
+                Repeats
+              </dt>
+              <dd className="text-slate-800" data-testid="event-series">
+                <span aria-hidden="true">🔁</span> {event.series.summary}
+              </dd>
+            </div>
+          )}
           {event.description && (
             <div>
               <dt className="text-xs font-medium uppercase tracking-wide text-slate-500">
@@ -260,14 +295,42 @@ export function EventDialog({
 
         {canEdit && (
           <div className="mt-4 flex flex-wrap justify-end gap-2 border-t border-slate-100 pt-3">
-            <button
-              type="button"
-              disabled={busy}
-              onClick={() => void remove()}
-              className="rounded-lg border border-rose-200 bg-white px-3 py-1.5 text-sm font-medium text-rose-700 hover:bg-rose-50 disabled:opacity-60"
-            >
-              Remove
-            </button>
+            {choosing ? (
+              <>
+                <button
+                  type="button"
+                  disabled={busy}
+                  onClick={() => void remove('one')}
+                  className="rounded-lg border border-rose-200 bg-white px-3 py-1.5 text-sm font-medium text-rose-700 hover:bg-rose-50 disabled:opacity-60"
+                >
+                  Just this date
+                </button>
+                <button
+                  type="button"
+                  disabled={busy}
+                  onClick={() => void remove('following')}
+                  className="rounded-lg border border-rose-200 bg-white px-3 py-1.5 text-sm font-medium text-rose-700 hover:bg-rose-50 disabled:opacity-60"
+                >
+                  This and all after
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setChoosing(false)}
+                  className="rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-sm font-medium text-slate-700 hover:bg-slate-50"
+                >
+                  Keep them
+                </button>
+              </>
+            ) : (
+              <button
+                type="button"
+                disabled={busy}
+                onClick={() => (event.series ? setChoosing(true) : void remove('one'))}
+                className="rounded-lg border border-rose-200 bg-white px-3 py-1.5 text-sm font-medium text-rose-700 hover:bg-rose-50 disabled:opacity-60"
+              >
+                Remove
+              </button>
+            )}
             <button
               type="button"
               disabled={busy}
@@ -293,6 +356,7 @@ function inputValue(date: Date): string {
 export function EventForm({
   event,
   initialKind = 'EVENT',
+  employees,
   locations,
   jobRoles,
   defaultDate,
@@ -303,12 +367,15 @@ export function EventForm({
   event?: PracticeEvent;
   /// What a new one starts as.
   initialKind?: EventKind;
+  /// Everybody who can be put on an event's list.
+  employees: Employee[];
   locations: Location[];
   jobRoles: JobRole[];
   /// Where a new event starts: the first day on screen, or today if that is
   /// in the past.
   defaultDate: Date;
-  onSaved: () => void;
+  /// With how many dates were written — more than one for a series.
+  onSaved: (created: number) => void;
   onCancel: () => void;
 }) {
   const id = useId();
@@ -340,6 +407,36 @@ export function EventForm({
   const [jobRoleId, setJobRoleId] = useState(event?.jobRole?.id ?? '');
   const [locationId, setLocationId] = useState(event?.location?.id ?? '');
   const [description, setDescription] = useState(event?.description ?? '');
+  /// An event's list: Everyone, or any mix of job roles, offices and people.
+  /// One made before the list existed opens with its one role or office on it.
+  const [invitees, setInvitees] = useState<InviteeSelection>(() => {
+    if (!event || event.audience === 'EVERYONE') return { ...NOBODY, everyone: true };
+    if (event.audience === 'JOB_ROLE')
+      return { ...NOBODY, jobRoleIds: event.jobRole ? [event.jobRole.id] : [] };
+    if (event.audience === 'LOCATION')
+      return { ...NOBODY, locationIds: event.location ? [event.location.id] : [] };
+    return {
+      everyone: false,
+      employeeIds: event.invitees.filter((i) => i.type === 'EMPLOYEE').map((i) => i.id),
+      jobRoleIds: event.invitees.filter((i) => i.type === 'JOB_ROLE').map((i) => i.id),
+      locationIds: event.invitees.filter((i) => i.type === 'LOCATION').map((i) => i.id),
+    };
+  });
+  const [repeat, setRepeat] = useState<RepeatInput | null>(() =>
+    event?.series
+      ? {
+          frequency: event.series.frequency,
+          interval: event.series.interval,
+          weekdays: event.series.weekdays,
+          monthlyMode: event.series.monthlyMode ?? undefined,
+          monthlyWeek: event.series.monthlyWeek ?? undefined,
+          until: event.series.until,
+        }
+      : null,
+  );
+  /// A date in a series: change just it, or it and every one after it.
+  const [scope, setScope] = useState<'one' | 'following'>('one');
+  const showRepeat = !event || !event.series || scope === 'following';
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -353,8 +450,8 @@ export function EventForm({
 
   function chooseKind(next: EventKind) {
     setKind(next);
-    // A closure shuts an office, never a job role.
-    if (next === 'CLOSURE' && audience === 'JOB_ROLE') setAudience('EVERYONE');
+    // A closure shuts an office, never a job role or a list of people.
+    if (next === 'CLOSURE' && audience !== 'LOCATION') setAudience('EVERYONE');
     if (!event) setAllDay(next === 'CLOSURE');
   }
 
@@ -385,15 +482,39 @@ export function EventForm({
   async function submit(form: React.FormEvent) {
     form.preventDefault();
     setError(null);
+    const chosen =
+      invitees.employeeIds.length + invitees.jobRoleIds.length + invitees.locationIds.length > 0;
+    if (!closed && !invitees.everyone && !chosen) {
+      setError('Add who it is for — Everyone, or job roles, offices and people.');
+      return;
+    }
+    if (showRepeat && repeat?.frequency === 'WEEKLY' && (repeat.weekdays ?? []).length === 0) {
+      setError('Choose at least one day of the week for it to repeat on.');
+      return;
+    }
     const body: EventInput = {
       kind,
       title: title.trim(),
       description: description.trim() || undefined,
       place: closed ? undefined : place.trim() || undefined,
       allDay,
-      audience,
-      jobRoleId: audience === 'JOB_ROLE' ? jobRoleId : undefined,
-      locationId: audience === 'LOCATION' ? locationId : undefined,
+      ...(closed
+        ? {
+            audience: audience === 'LOCATION' ? 'LOCATION' : 'EVERYONE',
+            locationId: audience === 'LOCATION' ? locationId : undefined,
+          }
+        : invitees.everyone
+          ? { audience: 'EVERYONE' as EventAudience }
+          : {
+              audience: 'CHOSEN' as EventAudience,
+              invitees: {
+                employeeIds: invitees.employeeIds,
+                jobRoleIds: invitees.jobRoleIds,
+                locationIds: invitees.locationIds,
+              },
+            }),
+      // Changing just one date of a series leaves how it repeats alone.
+      ...(showRepeat ? { repeat } : {}),
       ...(allDay
         ? { startDate, endDate }
         : // datetime-local is the viewer's wall clock; the API stores instants.
@@ -411,9 +532,10 @@ export function EventForm({
     }
     setBusy(true);
     try {
-      if (event) await api.updateEvent(event.id, body);
-      else await api.createEvent(body);
-      onSaved();
+      const saved = event
+        ? await api.updateEvent(event.id, body, event.series ? scope : 'one')
+        : await api.createEvent(body);
+      onSaved(saved.created ?? 1);
     } catch (err) {
       setError(err instanceof ApiError ? err.message : 'Could not save that.');
       setBusy(false);
@@ -460,6 +582,31 @@ export function EventForm({
             </button>
           ))}
         </div>
+
+        {event?.series && (
+          <fieldset className="space-y-1 rounded-lg bg-amber-50 p-3 text-sm text-amber-950 ring-1 ring-inset ring-amber-200 sm:col-span-2">
+            <legend className="sr-only">Which dates to change</legend>
+            <p className="font-medium">This date is part of a series: {event.series.summary}.</p>
+            <label className="flex items-center gap-2">
+              <input
+                type="radio"
+                name={`${id}-scope`}
+                checked={scope === 'one'}
+                onChange={() => setScope('one')}
+              />
+              Change only this date ({describeWhen(event).split(',').slice(0, 2).join(',')})
+            </label>
+            <label className="flex items-center gap-2">
+              <input
+                type="radio"
+                name={`${id}-scope`}
+                checked={scope === 'following'}
+                onChange={() => setScope('following')}
+              />
+              Change this date and all after it
+            </label>
+          </fieldset>
+        )}
 
         <div className="sm:col-span-2">
           <label htmlFor={`${id}-title`} className={label}>
@@ -583,59 +730,70 @@ export function EventForm({
           </div>
         )}
 
-        <div>
-          <label htmlFor={`${id}-audience`} className={label}>
-            {closed ? 'Which offices are closed?' : 'Who is it for?'}
-          </label>
-          <select
-            id={`${id}-audience`}
-            value={audience}
-            onChange={(change) => setAudience(change.target.value as EventAudience)}
-            className={field}
-          >
-            <option value="EVERYONE">{closed ? 'Both offices' : 'Everyone'}</option>
-            {!closed && <option value="JOB_ROLE">One job role</option>}
-            <option value="LOCATION">One office</option>
-          </select>
-        </div>
-        {audience === 'JOB_ROLE' && (
-          <div>
-            <label htmlFor={`${id}-role`} className={label}>
-              Job role
+        {closed ? (
+          <>
+            <div>
+              <label htmlFor={`${id}-audience`} className={label}>
+                Which offices are closed?
+              </label>
+              <select
+                id={`${id}-audience`}
+                value={audience === 'LOCATION' ? 'LOCATION' : 'EVERYONE'}
+                onChange={(change) => setAudience(change.target.value as EventAudience)}
+                className={field}
+              >
+                <option value="EVERYONE">Both offices</option>
+                <option value="LOCATION">One office</option>
+              </select>
+            </div>
+            {audience === 'LOCATION' && (
+              <div>
+                <label htmlFor={`${id}-office`} className={label}>
+                  Office
+                </label>
+                <select
+                  id={`${id}-office`}
+                  required
+                  value={locationId}
+                  onChange={(change) => setLocationId(change.target.value)}
+                  className={field}
+                >
+                  {locations.map((location) => (
+                    <option key={location.id} value={location.id}>
+                      {location.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            )}
+          </>
+        ) : (
+          <div className="sm:col-span-2">
+            <label htmlFor={`${id}-who`} className={label}>
+              Who is it for?
             </label>
-            <select
-              id={`${id}-role`}
-              required
-              value={jobRoleId}
-              onChange={(change) => setJobRoleId(change.target.value)}
-              className={field}
-            >
-              {jobRoles.map((role) => (
-                <option key={role.id} value={role.id}>
-                  {role.name}
-                </option>
-              ))}
-            </select>
+            <InviteePicker
+              id={`${id}-who`}
+              value={invitees}
+              onChange={setInvitees}
+              employees={employees}
+              jobRoles={jobRoles}
+              locations={locations}
+            />
+            <p className="mt-1 text-xs text-slate-500">
+              Everyone, or any mix of job roles, offices and people — e.g. Provider, Kayla,
+              Angelina.
+            </p>
           </div>
         )}
-        {audience === 'LOCATION' && (
-          <div>
-            <label htmlFor={`${id}-office`} className={label}>
-              Office
-            </label>
-            <select
-              id={`${id}-office`}
-              required
-              value={locationId}
-              onChange={(change) => setLocationId(change.target.value)}
-              className={field}
-            >
-              {locations.map((location) => (
-                <option key={location.id} value={location.id}>
-                  {location.name}
-                </option>
-              ))}
-            </select>
+
+        {showRepeat && (
+          <div className="sm:col-span-2">
+            <RepeatPicker
+              startDate={allDay ? startDate : startsAt.slice(0, 10)}
+              value={repeat}
+              onChange={setRepeat}
+            />
           </div>
         )}
 

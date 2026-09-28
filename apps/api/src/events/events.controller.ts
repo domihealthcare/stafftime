@@ -15,7 +15,7 @@ import { Role } from '@prisma/client';
 import { AuthUser } from '../common/auth/auth-user';
 import { CurrentUser } from '../common/auth/current-user.decorator';
 import { Roles } from '../common/auth/roles.decorator';
-import { CopyClosuresDto, EventInput, QueryEventsDto } from './dto/event.dto';
+import { CopyClosuresDto, EventInput, QueryEventsDto, ScopeQuery } from './dto/event.dto';
 import { EventsService } from './events.service';
 
 /// Anybody signed in reads the events that are for them (managers read all);
@@ -45,17 +45,24 @@ export class EventsController {
 
   @Patch(':id')
   @Roles(Role.MANAGER)
+  /// `?scope=following` changes this date and every one after it in its series.
   update(
     @Param('id', ParseUUIDPipe) id: string,
     @Body() dto: EventInput,
+    @Query() query: ScopeQuery,
     @CurrentUser() user: AuthUser,
   ) {
-    return this.events.update(id, dto, user);
+    return this.events.update(id, dto, user, query.scope ?? 'one');
   }
 
+  /// `?scope=following` removes this date and every one after it.
   @Delete(':id')
   @Roles(Role.MANAGER)
-  remove(@Param('id', ParseUUIDPipe) id: string, @CurrentUser() user: AuthUser) {
-    return this.events.remove(id, user);
+  remove(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Query() query: ScopeQuery,
+    @CurrentUser() user: AuthUser,
+  ) {
+    return this.events.remove(id, user, query.scope ?? 'one');
   }
 }

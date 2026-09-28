@@ -2232,3 +2232,49 @@ test had the same slip, so it passed. Harmless while the feed only carried
 office names and time-off types; not once managers type event names. Fixed,
 with the test corrected.
 
+### Repeating events and chosen people
+
+Asked for by Dominguez straight after events went live (September 2026): the
+office meeting and the admin meeting on alternate Fridays, 9–10am; "every 2
+weeks on Monday and Friday"; and an event for "Providers, Kayla, Angelina".
+
+**Repeats.** `events/recurrence.ts` works out a series' dates on calendar
+dates, never instants — weekly every *n* weeks on chosen weekdays (weeks
+counted from the Monday of the first date, so Monday and Friday stay in the
+same fortnight), or monthly on the same date (a 31st is skipped in shorter
+months, not moved) or the same weekday of the month ("first Friday", "last
+Friday") — until a date at most a year on. Each date becomes a
+`PracticeEvent` at the same wall-clock times on New Jersey's clock, so a 9am
+meeting stays 9am across the clocks changing (13:00 UTC in October, 14:00 in
+November). Written out like repeating shifts, one row per date, because every
+screen, the calendar feed and the reminders already work on single rows; the
+rule is kept in `PracticeEventSeries` to describe the series and to change
+it. Alternating meetings are two series a week apart.
+
+**Changing and removing.** Just this date: that row changes and stays in its
+series. This date and all after it: every date from it on is removed, the old
+series ends the day before (or goes, if nothing is left of it), and a new
+series starts from the edited date — the way a phone calendar does it. Giving
+a one-off event a repeat makes it the first date of a new series.
+
+**Who it is for.** `audience: CHOSEN` with one `PracticeEventInvitee` row per
+person, job role or office (a database check says exactly one). Visibility
+and notifications use the same rule: a person is in if they are named, hold a
+listed role, or work at a listed office. Removing somebody, a role or an
+office removes their row; a list left empty is nobody, not everybody. Events
+made before this keep `JOB_ROLE` / `LOCATION` and open in the form with that
+one role or office on the list. Closures stay both offices or one.
+
+**Telling people.** One notification for a whole series ("Every 2 weeks on
+Fri until Dec 31. First: Fri, Oct 9, 9:00 AM–10:00 AM"), not one per date; a
+change from one date on is one notice too. The nightly job (5am in New
+Jersey) reminds everybody an event or closure is for about the ones starting
+tomorrow, and marks each with `reminderSentAt` so a second run sends nothing.
+
+**Rolled out without a break.** The two migrations only add: the `CHOSEN`
+value in a migration of its own (Postgres will not use a new enum value in
+the transaction that adds it), then the tables, columns and checks. Before
+pushing — which applies migrations to the live database through the preview
+build — the version then live was run against a database with both applied,
+and its events, closures, rota, bell, calendar and scheduler suites passed.
+

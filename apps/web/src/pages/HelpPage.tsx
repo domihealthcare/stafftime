@@ -212,11 +212,11 @@ const STAFF: Section[] = [
         answer: (
           <p>
             On <Screen>Schedule</Screen>, in the <strong>Events</strong> row above your shifts (and
-            with a 📅 in the month): office meetings, meetings for your job role, events at your
-            office, and practice-wide days like a wellness event. Tap one for the time, the place
-            and the details. The bell tells you when one is added, moved or cancelled, and if you
-            use the calendar link they appear on your phone as well. An event is not a shift — if
-            you are being paid to be there, clock in as usual.
+            with a 📅 in the month): office meetings, meetings you have been added to, and
+            practice-wide days like a wellness event. A 🔁 means it repeats. Tap one for the time,
+            the place and who it is for. The bell tells you when one is added, moved or cancelled,
+            and reminds you the day before; if you use the calendar link they appear on your phone
+            as well. An event is not a shift — if you are being paid to be there, clock in as usual.
           </p>
         ),
       },
@@ -524,12 +524,18 @@ const MANAGERS: Section[] = [
         answer: (
           <p>
             On <Screen>Schedule</Screen>, choose <strong>+ Add event</strong>: a name, a time (or
-            tick <strong>All day</strong>, for one day or several), where it is, and who it is for —
-            everyone, one job role (say Provider, for a provider meeting) or one office. Everybody
-            it is for sees it in the Events row, gets a notification, and has it on their phone if
-            they sync their calendar. Click an event to change or remove it; the people it is for
-            are told either way. Events never count as hours or overtime — anybody being paid to
-            attend clocks in as usual, so payroll stays with the punches.
+            tick <strong>All day</strong>, for one day or several), where it is, and{' '}
+            <strong>who it is for</strong> — Everyone, or type into the box and add any mix of job
+            roles, offices and people (say <em>Provider</em>, <em>Kayla</em>, <em>Angelina</em>).
+            To make it repeat, choose from <strong>Repeats</strong>: every week, every 2 weeks, every
+            month (the same date, or e.g. the first Friday), or <strong>Custom</strong> — every 2
+            weeks on Monday and Friday — until a date up to a year ahead. For meetings on
+            alternate Fridays, make each one every 2 weeks, starting a week apart. Everybody it is
+            for sees it in the Events row, gets one notification for the whole series and a
+            reminder the day before, and has it on their phone if they sync their calendar. Click
+            an event to change or remove <strong>just that date</strong> or{' '}
+            <strong>that date and all after it</strong>. Events never count as hours or overtime —
+            anybody being paid to attend clocks in as usual, so payroll stays with the punches.
           </p>
         ),
       },
