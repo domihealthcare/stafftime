@@ -339,6 +339,18 @@ Beyond the phases, the parts worth knowing about before picking up work:
   anybody paid to attend clocks in as usual. **No replies** (going / can't
   go) for now. All four choices confirmed by Dominguez. `PracticeEvent`,
   `src/events/`.
+- **Repeating events and chosen people** (September 2026, Dominguez): an
+  event can repeat — every week, every 2 weeks, monthly (same date or "the
+  first Friday"), or custom ("every 2 weeks on Mon and Fri") — until a date
+  at most a year on. Written out **one row per date** in a
+  `PracticeEventSeries`, so one date can be changed or removed alone, or
+  "this and all after it" (the old series ends the day before, a new one
+  starts). Office and admin meetings on alternate Fridays are two series a
+  week apart. **Who it is for** is one searchable box: Everyone, or any mix
+  of job roles, offices and people (`audience: CHOSEN`, rows in
+  `PracticeEventInvitee`). One notification per series, plus a **reminder the
+  day before** each date from the nightly job (`reminderSentAt` stops a
+  second). Closures stay both offices or one.
 - **Holidays and closures** (September 2026, Dominguez): a `PracticeEvent`
   with `kind: CLOSURE` — Christmas all day, Christmas Eve from 1pm — for
   **both offices or one** (never a job role). Shown with a 🔒 to that office's

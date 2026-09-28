@@ -881,17 +881,26 @@ export const api = {
     request<PracticeEvent[]>(
       `/events?from=${encodeURIComponent(from)}&to=${encodeURIComponent(to)}`,
     ),
+  /// `created` is how many dates were written — more than one for a series.
   createEvent: (body: EventInput) =>
-    request<PracticeEvent>('/events', { method: 'POST', body: JSON.stringify(body) }),
-  updateEvent: (id: string, body: EventInput) =>
-    request<PracticeEvent>(`/events/${id}`, { method: 'PATCH', body: JSON.stringify(body) }),
+    request<PracticeEvent & { created: number }>('/events', {
+      method: 'POST',
+      body: JSON.stringify(body),
+    }),
+  /// `following` changes this date and every one after it in its series.
+  updateEvent: (id: string, body: EventInput, scope: 'one' | 'following' = 'one') =>
+    request<PracticeEvent & { created: number }>(`/events/${id}?scope=${scope}`, {
+      method: 'PATCH',
+      body: JSON.stringify(body),
+    }),
   /// Every closure in `fromYear`, put on the same date the year after.
   copyClosures: (fromYear: number) =>
     request<{ copied: number; skipped: string[]; toYear: number }>('/events/closures/copy', {
       method: 'POST',
       body: JSON.stringify({ fromYear }),
     }),
-  deleteEvent: (id: string) => request<{ deleted: boolean }>(`/events/${id}`, { method: 'DELETE' }),
+  deleteEvent: (id: string, scope: 'one' | 'following' = 'one') =>
+    request<{ deleted: number }>(`/events/${id}?scope=${scope}`, { method: 'DELETE' }),
 
   announcements: () => request<Announcement[]>('/announcements'),
   primaryAnnouncement: () =>

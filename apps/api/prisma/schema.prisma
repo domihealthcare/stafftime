@@ -140,8 +140,9 @@ model Location {
   closingRecords ClosingRecord[]
   supplyRequests SupplyRequest[]
 
-  surveys Survey[]
-  events  PracticeEvent[]
+  surveys       Survey[]
+  events        PracticeEvent[]
+  eventInvitees PracticeEventInvitee[]
 
   @@map("locations")
 }
@@ -275,6 +276,7 @@ model Employee {
   surveysTaken              SurveyParticipant[]
   notifications             Notification[]
   createdEvents             PracticeEvent[]         @relation("EventCreatedBy")
+  eventInvites              PracticeEventInvitee[]  @relation("EventInvitee")
 
   @@index([employmentStatus])
   @@map("employees")
@@ -1071,6 +1073,7 @@ model JobRole {
   resources            Resource[]
   surveys              Survey[]
   events               PracticeEvent[]
+  eventInvitees        PracticeEventInvitee[]
   shifts               Shift[]
   /// Its closing checklist, shown at clock-out.
   closingSections      ClosingSection[]
@@ -1212,8 +1215,25 @@ enum PracticeEventKind {
 /// Who an event is for. The same three choices as a survey.
 enum EventAudience {
   EVERYONE
+  /// One job role. Events made before "Chosen" still use it.
   JOB_ROLE
+  /// One office — and for a closure, the office that is shut.
   LOCATION
+  /// Any mix of job roles, offices and people, in PracticeEventInvitee
+  /// (September 2026: "Providers, Kayla, Angelina").
+  CHOSEN
+}
+
+/// How a series repeats.
+enum RepeatFrequency {
+  WEEKLY
+  MONTHLY
+}
+
+/// A monthly series: the same date, or the same weekday in the same week.
+enum MonthlyRepeat {
+  DAY_OF_MONTH
+  WEEKDAY_OF_MONTH
 }
 
 /// "PracticeEvent" rather than "Event" so it never reads as a DOM or Node event.
@@ -1239,17 +1259,73 @@ model PracticeEvent {
   /// For LOCATION — and for a closure, the one office that is shut.
   locationId String?       @db.Uuid
 
+  /// The series this date belongs to, if it repeats. Each date is its own
+  /// row, so one can be moved or removed without the rest.
+  seriesId       String?   @db.Uuid
+  /// When the day-before reminder went, so the nightly job never sends two.
+  reminderSentAt DateTime?
+
   createdById String?  @db.Uuid
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
-  jobRole   JobRole?  @relation(fields: [jobRoleId], references: [id], onDelete: SetNull)
-  location  Location? @relation(fields: [locationId], references: [id], onDelete: SetNull)
-  createdBy Employee? @relation("EventCreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
+  jobRole   JobRole?               @relation(fields: [jobRoleId], references: [id], onDelete: SetNull)
+  location  Location?              @relation(fields: [locationId], references: [id], onDelete: SetNull)
+  createdBy Employee?              @relation("EventCreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
+  series    PracticeEventSeries?   @relation(fields: [seriesId], references: [id], onDelete: SetNull)
+  invitees  PracticeEventInvitee[]
 
   @@index([startsAt])
   @@index([kind, startsAt])
+  @@index([seriesId, startsAt])
   @@map("practice_events")
+}
+
+/// Who a CHOSEN event is for: each row is one person, one job role or one
+/// office — exactly one of the three (a database check says so). Removing the
+/// person, role or office removes the row.
+model PracticeEventInvitee {
+  id         String  @id @default(uuid()) @db.Uuid
+  eventId    String  @db.Uuid
+  employeeId String? @db.Uuid
+  jobRoleId  String? @db.Uuid
+  locationId String? @db.Uuid
+
+  event    PracticeEvent @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  employee Employee?     @relation("EventInvitee", fields: [employeeId], references: [id], onDelete: Cascade)
+  jobRole  JobRole?      @relation(fields: [jobRoleId], references: [id], onDelete: Cascade)
+  location Location?     @relation(fields: [locationId], references: [id], onDelete: Cascade)
+
+  @@index([eventId])
+  @@index([employeeId])
+  @@index([jobRoleId])
+  @@index([locationId])
+  @@map("practice_event_invitees")
+}
+
+/// The rule a repeating event was made from: "every 2 weeks on Mon and Fri
+/// until Dec 31". Its dates are written out as PracticeEvent rows; the rule is
+/// kept to describe the series and to change "this and all after it".
+model PracticeEventSeries {
+  id          String          @id @default(uuid()) @db.Uuid
+  frequency   RepeatFrequency
+  /// Every 1, 2, 3… weeks or months.
+  interval    Int
+  /// WEEKLY: 1 = Monday … 7 = Sunday.
+  weekdays    Int[]
+  monthlyMode MonthlyRepeat?
+  /// WEEKDAY_OF_MONTH: 1–4, or -1 for the last.
+  monthlyWeek Int?
+  /// The first date of the series, and the last it may land on.
+  firstDate   DateTime        @db.Date
+  untilDate   DateTime        @db.Date
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  events PracticeEvent[]
+
+  @@map("practice_event_series")
 }
 
 // ---------------------------------------------------------------------------

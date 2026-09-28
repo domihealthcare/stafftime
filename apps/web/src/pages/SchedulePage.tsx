@@ -116,6 +116,8 @@ export function SchedulePage() {
     event?: PracticeEvent;
     kind?: PracticeEvent['kind'];
   } | null>(null);
+  /// "7 dates added", after a repeating event is saved.
+  const [eventNotice, setEventNotice] = useState<string | null>(null);
   /// Bumped on every load, so the holidays card re-reads after a change.
   const [eventsVersion, setEventsVersion] = useState(0);
   /// Your own weeks over or close to the overtime line (staff).
@@ -451,16 +453,27 @@ export function SchedulePage() {
             key={eventForm.event?.id ?? `new-${eventForm.kind ?? 'EVENT'}`}
             event={eventForm.event}
             initialKind={eventForm.kind}
+            employees={employees}
             locations={locations}
             jobRoles={jobRoles}
             defaultDate={newEventDay(view === 'week' ? weekStart : monthStart)}
-            onSaved={() => {
+            onSaved={(created) => {
               setEventForm(null);
+              setEventNotice(created > 1 ? `Saved — ${created} dates are on the schedule.` : null);
               void load();
             }}
             onCancel={() => setEventForm(null)}
           />
         </div>
+      )}
+
+      {eventNotice && (
+        <p
+          role="status"
+          className="mb-4 rounded-lg bg-emerald-50 px-3 py-2 text-sm text-emerald-900 ring-1 ring-inset ring-emerald-200"
+        >
+          {eventNotice}
+        </p>
       )}
 
       {openEvent && (

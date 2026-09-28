@@ -95,8 +95,10 @@ await step('an all-day wellness day for one office, and a meeting for one job ro
   await form.getByLabel('All day').check();
   await form.getByLabel('First day').fill(key(wednesday));
   await form.getByLabel('Last day').fill(key(thursday));
-  await form.getByLabel('Who is it for?').selectOption('LOCATION');
-  await form.getByLabel('Office').selectOption({ label: 'West New York' });
+  // Who it is for is one searchable box: Everyone off, the office on.
+  await form.getByRole('button', { name: 'Remove Everyone' }).click();
+  await form.getByRole('combobox', { name: 'Who is it for?' }).fill('west new');
+  await manager.getByRole('listbox').getByRole('option', { name: /^West New York/ }).click();
   await form.getByRole('button', { name: 'Add event' }).click();
   await manager.getByTestId('rota-events-row').getByText('Wellness day').first().waitFor({ timeout: 10000 });
   // Two days, so a chip on each.
@@ -108,8 +110,9 @@ await step('an all-day wellness day for one office, and a meeting for one job ro
   await second.getByLabel('What is it?').fill('Provider meeting');
   await second.getByLabel('Starts').fill(`${key(thursday)}T08:00`);
   await second.getByLabel('Ends').fill(`${key(thursday)}T09:00`);
-  await second.getByLabel('Who is it for?').selectOption('JOB_ROLE');
-  await second.getByLabel('Job role').selectOption({ label: 'Provider' });
+  await second.getByRole('button', { name: 'Remove Everyone' }).click();
+  await second.getByRole('combobox', { name: 'Who is it for?' }).fill('provider');
+  await manager.getByRole('listbox').getByRole('option', { name: /^Provider/ }).click();
   await second.getByRole('button', { name: 'Add event' }).click();
   await manager.getByTestId('rota-events-row').getByText('Provider meeting').waitFor({ timeout: 10000 });
 });
