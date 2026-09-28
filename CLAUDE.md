@@ -404,8 +404,8 @@ Beyond the phases, the parts worth knowing about before picking up work:
   deployed security headers.
 
 `docs/architecture.md` is the long version, and explains *why* for anything
-surprising. `docs/open-questions.md` is what is still waiting on a decision, and
-`docs/manager-review.md` is written for the managers rather than for us.
+surprising, and `docs/open-questions.md` is what is still waiting on a decision.
+The guides for staff and managers are on the app's own Help page.
 
 ## Ways of working
 - Confirm scope and data accuracy before drafting deliverables — don't build ahead

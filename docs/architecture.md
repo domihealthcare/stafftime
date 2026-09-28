@@ -1129,9 +1129,6 @@ The data is deliberately imperfect: somebody late, somebody who left early,
 somebody who forgot to clock out, one entry a manager corrected with the reason
 recorded. The whole point is to see what the flagged cases look like.
 
-`docs/manager-review.md` is the walkthrough that goes with it, written for the
-managers rather than for a developer.
-
 ## Phones
 
 Half of this app is used on a phone: clocking in at the desk, a manager

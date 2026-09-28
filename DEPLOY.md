@@ -255,9 +255,7 @@ app does not care which one sends. See `docs/architecture.md`.
 Send them the link and their email address. Give them the temporary password by
 phone or in person — not in the same email as the link.
 
-Send them [docs/manager-review.md](./docs/manager-review.md) too. It is written
-for them rather than for a developer: what to try, in what order, what is
-deliberately missing, and what we need them to comment on.
+The **Help** page (account menu) has a guide for staff and one for managers.
 
 **Give them something to look at.** An empty timesheet tells a practice manager
 nothing.
