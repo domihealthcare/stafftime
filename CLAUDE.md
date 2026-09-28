@@ -213,6 +213,14 @@ Still to do on the deployment, in `DEPLOY.md`:
   far-corner test was waived (Dominguez, 25 September 2026); 500 ft stands.
   Never run `npm run db:seed` against the live
   database — it resets the pins to the old placeholders.
+- **Never edit a migration once it has been pushed** (learned 28 September
+  2026). A preview build runs `prisma migrate deploy`, and the previews appear
+  to share the live database. So a migration reaches the live database as soon
+  as its branch is pushed, not when it is merged, and an edited migration is
+  never run again. That is how the closure `kind` column went missing on the
+  live site, breaking the Schedule; `20260928010000_practice_events_kind`
+  repaired it. A change always goes in a new migration. Worth checking in
+  Vercel whether Preview should have its own database.
 - ~~`SETUP_TOKEN` should be deleted~~ — **done, 25 September 2026.** Still to
   do: **rotate the Neon password** (Dominguez to find time; steps given in
   chat: reset in Neon, paste the new pooled and direct strings into

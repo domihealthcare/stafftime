@@ -16,8 +16,11 @@ const step = async (name, fn) => {
   catch (e) { console.log(`FAIL  ${name}: ${e.message}`); errors.push(`${name}: ${e.message}`); }
 };
 
+/// A date n days from today — New Jersey's today, as the app counts it. From
+/// 8pm there the UTC date is already tomorrow, and "21 days left" read 20.
 const dayOffset = (n) => {
-  const date = new Date();
+  const today = new Intl.DateTimeFormat('en-CA', { timeZone: 'America/New_York' }).format(new Date());
+  const date = new Date(`${today}T00:00:00Z`);
   date.setUTCDate(date.getUTCDate() + n);
   return date.toISOString().slice(0, 10);
 };

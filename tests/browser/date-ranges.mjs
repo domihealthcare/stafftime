@@ -32,11 +32,10 @@ const addDays = (date, n) => {
   d.setUTCDate(d.getUTCDate() + n);
   return d.toISOString().slice(0, 10);
 };
-const localToday = () => {
-  const d = new Date();
-  const pad = (n) => String(n).padStart(2, '0');
-  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
-};
+/// Today at the practice. The machine's own date is UTC on a CI runner, which
+/// from 8pm in New Jersey is already tomorrow — and the app, rightly, is not.
+const localToday = () =>
+  new Intl.DateTimeFormat('en-CA', { timeZone: 'America/New_York' }).format(new Date());
 const periodContaining = (date) => {
   const days = Math.round((Date.parse(`${date}T00:00:00Z`) - Date.parse(`${ANCHOR}T00:00:00Z`)) / 86_400_000);
   const from = addDays(ANCHOR, Math.floor(days / 14) * 14);
