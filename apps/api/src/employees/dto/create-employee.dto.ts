@@ -25,18 +25,22 @@ export class CreateEmployeeDto {
   @Length(1, 80)
   lastName!: string;
 
+  /// The name they go by. Empty or null clears it.
   @IsOptional()
+  @ValidateIf((_, value) => value !== null && value !== '')
   @IsString()
   @Length(1, 80)
-  preferredName?: string;
+  preferredName?: string | null;
 
   @IsEmail()
   email!: string;
 
+  /// Shown to colleagues in the Directory. Empty or null clears it.
   @IsOptional()
+  @ValidateIf((_, value) => value !== null && value !== '')
   @IsString()
   @Length(7, 25)
-  phone?: string;
+  phone?: string | null;
 
   @IsOptional()
   @IsEnum(Role)

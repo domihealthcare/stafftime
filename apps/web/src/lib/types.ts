@@ -70,6 +70,10 @@ export interface Employee extends EmployeeSummary {
   welcomeSentAt?: string | null;
   preferredName: string | null;
   pronouns?: string | null;
+  phone?: string | null;
+  payType?: 'HOURLY' | 'SALARY';
+  /// Their last day, once they have left (or been given one).
+  terminationDate?: string | null;
   /// When their profile photo last changed; null for none.
   photoUpdatedAt?: string | null;
   externalId?: string | null;

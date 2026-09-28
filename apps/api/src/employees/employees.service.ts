@@ -27,6 +27,19 @@ function normaliseEmail(email: string): string {
   return email.trim().toLowerCase();
 }
 
+/// YYYY-MM-DD, and a real day — "2026-02-30" is not one.
+function isCalendarDate(value: string): boolean {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(value)) return false;
+  const date = new Date(`${value}T00:00:00Z`);
+  return !Number.isNaN(date.getTime()) && date.toISOString().startsWith(value);
+}
+
+/// An optional line of text, as stored: trimmed, and blank means none.
+/// Undefined stays undefined, so a field left out of an update is left alone.
+function optionalText(value: string | null | undefined): string | null | undefined {
+  return value === undefined ? undefined : value?.trim() || null;
+}
+
 @Injectable()
 export class EmployeesService {
   constructor(private readonly prisma: PrismaService) {}
@@ -41,6 +54,8 @@ export class EmployeesService {
         data: {
           ...employee,
           email: normaliseEmail(employee.email),
+          preferredName: optionalText(employee.preferredName),
+          phone: optionalText(employee.phone),
           adpFileNumber: adpFileNumber?.trim() || null,
           hireDate: employee.hireDate ? new Date(employee.hireDate) : null,
           terminationDate: employee.terminationDate
@@ -183,7 +198,11 @@ export class EmployeesService {
         where: { id },
         data: {
           ...employee,
+          firstName: employee.firstName?.trim(),
+          lastName: employee.lastName?.trim(),
           email: employee.email === undefined ? undefined : normaliseEmail(employee.email),
+          preferredName: optionalText(employee.preferredName),
+          phone: optionalText(employee.phone),
           adpFileNumber: adpFileNumber === undefined ? undefined : adpFileNumber?.trim() || null,
           hireDate:
             employee.hireDate === undefined
@@ -193,7 +212,11 @@ export class EmployeesService {
                 : null,
           terminationDate: employee.terminationDate
             ? new Date(employee.terminationDate)
-            : undefined,
+            : // Brought back after being marked as having left: they have no
+              // last day any more, or an offboarding checklist would hang off it.
+              employee.employmentStatus && employee.employmentStatus !== EmploymentStatus.TERMINATED
+              ? null
+              : undefined,
           // Location assignments are replaced wholesale when provided.
           locations: locationIds
             ? {
@@ -215,6 +238,9 @@ export class EmployeesService {
 
   /// Employees are never hard-deleted — timesheets must stay attributable.
   async terminate(id: string, terminationDate?: string) {
+    if (terminationDate !== undefined && !isCalendarDate(terminationDate)) {
+      throw new BadRequestException('Their last day is a date, like 2026-09-30.');
+    }
     await this.findOne(id);
     const updated = await this.prisma.employee.update({
       where: { id },
@@ -247,6 +273,9 @@ export class EmployeesService {
         const target = (error.meta?.target as string[] | undefined)?.join(', ') ?? 'field';
         if (target.includes('adpFileNumber')) {
           return new ConflictException('Somebody else already has that ADP File #.');
+        }
+        if (target.includes('email')) {
+          return new ConflictException('Somebody else already signs in with that email.');
         }
         return new ConflictException(`An employee with that ${target} already exists.`);
       }

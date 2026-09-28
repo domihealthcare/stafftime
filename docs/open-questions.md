@@ -159,7 +159,7 @@ What needs a decision from the practice:
 Scope is in `CLAUDE.md` under *Build phasing*. Still to settle:
 
 - [ ] **Check everybody is in their job role(s).** It decides which closing
-      checklist and resources somebody gets. Staff → Edit details, or Manage →
+      checklist and resources somebody gets. Staff → Edit, or Manage →
       Job roles.
 - [ ] **Uploads for resources.** Links and written pages only for now. Adding
       uploads later reverses *Data this app does not hold* and needs deciding

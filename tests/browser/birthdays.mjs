@@ -43,11 +43,12 @@ const admin = await signIn('admin@domihealthcare.com');
 await step('an admin sets a birthday on the Staff screen — a month and a day, no year', async () => {
   await admin.goto(`${BASE}/staff`, { waitUntil: 'networkidle' });
   const card = admin.getByTestId('staff-frontdesk@domihealthcare.com');
-  await card.getByRole('button', { name: 'Edit details' }).click();
-  await card.getByLabel('Birthday month').selectOption(String(today.getMonth() + 1));
-  await card.getByLabel('Birthday day').fill(String(today.getDate()));
-  await card.getByRole('button', { name: /^Save/ }).click();
-  await card.getByRole('button', { name: 'Edit details' }).waitFor({ timeout: 10000 });
+  await card.getByRole('button', { name: /^Edit / }).click();
+  const editor = admin.getByTestId('staff-editor');
+  await editor.getByLabel('Birthday month').selectOption(String(today.getMonth() + 1));
+  await editor.getByLabel('Birthday day').fill(String(today.getDate()));
+  await editor.getByRole('button', { name: 'Save changes' }).click();
+  await editor.waitFor({ state: 'detached', timeout: 10000 });
 
   // Morgan's is in two days, set straight through the API.
   const saved = await admin.evaluate(async ([month, day]) => {
@@ -175,10 +176,12 @@ await step('a pasted staff list brings birthdays in, keeping only the month and 
 
 await step('clearing a birthday takes it off everywhere', async () => {
   const card = admin.getByTestId('staff-manager@domihealthcare.com');
-  await card.getByRole('button', { name: 'Edit details' }).click();
-  await card.getByLabel('Birthday month').selectOption('');
-  await card.getByRole('button', { name: /^Save/ }).click();
-  await card.getByRole('button', { name: 'Edit details' }).waitFor({ timeout: 10000 });
+  await card.getByRole('button', { name: /^Edit / }).click();
+  const editor = admin.getByTestId('staff-editor');
+  await editor.getByLabel('Birthday month').selectOption('');
+  await editor.getByLabel('Birthday day').fill('');
+  await editor.getByRole('button', { name: 'Save changes' }).click();
+  await editor.waitFor({ state: 'detached', timeout: 10000 });
   const found = await admin.evaluate(async ([from, to]) =>
     fetch(`/api/directory/birthdays?from=${from}&to=${to}`).then((r) => r.json()),
   [key(today), key(inTwoDays)]);

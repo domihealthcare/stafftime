@@ -588,9 +588,13 @@ export const api = {
     body: Partial<{
       firstName: string;
       lastName: string;
+      preferredName: string | null;
       email: string;
+      phone: string | null;
       role: string;
       payType: string;
+      /// ACTIVE brings back somebody marked as having left.
+      employmentStatus: 'ACTIVE';
       locationIds: string[];
       primaryLocationId: string;
       adpFileNumber: string | null;
@@ -599,7 +603,12 @@ export const api = {
       birthdayDay: number | null;
     }>,
   ) => request<Employee>(`/employees/${id}`, { method: 'PATCH', body: JSON.stringify(body) }),
-  terminateEmployee: (id: string) => request<Employee>(`/employees/${id}`, { method: 'DELETE' }),
+  /// `lastDay` is YYYY-MM-DD; left out, it is today.
+  terminateEmployee: (id: string, lastDay?: string) =>
+    request<Employee>(
+      `/employees/${id}${lastDay ? `?terminationDate=${encodeURIComponent(lastDay)}` : ''}`,
+      { method: 'DELETE' },
+    ),
 
   createLocation: (body: {
     name: string;
