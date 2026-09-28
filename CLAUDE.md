@@ -360,7 +360,7 @@ Beyond the phases, the parts worth knowing about before picking up work:
   *Trusted*: practice accounts walk in, others knock. It works through a
   Google service account with domain-wide delegation for the one scope
   `meetings.space.created` (`events/google-meet.service.ts`, no Google
-  library). **Not set up on the live site yet**: whoever is admin@ follows
+  library). **Not set up on the live site yet**: the Workspace super admin (dominguez@ — not admin@) follows
   `docs/google-meet-setup.md`; until then the tick box is hidden and links
   are pasted.
 - **Holidays and closures** (September 2026, Dominguez): a `PracticeEvent`

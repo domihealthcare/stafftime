@@ -9,8 +9,8 @@ repeating event gets one link for all its dates.
 Until it is done, nothing is broken: the tick box just isn't shown, and a
 link can still be pasted into **Video call link** by hand.
 
-**Who does it:** somebody who can sign in as **admin@domihealthcare.com** (a
-Google Workspace super admin). It takes about 15 minutes, once. Nobody needs
+**Who does it:** the practice's Google Workspace super admin,
+**dominguez@domihealthcare.com**. It takes about 15 minutes, once. Nobody needs
 office@'s password.
 
 ## What it allows, and what it doesn't
@@ -27,9 +27,9 @@ The meetings it makes are **Trusted**: anybody signed in with a
 account (a personal Gmail) knocks and is let in by somebody already in the
 meeting.
 
-## Part 1 — Google Cloud (signed in as admin@)
+## Part 1 — Google Cloud (signed in as dominguez@)
 
-1. Go to **console.cloud.google.com** and sign in as admin@domihealthcare.com.
+1. Go to **console.cloud.google.com** and sign in as dominguez@domihealthcare.com.
    Accept the terms if asked.
 2. At the top, open the project picker → **New project**. Name it
    `Domi Staff`, leave the organization as `domihealthcare.com`, and create
@@ -50,11 +50,11 @@ meeting.
    > block this by default. Menu → **IAM & Admin → Organization Policies**,
    > find **Disable service account key creation**, **Manage policy** →
    > **Override parent's policy** → **Not enforced** → **Set policy**. If you
-   > can't change it, give admin@ the role **Organization Policy
+   > can't change it, give dominguez@ the role **Organization Policy
    > Administrator** first (IAM & Admin → IAM, with the organization selected
    > at the top, not the project). Then go back to step 6.
 
-## Part 2 — Workspace Admin console (signed in as admin@)
+## Part 2 — Workspace Admin console (signed in as dominguez@)
 
 7. Go to **admin.google.com**.
 8. **Security → Access and data control → API controls → Manage Domain Wide

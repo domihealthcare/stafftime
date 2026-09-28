@@ -601,8 +601,8 @@ is the bit we need to hear about.
 - An event can have a **video call link**: paste one from Google Meet, Zoom or
   Teams. Staff get a **Join video call** button when they open the event, and
   the link is on their phone calendar.
-- Once Google Meet is set up (a one-time job for whoever looks after
-  admin@domihealthcare.com, `docs/google-meet-setup.md`), there is a tick
+- Once Google Meet is set up (a one-time job for the Workspace admin,
+  dominguez@domihealthcare.com, `docs/google-meet-setup.md`), there is a tick
   box: **Create a Google Meet link**. The meeting belongs to
   office@domihealthcare.com; anybody signed in with a practice Google account
   goes straight in, and anybody else is let in from the meeting. A repeating

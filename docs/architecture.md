@@ -2304,6 +2304,6 @@ A series gets one meeting for all its dates, as Google Calendar does.
 
 Off unless `GOOGLE_SERVICE_ACCOUNT_JSON` and `GOOGLE_MEET_HOST` are both set;
 `/api/config` says only whether it is on (`googleMeet`), never which account
-or key, and the form shows the tick box only then. Setup, for whoever is
-admin@: `docs/google-meet-setup.md`.
+or key, and the form shows the tick box only then. Setup, for the Workspace
+super admin (dominguez@): `docs/google-meet-setup.md`.
 
