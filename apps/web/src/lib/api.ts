@@ -38,6 +38,7 @@ import type {
   PtoPolicy,
   PtoRequest,
   ReportPreset,
+  DriveFolderListing,
   Resource,
   ResourceKind,
   ResourceSection,
@@ -408,6 +409,28 @@ export interface AppConfig {
   version: string | null;
   /// Whether events can have a Google Meet link made for them.
   googleMeet?: boolean;
+  /// Whether shifts and events go out as calendar invites (and so have left
+  /// the subscribed feed, which keeps closures and time off).
+  calendarInvites?: boolean;
+}
+
+export interface CalendarInviteStatus {
+  enabled: boolean;
+  calendarMade: boolean;
+  /// Invites to send, change or cancel.
+  pending: number;
+  /// Invites out for things still to come.
+  upcoming: number;
+  lastSyncAt: string | null;
+  lastError: string | null;
+  lastErrorAt: string | null;
+}
+
+export interface CalendarInviteRound {
+  sent: number;
+  cancelled: number;
+  failed: number;
+  remaining: number;
 }
 
 export interface CalendarLink {
@@ -526,6 +549,9 @@ export const api = {
   ptoBalance: (employeeId?: string) =>
     request<PtoBalance>(`/pto/balance${employeeId ? `?employeeId=${employeeId}` : ''}`),
   staffPtoBalances: () => request<StaffBalance[]>('/pto/balances'),
+  calendarInviteStatus: () => request<CalendarInviteStatus>('/calendar-invites/status'),
+  sendCalendarInvites: () =>
+    request<CalendarInviteRound>('/calendar-invites/sync', { method: 'POST' }),
   adjustPtoBalance: (employeeId: string, body: PtoAdjustment) =>
     request<StaffBalance>(`/pto/balances/${employeeId}`, {
       method: 'PUT',
@@ -1043,6 +1069,7 @@ export const api = {
     id: string,
     body: Partial<{ jobRoleId: string | null; title: string; url: string; body: string }>,
   ) => request<Resource>(`/resources/${id}`, { method: 'PATCH', body: JSON.stringify(body) }),
+  resourceFiles: (id: string) => request<DriveFolderListing>(`/resources/${id}/files`),
   deleteResource: (id: string) =>
     request<{ deleted: boolean }>(`/resources/${id}`, { method: 'DELETE' }),
 

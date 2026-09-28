@@ -3,6 +3,7 @@ import { LoginThrottleService } from '../auth/login-throttle.service';
 import { PasswordResetService } from '../auth/password-reset.service';
 import { DigestService } from '../email/digest.service';
 import { EventsService } from '../events/events.service';
+import { CalendarInvitesService } from '../invites/invites.service';
 import { InboxService } from '../email/inbox.service';
 import { SessionService } from '../auth/session.service';
 import { PrismaService } from '../prisma/prisma.service';
@@ -31,6 +32,9 @@ export interface PurgeReport {
   digestSentTo: number;
   /// Events and closures tomorrow that everybody they are for was reminded of.
   eventReminders: number;
+  /// Calendar invites sent, changed or cancelled — shifts and events coming
+  /// into range, and anything a save did not get to.
+  calendarInvites: number;
 }
 
 /**
@@ -56,6 +60,7 @@ export class MaintenanceService {
     private readonly digest: DigestService,
     private readonly inbox: InboxService,
     private readonly events: EventsService,
+    private readonly invites: CalendarInvitesService,
   ) {}
 
   async purge(): Promise<PurgeReport> {
@@ -69,6 +74,7 @@ export class MaintenanceService {
       oldNotifications: await this.inbox.purgeOld(),
       digestSentTo: await this.sendDigest(),
       eventReminders: await this.remindAboutTomorrow(),
+      calendarInvites: await this.sendCalendarInvites(),
     };
 
     this.logger.log(
@@ -108,6 +114,26 @@ export class MaintenanceService {
     } catch (error) {
       this.logger.error(
         `Could not send event reminders: ${error instanceof Error ? error.message : error}`,
+      );
+      return 0;
+    }
+  }
+
+  /**
+   * Calendar invites for shifts and events coming into range (a shift two
+   * weeks ahead, an event two months), and anything a save left over. Like
+   * the digest, never allowed to fail the tidying up; old rows are forgotten
+   * after 90 days, their Google events untouched.
+   */
+  private async sendCalendarInvites(): Promise<number> {
+    try {
+      await this.invites.purge(new Date(Date.now() - 90 * 86_400_000));
+      if (!this.invites.enabled) return 0;
+      const { sent, cancelled } = await this.invites.sync({ budget: 100 });
+      return sent + cancelled;
+    } catch (error) {
+      this.logger.error(
+        `Could not send calendar invites: ${error instanceof Error ? error.message : error}`,
       );
       return 0;
     }

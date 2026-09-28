@@ -3,6 +3,7 @@ import { ConfigService } from '@nestjs/config';
 import { Public } from '../common/auth/public.decorator';
 import { AppEnvironment } from '../config/env.validation';
 import { GoogleMeetService } from '../events/google-meet.service';
+import { CalendarInvitesService } from '../invites/invites.service';
 
 /**
  * The handful of facts the web app needs before anyone signs in.
@@ -15,6 +16,7 @@ export class AppConfigController {
   constructor(
     private readonly config: ConfigService,
     private readonly meet: GoogleMeetService,
+    private readonly invites: CalendarInvitesService,
   ) {}
 
   @Get()
@@ -34,6 +36,9 @@ export class AppConfigController {
       // Whether the event form may offer "Create a Google Meet link". Says
       // only that it is set up — never which account or key.
       googleMeet: this.meet.available,
+      // Whether shifts and events arrive as calendar invites, so the
+      // calendar card can say the feed now carries only closures and time off.
+      calendarInvites: this.invites.enabled,
     };
   }
 }

@@ -1,5 +1,7 @@
 import { BadRequestException, ForbiddenException } from '@nestjs/common';
 import { ResourceKind, Role } from '@prisma/client';
+import { GoogleProblem } from '../google/google-auth.service';
+import { driveFolderIdOf } from '../google/google-drive.client';
 import { ResourcesService, checkContent, safeLink } from './resources.service';
 
 const manager = { id: 'mgr-1', email: 'morgan@domihealthcare.com', role: Role.MANAGER };
@@ -20,7 +22,7 @@ function resource(over: Record<string, unknown> = {}) {
   };
 }
 
-function build(options: { mine?: string[]; one?: unknown } = {}) {
+function build(options: { mine?: string[]; one?: unknown; driveOn?: boolean } = {}) {
   const prisma = {
     jobRole: {
       findMany: jest.fn(async ({ where }) =>
@@ -50,7 +52,24 @@ function build(options: { mine?: string[]; one?: unknown } = {}) {
     idsFor: jest.fn().mockResolvedValue(options.mine ?? ['role-fd']),
     findOne: jest.fn().mockResolvedValue({ id: 'role-fd' }),
   };
-  return { service: new ResourcesService(prisma as never, jobRoles as never), prisma };
+  const drive = {
+    available: options.driveOn ?? true,
+    robotEmail: 'domi-staff-meet@domi-staff.iam.gserviceaccount.com',
+    list: jest.fn().mockResolvedValue([
+      {
+        id: 'f1',
+        name: 'Scripts.pdf',
+        isFolder: false,
+        url: 'https://drive.google.com/file/d/f1/view',
+        modifiedAt: null,
+      },
+    ]),
+  };
+  return {
+    service: new ResourcesService(prisma as never, jobRoles as never, drive as never),
+    prisma,
+    drive,
+  };
 }
 
 describe('safeLink', () => {
@@ -182,5 +201,67 @@ describe('ResourcesService', () => {
     const { data } = prisma.resource.update.mock.calls[0][0];
     expect(data).not.toHaveProperty('url');
     expect(data).not.toHaveProperty('body');
+  });
+});
+
+describe('Drive folders', () => {
+  const FOLDER = 'https://drive.google.com/drive/folders/1AbCdEfGhIjKlMnOp';
+
+  it('knows a Drive folder address when it sees one', () => {
+    expect(driveFolderIdOf(FOLDER)).toBe('1AbCdEfGhIjKlMnOp');
+    expect(
+      driveFolderIdOf('https://drive.google.com/drive/u/0/folders/1AbCdEfGhIjKlMnOp?usp=sharing'),
+    ).toBe('1AbCdEfGhIjKlMnOp');
+    expect(driveFolderIdOf('https://drive.google.com/file/d/1AbCdEfGhIjKlMnOp/view')).toBeNull();
+    expect(driveFolderIdOf('https://evil.example.com/drive/folders/1AbCdEfGhIjKlMnOp')).toBeNull();
+    expect(driveFolderIdOf('http://drive.google.com/drive/folders/1AbCdEfGhIjKlMnOp')).toBeNull();
+    expect(driveFolderIdOf("https://drive.google.com/drive/folders/1AbC' or '1'='1")).toBeNull();
+  });
+
+  it('lists what is in the folder for somebody who may see the link', async () => {
+    const { service, drive } = build({ one: resource({ url: FOLDER }) });
+    await expect(service.driveFiles('res-1', employee)).resolves.toMatchObject({
+      status: 'ok',
+      files: [{ name: 'Scripts.pdf' }],
+    });
+    expect(drive.list).toHaveBeenCalledWith('1AbCdEfGhIjKlMnOp');
+  });
+
+  it('keeps it from somebody not in the job role, like the link itself', async () => {
+    const { service, drive } = build({ one: resource({ url: FOLDER }), mine: ['role-ma'] });
+    await expect(service.driveFiles('res-1', employee)).rejects.toBeInstanceOf(ForbiddenException);
+    expect(drive.list).not.toHaveBeenCalled();
+  });
+
+  it('says so for a link that is not a folder, or while Google is not set up', async () => {
+    await expect(build().service.driveFiles('res-1', employee)).resolves.toEqual({
+      status: 'not-a-folder',
+    });
+    const off = build({ one: resource({ url: FOLDER }), driveOn: false });
+    await expect(off.service.driveFiles('res-1', employee)).resolves.toEqual({ status: 'off' });
+  });
+
+  it('says Drive is not set up, not "share it", while the Drive API is off', async () => {
+    const { service, drive } = build({ one: resource({ url: FOLDER }) });
+    drive.list.mockRejectedValue(
+      new GoogleProblem(
+        'Google Drive API has not been used in project 123 before or it is disabled.',
+        403,
+      ),
+    );
+    await expect(service.driveFiles('res-1', manager)).resolves.toEqual({ status: 'off' });
+  });
+
+  it('tells a manager, and only a manager, who to share an unreadable folder with', async () => {
+    const { service, drive } = build({ one: resource({ url: FOLDER }) });
+    drive.list.mockRejectedValue(new GoogleProblem('File not found', 404));
+    await expect(service.driveFiles('res-1', manager)).resolves.toEqual({
+      status: 'unreadable',
+      shareWith: 'domi-staff-meet@domi-staff.iam.gserviceaccount.com',
+    });
+    await expect(service.driveFiles('res-1', employee)).resolves.toEqual({
+      status: 'unreadable',
+      shareWith: null,
+    });
   });
 });

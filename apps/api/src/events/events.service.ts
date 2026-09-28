@@ -32,7 +32,7 @@ const MAX_WINDOW_DAYS = 400;
 
 const PERSON = { select: { id: true, firstName: true, lastName: true, preferredName: true } };
 
-const EVENT_SELECT = {
+export const EVENT_SELECT = {
   id: true,
   kind: true,
   title: true,

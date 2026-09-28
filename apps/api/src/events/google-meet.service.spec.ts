@@ -1,5 +1,6 @@
 import { ConfigService } from '@nestjs/config';
 import { createVerify, generateKeyPairSync } from 'node:crypto';
+import { GoogleAuthService } from '../google/google-auth.service';
 import { GoogleMeetService, MEET_SCOPE } from './google-meet.service';
 
 // A throwaway key, made for this test run only.
@@ -17,7 +18,9 @@ function service(settings: Record<string, string | undefined> = {}) {
     GOOGLE_MEET_HOST: 'office@domihealthcare.com',
     ...settings,
   };
-  return new GoogleMeetService({ get: (name: string) => values[name] } as unknown as ConfigService);
+  return new GoogleMeetService(
+    new GoogleAuthService({ get: (name: string) => values[name] } as unknown as ConfigService),
+  );
 }
 
 function reply(status: number, body: unknown) {

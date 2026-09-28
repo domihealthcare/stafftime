@@ -10,6 +10,7 @@ import {
   Patch,
   Post,
   Query,
+  UseInterceptors,
 } from '@nestjs/common';
 import { Role } from '@prisma/client';
 import { AuthUser } from '../common/auth/auth-user';
@@ -17,9 +18,12 @@ import { CurrentUser } from '../common/auth/current-user.decorator';
 import { Roles } from '../common/auth/roles.decorator';
 import { CopyClosuresDto, EventInput, QueryEventsDto, ScopeQuery } from './dto/event.dto';
 import { EventsService } from './events.service';
+import { InvitesSyncInterceptor } from '../invites/invites-sync.interceptor';
 
 /// Anybody signed in reads the events that are for them (managers read all);
 /// managers and admins make, change and remove them.
+// A save here can change somebody's calendar invites.
+@UseInterceptors(InvitesSyncInterceptor)
 @Controller('events')
 export class EventsController {
   constructor(private readonly events: EventsService) {}

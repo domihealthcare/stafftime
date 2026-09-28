@@ -1,13 +1,26 @@
-import { Body, Controller, Delete, Get, Param, ParseUUIDPipe, Patch, Post } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Delete,
+  Get,
+  Param,
+  ParseUUIDPipe,
+  Patch,
+  Post,
+  UseInterceptors,
+} from '@nestjs/common';
 import { Role } from '@prisma/client';
 import { AuthUser } from '../common/auth/auth-user';
 import { CurrentUser } from '../common/auth/current-user.decorator';
 import { Roles } from '../common/auth/roles.decorator';
 import { AddMemberDto, CreateJobRoleDto, UpdateJobRoleDto } from './dto/job-role.dto';
 import { JobRolesService } from './job-roles.service';
+import { InvitesSyncInterceptor } from '../invites/invites-sync.interceptor';
 
 /// Managers keep the list and who is in it. Everybody signed in can read it:
 /// it is who does what, which the staff directory shows anyway.
+// A save here can change somebody's calendar invites.
+@UseInterceptors(InvitesSyncInterceptor)
 @Controller('job-roles')
 export class JobRolesController {
   constructor(private readonly jobRoles: JobRolesService) {}

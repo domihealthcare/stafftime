@@ -2325,3 +2325,65 @@ Off unless `GOOGLE_SERVICE_ACCOUNT_JSON` and `GOOGLE_MEET_HOST` are both set;
 or key, and the form shows the tick box only then. Setup, for the Workspace
 super admin (dominguez@): `docs/google-meet-setup.md`.
 
+Since September 2026 the meetings are `OPEN` rather than `TRUSTED`: most
+staff are on personal Google accounts, and under Trusted they would all have
+knocked. The sign-in moved to `google/google-auth.service.ts`, shared with
+calendar invites and Drive, with a token per scope — so a scope the admin has
+not allowed spoils none of the others.
+
+## Calendar invites
+
+Asked for by Dominguez (September 2026) because a subscribed feed refreshes
+when the calendar app feels like it — Google can take a day. Each published
+shift is sent to the person on it, and each practice event to the people it
+is for, as a Google Calendar invite; nobody else is on it, and
+`guestsCanSeeOtherGuests` is off.
+
+**Where from.** A secondary calendar, "Domi Staff", that the app makes under
+office@ on first use (id kept in `GoogleCalendar`). The scope is
+`calendar.app.created`: make secondary calendars and manage the events on
+them — nothing else on office@'s calendars, which a broader scope would have
+exposed. Google emails the invitee on every create, change and cancel
+(`sendUpdates=all`), which is also what gets it onto a non-Google calendar.
+
+**Reconciled, not event-driven.** A round works out what should be on
+calendars now (published, assigned shifts of working staff in the next 14
+days; `EVENT`-kind practice events in the next 60 with their audience from
+`audienceWhere`) and compares it with `CalendarInvite` — one row per shift or
+event sent, with a hash of what was sent. It sends the new and the changed,
+cancels what is no longer wanted and not yet over, soonest first, four at a
+time, up to a budget. Rounds run after any non-GET on the shifts, events,
+employees, locations and job-roles controllers (an interceptor, awaited —
+Vercel freezes anything left running), nightly (budget 100), and from
+Practice settings → **Send now** (40 a round, the page repeating). So a
+change made any way at all reaches people, and a failure is retried rather
+than lost. The windows keep a long repeating rota from sending dozens of
+emails at once; each shift arrives two weeks ahead.
+
+**No duplicates.** The Google event id is the app's own (`shift`/`event` and
+the row id; Google allows 0-9 and a-v), so a repeat send gets 409 and is
+replaced (`PUT`, which also revives a cancelled one). And each invite is
+claimed first — a conditional update of its row's fingerprint, or a create
+guarded by the unique key — so of two saves running at once only one calls
+Google. A failed send sets the fingerprint to `retry`. The rows have no
+foreign key to the shift or event, on purpose: a deleted shift's row is how
+the app knows there is an invite to cancel. Rows are forgotten 90 days after
+the thing ended.
+
+**The feed.** While invites are on, the feed leaves out shifts and events and
+keeps closures and approved time off, so nothing shows twice (Dominguez).
+Off until `GOOGLE_CALENDAR_INVITES=on` — deliberately a setting, not
+detected, since what the feed carries hangs on it.
+
+## Drive folders on Resources
+
+A Resources link whose address is a Drive folder
+(`drive.google.com/drive/folders/…`, strictly matched) gets **Show what's in
+it**: `GET /resources/:id/files`, allowed to whoever may see the link, lists
+the folder's files as links into Drive. The robot reads it as itself
+(`drive.readonly`, no delegation — it sees only what is shared with anyone
+with the link or with its own address), cached five minutes per folder. No
+file is fetched or kept, so *Data this app does not hold* still stands. A
+folder it cannot read says so, and tells a manager (only) the robot's address
+to share it with.
+

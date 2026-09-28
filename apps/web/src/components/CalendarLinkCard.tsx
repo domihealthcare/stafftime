@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
 import { ApiError, api } from '../lib/api';
+import { useSession } from '../lib/session';
 import { useConfirm } from './ConfirmDialog';
 import { Alert, Card } from './ui';
 
@@ -12,6 +13,10 @@ import { Alert, Card } from './ui';
  * feature and not three integrations.
  */
 export function CalendarLinkCard() {
+  const { employee } = useSession();
+  // Once shifts and events go out as invites (September 2026), the link
+  // carries only closures and approved time off.
+  const [invites, setInvites] = useState(false);
   const [token, setToken] = useState<string | null>(null);
   const [hasLink, setHasLink] = useState(false);
   const [loading, setLoading] = useState(true);
@@ -36,6 +41,17 @@ export function CalendarLinkCard() {
   useEffect(() => {
     void load();
   }, [load]);
+
+  useEffect(() => {
+    let cancelled = false;
+    api
+      .appConfig()
+      .then((config) => !cancelled && setInvites(Boolean(config.calendarInvites)))
+      .catch(() => undefined);
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   const url = token ? `${window.location.origin}/api/calendar/${token}/domi.ics` : null;
 
@@ -98,11 +114,25 @@ export function CalendarLinkCard() {
       <div className="flex flex-wrap items-center justify-between gap-2">
         <div>
           <h2 className="text-sm font-semibold text-slate-900">Your calendar</h2>
-          <p className="mt-0.5 text-sm text-slate-600">
-            {hasLink
-              ? 'Syncing is on. Your shifts, approved time off and practice events appear in your own calendar.'
-              : 'Add your shifts and practice events to Google Calendar, Apple Calendar or Outlook.'}
-          </p>
+          {invites ? (
+            <>
+              <p className="mt-0.5 text-sm text-slate-600" data-testid="calendar-invites-note">
+                Your shifts (two weeks ahead) and practice events arrive as calendar invites to{' '}
+                <strong>{employee?.email}</strong> — accept them if your calendar asks.
+              </p>
+              <p className="mt-1 text-sm text-slate-600">
+                {hasLink
+                  ? 'Syncing is on for office closures and your approved time off.'
+                  : 'Office closures and your approved time off can go in your calendar too.'}
+              </p>
+            </>
+          ) : (
+            <p className="mt-0.5 text-sm text-slate-600">
+              {hasLink
+                ? 'Syncing is on. Your shifts, approved time off and practice events appear in your own calendar.'
+                : 'Add your shifts and practice events to Google Calendar, Apple Calendar or Outlook.'}
+            </p>
+          )}
         </div>
 
         {hasLink ? (

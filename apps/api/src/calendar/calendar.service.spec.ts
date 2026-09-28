@@ -11,6 +11,7 @@ describe('CalendarService', () => {
       shifts?: unknown[];
       timeOff?: unknown[];
       events?: unknown[];
+      invitesOn?: boolean;
     } = {},
   ) {
     const prisma = {
@@ -37,7 +38,13 @@ describe('CalendarService', () => {
     };
     const events = { forPerson: jest.fn().mockResolvedValue(options.events ?? []) };
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    return { service: new CalendarService(prisma as any, events as any), prisma, events };
+    const invites = { enabled: options.invitesOn ?? false };
+    return {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      service: new CalendarService(prisma as any, events as any, invites as any),
+      prisma,
+      events,
+    };
   }
 
   const shift = {
@@ -339,6 +346,62 @@ describe('CalendarService', () => {
       const feed = await service.feedForToken('token', NOW);
       expect(feed).toContain('SUMMARY:North Bergen closed: Christmas Eve');
       expect(feed).toContain('TRANSP:TRANSPARENT');
+    });
+  });
+
+  describe('once shifts and events go out as invites', () => {
+    it('keeps only closures and time off, so nothing shows twice', async () => {
+      const { service, prisma } = build({
+        invitesOn: true,
+        shifts: [shift],
+        timeOff: [
+          {
+            id: 'pto-1',
+            type: 'VACATION',
+            startDate: new Date('2026-10-05T00:00:00.000Z'),
+            endDate: new Date('2026-10-06T00:00:00.000Z'),
+            isHalfDay: false,
+            updatedAt: NOW,
+          },
+        ],
+        events: [
+          {
+            id: 'ev-1',
+            kind: 'EVENT',
+            title: 'Office meeting',
+            description: null,
+            place: 'Break room',
+            meetingUrl: null,
+            allDay: false,
+            audience: 'EVERYONE',
+            location: null,
+            startsAt: new Date('2026-10-02T13:00:00.000Z'),
+            endsAt: new Date('2026-10-02T14:00:00.000Z'),
+            updatedAt: NOW,
+          },
+          {
+            id: 'ev-2',
+            kind: 'CLOSURE',
+            title: 'Christmas Day',
+            description: null,
+            place: null,
+            meetingUrl: null,
+            allDay: true,
+            audience: 'EVERYONE',
+            location: null,
+            startsAt: new Date('2026-12-25T05:00:00.000Z'),
+            endsAt: new Date('2026-12-26T05:00:00.000Z'),
+            updatedAt: NOW,
+          },
+        ],
+      });
+      const feed = await service.feedForToken('token', NOW);
+      expect(prisma.shift.findMany).not.toHaveBeenCalled();
+      expect(feed).not.toContain('Office meeting');
+      expect(feed).toContain('SUMMARY:Closed: Christmas Day');
+      expect(feed).toContain('SUMMARY:Vacation');
+      // Said at the top of the calendar, for anybody who wonders where they went.
+      expect(feed).toContain('Office closures and approved time off');
     });
   });
 });

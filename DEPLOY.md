@@ -250,15 +250,17 @@ It is two variables, and the fiddly part is DNS rather than code:
 Another provider (SendGrid, SES) is one new class in `apps/api/src/email` — the
 app does not care which one sends. See `docs/architecture.md`.
 
-## Turning on Google Meet links
+## Turning on Google: Meet links, calendar invites, Drive folders
 
-**Not done on the live site yet.** Optional: it adds a **Create a Google Meet
-link** tick box to the event form, making meetings hosted by
-office@domihealthcare.com. Without it, links can still be pasted by hand.
-
-It is two Vercel variables, `GOOGLE_SERVICE_ACCOUNT_JSON` and
-`GOOGLE_MEET_HOST`, plus a one-time permission given by the Workspace admin.
-Click-by-click steps are in [`docs/google-meet-setup.md`](docs/google-meet-setup.md).
+Optional, all three. **Meet links**: a **Create a Google Meet link** tick box
+on the event form, meetings hosted by office@domihealthcare.com — two Vercel
+variables, `GOOGLE_SERVICE_ACCOUNT_JSON` and `GOOGLE_MEET_HOST`, plus a
+one-time permission from the Workspace admin (done on the live site,
+September 2026). **Calendar invites**: shifts and events sent as invites from
+office@ — one more scope from the admin and `GOOGLE_CALENDAR_INVITES=on`.
+**Drive folders**: a Resources link to a Drive folder lists what is in it —
+the Drive API enabled, nothing else. Click-by-click steps are in
+[`docs/google-meet-setup.md`](docs/google-meet-setup.md).
 
 ## Showing it to your managers
 

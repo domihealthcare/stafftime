@@ -1712,3 +1712,51 @@ model SupplyRequest {
   @@index([locationId, orderedAt])
   @@map("supply_requests")
 }
+
+// ---------------------------------------------------------------------------
+// Calendar invites (September 2026)
+// ---------------------------------------------------------------------------
+
+enum CalendarInviteKind {
+  SHIFT
+  EVENT
+}
+
+/// One invite the app has sent from the "Domi Staff" Google calendar — for a
+/// published shift (to the person on it) or a practice event (to the people
+/// it is for). Dominguez, September 2026: staff get real invites instead of
+/// waiting for a subscribed feed to refresh.
+///
+/// No foreign key to the shift or event on purpose: when one is deleted, the
+/// row is how the app knows there is a Google event to cancel. `fingerprint`
+/// is a hash of what was last sent, so an unchanged shift is not sent again.
+model CalendarInvite {
+  id            String             @id @default(uuid()) @db.Uuid
+  kind          CalendarInviteKind
+  sourceId      String             @db.Uuid
+  googleEventId String             @unique
+  fingerprint   String
+  startsAt      DateTime
+  endsAt        DateTime
+  createdAt     DateTime           @default(now())
+  updatedAt     DateTime           @updatedAt
+
+  @@unique([kind, sourceId])
+  @@index([endsAt])
+  @@map("calendar_invites")
+}
+
+/// The "Domi Staff" calendar the app made under the host account, and how
+/// the last round of invites went. One row, like PtoPolicy.
+model GoogleCalendar {
+  id          String    @id @default(uuid()) @db.Uuid
+  singleton   Int       @unique @default(1)
+  calendarId  String?
+  lastSyncAt  DateTime?
+  lastError   String?
+  lastErrorAt DateTime?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  @@map("google_calendar")
+}

@@ -16,6 +16,11 @@ describe('MaintenanceService', () => {
     const digest = { send: jest.fn().mockResolvedValue({ sent: 2, contents: {} }) };
     const inbox = { purgeOld: jest.fn().mockResolvedValue(6) };
     const events = { sendReminders: jest.fn().mockResolvedValue(1) };
+    const invites = {
+      enabled: true,
+      purge: jest.fn().mockResolvedValue(0),
+      sync: jest.fn().mockResolvedValue({ sent: 3, cancelled: 1, failed: 0, remaining: 0 }),
+    };
 
     return {
       service: new MaintenanceService(
@@ -26,6 +31,7 @@ describe('MaintenanceService', () => {
         digest as never,
         inbox as never,
         events as never,
+        invites as never,
       ),
       prisma,
       sessions,
@@ -33,6 +39,7 @@ describe('MaintenanceService', () => {
       resets,
       digest,
       events,
+      invites,
     };
   }
 
@@ -48,7 +55,25 @@ describe('MaintenanceService', () => {
       oldNotifications: 6,
       digestSentTo: 2,
       eventReminders: 1,
+      calendarInvites: 4,
     });
+  });
+
+  it('still tidies up when Google is having a bad night', async () => {
+    const { service, invites } = build();
+    invites.sync.mockRejectedValue(new Error('Google could not be reached'));
+    await expect(service.purge()).resolves.toMatchObject({
+      expiredSessions: 7,
+      calendarInvites: 0,
+    });
+  });
+
+  it('forgets invites for things long over, even with invites off', async () => {
+    const { service, invites } = build();
+    invites.enabled = false;
+    await expect(service.purge()).resolves.toMatchObject({ calendarInvites: 0 });
+    expect(invites.purge).toHaveBeenCalled();
+    expect(invites.sync).not.toHaveBeenCalled();
   });
 
   it('still tidies up when the event reminders cannot be sent', async () => {
