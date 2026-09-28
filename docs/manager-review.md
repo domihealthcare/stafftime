@@ -537,3 +537,44 @@ is the bit we need to hear about.
 - The menu item that used to be called **Notifications** (the nightly email for
   managers) is now **Email settings**.
 
+### Meetings and practice events (September 2026)
+
+- **Schedule → + Add event**: an office meeting, an admin or provider meeting,
+  or something the practice is doing, like a wellness day. Give it a name, a
+  time (or tick **All day**, for one day or several), where it is, and who it
+  is for: **everyone**, **one job role** (Provider, for a provider meeting) or
+  **one office**.
+- It shows in an **Events** row above everybody's shifts, and with a 📅 in the
+  month. Staff only see the ones meant for them. Click one to see the details —
+  or, as a manager, to change or remove it.
+- Everybody it is for gets a notification under the bell when it is added,
+  moved or cancelled, and it appears on their **phone's calendar** if they have
+  turned on calendar syncing (Schedule → Your calendar).
+- An event is **not a shift**: it does not count as hours or overtime, and it
+  is not on the payroll export. If somebody is being paid to attend, they clock
+  in and out as usual.
+  - **Tell us:** would you want people to be able to reply "going" or "can't
+    go"? Should anything else about an event — a reminder the day before, an
+    email — be added?
+
+### Holidays and closures (September 2026)
+
+- **Schedule → + Add event → The office is closed (holiday)**, or **+ Add
+  closure** in **Holidays and closures** near the bottom of the Schedule.
+  Close **both offices or just one** — for Christmas Day, for several days, or
+  for part of a day: Christmas Eve from 1pm (put midnight as when it opens
+  again).
+- Staff at that office see it with a 🔒, are told under the bell, and have it
+  on their phone if they sync their calendar. The other office hears nothing
+  about it.
+- It **never stops you scheduling** somebody during a closure — they may be
+  doing admin that day — but it warns you in the shift form, asks before
+  saving, marks the shift with ⚠, and lists it in the banner and the nightly
+  email until it is moved.
+- **Copy these into next year** puts the whole year's closures on the same
+  dates the following year. Check the ones that move (Thanksgiving, Memorial
+  Day, Labor Day) and fix their dates.
+- **Pay is not changed** by a closure yet.
+  - **Tell us:** how does the practice pay holidays — which ones, who gets
+    them, and how many hours? We need that (and ADP's code for holiday pay)
+    before holidays can go on the payroll export.

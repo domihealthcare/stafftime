@@ -10,6 +10,7 @@ import type {
   Location,
   OvertimeWarning,
   OwnOvertimeWeek,
+  PracticeEvent,
   PtoRequest,
   Shift,
 } from '../lib/types';
@@ -18,6 +19,15 @@ import { jobRoleHex } from '../lib/job-role-colours';
 import { useConfirm } from './ConfirmDialog';
 import { confirmOvertime, OvertimePreview, useOvertimeCheck } from './OvertimeAlerts';
 import { Avatar } from './Avatar';
+import {
+  ClosureWarning,
+  closuresCovering,
+  confirmClosure,
+  EventChip,
+  eventsOnDay,
+  isClosure,
+  useClosureCheck,
+} from './PracticeEvents';
 import { Alert } from './ui';
 
 export type RotaGrouping = 'person' | 'location' | 'role';
@@ -66,6 +76,8 @@ export function RotaTable({
   coverage,
   timeOff = [],
   birthdays = [],
+  events = [],
+  onOpenEvent,
   overtimeThresholdHours,
   overtime,
   ownWeeks,
@@ -89,6 +101,10 @@ export function RotaTable({
   /// Colleagues' birthdays this week: a cake under the day, for everybody,
   /// and on the person's own row.
   birthdays?: BirthdayEntry[];
+  /// Meetings and practice events this week: a row of their own above
+  /// everybody's shifts. Never counted as hours.
+  events?: PracticeEvent[];
+  onOpenEvent?: (event: PracticeEvent) => void;
   overtimeThresholdHours: number;
   /// From the server, per person per week and across every location — so a
   /// row filtered to one office still shows the week as a whole.
@@ -116,6 +132,9 @@ export function RotaTable({
   }, [locations]);
 
   const live = shifts.filter((shift) => shift.status !== 'CANCELLED');
+  const weekEvents = events.filter((event) =>
+    dayKeys.some((key) => eventsOnDay([event], key).length > 0),
+  );
 
   /// Where each person's week stands against the overtime line. The week on
   /// screen starts on dayKeys[0], a Monday, as the server's weeks do.
@@ -149,8 +168,14 @@ export function RotaTable({
         else if (shift.unavailable) map.set(shift.id, shift.unavailable);
       }
     }
+    // A shift while its office is closed says so first: it is the likelier
+    // mistake — a repeating rota running straight through Christmas.
+    for (const shift of shifts) {
+      const [closure] = closuresCovering(events, shift);
+      if (closure) map.set(shift.id, `Office closed: ${closure.title}`);
+    }
     return map;
-  }, [coverage]);
+  }, [coverage, shifts, events]);
 
   const membersOf = useMemo(() => {
     const map = new Map<string, Set<string>>();
@@ -327,7 +352,11 @@ export function RotaTable({
               </th>
               {days.map((day, index) => {
                 const cov = coverage?.find((entry) => entry.date === dayKeys[index]);
-                const empty = cov && cov.peopleScheduled === 0;
+                // Nobody on a day both offices are shut is the plan, not a gap.
+                const shut = eventsOnDay(events, dayKeys[index]).some(
+                  (event) => isClosure(event) && event.allDay && event.audience === 'EVERYONE',
+                );
+                const empty = cov && cov.peopleScheduled === 0 && !shut;
                 const isToday = localDate(new Date()) === dayKeys[index];
                 return (
                   <th
@@ -357,6 +386,8 @@ export function RotaTable({
                       >
                         {cov.peopleScheduled > 0 ? (
                           `${cov.staffedHours} h · ${cov.peopleScheduled} on`
+                        ) : shut ? (
+                          <span className="font-semibold text-slate-600">Closed</span>
                         ) : (
                           <span className="font-semibold text-amber-800">Nobody on</span>
                         )}
@@ -377,6 +408,31 @@ export function RotaTable({
                 Week
               </th>
             </tr>
+            {/* Their own row, above the people, because an event is for a group
+                rather than for one person — and it is not a shift. */}
+            {weekEvents.length > 0 && (
+              <tr className="border-b border-slate-200 bg-white" data-testid="rota-events-row">
+                <th
+                  scope="row"
+                  className="sticky left-0 z-10 bg-white px-3 py-2 text-left align-top text-sm font-medium text-slate-700"
+                >
+                  <span aria-hidden="true">📅</span> Events
+                </th>
+                {dayKeys.map((key) => (
+                  <td key={key} className="space-y-1 px-1.5 py-1.5 align-top">
+                    {eventsOnDay(weekEvents, key).map((event) => (
+                      <EventChip
+                        key={event.id}
+                        event={event}
+                        day={key}
+                        onOpen={(picked) => onOpenEvent?.(picked)}
+                      />
+                    ))}
+                  </td>
+                ))}
+                <td className="px-3 py-2 text-right align-top text-xs text-slate-400">Not hours</td>
+              </tr>
+            )}
           </thead>
 
           {sections.map((section) => (
@@ -1112,9 +1168,16 @@ function QuickAddDialog({
         }
       : null;
   const overtimeCheck = useOvertimeCheck(proposed);
+  // Open shifts too: nobody should be wanted while the office is shut.
+  const place =
+    locationId && /^\d\d:\d\d$/.test(start) && /^\d\d:\d\d$/.test(end) && end > start
+      ? { locationId, startsAt: at(start).toISOString(), endsAt: at(end).toISOString() }
+      : null;
+  const closures = useClosureCheck(place);
 
   async function submit(event: React.FormEvent) {
     event.preventDefault();
+    if (place && !(await confirmClosure(confirm, place))) return;
     if (proposed && !(await confirmOvertime(confirm, proposed, row.label))) return;
     setBusy(true);
     setProblem(null);
@@ -1239,6 +1302,11 @@ function QuickAddDialog({
           />
           Publish it now
         </label>
+        {closures.length > 0 && (
+          <div className="col-span-2">
+            <ClosureWarning closures={closures} />
+          </div>
+        )}
         {proposed && overtimeCheck && overtimeCheck.level !== 'ok' && (
           <div className="col-span-2">
             <OvertimePreview check={overtimeCheck} name={row.label} />

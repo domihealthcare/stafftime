@@ -6,7 +6,7 @@ const DEMO_TAG = 'demo:';
 /**
  * Everything a test deployment gathers that must not follow it into real use:
  * the demo staff (who all share one well-known password) and every shift,
- * punch, request, checklist, post and survey made while trying the app out.
+ * punch, request, checklist, post, survey and event made while trying the app out.
  *
  * What stays is the practice's own set-up — decided with Dominguez, September
  * 2026: the offices and their pins, practice settings and the ADP set-up, job
@@ -30,6 +30,7 @@ export async function clearTestData(prisma: PrismaClient) {
     const availability = await tx.unavailability.deleteMany({});
     const posts = await tx.announcement.deleteMany({});
     const surveys = await tx.survey.deleteMany({});
+    const events = await tx.practiceEvent.deleteMany({});
     const feedback = await tx.feedback.deleteMany({});
     const notifications = await tx.notification.deleteMany({});
     const reports = await tx.reportPreset.deleteMany({});
@@ -48,6 +49,7 @@ export async function clearTestData(prisma: PrismaClient) {
       availability: availability.count,
       posts: posts.count,
       surveys: surveys.count,
+      events: events.count,
       suggestions: feedback.count,
       notifications: notifications.count,
       payrollExports: exports.count,
@@ -73,6 +75,7 @@ export async function previewTestData(prisma: PrismaClient) {
     availability,
     posts,
     surveys,
+    events,
     suggestions,
     notifications,
     payrollExports,
@@ -90,6 +93,7 @@ export async function previewTestData(prisma: PrismaClient) {
     prisma.unavailability.count(),
     prisma.announcement.count(),
     prisma.survey.count(),
+    prisma.practiceEvent.count(),
     prisma.feedback.count(),
     prisma.notification.count(),
     prisma.payrollExport.count(),
@@ -114,6 +118,7 @@ export async function previewTestData(prisma: PrismaClient) {
     availability,
     posts,
     surveys,
+    events,
     suggestions,
     notifications,
     payrollExports,

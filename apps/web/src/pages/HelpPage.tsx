@@ -208,6 +208,31 @@ const STAFF: Section[] = [
         ),
       },
       {
+        question: 'Where are the meetings and practice events?',
+        answer: (
+          <p>
+            On <Screen>Schedule</Screen>, in the <strong>Events</strong> row above your shifts (and
+            with a 📅 in the month): office meetings, meetings for your job role, events at your
+            office, and practice-wide days like a wellness event. Tap one for the time, the place
+            and the details. The bell tells you when one is added, moved or cancelled, and if you
+            use the calendar link they appear on your phone as well. An event is not a shift — if
+            you are being paid to be there, clock in as usual.
+          </p>
+        ),
+      },
+      {
+        question: 'When is the office closed?',
+        answer: (
+          <p>
+            Holidays and other closures show with a 🔒 in the same Events row — &ldquo;Closed all
+            day&rdquo; for Christmas, &ldquo;Closed from 1pm&rdquo; for an early close — and{' '}
+            <strong>Holidays and closures</strong> further down <Screen>Schedule</Screen> lists the
+            whole year. You only see the ones for your office. They reach your phone through the
+            calendar link too, and the bell tells you when one is added or called off.
+          </p>
+        ),
+      },
+      {
         question: 'Why does it say I am in overtime?',
         answer: (
           <p>
@@ -355,8 +380,9 @@ const STAFF: Section[] = [
         answer: (
           <p>
             Your notifications — things that are just for you: a shift added to, changed on or taken
-            off your schedule, your time off decided, overtime on your schedule, a survey waiting
-            for you, your checklist starting, and new posts on <Screen>News</Screen>. The red number
+            off your schedule, a meeting, event or office closure added, moved or cancelled, your time off
+            decided, overtime on your schedule, a survey waiting for you, your checklist starting,
+            and new posts on <Screen>News</Screen>. The red number
             is how many you have not read. Choose one to go straight to it; they are kept for 90
             days.
           </p>
@@ -490,6 +516,37 @@ const MANAGERS: Section[] = [
             office&rsquo;s Open shifts row. They are flagged on the rota, in the banner and in the
             nightly email until you click one and put somebody in it. Anybody already on at that
             time is greyed out.
+          </p>
+        ),
+      },
+      {
+        question: 'Meetings and practice events',
+        answer: (
+          <p>
+            On <Screen>Schedule</Screen>, choose <strong>+ Add event</strong>: a name, a time (or
+            tick <strong>All day</strong>, for one day or several), where it is, and who it is for —
+            everyone, one job role (say Provider, for a provider meeting) or one office. Everybody
+            it is for sees it in the Events row, gets a notification, and has it on their phone if
+            they sync their calendar. Click an event to change or remove it; the people it is for
+            are told either way. Events never count as hours or overtime — anybody being paid to
+            attend clocks in as usual, so payroll stays with the punches.
+          </p>
+        ),
+      },
+      {
+        question: 'Holidays and closures',
+        answer: (
+          <p>
+            On <Screen>Schedule</Screen>, choose <strong>+ Add event</strong> and then{' '}
+            <strong>The office is closed (holiday)</strong>, or <strong>+ Add closure</strong> under
+            Holidays and closures. Close <strong>both offices or just one</strong>, for the whole day
+            (Christmas Day), several days, or part of one (Christmas Eve from 1pm — put midnight as
+            when it opens again). Staff at that office see it and are told. Nothing stops you
+            scheduling somebody during a closure, but it is flagged: a warning in the shift form,
+            ⚠ on the shift, and a line in the Schedule banner and the nightly email until the shift
+            is moved. Once a year is filled in, <strong>Copy these into next year</strong> puts
+            every closure on the same date the following year — then fix the ones that move, like
+            Thanksgiving. Closures do not change pay: holiday pay is not set up.
           </p>
         ),
       },

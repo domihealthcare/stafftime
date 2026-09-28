@@ -1,6 +1,14 @@
 import { Injectable, Logger, NotFoundException } from '@nestjs/common';
-import { EmploymentStatus, PtoStatus, ShiftStatus } from '@prisma/client';
+import {
+  EmploymentStatus,
+  EventAudience,
+  PracticeEventKind,
+  PtoStatus,
+  ShiftStatus,
+} from '@prisma/client';
 import { randomBytes } from 'node:crypto';
+import { allDayDates } from '../events/event-time';
+import { EventsService, type EventRow } from '../events/events.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { buildCalendar, type CalendarEvent } from './ical';
 
@@ -15,7 +23,10 @@ const TOKEN_BYTES = 24;
 export class CalendarService {
   private readonly logger = new Logger(CalendarService.name);
 
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly events: EventsService,
+  ) {}
 
   /// The employee's existing token, or null if they have never asked for one.
   async currentToken(employeeId: string): Promise<{ token: string | null; setAt: Date | null }> {
@@ -77,7 +88,7 @@ export class CalendarService {
     const from = new Date(now.getTime() - WINDOW_BEHIND_DAYS * 86_400_000);
     const to = new Date(now.getTime() + WINDOW_AHEAD_DAYS * 86_400_000);
 
-    const [shifts, timeOff] = await Promise.all([
+    const [shifts, timeOff, practiceEvents] = await Promise.all([
       this.prisma.shift.findMany({
         where: {
           employeeId: employee.id,
@@ -115,6 +126,9 @@ export class CalendarService {
         },
         orderBy: { startDate: 'asc' },
       }),
+      // Meetings and practice events for them: everyone's, their job roles',
+      // their offices'.
+      this.events.forPerson(employee.id, from, to),
     ]);
 
     const displayName = employee.preferredName ?? employee.firstName;
@@ -145,15 +159,53 @@ export class CalendarService {
         // Time off should not make the person look busy to a scheduler.
         transparent: true,
       })),
+      ...practiceEvents.map((event): CalendarEvent => {
+        const common = {
+          uid: `event-${event.id}@staff.domihealthcare.com`,
+          sequence: secondsSinceEpoch(event.updatedAt),
+          summary: summaryOf(event),
+          description: event.description ?? undefined,
+          location: event.place ?? undefined,
+        };
+        if (!event.allDay) {
+          // A closure is time off the rota, not an appointment: it should not
+          // make anybody look busy.
+          return {
+            ...common,
+            start: event.startsAt,
+            end: event.endsAt,
+            transparent: event.kind === PracticeEventKind.CLOSURE,
+          };
+        }
+        // Whole days on the practice's clock, so a wellness day on the 15th
+        // is the 15th on the phone too.
+        const { startDate, endDate } = allDayDates(event);
+        return {
+          ...common,
+          startDate: new Date(`${startDate}T00:00:00.000Z`),
+          endDate: new Date(`${endDate}T00:00:00.000Z`),
+          // An all-day event is something happening, not a day blocked out.
+          transparent: true,
+        };
+      }),
     ];
 
     return buildCalendar(events, {
       name: `${displayName} ${employee.lastName} — Domi Staff`,
-      description: 'Shifts and approved time off from Domi Staff.',
+      description: 'Shifts, approved time off and practice events from Domi Staff.',
       refreshMinutes: 60,
       now,
     });
   }
+}
+
+/// "Office meeting", or for a closure "Closed: Christmas Day" /
+/// "North Bergen closed: Burst pipe".
+function summaryOf(event: EventRow): string {
+  if (event.kind !== PracticeEventKind.CLOSURE) return event.title;
+  return event.audience === EventAudience.LOCATION && event.location
+    ? `${event.location.name} closed: ${event.title}`
+    : `Closed: ${event.title}`;
 }
 
 /// iCalendar SEQUENCE must be a non-negative integer that only increases.
