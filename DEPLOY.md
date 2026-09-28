@@ -1,5 +1,10 @@
 # Deploying to staff.domihealthcare.com
 
+> **The live site is already set up** (live since 26 September 2026 — see
+> `CLAUDE.md`, *Where it has got to*). Nothing here needs doing again. It is
+> kept as the recipe for setting up another copy, such as a separate test
+> site.
+
 About 30 minutes, most of it waiting. **No terminal needed** — everything is in
 a browser.
 
@@ -194,17 +199,18 @@ radius, so a small radius mostly produces refusals rather than precision.
 This step cannot be done from a desk, and until it is done browser clock-in will
 either refuse people or accept the car park.
 
-**e. Kiosks, if you want them** — *Kiosks*. Add a tablet per location, open
-`/kiosk` on that tablet, and type the pairing code. Set each person's PIN on the
-same screen.
+**e. The time clock** — *Kiosks*. Add one per location, open `/kiosk` on
+the front-desk computer or tablet, and type the pairing code. Staff choose
+their own PIN on *Your profile*; a manager can set a replacement from the
+Directory.
 
-**f. Check the two practice settings** — *Settings*, in the top right. Overtime
+**f. Check the practice settings** — account menu → *Practice settings*. Overtime
 starts after 40 hours a week, and the app chases you about an unpublished rota 4
 days before the week starts. Both are defaults you confirmed rather than
 measured — once you have used it for a fortnight, change them if they are wrong
 rather than working around them.
 
-**g. Decide who gets the nightly email** — *Notifications*, next to Settings.
+**g. Decide who gets the nightly email** — account menu → *Email settings*.
 Each manager sets their own. It only sends on nights when there is something to
 say, and nothing is lost by turning it off: everything in it is also on the
 screen it belongs to.
@@ -277,9 +283,9 @@ With `APP_ENVIRONMENT=test` set, every screen tells them plainly that nothing is
 real — so they can clock in, request time off and poke at anything without
 worrying they have created a payroll problem.
 
-When you are ready for real hours: change `APP_ENVIRONMENT` to `production`,
-redeploy, and clear out the practice data they created. Ask me for a hand with
-that when you get there — it wants care rather than a delete button.
+When you are ready for real hours: Practice settings → **Start using it for
+real** clears the demo staff and everything made while testing, and keeps the
+set-up. Then change `APP_ENVIRONMENT` to `production` and redeploy.
 
 ---
 
