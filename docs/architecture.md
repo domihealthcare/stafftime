@@ -417,6 +417,16 @@ they are working, on a phone. So the square lists first names for a manager, who
 is looking at everybody, and times for an employee, who only ever sees their own
 shifts and would otherwise read their own name forty times.
 
+**A manager can narrow it to one person** (Dominguez, September 2026): a
+dropdown you can type into (`components/PersonPicker.tsx`) beside the buttons,
+Everyone by default. With somebody picked the squares show that person's times,
+as an employee sees their own, and a line above the grid says how many shifts
+they have in the month. The pick is kept while paging from month to month, and
+is only a filter on shifts already loaded — no extra request, and nothing a
+manager could not already see. People who have left are listed only while they
+still have a shift on screen. Staff are not offered it: they only ever get
+their own shifts.
+
 At phone width a square is about forty pixels of text, where "1pm–9pm"
 truncates to "1p…" and tells nobody anything. So the narrow rendering is the
 start time alone, which still answers the question somebody opened the month to
