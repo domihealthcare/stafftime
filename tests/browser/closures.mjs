@@ -80,7 +80,8 @@ const week = async (page) => {
 
 await step('a manager closes both offices for a whole day', async () => {
   await week(manager);
-  await manager.getByRole('button', { name: '+ Add event' }).click();
+  await manager.getByRole('button', { name: '+ Add', exact: true }).click();
+  await manager.getByRole('menuitem', { name: 'Event', exact: true }).click();
   const form = manager.getByRole('form', { name: 'New event' });
   await form.getByRole('button', { name: /The office is closed/ }).click();
   const closure = manager.getByRole('form', { name: 'New closure' });

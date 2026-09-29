@@ -193,7 +193,8 @@ export function StandingShiftsCard({
       </h2>
       <p className="mt-0.5 text-xs text-slate-500">
         Repeating shifts with no end date. Each keeps the rota filled eight weeks ahead until it is
-        stopped. Make one with <span className="font-medium">Repeating shifts</span> → No end date.
+        stopped. Make one with <span className="font-medium">+ Add → Repeating shifts</span> → No
+        end date.
       </p>
 
       {standing === null ? null : standing.length === 0 ? (

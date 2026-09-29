@@ -88,7 +88,8 @@ await step('so does the month', async () => {
 });
 
 await step('the repeat form lists Sunday first', async () => {
-  await page.getByRole('button', { name: 'Repeating shifts' }).click();
+  await page.getByRole('button', { name: '+ Add', exact: true }).click();
+  await page.getByRole('menuitem', { name: 'Repeating shifts', exact: true }).click();
   await page.getByText('One rota line at a time').waitFor({ timeout: 10000 });
   const labels = await page
     .getByRole('button', { name: /^(Sun|Mon|Tue|Wed|Thu|Fri|Sat)$/ })
@@ -175,7 +176,8 @@ await step('stopping it asks first, then takes off the shifts after the last day
 await page.screenshot({ path: `${OUT}/standing-stopped.png`, fullPage: true });
 
 await step('a repeat with an end date makes no regular shift', async () => {
-  await page.getByRole('button', { name: 'Repeating shifts' }).click();
+  await page.getByRole('button', { name: '+ Add', exact: true }).click();
+  await page.getByRole('menuitem', { name: 'Repeating shifts', exact: true }).click();
   await page.getByLabel('Employee').selectOption({ label: 'Frankie Front-Desk' });
   await page.getByLabel('From', { exact: true }).fill('2027-03-01');
   await page.getByLabel('Until', { exact: true }).fill('2027-03-05');

@@ -198,7 +198,8 @@ await step('a manager can move a shift from home back to the office, and back ag
 
 await step('the new-shift form can make a shift work from home', async () => {
   await mgr.keyboard.press('Escape').catch(() => {});
-  await mgr.getByRole('button', { name: '+ Add shift' }).click();
+  await mgr.getByRole('button', { name: '+ Add', exact: true }).click();
+  await mgr.getByRole('menuitem', { name: 'Shift', exact: true }).click();
   await mgr.getByLabel('Employee').selectOption({ label: 'Frankie Front-Desk' });
   await mgr.getByLabel('Starts').fill('2027-03-01T09:00');
   await mgr.getByLabel('Ends').fill('2027-03-01T13:00');

@@ -47,7 +47,8 @@ await step('an office with nothing open has an open-shift row, and no flag', asy
 });
 
 await step('repeating open shifts: two Front Desk slots every Saturday, nobody named', async () => {
-  await mgr.getByRole('button', { name: 'Repeating shifts' }).click();
+  await mgr.getByRole('button', { name: '+ Add', exact: true }).click();
+  await mgr.getByRole('menuitem', { name: 'Repeating shifts', exact: true }).click();
   await mgr.getByLabel('Employee').selectOption({ label: 'Nobody yet — open shifts to fill' });
   await mgr.getByLabel('Location', { exact: true }).selectOption({ label: 'North Bergen' });
   await mgr.getByLabel(/^Job role/).selectOption({ label: 'Front Desk' });

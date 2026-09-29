@@ -246,7 +246,8 @@ await step('changing the threshold changes what the rota warns about', async () 
   // The seeded rota is a single 8-hour shift today, which is over 20 for
   // nobody — so build a week that clears the new line but not the old one.
   await admin.getByRole('link', { name: /^Schedule/ }).first().click();
-  await admin.getByRole('button', { name: 'Repeating shifts' }).click();
+  await admin.getByRole('button', { name: '+ Add', exact: true }).click();
+  await admin.getByRole('menuitem', { name: 'Repeating shifts', exact: true }).click();
   // Not Frankie: an earlier step in this suite marks them as no longer
   // employed, which takes them out of the dropdown.
   await admin.getByLabel('Employee').selectOption({ label: 'Max Assistant' });

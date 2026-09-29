@@ -38,7 +38,8 @@ await step('an empty week is called out rather than left blank', async () => {
 });
 
 await step('the repeating-shifts form opens', async () => {
-  await page.getByRole('button', { name: 'Repeating shifts' }).click();
+  await page.getByRole('button', { name: '+ Add', exact: true }).click();
+  await page.getByRole('menuitem', { name: 'Repeating shifts', exact: true }).click();
   await page.getByText('One rota line at a time').waitFor({ timeout: 10000 });
 });
 
@@ -73,7 +74,8 @@ await page.screenshot({ path: `${OUT}/38-repeat-result.png`, fullPage: true });
 
 await step('running the same rota again reports every day as skipped', async () => {
   await page.getByRole('button', { name: 'Dismiss' }).click();
-  await page.getByRole('button', { name: 'Repeating shifts' }).click();
+  await page.getByRole('button', { name: '+ Add', exact: true }).click();
+  await page.getByRole('menuitem', { name: 'Repeating shifts', exact: true }).click();
   await page.getByLabel('Employee').selectOption({ label: 'Frankie Front-Desk' });
   for (const day of ['Mon', 'Wed', 'Fri']) {
     await page.getByRole('button', { name: day, exact: true }).click();
@@ -159,7 +161,8 @@ await step('a normal week says nothing about overtime', async () => {
 await step('a rota that crosses 40 hours is called out, in hours', async () => {
   // Frankie already has Tuesday and Thursday that week. Six 9-hour days on top
   // is well over.
-  await page.getByRole('button', { name: 'Repeating shifts' }).click();
+  await page.getByRole('button', { name: '+ Add', exact: true }).click();
+  await page.getByRole('menuitem', { name: 'Repeating shifts', exact: true }).click();
   await page.getByLabel('Employee').selectOption({ label: 'Frankie Front-Desk' });
   for (const day of ['Sat', 'Sun']) {
     await page.getByRole('button', { name: day, exact: true }).click();
@@ -340,7 +343,7 @@ await step('an employee sees neither the planning tools nor coverage', async () 
   await emp.getByRole('link', { name: 'Schedule' }).click();
   await emp.getByText('Your upcoming shifts').waitFor({ timeout: 10000 });
 
-  for (const name of ['Repeating shifts', /Copy last week/]) {
+  for (const name of ['+ Add', /Copy last week/]) {
     if (await emp.getByRole('button', { name }).count() > 0)
       throw new Error(`employee was offered ${name}`);
   }
