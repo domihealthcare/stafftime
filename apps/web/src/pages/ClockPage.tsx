@@ -48,7 +48,8 @@ export function ClockPage() {
               .catch(() => [])
           : [],
       );
-      setTodaysShift(shifts[0] ?? null);
+      // A removed shift is kept as CANCELLED; it is not today's shift.
+      setTodaysShift(shifts.find((shift) => shift.status !== 'CANCELLED') ?? null);
       setError(null);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Could not load your status.');

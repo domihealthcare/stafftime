@@ -215,9 +215,12 @@ export function SchedulePage() {
     }
   }
 
+  // A published shift that is removed is kept as CANCELLED, so staff who saw
+  // it have a record — but it is not on anymore. The week (RotaTable) always
+  // left those out; the month showed them, so a removed shift was still there.
   const shiftsByDay = useMemo(() => {
     const map = new Map<string, Shift[]>();
-    for (const shift of shifts) {
+    for (const shift of shifts.filter((candidate) => candidate.status !== 'CANCELLED')) {
       const key = new Date(shift.startsAt).toDateString();
       map.set(key, [...(map.get(key) ?? []), shift]);
     }
@@ -606,11 +609,14 @@ export function SchedulePage() {
         </div>
       )}
 
-      {!loading && shifts.length === 0 && events.length === 0 && !isManager && (
-        <div className="mt-4">
-          <EmptyState>Nothing scheduled for you this week.</EmptyState>
-        </div>
-      )}
+      {!loading &&
+        !shifts.some((shift) => shift.status !== 'CANCELLED') &&
+        events.length === 0 &&
+        !isManager && (
+          <div className="mt-4">
+            <EmptyState>Nothing scheduled for you this week.</EmptyState>
+          </div>
+        )}
 
       {isManager && (
         <div className="mt-6">
