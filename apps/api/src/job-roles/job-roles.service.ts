@@ -18,6 +18,7 @@ const JOB_ROLE_SELECT = {
   sortOrder: true,
   colour: true,
   seesOwnPersonnelTabs: true,
+  usesClinicalForms: true,
   _count: { select: { resources: true } },
   members: {
     // Somebody who has left is not "in" Front Desk any more, even if nobody
@@ -81,6 +82,7 @@ export class JobRolesService {
         sortOrder: (last._max.sortOrder ?? 0) + 10,
         colour,
         seesOwnPersonnelTabs: dto.seesOwnPersonnelTabs ?? false,
+        usesClinicalForms: dto.usesClinicalForms ?? false,
       },
       select: JOB_ROLE_SELECT,
     });
@@ -101,6 +103,7 @@ export class JobRolesService {
         sortOrder: dto.sortOrder,
         colour: dto.colour,
         seesOwnPersonnelTabs: dto.seesOwnPersonnelTabs,
+        usesClinicalForms: dto.usesClinicalForms,
       },
       select: JOB_ROLE_SELECT,
     });

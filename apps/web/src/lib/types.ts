@@ -72,6 +72,8 @@ export interface Employee extends EmployeeSummary {
   hireDate?: string | null;
   welcomeSentAt?: string | null;
   preferredName: string | null;
+  /// Letters after their name ("MD", "APN-C"), for the clinical forms.
+  postNominals?: string | null;
   pronouns?: string | null;
   phone?: string | null;
   payType?: 'HOURLY' | 'SALARY';
@@ -93,6 +95,9 @@ export interface Employee extends EmployeeSummary {
   /// Signed-in person only: their job role shows them their own licenses and
   /// onboarding under Team (Providers).
   seesOwnPersonnelTabs?: boolean;
+  /// Signed-in person only: their job role gives them the clinical forms
+  /// under Team (Providers).
+  usesClinicalForms?: boolean;
 }
 
 export interface Shift {
@@ -748,6 +753,8 @@ export interface JobRole {
   members: PersonName[];
   /// People in it see their own licenses and onboarding under Team.
   seesOwnPersonnelTabs?: boolean;
+  /// People in it get the clinical forms under Team.
+  usesClinicalForms?: boolean;
 }
 
 export type ResourceKind = 'LINK' | 'PAGE';

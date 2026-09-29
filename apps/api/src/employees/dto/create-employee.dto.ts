@@ -32,6 +32,14 @@ export class CreateEmployeeDto {
   @Length(1, 80)
   preferredName?: string | null;
 
+  /// Letters after their name — "MD", "APN-C" — printed beside it on the
+  /// clinical forms. Empty or null clears it.
+  @IsOptional()
+  @ValidateIf((_, value) => value !== null && value !== '')
+  @IsString()
+  @Length(1, 40)
+  postNominals?: string | null;
+
   @IsEmail()
   email!: string;
 

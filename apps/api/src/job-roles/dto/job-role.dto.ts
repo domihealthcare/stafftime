@@ -17,6 +17,10 @@ export class CreateJobRoleDto {
   @IsBoolean()
   seesOwnPersonnelTabs?: boolean;
 
+  @IsOptional()
+  @IsBoolean()
+  usesClinicalForms?: boolean;
+
   @IsString()
   @MinLength(2)
   @MaxLength(60)
@@ -38,6 +42,13 @@ export class UpdateJobRoleDto {
   @IsOptional()
   @IsBoolean()
   seesOwnPersonnelTabs?: boolean;
+
+  /// Whether people in this role get the clinical forms (the 99483 cognitive
+  /// assessment) under Team. The forms run in the browser and keep nothing,
+  /// so this shows a screen and nothing more — no power.
+  @IsOptional()
+  @IsBoolean()
+  usesClinicalForms?: boolean;
 
   @IsOptional()
   @IsString()

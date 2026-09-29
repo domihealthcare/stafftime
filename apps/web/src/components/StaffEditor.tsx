@@ -56,6 +56,7 @@ export function StaffEditor({
     firstName: person.firstName,
     lastName: person.lastName,
     preferredName: person.preferredName ?? '',
+    postNominals: person.postNominals ?? '',
     email: person.email,
     phone: person.phone ?? '',
     role: person.role,
@@ -131,6 +132,7 @@ export function StaffEditor({
         firstName: form.firstName.trim(),
         lastName: form.lastName.trim(),
         preferredName: form.preferredName.trim() || null,
+        postNominals: form.postNominals.trim() || null,
         email: form.email.trim().toLowerCase(),
         phone: form.phone.trim() || null,
         role: form.role,
@@ -239,6 +241,20 @@ export function StaffEditor({
                     maxLength={80}
                     value={form.preferredName}
                     onChange={(event) => set('preferredName', event.target.value)}
+                    className={FIELD}
+                  />
+                </Field>
+                <Field
+                  id="edit-post-nominals"
+                  label="Letters after their name"
+                  hint="Optional — MD, DO, APN-C, PA-C. Printed beside their name on the clinical forms."
+                >
+                  <input
+                    id="edit-post-nominals"
+                    maxLength={40}
+                    placeholder="MD"
+                    value={form.postNominals}
+                    onChange={(event) => set('postNominals', event.target.value)}
                     className={FIELD}
                   />
                 </Field>
