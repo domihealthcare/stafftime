@@ -5,6 +5,7 @@ import {
   NONE,
   type CarePlanArea,
   type ElementKey,
+  type PlanningItem,
   type RequirementKey,
 } from './config';
 import type { HandoutLanguage } from './translations.es';
@@ -47,11 +48,13 @@ export interface AssessmentForm {
     mrn: string;
     dos: string;
     visitType: string;
-    awvSameDay: boolean;
     totalMinutes: string;
     medicalDecisionMaking: string;
   };
   completion: Record<ElementKey, Completion>;
+  /// Ticked to confirm the prior-visit statement, for each element done
+  /// at a prior visit (Dominguez, September 2026).
+  priorConfirmed: Record<ElementKey, boolean>;
   A: {
     collateralHistory: string;
     examFindings: string;
@@ -97,7 +100,7 @@ export interface AssessmentForm {
     willingness: string;
     socialSupports: string;
   };
-  I: { status: string; directive: string; goalsOfCare: string };
+  I: { status: string; goalsOfCare: string } & Record<PlanningItem, string>;
   J: {
     plan: Record<CarePlanArea, CarePlanEntry>;
     referrals: string[];
@@ -127,14 +130,25 @@ export function emptyForm(dos: string): AssessmentForm {
       mrn: '',
       dos,
       visitType: '',
-      awvSameDay: false,
       totalMinutes: '',
       medicalDecisionMaking: '',
     },
     completion: Object.fromEntries(
       ELEMENTS.map(({ key }) => [key, DEFAULT_PRIOR.includes(key) ? 'prior' : 'today']),
     ) as Record<ElementKey, Completion>,
-    A: { collateralHistory: '', examFindings: '', domains: [], test: '', testOther: '', score: '' },
+    priorConfirmed: Object.fromEntries(ELEMENTS.map(({ key }) => [key, false])) as Record<
+      ElementKey,
+      boolean
+    >,
+    // BrainCheck Assess is what the practice tests with.
+    A: {
+      collateralHistory: '',
+      examFindings: '',
+      domains: [],
+      test: 'braincheck',
+      testOther: '',
+      score: '',
+    },
     B: { adl: [], iadl: [], details: '', tool: '', toolOther: '' },
     C: { capacity: '', comment: '' },
     D: { instrument: 'fast', fastStage: '', otherName: '', otherScore: '' },
@@ -165,7 +179,7 @@ export function emptyForm(dos: string): AssessmentForm {
       willingness: '',
       socialSupports: '',
     },
-    I: { status: '', directive: '', goalsOfCare: '' },
+    I: { status: '', financialPoa: '', healthcareProxy: '', lifeSupport: '', goalsOfCare: '' },
     J: {
       plan: Object.fromEntries(
         CARE_PLAN_AREAS.map((area) => [

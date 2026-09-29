@@ -567,8 +567,8 @@ Beyond the phases, the parts worth knowing about before picking up work:
   overtime counts the whole week at every office; a repeat PIN within
   `KIOSK_REPEAT_SECONDS` (120) is not a clock-out; screens load when first
   opened and `/assets` is cached for a year.
-- **Clinical forms — CPT 99483** (29 September 2026, Dominguez; Phases 1
-  and 2 built). Resources → **Provider** → **Cognitive assessment
+- **Clinical forms — CPT 99483** (29 September 2026, Dominguez; Phases 1–3
+  built). Resources → **Provider** → **Cognitive assessment
   (99483)**, for job roles with **uses clinical forms** (Provider only;
   access level brings nothing). The provider fills it in during the visit
   and downloads the **clinical note** for eCW Documents and the **care plan
@@ -580,9 +580,11 @@ Beyond the phases, the parts worth knowing about before picking up work:
   (impairment documented in eCW — not re-entered; historian present; 180
   days; no conflicting codes), the provider is **the person signed in**,
   **office or telehealth** (telehealth reminds about modifier 95), each
-  element "Today" or "Prior visit" **as a statement** (A starts as prior),
-  **FAST staging on screen**, and a **care plan built from the answers**
-  (suggested goals and actions, never ticked for them). Everything editable
+  element "Today" or "Prior visit" **as a ticked statement** (A starts as
+  prior), **BrainCheck Assess** as the test, **FAST staging on screen**, no
+  AWV, and a **care plan built from the answers** (suggested goals and
+  actions, never ticked for them). The handout follows **BrainCheck's care
+  plan** layout; providers have a section on Help. Everything editable
   is in `clinical/cognitive-assessment/config.ts`. Leaving, Back, reloading
   and Sign out all ask first. See *The clinical forms* in
   `docs/architecture.md`.

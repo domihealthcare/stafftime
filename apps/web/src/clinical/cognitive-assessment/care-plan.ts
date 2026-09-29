@@ -247,7 +247,7 @@ export function suggestions(form: AssessmentForm): { goals: Set<string>; actions
     'caregiver:g:plan-help',
   );
   when(
-    H.needs.includes('legal-financial') || I.directive === 'not-present',
+    H.needs.includes('legal-financial') || I.financialPoa === 'no' || I.healthcareProxy === 'no',
     'caregiver:g:plan-ahead',
     'caregiver:legal',
   );

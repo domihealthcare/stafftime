@@ -190,8 +190,9 @@ Scope is in `CLAUDE.md` under *Build phasing*. Still to settle:
 
 ## Clinical forms (99483, built September 2026)
 
-Phases 1 and 2 are built: the form (reworked with Dominguez on 29 September
-2026 to be shorter), the clinical note and the English/Spanish handout.
+Phases 1–3 are built: the form (reworked twice with Dominguez on 29
+September 2026), the clinical note, the English/Spanish handout (laid out
+after BrainCheck's care plan) and a providers' section on Help.
 
 - [ ] **A native speaker to read the Spanish** in
       `apps/web/src/clinical/cognitive-assessment/translations.es.ts`, then
@@ -202,12 +203,9 @@ Phases 1 and 2 are built: the form (reworked with Dominguez on 29 September
 - [ ] **Billing (Coronis) to check**: the conflicting same-day codes, the
       telehealth reminder (modifier 95 / place of service by payer), and the
       **G2212 threshold** (`G2212_THRESHOLD_MINUTES`, `null` until they give it).
-- [ ] **The practice's phone numbers** for the handout's "Questions?" line
-      (`PRACTICE_PHONES`, `null` until given).
 - [ ] **Try one fake-patient PDF in eCW** before real use.
 - [ ] **Set the letters after each provider's name** (Staff → Edit).
-- [ ] **Phase 3: polish** — a Help page section, and tuning after a provider
-      has used it in a few visits.
+- [ ] **Tuning after a provider has used it** in a few visits.
 
 ## Product decisions
 

@@ -7,7 +7,7 @@ import { useSession } from '../../lib/session';
 import type { Employee } from '../../lib/types';
 import { setUnsavedWork } from '../../lib/unsaved-work';
 import { ELEMENTS, type ElementKey } from './config';
-import { FieldContext } from './fields';
+import { Confirm, FieldContext } from './fields';
 import { emptyForm, isPrior, type AssessmentForm } from './form';
 import { carePlanFilename, carePlanPdf } from './pdf/care-plan-handout';
 import { clinicalNotePdf, noteFilename, type Provider } from './pdf/clinical-note';
@@ -304,18 +304,31 @@ function AssessmentScreen({ employee }: { employee: Employee }) {
                 }
               >
                 {prior && (
-                  <p className="mb-3 text-sm text-slate-600">
-                    {PRIOR_STATEMENT}
+                  <div className="mb-3 flex flex-wrap items-center gap-2">
+                    <div className="min-w-0 flex-1">
+                      <Confirm
+                        path={`priorConfirmed.${element.key}`}
+                        required
+                        label={PRIOR_STATEMENT}
+                        checked={form.priorConfirmed[element.key]}
+                        onChange={(checked) =>
+                          setForm((current) => ({
+                            ...current,
+                            priorConfirmed: { ...current.priorConfirmed, [element.key]: checked },
+                          }))
+                        }
+                      />
+                    </div>
                     {!open && (
                       <button
                         type="button"
                         onClick={() => setOpened((set) => new Set(set).add(element.key))}
-                        className="ml-2 font-medium text-brand-700 hover:text-brand-900"
+                        className="text-sm font-medium text-brand-700 hover:text-brand-900"
                       >
                         Add details
                       </button>
                     )}
-                  </p>
+                  </div>
                 )}
                 {element.key === 'J' ? (
                   <CarePlanSection form={form} update={update} />
@@ -334,7 +347,15 @@ function AssessmentScreen({ employee }: { employee: Employee }) {
         {/* What is missing, and the downloads. */}
         <div ref={checklist} className="mt-6 scroll-mt-4">
           <Card className="p-4 sm:p-5">
-            <h2 className="text-lg font-semibold text-slate-900">PDFs</h2>
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <h2 className="text-lg font-semibold text-slate-900">PDFs</h2>
+              <LanguagePicker
+                value={form.handoutLanguage}
+                onChange={(language) =>
+                  setForm((current) => ({ ...current, handoutLanguage: language }))
+                }
+              />
+            </div>
             {problems.length === 0 ? (
               <p className="mt-1 text-sm text-emerald-800">Everything required is filled in.</p>
             ) : (
@@ -350,7 +371,10 @@ function AssessmentScreen({ employee }: { employee: Employee }) {
                           onClick={() => focusField(problem.field, problem.section)}
                           className="w-full rounded-lg px-2 py-1.5 text-left text-sm text-slate-800 hover:bg-slate-100"
                         >
-                          <span className="font-semibold text-slate-900">{section?.label}.</span>{' '}
+                          <span className="font-semibold text-slate-900">
+                            {/* "✓." would read as done: name the requirements instead. */}
+                            {problem.section === 'requirements' ? 'Requirements' : section?.label}.
+                          </span>{' '}
                           {problem.message}
                         </button>
                       </li>
@@ -366,71 +390,27 @@ function AssessmentScreen({ employee }: { employee: Employee }) {
               </div>
             )}
 
-            <div className="mt-4 grid gap-3 sm:grid-cols-2">
-              <DownloadBox
-                title="1. Clinical note"
-                detail="For eCW Documents."
+            {/* The two downloads side by side; the handout's language is the small
+                choice beside the heading (Dominguez, September 2026). */}
+            <div className="mt-4 grid grid-cols-2 gap-3">
+              <DownloadButton
+                label="Download the note"
+                detail="Clinical note, for eCW Documents"
+                making={making === 'note'}
+                disabled={making !== null}
                 done={current?.note ?? false}
-              >
-                <button
-                  type="button"
-                  onClick={() => void download('note')}
-                  disabled={making !== null}
-                  className="min-h-[48px] w-full rounded-lg bg-brand-600 px-4 text-base font-semibold text-white hover:bg-brand-700 disabled:opacity-60"
-                >
-                  {making === 'note' ? 'Making it…' : 'Download the note'}
-                </button>
-              </DownloadBox>
-              <DownloadBox
-                title="2. Care plan handout"
-                detail="For the patient and caregiver."
+                onClick={() => void download('note')}
+              />
+              <DownloadButton
+                label="Download the handout"
+                detail={`Care plan for the patient, in ${
+                  form.handoutLanguage === 'es' ? 'Spanish' : 'English'
+                }`}
+                making={making === 'handout'}
+                disabled={making !== null}
                 done={current?.handout === form.handoutLanguage}
-              >
-                <div
-                  role="radiogroup"
-                  aria-label="Handout language"
-                  className="mb-2 inline-flex rounded-lg bg-slate-100 p-0.5 text-sm"
-                >
-                  {(
-                    [
-                      ['en', 'English'],
-                      ['es', 'Español'],
-                    ] as const
-                  ).map(([language, label]) => (
-                    <label
-                      key={language}
-                      className={`flex min-h-[36px] cursor-pointer items-center rounded-md px-3 ${
-                        form.handoutLanguage === language
-                          ? 'bg-white font-semibold text-brand-800 shadow-sm'
-                          : 'text-slate-600'
-                      }`}
-                    >
-                      <input
-                        type="radio"
-                        className="sr-only"
-                        checked={form.handoutLanguage === language}
-                        onChange={() =>
-                          setForm((current) => ({ ...current, handoutLanguage: language }))
-                        }
-                      />
-                      {label}
-                    </label>
-                  ))}
-                </div>
-                {form.handoutLanguage === 'es' && NEEDS_NATIVE_SPEAKER_REVIEW && (
-                  <p className="mb-2 text-xs text-amber-800">
-                    The Spanish wording has not yet been checked by a native speaker.
-                  </p>
-                )}
-                <button
-                  type="button"
-                  onClick={() => void download('handout')}
-                  disabled={making !== null}
-                  className="min-h-[48px] w-full rounded-lg bg-brand-600 px-4 text-base font-semibold text-white hover:bg-brand-700 disabled:opacity-60"
-                >
-                  {making === 'handout' ? 'Making it…' : 'Download the handout'}
-                </button>
-              </DownloadBox>
+                onClick={() => void download('handout')}
+              />
             </div>
 
             {current?.note && current.handout && (
@@ -458,25 +438,91 @@ function AssessmentScreen({ employee }: { employee: Employee }) {
   );
 }
 
-function DownloadBox({
-  title,
+function DownloadButton({
+  label,
   detail,
+  making,
+  disabled,
   done,
-  children,
+  onClick,
 }: {
-  title: string;
+  label: string;
   detail: string;
+  making: boolean;
+  disabled: boolean;
   done: boolean;
-  children: ReactNode;
+  onClick: () => void;
 }) {
   return (
-    <div className="rounded-lg border border-slate-200 p-3">
-      <p className="text-sm font-semibold text-slate-900">
-        {title}
-        {done && <span className="ml-2 text-emerald-700">✓ downloaded</span>}
+    <div>
+      <button
+        type="button"
+        onClick={onClick}
+        disabled={disabled}
+        className="min-h-[48px] w-full rounded-lg bg-brand-600 px-3 text-base font-semibold text-white hover:bg-brand-700 disabled:opacity-60"
+      >
+        {making ? 'Making it…' : label}
+      </button>
+      <p className="mt-1 text-xs text-slate-500">
+        {detail}
+        {done && <span className="ml-1 font-medium text-emerald-700">— ✓ downloaded</span>}
       </p>
-      <p className="mb-2 text-xs text-slate-500">{detail}</p>
-      {children}
+    </div>
+  );
+}
+
+/// "Handout: English ▾" — a secondary choice, opened when needed.
+function LanguagePicker({
+  value,
+  onChange,
+}: {
+  value: HandoutLanguage;
+  onChange: (language: HandoutLanguage) => void;
+}) {
+  const [open, setOpen] = useState(false);
+  const names: Record<HandoutLanguage, string> = { en: 'English', es: 'Español' };
+  return (
+    <div className="relative text-sm">
+      <button
+        type="button"
+        aria-expanded={open}
+        onClick={() => setOpen((shown) => !shown)}
+        className="rounded-lg px-2 py-1 text-slate-600 hover:bg-slate-100"
+      >
+        Handout: <span className="font-medium text-slate-900">{names[value]}</span> ▾
+      </button>
+      {open && (
+        <div
+          role="radiogroup"
+          aria-label="Handout language"
+          className="absolute right-0 z-20 mt-1 w-40 rounded-lg border border-slate-200 bg-white p-1 shadow-lg"
+        >
+          {(Object.keys(names) as HandoutLanguage[]).map((language) => (
+            <label
+              key={language}
+              className={`flex cursor-pointer items-center gap-2 rounded-md px-2 py-1.5 ${
+                value === language ? 'bg-brand-50 font-medium text-brand-900' : 'text-slate-700'
+              }`}
+            >
+              <input
+                type="radio"
+                checked={value === language}
+                onChange={() => {
+                  onChange(language);
+                  setOpen(false);
+                }}
+                className="border-slate-300 text-brand-600 focus:ring-brand-600"
+              />
+              {names[language]}
+            </label>
+          ))}
+        </div>
+      )}
+      {value === 'es' && NEEDS_NATIVE_SPEAKER_REVIEW && (
+        <p className="mt-1 max-w-[16rem] text-right text-xs text-amber-800">
+          Spanish not yet checked by a native speaker.
+        </p>
+      )}
     </div>
   );
 }

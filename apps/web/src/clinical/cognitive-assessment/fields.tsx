@@ -1,4 +1,4 @@
-import { createContext, useContext, type ReactNode } from 'react';
+import { createContext, useContext, useState, type ReactNode } from 'react';
 import { toggleChoice } from './form';
 import type { Choice } from './config';
 
@@ -252,11 +252,11 @@ export function RadioGroup({
       <Label as="legend" required={required}>
         {label}
       </Label>
-      <div className="flex flex-wrap gap-2">
+      <div className="flex flex-wrap gap-1.5">
         {options.map((option) => (
           <label
             key={option.value}
-            className={`flex min-h-[44px] cursor-pointer items-center gap-2 rounded-lg border px-3 py-2 text-sm ${
+            className={`flex min-h-[38px] cursor-pointer items-center gap-2 rounded-lg border px-2.5 py-1.5 text-sm leading-tight ${
               value === option.value
                 ? 'border-brand-600 bg-brand-50 font-medium text-brand-900'
                 : 'border-slate-300 bg-white text-slate-700 hover:bg-slate-50'
@@ -275,6 +275,43 @@ export function RadioGroup({
       <Hint>{hint}</Hint>
       <ProblemText problem={problem} />
     </fieldset>
+  );
+}
+
+/// A small "i" that shows a note on hover — or on a tap, since a tablet has
+/// no hover. Used where a list would crowd the form (the conflicting codes).
+export function InfoTip({ label, children }: { label: string; children: ReactNode }) {
+  const [open, setOpen] = useState(false);
+  return (
+    <span
+      className="relative inline-block align-middle"
+      onMouseEnter={() => setOpen(true)}
+      onMouseLeave={() => setOpen(false)}
+    >
+      <button
+        type="button"
+        aria-label={label}
+        aria-expanded={open}
+        onClick={(event) => {
+          // Inside a tick box's label: show the note, do not tick the box.
+          event.preventDefault();
+          event.stopPropagation();
+          setOpen((shown) => !shown);
+        }}
+        onBlur={() => setOpen(false)}
+        className="ml-1 inline-flex h-6 w-6 items-center justify-center rounded-full text-sm font-semibold text-brand-700 ring-1 ring-inset ring-brand-300 hover:bg-brand-50"
+      >
+        i
+      </button>
+      {open && (
+        <span
+          role="tooltip"
+          className="absolute left-0 top-7 z-20 block w-72 max-w-[80vw] rounded-lg bg-slate-900 px-3 py-2 text-xs font-normal leading-relaxed text-white shadow-lg"
+        >
+          {children}
+        </span>
+      )}
+    </span>
   );
 }
 
@@ -303,13 +340,13 @@ export function CheckGroup({
       <Label as="legend" required={required}>
         {label}
       </Label>
-      <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
+      <div className="grid grid-cols-2 gap-1.5 sm:grid-cols-3 lg:grid-cols-4">
         {options.map((option) => {
           const checked = values.includes(option.value);
           return (
             <label
               key={option.value}
-              className={`flex min-h-[44px] cursor-pointer items-center gap-2 rounded-lg border px-3 py-2 text-sm ${
+              className={`flex min-h-[38px] cursor-pointer items-center gap-2 rounded-lg border px-2.5 py-1.5 text-sm leading-tight ${
                 checked
                   ? 'border-brand-600 bg-brand-50 text-brand-900'
                   : 'border-slate-300 bg-white text-slate-700 hover:bg-slate-50'

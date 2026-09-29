@@ -76,7 +76,20 @@ export const HANDOUT_STRINGS = {
     nextVisit: 'Your next visit',
     inInterval: (interval: string) => `In ${interval}`,
     onDate: (date: string) => `on ${date}`,
-    questions: 'Questions? Call Domi Healthcare.',
+    questions: (phone: string) => `Questions? Call Domi Healthcare at ${phone}.`,
+    preparedBy: 'Prepared by',
+    practice: 'Practice',
+    patient: 'Patient',
+    dob: 'Date of birth',
+    carePartner: 'Care partner',
+    createdOn: 'Created on',
+    confidential: 'Confidential',
+    thingsToTry: 'Things to try',
+    planningAhead: 'Planning ahead',
+    planningIntro:
+      'It is important to plan for money and health decisions while choices can still be made clearly. If this was done before, it is worth reviewing again now.',
+    done: 'Done',
+    notYet: 'Not yet',
     header: (name: string, dob: string, date: string) =>
       `${name}  |  Date of birth: ${dob}  |  Visit: ${date}`,
     footer: 'Domi Healthcare — memory care plan',
@@ -97,7 +110,20 @@ export const HANDOUT_STRINGS = {
     nextVisit: 'Su próxima visita',
     inInterval: (interval: string) => `En ${interval}`,
     onDate: (date: string) => `el ${date}`,
-    questions: '¿Preguntas? Llame a Domi Healthcare.',
+    questions: (phone: string) => `¿Preguntas? Llame a Domi Healthcare al ${phone}.`,
+    preparedBy: 'Preparado por',
+    practice: 'Consultorio',
+    patient: 'Paciente',
+    dob: 'Fecha de nacimiento',
+    carePartner: 'Persona que cuida',
+    createdOn: 'Fecha',
+    confidential: 'Confidencial',
+    thingsToTry: 'Qué puede hacer',
+    planningAhead: 'Planificar con anticipación',
+    planningIntro:
+      'Es importante planificar las decisiones económicas y de salud mientras todavía se pueden tomar con claridad. Si ya lo hizo antes, vale la pena revisarlo de nuevo ahora.',
+    done: 'Hecho',
+    notYet: 'Todavía no',
     header: (name: string, dob: string, date: string) =>
       `${name}  |  Fecha de nacimiento: ${dob}  |  Visita: ${date}`,
     footer: 'Domi Healthcare — plan de cuidado de la memoria',
@@ -112,6 +138,30 @@ export const ES_AREAS: Record<string, string> = {
   medications: 'Medicamentos',
   safety: 'Seguridad',
   caregiver: 'Apoyo para quien cuida',
+};
+
+/// A line of plain explanation under each area's heading. Needs
+/// native-speaker review.
+export const ES_INTROS: Record<string, string> = {
+  cognition:
+    'Los cambios en la memoria y el pensamiento pueden hacer más difíciles las cosas de cada día. Mantenerse activo, seguir una rutina y venir a sus citas con nosotros ayudan.',
+  function:
+    'Con el tiempo, tareas como cocinar, hacer compras, manejar el dinero o vestirse pueden necesitar más ayuda. Organizar esa ayuda a tiempo da a todos más seguridad y menos estrés.',
+  behavior:
+    'Los cambios de ánimo, de sueño y de comportamiento son comunes con la pérdida de memoria. Son parte de la enfermedad, no son culpa de nadie, y muchos se pueden aliviar.',
+  medications:
+    'Algunos medicamentos pueden empeorar la memoria o el pensamiento. Revisamos los medicamentos y los seguiremos revisando.',
+  safety:
+    'Los cambios en la memoria pueden afectar el equilibrio, el juicio y la conciencia del peligro. Pequeños cambios en casa hacen una gran diferencia.',
+  caregiver:
+    'Cuidar a alguien con pérdida de memoria es valioso y también es un trabajo duro. Quien cuida también necesita apoyo.',
+};
+
+/// Planning ahead. Needs native-speaker review.
+export const ES_PLANNING: Record<string, string> = {
+  financialPoa: 'Poder notarial para asuntos económicos',
+  healthcareProxy: 'Representante para decisiones de salud (poder notarial médico)',
+  lifeSupport: 'Deseos sobre el soporte vital conversados',
 };
 
 /// Care plan goals, keyed "area:value". Needs native-speaker review.

@@ -144,8 +144,14 @@ await step('the requirements come first, before the patient', async () => {
   );
   if (order[0] !== 'section-requirements' || order[1] !== 'section-visit') throw new Error(order.join(', '));
   const text = await section('requirements').innerText();
-  for (const piece of ['documented in the eCW record', 'independent historian', '180 days', 'conflicting same-day', '99497'])
+  for (const piece of ['documented in the eCW record', 'independent historian', '180 days', 'conflicting same-day'])
     if (!text.includes(piece)) throw new Error(`requirements lack "${piece}"`);
+  // The codes are behind an info button, not spelled out on the form.
+  if (text.includes('99497')) throw new Error('the codes are printed on the form');
+  await section('requirements').getByRole('button', { name: 'Which codes conflict' }).hover();
+  await page.getByRole('tooltip').getByText(/99497/).waitFor({ timeout: 5000 });
+  if (await section('requirements').getByLabel(/conflicting same-day service/).isChecked())
+    throw new Error('hovering the info button ticked the box');
 });
 
 await step('an empty form makes no PDF, and lists what is missing', async () => {
@@ -167,9 +173,15 @@ await step('a missing item jumps to its field', async () => {
   if (!focused.endsWith('visit-mrn')) throw new Error(`focus went to "${focused}"`);
 });
 
-await step('the history and exam start as done at a prior visit, as a statement', async () => {
+await step('the history and exam start as done at a prior visit, with a tick to confirm it', async () => {
   const a = section('A');
-  await a.getByText('Completed at a prior visit; reviewed today and still valid or updated.').waitFor({ timeout: 5000 });
+  const tick = a.getByLabel(/Completed at a prior visit; reviewed today and still valid or updated/);
+  if (await tick.isChecked()) throw new Error('ticked for the provider');
+  await page
+    .getByTestId('missing-checklist')
+    .getByText('Tick to confirm it was completed at a prior visit and reviewed today.')
+    .waitFor({ timeout: 5000 });
+  await tick.check();
   if ((await a.getByLabel(/Collateral history/).count()) > 0) throw new Error('details shown without asking');
   if ((await a.getByLabel(/Prior visit date|Performed by/).count()) > 0) throw new Error('asks for a date or a name');
   await a.getByRole('button', { name: 'Add details' }).click();
@@ -190,12 +202,28 @@ await step('FAST is done on screen, with no “no impairment” stage', async ()
   await d.getByLabel(/Stage 4/).check();
 });
 
-await step('telehealth reminds about modifier 95; an AWV reminds about modifier 25', async () => {
+await step('telehealth reminds about modifier 95, and there is no AWV question', async () => {
   const v = section('visit');
   await v.getByLabel('Telehealth').check();
   await v.getByText(/telehealth modifier \(95\)/).waitFor({ timeout: 5000 });
-  await v.getByLabel(/annual wellness visit/).check();
-  await v.getByText('Bill the AWV separately and append modifier 25.').waitFor({ timeout: 5000 });
+  if ((await page.getByText(/annual wellness visit|AWV/).count()) > 0) throw new Error('the AWV is still asked about');
+});
+
+await step('BrainCheck Assess is the cognitive test to start with', async () => {
+  const a = section('A');
+  const chosen = await a.getByLabel(/Cognitive test/).evaluate((el) => el.selectedOptions[0]?.textContent);
+  if (chosen !== 'BrainCheck Assess') throw new Error(`starts on ${chosen}`);
+});
+
+await step('the options are compact, and the two downloads sit side by side', async () => {
+  // Rows stretch to their tallest neighbour, so check what an option asks for.
+  const option = await section('G').getByText('Fall risk', { exact: true }).evaluate((el) =>
+    getComputedStyle(el.closest('label')).minHeight,
+  );
+  if (option !== '38px') throw new Error(`an option is at least ${option} tall`);
+  const note = await page.getByRole('button', { name: 'Download the note' }).boundingBox();
+  const handout = await page.getByRole('button', { name: 'Download the handout' }).boundingBox();
+  if (Math.abs(note.y - handout.y) > 2 || handout.x <= note.x) throw new Error('not side by side');
 });
 
 await step('a safety concern makes the care plan suggest what to do about it', async () => {
@@ -239,7 +267,10 @@ await step('the whole form, filled in with a fake patient, makes the note', asyn
   const g = section('G');
   await g.getByLabel('Driving evaluation recommended').check();
   await section('H').getByLabel(/Willingness/).selectOption({ label: 'Willing and able' });
-  await section('I').getByLabel('Developed').check();
+  const i = section('I');
+  await i.getByLabel('Developed').check();
+  await i.getByRole('group', { name: /^Health care proxy/ }).getByLabel('Done').check();
+  await i.getByRole('group', { name: /^Financial power of attorney/ }).getByLabel('Not yet').check();
 
   const plan = {
     cognition: ['Keep memory and thinking skills', 'Recheck memory and thinking'],
@@ -297,7 +328,8 @@ await step('the whole form, filled in with a fake patient, makes the note', asyn
     'Stage 4 — Needs help with complex tasks',
     'Home: fall risk',
     'Remove tripping hazards',
-    'AWV billed separately, with modifier 25',
+    'Financial power of attorney Not yet',
+    'Health care proxy',
     `Total time on the date of service (${usDate(today)}): 65 minutes`,
     'Signature:',
   ]) {
@@ -316,7 +348,7 @@ await step('the handout is in plain English, with the plan and nothing clinical'
   await download.saveAs(path);
   const pages = await pdfPages(path);
   const all = pages.join(' ');
-  for (const piece of ['Your memory care plan', 'Our goals', 'What we will do', 'Remove tripping hazards', 'Support group', '1-800-272-3900', 'Safety tips', 'Your next visit', 'In 3 months']) {
+  for (const piece of ['Your memory care plan', 'Prepared by', 'Care partner John Testhistorian, son', 'Our goals', 'Things to try', 'Small changes at home make a big difference', 'Remove tripping hazards', 'Planning ahead', 'Financial power of attorney Not yet', 'Support group', '1-800-272-3900', 'Safety tips', 'Your next visit', 'In 3 months', 'Confidential', '201-528-3664']) {
     if (!all.includes(piece)) throw new Error(`the handout lacks "${piece}"`);
   }
   for (const clinical of ['FAST', 'PHQ-9', 'MRN', 'modifier', 'Stage 4']) {
@@ -329,8 +361,12 @@ await step('the handout is in plain English, with the plan and nothing clinical'
 });
 
 await step('and in Spanish, flagged on screen as not yet checked by a native speaker', async () => {
+  // A small choice beside the heading, opened when needed.
+  if ((await page.getByRole('radiogroup', { name: 'Handout language' }).count()) > 0)
+    throw new Error('the language choice is open before it is asked for');
+  await page.getByRole('button', { name: /^Handout: English/ }).click();
   await page.getByRole('radiogroup', { name: 'Handout language' }).getByText('Español').click();
-  await page.getByText('The Spanish wording has not yet been checked by a native speaker.').waitFor({ timeout: 5000 });
+  await page.getByText('Spanish not yet checked by a native speaker.').waitFor({ timeout: 5000 });
   const [download] = await Promise.all([
     page.waitForEvent('download', { timeout: 20000 }),
     page.getByRole('button', { name: 'Download the handout' }).click(),
@@ -339,7 +375,7 @@ await step('and in Spanish, flagged on screen as not yet checked by a native spe
   await download.saveAs(path);
   const pages = await pdfPages(path);
   const all = pages.join(' ');
-  for (const piece of ['Su plan de cuidado de la memoria', 'Nuestras metas', 'Lo que vamos a hacer', 'Consejos de seguridad', 'En 3 meses', 'Página 1 de']) {
+  for (const piece of ['Su plan de cuidado de la memoria', 'Preparado por', 'Nuestras metas', 'Qué puede hacer', 'Planificar con anticipación', 'Consejos de seguridad', 'En 3 meses', 'Página 1 de', 'Confidencial', 'al 201-528-3664']) {
     if (!all.includes(piece)) throw new Error(`the Spanish handout lacks "${piece}"`);
   }
   if (all.includes('native speaker') || all.includes('review')) throw new Error('the review note is on the handout');
@@ -430,6 +466,12 @@ await step('there is no file input on the form', async () => {
   await page.goto(`${BASE}/clinical/99483`, { waitUntil: 'networkidle' });
   await page.getByTestId('cognitive-assessment').waitFor({ timeout: 10000 });
   if ((await page.locator('input[type=file]').count()) > 0) throw new Error('a file input appeared');
+});
+
+await step('Help has a section for providers', async () => {
+  await page.goto(`${BASE}/help`, { waitUntil: 'networkidle' });
+  await page.getByRole('heading', { name: /For providers: cognitive assessment/ }).waitFor({ timeout: 10000 });
+  await page.getByText('Is anything saved? (patient privacy)').waitFor({ timeout: 5000 });
 });
 
 await step('the letters after a name are kept on the staff record, and can be cleared', async () => {

@@ -1,7 +1,6 @@
 import {
   ACP_STATUS,
   ADL_IMPAIRMENTS,
-  ADVANCE_DIRECTIVE,
   CAPACITY,
   CAREGIVER_KNOWLEDGE,
   CAREGIVER_NEEDS,
@@ -25,6 +24,8 @@ import {
   IADL_IMPAIRMENTS,
   MEDICAL_DECISION_MAKING,
   NEUROPSYCHIATRIC_SYMPTOMS,
+  PLANNING_ITEMS,
+  PLANNING_STATUS,
   PLAN_SHARED_WITH,
   REFERRALS,
   REQUIREMENTS,
@@ -113,9 +114,6 @@ export async function clinicalNotePdf(
     'Medical decision making',
     labelOf(MEDICAL_DECISION_MAKING, visit.medicalDecisionMaking),
   );
-  if (visit.awvSameDay) {
-    pdf.field('AWV same day', 'Yes — AWV billed separately, with modifier 25 appended.');
-  }
 
   pdf.heading('Requirements confirmed');
   pdf.bullets(
@@ -268,7 +266,9 @@ const ELEMENT_WRITERS: Record<ElementKey, ElementWriter> = {
 
   I(pdf, { I }) {
     optional(pdf, 'Status', labelOf(ACP_STATUS, I.status));
-    optional(pdf, 'Proxy / directive', labelOf(ADVANCE_DIRECTIVE, I.directive));
+    for (const item of PLANNING_ITEMS) {
+      optional(pdf, item.label, labelOf(PLANNING_STATUS, I[item.value]));
+    }
     optional(pdf, 'Goals of care', I.goalsOfCare);
   },
 
