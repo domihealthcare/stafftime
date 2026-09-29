@@ -42,9 +42,6 @@ const OWN_PERSONNEL = [
   { to: '/credentials', label: 'Your licenses' },
   { to: '/checklists', label: 'Your onboarding' },
 ];
-/// Clinical forms, for people whose job role uses them (Providers). They run on
-/// the provider's own device and keep nothing — see docs/architecture.md.
-const CLINICAL = [{ to: '/clinical/99483', label: 'Cognitive assessment (99483)' }];
 const ADMINISTER = [
   { to: '/staff', label: 'Staff' },
   { to: '/kiosks', label: 'Kiosks' },
@@ -162,7 +159,6 @@ export function Layout() {
               items={[
                 ...TEAM,
                 ...(!isManager && employee?.seesOwnPersonnelTabs ? OWN_PERSONNEL : []),
-                ...(employee?.usesClinicalForms ? CLINICAL : []),
               ]}
               className={linkClasses}
             />

@@ -33,6 +33,8 @@ export interface PageStamp {
   lines: string[];
   /// Bottom of every page.
   footer: string;
+  /// "Page 2 of 5" by default; the Spanish handout passes its own.
+  pageLabel?: (page: number, pages: number) => string;
 }
 
 export class PdfWriter {
@@ -82,10 +84,10 @@ export class PdfWriter {
     this.y -= 6;
   }
 
-  subheading(text: string) {
+  subheading(text: string, size = 10) {
     this.ensure(36);
     this.y -= 4;
-    this.block(text, { font: this.bold, size: 10, after: 2 });
+    this.block(text, { font: this.bold, size, after: 2 });
   }
 
   paragraph(text: string, options: { muted?: boolean; size?: number; indent?: number } = {}) {
@@ -117,15 +119,15 @@ export class PdfWriter {
     this.y -= 3;
   }
 
-  bullets(items: string[], indent = 0) {
+  bullets(items: string[], indent = 0, size = 10) {
     for (const item of items) {
-      const lines = this.wrap(item, this.regular, 10, CONTENT - indent - 12);
+      const lines = this.wrap(item, this.regular, size, CONTENT - indent - 12);
       lines.forEach((line, index) => {
-        this.ensure(13);
-        this.y -= 10;
-        if (index === 0) this.draw('•', LEFT + indent, this.regular, 10, INK);
-        this.draw(line, LEFT + indent + 12, this.regular, 10, INK);
-        this.y -= 3;
+        this.ensure(size * 1.3);
+        this.y -= size;
+        if (index === 0) this.draw('•', LEFT + indent, this.regular, size, INK);
+        this.draw(line, LEFT + indent + 12, this.regular, size, INK);
+        this.y -= size * 0.3;
       });
     }
     this.y -= 3;
@@ -178,7 +180,9 @@ export class PdfWriter {
   async finish(stamp: PageStamp): Promise<Uint8Array> {
     const pages = this.doc.getPages();
     pages.forEach((page, index) => {
-      const pageLabel = `Page ${index + 1} of ${pages.length}`;
+      const pageLabel = stamp.pageLabel
+        ? stamp.pageLabel(index + 1, pages.length)
+        : `Page ${index + 1} of ${pages.length}`;
       const top = HEIGHT - 40;
       const labelWidth = this.regular.widthOfTextAtSize(pageLabel, 9);
       const titleLine = this.fit(stamp.title, this.bold, 10, CONTENT - labelWidth - 16);

@@ -190,28 +190,24 @@ Scope is in `CLAUDE.md` under *Build phasing*. Still to settle:
 
 ## Clinical forms (99483, built September 2026)
 
-Phase 1 — the form, its checks and the clinical note — is built. Still to do
-or to confirm:
+Phases 1 and 2 are built: the form (reworked with Dominguez on 29 September
+2026 to be shorter), the clinical note and the English/Spanish handout.
 
-- [ ] **Phase 2: the patient and caregiver handout** (PDF 2), in English and
-      Spanish, from the care plan. The Spanish needs a native speaker's read.
-- [ ] **Phase 3: polish** — a Help page section, and more tablet tuning once
-      a provider has used it in a visit.
-- [ ] **Billing (Coronis) to check the lists in `config.ts`**: the
-      conflicting same-day codes, the ICD-10 quick picks and their wording,
-      and the **G2212 threshold** (`G2212_THRESHOLD_MINUTES`, `null` until
-      they give it).
-- [ ] **A provider to check the clinical choices in `config.ts`** — the
-      reasons, symptoms, safety concerns, caregiver needs, education topics,
-      and the staging lists (FAST 1, CDR 0 and GDS 1 are left out as "no
-      impairment").
-- [ ] **Try one fake-patient PDF in eCW** before real use: upload it to a
-      test chart's Documents and check it shows and searches properly.
-- [ ] **Set the letters after each provider's name** (Staff → Edit →
-      "Letters after their name"), so the form fills them in.
-- [ ] **Which answers are required** was decided from the brief; worth a
-      provider's view after a few visits (e.g. all three of problem, goal and
-      plan for each of the six care plan areas).
+- [ ] **A native speaker to read the Spanish** in
+      `apps/web/src/clinical/cognitive-assessment/translations.es.ts`, then
+      set `NEEDS_NATIVE_SPEAKER_REVIEW` to false.
+- [ ] **A provider to check the clinical wording in `config.ts`**: the FAST
+      stage descriptions (paraphrased from Reisberg's FAST), the care plan
+      goals and actions, and which answers suggest which (`care-plan.ts`).
+- [ ] **Billing (Coronis) to check**: the conflicting same-day codes, the
+      telehealth reminder (modifier 95 / place of service by payer), and the
+      **G2212 threshold** (`G2212_THRESHOLD_MINUTES`, `null` until they give it).
+- [ ] **The practice's phone numbers** for the handout's "Questions?" line
+      (`PRACTICE_PHONES`, `null` until given).
+- [ ] **Try one fake-patient PDF in eCW** before real use.
+- [ ] **Set the letters after each provider's name** (Staff → Edit).
+- [ ] **Phase 3: polish** — a Help page section, and tuning after a provider
+      has used it in a few visits.
 
 ## Product decisions
 

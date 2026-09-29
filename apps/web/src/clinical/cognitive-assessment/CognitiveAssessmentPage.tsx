@@ -6,29 +6,33 @@ import { localDate } from '../../lib/format';
 import { useSession } from '../../lib/session';
 import type { Employee } from '../../lib/types';
 import { setUnsavedWork } from '../../lib/unsaved-work';
-import { ELEMENTS } from './config';
-import { dayNumber } from './dates';
+import { ELEMENTS, type ElementKey } from './config';
 import { FieldContext } from './fields';
 import { emptyForm, isPrior, type AssessmentForm } from './form';
-import { clinicalNotePdf, noteFilename } from './pdf/clinical-note';
+import { carePlanFilename, carePlanPdf } from './pdf/care-plan-handout';
+import { clinicalNotePdf, noteFilename, type Provider } from './pdf/clinical-note';
 import {
-  BillingSection,
-  CompletionToggle,
+  CarePlanSection,
+  CompletionSwitch,
   ELEMENT_BODIES,
+  PRIOR_STATEMENT,
+  RequirementsSection,
   VisitSection,
   type Update,
 } from './sections';
+import { NEEDS_NATIVE_SPEAKER_REVIEW, type HandoutLanguage } from './translations.es';
 import { SECTIONS, validate, type SectionKey } from './validate';
 
 /**
  * CPT 99483 — cognitive assessment and care plan (September 2026, Dominguez).
  *
- * A provider fills this in during the visit and downloads a PDF to upload to
- * eCW Documents. The form runs entirely in the browser: what is typed is never
- * sent to the server, never written to the browser's storage, and is gone
- * when the page closes. This file and the rest of its folder may not import
- * the API client (see .eslintrc.cjs), and the browser suite watches every
- * request while it is filled in.
+ * A provider fills this in during the visit and downloads two PDFs: the
+ * clinical note for eCW Documents, and the care plan handout for the patient
+ * and caregiver, in English or Spanish. The form runs entirely in the
+ * browser: what is typed is never sent to the server, never written to the
+ * browser's storage, and is gone when the page closes. This folder may not
+ * import the API client (see .eslintrc.cjs), and the browser suite watches
+ * every request while it is filled in.
  */
 export function CognitiveAssessmentPage() {
   const { employee } = useSession();
@@ -48,6 +52,8 @@ export function CognitiveAssessmentPage() {
 
 const UNSAVED = 'the cognitive assessment you are filling in';
 
+type Made = { note: boolean; handout: HandoutLanguage | null; snapshot: string };
+
 function AssessmentScreen({ employee }: { employee: Employee }) {
   const confirm = useConfirm();
   // A fresh prefix for every field id on each visit: nothing a browser could
@@ -55,16 +61,16 @@ function AssessmentScreen({ employee }: { employee: Employee }) {
   const [prefix] = useState(() => `ca${Math.random().toString(36).slice(2, 8)}`);
   const idFor = useCallback((path: string) => `${prefix}-${path.replace(/\./g, '-')}`, [prefix]);
 
-  const blank = useCallback(
-    () =>
-      emptyForm({
-        dos: localDate(new Date()),
-        providerName: `${employee.firstName} ${employee.lastName}`,
-        providerCredentials: employee.postNominals ?? '',
-      }),
+  // Always the person signed in (Dominguez, September 2026).
+  const provider: Provider = useMemo(
+    () => ({
+      name: `${employee.firstName} ${employee.lastName}`,
+      credentials: employee.postNominals?.trim() ?? '',
+    }),
     [employee.firstName, employee.lastName, employee.postNominals],
   );
-  const [form, setForm] = useState<AssessmentForm>(blank);
+
+  const [form, setForm] = useState<AssessmentForm>(() => emptyForm(localDate(new Date())));
   const [untouched, setUntouched] = useState(() => JSON.stringify(form));
   const update = useCallback<Update>(
     (section, patch) =>
@@ -82,23 +88,20 @@ function AssessmentScreen({ employee }: { employee: Employee }) {
   );
   const fieldContext = useMemo(() => ({ idFor, problemFor }), [idFor, problemFor]);
 
-  // ------------------------------------------------------ the PDF, and after
-  const [made, setMade] = useState<{
-    filename: string;
-    bytes: Uint8Array;
-    snapshot: string;
-  } | null>(null);
-  const [making, setMaking] = useState(false);
+  // ------------------------------------------------------ the PDFs, and after
+  const [made, setMade] = useState<Made | null>(null);
+  const [making, setMaking] = useState<'note' | 'handout' | null>(null);
   const [failure, setFailure] = useState<string | null>(null);
   const [cleared, setCleared] = useState(false);
-  const snapshot = JSON.stringify(form);
-  // Changing anything after the PDF was made means it no longer matches.
+  // What the PDFs are made from. The handout's language is left out: switching
+  // it to make a second copy does not undo the note already downloaded.
+  const snapshot = JSON.stringify({ ...form, handoutLanguage: null });
+  // Changing anything after a PDF was made means it no longer matches.
   const current = made && made.snapshot === snapshot ? made : null;
-  const dirty = snapshot !== untouched;
-
+  const dirty = JSON.stringify(form) !== untouched;
   const checklist = useRef<HTMLDivElement>(null);
 
-  async function makePdf() {
+  async function download(which: 'note' | 'handout') {
     setFailure(null);
     setCleared(false);
     if (problems.length > 0) {
@@ -106,23 +109,33 @@ function AssessmentScreen({ employee }: { employee: Employee }) {
       checklist.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
       return;
     }
-    setMaking(true);
+    setMaking(which);
     try {
-      const bytes = await clinicalNotePdf(form, new Date());
-      const filename = noteFilename(form);
-      save(bytes, filename);
-      setMade({ filename, bytes, snapshot });
+      if (which === 'note') {
+        save(await clinicalNotePdf(form, provider, new Date()), noteFilename(form));
+      } else {
+        save(await carePlanPdf(form, provider, form.handoutLanguage), carePlanFilename(form));
+      }
+      setMade((before) => {
+        const base: Made =
+          before && before.snapshot === snapshot
+            ? before
+            : { note: false, handout: null, snapshot };
+        return which === 'note'
+          ? { ...base, note: true }
+          : { ...base, handout: form.handoutLanguage };
+      });
     } catch {
       setFailure(
         'The PDF could not be made. Nothing was sent anywhere and the form is as you left it — try again, and tell the office if it keeps happening.',
       );
     } finally {
-      setMaking(false);
+      setMaking(null);
     }
   }
 
   function clearForm() {
-    const next = blank();
+    const next = emptyForm(localDate(new Date()));
     setForm(next);
     setUntouched(JSON.stringify(next));
     setMade(null);
@@ -170,29 +183,31 @@ function AssessmentScreen({ employee }: { employee: Employee }) {
   }, [blocker, confirm]);
 
   // -------------------------------------------------------------- the page
-  const lastDay = dayNumber(form.billing.lastServiceDate);
-  const dosDay = dayNumber(form.visit.dos);
-  const daysSinceLast =
-    !form.billing.lastServiceNone && lastDay !== null && dosDay !== null ? dosDay - lastDay : null;
-
   const sectionDone = (key: SectionKey) => !problems.some((problem) => problem.section === key);
   const done = SECTIONS.filter((section) => sectionDone(section.key)).length;
+  const [opened, setOpened] = useState<Set<ElementKey>>(new Set());
 
   const jumpTo = (key: SectionKey) =>
     document
       .getElementById(`${prefix}-section-${key}`)
       ?.scrollIntoView({ behavior: 'smooth', block: 'start' });
   const focusField = (path: string, section: SectionKey) => {
-    const element = document.getElementById(idFor(path));
-    if (!element) {
-      jumpTo(section);
-      return;
+    if (section !== 'requirements' && section !== 'visit') {
+      setOpened((open) => new Set(open).add(section));
     }
-    element.scrollIntoView({ behavior: 'smooth', block: 'center' });
-    const target = element.matches('input, select, textarea')
-      ? element
-      : element.querySelector<HTMLElement>('input, select, textarea');
-    target?.focus({ preventScroll: true });
+    // After the section has opened.
+    window.setTimeout(() => {
+      const element = document.getElementById(idFor(path));
+      if (!element) {
+        jumpTo(section);
+        return;
+      }
+      element.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      const target = element.matches('input, select, textarea')
+        ? element
+        : element.querySelector<HTMLElement>('input, select, textarea');
+      target?.focus({ preventScroll: true });
+    }, 0);
   };
 
   return (
@@ -201,27 +216,14 @@ function AssessmentScreen({ employee }: { employee: Employee }) {
       <div className="mx-auto max-w-4xl" translate="no" data-testid="cognitive-assessment">
         <PageHeading
           title="Cognitive assessment (99483)"
-          subtitle="Cognitive assessment and care plan. Fill it in during the visit, then download the PDF and upload it to eCW Documents."
+          subtitle="Stays on this device — nothing is sent or saved. Download both PDFs at the end: the note for eCW, the care plan for the patient."
         />
-
-        <div className="mb-4">
-          <Alert tone="info">
-            <p className="font-semibold">Everything you type stays on this device.</p>
-            <ul className="mt-1 list-disc space-y-0.5 pl-5">
-              <li>
-                Nothing is sent to Domi Staff or saved. Leaving or reloading this page clears it.
-              </li>
-              <li>Use your own or a practice device — not the shared front-desk tablet.</li>
-              <li>After uploading the PDF to eCW, delete it from this device’s Downloads.</li>
-            </ul>
-          </Alert>
-        </div>
 
         {cleared && (
           <div className="mb-4">
             <Alert tone="success">
-              The form is cleared. Upload the PDF to eCW Documents, reference it in the progress
-              note, then delete it from this device.
+              The form is cleared. Upload the note to eCW Documents and reference it in the progress
+              note, then delete both PDFs from this device.
             </Alert>
           </div>
         )}
@@ -234,26 +236,13 @@ function AssessmentScreen({ employee }: { employee: Employee }) {
           <div className="flex items-center justify-between gap-3 text-xs text-slate-600">
             <span>
               <span className="font-semibold text-slate-900">{done}</span> of {SECTIONS.length}{' '}
-              sections complete
+              complete
             </span>
             <span>
               {problems.length === 0
-                ? 'Ready for the PDF'
+                ? 'Ready for the PDFs'
                 : `${problems.length} thing${problems.length === 1 ? '' : 's'} still needed`}
             </span>
-          </div>
-          <div
-            className="mt-1.5 h-1.5 overflow-hidden rounded-full bg-slate-200"
-            role="progressbar"
-            aria-label="Sections complete"
-            aria-valuemin={0}
-            aria-valuemax={SECTIONS.length}
-            aria-valuenow={done}
-          >
-            <div
-              className="h-full rounded-full bg-brand-600 transition-all"
-              style={{ width: `${(done / SECTIONS.length) * 100}%` }}
-            />
           </div>
           <div className="mt-2 flex gap-1.5 overflow-x-auto pb-1">
             {SECTIONS.map((section) => {
@@ -265,29 +254,40 @@ function AssessmentScreen({ employee }: { employee: Employee }) {
                   title={section.title}
                   onClick={() => jumpTo(section.key)}
                   data-complete={complete}
-                  className={`min-h-[36px] min-w-[44px] shrink-0 rounded-lg px-2 text-sm font-semibold ring-1 ring-inset ${
+                  className={`min-h-[36px] min-w-[40px] shrink-0 rounded-lg px-2 text-sm font-semibold ring-1 ring-inset ${
                     complete
                       ? 'bg-emerald-50 text-emerald-800 ring-emerald-200'
                       : 'bg-white text-slate-700 ring-slate-300'
                   }`}
                 >
                   {section.label}
-                  {complete && <span aria-label=" complete"> ✓</span>}
                 </button>
               );
             })}
           </div>
         </nav>
 
-        <div className="space-y-5">
-          <Section prefix={prefix} sectionKey="visit" label="0" title="Patient and visit">
-            <VisitSection form={form} update={update} />
+        <div className="space-y-4">
+          <Section
+            prefix={prefix}
+            sectionKey="requirements"
+            label="✓"
+            title="Requirements for 99483"
+          >
+            <RequirementsSection form={form} update={update} />
           </Section>
-          <Section prefix={prefix} sectionKey="billing" label="1" title="Eligibility and billing">
-            <BillingSection form={form} update={update} daysSinceLast={daysSinceLast} />
+          <Section prefix={prefix} sectionKey="visit" label="0" title="Patient and visit">
+            <VisitSection form={form} update={update} provider={provider} />
           </Section>
           {ELEMENTS.map((element) => {
-            const Body = ELEMENT_BODIES[element.key];
+            const prior = isPrior(form, element.key);
+            const open =
+              !prior || opened.has(element.key) || (showProblems && !sectionDone(element.key));
+            const setMode = (mode: 'today' | 'prior') =>
+              setForm((current) => ({
+                ...current,
+                completion: { ...current.completion, [element.key]: mode },
+              }));
             return (
               <Section
                 key={element.key}
@@ -295,36 +295,52 @@ function AssessmentScreen({ employee }: { employee: Employee }) {
                 sectionKey={element.key}
                 label={element.key}
                 title={element.title}
-              >
-                <div className="space-y-4">
-                  <CompletionToggle
+                aside={
+                  <CompletionSwitch
                     elementKey={element.key}
-                    completion={form[element.key].completion}
-                    onChange={(completion) => update(element.key, { completion })}
+                    value={form.completion[element.key]}
+                    onChange={setMode}
                   />
-                  <Body
-                    form={form}
-                    update={update}
-                    required={element.key === 'J' || !isPrior(form, element.key)}
-                  />
-                </div>
+                }
+              >
+                {prior && (
+                  <p className="mb-3 text-sm text-slate-600">
+                    {PRIOR_STATEMENT}
+                    {!open && (
+                      <button
+                        type="button"
+                        onClick={() => setOpened((set) => new Set(set).add(element.key))}
+                        className="ml-2 font-medium text-brand-700 hover:text-brand-900"
+                      >
+                        Add details
+                      </button>
+                    )}
+                  </p>
+                )}
+                {element.key === 'J' ? (
+                  <CarePlanSection form={form} update={update} />
+                ) : (
+                  open &&
+                  (() => {
+                    const Body = ELEMENT_BODIES[element.key];
+                    return <Body form={form} update={update} required={!prior} />;
+                  })()
+                )}
               </Section>
             );
           })}
         </div>
 
-        {/* What is missing, and the button. */}
+        {/* What is missing, and the downloads. */}
         <div ref={checklist} className="mt-6 scroll-mt-4">
           <Card className="p-4 sm:p-5">
-            <h2 className="text-lg font-semibold text-slate-900">Make the PDF</h2>
+            <h2 className="text-lg font-semibold text-slate-900">PDFs</h2>
             {problems.length === 0 ? (
               <p className="mt-1 text-sm text-emerald-800">Everything required is filled in.</p>
             ) : (
               <div className="mt-2" data-testid="missing-checklist">
-                <p className="text-sm text-slate-700">
-                  Still needed before the PDF can be made ({problems.length}):
-                </p>
-                <ul className="mt-2 max-h-80 space-y-1 overflow-y-auto">
+                <p className="text-sm text-slate-700">Still needed ({problems.length}):</p>
+                <ul className="mt-2 max-h-72 space-y-1 overflow-y-auto">
                   {problems.map((problem, index) => {
                     const section = SECTIONS.find((s) => s.key === problem.section);
                     return (
@@ -350,43 +366,89 @@ function AssessmentScreen({ employee }: { employee: Employee }) {
               </div>
             )}
 
-            <div className="mt-4 flex flex-wrap gap-2">
-              <button
-                type="button"
-                onClick={() => void makePdf()}
-                disabled={making}
-                className="min-h-[48px] rounded-lg bg-brand-600 px-5 text-base font-semibold text-white hover:bg-brand-700 disabled:opacity-60"
+            <div className="mt-4 grid gap-3 sm:grid-cols-2">
+              <DownloadBox
+                title="1. Clinical note"
+                detail="For eCW Documents."
+                done={current?.note ?? false}
               >
-                {making ? 'Making the PDF…' : 'Make the PDF'}
-              </button>
+                <button
+                  type="button"
+                  onClick={() => void download('note')}
+                  disabled={making !== null}
+                  className="min-h-[48px] w-full rounded-lg bg-brand-600 px-4 text-base font-semibold text-white hover:bg-brand-700 disabled:opacity-60"
+                >
+                  {making === 'note' ? 'Making it…' : 'Download the note'}
+                </button>
+              </DownloadBox>
+              <DownloadBox
+                title="2. Care plan handout"
+                detail="For the patient and caregiver."
+                done={current?.handout === form.handoutLanguage}
+              >
+                <div
+                  role="radiogroup"
+                  aria-label="Handout language"
+                  className="mb-2 inline-flex rounded-lg bg-slate-100 p-0.5 text-sm"
+                >
+                  {(
+                    [
+                      ['en', 'English'],
+                      ['es', 'Español'],
+                    ] as const
+                  ).map(([language, label]) => (
+                    <label
+                      key={language}
+                      className={`flex min-h-[36px] cursor-pointer items-center rounded-md px-3 ${
+                        form.handoutLanguage === language
+                          ? 'bg-white font-semibold text-brand-800 shadow-sm'
+                          : 'text-slate-600'
+                      }`}
+                    >
+                      <input
+                        type="radio"
+                        className="sr-only"
+                        checked={form.handoutLanguage === language}
+                        onChange={() =>
+                          setForm((current) => ({ ...current, handoutLanguage: language }))
+                        }
+                      />
+                      {label}
+                    </label>
+                  ))}
+                </div>
+                {form.handoutLanguage === 'es' && NEEDS_NATIVE_SPEAKER_REVIEW && (
+                  <p className="mb-2 text-xs text-amber-800">
+                    The Spanish wording has not yet been checked by a native speaker.
+                  </p>
+                )}
+                <button
+                  type="button"
+                  onClick={() => void download('handout')}
+                  disabled={making !== null}
+                  className="min-h-[48px] w-full rounded-lg bg-brand-600 px-4 text-base font-semibold text-white hover:bg-brand-700 disabled:opacity-60"
+                >
+                  {making === 'handout' ? 'Making it…' : 'Download the handout'}
+                </button>
+              </DownloadBox>
             </div>
 
-            {current && (
+            {current?.note && current.handout && (
               <div
                 className="mt-4 rounded-lg bg-slate-50 p-4 ring-1 ring-inset ring-slate-200"
                 data-testid="download-check"
               >
-                <p className="text-sm font-semibold text-slate-900">Did the PDF download?</p>
+                <p className="text-sm font-semibold text-slate-900">Did both PDFs download?</p>
                 <p className="mt-1 text-sm text-slate-700">
-                  Look for <span className="font-mono">{current.filename}</span> in this device’s
-                  Downloads. The form is cleared only once you say it arrived.
+                  Check this device’s Downloads. The form is cleared only once you say they arrived.
                 </p>
-                <div className="mt-3 flex flex-wrap gap-2">
-                  <button
-                    type="button"
-                    onClick={clearForm}
-                    className="min-h-[44px] rounded-lg bg-brand-600 px-4 text-sm font-semibold text-white hover:bg-brand-700"
-                  >
-                    Yes, it downloaded — clear the form
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => save(current.bytes, current.filename)}
-                    className="min-h-[44px] rounded-lg border border-slate-300 bg-white px-4 text-sm font-medium text-slate-700 hover:bg-slate-50"
-                  >
-                    Download it again
-                  </button>
-                </div>
+                <button
+                  type="button"
+                  onClick={clearForm}
+                  className="mt-3 min-h-[44px] rounded-lg bg-brand-600 px-4 text-sm font-semibold text-white hover:bg-brand-700"
+                >
+                  Yes, both downloaded — clear the form
+                </button>
               </div>
             )}
           </Card>
@@ -396,17 +458,42 @@ function AssessmentScreen({ employee }: { employee: Employee }) {
   );
 }
 
+function DownloadBox({
+  title,
+  detail,
+  done,
+  children,
+}: {
+  title: string;
+  detail: string;
+  done: boolean;
+  children: ReactNode;
+}) {
+  return (
+    <div className="rounded-lg border border-slate-200 p-3">
+      <p className="text-sm font-semibold text-slate-900">
+        {title}
+        {done && <span className="ml-2 text-emerald-700">✓ downloaded</span>}
+      </p>
+      <p className="mb-2 text-xs text-slate-500">{detail}</p>
+      {children}
+    </div>
+  );
+}
+
 function Section({
   prefix,
   sectionKey,
   label,
   title,
+  aside,
   children,
 }: {
   prefix: string;
   sectionKey: SectionKey;
   label: string;
   title: string;
+  aside?: ReactNode;
   children: ReactNode;
 }) {
   const headingId = `${prefix}-heading-${sectionKey}`;
@@ -414,16 +501,19 @@ function Section({
     <section
       id={`${prefix}-section-${sectionKey}`}
       aria-labelledby={headingId}
-      className="scroll-mt-32"
+      className="scroll-mt-28"
       data-testid={`section-${sectionKey}`}
     >
       <Card className="p-4 sm:p-5">
-        <h2 id={headingId} className="mb-4 text-lg font-semibold text-slate-900">
-          <span className="mr-2 inline-flex h-7 min-w-[28px] items-center justify-center rounded-md bg-brand-600 px-1.5 text-sm text-white">
-            {label}
-          </span>
-          {title}
-        </h2>
+        <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
+          <h2 id={headingId} className="text-base font-semibold text-slate-900 sm:text-lg">
+            <span className="mr-2 inline-flex h-7 min-w-[28px] items-center justify-center rounded-md bg-brand-600 px-1.5 text-sm text-white">
+              {label}
+            </span>
+            {title}
+          </h2>
+          {aside}
+        </div>
         {children}
       </Card>
     </section>

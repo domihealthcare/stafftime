@@ -786,7 +786,14 @@ export type DriveFolderListing =
 
 export interface ResourceSection {
   /// Null is the section everybody sees.
-  jobRole: { id: string; name: string; description: string | null; colour: string } | null;
+  jobRole: {
+    id: string;
+    name: string;
+    description: string | null;
+    colour: string;
+    /// Its section carries the clinical forms (Provider).
+    usesClinicalForms?: boolean;
+  } | null;
   /// Whether the viewer is in this role.
   yours: boolean;
   resources: Resource[];

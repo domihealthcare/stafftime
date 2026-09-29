@@ -5,7 +5,7 @@ import { useConfirm } from '../components/ConfirmDialog';
 import { DriveFolderFiles, isDriveFolder } from '../components/DriveFolderFiles';
 import { Alert, Badge, Card, EmptyState, PageHeading, Spinner } from '../components/ui';
 import { ApiError, api } from '../lib/api';
-import { useIsManager } from '../lib/session';
+import { useIsManager, useSession } from '../lib/session';
 import type { Resource, ResourceKind, ResourceSection } from '../lib/types';
 
 /**
@@ -135,6 +135,8 @@ function SectionBlock({
       {section.jobRole?.description && (
         <p className="mb-2 text-sm text-slate-600">{section.jobRole.description}</p>
       )}
+
+      {section.jobRole?.usesClinicalForms && <ClinicalTools />}
 
       {adding && (
         <div className="mb-2">
@@ -463,4 +465,34 @@ function hostOf(url: string): string {
   } catch {
     return url;
   }
+}
+
+/**
+ * The clinical forms, first in the Provider section (September 2026,
+ * Dominguez: "provider resources, not Team"). Only for people whose job role
+ * uses them — a manager looking over the section sees that it is there.
+ */
+function ClinicalTools() {
+  const { employee } = useSession();
+  if (!employee?.usesClinicalForms) {
+    return (
+      <p className="mb-2 text-xs text-slate-500">
+        Providers also see the cognitive assessment (99483) form here.
+      </p>
+    );
+  }
+  return (
+    <Card className="mb-2 border-brand-200 bg-brand-50 p-3" testId="clinical-tools">
+      <Link
+        to="/clinical/99483"
+        className="block text-sm font-semibold text-brand-800 hover:text-brand-900"
+      >
+        Cognitive assessment (99483) →
+      </Link>
+      <p className="mt-0.5 text-xs text-slate-600">
+        Fill it in during the visit; download the note for eCW and the care plan for the patient.
+        Nothing is saved.
+      </p>
+    </Card>
+  );
 }
