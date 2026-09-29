@@ -510,7 +510,8 @@ const MANAGERS: Section[] = [
             </li>
             <li>
               <strong>Repeating shifts</strong> makes, say, every Tuesday and Thursday for a month
-              in one go.
+              in one go. The ＋ in a day on the rota can do the same: tick{' '}
+              <strong>Repeat this shift</strong>, pick the days and how long for.
             </li>
             <li>
               For somebody who always works the same days, tick <strong>No end date</strong> in
@@ -604,10 +605,11 @@ const MANAGERS: Section[] = [
         question: 'Work from home',
         answer: (
           <p>
-            Tick <strong>Work from home</strong> when you make a shift, or click a shift and choose{' '}
-            <strong>Make it work from home</strong>. Once it is published, that person can clock in
-            from anywhere from half an hour before it starts until it ends, with no location asked
-            for or recorded. The shift still belongs to an office, for the rota and the reports.
+            Choose <strong>Work from home</strong> as the Location when you make a shift, or click a
+            shift and choose <strong>Make it work from home</strong>. Once it is published, that
+            person can clock in from anywhere from half an hour before it starts until it ends, with
+            no location asked for or recorded. Behind the scenes it is counted under their main
+            office, so the office view of the rota and the reports still add up.
             Outside a work-from-home shift the usual office check applies, so nobody can clock in
             from home on a day they are due in.
           </p>

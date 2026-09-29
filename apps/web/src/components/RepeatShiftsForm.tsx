@@ -1,14 +1,15 @@
 import { useEffect, useState } from 'react';
 import { ApiError, api } from '../lib/api';
 import type { Employee, JobRole, Location, PlanResult } from '../lib/types';
-import { WEEK_ORDER, WEEKDAY_NAMES } from '../lib/format';
+import {
+  PlaceSelect,
+  WORK_FROM_HOME,
+  WorkFromHomeNote,
+  homeOfficeOf,
+  placeToShift,
+} from './PlaceSelect';
 import { Alert, Card } from './ui';
-
-/// Sunday first, as the calendar reads; the values are the API's, 1 = Monday.
-const WEEKDAYS = WEEK_ORDER.map((value) => ({
-  value,
-  short: WEEKDAY_NAMES[value - 1].slice(0, 3),
-}));
+import { WeekdayToggles } from './WeekdayToggles';
 
 /// Builds a rota in one go — the alternative being a manager creating forty
 /// shifts by hand.
@@ -31,8 +32,8 @@ export function RepeatShiftsForm({
   const [employeeId, setEmployeeId] = useState('');
   const [jobRoleId, setJobRoleId] = useState('');
   const [openCount, setOpenCount] = useState(1);
-  const [remote, setRemote] = useState(false);
-  const [locationId, setLocationId] = useState('');
+  /// An office id, or Work from home.
+  const [place, setPlace] = useState('');
   const [startTime, setStartTime] = useState('09:00');
   const [endTime, setEndTime] = useState('17:00');
   const [days, setDays] = useState<number[]>([1, 2, 3, 4, 5]);
@@ -54,11 +55,16 @@ export function RepeatShiftsForm({
       )
     : locations;
 
+  const canWorkFromHome = Boolean(selected);
+
   useEffect(() => {
-    if (available.length > 0 && !available.some((l) => l.id === locationId)) {
-      setLocationId(available[0].id);
+    if (place === WORK_FROM_HOME && canWorkFromHome) return;
+    if (available.length > 0 && !available.some((l) => l.id === place)) {
+      setPlace(available[0].id);
     }
-  }, [available, locationId]);
+  }, [available, place, canWorkFromHome]);
+
+  const { locationId, isRemote } = placeToShift(place, homeOfficeOf(selected));
 
   // Default to four weeks out: long enough to be useful, short enough to review.
   useEffect(() => {
@@ -78,7 +84,7 @@ export function RepeatShiftsForm({
         await api.repeatShifts({
           ...(employeeId === OPEN ? { openCount } : { employeeId }),
           jobRoleId: jobRoleId || undefined,
-          isRemote: remote,
+          isRemote,
           locationId,
           startTime,
           endTime,
@@ -134,19 +140,15 @@ export function RepeatShiftsForm({
             <label htmlFor="repeat-location" className="block text-sm font-medium text-slate-700">
               Location
             </label>
-            <select
+            <PlaceSelect
               id="repeat-location"
-              required
-              value={locationId}
-              onChange={(event) => setLocationId(event.target.value)}
+              value={place}
+              onChange={setPlace}
+              offices={available}
+              allowHome={canWorkFromHome}
               className={field}
-            >
-              {available.map((location) => (
-                <option key={location.id} value={location.id}>
-                  {location.name}
-                </option>
-              ))}
-            </select>
+            />
+            {isRemote && <WorkFromHomeNote />}
           </div>
         </div>
 
@@ -194,32 +196,7 @@ export function RepeatShiftsForm({
 
         <fieldset>
           <legend className="text-sm font-medium text-slate-700">Days</legend>
-          <div className="mt-1 flex flex-wrap gap-1">
-            {WEEKDAYS.map((day) => {
-              const on = days.includes(day.value);
-              return (
-                <button
-                  key={day.value}
-                  type="button"
-                  aria-pressed={on}
-                  onClick={() =>
-                    setDays((current) =>
-                      current.includes(day.value)
-                        ? current.filter((value) => value !== day.value)
-                        : [...current, day.value],
-                    )
-                  }
-                  className={`rounded-lg px-3 py-2 text-sm font-medium ${
-                    on
-                      ? 'bg-brand-600 text-white'
-                      : 'border border-slate-300 bg-white text-slate-700 hover:bg-slate-50'
-                  }`}
-                >
-                  {day.short}
-                </button>
-              );
-            })}
-          </div>
+          <WeekdayToggles days={days} onChange={setDays} />
           {days.length === 0 && (
             <p className="mt-1 text-xs text-rose-600">Pick at least one day.</p>
           )}
@@ -309,22 +286,6 @@ export function RepeatShiftsForm({
             <span className="block text-xs text-slate-500">
               For a regular shift, like every Monday. The rota is kept filled eight weeks ahead;
               stop it any time under Regular shifts.
-            </span>
-          </span>
-        </label>
-
-        <label className="flex items-start gap-2 text-sm text-slate-700" htmlFor="repeat-remote">
-          <input
-            id="repeat-remote"
-            type="checkbox"
-            checked={remote}
-            onChange={(event) => setRemote(event.target.checked)}
-            className="mt-0.5 rounded border-slate-300 text-brand-600 focus:ring-brand-600"
-          />
-          <span>
-            Work from home
-            <span className="block text-xs text-slate-500">
-              They can clock in from anywhere during it; no location is recorded.
             </span>
           </span>
         </label>

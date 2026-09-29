@@ -288,7 +288,11 @@ Beyond the phases, the parts worth knowing about before picking up work:
   starts until it ends — the person clocks in from anywhere, no location asked
   for or recorded; the punch is `REMOTE` ("Work from home" on the timesheet
   and in the Directory). Otherwise the usual office check applies. Chosen over
-  a standing per-person permission.
+  a standing per-person permission. Since 29 September 2026 (Dominguez) it
+  is picked as **Work from home** in the shift forms' Location list, not a
+  tick box beside an office; the shift is counted under the person's main
+  office (`homeOfficeOf`, `components/PlaceSelect.tsx`). The ＋ on the rota
+  can also **repeat** a shift (the same as Repeating shifts, from that day).
 - **Tablet PINs are chosen by staff** on their profile (confirmed with their
   password); the profile shows only that one is set and since when, never the
   PIN. Managers and admins can set a replacement from the Directory, never

@@ -17,6 +17,7 @@ import type {
   OvertimeWarning,
   OwnOvertimeWeek,
   PracticeEvent,
+  PlanResult,
   PtoRequest,
   Shift,
 } from '../lib/types';
@@ -25,6 +26,14 @@ import { jobRoleHex } from '../lib/job-role-colours';
 import { useConfirm } from './ConfirmDialog';
 import { confirmOvertime, OvertimePreview, useOvertimeCheck } from './OvertimeAlerts';
 import { Avatar } from './Avatar';
+import {
+  PlaceSelect,
+  WORK_FROM_HOME,
+  WorkFromHomeNote,
+  homeOfficeOf,
+  placeToShift,
+} from './PlaceSelect';
+import { WeekdayToggles } from './WeekdayToggles';
 import {
   ClosureWarning,
   closuresCovering,
@@ -100,6 +109,7 @@ export function RotaTable({
   canEdit,
   selfId,
   onChanged,
+  onPlanned,
   onError,
 }: {
   days: Date[];
@@ -131,6 +141,8 @@ export function RotaTable({
   /// For staff: only their own row.
   selfId?: string;
   onChanged: () => void;
+  /// A shift added from a cell as a repeating one: what was made and skipped.
+  onPlanned?: (result: PlanResult) => void;
   onError: (message: string) => void;
 }) {
   const [menu, setMenu] = useState<Shift | null>(null);
@@ -651,6 +663,7 @@ export function RotaTable({
             setAdding(null);
             onChanged();
           }}
+          onPlanned={onPlanned}
         />
       )}
     </div>
@@ -1047,7 +1060,7 @@ function ShiftDialog({
     >
       <p className="text-sm text-slate-700">{when}</p>
       <p className="text-sm text-slate-500">
-        {shift.isRemote ? `Work from home (${shift.location?.name ?? ''})` : shift.location?.name}
+        {shift.isRemote ? 'Work from home' : shift.location?.name}
         {shift.jobRole && ` · ${shift.jobRole.name}`}
         {shift.status === 'DRAFT' && ' · draft'}
       </p>
@@ -1150,7 +1163,9 @@ function ShiftDialog({
 }
 
 /// Adding a shift straight into a cell: for that person, or an open one for
-/// that office.
+/// that office — once, or repeating from that day (Dominguez, September 2026:
+/// the + had no way to repeat, so a regular shift meant going to Repeating
+/// shifts and starting again).
 function QuickAddDialog({
   row,
   day,
@@ -1159,6 +1174,7 @@ function QuickAddDialog({
   jobRoles,
   onClose,
   onCreated,
+  onPlanned,
 }: {
   row: Row;
   day: Date;
@@ -1168,18 +1184,33 @@ function QuickAddDialog({
   jobRoles: JobRole[];
   onClose: () => void;
   onCreated: () => void;
+  onPlanned?: (result: PlanResult) => void;
 }) {
-  const personLocations = row.person
-    ? locations.filter((location) =>
-        row.person!.locations.some((a) => a.locationId === location.id),
-      )
-    : locations;
-  const [locationId, setLocationId] = useState(row.locationId ?? personLocations[0]?.id ?? '');
+  // A row inside an office's group adds to that office; otherwise any of the
+  // person's offices.
+  const offices = row.locationId
+    ? locations.filter((location) => location.id === row.locationId)
+    : row.person
+      ? locations.filter((location) =>
+          row.person!.locations.some((a) => a.locationId === location.id),
+        )
+      : locations;
+  /// An office id, or Work from home.
+  const [place, setPlace] = useState(row.locationId ?? offices[0]?.id ?? '');
+  const { locationId, isRemote } = placeToShift(place, row.locationId ?? homeOfficeOf(row.person));
   const [jobRoleId, setJobRoleId] = useState(row.jobRoleId ?? '');
   const [start, setStart] = useState('09:00');
   const [end, setEnd] = useState('17:00');
   const [publish, setPublish] = useState(true);
-  const [remote, setRemote] = useState(false);
+  const [repeat, setRepeat] = useState(false);
+  /// 1 = Monday … 7 = Sunday; starts on the day that was clicked.
+  const [repeatDays, setRepeatDays] = useState<number[]>(() => [((day.getDay() + 6) % 7) + 1]);
+  const [until, setUntil] = useState(() => {
+    const fourWeeks = new Date(day);
+    fourWeeks.setDate(fourWeeks.getDate() + 27);
+    return localDate(fourWeeks);
+  });
+  const [noEnd, setNoEnd] = useState(false);
   const [busy, setBusy] = useState(false);
   const [problem, setProblem] = useState<string | null>(null);
   const confirm = useConfirm();
@@ -1203,24 +1234,44 @@ function QuickAddDialog({
       : null;
   const overtimeCheck = useOvertimeCheck(proposed);
   // Open shifts too: nobody should be wanted while the office is shut.
-  const place =
+  const closure =
     locationId && /^\d\d:\d\d$/.test(start) && /^\d\d:\d\d$/.test(end) && end > start
       ? { locationId, startsAt: at(start).toISOString(), endsAt: at(end).toISOString() }
       : null;
-  const closures = useClosureCheck(place);
+  const closures = useClosureCheck(closure);
 
   async function submit(event: React.FormEvent) {
     event.preventDefault();
-    if (place && !(await confirmClosure(confirm, place))) return;
-    if (proposed && !(await confirmOvertime(confirm, proposed, row.label))) return;
     setBusy(true);
     setProblem(null);
     try {
+      if (repeat) {
+        // The same as Repeating shifts, starting on this day. What it makes,
+        // skips and puts into overtime is reported afterwards, across every
+        // week it touches, rather than asked about one day at a time here.
+        const result = await api.repeatShifts({
+          ...(row.person ? { employeeId: row.person.id } : { openCount: 1 }),
+          jobRoleId: jobRoleId || undefined,
+          isRemote,
+          locationId,
+          startTime: start,
+          endTime: end,
+          daysOfWeek: [...repeatDays].sort(),
+          from: localDate(day),
+          ...(noEnd ? {} : { until }),
+          status: publish ? 'PUBLISHED' : 'DRAFT',
+        });
+        onPlanned?.(result);
+        onCreated();
+        return;
+      }
+      if (closure && !(await confirmClosure(confirm, closure))) return;
+      if (proposed && !(await confirmOvertime(confirm, proposed, row.label))) return;
       await api.createShift({
         employeeId: row.person?.id ?? null,
         locationId,
         jobRoleId: jobRoleId || null,
-        isRemote: remote,
+        isRemote,
         startsAt: at(start).toISOString(),
         endsAt: at(end).toISOString(),
         status: publish ? 'PUBLISHED' : 'DRAFT',
@@ -1276,22 +1327,20 @@ function QuickAddDialog({
             className={field}
           />
         </label>
-        <label className="col-span-2 text-sm" htmlFor="quick-location">
-          <span className="font-medium text-slate-800">Location</span>
-          <select
+        <div className="col-span-2 text-sm">
+          <label htmlFor="quick-location" className="font-medium text-slate-800">
+            Location
+          </label>
+          <PlaceSelect
             id="quick-location"
-            value={locationId}
-            disabled={Boolean(row.locationId)}
-            onChange={(event) => setLocationId(event.target.value)}
+            value={place}
+            onChange={setPlace}
+            offices={offices}
+            allowHome={Boolean(row.person)}
             className={field}
-          >
-            {personLocations.map((location) => (
-              <option key={location.id} value={location.id}>
-                {location.name}
-              </option>
-            ))}
-          </select>
-        </label>
+          />
+          {place === WORK_FROM_HOME && <WorkFromHomeNote />}
+        </div>
         <label className="col-span-2 text-sm" htmlFor="quick-role">
           <span className="font-medium text-slate-800">
             Job role {row.person && <span className="font-normal text-slate-400">(optional)</span>}
@@ -1311,21 +1360,63 @@ function QuickAddDialog({
           </select>
         </label>
         <div className="col-span-2">
-          <label className="flex items-start gap-2 text-sm text-slate-700" htmlFor="quick-remote">
+          <label className="flex items-center gap-2 text-sm text-slate-700" htmlFor="quick-repeat">
             <input
-              id="quick-remote"
+              id="quick-repeat"
               type="checkbox"
-              checked={remote}
-              onChange={(event) => setRemote(event.target.checked)}
-              className="mt-0.5 rounded border-slate-300 text-brand-600 focus:ring-brand-600"
+              checked={repeat}
+              onChange={(event) => setRepeat(event.target.checked)}
+              className="rounded border-slate-300 text-brand-600 focus:ring-brand-600"
             />
-            <span>
-              Work from home
-              <span className="block text-xs text-slate-500">
-                They can clock in from anywhere during it; no location is recorded.
-              </span>
-            </span>
+            Repeat this shift
           </label>
+          {repeat && (
+            <div className="mt-2 space-y-2 rounded-lg bg-slate-50 p-3 ring-1 ring-inset ring-slate-200">
+              <fieldset>
+                <legend className="text-sm font-medium text-slate-800">Every</legend>
+                <WeekdayToggles days={repeatDays} onChange={setRepeatDays} size="small" />
+                {repeatDays.length === 0 && (
+                  <p className="mt-1 text-xs text-rose-600">Pick at least one day.</p>
+                )}
+              </fieldset>
+              {noEnd ? (
+                <p className="text-sm text-slate-700">
+                  From this day, with <strong>no end date</strong>.
+                </p>
+              ) : (
+                <label className="block text-sm" htmlFor="quick-until">
+                  <span className="font-medium text-slate-800">Until</span>
+                  <input
+                    id="quick-until"
+                    type="date"
+                    required
+                    min={localDate(day)}
+                    value={until}
+                    onChange={(event) => setUntil(event.target.value)}
+                    className={field}
+                  />
+                </label>
+              )}
+              <label
+                className="flex items-start gap-2 text-sm text-slate-700"
+                htmlFor="quick-no-end"
+              >
+                <input
+                  id="quick-no-end"
+                  type="checkbox"
+                  checked={noEnd}
+                  onChange={(event) => setNoEnd(event.target.checked)}
+                  className="mt-0.5 rounded border-slate-300 text-brand-600 focus:ring-brand-600"
+                />
+                <span>
+                  No end date — it keeps going
+                  <span className="block text-xs text-slate-500">
+                    Kept filled eight weeks ahead; stop it any time under Regular shifts.
+                  </span>
+                </span>
+              </label>
+            </div>
+          )}
         </div>
         <label className="col-span-2 flex items-center gap-2 text-sm text-slate-700">
           <input
@@ -1341,7 +1432,7 @@ function QuickAddDialog({
             <ClosureWarning closures={closures} />
           </div>
         )}
-        {proposed && overtimeCheck && overtimeCheck.level !== 'ok' && (
+        {!repeat && proposed && overtimeCheck && overtimeCheck.level !== 'ok' && (
           <div className="col-span-2">
             <OvertimePreview check={overtimeCheck} name={row.label} />
           </div>
@@ -1354,10 +1445,15 @@ function QuickAddDialog({
         <div className="col-span-2 flex gap-2">
           <button
             type="submit"
-            disabled={busy || !locationId || end <= start}
+            disabled={
+              busy ||
+              !locationId ||
+              end <= start ||
+              (repeat && (repeatDays.length === 0 || (!noEnd && !until)))
+            }
             className="rounded-lg bg-brand-600 px-4 py-2 text-sm font-semibold text-white hover:bg-brand-700 disabled:opacity-60"
           >
-            {busy ? 'Adding…' : 'Add shift'}
+            {busy ? 'Adding…' : repeat ? 'Add the shifts' : 'Add shift'}
           </button>
           <button
             type="button"
