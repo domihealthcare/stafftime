@@ -421,7 +421,13 @@ shifts and would otherwise read their own name forty times.
 dropdown you can type into (`components/PersonPicker.tsx`) beside the buttons,
 Everyone by default. With somebody picked the squares show that person's times,
 as an employee sees their own, and a line above the grid says how many shifts
-they have in the month. The pick is kept while paging from month to month, and
+they have in the month. **Or to a group**: the week's office and job role
+filters work in the month too, by the week's rules — an office keeps the
+shifts at that office; a job role keeps the shifts of its members and open
+shifts asked for it — so "MAs in North Bergen" is both at once ("Only Medical
+Assistant at North Bergen — 12 shifts this month"), and the person list narrows
+to that group. The filters are one set of state, so they carry between the
+week and the month. The pick is kept while paging from month to month, and
 is only a filter on shifts already loaded — no extra request, and nothing a
 manager could not already see. People who have left are listed only while they
 still have a shift on screen. Staff are not offered it: they only ever get
