@@ -614,6 +614,17 @@ const MANAGERS: Section[] = [
               remove a single week as usual; the rest carry on.
             </li>
             <li>
+              For somebody whose hours or office differ day to day — Mondays 12 to 8 at North
+              Bergen, Tuesdays 9 to 5 at West New York, Fridays from home — set their{' '}
+              <strong>usual week</strong> instead: under <strong>Regular shifts</strong>, choose
+              them in <strong>Set somebody&rsquo;s usual week</strong> (or press{' '}
+              <strong>Their week…</strong> beside one of theirs), tick the days they work and give
+              each its hours and place. <strong>Same on all ticked days</strong> copies one
+              day&rsquo;s hours to the rest. Save it once and it goes on the rota from the day you
+              pick, kept eight weeks ahead. Changing it later only touches the days that changed.
+              Admins find the same thing on the Staff screen, in the person&rsquo;s editor.
+            </li>
+            <li>
               The week is a <strong>rota</strong>: a row per person, a column per day. Click ＋ in a
               cell to add a shift there, or click a shift to change who works it, publish it or
               remove it. Removing a shift, or taking somebody off one, asks you to confirm first.

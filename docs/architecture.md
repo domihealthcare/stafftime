@@ -951,6 +951,42 @@ the next ones as the weeks go by.
 - **Go-live and demo data** clear `shift_series` with the shifts, or the
   nightly job would write the test rota back.
 
+### A usual week: several regular shifts set at once
+
+Asked for by Dominguez, September 2026: a salaried person on "Mondays 12 to 8
+at North Bergen, Tuesdays 9 to 5 at West New York" needed a regular shift made
+for each day. A **usual week** (`POST /shifts/weekly/:employeeId`, managers)
+takes the whole week — each day off, or hours, a place (an office or work from
+home) and an optional job role — and a first day, and is stored as the regular
+shifts above, **not a new table**: days sharing hours, place, job role and
+status become one `ShiftSeries`. So the nightly top-up, stopping, the list
+under Regular shifts, go-live and everything reading `seriesId` work unchanged.
+Read back, the person's running series are the week.
+
+Saving compares with the person's running series (`endsOn` null):
+
+- **identical** (same hours, place, role, status and days) — left alone,
+  shifts and all;
+- **same shape, different days** — kept, `daysOfWeek` updated; shifts on the
+  dropped weekdays from the first day are taken off, and the added weekdays
+  written out to its `filledThrough`. Only while the first day is no later
+  than the day after `filledThrough` — otherwise the nightly job would write
+  the new days before the first day, so it is a stop and a start instead;
+- **anything else** — stopped the day before the first day (as a stop does:
+  drafts deleted, published cancelled, started or punched shifts never
+  touched);
+- what is left is made new, with no end date, published unless asked for as
+  drafts.
+
+Everything is taken off before anything is written, so a new Monday does not
+clash with the Monday it replaces. One shift a day (a split shift is two
+ordinary shifts, or two repeats). The person gets **one** notice ("Your usual
+week has changed — From Sun, Oct 4: Mondays 12pm–8pm, …") and the overtime
+email as for any published change. A series stopped before its first day never
+ran and is left out of the Regular shifts list. On screen:
+`components/WeeklyScheduleEditor.tsx`, under Schedule → Regular shifts and in
+the Staff editor (admins).
+
 ### Copy week rebuilds from wall-clock time
 
 `POST /api/shifts/copy-week` does **not** add seven days of milliseconds to each

@@ -34,8 +34,11 @@ export function PlaceSelect({
   offices,
   allowHome,
   className,
+  label,
 }: {
   id: string;
+  /// Read out when there is no <label> for it, as in a row of a grid.
+  label?: string;
   value: string;
   onChange: (value: string) => void;
   offices: Location[];
@@ -47,6 +50,7 @@ export function PlaceSelect({
   return (
     <select
       id={id}
+      aria-label={label}
       required
       value={value}
       onChange={(event) => onChange(event.target.value)}

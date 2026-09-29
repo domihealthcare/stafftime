@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { ApiError, api } from '../lib/api';
 import {
   displayName,
@@ -18,6 +18,7 @@ import {
 } from './PlaceSelect';
 import { Alert, Card } from './ui';
 import { WeekdayToggles } from './WeekdayToggles';
+import { WeeklyScheduleEditor } from './WeeklyScheduleEditor';
 
 /// "Mondays and Thursdays", Sunday first as the calendar reads.
 function whichDays(days: number[]): string {
@@ -74,6 +75,10 @@ export function StandingShiftsCard({
   const [busy, setBusy] = useState(false);
   const [result, setResult] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  /// Whose usual week is open for setting, if anybody's.
+  const [weekOf, setWeekOf] = useState('');
+  const weekPerson = employees.find((e) => e.id === weekOf);
+  const weekBox = useRef<HTMLDivElement>(null);
 
   const load = useCallback(() => {
     api
@@ -198,9 +203,44 @@ export function StandingShiftsCard({
       )}
       <p className={`text-xs text-slate-500 ${bare ? '' : 'mt-0.5'}`}>
         Repeating shifts with no end date. Each keeps the rota filled eight weeks ahead until it is
-        stopped. Make one with <span className="font-medium">+ Add → Repeating shifts</span> → No
-        end date.
+        stopped. The quickest way to make them is somebody&rsquo;s{' '}
+        <span className="font-medium">usual week</span>, below — every day at once.
       </p>
+
+      <div ref={weekBox} className="mt-3 rounded-lg bg-slate-50 p-3" data-testid="usual-week">
+        <label className="block text-sm text-slate-700">
+          <span className="block text-xs font-medium">Set somebody&rsquo;s usual week</span>
+          <select
+            value={weekOf}
+            onChange={(event) => setWeekOf(event.target.value)}
+            className="mt-0.5 w-full rounded-lg border-slate-300 py-1.5 text-sm shadow-sm sm:max-w-xs"
+          >
+            <option value="">Choose a person…</option>
+            {employees
+              .filter((e) => e.employmentStatus !== 'TERMINATED')
+              .sort((a, b) => displayName(a).localeCompare(displayName(b)))
+              .map((e) => (
+                <option key={e.id} value={e.id}>
+                  {displayName(e)}
+                </option>
+              ))}
+          </select>
+        </label>
+        {weekPerson && (
+          <div className="mt-3">
+            <WeeklyScheduleEditor
+              key={weekPerson.id}
+              person={weekPerson}
+              locations={locations}
+              jobRoles={jobRoles}
+              onSaved={() => {
+                load();
+                onChanged();
+              }}
+            />
+          </div>
+        )}
+      </div>
 
       {standing === null ? null : standing.length === 0 ? (
         <p className="mt-2 text-sm text-slate-500">None yet.</p>
@@ -226,6 +266,20 @@ export function StandingShiftsCard({
                 </span>
                 {!item.endsOn && stopping !== item.id && editing?.id !== item.id && (
                   <span className="flex gap-2">
+                    {item.employeeId && (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setWeekOf(item.employeeId!);
+                          setEditing(null);
+                          setStopping(null);
+                          weekBox.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                        }}
+                        className="rounded-lg border border-slate-300 bg-white px-3 py-1 text-sm font-medium text-slate-700 hover:bg-slate-50"
+                      >
+                        Their week…
+                      </button>
+                    )}
                     <button
                       type="button"
                       onClick={() => startEdit(item)}
