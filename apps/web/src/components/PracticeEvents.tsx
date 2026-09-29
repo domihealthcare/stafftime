@@ -478,6 +478,9 @@ export function EventForm({
         }
       : null,
   );
+  /// A new closure can be entered for the next few years too.
+  const [yearly, setYearly] = useState(false);
+  const [yearsAhead, setYearsAhead] = useState(5);
   /// A date in a series: change just it, or it and every one after it.
   const [scope, setScope] = useState<'one' | 'following'>('one');
   const showRepeat = !event || !event.series || scope === 'following';
@@ -565,6 +568,7 @@ export function EventForm({
             }),
       // Changing just one date of a series leaves how it repeats alone.
       ...(showRepeat ? { repeat } : {}),
+      ...(closed && !event && yearly ? { yearsAhead } : {}),
       ...(allDay
         ? { startDate, endDate }
         : // datetime-local is the viewer's wall clock; the API stores instants.
@@ -874,6 +878,39 @@ export function EventForm({
               Everyone, or any mix of job roles, offices and people — e.g. Provider, Kayla,
               Angelina.
             </p>
+          </div>
+        )}
+
+        {closed && !event && (
+          <div className="sm:col-span-2">
+            <label className="flex items-start gap-2 text-sm text-slate-700">
+              <input
+                type="checkbox"
+                checked={yearly}
+                onChange={(change) => setYearly(change.target.checked)}
+                className="mt-0.5 rounded border-slate-300 text-brand-600 focus:ring-brand-600"
+              />
+              <span>
+                Repeat every year on this date
+                <span className="block text-xs text-slate-500">
+                  Puts it on the calendar for the next{' '}
+                  <input
+                    type="number"
+                    min={1}
+                    max={10}
+                    value={yearsAhead}
+                    disabled={!yearly}
+                    aria-label="Years ahead"
+                    onChange={(change) =>
+                      setYearsAhead(Math.max(1, Math.min(10, Number(change.target.value) || 1)))
+                    }
+                    className="mx-1 w-14 rounded border-slate-300 py-0.5 text-xs"
+                  />
+                  years. Each year is its own closure, so a holiday that moves (Thanksgiving) can be
+                  fixed one year at a time.
+                </span>
+              </span>
+            </label>
           </div>
         )}
 

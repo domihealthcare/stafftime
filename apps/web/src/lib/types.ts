@@ -8,7 +8,8 @@ export type ClockMethod = 'WEB' | 'MOBILE' | 'KIOSK';
 export type VerificationMethod = 'GEOFENCE' | 'IP_ALLOWLIST' | 'KIOSK' | 'MANUAL' | 'REMOTE';
 export type TimeEntryStatus = 'OPEN' | 'COMPLETED' | 'NEEDS_REVIEW' | 'APPROVED';
 /// Why a manager had to enter somebody's hours by hand.
-export type HandEntryReason = 'FORGOT' | 'APP_REFUSED' | 'NO_LOCATION_SHARING' | 'NO_PHONE' | 'OTHER';
+export type HandEntryReason =
+  'FORGOT' | 'APP_REFUSED' | 'NO_LOCATION_SHARING' | 'NO_PHONE' | 'OTHER';
 export type ShiftStatus = 'DRAFT' | 'PUBLISHED' | 'CANCELLED';
 
 export interface LocationSummary {
@@ -928,6 +929,9 @@ export interface EventInput {
   locationId?: string;
   invitees?: { employeeIds?: string[]; jobRoleIds?: string[]; locationIds?: string[] };
   repeat?: RepeatInput | null;
+  /// Closures, when making one: also on the same date in each of the next
+  /// this-many years.
+  yearsAhead?: number;
 }
 export type SurveyStatus = 'DRAFT' | 'OPEN' | 'CLOSED';
 export type SurveyQuestionKind = 'RATING' | 'CHOICE' | 'TEXT';

@@ -156,6 +156,14 @@ export class EventInput {
   @Type(() => InviteesInput)
   invitees?: InviteesInput;
 
+  /// Closures only, when making one: also put it on the same date in each of
+  /// the next this-many years ("Christmas Day, every year").
+  @IsOptional()
+  @IsInt()
+  @Min(1)
+  @Max(10)
+  yearsAhead?: number;
+
   /// Absent or null: it happens once.
   @IsOptional()
   @ValidateNested()
