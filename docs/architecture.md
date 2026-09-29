@@ -2535,3 +2535,99 @@ file is fetched or kept, so *Data this app does not hold* still stands. A
 folder it cannot read says so, and tells a manager (only) the robot's address
 to share it with.
 
+
+## The clinical forms
+
+Asked for by Dominguez (29 September 2026): a form for **CPT 99483**,
+cognitive assessment and care plan services. A provider fills it in during
+the visit and downloads a PDF to upload to **eClinicalWorks Documents**; the
+progress note in eCW only points to it, so the PDF carries all the clinical
+and billing detail on its own. `apps/web/src/clinical/cognitive-assessment/`,
+at `/clinical/99483`, under **Team → Cognitive assessment (99483)**.
+
+**No patient details ever leave the browser, or stay in it.** This is the one
+screen in Domi Staff that handles patient information, and it does so without
+the app holding any — the same line as *Data this app does not hold*:
+
+- The form lives in React state and nowhere else. No request carries any of
+  it; no table holds any of it (`no-sensitive-data.spec.ts` now fails on a
+  model or column named for a patient, an MRN, a diagnosis or a care plan).
+- `.eslintrc.cjs` forbids the folder from importing the API client, calling
+  `fetch`/`XMLHttpRequest`/`sendBeacon`, touching `localStorage`,
+  `sessionStorage`, `indexedDB`, `caches` or `document.cookie`, and logging.
+- Browsers remember what is typed into forms: every input has
+  `autocomplete="off"`, no `name`, and an id with a prefix made fresh each
+  visit; the page never submits a `<form>` (submitting is when Chrome saves
+  entries). Spell-check is off, and the page is `translate="no"`, because
+  both can send the text away.
+- The page and its PDF code are one lazily loaded piece, so once it is open
+  nothing more is fetched: a release mid-visit cannot turn "make the PDF"
+  into the reload `vite:preloadError` does.
+- `tests/browser/clinical.mjs` fills in a fake patient, records every request
+  the page makes and fails if the name, MRN or historian appears in any of
+  them (or if the page writes anything at all to the server while the form
+  is open), then checks local and
+  session storage, cookies, IndexedDB and the Cache API.
+
+What the app cannot control is said on the page instead: the downloaded PDF
+sits in the device's Downloads until somebody deletes it, so use a practice
+device, not the shared front-desk tablet, and delete it once it is in eCW.
+
+**Who sees it.** A job-role switch, `JobRole.usesClinicalForms`, on for
+Provider only (like `seesOwnPersonnelTabs`), sent as `usesClinicalForms` from
+`/auth/me`. Being a manager or admin does not bring it — it is a clinical
+tool, and the job role is the practice's statement of who is a provider. It
+grants nothing: the form reads and writes nothing on the server, so the check
+is only about who is shown it. `Employee.postNominals` ("MD", "APN-C"), set
+by an admin in the Staff editor, fills in the provider's credentials beside
+their legal name; both stay editable on the form.
+
+**Leaving.** A half-filled form exists nowhere else, so leaving asks first:
+closing or reloading the tab through `beforeunload` (the browser's own
+words), a link or the Back button through `useBlocker` and the app's
+confirmation pop-up, and **Sign out** through `lib/unsaved-work.ts`, which the
+account menu checks. `useBlocker` only works under a data router, which is
+why `App.tsx` became `createBrowserRouter` — one splat route around the same
+`<Routes>` as before, nothing else changed. The form is cleared only when the
+provider says the download arrived; **Download it again** re-saves the same
+bytes. One way out is not asked about: a session that ends (eight hours idle,
+or signing out in another tab) sends the app back to the sign-in screen and
+the form goes with it — nothing leaks, but what was typed is lost.
+
+**The rules** are in `validate.ts`, one list used three ways: the checklist
+beside **Make the PDF**, the tick on each section in the progress bar, and
+the button, which only makes a PDF when the list is empty. Choices, code
+lists and thresholds are all in `config.ts`, so billing can change them
+without touching a screen — the conflicting same-day codes, the ICD-10 quick
+picks, and `G2212_THRESHOLD_MINUTES`, `null` until Coronis confirms it.
+
+Decisions made with Dominguez (29 September 2026):
+
+- **Completed at a prior visit** needs the date, who did it and the "reviewed
+  today; still valid or updated" tick; the element's own answers become
+  optional, except **J, the care plan**, which is always required (the
+  patient's handout is made from it), and **driving**, required always.
+- A **safety plan** is required when a home safety concern is ticked, driving
+  is "concerns" or "evaluation recommended", or there are firearms at home.
+- **No "no impairment" anywhere**: the impairment list has none, and the
+  staging lists leave out FAST 1, CDR 0 and GDS 1, which mean exactly that.
+  Advance care planning has no "not addressed".
+- A 99483 **less than 180 days** before the date of service blocks the PDF;
+  exactly 180 is allowed.
+- A list with a **None** (ADLs, IADLs, symptoms, home safety) must be
+  answered — None is an answer — and ticking None clears the rest.
+
+**The PDF** (`pdf/writer.ts`, `pdf/clinical-note.ts`) is drawn with
+**pdf-lib** as real text in Helvetica — selectable and searchable, never a
+picture. pdf-lib was chosen because it runs under the deployed CSP as it is
+(pdfmake needs code-from-text, which `script-src 'self'` blocks; jsPDF ships
+an HTML-to-picture path we must not use). It has not had a release since
+2021, which matters little for a library that only writes files. Helvetica
+covers English, Spanish and Western Europe (WinAnsi); `printable.ts` composes
+accents and swaps a few look-alikes (≥ → >=), and anything else it cannot
+print is listed as a problem to retype rather than dropped. Every page has
+the title, "Page X of Y" and the patient's name, DOB, MRN and DOS at the top,
+and "Generated … — upload to eCW Documents and reference in the DOS progress
+note." at the foot; they are stamped once all pages exist. The file's title
+property carries no patient details. `99483_Note_[MRN]_[YYYY-MM-DD].pdf`,
+with the MRN kept to letters, digits and dashes.

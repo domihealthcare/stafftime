@@ -9,4 +9,6 @@ module.exports = {
   collectCoverageFrom: ['**/*.(t|j)s'],
   coverageDirectory: '../coverage',
   testEnvironment: 'node',
+  // Ignore a local .env: see jest.setup-env.js.
+  setupFiles: ['<rootDir>/../jest.setup-env.js'],
 };

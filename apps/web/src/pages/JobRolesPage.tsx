@@ -306,6 +306,7 @@ function RoleForm({
       JOB_ROLE_COLOUR_KEYS[0],
   );
   const [seesOwn, setSeesOwn] = useState(role?.seesOwnPersonnelTabs ?? false);
+  const [clinical, setClinical] = useState(role?.usesClinicalForms ?? false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -318,6 +319,7 @@ function RoleForm({
         description: description.trim(),
         colour,
         seesOwnPersonnelTabs: seesOwn,
+        usesClinicalForms: clinical,
       };
       onSaved(role ? await api.updateJobRole(role.id, body) : await api.createJobRole(body));
     } catch (cause) {
@@ -397,6 +399,22 @@ function RoleForm({
           People in this role see their own licenses and onboarding, under Team
           <span className="block text-xs text-slate-500">
             On for Provider. Their own records only — it gives no extra access.
+          </span>
+        </span>
+      </label>
+
+      <label className="mt-2 flex items-start gap-2 text-sm text-slate-700">
+        <input
+          type="checkbox"
+          checked={clinical}
+          onChange={(event) => setClinical(event.target.checked)}
+          className="mt-0.5 rounded border-slate-300"
+        />
+        <span>
+          People in this role get the clinical forms, under Team
+          <span className="block text-xs text-slate-500">
+            On for Provider: the cognitive assessment (99483). The forms run on the provider&rsquo;s
+            own device and keep nothing, so this gives no access to anything.
           </span>
         </span>
       </label>

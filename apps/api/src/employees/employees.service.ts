@@ -55,6 +55,7 @@ export class EmployeesService {
           ...employee,
           email: normaliseEmail(employee.email),
           preferredName: optionalText(employee.preferredName),
+          postNominals: optionalText(employee.postNominals),
           phone: optionalText(employee.phone),
           adpFileNumber: adpFileNumber?.trim() || null,
           hireDate: employee.hireDate ? new Date(employee.hireDate) : null,
@@ -202,6 +203,7 @@ export class EmployeesService {
           lastName: employee.lastName?.trim(),
           email: employee.email === undefined ? undefined : normaliseEmail(employee.email),
           preferredName: optionalText(employee.preferredName),
+          postNominals: optionalText(employee.postNominals),
           phone: optionalText(employee.phone),
           adpFileNumber: adpFileNumber === undefined ? undefined : adpFileNumber?.trim() || null,
           hireDate:

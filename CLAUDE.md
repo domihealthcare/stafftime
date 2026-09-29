@@ -63,6 +63,11 @@ This is a timekeeping app, not a payroll or HR system. It deliberately stores:
   the browser, before anything is sent, and the schema guard fails on any
   other birth field
 
+The **99483 clinical form** (September 2026) is the one screen that handles
+patient details, and it keeps them out of the app too: they are typed, made
+into a PDF and downloaded entirely in the provider's browser, and never sent
+or stored (see *Clinical forms* below).
+
 Nothing is uploaded to the app, with **one deliberate exception**: a
 **profile photo** of yourself (confirmed by Dominguez, September 2026). The
 browser crops it square, shrinks it to 256 px and re-encodes it as a small
@@ -549,11 +554,30 @@ Beyond the phases, the parts worth knowing about before picking up work:
   overtime counts the whole week at every office; a repeat PIN within
   `KIOSK_REPEAT_SECONDS` (120) is not a clock-out; screens load when first
   opened and `/assets` is cached for a year.
+- **Clinical forms — CPT 99483** (29 September 2026, Dominguez; **Phase 1
+  built**: the form, its checks and the clinical-note PDF). Team →
+  **Cognitive assessment (99483)**, for job roles with **uses clinical
+  forms** (Provider only; access level brings nothing). A provider fills it
+  in during the visit and downloads `99483_Note_[MRN]_[date].pdf` to upload
+  to eCW Documents. **Patient details never leave the browser or stay in
+  it**: no request, no table, no browser storage — a lint rule on
+  `src/clinical/`, the schema guard and `tests/browser/clinical.mjs` hold it
+  there. Leaving, Back, reloading and Sign out all ask first; the form clears
+  once the download is confirmed. PDFs drawn as real text with **pdf-lib**
+  (works under the CSP as it is). Every list, code and threshold is in
+  `clinical/cognitive-assessment/config.ts`; G2212's threshold is `null`
+  until Coronis gives it. The provider's credentials come from
+  **"Letters after their name"** in the Staff editor. The router is now a
+  data router (`createBrowserRouter`), for `useBlocker`. Phase 2 (the
+  English/Spanish patient handout) and Phase 3 (polish) are next — see
+  *The clinical forms* in `docs/architecture.md` and `docs/open-questions.md`.
 - **Tests**: ~870 unit tests, and ~495 end-to-end checks in `tests/browser`
   driven against a real API, a real Postgres and a real Chromium. Both run in CI
   on every push. The convention is to run the browser suites twice — once
   against the dev server, once against `vite preview`, which applies the
-  deployed security headers.
+  deployed security headers. The unit tests ignore a local `apps/api/.env`
+  (`apps/api/jest.setup-env.js`): importing Prisma loads it, and it used to
+  override the settings specs give themselves.
 
 `docs/architecture.md` is the long version, and explains *why* for anything
 surprising, and `docs/open-questions.md` is what is still waiting on a decision.

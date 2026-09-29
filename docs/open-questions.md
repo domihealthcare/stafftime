@@ -188,6 +188,31 @@ Scope is in `CLAUDE.md` under *Build phasing*. Still to settle:
       With five providers and a small front desk, a question sent to one job
       role can have fewer than three people who could answer it.
 
+## Clinical forms (99483, built September 2026)
+
+Phase 1 — the form, its checks and the clinical note — is built. Still to do
+or to confirm:
+
+- [ ] **Phase 2: the patient and caregiver handout** (PDF 2), in English and
+      Spanish, from the care plan. The Spanish needs a native speaker's read.
+- [ ] **Phase 3: polish** — a Help page section, and more tablet tuning once
+      a provider has used it in a visit.
+- [ ] **Billing (Coronis) to check the lists in `config.ts`**: the
+      conflicting same-day codes, the ICD-10 quick picks and their wording,
+      and the **G2212 threshold** (`G2212_THRESHOLD_MINUTES`, `null` until
+      they give it).
+- [ ] **A provider to check the clinical choices in `config.ts`** — the
+      reasons, symptoms, safety concerns, caregiver needs, education topics,
+      and the staging lists (FAST 1, CDR 0 and GDS 1 are left out as "no
+      impairment").
+- [ ] **Try one fake-patient PDF in eCW** before real use: upload it to a
+      test chart's Documents and check it shows and searches properly.
+- [ ] **Set the letters after each provider's name** (Staff → Edit →
+      "Letters after their name"), so the form fills them in.
+- [ ] **Which answers are required** was decided from the brief; worth a
+      provider's view after a few visits (e.g. all three of problem, goal and
+      plan for each of the six care plan areas).
+
 ## Product decisions
 
 - [ ] **Who may correct a timesheet** — any manager, or only the employee's own

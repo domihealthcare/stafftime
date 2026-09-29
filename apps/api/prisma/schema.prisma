@@ -183,6 +183,10 @@ model Employee {
   firstName      String
   lastName       String
   preferredName  String?
+  /// Letters after their name — "MD", "APN-C" (September 2026). Set by an
+  /// admin; printed beside the name on the clinical forms a provider makes.
+  /// A title, not a licence number: those stay out (see no-sensitive-data).
+  postNominals   String?
   email          String    @unique
   /// A number colleagues can reach them on, shown in the Directory. Their own
   /// to set on their profile; an admin can set it too.
@@ -1274,6 +1278,11 @@ model JobRole {
   /// People in this role see their own licenses and onboarding under Team.
   /// Starts true for Provider only (September 2026).
   seesOwnPersonnelTabs   Boolean                 @default(false)
+  /// People in this role get the clinical forms under Team — the 99483
+  /// cognitive assessment. Starts true for Provider only (September 2026).
+  /// The forms run in the browser and store nothing, so this shows a screen
+  /// and grants no access to anything.
+  usesClinicalForms      Boolean                 @default(false)
 
   @@map("job_roles")
 }

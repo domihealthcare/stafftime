@@ -2,6 +2,8 @@ import { useEffect, useRef, useState } from 'react';
 import { Avatar } from './Avatar';
 import { NavLink } from 'react-router-dom';
 import { useIsManager, useSession } from '../lib/session';
+import { unsavedWork } from '../lib/unsaved-work';
+import { useConfirm } from './ConfirmDialog';
 
 /**
  * Who you are, and the things that are yours rather than the practice's.
@@ -14,6 +16,7 @@ import { useIsManager, useSession } from '../lib/session';
 export function AccountMenu() {
   const { employee, signOut } = useSession();
   const isManager = useIsManager();
+  const confirm = useConfirm();
   const [open, setOpen] = useState(false);
   const [signingOut, setSigningOut] = useState(false);
   const menu = useRef<HTMLDivElement>(null);
@@ -125,6 +128,19 @@ export function AccountMenu() {
               role="menuitem"
               disabled={signingOut}
               onClick={async () => {
+                const unsaved = unsavedWork();
+                if (
+                  unsaved &&
+                  !(await confirm({
+                    title: 'Sign out and lose what you have entered?',
+                    body: `Signing out clears ${unsaved}. It is not saved anywhere, so it cannot be got back.`,
+                    confirmLabel: 'Sign out and clear it',
+                    cancelLabel: 'Stay signed in',
+                    tone: 'danger',
+                  }))
+                ) {
+                  return;
+                }
                 setSigningOut(true);
                 try {
                   await signOut();

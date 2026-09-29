@@ -1,5 +1,5 @@
 import { Suspense, lazy, useEffect, useState } from 'react';
-import { BrowserRouter, Route, Routes } from 'react-router-dom';
+import { Route, RouterProvider, Routes, createBrowserRouter } from 'react-router-dom';
 import { api } from './lib/api';
 import { ConfirmProvider } from './components/ConfirmDialog';
 import { EnvironmentBanner } from './components/EnvironmentBanner';
@@ -83,6 +83,14 @@ const ForgotPasswordPage = lazy(() =>
 const ResetPasswordPage = lazy(() =>
   import('./pages/ResetPasswordPage').then((m) => ({ default: m.ResetPasswordPage })),
 );
+/// One piece with its PDF maker, so nothing more is fetched once it is open:
+/// a release mid-visit cannot turn "make the PDF" into a reload that loses the
+/// form (see the `vite:preloadError` handler in main.tsx).
+const CognitiveAssessmentPage = lazy(() =>
+  import('./clinical/cognitive-assessment/CognitiveAssessmentPage').then((m) => ({
+    default: m.CognitiveAssessmentPage,
+  })),
+);
 const TimesheetPage = lazy(() =>
   import('./pages/TimesheetPage').then((m) => ({ default: m.TimesheetPage })),
 );
@@ -164,6 +172,7 @@ function Routed() {
           <Route path="staff" element={<StaffPage />} />
           <Route path="kiosks" element={<KiosksPage />} />
           <Route path="locations" element={<LocationsPage />} />
+          <Route path="clinical/99483" element={<CognitiveAssessmentPage />} />
           <Route path="*" element={<ClockPage />} />
         </Route>
       </Routes>
@@ -171,9 +180,9 @@ function Routed() {
   );
 }
 
-export function App() {
+function AppRoutes() {
   return (
-    <BrowserRouter>
+    <>
       {/* Above everything, including sign-in and the kiosk. */}
       <EnvironmentBanner />
       <Suspense fallback={<Loading />}>
@@ -204,6 +213,19 @@ export function App() {
           />
         </Routes>
       </Suspense>
-    </BrowserRouter>
+    </>
   );
+}
+
+/*
+  A "data router" around the same routes as before, which stay where they
+  were — in <Routes> above. It is here for one thing: `useBlocker`, which only
+  works under one. The clinical form uses it to ask before somebody leaves a
+  half-filled form by a link or the Back button (September 2026); a plain
+  BrowserRouter cannot stop either.
+*/
+const router = createBrowserRouter([{ path: '*', element: <AppRoutes /> }]);
+
+export function App() {
+  return <RouterProvider router={router} />;
 }
