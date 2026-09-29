@@ -296,6 +296,18 @@ export interface StandingShift {
   jobRole: { id: string; name: string } | null;
 }
 
+/// What saving somebody's usual week did.
+export interface WeeklyScheduleResult {
+  from: string;
+  created: number;
+  removed: number;
+  /// Regular shifts that already matched and were left alone.
+  kept: number;
+  skipped: PlanResult['skipped'];
+  dates: string[];
+  overtime: OvertimeWarning[];
+}
+
 export interface CoverageShift {
   id: string;
   /// Null for an open shift.

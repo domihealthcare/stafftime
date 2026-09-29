@@ -6,6 +6,7 @@ import type { CredentialStanding, Employee, JobRole, Location, Role } from '../l
 import { PASSWORD_RULE, meetsPasswordRule } from '../lib/password';
 import { useConfirm } from './ConfirmDialog';
 import { Alert, Badge } from './ui';
+import { WeeklyScheduleEditor } from './WeeklyScheduleEditor';
 
 export const ROLE_LABELS: Record<Role, string> = {
   EMPLOYEE: 'Employee',
@@ -73,6 +74,8 @@ export function StaffEditor({
   const [form, setForm] = useState(initial);
   const [busy, setBusy] = useState(false);
   const [problem, setProblem] = useState<string | null>(null);
+  /// Their usual week has its own Save; this is whether it has unsaved edits.
+  const [weekDirty, setWeekDirty] = useState(false);
   const terminated = person.employmentStatus === 'TERMINATED';
   // Ticking a box off and on again is not a change.
   const comparable = (values: typeof form) =>
@@ -98,10 +101,12 @@ export function StaffEditor({
   }, []);
 
   async function close() {
-    if (dirty) {
+    if (dirty || weekDirty) {
       const leave = await confirm({
         title: 'Close without saving?',
-        body: `The changes to ${person.firstName}’s details have not been saved.`,
+        body: dirty
+          ? `The changes to ${person.firstName}’s details have not been saved.`
+          : `The changes to ${person.firstName}’s usual week have not been saved.`,
         confirmLabel: 'Close without saving',
         cancelLabel: 'Keep editing',
       });
@@ -482,6 +487,23 @@ export function StaffEditor({
               </button>
             </div>
           </form>
+
+          {!terminated && (
+            <div className="border-t border-slate-100 p-5">
+              <Section title="Usual week">
+                <p className="mb-3 text-sm text-slate-600">
+                  The days and hours they normally work, set once. They go on the rota as regular
+                  shifts, kept eight weeks ahead.
+                </p>
+                <WeeklyScheduleEditor
+                  person={person}
+                  locations={locations}
+                  jobRoles={jobRoles}
+                  onDirtyChange={setWeekDirty}
+                />
+              </Section>
+            </div>
+          )}
 
           {!terminated && <LicensesSummary person={person} />}
 

@@ -28,6 +28,7 @@ import {
   CopyWeekDto,
   QueryCoverageDto,
   RepeatShiftsDto,
+  SetWeeklyScheduleDto,
   StopStandingShiftDto,
   UpdateStandingShiftDto,
 } from './dto/repeat-shifts.dto';
@@ -298,9 +299,11 @@ export class ShiftPlanningService {
   }
 
   /// The standing shifts still running, for the Schedule's list of them.
+  /// One stopped before its first day — replaced in a usual week before it
+  /// began — never ran, and is left out.
   async standing(now: Date = new Date()) {
     const today = localDateIn(now, PRACTICE_ZONE);
-    return this.prisma.shiftSeries.findMany({
+    const running = await this.prisma.shiftSeries.findMany({
       where: { OR: [{ endsOn: null }, { endsOn: { gte: asDate(today) } }] },
       select: {
         id: true,
@@ -320,6 +323,7 @@ export class ShiftPlanningService {
       },
       orderBy: [{ startsOn: 'asc' }, { startTime: 'asc' }],
     });
+    return running.filter((series) => !series.endsOn || series.endsOn >= series.startsOn);
   }
 
   /**
@@ -482,6 +486,299 @@ export class ShiftPlanningService {
 
     this.logger.log(`Stopped standing shift ${id} after ${lastDate}`);
     return { lastDate, removed: deleted.count + cancelled.count };
+  }
+
+  /**
+   * Sets somebody's usual week in one go — "Mondays 12 to 8 at North Bergen,
+   * Tuesdays 9 to 5 at West New York, Fridays from home" — from `from` on
+   * (Dominguez, September 2026). Before, a person whose hours or office
+   * differ day to day needed a regular shift made for each day by hand.
+   *
+   * It is stored as the regular shifts it already was: days with the same
+   * hours, office and job role share one. Against what they have now:
+   *
+   * - a regular shift that still matches exactly is left alone, shifts and all;
+   * - one whose hours and place still match but whose days changed keeps
+   *   going, losing only the days dropped and gaining the days added;
+   * - any other is stopped the day before `from` (drafts deleted, published
+   *   shifts cancelled, as a stop does);
+   * - and what is left is made new, with no end date.
+   *
+   * Everything is taken off before anything is written, so a new Monday does
+   * not clash with the old Monday it replaces. Time already started or worked
+   * is never touched. The person is told once, not per day.
+   */
+  async setWeek(
+    employeeId: string,
+    dto: SetWeeklyScheduleDto,
+    createdById: string,
+    now: Date = new Date(),
+  ) {
+    const employee = await this.prisma.employee.findUnique({
+      where: { id: employeeId },
+      select: { id: true, employmentStatus: true },
+    });
+    if (!employee) throw new NotFoundException('That member of staff does not exist.');
+    if (employee.employmentStatus === EmploymentStatus.TERMINATED) {
+      throw new BadRequestException('They have left the practice.');
+    }
+
+    const seen = new Set<number>();
+    for (const day of dto.days) {
+      // "Mondays" → "Monday".
+      const name = WEEKDAY_PLURAL[day.dayOfWeek - 1].slice(0, -1);
+      if (seen.has(day.dayOfWeek)) {
+        throw new BadRequestException(
+          `${name} is in there twice. One shift a day in a usual week.`,
+        );
+      }
+      seen.add(day.dayOfWeek);
+      if (day.endTime <= day.startTime) {
+        throw new BadRequestException(`${name}: the end time must be after the start time.`);
+      }
+    }
+
+    const today = localDateIn(now, PRACTICE_ZONE);
+    const from = laterOf(dto.from?.slice(0, 10) ?? today, today);
+    const status = dto.status ?? ShiftStatus.PUBLISHED;
+
+    const zones = new Map<string, string>();
+    for (const locationId of new Set(dto.days.map((day) => day.locationId))) {
+      const location = await this.requireLocation(locationId);
+      await this.requireAssignment(employeeId, locationId);
+      zones.set(locationId, location.timezone);
+    }
+    for (const jobRoleId of new Set(dto.days.flatMap((day) => day.jobRoleId ?? []))) {
+      await this.requireJobRole(jobRoleId);
+    }
+
+    // Days that share everything but the day become one regular shift.
+    const wanted = new Map<
+      string,
+      {
+        locationId: string;
+        isRemote: boolean;
+        jobRoleId: string | null;
+        startTime: string;
+        endTime: string;
+        daysOfWeek: number[];
+      }
+    >();
+    for (const day of dto.days) {
+      const shape = {
+        locationId: day.locationId,
+        isRemote: day.isRemote ?? false,
+        jobRoleId: day.jobRoleId ?? null,
+        startTime: day.startTime,
+        endTime: day.endTime,
+      };
+      const key = seriesKey({ ...shape, status });
+      const group = wanted.get(key) ?? { ...shape, daysOfWeek: [] };
+      group.daysOfWeek.push(day.dayOfWeek);
+      wanted.set(key, group);
+    }
+    for (const group of wanted.values()) group.daysOfWeek.sort();
+
+    const current = await this.prisma.shiftSeries.findMany({
+      where: { employeeId, endsOn: null },
+      include: { location: { select: { timezone: true } } },
+      orderBy: { startsOn: 'asc' },
+    });
+
+    const horizon = standingHorizon(from);
+    const startsOn = await this.settings.workweekStartsOn();
+    const weeks = [
+      ...new Set(datesBetween(from, horizon).map((date) => weekStartOf(date, startsOn))),
+    ];
+    const before = await this.overtime.snapshot([employeeId], weeks);
+
+    // First, everything that goes.
+    let removed = 0;
+    let publishedRemoved = 0;
+    let kept = 0;
+    const additions: {
+      seriesId: string;
+      group: NonNullable<ReturnType<typeof wanted.get>>;
+      days: number[];
+      through: string;
+      status: ShiftStatus;
+      notes?: string;
+    }[] = [];
+
+    for (const series of current) {
+      const key = seriesKey(series);
+      const group = wanted.get(key);
+      const filled = isoDate(series.filledThrough);
+      const sameDays = group && group.daysOfWeek.join() === [...series.daysOfWeek].sort().join();
+
+      if (group && sameDays) {
+        wanted.delete(key);
+        kept += 1;
+        continue;
+      }
+
+      // Changed in place only while the nightly job would carry the new days
+      // on from where it is; a change far enough ahead is a stop and a start.
+      if (group && from <= addDaysTo(filled, 1)) {
+        wanted.delete(key);
+        const dropped = series.daysOfWeek.filter((day) => !group.daysOfWeek.includes(day));
+        const added = group.daysOfWeek.filter((day) => !series.daysOfWeek.includes(day));
+        await this.prisma.shiftSeries.update({
+          where: { id: series.id },
+          data: { daysOfWeek: group.daysOfWeek },
+        });
+        const gone = await this.takeOff(series.id, series.location.timezone, from, now, dropped);
+        removed += gone.removed;
+        publishedRemoved += gone.published;
+        if (added.length > 0) {
+          additions.push({
+            seriesId: series.id,
+            group,
+            days: added,
+            through: filled,
+            status: series.status,
+            notes: series.notes ?? undefined,
+          });
+        }
+        continue;
+      }
+
+      await this.prisma.shiftSeries.update({
+        where: { id: series.id },
+        data: { endsOn: asDate(addDaysTo(from, -1)) },
+      });
+      const gone = await this.takeOff(series.id, series.location.timezone, from, now);
+      removed += gone.removed;
+      publishedRemoved += gone.published;
+    }
+
+    // Then what is new.
+    for (const group of wanted.values()) {
+      const series = await this.prisma.shiftSeries.create({
+        data: {
+          employeeId,
+          locationId: group.locationId,
+          jobRoleId: group.jobRoleId,
+          isRemote: group.isRemote,
+          openCount: 1,
+          daysOfWeek: group.daysOfWeek,
+          startTime: group.startTime,
+          endTime: group.endTime,
+          status,
+          startsOn: asDate(from),
+          filledThrough: asDate(horizon),
+          createdById,
+        },
+        select: { id: true },
+      });
+      additions.push({
+        seriesId: series.id,
+        group,
+        days: group.daysOfWeek,
+        through: horizon,
+        status,
+      });
+    }
+
+    let created = 0;
+    let publishedCreated = 0;
+    const skipped: PlannedSkip[] = [];
+    const dates: string[] = [];
+    for (const addition of additions) {
+      const zone = zones.get(addition.group.locationId)!;
+      const result = await this.createAll(
+        datesBetween(from, addition.through)
+          .filter((date) => addition.days.includes(isoWeekdayOf(date)))
+          .map((date) => ({
+            date,
+            startsAt: zonedTimeToUtc(date, addition.group.startTime, zone),
+            endsAt: zonedTimeToUtc(date, addition.group.endTime, zone),
+          })),
+        {
+          employeeId,
+          jobRoleId: addition.group.jobRoleId,
+          isRemote: addition.group.isRemote,
+          openCount: 1,
+          locationId: addition.group.locationId,
+          status: addition.status,
+          notes: addition.notes,
+          createdById,
+          timezone: zone,
+          seriesId: addition.seriesId,
+        },
+      );
+      created += result.created;
+      if (addition.status === ShiftStatus.PUBLISHED) publishedCreated += result.created;
+      skipped.push(...result.skipped);
+      dates.push(...result.dates);
+    }
+
+    if (publishedCreated > 0 || publishedRemoved > 0) {
+      await this.inbox.notify([employeeId], {
+        kind: NotificationKind.SCHEDULE_CHANGED,
+        title: 'Your usual week has changed',
+        body: `From ${shortDay(from)}: ${weekSummary(dto.days)}.`,
+        link: '/schedule',
+      });
+      await this.overtime.announceNewOvertime(before, [employeeId], weeks);
+    }
+
+    this.logger.log(
+      `Set the usual week of ${employeeId} from ${from}: ${created} shifts written, ${removed} taken off`,
+    );
+    const written = [...new Set(dates)].sort();
+    return {
+      from,
+      created,
+      removed,
+      kept,
+      skipped: skipped.sort((a, b) => a.date.localeCompare(b.date)),
+      dates: written,
+      overtime: await this.overtimeAfterPlanning(written, [employeeId]),
+    };
+  }
+
+  /**
+   * Takes a regular shift's shifts off the rota from `from` — on the given
+   * weekdays only, when given. A draft is deleted, a published shift is
+   * cancelled so the person keeps a record of it; one already started, or
+   * with a punch against it, is never touched.
+   */
+  private async takeOff(
+    seriesId: string,
+    zone: string,
+    from: string,
+    now: Date,
+    weekdays?: number[],
+  ): Promise<{ removed: number; published: number }> {
+    if (weekdays && weekdays.length === 0) return { removed: 0, published: 0 };
+    const cutoff = zonedTimeToUtc(from, '00:00', zone);
+    const going = (
+      await this.prisma.shift.findMany({
+        where: {
+          seriesId,
+          status: { not: ShiftStatus.CANCELLED },
+          startsAt: { gte: cutoff > now ? cutoff : now },
+        },
+        select: { id: true, startsAt: true, status: true },
+      })
+    ).filter(
+      (shift) => !weekdays || weekdays.includes(isoWeekdayOf(localDateIn(shift.startsAt, zone))),
+    );
+    if (going.length === 0) return { removed: 0, published: 0 };
+
+    const ids = going.map((shift) => shift.id);
+    const deleted = await this.prisma.shift.deleteMany({
+      where: { id: { in: ids }, status: ShiftStatus.DRAFT, timeEntries: { none: {} } },
+    });
+    const cancelled = await this.prisma.shift.updateMany({
+      where: { id: { in: ids }, status: { not: ShiftStatus.CANCELLED } },
+      data: { status: ShiftStatus.CANCELLED },
+    });
+    return {
+      removed: deleted.count + cancelled.count,
+      published: going.filter((shift) => shift.status === ShiftStatus.PUBLISHED).length,
+    };
   }
 
   /**
@@ -1078,6 +1375,45 @@ export function weekdaysPhrase(daysOfWeek: number[]): string {
     .map((day) => WEEKDAY_PLURAL[day - 1]);
   if (names.length <= 1) return names[0] ?? '';
   return `${names.slice(0, -1).join(', ')} and ${names[names.length - 1]}`;
+}
+
+/// What makes two regular shifts the same apart from their days.
+function seriesKey(shape: {
+  locationId: string;
+  isRemote: boolean;
+  jobRoleId: string | null;
+  startTime: string;
+  endTime: string;
+  status: ShiftStatus;
+}): string {
+  return [
+    shape.locationId,
+    shape.isRemote,
+    shape.jobRoleId ?? '',
+    shape.startTime,
+    shape.endTime,
+    shape.status,
+  ].join('|');
+}
+
+/// "8:30" → "8:30am", "12:00" → "12pm".
+function clockTime(time: string): string {
+  const [h, m] = time.split(':').map(Number);
+  const hour = h % 12 === 0 ? 12 : h % 12;
+  return `${hour}${m ? `:${String(m).padStart(2, '0')}` : ''}${h < 12 ? 'am' : 'pm'}`;
+}
+
+/// "Mondays 12pm–8pm, Tuesdays 9am–5pm" — Sunday first; "no regular shifts"
+/// for an empty week. Offices are left to the Schedule, one tap away.
+export function weekSummary(days: { dayOfWeek: number; startTime: string; endTime: string }[]) {
+  if (days.length === 0) return 'no regular shifts';
+  return [...days]
+    .sort((a, b) => (a.dayOfWeek % 7) - (b.dayOfWeek % 7))
+    .map(
+      (day) =>
+        `${WEEKDAY_PLURAL[day.dayOfWeek - 1]} ${clockTime(day.startTime)}–${clockTime(day.endTime)}`,
+    )
+    .join(', ');
 }
 
 function round2(value: number): number {

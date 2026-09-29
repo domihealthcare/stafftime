@@ -129,7 +129,8 @@ await step('every one of them belongs to the regular shift', async () => {
 
 await step('it is listed under Regular shifts', async () => {
   const card = page.getByTestId('standing-shifts-card');
-  await card.getByText('Frankie Front-Desk').waitFor({ timeout: 10000 });
+  // Scoped to the list: the usual-week picker above it names everybody too.
+  await card.getByTestId('standing-shift').getByText('Frankie Front-Desk').waitFor({ timeout: 10000 });
   await card.getByText(/Mondays, 9:00 AM–5:00 PM · North Bergen/).waitFor({ timeout: 5000 });
   await card.getByTestId('standing-shift').getByText(/· no end date/).waitFor({ timeout: 5000 });
 });

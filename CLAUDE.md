@@ -345,6 +345,15 @@ Beyond the phases, the parts worth knowing about before picking up work:
   removed by hand stays removed. Listed under Schedule → **Regular shifts**,
   stopped there from a chosen last day (later shifts cancelled or deleted,
   person told once).
+- **A usual week** (29 September 2026, Dominguez: a salaried person with
+  different hours or offices each day needed a regular shift per day): under
+  Schedule → Regular shifts (**Set somebody's usual week**, or **Their
+  week…**) and in the Staff editor, tick the days somebody works and give
+  each hours, a place (office or work from home) and optionally a job role;
+  saved once, from a chosen day. Stored as ordinary regular shifts — days
+  sharing hours and place share one — so nothing else changed. A later save
+  only touches the days that changed; the person is told once. One shift a
+  day. See *A usual week* in `docs/architecture.md`.
 - **Weeks start on Sunday on screen** (September 2026, Dominguez): week
   view, month, printed rota, "This week" shortcuts, weekday pickers.
   Display only.

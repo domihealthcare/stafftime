@@ -24,6 +24,7 @@ import {
   CopyWeekDto,
   QueryCoverageDto,
   RepeatShiftsDto,
+  SetWeeklyScheduleDto,
   StopStandingShiftDto,
   UpdateStandingShiftDto,
 } from './dto/repeat-shifts.dto';
@@ -73,6 +74,19 @@ export class ShiftsController {
   @HttpCode(HttpStatus.OK)
   stopStanding(@Param('id', ParseUUIDPipe) id: string, @Body() dto: StopStandingShiftDto) {
     return this.planning.stopStanding(id, dto);
+  }
+
+  /// Sets somebody's usual week — each day off, or hours and a place — as
+  /// their regular shifts, from a given day on.
+  @Post('weekly/:employeeId')
+  @Roles(Role.MANAGER)
+  @HttpCode(HttpStatus.OK)
+  setWeek(
+    @Param('employeeId', ParseUUIDPipe) employeeId: string,
+    @Body() dto: SetWeeklyScheduleDto,
+    @CurrentUser() user: AuthUser,
+  ) {
+    return this.planning.setWeek(employeeId, dto, user.id);
   }
 
   /// Copies one week's shifts onto another.

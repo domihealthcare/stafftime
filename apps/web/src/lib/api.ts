@@ -47,6 +47,7 @@ import type {
   ResourceSection,
   Shift,
   StandingShift,
+  WeeklyScheduleResult,
   TeamAvailability,
   UnavailabilityKind,
   TemplateTaskInput,
@@ -872,6 +873,26 @@ export const api = {
     },
   ) =>
     request<PlanResult & { from: string }>(`/shifts/standing/${id}/update`, {
+      method: 'POST',
+      body: JSON.stringify(body),
+    }),
+  /// Somebody's usual week — a day not listed is a day off — from `from` on.
+  setWeeklySchedule: (
+    employeeId: string,
+    body: {
+      from: string;
+      status: 'DRAFT' | 'PUBLISHED';
+      days: {
+        dayOfWeek: number;
+        locationId: string;
+        isRemote: boolean;
+        jobRoleId: string | null;
+        startTime: string;
+        endTime: string;
+      }[];
+    },
+  ) =>
+    request<WeeklyScheduleResult>(`/shifts/weekly/${employeeId}`, {
       method: 'POST',
       body: JSON.stringify(body),
     }),

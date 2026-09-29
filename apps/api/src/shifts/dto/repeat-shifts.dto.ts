@@ -1,11 +1,14 @@
 import { ShiftStatus } from '@prisma/client';
+import { Type } from 'class-transformer';
 import {
+  ArrayMaxSize,
   ArrayNotEmpty,
   ArrayUnique,
   IsArray,
   IsBoolean,
   IsDateString,
   IsEnum,
+  IsIn,
   IsInt,
   IsOptional,
   IsString,
@@ -13,6 +16,8 @@ import {
   Matches,
   Max,
   Min,
+  ValidateIf,
+  ValidateNested,
 } from 'class-validator';
 
 /// "Every Tuesday and Thursday, 9 to 5, until March."
@@ -130,6 +135,58 @@ export class UpdateStandingShiftDto {
   @IsOptional()
   @IsDateString()
   from?: string;
+}
+
+/// One working day in somebody's usual week: "Monday, 12 to 8, North Bergen".
+export class WeeklyDayDto {
+  /// 1 = Monday … 7 = Sunday.
+  @IsInt()
+  @Min(1)
+  @Max(7)
+  dayOfWeek!: number;
+
+  /// The office — for a work-from-home day, the one it is counted under.
+  @IsUUID('4')
+  locationId!: string;
+
+  @IsOptional()
+  @IsBoolean()
+  isRemote?: boolean;
+
+  @IsOptional()
+  @ValidateIf((_, value) => value !== null)
+  @IsUUID('4')
+  jobRoleId?: string | null;
+
+  @IsString()
+  @Matches(/^([01]\d|2[0-3]):[0-5]\d$/, { message: 'startTime must be HH:MM, e.g. 09:00' })
+  startTime!: string;
+
+  @IsString()
+  @Matches(/^([01]\d|2[0-3]):[0-5]\d$/, { message: 'endTime must be HH:MM, e.g. 17:00' })
+  endTime!: string;
+}
+
+/// Somebody's usual week, set in one go (Dominguez, September 2026: a
+/// salaried person with different hours or offices on different days used to
+/// need a regular shift per day). A day not listed is a day off.
+export class SetWeeklyScheduleDto {
+  @IsArray()
+  @ArrayMaxSize(7)
+  @ValidateNested({ each: true })
+  @Type(() => WeeklyDayDto)
+  days!: WeeklyDayDto[];
+
+  /// The first day it applies to. Absent: today.
+  @IsOptional()
+  @IsDateString()
+  from?: string;
+
+  /// What new shifts are made as. Absent: published — a person's usual week
+  /// is not a draft to review.
+  @IsOptional()
+  @IsIn([ShiftStatus.DRAFT, ShiftStatus.PUBLISHED])
+  status?: ShiftStatus;
 }
 
 /// Copies one week's shifts onto another week.
