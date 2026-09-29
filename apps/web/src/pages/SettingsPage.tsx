@@ -153,6 +153,20 @@ export function SettingsPage() {
                 weeks from it, and it powers the &ldquo;This pay period&rdquo; and &ldquo;Last pay
                 period&rdquo; shortcuts on the Timesheet and Export screens.
               </p>
+              <p className="mt-1 text-xs text-slate-700" data-testid="overtime-week">
+                Overtime weeks start on{' '}
+                <strong>
+                  {payStart
+                    ? new Date(`${payStart}T00:00:00Z`).toLocaleDateString('en-US', {
+                        timeZone: 'UTC',
+                        weekday: 'long',
+                      })
+                    : 'Monday'}
+                </strong>
+                {payStart ? ', the pay period’s first day' : ' until a pay period is set'}: each pay
+                period is two weeks, and hours past the overtime line in either week are overtime
+                — on the schedule, the dashboard and the payroll export.
+              </p>
             </div>
           </div>
 

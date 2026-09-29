@@ -31,17 +31,17 @@ export function refreshPayPeriod() {
 }
 
 export function presetRanges(today: Date, payPeriod: PayPeriodInfo | null): Preset[] {
-  const monday = startOfWeek(today);
+  const weekStart = startOfWeek(today);
   const firstOfMonth = startOfMonth(today);
   const lastMonth = addMonths(firstOfMonth, -1);
   const waiting =
     payPeriod && !payPeriod.anchor ? 'Set the pay period start in Practice settings.' : undefined;
   return [
-    { key: 'this-week', label: 'This week', range: span(monday, addDays(monday, 6)) },
+    { key: 'this-week', label: 'This week', range: span(weekStart, addDays(weekStart, 6)) },
     {
       key: 'last-week',
       label: 'Last week',
-      range: span(addDays(monday, -7), addDays(monday, -1)),
+      range: span(addDays(weekStart, -7), addDays(weekStart, -1)),
     },
     {
       key: 'this-pay-period',

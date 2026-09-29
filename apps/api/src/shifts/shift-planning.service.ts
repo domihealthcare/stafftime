@@ -1,30 +1,51 @@
 import { BadRequestException, Injectable, Logger, NotFoundException } from '@nestjs/common';
-import { NotificationKind, PayType, Prisma, PtoStatus, ShiftStatus } from '@prisma/client';
+import {
+  EmploymentStatus,
+  NotificationKind,
+  PayType,
+  Prisma,
+  PtoStatus,
+  ShiftStatus,
+} from '@prisma/client';
 import {
   addDaysTo,
   datesBetween,
   isoWeekdayOf,
   localDateIn,
   localTimeIn,
+  PRACTICE_ZONE,
   weekStartIn,
+  weekStartOf,
   zonedTimeToUtc,
 } from '../common/util/zoned-time.util';
 import { clashFor, Rule } from '../availability/availability.rules';
 import { toRule } from '../availability/availability.service';
 import { InboxService } from '../email/inbox.service';
 import { PrismaService } from '../prisma/prisma.service';
+import { workweekStartsOn } from '../settings/pay-period';
 import { PracticeSettingsService } from '../settings/practice-settings.service';
-import { CopyWeekDto, QueryCoverageDto, RepeatShiftsDto } from './dto/repeat-shifts.dto';
+import {
+  CopyWeekDto,
+  QueryCoverageDto,
+  RepeatShiftsDto,
+  StopStandingShiftDto,
+} from './dto/repeat-shifts.dto';
 import { OvertimeService } from './overtime.service';
 
 /// Guards against a mis-typed year turning into three thousand shifts.
 const MAX_GENERATED_SHIFTS = 200;
 const MAX_SPAN_DAYS = 400;
 
+/// How far ahead a standing shift — one with no end date — is written out.
+/// Eight weeks: past anything a manager plans or staff look at in the month
+/// view, and the nightly job keeps it there.
+export const STANDING_DAYS_AHEAD = 56;
+
 export interface OvertimeWarning {
   employeeId: string;
   employeeName: string;
-  /// Monday of the week these hours fall in, as a plain date.
+  /// First day of the overtime week these hours fall in (the pay period's
+  /// weekday), as a plain date.
   weekStart: string;
   scheduledHours: number;
   overtimeHours: number;
@@ -50,6 +71,9 @@ export interface PlanResult {
   /// with the result, because a repeating rota can reach weeks nobody is
   /// looking at yet.
   overtime: OvertimeWarning[];
+  /// For a repeat with no end date: the standing shift it made, and the last
+  /// date written out so far.
+  standing?: { id: string; filledThrough: string };
 }
 
 const SHIFT_INCLUDE = {
@@ -80,14 +104,26 @@ export class ShiftPlanningService {
     private readonly inbox: InboxService,
   ) {}
 
-  async repeat(dto: RepeatShiftsDto, createdById: string): Promise<PlanResult> {
+  async repeat(
+    dto: RepeatShiftsDto,
+    createdById: string,
+    now: Date = new Date(),
+  ): Promise<PlanResult> {
     if (dto.endTime <= dto.startTime) {
       throw new BadRequestException(
         'The end time must be after the start time. An overnight shift needs to be added a day at a time for now.',
       );
     }
 
-    const dates = datesBetween(dto.from, dto.until);
+    // No last date: a standing shift, written out a few weeks ahead now and
+    // topped up every night (`extendStandingShifts`).
+    const from = dto.from.slice(0, 10);
+    const standing = !dto.until;
+    const until = dto.until
+      ? dto.until.slice(0, 10)
+      : standingHorizon(laterOf(from, localDateIn(now, PRACTICE_ZONE)));
+
+    const dates = datesBetween(from, until);
     if (dates.length === 0) {
       throw new BadRequestException('The last date cannot be before the first.');
     }
@@ -125,11 +161,33 @@ export class ShiftPlanningService {
     }
 
     const status = dto.status ?? ShiftStatus.DRAFT;
-    const weeks = [...new Set(wanted.map(mondayOnOrBefore))];
+    const startsOn = await this.settings.workweekStartsOn();
+    const weeks = [...new Set(wanted.map((date) => weekStartOf(date, startsOn)))];
     const before =
       dto.employeeId && status === ShiftStatus.PUBLISHED
         ? await this.overtime.snapshot([dto.employeeId], weeks)
         : null;
+
+    const series = standing
+      ? await this.prisma.shiftSeries.create({
+          data: {
+            employeeId: dto.employeeId ?? null,
+            locationId: dto.locationId,
+            jobRoleId: dto.jobRoleId ?? null,
+            isRemote: dto.isRemote ?? false,
+            openCount: perDay,
+            daysOfWeek: [...dto.daysOfWeek].sort(),
+            startTime: dto.startTime,
+            endTime: dto.endTime,
+            status,
+            notes: dto.notes,
+            startsOn: asDate(from),
+            filledThrough: asDate(until),
+            createdById,
+          },
+          select: { id: true },
+        })
+      : null;
 
     const result = await this.createAll(candidates, {
       employeeId: dto.employeeId ?? null,
@@ -141,18 +199,185 @@ export class ShiftPlanningService {
       notes: dto.notes,
       createdById,
       timezone: location.timezone,
+      seriesId: series?.id ?? null,
     });
 
     if (before && dto.employeeId) {
       await this.overtime.announceNewOvertime(before, [dto.employeeId], weeks);
-      await this.tellAboutNewShifts(dto.employeeId, result.created, result.dates);
+      await this.tellAboutNewShifts(
+        dto.employeeId,
+        result.created,
+        result.dates,
+        standing ? { daysOfWeek: dto.daysOfWeek, from } : undefined,
+      );
     }
     return {
       ...result,
       overtime: dto.employeeId
         ? await this.overtimeAfterPlanning(result.dates, [dto.employeeId])
         : [],
+      ...(series ? { standing: { id: series.id, filledThrough: until } } : {}),
     };
+  }
+
+  /**
+   * Writes out the next weeks of every standing shift, so each stays
+   * `STANDING_DAYS_AHEAD` days ahead. Run by the nightly job.
+   *
+   * It carries on from the day after the last date already written, never
+   * before — so a shift a manager removed by hand stays removed — and it
+   * clashes, skips and warns exactly as a repeat does. Nobody is told under
+   * the bell: they were told "every Monday, no end date" when it was made,
+   * and a new line every night would be noise.
+   *
+   * Somebody who is no longer active, or no longer at that office, gets no
+   * new shifts from it; the dates are passed over rather than kept for later,
+   * so nobody comes back to a pile of shifts in the past.
+   */
+  async extendStandingShifts(now: Date = new Date()): Promise<number> {
+    const target = standingHorizon(localDateIn(now, PRACTICE_ZONE));
+    const today = localDateIn(now, PRACTICE_ZONE);
+    const due = await this.prisma.shiftSeries.findMany({
+      where: {
+        filledThrough: { lt: asDate(target) },
+        OR: [{ endsOn: null }, { endsOn: { gte: asDate(today) } }],
+      },
+      include: {
+        location: { select: { timezone: true, isActive: true } },
+        employee: {
+          select: { employmentStatus: true, locations: { select: { locationId: true } } },
+        },
+      },
+    });
+
+    let created = 0;
+    for (const series of due) {
+      const filled = isoDate(series.filledThrough);
+      const endsOn = series.endsOn ? isoDate(series.endsOn) : null;
+      const last = endsOn && endsOn < target ? endsOn : target;
+      if (last <= filled) continue;
+
+      const working =
+        series.location.isActive &&
+        (!series.employeeId ||
+          (series.employee?.employmentStatus === EmploymentStatus.ACTIVE &&
+            series.employee.locations.some((at) => at.locationId === series.locationId)));
+
+      if (working) {
+        const candidates = datesBetween(addDaysTo(filled, 1), last)
+          .filter((date) => series.daysOfWeek.includes(isoWeekdayOf(date)))
+          .map((date) => ({
+            date,
+            startsAt: zonedTimeToUtc(date, series.startTime, series.location.timezone),
+            endsAt: zonedTimeToUtc(date, series.endTime, series.location.timezone),
+          }));
+        const result = await this.createAll(candidates, {
+          employeeId: series.employeeId,
+          jobRoleId: series.jobRoleId,
+          isRemote: series.isRemote,
+          openCount: series.openCount,
+          locationId: series.locationId,
+          status: series.status,
+          notes: series.notes ?? undefined,
+          createdById: series.createdById,
+          timezone: series.location.timezone,
+          seriesId: series.id,
+        });
+        created += result.created;
+      }
+
+      await this.prisma.shiftSeries.update({
+        where: { id: series.id },
+        data: { filledThrough: asDate(last) },
+      });
+    }
+
+    if (created > 0) this.logger.log(`Standing shifts: wrote ${created} more`);
+    return created;
+  }
+
+  /// The standing shifts still running, for the Schedule's list of them.
+  async standing(now: Date = new Date()) {
+    const today = localDateIn(now, PRACTICE_ZONE);
+    return this.prisma.shiftSeries.findMany({
+      where: { OR: [{ endsOn: null }, { endsOn: { gte: asDate(today) } }] },
+      select: {
+        id: true,
+        employeeId: true,
+        locationId: true,
+        daysOfWeek: true,
+        startTime: true,
+        endTime: true,
+        openCount: true,
+        isRemote: true,
+        status: true,
+        startsOn: true,
+        endsOn: true,
+        employee: { select: { id: true, firstName: true, lastName: true, preferredName: true } },
+        location: { select: { id: true, name: true } },
+        jobRole: { select: { id: true, name: true } },
+      },
+      orderBy: [{ startsOn: 'asc' }, { startTime: 'asc' }],
+    });
+  }
+
+  /**
+   * Stops a standing shift after `lastDate` (today if not given).
+   *
+   * Its shifts after that day go the way a single removal goes: a draft is
+   * deleted, a published shift is cancelled so the person keeps a record of
+   * it. A shift that has already started is never touched, whatever date is
+   * given, and neither is one moved off the series by hand since.
+   */
+  async stopStanding(id: string, dto: StopStandingShiftDto, now: Date = new Date()) {
+    const series = await this.prisma.shiftSeries.findUnique({
+      where: { id },
+      include: { location: { select: { timezone: true } } },
+    });
+    if (!series) throw new NotFoundException('That standing shift does not exist.');
+
+    const lastDate = dto.lastDate?.slice(0, 10) ?? localDateIn(now, PRACTICE_ZONE);
+    const cutoff = zonedTimeToUtc(addDaysTo(lastDate, 1), '00:00', series.location.timezone);
+    const after = cutoff > now ? cutoff : now;
+
+    await this.prisma.shiftSeries.update({
+      where: { id },
+      data: { endsOn: asDate(lastDate) },
+    });
+
+    const going = {
+      seriesId: id,
+      status: { not: ShiftStatus.CANCELLED },
+      startsAt: { gte: after },
+    } satisfies Prisma.ShiftWhereInput;
+
+    const published = await this.prisma.shift.findMany({
+      where: { ...going, status: ShiftStatus.PUBLISHED },
+      select: { employeeId: true, startsAt: true },
+      orderBy: { startsAt: 'asc' },
+    });
+    const deleted = await this.prisma.shift.deleteMany({
+      where: { ...going, status: ShiftStatus.DRAFT, timeEntries: { none: {} } },
+    });
+    const cancelled = await this.prisma.shift.updateMany({
+      where: going,
+      data: { status: ShiftStatus.CANCELLED },
+    });
+
+    if (series.employeeId && published.length > 0) {
+      await this.inbox.notify([series.employeeId], {
+        kind: NotificationKind.SCHEDULE_CHANGED,
+        title:
+          published.length === 1
+            ? 'A shift taken off your schedule'
+            : `${published.length} shifts taken off your schedule`,
+        body: `${weekdaysPhrase(series.daysOfWeek)} after ${shortDay(lastDate)} — that regular shift has ended.`,
+        link: '/schedule',
+      });
+    }
+
+    this.logger.log(`Stopped standing shift ${id} after ${lastDate}`);
+    return { lastDate, removed: deleted.count + cancelled.count };
   }
 
   /**
@@ -204,9 +429,10 @@ export class ShiftPlanningService {
     const people = [
       ...new Set(source.flatMap((shift) => (shift.employeeId ? [shift.employeeId] : []))),
     ];
-    // The target week, with a week either side for an office whose Monday
+    // The target week, with a week either side for an office whose week
     // falls on a different UTC date than the one given.
-    const weeks = [-7, 0, 7].map((offset) => mondayOnOrBefore(addDaysTo(toStart, offset)));
+    const startsOn = await this.settings.workweekStartsOn();
+    const weeks = [-7, 0, 7].map((offset) => weekStartOf(addDaysTo(toStart, offset), startsOn));
     const before =
       dto.status === ShiftStatus.PUBLISHED ? await this.overtime.snapshot(people, weeks) : null;
 
@@ -409,8 +635,9 @@ export class ShiftPlanningService {
    *
    * **The whole week counts, not the visible window.** A manager looking at
    * Wednesday to Friday still needs Monday and Tuesday in the total, or adding
-   * a sixth day looks free. So the query widens to the Monday of the first week
-   * and the Sunday of the last, whatever was asked for.
+   * a sixth day looks free. So the query widens to the start of the first week
+   * and the end of the last, whatever was asked for. A week starts on the pay
+   * period's weekday (`workweekStartsOn`).
    *
    * **Every location counts, not the one being viewed.** Somebody on 24 hours
    * at North Bergen and 20 at West New York is on 44 for the week, and a
@@ -430,15 +657,16 @@ export class ShiftPlanningService {
     dates: string[],
     viewingLocationId?: string,
   ): Promise<OvertimeWarning[]> {
-    const { overtimeThresholdHours } = await this.settings.get();
-    const firstMonday = mondayOnOrBefore(dates[0]);
-    const lastSunday = addDaysTo(mondayOnOrBefore(dates[dates.length - 1]), 6);
+    const { overtimeThresholdHours, payPeriodStart } = await this.settings.get();
+    const startsOn = workweekStartsOn(payPeriodStart);
+    const firstDay = weekStartOf(dates[0], startsOn);
+    const lastDay = addDaysTo(weekStartOf(dates[dates.length - 1], startsOn), 6);
 
     const shifts = await this.prisma.shift.findMany({
       where: {
         status: { not: ShiftStatus.CANCELLED },
-        startsAt: { gte: new Date(`${firstMonday}T00:00:00Z`) },
-        endsAt: { lt: new Date(`${addDaysTo(lastSunday, 2)}T00:00:00Z`) },
+        startsAt: { gte: new Date(`${firstDay}T00:00:00Z`) },
+        endsAt: { lt: new Date(`${addDaysTo(lastDay, 2)}T00:00:00Z`) },
         employee: { payType: PayType.HOURLY },
       },
       include: SHIFT_INCLUDE,
@@ -460,7 +688,7 @@ export class ShiftPlanningService {
       // The query already asks for hourly staff, which no open shift has; this
       // is for the type checker as much as anything.
       if (!shift.employeeId || !shift.employee) continue;
-      const weekStart = weekStartIn(shift.startsAt, shift.location.timezone);
+      const weekStart = weekStartIn(shift.startsAt, shift.location.timezone, startsOn);
       const key = `${shift.employeeId}:${weekStart}`;
 
       const week = weeks.get(key) ?? {
@@ -497,22 +725,29 @@ export class ShiftPlanningService {
 
   /// One notice for a batch of published shifts, not one per shift: a month
   /// of Tuesdays is one thing to know.
-  private async tellAboutNewShifts(employeeId: string, count: number, dates: string[]) {
+  private async tellAboutNewShifts(
+    employeeId: string,
+    count: number,
+    dates: string[],
+    standing?: { daysOfWeek: number[]; from: string },
+  ) {
     if (count === 0) return;
     const sorted = [...dates].sort();
-    const day = (date: string) =>
-      new Date(`${date}T00:00:00Z`).toLocaleDateString('en-US', {
-        timeZone: 'UTC',
-        weekday: 'short',
-        month: 'short',
-        day: 'numeric',
-      });
     const first = sorted[0];
     const last = sorted[sorted.length - 1];
+    if (standing) {
+      await this.inbox.notify([employeeId], {
+        kind: NotificationKind.SCHEDULE_CHANGED,
+        title: 'A regular shift on your schedule',
+        body: `${weekdaysPhrase(standing.daysOfWeek)} from ${shortDay(first)}, with no end date.`,
+        link: '/schedule',
+      });
+      return;
+    }
     await this.inbox.notify([employeeId], {
       kind: NotificationKind.SCHEDULE_CHANGED,
       title: count === 1 ? 'A new shift on your schedule' : `${count} new shifts on your schedule`,
-      body: first === last ? `${day(first)}.` : `${day(first)} to ${day(last)}.`,
+      body: first === last ? `${shortDay(first)}.` : `${shortDay(first)} to ${shortDay(last)}.`,
       link: '/schedule',
     });
   }
@@ -549,8 +784,10 @@ export class ShiftPlanningService {
       locationId: string;
       status: ShiftStatus;
       notes?: string;
-      createdById: string;
+      createdById: string | null;
       timezone: string;
+      /// The standing shift these come from, if any.
+      seriesId?: string | null;
     },
   ): Promise<Omit<PlanResult, 'overtime'>> {
     const skipped: PlannedSkip[] = [];
@@ -572,6 +809,7 @@ export class ShiftPlanningService {
             status: common.status,
             notes: common.notes,
             createdById: common.createdById,
+            seriesId: common.seriesId ?? null,
           })),
         });
         created += common.openCount;
@@ -628,6 +866,7 @@ export class ShiftPlanningService {
           status: common.status,
           notes: common.notes,
           createdById: common.createdById,
+          seriesId: common.seriesId ?? null,
         },
       });
 
@@ -689,11 +928,53 @@ function daysBetween(from: string, to: string): number {
   );
 }
 
-/// The Monday on or before a plain date. `weekStartIn` answers this for an
-/// instant in a timezone; this is the same question for a date that is already
-/// a local calendar day.
-function mondayOnOrBefore(date: string): string {
-  return addDaysTo(date, -((isoWeekdayOf(date) + 6) % 7));
+
+/// The last date a standing shift is written out to, counting from `date`.
+function standingHorizon(date: string): string {
+  return addDaysTo(date, STANDING_DAYS_AHEAD);
+}
+
+function laterOf(a: string, b: string): string {
+  return a > b ? a : b;
+}
+
+/// A plain date as Prisma's `@db.Date` wants it.
+function asDate(date: string): Date {
+  return new Date(`${date}T00:00:00Z`);
+}
+
+function isoDate(date: Date): string {
+  return date.toISOString().slice(0, 10);
+}
+
+/// "Tue, Oct 6".
+function shortDay(date: string): string {
+  return new Date(`${date}T00:00:00Z`).toLocaleDateString('en-US', {
+    timeZone: 'UTC',
+    weekday: 'short',
+    month: 'short',
+    day: 'numeric',
+  });
+}
+
+const WEEKDAY_PLURAL = [
+  'Mondays',
+  'Tuesdays',
+  'Wednesdays',
+  'Thursdays',
+  'Fridays',
+  'Saturdays',
+  'Sundays',
+];
+
+/// "Mondays", "Mondays and Thursdays", "Mondays, Wednesdays and Fridays" —
+/// in the week's order as the practice reads it, Sunday first.
+export function weekdaysPhrase(daysOfWeek: number[]): string {
+  const names = [...new Set(daysOfWeek)]
+    .sort((a, b) => (a % 7) - (b % 7))
+    .map((day) => WEEKDAY_PLURAL[day - 1]);
+  if (names.length <= 1) return names[0] ?? '';
+  return `${names.slice(0, -1).join(', ')} and ${names[names.length - 1]}`;
 }
 
 function round2(value: number): number {

@@ -6,6 +6,7 @@ import { EventsService } from '../events/events.service';
 import { CalendarInvitesService } from '../invites/invites.service';
 import { InboxService } from '../email/inbox.service';
 import { SessionService } from '../auth/session.service';
+import { ShiftPlanningService } from '../shifts/shift-planning.service';
 import { PrismaService } from '../prisma/prisma.service';
 import {
   LOCATION_RETENTION_DAYS,
@@ -32,6 +33,9 @@ export interface PurgeReport {
   digestSentTo: number;
   /// Events and closures tomorrow that everybody they are for was reminded of.
   eventReminders: number;
+  /// Shifts written out for standing shifts ("every Monday, no end date")
+  /// coming into range.
+  standingShifts: number;
   /// Calendar invites sent, changed or cancelled — shifts and events coming
   /// into range, and anything a save did not get to.
   calendarInvites: number;
@@ -61,6 +65,7 @@ export class MaintenanceService {
     private readonly inbox: InboxService,
     private readonly events: EventsService,
     private readonly invites: CalendarInvitesService,
+    private readonly planning: ShiftPlanningService,
   ) {}
 
   async purge(): Promise<PurgeReport> {
@@ -72,6 +77,8 @@ export class MaintenanceService {
       orphanedFiles: await this.deleteOrphanedFiles(),
       clearedLocations: await this.clearOldPunchLocations(),
       oldNotifications: await this.inbox.purgeOld(),
+      // Before the round-up and the invites, so both see the new weeks.
+      standingShifts: await this.extendStandingShifts(),
       digestSentTo: await this.sendDigest(),
       eventReminders: await this.remindAboutTomorrow(),
       calendarInvites: await this.sendCalendarInvites(),
@@ -97,6 +104,21 @@ export class MaintenanceService {
     } catch (error) {
       this.logger.error(
         `Could not send the daily digest: ${error instanceof Error ? error.message : error}`,
+      );
+      return 0;
+    }
+  }
+
+  /**
+   * The next weeks of every standing shift, so each stays eight weeks ahead.
+   * Like the digest, never allowed to fail the tidying up.
+   */
+  private async extendStandingShifts(): Promise<number> {
+    try {
+      return await this.planning.extendStandingShifts();
+    } catch (error) {
+      this.logger.error(
+        `Could not extend standing shifts: ${error instanceof Error ? error.message : error}`,
       );
       return 0;
     }

@@ -33,6 +33,9 @@ monday.setHours(0, 0, 0, 0);
 monday.setDate(monday.getDate() - ((monday.getDay() + 6) % 7) + 7);
 const day = (offset) => { const d = new Date(monday); d.setDate(d.getDate() + offset); return d; };
 const MON = ymd(day(0));
+// The week on screen, and so on paper, starts the Sunday before (Dominguez,
+// September 2026): Monday is the second column.
+const SUN = ymd(day(-1));
 const WED = ymd(day(2));
 const THU = ymd(day(3));
 
@@ -137,7 +140,7 @@ await step('Print on the schedule opens the printable week, one page per office'
   await mgr.getByRole('link', { name: 'Print', exact: true }).click();
   await mgr.getByTestId('print-page-North Bergen').waitFor({ timeout: 15000 });
   await mgr.getByTestId('print-page-West New York').waitFor({ timeout: 5000 });
-  if (!new URL(mgr.url()).searchParams.get('week')?.startsWith(MON))
+  if (!new URL(mgr.url()).searchParams.get('week')?.startsWith(SUN))
     throw new Error(`printing the wrong week: ${mgr.url()}`);
 });
 
@@ -155,20 +158,20 @@ await step('published shifts print; drafts are left off and counted', async () =
   const row = nbPage().getByTestId('print-row-Frankie Front-Desk');
   await row.waitFor({ timeout: 5000 });
   const cells = row.locator('td');
-  if (!/9\s?am.*5\s?pm/i.test(await cells.nth(0).innerText()))
-    throw new Error(`Monday reads "${await cells.nth(0).innerText()}"`);
-  if (/\d/.test(await cells.nth(1).innerText())) throw new Error('the draft Tuesday shift printed');
+  if (!/9\s?am.*5\s?pm/i.test(await cells.nth(1).innerText()))
+    throw new Error(`Monday reads "${await cells.nth(1).innerText()}"`);
+  if (/\d/.test(await cells.nth(2).innerText())) throw new Error('the draft Tuesday shift printed');
   await mgr.getByTestId('print-drafts').getByText(/draft shift/).waitFor({ timeout: 5000 });
 });
 
 await step('time off prints as Off, never saying what kind', async () => {
   const row = nbPage().getByTestId('print-row-Frankie Front-Desk');
-  const wed = row.locator('td').nth(2);
+  const wed = row.locator('td').nth(3);
   if ((await wed.innerText()).trim() !== 'Off') throw new Error(`Wednesday reads "${await wed.innerText()}"`);
   const page = await nbPage().innerText();
   if (/sick/i.test(page)) throw new Error('the printout says who is off sick');
   // Not approved yet, so not on the wall.
-  const thu = row.locator('td').nth(3);
+  const thu = row.locator('td').nth(4);
   if (/off/i.test(await thu.innerText())) throw new Error('an undecided request printed as off');
 });
 

@@ -3,7 +3,7 @@ import { PracticeSettings, Prisma } from '@prisma/client';
 import { localDateIn } from '../common/util/zoned-time.util';
 import { PrismaService } from '../prisma/prisma.service';
 import { UpdatePracticeSettingsDto } from './dto/practice-settings.dto';
-import { PAY_PERIOD_DAYS, payPeriods } from './pay-period';
+import { PAY_PERIOD_DAYS, payPeriods, workweekStartsOn } from './pay-period';
 
 /// Both offices are in New Jersey; "today" for a pay period is New Jersey's.
 const PRACTICE_ZONE = 'America/New_York';
@@ -78,6 +78,12 @@ export class PracticeSettingsService {
     });
   }
 
+  /// The weekday overtime weeks start on: the pay period's first day, or
+  /// Monday until one is set. See `workweekStartsOn`.
+  async workweekStartsOn(): Promise<number> {
+    return workweekStartsOn((await this.get()).payPeriodStart);
+  }
+
   /// The pay periods either side of today, for the date shortcuts. Anybody
   /// signed in may know when the pay period runs: it is on their payslip.
   async payPeriod(now = new Date()) {
@@ -86,6 +92,8 @@ export class PracticeSettingsService {
     return {
       lengthDays: PAY_PERIOD_DAYS,
       anchor,
+      /// 1 = Monday … 7 = Sunday: where overtime weeks begin.
+      workweekStartsOn: workweekStartsOn(anchor),
       ...payPeriods(localDateIn(now, PRACTICE_ZONE), anchor),
     };
   }

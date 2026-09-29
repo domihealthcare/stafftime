@@ -33,6 +33,7 @@ describe('OvertimeService', () => {
       shifts?: unknown[];
       payType?: 'HOURLY' | 'SALARIED';
       threshold?: number;
+      payPeriodStart?: Date;
     } = {},
   ) {
     const prisma = {
@@ -45,9 +46,10 @@ describe('OvertimeService', () => {
     const notifications = { scheduledIntoOvertime: jest.fn().mockResolvedValue(undefined) };
     const service = new OvertimeService(
       prisma as never,
-      fakeSettings(
-        options.threshold === undefined ? {} : { overtimeThresholdHours: options.threshold },
-      ),
+      fakeSettings({
+        ...(options.threshold === undefined ? {} : { overtimeThresholdHours: options.threshold }),
+        ...(options.payPeriodStart ? { payPeriodStart: options.payPeriodStart } : {}),
+      }),
       notifications as unknown as NotificationsService,
     );
     return { service, prisma, notifications };
@@ -76,6 +78,19 @@ describe('OvertimeService', () => {
         thresholdHours: 40,
         level: 'over',
       });
+    });
+
+    it('counts the week from the pay period\'s weekday', async () => {
+      // A pay period that starts on a Sunday: Sunday 4 October is in
+      // Tuesday's week, Monday 12 October is not.
+      const { service } = build({
+        payPeriodStart: new Date('2026-09-20T00:00:00Z'),
+        shifts: [shiftOn('2026-10-04', 12), shiftOn('2026-10-05', 8), shiftOn('2026-10-12', 12)],
+      });
+
+      const result = await service.check(tuesday);
+
+      expect(result).toMatchObject({ weekStart: '2026-10-04', hoursBefore: 20, hoursAfter: 28 });
     });
 
     it('says close when it lands within four hours of the line', async () => {

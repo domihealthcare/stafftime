@@ -481,6 +481,13 @@ const MANAGERS: Section[] = [
               in one go.
             </li>
             <li>
+              For somebody who always works the same days, tick <strong>No end date</strong> in
+              Repeating shifts. It keeps the rota filled eight weeks ahead, every night, until you
+              stop it under <strong>Regular shifts</strong> below the rota: pick the last day, and
+              the shifts after it come off (the person is told if they were published). Change or
+              remove a single week as usual; the rest carry on.
+            </li>
+            <li>
               The week is a <strong>rota</strong>: a row per person, a column per day. Click ＋ in a
               cell to add a shift there, or click a shift to change who works it, publish it or
               remove it. Removing a shift, or taking somebody off one, asks you to confirm first.
@@ -591,7 +598,8 @@ const MANAGERS: Section[] = [
           <>
             <p>
               <strong>Overtime</strong> — the rota puts somebody past the weekly threshold (40
-              hours, across both offices). It shows in red at the top of the schedule and beside
+              hours, across both offices). Weeks for overtime start on the pay period&rsquo;s first
+              day, so each pay period is two of them; Practice settings shows which day. It shows in red at the top of the schedule and beside
               their weekly total. Adding or assigning a shift checks first: the form warns as you
               fill it in, and saving asks you to confirm. Once a shift that puts them over is
               published, the person sees it too and is emailed. While you are adding or assigning a

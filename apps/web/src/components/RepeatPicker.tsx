@@ -1,5 +1,6 @@
 import { useEffect, useId, useState } from 'react';
 import type { RepeatInput } from '../lib/types';
+import { WEEK_ORDER } from '../lib/format';
 
 /**
  * How an event repeats (September 2026): every week, every 2 weeks, monthly —
@@ -195,8 +196,8 @@ export function RepeatPicker({
 
           {value.frequency === 'WEEKLY' ? (
             <div role="group" aria-label="On these days" className="flex flex-wrap gap-1">
-              {DAYS.map((name, index) => {
-                const day = index + 1;
+              {WEEK_ORDER.map((day) => {
+                const name = DAYS[day - 1];
                 const on = value.weekdays?.includes(day) ?? false;
                 return (
                   <button

@@ -1,4 +1,5 @@
 import { PracticeSettings } from '@prisma/client';
+import { workweekStartsOn } from './pay-period';
 import { PracticeSettingsService } from './practice-settings.service';
 
 /**
@@ -24,5 +25,6 @@ export function fakeSettings(over: Partial<PracticeSettings> = {}): PracticeSett
   return {
     get: async () => settings,
     update: async () => settings,
+    workweekStartsOn: async () => workweekStartsOn(settings.payPeriodStart),
   } as unknown as PracticeSettingsService;
 }

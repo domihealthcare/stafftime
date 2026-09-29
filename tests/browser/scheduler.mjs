@@ -211,22 +211,23 @@ await step('the month view shows the month it says it does', async () => {
 });
 await page.screenshot({ path: `${OUT}/39b-month.png`, fullPage: true });
 
-await step('it is whole weeks, starting Monday, with every day of the month', async () => {
+await step('it is whole weeks, starting Sunday, with every day of the month', async () => {
   const grid = page.getByTestId('month-grid');
   const cells = grid.getByRole('button');
   const count = await cells.count();
 
   if (count % 7 !== 0) throw new Error(`${count} day cells, which is not whole weeks`);
 
-  // February 2027 starts on a Monday and has 28 days, so it is exactly four
-  // rows with nothing spilling either side.
-  if (count !== 28) throw new Error(`expected 28 cells for February 2027, got ${count}`);
+  // February 2027 starts on a Monday and has 28 days. Weeks run Sunday to
+  // Saturday (Dominguez, September 2026), so it is five rows: Sunday 31
+  // January before it, and the first week of March after.
+  if (count !== 35) throw new Error(`expected 35 cells for February 2027, got ${count}`);
 
   const first = await cells.first().getAttribute('aria-label');
-  if (!/^Monday, February 1/.test(first ?? ''))
+  if (!/^Sunday, January 31/.test(first ?? ''))
     throw new Error(`the grid starts on "${first}"`);
   const last = await cells.last().getAttribute('aria-label');
-  if (!/^Sunday, February 28/.test(last ?? ''))
+  if (!/^Saturday, March 6/.test(last ?? ''))
     throw new Error(`the grid ends on "${last}"`);
 });
 
@@ -234,7 +235,7 @@ await step('a manager sees who is on, not just how many', async () => {
   // Monday 1 February carries one of the nine-hour shifts from the overtime
   // rota above. A manager is looking at everybody, so the name is the useful
   // part.
-  const monday = page.getByTestId('month-grid').getByRole('button').first();
+  const monday = page.getByTestId('month-grid').getByRole('button').nth(1);
   const label = await monday.getAttribute('aria-label');
   if (!/1 shift: Frankie/.test(label ?? ''))
     throw new Error(`Monday reads "${label}"`);
@@ -283,11 +284,12 @@ await step('Previous and Next move a month, not a week', async () => {
 await step('picking a day opens that week', async () => {
   // The month view is an overview; the week is where shifts are edited, so a
   // day has to be a way back into it.
-  await page.getByTestId('month-grid').getByRole('button').nth(7).click(); // Mon 8 Feb
+  await page.getByTestId('month-grid').getByRole('button').nth(8).click(); // Mon 8 Feb
   await page.getByTestId('week-grid').waitFor({ timeout: 15000 });
 
-  const text = await page.locator('main').innerText();
-  if (!/Feb 8/.test(text)) throw new Error(`the week did not follow the day picked: ${text.slice(0, 200)}`);
+  // Its week, which starts on Sunday the 7th.
+  const text = await page.getByTestId('schedule-period').innerText();
+  if (!/^Feb 7/.test(text)) throw new Error(`the week did not follow the day picked: ${text}`);
 });
 
 await step('an employee sees when they are on, not their own name', async () => {

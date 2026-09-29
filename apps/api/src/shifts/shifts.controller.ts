@@ -20,7 +20,12 @@ import { Roles } from '../common/auth/roles.decorator';
 import { CreateShiftDto } from './dto/create-shift.dto';
 import { OvertimeCheckDto } from './dto/overtime-check.dto';
 import { QueryShiftsDto } from './dto/query-shifts.dto';
-import { CopyWeekDto, QueryCoverageDto, RepeatShiftsDto } from './dto/repeat-shifts.dto';
+import {
+  CopyWeekDto,
+  QueryCoverageDto,
+  RepeatShiftsDto,
+  StopStandingShiftDto,
+} from './dto/repeat-shifts.dto';
 import { UpdateShiftDto } from './dto/update-shift.dto';
 import { OvertimeService } from './overtime.service';
 import { ShiftPlanningService } from './shift-planning.service';
@@ -37,11 +42,28 @@ export class ShiftsController {
     private readonly overtime: OvertimeService,
   ) {}
 
-  /// "Every Tuesday and Thursday, 9 to 5, until March."
+  /// "Every Tuesday and Thursday, 9 to 5, until March" — or, with no last
+  /// date, "every Monday" for good: a standing shift.
   @Post('repeat')
   @Roles(Role.MANAGER)
   repeat(@Body() dto: RepeatShiftsDto, @CurrentUser() user: AuthUser) {
     return this.planning.repeat(dto, user.id);
+  }
+
+  /// The standing shifts still running. Declared before `:id`, which would
+  /// otherwise take "standing" for a shift id.
+  @Get('standing')
+  @Roles(Role.MANAGER)
+  standing() {
+    return this.planning.standing();
+  }
+
+  /// Ends a standing shift after a given day.
+  @Post('standing/:id/stop')
+  @Roles(Role.MANAGER)
+  @HttpCode(HttpStatus.OK)
+  stopStanding(@Param('id', ParseUUIDPipe) id: string, @Body() dto: StopStandingShiftDto) {
+    return this.planning.stopStanding(id, dto);
   }
 
   /// Copies one week's shifts onto another.

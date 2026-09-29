@@ -3,6 +3,7 @@ import { PayType, PayrollExportStatus, Prisma, TimeEntryStatus } from '@prisma/c
 import { addUtcDays } from '../common/util/calendar-date.util';
 import { weekStartIn } from '../common/util/zoned-time.util';
 import { PrismaService } from '../prisma/prisma.service';
+import { workweekStartsOn } from '../settings/pay-period';
 import { PracticeSettingsService } from '../settings/practice-settings.service';
 import { payrollStateOf } from '../time-entries/payroll-state';
 import { DEFAULT_COLUMN_KEYS, type TimesheetColumnKey } from './columns';
@@ -138,7 +139,7 @@ export class TimesheetExportService {
     const payrollStates = entries.map((entry) => payrollStateOf(entry));
     // The same threshold the rota warns on. If these two ever disagreed, the
     // schedule would promise one thing and the payslip say another.
-    const { overtimeThresholdHours } = await this.settings.get();
+    const { overtimeThresholdHours, payPeriodStart } = await this.settings.get();
     // Overtime is a whole week's hours, at any office — whatever this file is
     // limited to. So the weeks it touches are read in full (a day either side
     // covers any time zone) and this file's entries take their own share.
@@ -160,6 +161,7 @@ export class TimesheetExportService {
       dto.splitOvertime ?? false,
       overtimeThresholdHours,
       context,
+      workweekStartsOn(payPeriodStart),
     );
 
     const location = dto.locationId
@@ -293,6 +295,8 @@ export class TimesheetExportService {
     /// so exporting one office, or a period that starts mid-week, neither loses
     /// overtime nor counts it twice.
     context: EntryWithRelations[] = entries,
+    /// The weekday overtime weeks start on: the pay period's first day.
+    startsOn = 1,
   ): EmployeeTotal[] {
     const byEmployee = new Map<string, EntryWithRelations[]>();
     for (const entry of entries) {
@@ -321,7 +325,7 @@ export class TimesheetExportService {
         const weekSoFar = new Map<string, number>();
         regularHours = 0;
         for (const entry of worked) {
-          const key = weekStartIn(entry.clockInAt, entry.location.timezone);
+          const key = weekStartIn(entry.clockInAt, entry.location.timezone, startsOn);
           const before = weekSoFar.get(key) ?? 0;
           const length = hoursBetween(entry.clockInAt, entry.clockOutAt);
           weekSoFar.set(key, before + length);
@@ -412,8 +416,9 @@ export function formatTime(date: Date, zone: string): string {
   return `${p.hour === '24' ? '00' : p.hour}:${p.minute}`;
 }
 
-/// Identifies the Monday-based week a punch falls in, in the location's
-/// timezone, so a late Sunday shift does not land in the wrong week.
+/// Identifies the overtime week a punch falls in — starting on the pay
+/// period's weekday — in the location's timezone, so a late shift on the last
+/// day does not land in the wrong week.
 ///
 /// Lives in `common/util/zoned-time.util.ts` because the rota's overtime
 /// warning has to agree with this one about where a week begins.

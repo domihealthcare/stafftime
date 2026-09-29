@@ -62,12 +62,15 @@ export class RepeatShiftsDto {
   @Max(7, { each: true })
   daysOfWeek!: number[];
 
-  /// First and last calendar date to consider, inclusive.
+  /// First and last calendar date to consider, inclusive. No last date makes
+  /// a **standing shift** — "I always work Mondays" — kept filled a few weeks
+  /// ahead by the nightly job until it is stopped.
   @IsDateString()
   from!: string;
 
+  @IsOptional()
   @IsDateString()
-  until!: string;
+  until?: string;
 
   @IsOptional()
   @IsEnum(ShiftStatus)
@@ -78,9 +81,17 @@ export class RepeatShiftsDto {
   notes?: string;
 }
 
+/// Ends a standing shift: nothing after `lastDate` stays on the rota.
+export class StopStandingShiftDto {
+  /// The last day it runs. Absent: today.
+  @IsOptional()
+  @IsDateString()
+  lastDate?: string;
+}
+
 /// Copies one week's shifts onto another week.
 export class CopyWeekDto {
-  /// Monday of the week to copy from, and the Monday to copy onto.
+  /// The first day of the week to copy from, and of the week to copy onto.
   @IsDateString()
   fromWeekStart!: string;
 

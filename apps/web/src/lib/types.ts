@@ -105,6 +105,8 @@ export interface Shift {
   endsAt: string;
   status: ShiftStatus;
   notes: string | null;
+  /// The standing shift ("every Monday, no end date") it was made from.
+  seriesId?: string | null;
   employee?: {
     id: string;
     firstName: string;
@@ -246,6 +248,35 @@ export interface PlanResult {
   dates: string[];
   /// Anyone the new shifts leave past the overtime line, in the weeks touched.
   overtime: OvertimeWarning[];
+  /// A repeat with no end date: written out this far, and kept going nightly.
+  standing?: { id: string; filledThrough: string };
+}
+
+/// A regular shift with no end date — "Rosa, every Monday, 8 to 4". Its
+/// shifts are written out eight weeks ahead and topped up every night.
+export interface StandingShift {
+  id: string;
+  /// Null: open shifts, a slot to fill week after week.
+  employeeId: string | null;
+  locationId: string;
+  /// 1 = Monday … 7 = Sunday.
+  daysOfWeek: number[];
+  startTime: string;
+  endTime: string;
+  openCount: number;
+  isRemote: boolean;
+  status: ShiftStatus;
+  startsOn: string;
+  /// Set once it has been stopped: the last day it runs.
+  endsOn: string | null;
+  employee: {
+    id: string;
+    firstName: string;
+    lastName: string;
+    preferredName: string | null;
+  } | null;
+  location: { id: string; name: string };
+  jobRole: { id: string; name: string } | null;
 }
 
 export interface CoverageShift {

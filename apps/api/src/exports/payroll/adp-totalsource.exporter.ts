@@ -28,8 +28,8 @@ const PRACTICE_ZONE = 'America/New_York';
  * admin — so nothing about Domi's paydata grid is guessed. The layout is in
  * `adp-worksheet.ts`; this class decides what goes in it.
  *
- * Overtime is always split for ADP, per calendar week at the practice's
- * threshold: a payroll import cannot leave it to somebody to work out.
+ * Overtime is always split for ADP, per week (starting on the pay period's
+ * weekday) at the practice's threshold: a payroll import cannot leave it to somebody to work out.
  * Salaried staff are left out unless asked for, since TotalSource normally
  * pays them without hours; the manager can include them.
  */

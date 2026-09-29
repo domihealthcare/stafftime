@@ -43,6 +43,7 @@ import type {
   ResourceKind,
   ResourceSection,
   Shift,
+  StandingShift,
   TeamAvailability,
   UnavailabilityKind,
   TemplateTaskInput,
@@ -827,10 +828,18 @@ export const api = {
     endTime: string;
     daysOfWeek: number[];
     from: string;
-    until: string;
+    /// Absent: no end date — a standing shift.
+    until?: string;
     status?: string;
     notes?: string;
   }) => request<PlanResult>('/shifts/repeat', { method: 'POST', body: JSON.stringify(body) }),
+  /// Regular shifts with no end date that are still running.
+  standingShifts: () => request<StandingShift[]>('/shifts/standing'),
+  stopStandingShift: (id: string, lastDate: string) =>
+    request<{ lastDate: string; removed: number }>(`/shifts/standing/${id}/stop`, {
+      method: 'POST',
+      body: JSON.stringify({ lastDate }),
+    }),
   copyWeek: (body: {
     fromWeekStart: string;
     toWeekStart: string;

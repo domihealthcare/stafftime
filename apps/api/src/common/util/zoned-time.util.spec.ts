@@ -7,6 +7,8 @@ import {
   zonedTimeToUtc,
   practiceDayStart,
   practiceToday,
+  weekStartIn,
+  weekStartOf,
 } from './zoned-time.util';
 
 const NJ = 'America/New_York';
@@ -191,5 +193,27 @@ describe("the practice's today", () => {
     expect(practiceToday(new Date('2026-09-28T04:30:00Z')).toISOString()).toBe(
       '2026-09-28T00:00:00.000Z',
     );
+  });
+});
+
+describe('overtime weeks, from the pay period\'s weekday', () => {
+  it('starts on Monday unless told otherwise', () => {
+    expect(weekStartOf('2026-10-04')).toBe('2026-09-28'); // a Sunday
+    expect(weekStartOf('2026-10-05')).toBe('2026-10-05');
+  });
+
+  it('starts on whichever weekday the pay period does', () => {
+    // Sunday: 4 October begins a week, Saturday the 10th ends it.
+    expect(weekStartOf('2026-10-04', 7)).toBe('2026-10-04');
+    expect(weekStartOf('2026-10-10', 7)).toBe('2026-10-04');
+    expect(weekStartOf('2026-10-11', 7)).toBe('2026-10-11');
+    // Friday.
+    expect(weekStartOf('2026-10-08', 5)).toBe('2026-10-02');
+    expect(weekStartOf('2026-10-09', 5)).toBe('2026-10-09');
+  });
+
+  it('puts a late shift on the last day in its own week, in New Jersey', () => {
+    // 11pm Saturday 10 October in New Jersey is 03:00 UTC on the Sunday.
+    expect(weekStartIn(new Date('2026-10-11T03:00:00Z'), NJ, 7)).toBe('2026-10-04');
   });
 });

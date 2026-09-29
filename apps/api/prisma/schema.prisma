@@ -133,6 +133,7 @@ model Location {
 
   employees      EmployeeLocation[]
   shifts         Shift[]
+  shiftSeries    ShiftSeries[]
   timeEntries    TimeEntry[]
   kioskDevices   KioskDevice[]
   payrollExports PayrollExport[]
@@ -176,8 +177,8 @@ model Employee {
   /// birthday, without an age or a date of birth in the app. Shown on the
   /// home screen that week, on the Schedule and in the Directory. Set by an
   /// admin; both or neither.
-  birthdayMonth Int?
-  birthdayDay   Int?
+  birthdayMonth  Int?
+  birthdayDay    Int?
   /// Optional, shown beside their name in the Directory ("she/her").
   pronouns       String?
   /// One line about themselves for the Directory, e.g. "Spanish speaker".
@@ -246,11 +247,13 @@ model Employee {
 
   locations      EmployeeLocation[]
   shifts         Shift[]
+  shiftSeries    ShiftSeries[]
   timeEntries    TimeEntry[]
   closingRecords ClosingRecord[]
   sessions       Session[]
 
   createdShifts       Shift[]            @relation("ShiftCreatedBy")
+  createdShiftSeries  ShiftSeries[]      @relation("ShiftSeriesCreatedBy")
   createdKiosks       KioskDevice[]      @relation("KioskCreatedBy")
   reportPresets       ReportPreset[]     @relation("ReportPresetOwner")
   ptoRequests         PtoRequest[]       @relation("PtoRequester")
@@ -640,19 +643,75 @@ model Shift {
 
   createdById String? @db.Uuid
 
+  /// The standing shift it was made from ("every Monday, no end date"), if
+  /// any. Only to find the ones still to come when it is stopped; the shift
+  /// itself is an ordinary shift and is changed or removed like one.
+  seriesId String? @db.Uuid
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  employee    Employee?   @relation(fields: [employeeId], references: [id], onDelete: Cascade)
-  location    Location    @relation(fields: [locationId], references: [id], onDelete: Restrict)
-  jobRole     JobRole?    @relation(fields: [jobRoleId], references: [id], onDelete: SetNull)
-  createdBy   Employee?   @relation("ShiftCreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
+  employee    Employee?    @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+  location    Location     @relation(fields: [locationId], references: [id], onDelete: Restrict)
+  jobRole     JobRole?     @relation(fields: [jobRoleId], references: [id], onDelete: SetNull)
+  createdBy   Employee?    @relation("ShiftCreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
+  series      ShiftSeries? @relation(fields: [seriesId], references: [id], onDelete: SetNull)
   timeEntries TimeEntry[]
 
   @@index([employeeId, startsAt])
   @@index([locationId, startsAt])
   @@index([jobRoleId, startsAt])
+  @@index([seriesId, startsAt])
   @@map("shifts")
+}
+
+/// A **standing shift**: "Rosa works every Monday, 8 to 4" with no end date
+/// (asked for by Dominguez, September 2026). Like a repeating event, its
+/// shifts are written out as ordinary Shift rows — but only so far ahead
+/// (`STANDING_DAYS_AHEAD`), and the nightly job writes the next ones as the
+/// weeks go by, so the rota never runs dry and nobody picks a stop date.
+///
+/// Stopped by giving it a last day: shifts after that go (drafts deleted,
+/// published ones cancelled, as a single removal would), and it writes no
+/// more.
+model ShiftSeries {
+  id         String      @id @default(uuid()) @db.Uuid
+  /// Null for standing **open shifts** — a slot filled week after week.
+  employeeId String?     @db.Uuid
+  locationId String      @db.Uuid
+  jobRoleId  String?     @db.Uuid
+  isRemote   Boolean     @default(false)
+  /// Open shifts only: how many slots each day.
+  openCount  Int         @default(1)
+  /// 1 = Monday … 7 = Sunday.
+  daysOfWeek Int[]
+  /// "08:00", on the office's own clock.
+  startTime  String
+  endTime    String
+  /// What the shifts it writes are made as: drafts to review, or published.
+  status     ShiftStatus
+  notes      String?
+
+  /// Its first date, and — once stopped — its last. Null: no end date.
+  startsOn      DateTime  @db.Date
+  endsOn        DateTime? @db.Date
+  /// The last date shifts have been written out to. The nightly job carries
+  /// on from the day after, so a shift removed by hand is not made again.
+  filledThrough DateTime  @db.Date
+
+  createdById String? @db.Uuid
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  employee  Employee? @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+  location  Location  @relation(fields: [locationId], references: [id], onDelete: Cascade)
+  jobRole   JobRole?  @relation(fields: [jobRoleId], references: [id], onDelete: SetNull)
+  createdBy Employee? @relation("ShiftSeriesCreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
+  shifts    Shift[]
+
+  @@index([endsOn])
+  @@map("shift_series")
 }
 
 // ---------------------------------------------------------------------------
@@ -1127,6 +1186,7 @@ model JobRole {
   events               PracticeEvent[]
   eventInvitees        PracticeEventInvitee[]
   shifts               Shift[]
+  shiftSeries          ShiftSeries[]
   /// Its closing checklist, shown at clock-out.
   closingSections      ClosingSection[]
   /// People in this role see their own licenses and onboarding under Team.

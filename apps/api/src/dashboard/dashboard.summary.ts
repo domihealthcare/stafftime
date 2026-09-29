@@ -1,5 +1,5 @@
 import { PayType, PtoType } from '@prisma/client';
-import { addDaysTo, datesBetween, isoWeekdayOf, weekStartIn } from '../common/util/zoned-time.util';
+import { datesBetween, isoWeekdayOf, weekStartIn, weekStartOf } from '../common/util/zoned-time.util';
 
 export interface EntryIn {
   employeeId: string;
@@ -54,8 +54,9 @@ const EMPTY: WeekFigures = {
  * Pure, so the arithmetic can be tested without a database. The rules match
  * the rest of the app, deliberately:
  *
- * - A week is Monday to Sunday **in the location's timezone**, like the
- *   overtime warning and the payroll export.
+ * - A week starts on the pay period's weekday (Monday until one is set) **in
+ *   the location's timezone**, like the overtime warning and the payroll
+ *   export.
  * - Worked hours come from completed punches only. An open punch is somebody
  *   still at work, or a missing clock-out that *What needs a look* chases; it
  *   is counted as a punch but not as hours.
@@ -67,6 +68,8 @@ const EMPTY: WeekFigures = {
  */
 export function summarise(input: {
   weekStarts: string[];
+  /// 1 = Monday … 7 = Sunday: the pay period's weekday. Monday if absent.
+  weekStartsOn?: number;
   locationIds: string[];
   entries: EntryIn[];
   shifts: ShiftIn[];
@@ -81,12 +84,13 @@ export function summarise(input: {
     return found;
   };
   const inWindow = new Set(input.weekStarts);
+  const startsOn = input.weekStartsOn ?? 1;
 
   // employee|week → hours and name, for overtime.
   const perPerson = new Map<string, { name: string; week: string; hours: number }>();
 
   for (const entry of input.entries) {
-    const week = weekStartIn(entry.clockInAt, entry.timezone);
+    const week = weekStartIn(entry.clockInAt, entry.timezone, startsOn);
     if (!inWindow.has(week)) continue;
     const figures = at(week, entry.locationId);
     figures.punches += 1;
@@ -105,7 +109,7 @@ export function summarise(input: {
   }
 
   for (const shift of input.shifts) {
-    const week = weekStartIn(shift.startsAt, shift.timezone);
+    const week = weekStartIn(shift.startsAt, shift.timezone, startsOn);
     if (!inWindow.has(week)) continue;
     at(week, shift.locationId).scheduledHours +=
       (shift.endsAt.getTime() - shift.startsAt.getTime()) / 3_600_000;
@@ -115,7 +119,7 @@ export function summarise(input: {
   for (const request of input.leave) {
     for (const date of datesBetween(request.startDate, request.endDate)) {
       if (isoWeekdayOf(date) > 5) continue;
-      const week = addDaysTo(date, -(isoWeekdayOf(date) - 1));
+      const week = weekStartOf(date, startsOn);
       if (!inWindow.has(week)) continue;
       const days = request.isHalfDay ? 0.5 : 1;
       if (request.locationId) at(week, request.locationId).timeOffDays += days;

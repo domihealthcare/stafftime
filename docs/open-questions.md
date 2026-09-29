@@ -119,6 +119,9 @@ What is deliberately left open:
       (banner, email, ⚠ on the shift). Skipping them automatically would be
       tidier, but quietly leaves days unscheduled if the closure is later
       removed. Worth asking once a real Christmas rota has been built.
+- [ ] **Should regular shifts (no end date) be editable as a series?** Today
+      a regular shift can only be stopped; to change the hours, stop it and
+      make a new one from the next week. Revisit if that becomes a chore.
 - [ ] **When should event reminders go?** Everybody an event is for gets a
       reminder under the bell the day before each date. Worth asking the
       managers whether the morning of would be better.

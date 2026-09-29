@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { PtoStatus, ShiftStatus } from '@prisma/client';
-import { addDaysTo, localDateIn } from '../common/util/zoned-time.util';
+import { addDaysTo, localDateIn, weekStartOf } from '../common/util/zoned-time.util';
 import { PrismaService } from '../prisma/prisma.service';
 import { PracticeSettingsService } from '../settings/practice-settings.service';
 import { ShiftPlanningService } from '../shifts/shift-planning.service';
@@ -28,15 +28,17 @@ export class DashboardService {
   async summary(weeks = 8, now = new Date()) {
     const count = Math.min(Math.max(Math.trunc(weeks) || 8, 1), MAX_WEEKS);
     const today = localDateIn(now, PRACTICE_ZONE);
-    const thisMonday = mondayOf(today);
+    // Weeks as overtime counts them: from the pay period's weekday.
+    const weekStartsOn = await this.settings.workweekStartsOn();
+    const thisWeek = weekStartOf(today, weekStartsOn);
     const weekStarts = Array.from({ length: count }, (_, i) =>
-      addDaysTo(thisMonday, -7 * (count - 1 - i)),
+      addDaysTo(thisWeek, -7 * (count - 1 - i)),
     );
 
     // A day either side, so a punch near midnight UTC still lands in its
     // local week; summarise() keeps only the weeks asked for.
     const from = new Date(`${addDaysTo(weekStarts[0], -1)}T00:00:00Z`);
-    const until = new Date(`${addDaysTo(thisMonday, 8)}T00:00:00Z`);
+    const until = new Date(`${addDaysTo(thisWeek, 8)}T00:00:00Z`);
 
     const [{ overtimeThresholdHours }, locations, entries, shifts, leave] = await Promise.all([
       this.settings.get(),
@@ -95,6 +97,7 @@ export class DashboardService {
 
     const summary = summarise({
       weekStarts,
+      weekStartsOn,
       locationIds: locations.map((location) => location.id),
       overtimeThresholdHours,
       entries: entries.map((entry) => ({
@@ -146,9 +149,4 @@ export class DashboardService {
       upcoming: { clashes, overtime: ahead.overtime },
     };
   }
-}
-
-function mondayOf(date: string): string {
-  const weekday = new Date(`${date}T00:00:00Z`).getUTCDay() || 7;
-  return addDaysTo(date, 1 - weekday);
 }

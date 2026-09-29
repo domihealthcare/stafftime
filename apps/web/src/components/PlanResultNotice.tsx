@@ -24,6 +24,17 @@ export function PlanResultNotice({
           ? 'No shifts were created.'
           : `${result.created} shift${result.created === 1 ? '' : 's'} created.`}
       </p>
+      {result.standing && (
+        <p className="mt-1 text-sm" data-testid="plan-standing">
+          No end date: written out to{' '}
+          {new Date(`${result.standing.filledThrough}T00:00:00Z`).toLocaleDateString(undefined, {
+            timeZone: 'UTC',
+            month: 'short',
+            day: 'numeric',
+          })}{' '}
+          so far, and kept eight weeks ahead every night. Stop it under Regular shifts.
+        </p>
+      )}
 
       {result.skipped.length > 0 && (
         <div className="mt-2">

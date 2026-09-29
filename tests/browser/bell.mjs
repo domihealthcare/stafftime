@@ -171,7 +171,13 @@ await step('nobody can read or mark somebody else’s', async () => {
 
 await step('mark all as read clears the count, and it stays cleared', async () => {
   await bell(frankie).click();
+  // Wait for the write itself before reloading (see README): on a slow run
+  // the reload could otherwise beat it and read the old count.
+  const marking = frankie.waitForResponse(
+    (r) => r.url().includes('/api/notifications/read-all') && r.request().method() === 'POST',
+  );
   await panel(frankie).getByRole('button', { name: 'Mark all as read' }).click();
+  if (!(await marking).ok()) throw new Error('marking all as read failed');
   await frankie.keyboard.press('Escape');
   await frankie.reload({ waitUntil: 'networkidle' });
   await frankie.waitForTimeout(1000);
