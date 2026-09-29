@@ -473,6 +473,7 @@ export function SchedulePage() {
                       key={what}
                       type="button"
                       role="menuitem"
+                      aria-label={label}
                       onClick={() => openAdd(what)}
                       className="block w-full px-3 py-2 text-left hover:bg-slate-50"
                     >
