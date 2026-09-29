@@ -6,5 +6,6 @@ import { SurveysService } from './surveys.service';
 @Module({
   controllers: [SurveysController, FeedbackController],
   providers: [SurveysService, FeedbackService],
+  exports: [SurveysService],
 })
 export class SurveysModule {}

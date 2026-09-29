@@ -239,6 +239,26 @@ Beyond the phases, the parts worth knowing about before picking up work:
   reaches a later run.
 - **Licence and certification expiry**, dates only (see *Data this app does not
   hold*), chased by the nightly round-up.
+- **License types** (29 September 2026, Dominguez): Licenses → **License
+  types** is the practice's list — name, kind, renewal interval in months
+  (optional), and per job role **required / optional / not needed**
+  (`CredentialType`, `CredentialRequirement`). Managers keep it. Started with
+  providers: medical license, CDS, DEA and malpractice insurance required;
+  ACLS, BLS, Student-Athlete Cardiac Assessment Certificate, flu vaccine and
+  TB test optional (flu, TB and malpractice were added without saying which —
+  check). **By person** shows everybody against their job roles' list; a
+  required one with **nothing on file** is on the Licenses banner and in the
+  nightly email (lapsed ones were already chased). Recording one picks the
+  type; with an interval, the date it was done works out the expiry. Shown
+  read-only in the Staff editor, and to staff for themselves. One query
+  (`credentials/standing-query.ts`) serves all of them.
+- **Dashboard → Across the practice** (29 September 2026, Dominguez): below
+  this week's hours — what is waiting on a manager (time off, hours to
+  approve, missing clock-outs, hand entries), licenses lapsed / due in 60
+  days / required not on file, surveys open or closed in 30 days with counts
+  only, onboarding and offboarding progress, closing checklists in the last 7
+  days and supplies to order. `GET /dashboard/practice`
+  (`PracticeOverviewService`).
 - **A nightly round-up** of what needs a look — lapsing licences, overdue
   checklist tasks, undecided time off, punches with no clock-out, kiosk tablets
   that have gone quiet, next week still unpublished, hours nobody has approved,

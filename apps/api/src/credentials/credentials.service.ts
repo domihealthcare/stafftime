@@ -10,6 +10,7 @@ import { EmploymentStatus, Prisma, Role } from '@prisma/client';
 import { AuthUser } from '../common/auth/auth-user';
 import { addUtcDays, toUtcDate } from '../common/util/calendar-date.util';
 import { PrismaService } from '../prisma/prisma.service';
+import { expiryFromInterval } from './standing';
 import {
   CreateCredentialDto,
   QueryCredentialsDto,
@@ -28,6 +29,7 @@ const CREDENTIAL_SELECT = {
   issuer: true,
   issuedOn: true,
   expiresOn: true,
+  credentialTypeId: true,
   notes: true,
   archivedAt: true,
   createdAt: true,
@@ -75,9 +77,7 @@ export class CredentialsService {
         // "Expiring within N days" always includes what has already lapsed:
         // the one that ran out last month is more urgent than the one running
         // out next month, not less.
-        ...(query.withinDays
-          ? { expiresOn: { lte: addUtcDays(today(), query.withinDays) } }
-          : {}),
+        ...(query.withinDays ? { expiresOn: { lte: addUtcDays(today(), query.withinDays) } } : {}),
       },
       select: CREDENTIAL_SELECT,
       orderBy: [{ expiresOn: 'asc' }, { name: 'asc' }],
@@ -127,16 +127,44 @@ export class CredentialsService {
     });
     if (!employee) throw new NotFoundException('That employee does not exist.');
 
-    const { issuedOn, expiresOn } = this.parseDates(dto.issuedOn, dto.expiresOn);
+    const type = dto.credentialTypeId
+      ? await this.prisma.credentialType.findUnique({
+          where: { id: dto.credentialTypeId },
+          select: { id: true, name: true, kind: true, renewalMonths: true },
+        })
+      : null;
+    if (dto.credentialTypeId && !type)
+      throw new NotFoundException('That license type does not exist.');
+
+    const parsed = this.parseDates(dto.issuedOn, dto.expiresOn);
+    // "Done on the 3rd, renewed every 12 months" is enough to know when it
+    // runs out.
+    const expiresOn =
+      parsed.expiresOn ??
+      (parsed.issuedOn && type?.renewalMonths
+        ? expiryFromInterval(parsed.issuedOn, type.renewalMonths)
+        : null);
+    if (!expiresOn) {
+      throw new BadRequestException(
+        type?.renewalMonths
+          ? 'Give the date it expires, or the date it was done.'
+          : 'Give the date it expires.',
+      );
+    }
+    const issuedOn = parsed.issuedOn;
+    const name = dto.name?.trim() || type?.name;
+    const kind = dto.kind ?? type?.kind;
+    if (!name || !kind) throw new BadRequestException('Say what it is.');
 
     const row = await this.prisma.employeeCredential.create({
       data: {
         employeeId: dto.employeeId,
-        kind: dto.kind,
-        name: dto.name.trim(),
+        credentialTypeId: type?.id ?? null,
+        kind,
+        name,
         issuer: dto.issuer?.trim() || null,
         issuedOn,
-        expiresOn: expiresOn!,
+        expiresOn,
         notes: dto.notes?.trim() || null,
         recordedById: actor.id,
       },

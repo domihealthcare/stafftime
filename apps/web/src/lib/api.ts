@@ -7,6 +7,8 @@ import type {
   Checklist,
   Credential,
   CredentialKind,
+  CredentialStanding,
+  CredentialType,
   PayrollExportRecord,
   PayrollTarget,
   ChecklistKind,
@@ -15,6 +17,7 @@ import type {
   ConflictingShift,
   Coverage,
   Dashboard,
+  PracticeOverview,
   DemoSummary,
   TestDataCounts,
   TestDataPreview,
@@ -926,11 +929,14 @@ export const api = {
     request<Credential[]>(`/credentials${toQuery(params)}`),
   createCredential: (body: {
     employeeId: string;
-    kind: CredentialKind;
-    name: string;
+    /// One of the practice's license types; its name and kind are used when
+    /// these are left out, and its renewal interval can work out the expiry.
+    credentialTypeId?: string;
+    kind?: CredentialKind;
+    name?: string;
     issuer?: string;
     issuedOn?: string;
-    expiresOn: string;
+    expiresOn?: string;
     notes?: string;
   }) => request<Credential>('/credentials', { method: 'POST', body: JSON.stringify(body) }),
   updateCredential: (
@@ -948,6 +954,25 @@ export const api = {
     request<Credential>(`/credentials/${id}/archive`, { method: 'POST' }),
   deleteCredential: (id: string) =>
     request<{ deleted: boolean }>(`/credentials/${id}`, { method: 'DELETE' }),
+  /// Each person against the licenses their job roles ask for.
+  credentialStanding: (employeeId?: string) =>
+    request<CredentialStanding[]>(`/credentials/standing${toQuery({ employeeId })}`),
+  credentialTypes: () => request<CredentialType[]>('/credential-types'),
+  saveCredentialType: (
+    id: string | null,
+    body: {
+      name: string;
+      kind: CredentialKind;
+      renewalMonths: number | null;
+      requirements: { jobRoleId: string; required: boolean }[];
+    },
+  ) =>
+    request<CredentialType>(id ? `/credential-types/${id}` : '/credential-types', {
+      method: id ? 'PATCH' : 'POST',
+      body: JSON.stringify(body),
+    }),
+  removeCredentialType: (id: string) =>
+    request<CredentialType>(`/credential-types/${id}`, { method: 'DELETE' }),
 
   /// Meetings and practice events overlapping [from, to), as ISO instants.
   events: (from: string, to: string) =>
@@ -992,6 +1017,8 @@ export const api = {
     request<{ deleted: boolean }>(`/announcements/${id}`, { method: 'DELETE' }),
 
   dashboard: (weeks: number) => request<Dashboard>(`/dashboard?weeks=${weeks}`),
+  /// Surveys, licenses, checklists, closing and what is waiting on a manager.
+  practiceOverview: () => request<PracticeOverview>('/dashboard/practice'),
   directory: () => request<DirectoryEntry[]>('/directory'),
   profile: () => request<Profile>('/profile'),
   updateProfile: (body: {

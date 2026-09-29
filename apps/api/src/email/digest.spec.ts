@@ -26,6 +26,8 @@ function build(
     supplies?: unknown[];
     locations?: unknown[];
     staff?: { id: string; firstName: string; lastName: string }[];
+    /// People with the job roles and credentials the license standing reads.
+    standing?: unknown[];
     settings?: { rotaWarningDays?: number; overtimeThresholdHours?: number };
     /// Published shifts at a quiet time clock's office since it was last seen.
     shiftsMissed?: number;
@@ -72,7 +74,13 @@ function build(
       // emailed, and what a handful of employee ids are called. Answering both
       // with the same list is how a test passes for the wrong reason.
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      findMany: jest.fn(async (args: any) => (args?.where?.id?.in ? (data.staff ?? []) : managers)),
+      findMany: jest.fn(async (args: any) =>
+        args?.select?.jobRoles
+          ? (data.standing ?? [])
+          : args?.where?.id?.in
+            ? (data.staff ?? [])
+            : managers,
+      ),
     },
   };
   const notifications = { dailyDigest: jest.fn() };
@@ -184,7 +192,11 @@ describe('DigestService', () => {
     });
     await service.send();
 
-    const where = prisma.employee.findMany.mock.calls[0][0].where;
+    // The call that asks who to email, not the one reading license standing.
+    const where = prisma.employee.findMany.mock.calls.find(
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      ([args]: any[]) => args?.where?.role,
+    )?.[0].where;
     expect(where.role.in).toEqual(['MANAGER', 'ADMIN']);
     expect(where.employmentStatus).toBe('ACTIVE');
   });
@@ -204,7 +216,11 @@ describe('DigestService — who gets it', () => {
     });
     await service.send();
 
-    const where = prisma.employee.findMany.mock.calls[0][0].where;
+    // The call that asks who to email, not the one reading license standing.
+    const where = prisma.employee.findMany.mock.calls.find(
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      ([args]: any[]) => args?.where?.role,
+    )?.[0].where;
     expect(where.wantsDailyDigest).toBe(true);
   });
 
@@ -385,6 +401,51 @@ describe('DigestService — what is going wrong at the office', () => {
       expect(where.shifts.some.status).toBe('PUBLISHED');
       const since = where.shifts.some.startsAt.gte;
       expect((date('2026-09-24').getTime() - since.getTime()) / 86_400_000).toBe(28);
+    });
+  });
+
+  describe('required licenses not on file', () => {
+    const provider = (credentials: unknown[]) => ({
+      id: 'emp-9',
+      firstName: 'Bola',
+      lastName: 'Oyelaran',
+      preferredName: null,
+      jobRoles: [
+        {
+          jobRole: {
+            name: 'Provider',
+            credentialRequirements: [
+              {
+                credentialTypeId: 'dea',
+                required: true,
+                credentialType: { id: 'dea', name: 'DEA registration', kind: 'REGISTRATION', renewalMonths: 36, sortOrder: 3 },
+              },
+              {
+                credentialTypeId: 'bls',
+                required: false,
+                credentialType: { id: 'bls', name: 'BLS', kind: 'LIFE_SUPPORT', renewalMonths: 24, sortOrder: 6 },
+              },
+            ],
+          },
+        },
+      ],
+      credentials,
+    });
+
+    it('names a required one with nothing on file, and never an optional one', async () => {
+      const { attention } = build({ standing: [provider([])] });
+      expect((await attention.gather()).missingCredentials).toEqual([
+        'Bola Oyelaran — DEA registration, required for Provider, not on file',
+      ]);
+    });
+
+    it('says nothing once one is on file, even if it has lapsed (that is chased as lapsed)', async () => {
+      const { attention } = build({
+        standing: [
+          provider([{ id: 'c1', name: 'DEA', credentialTypeId: 'dea', expiresOn: day('2020-01-01') }]),
+        ],
+      });
+      expect((await attention.gather()).missingCredentials).toEqual([]);
     });
   });
 

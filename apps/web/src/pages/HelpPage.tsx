@@ -737,6 +737,29 @@ const MANAGERS: Section[] = [
           </p>
         ),
       },
+      {
+        question: 'Which licenses each job role needs',
+        answer: (
+          <>
+            <p>
+              <Screen>Manage → Licenses → License types</Screen> is the practice&rsquo;s list: a
+              name, how often it is renewed, and for each job role whether it is{' '}
+              <strong>required</strong>, <strong>optional</strong> or not needed. Add one with{' '}
+              <strong>+ New license type</strong>; <strong>Edit</strong> changes it, and{' '}
+              <strong>Remove</strong> stops asking for it (what is on file stays).
+            </p>
+            <p>
+              <strong>By person</strong> shows everybody against what their job roles ask for.
+              A required one that is not on file is flagged there, on the banner and in the
+              nightly email; optional ones are only listed. Press <strong>Record it</strong> on
+              one and the form starts on that person and license — when the license has a
+              renewal interval, the date it was done is enough and the expiry is worked out.
+              The same list is on the person&rsquo;s card under <Screen>Staff → Edit</Screen>, and
+              staff see their own.
+            </p>
+          </>
+        ),
+      },
     ],
   },
   {
@@ -748,7 +771,11 @@ const MANAGERS: Section[] = [
           <p>
             <Screen>Manage → Dashboard</Screen>: hours worked against scheduled, overtime, late
             clock-ins and time off, with a chart per location, and — looking ahead — shifts in the
-            next two weeks that clash with somebody's availability or push them into overtime.
+            next two weeks that clash with somebody's availability or push them into overtime.{' '}
+            <strong>Across the practice</strong> adds what is waiting on a manager (time off,
+            hours to approve, missing clock-outs, hours entered by hand), licenses lapsed, due or
+            missing, surveys and how many have answered, onboarding and offboarding progress,
+            and the last week&rsquo;s closing checklists and supplies to order.
           </p>
         ),
       },

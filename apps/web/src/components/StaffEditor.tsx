@@ -1,8 +1,8 @@
 import { useEffect, useRef, useState } from 'react';
-import { localDate } from '../lib/format';
+import { formatCalendarDate, localDate } from '../lib/format';
 import { MONTHS } from '../lib/birthday';
 import { ApiError, api } from '../lib/api';
-import type { Employee, JobRole, Location, Role } from '../lib/types';
+import type { CredentialStanding, Employee, JobRole, Location, Role } from '../lib/types';
 import { PASSWORD_RULE, meetsPasswordRule } from '../lib/password';
 import { useConfirm } from './ConfirmDialog';
 import { Alert, Badge } from './ui';
@@ -414,7 +414,9 @@ export function StaffEditor({
                       className={`${FIELD} !w-20`}
                     />
                   </div>
-                  <p className={`mt-1 text-xs ${birthdayHalf ? 'text-amber-700' : 'text-slate-500'}`}>
+                  <p
+                    className={`mt-1 text-xs ${birthdayHalf ? 'text-amber-700' : 'text-slate-500'}`}
+                  >
                     {birthdayHalf
                       ? 'Give both the month and the day, or neither.'
                       : 'Month and day only — colleagues see it that week.'}
@@ -465,6 +467,8 @@ export function StaffEditor({
             </div>
           </form>
 
+          {!terminated && <LicensesSummary person={person} />}
+
           {!terminated && (
             <div className="border-t border-slate-100 p-5">
               <SigningIn person={person} onChanged={onChanged} />
@@ -487,6 +491,60 @@ export function StaffEditor({
           </div>
         </div>
       </div>
+    </div>
+  );
+}
+
+/**
+ * The licenses their job roles ask for, and what is on file — read-only here;
+ * they are recorded and renewed on the Licenses screen. Shown only when a job
+ * role of theirs asks for something.
+ */
+function LicensesSummary({ person }: { person: Employee }) {
+  const [standing, setStanding] = useState<CredentialStanding | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    api
+      .credentialStanding(person.id)
+      .then((rows) => !cancelled && setStanding(rows[0] ?? null))
+      .catch(() => undefined);
+    return () => {
+      cancelled = true;
+    };
+  }, [person.id]);
+
+  if (!standing || standing.lines.length === 0) return null;
+  const words: Record<CredentialStanding['lines'][number]['state'], string> = {
+    CURRENT: 'current',
+    DUE_SOON: 'due soon',
+    EXPIRED: 'lapsed',
+    MISSING: 'not on file',
+  };
+  return (
+    <div className="border-t border-slate-100 p-5">
+      <Section title="Licenses">
+        <ul className="space-y-1 text-sm" data-testid="staff-licenses">
+          {standing.lines.map((line) => {
+            const bad = line.state === 'EXPIRED' || (line.required && line.state === 'MISSING');
+            return (
+              <li key={line.type.id} className="flex flex-wrap justify-between gap-2">
+                <span className="text-slate-800">
+                  {line.type.name}{' '}
+                  <span className="text-xs text-slate-500">
+                    {line.required ? 'required' : 'optional'}
+                  </span>
+                </span>
+                <span className={bad ? 'font-medium text-rose-700' : 'text-slate-600'}>
+                  {words[line.state]}
+                  {line.credential ? ` · ${formatCalendarDate(line.credential.expiresOn)}` : ''}
+                </span>
+              </li>
+            );
+          })}
+        </ul>
+        <p className="mt-2 text-xs text-slate-500">Recorded and renewed under Manage → Licenses.</p>
+      </Section>
     </div>
   );
 }

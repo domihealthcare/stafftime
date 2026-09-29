@@ -426,6 +426,7 @@ export interface Coverage {
 export interface Attention {
   expiredCredentials: string[];
   expiringCredentials: string[];
+  missingCredentials: string[];
   overdueTasks: string[];
   missingPunches: string[];
   undecidedTimeOff: string[];
@@ -680,6 +681,38 @@ export interface Credential {
     employmentStatus: string;
   };
   recordedBy: { id: string; firstName: string; lastName: string } | null;
+}
+
+/// A license or certificate the practice asks for, and which job roles need
+/// it — required, or optional.
+export interface CredentialType {
+  id: string;
+  name: string;
+  kind: CredentialKind;
+  /// How often it is renewed, in months; null when it varies.
+  renewalMonths: number | null;
+  sortOrder: number;
+  archivedAt: string | null;
+  requirements: {
+    jobRoleId: string;
+    required: boolean;
+    jobRole: { id: string; name: string; colour: string };
+  }[];
+}
+
+export type StandingState = 'CURRENT' | 'DUE_SOON' | 'EXPIRED' | 'MISSING';
+
+/// One person against the licenses their job roles ask for.
+export interface CredentialStanding {
+  employee: { id: string; firstName: string; lastName: string; preferredName: string | null };
+  lines: {
+    type: { id: string; name: string; kind: CredentialKind; renewalMonths: number | null };
+    required: boolean;
+    /// Which of their job roles ask for it.
+    forRoles: string[];
+    credential: { id: string; expiresOn: string; daysUntilExpiry: number } | null;
+    state: StandingState;
+  }[];
 }
 
 export interface Announcement {
@@ -966,6 +999,53 @@ export interface DashboardWeek {
   total: DashboardFigures & { overtimeHours: number };
   timeOffByType: Partial<Record<PtoType, number>>;
   overtime: { name: string; hours: number; overtimeHours: number }[];
+}
+
+/// The Dashboard's "Across the practice": everything besides hours.
+export interface PracticeOverview {
+  surveys: {
+    surveys: {
+      id: string;
+      title: string;
+      status: 'DRAFT' | 'OPEN' | 'CLOSED';
+      openedAt: string | null;
+      closedAt: string | null;
+      responses: number;
+      audienceSize: number;
+      /// Closed, and enough people answered for results to be shown.
+      resultsShown: boolean;
+    }[];
+    suggestionsLast30Days: number;
+  };
+  licenses: {
+    withinDays: number;
+    expired: { employeeName: string; name: string; expiresOn: string; daysUntilExpiry: number }[];
+    dueSoon: { employeeName: string; name: string; expiresOn: string; daysUntilExpiry: number }[];
+    missingRequired: { employeeName: string; name: string }[];
+  };
+  checklists: {
+    id: string;
+    kind: 'ONBOARDING' | 'OFFBOARDING';
+    name: string;
+    employeeName: string;
+    total: number;
+    done: number;
+    overdue: number;
+  }[];
+  closing: {
+    days: number;
+    total: number;
+    complete: number;
+    withGaps: number;
+    skipped: number;
+    suppliesToOrder: { office: string; count: number }[];
+  };
+  waiting: {
+    timeOff: number;
+    handEntries: number;
+    unapprovedHours: number;
+    missingPunches: number;
+  };
 }
 
 export interface Dashboard {

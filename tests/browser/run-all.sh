@@ -35,6 +35,7 @@ reset_state() {
     -c "delete from password_reset_tokens;" \
     -c "delete from payroll_exports;" \
     -c "delete from employee_credentials;" \
+    -c "delete from credential_types where name not in ('Medical license', 'CDS registration', 'DEA registration', 'Medical malpractice insurance', 'ACLS', 'BLS', 'Student-Athlete Cardiac Assessment Certificate', 'Flu vaccine', 'TB test');" \
     -c "update employees set \"employmentStatus\" = 'ACTIVE', \"wantsDailyDigest\" = true;" \
     -c "delete from practice_settings;" \
     -c "delete from announcements;" \
@@ -72,7 +73,7 @@ reset_state() {
 
 # The scheduler suite builds its rotas in February 2027 so that clearing them
 # cannot touch the shift the seed puts on today's date.
-SUITES="drive refusals correct auth kiosk export locations pto pto-policy presets calendar scheduler checklists phone reset payroll credentials privacy race attention announcements resources directory availability surveys dashboard date-ranges help adp profile rota wfh overtime bell rota-print closing install golive staff birthdays events closures recurring standing hand-entry removed-shift quick-add"
+SUITES="drive refusals correct auth kiosk export locations pto pto-policy presets calendar scheduler checklists phone reset payroll credentials privacy race attention announcements resources directory availability surveys dashboard date-ranges help adp profile rota wfh overtime bell rota-print closing install golive staff birthdays events closures recurring standing hand-entry removed-shift quick-add credential-types"
 
 # Full output per suite goes to a file, and only the step lines are printed, so
 # a failure's detail is still there to read rather than truncated away.
