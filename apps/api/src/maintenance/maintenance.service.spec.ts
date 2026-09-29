@@ -21,6 +21,7 @@ describe('MaintenanceService', () => {
       purge: jest.fn().mockResolvedValue(0),
       sync: jest.fn().mockResolvedValue({ sent: 3, cancelled: 1, failed: 0, remaining: 0 }),
     };
+    const planning = { extendStandingShifts: jest.fn().mockResolvedValue(8) };
 
     return {
       service: new MaintenanceService(
@@ -32,6 +33,7 @@ describe('MaintenanceService', () => {
         inbox as never,
         events as never,
         invites as never,
+        planning as never,
       ),
       prisma,
       sessions,
@@ -40,6 +42,7 @@ describe('MaintenanceService', () => {
       digest,
       events,
       invites,
+      planning,
     };
   }
 
@@ -53,8 +56,19 @@ describe('MaintenanceService', () => {
       orphanedFiles: 1,
       clearedLocations: 5,
       oldNotifications: 6,
+      standingShifts: 8,
       digestSentTo: 2,
       eventReminders: 1,
+      calendarInvites: 4,
+    });
+  });
+
+  it('still tidies up when standing shifts cannot be written', async () => {
+    const { service, planning } = build();
+    planning.extendStandingShifts.mockRejectedValue(new Error('database hiccup'));
+    await expect(service.purge()).resolves.toMatchObject({
+      expiredSessions: 7,
+      standingShifts: 0,
       calendarInvites: 4,
     });
   });

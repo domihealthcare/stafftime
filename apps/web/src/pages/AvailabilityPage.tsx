@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom';
 import { useConfirm } from '../components/ConfirmDialog';
 import { Alert, Badge, Card, EmptyState, PageHeading, Spinner } from '../components/ui';
 import { ApiError, api } from '../lib/api';
-import { displayName, formatCalendarDate, localDate } from '../lib/format';
+import { displayName, formatCalendarDate, localDate, WEEK_ORDER } from '../lib/format';
 import { useIsManager } from '../lib/session';
 import type {
   MyAvailability,
@@ -310,9 +310,9 @@ function RuleForm({
               onChange={(event) => setWeekday(Number(event.target.value))}
               className="w-full rounded-lg border border-slate-300 px-2 py-1.5"
             >
-              {WEEKDAYS.map((name, index) => (
-                <option key={name} value={index + 1}>
-                  {name}
+              {WEEK_ORDER.map((day) => (
+                <option key={day} value={day}>
+                  {WEEKDAYS[day - 1]}
                 </option>
               ))}
             </select>

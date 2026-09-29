@@ -481,6 +481,13 @@ const MANAGERS: Section[] = [
               in one go.
             </li>
             <li>
+              For somebody who always works the same days, tick <strong>No end date</strong> in
+              Repeating shifts. It keeps the rota filled eight weeks ahead, every night, until you
+              stop it under <strong>Regular shifts</strong> below the rota: pick the last day, and
+              the shifts after it come off (the person is told if they were published). Change or
+              remove a single week as usual; the rest carry on.
+            </li>
+            <li>
               The week is a <strong>rota</strong>: a row per person, a column per day. Click ＋ in a
               cell to add a shift there, or click a shift to change who works it, publish it or
               remove it. Removing a shift, or taking somebody off one, asks you to confirm first.

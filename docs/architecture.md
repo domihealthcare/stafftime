@@ -404,9 +404,11 @@ The Schedule screen does both. The week view is where shifts are added and
 removed; the month view is an overview, and a day in it is a way back to that
 week.
 
-**The month is drawn as whole Monday-to-Sunday weeks**, so every row has seven
+**The month is drawn as whole Sunday-to-Saturday weeks**, so every row has seven
 days and the month sits inside it — four rows for a February that starts on a
-Monday, six for a month that straddles. The days either side are shown but
+Sunday, six for a month that straddles. (Monday-first until September 2026,
+when Dominguez asked for Sunday: it is how the practice reads a calendar. See
+*Weeks on screen start on Sunday; overtime weeks do not*, below.) The days either side are shown but
 dimmed: a shift on the 1st matters whichever row it lands in.
 
 **It shows who is on.** This is mostly a staff screen — a manager builds the
@@ -437,6 +439,29 @@ a different rule would be worse than one that said nothing.
 `addMonths` next to it: `setMonth` on the 31st rolls into the month after next,
 and a schedule that skips February is a memorable bug.
 
+### Weeks on screen start on Sunday; overtime weeks do not
+
+September 2026, Dominguez: "calendar/days should show starting from Sundays".
+The week view, the month, the printed rota, the "This week / Last week"
+shortcuts and the weekday pickers all run Sunday to Saturday
+(`startOfWeek` and `WEEK_ORDER` in `lib/format.ts`).
+
+**Overtime did not move with it**, on purpose — asked, Dominguez said overtime
+goes by the pay period and a display change must not touch it. So the server's
+weeks (`weekStartIn`: overtime, the payroll export, the dashboard, the
+unpublished-rota chase, availability's published-week lock) are still Monday to
+Sunday, and API weekday numbers are still 1 = Monday … 7 = Sunday.
+
+The one place the two meet is the rota's overtime badge: a Sunday-to-Saturday
+row touches two overtime weeks (Sunday closes one, Monday opens the next). The
+badge shows a warning for either, says which week in its tooltip, and no longer
+guesses from the row's own total while the figures load — that total is a
+different week.
+
+Worth confirming (see `docs/open-questions.md`): overtime is counted from
+Monday, not from the pay period's first day. If the pay period starts on a
+Sunday, the two disagree.
+
 ### Warning about overtime while the rota is being built
 
 The coverage strip answers "is anybody scheduled?"; this answers "is anybody
@@ -457,8 +482,9 @@ view is precisely where that goes unnoticed. The hours are totalled across the
 practice even when the screen is filtered, and `spansLocations` tells the screen
 to say so — otherwise the number looks wrong to whoever is reading it.
 
-Weeks start Monday in the location's timezone, using the same `weekStartIn` as
-the payroll export. That sharing is deliberate: a rota that predicts overtime
+Overtime weeks start Monday in the location's timezone, using the same
+`weekStartIn` as the payroll export — even though the screens draw weeks from
+Sunday (see *Weeks on screen start on Sunday; overtime weeks do not*). That sharing is deliberate: a rota that predicts overtime
 and an export that reports it must not disagree about where a week begins, and a
 late Sunday shift has to land in the week the person experienced rather than the
 week UTC puts it in.
@@ -866,6 +892,36 @@ its own is worse than an error.
 
 Re-running the same rota is therefore safe and idempotent-ish: everything is
 skipped as `OVERLAPS_SHIFT`, nothing is duplicated.
+
+### Regular shifts: a repeat with no end date
+
+Asked for by Dominguez, September 2026: "I always work Mondays" should not
+need a stop date. A repeat sent with no `until` makes a **standing shift** — a
+`ShiftSeries` row holding the rule — and still writes ordinary `Shift` rows,
+because everything above about rows still holds. It just writes them only
+`STANDING_DAYS_AHEAD` (56 days) ahead, and the nightly job
+(`extendStandingShifts`, before the round-up and the calendar invites) writes
+the next ones as the weeks go by.
+
+- **It carries on from `filledThrough`**, never from the rule's start, so a
+  shift a manager removed or moved by hand is not made again. Each written
+  shift carries `seriesId`, and is otherwise an ordinary shift.
+- **The same skips as a repeat**: an existing shift or approved leave skips the
+  day. Somebody no longer `ACTIVE`, or no longer at that office, or an office
+  made inactive, gets nothing — and the dates are passed over, not saved up.
+- **Status is the rule's**: made published, it keeps writing published shifts;
+  made as drafts, drafts, which the unpublished-week chase picks up as usual.
+- **The person is told once**, when it is made ("Mondays from Mon, Oct 5, with
+  no end date"), not every night. The nightly writing does not send overtime
+  emails either; the rota's red banner and the person's own overtime notice
+  are computed live and still show it.
+- **Stopping** (`POST /shifts/standing/:id/stop`, Schedule → *Regular shifts*
+  → Stop…) takes a last day. Its shifts after that go as a single removal
+  goes — a draft is deleted, a published one cancelled — and the person gets
+  one notice. A shift that has already started is never touched, whatever day
+  is given.
+- **Go-live and demo data** clear `shift_series` with the shifts, or the
+  nightly job would write the test rota back.
 
 ### Copy week rebuilds from wall-clock time
 
@@ -1929,7 +1985,8 @@ so it can be tested without a database, and every rule in it is one the rest
 of the app already uses — a number here must never disagree with the
 timesheet, the scheduler or the payroll export:
 
-- a week is Monday–Sunday **in the location's timezone**;
+- a week is Monday–Sunday **in the location's timezone** (the overtime week;
+  the calendar screens draw Sunday to Saturday, but this is not a calendar);
 - hours worked come from **completed** punches; an open punch counts as a punch
   but not as hours (it is somebody still at work, or a missing clock-out that
   *What needs a look* chases);

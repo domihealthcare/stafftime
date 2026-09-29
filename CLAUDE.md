@@ -293,6 +293,18 @@ Beyond the phases, the parts worth knowing about before picking up work:
   password); the profile shows only that one is set and since when, never the
   PIN. Managers and admins can set a replacement from the Directory, never
   read one (decided September 2026).
+- **Regular shifts** (September 2026, Dominguez: "I always work Mondays"):
+  Repeating shifts → **No end date** makes a `ShiftSeries`; its shifts are
+  written out 8 weeks ahead (`STANDING_DAYS_AHEAD`) and the nightly job
+  writes the next ones, from the day after the last written, so a shift
+  removed by hand stays removed. Listed under Schedule → **Regular shifts**,
+  stopped there from a chosen last day (later shifts cancelled or deleted,
+  person told once).
+- **Weeks start on Sunday on screen** (September 2026, Dominguez): week
+  view, month, printed rota, "This week" shortcuts, weekday pickers.
+  **Overtime is still counted Monday to Sunday** — Dominguez: overtime goes
+  by the pay period and must not move with the display. Whether the pay
+  period starts on a Sunday is in `docs/open-questions.md`.
 - **The scheduler** does a week (for building, on a laptop) and a month (for
   staff checking when they are on, often on a phone), warns when the rota puts
   somebody past the overtime threshold in a week, and syncs to Google, Apple or

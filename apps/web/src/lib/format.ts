@@ -81,13 +81,41 @@ export function toLocalInputValue(date: Date): string {
   return `${ymd}T${pad(date.getHours())}:${pad(date.getMinutes())}:${pad(date.getSeconds())}`;
 }
 
+/// The Sunday on or before a date: weeks on screen run Sunday to Saturday,
+/// which is how the practice reads a calendar (asked for by Dominguez,
+/// September 2026).
+///
+/// On screen only. Overtime is still counted Monday to Sunday on the server
+/// (see `overtimeWeekStart`), and nothing about pay moved with this.
 export function startOfWeek(date: Date): Date {
   const result = new Date(date);
   result.setHours(0, 0, 0, 0);
-  // Weeks run Monday-Sunday, which is how a practice schedule reads.
-  const daysSinceMonday = (result.getDay() + 6) % 7;
-  result.setDate(result.getDate() - daysSinceMonday);
+  result.setDate(result.getDate() - result.getDay());
   return result;
+}
+
+/// The days of the week in the order the screens show them, Sunday first, as
+/// the API numbers them: 1 = Monday … 7 = Sunday.
+export const WEEK_ORDER = [7, 1, 2, 3, 4, 5, 6] as const;
+
+/// Indexed by the API's number less one: WEEKDAY_NAMES[0] is Monday.
+export const WEEKDAY_NAMES = [
+  'Monday',
+  'Tuesday',
+  'Wednesday',
+  'Thursday',
+  'Friday',
+  'Saturday',
+  'Sunday',
+] as const;
+
+/// The Monday a "YYYY-MM-DD" falls in the overtime week of. The overtime
+/// line is counted Monday to Sunday on the server, whatever day the calendar
+/// starts on, so the rota asks it this way.
+export function overtimeWeekStart(day: string): string {
+  const date = new Date(`${day}T00:00:00Z`);
+  date.setUTCDate(date.getUTCDate() - ((date.getUTCDay() + 6) % 7));
+  return date.toISOString().slice(0, 10);
 }
 
 export function addDays(date: Date, days: number): Date {
@@ -114,7 +142,7 @@ export function addMonths(date: Date, months: number): Date {
   return result;
 }
 
-/// The Monday-to-Sunday grid that contains a whole month: five or six full
+/// The Sunday-to-Saturday grid that contains a whole month: five or six full
 /// weeks, so every row has seven days and the month sits inside it.
 export function monthGrid(monthStart: Date): Date[] {
   const first = startOfWeek(startOfMonth(monthStart));

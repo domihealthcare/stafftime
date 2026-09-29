@@ -472,9 +472,10 @@ async function clearPreviousDemoData(prisma: PrismaClient) {
 
   // The seeded accounts stay, but their punches and rotas go, so the only
   // hours on the timesheet are the ones this script put there.
-  const [entries, shifts, requests, checklists] = await prisma.$transaction([
+  const [entries, shifts, , requests, , checklists] = await prisma.$transaction([
     prisma.timeEntry.deleteMany({}),
     prisma.shift.deleteMany({}),
+    prisma.shiftSeries.deleteMany({}),
     prisma.ptoRequest.deleteMany({}),
     prisma.ptoStartingPoint.deleteMany({}),
     prisma.employeeChecklist.deleteMany({}),

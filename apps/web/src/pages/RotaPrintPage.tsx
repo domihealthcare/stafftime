@@ -9,8 +9,8 @@ import { BrandLogoForPrint } from '../components/Brand';
 import { eventsOnDay, eventTimeLabel, isClosure } from '../components/PracticeEvents';
 import { Alert, Spinner } from '../components/ui';
 
-/// "2026-09-28" as a local midnight, not UTC — a week that starts on Monday
-/// must not print as Sunday west of Greenwich.
+/// "2026-09-27" as a local midnight, not UTC — a week that starts on Sunday
+/// must not print as Saturday west of Greenwich.
 function parseDay(value: string | null): Date | null {
   if (!value || !/^\d{4}-\d{2}-\d{2}$/.test(value)) return null;
   const [y, m, d] = value.split('-').map(Number);

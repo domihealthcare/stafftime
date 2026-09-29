@@ -41,6 +41,7 @@ import {
 import { PlanResultNotice } from '../components/PlanResultNotice';
 import { RepeatShiftsForm } from '../components/RepeatShiftsForm';
 import { RotaTable, type RotaGrouping } from '../components/RotaTable';
+import { StandingShiftsCard } from '../components/StandingShiftsCard';
 import { Alert, Card, EmptyState, PageHeading, Spinner } from '../components/ui';
 import { NeedsAttention } from '../components/NeedsAttention';
 import { useConfirm } from '../components/ConfirmDialog';
@@ -126,9 +127,11 @@ export function SchedulePage() {
   const [error, setError] = useState<string | null>(null);
   const [planning, setPlanning] = useState(false);
   const [planResult, setPlanResult] = useState<PlanResult | null>(null);
+  /// Bumped when a regular shift (no end date) is made, to refresh their list.
+  const [standingVersion, setStandingVersion] = useState(0);
   const [copying, setCopying] = useState(false);
 
-  /// The days on screen. A month is shown as whole Monday-to-Sunday weeks, so
+  /// The days on screen. A month is shown as whole Sunday-to-Saturday weeks, so
   /// every row has seven days and the month sits inside it — which means the
   /// range loaded is a little wider than the month itself.
   const days = useMemo(
@@ -494,6 +497,7 @@ export function SchedulePage() {
             onCreated={(result) => {
               setPlanResult(result);
               setPlanning(false);
+              if (result.standing) setStandingVersion((v) => v + 1);
               void load();
             }}
           />
@@ -608,7 +612,13 @@ export function SchedulePage() {
         </div>
       )}
 
-      <div className="mt-6">
+      {isManager && (
+        <div className="mt-6">
+          <StandingShiftsCard version={standingVersion} onChanged={() => void load()} />
+        </div>
+      )}
+
+      <div className={isManager ? 'mt-3' : 'mt-6'}>
         <ClosuresCard
           initialYear={(view === 'week' ? weekStart : monthStart).getFullYear()}
           canEdit={isManager}

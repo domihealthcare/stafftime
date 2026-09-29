@@ -1,7 +1,14 @@
 import { useMemo, useState } from 'react';
 import { birthdayName } from '../lib/birthday';
 import { ApiError, api } from '../lib/api';
-import { formatTime, formatTimeCompact, localDate, toLocalInputValue } from '../lib/format';
+import {
+  formatCalendarDate,
+  formatTime,
+  formatTimeCompact,
+  localDate,
+  overtimeWeekStart,
+  toLocalInputValue,
+} from '../lib/format';
 import type {
   BirthdayEntry,
   CoverageDay,
@@ -136,28 +143,36 @@ export function RotaTable({
     dayKeys.some((key) => eventsOnDay([event], key).length > 0),
   );
 
-  /// Where each person's week stands against the overtime line. The week on
-  /// screen starts on dayKeys[0], a Monday, as the server's weeks do.
-  const weekStanding = (personId: string, rowTotal: number) => {
-    const weekStart = dayKeys[0];
-    const over = overtime?.find((w) => w.employeeId === personId && w.weekStart === weekStart);
-    if (over)
-      return { level: 'over' as const, hours: over.scheduledHours, overBy: over.overtimeHours };
-    if (selfId) {
-      const own = ownWeeks?.find((w) => w.weekStart === weekStart);
-      return own
-        ? { level: 'over' as const, hours: own.scheduledHours, overBy: own.overtimeHours }
-        : null;
+  /// Where each person's week stands against the overtime line.
+  ///
+  /// The rota runs Sunday to Saturday, but overtime is counted Monday to
+  /// Sunday (it follows pay, not the calendar), so the week on screen touches
+  /// two overtime weeks: Sunday closes one, Monday to Saturday open the next.
+  /// A warning for either is shown; the later one first, as it holds six of
+  /// the seven days in view.
+  const overtimeWeeks = [...new Set(dayKeys.map(overtimeWeekStart))].reverse();
+  const weekStanding = (personId: string) => {
+    for (const weekStart of overtimeWeeks) {
+      const over = overtime?.find((w) => w.employeeId === personId && w.weekStart === weekStart);
+      if (over)
+        return {
+          level: 'over' as const,
+          hours: over.scheduledHours,
+          overBy: over.overtimeHours,
+          weekStart,
+        };
+      const own = selfId ? ownWeeks?.find((w) => w.weekStart === weekStart) : undefined;
+      if (own)
+        return {
+          level: 'over' as const,
+          hours: own.scheduledHours,
+          overBy: own.overtimeHours,
+          weekStart,
+        };
     }
-    // No figures from the server (still loading): the row's own sum is better
-    // than nothing, and never shows a warning the server would not.
-    if (!overtime && rowTotal > overtimeThresholdHours) {
-      return {
-        level: 'over' as const,
-        hours: rowTotal,
-        overBy: round1(rowTotal - overtimeThresholdHours),
-      };
-    }
+    // No figures from the server yet (still loading): nothing, rather than
+    // a guess from the row — the row is a Sunday-to-Saturday week and the
+    // line is not, so its sum could warn where the server would not.
     return null;
   };
   const warnings = useMemo(() => {
@@ -463,7 +478,7 @@ export function RotaTable({
               {section.rows.map((row) => {
                 const total = round1(row.shifts.reduce((sum, shift) => sum + hoursOf(shift), 0));
                 const standing =
-                  row.kind === 'person' && row.person ? weekStanding(row.person.id, total) : null;
+                  row.kind === 'person' && row.person ? weekStanding(row.person.id) : null;
                 const over = standing?.level === 'over';
                 if (row.kind === 'open' && row.shifts.length === 0 && !canEdit) return null;
                 return (
@@ -577,7 +592,7 @@ export function RotaTable({
                       {standing && (
                         <span
                           data-testid={`week-standing-${standing.level}`}
-                          title={`${standing.hours} hours this week, every location — the overtime line is ${overtimeThresholdHours}`}
+                          title={`${standing.hours} hours in the week of ${formatCalendarDate(standing.weekStart, { year: false })} (overtime weeks run Monday to Sunday), every location — the overtime line is ${overtimeThresholdHours}`}
                           className="mt-1 block whitespace-nowrap rounded-full bg-rose-600 px-2 py-0.5 text-center text-xs font-semibold text-white"
                         >
                           ⚠ {standing.overBy} h overtime
@@ -1025,6 +1040,12 @@ function ShiftDialog({
       </p>
       {warning && (
         <p className="mt-2 rounded-md bg-rose-50 px-2 py-1 text-sm text-rose-800">⚠ {warning}</p>
+      )}
+      {shift.seriesId && (
+        <p className="mt-2 text-xs text-slate-500" data-testid="shift-is-regular">
+          <span aria-hidden="true">🔁</span> Part of a regular shift with no end date. Changing or
+          removing this one leaves the rest; to end them all, use Regular shifts below the rota.
+        </p>
       )}
 
       <div className="mt-4">

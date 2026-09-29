@@ -1,17 +1,14 @@
 import { useEffect, useState } from 'react';
 import { ApiError, api } from '../lib/api';
 import type { Employee, JobRole, Location, PlanResult } from '../lib/types';
+import { WEEK_ORDER, WEEKDAY_NAMES } from '../lib/format';
 import { Alert, Card } from './ui';
 
-const WEEKDAYS = [
-  { value: 1, short: 'Mon' },
-  { value: 2, short: 'Tue' },
-  { value: 3, short: 'Wed' },
-  { value: 4, short: 'Thu' },
-  { value: 5, short: 'Fri' },
-  { value: 6, short: 'Sat' },
-  { value: 7, short: 'Sun' },
-];
+/// Sunday first, as the calendar reads; the values are the API's, 1 = Monday.
+const WEEKDAYS = WEEK_ORDER.map((value) => ({
+  value,
+  short: WEEKDAY_NAMES[value - 1].slice(0, 3),
+}));
 
 /// Builds a rota in one go — the alternative being a manager creating forty
 /// shifts by hand.
@@ -41,6 +38,9 @@ export function RepeatShiftsForm({
   const [days, setDays] = useState<number[]>([1, 2, 3, 4, 5]);
   const [from, setFrom] = useState(defaultFrom);
   const [until, setUntil] = useState('');
+  /// No last date: "she always works Mondays". Kept eight weeks ahead, every
+  /// night, until it is stopped under Regular shifts.
+  const [noEnd, setNoEnd] = useState(false);
   const [publish, setPublish] = useState(false);
   const [busy, setBusy] = useState(false);
   const [problem, setProblem] = useState<string | null>(null);
@@ -84,7 +84,7 @@ export function RepeatShiftsForm({
           endTime,
           daysOfWeek: [...days].sort(),
           from,
-          until,
+          ...(noEnd ? {} : { until }),
           status: publish ? 'PUBLISHED' : 'DRAFT',
         }),
       );
@@ -97,13 +97,13 @@ export function RepeatShiftsForm({
 
   const field =
     'mt-1 w-full rounded-lg border-slate-300 py-2.5 text-base shadow-sm focus:border-brand-600 focus:ring-brand-600';
-  const ready = employeeId && locationId && days.length > 0 && from && until;
+  const ready = employeeId && locationId && days.length > 0 && from && (noEnd || until);
 
   return (
     <Card className="p-5">
       <h3 className="text-sm font-semibold text-slate-900">Repeating shifts</h3>
       <p className="mt-0.5 text-sm text-slate-600">
-        One rota line at a time — days, hours, and how far ahead.
+        One rota line at a time — days, hours, and how far ahead, or for good.
       </p>
 
       <form onSubmit={(event) => void submit(event)} className="mt-4 space-y-4">
@@ -272,20 +272,46 @@ export function RepeatShiftsForm({
             />
           </div>
           <div>
-            <label htmlFor="repeat-until" className="block text-sm font-medium text-slate-700">
+            <label
+              htmlFor={noEnd ? undefined : 'repeat-until'}
+              className="block text-sm font-medium text-slate-700"
+            >
               Until
             </label>
-            <input
-              id="repeat-until"
-              type="date"
-              required
-              min={from}
-              value={until}
-              onChange={(event) => setUntil(event.target.value)}
-              className={field}
-            />
+            {noEnd ? (
+              <p className="mt-1 rounded-lg border border-dashed border-slate-300 px-3 py-2.5 text-base text-slate-500">
+                No end date
+              </p>
+            ) : (
+              <input
+                id="repeat-until"
+                type="date"
+                required
+                min={from}
+                value={until}
+                onChange={(event) => setUntil(event.target.value)}
+                className={field}
+              />
+            )}
           </div>
         </div>
+
+        <label className="flex items-start gap-2 text-sm text-slate-700" htmlFor="repeat-no-end">
+          <input
+            id="repeat-no-end"
+            type="checkbox"
+            checked={noEnd}
+            onChange={(event) => setNoEnd(event.target.checked)}
+            className="mt-0.5 rounded border-slate-300 text-brand-600 focus:ring-brand-600"
+          />
+          <span>
+            No end date — it keeps going
+            <span className="block text-xs text-slate-500">
+              For a regular shift, like every Monday. The rota is kept filled eight weeks ahead;
+              stop it any time under Regular shifts.
+            </span>
+          </span>
+        </label>
 
         <label className="flex items-start gap-2 text-sm text-slate-700" htmlFor="repeat-remote">
           <input

@@ -24,6 +24,8 @@ export async function clearTestData(prisma: PrismaClient) {
     const supplies = await tx.supplyRequest.deleteMany({});
     const entries = await tx.timeEntry.deleteMany({});
     const shifts = await tx.shift.deleteMany({});
+    // The standing shifts that made them, or the nightly job writes them back.
+    await tx.shiftSeries.deleteMany({});
     const timeOff = await tx.ptoRequest.deleteMany({});
     // Days taken before the app, as entered while testing; allowances are
     // set-up and stay (or go with the demo staff they belong to).
