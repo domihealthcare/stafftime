@@ -223,18 +223,22 @@ How the live site is set up, for reference:
   live site, breaking the Schedule; `20260928010000_practice_events_kind`
   repaired it. A change always goes in a new migration. Worth checking in
   Vercel whether Preview should have its own database.
-- **Branch previews fail on purpose, for now** (found 29 September 2026).
-  Vercel's Hobby plan only deploys commits authored by the account owner;
-  Claude's commits are authored "Claude <noreply@anthropic.com>", so every
-  branch preview fails at once, while merges (authored by Dominguez's GitHub
-  account) deploy to the live site as normal. Leave it so until previews
-  are safe (agreed with Dominguez): (1) Preview gets its own database — a
-  Neon branch, with `DATABASE_URL` / `DIRECT_DATABASE_URL` set per
-  environment in Vercel; (2) Preview gets `APP_ENVIRONMENT=test` and no
-  `RESEND_API_KEY` or `GOOGLE_SERVICE_ACCOUNT_JSON`, so a preview cannot
-  email staff or make Meet links. Only once Dominguez confirms both are
-  done, author commits as `domihealthcare <dominguez@domihealthcare.com>`
-  (git config in the session, keeping the `Co-Authored-By: Claude` trailer).
+- **No branch previews, on purpose** (decided by Dominguez, 29 September
+  2026). `vercel.json`'s `ignoreCommand` skips every build Vercel labels a
+  preview (`VERCEL_ENV` = `preview`), whoever pushed it; anything else,
+  production included, builds — written that way round so a missing label
+  can never stop the live site deploying. Reasons: previews shared the live
+  database (a branch's migration reached it on push), and could email staff
+  and make Meet links. GitHub's CI is the check before merge. Separately,
+  Vercel's Hobby plan only deploys commits authored by the account owner, and
+  Claude's commits are authored "Claude <noreply@anthropic.com>", so those
+  were blocked even before this. To bring previews back later: (1) Preview
+  gets its own database — a Neon branch, with `DATABASE_URL` /
+  `DIRECT_DATABASE_URL` set per environment in Vercel; (2) Preview gets
+  `APP_ENVIRONMENT=test` and no `RESEND_API_KEY` or
+  `GOOGLE_SERVICE_ACCOUNT_JSON`; (3) remove `ignoreCommand`; (4) only then
+  author commits as `domihealthcare <dominguez@domihealthcare.com>` (git
+  config in the session, keeping the `Co-Authored-By: Claude` trailer).
 - **Still to do**: rotate the Neon password (Dominguez to find time: reset in
   Neon, paste the new pooled and direct strings into `DATABASE_URL` /
   `DIRECT_DATABASE_URL`, redeploy).

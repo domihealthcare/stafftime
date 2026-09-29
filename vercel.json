@@ -3,6 +3,7 @@
   "buildCommand": "npm run vercel-build",
   "outputDirectory": "apps/web/dist",
   "installCommand": "npm install",
+  "ignoreCommand": "[ \"$VERCEL_ENV\" = \"preview\" ]",
   "framework": null,
   "functions": {
     "api/index.ts": {
