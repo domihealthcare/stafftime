@@ -287,15 +287,17 @@ await step('Previous and Next move a month, not a week', async () => {
 // --- one person's month ---
 
 const personBox = page.getByRole('combobox', { name: 'Show person' });
+// Only the picker's own list — the office and job role selects have options too.
+const personList = page.getByRole('listbox', { name: 'Show person' });
 
 await step('a manager can find one person by typing part of their name', async () => {
   await personBox.click();
   await personBox.fill('frank');
-  const options = page.getByRole('option');
+  const options = personList.getByRole('option');
   // "Everyone" drops out while a name is being typed; only Frankie matches.
   if ((await options.count()) !== 1)
     throw new Error(`"frank" matched ${await options.count()} options`);
-  await page.getByRole('option', { name: /Frankie Front-Desk/ }).click();
+  await personList.getByRole('option', { name: /Frankie Front-Desk/ }).click();
   const shown = await page.getByTestId('month-person').innerText();
   if (!/^Only Frankie Front-Desk — \d+ shifts? this month\.$/.test(shown))
     throw new Error(`the month says "${shown}"`);
@@ -323,7 +325,7 @@ await step('the picked person stays picked from month to month', async () => {
 await step("somebody else's month leaves Frankie's shifts out", async () => {
   await personBox.click();
   await personBox.fill('max');
-  await page.getByRole('option', { name: /Max Assistant/ }).click();
+  await personList.getByRole('option', { name: /Max Assistant/ }).click();
   await page.getByText(/^Only Max Assistant/).waitFor({ timeout: 10000 });
   // This suite only ever schedules Frankie, so Max's February is empty.
   const shown = await page.getByTestId('month-person').innerText();
@@ -350,6 +352,51 @@ await step('✕ goes back to everyone', async () => {
   const monday = page.getByTestId('month-grid').getByRole('button').nth(1);
   const label = await monday.getAttribute('aria-label');
   if (!/1 shift: Frankie/.test(label ?? '')) throw new Error(`Monday reads "${label}"`);
+});
+
+// --- a group's month: a job role, an office, or both ---
+
+await step('the month narrows to one job role at one office (MAs in North Bergen)', async () => {
+  // Frankie is Front Desk and Medical Assistant at North Bergen; Max is an MA
+  // at West New York. The rota above is all Frankie's, at North Bergen.
+  await page.getByLabel('Show job role').selectOption({ label: 'Medical Assistant' });
+  await page.getByLabel('Show location').selectOption({ label: 'North Bergen' });
+  const shown = await page.getByTestId('month-person').innerText();
+  if (!/^Only Medical Assistant at North Bergen — [1-9]\d* shifts? this month\.$/.test(shown))
+    throw new Error(`the month says "${shown}"`);
+  // A group is several people, so the squares go back to names.
+  const monday = page.getByTestId('month-grid').getByRole('button').nth(1);
+  const label = await monday.getAttribute('aria-label');
+  if (!/1 shift: Frankie/.test(label ?? '')) throw new Error(`Monday reads "${label}"`);
+});
+await page.screenshot({ path: `${OUT}/39d-month-group.png`, fullPage: true });
+
+await step('the person list only offers people in that group', async () => {
+  await personBox.click();
+  // Read the list once it is open, not while it opens.
+  await personList.getByRole('option', { name: /Frankie Front-Desk/ }).waitFor({ timeout: 5000 });
+  const names = await personList.getByRole('option').allInnerTexts();
+  // "✓ Everyone" is always there to go back to; the rest are people.
+  const people = names.filter((name) => !/Everyone/.test(name));
+  if (people.length !== 1 || !/Frankie Front-Desk/.test(people[0]))
+    throw new Error(`offered: ${names.map((name) => name.split('\n')[0]).join(' | ')}`);
+  await personBox.press('Escape');
+});
+
+await step('the other office leaves North Bergen shifts out', async () => {
+  await page.getByLabel('Show location').selectOption({ label: 'West New York' });
+  await page.getByText('Only Medical Assistant at West New York — no shifts this month.').waitFor({
+    timeout: 5000,
+  });
+});
+
+await step('an office alone, and back to all', async () => {
+  await page.getByLabel('Show job role').selectOption({ label: 'All job roles' });
+  await page.getByLabel('Show location').selectOption({ label: 'North Bergen' });
+  await page.getByText(/^Only North Bergen — [1-9]\d* shifts? this month\.$/).waitFor({ timeout: 5000 });
+  await page.getByLabel('Show location').selectOption({ label: 'All locations' });
+  if ((await page.getByTestId('month-person').count()) > 0)
+    throw new Error('still narrowed with every filter off');
 });
 
 await step('an employee is not offered the person picker', async () => {

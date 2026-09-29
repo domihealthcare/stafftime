@@ -257,42 +257,69 @@ export function SchedulePage() {
   // A published shift that is removed is kept as CANCELLED, so staff who saw
   // it have a record — but it is not on anymore. The week (RotaTable) always
   // left those out; the month showed them, so a removed shift was still there.
+  //
+  // The month narrows by the same office and job role filters as the week, by
+  // the week's rules (RotaTable): an office keeps the shifts at that office; a
+  // job role keeps the shifts of the people in it, and open shifts asked for
+  // that role. "MAs in North Bergen" is both at once.
+  const roleMembers = useMemo(
+    () => new Set(jobRoles.find((role) => role.id === roleFilter)?.members.map((m) => m.id)),
+    [jobRoles, roleFilter],
+  );
   const shiftsByDay = useMemo(() => {
     const map = new Map<string, Shift[]>();
     for (const shift of shifts.filter(
       (candidate) =>
         candidate.status !== 'CANCELLED' &&
-        (!personFilter || candidate.employeeId === personFilter),
+        (!personFilter || candidate.employeeId === personFilter) &&
+        (!locationFilter || candidate.locationId === locationFilter) &&
+        (!roleFilter ||
+          (candidate.employeeId === null
+            ? candidate.jobRoleId === roleFilter
+            : roleMembers.has(candidate.employeeId))),
     )) {
       const key = new Date(shift.startsAt).toDateString();
       map.set(key, [...(map.get(key) ?? []), shift]);
     }
     return map;
-  }, [shifts, personFilter]);
+  }, [shifts, personFilter, locationFilter, roleFilter, roleMembers]);
 
   /// Who can be picked in the month: everybody still here, and anybody who
-  /// has left but still has a shift on screen, so it can be found and moved.
+  /// has left but still has a shift on screen, so it can be found and moved —
+  /// narrowed to the office and job role chosen beside it.
   const pickablePeople = useMemo(() => {
     const onScreen = new Set(shifts.map((shift) => shift.employeeId));
     return employees.filter(
       (person) =>
-        person.employmentStatus === 'ACTIVE' ||
-        person.employmentStatus === 'ON_LEAVE' ||
-        onScreen.has(person.id) ||
-        person.id === personFilter,
+        person.id === personFilter ||
+        ((person.employmentStatus === 'ACTIVE' ||
+          person.employmentStatus === 'ON_LEAVE' ||
+          onScreen.has(person.id)) &&
+          (!roleFilter || roleMembers.has(person.id)) &&
+          (!locationFilter ||
+            person.locations.some((assignment) => assignment.locationId === locationFilter))),
     );
-  }, [employees, shifts, personFilter]);
+  }, [employees, shifts, personFilter, roleFilter, locationFilter, roleMembers]);
   const pickedPerson = employees.find((person) => person.id === personFilter) ?? null;
-  /// How many shifts the chosen person has in the month itself — not the
-  /// days either side that square off the grid.
-  const pickedShiftCount = useMemo(() => {
-    if (!personFilter) return 0;
+  /// What the month is narrowed to, in words: "Frankie Front-Desk",
+  /// "Medical Assistant at North Bergen". Null when it shows everybody.
+  const monthScope = useMemo(() => {
+    const who = pickedPerson
+      ? displayName(pickedPerson)
+      : (jobRoles.find((role) => role.id === roleFilter)?.name ?? null);
+    const where = locations.find((location) => location.id === locationFilter)?.name ?? null;
+    if (!who && !where) return null;
+    return who && where ? `${who} at ${where}` : (who ?? where);
+  }, [pickedPerson, jobRoles, roleFilter, locations, locationFilter]);
+  /// How many shifts that leaves in the month itself — not the days either
+  /// side that square off the grid.
+  const scopedShiftCount = useMemo(() => {
     let count = 0;
     for (const [key, dayShifts] of shiftsByDay) {
       if (new Date(key).getMonth() === monthStart.getMonth()) count += dayShifts.length;
     }
     return count;
-  }, [shiftsByDay, personFilter, monthStart]);
+  }, [shiftsByDay, monthStart]);
 
   return (
     <div className="mx-auto max-w-6xl">
@@ -442,34 +469,34 @@ export function SchedulePage() {
                   </button>
                 ))}
               </div>
-              <select
-                aria-label="Show location"
-                value={locationFilter}
-                onChange={(event) => setLocationFilter(event.target.value)}
-                className="rounded-lg border border-slate-300 bg-white px-2 py-1.5 text-sm"
-              >
-                <option value="">All locations</option>
-                {locations.map((location) => (
-                  <option key={location.id} value={location.id}>
-                    {location.name}
-                  </option>
-                ))}
-              </select>
-              <select
-                aria-label="Show job role"
-                value={roleFilter}
-                onChange={(event) => setRoleFilter(event.target.value)}
-                className="rounded-lg border border-slate-300 bg-white px-2 py-1.5 text-sm"
-              >
-                <option value="">All job roles</option>
-                {jobRoles.map((role) => (
-                  <option key={role.id} value={role.id}>
-                    {role.name}
-                  </option>
-                ))}
-              </select>
             </>
           )}
+          <select
+            aria-label="Show location"
+            value={locationFilter}
+            onChange={(event) => setLocationFilter(event.target.value)}
+            className="rounded-lg border border-slate-300 bg-white py-1.5 pl-2 pr-8 text-sm"
+          >
+            <option value="">All locations</option>
+            {locations.map((location) => (
+              <option key={location.id} value={location.id}>
+                {location.name}
+              </option>
+            ))}
+          </select>
+          <select
+            aria-label="Show job role"
+            value={roleFilter}
+            onChange={(event) => setRoleFilter(event.target.value)}
+            className="rounded-lg border border-slate-300 bg-white py-1.5 pl-2 pr-8 text-sm"
+          >
+            <option value="">All job roles</option>
+            {jobRoles.map((role) => (
+              <option key={role.id} value={role.id}>
+                {role.name}
+              </option>
+            ))}
+          </select>
           {view === 'month' && (
             <PersonPicker
               label="Show person"
@@ -651,12 +678,12 @@ export function SchedulePage() {
         </Card>
       ) : view === 'month' ? (
         <>
-          {isManager && pickedPerson && (
+          {isManager && monthScope && (
             <p className="mb-2 text-sm text-slate-700" data-testid="month-person">
-              Only <span className="font-semibold">{displayName(pickedPerson)}</span>
-              {pickedShiftCount === 0
+              Only <span className="font-semibold">{monthScope}</span>
+              {scopedShiftCount === 0
                 ? ' — no shifts this month.'
-                : ` — ${pickedShiftCount} shift${pickedShiftCount === 1 ? '' : 's'} this month.`}
+                : ` — ${scopedShiftCount} shift${scopedShiftCount === 1 ? '' : 's'} this month.`}
             </p>
           )}
           <MonthGrid

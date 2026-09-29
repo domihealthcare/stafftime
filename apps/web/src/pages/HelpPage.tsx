@@ -530,9 +530,9 @@ const MANAGERS: Section[] = [
               <strong>by job role</strong>, and filter to one office or one role.
             </li>
             <li>
-              In the <strong>Month</strong>, the box beside the buttons shows one person&rsquo;s
-              shifts: type part of their name (or a job role), pick them, and page through their
-              months. ✕ goes back to everyone.
+              The <strong>Month</strong> filters the same way — one office, one job role, or both
+              (MAs in North Bergen) — and the box beside them shows one person&rsquo;s shifts: type
+              part of their name, pick them, and page through their months. ✕ goes back to everyone.
             </li>
             <li>
               Each shift is tinted in its office&rsquo;s colour, with a stripe down the left in the
