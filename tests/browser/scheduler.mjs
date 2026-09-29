@@ -284,6 +284,91 @@ await step('Previous and Next move a month, not a week', async () => {
   await page.getByText('February 2027').waitFor({ timeout: 10000 });
 });
 
+// --- one person's month ---
+
+const personBox = page.getByRole('combobox', { name: 'Show person' });
+
+await step('a manager can find one person by typing part of their name', async () => {
+  await personBox.click();
+  await personBox.fill('frank');
+  const options = page.getByRole('option');
+  // "Everyone" drops out while a name is being typed; only Frankie matches.
+  if ((await options.count()) !== 1)
+    throw new Error(`"frank" matched ${await options.count()} options`);
+  await page.getByRole('option', { name: /Frankie Front-Desk/ }).click();
+  const shown = await page.getByTestId('month-person').innerText();
+  if (!/^Only Frankie Front-Desk — \d+ shifts? this month\.$/.test(shown))
+    throw new Error(`the month says "${shown}"`);
+  if ((await personBox.inputValue()) !== 'Frankie Front-Desk')
+    throw new Error(`the box reads "${await personBox.inputValue()}"`);
+});
+await page.screenshot({ path: `${OUT}/39c-month-one-person.png`, fullPage: true });
+
+await step("with one person picked, a day shows their times, not their name", async () => {
+  const monday = page.getByTestId('month-grid').getByRole('button').nth(1);
+  const label = await monday.getAttribute('aria-label');
+  if (!/1 shift: \d{1,2}(:\d\d)?(am|pm)–\d/.test(label ?? ''))
+    throw new Error(`Monday reads "${label}"`);
+});
+
+await step('the picked person stays picked from month to month', async () => {
+  await page.getByRole('button', { name: 'Next →' }).click();
+  await page.getByText('March 2027').waitFor({ timeout: 10000 });
+  await page.getByTestId('month-person').waitFor({ timeout: 10000 });
+  await page.getByRole('button', { name: '← Previous' }).click();
+  await page.getByText('February 2027').waitFor({ timeout: 10000 });
+  await page.getByTestId('month-person').getByText('Frankie Front-Desk').waitFor({ timeout: 10000 });
+});
+
+await step("somebody else's month leaves Frankie's shifts out", async () => {
+  await personBox.click();
+  await personBox.fill('max');
+  await page.getByRole('option', { name: /Max Assistant/ }).click();
+  await page.getByText(/^Only Max Assistant/).waitFor({ timeout: 10000 });
+  // This suite only ever schedules Frankie, so Max's February is empty.
+  const shown = await page.getByTestId('month-person').innerText();
+  if (!/no shifts this month/.test(shown)) throw new Error(`the month says "${shown}"`);
+  const labels = await page
+    .getByTestId('month-grid')
+    .getByRole('button')
+    .evaluateAll((nodes) => nodes.map((node) => node.getAttribute('aria-label') ?? ''));
+  const withShifts = labels.filter((label) => !/no shifts/.test(label));
+  if (withShifts.length > 0) throw new Error(`still showing shifts: ${withShifts[0]}`);
+});
+
+await step('a name nobody has says so', async () => {
+  await personBox.click();
+  await personBox.fill('zzzz');
+  await page.getByText('Nobody by that name.').waitFor({ timeout: 5000 });
+  await personBox.press('Escape');
+});
+
+await step('✕ goes back to everyone', async () => {
+  await page.getByRole('button', { name: 'Show everyone' }).click();
+  if ((await page.getByTestId('month-person').count()) > 0)
+    throw new Error('still showing one person');
+  const monday = page.getByTestId('month-grid').getByRole('button').nth(1);
+  const label = await monday.getAttribute('aria-label');
+  if (!/1 shift: Frankie/.test(label ?? '')) throw new Error(`Monday reads "${label}"`);
+});
+
+await step('an employee is not offered the person picker', async () => {
+  // Staff only ever get their own shifts, so there is nobody else to pick.
+  const empCtx = await browser.newContext({ viewport: { width: 1280, height: 900 } });
+  const emp = await empCtx.newPage();
+  await emp.goto(`${BASE}/`, { waitUntil: 'networkidle' });
+  await emp.getByLabel('Email').fill('frontdesk@domihealthcare.com');
+  await emp.getByLabel('Password', { exact: true }).fill('shift-change-2026');
+  await emp.getByRole('button', { name: 'Sign in' }).click();
+  await emp.getByText('Not clocked in').waitFor({ timeout: 15000 });
+  await emp.getByRole('link', { name: 'Schedule' }).click();
+  await emp.getByRole('button', { name: 'Month', exact: true }).click();
+  await emp.getByTestId('month-grid').waitFor({ timeout: 15000 });
+  if ((await emp.getByRole('combobox', { name: 'Show person' }).count()) > 0)
+    throw new Error('an employee was offered the person picker');
+  await empCtx.close();
+});
+
 await step('picking a day opens that week', async () => {
   // The month view is an overview; the week is where shifts are edited, so a
   // day has to be a way back into it.
