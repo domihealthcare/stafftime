@@ -338,7 +338,8 @@ Beyond the phases, the parts worth knowing about before picking up work:
   export alike; Monday until a pay period date is set. Still 40 **a week**,
   not 80 a fortnight (federal and NJ law). Practice settings shows the day.
 - **The scheduler** does a week (for building, on a laptop) and a month (for
-  staff checking when they are on, often on a phone), warns when the rota puts
+  staff checking when they are on, often on a phone — managers can narrow the
+  month to one person from a dropdown with a search), warns when the rota puts
   somebody past the overtime threshold in a week, and syncs to Google, Apple or
   Outlook calendars by private subscription URL.
 - **Overtime alerts made hard to miss** (asked for by Dominguez, September

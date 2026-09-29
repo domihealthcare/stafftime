@@ -4,6 +4,7 @@ import { api } from '../lib/api';
 import {
   addDays,
   addMonths,
+  displayName,
   formatTimeCompact,
   localDate,
   monthGrid,
@@ -38,6 +39,7 @@ import {
   isClosure,
   useClosureCheck,
 } from '../components/PracticeEvents';
+import { PersonPicker } from '../components/PersonPicker';
 import { PlanResultNotice } from '../components/PlanResultNotice';
 import {
   PlaceSelect,
@@ -78,6 +80,9 @@ export function SchedulePage() {
   });
   const [locationFilter, setLocationFilter] = useState('');
   const [roleFilter, setRoleFilter] = useState('');
+  /// The month view, one person's shifts only ('' for everyone). Kept while
+  /// moving between months, so a manager can page through somebody's autumn.
+  const [personFilter, setPersonFilter] = useState('');
   const [jobRoles, setJobRoles] = useState<JobRole[]>([]);
   const [adding, setAdding] = useState(false);
   /// A week at a time to build a rota, a month at a time to see the shape of
@@ -254,12 +259,40 @@ export function SchedulePage() {
   // left those out; the month showed them, so a removed shift was still there.
   const shiftsByDay = useMemo(() => {
     const map = new Map<string, Shift[]>();
-    for (const shift of shifts.filter((candidate) => candidate.status !== 'CANCELLED')) {
+    for (const shift of shifts.filter(
+      (candidate) =>
+        candidate.status !== 'CANCELLED' &&
+        (!personFilter || candidate.employeeId === personFilter),
+    )) {
       const key = new Date(shift.startsAt).toDateString();
       map.set(key, [...(map.get(key) ?? []), shift]);
     }
     return map;
-  }, [shifts]);
+  }, [shifts, personFilter]);
+
+  /// Who can be picked in the month: everybody still here, and anybody who
+  /// has left but still has a shift on screen, so it can be found and moved.
+  const pickablePeople = useMemo(() => {
+    const onScreen = new Set(shifts.map((shift) => shift.employeeId));
+    return employees.filter(
+      (person) =>
+        person.employmentStatus === 'ACTIVE' ||
+        person.employmentStatus === 'ON_LEAVE' ||
+        onScreen.has(person.id) ||
+        person.id === personFilter,
+    );
+  }, [employees, shifts, personFilter]);
+  const pickedPerson = employees.find((person) => person.id === personFilter) ?? null;
+  /// How many shifts the chosen person has in the month itself — not the
+  /// days either side that square off the grid.
+  const pickedShiftCount = useMemo(() => {
+    if (!personFilter) return 0;
+    let count = 0;
+    for (const [key, dayShifts] of shiftsByDay) {
+      if (new Date(key).getMonth() === monthStart.getMonth()) count += dayShifts.length;
+    }
+    return count;
+  }, [shiftsByDay, personFilter, monthStart]);
 
   return (
     <div className="mx-auto max-w-6xl">
@@ -437,6 +470,15 @@ export function SchedulePage() {
               </select>
             </>
           )}
+          {view === 'month' && (
+            <PersonPicker
+              label="Show person"
+              value={personFilter}
+              onChange={setPersonFilter}
+              employees={pickablePeople}
+              jobRoles={jobRoles}
+            />
+          )}
           <span className="flex-1" />
           {view === 'week' && (
             <Link
@@ -608,23 +650,34 @@ export function SchedulePage() {
           <Spinner label="Loading schedule" />
         </Card>
       ) : view === 'month' ? (
-        <MonthGrid
-          days={days}
-          monthStart={monthStart}
-          shiftsByDay={shiftsByDay}
-          events={events}
-          birthdays={birthdaysByDay(birthdays)}
-          showNames={isManager}
-          onPickDay={(day) => {
-            setWeekStart(startOfWeek(day));
-            setView('week');
-            try {
-              window.localStorage.setItem(VIEW_KEY, 'week');
-            } catch {
-              // As above.
-            }
-          }}
-        />
+        <>
+          {isManager && pickedPerson && (
+            <p className="mb-2 text-sm text-slate-700" data-testid="month-person">
+              Only <span className="font-semibold">{displayName(pickedPerson)}</span>
+              {pickedShiftCount === 0
+                ? ' — no shifts this month.'
+                : ` — ${pickedShiftCount} shift${pickedShiftCount === 1 ? '' : 's'} this month.`}
+            </p>
+          )}
+          <MonthGrid
+            days={days}
+            monthStart={monthStart}
+            shiftsByDay={shiftsByDay}
+            events={events}
+            birthdays={birthdaysByDay(birthdays)}
+            // One person picked: their times, as staff see their own month.
+            showNames={isManager && !personFilter}
+            onPickDay={(day) => {
+              setWeekStart(startOfWeek(day));
+              setView('week');
+              try {
+                window.localStorage.setItem(VIEW_KEY, 'week');
+              } catch {
+                // As above.
+              }
+            }}
+          />
+        </>
       ) : (
         <RotaTable
           days={days}
