@@ -60,14 +60,17 @@ async function seedJobRoles() {
     // Providers see their own licenses and onboarding under Team; nobody else
     // does by job role (September 2026).
     const seesOwnPersonnelTabs = name === 'Provider';
+    // Providers get the clinical forms too (the 99483 cognitive assessment).
+    const usesClinicalForms = name === 'Provider';
     await prisma.jobRole.upsert({
       where: { name },
-      update: { seesOwnPersonnelTabs },
+      update: { seesOwnPersonnelTabs, usesClinicalForms },
       create: {
         name,
         sortOrder: (index + 1) * 10,
         colour: JOB_ROLE_COLOURS[index],
         seesOwnPersonnelTabs,
+        usesClinicalForms,
       },
     });
   }

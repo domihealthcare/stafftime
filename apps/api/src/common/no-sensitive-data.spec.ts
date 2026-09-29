@@ -167,4 +167,25 @@ describe('what this app deliberately does not store', () => {
     expect(body).not.toMatch(/response/i);
     expect(body).not.toMatch(/createdAt|answeredAt/);
   });
+
+  /// The clinical forms (the 99483 cognitive assessment, September 2026) are
+  /// filled in and turned into PDFs entirely in the provider's browser: the
+  /// patient's details never reach the server. There is no table for them, and
+  /// the one easy way to change that is a model or column that sounds like one.
+  it('holds no patient data: the clinical forms keep nothing on the server', () => {
+    const names = [...schema.matchAll(/\nmodel (\w+) \{/g)].map((match) => match[1]);
+    for (const name of names) {
+      expect(name).not.toMatch(/patient|clinical|assessment|mrn|diagnos|carePlan|cognitive/i);
+      const fields = model(name)
+        .split('\n')
+        .map((line) => line.trim())
+        .filter((line) => line && !line.startsWith('//') && !line.startsWith('@@'))
+        .map((line) => line.split(/\s+/)[0]);
+      for (const field of fields) {
+        expect(`${name}.${field}`).not.toMatch(
+          /\.(patient|mrn|medicalRecord|diagnos|icd10|carePlan)/i,
+        );
+      }
+    }
+  });
 });

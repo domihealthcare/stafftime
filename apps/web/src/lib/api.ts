@@ -594,6 +594,7 @@ export const api = {
       firstName: string;
       lastName: string;
       preferredName: string | null;
+      postNominals: string | null;
       email: string;
       phone: string | null;
       role: string;
@@ -1099,6 +1100,7 @@ export const api = {
     description?: string;
     colour?: string;
     seesOwnPersonnelTabs?: boolean;
+    usesClinicalForms?: boolean;
   }) => request<JobRole>('/job-roles', { method: 'POST', body: JSON.stringify(body) }),
   updateJobRole: (
     id: string,
@@ -1107,6 +1109,7 @@ export const api = {
       description: string;
       colour: string;
       seesOwnPersonnelTabs: boolean;
+      usesClinicalForms: boolean;
     }>,
   ) => request<JobRole>(`/job-roles/${id}`, { method: 'PATCH', body: JSON.stringify(body) }),
   deleteJobRole: (id: string) =>

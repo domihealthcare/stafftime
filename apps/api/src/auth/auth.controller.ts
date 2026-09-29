@@ -189,6 +189,7 @@ export class AuthController {
         firstName: true,
         lastName: true,
         preferredName: true,
+        postNominals: true,
         pronouns: true,
         photoUpdatedAt: true,
         email: true,
@@ -204,7 +205,9 @@ export class AuthController {
             location: { select: { id: true, name: true, slug: true, timezone: true } },
           },
         },
-        jobRoles: { select: { jobRole: { select: { seesOwnPersonnelTabs: true } } } },
+        jobRoles: {
+          select: { jobRole: { select: { seesOwnPersonnelTabs: true, usesClinicalForms: true } } },
+        },
       },
     });
     return {
@@ -212,6 +215,9 @@ export class AuthController {
       /// Whether their own licenses and onboarding are under Team — Providers,
       /// as the practice has it. Managers and admins have them under Manage.
       seesOwnPersonnelTabs: jobRoles.some((membership) => membership.jobRole.seesOwnPersonnelTabs),
+      /// Whether the clinical forms are under Team — Providers. Job role only:
+      /// being a manager or admin does not bring them.
+      usesClinicalForms: jobRoles.some((membership) => membership.jobRole.usesClinicalForms),
     };
   }
 }
