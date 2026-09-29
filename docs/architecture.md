@@ -987,6 +987,25 @@ ran and is left out of the Regular shifts list. On screen:
 `components/WeeklyScheduleEditor.tsx`, under Schedule → Regular shifts and in
 the Staff editor (admins).
 
+### A shift's job role is always one the person holds
+
+Asked for by Dominguez, September 2026. `heldJobRole` (`shifts/held-job-role.ts`)
+decides the role of any shift made or changed for a person — single shifts,
+repeats, a standing shift's edit and each day of a usual week:
+
+- a role they hold is used;
+- a role they do not hold is refused, by name, with theirs listed;
+- no role, with one held: that one — so a client that sends none still gets
+  it right; with several: refused, asking which; with none held: no role
+  (and the screens say to add them to one on Staff).
+
+On `PATCH /shifts/:id` it runs only when the person or the role changes, so
+a shift saved before the rule can still be moved or published. Open shifts
+belong to nobody and keep any role or none. Nightly top-ups and Copy week
+reproduce existing shifts and are not re-checked. On screen, one component
+(`components/JobRoleSelect.tsx`) gives every shift form the same list, and
+assigning an open shift that has a role lists only the people in it.
+
 ### Copy week rebuilds from wall-clock time
 
 `POST /api/shifts/copy-week` does **not** add seven days of milliseconds to each

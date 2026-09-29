@@ -13,6 +13,7 @@ import {
   toLocalInputValue,
 } from '../lib/format';
 import { birthdayName, birthdaysByDay } from '../lib/birthday';
+import { atPlace, forRole, WORK_FROM_HOME_FILTER } from '../lib/shift-filters';
 import { useIsManager, useSession } from '../lib/session';
 import type {
   BirthdayEntry,
@@ -39,6 +40,7 @@ import {
   isClosure,
   useClosureCheck,
 } from '../components/PracticeEvents';
+import { JobRoleSelect } from '../components/JobRoleSelect';
 import { PersonPicker } from '../components/PersonPicker';
 import { PlanResultNotice } from '../components/PlanResultNotice';
 import {
@@ -258,10 +260,10 @@ export function SchedulePage() {
   // it have a record — but it is not on anymore. The week (RotaTable) always
   // left those out; the month showed them, so a removed shift was still there.
   //
-  // The month narrows by the same office and job role filters as the week, by
-  // the week's rules (RotaTable): an office keeps the shifts at that office; a
-  // job role keeps the shifts of the people in it, and open shifts asked for
-  // that role. "MAs in North Bergen" is both at once.
+  // The month narrows by the same office and job role filters as the week
+  // (`lib/shift-filters.ts`): an office keeps the shifts at that office — not
+  // work from home, which has its own choice; a job role keeps the shifts for
+  // that role, not everything its people do. "MAs in North Bergen" is both.
   const roleMembers = useMemo(
     () => new Set(jobRoles.find((role) => role.id === roleFilter)?.members.map((m) => m.id)),
     [jobRoles, roleFilter],
@@ -272,11 +274,8 @@ export function SchedulePage() {
       (candidate) =>
         candidate.status !== 'CANCELLED' &&
         (!personFilter || candidate.employeeId === personFilter) &&
-        (!locationFilter || candidate.locationId === locationFilter) &&
-        (!roleFilter ||
-          (candidate.employeeId === null
-            ? candidate.jobRoleId === roleFilter
-            : roleMembers.has(candidate.employeeId))),
+        atPlace(candidate, locationFilter) &&
+        forRole(candidate, roleFilter, roleMembers),
     )) {
       const key = new Date(shift.startsAt).toDateString();
       map.set(key, [...(map.get(key) ?? []), shift]);
@@ -289,6 +288,7 @@ export function SchedulePage() {
   /// narrowed to the office and job role chosen beside it.
   const pickablePeople = useMemo(() => {
     const onScreen = new Set(shifts.map((shift) => shift.employeeId));
+    const fromHome = new Set(shifts.filter((s) => s.isRemote).map((s) => s.employeeId));
     return employees.filter(
       (person) =>
         person.id === personFilter ||
@@ -297,7 +297,9 @@ export function SchedulePage() {
           onScreen.has(person.id)) &&
           (!roleFilter || roleMembers.has(person.id)) &&
           (!locationFilter ||
-            person.locations.some((assignment) => assignment.locationId === locationFilter))),
+            (locationFilter === WORK_FROM_HOME_FILTER
+              ? fromHome.has(person.id)
+              : person.locations.some((assignment) => assignment.locationId === locationFilter)))),
     );
   }, [employees, shifts, personFilter, roleFilter, locationFilter, roleMembers]);
   const pickedPerson = employees.find((person) => person.id === personFilter) ?? null;
@@ -307,6 +309,9 @@ export function SchedulePage() {
     const who = pickedPerson
       ? displayName(pickedPerson)
       : (jobRoles.find((role) => role.id === roleFilter)?.name ?? null);
+    if (locationFilter === WORK_FROM_HOME_FILTER) {
+      return who ? `${who}, working from home` : 'Working from home';
+    }
     const where = locations.find((location) => location.id === locationFilter)?.name ?? null;
     if (!who && !where) return null;
     return who && where ? `${who} at ${where}` : (who ?? where);
@@ -483,6 +488,7 @@ export function SchedulePage() {
                 {location.name}
               </option>
             ))}
+            <option value={WORK_FROM_HOME_FILTER}>Work from home</option>
           </select>
           <select
             aria-label="Show job role"
@@ -509,7 +515,7 @@ export function SchedulePage() {
           <span className="flex-1" />
           {view === 'week' && (
             <Link
-              to={`/schedule/print?week=${localDate(weekStart)}${locationFilter ? `&location=${locationFilter}` : ''}`}
+              to={`/schedule/print?week=${localDate(weekStart)}${locationFilter && locationFilter !== WORK_FROM_HOME_FILTER ? `&location=${locationFilter}` : ''}`}
               className="rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-sm font-medium text-slate-700 hover:bg-slate-50"
             >
               Print
@@ -950,23 +956,19 @@ function NewShiftForm({
         <div className="sm:col-span-2">
           <label htmlFor="shift-role" className="block text-sm font-medium text-slate-700">
             Job role{' '}
-            <span className="font-normal text-slate-400">
-              {employeeId === OPEN_SHIFT ? '(who should fill it)' : '(optional)'}
-            </span>
+            {employeeId === OPEN_SHIFT && (
+              <span className="font-normal text-slate-400">(who should fill it)</span>
+            )}
           </label>
-          <select
+          <JobRoleSelect
             id="shift-role"
             value={jobRoleId}
-            onChange={(event) => setJobRoleId(event.target.value)}
+            onChange={setJobRoleId}
+            jobRoles={jobRoles}
+            personId={selectedEmployee?.id}
+            open={employeeId === OPEN_SHIFT}
             className="mt-1 w-full rounded-lg border-slate-300 text-sm shadow-sm focus:border-brand-600 focus:ring-brand-600"
-          >
-            <option value="">{employeeId === OPEN_SHIFT ? 'Any role' : 'Not specified'}</option>
-            {jobRoles.map((role) => (
-              <option key={role.id} value={role.id}>
-                {role.name}
-              </option>
-            ))}
-          </select>
+          />
         </div>
 
         <div className="sm:col-span-2">

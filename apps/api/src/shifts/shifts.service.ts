@@ -4,6 +4,7 @@ import { weekStartIn } from '../common/util/zoned-time.util';
 import { InboxService } from '../email/inbox.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateShiftDto } from './dto/create-shift.dto';
+import { heldJobRole } from './held-job-role';
 import { QueryShiftsDto } from './dto/query-shifts.dto';
 import { UpdateShiftDto } from './dto/update-shift.dto';
 import { OvertimeService } from './overtime.service';
@@ -40,13 +41,16 @@ export class ShiftsService {
       await this.assertEmployeeWorksAtLocation(employeeId, dto.locationId);
       await this.assertNoOverlap(employeeId, startsAt, endsAt);
     }
-    if (dto.jobRoleId) await this.assertJobRole(dto.jobRoleId);
+    // Somebody's shift is for one of their own job roles; an open one, any.
+    let jobRoleId = dto.jobRoleId ?? null;
+    if (employeeId) jobRoleId = await heldJobRole(this.prisma, employeeId, jobRoleId);
+    else if (jobRoleId) await this.assertJobRole(jobRoleId);
 
     const watch = employeeId
       ? await this.watchOvertime(employeeId, [{ startsAt, locationId: dto.locationId }])
       : null;
     const shift = await this.prisma.shift.create({
-      data: { ...dto, employeeId, jobRoleId: dto.jobRoleId ?? null, startsAt, endsAt, createdById },
+      data: { ...dto, employeeId, jobRoleId, startsAt, endsAt, createdById },
       include: SHIFT_INCLUDE,
     });
     await watch?.();
@@ -95,7 +99,18 @@ export class ShiftsService {
       }
       await this.assertNoOverlap(employeeId, startsAt, endsAt, id);
     }
-    if (dto.jobRoleId) await this.assertJobRole(dto.jobRoleId);
+    // Putting somebody on it, or changing its job role: one of theirs. A
+    // shift left as it was keeps its role, so an old one can still be moved.
+    const data: UpdateShiftDto = { ...dto };
+    if (employeeId && (dto.employeeId || dto.jobRoleId !== undefined)) {
+      data.jobRoleId = await heldJobRole(
+        this.prisma,
+        employeeId,
+        dto.jobRoleId === undefined ? existing.jobRoleId : dto.jobRoleId,
+      );
+    } else if (dto.jobRoleId) {
+      await this.assertJobRole(dto.jobRoleId);
+    }
 
     // Assigning, moving or publishing can each put the person on it over.
     const watch = employeeId
@@ -106,7 +121,7 @@ export class ShiftsService {
       : null;
     const shift = await this.prisma.shift.update({
       where: { id },
-      data: { ...dto, startsAt, endsAt },
+      data: { ...data, startsAt, endsAt },
       include: SHIFT_INCLUDE,
     });
     await watch?.();

@@ -21,6 +21,7 @@ import {
 import { clashFor, Rule } from '../availability/availability.rules';
 import { toRule } from '../availability/availability.service';
 import { InboxService } from '../email/inbox.service';
+import { heldJobRole } from './held-job-role';
 import { PrismaService } from '../prisma/prisma.service';
 import { workweekStartsOn } from '../settings/pay-period';
 import { PracticeSettingsService } from '../settings/practice-settings.service';
@@ -137,7 +138,11 @@ export class ShiftPlanningService {
 
     const location = await this.requireLocation(dto.locationId);
     if (dto.employeeId) await this.requireAssignment(dto.employeeId, dto.locationId);
-    if (dto.jobRoleId) await this.requireJobRole(dto.jobRoleId);
+    // Somebody's shifts are for one of their own job roles; open ones, any.
+    const jobRoleId = dto.employeeId
+      ? await heldJobRole(this.prisma, dto.employeeId, dto.jobRoleId)
+      : (dto.jobRoleId ?? null);
+    if (!dto.employeeId && jobRoleId) await this.requireJobRole(jobRoleId);
 
     const wanted = dates.filter((date) => dto.daysOfWeek.includes(isoWeekdayOf(date)));
     if (wanted.length === 0) {
@@ -175,7 +180,7 @@ export class ShiftPlanningService {
           data: {
             employeeId: dto.employeeId ?? null,
             locationId: dto.locationId,
-            jobRoleId: dto.jobRoleId ?? null,
+            jobRoleId,
             isRemote: dto.isRemote ?? false,
             openCount: perDay,
             daysOfWeek: [...dto.daysOfWeek].sort(),
@@ -193,7 +198,7 @@ export class ShiftPlanningService {
 
     const result = await this.createAll(candidates, {
       employeeId: dto.employeeId ?? null,
-      jobRoleId: dto.jobRoleId ?? null,
+      jobRoleId,
       isRemote: dto.isRemote ?? false,
       openCount: perDay,
       locationId: dto.locationId,
@@ -347,14 +352,17 @@ export class ShiftPlanningService {
 
     const location = await this.requireLocation(dto.locationId);
     if (series.employeeId) await this.requireAssignment(series.employeeId, dto.locationId);
-    if (dto.jobRoleId) await this.requireJobRole(dto.jobRoleId);
+    const askedRole = dto.jobRoleId === undefined ? series.jobRoleId : dto.jobRoleId;
+    const jobRoleId = series.employeeId
+      ? await heldJobRole(this.prisma, series.employeeId, askedRole)
+      : askedRole;
+    if (!series.employeeId && jobRoleId) await this.requireJobRole(jobRoleId);
 
     const today = localDateIn(now, PRACTICE_ZONE);
     const from = laterOf(dto.from?.slice(0, 10) ?? today, today);
     const filled = isoDate(series.filledThrough);
     const daysOfWeek = [...dto.daysOfWeek].sort();
     const openCount = series.employeeId ? 1 : (dto.openCount ?? series.openCount);
-    const jobRoleId = dto.jobRoleId === undefined ? series.jobRoleId : dto.jobRoleId;
     const isRemote = dto.isRemote ?? series.isRemote;
 
     // Shifts on or after `from` that have not started. Time already worked, or
@@ -548,8 +556,10 @@ export class ShiftPlanningService {
       await this.requireAssignment(employeeId, locationId);
       zones.set(locationId, location.timezone);
     }
-    for (const jobRoleId of new Set(dto.days.flatMap((day) => day.jobRoleId ?? []))) {
-      await this.requireJobRole(jobRoleId);
+    // Each day is for one of their own job roles.
+    const roleOf = new Map<number, string | null>();
+    for (const day of dto.days) {
+      roleOf.set(day.dayOfWeek, await heldJobRole(this.prisma, employeeId, day.jobRoleId));
     }
 
     // Days that share everything but the day become one regular shift.
@@ -568,7 +578,7 @@ export class ShiftPlanningService {
       const shape = {
         locationId: day.locationId,
         isRemote: day.isRemote ?? false,
-        jobRoleId: day.jobRoleId ?? null,
+        jobRoleId: roleOf.get(day.dayOfWeek) ?? null,
         startTime: day.startTime,
         endTime: day.endTime,
       };

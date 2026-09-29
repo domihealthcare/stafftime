@@ -9,6 +9,7 @@ import {
   placeToShift,
 } from './PlaceSelect';
 import { Alert, Card } from './ui';
+import { JobRoleSelect } from './JobRoleSelect';
 import { WeekdayToggles } from './WeekdayToggles';
 
 /// Builds a rota in one go — the alternative being a manager creating forty
@@ -156,23 +157,19 @@ export function RepeatShiftsForm({
           <div>
             <label htmlFor="repeat-role" className="block text-sm font-medium text-slate-700">
               Job role{' '}
-              <span className="font-normal text-slate-400">
-                {employeeId === OPEN ? '(who should fill them)' : '(optional)'}
-              </span>
+              {employeeId === OPEN && (
+                <span className="font-normal text-slate-400">(who should fill them)</span>
+              )}
             </label>
-            <select
+            <JobRoleSelect
               id="repeat-role"
               value={jobRoleId}
-              onChange={(event) => setJobRoleId(event.target.value)}
+              onChange={setJobRoleId}
+              jobRoles={jobRoles}
+              personId={selected?.id}
+              open={employeeId === OPEN}
               className={field}
-            >
-              <option value="">{employeeId === OPEN ? 'Any role' : 'Not specified'}</option>
-              {jobRoles.map((role) => (
-                <option key={role.id} value={role.id}>
-                  {role.name}
-                </option>
-              ))}
-            </select>
+            />
           </div>
           {employeeId === OPEN && (
             <div>

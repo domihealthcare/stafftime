@@ -23,6 +23,7 @@ import type {
 } from '../lib/types';
 import { PTO_TYPE_LABELS, timeOffOn } from '../lib/time-off';
 import { jobRoleHex } from '../lib/job-role-colours';
+import { atPlace, forRole, WORK_FROM_HOME_FILTER } from '../lib/shift-filters';
 import { useConfirm } from './ConfirmDialog';
 import { confirmOvertime, OvertimePreview, useOvertimeCheck } from './OvertimeAlerts';
 import { Avatar } from './Avatar';
@@ -33,6 +34,7 @@ import {
   homeOfficeOf,
   placeToShift,
 } from './PlaceSelect';
+import { JobRoleSelect } from './JobRoleSelect';
 import { WeekdayToggles } from './WeekdayToggles';
 import {
   ClosureWarning,
@@ -230,10 +232,18 @@ export function RotaTable({
   const rolesOfPerson = (id: string) =>
     jobRoles.filter((role) => membersOf.get(role.id)?.has(id)).map((role) => role.name);
 
+  // "Work from home" has no office rows: an open shift is always at an office.
+  const fromHome = locationFilter === WORK_FROM_HOME_FILTER;
   const visibleLocations = locations.filter(
     (location) =>
-      location.isActive !== false && (!locationFilter || location.id === locationFilter),
+      !fromHome &&
+      location.isActive !== false &&
+      (!locationFilter || location.id === locationFilter),
   );
+  const workingFromHome = new Set(
+    live.filter((shift) => shift.isRemote).map((shift) => shift.employeeId),
+  );
+  const roleMembers = membersOf.get(roleFilter) ?? new Set<string>();
   const visibleRoles = jobRoles.filter((role) => !roleFilter || role.id === roleFilter);
 
   const staff = employees
@@ -241,6 +251,7 @@ export function RotaTable({
       (person) => person.employmentStatus === 'ACTIVE' || person.employmentStatus === 'ON_LEAVE',
     )
     .filter((person) => !roleFilter || membersOf.get(roleFilter)?.has(person.id))
+    .filter((person) => !fromHome || workingFromHome.has(person.id))
     .sort((a, b) => a.firstName.localeCompare(b.firstName) || a.lastName.localeCompare(b.lastName));
   const worksAt = (person: Employee, locationId: string) =>
     person.locations.some((assignment) => assignment.locationId === locationId);
@@ -256,7 +267,8 @@ export function RotaTable({
       (shift) =>
         shift.employeeId === person.id &&
         (!only?.locationId || shift.locationId === only.locationId) &&
-        (!locationFilter || shift.locationId === locationFilter),
+        atPlace(shift, locationFilter) &&
+        forRole(shift, roleFilter, roleMembers),
     ),
   });
 
@@ -293,6 +305,15 @@ export function RotaTable({
               shifts: mine,
             },
           ],
+        },
+      ];
+    }
+    if (grouping === 'location' && fromHome) {
+      return [
+        {
+          key: 'home',
+          title: 'Work from home',
+          rows: staff.map((person) => personRow(person)),
         },
       ];
     }
@@ -341,7 +362,7 @@ export function RotaTable({
         rows: [
           ...visibleLocations.map((location) => openRow(location)),
           ...staff
-            .filter((person) => !locationFilter || worksAt(person, locationFilter))
+            .filter((person) => !locationFilter || fromHome || worksAt(person, locationFilter))
             .map((person) => personRow(person)),
         ],
       },
@@ -352,7 +373,7 @@ export function RotaTable({
   const openTotal = live.filter(
     (shift) =>
       shift.employeeId === null &&
-      (!locationFilter || shift.locationId === locationFilter) &&
+      atPlace(shift, locationFilter) &&
       (!roleFilter || shift.jobRoleId === roleFilter),
   ).length;
 
@@ -939,6 +960,8 @@ function ShiftDialog({
   onError: (message: string) => void;
 }) {
   const [person, setPerson] = useState(shift.employeeId ?? '');
+  /// For a shift with no job role: which of the chosen person's it is for.
+  const [asRole, setAsRole] = useState('');
   const [busy, setBusy] = useState(false);
   const [problem, setProblem] = useState<string | null>(null);
   const confirm = useConfirm();
@@ -960,18 +983,16 @@ function ShiftDialog({
       )
       .map((other) => other.employeeId as string),
   );
-  // People who work at this office, the ones in the shift's job role first.
+  // People who work at this office — and, for a shift with a job role, only
+  // those in it: somebody's shift is always for one of their own roles.
   const candidates = employees
     .filter(
       (p) =>
         p.employmentStatus === 'ACTIVE' &&
-        p.locations.some((a) => a.locationId === shift.locationId),
+        p.locations.some((a) => a.locationId === shift.locationId) &&
+        (!shift.jobRoleId || members.has(p.id) || p.id === shift.employeeId),
     )
-    .sort(
-      (a, b) =>
-        Number(members.has(b.id)) - Number(members.has(a.id)) ||
-        a.firstName.localeCompare(b.firstName),
-    );
+    .sort((a, b) => a.firstName.localeCompare(b.firstName));
 
   async function act(change: () => Promise<unknown>) {
     setBusy(true);
@@ -1010,7 +1031,12 @@ function ShiftDialog({
   async function assign() {
     if (!proposed) return;
     if (!(await confirmOvertime(confirm, proposed, chosenName))) return;
-    await act(() => api.updateShift(shift.id, { employeeId: person }));
+    await act(() =>
+      api.updateShift(shift.id, {
+        employeeId: person,
+        ...(shift.jobRoleId ? {} : { jobRoleId: asRole || null }),
+      }),
+    );
   }
 
   async function remove() {
@@ -1089,7 +1115,6 @@ function ShiftDialog({
             {candidates.map((p) => (
               <option key={p.id} value={p.id} disabled={busyIds.has(p.id)}>
                 {p.preferredName ?? p.firstName} {p.lastName}
-                {shift.jobRoleId && !members.has(p.id) ? ` (not ${shift.jobRole?.name})` : ''}
                 {busyIds.has(p.id) ? ' — already on then' : ''}
               </option>
             ))}
@@ -1104,7 +1129,26 @@ function ShiftDialog({
           </button>
         </div>
         {candidates.length === 0 && (
-          <p className="mt-1 text-xs text-slate-500">Nobody works at this office yet.</p>
+          <p className="mt-1 text-xs text-slate-500">
+            {shift.jobRoleId
+              ? `Nobody in ${shift.jobRole?.name ?? 'that job role'} works at this office yet.`
+              : 'Nobody works at this office yet.'}
+          </p>
+        )}
+        {!shift.jobRoleId && chosen && person !== shift.employeeId && (
+          <div className="mt-2 text-sm">
+            <label htmlFor="assign-role" className="font-medium text-slate-800">
+              As
+            </label>
+            <JobRoleSelect
+              id="assign-role"
+              value={asRole}
+              onChange={setAsRole}
+              jobRoles={jobRoles}
+              personId={chosen.id}
+              className="mt-1 w-full rounded-lg border border-slate-300 px-2 py-1.5 text-sm"
+            />
+          </div>
         )}
         {proposed && (
           <div className="mt-2">
@@ -1341,24 +1385,20 @@ function QuickAddDialog({
           />
           {place === WORK_FROM_HOME && <WorkFromHomeNote />}
         </div>
-        <label className="col-span-2 text-sm" htmlFor="quick-role">
-          <span className="font-medium text-slate-800">
-            Job role {row.person && <span className="font-normal text-slate-400">(optional)</span>}
-          </span>
-          <select
+        <div className="col-span-2 text-sm">
+          <label htmlFor="quick-role" className="font-medium text-slate-800">
+            Job role
+          </label>
+          <JobRoleSelect
             id="quick-role"
             value={jobRoleId}
-            onChange={(event) => setJobRoleId(event.target.value)}
+            onChange={setJobRoleId}
+            jobRoles={jobRoles}
+            personId={row.person?.id}
+            open={!row.person}
             className={field}
-          >
-            <option value="">{row.person ? 'Not specified' : 'Any role'}</option>
-            {jobRoles.map((role) => (
-              <option key={role.id} value={role.id}>
-                {role.name}
-              </option>
-            ))}
-          </select>
-        </label>
+          />
+        </div>
         <div className="col-span-2">
           <label className="flex items-center gap-2 text-sm text-slate-700" htmlFor="quick-repeat">
             <input
