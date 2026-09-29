@@ -134,6 +134,22 @@ export function SchedulePage() {
   const [error, setError] = useState<string | null>(null);
   const [planning, setPlanning] = useState(false);
   const [addMenu, setAddMenu] = useState(false);
+  const [recurringTab, setRecurringTab] = useState<'shifts' | 'closures'>('shifts');
+
+  const closuresCard = (bare: boolean) => (
+    <ClosuresCard
+      bare={bare}
+      initialYear={(view === 'week' ? weekStart : monthStart).getFullYear()}
+      canEdit={isManager}
+      version={eventsVersion}
+      onAdd={() => {
+        setEventForm({ kind: 'CLOSURE' });
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+      }}
+      onOpen={setOpenEvent}
+      onChanged={() => void load()}
+    />
+  );
 
   /// One place to start anything new: the rest of the forms close so only
   /// the one asked for is open.
@@ -666,30 +682,52 @@ export function SchedulePage() {
           </div>
         )}
 
-      {isManager && (
-        <div className="mt-6">
-          <StandingShiftsCard
-            version={standingVersion}
-            employees={employees}
-            locations={locations}
-            jobRoles={jobRoles}
-            onChanged={() => void load()}
-          />
-        </div>
-      )}
-
-      <div className={isManager ? 'mt-3' : 'mt-6'}>
-        <ClosuresCard
-          initialYear={(view === 'week' ? weekStart : monthStart).getFullYear()}
-          canEdit={isManager}
-          version={eventsVersion}
-          onAdd={() => {
-            setEventForm({ kind: 'CLOSURE' });
-            window.scrollTo({ top: 0, behavior: 'smooth' });
-          }}
-          onOpen={setOpenEvent}
-          onChanged={() => void load()}
-        />
+      <div className="mt-6">
+        {isManager ? (
+          <Card className="p-4" testId="recurring-card">
+            <div
+              role="tablist"
+              aria-label="Regular shifts and holidays"
+              className="mb-3 flex gap-1"
+            >
+              {(
+                [
+                  ['shifts', '🔁 Regular shifts'],
+                  ['closures', '🔒 Holidays and closures'],
+                ] as const
+              ).map(([id, label]) => (
+                <button
+                  key={id}
+                  type="button"
+                  role="tab"
+                  aria-selected={recurringTab === id}
+                  onClick={() => setRecurringTab(id)}
+                  className={`rounded-lg px-3 py-1.5 text-sm font-medium ${
+                    recurringTab === id
+                      ? 'bg-brand-50 text-brand-700'
+                      : 'text-slate-600 hover:bg-slate-50'
+                  }`}
+                >
+                  {label}
+                </button>
+              ))}
+            </div>
+            {recurringTab === 'shifts' ? (
+              <StandingShiftsCard
+                bare
+                version={standingVersion}
+                employees={employees}
+                locations={locations}
+                jobRoles={jobRoles}
+                onChanged={() => void load()}
+              />
+            ) : (
+              closuresCard(true)
+            )}
+          </Card>
+        ) : (
+          closuresCard(false)
+        )}
       </div>
 
       <div className="mt-3 grid gap-3 sm:grid-cols-[1fr_auto] sm:items-start">

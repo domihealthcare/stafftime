@@ -48,7 +48,10 @@ export function StandingShiftsCard({
   locations,
   jobRoles,
   onChanged,
+  bare = false,
 }: {
+  /// Inside another card (the Schedule's tabs): no card of its own.
+  bare?: boolean;
   /// Bumped when a repeat is made elsewhere on the page, to re-fetch.
   version: number;
   employees: Employee[];
@@ -187,7 +190,7 @@ export function StandingShiftsCard({
   const ending = (standing ?? []).filter((item) => item.endsOn);
 
   return (
-    <Card className="p-4" testId="standing-shifts-card">
+    <Wrap bare={bare} testId="standing-shifts-card">
       <h2 className="text-sm font-semibold text-slate-900">
         <span aria-hidden="true">🔁</span> Regular shifts
       </h2>
@@ -391,6 +394,24 @@ export function StandingShiftsCard({
           <Alert>{error}</Alert>
         </div>
       )}
+    </Wrap>
+  );
+}
+
+function Wrap({
+  bare,
+  testId,
+  children,
+}: {
+  bare: boolean;
+  testId: string;
+  children: React.ReactNode;
+}) {
+  return bare ? (
+    <div data-testid={testId}>{children}</div>
+  ) : (
+    <Card className="p-4" testId={testId}>
+      {children}
     </Card>
   );
 }

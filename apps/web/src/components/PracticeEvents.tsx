@@ -1097,7 +1097,10 @@ export function ClosuresCard({
   onAdd,
   onOpen,
   onChanged,
+  bare = false,
 }: {
+  /// Inside another card (the Schedule's tabs): no card of its own.
+  bare?: boolean;
   initialYear: number;
   canEdit: boolean;
   /// Bumped when events change elsewhere on the page, to re-fetch.
@@ -1173,7 +1176,7 @@ export function ClosuresCard({
   };
 
   return (
-    <Card className="p-4" testId="closures-card">
+    <Wrap bare={bare} testId="closures-card">
       <div className="flex flex-wrap items-center justify-between gap-2">
         <h2 className="text-sm font-semibold text-slate-900">
           <span aria-hidden="true">🔒</span> Holidays and closures
@@ -1252,6 +1255,25 @@ export function ClosuresCard({
           )}
         </div>
       )}
+    </Wrap>
+  );
+}
+
+/// A card, or — inside the Schedule's tabbed card — just its contents.
+function Wrap({
+  bare,
+  testId,
+  children,
+}: {
+  bare: boolean;
+  testId: string;
+  children: React.ReactNode;
+}) {
+  return bare ? (
+    <div data-testid={testId}>{children}</div>
+  ) : (
+    <Card className="p-4" testId={testId}>
+      {children}
     </Card>
   );
 }

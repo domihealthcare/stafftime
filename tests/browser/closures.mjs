@@ -100,6 +100,7 @@ await step('a manager closes both offices for a whole day', async () => {
 });
 
 await step('and North Bergen alone from 1pm the day before', async () => {
+  await manager.getByRole('tab', { name: 'Holidays and closures' }).click();
   await manager.getByTestId('closures-card').getByRole('button', { name: '+ Add closure' }).click();
   const closure = manager.getByRole('form', { name: 'New closure' });
   await closure.getByLabel('Which holiday or closure?').fill('Christmas Eve');
@@ -216,6 +217,7 @@ await step('the printed rota says the office is closed', async () => {
 
 await step('copying the year puts both a year on, and a second copy adds nothing', async () => {
   await week(manager);
+  await manager.getByRole('tab', { name: 'Holidays and closures' }).click();
   const card = manager.getByTestId('closures-card');
   // The card starts on the year on screen.
   await card.getByText(String(year), { exact: true }).waitFor({ timeout: 10000 });
