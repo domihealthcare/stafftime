@@ -408,7 +408,7 @@ week.
 days and the month sits inside it — four rows for a February that starts on a
 Sunday, six for a month that straddles. (Monday-first until September 2026,
 when Dominguez asked for Sunday: it is how the practice reads a calendar. See
-*Weeks on screen start on Sunday; overtime weeks do not*, below.) The days either side are shown but
+*Weeks on screen start on Sunday; overtime weeks follow the pay period*, below.) The days either side are shown but
 dimmed: a shift on the 1st matters whichever row it lands in.
 
 **It shows who is on.** This is mostly a staff screen — a manager builds the
@@ -439,28 +439,39 @@ a different rule would be worse than one that said nothing.
 `addMonths` next to it: `setMonth` on the 31st rolls into the month after next,
 and a schedule that skips February is a memorable bug.
 
-### Weeks on screen start on Sunday; overtime weeks do not
+### Weeks on screen start on Sunday; overtime weeks follow the pay period
 
 September 2026, Dominguez: "calendar/days should show starting from Sundays".
 The week view, the month, the printed rota, the "This week / Last week"
 shortcuts and the weekday pickers all run Sunday to Saturday
 (`startOfWeek` and `WEEK_ORDER` in `lib/format.ts`).
 
-**Overtime did not move with it**, on purpose — asked, Dominguez said overtime
-goes by the pay period and a display change must not touch it. So the server's
-weeks (`weekStartIn`: overtime, the payroll export, the dashboard, the
-unpublished-rota chase, availability's published-week lock) are still Monday to
-Sunday, and API weekday numbers are still 1 = Monday … 7 = Sunday.
+**Overtime weeks follow the pay period**, not the calendar (Dominguez,
+September 2026: "the overtime hours should be dependent on the pay period").
+Pay is every two weeks from `PracticeSettings.payPeriodStart`, so each pay
+period is exactly two overtime weeks, each starting on the pay period's
+weekday — `workweekStartsOn` in `settings/pay-period.ts`, passed to
+`weekStartIn` / `weekStartOf` by the rota's overtime warning, the overtime
+emails and notices, the dashboard and the payroll export (ADP included). Until
+a pay period is set, weeks start on Monday, as they always did. Practice
+settings says which day it is, under the pay period date.
 
-The one place the two meet is the rota's overtime badge: a Sunday-to-Saturday
-row touches two overtime weeks (Sunday closes one, Monday opens the next). The
-badge shows a warning for either, says which week in its tooltip, and no longer
-guesses from the row's own total while the figures load — that total is a
-different week.
+Still forty hours **a week**, never eighty a fortnight: federal and New Jersey
+law count overtime week by week (the 8/80 arrangement is for hospitals), so a
+pay period with 45 hours one week and 35 the next pays 5 hours of overtime.
 
-Worth confirming (see `docs/open-questions.md`): overtime is counted from
-Monday, not from the pay period's first day. If the pay period starts on a
-Sunday, the two disagree.
+**Moving the pay period date moves the overtime weeks**, for past weeks too:
+a re-export of an old period is recomputed with the current date. Set it once,
+from a real payslip.
+
+What did **not** move: the unpublished-rota chase and availability's
+published-week lock still think in Monday weeks (they are about the rota, not
+pay), and API weekday numbers are still 1 = Monday … 7 = Sunday.
+
+The rota's overtime badge shows a warning for any overtime week overlapping
+the seven days on screen (a Sunday-to-Saturday row can touch two), says which
+week in its tooltip, and no longer guesses from the row's own total while the
+figures load — that total need not be the same seven days.
 
 ### Warning about overtime while the rota is being built
 
@@ -473,8 +484,8 @@ warning off in exactly the case it exists for.
 
 **The whole week counts, not the window on screen.** A manager looking at
 Thursday and Friday still needs Monday to Wednesday in the total, or adding a
-sixth day looks free. The overtime query therefore widens to the Monday of the
-first week and the Sunday of the last, whatever window was asked for.
+sixth day looks free. The overtime query therefore widens to the start of the
+first week and the end of the last, whatever window was asked for.
 
 **Every location counts, not the one being viewed.** Somebody on 24 hours at
 North Bergen and 20 at West New York is on 44 for the week, and a per-location
@@ -482,12 +493,13 @@ view is precisely where that goes unnoticed. The hours are totalled across the
 practice even when the screen is filtered, and `spansLocations` tells the screen
 to say so — otherwise the number looks wrong to whoever is reading it.
 
-Overtime weeks start Monday in the location's timezone, using the same
-`weekStartIn` as the payroll export — even though the screens draw weeks from
-Sunday (see *Weeks on screen start on Sunday; overtime weeks do not*). That sharing is deliberate: a rota that predicts overtime
-and an export that reports it must not disagree about where a week begins, and a
-late Sunday shift has to land in the week the person experienced rather than the
-week UTC puts it in.
+Overtime weeks start on the pay period's weekday in the location's timezone,
+using the same `weekStartIn` and `workweekStartsOn` as the payroll export (see
+*Weeks on screen start on Sunday; overtime weeks follow the pay period*). That
+sharing is deliberate: a rota that predicts overtime and an export that reports
+it must not disagree about where a week begins, and a late shift on a week's
+last day has to land in the week the person experienced rather than the week
+UTC puts it in.
 
 **The threshold is the practice's**, in `PracticeSettings`, not a constant.
 Forty is the federal line and a sensible default, but it was a default nobody
@@ -1985,8 +1997,9 @@ so it can be tested without a database, and every rule in it is one the rest
 of the app already uses — a number here must never disagree with the
 timesheet, the scheduler or the payroll export:
 
-- a week is Monday–Sunday **in the location's timezone** (the overtime week;
-  the calendar screens draw Sunday to Saturday, but this is not a calendar);
+- a week is the overtime week — from the pay period's weekday, Monday until one
+  is set — **in the location's timezone** (the calendar screens draw Sunday to
+  Saturday, but this is not a calendar);
 - hours worked come from **completed** punches; an open punch counts as a punch
   but not as hours (it is somebody still at work, or a missing clock-out that
   *What needs a look* chases);

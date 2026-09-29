@@ -15,12 +15,14 @@ import {
   localTimeIn,
   PRACTICE_ZONE,
   weekStartIn,
+  weekStartOf,
   zonedTimeToUtc,
 } from '../common/util/zoned-time.util';
 import { clashFor, Rule } from '../availability/availability.rules';
 import { toRule } from '../availability/availability.service';
 import { InboxService } from '../email/inbox.service';
 import { PrismaService } from '../prisma/prisma.service';
+import { workweekStartsOn } from '../settings/pay-period';
 import { PracticeSettingsService } from '../settings/practice-settings.service';
 import {
   CopyWeekDto,
@@ -42,7 +44,8 @@ export const STANDING_DAYS_AHEAD = 56;
 export interface OvertimeWarning {
   employeeId: string;
   employeeName: string;
-  /// Monday of the week these hours fall in, as a plain date.
+  /// First day of the overtime week these hours fall in (the pay period's
+  /// weekday), as a plain date.
   weekStart: string;
   scheduledHours: number;
   overtimeHours: number;
@@ -158,7 +161,8 @@ export class ShiftPlanningService {
     }
 
     const status = dto.status ?? ShiftStatus.DRAFT;
-    const weeks = [...new Set(wanted.map(mondayOnOrBefore))];
+    const startsOn = await this.settings.workweekStartsOn();
+    const weeks = [...new Set(wanted.map((date) => weekStartOf(date, startsOn)))];
     const before =
       dto.employeeId && status === ShiftStatus.PUBLISHED
         ? await this.overtime.snapshot([dto.employeeId], weeks)
@@ -425,9 +429,10 @@ export class ShiftPlanningService {
     const people = [
       ...new Set(source.flatMap((shift) => (shift.employeeId ? [shift.employeeId] : []))),
     ];
-    // The target week, with a week either side for an office whose Monday
+    // The target week, with a week either side for an office whose week
     // falls on a different UTC date than the one given.
-    const weeks = [-7, 0, 7].map((offset) => mondayOnOrBefore(addDaysTo(toStart, offset)));
+    const startsOn = await this.settings.workweekStartsOn();
+    const weeks = [-7, 0, 7].map((offset) => weekStartOf(addDaysTo(toStart, offset), startsOn));
     const before =
       dto.status === ShiftStatus.PUBLISHED ? await this.overtime.snapshot(people, weeks) : null;
 
@@ -630,8 +635,9 @@ export class ShiftPlanningService {
    *
    * **The whole week counts, not the visible window.** A manager looking at
    * Wednesday to Friday still needs Monday and Tuesday in the total, or adding
-   * a sixth day looks free. So the query widens to the Monday of the first week
-   * and the Sunday of the last, whatever was asked for.
+   * a sixth day looks free. So the query widens to the start of the first week
+   * and the end of the last, whatever was asked for. A week starts on the pay
+   * period's weekday (`workweekStartsOn`).
    *
    * **Every location counts, not the one being viewed.** Somebody on 24 hours
    * at North Bergen and 20 at West New York is on 44 for the week, and a
@@ -651,15 +657,16 @@ export class ShiftPlanningService {
     dates: string[],
     viewingLocationId?: string,
   ): Promise<OvertimeWarning[]> {
-    const { overtimeThresholdHours } = await this.settings.get();
-    const firstMonday = mondayOnOrBefore(dates[0]);
-    const lastSunday = addDaysTo(mondayOnOrBefore(dates[dates.length - 1]), 6);
+    const { overtimeThresholdHours, payPeriodStart } = await this.settings.get();
+    const startsOn = workweekStartsOn(payPeriodStart);
+    const firstDay = weekStartOf(dates[0], startsOn);
+    const lastDay = addDaysTo(weekStartOf(dates[dates.length - 1], startsOn), 6);
 
     const shifts = await this.prisma.shift.findMany({
       where: {
         status: { not: ShiftStatus.CANCELLED },
-        startsAt: { gte: new Date(`${firstMonday}T00:00:00Z`) },
-        endsAt: { lt: new Date(`${addDaysTo(lastSunday, 2)}T00:00:00Z`) },
+        startsAt: { gte: new Date(`${firstDay}T00:00:00Z`) },
+        endsAt: { lt: new Date(`${addDaysTo(lastDay, 2)}T00:00:00Z`) },
         employee: { payType: PayType.HOURLY },
       },
       include: SHIFT_INCLUDE,
@@ -681,7 +688,7 @@ export class ShiftPlanningService {
       // The query already asks for hourly staff, which no open shift has; this
       // is for the type checker as much as anything.
       if (!shift.employeeId || !shift.employee) continue;
-      const weekStart = weekStartIn(shift.startsAt, shift.location.timezone);
+      const weekStart = weekStartIn(shift.startsAt, shift.location.timezone, startsOn);
       const key = `${shift.employeeId}:${weekStart}`;
 
       const week = weeks.get(key) ?? {
@@ -921,12 +928,6 @@ function daysBetween(from: string, to: string): number {
   );
 }
 
-/// The Monday on or before a plain date. `weekStartIn` answers this for an
-/// instant in a timezone; this is the same question for a date that is already
-/// a local calendar day.
-function mondayOnOrBefore(date: string): string {
-  return addDaysTo(date, -((isoWeekdayOf(date) + 6) % 7));
-}
 
 /// The last date a standing shift is written out to, counting from `date`.
 function standingHorizon(date: string): string {

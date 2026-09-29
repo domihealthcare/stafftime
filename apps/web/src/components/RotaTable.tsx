@@ -6,7 +6,6 @@ import {
   formatTime,
   formatTimeCompact,
   localDate,
-  overtimeWeekStart,
   toLocalInputValue,
 } from '../lib/format';
 import type {
@@ -65,6 +64,13 @@ const hoursOf = (shift: Shift) =>
   (new Date(shift.endsAt).getTime() - new Date(shift.startsAt).getTime()) / 3_600_000;
 
 const round1 = (value: number) => Math.round(value * 10) / 10;
+
+/// Whole days on from a "YYYY-MM-DD", in UTC so a clock change cannot move it.
+function addDayKey(day: string, days: number): string {
+  const date = new Date(`${day}T00:00:00Z`);
+  date.setUTCDate(date.getUTCDate() + days);
+  return date.toISOString().slice(0, 10);
+}
 
 /**
  * The week as a rota: one row per person, one column per day — and, above
@@ -145,14 +151,21 @@ export function RotaTable({
 
   /// Where each person's week stands against the overtime line.
   ///
-  /// The rota runs Sunday to Saturday, but overtime is counted Monday to
-  /// Sunday (it follows pay, not the calendar), so the week on screen touches
-  /// two overtime weeks: Sunday closes one, Monday to Saturday open the next.
-  /// A warning for either is shown; the later one first, as it holds six of
-  /// the seven days in view.
-  const overtimeWeeks = [...new Set(dayKeys.map(overtimeWeekStart))].reverse();
+  /// Overtime weeks start on the pay period's weekday, which need not be the
+  /// Sunday the rota starts on, so the week on screen can touch two of them.
+  /// A warning for any overtime week overlapping the days in view is shown;
+  /// the latest first, as it holds most of them.
+  const overtimeWeeks = (weekStarts: string[]) =>
+    [...new Set(weekStarts)]
+      .filter((start) => start <= dayKeys[dayKeys.length - 1] && addDayKey(start, 6) >= dayKeys[0])
+      .sort()
+      .reverse();
   const weekStanding = (personId: string) => {
-    for (const weekStart of overtimeWeeks) {
+    const candidates = overtimeWeeks([
+      ...(overtime ?? []).filter((w) => w.employeeId === personId).map((w) => w.weekStart),
+      ...(selfId ? (ownWeeks ?? []).map((w) => w.weekStart) : []),
+    ]);
+    for (const weekStart of candidates) {
       const over = overtime?.find((w) => w.employeeId === personId && w.weekStart === weekStart);
       if (over)
         return {
@@ -171,8 +184,8 @@ export function RotaTable({
         };
     }
     // No figures from the server yet (still loading): nothing, rather than
-    // a guess from the row — the row is a Sunday-to-Saturday week and the
-    // line is not, so its sum could warn where the server would not.
+    // a guess from the row — the row's week and the overtime week need not
+    // be the same seven days, so its sum could warn where the server would not.
     return null;
   };
   const warnings = useMemo(() => {
@@ -592,7 +605,7 @@ export function RotaTable({
                       {standing && (
                         <span
                           data-testid={`week-standing-${standing.level}`}
-                          title={`${standing.hours} hours in the week of ${formatCalendarDate(standing.weekStart, { year: false })} (overtime weeks run Monday to Sunday), every location — the overtime line is ${overtimeThresholdHours}`}
+                          title={`${standing.hours} hours in the overtime week from ${formatCalendarDate(standing.weekStart, { year: false })} (it follows the pay period), every location — the overtime line is ${overtimeThresholdHours}`}
                           className="mt-1 block whitespace-nowrap rounded-full bg-rose-600 px-2 py-0.5 text-center text-xs font-semibold text-white"
                         >
                           ⚠ {standing.overBy} h overtime

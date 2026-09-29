@@ -302,9 +302,12 @@ Beyond the phases, the parts worth knowing about before picking up work:
   person told once).
 - **Weeks start on Sunday on screen** (September 2026, Dominguez): week
   view, month, printed rota, "This week" shortcuts, weekday pickers.
-  **Overtime is still counted Monday to Sunday** — Dominguez: overtime goes
-  by the pay period and must not move with the display. Whether the pay
-  period starts on a Sunday is in `docs/open-questions.md`.
+  Display only.
+- **Overtime weeks follow the pay period** (September 2026, Dominguez): each
+  two-week pay period is two overtime weeks starting on the pay period's
+  weekday (`workweekStartsOn`), for the rota warnings, dashboard and payroll
+  export alike; Monday until a pay period date is set. Still 40 **a week**,
+  not 80 a fortnight (federal and NJ law). Practice settings shows the day.
 - **The scheduler** does a week (for building, on a laptop) and a month (for
   staff checking when they are on, often on a phone), warns when the rota puts
   somebody past the overtime threshold in a week, and syncs to Google, Apple or

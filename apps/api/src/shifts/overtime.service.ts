@@ -3,6 +3,7 @@ import { PayType, ShiftStatus } from '@prisma/client';
 import { addDaysTo, localDateIn, weekStartIn } from '../common/util/zoned-time.util';
 import { NotificationsService } from '../email/notifications.service';
 import { PrismaService } from '../prisma/prisma.service';
+import { workweekStartsOn } from '../settings/pay-period';
 import { PracticeSettingsService } from '../settings/practice-settings.service';
 
 /// How close to the overtime line counts as "close". Four hours is half a
@@ -74,7 +75,7 @@ export class OvertimeService {
     /// The shift being changed, so it is not counted twice.
     shiftId?: string;
   }): Promise<OvertimeCheck> {
-    const [employee, location, { overtimeThresholdHours }] = await Promise.all([
+    const [employee, location, { overtimeThresholdHours, payPeriodStart }] = await Promise.all([
       this.prisma.employee.findUnique({
         where: { id: query.employeeId },
         select: { payType: true },
@@ -88,7 +89,11 @@ export class OvertimeService {
     if (!employee) throw new NotFoundException('That employee does not exist.');
     if (!location) throw new NotFoundException('That location does not exist.');
 
-    const weekStart = weekStartIn(query.startsAt, location.timezone);
+    const weekStart = weekStartIn(
+      query.startsAt,
+      location.timezone,
+      workweekStartsOn(payPeriodStart),
+    );
     const totals = await this.weekTotals([query.employeeId], [weekStart], {
       excludeShiftId: query.shiftId,
     });
@@ -130,15 +135,16 @@ export class OvertimeService {
       select: { startsAt: true, endsAt: true, location: { select: { timezone: true } } },
     });
 
+    const { overtimeThresholdHours, payPeriodStart } = await this.settings.get();
+    const startsOn = workweekStartsOn(payPeriodStart);
     const weeks = new Map<string, { hours: number; zone: string }>();
     for (const shift of shifts) {
-      const weekStart = weekStartIn(shift.startsAt, shift.location.timezone);
+      const weekStart = weekStartIn(shift.startsAt, shift.location.timezone, startsOn);
       const week = weeks.get(weekStart) ?? { hours: 0, zone: shift.location.timezone };
       week.hours += (shift.endsAt.getTime() - shift.startsAt.getTime()) / 3_600_000;
       weeks.set(weekStart, week);
     }
 
-    const { overtimeThresholdHours } = await this.settings.get();
     const result: OwnOvertimeWeek[] = [];
     for (const [weekStart, week] of weeks) {
       // A week that has already finished is the timesheet's business now.
@@ -170,6 +176,7 @@ export class OvertimeService {
     const weeks = new Set(weekStarts);
     if (ids.length === 0 || weeks.size === 0) return totals;
 
+    const startsOn = await this.settings.workweekStartsOn();
     const sorted = [...weeks].sort();
     // A day either side: the office's week starts at its own midnight, not UTC's.
     const from = new Date(`${addDaysTo(sorted[0], -1)}T00:00:00Z`);
@@ -193,7 +200,7 @@ export class OvertimeService {
 
     for (const shift of shifts) {
       if (!shift.employeeId) continue;
-      const weekStart = weekStartIn(shift.startsAt, shift.location.timezone);
+      const weekStart = weekStartIn(shift.startsAt, shift.location.timezone, startsOn);
       if (!weeks.has(weekStart)) continue;
       const k = key(shift.employeeId, weekStart);
       totals.set(
@@ -202,6 +209,12 @@ export class OvertimeService {
       );
     }
     return totals;
+  }
+
+  /// The weekday overtime weeks start on — the pay period's first day — for
+  /// callers that work out which weeks a change touches.
+  workweekStartsOn(): Promise<number> {
+    return this.settings.workweekStartsOn();
   }
 
   /// Published hours for these people and weeks, taken before a change so the

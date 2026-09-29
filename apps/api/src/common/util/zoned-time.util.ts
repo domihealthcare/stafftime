@@ -113,19 +113,26 @@ export function addDaysTo(date: string, days: number): string {
 }
 
 /**
- * The Monday of the week an instant falls in, in a given timezone.
+ * The first day of the overtime week an instant falls in, in a given timezone.
+ *
+ * `startsOn` is the weekday overtime weeks begin on (1 = Monday … 7 =
+ * Sunday): the pay period's first day, since September 2026 — see
+ * `workweekStartsOn` in `settings/pay-period.ts`. Monday when no pay period
+ * has been set.
  *
  * Shared by the payroll export, which splits hours over forty, and the rota's
  * overtime warning, which predicts them. Those two must agree about where a
  * week begins or the schedule will promise one thing and the payslip say
- * another — a late Sunday shift in particular has to land in the week the
- * person experienced, not the week UTC puts it in.
+ * another — a late shift on the last day in particular has to land in the week
+ * the person experienced, not the week UTC puts it in.
  */
-export function weekStartIn(instant: Date, zone: string): string {
-  const local = new Date(`${localDateIn(instant, zone)}T00:00:00Z`);
-  const daysSinceMonday = (local.getUTCDay() + 6) % 7;
-  local.setUTCDate(local.getUTCDate() - daysSinceMonday);
-  return local.toISOString().slice(0, 10);
+export function weekStartIn(instant: Date, zone: string, startsOn = 1): string {
+  return weekStartOf(localDateIn(instant, zone), startsOn);
+}
+
+/// The same question for a plain date that is already a local calendar day.
+export function weekStartOf(date: string, startsOn = 1): string {
+  return addDaysTo(date, -((isoWeekdayOf(date) - startsOn + 7) % 7));
 }
 
 /// "HH:MM" on the wall clock in `zone`.

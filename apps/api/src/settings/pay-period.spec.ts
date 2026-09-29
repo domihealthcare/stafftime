@@ -1,4 +1,4 @@
-import { PAY_PERIOD_DAYS, payPeriodContaining, payPeriods } from './pay-period';
+import { PAY_PERIOD_DAYS, payPeriodContaining, payPeriods, workweekStartsOn } from './pay-period';
 
 // A Monday a pay period began.
 const ANCHOR = '2026-09-14';
@@ -56,5 +56,17 @@ describe('payPeriods', () => {
 
   it('gives nothing until an anchor is set', () => {
     expect(payPeriods('2026-09-23', null)).toEqual({ current: null, previous: null });
+  });
+});
+
+describe('workweekStartsOn', () => {
+  it('is the pay period\'s own weekday', () => {
+    expect(workweekStartsOn(ANCHOR)).toBe(1);
+    expect(workweekStartsOn('2026-09-13')).toBe(7); // a Sunday
+    expect(workweekStartsOn(new Date('2026-09-25T00:00:00Z'))).toBe(5); // a Friday
+  });
+
+  it('is Monday until a pay period is set, as it always was', () => {
+    expect(workweekStartsOn(null)).toBe(1);
   });
 });

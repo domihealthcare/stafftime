@@ -85,8 +85,8 @@ export function toLocalInputValue(date: Date): string {
 /// which is how the practice reads a calendar (asked for by Dominguez,
 /// September 2026).
 ///
-/// On screen only. Overtime is still counted Monday to Sunday on the server
-/// (see `overtimeWeekStart`), and nothing about pay moved with this.
+/// On screen only. Overtime weeks start on the pay period's weekday, on the
+/// server, and nothing about pay moved with this.
 export function startOfWeek(date: Date): Date {
   const result = new Date(date);
   result.setHours(0, 0, 0, 0);
@@ -108,15 +108,6 @@ export const WEEKDAY_NAMES = [
   'Saturday',
   'Sunday',
 ] as const;
-
-/// The Monday a "YYYY-MM-DD" falls in the overtime week of. The overtime
-/// line is counted Monday to Sunday on the server, whatever day the calendar
-/// starts on, so the rota asks it this way.
-export function overtimeWeekStart(day: string): string {
-  const date = new Date(`${day}T00:00:00Z`);
-  date.setUTCDate(date.getUTCDate() - ((date.getUTCDay() + 6) % 7));
-  return date.toISOString().slice(0, 10);
-}
 
 export function addDays(date: Date, days: number): Date {
   const result = new Date(date);

@@ -131,9 +131,12 @@ export class ShiftsService {
         })
       ).map((location) => [location.id, location.timezone]),
     );
+    const startsOn = await this.overtime.workweekStartsOn();
     const weeks = [
       ...new Set(
-        touched.map((t) => weekStartIn(t.startsAt, zones.get(t.locationId) ?? 'America/New_York')),
+        touched.map((t) =>
+          weekStartIn(t.startsAt, zones.get(t.locationId) ?? 'America/New_York', startsOn),
+        ),
       ),
     ];
     const before = await this.overtime.snapshot([employeeId], weeks);

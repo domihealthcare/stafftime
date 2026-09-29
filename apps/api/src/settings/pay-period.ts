@@ -1,4 +1,4 @@
-import { addDaysTo } from '../common/util/zoned-time.util';
+import { addDaysTo, isoWeekdayOf } from '../common/util/zoned-time.util';
 
 /// Domi is paid every two weeks (confirmed by Dominguez, September 2026).
 export const PAY_PERIOD_DAYS = 14;
@@ -31,4 +31,21 @@ export function payPeriods(today: string, anchor: string | null) {
   if (!anchor) return { current: null, previous: null };
   const current = payPeriodContaining(today, anchor);
   return { current, previous: payPeriodContaining(addDaysTo(current.from, -1), anchor) };
+}
+
+/**
+ * The weekday overtime weeks start on (1 = Monday … 7 = Sunday): the pay
+ * period's own first day, so each fortnight is exactly two overtime weeks
+ * (Dominguez, September 2026: "the overtime hours should be dependent on the
+ * pay period").
+ *
+ * Still forty hours **a week**, not eighty a fortnight: federal and New Jersey
+ * law count overtime week by week, and the 8/80 exception is for hospitals.
+ * Monday when no pay period has been set, as it always was.
+ */
+export function workweekStartsOn(payPeriodStart: Date | string | null): number {
+  if (!payPeriodStart) return 1;
+  const date =
+    typeof payPeriodStart === 'string' ? payPeriodStart : payPeriodStart.toISOString();
+  return isoWeekdayOf(date.slice(0, 10));
 }

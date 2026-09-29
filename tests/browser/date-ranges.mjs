@@ -89,6 +89,26 @@ await step('an admin sets the pay period start in Practice settings', async () =
     throw new Error(`server periods ${JSON.stringify(info)} differ from ${JSON.stringify({ current, previous })}`);
 });
 
+await step('overtime weeks start on the pay period\'s weekday, and it says so', async () => {
+  const says = admin.getByTestId('overtime-week');
+  await says.getByText('Monday', { exact: true }).waitFor({ timeout: 5000 });
+  // Try a Sunday: the day follows the date as it is typed, and the server agrees once saved.
+  await admin.getByLabel('Pay period start').fill('2026-09-13');
+  await says.getByText('Sunday', { exact: true }).waitFor({ timeout: 5000 });
+  const save = async () => {
+    const saving = admin.waitForResponse((r) => r.url().includes('/api/settings') && r.request().method() === 'PATCH');
+    await admin.getByRole('button', { name: 'Save', exact: true }).click();
+    if (!(await saving).ok()) throw new Error('the save failed');
+  };
+  await save();
+  const info = await admin.evaluate(() => fetch('/api/settings/pay-period').then((r) => r.json()));
+  if (info.workweekStartsOn !== 7) throw new Error(`the server starts weeks on ${info.workweekStartsOn}`);
+  // Back to the Monday the rest of this suite counts from.
+  await admin.getByLabel('Pay period start').fill(ANCHOR);
+  await save();
+  await says.getByText('Monday', { exact: true }).waitFor({ timeout: 5000 });
+});
+
 await step('staff get the pay-period shortcuts too, and they ask for exactly those days', async () => {
   await emp.reload({ waitUntil: 'networkidle' });
   await chip(emp, 'This pay period').waitFor({ timeout: 15000 });

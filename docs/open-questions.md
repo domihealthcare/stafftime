@@ -119,14 +119,6 @@ What is deliberately left open:
       (banner, email, ⚠ on the shift). Skipping them automatically would be
       tidier, but quietly leaves days unscheduled if the closure is later
       removed. Worth asking once a real Christmas rota has been built.
-- [ ] **Does the overtime week start on the pay period's first day?** Asked
-      when the calendar moved to Sunday-first (September 2026), Dominguez said
-      overtime goes by the pay period and must not move with the display. The
-      app counts overtime **Monday to Sunday** (rota, dashboard and payroll
-      export alike), as it always has. If Domi's pay period starts on a
-      Sunday — worth checking the date in Practice settings, and the workweek
-      ADP TotalSource has on file — the overtime week should start on Sunday
-      too. A small change once confirmed; not made without it, as it moves pay.
 - [ ] **Should regular shifts (no end date) be editable as a series?** Today
       a regular shift can only be stopped; to change the hours, stop it and
       make a new one from the next week. Revisit if that becomes a chore.

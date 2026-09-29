@@ -598,7 +598,8 @@ const MANAGERS: Section[] = [
           <>
             <p>
               <strong>Overtime</strong> — the rota puts somebody past the weekly threshold (40
-              hours, across both offices). It shows in red at the top of the schedule and beside
+              hours, across both offices). Weeks for overtime start on the pay period&rsquo;s first
+              day, so each pay period is two of them; Practice settings shows which day. It shows in red at the top of the schedule and beside
               their weekly total. Adding or assigning a shift checks first: the form warns as you
               fill it in, and saving asks you to confirm. Once a shift that puts them over is
               published, the person sees it too and is emailed. While you are adding or assigning a

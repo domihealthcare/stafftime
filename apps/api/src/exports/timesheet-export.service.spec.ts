@@ -109,13 +109,16 @@ describe('TimesheetExportService', () => {
     };
   }
 
-  function build(entries: unknown[]) {
+  function build(entries: unknown[], settings: Parameters<typeof fakeSettings>[0] = {}) {
     const prisma = {
       timeEntry: { findMany: jest.fn().mockResolvedValue(entries) },
       location: { findUnique: jest.fn().mockResolvedValue({ name: 'North Bergen' }) },
     };
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    return { service: new TimesheetExportService(prisma as any, fakeSettings()), prisma };
+    return {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      service: new TimesheetExportService(prisma as any, fakeSettings(settings)),
+      prisma,
+    };
   }
 
   const period = { from: '2026-09-14T00:00:00Z', to: '2026-09-28T00:00:00Z' };
@@ -265,6 +268,18 @@ describe('TimesheetExportService', () => {
       const data = await service.build({ ...period, splitOvertime: true });
       expect(data.totals[0].regularHours).toBe(40);
       expect(data.totals[0].overtimeHours).toBe(5);
+    });
+
+    it('counts each week from the pay period\'s first weekday', async () => {
+      // Monday to Friday, 9 hours a day. From Monday that is one 45-hour week;
+      // with a pay period that starts on a Wednesday, Monday and Tuesday
+      // close one week (18 hours) and Wednesday to Friday open the next (27).
+      const { service } = build(fortyFiveHourWeek(), {
+        payPeriodStart: new Date('2026-09-16T00:00:00Z'),
+      });
+      const data = await service.build({ ...period, splitOvertime: true });
+      expect(data.totals[0].regularHours).toBe(45);
+      expect(data.totals[0].overtimeHours).toBe(0);
     });
 
     it('splits per week, not across the whole period', async () => {
