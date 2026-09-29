@@ -2603,17 +2603,20 @@ shorter and harder to get wrong):
   documented in eCW (no diagnosis or ICD-10 entered again here — it is
   already in the chart, and copying it invites errors); an independent
   historian took part (who: one line); no 99483 in 180 days; no conflicting
-  same-day service (the codes listed).
+  same-day service (the codes behind an "i" that shows them on hover or tap).
 - **Patient and visit**: name, DOB, MRN, date of service, **office or
-  telehealth** (no location — the claim carries it), time, MDM, and an AWV
-  tick. Telehealth shows a **modifier 95** reminder and the AWV a modifier 25
-  one; both wordings are in `config.ts` (payers differ on 95 and place of
-  service, so it reminds rather than rules).
-- **A–J**: each "Today" or "Prior visit". Prior visit is a **statement**
-  ("completed at a prior visit; reviewed today and still valid or
-  updated"), not a date and a name; its answers fold away and are optional.
-  **A starts as prior visit** (`DEFAULT_PRIOR`). Driving (G) and the care
-  plan (J) are required either way.
+  telehealth** (no location — the claim carries it), time and MDM.
+  Telehealth shows a **modifier 95** reminder, worded in `config.ts` (payers
+  differ on 95 and place of service, so it reminds rather than rules). No
+  AWV question: an AWV is not done with this visit (Dominguez).
+- **A–J**: each "Today" or "Prior visit". Prior visit is a **statement the
+  provider ticks** ("completed at a prior visit; reviewed today and still
+  valid or updated"), not a date and a name; its answers fold away and are
+  optional. **A starts as prior visit** (`DEFAULT_PRIOR`), unticked.
+  Driving (G) and the care plan (J) are required either way. The cognitive
+  test starts on **BrainCheck Assess**, which the practice uses; its result
+  is entered as reported. I records **planning ahead** — financial power of
+  attorney, health care proxy, life-support wishes — each done or not yet.
 - **D, dementia staging, is done on screen with FAST** — pick the highest
   stage whose description fits. Staging is one of 99483's required elements.
   FAST 1 is left out (no "no impairment" anywhere); another instrument (CDR,
@@ -2643,10 +2646,14 @@ look-alikes (≥ → >=), and anything else is listed as a problem to retype.
   "Page X of Y" on every page; the requirements confirmed; each element and
   how it was completed; the care plan; the attestation with the minutes
   entered, the provider, a time stamp and a signature line; the eCW footer.
-- **The handout** — `99483_CarePlan_[MRN]_[date].pdf`: plain words, larger
-  print, nothing clinical (no scores, stages or MRN). Per area, "Our goals"
-  and "What we will do"; referrals, the Alzheimer's Association helpline,
-  general safety tips and the next visit. Dates are spelled out ("29 de
+- **The handout** — `99483_CarePlan_[MRN]_[date].pdf`, laid out after
+  BrainCheck's cognitive care plan (the sample Dominguez shared): prepared
+  by, practice, patient, care partner and date; per area a line of plain
+  explanation, "Our goals" and "Things to try"; planning ahead as a
+  checklist; referrals, the Alzheimer's Association helpline, general safety
+  tips, the next visit and the practice's number (201-528-3664);
+  "Confidential" on every page. Plain words, larger print, nothing clinical
+  (no scores, stages or MRN). Dates are spelled out ("29 de
   septiembre de 2026") so nobody guesses which number is the month. Chosen
   lines are translated; anything typed is printed as typed. **All Spanish is
   in `translations.es.ts`, marked for native-speaker review**; while
@@ -2655,3 +2662,7 @@ look-alikes (≥ → >=), and anything else is listed as a problem to retype.
 
 Switching the handout's language does not undo the note already
 downloaded; changing anything else does.
+
+**Help.** Providers get a *For providers* section on the Help page (where it
+is, privacy, prior visits, the care plan, after the visit in eCW); the
+managers guide says how to give a provider the form.

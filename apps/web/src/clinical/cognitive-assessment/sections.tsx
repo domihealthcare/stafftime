@@ -3,8 +3,6 @@ import { Alert } from '../../components/ui';
 import {
   ACP_STATUS,
   ADL_IMPAIRMENTS,
-  ADVANCE_DIRECTIVE,
-  AWV_REMINDER,
   CAPACITY,
   CAREGIVER_KNOWLEDGE,
   CAREGIVER_NEEDS,
@@ -28,6 +26,8 @@ import {
   IADL_IMPAIRMENTS,
   MEDICAL_DECISION_MAKING,
   NEUROPSYCHIATRIC_SYMPTOMS,
+  PLANNING_ITEMS,
+  PLANNING_STATUS,
   PLAN_SHARED_WITH,
   REFERRALS,
   RELATIONSHIPS,
@@ -43,6 +43,7 @@ import {
   CheckGroup,
   Confirm,
   FieldContext,
+  InfoTip,
   RadioGroup,
   Select,
   TextArea,
@@ -54,10 +55,7 @@ import { hasConcern, type AssessmentForm, type CarePlanEntry, type Completion } 
 /// handout's language, which is set on its own).
 export type FormSection = Exclude<keyof AssessmentForm, 'handoutLanguage'>;
 
-export type Update = <S extends FormSection>(
-  section: S,
-  patch: Partial<AssessmentForm[S]>,
-) => void;
+export type Update = <S extends FormSection>(section: S, patch: Partial<AssessmentForm[S]>) => void;
 
 interface SectionProps {
   form: AssessmentForm;
@@ -80,14 +78,21 @@ export function RequirementsSection({ form, update }: SectionProps) {
         <div key={requirement.key}>
           <Confirm
             path={`requirements.${requirement.key}`}
-            label={requirement.label}
+            label={
+              requirement.key === 'noConflictingServices' ? (
+                <>
+                  {requirement.label}
+                  <InfoTip label="Which codes conflict">
+                    Codes that conflict with 99483 on the same day, by the same provider:{' '}
+                    {CONFLICTING_SAME_DAY_CODES.join(', ')}.
+                  </InfoTip>
+                </>
+              ) : (
+                requirement.label
+              )
+            }
             checked={requirements[requirement.key]}
             onChange={(checked) => set({ [requirement.key]: checked })}
-            hint={
-              requirement.key === 'noConflictingServices'
-                ? `Conflicting codes: ${CONFLICTING_SAME_DAY_CODES.join(', ')}.`
-                : undefined
-            }
           />
           {requirement.key === 'historianPresent' && requirements.historianPresent && (
             <div className="ml-8 mt-2">
@@ -196,19 +201,6 @@ export function VisitSection({
           onChange={(medicalDecisionMaking) => set({ medicalDecisionMaking })}
         />
       </Grid>
-      <div>
-        <Confirm
-          path="visit.awvSameDay"
-          label="An annual wellness visit (AWV) was also done today."
-          checked={visit.awvSameDay}
-          onChange={(awvSameDay) => set({ awvSameDay })}
-        />
-        {visit.awvSameDay && (
-          <div className="mt-2">
-            <Alert tone="info">{AWV_REMINDER}</Alert>
-          </div>
-        )}
-      </div>
       <p className="text-sm text-slate-600" data-testid="provider-line">
         Provider:{' '}
         <span className="font-medium text-slate-900">
@@ -470,7 +462,7 @@ function ElementD({ form, update, required }: ElementProps) {
           {FAST_STAGES.map((stage) => (
             <label
               key={stage.value}
-              className={`flex min-h-[44px] cursor-pointer items-start gap-2 rounded-lg border px-3 py-2 text-sm ${
+              className={`flex min-h-[38px] cursor-pointer items-start gap-2 rounded-lg border px-2.5 py-1.5 text-sm leading-snug ${
                 D.fastStage === stage.value
                   ? 'border-brand-600 bg-brand-50 text-brand-900'
                   : 'border-slate-300 bg-white text-slate-700 hover:bg-slate-50'
@@ -760,14 +752,19 @@ function ElementI({ form, update, required }: ElementProps) {
           value={I.status}
           onChange={(status) => set({ status })}
         />
-        <RadioGroup
-          path="I.directive"
-          label="Health care proxy / advance directive"
-          options={ADVANCE_DIRECTIVE}
-          value={I.directive}
-          onChange={(directive) => set({ directive })}
-        />
       </Grid>
+      <div className="grid gap-3 lg:grid-cols-3">
+        {PLANNING_ITEMS.map((item) => (
+          <RadioGroup
+            key={item.value}
+            path={`I.${item.value}`}
+            label={item.label}
+            options={PLANNING_STATUS}
+            value={I[item.value]}
+            onChange={(value) => set({ [item.value]: value })}
+          />
+        ))}
+      </div>
       <TextField
         path="I.goalsOfCare"
         label="Goals of care"
@@ -977,7 +974,7 @@ function CarePlanAreaBlock({
       <div className="grid gap-3 lg:grid-cols-2">
         <div id={idFor(`J.plan.${area}.goals`)}>
           <p className="mb-1 text-sm font-medium text-slate-700">Goals</p>
-          <div className="space-y-1.5">
+          <div className="space-y-1">
             {goals.map((goal) => (
               <PlanTick
                 key={goal.value}
@@ -1007,7 +1004,7 @@ function CarePlanAreaBlock({
               </button>
             )}
           </div>
-          <div className="space-y-1.5">
+          <div className="space-y-1">
             {actions.map((action) => (
               <PlanTick
                 key={action.value}
@@ -1047,7 +1044,7 @@ function PlanTick({
 }) {
   return (
     <label
-      className={`flex min-h-[40px] cursor-pointer items-start gap-2 rounded-lg border px-3 py-2 text-sm ${
+      className={`flex min-h-[36px] cursor-pointer items-start gap-2 rounded-lg border px-2.5 py-1.5 text-sm leading-snug ${
         checked
           ? 'border-brand-600 bg-brand-50 text-brand-900'
           : 'border-slate-300 bg-white text-slate-700 hover:bg-slate-50'

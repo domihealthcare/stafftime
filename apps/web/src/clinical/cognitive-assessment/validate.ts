@@ -106,6 +106,15 @@ export function validate(form: AssessmentForm, today: string): Problem[] {
   );
 
   // ------------------------------------------------------ required elements
+  for (const element of ELEMENTS) {
+    if (!isPrior(form, element.key)) continue;
+    need(
+      form.priorConfirmed[element.key],
+      element.key,
+      `priorConfirmed.${element.key}`,
+      'Tick to confirm it was completed at a prior visit and reviewed today.',
+    );
+  }
   // Completed at a prior visit, an element's own answers are optional — the
   // statement is enough (Dominguez, September 2026). Driving and the care
   // plan are always required.
@@ -257,7 +266,8 @@ export function validate(form: AssessmentForm, today: string): Problem[] {
 function sectionOf(path: string): SectionKey {
   const head = path.split('.')[0];
   if (head === 'requirements' || head === 'visit') return head;
-  if (head === 'handoutLanguage' || head === 'completion') return 'visit';
+  if (head === 'completion' || head === 'priorConfirmed') return path.split('.')[1] as ElementKey;
+  if (head === 'handoutLanguage') return 'visit';
   return head as ElementKey;
 }
 

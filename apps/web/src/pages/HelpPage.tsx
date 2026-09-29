@@ -1,6 +1,6 @@
 import type { ReactNode } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
-import { useIsManager } from '../lib/session';
+import { useIsManager, useSession } from '../lib/session';
 import { PASSWORD_RULE } from '../lib/password';
 import { PageHeading } from '../components/ui';
 import { VersionCard } from '../components/VersionCard';
@@ -419,6 +419,100 @@ const STAFF: Section[] = [
             shown on timesheets. Clocking in from home records nothing about where you are. Your
             tablet PIN is stored scrambled, so nobody can read it back. It holds no social security
             number, no ID numbers and no personnel documents — those stay in your personnel file.
+          </p>
+        ),
+      },
+    ],
+  },
+];
+
+/// For people whose job role uses the clinical forms (Providers).
+const PROVIDERS: Section[] = [
+  {
+    title: 'For providers: cognitive assessment (99483)',
+    topics: [
+      {
+        question: 'Where is it, and how does it work?',
+        answer: (
+          <>
+            <p>
+              <Screen>Team</Screen> → <Screen>Resources</Screen> → the <Screen>Provider</Screen>{' '}
+              section → <strong>Cognitive assessment (99483)</strong>.
+            </p>
+            <ul>
+              <li>Tick the requirements at the top first — all four are needed to bill 99483.</li>
+              <li>
+                Fill in the patient and visit. You are the provider: your name and letters come from
+                your staff record.
+              </li>
+              <li>
+                Work down A to J. The bar at the top ticks off each section as it is complete.
+              </li>
+              <li>
+                Anything missing is listed at the bottom; tap an item to jump to it. The PDFs can
+                only be made when that list is empty.
+              </li>
+              <li>
+                Download the <strong>note</strong> and the <strong>handout</strong>, then tell it
+                both arrived — that clears the form.
+              </li>
+            </ul>
+          </>
+        ),
+      },
+      {
+        question: 'Is anything saved? (patient privacy)',
+        answer: (
+          <>
+            <p>
+              No. What you type stays on your device and is never sent to Domi Staff or saved in it
+              — leaving, reloading or signing out clears it, and it asks first.
+            </p>
+            <p>
+              The two PDFs you download are patient records on your device. Use your own or a
+              practice device, not the shared front-desk tablet, and delete them once the note is in
+              eCW and the handout is with the patient.
+            </p>
+          </>
+        ),
+      },
+      {
+        question: 'Completed at a prior visit',
+        answer: (
+          <p>
+            Switch an element to <strong>Prior visit</strong> and tick the statement that it was
+            reviewed today and is still valid or updated. Its details become optional — open{' '}
+            <strong>Add details</strong> to record anything new. The history and exam (A) start as a
+            prior visit. Driving (G) and the care plan (J) are needed either way.
+          </p>
+        ),
+      },
+      {
+        question: 'Building the care plan',
+        answer: (
+          <>
+            <p>
+              Each area&rsquo;s problem is written from your answers above; press{' '}
+              <strong>Edit</strong> to change it. Goals and actions that fit your answers are marked{' '}
+              <strong>Suggested</strong> and listed first — nothing is ticked for you. Each area
+              needs a goal and something that will be done.
+            </p>
+            <p>
+              Ticked goals and actions go on the handout in plain words, in English or Spanish
+              (choose beside <strong>PDFs</strong>). Anything you type is printed as typed, so write
+              it in Spanish for a Spanish handout.
+            </p>
+          </>
+        ),
+      },
+      {
+        question: 'After the visit: eCW',
+        answer: (
+          <p>
+            Upload the note (<strong>99483_Note_…pdf</strong>) to the patient&rsquo;s chart in eCW
+            Documents and reference it in the progress note for the date of service. Give the
+            patient and care partner the handout (<strong>99483_CarePlan_…pdf</strong>), then delete
+            both files from the device.
           </p>
         ),
       },
@@ -930,6 +1024,17 @@ const MANAGERS: Section[] = [
         ),
       },
       {
+        question: 'Giving a provider the cognitive assessment (99483)',
+        answer: (
+          <p>
+            Add them to the <strong>Provider</strong> job role (<Screen>Job roles</Screen>) — the
+            role has &ldquo;clinical forms&rdquo; switched on. Then, in <Screen>Staff</Screen> →{' '}
+            <strong>Edit</strong>, fill in <strong>Letters after their name</strong> (MD, APN…) so
+            the note shows their credentials.
+          </p>
+        ),
+      },
+      {
         question: 'Announcements',
         answer: (
           <p>
@@ -951,9 +1056,11 @@ const MANAGERS: Section[] = [
  */
 export function HelpPage() {
   const isManager = useIsManager();
+  const { employee } = useSession();
   const [params, setParams] = useSearchParams();
   const guide = isManager && params.get('guide') === 'managers' ? 'managers' : 'staff';
-  const sections = guide === 'managers' ? MANAGERS : STAFF;
+  const sections =
+    guide === 'managers' ? MANAGERS : [...STAFF, ...(employee?.usesClinicalForms ? PROVIDERS : [])];
 
   const tab = (key: 'staff' | 'managers', label: string) => (
     <button

@@ -85,9 +85,6 @@ export const VISIT_TYPES = choices(['office', 'In the office'], ['telehealth', '
 export const TELEHEALTH_REMINDER =
   'Telehealth: add the telehealth modifier (95) and place of service this payer expects — confirm with billing (Coronis) if unsure.';
 
-/// Shown when an annual wellness visit was also done today.
-export const AWV_REMINDER = 'Bill the AWV separately and append modifier 25.';
-
 export const MEDICAL_DECISION_MAKING = choices(['moderate', 'Moderate'], ['high', 'High']);
 
 // ------------------------------------------------ A. history and examination
@@ -104,6 +101,9 @@ export const COGNITIVE_DOMAINS = choices(
 
 /// `max` is the top score, printed as "18/30"; null where it varies.
 export const COGNITIVE_TESTS: (Choice & { max: number | null })[] = [
+  // The practice tests with BrainCheck Assess; its result is entered as
+  // reported, so it has no top score here.
+  { value: 'braincheck', label: 'BrainCheck Assess', max: null },
   { value: 'moca', label: 'MoCA', max: 30 },
   { value: 'slums', label: 'SLUMS', max: 30 },
   { value: 'mini-cog', label: 'Mini-Cog', max: 5 },
@@ -296,23 +296,67 @@ export const ACP_STATUS = choices(
   ['reviewed', 'Reviewed'],
 );
 
-export const ADVANCE_DIRECTIVE = choices(
-  ['present', 'Present'],
-  ['not-present', 'Not present'],
-  ['unknown', 'Unknown'],
-);
+/// Planning ahead, as on BrainCheck's care plan: each done or not yet. Shown
+/// on the handout as a checklist.
+export const PLANNING_ITEMS = [
+  { value: 'financialPoa', label: 'Financial power of attorney' },
+  { value: 'healthcareProxy', label: 'Health care proxy (medical power of attorney)' },
+  { value: 'lifeSupport', label: 'Wishes about life support discussed' },
+] as const;
+
+export type PlanningItem = (typeof PLANNING_ITEMS)[number]['value'];
+
+export const PLANNING_STATUS = choices(['yes', 'Done'], ['no', 'Not yet']);
 
 // ---------------------------------------------------------- J. care plan
 
 /// The six areas of the care plan. `label` is the note's heading; `handout`
-/// is the patient's (plain words), translated in translations.es.ts.
+/// is the patient's heading and `intro` a line of plain explanation under it
+/// (after BrainCheck's care plan, which the practice uses), both translated
+/// in translations.es.ts.
 export const CARE_PLAN_AREAS = [
-  { value: 'cognition', label: 'Cognition', handout: 'Memory and thinking' },
-  { value: 'function', label: 'Function', handout: 'Daily activities' },
-  { value: 'behavior', label: 'Neuropsychiatric / behavioral', handout: 'Mood and behavior' },
-  { value: 'medications', label: 'Medications', handout: 'Medicines' },
-  { value: 'safety', label: 'Safety', handout: 'Safety' },
-  { value: 'caregiver', label: 'Caregiver', handout: 'Support for caregivers' },
+  {
+    value: 'cognition',
+    label: 'Cognition',
+    handout: 'Memory and thinking',
+    intro:
+      'Changes in memory and thinking can make everyday things harder. Staying active, keeping to a routine and seeing us regularly all help.',
+  },
+  {
+    value: 'function',
+    label: 'Function',
+    handout: 'Daily activities',
+    intro:
+      'Over time, tasks like cooking, shopping, handling money or dressing may need more help. Getting that help in place early keeps everyone safer and less stressed.',
+  },
+  {
+    value: 'behavior',
+    label: 'Neuropsychiatric / behavioral',
+    handout: 'Mood and behavior',
+    intro:
+      "Changes in mood, sleep and behavior are common with memory loss. They are part of the condition, not anyone's fault, and many can be eased.",
+  },
+  {
+    value: 'medications',
+    label: 'Medications',
+    handout: 'Medicines',
+    intro:
+      'Some medicines can make memory or thinking worse. We have reviewed the medicines and will keep checking them.',
+  },
+  {
+    value: 'safety',
+    label: 'Safety',
+    handout: 'Safety',
+    intro:
+      'Memory changes can affect balance, judgment and awareness of danger. Small changes at home make a big difference.',
+  },
+  {
+    value: 'caregiver',
+    label: 'Caregiver',
+    handout: 'Support for care partners',
+    intro:
+      'Caring for someone with memory loss is meaningful, and it is hard work. Care partners need support too.',
+  },
 ] as const;
 
 export type CarePlanArea = (typeof CARE_PLAN_AREAS)[number]['value'];
@@ -457,10 +501,9 @@ export const SAFETY_TIPS = choices(
   ['help', 'Call 911 in an emergency.'],
 );
 
-/// The practice's phone numbers for the handout's "Questions?" line. Left
-/// null until the practice gives them; while null, the line names the
-/// practice only.
-export const PRACTICE_PHONES: { office: string; phone: string }[] | null = null;
+/// The practice's number for the handout's "Questions?" line (Dominguez,
+/// September 2026).
+export const PRACTICE_PHONE = '201-528-3664';
 
 // ------------------------------------------------------- required elements
 
