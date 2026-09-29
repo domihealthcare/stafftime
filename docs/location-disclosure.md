@@ -105,11 +105,14 @@ technical check at the time clock (see *Kiosk* in `docs/open-questions.md`).
       behind it.** Dominguez decided (29 September 2026) not to set up a time
       clock until the practice has a dedicated tablet, and the office IP
       fallback is set aside. So somebody who refuses location sharing cannot
-      clock in themselves at the moment. Until there is a tablet, either their
-      manager records their hours (a manual entry), or the office IP addresses
-      are entered, or the paragraph says so plainly. Once a tablet is bought, it
-      needs to be available at both offices on every shift for the opt-out to
-      mean something.
+      clock in themselves at the moment. **Decided** (Dominguez, 29 September
+      2026): until there is a tablet, their manager enters their hours by hand,
+      and every hand-entered day is reported so somebody finds out why it was
+      needed. **Not possible yet**: a manager can only correct a punch that
+      exists, not add a day that has none (see *Adding hours by hand* in
+      `docs/open-questions.md`). The paragraph needs rewording to match. Once a
+      tablet is bought, it needs to be available at both offices on every shift
+      for the opt-out to mean something.
 - [ ] **Confirm the 90 days** with whoever advises on employment matters. It is
       a considered default, not a legal requirement, and a practice might prefer
       shorter.

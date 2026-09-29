@@ -230,6 +230,20 @@ What is left:
       kiosk browser mode so staff cannot navigate away. Device configuration
       rather than code.
 
+## Adding hours by hand
+
+- [ ] **A manager cannot add hours for a day with no punch.** The timesheet
+      only corrects punches that exist (`PATCH /time-entries/:id`). Somebody
+      who never clocked in (a forgotten clock-in, a phone that would not share
+      its location, or nobody at the office to clock in with) has no way to get
+      those hours into the app or the payroll export. Decided by Dominguez
+      (29 September 2026): a manager enters them by hand, and **every
+      hand-entered day is reported so somebody finds out why** it was needed,
+      treated like a bug report rather than routine. Proposed, not built yet:
+      *Add hours* on the timesheet (manager, with a reason), marked as
+      entered by hand, and listed in a banner and the nightly round-up until
+      somebody has looked at why.
+
 ## Technical to-dos
 
 - [ ] **Two-factor authentication** — less pressing now the personnel documents
