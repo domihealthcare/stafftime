@@ -89,6 +89,49 @@ export class StopStandingShiftDto {
   lastDate?: string;
 }
 
+/// Changes a standing shift from a date onward. The person and whether it is
+/// published stay as they were; to change those, stop it and make a new one.
+export class UpdateStandingShiftDto {
+  @IsOptional()
+  @IsUUID('4')
+  jobRoleId?: string | null;
+
+  @IsOptional()
+  @IsBoolean()
+  isRemote?: boolean;
+
+  /// Open shifts only.
+  @IsOptional()
+  @IsInt()
+  @Min(1)
+  @Max(10)
+  openCount?: number;
+
+  @IsUUID('4')
+  locationId!: string;
+
+  @IsString()
+  @Matches(/^([01]\d|2[0-3]):[0-5]\d$/, { message: 'startTime must be HH:MM, e.g. 09:00' })
+  startTime!: string;
+
+  @IsString()
+  @Matches(/^([01]\d|2[0-3]):[0-5]\d$/, { message: 'endTime must be HH:MM, e.g. 17:00' })
+  endTime!: string;
+
+  @IsArray()
+  @ArrayNotEmpty()
+  @ArrayUnique()
+  @IsInt({ each: true })
+  @Min(1, { each: true })
+  @Max(7, { each: true })
+  daysOfWeek!: number[];
+
+  /// The first day the change applies to. Absent: today.
+  @IsOptional()
+  @IsDateString()
+  from?: string;
+}
+
 /// Copies one week's shifts onto another week.
 export class CopyWeekDto {
   /// The first day of the week to copy from, and of the week to copy onto.

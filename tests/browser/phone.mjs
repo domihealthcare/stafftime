@@ -208,7 +208,8 @@ await step('the rota scrolls inside itself on a phone, keeping names in view', a
 await page.screenshot({ path: `${OUT}/52-phone-schedule.png`, fullPage: true });
 
 await step('the repeating-shifts form fits a phone', async () => {
-  await page.getByRole('button', { name: 'Repeating shifts' }).click();
+  await page.getByRole('button', { name: '+ Add', exact: true }).click();
+  await page.getByRole('menuitem', { name: 'Repeating shifts', exact: true }).click();
   await page.getByText('One rota line at a time').waitFor({ timeout: 10000 });
   await assertNoSidewaysScroll(page, 'Repeating shifts');
 });

@@ -47,8 +47,8 @@ const STAFF: Section[] = [
             </p>
             <p>
               <strong>iPhone, in Safari:</strong> open {window.location.host}, tap{' '}
-              <strong>Share</strong> (the square with an arrow, at the bottom), scroll down and
-              tap <strong>Add to Home Screen</strong>, then <strong>Add</strong>.
+              <strong>Share</strong> (the square with an arrow, at the bottom), scroll down and tap{' '}
+              <strong>Add to Home Screen</strong>, then <strong>Add</strong>.
             </p>
             <p>
               <strong>iPhone, in Chrome:</strong> open {window.location.host}, tap{' '}
@@ -57,16 +57,15 @@ const STAFF: Section[] = [
               <strong>Add to Home Screen</strong> and <strong>Add</strong>.
             </p>
             <p>
-              <strong>Android, in Chrome:</strong> tap the <strong>⋮</strong> menu at the top
-              right, then <strong>Add to Home screen</strong> or <strong>Install app</strong>. The
-              sign-in screen may offer an <strong>Install</strong> button that does the same.
+              <strong>Android, in Chrome:</strong> tap the <strong>⋮</strong> menu at the top right,
+              then <strong>Add to Home screen</strong> or <strong>Install app</strong>. The sign-in
+              screen may offer an <strong>Install</strong> button that does the same.
             </p>
             <p>
-              <strong>A computer, in Chrome:</strong> click the install icon at the right
-              of the address bar (a screen with a down arrow), or open the <strong>⋮</strong>{' '}
-              menu, then <strong>Cast, save and share</strong> →{' '}
-              <strong>Install page as app</strong>. It then opens in its own window from the
-              Start menu, Dock or desktop.
+              <strong>A computer, in Chrome:</strong> click the install icon at the right of the
+              address bar (a screen with a down arrow), or open the <strong>⋮</strong> menu, then{' '}
+              <strong>Cast, save and share</strong> → <strong>Install page as app</strong>. It then
+              opens in its own window from the Start menu, Dock or desktop.
             </p>
             <p>
               It still needs a signal to clock in or out — nothing is saved on the phone to send
@@ -212,8 +211,8 @@ const STAFF: Section[] = [
           <p>
             <Screen>Schedule</Screen> shows your shifts by week or by month, and in the week your
             time off too: &ldquo;Time off&rdquo; once it is approved, &ldquo;Asked off&rdquo; while
-            it is waiting. Your shifts reach your own calendar (Google, Apple or Outlook) either
-            as invites to your email — accept them if asked — or through the calendar link on that
+            it is waiting. Your shifts reach your own calendar (Google, Apple or Outlook) either as
+            invites to your email — accept them if asked — or through the calendar link on that
             screen, which keeps itself up to date; <strong>Your calendar</strong> on that screen
             says which. Treat the link like a password: anyone who has it can see what is on it.
           </p>
@@ -225,11 +224,12 @@ const STAFF: Section[] = [
           <p>
             On <Screen>Schedule</Screen>, in the <strong>Events</strong> row above your shifts (and
             with a 📅 in the month): office meetings, meetings you have been added to, and
-            practice-wide days like a wellness event. A 🔁 means it repeats, a 🎥 that it is a
-            video call. Tap one for the time, the place and who it is for — and a{' '}
-            <strong>Join video call</strong> button when there is one. The bell tells you when one is added, moved or cancelled,
-            and reminds you the day before; they reach your phone&rsquo;s calendar too, as an
-            invite or through the calendar link. An event is not a shift — if you are being paid to be there, clock in as usual.
+            practice-wide days like a wellness event. A 🔁 means it repeats, a 🎥 that it is a video
+            call. Tap one for the time, the place and who it is for — and a{' '}
+            <strong>Join video call</strong> button when there is one. The bell tells you when one
+            is added, moved or cancelled, and reminds you the day before; they reach your
+            phone&rsquo;s calendar too, as an invite or through the calendar link. An event is not a
+            shift — if you are being paid to be there, clock in as usual.
           </p>
         ),
       },
@@ -277,8 +277,8 @@ const STAFF: Section[] = [
         answer: (
           <p>
             Open <Screen>Time off</Screen>, choose <strong>Sick</strong> or <strong>PTO</strong> and
-            the dates, and send it. Your balance is shown on the same screen. You get an email when a manager decides, with their reason
-            if they give one.
+            the dates, and send it. Your balance is shown on the same screen. You get an email when
+            a manager decides, with their reason if they give one.
           </p>
         ),
       },
@@ -393,11 +393,10 @@ const STAFF: Section[] = [
         answer: (
           <p>
             Your notifications — things that are just for you: a shift added to, changed on or taken
-            off your schedule, a meeting, event or office closure added, moved or cancelled, your time off
-            decided, overtime on your schedule, a survey waiting for you, your checklist starting,
-            and new posts on <Screen>News</Screen>. The red number
-            is how many you have not read. Choose one to go straight to it; they are kept for 90
-            days.
+            off your schedule, a meeting, event or office closure added, moved or cancelled, your
+            time off decided, overtime on your schedule, a survey waiting for you, your checklist
+            starting, and new posts on <Screen>News</Screen>. The red number is how many you have
+            not read. Choose one to go straight to it; they are kept for 90 days.
           </p>
         ),
       },
@@ -509,8 +508,8 @@ const MANAGERS: Section[] = [
               <strong>Copy last week</strong> when most weeks look the same, then adjust.
             </li>
             <li>
-              <strong>Repeating shifts</strong> makes, say, every Tuesday and Thursday for a month
-              in one go. The ＋ in a day on the rota can do the same: tick{' '}
+              <strong>+ Add → Repeating shifts</strong> makes, say, every Tuesday and Thursday for a
+              month in one go. The ＋ in a day on the rota can do the same: tick{' '}
               <strong>Repeat this shift</strong>, pick the days and how long for.
             </li>
             <li>
@@ -553,11 +552,11 @@ const MANAGERS: Section[] = [
         answer: (
           <p>
             A shift the office needs covered that nobody is on yet — say two Front Desk on Saturday
-            morning. Make them with <strong>+ Add shift</strong> or{' '}
-            <strong>Repeating shifts</strong> by choosing &ldquo;Nobody yet&rdquo;, or with ＋ in an
-            office&rsquo;s Open shifts row. They are flagged on the rota, in the banner and in the
-            nightly email until you click one and put somebody in it. Anybody already on at that
-            time is greyed out.
+            morning. Make them with <strong>+ Add → Shift</strong> or{' '}
+            <strong>+ Add → Repeating shifts</strong> by choosing &ldquo;Nobody yet&rdquo;, or with
+            ＋ in an office&rsquo;s Open shifts row. They are flagged on the rota, in the banner and
+            in the nightly email until you click one and put somebody in it. Anybody already on at
+            that time is greyed out.
           </p>
         ),
       },
@@ -565,22 +564,22 @@ const MANAGERS: Section[] = [
         question: 'Meetings and practice events',
         answer: (
           <p>
-            On <Screen>Schedule</Screen>, choose <strong>+ Add event</strong>: a name, a time (or
+            On <Screen>Schedule</Screen>, choose <strong>+ Add → Event</strong>: a name, a time (or
             tick <strong>All day</strong>, for one day or several), where it is, and{' '}
             <strong>who it is for</strong> — Everyone, or type into the box and add any mix of job
             roles, offices and people (say <em>Provider</em>, <em>Kayla</em>, <em>Angelina</em>).
             For a call, paste its link into <strong>Video call link</strong> — or, once Google Meet
             is set up, tick <strong>Create a Google Meet link</strong> (hosted by office@; anybody
-            with the link goes straight in, so share it only with the people invited). To make it repeat, choose from{' '}
-            <strong>Repeats</strong>: every week, every 2 weeks, every
-            month (the same date, or e.g. the first Friday), or <strong>Custom</strong> — every 2
-            weeks on Monday and Friday — until a date up to a year ahead. For meetings on
-            alternate Fridays, make each one every 2 weeks, starting a week apart. Everybody it is
-            for sees it in the Events row, gets one notification for the whole series and a
-            reminder the day before, and has it on their phone if they sync their calendar. Click
-            an event to change or remove <strong>just that date</strong> or{' '}
-            <strong>that date and all after it</strong>. Events never count as hours or overtime —
-            anybody being paid to attend clocks in as usual, so payroll stays with the punches.
+            with the link goes straight in, so share it only with the people invited). To make it
+            repeat, choose from <strong>Repeats</strong>: every week, every 2 weeks, every month
+            (the same date, or e.g. the first Friday), or <strong>Custom</strong> — every 2 weeks on
+            Monday and Friday — until a date up to a year ahead. For meetings on alternate Fridays,
+            make each one every 2 weeks, starting a week apart. Everybody it is for sees it in the
+            Events row, gets one notification for the whole series and a reminder the day before,
+            and has it on their phone if they sync their calendar. Click an event to change or
+            remove <strong>just that date</strong> or <strong>that date and all after it</strong>.
+            Events never count as hours or overtime — anybody being paid to attend clocks in as
+            usual, so payroll stays with the punches.
           </p>
         ),
       },
@@ -588,16 +587,17 @@ const MANAGERS: Section[] = [
         question: 'Holidays and closures',
         answer: (
           <p>
-            On <Screen>Schedule</Screen>, choose <strong>+ Add event</strong> and then{' '}
-            <strong>The office is closed (holiday)</strong>, or <strong>+ Add closure</strong> under
-            Holidays and closures. Close <strong>both offices or just one</strong>, for the whole day
-            (Christmas Day), several days, or part of one (Christmas Eve from 1pm — put midnight as
-            when it opens again). Staff at that office see it and are told. Nothing stops you
-            scheduling somebody during a closure, but it is flagged: a warning in the shift form,
-            ⚠ on the shift, and a line in the Schedule banner and the nightly email until the shift
-            is moved. Once a year is filled in, <strong>Copy these into next year</strong> puts
-            every closure on the same date the following year — then fix the ones that move, like
-            Thanksgiving. Closures do not change pay: holiday pay is not set up.
+            On <Screen>Schedule</Screen>, choose <strong>+ Add → Holiday or closure</strong>, or use{' '}
+            <strong>+ Add closure</strong> under Holidays and closures. Tick{' '}
+            <strong>Repeat every year</strong> to enter it for the next several years at once. Close{' '}
+            <strong>both offices or just one</strong>, for the whole day (Christmas Day), several
+            days, or part of one (Christmas Eve from 1pm — put midnight as when it opens again).
+            Staff at that office see it and are told. Nothing stops you scheduling somebody during a
+            closure, but it is flagged: a warning in the shift form, ⚠ on the shift, and a line in
+            the Schedule banner and the nightly email until the shift is moved. Once a year is
+            filled in, <strong>Copy these into next year</strong> puts every closure on the same
+            date the following year — then fix the ones that move, like Thanksgiving. Closures do
+            not change pay: holiday pay is not set up.
           </p>
         ),
       },
@@ -609,9 +609,9 @@ const MANAGERS: Section[] = [
             shift and choose <strong>Make it work from home</strong>. Once it is published, that
             person can clock in from anywhere from half an hour before it starts until it ends, with
             no location asked for or recorded. Behind the scenes it is counted under their main
-            office, so the office view of the rota and the reports still add up.
-            Outside a work-from-home shift the usual office check applies, so nobody can clock in
-            from home on a day they are due in.
+            office, so the office view of the rota and the reports still add up. Outside a
+            work-from-home shift the usual office check applies, so nobody can clock in from home on
+            a day they are due in.
           </p>
         ),
       },
@@ -633,12 +633,13 @@ const MANAGERS: Section[] = [
             <p>
               <strong>Overtime</strong> — the rota puts somebody past the weekly threshold (40
               hours, across both offices). Weeks for overtime start on the pay period&rsquo;s first
-              day, so each pay period is two of them; Practice settings shows which day. It shows in red at the top of the schedule and beside
-              their weekly total. Adding or assigning a shift checks first: the form warns as you
-              fill it in, and saving asks you to confirm. Once a shift that puts them over is
-              published, the person sees it too and is emailed. While you are adding or assigning a
-              shift, an amber <strong>close to overtime</strong> note means it brings them within
-              four hours of the line; once saved, only going over is flagged.
+              day, so each pay period is two of them; Practice settings shows which day. It shows in
+              red at the top of the schedule and beside their weekly total. Adding or assigning a
+              shift checks first: the form warns as you fill it in, and saving asks you to confirm.
+              Once a shift that puts them over is published, the person sees it too and is emailed.
+              While you are adding or assigning a shift, an amber <strong>close to overtime</strong>{' '}
+              note means it brings them within four hours of the line; once saved, only going over
+              is flagged.
             </p>
             <p>
               <strong>Unavailable</strong> — the shift lands on time they have said they cannot
@@ -749,13 +750,12 @@ const MANAGERS: Section[] = [
               <strong>Remove</strong> stops asking for it (what is on file stays).
             </p>
             <p>
-              <strong>By person</strong> shows everybody against what their job roles ask for.
-              A required one that is not on file is flagged there, on the banner and in the
-              nightly email; optional ones are only listed. Press <strong>Record it</strong> on
-              one and the form starts on that person and license — when the license has a
-              renewal interval, the date it was done is enough and the expiry is worked out.
-              The same list is on the person&rsquo;s card under <Screen>Staff → Edit</Screen>, and
-              staff see their own.
+              <strong>By person</strong> shows everybody against what their job roles ask for. A
+              required one that is not on file is flagged there, on the banner and in the nightly
+              email; optional ones are only listed. Press <strong>Record it</strong> on one and the
+              form starts on that person and license — when the license has a renewal interval, the
+              date it was done is enough and the expiry is worked out. The same list is on the
+              person&rsquo;s card under <Screen>Staff → Edit</Screen>, and staff see their own.
             </p>
           </>
         ),
@@ -772,10 +772,10 @@ const MANAGERS: Section[] = [
             <Screen>Manage → Dashboard</Screen>: hours worked against scheduled, overtime, late
             clock-ins and time off, with a chart per location, and — looking ahead — shifts in the
             next two weeks that clash with somebody's availability or push them into overtime.{' '}
-            <strong>Across the practice</strong> adds what is waiting on a manager (time off,
-            hours to approve, missing clock-outs, hours entered by hand), licenses lapsed, due or
-            missing, surveys and how many have answered, onboarding and offboarding progress,
-            and the last week&rsquo;s closing checklists and supplies to order.
+            <strong>Across the practice</strong> adds what is waiting on a manager (time off, hours
+            to approve, missing clock-outs, hours entered by hand), licenses lapsed, due or missing,
+            surveys and how many have answered, onboarding and offboarding progress, and the last
+            week&rsquo;s closing checklists and supplies to order.
           </p>
         ),
       },
@@ -830,10 +830,10 @@ const MANAGERS: Section[] = [
         answer: (
           <ul>
             <li>
-              <Screen>Manage → Staff</Screen> — add people one at a time or several at once.
-              Press <strong>Edit</strong> on somebody&rsquo;s card to change their email, phone,
-              access (Employee, Manager or Admin), job roles, offices and ADP File #, send their
-              welcome email, or give them a temporary password or tablet PIN.
+              <Screen>Manage → Staff</Screen> — add people one at a time or several at once. Press{' '}
+              <strong>Edit</strong> on somebody&rsquo;s card to change their email, phone, access
+              (Employee, Manager or Admin), job roles, offices and ADP File #, send their welcome
+              email, or give them a temporary password or tablet PIN.
             </li>
             <li>
               When somebody leaves: <strong>Edit</strong>, then <strong>… has left</strong> at the
@@ -862,8 +862,8 @@ const MANAGERS: Section[] = [
               select the list <strong>with its row of column names</strong>, copy, and paste it into
               the box. It needs a name, email, office (North Bergen, West New York or Both) and hire
               date; phone, job roles, access, birthday and ADP File # are optional. From a birthday
-              only the month and day are kept — the year is dropped before anything is sent. Any other column — a
-              social security number, say — is ignored and never kept.
+              only the month and day are kept — the year is dropped before anything is sent. Any
+              other column — a social security number, say — is ignored and never kept.
             </p>
             <p>
               Every line is checked and shown first. Anything marked in red is fixed in the
@@ -873,8 +873,8 @@ const MANAGERS: Section[] = [
               Then <strong>Send welcome emails</strong>: each person gets a link to choose their
               password, good for a week, with how to put Domi Staff on their phone and answers to
               the usual first-day questions. Somebody who lost theirs can be sent it again from
-              their card; after they have chosen a password, <strong>Forgotten your password?</strong>{' '}
-              on the sign-in screen is the way back in.
+              their card; after they have chosen a password,{' '}
+              <strong>Forgotten your password?</strong> on the sign-in screen is the way back in.
             </p>
           </>
         ),
@@ -897,17 +897,16 @@ const MANAGERS: Section[] = [
                 Chrome and type the code.
               </li>
               <li>
-                That browser is now the time clock, for a year, through restarts. Keep it in its
-                own window, or pin the tab, so the desk can use the computer for other work.
-                Clearing the browser&rsquo;s history or cookies unpairs it — pair it again the same
-                way.
+                That browser is now the time clock, for a year, through restarts. Keep it in its own
+                window, or pin the tab, so the desk can use the computer for other work. Clearing
+                the browser&rsquo;s history or cookies unpairs it — pair it again the same way.
               </li>
             </ol>
             <p>
-              Turning the computer off at night is fine. The time clock is only reported as quiet
-              if a whole shift at that office goes by without it being open. After ten wrong PINs
-              in a quarter of an hour it stops taking PINs for five minutes, so nobody can sit and
-              guess colleagues&rsquo; PINs.
+              Turning the computer off at night is fine. The time clock is only reported as quiet if
+              a whole shift at that office goes by without it being open. After ten wrong PINs in a
+              quarter of an hour it stops taking PINs for five minutes, so nobody can sit and guess
+              colleagues&rsquo; PINs.
             </p>
           </>
         ),

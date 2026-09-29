@@ -72,7 +72,8 @@ const manager = await signIn('manager@domihealthcare.com');
 await step('a manager adds an office meeting from the Schedule', async () => {
   await manager.goto(`${BASE}/schedule?week=${key(nextWeek)}`, { waitUntil: 'networkidle' });
   await manager.getByRole('button', { name: 'Week', exact: true }).click();
-  await manager.getByRole('button', { name: '+ Add event' }).click();
+  await manager.getByRole('button', { name: '+ Add', exact: true }).click();
+  await manager.getByRole('menuitem', { name: 'Event', exact: true }).click();
   const form = manager.getByRole('form', { name: 'New event' });
   await form.getByLabel('What is it?').fill('Office meeting');
   await form.getByLabel('Starts').fill(`${key(wednesday)}T12:30`);
@@ -89,7 +90,8 @@ await step('a manager adds an office meeting from the Schedule', async () => {
 });
 
 await step('an all-day wellness day for one office, and a meeting for one job role', async () => {
-  await manager.getByRole('button', { name: '+ Add event' }).click();
+  await manager.getByRole('button', { name: '+ Add', exact: true }).click();
+  await manager.getByRole('menuitem', { name: 'Event', exact: true }).click();
   const form = manager.getByRole('form', { name: 'New event' });
   await form.getByLabel('What is it?').fill('Wellness day');
   await form.getByLabel('All day').check();
@@ -105,7 +107,8 @@ await step('an all-day wellness day for one office, and a meeting for one job ro
   const chips = await manager.getByTestId('rota-events-row').getByText('Wellness day').count();
   if (chips !== 2) throw new Error(`${chips} chips for a two-day event`);
 
-  await manager.getByRole('button', { name: '+ Add event' }).click();
+  await manager.getByRole('button', { name: '+ Add', exact: true }).click();
+  await manager.getByRole('menuitem', { name: 'Event', exact: true }).click();
   const second = manager.getByRole('form', { name: 'New event' });
   await second.getByLabel('What is it?').fill('Provider meeting');
   await second.getByLabel('Starts').fill(`${key(thursday)}T08:00`);
@@ -147,7 +150,7 @@ await step('staff see the events for them, and only those', async () => {
   const text = await row.innerText();
   if (text.includes('Wellness day')) throw new Error('North Bergen staff see a West New York event');
   if (text.includes('Provider meeting')) throw new Error('a Front Desk member sees the Provider meeting');
-  if (await frankie.getByRole('button', { name: '+ Add event' }).count()) {
+  if (await frankie.getByRole('button', { name: '+ Add', exact: true }).count()) {
     throw new Error('staff are offered + Add event');
   }
 });
@@ -290,7 +293,8 @@ await step('on a phone the events row is there above the shifts', async () => {
 await step('a video call link: refused unless it is a real link, then a Join button and on the phone', async () => {
   await manager.goto(`${BASE}/schedule?week=${key(nextWeek)}`, { waitUntil: 'networkidle' });
   await manager.getByRole('button', { name: 'Week', exact: true }).click();
-  await manager.getByRole('button', { name: '+ Add event' }).click();
+  await manager.getByRole('button', { name: '+ Add', exact: true }).click();
+  await manager.getByRole('menuitem', { name: 'Event', exact: true }).click();
   const form = manager.getByRole('form', { name: 'New event' });
   await form.getByLabel('What is it?').fill('Video check-in');
   await form.getByLabel('Starts').fill(`${key(wednesday)}T15:00`);

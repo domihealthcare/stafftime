@@ -175,6 +175,12 @@ export class EventsService {
       `Event ${first.id} added by ${actor.id} (${count} date${count === 1 ? '' : 's'})`,
     );
 
+    // A closure can also be entered for the next few years in one go.
+    let yearsCreated = 0;
+    if (dto.yearsAhead && input.data.kind === PracticeEventKind.CLOSURE) {
+      yearsCreated = await this.repeatClosureYearly(first, dto.yearsAhead, actor);
+    }
+
     // One notification for a whole series, not one per date.
     if (last.endsAt > new Date()) {
       await this.inbox.notify(
@@ -182,7 +188,7 @@ export class EventsService {
         notice(first, 'added', input.repeat ? seriesBody(first, input.repeat) : undefined),
       );
     }
-    return { ...present(first), created: count };
+    return { ...present(first), created: count + yearsCreated };
   }
 
   /**
@@ -290,6 +296,39 @@ export class EventsService {
    * it twice does nothing the second time. A 29 February is skipped too,
    * rather than guessed.
    */
+  /// The same closure on the same date in each of the next `years` years, as
+  /// separate one-off closures (a moving holiday can then be fixed one year at
+  /// a time). Returns how many were made.
+  private async repeatClosureYearly(row: EventRow, years: number, actor: AuthUser) {
+    const source = await this.prisma.practiceEvent.findUniqueOrThrow({
+      where: { id: row.id },
+      select: { ...EVENT_SELECT, jobRoleId: true, locationId: true },
+    });
+    const firstYear = Number(localDateIn(source.startsAt, PRACTICE_ZONE).slice(0, 4));
+    let made = 0;
+    for (let year = firstYear + 1; year <= firstYear + years; year += 1) {
+      const moved = closureInYear(source, year);
+      if (!moved) continue;
+      await this.prisma.practiceEvent.create({
+        data: {
+          kind: PracticeEventKind.CLOSURE,
+          title: source.title,
+          description: source.description,
+          place: null,
+          allDay: source.allDay,
+          startsAt: moved.startsAt,
+          endsAt: moved.endsAt,
+          audience: source.audience,
+          jobRoleId: null,
+          locationId: source.locationId,
+          createdById: actor.id,
+        },
+      });
+      made += 1;
+    }
+    return made;
+  }
+
   async copyClosures(fromYear: number, actor: AuthUser) {
     const toYear = fromYear + 1;
     const rows = await this.prisma.practiceEvent.findMany({
@@ -307,34 +346,12 @@ export class EventsService {
     const created: EventRow[] = [];
     const skipped: string[] = [];
     for (const row of rows) {
-      const firstDay = localDateIn(row.startsAt, PRACTICE_ZONE);
-      if (firstDay.slice(5) === '02-29') {
+      const moved = closureInYear(row, toYear);
+      if (!moved) {
         skipped.push(`${row.title} — 29 February has no date in ${toYear}`);
         continue;
       }
-      const nextFirst = `${toYear}${firstDay.slice(4)}`;
-      let startsAt: Date;
-      let endsAt: Date;
-      if (row.allDay) {
-        const { startDate, endDate } = allDayDates(row);
-        ({ startsAt, endsAt } = allDayRange(
-          nextFirst,
-          addDaysTo(nextFirst, daysBetween(startDate, endDate)),
-        ));
-      } else {
-        // The same wall-clock times, whatever the clocks are doing that year.
-        const lastDay = localDateIn(row.endsAt, PRACTICE_ZONE);
-        startsAt = zonedTimeToUtc(
-          nextFirst,
-          localTimeIn(row.startsAt, PRACTICE_ZONE),
-          PRACTICE_ZONE,
-        );
-        endsAt = zonedTimeToUtc(
-          addDaysTo(nextFirst, daysBetween(firstDay, lastDay)),
-          localTimeIn(row.endsAt, PRACTICE_ZONE),
-          PRACTICE_ZONE,
-        );
-      }
+      const { startsAt, endsAt } = moved;
 
       const already = await this.prisma.practiceEvent.count({
         where: {
@@ -926,4 +943,25 @@ function daysBetween(from: string, to: string): number {
 /// The schedule, open on the week the event is in.
 function scheduleLink(row: EventRow): string {
   return `/schedule?week=${localDateIn(row.startsAt, PRACTICE_ZONE)}`;
+}
+
+/// A closure's start and end moved to the same date in `year` (same wall-clock
+/// times, whatever the clocks are doing), or null for a 29 February.
+function closureInYear(row: EventRow, year: number): { startsAt: Date; endsAt: Date } | null {
+  const firstDay = localDateIn(row.startsAt, PRACTICE_ZONE);
+  if (firstDay.slice(5) === '02-29') return null;
+  const nextFirst = `${year}${firstDay.slice(4)}`;
+  if (row.allDay) {
+    const { startDate, endDate } = allDayDates(row);
+    return allDayRange(nextFirst, addDaysTo(nextFirst, daysBetween(startDate, endDate)));
+  }
+  const lastDay = localDateIn(row.endsAt, PRACTICE_ZONE);
+  return {
+    startsAt: zonedTimeToUtc(nextFirst, localTimeIn(row.startsAt, PRACTICE_ZONE), PRACTICE_ZONE),
+    endsAt: zonedTimeToUtc(
+      addDaysTo(nextFirst, daysBetween(firstDay, lastDay)),
+      localTimeIn(row.endsAt, PRACTICE_ZONE),
+      PRACTICE_ZONE,
+    ),
+  };
 }

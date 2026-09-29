@@ -29,6 +29,7 @@ import {
   QueryCoverageDto,
   RepeatShiftsDto,
   StopStandingShiftDto,
+  UpdateStandingShiftDto,
 } from './dto/repeat-shifts.dto';
 import { OvertimeService } from './overtime.service';
 
@@ -319,6 +320,109 @@ export class ShiftPlanningService {
       },
       orderBy: [{ startsOn: 'asc' }, { startTime: 'asc' }],
     });
+  }
+
+  /**
+   * Changes a standing shift from `from` (today if not given) onward.
+   *
+   * The rule is updated, and its shifts from that day are taken off the rota
+   * the way a stop does it (drafts deleted, published ones cancelled) and
+   * written again to the new rule. Earlier shifts, started shifts and ones
+   * moved off the series by hand are left alone. The person is told once.
+   */
+  async updateStanding(id: string, dto: UpdateStandingShiftDto, now: Date = new Date()) {
+    if (dto.endTime <= dto.startTime) {
+      throw new BadRequestException('The end time must be after the start time.');
+    }
+    const series = await this.prisma.shiftSeries.findUnique({
+      where: { id },
+      include: { location: { select: { timezone: true } } },
+    });
+    if (!series) throw new NotFoundException('That standing shift does not exist.');
+    if (series.endsOn) throw new BadRequestException('That regular shift has been stopped.');
+
+    const location = await this.requireLocation(dto.locationId);
+    if (series.employeeId) await this.requireAssignment(series.employeeId, dto.locationId);
+    if (dto.jobRoleId) await this.requireJobRole(dto.jobRoleId);
+
+    const today = localDateIn(now, PRACTICE_ZONE);
+    const from = laterOf(dto.from?.slice(0, 10) ?? today, today);
+    const filled = isoDate(series.filledThrough);
+    const daysOfWeek = [...dto.daysOfWeek].sort();
+    const openCount = series.employeeId ? 1 : (dto.openCount ?? series.openCount);
+    const jobRoleId = dto.jobRoleId === undefined ? series.jobRoleId : dto.jobRoleId;
+    const isRemote = dto.isRemote ?? series.isRemote;
+
+    // Shifts on or after `from` that have not started. Time already worked, or
+    // with punches against it, is never touched.
+    const cutoff = zonedTimeToUtc(from, '00:00', series.location.timezone);
+    const going = {
+      seriesId: id,
+      status: { not: ShiftStatus.CANCELLED },
+      startsAt: { gte: cutoff > now ? cutoff : now },
+    } satisfies Prisma.ShiftWhereInput;
+
+    await this.prisma.shiftSeries.update({
+      where: { id },
+      data: {
+        locationId: dto.locationId,
+        jobRoleId,
+        isRemote,
+        openCount,
+        daysOfWeek,
+        startTime: dto.startTime,
+        endTime: dto.endTime,
+      },
+    });
+
+    const published = await this.prisma.shift.count({
+      where: { ...going, status: ShiftStatus.PUBLISHED },
+    });
+    await this.prisma.shift.deleteMany({
+      where: { ...going, status: ShiftStatus.DRAFT, timeEntries: { none: {} } },
+    });
+    await this.prisma.shift.updateMany({ where: going, data: { status: ShiftStatus.CANCELLED } });
+
+    const dates = datesBetween(from, filled).filter((date) =>
+      daysOfWeek.includes(isoWeekdayOf(date)),
+    );
+    const result = await this.createAll(
+      dates.map((date) => ({
+        date,
+        startsAt: zonedTimeToUtc(date, dto.startTime, location.timezone),
+        endsAt: zonedTimeToUtc(date, dto.endTime, location.timezone),
+      })),
+      {
+        employeeId: series.employeeId,
+        jobRoleId,
+        isRemote,
+        openCount,
+        locationId: dto.locationId,
+        status: series.status,
+        notes: series.notes ?? undefined,
+        createdById: series.createdById,
+        timezone: location.timezone,
+        seriesId: id,
+      },
+    );
+
+    if (series.employeeId && (published > 0 || result.created > 0)) {
+      await this.inbox.notify([series.employeeId], {
+        kind: NotificationKind.SCHEDULE_CHANGED,
+        title: 'Your regular shift has changed',
+        body: `${weekdaysPhrase(daysOfWeek)} from ${shortDay(from)}.`,
+        link: '/schedule',
+      });
+    }
+
+    this.logger.log(`Changed standing shift ${id} from ${from}`);
+    return {
+      ...result,
+      from,
+      overtime: series.employeeId
+        ? await this.overtimeAfterPlanning(result.dates, [series.employeeId])
+        : [],
+    };
   }
 
   /**
@@ -927,7 +1031,6 @@ function daysBetween(from: string, to: string): number {
     (new Date(`${to}T00:00:00Z`).getTime() - new Date(`${from}T00:00:00Z`).getTime()) / 86_400_000,
   );
 }
-
 
 /// The last date a standing shift is written out to, counting from `date`.
 function standingHorizon(date: string): string {

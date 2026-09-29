@@ -91,7 +91,8 @@ const manager = await signIn('manager@domihealthcare.com');
 
 await step('the office meeting: every 2 weeks on Friday, 9 to 10, for everyone', async () => {
   await weekView(manager, week1);
-  await manager.getByRole('button', { name: '+ Add event' }).click();
+  await manager.getByRole('button', { name: '+ Add', exact: true }).click();
+  await manager.getByRole('menuitem', { name: 'Event', exact: true }).click();
   const form = manager.getByRole('form', { name: 'New event' });
   await form.getByLabel('What is it?').fill('Office meeting');
   await form.getByLabel('Starts').fill(`${key(friday1)}T${NINE}`);
@@ -117,7 +118,8 @@ await step('it is on alternate Fridays: the week after has none, the one after t
 
 await step('the admin meeting alternates with it, for chosen people typed into one box', async () => {
   await weekView(manager, plusDays(week1, 7));
-  await manager.getByRole('button', { name: '+ Add event' }).click();
+  await manager.getByRole('button', { name: '+ Add', exact: true }).click();
+  await manager.getByRole('menuitem', { name: 'Event', exact: true }).click();
   const form = manager.getByRole('form', { name: 'New event' });
   await form.getByLabel('What is it?').fill('Admin meeting');
   await form.getByLabel('Starts').fill(`${key(friday2)}T${NINE}`);
@@ -144,7 +146,8 @@ await step('the admin meeting alternates with it, for chosen people typed into o
 
 await step('every 2 weeks on Monday and Friday, from the custom choice', async () => {
   await weekView(manager, week1);
-  await manager.getByRole('button', { name: '+ Add event' }).click();
+  await manager.getByRole('button', { name: '+ Add', exact: true }).click();
+  await manager.getByRole('menuitem', { name: 'Event', exact: true }).click();
   const form = manager.getByRole('form', { name: 'New event' });
   await form.getByLabel('What is it?').fill('Huddle');
   await form.getByLabel('Starts').fill(`${key(week1)}T12:00`);

@@ -105,7 +105,7 @@ await step('schedule shows the week', async () => {
 await page.screenshot({ path: `${OUT}/04-schedule-employee.png`, fullPage: true });
 
 await step('employee cannot add shifts', async () => {
-  if (await page.getByRole('button', { name: '+ Add shift' }).count() > 0)
+  if (await page.getByRole('button', { name: '+ Add', exact: true }).count() > 0)
     throw new Error('employee was offered the Add shift button');
 });
 
@@ -140,13 +140,14 @@ await step('manager approves a completed entry', async () => {
 
 await step('manager sees the shift scheduler', async () => {
   await page.getByRole('link', { name: 'Schedule' }).click();
-  await page.getByRole('button', { name: '+ Add shift' }).waitFor({ timeout: 10000 });
+  await page.getByRole('button', { name: '+ Add', exact: true }).waitFor({ timeout: 10000 });
 });
 await page.screenshot({ path: `${OUT}/06-schedule-manager.png`, fullPage: true });
 
 let createdDay;
 await step('manager creates a shift', async () => {
-  await page.getByRole('button', { name: '+ Add shift' }).click();
+  await page.getByRole('button', { name: '+ Add', exact: true }).click();
+  await page.getByRole('menuitem', { name: 'Shift', exact: true }).click();
   await page.getByLabel('Employee').selectOption({ label: 'Frankie Front-Desk' });
   // Far-future and randomised so repeat runs never collide with an existing shift.
   const d = new Date();
@@ -167,7 +168,8 @@ await step('manager creates a shift', async () => {
 });
 
 await step('an overlapping shift is refused and the reason is shown', async () => {
-  await page.getByRole('button', { name: '+ Add shift' }).click();
+  await page.getByRole('button', { name: '+ Add', exact: true }).click();
+  await page.getByRole('menuitem', { name: 'Shift', exact: true }).click();
   await page.getByLabel('Employee').selectOption({ label: 'Frankie Front-Desk' });
   await page.getByLabel('Starts').fill(`${createdDay}T12:00`);
   await page.getByLabel('Ends').fill(`${createdDay}T20:00`);
