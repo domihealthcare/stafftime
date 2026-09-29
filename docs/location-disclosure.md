@@ -86,12 +86,30 @@ coordinate at the moment of a punch is the entire record.
 > makes a remote clock-in trustworthy for everybody. It is not used to monitor
 > where staff are, and it cannot be used that way.
 
+> ### Recording your own time
+>
+> Clock in and out only for yourself. Clocking in or out for anybody else,
+> asking somebody to do it for you, or sharing your password or time-clock PIN
+> is falsifying a time record, and is treated as a disciplinary matter[, up to
+> and including termination]. If you forget to clock in or out, or the app will
+> not let you, tell your manager, who can correct the record. A forgotten punch
+> is simply corrected.
+
+The words in square brackets are for whoever advises on employment matters to
+keep or change. Asked for by Dominguez (29 September 2026), in place of any
+technical check at the time clock (see *Kiosk* in `docs/open-questions.md`).
+
 ### Points to settle before this goes in
 
-- [ ] **Is the tablet actually available at both offices, on every shift?** The
-      opt-out above only means something if it is. If someone opens the West New
-      York office alone on a Saturday and the tablet lives behind a locked desk,
-      "use the kiosk instead" is not a real choice.
+- [ ] **There is no time clock for now, so the opt-out above has nothing
+      behind it.** Dominguez decided (29 September 2026) not to set up a time
+      clock until the practice has a dedicated tablet, and the office IP
+      fallback is set aside. So somebody who refuses location sharing cannot
+      clock in themselves at the moment. Until there is a tablet, either their
+      manager records their hours (a manual entry), or the office IP addresses
+      are entered, or the paragraph says so plainly. Once a tablet is bought, it
+      needs to be available at both offices on every shift for the opt-out to
+      mean something.
 - [ ] **Confirm the 90 days** with whoever advises on employment matters. It is
       a considered default, not a legal requirement, and a practice might prefer
       shorter.

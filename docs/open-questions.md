@@ -200,7 +200,26 @@ Scope is in `CLAUDE.md` under *Build phasing*. Still to settle:
 
 ## Kiosk
 
-The office computer is the time clock for now, with PINs. What is left:
+**No time clock for now** (Dominguez, 29 September 2026): staff clock in on
+their own phones. A time clock is set up only once the practice buys a
+dedicated tablet, and not on an office computer in the meantime. Decided
+along the way:
+
+- **A time clock on every office computer, limited to the office network:
+  dropped.** Anybody can give a colleague their PIN ("buddy punching"), and
+  more PIN screens make it easier. A phone needs the person's own phone,
+  password and presence, which is much harder to lend.
+- **Showing the person's photo after the PIN** ("is this you?"): ruled out,
+  since people can simply say yes.
+- **A webcam snapshot at each punch**: ruled out as too invasive.
+- **Instead, a handbook rule**: clocking in or out for somebody else is a
+  disciplinary matter. Draft wording is in `docs/location-disclosure.md`.
+
+What is left:
+
+- [ ] **Confirming the person at the tablet, once there is one.** Worth
+      looking at again when a tablet is bought, knowing a PIN or badge proves
+      only who knows it or holds it.
 
 - [ ] **Badge tap.** Not built. A USB badge reader behaves like a keyboard, so
       the screen would listen for a fast burst of keystrokes ending in Enter and
