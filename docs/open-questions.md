@@ -15,11 +15,17 @@ taken off this list, and the answer is written into `CLAUDE.md` or
 - [ ] **Rotate the Neon database password.** Reset it in Neon, paste the new
       pooled and direct strings into `DATABASE_URL` / `DIRECT_DATABASE_URL` in
       Vercel, and redeploy.
-- [ ] **Should Vercel previews have their own database?** They appear to share
-      the live one, so a pushed branch's migration reaches the live database
-      before it is merged (see *Never edit a migration once it has been pushed*
-      in `CLAUDE.md`). Check in Vercel → Settings → Environment Variables
-      whether Preview has its own `DATABASE_URL`.
+- [ ] **Give Vercel previews their own database.** Confirmed by Dominguez
+      (29 September 2026): `DATABASE_URL` is one variable set for both Preview
+      and Production, so previews use the live database, and a pushed branch's
+      migration reaches it before it is merged (see *Never edit a migration
+      once it has been pushed* in `CLAUDE.md`). The fix is a Neon branch for
+      Preview, with its own `DATABASE_URL` and `DIRECT_DATABASE_URL` scoped to
+      Preview only. Also reported: `DIRECT_DATABASE_URL` is set for Preview
+      only. The production build runs `prisma migrate deploy`, which needs it
+      (`directUrl` in `schema.prisma`), so check that the latest Production
+      deployment built cleanly and that Help → About this version shows the
+      latest commit.
 
 ## ADP TotalSource import (built September 2026 — needs setting up)
 
