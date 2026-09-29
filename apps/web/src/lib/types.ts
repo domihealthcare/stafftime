@@ -1001,6 +1001,53 @@ export interface DashboardWeek {
   overtime: { name: string; hours: number; overtimeHours: number }[];
 }
 
+/// The Dashboard's "Across the practice": everything besides hours.
+export interface PracticeOverview {
+  surveys: {
+    surveys: {
+      id: string;
+      title: string;
+      status: 'DRAFT' | 'OPEN' | 'CLOSED';
+      openedAt: string | null;
+      closedAt: string | null;
+      responses: number;
+      audienceSize: number;
+      /// Closed, and enough people answered for results to be shown.
+      resultsShown: boolean;
+    }[];
+    suggestionsLast30Days: number;
+  };
+  licenses: {
+    withinDays: number;
+    expired: { employeeName: string; name: string; expiresOn: string; daysUntilExpiry: number }[];
+    dueSoon: { employeeName: string; name: string; expiresOn: string; daysUntilExpiry: number }[];
+    missingRequired: { employeeName: string; name: string }[];
+  };
+  checklists: {
+    id: string;
+    kind: 'ONBOARDING' | 'OFFBOARDING';
+    name: string;
+    employeeName: string;
+    total: number;
+    done: number;
+    overdue: number;
+  }[];
+  closing: {
+    days: number;
+    total: number;
+    complete: number;
+    withGaps: number;
+    skipped: number;
+    suppliesToOrder: { office: string; count: number }[];
+  };
+  waiting: {
+    timeOff: number;
+    handEntries: number;
+    unapprovedHours: number;
+    missingPunches: number;
+  };
+}
+
 export interface Dashboard {
   today: string;
   overtimeThresholdHours: number;

@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
+import { PracticeOverviewSection } from '../components/PracticeOverviewSection';
 import { Alert, Card, EmptyState, PageHeading, Spinner } from '../components/ui';
 import { ApiError, api } from '../lib/api';
 import type { Dashboard, DashboardFigures, DashboardWeek } from '../lib/types';
@@ -57,7 +58,7 @@ export function DashboardPage() {
     <div className="mx-auto max-w-5xl">
       <PageHeading
         title="Dashboard"
-        subtitle="How the weeks have gone — from the punches, the rota and approved time off."
+        subtitle="How the weeks have gone, and what else needs a manager — licenses, surveys, onboarding and closing checklists."
       />
 
       {error && (
@@ -143,6 +144,13 @@ export function DashboardPage() {
         />
       </div>
 
+      <div className="mb-8">
+        <PracticeOverviewSection />
+      </div>
+
+      <h2 className="mb-2 text-sm font-semibold uppercase tracking-wide text-slate-600">
+        Hours, week by week
+      </h2>
       <Card className="mb-6 p-4">
         <HoursChart data={data} locations={shownLocations} />
       </Card>

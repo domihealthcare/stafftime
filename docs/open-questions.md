@@ -148,6 +148,13 @@ What needs a decision from the practice:
       whichever is later — and since the app holds no copy, nothing here can
       remind anyone. Worth deciding whether it should: a checklist task on the
       offboarding list ("I-9 retention date diarised") would cost nothing.
+- [ ] **Check the starting license types.** Flu vaccine, TB test and
+      malpractice insurance were asked for without saying required or
+      optional; they start as optional, optional and required for Provider.
+      Renewal intervals were filled in only where fixed and well known (DEA 36
+      months, ACLS/BLS 24, flu and TB 12); medical license, CDS, malpractice
+      and the Student-Athlete certificate are left blank for the practice to
+      set. And should Medical Assistants or Front Desk need any (BLS, flu, TB)?
 - [ ] **Licence warnings.** How far ahead the practice wants warning (60 days
       by default), and whether a lapsed licence should stop somebody being
       scheduled — today it is reported, not enforced.

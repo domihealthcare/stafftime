@@ -89,6 +89,8 @@ await step('the chart draws a line per location, with a legend, and hovering nam
   await mgr.getByLabel('Legend').getByText('West New York').waitFor({ timeout: 5000 });
 
   const svg = chart.locator('svg');
+  // Below "Across the practice" since September 2026, so off the first screen.
+  await svg.scrollIntoViewIfNeeded();
   const box = await svg.boundingBox();
   await mgr.mouse.move(box.x + box.width * 0.45, box.y + box.height / 2);
   await chart.getByRole('status').getByText(/Week of|This week/).waitFor({ timeout: 5000 });
@@ -113,6 +115,51 @@ await step('filtering to one location keeps its line and its colour', async () =
   if (stroke === blueBefore) throw new Error('West New York took North Bergen’s colour when filtered');
   await mgr.getByTestId('tile-Overtime').getByText('Both locations — overtime is per person').waitFor({ timeout: 5000 });
   await mgr.getByLabel('Location').selectOption({ label: 'Both locations' });
+});
+
+await step('across the practice: what is waiting, licenses, surveys, checklists and closing', async () => {
+  // A survey that is open, so the Surveys card has something to count.
+  const made = await json(mgr, '/surveys', {
+    method: 'POST',
+    body: JSON.stringify({
+      title: 'Dashboard pulse',
+      audience: 'EVERYONE',
+      questions: [{ kind: 'RATING', prompt: 'How was your week?' }],
+    }),
+  });
+  if (made.status !== 201) throw new Error(`making a survey answered ${made.status}`);
+  const opened = await json(mgr, `/surveys/${made.body.id}/open`, { method: 'POST' });
+  if (opened.status >= 300) throw new Error(`opening it answered ${opened.status}`);
+
+  await mgr.goto(`${BASE}/dashboard`, { waitUntil: 'networkidle' });
+  const overview = mgr.getByTestId('practice-overview');
+  await overview.getByText('Across the practice').waitFor({ timeout: 15000 });
+  for (const tile of ['Time off to decide', 'Hours to approve', 'Punches with no clock-out', 'Hours entered by hand to look into']) {
+    await overview.getByTestId(`waiting-${tile}`).waitFor({ timeout: 5000 });
+  }
+  // The demo providers have none of the licenses a provider needs on file.
+  await mgr.getByTestId('overview-licenses').getByText(/required not on file/).waitFor({ timeout: 5000 });
+  await mgr.getByTestId('overview-licenses').getByText(/DEA registration, not on file|Medical license, not on file|and \d+ more/).first().waitFor({ timeout: 5000 });
+  const surveys = mgr.getByTestId('overview-surveys');
+  await surveys.getByText('Dashboard pulse').waitFor({ timeout: 5000 });
+  await surveys.getByText(/0 of \d+ answered/).waitFor({ timeout: 5000 });
+  await mgr.getByTestId('overview-checklists').waitFor({ timeout: 5000 });
+  await mgr.getByTestId('overview-closing').getByText(/Supplies|supplies/).waitFor({ timeout: 5000 });
+  await mgr.screenshot({ path: `${OUT}/101-dashboard-practice.png`, fullPage: true });
+
+  // A tile goes where the thing is dealt with.
+  await overview.getByTestId('waiting-Time off to decide').click();
+  await mgr.waitForURL(/\/time-off/, { timeout: 10000 });
+  await json(mgr, `/surveys/${made.body.id}`, { method: 'DELETE' });
+});
+
+await step('staff cannot read the practice overview either', async () => {
+  const ctx = await browser.newContext();
+  const emp = await ctx.newPage();
+  await signIn(emp, 'frontdesk@domihealthcare.com');
+  const answer = await json(emp, '/dashboard/practice');
+  if (answer.status !== 403) throw new Error(`staff got ${answer.status}`);
+  await ctx.close();
 });
 
 await step('staff cannot open it', async () => {

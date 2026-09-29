@@ -336,6 +336,40 @@ export class SurveysService {
     return row;
   }
 
+  /**
+   * For the Dashboard: the surveys open now and those closed in the last 30
+   * days, with how many could answer and how many have — the same counts the
+   * Surveys screen shows — and whether results can be shown. Never answers.
+   */
+  async overview(now = new Date()) {
+    const since = new Date(now.getTime() - 30 * 86_400_000);
+    const rows = await this.prisma.survey.findMany({
+      where: {
+        OR: [
+          { status: SurveyStatus.OPEN },
+          { status: SurveyStatus.CLOSED, closedAt: { gte: since } },
+        ],
+      },
+      select: SURVEY_SELECT,
+      orderBy: { openedAt: 'desc' },
+    });
+    const surveys = await Promise.all(rows.map((row) => this.forManager(row)));
+    // Open ones first: those are the ones still collecting answers.
+    surveys.sort(
+      (a, b) => Number(b.status === SurveyStatus.OPEN) - Number(a.status === SurveyStatus.OPEN),
+    );
+    return surveys.map((survey) => ({
+      id: survey.id,
+      title: survey.title,
+      status: survey.status,
+      openedAt: survey.openedAt,
+      closedAt: survey.closedAt,
+      responses: survey.responses,
+      audienceSize: survey.audienceSize,
+      resultsShown: survey.status === SurveyStatus.CLOSED && survey.responses >= MIN_RESPONSES,
+    }));
+  }
+
   /// A manager's view: who it is for, how many could answer, how many have.
   private async forManager(row: SurveyRow) {
     const { _count, ...rest } = row;

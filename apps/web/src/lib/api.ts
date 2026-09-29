@@ -17,6 +17,7 @@ import type {
   ConflictingShift,
   Coverage,
   Dashboard,
+  PracticeOverview,
   DemoSummary,
   TestDataCounts,
   TestDataPreview,
@@ -1016,6 +1017,8 @@ export const api = {
     request<{ deleted: boolean }>(`/announcements/${id}`, { method: 'DELETE' }),
 
   dashboard: (weeks: number) => request<Dashboard>(`/dashboard?weeks=${weeks}`),
+  /// Surveys, licenses, checklists, closing and what is waiting on a manager.
+  practiceOverview: () => request<PracticeOverview>('/dashboard/practice'),
   directory: () => request<DirectoryEntry[]>('/directory'),
   profile: () => request<Profile>('/profile'),
   updateProfile: (body: {

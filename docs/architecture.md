@@ -2170,6 +2170,41 @@ on the Timesheet banner and in the nightly email, with no time limit. The
 manager who entered it cannot mark it looked into: the list is there so a
 second person sees each one. Staff see their own hand-entered days, and why.
 
+## License types and who needs them
+
+Asked for by Dominguez (29 September 2026): providers all need a medical
+license, CDS and DEA; others are optional; and the practice should be able
+to add more itself, say who needs each and how often it renews.
+
+`CredentialType` is the practice's list (name, kind, `renewalMonths`), and
+`CredentialRequirement` says a job role needs a type, `required` or not. A
+credential on file points at its type (`credentialTypeId`); ones recorded
+free-hand before types existed count for a type when the name matches
+exactly, ignoring case. `standingFor` (pure, tested) lines each person up
+against the types their job roles ask for — required wins over optional
+across several roles, and the credential that runs longest counts, so an old
+card beside its renewal does not read as lapsed. `loadStanding` is the one
+query behind the Licenses screen's **By person**, the Staff editor, the
+nightly round-up and the Dashboard.
+
+Only a **required** type with **nothing on file** is a new thing to chase;
+a lapsed or lapsing one was already chased as such. Optional ones are listed
+and never chased. Removing a type archives it: nobody is expected to have it,
+what is on file stays, and adding the same name again brings it back.
+
+Still dates only: a type is a name and an interval, never a number.
+
+## Dashboard: across the practice
+
+Asked for by Dominguez (29 September 2026): the Dashboard was all hours.
+`GET /dashboard/practice` adds what is waiting on a manager, licenses,
+surveys, onboarding and offboarding, and closing checklists — counts and short
+lists, each read through the service or query its own screen uses (the
+survey counts from `SurveysService.overview`, the licenses from
+`CredentialsService.expiring` and `loadStanding`), so the Dashboard cannot
+tell a different story from those screens. Survey answers are never read:
+only how many people answered, as the Surveys screen shows.
+
 ## Birthdays
 
 Asked for by Dominguez (September 2026) so colleagues can wish each other a
