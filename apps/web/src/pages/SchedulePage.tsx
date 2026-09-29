@@ -631,7 +631,13 @@ export function SchedulePage() {
 
       {isManager && (
         <div className="mt-6">
-          <StandingShiftsCard version={standingVersion} onChanged={() => void load()} />
+          <StandingShiftsCard
+            version={standingVersion}
+            employees={employees}
+            locations={locations}
+            jobRoles={jobRoles}
+            onChanged={() => void load()}
+          />
         </div>
       )}
 

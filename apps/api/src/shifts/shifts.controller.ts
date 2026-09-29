@@ -25,6 +25,7 @@ import {
   QueryCoverageDto,
   RepeatShiftsDto,
   StopStandingShiftDto,
+  UpdateStandingShiftDto,
 } from './dto/repeat-shifts.dto';
 import { UpdateShiftDto } from './dto/update-shift.dto';
 import { OvertimeService } from './overtime.service';
@@ -56,6 +57,14 @@ export class ShiftsController {
   @Roles(Role.MANAGER)
   standing() {
     return this.planning.standing();
+  }
+
+  /// Changes a standing shift's days, hours or place from a given day on.
+  @Post('standing/:id/update')
+  @Roles(Role.MANAGER)
+  @HttpCode(HttpStatus.OK)
+  updateStanding(@Param('id', ParseUUIDPipe) id: string, @Body() dto: UpdateStandingShiftDto) {
+    return this.planning.updateStanding(id, dto);
   }
 
   /// Ends a standing shift after a given day.

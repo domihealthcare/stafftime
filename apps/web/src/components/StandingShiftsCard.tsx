@@ -7,9 +7,17 @@ import {
   WEEK_ORDER,
   WEEKDAY_NAMES,
 } from '../lib/format';
-import type { StandingShift } from '../lib/types';
+import type { Employee, JobRole, Location, StandingShift } from '../lib/types';
 import { useConfirm } from './ConfirmDialog';
+import {
+  PlaceSelect,
+  WORK_FROM_HOME,
+  WorkFromHomeNote,
+  homeOfficeOf,
+  placeToShift,
+} from './PlaceSelect';
 import { Alert, Card } from './ui';
+import { WeekdayToggles } from './WeekdayToggles';
 
 /// "Mondays and Thursdays", Sunday first as the calendar reads.
 function whichDays(days: number[]): string {
@@ -30,21 +38,35 @@ function clock(time: string): string {
 
 /**
  * The regular shifts with no end date — "Rosa, every Monday, 8 to 4" — and
- * the one thing to do with them: stop them (asked for by Dominguez,
+ * stop them or change them from a date on (asked for by Dominguez,
  * September 2026). Each keeps the rota filled eight weeks ahead, every night,
  * until then. Managers and admins only.
  */
 export function StandingShiftsCard({
   version,
+  employees,
+  locations,
+  jobRoles,
   onChanged,
 }: {
   /// Bumped when a repeat is made elsewhere on the page, to re-fetch.
   version: number;
+  employees: Employee[];
+  locations: Location[];
+  jobRoles: JobRole[];
   onChanged: () => void;
 }) {
   const confirm = useConfirm();
   const [standing, setStanding] = useState<StandingShift[] | null>(null);
   const [stopping, setStopping] = useState<string | null>(null);
+  const [editing, setEditing] = useState<StandingShift | null>(null);
+  const [days, setDays] = useState<number[]>([]);
+  const [startTime, setStartTime] = useState('09:00');
+  const [endTime, setEndTime] = useState('17:00');
+  const [place, setPlace] = useState('');
+  const [jobRoleId, setJobRoleId] = useState('');
+  const [openCount, setOpenCount] = useState(1);
+  const [fromDate, setFromDate] = useState(() => localDate(new Date()));
   const [lastDate, setLastDate] = useState(() => localDate(new Date()));
   const [busy, setBusy] = useState(false);
   const [result, setResult] = useState<string | null>(null);
@@ -65,6 +87,67 @@ export function StandingShiftsCard({
     item.employee
       ? displayName(item.employee)
       : `Open shift${item.openCount > 1 ? ` ×${item.openCount}` : ''}${item.jobRole ? ` — ${item.jobRole.name}` : ''}`;
+
+  const person = (item: StandingShift) =>
+    item.employeeId ? employees.find((e) => e.id === item.employeeId) : undefined;
+
+  function startEdit(item: StandingShift) {
+    setEditing(item);
+    setStopping(null);
+    setResult(null);
+    setError(null);
+    setDays(item.daysOfWeek);
+    setStartTime(item.startTime);
+    setEndTime(item.endTime);
+    setPlace(item.isRemote ? WORK_FROM_HOME : item.locationId);
+    setJobRoleId(item.jobRole?.id ?? '');
+    setOpenCount(item.openCount);
+    setFromDate(localDate(new Date()));
+  }
+
+  async function saveEdit() {
+    if (!editing) return;
+    const { locationId, isRemote } = placeToShift(place, homeOfficeOf(person(editing)));
+    const sure = await confirm({
+      title: `Change ${who(editing)}’s regular shift?`,
+      body: (
+        <p>
+          From {formatCalendarDate(fromDate, { year: false })} on, it becomes {whichDays(days)},{' '}
+          {clock(startTime)}–{clock(endTime)}. Shifts from then are replaced
+          {editing.employee ? ', and they are told' : ''}. Earlier ones stay as they are.
+        </p>
+      ),
+      confirmLabel: 'Yes, change it',
+      cancelLabel: 'Not yet',
+    });
+    if (!sure) return;
+    setBusy(true);
+    setError(null);
+    try {
+      const done = await api.updateStandingShift(editing.id, {
+        locationId,
+        isRemote,
+        jobRoleId: jobRoleId || null,
+        ...(editing.employeeId ? {} : { openCount }),
+        startTime,
+        endTime,
+        daysOfWeek: [...days].sort(),
+        from: fromDate,
+      });
+      setResult(
+        `Changed from ${formatCalendarDate(done.from, { year: false })}. ${done.created} ${
+          done.created === 1 ? 'shift' : 'shifts'
+        } written${done.skipped.length ? `, ${done.skipped.length} skipped (a clash or leave)` : ''}.`,
+      );
+      setEditing(null);
+      load();
+      onChanged();
+    } catch (err) {
+      setError(err instanceof ApiError ? err.message : 'Could not change it.');
+    } finally {
+      setBusy(false);
+    }
+  }
 
   async function stop(item: StandingShift) {
     const sure = await confirm({
@@ -135,20 +218,135 @@ export function StandingShiftsCard({
                     ? ` · ends ${formatCalendarDate(item.endsOn, { year: false })}`
                     : ' · no end date'}
                 </span>
-                {!item.endsOn && stopping !== item.id && (
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setStopping(item.id);
-                      setLastDate(localDate(new Date()));
-                      setResult(null);
-                    }}
-                    className="rounded-lg border border-slate-300 bg-white px-3 py-1 text-sm font-medium text-slate-700 hover:bg-slate-50"
-                  >
-                    Stop…
-                  </button>
+                {!item.endsOn && stopping !== item.id && editing?.id !== item.id && (
+                  <span className="flex gap-2">
+                    <button
+                      type="button"
+                      onClick={() => startEdit(item)}
+                      className="rounded-lg border border-slate-300 bg-white px-3 py-1 text-sm font-medium text-slate-700 hover:bg-slate-50"
+                    >
+                      Edit…
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setStopping(item.id);
+                        setEditing(null);
+                        setLastDate(localDate(new Date()));
+                        setResult(null);
+                      }}
+                      className="rounded-lg border border-slate-300 bg-white px-3 py-1 text-sm font-medium text-slate-700 hover:bg-slate-50"
+                    >
+                      Stop…
+                    </button>
+                  </span>
                 )}
               </div>
+              {editing?.id === item.id && (
+                <div className="mt-2 space-y-3 rounded-lg bg-slate-50 p-3">
+                  <fieldset>
+                    <legend className="text-xs font-medium text-slate-700">Days</legend>
+                    <WeekdayToggles days={days} onChange={setDays} />
+                  </fieldset>
+                  <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+                    <label className="text-sm text-slate-700">
+                      <span className="block text-xs font-medium">Starts</span>
+                      <input
+                        type="time"
+                        value={startTime}
+                        onChange={(event) => setStartTime(event.target.value)}
+                        className="mt-0.5 w-full rounded-lg border-slate-300 py-1.5 text-sm shadow-sm"
+                      />
+                    </label>
+                    <label className="text-sm text-slate-700">
+                      <span className="block text-xs font-medium">Ends</span>
+                      <input
+                        type="time"
+                        value={endTime}
+                        onChange={(event) => setEndTime(event.target.value)}
+                        className="mt-0.5 w-full rounded-lg border-slate-300 py-1.5 text-sm shadow-sm"
+                      />
+                    </label>
+                    <label className="text-sm text-slate-700">
+                      <span className="block text-xs font-medium">Location</span>
+                      <PlaceSelect
+                        id={`standing-place-${item.id}`}
+                        value={place}
+                        onChange={setPlace}
+                        offices={
+                          person(item)
+                            ? locations.filter((l) =>
+                                person(item)!.locations.some((a) => a.locationId === l.id),
+                              )
+                            : locations
+                        }
+                        allowHome={Boolean(item.employeeId)}
+                        className="mt-0.5 w-full rounded-lg border-slate-300 py-1.5 text-sm shadow-sm"
+                      />
+                    </label>
+                    <label className="text-sm text-slate-700">
+                      <span className="block text-xs font-medium">Job role</span>
+                      <select
+                        value={jobRoleId}
+                        onChange={(event) => setJobRoleId(event.target.value)}
+                        className="mt-0.5 w-full rounded-lg border-slate-300 py-1.5 text-sm shadow-sm"
+                      >
+                        <option value="">Not specified</option>
+                        {jobRoles.map((role) => (
+                          <option key={role.id} value={role.id}>
+                            {role.name}
+                          </option>
+                        ))}
+                      </select>
+                    </label>
+                  </div>
+                  {place === WORK_FROM_HOME && <WorkFromHomeNote />}
+                  {!item.employeeId && (
+                    <label className="block text-sm text-slate-700">
+                      <span className="block text-xs font-medium">How many each day</span>
+                      <input
+                        type="number"
+                        min={1}
+                        max={10}
+                        value={openCount}
+                        onChange={(event) =>
+                          setOpenCount(Math.max(1, Math.min(10, Number(event.target.value) || 1)))
+                        }
+                        className="mt-0.5 w-24 rounded-lg border-slate-300 py-1.5 text-sm shadow-sm"
+                      />
+                    </label>
+                  )}
+                  <div className="flex flex-wrap items-end gap-2">
+                    <label className="text-sm text-slate-700">
+                      <span className="block text-xs font-medium">Change applies from</span>
+                      <input
+                        type="date"
+                        min={localDate(new Date())}
+                        value={fromDate}
+                        onChange={(event) => setFromDate(event.target.value)}
+                        className="mt-0.5 rounded-lg border-slate-300 py-1.5 text-sm shadow-sm"
+                      />
+                    </label>
+                    <button
+                      type="button"
+                      disabled={
+                        busy || !fromDate || days.length === 0 || !place || endTime <= startTime
+                      }
+                      onClick={() => void saveEdit()}
+                      className="rounded-lg bg-brand-600 px-3 py-1.5 text-sm font-semibold text-white hover:bg-brand-700 disabled:opacity-60"
+                    >
+                      {busy ? 'Saving…' : 'Save changes'}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setEditing(null)}
+                      className="px-2 py-1.5 text-sm text-slate-600 hover:underline"
+                    >
+                      Cancel
+                    </button>
+                  </div>
+                </div>
+              )}
               {stopping === item.id && (
                 <div className="mt-2 flex flex-wrap items-end gap-2 rounded-lg bg-slate-50 p-2">
                   <label className="text-sm text-slate-700">

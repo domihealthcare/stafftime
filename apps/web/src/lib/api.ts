@@ -857,6 +857,23 @@ export const api = {
   }) => request<PlanResult>('/shifts/repeat', { method: 'POST', body: JSON.stringify(body) }),
   /// Regular shifts with no end date that are still running.
   standingShifts: () => request<StandingShift[]>('/shifts/standing'),
+  updateStandingShift: (
+    id: string,
+    body: {
+      locationId: string;
+      jobRoleId?: string | null;
+      isRemote?: boolean;
+      openCount?: number;
+      startTime: string;
+      endTime: string;
+      daysOfWeek: number[];
+      from?: string;
+    },
+  ) =>
+    request<PlanResult & { from: string }>(`/shifts/standing/${id}/update`, {
+      method: 'POST',
+      body: JSON.stringify(body),
+    }),
   stopStandingShift: (id: string, lastDate: string) =>
     request<{ lastDate: string; removed: number }>(`/shifts/standing/${id}/stop`, {
       method: 'POST',
