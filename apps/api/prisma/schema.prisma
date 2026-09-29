@@ -65,6 +65,21 @@ enum VerificationMethod {
   REMOTE
 }
 
+/// Why a manager had to enter somebody's hours by hand. Every hand entry is
+/// chased until somebody has found out why (Dominguez, September 2026), and
+/// these are the usual answers — APP_REFUSED is the one that is a bug report.
+enum HandEntryReason {
+  /// Forgot to clock in or out.
+  FORGOT
+  /// Tried, and the app would not let them.
+  APP_REFUSED
+  /// Would rather not share their location, and there is no time clock.
+  NO_LOCATION_SHARING
+  /// No phone with them, a flat battery or no signal.
+  NO_PHONE
+  OTHER
+}
+
 enum TimeEntryStatus {
   OPEN
   COMPLETED
@@ -266,6 +281,8 @@ model Employee {
   editedSettings      PracticeSettings[] @relation("PracticeSettingsEditor")
   editedTimeEntries   TimeEntry[]        @relation("TimeEntryEditedBy")
   approvedTimeEntries TimeEntry[]        @relation("TimeEntryApprovedBy")
+  enteredTimeEntries  TimeEntry[]        @relation("TimeEntryEnteredBy")
+  checkedHandEntries  TimeEntry[]        @relation("TimeEntryHandEntryCheckedBy")
 
   checklists                EmployeeChecklist[]     @relation("EmployeeChecklistSubject")
   createdChecklists         EmployeeChecklist[]     @relation("EmployeeChecklistCreatedBy")
@@ -755,14 +772,30 @@ model TimeEntry {
   approvedById String?   @db.Uuid
   approvedAt   DateTime?
 
+  /// Hours a manager entered by hand for a day with no punch at all. Set only
+  /// by `TimeEntriesService.addByHand`; a correction to a real punch is an edit
+  /// (above), not this. `enteredByHandAt` is what marks the entry, so it stays
+  /// marked even if the manager's own record is later removed.
+  enteredByHandAt      DateTime?
+  enteredById          String?          @db.Uuid
+  handEntryReason      HandEntryReason?
+  handEntryNote        String?
+  /// Somebody has looked into why it was needed. Until then it is listed in
+  /// the Timesheet banner and the nightly round-up.
+  handEntryCheckedAt   DateTime?
+  handEntryCheckedById String?          @db.Uuid
+  handEntryFinding     String?
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  employee   Employee  @relation(fields: [employeeId], references: [id], onDelete: Cascade)
-  location   Location  @relation(fields: [locationId], references: [id], onDelete: Restrict)
-  shift      Shift?    @relation(fields: [shiftId], references: [id], onDelete: SetNull)
-  editedBy   Employee? @relation("TimeEntryEditedBy", fields: [editedById], references: [id], onDelete: SetNull)
-  approvedBy Employee? @relation("TimeEntryApprovedBy", fields: [approvedById], references: [id], onDelete: SetNull)
+  employee           Employee  @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+  location           Location  @relation(fields: [locationId], references: [id], onDelete: Restrict)
+  shift              Shift?    @relation(fields: [shiftId], references: [id], onDelete: SetNull)
+  editedBy           Employee? @relation("TimeEntryEditedBy", fields: [editedById], references: [id], onDelete: SetNull)
+  approvedBy         Employee? @relation("TimeEntryApprovedBy", fields: [approvedById], references: [id], onDelete: SetNull)
+  enteredBy          Employee? @relation("TimeEntryEnteredBy", fields: [enteredById], references: [id], onDelete: SetNull)
+  handEntryCheckedBy Employee? @relation("TimeEntryHandEntryCheckedBy", fields: [handEntryCheckedById], references: [id], onDelete: SetNull)
 
   payrollExports PayrollExportEntry[]
 

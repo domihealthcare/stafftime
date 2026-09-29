@@ -48,6 +48,7 @@ import type {
   UnavailabilityKind,
   TemplateTaskInput,
   TimeEntry,
+  HandEntryReason,
   UpdateLocationInput,
   OvertimeCheck,
   OwnOvertimeWeek,
@@ -801,6 +802,24 @@ export const api = {
     }),
   listTimeEntries: (params: Record<string, string | undefined> = {}) =>
     request<TimeEntry[]>(`/time-entries${toQuery(params)}`),
+  /// A day with no punch at all, entered by a manager.
+  addHours: (body: {
+    employeeId: string;
+    locationId: string;
+    clockInAt: string;
+    clockOutAt: string;
+    reason: HandEntryReason;
+    note: string;
+    /// Set only after the server has refused once because the day's pay
+    /// period has already gone to payroll.
+    acknowledgeExported?: boolean;
+  }) => request<TimeEntry>('/time-entries', { method: 'POST', body: JSON.stringify(body) }),
+  /// Somebody has found out why hours had to be entered by hand.
+  checkHandEntry: (id: string, finding: string) =>
+    request<TimeEntry>(`/time-entries/${id}/checked`, {
+      method: 'PATCH',
+      body: JSON.stringify({ finding: finding.trim() || undefined }),
+    }),
   approveTimeEntry: (id: string) =>
     request<TimeEntry>(`/time-entries/${id}/approve`, { method: 'PATCH' }),
   editTimeEntry: (

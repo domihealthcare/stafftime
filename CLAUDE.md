@@ -288,7 +288,11 @@ Beyond the phases, the parts worth knowing about before picking up work:
   starts until it ends — the person clocks in from anywhere, no location asked
   for or recorded; the punch is `REMOTE` ("Work from home" on the timesheet
   and in the Directory). Otherwise the usual office check applies. Chosen over
-  a standing per-person permission.
+  a standing per-person permission. Since 29 September 2026 (Dominguez) it
+  is picked as **Work from home** in the shift forms' Location list, not a
+  tick box beside an office; the shift is counted under the person's main
+  office (`homeOfficeOf`, `components/PlaceSelect.tsx`). The ＋ on the rota
+  can also **repeat** a shift (the same as Repeating shifts, from that day).
 - **Tablet PINs are chosen by staff** on their profile (confirmed with their
   password); the profile shows only that one is set and since when, never the
   PIN. Managers and admins can set a replacement from the Directory, never
@@ -470,6 +474,14 @@ Beyond the phases, the parts worth knowing about before picking up work:
   webcam snapshot were all turned down. A handbook rule (clocking in for
   somebody else is a disciplinary matter) was chosen instead, drafted in
   `docs/location-disclosure.md`. See *Kiosk* in `docs/open-questions.md`.
+- **Hours entered by hand** (29 September 2026, Dominguez): Timesheet →
+  **+ Add hours** (managers) for a day with no punch at all — a reason from a
+  short list and a note, never your own hours, never over a punch already
+  there. Marked "Entered by hand", and listed on the Timesheet banner and in
+  the nightly email until a **different** manager presses **Looked into
+  why…** with what they found — treated like a bug report. Otherwise ordinary
+  hours (approval, overtime, payroll). See *Hours entered by hand* in
+  `docs/architecture.md`.
 - **The office computer as the time clock** (built, not in use; see above):
   any browser pairs as a kiosk at `/kiosk`. It re-fetches its staff list every
   10 minutes, and is only reported quiet if a whole published shift at its

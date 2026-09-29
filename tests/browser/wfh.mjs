@@ -202,12 +202,17 @@ await step('the new-shift form can make a shift work from home', async () => {
   await mgr.getByLabel('Employee').selectOption({ label: 'Frankie Front-Desk' });
   await mgr.getByLabel('Starts').fill('2027-03-01T09:00');
   await mgr.getByLabel('Ends').fill('2027-03-01T13:00');
-  await mgr.getByRole('checkbox', { name: /^Work from home/ }).check();
+  // A place of its own in the Location list, not a tick box beside an office.
+  await mgr.getByLabel('Location', { exact: true }).selectOption({ label: 'Work from home' });
+  await mgr.getByText('They can clock in from anywhere during it').waitFor({ timeout: 5000 });
   const made = mgr.waitForResponse((r) => r.url().endsWith('/api/shifts') && r.request().method() === 'POST');
   await mgr.getByRole('button', { name: 'Create shift' }).click();
   const response = await made;
   if (!response.ok()) throw new Error(`refused: ${await response.text()}`);
-  if ((await response.json()).isRemote !== true) throw new Error('saved as an office shift');
+  const saved = await response.json();
+  if (saved.isRemote !== true) throw new Error('saved as an office shift');
+  // Counted under Frankie's own office behind the scenes.
+  if (saved.location?.name !== 'North Bergen') throw new Error(`counted under ${saved.location?.name}`);
 });
 
 await browser.close();

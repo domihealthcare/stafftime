@@ -39,6 +39,13 @@ import {
   useClosureCheck,
 } from '../components/PracticeEvents';
 import { PlanResultNotice } from '../components/PlanResultNotice';
+import {
+  PlaceSelect,
+  WORK_FROM_HOME,
+  WorkFromHomeNote,
+  homeOfficeOf,
+  placeToShift,
+} from '../components/PlaceSelect';
 import { RepeatShiftsForm } from '../components/RepeatShiftsForm';
 import { RotaTable, type RotaGrouping } from '../components/RotaTable';
 import { StandingShiftsCard } from '../components/StandingShiftsCard';
@@ -215,9 +222,12 @@ export function SchedulePage() {
     }
   }
 
+  // A published shift that is removed is kept as CANCELLED, so staff who saw
+  // it have a record — but it is not on anymore. The week (RotaTable) always
+  // left those out; the month showed them, so a removed shift was still there.
   const shiftsByDay = useMemo(() => {
     const map = new Map<string, Shift[]>();
-    for (const shift of shifts) {
+    for (const shift of shifts.filter((candidate) => candidate.status !== 'CANCELLED')) {
       const key = new Date(shift.startsAt).toDateString();
       map.set(key, [...(map.get(key) ?? []), shift]);
     }
@@ -583,6 +593,10 @@ export function SchedulePage() {
           canEdit={isManager}
           selfId={isManager ? undefined : me?.id}
           onChanged={() => void load()}
+          onPlanned={(result) => {
+            setPlanResult(result);
+            if (result.standing) setStandingVersion((v) => v + 1);
+          }}
           onError={setError}
         />
       )}
@@ -606,11 +620,14 @@ export function SchedulePage() {
         </div>
       )}
 
-      {!loading && shifts.length === 0 && events.length === 0 && !isManager && (
-        <div className="mt-4">
-          <EmptyState>Nothing scheduled for you this week.</EmptyState>
-        </div>
-      )}
+      {!loading &&
+        !shifts.some((shift) => shift.status !== 'CANCELLED') &&
+        events.length === 0 &&
+        !isManager && (
+          <div className="mt-4">
+            <EmptyState>Nothing scheduled for you this week.</EmptyState>
+          </div>
+        )}
 
       {isManager && (
         <div className="mt-6">
@@ -667,8 +684,8 @@ function NewShiftForm({
 }) {
   const [employeeId, setEmployeeId] = useState('');
   const [jobRoleId, setJobRoleId] = useState('');
-  const [remote, setRemote] = useState(false);
-  const [locationId, setLocationId] = useState('');
+  /// An office id, or Work from home.
+  const [place, setPlace] = useState('');
   const [startsAt, setStartsAt] = useState(() => defaultInput(defaultDate, 9));
   const [endsAt, setEndsAt] = useState(() => defaultInput(defaultDate, 17));
   const [busy, setBusy] = useState(false);
@@ -686,11 +703,16 @@ function NewShiftForm({
       )
     : locations;
 
+  const canWorkFromHome = Boolean(selectedEmployee);
+
   useEffect(() => {
-    if (availableLocations.length > 0 && !availableLocations.some((l) => l.id === locationId)) {
-      setLocationId(availableLocations[0].id);
+    if (place === WORK_FROM_HOME && canWorkFromHome) return;
+    if (availableLocations.length > 0 && !availableLocations.some((l) => l.id === place)) {
+      setPlace(availableLocations[0].id);
     }
-  }, [availableLocations, locationId]);
+  }, [availableLocations, place, canWorkFromHome]);
+
+  const { locationId, isRemote } = placeToShift(place, homeOfficeOf(selectedEmployee));
 
   // Checked while the form is filled in, so the warning is there before
   // Create is pressed; checked again, fresh, when it is.
@@ -703,15 +725,15 @@ function NewShiftForm({
   const overtimeCheck = useOvertimeCheck(proposed);
   const who = selectedEmployee ? `${selectedEmployee.firstName} ${selectedEmployee.lastName}` : '';
   // Open shifts too: nobody should be wanted while the office is shut.
-  const place =
+  const closure =
     locationId && startsIso && endsIso && endsIso > startsIso
       ? { locationId, startsAt: startsIso, endsAt: endsIso }
       : null;
-  const closures = useClosureCheck(place);
+  const closures = useClosureCheck(closure);
 
   async function submit(event: React.FormEvent) {
     event.preventDefault();
-    if (place && !(await confirmClosure(confirm, place))) return;
+    if (closure && !(await confirmClosure(confirm, closure))) return;
     if (proposed && !(await confirmOvertime(confirm, proposed, who))) return;
     setBusy(true);
     try {
@@ -719,7 +741,7 @@ function NewShiftForm({
         employeeId: employeeId === OPEN_SHIFT ? null : employeeId,
         locationId,
         jobRoleId: jobRoleId || null,
-        isRemote: remote,
+        isRemote,
         // datetime-local gives local wall-clock time; the API stores UTC.
         startsAt: new Date(startsAt).toISOString(),
         endsAt: new Date(endsAt).toISOString(),
@@ -790,19 +812,15 @@ function NewShiftForm({
           <label htmlFor="shift-location" className="block text-sm font-medium text-slate-700">
             Location
           </label>
-          <select
+          <PlaceSelect
             id="shift-location"
-            required
-            value={locationId}
-            onChange={(event) => setLocationId(event.target.value)}
+            value={place}
+            onChange={setPlace}
+            offices={availableLocations}
+            allowHome={canWorkFromHome}
             className="mt-1 w-full rounded-lg border-slate-300 text-sm shadow-sm focus:border-brand-600 focus:ring-brand-600"
-          >
-            {availableLocations.map((location) => (
-              <option key={location.id} value={location.id}>
-                {location.name}
-              </option>
-            ))}
-          </select>
+          />
+          {isRemote && <WorkFromHomeNote />}
           {selectedEmployee && availableLocations.length === 0 && (
             <p className="mt-1 text-xs text-rose-600">
               This employee is not assigned to any location yet.
@@ -836,24 +854,6 @@ function NewShiftForm({
             onChange={(event) => setEndsAt(event.target.value)}
             className="mt-1 w-full rounded-lg border-slate-300 text-sm shadow-sm focus:border-brand-600 focus:ring-brand-600"
           />
-        </div>
-
-        <div className="sm:col-span-2">
-          <label className="flex items-start gap-2 text-sm text-slate-700" htmlFor="shift-remote">
-            <input
-              id="shift-remote"
-              type="checkbox"
-              checked={remote}
-              onChange={(event) => setRemote(event.target.checked)}
-              className="mt-0.5 rounded border-slate-300 text-brand-600 focus:ring-brand-600"
-            />
-            <span>
-              Work from home
-              <span className="block text-xs text-slate-500">
-                They can clock in from anywhere during it; no location is recorded.
-              </span>
-            </span>
-          </label>
         </div>
 
         {closures.length > 0 && (

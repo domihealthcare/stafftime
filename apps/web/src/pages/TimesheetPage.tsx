@@ -2,7 +2,10 @@ import { Fragment, useCallback, useEffect, useState } from 'react';
 import { api } from '../lib/api';
 import { durationHours, formatDate, formatTime } from '../lib/format';
 import { useIsManager, useSession } from '../lib/session';
-import type { DayRange, TimeEntry } from '../lib/types';
+import { handEntryReasonLabel } from '../lib/hand-entry';
+import type { DayRange, Employee, TimeEntry } from '../lib/types';
+import { AddHoursDialog } from '../components/AddHoursDialog';
+import { CheckHandEntryDialog } from '../components/CheckHandEntryDialog';
 import { DateRangePicker, presetRanges, toInstants } from '../components/DateRangePicker';
 import { EditEntryDialog } from '../components/EditEntryDialog';
 import { Alert, Badge, Card, EmptyState, PageHeading, Spinner } from '../components/ui';
@@ -19,6 +22,11 @@ export function TimesheetPage() {
   const [error, setError] = useState<string | null>(null);
   const [busyId, setBusyId] = useState<string | null>(null);
   const [editing, setEditing] = useState<TimeEntry | null>(null);
+  const [checking, setChecking] = useState<TimeEntry | null>(null);
+  /// The staff list for Add hours, fetched when the button is first pressed.
+  const [adding, setAdding] = useState<Employee[] | null>(null);
+  /// Bumped after a change that the "Worth a look" banner reports on.
+  const [bannerKey, setBannerKey] = useState(0);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -49,6 +57,14 @@ export function TimesheetPage() {
     }
   }
 
+  async function openAddHours() {
+    try {
+      setAdding(await api.listEmployees());
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Could not load the staff list.');
+    }
+  }
+
   const totalHours = entries.reduce(
     (sum, entry) => sum + durationHours(entry.clockInAt, entry.clockOutAt),
     0,
@@ -65,14 +81,28 @@ export function TimesheetPage() {
         }
       />
 
-      <NeedsAttention sections={['unapprovedHours', 'missingPunches']} />
+      <NeedsAttention
+        key={bannerKey}
+        sections={['handEntries', 'unapprovedHours', 'missingPunches']}
+      />
 
       <div className="mb-4 flex flex-wrap items-end justify-between gap-3">
         <DateRangePicker value={range} onChange={setRange} label="Timesheet period" />
-        <p className="text-sm text-slate-600">
-          <span className="font-semibold text-slate-900">{totalHours.toFixed(2)}</span> hours
-          {!loading && ` · ${entries.length} ${entries.length === 1 ? 'entry' : 'entries'}`}
-        </p>
+        <div className="flex items-center gap-3">
+          <p className="text-sm text-slate-600">
+            <span className="font-semibold text-slate-900">{totalHours.toFixed(2)}</span> hours
+            {!loading && ` · ${entries.length} ${entries.length === 1 ? 'entry' : 'entries'}`}
+          </p>
+          {isManager && (
+            <button
+              type="button"
+              onClick={() => void openAddHours()}
+              className="rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-sm font-medium text-slate-700 hover:bg-slate-50"
+            >
+              + Add hours
+            </button>
+          )}
+        </div>
       </div>
 
       {error && (
@@ -169,12 +199,20 @@ export function TimesheetPage() {
                     </tr>
                     {/* The reason for a correction is a sentence, so it gets a
                       line rather than being squeezed into the flags column. */}
-                    {entry.editReason && (
+                    {(entry.editReason || entry.enteredByHandAt) && (
                       <tr className="border-none">
                         <td colSpan={isManager ? 8 : 6} className="px-4 pb-3 pt-0">
-                          <p className="text-xs text-slate-500">
-                            <span className="font-medium">Corrected:</span> {entry.editReason}
-                          </p>
+                          <HandEntryLine
+                            entry={entry}
+                            isManager={isManager}
+                            selfId={employee?.id}
+                            onCheck={() => setChecking(entry)}
+                          />
+                          {entry.editReason && (
+                            <p className="text-xs text-slate-500">
+                              <span className="font-medium">Corrected:</span> {entry.editReason}
+                            </p>
+                          )}
                         </td>
                       </tr>
                     )}
@@ -223,6 +261,17 @@ export function TimesheetPage() {
                   </div>
                 )}
 
+                {entry.enteredByHandAt && (
+                  <div className="mt-1">
+                    <HandEntryLine
+                      entry={entry}
+                      isManager={isManager}
+                      selfId={employee?.id}
+                      onCheck={() => setChecking(entry)}
+                    />
+                  </div>
+                )}
+
                 {entry.editReason && (
                   <p className="mt-1 text-xs text-slate-500">
                     <span className="font-medium">Corrected:</span> {entry.editReason}
@@ -256,6 +305,31 @@ export function TimesheetPage() {
         />
       )}
 
+      {adding && (
+        <AddHoursDialog
+          employees={adding}
+          selfId={employee?.id}
+          onClose={() => setAdding(null)}
+          onSaved={() => {
+            setAdding(null);
+            setBannerKey((key) => key + 1);
+            void load();
+          }}
+        />
+      )}
+
+      {checking && (
+        <CheckHandEntryDialog
+          entry={checking}
+          onClose={() => setChecking(null)}
+          onSaved={() => {
+            setChecking(null);
+            setBannerKey((key) => key + 1);
+            void load();
+          }}
+        />
+      )}
+
       {employee && !isManager && (
         <p className="mt-3 text-xs text-slate-500">
           Something look wrong? Ask a manager to correct it — every correction is recorded with a
@@ -274,7 +348,60 @@ function hasFlags(entry: TimeEntry): boolean {
     entry.isEarlyDeparture ||
     entry.isMissingPunch ||
     entry.isManuallyEdited ||
+    Boolean(entry.enteredByHandAt) ||
     entry.status === 'NEEDS_REVIEW'
+  );
+}
+
+/**
+ * Who entered a day by hand and why, and — for managers — whether somebody
+ * has looked into it yet. Not the manager who entered it: the list is there
+ * so a second person sees each one.
+ */
+function HandEntryLine({
+  entry,
+  isManager,
+  selfId,
+  onCheck,
+}: {
+  entry: TimeEntry;
+  isManager: boolean;
+  selfId: string | undefined;
+  onCheck: () => void;
+}) {
+  if (!entry.enteredByHandAt) return null;
+  const by = entry.enteredBy ? ` by ${entry.enteredBy.firstName} ${entry.enteredBy.lastName}` : '';
+  return (
+    <div className="text-xs text-slate-500">
+      <p>
+        <span className="font-medium">Entered by hand{by}:</span>{' '}
+        {handEntryReasonLabel(entry.handEntryReason)}
+        {entry.handEntryNote ? ` — “${entry.handEntryNote}”` : ''}
+      </p>
+      {isManager &&
+        (entry.handEntryCheckedAt ? (
+          <p>
+            <span className="font-medium">
+              Looked into
+              {entry.handEntryCheckedBy
+                ? ` by ${entry.handEntryCheckedBy.firstName} ${entry.handEntryCheckedBy.lastName}`
+                : ''}
+              {entry.handEntryFinding ? ':' : ''}
+            </span>
+            {entry.handEntryFinding ? ` ${entry.handEntryFinding}` : ''}
+          </p>
+        ) : entry.enteredBy?.id === selfId ? (
+          <p className="text-amber-700">Waiting for another manager to look into why.</p>
+        ) : (
+          <button
+            type="button"
+            onClick={onCheck}
+            className="mt-0.5 font-medium text-brand-700 hover:text-brand-900"
+          >
+            Looked into why…
+          </button>
+        ))}
+    </div>
   );
 }
 
@@ -333,6 +460,7 @@ function Flags({ entry }: { entry: TimeEntry }) {
   if (entry.isLate) flags.push({ label: 'Late', tone: 'warning' });
   if (entry.isEarlyDeparture) flags.push({ label: 'Left early', tone: 'warning' });
   if (entry.isMissingPunch) flags.push({ label: 'Missing punch', tone: 'danger' });
+  if (entry.enteredByHandAt) flags.push({ label: 'Entered by hand', tone: 'warning' });
   if (entry.isManuallyEdited) flags.push({ label: 'Edited', tone: 'info' });
   if (entry.status === 'NEEDS_REVIEW') flags.push({ label: 'Needs review', tone: 'danger' });
 

@@ -160,6 +160,17 @@ const STAFF: Section[] = [
           </p>
         ),
       },
+      {
+        question: 'I could not clock in at all.',
+        answer: (
+          <p>
+            Tell a manager, and tell them what the app said if it refused you. They add the hours
+            for you, with the reason, and it shows on your timesheet as{' '}
+            <strong>Entered by hand</strong>. Each time that happens somebody looks into why, so it
+            can be put right — a phone setting, or a problem with the app.
+          </p>
+        ),
+      },
     ],
   },
   {
@@ -442,6 +453,27 @@ const MANAGERS: Section[] = [
         ),
       },
       {
+        question: 'Somebody has no punch at all for a day',
+        answer: (
+          <>
+            <p>
+              On <Screen>Timesheet</Screen>, press <strong>+ Add hours</strong>: who, the day, when
+              they started and finished, why it is by hand, and what happened. You cannot add your
+              own hours — another manager does. <strong>Correct</strong> is still the way to fix a
+              punch that is there, such as a missing clock-out.
+            </p>
+            <p>
+              Every day added by hand is listed under <strong>Worth a look</strong> and in the
+              nightly email until a <em>different</em> manager has found out why it was needed and
+              pressed <strong>Looked into why…</strong> on it, with what they found. Treat each one
+              like a bug report: somebody forgot, a phone needs a setting changed, or the app
+              refused somebody it should not have. The hours themselves are approved and paid like
+              any others.
+            </p>
+          </>
+        ),
+      },
+      {
         question: 'How do I run payroll?',
         answer: (
           <>
@@ -478,7 +510,8 @@ const MANAGERS: Section[] = [
             </li>
             <li>
               <strong>Repeating shifts</strong> makes, say, every Tuesday and Thursday for a month
-              in one go.
+              in one go. The ＋ in a day on the rota can do the same: tick{' '}
+              <strong>Repeat this shift</strong>, pick the days and how long for.
             </li>
             <li>
               For somebody who always works the same days, tick <strong>No end date</strong> in
@@ -572,10 +605,11 @@ const MANAGERS: Section[] = [
         question: 'Work from home',
         answer: (
           <p>
-            Tick <strong>Work from home</strong> when you make a shift, or click a shift and choose{' '}
-            <strong>Make it work from home</strong>. Once it is published, that person can clock in
-            from anywhere from half an hour before it starts until it ends, with no location asked
-            for or recorded. The shift still belongs to an office, for the rota and the reports.
+            Choose <strong>Work from home</strong> as the Location when you make a shift, or click a
+            shift and choose <strong>Make it work from home</strong>. Once it is published, that
+            person can clock in from anywhere from half an hour before it starts until it ends, with
+            no location asked for or recorded. Behind the scenes it is counted under their main
+            office, so the office view of the rota and the reports still add up.
             Outside a work-from-home shift the usual office check applies, so nobody can clock in
             from home on a day they are due in.
           </p>

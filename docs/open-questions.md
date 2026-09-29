@@ -21,11 +21,9 @@ taken off this list, and the answer is written into `CLAUDE.md` or
       migration reaches it before it is merged (see *Never edit a migration
       once it has been pushed* in `CLAUDE.md`). The fix is a Neon branch for
       Preview, with its own `DATABASE_URL` and `DIRECT_DATABASE_URL` scoped to
-      Preview only. Also reported: `DIRECT_DATABASE_URL` is set for Preview
-      only. The production build runs `prisma migrate deploy`, which needs it
-      (`directUrl` in `schema.prisma`), so check that the latest Production
-      deployment built cleanly and that Help → About this version shows the
-      latest commit.
+      Preview only. (`DIRECT_DATABASE_URL` was reported as set for Preview
+      only, but live releases build fine: Help showed `6c44f19`, the latest,
+      live on 29 September 2026. Worth a look while in there all the same.)
 
 ## ADP TotalSource import (built September 2026 — needs setting up)
 
@@ -229,20 +227,6 @@ What is left:
 - [ ] **Kiosk browser setup.** Whatever the device, it wants guided access or
       kiosk browser mode so staff cannot navigate away. Device configuration
       rather than code.
-
-## Adding hours by hand
-
-- [ ] **A manager cannot add hours for a day with no punch.** The timesheet
-      only corrects punches that exist (`PATCH /time-entries/:id`). Somebody
-      who never clocked in (a forgotten clock-in, a phone that would not share
-      its location, or nobody at the office to clock in with) has no way to get
-      those hours into the app or the payroll export. Decided by Dominguez
-      (29 September 2026): a manager enters them by hand, and **every
-      hand-entered day is reported so somebody finds out why** it was needed,
-      treated like a bug report rather than routine. Proposed, not built yet:
-      *Add hours* on the timesheet (manager, with a reason), marked as
-      entered by hand, and listed in a banner and the nightly round-up until
-      somebody has looked at why.
 
 ## Technical to-dos
 
