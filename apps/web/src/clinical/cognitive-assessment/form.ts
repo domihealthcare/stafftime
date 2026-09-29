@@ -1,4 +1,13 @@
-import { CARE_PLAN_AREAS, NONE, type ElementKey } from './config';
+import {
+  CARE_PLAN_AREAS,
+  DEFAULT_PRIOR,
+  ELEMENTS,
+  NONE,
+  type CarePlanArea,
+  type ElementKey,
+  type RequirementKey,
+} from './config';
+import type { HandoutLanguage } from './translations.es';
 
 /**
  * The 99483 form as it is being filled in.
@@ -12,55 +21,38 @@ import { CARE_PLAN_AREAS, NONE, type ElementKey } from './config';
  * Dates are YYYY-MM-DD, as a date input gives them.
  */
 
-/// "Completed today", or "completed at a prior visit" with who and when.
-export interface Completion {
-  mode: 'today' | 'prior';
-  priorDate: string;
-  priorBy: string;
-  /// "Reviewed today; still valid or updated."
-  priorConfirmed: boolean;
-}
-
-export interface Diagnosis {
-  code: string;
-  description: string;
-}
+/// Done today, or at a prior visit — a statement, not a date and a name
+/// (Dominguez, September 2026): "completed at a prior visit; reviewed today
+/// and still valid or updated".
+export type Completion = 'today' | 'prior';
 
 export interface CarePlanEntry {
-  problem: string;
-  goal: string;
-  plan: string;
+  /// The problem as the provider wrote it, or null to use the summary made
+  /// from their answers above.
+  problem: string | null;
+  goals: string[];
+  actions: string[];
+  /// Anything else, in their own words. Printed as typed on both PDFs.
+  extra: string;
 }
 
 export interface AssessmentForm {
+  requirements: Record<RequirementKey, boolean> & {
+    /// Who the independent historian is: name and relationship.
+    historian: string;
+  };
   visit: {
     patientName: string;
     dob: string;
     mrn: string;
     dos: string;
-    location: string;
     visitType: string;
-    providerName: string;
-    providerCredentials: string;
-  };
-  billing: {
-    impairment: string;
-    impairmentConfirmed: boolean;
-    /// The last 99483 for this patient: "none" ticked, or a date.
-    lastServiceNone: boolean;
-    lastServiceDate: string;
-    diagnoses: Diagnosis[];
-    historianName: string;
-    historianRelationship: string;
-    noConflictingServices: boolean;
-    awvSameDay: string;
+    awvSameDay: boolean;
     totalMinutes: string;
     medicalDecisionMaking: string;
   };
+  completion: Record<ElementKey, Completion>;
   A: {
-    completion: Completion;
-    reasons: string[];
-    reasonOther: string;
     collateralHistory: string;
     examFindings: string;
     domains: string[];
@@ -68,27 +60,16 @@ export interface AssessmentForm {
     testOther: string;
     score: string;
   };
-  B: {
-    completion: Completion;
-    adl: string[];
-    iadl: string[];
-    details: string;
-    tool: string;
-    toolOther: string;
-  };
-  C: {
-    completion: Completion;
-    capacity: string;
-    comment: string;
-  };
+  B: { adl: string[]; iadl: string[]; details: string; tool: string; toolOther: string };
+  C: { capacity: string; comment: string };
   D: {
-    completion: Completion;
+    /// "fast" (done on screen) or "other".
     instrument: string;
-    instrumentOther: string;
-    stage: string;
+    fastStage: string;
+    otherName: string;
+    otherScore: string;
   };
   E: {
-    completion: Completion;
     reconciled: boolean;
     highRiskReviewed: boolean;
     highRiskClasses: string[];
@@ -96,7 +77,6 @@ export interface AssessmentForm {
     changes: string;
   };
   F: {
-    completion: Completion;
     symptoms: string[];
     symptomDetails: string;
     depressionScreen: string;
@@ -105,16 +85,9 @@ export interface AssessmentForm {
     otherInstrument: string;
     otherScore: string;
   };
-  G: {
-    completion: Completion;
-    homeConcerns: string[];
-    driving: string;
-    firearms: string;
-    safetyPlan: string;
-  };
+  G: { homeConcerns: string[]; driving: string; firearms: string };
   H: {
-    completion: Completion;
-    /// "identified", or "none" for no caregiver identified.
+    /// "historian" (the same person), "other", or "none".
     caregiver: string;
     caregiverName: string;
     caregiverRelationship: string;
@@ -124,15 +97,9 @@ export interface AssessmentForm {
     willingness: string;
     socialSupports: string;
   };
-  I: {
-    completion: Completion;
-    status: string;
-    directive: string;
-    goalsOfCare: string;
-  };
+  I: { status: string; directive: string; goalsOfCare: string };
   J: {
-    completion: Completion;
-    plan: Record<string, CarePlanEntry>;
+    plan: Record<CarePlanArea, CarePlanEntry>;
     referrals: string[];
     referralsOther: string;
     sharedWith: string;
@@ -142,60 +109,36 @@ export interface AssessmentForm {
     followUpDate: string;
     followUpPlan: string;
   };
+  handoutLanguage: HandoutLanguage;
 }
 
-const completion = (): Completion => ({
-  mode: 'today',
-  priorDate: '',
-  priorBy: '',
-  priorConfirmed: false,
-});
-
-export function emptyForm(defaults: {
-  dos: string;
-  providerName: string;
-  providerCredentials: string;
-}): AssessmentForm {
+export function emptyForm(dos: string): AssessmentForm {
   return {
+    requirements: {
+      impairmentDocumented: false,
+      historianPresent: false,
+      noServiceIn180Days: false,
+      noConflictingServices: false,
+      historian: '',
+    },
     visit: {
       patientName: '',
       dob: '',
       mrn: '',
-      dos: defaults.dos,
-      location: '',
+      dos,
       visitType: '',
-      providerName: defaults.providerName,
-      providerCredentials: defaults.providerCredentials,
-    },
-    billing: {
-      impairment: '',
-      impairmentConfirmed: false,
-      lastServiceNone: false,
-      lastServiceDate: '',
-      diagnoses: [{ code: '', description: '' }],
-      historianName: '',
-      historianRelationship: '',
-      noConflictingServices: false,
-      awvSameDay: '',
+      awvSameDay: false,
       totalMinutes: '',
       medicalDecisionMaking: '',
     },
-    A: {
-      completion: completion(),
-      reasons: [],
-      reasonOther: '',
-      collateralHistory: '',
-      examFindings: '',
-      domains: [],
-      test: '',
-      testOther: '',
-      score: '',
-    },
-    B: { completion: completion(), adl: [], iadl: [], details: '', tool: '', toolOther: '' },
-    C: { completion: completion(), capacity: '', comment: '' },
-    D: { completion: completion(), instrument: '', instrumentOther: '', stage: '' },
+    completion: Object.fromEntries(
+      ELEMENTS.map(({ key }) => [key, DEFAULT_PRIOR.includes(key) ? 'prior' : 'today']),
+    ) as Record<ElementKey, Completion>,
+    A: { collateralHistory: '', examFindings: '', domains: [], test: '', testOther: '', score: '' },
+    B: { adl: [], iadl: [], details: '', tool: '', toolOther: '' },
+    C: { capacity: '', comment: '' },
+    D: { instrument: 'fast', fastStage: '', otherName: '', otherScore: '' },
     E: {
-      completion: completion(),
       reconciled: false,
       highRiskReviewed: false,
       highRiskClasses: [],
@@ -203,7 +146,6 @@ export function emptyForm(defaults: {
       changes: '',
     },
     F: {
-      completion: completion(),
       symptoms: [],
       symptomDetails: '',
       depressionScreen: '',
@@ -212,10 +154,9 @@ export function emptyForm(defaults: {
       otherInstrument: '',
       otherScore: '',
     },
-    G: { completion: completion(), homeConcerns: [], driving: '', firearms: '', safetyPlan: '' },
+    G: { homeConcerns: [], driving: '', firearms: '' },
     H: {
-      completion: completion(),
-      caregiver: '',
+      caregiver: 'historian',
       caregiverName: '',
       caregiverRelationship: '',
       noCaregiverPlan: '',
@@ -224,12 +165,14 @@ export function emptyForm(defaults: {
       willingness: '',
       socialSupports: '',
     },
-    I: { completion: completion(), status: '', directive: '', goalsOfCare: '' },
+    I: { status: '', directive: '', goalsOfCare: '' },
     J: {
-      completion: completion(),
       plan: Object.fromEntries(
-        CARE_PLAN_AREAS.map((area) => [area.value, { problem: '', goal: '', plan: '' }]),
-      ),
+        CARE_PLAN_AREAS.map((area) => [
+          area.value,
+          { problem: null, goals: [], actions: [], extra: '' },
+        ]),
+      ) as unknown as Record<CarePlanArea, CarePlanEntry>,
       referrals: [],
       referralsOther: '',
       sharedWith: '',
@@ -239,6 +182,7 @@ export function emptyForm(defaults: {
       followUpDate: '',
       followUpPlan: '',
     },
+    handoutLanguage: 'en',
   };
 }
 
@@ -256,5 +200,5 @@ export function hasConcern(values: string[]): boolean {
 }
 
 export function isPrior(form: AssessmentForm, key: ElementKey): boolean {
-  return form[key].completion.mode === 'prior';
+  return form.completion[key] === 'prior';
 }

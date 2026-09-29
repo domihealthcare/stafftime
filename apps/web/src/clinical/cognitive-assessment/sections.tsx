@@ -1,22 +1,24 @@
-import type { ReactNode } from 'react';
+import { useContext, useState, type ReactNode } from 'react';
 import { Alert } from '../../components/ui';
-import { useConfirm } from '../../components/ConfirmDialog';
 import {
   ACP_STATUS,
   ADL_IMPAIRMENTS,
   ADVANCE_DIRECTIVE,
-  ASSESSMENT_REASONS,
+  AWV_REMINDER,
   CAPACITY,
   CAREGIVER_KNOWLEDGE,
   CAREGIVER_NEEDS,
   CAREGIVER_WILLINGNESS,
+  CARE_PLAN_ACTIONS,
   CARE_PLAN_AREAS,
+  CARE_PLAN_GOALS,
   COGNITIVE_DOMAINS,
   COGNITIVE_TESTS,
   CONFLICTING_SAME_DAY_CODES,
   DEPRESSION_SCREENS,
   DRIVING_STATUS,
   EDUCATION_TOPICS,
+  FAST_STAGES,
   FIREARMS,
   FOLLOW_UP_INTERVALS,
   FUNCTIONAL_TOOLS,
@@ -24,25 +26,35 @@ import {
   HIGH_RISK_MEDICATION_CLASSES,
   HOME_SAFETY_CONCERNS,
   IADL_IMPAIRMENTS,
-  ICD10_QUICK_PICKS,
-  IMPAIRMENT_TYPES,
-  LOCATIONS,
   MEDICAL_DECISION_MAKING,
-  MIN_DAYS_BETWEEN_SERVICES,
   NEUROPSYCHIATRIC_SYMPTOMS,
   PLAN_SHARED_WITH,
   REFERRALS,
   RELATIONSHIPS,
-  STAGING_INSTRUMENTS,
+  REQUIREMENTS,
+  TELEHEALTH_REMINDER,
   TYPICAL_MINUTES,
   VISIT_TYPES,
+  type CarePlanArea,
   type ElementKey,
 } from './config';
-import { CheckGroup, Confirm, RadioGroup, Select, TextArea, TextField } from './fields';
-import { hasConcern, type AssessmentForm, type Completion } from './form';
-import { safetyConcern } from './validate';
+import { problemSummary, suggestions } from './care-plan';
+import {
+  CheckGroup,
+  Confirm,
+  FieldContext,
+  RadioGroup,
+  Select,
+  TextArea,
+  TextField,
+} from './fields';
+import { hasConcern, type AssessmentForm, type CarePlanEntry, type Completion } from './form';
 
-export type Update = <S extends keyof AssessmentForm>(
+/// The parts of the form that are groups of answers (everything but the
+/// handout's language, which is set on its own).
+export type FormSection = Exclude<keyof AssessmentForm, 'handoutLanguage'>;
+
+export type Update = <S extends FormSection>(
   section: S,
   patch: Partial<AssessmentForm[S]>,
 ) => void;
@@ -52,18 +64,59 @@ interface SectionProps {
   update: Update;
 }
 
-const YES_NO = [
-  { value: 'yes', label: 'Yes' },
-  { value: 'no', label: 'No' },
-];
-
 const Grid = ({ children }: { children: ReactNode }) => (
   <div className="grid gap-4 sm:grid-cols-2">{children}</div>
 );
 
-// ------------------------------------------------------ 0. patient and visit
+// ------------------------------------------------------------- requirements
 
-export function VisitSection({ form, update }: SectionProps) {
+/// The conditions for billing 99483, ticked before anything else.
+export function RequirementsSection({ form, update }: SectionProps) {
+  const { requirements } = form;
+  const set = (patch: Partial<AssessmentForm['requirements']>) => update('requirements', patch);
+  return (
+    <div className="space-y-2">
+      {REQUIREMENTS.map((requirement) => (
+        <div key={requirement.key}>
+          <Confirm
+            path={`requirements.${requirement.key}`}
+            label={requirement.label}
+            checked={requirements[requirement.key]}
+            onChange={(checked) => set({ [requirement.key]: checked })}
+            hint={
+              requirement.key === 'noConflictingServices'
+                ? `Conflicting codes: ${CONFLICTING_SAME_DAY_CODES.join(', ')}.`
+                : undefined
+            }
+          />
+          {requirement.key === 'historianPresent' && requirements.historianPresent && (
+            <div className="ml-8 mt-2">
+              <TextField
+                path="requirements.historian"
+                label="Who (name and relationship)"
+                required
+                placeholder="Maria, daughter"
+                value={requirements.historian}
+                onChange={(historian) => set({ historian })}
+              />
+            </div>
+          )}
+        </div>
+      ))}
+    </div>
+  );
+}
+
+// -------------------------------------------------------- patient and visit
+
+export function VisitSection({
+  form,
+  update,
+  provider,
+}: SectionProps & {
+  /// "Casey Testprovider, MD", from the signed-in account.
+  provider: { name: string; credentials: string };
+}) {
   const { visit } = form;
   const set = (patch: Partial<AssessmentForm['visit']>) => update('visit', patch);
   return (
@@ -101,388 +154,139 @@ export function VisitSection({ form, update }: SectionProps) {
           onChange={(dos) => set({ dos })}
         />
       </Grid>
-      <RadioGroup
-        path="visit.location"
-        label="Location"
-        required
-        options={LOCATIONS}
-        value={visit.location}
-        onChange={(location) => set({ location })}
-      />
-      <RadioGroup
-        path="visit.visitType"
-        label="Visit type"
-        required
-        options={VISIT_TYPES}
-        value={visit.visitType}
-        onChange={(visitType) => set({ visitType })}
-      />
-      <Grid>
-        <TextField
-          path="visit.providerName"
-          label="Provider name"
-          required
-          value={visit.providerName}
-          onChange={(providerName) => set({ providerName })}
-        />
-        <TextField
-          path="visit.providerCredentials"
-          label="Credentials"
-          required
-          maxLength={40}
-          placeholder="MD"
-          hint="Filled in from your staff record, where the practice has it."
-          value={visit.providerCredentials}
-          onChange={(providerCredentials) => set({ providerCredentials })}
-        />
-      </Grid>
-    </div>
-  );
-}
-
-// -------------------------------------------------- 1. eligibility and billing
-
-export function BillingSection({
-  form,
-  update,
-  daysSinceLast,
-}: SectionProps & {
-  /// Days from the last 99483 to this date of service, when both are known.
-  daysSinceLast: number | null;
-}) {
-  const { billing } = form;
-  const set = (patch: Partial<AssessmentForm['billing']>) => update('billing', patch);
-  const confirm = useConfirm();
-
-  const setDiagnosis = (index: number, patch: Partial<{ code: string; description: string }>) =>
-    set({
-      diagnoses: billing.diagnoses.map((d, i) => (i === index ? { ...d, ...patch } : d)),
-    });
-
-  const addQuickPick = (code: string) => {
-    const pick = ICD10_QUICK_PICKS.find((p) => p.code === code);
-    if (!pick || billing.diagnoses.some((d) => d.code.trim().toUpperCase() === pick.code)) return;
-    const empty = billing.diagnoses.findIndex((d) => !d.code.trim() && !d.description.trim());
-    set({
-      diagnoses:
-        empty >= 0
-          ? billing.diagnoses.map((d, i) => (i === empty ? { ...pick } : d))
-          : [...billing.diagnoses, { ...pick }],
-    });
-  };
-
-  const removeDiagnosis = async (index: number) => {
-    const row = billing.diagnoses[index];
-    if (
-      (row.code.trim() || row.description.trim()) &&
-      !(await confirm({
-        title: `Remove ${row.code.trim() || 'this code'}?`,
-        body: 'It comes off this form. You can add it again.',
-        confirmLabel: 'Yes, remove',
-        cancelLabel: 'Keep it',
-        tone: 'danger',
-      }))
-    ) {
-      return;
-    }
-    set({ diagnoses: billing.diagnoses.filter((_, i) => i !== index) });
-  };
-
-  const tooSoon =
-    daysSinceLast !== null && daysSinceLast > 0 && daysSinceLast < MIN_DAYS_BETWEEN_SERVICES;
-
-  return (
-    <div className="space-y-5">
-      <div className="space-y-3">
-        <Select
-          path="billing.impairment"
-          label="Documented cognitive impairment"
-          required
-          options={IMPAIRMENT_TYPES}
-          value={billing.impairment}
-          onChange={(impairment) => set({ impairment })}
-        />
-        <Confirm
-          path="billing.impairmentConfirmed"
-          required
-          label="I confirm this cognitive impairment is documented in the patient’s record."
-          checked={billing.impairmentConfirmed}
-          onChange={(impairmentConfirmed) => set({ impairmentConfirmed })}
-        />
-      </div>
-
-      <div>
-        <Grid>
-          <TextField
-            path="billing.lastServiceDate"
-            label="Date of the last 99483 for this patient"
-            type="date"
-            required={!billing.lastServiceNone}
-            disabled={billing.lastServiceNone}
-            value={billing.lastServiceNone ? '' : billing.lastServiceDate}
-            onChange={(lastServiceDate) => set({ lastServiceDate })}
-          />
-          <div className="sm:pt-6">
-            <Confirm
-              path="billing.lastServiceNone"
-              label="None — no earlier 99483"
-              checked={billing.lastServiceNone}
-              onChange={(lastServiceNone) =>
-                set({
-                  lastServiceNone,
-                  lastServiceDate: lastServiceNone ? '' : billing.lastServiceDate,
-                })
-              }
-            />
-          </div>
-        </Grid>
-        {tooSoon && (
-          <div className="mt-3">
-            <Alert tone="danger">
-              <strong>Payable once per {MIN_DAYS_BETWEEN_SERVICES} days.</strong> The last 99483 was{' '}
-              {daysSinceLast} days before this date of service, so the PDF cannot be made.
-            </Alert>
-          </div>
-        )}
-      </div>
-
-      <fieldset>
-        <legend className="mb-1 block text-sm font-medium text-slate-800">
-          ICD-10 codes
-          <span className="ml-0.5 text-rose-600" aria-hidden="true">
-            *
-          </span>
-          <span className="sr-only"> (required)</span>
-        </legend>
-        <p className="mb-2 text-xs text-slate-500">Primary first. One or more.</p>
-        <div className="space-y-3">
-          {billing.diagnoses.map((diagnosis, index) => (
-            <div key={index} className="grid gap-2 sm:grid-cols-[10rem_1fr_auto] sm:items-end">
-              <TextField
-                path={`billing.diagnoses.${index}.code`}
-                label={index === 0 ? 'Primary code' : `Code ${index + 1}`}
-                maxLength={10}
-                placeholder="G30.9"
-                value={diagnosis.code}
-                onChange={(code) => setDiagnosis(index, { code })}
-              />
-              <TextField
-                path={`billing.diagnoses.${index}.description`}
-                label="Description"
-                value={diagnosis.description}
-                onChange={(description) => setDiagnosis(index, { description })}
-              />
-              {billing.diagnoses.length > 1 && (
-                <button
-                  type="button"
-                  onClick={() => void removeDiagnosis(index)}
-                  className="min-h-[44px] rounded-lg px-3 text-sm text-rose-700 hover:bg-rose-50"
-                >
-                  Remove
-                </button>
-              )}
-            </div>
-          ))}
-        </div>
-        <div className="mt-3 flex flex-wrap items-center gap-2">
-          <button
-            type="button"
-            onClick={() =>
-              set({ diagnoses: [...billing.diagnoses, { code: '', description: '' }] })
-            }
-            className="min-h-[44px] rounded-lg border border-slate-300 bg-white px-3 text-sm font-medium text-slate-700 hover:bg-slate-50"
-          >
-            + Add another code
-          </button>
-          <label className="sr-only" htmlFor="icd-quick-pick">
-            Add a common code
-          </label>
-          <select
-            id="icd-quick-pick"
-            value=""
-            onChange={(event) => addQuickPick(event.target.value)}
-            className="min-h-[44px] max-w-full rounded-lg border-slate-300 text-base sm:text-sm"
-            autoComplete="off"
-          >
-            <option value="">Add a common code…</option>
-            {ICD10_QUICK_PICKS.map((pick) => (
-              <option key={pick.code} value={pick.code}>
-                {pick.code} — {pick.description}
-              </option>
-            ))}
-          </select>
-        </div>
-      </fieldset>
-
-      <Grid>
-        <TextField
-          path="billing.historianName"
-          label="Independent historian present"
-          required
-          placeholder="Name"
-          value={billing.historianName}
-          onChange={(historianName) => set({ historianName })}
-        />
-        <Select
-          path="billing.historianRelationship"
-          label="Relationship to the patient"
-          required
-          options={RELATIONSHIPS}
-          value={billing.historianRelationship}
-          onChange={(historianRelationship) => set({ historianRelationship })}
-        />
-      </Grid>
-
-      <Confirm
-        path="billing.noConflictingServices"
-        required
-        label="No conflicting same-day services billed by this provider."
-        hint={<>Codes that conflict: {CONFLICTING_SAME_DAY_CODES.join(', ')}.</>}
-        checked={billing.noConflictingServices}
-        onChange={(noConflictingServices) => set({ noConflictingServices })}
-      />
-
       <div>
         <RadioGroup
-          path="billing.awvSameDay"
-          label="Annual wellness visit (AWV) performed the same day?"
+          path="visit.visitType"
+          label="Visit"
           required
-          options={YES_NO}
-          value={billing.awvSameDay}
-          onChange={(awvSameDay) => set({ awvSameDay })}
+          options={VISIT_TYPES}
+          value={visit.visitType}
+          onChange={(visitType) => set({ visitType })}
         />
-        {billing.awvSameDay === 'yes' && (
+        {visit.visitType === 'telehealth' && (
           <div className="mt-2">
-            <Alert tone="info">Bill the AWV separately and append modifier 25.</Alert>
+            <Alert tone="warning">{TELEHEALTH_REMINDER}</Alert>
           </div>
         )}
       </div>
-
       <Grid>
         <div>
           <TextField
-            path="billing.totalMinutes"
-            label="Total time on the date of service"
+            path="visit.totalMinutes"
+            label="Total time today"
             required
             inputMode="numeric"
             maxLength={3}
             suffix="minutes"
-            hint={`Typical time ${TYPICAL_MINUTES} minutes.`}
-            value={billing.totalMinutes}
+            hint={`Typical time ${TYPICAL_MINUTES} minutes. G2212 (prolonged): ${
+              G2212_THRESHOLD_MINUTES === null
+                ? 'confirm threshold with billing (Coronis).'
+                : `may apply from ${G2212_THRESHOLD_MINUTES} minutes — confirm with billing (Coronis).`
+            }`}
+            value={visit.totalMinutes}
             onChange={(totalMinutes) => set({ totalMinutes: totalMinutes.replace(/[^\d]/g, '') })}
           />
-          <p className="mt-2 rounded-lg bg-sky-50 px-3 py-2 text-xs text-sky-900 ring-1 ring-inset ring-sky-200">
-            G2212 (prolonged service):{' '}
-            {G2212_THRESHOLD_MINUTES === null
-              ? 'confirm threshold with billing (Coronis).'
-              : `may apply from ${G2212_THRESHOLD_MINUTES} minutes — confirm with billing (Coronis).`}
-          </p>
         </div>
         <RadioGroup
-          path="billing.medicalDecisionMaking"
+          path="visit.medicalDecisionMaking"
           label="Medical decision making"
           required
           options={MEDICAL_DECISION_MAKING}
-          value={billing.medicalDecisionMaking}
+          value={visit.medicalDecisionMaking}
           onChange={(medicalDecisionMaking) => set({ medicalDecisionMaking })}
         />
       </Grid>
+      <div>
+        <Confirm
+          path="visit.awvSameDay"
+          label="An annual wellness visit (AWV) was also done today."
+          checked={visit.awvSameDay}
+          onChange={(awvSameDay) => set({ awvSameDay })}
+        />
+        {visit.awvSameDay && (
+          <div className="mt-2">
+            <Alert tone="info">{AWV_REMINDER}</Alert>
+          </div>
+        )}
+      </div>
+      <p className="text-sm text-slate-600" data-testid="provider-line">
+        Provider:{' '}
+        <span className="font-medium text-slate-900">
+          {provider.credentials ? `${provider.name}, ${provider.credentials}` : provider.name}
+        </span>{' '}
+        (you)
+        {!provider.credentials && (
+          <span className="mt-1 block text-amber-800">
+            Your staff record has no letters after your name (MD, APN…), so the note will show your
+            name only. An admin can add them: Staff → Edit → Letters after their name.
+          </span>
+        )}
+      </p>
     </div>
   );
 }
 
-// --------------------------------------------------- the completion toggle
+// ----------------------------------------------------- the elements, A to I
 
-export function CompletionToggle({
+/// "Today" or "Prior visit", beside each element's title.
+export function CompletionSwitch({
   elementKey,
-  completion,
+  value,
   onChange,
 }: {
   elementKey: ElementKey;
-  completion: Completion;
-  onChange: (completion: Completion) => void;
+  value: Completion;
+  onChange: (value: Completion) => void;
 }) {
-  const path = `${elementKey}.completion`;
+  const { idFor } = useContext(FieldContext);
   return (
-    <div className="rounded-lg bg-slate-50 p-3 ring-1 ring-inset ring-slate-200">
-      <RadioGroup
-        path={`${path}.mode`}
-        label="Completion"
-        options={[
-          { value: 'today', label: 'Completed today' },
-          { value: 'prior', label: 'Completed at prior visit' },
-        ]}
-        value={completion.mode}
-        onChange={(mode) => onChange({ ...completion, mode: mode as Completion['mode'] })}
-      />
-      {completion.mode === 'prior' && (
-        <div className="mt-3 space-y-3">
-          <Grid>
-            <TextField
-              path={`${path}.priorDate`}
-              label="Prior visit date"
-              type="date"
-              required
-              value={completion.priorDate}
-              onChange={(priorDate) => onChange({ ...completion, priorDate })}
-            />
-            <TextField
-              path={`${path}.priorBy`}
-              label="Performed by (name and credentials)"
-              required
-              placeholder="Name, MD"
-              value={completion.priorBy}
-              onChange={(priorBy) => onChange({ ...completion, priorBy })}
-            />
-          </Grid>
-          <Confirm
-            path={`${path}.priorConfirmed`}
-            required
-            label="Reviewed today; still valid or updated."
-            checked={completion.priorConfirmed}
-            onChange={(priorConfirmed) => onChange({ ...completion, priorConfirmed })}
+    <div
+      role="radiogroup"
+      aria-label={`${elementKey}: completed`}
+      id={idFor(`completion.${elementKey}`)}
+      className="inline-flex rounded-lg bg-slate-100 p-0.5 text-sm"
+    >
+      {(
+        [
+          ['today', 'Today'],
+          ['prior', 'Prior visit'],
+        ] as const
+      ).map(([mode, label]) => (
+        <label
+          key={mode}
+          className={`flex min-h-[36px] cursor-pointer items-center rounded-md px-3 ${
+            value === mode ? 'bg-white font-semibold text-brand-800 shadow-sm' : 'text-slate-600'
+          }`}
+        >
+          <input
+            type="radio"
+            className="sr-only"
+            checked={value === mode}
+            onChange={() => onChange(mode)}
           />
-          {elementKey !== 'J' && (
-            <p className="text-xs text-slate-500">
-              The answers below are optional for an element completed at a prior visit. Anything you
-              enter goes on the note.
-            </p>
-          )}
-        </div>
-      )}
+          {label}
+        </label>
+      ))}
     </div>
   );
 }
 
-// ------------------------------------------------------ the elements, A to J
+export const PRIOR_STATEMENT =
+  'Completed at a prior visit; reviewed today and still valid or updated.';
 
 type ElementProps = SectionProps & { required: boolean };
 
-export function ElementA({ form, update, required }: ElementProps) {
+function ElementA({ form, update, required }: ElementProps) {
   const { A } = form;
   const set = (patch: Partial<AssessmentForm['A']>) => update('A', patch);
   const test = COGNITIVE_TESTS.find((t) => t.value === A.test);
   return (
     <div className="space-y-4">
-      <CheckGroup
-        path="A.reasons"
-        label="Reason for assessment"
-        options={ASSESSMENT_REASONS}
-        values={A.reasons}
-        onChange={(reasons) => set({ reasons })}
-      />
-      {A.reasons.includes('other') && (
-        <TextField
-          path="A.reasonOther"
-          label="Other reason"
-          value={A.reasonOther}
-          onChange={(reasonOther) => set({ reasonOther })}
-        />
-      )}
       <TextArea
         path="A.collateralHistory"
         label="Collateral history from the historian"
         required={required}
+        rows={2}
         value={A.collateralHistory}
         onChange={(collateralHistory) => set({ collateralHistory })}
       />
@@ -490,6 +294,7 @@ export function ElementA({ form, update, required }: ElementProps) {
         path="A.examFindings"
         label="Focused exam findings"
         required={required}
+        rows={2}
         value={A.examFindings}
         onChange={(examFindings) => set({ examFindings })}
       />
@@ -535,7 +340,7 @@ export function ElementA({ form, update, required }: ElementProps) {
   );
 }
 
-export function ElementB({ form, update, required }: ElementProps) {
+function ElementB({ form, update, required }: ElementProps) {
   const { B } = form;
   const set = (patch: Partial<AssessmentForm['B']>) => update('B', patch);
   return (
@@ -588,7 +393,7 @@ export function ElementB({ form, update, required }: ElementProps) {
   );
 }
 
-export function ElementC({ form, update, required }: ElementProps) {
+function ElementC({ form, update, required }: ElementProps) {
   const { C } = form;
   const set = (patch: Partial<AssessmentForm['C']>) => update('C', patch);
   return (
@@ -604,7 +409,7 @@ export function ElementC({ form, update, required }: ElementProps) {
       <TextArea
         path="C.comment"
         label="Comment"
-        required={required}
+        required={C.capacity === 'impaired' || C.capacity === 'uncertain'}
         rows={2}
         value={C.comment}
         onChange={(comment) => set({ comment })}
@@ -613,75 +418,113 @@ export function ElementC({ form, update, required }: ElementProps) {
   );
 }
 
-export function ElementD({ form, update, required }: ElementProps) {
+/// FAST, done right here: the provider picks the highest stage that fits.
+function ElementD({ form, update, required }: ElementProps) {
   const { D } = form;
   const set = (patch: Partial<AssessmentForm['D']>) => update('D', patch);
-  const instrument = STAGING_INSTRUMENTS.find((i) => i.value === D.instrument);
+  const { idFor, problemFor } = useContext(FieldContext);
+  if (D.instrument === 'other') {
+    return (
+      <div className="space-y-4">
+        <Grid>
+          <TextField
+            path="D.otherName"
+            label="Staging instrument"
+            required={required}
+            placeholder="CDR"
+            value={D.otherName}
+            onChange={(otherName) => set({ otherName })}
+          />
+          <TextField
+            path="D.otherScore"
+            label="Stage / score"
+            required={required}
+            maxLength={40}
+            value={D.otherScore}
+            onChange={(otherScore) => set({ otherScore })}
+          />
+        </Grid>
+        <button
+          type="button"
+          onClick={() => set({ instrument: 'fast', otherName: '', otherScore: '' })}
+          className="text-sm font-medium text-brand-700 hover:text-brand-900"
+        >
+          Stage with FAST here instead
+        </button>
+      </div>
+    );
+  }
+  const problem = problemFor('D.fastStage');
   return (
-    <Grid>
-      <Select
-        path="D.instrument"
-        label="Staging instrument"
-        required={required}
-        options={STAGING_INSTRUMENTS}
-        value={D.instrument}
-        // A stage from one scale means nothing on another.
-        onChange={(value) => set({ instrument: value, stage: '', instrumentOther: '' })}
-      />
-      {instrument && instrument.stages.length > 0 ? (
-        <Select
-          path="D.stage"
-          label="Stage / score"
-          required={required}
-          options={instrument.stages}
-          value={D.stage}
-          onChange={(stage) => set({ stage })}
-        />
-      ) : (
-        <TextField
-          path="D.stage"
-          label="Stage / score"
-          required={required}
-          maxLength={40}
-          value={D.stage}
-          onChange={(stage) => set({ stage })}
-        />
-      )}
-      {D.instrument === 'other' && (
-        <TextField
-          path="D.instrumentOther"
-          label="Which instrument"
-          required
-          value={D.instrumentOther}
-          onChange={(instrumentOther) => set({ instrumentOther })}
-        />
-      )}
-    </Grid>
+    <div className="space-y-3">
+      <fieldset id={idFor('D.fastStage')}>
+        <legend className="mb-1 text-sm font-medium text-slate-800">
+          FAST — pick the highest stage that fits
+          {required && (
+            <span className="ml-0.5 text-rose-600" aria-hidden="true">
+              *
+            </span>
+          )}
+        </legend>
+        <div className="grid gap-1.5 sm:grid-cols-2">
+          {FAST_STAGES.map((stage) => (
+            <label
+              key={stage.value}
+              className={`flex min-h-[44px] cursor-pointer items-start gap-2 rounded-lg border px-3 py-2 text-sm ${
+                D.fastStage === stage.value
+                  ? 'border-brand-600 bg-brand-50 text-brand-900'
+                  : 'border-slate-300 bg-white text-slate-700 hover:bg-slate-50'
+              }`}
+            >
+              <input
+                type="radio"
+                checked={D.fastStage === stage.value}
+                onChange={() => set({ fastStage: stage.value })}
+                className="mt-0.5 border-slate-300 text-brand-600 focus:ring-brand-600"
+              />
+              <span>
+                <span className="font-semibold">{stage.label}</span> — {stage.description}
+              </span>
+            </label>
+          ))}
+        </div>
+        {problem && <p className="mt-1 text-xs font-medium text-rose-700">{problem}</p>}
+      </fieldset>
+      <button
+        type="button"
+        onClick={() => set({ instrument: 'other', fastStage: '' })}
+        className="text-sm font-medium text-brand-700 hover:text-brand-900"
+      >
+        Used another instrument (CDR, GDS…)
+      </button>
+    </div>
   );
 }
 
-export function ElementE({ form, update, required }: ElementProps) {
+function ElementE({ form, update, required }: ElementProps) {
   const { E } = form;
   const set = (patch: Partial<AssessmentForm['E']>) => update('E', patch);
   return (
     <div className="space-y-4">
-      <Confirm
-        path="E.reconciled"
-        required={required}
-        label="Medication reconciliation completed."
-        checked={E.reconciled}
-        onChange={(reconciled) => set({ reconciled })}
-      />
-      <Confirm
-        path="E.highRiskReviewed"
-        required={required}
-        label="High-risk and cognition-affecting medications reviewed."
-        checked={E.highRiskReviewed}
-        onChange={(highRiskReviewed) => set({ highRiskReviewed })}
-      />
+      <Grid>
+        <Confirm
+          path="E.reconciled"
+          required={required}
+          label="Medication reconciliation completed."
+          checked={E.reconciled}
+          onChange={(reconciled) => set({ reconciled })}
+        />
+        <Confirm
+          path="E.highRiskReviewed"
+          required={required}
+          label="High-risk and cognition-affecting medications reviewed."
+          checked={E.highRiskReviewed}
+          onChange={(highRiskReviewed) => set({ highRiskReviewed })}
+        />
+      </Grid>
       <CheckGroup
         path="E.highRiskClasses"
-        label="High-risk classes noted"
+        label="High-risk classes found"
         options={HIGH_RISK_MEDICATION_CLASSES}
         values={E.highRiskClasses}
         onChange={(highRiskClasses) => set({ highRiskClasses })}
@@ -706,7 +549,7 @@ export function ElementE({ form, update, required }: ElementProps) {
   );
 }
 
-export function ElementF({ form, update, required }: ElementProps) {
+function ElementF({ form, update, required }: ElementProps) {
   const { F } = form;
   const set = (patch: Partial<AssessmentForm['F']>) => update('F', patch);
   const screen = DEPRESSION_SCREENS.find((s) => s.value === F.depressionScreen);
@@ -732,7 +575,7 @@ export function ElementF({ form, update, required }: ElementProps) {
       <Grid>
         <Select
           path="F.depressionScreen"
-          label="Depression screen (standardized instrument)"
+          label="Depression screen"
           required={required}
           options={DEPRESSION_SCREENS}
           value={F.depressionScreen}
@@ -762,8 +605,6 @@ export function ElementF({ form, update, required }: ElementProps) {
             onChange={(depressionScreenOther) => set({ depressionScreenOther })}
           />
         )}
-      </Grid>
-      <Grid>
         <TextField
           path="F.otherInstrument"
           label="Other behavioral instrument, if used"
@@ -772,19 +613,22 @@ export function ElementF({ form, update, required }: ElementProps) {
           value={F.otherInstrument}
           onChange={(otherInstrument) => set({ otherInstrument })}
         />
-        <TextField
-          path="F.otherScore"
-          label="Its score"
-          maxLength={20}
-          value={F.otherScore}
-          onChange={(otherScore) => set({ otherScore })}
-        />
+        {F.otherInstrument.trim() !== '' && (
+          <TextField
+            path="F.otherScore"
+            label="Its score"
+            required
+            maxLength={20}
+            value={F.otherScore}
+            onChange={(otherScore) => set({ otherScore })}
+          />
+        )}
       </Grid>
     </div>
   );
 }
 
-export function ElementG({ form, update, required }: ElementProps) {
+function ElementG({ form, update, required }: ElementProps) {
   const { G } = form;
   const set = (patch: Partial<AssessmentForm['G']>) => update('G', patch);
   return (
@@ -799,7 +643,7 @@ export function ElementG({ form, update, required }: ElementProps) {
       />
       <RadioGroup
         path="G.driving"
-        label="Driving / motor vehicle status"
+        label="Driving"
         required
         options={DRIVING_STATUS}
         value={G.driving}
@@ -812,76 +656,77 @@ export function ElementG({ form, update, required }: ElementProps) {
         value={G.firearms}
         onChange={(firearms) => set({ firearms })}
       />
-      {safetyConcern(form) && (
-        <TextArea
-          path="G.safetyPlan"
-          label="Safety plan"
-          required
-          hint="Required because a concern is noted above."
-          value={G.safetyPlan}
-          onChange={(safetyPlan) => set({ safetyPlan })}
-        />
-      )}
+      <p className="text-xs text-slate-500">The safety plan is written in the care plan (J).</p>
     </div>
   );
 }
 
-export function ElementH({ form, update, required }: ElementProps) {
-  const { H, billing } = form;
+function ElementH({ form, update, required }: ElementProps) {
+  const { H, requirements } = form;
   const set = (patch: Partial<AssessmentForm['H']>) => update('H', patch);
+  const historian = requirements.historian.trim();
   return (
     <div className="space-y-4">
       <RadioGroup
         path="H.caregiver"
         label="Caregiver"
-        required={required}
         options={[
-          { value: 'identified', label: 'Caregiver identified' },
+          {
+            value: 'historian',
+            label: historian ? `The historian (${historian})` : 'The historian',
+          },
+          { value: 'other', label: 'Someone else' },
           { value: 'none', label: 'No caregiver identified' },
         ]}
         value={H.caregiver}
         onChange={(caregiver) => set({ caregiver })}
       />
-      {H.caregiver === 'identified' && (
+      {H.caregiver === 'other' && (
+        <Grid>
+          <TextField
+            path="H.caregiverName"
+            label="Caregiver name"
+            required
+            value={H.caregiverName}
+            onChange={(caregiverName) => set({ caregiverName })}
+          />
+          <Select
+            path="H.caregiverRelationship"
+            label="Relationship"
+            options={RELATIONSHIPS}
+            value={H.caregiverRelationship}
+            onChange={(caregiverRelationship) => set({ caregiverRelationship })}
+          />
+        </Grid>
+      )}
+      {H.caregiver === 'none' ? (
+        <TextArea
+          path="H.noCaregiverPlan"
+          label="Plan, with no caregiver identified"
+          required
+          rows={2}
+          value={H.noCaregiverPlan}
+          onChange={(noCaregiverPlan) => set({ noCaregiverPlan })}
+        />
+      ) : (
         <>
           <Grid>
-            <TextField
-              path="H.caregiverName"
-              label="Caregiver name"
-              required
-              value={H.caregiverName}
-              onChange={(caregiverName) => set({ caregiverName })}
-            />
             <Select
-              path="H.caregiverRelationship"
-              label="Relationship"
-              required
-              options={RELATIONSHIPS}
-              value={H.caregiverRelationship}
-              onChange={(caregiverRelationship) => set({ caregiverRelationship })}
+              path="H.willingness"
+              label="Willingness / ability to take on caregiving"
+              required={required}
+              options={CAREGIVER_WILLINGNESS}
+              value={H.willingness}
+              onChange={(willingness) => set({ willingness })}
+            />
+            <RadioGroup
+              path="H.knowledge"
+              label="Caregiver knowledge"
+              options={CAREGIVER_KNOWLEDGE}
+              value={H.knowledge}
+              onChange={(knowledge) => set({ knowledge })}
             />
           </Grid>
-          {billing.historianName.trim() && (
-            <button
-              type="button"
-              onClick={() =>
-                set({
-                  caregiverName: billing.historianName,
-                  caregiverRelationship: billing.historianRelationship,
-                })
-              }
-              className="min-h-[44px] rounded-lg border border-slate-300 bg-white px-3 text-sm font-medium text-slate-700 hover:bg-slate-50"
-            >
-              Same as the independent historian
-            </button>
-          )}
-          <RadioGroup
-            path="H.knowledge"
-            label="Caregiver knowledge"
-            options={CAREGIVER_KNOWLEDGE}
-            value={H.knowledge}
-            onChange={(knowledge) => set({ knowledge })}
-          />
           <CheckGroup
             path="H.needs"
             label="Caregiver needs"
@@ -889,29 +734,11 @@ export function ElementH({ form, update, required }: ElementProps) {
             values={H.needs}
             onChange={(needs) => set({ needs })}
           />
-          <Select
-            path="H.willingness"
-            label="Willingness / ability to take on caregiving tasks"
-            required={required}
-            options={CAREGIVER_WILLINGNESS}
-            value={H.willingness}
-            onChange={(willingness) => set({ willingness })}
-          />
         </>
       )}
-      {H.caregiver === 'none' && (
-        <TextArea
-          path="H.noCaregiverPlan"
-          label="Plan, with no caregiver identified"
-          required
-          value={H.noCaregiverPlan}
-          onChange={(noCaregiverPlan) => set({ noCaregiverPlan })}
-        />
-      )}
-      <TextArea
+      <TextField
         path="H.socialSupports"
         label="Social supports"
-        rows={2}
         value={H.socialSupports}
         onChange={(socialSupports) => set({ socialSupports })}
       />
@@ -919,30 +746,31 @@ export function ElementH({ form, update, required }: ElementProps) {
   );
 }
 
-export function ElementI({ form, update, required }: ElementProps) {
+function ElementI({ form, update, required }: ElementProps) {
   const { I } = form;
   const set = (patch: Partial<AssessmentForm['I']>) => update('I', patch);
   return (
     <div className="space-y-4">
-      <RadioGroup
-        path="I.status"
-        label="Advance care planning"
-        required={required}
-        options={ACP_STATUS}
-        value={I.status}
-        onChange={(status) => set({ status })}
-      />
-      <RadioGroup
-        path="I.directive"
-        label="Health care proxy / advance directive"
-        options={ADVANCE_DIRECTIVE}
-        value={I.directive}
-        onChange={(directive) => set({ directive })}
-      />
-      <TextArea
+      <Grid>
+        <RadioGroup
+          path="I.status"
+          label="Advance care planning"
+          required={required}
+          options={ACP_STATUS}
+          value={I.status}
+          onChange={(status) => set({ status })}
+        />
+        <RadioGroup
+          path="I.directive"
+          label="Health care proxy / advance directive"
+          options={ADVANCE_DIRECTIVE}
+          value={I.directive}
+          onChange={(directive) => set({ directive })}
+        />
+      </Grid>
+      <TextField
         path="I.goalsOfCare"
         label="Goals of care"
-        rows={2}
         value={I.goalsOfCare}
         onChange={(goalsOfCare) => set({ goalsOfCare })}
       />
@@ -950,34 +778,51 @@ export function ElementI({ form, update, required }: ElementProps) {
   );
 }
 
-export function ElementJ({ form, update }: ElementProps) {
+export const ELEMENT_BODIES: Record<
+  Exclude<ElementKey, 'J'>,
+  (props: ElementProps) => JSX.Element
+> = {
+  A: ElementA,
+  B: ElementB,
+  C: ElementC,
+  D: ElementD,
+  E: ElementE,
+  F: ElementF,
+  G: ElementG,
+  H: ElementH,
+  I: ElementI,
+};
+
+// ------------------------------------------------------- J. the care plan
+
+/// The care plan, put together from what is above: a problem written from the
+/// answers, and goals and actions with the ones the answers point to marked
+/// "Suggested" and listed first. Nothing is ticked for the provider.
+export function CarePlanSection({ form, update }: SectionProps) {
   const { J } = form;
   const set = (patch: Partial<AssessmentForm['J']>) => update('J', patch);
-  const setArea = (area: string, patch: Partial<AssessmentForm['J']['plan'][string]>) =>
+  const suggested = suggestions(form);
+  const setArea = (area: CarePlanArea, patch: Partial<CarePlanEntry>) =>
     set({ plan: { ...J.plan, [area]: { ...J.plan[area], ...patch } } });
+
   return (
-    <div className="space-y-5">
+    <div className="space-y-4">
       <p className="text-sm text-slate-600">
-        The written care plan is always required — the patient’s handout is made from it.
+        Built from your answers above: items marked <SuggestedTag /> fit what you found. Tick what
+        applies. Goals and actions go on the patient’s handout in plain words, in English or
+        Spanish.
       </p>
       {CARE_PLAN_AREAS.map((area) => (
-        <fieldset key={area.value} className="rounded-lg border border-slate-200 p-3">
-          <legend className="px-1 text-sm font-semibold text-slate-900">{area.label}</legend>
-          <div className="grid gap-3 lg:grid-cols-3">
-            {(['problem', 'goal', 'plan'] as const).map((part) => (
-              <TextArea
-                key={part}
-                path={`J.plan.${area.value}.${part}`}
-                label={`${area.label}: ${part}`}
-                required
-                rows={2}
-                maxLength={1500}
-                value={J.plan[area.value][part]}
-                onChange={(value) => setArea(area.value, { [part]: value })}
-              />
-            ))}
-          </div>
-        </fieldset>
+        <CarePlanAreaBlock
+          key={area.value}
+          area={area.value}
+          title={area.label}
+          entry={J.plan[area.value]}
+          summary={problemSummary(form, area.value)}
+          suggestedGoals={suggested.goals}
+          suggestedActions={suggested.actions}
+          onChange={(patch) => setArea(area.value, patch)}
+        />
       ))}
       <CheckGroup
         path="J.referrals"
@@ -992,14 +837,32 @@ export function ElementJ({ form, update }: ElementProps) {
         value={J.referralsOther}
         onChange={(referralsOther) => set({ referralsOther })}
       />
-      <RadioGroup
-        path="J.sharedWith"
-        label="Plan shared with"
-        required
-        options={PLAN_SHARED_WITH}
-        value={J.sharedWith}
-        onChange={(sharedWith) => set({ sharedWith })}
-      />
+      <Grid>
+        <RadioGroup
+          path="J.sharedWith"
+          label="Plan shared with"
+          required
+          options={PLAN_SHARED_WITH}
+          value={J.sharedWith}
+          onChange={(sharedWith) => set({ sharedWith })}
+        />
+        <div className="grid grid-cols-2 gap-3">
+          <Select
+            path="J.followUpInterval"
+            label="Follow-up in"
+            options={FOLLOW_UP_INTERVALS}
+            value={J.followUpInterval}
+            onChange={(followUpInterval) => set({ followUpInterval })}
+          />
+          <TextField
+            path="J.followUpDate"
+            label="Follow-up date"
+            type="date"
+            value={J.followUpDate}
+            onChange={(followUpDate) => set({ followUpDate })}
+          />
+        </div>
+      </Grid>
       <CheckGroup
         path="J.education"
         label="Education and support provided"
@@ -1017,27 +880,9 @@ export function ElementJ({ form, update }: ElementProps) {
           onChange={(educationOther) => set({ educationOther })}
         />
       )}
-      <Grid>
-        <Select
-          path="J.followUpInterval"
-          label="Follow-up interval"
-          options={FOLLOW_UP_INTERVALS}
-          value={J.followUpInterval}
-          onChange={(followUpInterval) => set({ followUpInterval })}
-        />
-        <TextField
-          path="J.followUpDate"
-          label="Follow-up date"
-          type="date"
-          value={J.followUpDate}
-          onChange={(followUpDate) => set({ followUpDate })}
-        />
-      </Grid>
-      <TextArea
+      <TextField
         path="J.followUpPlan"
         label="Follow-up plan"
-        required={J.followUpInterval === 'other'}
-        rows={2}
         value={J.followUpPlan}
         onChange={(followUpPlan) => set({ followUpPlan })}
       />
@@ -1045,15 +890,181 @@ export function ElementJ({ form, update }: ElementProps) {
   );
 }
 
-export const ELEMENT_BODIES: Record<ElementKey, (props: ElementProps) => JSX.Element> = {
-  A: ElementA,
-  B: ElementB,
-  C: ElementC,
-  D: ElementD,
-  E: ElementE,
-  F: ElementF,
-  G: ElementG,
-  H: ElementH,
-  I: ElementI,
-  J: ElementJ,
-};
+function SuggestedTag() {
+  return (
+    <span className="rounded-full bg-amber-100 px-1.5 py-0.5 text-[11px] font-semibold uppercase tracking-wide text-amber-800">
+      Suggested
+    </span>
+  );
+}
+
+function CarePlanAreaBlock({
+  area,
+  title,
+  entry,
+  summary,
+  suggestedGoals,
+  suggestedActions,
+  onChange,
+}: {
+  area: CarePlanArea;
+  title: string;
+  entry: CarePlanEntry;
+  summary: string;
+  suggestedGoals: Set<string>;
+  suggestedActions: Set<string>;
+  onChange: (patch: Partial<CarePlanEntry>) => void;
+}) {
+  const { idFor, problemFor } = useContext(FieldContext);
+  const [editing, setEditing] = useState(false);
+  const own = entry.problem !== null;
+  const byFit = (key: (value: string) => boolean) => (a: { value: string }, b: { value: string }) =>
+    Number(key(b.value)) - Number(key(a.value));
+  const goals = [...CARE_PLAN_GOALS[area]].sort(byFit((v) => suggestedGoals.has(`${area}:${v}`)));
+  const actions = [...CARE_PLAN_ACTIONS[area]].sort(
+    byFit((v) => suggestedActions.has(`${area}:${v}`)),
+  );
+  const untickedSuggestions = actions.filter(
+    (a) => suggestedActions.has(`${area}:${a.value}`) && !entry.actions.includes(a.value),
+  );
+  const toggle = (list: string[], value: string, on: boolean) =>
+    on ? [...list.filter((v) => v !== value), value] : list.filter((v) => v !== value);
+
+  return (
+    <fieldset className="rounded-lg border border-slate-200 p-3" data-testid={`care-plan-${area}`}>
+      <legend className="px-1 text-sm font-semibold text-slate-900">{title}</legend>
+
+      <div className="mb-3 text-sm">
+        <span className="font-medium text-slate-700">Problem: </span>
+        {own || editing ? (
+          <div className="mt-1">
+            <TextArea
+              path={`J.plan.${area}.problem`}
+              label={`${title}: problem`}
+              rows={2}
+              maxLength={1500}
+              value={entry.problem ?? summary}
+              onChange={(problem) => onChange({ problem })}
+            />
+            <button
+              type="button"
+              onClick={() => {
+                onChange({ problem: null });
+                setEditing(false);
+              }}
+              className="mt-1 text-xs font-medium text-brand-700 hover:text-brand-900"
+            >
+              Use the summary from my answers
+            </button>
+          </div>
+        ) : (
+          <>
+            <span className="text-slate-800">{summary || 'Fill in the sections above.'}</span>{' '}
+            <button
+              type="button"
+              onClick={() => {
+                setEditing(true);
+                onChange({ problem: summary });
+              }}
+              className="text-xs font-medium text-brand-700 hover:text-brand-900"
+            >
+              Edit
+            </button>
+          </>
+        )}
+      </div>
+
+      <div className="grid gap-3 lg:grid-cols-2">
+        <div id={idFor(`J.plan.${area}.goals`)}>
+          <p className="mb-1 text-sm font-medium text-slate-700">Goals</p>
+          <div className="space-y-1.5">
+            {goals.map((goal) => (
+              <PlanTick
+                key={goal.value}
+                label={goal.label}
+                suggested={suggestedGoals.has(`${area}:${goal.value}`)}
+                checked={entry.goals.includes(goal.value)}
+                onChange={(on) => onChange({ goals: toggle(entry.goals, goal.value, on) })}
+              />
+            ))}
+          </div>
+          <ProblemLine problem={problemFor(`J.plan.${area}.goals`)} />
+        </div>
+        <div id={idFor(`J.plan.${area}.actions`)}>
+          <div className="mb-1 flex items-center justify-between gap-2">
+            <p className="text-sm font-medium text-slate-700">What will be done</p>
+            {untickedSuggestions.length > 1 && (
+              <button
+                type="button"
+                onClick={() =>
+                  onChange({
+                    actions: [...entry.actions, ...untickedSuggestions.map((a) => a.value)],
+                  })
+                }
+                className="text-xs font-medium text-brand-700 hover:text-brand-900"
+              >
+                Tick the suggested ones
+              </button>
+            )}
+          </div>
+          <div className="space-y-1.5">
+            {actions.map((action) => (
+              <PlanTick
+                key={action.value}
+                label={action.label}
+                suggested={suggestedActions.has(`${area}:${action.value}`)}
+                checked={entry.actions.includes(action.value)}
+                onChange={(on) => onChange({ actions: toggle(entry.actions, action.value, on) })}
+              />
+            ))}
+          </div>
+          <ProblemLine problem={problemFor(`J.plan.${area}.actions`)} />
+        </div>
+      </div>
+      <div className="mt-3">
+        <TextField
+          path={`J.plan.${area}.extra`}
+          label={`${title}: anything else (optional)`}
+          hint="Printed as typed on the note and the handout — write it in Spanish for a Spanish handout."
+          value={entry.extra}
+          onChange={(extra) => onChange({ extra })}
+        />
+      </div>
+    </fieldset>
+  );
+}
+
+function PlanTick({
+  label,
+  suggested,
+  checked,
+  onChange,
+}: {
+  label: string;
+  suggested: boolean;
+  checked: boolean;
+  onChange: (checked: boolean) => void;
+}) {
+  return (
+    <label
+      className={`flex min-h-[40px] cursor-pointer items-start gap-2 rounded-lg border px-3 py-2 text-sm ${
+        checked
+          ? 'border-brand-600 bg-brand-50 text-brand-900'
+          : 'border-slate-300 bg-white text-slate-700 hover:bg-slate-50'
+      }`}
+    >
+      <input
+        type="checkbox"
+        checked={checked}
+        onChange={(event) => onChange(event.target.checked)}
+        className="mt-0.5 rounded border-slate-300 text-brand-600 focus:ring-brand-600"
+      />
+      <span className="flex-1">{label}</span>
+      {suggested && <SuggestedTag />}
+    </label>
+  );
+}
+
+function ProblemLine({ problem }: { problem?: string }) {
+  return problem ? <p className="mt-1 text-xs font-medium text-rose-700">{problem}</p> : null;
+}

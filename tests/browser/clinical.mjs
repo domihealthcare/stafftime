@@ -3,9 +3,10 @@ import { mkdirSync, readFileSync } from 'node:fs';
 import { getDocument } from 'pdfjs-dist/legacy/build/pdf.mjs';
 
 // The 99483 cognitive assessment (September 2026): a provider-only form that
-// makes a PDF entirely in the browser. What matters most is what does NOT
-// happen — the patient's details never reach the server and are never kept in
-// the browser — so this suite watches every request and every kind of browser
+// makes two PDFs entirely in the browser — the clinical note and the patient's
+// care plan, in English or Spanish. What matters most is what does NOT happen —
+// the patient's details never reach the server and are never kept in the
+// browser — so this suite watches every request and every kind of browser
 // storage while a fake patient is entered. Fake data only, here and anywhere.
 const OUT = process.argv[2] || new URL('./shots/', import.meta.url).pathname;
 mkdirSync(OUT, { recursive: true });
@@ -61,16 +62,11 @@ async function pdfPages(path) {
 // The fake patient. Nothing about them may ever appear in a request.
 const PATIENT = 'Jane Testpatient';
 const MRN = 'TEST-0001';
-const HISTORIAN = 'John Testhistorian';
-const SECRETS = [PATIENT, 'Testpatient', MRN, HISTORIAN, 'Testhistorian', 'oxybutynin-fake'];
+const HISTORIAN = 'John Testhistorian, son';
+const SECRETS = [PATIENT, 'Testpatient', MRN, 'Testhistorian', 'oxybutynin-fake'];
 
 // New Jersey's day, as the provider's device has it.
 const today = new Intl.DateTimeFormat('en-CA', { timeZone: 'America/New_York' }).format(new Date());
-const daysBefore = (n) => {
-  const d = new Date(`${today}T12:00:00Z`);
-  d.setUTCDate(d.getUTCDate() - n);
-  return d.toISOString().slice(0, 10);
-};
 const usDate = (iso) => `${iso.slice(5, 7)}/${iso.slice(8, 10)}/${iso.slice(0, 4)}`;
 
 // Frankie works the front desk; for this suite they are also a Provider.
@@ -89,9 +85,11 @@ await signIn(admin, 'admin@domihealthcare.com');
 const me = (await call(page, '/profile')).body;
 const provider = (await call(admin, '/job-roles')).body.find((r) => r.name === 'Provider');
 
-await step('somebody who is not a Provider has no such menu item, and the page says so', async () => {
+await step('somebody who is not a Provider sees no link to it, and the page says so', async () => {
   const team = await menuItems(page, 'Team');
   if (team.some((t) => /cognitive/i.test(t))) throw new Error(`Team menu: ${team.join(', ')}`);
+  await page.goto(`${BASE}/resources`, { waitUntil: 'networkidle' });
+  if ((await page.getByTestId('clinical-tools').count()) > 0) throw new Error('the link is on Resources');
   await page.goto(`${BASE}/clinical/99483`, { waitUntil: 'networkidle' });
   await page.getByText('This form is for providers.').waitFor({ timeout: 10000 });
   if ((await page.getByLabel(/Patient name/).count()) > 0) throw new Error('the form is shown');
@@ -103,7 +101,7 @@ await step('Provider starts with the clinical forms switched on, and nobody else
   if (on.join() !== 'Provider') throw new Error(`on for: ${on.join(', ')}`);
 });
 
-await step('in the Provider job role, it is under Team', async () => {
+await step('in the Provider job role, it is under Resources → Provider, not the Team menu', async () => {
   const added = await call(admin, `/job-roles/${provider.id}/members`, {
     method: 'POST',
     body: JSON.stringify({ employeeId: me.id }),
@@ -116,9 +114,10 @@ await step('in the Provider job role, it is under Team', async () => {
   if (titled.status >= 300) throw new Error(`setting letters answered ${titled.status}`);
   await page.goto(`${BASE}/`, { waitUntil: 'networkidle' });
   const team = await menuItems(page, 'Team');
-  if (!team.includes('Cognitive assessment (99483)')) throw new Error(`Team menu: ${team.join(', ')}`);
-  await page.getByRole('button', { name: 'Team', exact: true }).click();
-  await page.getByRole('link', { name: 'Cognitive assessment (99483)' }).click();
+  if (team.some((t) => /cognitive/i.test(t))) throw new Error(`still in the Team menu: ${team.join(', ')}`);
+  await page.goto(`${BASE}/resources`, { waitUntil: 'networkidle' });
+  const tools = page.getByTestId('section-Provider').getByTestId('clinical-tools');
+  await tools.getByRole('link', { name: /Cognitive assessment \(99483\)/ }).click();
   await page.getByTestId('cognitive-assessment').waitFor({ timeout: 15000 });
 });
 
@@ -131,183 +130,145 @@ page.on('request', (request) => {
 
 const section = (key) => page.getByTestId(`section-${key}`);
 
-await step('the provider’s name and letters are filled in from their staff record', async () => {
-  const name = await section('visit').getByLabel(/Provider name/).inputValue();
-  const letters = await section('visit').getByLabel(/Credentials/).inputValue();
-  if (!name.trim()) throw new Error('no provider name');
-  if (letters !== 'APN-C') throw new Error(`credentials: "${letters}"`);
+await step('the provider is the person signed in, with their letters, and cannot be typed over', async () => {
+  const line = await page.getByTestId('provider-line').innerText();
+  if (!/Frankie .*, APN-C/.test(line)) throw new Error(`provider line: "${line}"`);
+  if ((await section('visit').getByLabel(/Provider/).count()) > 0) throw new Error('there is a provider field');
   const dos = await section('visit').getByLabel(/Date of service/).inputValue();
   if (dos !== today) throw new Error(`date of service ${dos}, expected ${today}`);
+});
+
+await step('the requirements come first, before the patient', async () => {
+  const order = await page.locator('[data-testid^="section-"]').evaluateAll((all) =>
+    all.map((el) => el.getAttribute('data-testid')),
+  );
+  if (order[0] !== 'section-requirements' || order[1] !== 'section-visit') throw new Error(order.join(', '));
+  const text = await section('requirements').innerText();
+  for (const piece of ['documented in the eCW record', 'independent historian', '180 days', 'conflicting same-day', '99497'])
+    if (!text.includes(piece)) throw new Error(`requirements lack "${piece}"`);
 });
 
 await step('an empty form makes no PDF, and lists what is missing', async () => {
   let downloaded = false;
   page.once('download', () => (downloaded = true));
-  await page.getByRole('button', { name: 'Make the PDF' }).click();
+  await page.getByRole('button', { name: 'Download the note' }).click();
   const list = page.getByTestId('missing-checklist');
   await list.waitFor({ timeout: 5000 });
   await list.getByText('Enter the patient’s name.').waitFor({ timeout: 5000 });
-  await list.getByText('Enter the collateral history.').waitFor({ timeout: 5000 });
+  await list.getByText(/Confirm: An independent historian/).waitFor({ timeout: 5000 });
   await page.waitForTimeout(500);
   if (downloaded) throw new Error('a PDF was downloaded');
-  // Shown under the field too, now they have tried.
-  await section('visit').getByText('Enter the patient’s name.').waitFor({ timeout: 5000 });
 });
 
 await step('a missing item jumps to its field', async () => {
-  await page
-    .getByTestId('missing-checklist')
-    .getByRole('button', { name: /Enter the MRN\./ })
-    .click();
+  await page.getByTestId('missing-checklist').getByRole('button', { name: /Enter the MRN\./ }).click();
+  await page.waitForTimeout(300);
   const focused = await page.evaluate(() => document.activeElement?.id ?? '');
   if (!focused.endsWith('visit-mrn')) throw new Error(`focus went to "${focused}"`);
 });
 
-await step('there is no “no impairment” choice anywhere', async () => {
-  const impairments = await section('billing').getByLabel(/Documented cognitive impairment/).locator('option').allInnerTexts();
-  if (impairments.some((t) => /no\b.*impairment|normal|none/i.test(t))) throw new Error(impairments.join(', '));
-  const staging = section('D').getByLabel(/Staging instrument/);
-  for (const [instrument, none] of [['FAST', 'Stage 1'], ['CDR', '0'], ['GDS-Reisberg', 'Stage 1']]) {
-    await staging.selectOption({ label: instrument });
-    const stages = (await section('D').getByLabel(/Stage \/ score/).locator('option').allInnerTexts()).map((t) => t.trim());
-    if (stages.some((t) => t === none || t.startsWith(`${none} `) || t.startsWith(`${none} —`)))
-      throw new Error(`${instrument} offers ${none}: ${stages.join(', ')}`);
-  }
-  const acp = await section('I').getByRole('group', { name: /^Advance care planning/ }).getByRole('radio').allInnerTexts();
-  const acpLabels = await section('I').getByRole('group', { name: /^Advance care planning/ }).innerText();
-  if (!/Developed[\s\S]*Updated[\s\S]*Reviewed/.test(acpLabels) || acp.length !== 3)
-    throw new Error(`advance care planning offers: ${acpLabels}`);
-  if ((await section('I').getByText(/not addressed/i).count()) > 0) throw new Error('"not addressed" offered');
+await step('the history and exam start as done at a prior visit, as a statement', async () => {
+  const a = section('A');
+  await a.getByText('Completed at a prior visit; reviewed today and still valid or updated.').waitFor({ timeout: 5000 });
+  if ((await a.getByLabel(/Collateral history/).count()) > 0) throw new Error('details shown without asking');
+  if ((await a.getByLabel(/Prior visit date|Performed by/).count()) > 0) throw new Error('asks for a date or a name');
+  await a.getByRole('button', { name: 'Add details' }).click();
+  await a.getByLabel(/Collateral history/).waitFor({ timeout: 5000 });
+  if ((await page.getByTestId('missing-checklist').getByText('Enter the collateral history.').count()) > 0)
+    throw new Error('prior-visit history still required');
 });
 
-await step('a 99483 less than 180 days ago blocks the PDF', async () => {
-  const last = daysBefore(100);
-  await section('visit').getByLabel(/Date of service/).fill(today);
-  await section('billing').getByLabel(/Date of the last 99483/).fill(last);
-  await section('billing').getByRole('alert').getByText('Payable once per 180 days.').waitFor({ timeout: 5000 });
-  await page.getByTestId('missing-checklist').getByText(/payable once per 180 days/).waitFor({ timeout: 5000 });
-  // Exactly 180 days is allowed.
-  await section('billing').getByLabel(/Date of the last 99483/).fill(daysBefore(180));
-  await page.waitForTimeout(200);
-  if ((await section('billing').getByRole('alert').getByText('Payable once per 180 days.').count()) > 0)
-    throw new Error('180 days still blocked');
+await step('FAST is done on screen, with no “no impairment” stage', async () => {
+  const d = section('D');
+  await d.getByText(/Needs help with complex tasks/).waitFor({ timeout: 5000 });
+  const stages = await d.getByRole('radio').count();
+  if (stages !== 2 + 15) throw new Error(`${stages} radios`); // Today/Prior + FAST 2–7f
+  if ((await d.getByText(/^Stage 1\b/).count()) > 0) throw new Error('FAST 1 offered');
+  await d.getByRole('button', { name: /Used another instrument/ }).click();
+  await d.getByLabel(/Staging instrument/).waitFor({ timeout: 5000 });
+  await d.getByRole('button', { name: /Stage with FAST here instead/ }).click();
+  await d.getByLabel(/Stage 4/).check();
 });
 
-await step('ticking a safety concern asks for a safety plan; ticking None takes it away', async () => {
-  const g = section('G');
-  if ((await g.getByLabel(/Safety plan/).count()) > 0) throw new Error('safety plan shown with no concern');
-  await g.getByLabel('Fall risk').check();
-  await g.getByLabel(/Safety plan/).waitFor({ timeout: 5000 });
-  await g.getByLabel('None', { exact: true }).check();
-  if (await g.getByLabel('Fall risk').isChecked()) throw new Error('None left Fall risk ticked');
-  await page.waitForTimeout(200);
-  if ((await g.getByLabel(/Safety plan/).count()) > 0) throw new Error('safety plan still shown');
-  // A worrying driving answer is a concern too.
-  await g.getByLabel('Driving evaluation recommended').check();
-  await g.getByLabel(/Safety plan/).waitFor({ timeout: 5000 });
+await step('telehealth reminds about modifier 95; an AWV reminds about modifier 25', async () => {
+  const v = section('visit');
+  await v.getByLabel('Telehealth').check();
+  await v.getByText(/telehealth modifier \(95\)/).waitFor({ timeout: 5000 });
+  await v.getByLabel(/annual wellness visit/).check();
+  await v.getByText('Bill the AWV separately and append modifier 25.').waitFor({ timeout: 5000 });
 });
 
-await step('completed at a prior visit asks who and when, and to confirm it was reviewed', async () => {
-  const c = section('C');
-  await c.getByLabel('Completed at prior visit').check();
-  await c.getByLabel(/Prior visit date/).waitFor({ timeout: 5000 });
-  await c.getByLabel(/Performed by/).waitFor({ timeout: 5000 });
-  await c.getByLabel(/Reviewed today; still valid or updated/).waitFor({ timeout: 5000 });
-  const list = page.getByTestId('missing-checklist');
-  await list.getByText('Confirm it was reviewed today and is still valid or updated.').waitFor({ timeout: 5000 });
-  if ((await list.getByText('Choose the decision-making capacity.').count()) > 0)
-    throw new Error('capacity still required for a prior-visit element');
+await step('a safety concern makes the care plan suggest what to do about it', async () => {
+  await section('G').getByLabel('Fall risk').check();
+  const safety = page.getByTestId('care-plan-safety');
+  const tick = safety.getByLabel(/Remove tripping hazards/);
+  const label = await tick.evaluate((el) => el.closest('label')?.textContent ?? '');
+  if (!/Suggested/.test(label)) throw new Error(`not suggested: "${label}"`);
+  if (await tick.isChecked()) throw new Error('ticked for the provider');
+  const problem = await safety.innerText();
+  if (!/Home: fall risk/.test(problem)) throw new Error(`problem not built from G: ${problem.slice(0, 120)}`);
 });
 
 await step('the whole form, filled in with a fake patient, makes the note', async () => {
+  const r = section('requirements');
+  await r.getByLabel(/documented in the eCW record/).check();
+  await r.getByLabel(/independent historian/).check();
+  await r.getByLabel(/Who \(name and relationship\)/).fill(HISTORIAN);
+  await r.getByLabel(/No 99483 has been billed/).check();
+  await r.getByLabel(/conflicting same-day service/).check();
+
   const v = section('visit');
   await v.getByLabel(/Patient name/).fill(PATIENT);
   await v.getByLabel(/MRN/).fill(MRN);
   await v.getByLabel(/Date of birth/).fill('1940-01-01');
-  await v.getByLabel('North Bergen, NJ').check();
-  await v.getByLabel('In person').check();
+  await v.getByLabel(/Total time today/).fill('65');
+  await v.getByLabel('High', { exact: true }).check();
 
-  const b = section('billing');
-  await b.getByLabel(/Documented cognitive impairment/).selectOption({ label: 'Dementia, mild' });
-  await b.getByLabel(/I confirm this cognitive impairment is documented/).check();
-  await b.getByLabel(/None — no earlier 99483/).check();
-  await b.getByLabel('Add a common code').selectOption('G30.9');
-  if ((await b.getByLabel(/Primary code/).inputValue()) !== 'G30.9') throw new Error('quick pick did not fill the code');
-  await b.getByLabel(/Independent historian present/).fill(HISTORIAN);
-  await b.getByLabel(/Relationship to the patient/).selectOption({ label: 'Adult child' });
-  await b.getByLabel(/No conflicting same-day services/).check();
-  await b.getByRole('radio', { name: 'Yes' }).check();
-  await b.getByText('Bill the AWV separately and append modifier 25.').waitFor({ timeout: 5000 });
-  await b.getByLabel(/Total time on the date of service/).fill('65');
-  await b.getByText('Typical time 60 minutes.').waitFor({ timeout: 5000 });
-  await b.getByText(/confirm threshold with billing \(Coronis\)/).waitFor({ timeout: 5000 });
-  await b.getByLabel('High', { exact: true }).check();
-
-  const a = section('A');
-  await a.getByLabel('Concerns raised by family or caregiver').check();
-  await a.getByLabel(/Collateral history/).fill('Son reports two years of forgetfulness and missed bills.');
-  await a.getByLabel(/Focused exam findings/).fill('Alert, word-finding pauses, no focal deficits.');
-  await a.getByLabel('Memory', { exact: true }).check();
-  await a.getByLabel(/Cognitive test/).selectOption({ label: 'MoCA' });
-  await a.getByLabel(/Score/).fill('18');
-
-  const bb = section('B');
-  await bb.getByRole('group', { name: /^ADL impairments/ }).getByLabel('None', { exact: true }).check();
-  await bb.getByLabel('Managing finances').check();
-  await bb.getByLabel(/Details/).waitFor({ timeout: 5000 });
-
-  const c = section('C');
-  await c.getByLabel(/Prior visit date/).fill(daysBefore(30));
-  await c.getByLabel(/Performed by/).fill('Casey Testprovider, MD');
-  await c.getByLabel(/Reviewed today; still valid or updated/).check();
-
-  const d = section('D');
-  await d.getByLabel(/Staging instrument/).selectOption({ label: 'FAST' });
-  await d.getByLabel(/Stage \/ score/).selectOption({ label: 'Stage 4' });
-
+  const b = section('B');
+  await b.getByRole('group', { name: /^ADL impairments/ }).getByLabel('None', { exact: true }).check();
+  await b.getByLabel('Managing finances').check();
+  await section('C').getByLabel('Intact').check();
   const e = section('E');
   await e.getByLabel(/Medication reconciliation completed/).check();
   await e.getByLabel(/High-risk and cognition-affecting medications reviewed/).check();
-  await e.getByLabel('Anticholinergics').check();
   await e.getByLabel(/Changes made/).fill('Stopped oxybutynin-fake.');
-
   const f = section('F');
   await f.getByLabel('Anxiety').check();
   await f.getByLabel(/Depression screen/).selectOption({ label: 'PHQ-9' });
   await f.getByLabel(/^Score/).fill('6');
-
   const g = section('G');
-  await g.getByLabel(/Safety plan/).fill('Driving evaluation referral; son holds the car keys meanwhile.');
-  await g.getByLabel('No', { exact: true }).check();
-
-  const h = section('H');
-  await h.getByLabel('Caregiver identified', { exact: true }).check();
-  await h.getByRole('button', { name: 'Same as the independent historian' }).click();
-  if ((await h.getByLabel(/Caregiver name/).inputValue()) !== HISTORIAN) throw new Error('caregiver not copied');
-  await h.getByLabel(/Willingness \/ ability/).selectOption({ label: 'Willing and able' });
-
+  await g.getByLabel('Driving evaluation recommended').check();
+  await section('H').getByLabel(/Willingness/).selectOption({ label: 'Willing and able' });
   await section('I').getByLabel('Developed').check();
 
-  const j = section('J');
-  for (const area of ['Cognition', 'Function', 'Neuropsychiatric / behavioral', 'Medications', 'Safety', 'Caregiver']) {
-    for (const part of ['problem', 'goal', 'plan']) {
-      await j.getByLabel(`${area}: ${part}`).fill(`${area} ${part} — fake`);
-    }
+  const plan = {
+    cognition: ['Keep memory and thinking skills', 'Recheck memory and thinking'],
+    function: ['Stay as independent as is safe', 'Family or caregiver to take over paying bills'],
+    behavior: ['Ease distressing mood', 'Keep a calm, regular daily routine'],
+    medications: ['Take medicines safely', 'Keep an up-to-date list of all medicines'],
+    safety: ['Prevent falls and injuries at home', 'Remove tripping hazards'],
+    caregiver: ['Support the caregiver', 'Respite care so the caregiver'],
+  };
+  for (const [area, [goal, action]] of Object.entries(plan)) {
+    const box = page.getByTestId(`care-plan-${area}`);
+    await box.getByLabel(new RegExp(goal)).check();
+    await box.getByLabel(new RegExp(action)).check();
   }
-  await j.getByLabel('Support group').check();
+  const j = section('J');
+  await j.getByRole('group', { name: /^Community resource referrals/ }).getByLabel('Support group', { exact: true }).check();
   await j.getByLabel('Patient and caregiver').check();
-  await j.getByLabel('The diagnosis and what to expect').check();
-  await j.getByLabel(/Follow-up interval/).selectOption({ label: '3 months' });
+  await j.getByRole('group', { name: /^Education and support provided/ }).getByLabel('The diagnosis and what to expect').check();
+  await j.getByLabel(/Follow-up in/).selectOption({ label: '3 months' });
 
   await page.getByText('Everything required is filled in.').waitFor({ timeout: 5000 });
   await page.screenshot({ path: `${OUT}/clinical-filled.png`, fullPage: false });
 
   const [download] = await Promise.all([
     page.waitForEvent('download', { timeout: 20000 }),
-    page.getByRole('button', { name: 'Make the PDF' }).click(),
+    page.getByRole('button', { name: 'Download the note' }).click(),
   ]);
   const expected = `99483_Note_${MRN}_${today}.pdf`;
-  if (download.suggestedFilename() !== expected) throw new Error(`file ${download.suggestedFilename()}, expected ${expected}`);
+  if (download.suggestedFilename() !== expected) throw new Error(`file ${download.suggestedFilename()}`);
   const path = `${OUT}/${expected}`;
   await download.saveAs(path);
 
@@ -327,16 +288,61 @@ await step('the whole form, filled in with a fake patient, makes the note', asyn
   });
   const all = pages.join(' ');
   for (const piece of [
-    'G30.9',
-    'MoCA 18/30',
-    'At a prior visit on',
-    'Casey Testprovider, MD',
+    'Frankie',
+    'APN-C',
+    'Visit Telehealth',
+    'Requirements confirmed',
+    'Historian: John Testhistorian, son',
+    'At a prior visit; reviewed today and still valid or updated.',
+    'Stage 4 — Needs help with complex tasks',
+    'Home: fall risk',
+    'Remove tripping hazards',
     'AWV billed separately, with modifier 25',
     `Total time on the date of service (${usDate(today)}): 65 minutes`,
     'Signature:',
   ]) {
     if (!all.includes(piece)) throw new Error(`the note lacks "${piece}"`);
   }
+});
+
+await step('the handout is in plain English, with the plan and nothing clinical', async () => {
+  const [download] = await Promise.all([
+    page.waitForEvent('download', { timeout: 20000 }),
+    page.getByRole('button', { name: 'Download the handout' }).click(),
+  ]);
+  const expected = `99483_CarePlan_${MRN}_${today}.pdf`;
+  if (download.suggestedFilename() !== expected) throw new Error(`file ${download.suggestedFilename()}`);
+  const path = `${OUT}/en-${expected}`;
+  await download.saveAs(path);
+  const pages = await pdfPages(path);
+  const all = pages.join(' ');
+  for (const piece of ['Your memory care plan', 'Our goals', 'What we will do', 'Remove tripping hazards', 'Support group', '1-800-272-3900', 'Safety tips', 'Your next visit', 'In 3 months']) {
+    if (!all.includes(piece)) throw new Error(`the handout lacks "${piece}"`);
+  }
+  for (const clinical of ['FAST', 'PHQ-9', 'MRN', 'modifier', 'Stage 4']) {
+    if (all.includes(clinical)) throw new Error(`the handout shows "${clinical}"`);
+  }
+  pages.forEach((text, i) => {
+    if (!text.includes(`Page ${i + 1} of ${pages.length}`) || !text.includes(PATIENT))
+      throw new Error(`page ${i + 1} lacks its header`);
+  });
+});
+
+await step('and in Spanish, flagged on screen as not yet checked by a native speaker', async () => {
+  await page.getByRole('radiogroup', { name: 'Handout language' }).getByText('Español').click();
+  await page.getByText('The Spanish wording has not yet been checked by a native speaker.').waitFor({ timeout: 5000 });
+  const [download] = await Promise.all([
+    page.waitForEvent('download', { timeout: 20000 }),
+    page.getByRole('button', { name: 'Download the handout' }).click(),
+  ]);
+  const path = `${OUT}/es-${download.suggestedFilename()}`;
+  await download.saveAs(path);
+  const pages = await pdfPages(path);
+  const all = pages.join(' ');
+  for (const piece of ['Su plan de cuidado de la memoria', 'Nuestras metas', 'Lo que vamos a hacer', 'Consejos de seguridad', 'En 3 meses', 'Página 1 de']) {
+    if (!all.includes(piece)) throw new Error(`the Spanish handout lacks "${piece}"`);
+  }
+  if (all.includes('native speaker') || all.includes('review')) throw new Error('the review note is on the handout');
 });
 
 await step('leaving by a link asks first, and staying keeps the form', async () => {
@@ -368,11 +374,11 @@ await step('signing out asks first', async () => {
   if ((await section('visit').getByLabel(/Patient name/).inputValue()) !== PATIENT) throw new Error('the form was cleared');
 });
 
-await step('saying the download worked clears the form', async () => {
-  await page.getByTestId('download-check').getByRole('button', { name: /Yes, it downloaded/ }).click();
+await step('saying both downloaded clears the form', async () => {
+  await page.getByTestId('download-check').getByRole('button', { name: /Yes, both downloaded/ }).click();
   await page.getByText('The form is cleared.').waitFor({ timeout: 5000 });
   if ((await section('visit').getByLabel(/Patient name/).inputValue()) !== '') throw new Error('patient name still there');
-  if ((await section('A').getByLabel(/Collateral history/).inputValue()) !== '') throw new Error('history still there');
+  if ((await section('requirements').getByLabel(/Who \(name and relationship\)/).count()) > 0) throw new Error('historian still there');
   // Nothing left to lose, so leaving no longer asks.
   await page.getByRole('navigation').getByRole('link', { name: 'Clock', exact: true }).click();
   await page.getByText(/Not clocked in|On the clock/).first().waitFor({ timeout: 10000 });

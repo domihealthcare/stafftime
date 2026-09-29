@@ -2530,18 +2530,20 @@ to share it with.
 
 Asked for by Dominguez (29 September 2026): a form for **CPT 99483**,
 cognitive assessment and care plan services. A provider fills it in during
-the visit and downloads a PDF to upload to **eClinicalWorks Documents**; the
-progress note in eCW only points to it, so the PDF carries all the clinical
-and billing detail on its own. `apps/web/src/clinical/cognitive-assessment/`,
-at `/clinical/99483`, under **Team → Cognitive assessment (99483)**.
+the visit and downloads two PDFs: the **clinical note** for **eClinicalWorks
+Documents** (the progress note in eCW only points to it, so it carries all
+the clinical and billing detail), and the **care plan handout** for the
+patient and caregiver, in **English or Spanish**.
+`apps/web/src/clinical/cognitive-assessment/`, at `/clinical/99483`, linked
+from the **Provider** section of **Resources** (not the Team menu).
 
 **No patient details ever leave the browser, or stay in it.** This is the one
-screen in Domi Staff that handles patient information, and it does so without
-the app holding any — the same line as *Data this app does not hold*:
+screen in Domi Staff that handles patient information (PHI), and it does so
+without the app holding any — the same line as *Data this app does not hold*:
 
 - The form lives in React state and nowhere else. No request carries any of
-  it; no table holds any of it (`no-sensitive-data.spec.ts` now fails on a
-  model or column named for a patient, an MRN, a diagnosis or a care plan).
+  it; no table holds any of it (`no-sensitive-data.spec.ts` fails on a model
+  or column named for a patient, an MRN, a diagnosis or a care plan).
 - `.eslintrc.cjs` forbids the folder from importing the API client, calling
   `fetch`/`XMLHttpRequest`/`sendBeacon`, touching `localStorage`,
   `sessionStorage`, `indexedDB`, `caches` or `document.cookie`, and logging.
@@ -2551,73 +2553,89 @@ the app holding any — the same line as *Data this app does not hold*:
   entries). Spell-check is off, and the page is `translate="no"`, because
   both can send the text away.
 - The page and its PDF code are one lazily loaded piece, so once it is open
-  nothing more is fetched: a release mid-visit cannot turn "make the PDF"
-  into the reload `vite:preloadError` does.
+  nothing more is fetched: a release mid-visit cannot turn a download into
+  the reload `vite:preloadError` does.
 - `tests/browser/clinical.mjs` fills in a fake patient, records every request
-  the page makes and fails if the name, MRN or historian appears in any of
-  them (or if the page writes anything at all to the server while the form
-  is open), then checks local and
-  session storage, cookies, IndexedDB and the Cache API.
+  the page makes and fails if a patient detail appears in any of them (or if
+  the page writes anything at all to the server while the form is open),
+  then checks local and session storage, cookies, IndexedDB and the Cache API.
 
-What the app cannot control is said on the page instead: the downloaded PDF
-sits in the device's Downloads until somebody deletes it, so use a practice
-device, not the shared front-desk tablet, and delete it once it is in eCW.
+What the app cannot control is said on the page instead: the downloaded PDFs
+sit in the device's Downloads until somebody deletes them.
 
-**Who sees it.** A job-role switch, `JobRole.usesClinicalForms`, on for
-Provider only (like `seesOwnPersonnelTabs`), sent as `usesClinicalForms` from
-`/auth/me`. Being a manager or admin does not bring it — it is a clinical
-tool, and the job role is the practice's statement of who is a provider. It
-grants nothing: the form reads and writes nothing on the server, so the check
-is only about who is shown it. `Employee.postNominals` ("MD", "APN-C"), set
-by an admin in the Staff editor, fills in the provider's credentials beside
-their legal name; both stay editable on the form.
+**Who sees it.** `JobRole.usesClinicalForms`, on for Provider only (like
+`seesOwnPersonnelTabs`), sent as `usesClinicalForms` from `/auth/me` and on
+each Resources section's job role. Being a manager or admin does not bring
+it. It grants nothing: the form reads and writes nothing on the server.
+**The provider is always the person signed in** — legal name plus
+`Employee.postNominals` ("MD", "APN-C"), set by an admin in the Staff
+editor; not editable on the form.
 
 **Leaving.** A half-filled form exists nowhere else, so leaving asks first:
-closing or reloading the tab through `beforeunload` (the browser's own
-words), a link or the Back button through `useBlocker` and the app's
-confirmation pop-up, and **Sign out** through `lib/unsaved-work.ts`, which the
-account menu checks. `useBlocker` only works under a data router, which is
-why `App.tsx` became `createBrowserRouter` — one splat route around the same
-`<Routes>` as before, nothing else changed. The form is cleared only when the
-provider says the download arrived; **Download it again** re-saves the same
-bytes. One way out is not asked about: a session that ends (eight hours idle,
-or signing out in another tab) sends the app back to the sign-in screen and
-the form goes with it — nothing leaks, but what was typed is lost.
+closing or reloading the tab (`beforeunload`), a link or the Back button
+(`useBlocker` and the app's confirmation pop-up — why `App.tsx` is a
+`createBrowserRouter` data router, one splat route around the same
+`<Routes>`), and **Sign out** (`lib/unsaved-work.ts`). The form clears only
+when the provider says both PDFs arrived. A session that ends (eight hours
+idle, or signing out in another tab) is not asked about: the app returns to
+sign-in and what was typed is lost — nothing leaks.
+
+**The shape of the form** (reworked with Dominguez, 29 September 2026, to be
+shorter and harder to get wrong):
+
+- **Requirements first**, as statements to tick: cognitive impairment is
+  documented in eCW (no diagnosis or ICD-10 entered again here — it is
+  already in the chart, and copying it invites errors); an independent
+  historian took part (who: one line); no 99483 in 180 days; no conflicting
+  same-day service (the codes listed).
+- **Patient and visit**: name, DOB, MRN, date of service, **office or
+  telehealth** (no location — the claim carries it), time, MDM, and an AWV
+  tick. Telehealth shows a **modifier 95** reminder and the AWV a modifier 25
+  one; both wordings are in `config.ts` (payers differ on 95 and place of
+  service, so it reminds rather than rules).
+- **A–J**: each "Today" or "Prior visit". Prior visit is a **statement**
+  ("completed at a prior visit; reviewed today and still valid or
+  updated"), not a date and a name; its answers fold away and are optional.
+  **A starts as prior visit** (`DEFAULT_PRIOR`). Driving (G) and the care
+  plan (J) are required either way.
+- **D, dementia staging, is done on screen with FAST** — pick the highest
+  stage whose description fits. Staging is one of 99483's required elements.
+  FAST 1 is left out (no "no impairment" anywhere); another instrument (CDR,
+  GDS) can be named with its score instead. The descriptions paraphrase
+  Reisberg's FAST: a provider to check them.
+- **J, the care plan, is built from the answers** (`care-plan.ts`): each
+  area's problem is written from sections A–I (editable), and its goals and
+  actions are pick-lists with the ones the answers point to marked
+  **Suggested** and listed first — never ticked for the provider. G's
+  safety plan is J's Safety area. Each area needs a goal and an action (or a
+  line of its own).
 
 **The rules** are in `validate.ts`, one list used three ways: the checklist
-beside **Make the PDF**, the tick on each section in the progress bar, and
-the button, which only makes a PDF when the list is empty. Choices, code
-lists and thresholds are all in `config.ts`, so billing can change them
-without touching a screen — the conflicting same-day codes, the ICD-10 quick
-picks, and `G2212_THRESHOLD_MINUTES`, `null` until Coronis confirms it.
+of what is missing, the tick on each section in the progress bar, and the
+two download buttons, which only work when it is empty. Every choice, code
+list, threshold, requirement wording, goal and action is in `config.ts`.
 
-Decisions made with Dominguez (29 September 2026):
+**The PDFs** (`pdf/writer.ts`, `pdf/clinical-note.ts`,
+`pdf/care-plan-handout.ts`) are drawn with **pdf-lib** as real text in
+Helvetica — selectable, never a picture. pdf-lib runs under the deployed
+CSP as it is (pdfmake needs code-from-text, which `script-src 'self'`
+blocks; jsPDF ships an HTML-to-picture path we must not use). Helvetica
+covers English and Spanish; `printable.ts` composes accents and swaps a few
+look-alikes (≥ → >=), and anything else is listed as a problem to retype.
 
-- **Completed at a prior visit** needs the date, who did it and the "reviewed
-  today; still valid or updated" tick; the element's own answers become
-  optional, except **J, the care plan**, which is always required (the
-  patient's handout is made from it), and **driving**, required always.
-- A **safety plan** is required when a home safety concern is ticked, driving
-  is "concerns" or "evaluation recommended", or there are firearms at home.
-- **No "no impairment" anywhere**: the impairment list has none, and the
-  staging lists leave out FAST 1, CDR 0 and GDS 1, which mean exactly that.
-  Advance care planning has no "not addressed".
-- A 99483 **less than 180 days** before the date of service blocks the PDF;
-  exactly 180 is allowed.
-- A list with a **None** (ADLs, IADLs, symptoms, home safety) must be
-  answered — None is an answer — and ticking None clears the rest.
+- **The note** — `99483_Note_[MRN]_[date].pdf`: patient, DOB, MRN, DOS and
+  "Page X of Y" on every page; the requirements confirmed; each element and
+  how it was completed; the care plan; the attestation with the minutes
+  entered, the provider, a time stamp and a signature line; the eCW footer.
+- **The handout** — `99483_CarePlan_[MRN]_[date].pdf`: plain words, larger
+  print, nothing clinical (no scores, stages or MRN). Per area, "Our goals"
+  and "What we will do"; referrals, the Alzheimer's Association helpline,
+  general safety tips and the next visit. Dates are spelled out ("29 de
+  septiembre de 2026") so nobody guesses which number is the month. Chosen
+  lines are translated; anything typed is printed as typed. **All Spanish is
+  in `translations.es.ts`, marked for native-speaker review**; while
+  `NEEDS_NATIVE_SPEAKER_REVIEW` is true the form says so beside the language
+  switch, never on the handout.
 
-**The PDF** (`pdf/writer.ts`, `pdf/clinical-note.ts`) is drawn with
-**pdf-lib** as real text in Helvetica — selectable and searchable, never a
-picture. pdf-lib was chosen because it runs under the deployed CSP as it is
-(pdfmake needs code-from-text, which `script-src 'self'` blocks; jsPDF ships
-an HTML-to-picture path we must not use). It has not had a release since
-2021, which matters little for a library that only writes files. Helvetica
-covers English, Spanish and Western Europe (WinAnsi); `printable.ts` composes
-accents and swaps a few look-alikes (≥ → >=), and anything else it cannot
-print is listed as a problem to retype rather than dropped. Every page has
-the title, "Page X of Y" and the patient's name, DOB, MRN and DOS at the top,
-and "Generated … — upload to eCW Documents and reference in the DOS progress
-note." at the foot; they are stamped once all pages exist. The file's title
-property carries no patient details. `99483_Note_[MRN]_[YYYY-MM-DD].pdf`,
-with the MRN kept to letters, digits and dashes.
+Switching the handout's language does not undo the note already
+downloaded; changing anything else does.

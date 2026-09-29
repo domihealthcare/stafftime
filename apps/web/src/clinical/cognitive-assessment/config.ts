@@ -1,11 +1,13 @@
 /**
- * Everything the 99483 form offers, in one place: the choices in every list,
- * the billing code lists and the thresholds. Billing (and the providers) can
- * change what is here without touching a screen.
+ * Everything the 99483 form offers, in one place: the requirements, the
+ * choices in every list, the care plan's goals and actions, the billing code
+ * lists and the thresholds. Billing and the providers can change what is here
+ * without touching a screen.
  *
  * Each choice has a `value`, which the form keeps, and a `label`, which the
- * screen and the PDF show. Change a label freely; change a value only if you
- * mean a different answer.
+ * screen and the PDFs show. Change a label freely; change a value only if you
+ * mean a different answer — and give it a Spanish line in translations.es.ts
+ * if the patient's handout uses it.
  *
  * Nothing in this file is about a patient. It is the blank form.
  */
@@ -22,20 +24,9 @@ const choices = (...labels: [string, string][]): Choice[] =>
 /// picking it clears the others, picking anything else clears it.
 export const NONE = 'none';
 
-// ------------------------------------------------------------------- billing
+// ------------------------------------------------------------- requirements
 
-/// Payable once per this many days, per patient.
-export const MIN_DAYS_BETWEEN_SERVICES = 180;
-
-/// Shown beside the time field. Helper text only — never filled in for them.
-export const TYPICAL_MINUTES = 60;
-
-/// G2212 (prolonged service). Left null until billing (Coronis) confirms the
-/// threshold; while it is null the form only shows a note to check with them.
-export const G2212_THRESHOLD_MINUTES: number | null = null;
-
-/// Codes this provider must not also bill on the same day. Shown beside the
-/// "no conflicting services" tick box. Billing keeps this list.
+/// Codes this provider must not also bill on the same day. Billing keeps it.
 export const CONFLICTING_SAME_DAY_CODES: string[] = [
   '90785',
   '90791',
@@ -51,90 +42,55 @@ export const CONFLICTING_SAME_DAY_CODES: string[] = [
   '99498',
 ];
 
-/// Deliberately no "no impairment" choice: 99483 is for somebody with one.
-export const IMPAIRMENT_TYPES = choices(
-  ['mci', 'Mild cognitive impairment'],
-  ['dementia-mild', 'Dementia, mild'],
-  ['dementia-moderate', 'Dementia, moderate'],
-  ['dementia-severe', 'Dementia, severe'],
-  ['dementia-unspecified', 'Dementia, severity not yet staged'],
-  ['other', 'Other cognitive impairment'],
-);
+/// Payable once per this many days, per patient.
+export const MIN_DAYS_BETWEEN_SERVICES = 180;
 
-/// Quick picks for the diagnosis list. Any code can be typed instead — these
-/// only save typing. Billing to confirm the wording against the current
-/// ICD-10-CM release.
-export const ICD10_QUICK_PICKS: { code: string; description: string }[] = [
-  { code: 'G31.84', description: 'Mild cognitive impairment of uncertain or known etiology' },
-  { code: 'G30.9', description: "Alzheimer's disease, unspecified" },
-  { code: 'G30.1', description: "Alzheimer's disease with late onset" },
-  { code: 'G30.0', description: "Alzheimer's disease with early onset" },
+/// The conditions for billing 99483, ticked at the top of the form. Each is
+/// a statement the provider confirms; all must be ticked for a PDF. The
+/// wording is printed on the note as it stands here.
+export const REQUIREMENTS = [
   {
-    code: 'F03.90',
-    description:
-      'Unspecified dementia, unspecified severity, without behavioral disturbance, psychotic disturbance, mood disturbance, and anxiety',
+    key: 'impairmentDocumented',
+    label: 'Cognitive impairment is documented in the eCW record, with its diagnosis codes.',
   },
   {
-    code: 'F03.A0',
-    description:
-      'Unspecified dementia, mild, without behavioral disturbance, psychotic disturbance, mood disturbance, and anxiety',
+    key: 'historianPresent',
+    label: 'An independent historian (caregiver or family member) took part in this visit.',
   },
   {
-    code: 'F03.B0',
-    description:
-      'Unspecified dementia, moderate, without behavioral disturbance, psychotic disturbance, mood disturbance, and anxiety',
+    key: 'noServiceIn180Days',
+    label: `No 99483 has been billed for this patient in the past ${MIN_DAYS_BETWEEN_SERVICES} days.`,
   },
   {
-    code: 'F03.C0',
-    description:
-      'Unspecified dementia, severe, without behavioral disturbance, psychotic disturbance, mood disturbance, and anxiety',
+    key: 'noConflictingServices',
+    label: 'I am not billing a conflicting same-day service.',
   },
-  {
-    code: 'F01.50',
-    description:
-      'Vascular dementia, unspecified severity, without behavioral disturbance, psychotic disturbance, mood disturbance, and anxiety',
-  },
-  {
-    code: 'F02.80',
-    description:
-      'Dementia in other diseases classified elsewhere, unspecified severity, without behavioral disturbance, psychotic disturbance, mood disturbance, and anxiety',
-  },
-  { code: 'G31.83', description: 'Neurocognitive disorder with Lewy bodies' },
-  { code: 'G31.09', description: 'Other frontotemporal neurocognitive disorder' },
-];
+] as const;
 
-export const RELATIONSHIPS = choices(
-  ['spouse', 'Spouse or partner'],
-  ['child', 'Adult child'],
-  ['family', 'Other family member'],
-  ['friend', 'Friend or neighbor'],
-  ['paid', 'Paid caregiver'],
-  ['other', 'Other'],
-);
+export type RequirementKey = (typeof REQUIREMENTS)[number]['key'];
+
+// ------------------------------------------------------------------ billing
+
+/// Shown beside the time field. Helper text only — never filled in for them.
+export const TYPICAL_MINUTES = 60;
+
+/// G2212 (prolonged service). Left null until billing (Coronis) confirms the
+/// threshold; while it is null the form only shows a note to check with them.
+export const G2212_THRESHOLD_MINUTES: number | null = null;
+
+export const VISIT_TYPES = choices(['office', 'In the office'], ['telehealth', 'Telehealth']);
+
+/// Shown when the visit is by telehealth. Payers differ on the modifier and
+/// place of service, so this is a reminder to check, not a rule.
+export const TELEHEALTH_REMINDER =
+  'Telehealth: add the telehealth modifier (95) and place of service this payer expects — confirm with billing (Coronis) if unsure.';
+
+/// Shown when an annual wellness visit was also done today.
+export const AWV_REMINDER = 'Bill the AWV separately and append modifier 25.';
 
 export const MEDICAL_DECISION_MAKING = choices(['moderate', 'Moderate'], ['high', 'High']);
 
-// ----------------------------------------------------------- patient & visit
-
-/// The two offices, as they appear on the note.
-export const LOCATIONS = choices(
-  ['north-bergen', 'North Bergen, NJ'],
-  ['west-new-york', 'West New York, NJ'],
-);
-
-export const VISIT_TYPES = choices(['in-person', 'In person'], ['telehealth', 'Telehealth']);
-
 // ------------------------------------------------ A. history and examination
-
-export const ASSESSMENT_REASONS = choices(
-  ['patient-concern', 'Memory or thinking concerns raised by the patient'],
-  ['family-concern', 'Concerns raised by family or caregiver'],
-  ['screen', 'Abnormal cognitive screen'],
-  ['function', 'Decline in daily functioning'],
-  ['behavior', 'Change in behavior or mood'],
-  ['known-diagnosis', 'Follow-up of a known diagnosis'],
-  ['other', 'Other'],
-);
 
 export const COGNITIVE_DOMAINS = choices(
   ['memory', 'Memory'],
@@ -198,54 +154,42 @@ export const CAPACITY = choices(
 
 // -------------------------------------------------------- D. dementia staging
 
-/// The stages each instrument offers. The ones meaning "no impairment"
-/// (FAST 1, CDR 0, GDS 1) are left out on purpose: the form has no such
-/// choice anywhere.
-export const STAGING_INSTRUMENTS: (Choice & { stages: Choice[] })[] = [
+/// FAST (Functional Assessment Staging), done on screen: the provider picks
+/// the highest stage whose description fits. Stage 1 (no difficulty) is left
+/// out on purpose — the form has no "no impairment" choice anywhere.
+/// Descriptions paraphrase Reisberg's FAST; a provider to check the wording.
+export const FAST_STAGES: (Choice & { description: string })[] = [
   {
-    value: 'fast',
-    label: 'FAST',
-    stages: [
-      '2',
-      '3',
-      '4',
-      '5',
-      '6a',
-      '6b',
-      '6c',
-      '6d',
-      '6e',
-      '7a',
-      '7b',
-      '7c',
-      '7d',
-      '7e',
-      '7f',
-    ].map((stage) => ({ value: stage, label: `Stage ${stage}` })),
+    value: '2',
+    label: 'Stage 2',
+    description: 'Notices forgetting (misplacing things, finding words); others do not.',
   },
   {
-    value: 'cdr',
-    label: 'CDR',
-    stages: choices(
-      ['0.5', '0.5 — very mild'],
-      ['1', '1 — mild'],
-      ['2', '2 — moderate'],
-      ['3', '3 — severe'],
-    ),
+    value: '3',
+    label: 'Stage 3',
+    description: 'Problems in demanding settings: at work, or travelling somewhere new.',
   },
   {
-    value: 'gds',
-    label: 'GDS-Reisberg',
-    stages: choices(
-      ['2', 'Stage 2 — very mild cognitive decline'],
-      ['3', 'Stage 3 — mild cognitive decline'],
-      ['4', 'Stage 4 — moderate cognitive decline'],
-      ['5', 'Stage 5 — moderately severe cognitive decline'],
-      ['6', 'Stage 6 — severe cognitive decline'],
-      ['7', 'Stage 7 — very severe cognitive decline'],
-    ),
+    value: '4',
+    label: 'Stage 4',
+    description: 'Needs help with complex tasks: finances, shopping, planning a meal.',
   },
-  { value: 'other', label: 'Other', stages: [] },
+  {
+    value: '5',
+    label: 'Stage 5',
+    description: 'Needs help choosing the right clothes for the day or season.',
+  },
+  { value: '6a', label: 'Stage 6a', description: 'Needs help putting clothes on.' },
+  { value: '6b', label: 'Stage 6b', description: 'Needs help bathing.' },
+  { value: '6c', label: 'Stage 6c', description: 'Needs help with the mechanics of toileting.' },
+  { value: '6d', label: 'Stage 6d', description: 'Urinary incontinence.' },
+  { value: '6e', label: 'Stage 6e', description: 'Fecal incontinence.' },
+  { value: '7a', label: 'Stage 7a', description: 'Speech limited to about six words a day.' },
+  { value: '7b', label: 'Stage 7b', description: 'Speech limited to a single intelligible word.' },
+  { value: '7c', label: 'Stage 7c', description: 'Cannot walk without help.' },
+  { value: '7d', label: 'Stage 7d', description: 'Cannot sit up without help.' },
+  { value: '7e', label: 'Stage 7e', description: 'Cannot smile.' },
+  { value: '7f', label: 'Stage 7f', description: 'Cannot hold the head up.' },
 ];
 
 // ------------------------------------------------------------ E. medications
@@ -305,12 +249,21 @@ export const DRIVING_STATUS = choices(
   ['evaluation', 'Driving evaluation recommended'],
 );
 
-/// Driving answers that count as a safety concern (and so need a safety plan).
+/// Driving answers that count as a safety concern.
 export const DRIVING_CONCERNS = ['concerns', 'evaluation'];
 
 export const FIREARMS = choices(['yes', 'Yes'], ['no', 'No'], ['unknown', 'Unknown']);
 
 // ------------------------------------------------------------- H. caregiver
+
+export const RELATIONSHIPS = choices(
+  ['spouse', 'Spouse or partner'],
+  ['child', 'Adult child'],
+  ['family', 'Other family member'],
+  ['friend', 'Friend or neighbor'],
+  ['paid', 'Paid caregiver'],
+  ['other', 'Other'],
+);
 
 export const CAREGIVER_KNOWLEDGE = choices(
   ['adequate', 'Adequate'],
@@ -351,14 +304,112 @@ export const ADVANCE_DIRECTIVE = choices(
 
 // ---------------------------------------------------------- J. care plan
 
-export const CARE_PLAN_AREAS = choices(
-  ['cognition', 'Cognition'],
-  ['function', 'Function'],
-  ['behavior', 'Neuropsychiatric / behavioral'],
-  ['medications', 'Medications'],
-  ['safety', 'Safety'],
-  ['caregiver', 'Caregiver'],
-);
+/// The six areas of the care plan. `label` is the note's heading; `handout`
+/// is the patient's (plain words), translated in translations.es.ts.
+export const CARE_PLAN_AREAS = [
+  { value: 'cognition', label: 'Cognition', handout: 'Memory and thinking' },
+  { value: 'function', label: 'Function', handout: 'Daily activities' },
+  { value: 'behavior', label: 'Neuropsychiatric / behavioral', handout: 'Mood and behavior' },
+  { value: 'medications', label: 'Medications', handout: 'Medicines' },
+  { value: 'safety', label: 'Safety', handout: 'Safety' },
+  { value: 'caregiver', label: 'Caregiver', handout: 'Support for caregivers' },
+] as const;
+
+export type CarePlanArea = (typeof CARE_PLAN_AREAS)[number]['value'];
+
+/// Goals the provider picks from, per area. Written in plain words: they go
+/// on the patient's handout as they are.
+export const CARE_PLAN_GOALS: Record<CarePlanArea, Choice[]> = {
+  cognition: choices(
+    ['keep-skills', 'Keep memory and thinking skills as strong as possible'],
+    ['understand', 'Understand the diagnosis and what to expect'],
+    ['stay-active', 'Stay socially and mentally active'],
+  ),
+  function: choices(
+    ['independent', 'Stay as independent as is safe in daily activities'],
+    ['get-help', 'Get help with the tasks that have become hard'],
+  ),
+  behavior: choices(
+    ['calmer', 'Ease distressing mood or behavior changes'],
+    ['sleep', 'Sleep better'],
+    ['watch', 'Watch for new mood or behavior changes'],
+  ),
+  medications: choices(
+    ['safe', 'Take medicines safely and as prescribed'],
+    ['avoid', 'Avoid medicines that can make memory worse'],
+  ),
+  safety: choices(
+    ['home', 'Prevent falls and injuries at home'],
+    ['travel', 'Stay safe when driving or getting around'],
+    ['money', 'Guard against scams and financial harm'],
+    ['stay-safe', 'Stay safe at home'],
+  ),
+  caregiver: choices(
+    ['support', 'Support the caregiver and prevent burnout'],
+    ['plan-help', 'Make sure help is in place'],
+    ['plan-ahead', 'Plan ahead for legal, money and health decisions'],
+  ),
+};
+
+/// What will be done, per area. Plain words, printed on the handout as they
+/// are. Items are suggested from the answers above (see care-plan.ts), but
+/// only ever ticked by the provider.
+export const CARE_PLAN_ACTIONS: Record<CarePlanArea, Choice[]> = {
+  cognition: choices(
+    ['exercise', 'Regular physical exercise, as able'],
+    ['engage', 'Stay socially and mentally active: conversation, hobbies, groups'],
+    ['aids', 'Use a calendar, notes and a daily routine as memory aids'],
+    ['senses', 'Check hearing and vision; use hearing aids and glasses'],
+    ['recheck', 'Recheck memory and thinking at the next visit'],
+  ),
+  function: choices(
+    ['finances', 'Family or caregiver to take over paying bills and managing money'],
+    ['pill-box', 'Use a weekly pill organizer, with a caregiver checking it'],
+    ['home-help', 'Arrange help at home with bathing, dressing or other daily care'],
+    ['therapy', 'Physical or occupational therapy to keep strength and independence'],
+    ['transport', 'Arrange rides to appointments and errands'],
+  ),
+  behavior: choices(
+    ['routine', 'Keep a calm, regular daily routine'],
+    [
+      'sleep-habits',
+      'Good sleep habits: set bedtime, daytime activity, fewer naps and less caffeine',
+    ],
+    ['mood-follow-up', 'Follow up on mood; treatment options discussed'],
+    [
+      'triggers',
+      'Caregiver to notice what sets off upsetting behavior and tell us at the next visit',
+    ],
+  ),
+  medications: choices(
+    ['list', 'Keep an up-to-date list of all medicines and bring it to every visit'],
+    ['changes', 'Follow the medicine changes made today'],
+    [
+      'avoid-otc',
+      'Avoid over-the-counter sleep and allergy medicines such as diphenhydramine (Benadryl)',
+    ],
+    ['give-help', 'Caregiver to help give medicines'],
+  ),
+  safety: choices(
+    ['falls', 'Remove tripping hazards; add night lights and grab bars'],
+    ['stove', 'Stove knob covers or automatic shut-off; supervise cooking'],
+    ['wandering', 'Medical ID bracelet, and a recent photo kept on hand'],
+    ['driving-eval', 'Driving evaluation before driving again'],
+    ['stop-driving', 'Stop driving; arrange other transportation'],
+    ['firearms', 'Lock up or remove firearms; store ammunition separately'],
+    ['scams', 'Caregiver to watch mail, calls and bank accounts for scams'],
+    ['check-in', 'Someone to check in every day'],
+    ['smoking', 'Supervise smoking; test smoke detectors'],
+  ),
+  caregiver: choices(
+    ['education', 'Caregiver education about the condition and what to expect'],
+    ['respite', 'Respite care so the caregiver can take breaks'],
+    ['support-group', 'Caregiver support group'],
+    ['home-care', 'Home care services'],
+    ['legal', 'Plan for power of attorney and a health care proxy'],
+    ['social-work', 'Social work to help find support'],
+  ),
+};
 
 export const REFERRALS = choices(
   ['adult-day', 'Adult day program'],
@@ -393,8 +444,23 @@ export const FOLLOW_UP_INTERVALS = choices(
   ['6-weeks', '6 weeks'],
   ['3-months', '3 months'],
   ['6-months', '6 months'],
-  ['other', 'Other'],
 );
+
+// ------------------------------------------------------ the patient handout
+
+/// General safety tips, always on the handout. Plain words; Spanish in
+/// translations.es.ts.
+export const SAFETY_TIPS = choices(
+  ['contacts', 'Keep a list of emergency contacts by the phone.'],
+  ['medicines', 'Keep medicines in one place, in their labelled bottles.'],
+  ['lighting', 'Keep rooms, hallways and stairs well lit.'],
+  ['help', 'Call 911 in an emergency.'],
+);
+
+/// The practice's phone numbers for the handout's "Questions?" line. Left
+/// null until the practice gives them; while null, the line names the
+/// practice only.
+export const PRACTICE_PHONES: { office: string; phone: string }[] | null = null;
 
 // ------------------------------------------------------- required elements
 
@@ -413,7 +479,11 @@ export const ELEMENTS = [
 
 export type ElementKey = (typeof ELEMENTS)[number]['key'];
 
+/// Elements that start as "completed at a prior visit" (Dominguez, September
+/// 2026): the cognition-focused history and exam is usually done then.
+export const DEFAULT_PRIOR: ElementKey[] = ['A'];
+
 /// The label for a stored value, or the value itself if it is not in the list.
-export function labelOf(list: Choice[], value: string): string {
+export function labelOf(list: readonly Choice[], value: string): string {
   return list.find((choice) => choice.value === value)?.label ?? value;
 }

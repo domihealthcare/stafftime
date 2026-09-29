@@ -553,23 +553,25 @@ Beyond the phases, the parts worth knowing about before picking up work:
   overtime counts the whole week at every office; a repeat PIN within
   `KIOSK_REPEAT_SECONDS` (120) is not a clock-out; screens load when first
   opened and `/assets` is cached for a year.
-- **Clinical forms — CPT 99483** (29 September 2026, Dominguez; **Phase 1
-  built**: the form, its checks and the clinical-note PDF). Team →
-  **Cognitive assessment (99483)**, for job roles with **uses clinical
-  forms** (Provider only; access level brings nothing). A provider fills it
-  in during the visit and downloads `99483_Note_[MRN]_[date].pdf` to upload
-  to eCW Documents. **Patient details never leave the browser or stay in
-  it**: no request, no table, no browser storage — a lint rule on
+- **Clinical forms — CPT 99483** (29 September 2026, Dominguez; Phases 1
+  and 2 built). Resources → **Provider** → **Cognitive assessment
+  (99483)**, for job roles with **uses clinical forms** (Provider only;
+  access level brings nothing). The provider fills it in during the visit
+  and downloads the **clinical note** for eCW Documents and the **care plan
+  handout** for the patient, in **English or Spanish** (Spanish awaiting a
+  native speaker's read). **Patient details (PHI) never leave the browser
+  or stay in it**: no request, no table, no browser storage — a lint rule on
   `src/clinical/`, the schema guard and `tests/browser/clinical.mjs` hold it
-  there. Leaving, Back, reloading and Sign out all ask first; the form clears
-  once the download is confirmed. PDFs drawn as real text with **pdf-lib**
-  (works under the CSP as it is). Every list, code and threshold is in
-  `clinical/cognitive-assessment/config.ts`; G2212's threshold is `null`
-  until Coronis gives it. The provider's credentials come from
-  **"Letters after their name"** in the Staff editor. The router is now a
-  data router (`createBrowserRouter`), for `useBlocker`. Phase 2 (the
-  English/Spanish patient handout) and Phase 3 (polish) are next — see
-  *The clinical forms* in `docs/architecture.md` and `docs/open-questions.md`.
+  there. Shape, as reworked with Dominguez: **requirements ticked first**
+  (impairment documented in eCW — not re-entered; historian present; 180
+  days; no conflicting codes), the provider is **the person signed in**,
+  **office or telehealth** (telehealth reminds about modifier 95), each
+  element "Today" or "Prior visit" **as a statement** (A starts as prior),
+  **FAST staging on screen**, and a **care plan built from the answers**
+  (suggested goals and actions, never ticked for them). Everything editable
+  is in `clinical/cognitive-assessment/config.ts`. Leaving, Back, reloading
+  and Sign out all ask first. See *The clinical forms* in
+  `docs/architecture.md`.
 - **Tests**: ~870 unit tests, and ~495 end-to-end checks in `tests/browser`
   driven against a real API, a real Postgres and a real Chromium. Both run in CI
   on every push. The convention is to run the browser suites twice — once

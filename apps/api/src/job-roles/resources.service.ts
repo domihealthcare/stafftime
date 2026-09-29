@@ -53,7 +53,8 @@ export class ResourcesService {
 
     const roles = await this.prisma.jobRole.findMany({
       where: isManager ? {} : { id: { in: mine } },
-      select: { id: true, name: true, description: true, colour: true },
+      // usesClinicalForms: the Provider section carries the clinical forms.
+      select: { id: true, name: true, description: true, colour: true, usesClinicalForms: true },
       orderBy: [{ sortOrder: 'asc' }, { name: 'asc' }],
     });
 
