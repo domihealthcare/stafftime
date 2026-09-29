@@ -15,6 +15,7 @@ import {
   practiceDayStart,
   practiceToday,
 } from '../common/util/zoned-time.util';
+import { loadStanding } from '../credentials/standing-query';
 import { PrismaService } from '../prisma/prisma.service';
 import { PracticeSettingsService } from '../settings/practice-settings.service';
 
@@ -63,6 +64,7 @@ const HAND_ENTRY_REASONS: Record<HandEntryReason, string> = {
 export interface DigestContents {
   expiredCredentials: string[];
   expiringCredentials: string[];
+  missingCredentials: string[];
   overdueTasks: string[];
   missingPunches: string[];
   undecidedTimeOff: string[];
@@ -207,6 +209,7 @@ export class AttentionService {
       ),
       ...(await this.gatherOperational(today, who, day, on)),
       handEntries: await this.handEntries(who, on),
+      missingCredentials: await this.missingCredentials(),
       shiftsInClosures: await this.shiftsInClosures(today, on),
       ...(await this.gatherClosing(today, day)),
     };
@@ -346,6 +349,24 @@ export class AttentionService {
           )}, but marked as no longer employed`,
       ),
     };
+  }
+
+  /**
+   * Required licenses with nothing on file at all — "DEA registration" for a
+   * provider who has none recorded. Lapsed and lapsing ones are already listed
+   * above; this is the gap nothing else would show. Optional ones are never
+   * chased.
+   */
+  private async missingCredentials(): Promise<string[]> {
+    const everyone = await loadStanding(this.prisma);
+    return everyone.flatMap((person) =>
+      person.lines
+        .filter((line) => line.required && line.state === 'MISSING')
+        .map(
+          (line) =>
+            `${person.employee.firstName} ${person.employee.lastName} — ${line.type.name}, required for ${line.forRoles.join(' and ')}, not on file`,
+        ),
+    );
   }
 
   /**

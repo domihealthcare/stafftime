@@ -426,6 +426,7 @@ export interface Coverage {
 export interface Attention {
   expiredCredentials: string[];
   expiringCredentials: string[];
+  missingCredentials: string[];
   overdueTasks: string[];
   missingPunches: string[];
   undecidedTimeOff: string[];
@@ -680,6 +681,38 @@ export interface Credential {
     employmentStatus: string;
   };
   recordedBy: { id: string; firstName: string; lastName: string } | null;
+}
+
+/// A license or certificate the practice asks for, and which job roles need
+/// it — required, or optional.
+export interface CredentialType {
+  id: string;
+  name: string;
+  kind: CredentialKind;
+  /// How often it is renewed, in months; null when it varies.
+  renewalMonths: number | null;
+  sortOrder: number;
+  archivedAt: string | null;
+  requirements: {
+    jobRoleId: string;
+    required: boolean;
+    jobRole: { id: string; name: string; colour: string };
+  }[];
+}
+
+export type StandingState = 'CURRENT' | 'DUE_SOON' | 'EXPIRED' | 'MISSING';
+
+/// One person against the licenses their job roles ask for.
+export interface CredentialStanding {
+  employee: { id: string; firstName: string; lastName: string; preferredName: string | null };
+  lines: {
+    type: { id: string; name: string; kind: CredentialKind; renewalMonths: number | null };
+    required: boolean;
+    /// Which of their job roles ask for it.
+    forRoles: string[];
+    credential: { id: string; expiresOn: string; daysUntilExpiry: number } | null;
+    state: StandingState;
+  }[];
 }
 
 export interface Announcement {

@@ -11,19 +11,28 @@ import {
   MaxLength,
   Min,
   MinLength,
+  ValidateIf,
 } from 'class-validator';
 
 export class CreateCredentialDto {
   @IsUUID()
   employeeId!: string;
 
-  @IsEnum(CredentialKind)
-  kind!: CredentialKind;
+  /// One of the practice's license types. Its name and kind are used when
+  /// these are left out, and its renewal interval suggests the expiry.
+  @IsOptional()
+  @IsUUID()
+  credentialTypeId?: string;
 
+  @ValidateIf((dto: CreateCredentialDto) => !dto.credentialTypeId || dto.kind !== undefined)
+  @IsEnum(CredentialKind)
+  kind?: CredentialKind;
+
+  @ValidateIf((dto: CreateCredentialDto) => !dto.credentialTypeId || dto.name !== undefined)
   @IsString()
   @MinLength(2)
   @MaxLength(160)
-  name!: string;
+  name?: string;
 
   @IsOptional()
   @IsString()
@@ -34,8 +43,10 @@ export class CreateCredentialDto {
   @IsISO8601()
   issuedOn?: string;
 
+  /// Left out when the type's renewal interval can work it out from issuedOn.
+  @IsOptional()
   @IsISO8601()
-  expiresOn!: string;
+  expiresOn?: string;
 
   @IsOptional()
   @IsString()

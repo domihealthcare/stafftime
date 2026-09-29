@@ -198,6 +198,7 @@ export class NotificationsService {
       ...section('Supplies to order:', contents.suppliesNeeded),
       ...section('Credentials that have already lapsed:', contents.expiredCredentials),
       ...section('Credentials expiring soon:', contents.expiringCredentials),
+      ...section('Required licenses not on file:', contents.missingCredentials),
       ...section('Hours entered by hand — find out why:', contents.handEntries),
       ...section('Hours not approved yet:', contents.unapprovedHours),
       ...section('Checklist tasks past their due date:', contents.overdueTasks),

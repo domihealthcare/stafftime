@@ -20,6 +20,7 @@ const HEADINGS: Record<keyof Attention, string> = {
   missingPunches: 'Punches with no clock-out',
   expiredCredentials: 'Already lapsed',
   expiringCredentials: 'Lapsing soon',
+  missingCredentials: 'Required licenses not on file',
   overdueTasks: 'Checklist tasks past their due date',
   undecidedTimeOff: 'Time off waiting on a decision',
   closingGaps: 'Closing checklists with something missed',

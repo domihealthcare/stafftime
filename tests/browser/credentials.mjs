@@ -51,6 +51,8 @@ await step('the screen opens on what is about to lapse', async () => {
 await step('a license is recorded by its date', async () => {
   await admin.getByRole('button', { name: '+ Record one' }).click();
   await admin.getByLabel('Who').selectOption({ label: 'Frankie Front-Desk' });
+  // Not one of the practice's license types: written in by hand.
+  await admin.getByLabel('Which').selectOption({ label: 'Something else…' });
   await admin.getByLabel('Kind').selectOption({ label: 'Professional license' });
   await admin.getByLabel('What it is').fill('NJ Registered Nurse license');
   await admin.getByLabel('Issued by').fill('NJ Board of Nursing');
@@ -76,6 +78,7 @@ await admin.screenshot({ path: `${OUT}/62-credentials.png`, fullPage: true });
 await step('one that has already lapsed is called out separately', async () => {
   await admin.getByRole('button', { name: '+ Record one' }).click();
   await admin.getByLabel('Who').selectOption({ label: 'Frankie Front-Desk' });
+  await admin.getByLabel('Which').selectOption({ label: 'Something else…' });
   await admin.getByLabel('Kind').selectOption({ label: 'CPR / BLS / ACLS' });
   await admin.getByLabel('What it is').fill('BLS card');
   await admin.getByLabel('Expires').fill(dayOffset(-12));
@@ -93,7 +96,8 @@ await step('a shorter window hides what is further out', async () => {
   // should not appear.
   await admin.getByRole('button', { name: '+ Record one' }).click();
   await admin.getByLabel('Who').selectOption({ label: 'Frankie Front-Desk' });
-  await admin.getByLabel('What it is').fill('DEA registration');
+  // One of the practice's license types: its name comes with it.
+  await admin.getByLabel('Which').selectOption({ label: 'DEA registration' });
   await admin.getByLabel('Expires').fill(dayOffset(300));
   await admin.getByRole('button', { name: 'Record it' }).click();
   await admin.waitForTimeout(1500);

@@ -1146,13 +1146,60 @@ model EmployeeCredential {
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
 
-  employee   Employee  @relation("CredentialSubject", fields: [employeeId], references: [id], onDelete: Cascade)
-  recordedBy Employee? @relation("CredentialRecordedBy", fields: [recordedById], references: [id], onDelete: SetNull)
+  employee         Employee        @relation("CredentialSubject", fields: [employeeId], references: [id], onDelete: Cascade)
+  recordedBy       Employee?       @relation("CredentialRecordedBy", fields: [recordedById], references: [id], onDelete: SetNull)
+  /// Which of the practice's license types this is, when it is one of them.
+  /// Null for something recorded free-hand, and for everything recorded
+  /// before license types existed.
+  credentialTypeId String?         @db.Uuid
+  credentialType   CredentialType? @relation(fields: [credentialTypeId], references: [id], onDelete: SetNull)
 
   @@index([employeeId, archivedAt])
   /// The query the whole feature exists for: what expires next.
   @@index([expiresOn, archivedAt])
   @@map("employee_credentials")
+}
+
+/// A license or certificate the practice asks for — "DEA registration",
+/// "Flu vaccine" — and which job roles need it (Dominguez, September 2026).
+/// Managers make and change these in the app; the ones a migration starts
+/// with are only a starting point.
+///
+/// Like the credentials themselves, a type is a name and dates, never a number.
+model CredentialType {
+  id            String         @id @default(uuid()) @db.Uuid
+  name          String         @unique
+  kind          CredentialKind @default(OTHER)
+  /// How often it has to be renewed, when that is fixed: a flu vaccine every
+  /// 12 months, BLS every 24. Used to suggest the expiry from the date it was
+  /// done. Null when it varies or is not known.
+  renewalMonths Int?
+  sortOrder     Int            @default(0)
+  /// No longer asked for. Kept, with anything recorded against it.
+  archivedAt    DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  requirements CredentialRequirement[]
+  credentials  EmployeeCredential[]
+
+  @@map("credential_types")
+}
+
+/// That a job role needs a license type — required, or optional ("worth
+/// having": shown on the person's list but never chased when missing).
+model CredentialRequirement {
+  credentialTypeId String  @db.Uuid
+  jobRoleId        String  @db.Uuid
+  required         Boolean @default(true)
+
+  credentialType CredentialType @relation(fields: [credentialTypeId], references: [id], onDelete: Cascade)
+  jobRole        JobRole        @relation(fields: [jobRoleId], references: [id], onDelete: Cascade)
+
+  @@id([credentialTypeId, jobRoleId])
+  @@index([jobRoleId])
+  @@map("credential_requirements")
 }
 
 // ---------------------------------------------------------------------------
@@ -1213,18 +1260,20 @@ model JobRole {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  members              EmployeeJobRole[]
-  resources            Resource[]
-  surveys              Survey[]
-  events               PracticeEvent[]
-  eventInvitees        PracticeEventInvitee[]
-  shifts               Shift[]
-  shiftSeries          ShiftSeries[]
+  members                EmployeeJobRole[]
+  resources              Resource[]
+  surveys                Survey[]
+  events                 PracticeEvent[]
+  eventInvitees          PracticeEventInvitee[]
+  shifts                 Shift[]
+  shiftSeries            ShiftSeries[]
   /// Its closing checklist, shown at clock-out.
-  closingSections      ClosingSection[]
+  closingSections        ClosingSection[]
+  /// The licenses and certificates people in it need.
+  credentialRequirements CredentialRequirement[]
   /// People in this role see their own licenses and onboarding under Team.
   /// Starts true for Provider only (September 2026).
-  seesOwnPersonnelTabs Boolean                @default(false)
+  seesOwnPersonnelTabs   Boolean                 @default(false)
 
   @@map("job_roles")
 }
