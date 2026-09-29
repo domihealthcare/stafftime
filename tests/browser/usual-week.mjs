@@ -167,6 +167,15 @@ await step('a change leaves the days that did not change alone', async () => {
     throw new Error('the Wednesdays were not added');
 });
 
+await step('the replaced regular shifts, which never ran, are gone from the list', async () => {
+  const list = page.getByTestId('standing-shift').filter({ hasText: 'Ada Admin' });
+  await page.waitForTimeout(500);
+  const texts = await list.allInnerTexts();
+  if (texts.length !== 2) throw new Error(`${texts.length} listed: ${texts.join(' | ')}`);
+  if (!texts.some((t) => /Tuesdays and Wednesdays/.test(t))) throw new Error('no Tue+Wed line');
+  if (!texts.some((t) => /Mondays, 1:00 PM/.test(t))) throw new Error('no 1pm Monday line');
+});
+
 const admin = await signIn('admin@domihealthcare.com');
 const editor = admin.getByTestId('staff-editor');
 
