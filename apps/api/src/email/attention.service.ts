@@ -3,6 +3,7 @@ import {
   ChecklistTaskStatus,
   EmploymentStatus,
   EventAudience,
+  HandEntryReason,
   PracticeEventKind,
   ShiftStatus,
   PtoStatus,
@@ -49,6 +50,16 @@ const OPEN_SHIFT_HORIZON_DAYS = 14;
 /// are put in early, and a Christmas shift is worth sorting out in November.
 const CLOSURE_HORIZON_DAYS = 60;
 
+/// How a hand entry's reason reads in a sentence. The same words as the
+/// Add hours form.
+const HAND_ENTRY_REASONS: Record<HandEntryReason, string> = {
+  FORGOT: 'forgot to clock in or out',
+  APP_REFUSED: 'the app would not let them clock in',
+  NO_LOCATION_SHARING: 'would rather not share their location',
+  NO_PHONE: 'no phone, battery or signal',
+  OTHER: 'something else',
+};
+
 export interface DigestContents {
   expiredCredentials: string[];
   expiringCredentials: string[];
@@ -58,6 +69,7 @@ export interface DigestContents {
   silentKiosks: string[];
   unpublishedRota: string[];
   unapprovedHours: string[];
+  handEntries: string[];
   shiftsForLeavers: string[];
   openShifts: string[];
   shiftsInClosures: string[];
@@ -194,6 +206,7 @@ export class AttentionService {
           }`,
       ),
       ...(await this.gatherOperational(today, who, day, on)),
+      handEntries: await this.handEntries(who, on),
       shiftsInClosures: await this.shiftsInClosures(today, on),
       ...(await this.gatherClosing(today, day)),
     };
@@ -333,6 +346,47 @@ export class AttentionService {
           )}, but marked as no longer employed`,
       ),
     };
+  }
+
+  /**
+   * Hours a manager had to enter by hand, until somebody has looked into why.
+   *
+   * No time window, unlike the rest: each one is a question to answer (a
+   * habit, a phone setting, a problem with the app), and it stays on the list
+   * until somebody answers it — like a bug report (Dominguez, September 2026).
+   */
+  private async handEntries(
+    who: (person: { firstName: string; lastName: string }) => string,
+    on: (instant: Date) => string,
+  ): Promise<string[]> {
+    const entries = await this.prisma.timeEntry.findMany({
+      where: { enteredByHandAt: { not: null }, handEntryCheckedAt: null },
+      select: {
+        clockInAt: true,
+        clockOutAt: true,
+        handEntryReason: true,
+        handEntryNote: true,
+        employee: { select: { firstName: true, lastName: true } },
+        location: { select: { name: true } },
+        enteredBy: { select: { firstName: true, lastName: true } },
+      },
+      orderBy: { clockInAt: 'asc' },
+      take: 50,
+    });
+
+    return entries.map((entry) => {
+      const hours = entry.clockOutAt
+        ? ((entry.clockOutAt.getTime() - entry.clockInAt.getTime()) / 3_600_000).toFixed(2)
+        : '?';
+      const reason = entry.handEntryReason
+        ? HAND_ENTRY_REASONS[entry.handEntryReason]
+        : 'no reason given';
+      const by = entry.enteredBy ? ` by ${who(entry.enteredBy)}` : '';
+      const note = entry.handEntryNote ? ` (“${entry.handEntryNote}”)` : '';
+      return `${who(entry.employee)} — ${hours} hours on ${on(entry.clockInAt)} at ${
+        entry.location.name
+      }, entered${by}: ${reason}${note}`;
+    });
   }
 
   /**

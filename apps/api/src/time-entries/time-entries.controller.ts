@@ -16,6 +16,7 @@ import { AuthUser } from '../common/auth/auth-user';
 import { CurrentUser } from '../common/auth/current-user.decorator';
 import { Roles } from '../common/auth/roles.decorator';
 import { ClockInDto } from './dto/clock-in.dto';
+import { AddHoursDto, CheckHandEntryDto } from './dto/add-hours.dto';
 import { ClockOutDto } from './dto/clock-out.dto';
 import { EditTimeEntryDto } from './dto/edit-time-entry.dto';
 import { QueryTimeEntriesDto } from './dto/query-time-entries.dto';
@@ -46,6 +47,14 @@ export class TimeEntriesController {
     @Query('employeeId') employeeId?: string,
   ) {
     return this.timeEntries.clockOut(dto, user, ip, employeeId);
+  }
+
+  /// A manager entering a day with no punch at all. Listed for somebody to
+  /// look into until they have — see `TimeEntriesService.addByHand`.
+  @Post()
+  @Roles(Role.MANAGER)
+  addByHand(@Body() dto: AddHoursDto, @CurrentUser() user: AuthUser) {
+    return this.timeEntries.addByHand(dto, user);
   }
 
   /// The caller's open punch, if any.
@@ -89,6 +98,17 @@ export class TimeEntriesController {
     @CurrentUser() user: AuthUser,
   ) {
     return this.timeEntries.edit(id, dto, user);
+  }
+
+  /// Somebody has found out why these hours had to be entered by hand.
+  @Patch(':id/checked')
+  @Roles(Role.MANAGER)
+  checkHandEntry(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Body() dto: CheckHandEntryDto,
+    @CurrentUser() user: AuthUser,
+  ) {
+    return this.timeEntries.checkHandEntry(id, dto, user);
   }
 
   @Patch(':id/approve')

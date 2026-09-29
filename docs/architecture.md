@@ -2137,6 +2137,39 @@ counts wrong PINs, against anybody, in a 15-minute window a correct PIN does
 not reset, and stops taking PINs for 5 minutes after 10. That is generous for
 honest typos and useless for guessing a colleague's PIN.
 
+## Hours entered by hand
+
+Asked for by Dominguez (29 September 2026), once there was no time clock:
+somebody who never punched (forgot, no phone, would rather not share their
+location, or the app refused them) needs their hours in the app, and every
+time that happens somebody should find out why, "even as a bug".
+
+Before this a manager could only **correct** a punch that existed. `POST
+/time-entries` (managers) now makes one from nothing, in
+`TimeEntriesService.addByHand`, held to more than a correction:
+
+- a **reason** from a short list (`HandEntryReason`) plus a **note** of what
+  happened. `APP_REFUSED` is the one that is really a bug report;
+- **never your own hours**, the same rule as deciding your own time off;
+- **never over hours already there**, including a punch still open, checked
+  inside a serializable transaction so a double-pressed Save makes one entry;
+- at one of the person's offices, at most 16 hours, and only once worked;
+- a deliberate yes (`ALREADY_EXPORTED`, like a correction) when the day's pay
+  period has already gone to payroll, because those hours cannot reach that run.
+
+The entry is otherwise ordinary: COMPLETED, waiting for approval, attached to
+the day's shift (so late and left early still mean something), counted for
+overtime and payroll. Both ends are `MANUAL`, with no location or IP, and the
+method is WEB — never KIOSK, which would claim the time clock saw them.
+`enteredByHandAt` is what marks it, not `enteredById`, so it stays marked if
+the manager's own record goes.
+
+Until somebody has looked into it (`PATCH /time-entries/:id/checked`, with an
+optional finding) it is listed under **Hours entered by hand — find out why**
+on the Timesheet banner and in the nightly email, with no time limit. The
+manager who entered it cannot mark it looked into: the list is there so a
+second person sees each one. Staff see their own hand-entered days, and why.
+
 ## Birthdays
 
 Asked for by Dominguez (September 2026) so colleagues can wish each other a

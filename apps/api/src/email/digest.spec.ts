@@ -13,6 +13,7 @@ function build(
     credentials?: unknown[];
     tasks?: unknown[];
     punches?: unknown[];
+    handEntries?: unknown[];
     timeOff?: unknown[];
     managers?: unknown[];
     kiosks?: unknown[];
@@ -39,7 +40,12 @@ function build(
     employeeCredential: { findMany: jest.fn().mockResolvedValue(data.credentials ?? []) },
     employeeChecklistTask: { findMany: jest.fn().mockResolvedValue(data.tasks ?? []) },
     timeEntry: {
-      findMany: jest.fn().mockResolvedValue(data.punches ?? []),
+      // Two questions of this table too: punches with no clock-out, and hours
+      // entered by hand — the one that asks about `enteredByHandAt`.
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      findMany: jest.fn(async (args: any) =>
+        args.where.enteredByHandAt ? (data.handEntries ?? []) : (data.punches ?? []),
+      ),
       groupBy: jest.fn().mockResolvedValue(data.unapproved ?? []),
     },
     ptoRequest: { findMany: jest.fn().mockResolvedValue(data.timeOff ?? []) },
@@ -379,6 +385,44 @@ describe('DigestService — what is going wrong at the office', () => {
       expect(where.shifts.some.status).toBe('PUBLISHED');
       const since = where.shifts.some.startsAt.gte;
       expect((date('2026-09-24').getTime() - since.getTime()) / 86_400_000).toBe(28);
+    });
+  });
+
+  describe('hours entered by hand', () => {
+    const handEntry = {
+      clockInAt: new Date('2026-09-28T13:00:00.000Z'),
+      clockOutAt: new Date('2026-09-28T21:30:00.000Z'),
+      handEntryReason: 'APP_REFUSED',
+      handEntryNote: 'Said it could not find her location',
+      employee: frankie,
+      location: { name: 'North Bergen' },
+      enteredBy: { firstName: 'Morgan', lastName: 'Manager' },
+    };
+
+    it('says whose, how long, who entered them and why', async () => {
+      const { attention } = build({ handEntries: [handEntry] });
+      expect((await attention.gather()).handEntries).toEqual([
+        'Frankie Front-Desk — 8.50 hours on Sep 28, 2026 at North Bergen, entered by Morgan Manager: the app would not let them clock in (“Said it could not find her location”)',
+      ]);
+    });
+
+    it('asks only for the ones nobody has looked into, however old', async () => {
+      const { attention, prisma } = build();
+      await attention.gather();
+      const call = prisma.timeEntry.findMany.mock.calls.find(
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        ([args]: any[]) => args.where.enteredByHandAt,
+      );
+      expect(call?.[0].where).toEqual({
+        enteredByHandAt: { not: null },
+        handEntryCheckedAt: null,
+      });
+    });
+
+    it('is enough on its own to send the email, under its own heading', async () => {
+      const { service, notifications } = build({ handEntries: [handEntry] });
+      await expect(service.send()).resolves.toMatchObject({ sent: 2 });
+      expect(notifications.dailyDigest.mock.calls[0][2].handEntries).toHaveLength(1);
     });
   });
 

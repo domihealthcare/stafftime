@@ -160,6 +160,17 @@ const STAFF: Section[] = [
           </p>
         ),
       },
+      {
+        question: 'I could not clock in at all.',
+        answer: (
+          <p>
+            Tell a manager, and tell them what the app said if it refused you. They add the hours
+            for you, with the reason, and it shows on your timesheet as{' '}
+            <strong>Entered by hand</strong>. Each time that happens somebody looks into why, so it
+            can be put right — a phone setting, or a problem with the app.
+          </p>
+        ),
+      },
     ],
   },
   {
@@ -439,6 +450,27 @@ const MANAGERS: Section[] = [
             have already gone to payroll the app stops you and asks you to confirm; the correction
             is then flagged until a later export picks it up.
           </p>
+        ),
+      },
+      {
+        question: 'Somebody has no punch at all for a day',
+        answer: (
+          <>
+            <p>
+              On <Screen>Timesheet</Screen>, press <strong>+ Add hours</strong>: who, the day, when
+              they started and finished, why it is by hand, and what happened. You cannot add your
+              own hours — another manager does. <strong>Correct</strong> is still the way to fix a
+              punch that is there, such as a missing clock-out.
+            </p>
+            <p>
+              Every day added by hand is listed under <strong>Worth a look</strong> and in the
+              nightly email until a <em>different</em> manager has found out why it was needed and
+              pressed <strong>Looked into why…</strong> on it, with what they found. Treat each one
+              like a bug report: somebody forgot, a phone needs a setting changed, or the app
+              refused somebody it should not have. The hours themselves are approved and paid like
+              any others.
+            </p>
+          </>
         ),
       },
       {

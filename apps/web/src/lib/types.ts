@@ -7,6 +7,8 @@ export type EmploymentStatus = 'PENDING' | 'ACTIVE' | 'ON_LEAVE' | 'TERMINATED';
 export type ClockMethod = 'WEB' | 'MOBILE' | 'KIOSK';
 export type VerificationMethod = 'GEOFENCE' | 'IP_ALLOWLIST' | 'KIOSK' | 'MANUAL' | 'REMOTE';
 export type TimeEntryStatus = 'OPEN' | 'COMPLETED' | 'NEEDS_REVIEW' | 'APPROVED';
+/// Why a manager had to enter somebody's hours by hand.
+export type HandEntryReason = 'FORGOT' | 'APP_REFUSED' | 'NO_LOCATION_SHARING' | 'NO_PHONE' | 'OTHER';
 export type ShiftStatus = 'DRAFT' | 'PUBLISHED' | 'CANCELLED';
 
 export interface LocationSummary {
@@ -134,6 +136,15 @@ export interface TimeEntry {
   isManuallyEdited: boolean;
   isMissingPunch: boolean;
   editReason: string | null;
+  /// Set when a manager entered the whole day by hand — there was no punch.
+  enteredByHandAt?: string | null;
+  enteredBy?: { id: string; firstName: string; lastName: string } | null;
+  handEntryReason?: HandEntryReason | null;
+  handEntryNote?: string | null;
+  /// When somebody looked into why it was needed; until then it is chased.
+  handEntryCheckedAt?: string | null;
+  handEntryCheckedBy?: { id: string; firstName: string; lastName: string } | null;
+  handEntryFinding?: string | null;
   employee?: { id: string; firstName: string; lastName: string };
   location?: LocationSummary;
   shift?: { id: string; startsAt: string; endsAt: string } | null;
@@ -421,6 +432,7 @@ export interface Attention {
   silentKiosks: string[];
   unpublishedRota: string[];
   unapprovedHours: string[];
+  handEntries: string[];
   shiftsForLeavers: string[];
   openShifts: string[];
   shiftsInClosures: string[];

@@ -20,10 +20,13 @@ import {
 } from '@prisma/client';
 import { ClosingService } from '../closing/closing.service';
 import { AuthUser } from '../common/auth/auth-user';
+import { toUtcDate } from '../common/util/calendar-date.util';
 import { normalizeIp } from '../common/util/ip.util';
+import { PRACTICE_ZONE, localDateIn } from '../common/util/zoned-time.util';
 import { PrismaService } from '../prisma/prisma.service';
 import { isPastLocationRetention } from './location-retention';
 import { payrollStateOf, withPayroll } from './payroll-state';
+import { AddHoursDto, CheckHandEntryDto } from './dto/add-hours.dto';
 import { ClockInDto } from './dto/clock-in.dto';
 import { ClockOutDto } from './dto/clock-out.dto';
 import { EditTimeEntryDto } from './dto/edit-time-entry.dto';
@@ -66,6 +69,13 @@ const TIME_ENTRY_SELECT = {
   editReason: true,
   approvedById: true,
   approvedAt: true,
+  enteredByHandAt: true,
+  handEntryReason: true,
+  handEntryNote: true,
+  handEntryCheckedAt: true,
+  handEntryFinding: true,
+  enteredBy: { select: { id: true, firstName: true, lastName: true } },
+  handEntryCheckedBy: { select: { id: true, firstName: true, lastName: true } },
   createdAt: true,
   updatedAt: true,
   employee: { select: { id: true, firstName: true, lastName: true } },
@@ -81,6 +91,10 @@ const TIME_ENTRY_SELECT = {
     orderBy: { export: { generatedAt: 'desc' } },
   },
 } satisfies Prisma.TimeEntrySelect;
+
+/// The longest single stretch of hours a manager can enter by hand. Anything
+/// longer is a typo — a wrong date or am for pm — not a shift.
+const HAND_ENTRY_MAX_HOURS = 16;
 
 /// How far from a punch we will look for a scheduled shift to attach it to.
 const SHIFT_MATCH_WINDOW_MINUTES = 240;
@@ -451,6 +465,203 @@ export class TimeEntriesService {
     });
 
     return withPayroll(updated);
+  }
+
+  /**
+   * Hours for a day with no punch at all, entered by a manager (Dominguez,
+   * September 2026) — somebody forgot, had no phone, would rather not share
+   * their location while there is no time clock, or the app refused them.
+   *
+   * A correction (`edit`) fixes a punch that exists; this makes one that does
+   * not, so it is held to more: a reason from a short list plus a note, never
+   * for yourself, never over a punch already there, and a deliberate yes when
+   * the day's pay period has already gone to payroll. The entry is marked
+   * `enteredByHandAt` and listed for somebody to look into until they have
+   * (`checkHandEntry`, and the Timesheet banner and nightly round-up) —
+   * treated like a bug report, because each one is either a habit to fix or
+   * a problem with the app.
+   *
+   * Otherwise it is ordinary hours: COMPLETED, waiting for approval, counted
+   * for overtime and payroll like any punch. No location or IP, since nobody
+   * was checked anywhere; both ends say MANUAL.
+   */
+  async addByHand(dto: AddHoursDto, actor: AuthUser) {
+    const clockInAt = new Date(dto.clockInAt);
+    const clockOutAt = new Date(dto.clockOutAt);
+    if (clockOutAt <= clockInAt) {
+      throw new BadRequestException('The finish time must be after the start time.');
+    }
+    if (clockOutAt.getTime() - clockInAt.getTime() > HAND_ENTRY_MAX_HOURS * 3_600_000) {
+      throw new BadRequestException(
+        `That is more than ${HAND_ENTRY_MAX_HOURS} hours. Check the date and the times.`,
+      );
+    }
+    // A minute's grace for a clock that runs a little ahead of the server's.
+    if (clockOutAt.getTime() > Date.now() + 60_000) {
+      throw new BadRequestException('Hours can only be added once they have been worked.');
+    }
+    if (dto.employeeId === actor.id) {
+      throw new ForbiddenException('Ask another manager to add your own hours.');
+    }
+
+    const employee = await this.prisma.employee.findUnique({
+      where: { id: dto.employeeId },
+      select: { id: true, firstName: true },
+    });
+    if (!employee) throw new NotFoundException(`Employee ${dto.employeeId} not found`);
+
+    const location = await this.prisma.location.findUnique({
+      where: { id: dto.locationId },
+      select: { id: true, name: true },
+    });
+    if (!location) throw new NotFoundException(`Location ${dto.locationId} not found`);
+    if (!(await this.isAssigned(dto.employeeId, dto.locationId))) {
+      throw new BadRequestException(
+        `${employee.firstName} does not work at ${location.name}. Add the office to them on the Staff screen first.`,
+      );
+    }
+
+    await this.assertDayNotPaidOrAcknowledged(clockInAt, dto);
+
+    const shift = await this.findMatchingShift(dto.employeeId, dto.locationId, clockInAt);
+
+    try {
+      return await this.prisma.$transaction(
+        async (tx) => {
+          // Anything of theirs that overlaps — including a punch still open,
+          // which runs until somebody closes it. Correct that one instead.
+          const clash = await tx.timeEntry.findFirst({
+            where: {
+              employeeId: dto.employeeId,
+              clockInAt: { lt: clockOutAt },
+              OR: [{ clockOutAt: { gt: clockInAt } }, { clockOutAt: null }],
+            },
+            select: { clockInAt: true, clockOutAt: true },
+            orderBy: { clockInAt: 'asc' },
+          });
+          if (clash) {
+            throw new ConflictException(
+              clash.clockOutAt
+                ? `${employee.firstName} already has hours from ${this.describe(clash.clockInAt)} that overlap these. Correct that entry instead.`
+                : `${employee.firstName} has a punch from ${this.describe(clash.clockInAt)} with no clock-out. Correct that entry first.`,
+            );
+          }
+
+          const now = new Date();
+          const created = await tx.timeEntry.create({
+            data: {
+              employeeId: dto.employeeId,
+              locationId: dto.locationId,
+              shiftId: shift?.id,
+              // Typed into a browser by the manager. Never KIOSK: that would
+              // claim the time clock saw them.
+              method: ClockMethod.WEB,
+              status: TimeEntryStatus.COMPLETED,
+              clockInAt,
+              clockInVerification: VerificationMethod.MANUAL,
+              clockOutAt,
+              clockOutVerification: VerificationMethod.MANUAL,
+              isLate: shift ? this.isLate(clockInAt, shift.startsAt) : false,
+              isEarlyDeparture: shift ? this.isEarlyDeparture(clockOutAt, shift.endsAt) : false,
+              enteredByHandAt: now,
+              enteredById: actor.id,
+              handEntryReason: dto.reason,
+              handEntryNote: dto.note.trim(),
+            },
+            select: TIME_ENTRY_SELECT,
+          });
+          return withPayroll(created);
+        },
+        { isolationLevel: Prisma.TransactionIsolationLevel.Serializable },
+      );
+    } catch (error) {
+      // A double-pressed Save: the other request made the entry this one
+      // would have overlapped.
+      if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2034') {
+        throw new ConflictException('Those hours were just added. Reload the timesheet.');
+      }
+      throw error;
+    }
+  }
+
+  /**
+   * Somebody has found out why hours had to be entered by hand, which takes
+   * the entry off the list. Not the manager who entered them: the list is
+   * there so somebody else sees each one.
+   */
+  async checkHandEntry(id: string, dto: CheckHandEntryDto, actor: AuthUser) {
+    const entry = await this.prisma.timeEntry.findUnique({
+      where: { id },
+      select: { enteredByHandAt: true, enteredById: true, handEntryCheckedAt: true },
+    });
+    if (!entry) throw new NotFoundException(`Time entry ${id} not found`);
+    if (!entry.enteredByHandAt) {
+      throw new BadRequestException('Only hours entered by hand are looked into.');
+    }
+    if (entry.enteredById === actor.id) {
+      throw new ForbiddenException(
+        'You entered these hours, so somebody else looks into why they were needed.',
+      );
+    }
+
+    // Compare-and-set, so two managers pressing it at once leave the first
+    // one's finding rather than the last one's.
+    const finding = dto.finding?.trim();
+    const updated = await this.prisma.timeEntry.updateMany({
+      where: { id, handEntryCheckedAt: null },
+      data: {
+        handEntryCheckedAt: new Date(),
+        handEntryCheckedById: actor.id,
+        handEntryFinding: finding ? finding : null,
+      },
+    });
+    if (updated.count === 0) {
+      throw new ConflictException('Somebody has already looked into these hours.');
+    }
+
+    return withPayroll(await this.findOne(id));
+  }
+
+  /**
+   * Hours added to a day whose pay period has already gone to payroll never
+   * reach that run, so — like a correction to paid hours — it is allowed, but
+   * not by accident.
+   */
+  private async assertDayNotPaidOrAcknowledged(clockInAt: Date, dto: AddHoursDto) {
+    if (dto.acknowledgeExported) return;
+    const day = toUtcDate(localDateIn(clockInAt, PRACTICE_ZONE));
+    const run = await this.prisma.payrollExport.findFirst({
+      where: {
+        status: PayrollExportStatus.GENERATED,
+        periodStart: { lte: day },
+        periodEnd: { gte: day },
+        OR: [{ locationId: null }, { locationId: dto.locationId }],
+      },
+      select: { id: true, generatedAt: true },
+      orderBy: { generatedAt: 'desc' },
+    });
+    if (!run) return;
+
+    throw new ConflictException({
+      code: 'ALREADY_EXPORTED',
+      message: `The pay period with this day already went to payroll on ${run.generatedAt
+        .toISOString()
+        .slice(0, 10)}. Hours added now have to reach a later pay run.`,
+      exportedAt: run.generatedAt,
+      exportId: run.id,
+    });
+  }
+
+  /// "Mon, Sep 28, 9:00 AM" at the practice, for a sentence in an error.
+  private describe(instant: Date): string {
+    return instant.toLocaleString('en-US', {
+      timeZone: PRACTICE_ZONE,
+      weekday: 'short',
+      month: 'short',
+      day: 'numeric',
+      hour: 'numeric',
+      minute: '2-digit',
+    });
   }
 
   /**
