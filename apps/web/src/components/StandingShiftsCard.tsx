@@ -191,10 +191,12 @@ export function StandingShiftsCard({
 
   return (
     <Wrap bare={bare} testId="standing-shifts-card">
-      <h2 className="text-sm font-semibold text-slate-900">
-        <span aria-hidden="true">🔁</span> Regular shifts
-      </h2>
-      <p className="mt-0.5 text-xs text-slate-500">
+      {!bare && (
+        <h2 className="text-sm font-semibold text-slate-900">
+          <span aria-hidden="true">🔁</span> Regular shifts
+        </h2>
+      )}
+      <p className={`text-xs text-slate-500 ${bare ? '' : 'mt-0.5'}`}>
         Repeating shifts with no end date. Each keeps the rota filled eight weeks ahead until it is
         stopped. Make one with <span className="font-medium">+ Add → Repeating shifts</span> → No
         end date.

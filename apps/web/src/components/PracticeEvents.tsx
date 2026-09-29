@@ -1178,9 +1178,11 @@ export function ClosuresCard({
   return (
     <Wrap bare={bare} testId="closures-card">
       <div className="flex flex-wrap items-center justify-between gap-2">
-        <h2 className="text-sm font-semibold text-slate-900">
-          <span aria-hidden="true">🔒</span> Holidays and closures
-        </h2>
+        {!bare && (
+          <h2 className="text-sm font-semibold text-slate-900">
+            <span aria-hidden="true">🔒</span> Holidays and closures
+          </h2>
+        )}
         <div className="flex items-center gap-1 text-sm">
           <button
             type="button"
