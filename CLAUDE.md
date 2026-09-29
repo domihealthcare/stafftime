@@ -463,7 +463,14 @@ Beyond the phases, the parts worth knowing about before picking up work:
   as resets), plus how to put the app on a phone and day-one FAQs
   (`email/welcome-email.ts`, text and HTML). `Employee.welcomeSentAt` records
   it; a failed send takes the link back and says so.
-- **The office computer as the time clock** (no tablet yet, September 2026):
+- **No time clock in use for now** (Dominguez, 29 September 2026): staff clock
+  in on their own phones, and a time clock goes in only once the practice has a
+  dedicated tablet, not on an office computer meanwhile. Because anybody can give
+  a colleague their PIN, a time clock on every computer, a photo check and a
+  webcam snapshot were all turned down. A handbook rule (clocking in for
+  somebody else is a disciplinary matter) was chosen instead, drafted in
+  `docs/location-disclosure.md`. See *Kiosk* in `docs/open-questions.md`.
+- **The office computer as the time clock** (built, not in use; see above):
   any browser pairs as a kiosk at `/kiosk`. It re-fetches its staff list every
   10 minutes, and is only reported quiet if a whole published shift at its
   office passes without it being open — so switching the computer off at

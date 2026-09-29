@@ -15,11 +15,17 @@ taken off this list, and the answer is written into `CLAUDE.md` or
 - [ ] **Rotate the Neon database password.** Reset it in Neon, paste the new
       pooled and direct strings into `DATABASE_URL` / `DIRECT_DATABASE_URL` in
       Vercel, and redeploy.
-- [ ] **Should Vercel previews have their own database?** They appear to share
-      the live one, so a pushed branch's migration reaches the live database
-      before it is merged (see *Never edit a migration once it has been pushed*
-      in `CLAUDE.md`). Check in Vercel → Settings → Environment Variables
-      whether Preview has its own `DATABASE_URL`.
+- [ ] **Give Vercel previews their own database.** Confirmed by Dominguez
+      (29 September 2026): `DATABASE_URL` is one variable set for both Preview
+      and Production, so previews use the live database, and a pushed branch's
+      migration reaches it before it is merged (see *Never edit a migration
+      once it has been pushed* in `CLAUDE.md`). The fix is a Neon branch for
+      Preview, with its own `DATABASE_URL` and `DIRECT_DATABASE_URL` scoped to
+      Preview only. Also reported: `DIRECT_DATABASE_URL` is set for Preview
+      only. The production build runs `prisma migrate deploy`, which needs it
+      (`directUrl` in `schema.prisma`), so check that the latest Production
+      deployment built cleanly and that Help → About this version shows the
+      latest commit.
 
 ## ADP TotalSource import (built September 2026 — needs setting up)
 
@@ -194,7 +200,26 @@ Scope is in `CLAUDE.md` under *Build phasing*. Still to settle:
 
 ## Kiosk
 
-The office computer is the time clock for now, with PINs. What is left:
+**No time clock for now** (Dominguez, 29 September 2026): staff clock in on
+their own phones. A time clock is set up only once the practice buys a
+dedicated tablet, and not on an office computer in the meantime. Decided
+along the way:
+
+- **A time clock on every office computer, limited to the office network:
+  dropped.** Anybody can give a colleague their PIN ("buddy punching"), and
+  more PIN screens make it easier. A phone needs the person's own phone,
+  password and presence, which is much harder to lend.
+- **Showing the person's photo after the PIN** ("is this you?"): ruled out,
+  since people can simply say yes.
+- **A webcam snapshot at each punch**: ruled out as too invasive.
+- **Instead, a handbook rule**: clocking in or out for somebody else is a
+  disciplinary matter. Draft wording is in `docs/location-disclosure.md`.
+
+What is left:
+
+- [ ] **Confirming the person at the tablet, once there is one.** Worth
+      looking at again when a tablet is bought, knowing a PIN or badge proves
+      only who knows it or holds it.
 
 - [ ] **Badge tap.** Not built. A USB badge reader behaves like a keyboard, so
       the screen would listen for a fast burst of keystrokes ending in Enter and
@@ -204,6 +229,20 @@ The office computer is the time clock for now, with PINs. What is left:
 - [ ] **Kiosk browser setup.** Whatever the device, it wants guided access or
       kiosk browser mode so staff cannot navigate away. Device configuration
       rather than code.
+
+## Adding hours by hand
+
+- [ ] **A manager cannot add hours for a day with no punch.** The timesheet
+      only corrects punches that exist (`PATCH /time-entries/:id`). Somebody
+      who never clocked in (a forgotten clock-in, a phone that would not share
+      its location, or nobody at the office to clock in with) has no way to get
+      those hours into the app or the payroll export. Decided by Dominguez
+      (29 September 2026): a manager enters them by hand, and **every
+      hand-entered day is reported so somebody finds out why** it was needed,
+      treated like a bug report rather than routine. Proposed, not built yet:
+      *Add hours* on the timesheet (manager, with a reason), marked as
+      entered by hand, and listed in a banner and the nightly round-up until
+      somebody has looked at why.
 
 ## Technical to-dos
 
