@@ -18,6 +18,7 @@ const LABELS: [keyof TestDataCounts, string][] = [
   ['surveys', 'surveys'],
   ['events', 'events'],
   ['productivityStatements', 'provider productivity statements'],
+  ['productivityStatements', 'provider productivity statements'],
   ['suggestions', 'suggestion box messages'],
   ['notifications', 'notifications'],
   ['payrollExports', 'payroll exports'],
@@ -27,7 +28,9 @@ const LABELS: [keyof TestDataCounts, string][] = [
 const ACCESS: Record<string, string> = { ADMIN: 'Admin', MANAGER: 'Manager', EMPLOYEE: 'Employee' };
 
 function listed(counts: TestDataCounts) {
-  return LABELS.filter(([key]) => counts[key] > 0).map(([key, label]) => `${counts[key]} ${label}`);
+  return LABELS.filter(([key]) => counts[key] > 0).map(
+    ([key, label]) => `${counts[key]} ${label}`,
+  );
 }
 
 /**
@@ -93,10 +96,10 @@ export function GoLiveCard() {
     <Card className="mt-6 p-4" testId="go-live">
       <h2 className="text-sm font-semibold text-slate-900">Start using it for real</h2>
       <p className="mt-1 text-sm text-slate-600">
-        Clears out the testing — the demo staff, who all share one password, and every shift, punch,
-        request, post and survey made while trying the app out. Your set-up stays: the offices and
-        their pins, these settings, the ADP set-up, job roles, closing checklists, checklist
-        templates, resources, kiosks and every real account.
+        Clears out the testing — the demo staff, who all share one password, and every shift,
+        punch, request, post and survey made while trying the app out. Your set-up stays: the
+        offices and their pins, these settings, the ADP set-up, job roles, closing checklists,
+        checklist templates, resources, kiosks and every real account.
       </p>
 
       {error && (
@@ -132,8 +135,8 @@ export function GoLiveCard() {
               ))}
             </ul>
             <p className="mt-2 text-xs text-slate-500">
-              Anybody here you made up while testing? Mark them as no longer employed on the Staff
-              screen.
+              Anybody here you made up while testing? Mark them as no longer employed on the
+              Staff screen.
             </p>
           </div>
         </div>
@@ -157,7 +160,8 @@ export function GoLiveCard() {
                 button with it.
               </li>
               <li>
-                Send the welcome emails from the Staff screen, so everybody can choose a password.
+                Send the welcome emails from the Staff screen, so everybody can choose a
+                password.
               </li>
             </ol>
           </Alert>
