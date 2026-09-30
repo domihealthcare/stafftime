@@ -147,7 +147,7 @@ await step('the timesheet labels the punch Work from home', async () => {
   await mgr.getByText('Work from home').first().waitFor({ timeout: 15000 });
 });
 
-// The rota: colour for the office, a stripe for the job role, violet for home.
+// The rota: the office fills the shift, the job role outlines it, violet for home.
 await step('the rota has a key to its colours', async () => {
   await mgr.getByRole('link', { name: 'Schedule' }).click();
   const legend = mgr.getByTestId('rota-legend');
@@ -159,17 +159,17 @@ await step('the rota has a key to its colours', async () => {
 const morganChip = () =>
   mgr.getByTestId('rota-row-Morgan Manager').getByTestId('shift-chip').first();
 
-await step('a work-from-home shift says Home and is tinted, with a job-role stripe', async () => {
+await step('a work-from-home shift says Home and is tinted, with a job-role outline', async () => {
   const chip = morganChip();
   await chip.waitFor({ timeout: 10000 });
   if ((await chip.getAttribute('data-remote')) !== 'true') throw new Error('not marked as from home');
   await chip.getByText('Home', { exact: true }).waitFor({ timeout: 5000 });
   const colours = await chip.evaluate((el) => {
     const s = getComputedStyle(el);
-    return { fill: s.backgroundColor, stripe: s.borderLeftColor, width: s.borderLeftWidth };
+    return { fill: s.backgroundColor, outline: s.borderTopColor, width: s.borderTopWidth };
   });
   if (colours.fill === 'rgba(0, 0, 0, 0)') throw new Error('the chip has no colour');
-  if (colours.width !== '4px') throw new Error(`the stripe is ${colours.width}`);
+  if (colours.width !== '2px') throw new Error(`the outline is ${colours.width}`);
 });
 
 await step('an office shift is tinted in its office’s colour, not left plain', async () => {

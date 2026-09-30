@@ -1,5 +1,5 @@
 import { useDialog } from './useDialog';
-import { REMOTE_COLOUR, locationColourFn, tint } from '../lib/shift-colours';
+import { REMOTE_COLOUR, locationColourFn, shiftChipStyle, tint } from '../lib/shift-colours';
 import { useMemo, useState } from 'react';
 import { birthdayName } from '../lib/birthday';
 import { ApiError, api } from '../lib/api';
@@ -108,6 +108,7 @@ export function RotaTable({
   locationFilter,
   roleFilter,
   canEdit,
+  onPersonMenu,
   selfId,
   onChanged,
   onPlanned,
@@ -139,6 +140,8 @@ export function RotaTable({
   locationFilter: string;
   roleFilter: string;
   canEdit: boolean;
+  /// Right-click on a person or their shift: profile, schedule. Managers only.
+  onPersonMenu?: (event: React.MouseEvent, person: { id: string; name: string }) => void;
   /// For staff: only their own row.
   selfId?: string;
   onChanged: () => void;
@@ -533,6 +536,15 @@ export function RotaTable({
                   >
                     <th
                       scope="row"
+                      onContextMenu={
+                        onPersonMenu && row.person
+                          ? (event) =>
+                              onPersonMenu(event, {
+                                id: row.person!.id,
+                                name: `${row.person!.firstName} ${row.person!.lastName}`,
+                              })
+                          : undefined
+                      }
                       className={`sticky left-0 z-10 px-3 py-2 text-left font-normal ${row.kind === 'open' ? (row.shifts.length > 0 ? 'bg-amber-50' : 'bg-slate-50') : over ? 'border-l-4 border-rose-600 bg-rose-50' : 'bg-white'}`}
                     >
                       <span className="flex items-center gap-2">
@@ -601,6 +613,15 @@ export function RotaTable({
                                 warning={warnings.get(shift.id)}
                                 showLocation={grouping !== 'location'}
                                 onOpen={canEdit ? () => setMenu(shift) : undefined}
+                                onContextMenu={
+                                  onPersonMenu && shift.employee
+                                    ? (event) =>
+                                        onPersonMenu(event, {
+                                          id: shift.employee!.id,
+                                          name: `${shift.employee!.firstName} ${shift.employee!.lastName}`,
+                                        })
+                                    : undefined
+                                }
                               />
                             ))}
                             {canEdit && (
@@ -609,11 +630,11 @@ export function RotaTable({
                                 data-empty={inCell.length === 0 ? 'true' : undefined}
                                 onClick={() => setAdding({ row, day })}
                                 aria-label={`Add ${row.kind === 'open' ? `an open shift at ${row.sublabel}` : `a shift for ${row.label}`} on ${day.toLocaleDateString(undefined, { weekday: 'long', month: 'short', day: 'numeric' })}`}
-                                // Big enough to see and to hit with a thumb, on a
-                                // phone as on a computer, and under the shifts
-                                // rather than over them.
-                                className={`flex w-full items-center justify-center rounded-md font-semibold leading-none text-slate-500 hover:bg-brand-50 hover:text-brand-700 focus:text-brand-700 ${
-                                  inCell.length === 0 ? 'min-h-10 text-2xl' : 'min-h-8 text-xl'
+                                // Quiet, so it does not compete with the shifts (Dominguez,
+                                // 30 September 2026: it was too big) — still a full-width
+                                // strip to hit, under the shifts rather than over them.
+                                className={`flex w-full items-center justify-center rounded-md text-sm font-medium leading-none text-slate-400 hover:bg-brand-50 hover:text-brand-700 focus:text-brand-700 ${
+                                  inCell.length === 0 ? 'min-h-8' : 'min-h-6'
                                 }`}
                               >
                                 ＋
@@ -730,16 +751,18 @@ function ShiftChip({
   warning,
   showLocation,
   onOpen,
+  onContextMenu,
 }: {
   shift: Shift;
-  /// The office's colour: the chip's tint.
+  /// The office's colour: what fills the chip.
   colour: string;
-  /// The job role's colour, as a stripe down the left edge — the shift's own
-  /// role, or the person's first.
+  /// The job role's colour, as the outline — the shift's own role, or the
+  /// person's first.
   roleColour: string | null;
   warning?: string;
   showLocation: boolean;
   onOpen?: () => void;
+  onContextMenu?: (event: React.MouseEvent) => void;
 }) {
   const open = shift.employeeId === null;
   const draft = shift.status === 'DRAFT';
@@ -780,25 +803,16 @@ function ShiftChip({
   );
 
   const base = remote ? REMOTE_COLOUR : colour;
-  const style: React.CSSProperties = open
-    ? { borderLeftColor: roleColour ?? '#d97706' }
-    : {
-        backgroundColor: draft ? '#ffffff' : tint(base, '1f'),
-        borderLeftColor: roleColour ?? base,
-        ...(draft ? { borderColor: tint(base, '99') } : {}),
-      };
-  const className = `block w-full rounded-md border-l-4 px-1.5 py-1 text-left text-xs text-slate-900 ${
-    open
-      ? 'bg-amber-100 text-amber-950 ring-1 ring-inset ring-amber-300'
-      : draft
-        ? 'border border-l-4 border-dashed'
-        : ''
-  } ${warning ? 'ring-1 ring-inset ring-rose-400' : ''}`;
+  const style: React.CSSProperties = shiftChipStyle({ base, roleColour, open, draft });
+  const className = `block w-full rounded-md border-2 px-1.5 py-1 text-left text-xs text-slate-900 ${
+    open ? 'bg-amber-100 text-amber-950' : ''
+  } ${draft ? 'border-dashed' : ''} ${warning ? 'ring-1 ring-inset ring-rose-400' : ''}`;
 
   return onOpen ? (
     <button
       type="button"
       onClick={onOpen}
+      onContextMenu={onContextMenu}
       aria-label={describe}
       style={style}
       className={`${className} hover:brightness-95`}
@@ -812,6 +826,7 @@ function ShiftChip({
       className={className}
       style={style}
       title={describe}
+      onContextMenu={onContextMenu}
       data-testid={open ? 'open-shift' : 'shift-chip'}
       data-remote={remote ? 'true' : undefined}
     >
@@ -833,8 +848,8 @@ export function RotaLegend({
   const swatch = (hex: string) => (
     <span
       aria-hidden="true"
-      className="inline-block h-3 w-5 rounded-sm border-l-4"
-      style={{ backgroundColor: tint(hex, '1f'), borderLeftColor: hex }}
+      className="inline-block h-3 w-5 rounded-sm"
+      style={{ backgroundColor: tint(hex, '55') }}
     />
   );
   return (
@@ -848,6 +863,7 @@ export function RotaLegend({
         Key
       </summary>
       <div className="flex flex-wrap items-center gap-x-4 gap-y-1">
+        <span className="basis-full sm:basis-auto">Fill, the office:</span>
         {locations
           .filter((location) => location.isActive !== false)
           .map((location) => (
@@ -882,13 +898,13 @@ export function RotaLegend({
           />
           Time off
         </span>
-        <span className="basis-full sm:basis-auto">Stripe on the left, the job role:</span>
+        <span className="basis-full sm:basis-auto">Outline, the job role:</span>
         {jobRoles.map((role) => (
           <span key={role.id} className="inline-flex items-center gap-1.5">
             <span
               aria-hidden="true"
-              className="inline-block h-3 w-1 rounded-sm"
-              style={{ backgroundColor: jobRoleHex(role.colour) }}
+              className="inline-block h-3 w-5 rounded-sm border-2 bg-white"
+              style={{ borderColor: jobRoleHex(role.colour) }}
             />
             {role.name}
           </span>

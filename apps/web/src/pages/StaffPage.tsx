@@ -34,7 +34,10 @@ export function StaffPage() {
     null,
   );
   const confirm = useConfirm();
-  const [search, setSearch] = useState('');
+  // The right-click menu's "Open in Staff" arrives as ?q=name.
+  const [search, setSearch] = useState(
+    () => new URLSearchParams(window.location.search).get('q') ?? '',
+  );
   const [showTerminated, setShowTerminated] = useState(false);
   /// Whose details are open in the editor.
   const [editingId, setEditingId] = useState<string | null>(null);

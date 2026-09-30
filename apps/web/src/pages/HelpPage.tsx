@@ -666,9 +666,17 @@ const MANAGERS: Section[] = [
               part of their name, pick them, and page through their months. ✕ goes back to everyone.
             </li>
             <li>
-              Each shift is tinted in its office&rsquo;s colour, with a stripe down the left in the
-              job role&rsquo;s colour; the key above the rota says which is which. Work from home is
-              violet, open shifts amber, drafts a dashed outline.
+              Each shift is filled with its office&rsquo;s colour and outlined in the job
+              role&rsquo;s colour; the key above the rota says which is which. Work from home is
+              violet, open shifts amber, drafts a dashed outline. Two job roles that should look the
+              same (Administrative and Manager, say) can be given the same colour under Manage
+              &rarr; Job roles.
+            </li>
+            <li>
+              <strong>Right-click</strong> somebody&rsquo;s name or shift — on the week, in the
+              month, or on their Directory card — for <strong>See profile</strong>,{' '}
+              <strong>See schedule</strong> (their month, on its own) and{' '}
+              <strong>Open in Staff</strong>.
             </li>
             <li>
               Time off is in each person&rsquo;s row: hatched grey once approved, &ldquo;Asked
