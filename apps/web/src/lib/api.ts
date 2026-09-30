@@ -10,6 +10,8 @@ import type {
   CredentialStanding,
   CredentialType,
   PayrollExportRecord,
+  PersonName,
+  ProductivityPerson,
   ProductivityPlan,
   ProductivityStatement,
   PayrollTarget,
@@ -1018,6 +1020,13 @@ export const api = {
   /// Provider productivity. A provider reads only their own published
   /// statements; the rest is for managers and admins.
   myProductivity: () => request<Omit<ProductivityStatement, 'employee'>[]>('/productivity/mine'),
+  /// Who may work out provider productivity — chosen by an admin.
+  productivityAccess: () => request<PersonName[]>('/productivity/access'),
+  grantProductivityAccess: (employeeId: string) =>
+    request<PersonName[]>(`/productivity/access/${employeeId}`, { method: 'PUT' }),
+  revokeProductivityAccess: (employeeId: string) =>
+    request<PersonName[]>(`/productivity/access/${employeeId}`, { method: 'DELETE' }),
+  productivityPeople: () => request<ProductivityPerson[]>('/productivity/people'),
   productivityPlans: () => request<ProductivityPlan[]>('/productivity/plans'),
   productivityPlan: (employeeId: string) =>
     request<ProductivityPlan | null>(`/productivity/plans/${employeeId}`),
@@ -1029,6 +1038,7 @@ export const api = {
       expectedPerInterval: number | null;
       multiplier: number | null;
       categories: string[];
+      carriesBalance: boolean;
     },
   ) =>
     request<ProductivityPlan>(`/productivity/plans/${employeeId}`, {

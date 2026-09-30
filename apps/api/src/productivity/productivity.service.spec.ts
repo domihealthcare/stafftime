@@ -1,4 +1,9 @@
-import { BadRequestException, ConflictException, NotFoundException } from '@nestjs/common';
+import {
+  BadRequestException,
+  ConflictException,
+  ForbiddenException,
+  NotFoundException,
+} from '@nestjs/common';
 import { Role } from '@prisma/client';
 import { ProductivityService, presentStatement } from './productivity.service';
 
@@ -282,10 +287,86 @@ describe('what a provider can read', () => {
     const shown = await service.mine(provider);
     expect(prisma.productivityStatement.findMany.mock.calls[0][0].where).toEqual({
       employeeId: 'doc-1',
-      publishedAt: { not: null },
     });
     expect(shown).toHaveLength(1);
     expect(shown[0]).not.toHaveProperty('employee');
+  });
+});
+
+describe('the running balance', () => {
+  const short = statementRow({
+    id: 'st-a',
+    startDate: day('2026-06-01'),
+    carriesBalance: true,
+    publishedAt: new Date(),
+    intervals: [
+      {
+        id: 'a1',
+        position: 0,
+        startDate: day('2026-06-01'),
+        endDate: day('2026-06-14'),
+        expected: 150,
+        counts: [{ label: 'Patients', count: 134 }],
+      },
+    ],
+  });
+  const good = statementRow({
+    id: 'st-b',
+    startDate: day('2026-06-15'),
+    carriesBalance: true,
+    publishedAt: new Date(),
+    intervals: [
+      {
+        id: 'b1',
+        position: 0,
+        startDate: day('2026-06-15'),
+        endDate: day('2026-06-28'),
+        expected: 150,
+        counts: [{ label: 'Patients', count: 170 }],
+      },
+    ],
+  });
+
+  it('nets a short period off the next one: -$800 then +$1,000 pays $200', async () => {
+    const { service, prisma } = build();
+    prisma.productivityStatement.findMany.mockResolvedValue([short, good]);
+    const shown = await service.mine(provider);
+    const [first, second] = shown;
+    expect(first.balance).toEqual({
+      carriedInCents: 0,
+      payableCents: 0,
+      carriedOutCents: -80_000,
+    });
+    expect(second.balance).toEqual({
+      carriedInCents: -80_000,
+      payableCents: 20_000,
+      carriedOutCents: 0,
+    });
+  });
+
+  it('a provider sees the balance from an earlier draft without seeing the draft', async () => {
+    const { service, prisma } = build();
+    prisma.productivityStatement.findMany.mockResolvedValue([
+      { ...short, publishedAt: null },
+      good,
+    ]);
+    const shown = await service.mine(provider);
+    expect(shown).toHaveLength(1);
+    expect(shown[0].id).toBe('st-b');
+  });
+});
+
+describe('who may use it', () => {
+  it('refuses somebody an admin has not chosen, whatever their access level', async () => {
+    const { service, prisma } = build();
+    prisma.employee.findUnique.mockResolvedValue({ canManageProductivity: false });
+    await expect(service.assertAccess(manager)).rejects.toBeInstanceOf(ForbiddenException);
+  });
+
+  it('lets somebody who has been chosen in', async () => {
+    const { service, prisma } = build();
+    prisma.employee.findUnique.mockResolvedValue({ canManageProductivity: true });
+    await expect(service.assertAccess(provider)).resolves.toBeUndefined();
   });
 });
 
@@ -311,6 +392,7 @@ describe('plans', () => {
       expectedPerInterval: null,
       multiplier: null,
       categories: [],
+      carriesBalance: true,
     });
   });
 });

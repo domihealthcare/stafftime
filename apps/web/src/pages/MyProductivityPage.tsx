@@ -35,7 +35,10 @@ export function MyProductivityPage() {
     const thisYear = String(new Date().getFullYear());
     const rows = (statements ?? []).filter((row) => row.startDate.startsWith(thisYear));
     if (rows.length === 0) return null;
-    const amounts = rows.map((row) => row.totals.amountCents);
+    // What was actually payable once any shortfall is netted off.
+    const amounts = rows.map((row) =>
+      row.carriesBalance ? row.balance.payableCents : row.totals.amountCents,
+    );
     return {
       year: thisYear,
       periods: rows.length,

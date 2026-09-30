@@ -60,7 +60,8 @@ export function EditEntryDialog({
       await api.editTimeEntry(entry.id, {
         // Only send what the manager actually touched.
         clockInAt: inChanged ? new Date(clockInAt).toISOString() : undefined,
-        clockOutAt: outChanged && clockOutAt !== '' ? new Date(clockOutAt).toISOString() : undefined,
+        clockOutAt:
+          outChanged && clockOutAt !== '' ? new Date(clockOutAt).toISOString() : undefined,
         // Emptying a field that had a value is a deliberate "this punch is missing".
         clearClockOut: initialOut !== '' && clockOutAt === '' ? true : undefined,
         editReason,
@@ -100,9 +101,8 @@ export function EditEntryDialog({
 
         {entry.payroll?.exported && !exportedWarning && (
           <p className="mt-2 text-xs text-amber-700">
-            These hours went to payroll on{' '}
-            {formatCalendarDate(entry.payroll.exportedAt as string)}. A correction now has to
-            reach a later pay run.
+            These hours went to payroll on {formatCalendarDate(entry.payroll.exportedAt as string)}.
+            A correction now has to reach a later pay run.
           </p>
         )}
 
@@ -138,9 +138,7 @@ export function EditEntryDialog({
               Leave empty for a missing punch — it stays flagged for review.
             </p>
             {outBeforeIn && (
-              <p className="mt-1 text-xs text-rose-600">
-                Clock-out must be after clock-in.
-              </p>
+              <p className="mt-1 text-xs text-rose-600">Clock-out must be after clock-in.</p>
             )}
           </div>
 
@@ -165,8 +163,8 @@ export function EditEntryDialog({
 
           {exportedWarning && (
             <Alert tone="warning">
-              {exportedWarning} Press save again to make the correction anyway — it will be
-              flagged so it can go out in the next run.
+              {exportedWarning} Press save again to make the correction anyway — it will be flagged
+              so it can go out in the next run.
             </Alert>
           )}
 
@@ -180,11 +178,7 @@ export function EditEntryDialog({
               disabled={busy || !canSave}
               className="rounded-lg bg-brand-600 px-4 py-2 text-sm font-medium text-white hover:bg-brand-700 disabled:opacity-60"
             >
-              {busy
-                ? 'Saving…'
-                : exportedWarning
-                  ? 'Correct it anyway'
-                  : 'Save correction'}
+              {busy ? 'Saving…' : exportedWarning ? 'Correct it anyway' : 'Save correction'}
             </button>
             <button
               type="button"

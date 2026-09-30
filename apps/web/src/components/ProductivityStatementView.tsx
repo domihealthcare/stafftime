@@ -25,6 +25,11 @@ export function ProductivityStatementView({
   const hasTarget = totals.expected !== null;
   const single = labels.length <= 1;
 
+  const { balance } = statement;
+  const running =
+    statement.carriesBalance &&
+    totals.amountCents !== null &&
+    (balance.carriedInCents !== 0 || balance.carriedOutCents !== 0);
   const figures: { name: string; value: string; tone?: string }[] = [];
   if (hasTarget) figures.push({ name: 'Expected', value: String(totals.expected) });
   figures.push({ name: hasTarget ? 'Actual' : 'Patients', value: String(totals.actual) });
@@ -45,6 +50,23 @@ export function ProductivityStatementView({
       value: formatMoney(totals.amountCents),
       tone: totals.amountCents < 0 ? 'text-rose-700' : '',
     });
+  }
+  if (running) {
+    if (balance.carriedInCents !== 0) {
+      figures.push({
+        name: 'Brought forward',
+        value: formatMoney(balance.carriedInCents),
+        tone: 'text-rose-700',
+      });
+    }
+    figures.push({ name: 'To pay', value: formatMoney(balance.payableCents ?? 0) });
+    if (balance.carriedOutCents !== 0) {
+      figures.push({
+        name: 'Carried forward',
+        value: formatMoney(balance.carriedOutCents),
+        tone: 'text-rose-700',
+      });
+    }
   }
 
   return (
@@ -68,7 +90,7 @@ export function ProductivityStatementView({
         {actions && <div className="flex flex-wrap gap-2">{actions}</div>}
       </div>
 
-      <dl className="mt-3 grid grid-cols-2 gap-3 sm:grid-cols-5">
+      <dl className="mt-3 grid grid-cols-2 gap-3 sm:grid-cols-4">
         {figures.map((figure) => (
           <div key={figure.name} className="rounded-lg bg-slate-50 px-3 py-2">
             <dt className="text-xs font-medium uppercase tracking-wide text-slate-500">

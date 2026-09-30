@@ -5,9 +5,15 @@ import { ProductivityStatementView } from '../components/ProductivityStatementVi
 import { Alert, Card, EmptyState, PageHeading, Spinner } from '../components/ui';
 import { ApiError, api } from '../lib/api';
 import { displayName } from '../lib/format';
-import { useIsManager } from '../lib/session';
+import { useIsAdmin, useSession } from '../lib/session';
 import { formatMoney, parseCount, parseMoney } from '../lib/productivity';
-import type { Employee, JobRole, ProductivityPlan, ProductivityStatement } from '../lib/types';
+import type {
+  Employee,
+  PersonName,
+  ProductivityPerson,
+  ProductivityPlan,
+  ProductivityStatement,
+} from '../lib/types';
 
 type Tab = 'statements' | 'plan';
 
@@ -27,21 +33,28 @@ const INPUT = 'w-full rounded-lg border border-slate-300 px-2 py-1.5 text-sm';
  * against a target, or one with money as well.
  */
 export function ProductivityPage() {
-  const isManager = useIsManager();
-  if (!isManager) {
-    return (
-      <div>
-        <PageHeading title="Provider productivity" />
-        <Alert>Provider productivity is for managers and admins.</Alert>
-      </div>
-    );
-  }
-  return <ManagerProductivity />;
+  const { employee } = useSession();
+  const isAdmin = useIsAdmin();
+  const allowed = employee?.canManageProductivity === true;
+  return (
+    <div>
+      {allowed ? <ManagerProductivity /> : <PageHeading title="Provider productivity" />}
+      {!allowed && (
+        <div className="mb-4">
+          <Alert>
+            {isAdmin
+              ? 'You have not given yourself access to the numbers. You can, below.'
+              : 'Provider productivity is only for the people an admin has chosen.'}
+          </Alert>
+        </div>
+      )}
+      {isAdmin && <AccessCard />}
+    </div>
+  );
 }
 
 function ManagerProductivity() {
-  const [staff, setStaff] = useState<Employee[]>([]);
-  const [roles, setRoles] = useState<JobRole[]>([]);
+  const [staff, setStaff] = useState<ProductivityPerson[]>([]);
   const [plans, setPlans] = useState<ProductivityPlan[]>([]);
   const [personId, setPersonId] = useState('');
   const [tab, setTab] = useState<Tab>('statements');
@@ -50,18 +63,11 @@ function ManagerProductivity() {
 
   const loadPeople = useCallback(async () => {
     try {
-      const [people, jobRoles, existing] = await Promise.all([
-        api.listEmployees(),
-        api.jobRoles(),
+      const [people, existing] = await Promise.all([
+        api.productivityPeople(),
         api.productivityPlans(),
       ]);
-      setStaff(
-        people.filter(
-          (person) =>
-            person.employmentStatus === 'ACTIVE' || person.employmentStatus === 'ON_LEAVE',
-        ),
-      );
-      setRoles(jobRoles);
+      setStaff(people);
       setPlans(existing);
     } catch (cause) {
       setError(cause instanceof ApiError ? cause.message : 'Could not load staff.');
@@ -76,17 +82,12 @@ function ManagerProductivity() {
 
   // Providers first: anybody in a job role that carries the clinical forms.
   const { providers, others } = useMemo(() => {
-    const providerIds = new Set(
-      roles
-        .filter((role) => role.usesClinicalForms)
-        .flatMap((role) => role.members.map((m) => m.id)),
-    );
-    const byName = (a: Employee, b: Employee) => displayName(a).localeCompare(displayName(b));
+    const byName = (a: PersonName, b: PersonName) => displayName(a).localeCompare(displayName(b));
     return {
-      providers: staff.filter((person) => providerIds.has(person.id)).sort(byName),
-      others: staff.filter((person) => !providerIds.has(person.id)).sort(byName),
+      providers: staff.filter((person) => person.isProvider).sort(byName),
+      others: staff.filter((person) => !person.isProvider).sort(byName),
     };
-  }, [staff, roles]);
+  }, [staff]);
 
   const planOf = (id: string) => plans.find((plan) => plan.employeeId === id) ?? null;
 
@@ -201,6 +202,7 @@ function PlanForm({
     plan?.multiplier == null ? '' : String(plan.multiplier),
   );
   const [categories, setCategories] = useState((plan?.categories ?? []).join(', '));
+  const [carries, setCarries] = useState(plan?.carriesBalance ?? true);
   const [busy, setBusy] = useState(false);
   const [saved, setSaved] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -231,6 +233,7 @@ function PlanForm({
         expectedPerInterval: expectedNumber,
         multiplier: moneyNumber ?? null,
         categories: kinds,
+        carriesBalance: carries,
       });
       setSaved(true);
       onChanged();
@@ -352,6 +355,23 @@ function PlanForm({
           </span>
         </label>
       </div>
+
+      <label className="mt-3 flex items-start gap-2 text-sm">
+        <input
+          type="checkbox"
+          aria-label="Carry a short period forward"
+          checked={carries}
+          onChange={(event) => setCarries(event.target.checked)}
+          className="mt-0.5"
+        />
+        <span>
+          <span className="font-medium text-slate-700">Carry a short period forward</span>
+          <span className="block text-xs text-slate-500">
+            A period that falls short is not paid as a negative: it is netted off the next periods
+            until it clears. Applies to statements made from now on.
+          </span>
+        </span>
+      </label>
 
       {summary.length > 0 && <p className="mt-3 text-sm text-slate-700">{summary.join('; ')}.</p>}
 
@@ -605,5 +625,117 @@ function Statements({ employeeId, plan }: { employeeId: string; plan: Productivi
         </div>
       )}
     </div>
+  );
+}
+
+/** Admins choose who may work out provider productivity. */
+function AccessCard() {
+  const confirm = useConfirm();
+  const [holders, setHolders] = useState<PersonName[] | null>(null);
+  const [everyone, setEveryone] = useState<Employee[]>([]);
+  const [chosen, setChosen] = useState('');
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    Promise.all([api.productivityAccess(), api.listEmployees()])
+      .then(([list, people]) => {
+        setHolders(list);
+        setEveryone(
+          people.filter(
+            (p) => p.employmentStatus === 'ACTIVE' || p.employmentStatus === 'ON_LEAVE',
+          ),
+        );
+      })
+      .catch((cause: unknown) =>
+        setError(cause instanceof ApiError ? cause.message : 'Could not load that.'),
+      );
+  }, []);
+
+  async function grant() {
+    if (!chosen) return;
+    try {
+      setHolders(await api.grantProductivityAccess(chosen));
+      setChosen('');
+    } catch (cause) {
+      setError(cause instanceof ApiError ? cause.message : 'Could not do that.');
+    }
+  }
+
+  async function revoke(person: PersonName) {
+    const ok = await confirm({
+      title: `Take access away from ${displayName(person)}?`,
+      body: 'They will no longer be able to see or work out anyone’s productivity. Nothing already entered is lost.',
+      confirmLabel: 'Yes, take it away',
+      cancelLabel: 'Keep it',
+      tone: 'danger',
+    });
+    if (!ok) return;
+    try {
+      setHolders(await api.revokeProductivityAccess(person.id));
+    } catch (cause) {
+      setError(cause instanceof ApiError ? cause.message : 'Could not do that.');
+    }
+  }
+
+  const without = everyone.filter((p) => !holders?.some((h) => h.id === p.id));
+
+  return (
+    <Card className="mt-8 p-4" testId="productivity-access">
+      <h2 className="text-base font-semibold text-slate-900">Who can use provider productivity</h2>
+      <p className="mt-1 text-sm text-slate-600">
+        Only the people listed here can see or work out anyone’s numbers, whatever their access
+        level. Each provider still reads only their own, once it is published. Only admins change
+        this list.
+      </p>
+      {error && (
+        <div className="mt-3">
+          <Alert>{error}</Alert>
+        </div>
+      )}
+      <ul className="mt-3 divide-y divide-slate-100">
+        {(holders ?? []).map((person) => (
+          <li key={person.id} className="flex items-center justify-between py-2 text-sm">
+            <span>{displayName(person)}</span>
+            <button
+              type="button"
+              onClick={() => void revoke(person)}
+              aria-label={`Take access away from ${displayName(person)}`}
+              className="rounded-lg border border-slate-300 px-3 py-1 text-xs font-medium text-slate-700 hover:bg-slate-50 hover:text-rose-700"
+            >
+              Remove
+            </button>
+          </li>
+        ))}
+        {holders?.length === 0 && <li className="py-2 text-sm text-slate-500">Nobody yet.</li>}
+      </ul>
+      <div className="mt-3 flex flex-wrap items-end gap-2">
+        <label className="text-sm">
+          <span className="mb-1 block font-medium text-slate-700">Give access to</span>
+          <select
+            aria-label="Give access to"
+            value={chosen}
+            onChange={(event) => setChosen(event.target.value)}
+            className="w-64 rounded-lg border border-slate-300 px-2 py-1.5 text-sm"
+          >
+            <option value="">Choose somebody…</option>
+            {without
+              .sort((a, b) => displayName(a).localeCompare(displayName(b)))
+              .map((person) => (
+                <option key={person.id} value={person.id}>
+                  {displayName(person)}
+                </option>
+              ))}
+          </select>
+        </label>
+        <button
+          type="button"
+          disabled={!chosen}
+          onClick={() => void grant()}
+          className="rounded-lg bg-brand-600 px-4 py-2 text-sm font-semibold text-white hover:bg-brand-700 disabled:opacity-60"
+        >
+          Give access
+        </button>
+      </div>
+    </Card>
   );
 }

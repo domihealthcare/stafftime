@@ -916,7 +916,8 @@ const MANAGERS: Section[] = [
               with no target, and the multiplier empty for one with no money in it.
             </p>
             <p>
-              A statement is a private <strong>draft</strong> until you press{' '}
+              Only the people an admin has chosen see this screen; admins choose them at the bottom
+              of it. A statement is a private <strong>draft</strong> until you press{' '}
               <strong>Publish</strong>. Then that provider, and nobody else, can read it under{' '}
               <Screen>Team → Your productivity</Screen> and is told it is ready.{' '}
               <strong>Unpublish</strong> takes it back. Add a <strong>Paid on</strong> date or a

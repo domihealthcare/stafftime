@@ -25,20 +25,6 @@ taken off this list, and the answer is written into `CLAUDE.md` or
       only, but live releases build fine: Help showed `6c44f19`, the latest,
       live on 29 September 2026. Worth a look while in there all the same.)
 
-## Provider productivity (built 30 September 2026)
-
-- [ ] **Do negative periods carry forward?** The sheet nets a short period
-      against a later one by hand ("CLOSED Paid with 08.15.25"). The app records
-      each period on its own and leaves that to the note. If the practice wants
-      the running balance worked out, say how (against the next period only, or
-      until it clears).
-- [ ] **Should it reach payroll?** Amounts are not in the ADP export. Bonuses
-      are paid separately today ("Paid 07.05.24"); say if they should be.
-- [ ] **Who else should be a provider?** Any staff member can have a plan;
-      providers (job roles with *uses clinical forms*) are listed first.
-- [ ] **Should managers be able to see each other's?** Managers and admins can
-      read every provider's, including a manager who is also a provider.
-
 ## ADP TotalSource import (built September 2026 — needs setting up)
 
 Built from ADP's own instructions, *Importing Payroll into ADP TotalSource*:

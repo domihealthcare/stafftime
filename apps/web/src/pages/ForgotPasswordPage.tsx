@@ -40,17 +40,15 @@ export function ForgotPasswordPage() {
         <h1 className="mb-1 text-center text-2xl font-semibold text-slate-900">
           Reset your password
         </h1>
-        <p className="mb-6 text-center text-sm text-slate-600">
-          We will email you a link.
-        </p>
+        <p className="mb-6 text-center text-sm text-slate-600">We will email you a link.</p>
 
         <Card className="p-6">
           {sent ? (
             <>
               <Alert tone="success">{sent}</Alert>
               <p className="mt-3 text-sm text-slate-600">
-                The link works once and stops working after 30 minutes. Check the spam
-                folder if it does not turn up.
+                The link works once and stops working after 30 minutes. Check the spam folder if it
+                does not turn up.
               </p>
             </>
           ) : (

@@ -197,6 +197,7 @@ export class AuthController {
         employmentStatus: true,
         mustChangePassword: true,
         wantsDailyDigest: true,
+        canManageProductivity: true,
         lastLoginAt: true,
         locations: {
           select: {

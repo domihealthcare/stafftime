@@ -305,6 +305,9 @@ model Employee {
   notifications             Notification[]
   createdEvents             PracticeEvent[]         @relation("EventCreatedBy")
   eventInvites              PracticeEventInvitee[]  @relation("EventInvitee")
+  /// May work out and publish provider productivity. Chosen by an admin,
+  /// separate from the access level: a manager has no say in it by default.
+  canManageProductivity     Boolean                 @default(false)
   productivityPlan          ProductivityPlan?       @relation("ProductivityPlanSubject")
   productivityStatements    ProductivityStatement[] @relation("ProductivityStatementSubject")
   createdProductivity       ProductivityStatement[] @relation("ProductivityStatementCreatedBy")
@@ -1946,6 +1949,10 @@ model ProductivityPlan {
   /// Empty means one number.
   categories            String[]
 
+  /// Whether a short period is carried forward and netted against the next
+  /// ones until it clears. Copied onto each statement when it is made.
+  carriesBalance Boolean @default(true)
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
@@ -1967,12 +1974,15 @@ model ProductivityStatement {
 
   /// Dollars per patient, copied from the plan when the statement was made and
   /// changeable here. Null when there is no money in it.
-  multiplier Decimal?  @db.Decimal(10, 2)
+  multiplier     Decimal?  @db.Decimal(10, 2)
   /// When it was paid, if it has been.
-  paidOn     DateTime? @db.Date
+  paidOn         DateTime? @db.Date
   /// A short word for the provider: "Paid with 08.15.25", "Closed in maternity
   /// leave". Never a patient's name.
-  note       String?
+  note           String?
+  /// Copied from the plan: a negative amount is carried into the provider's
+  /// next statements rather than paid out as a negative.
+  carriesBalance Boolean   @default(false)
 
   /// Null while a draft. Set, the provider can read it.
   publishedAt   DateTime?

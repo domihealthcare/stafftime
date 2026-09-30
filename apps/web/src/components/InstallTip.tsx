@@ -52,23 +52,23 @@ export function InstallTip() {
       className="mt-4 rounded-xl bg-white p-4 text-sm text-slate-700 shadow-sm ring-1 ring-brand-100"
     >
       <div className="flex items-start gap-3">
-        <img src="/icon-192.png" alt="" className="h-10 w-10 shrink-0 rounded-lg ring-1 ring-slate-200" />
+        <img
+          src="/icon-192.png"
+          alt=""
+          className="h-10 w-10 shrink-0 rounded-lg ring-1 ring-slate-200"
+        />
         <div className="min-w-0 flex-1">
           <p className="font-semibold text-slate-900">Add Domi Staff to your home screen</p>
           {kind === 'ios' && isChromeOnIos() ? (
             <p className="mt-1">
-              Tap <strong>Share</strong>{' '}
-              <ShareIcon />
-              {' '}in Chrome&rsquo;s address bar at the top (or <strong>⋯</strong>, then{' '}
-              <strong>Share</strong>), then <strong>Add to Home Screen</strong>. It opens like an
-              app — no app store needed.
+              Tap <strong>Share</strong> <ShareIcon /> in Chrome&rsquo;s address bar at the top (or{' '}
+              <strong>⋯</strong>, then <strong>Share</strong>), then{' '}
+              <strong>Add to Home Screen</strong>. It opens like an app — no app store needed.
             </p>
           ) : kind === 'ios' ? (
             <p className="mt-1">
-              Tap <strong>Share</strong>{' '}
-              <ShareIcon />
-              {' '}at the bottom of Safari, then <strong>Add to Home Screen</strong>. It opens
-              like an app — no app store needed.
+              Tap <strong>Share</strong> <ShareIcon /> at the bottom of Safari, then{' '}
+              <strong>Add to Home Screen</strong>. It opens like an app — no app store needed.
             </p>
           ) : canPrompt ? (
             <p className="mt-1">It opens like an app — no app store needed.</p>

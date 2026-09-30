@@ -1,6 +1,7 @@
 import {
   BadRequestException,
   ConflictException,
+  ForbiddenException,
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
@@ -8,8 +9,13 @@ import { NotificationKind, Prisma } from '@prisma/client';
 import { AuthUser } from '../common/auth/auth-user';
 import { InboxService } from '../email/inbox.service';
 import { PrismaService } from '../prisma/prisma.service';
-import { IntervalDto, NewStatementDto, SavePlanDto, SaveStatementDto } from './dto/productivity.dto';
-import { addDaysIso, planIntervals, totals } from './productivity-math';
+import {
+  IntervalDto,
+  NewStatementDto,
+  SavePlanDto,
+  SaveStatementDto,
+} from './dto/productivity.dto';
+import { addDaysIso, planIntervals, runningBalances, totals } from './productivity-math';
 
 /// The label used when a plan has no categories: one number for the interval.
 export const DEFAULT_LABEL = 'Patients';
@@ -22,6 +28,7 @@ const STATEMENT_SELECT = {
   multiplier: true,
   paidOn: true,
   note: true,
+  carriesBalance: true,
   publishedAt: true,
   createdAt: true,
   updatedAt: true,
@@ -64,6 +71,7 @@ export function presentStatement(row: StatementRow) {
     multiplier: row.multiplier === null ? null : Number(row.multiplier.toString()),
     paidOn: row.paidOn ? iso(row.paidOn) : null,
     note: row.note,
+    carriesBalance: row.carriesBalance,
     published: row.publishedAt !== null,
     publishedAt: row.publishedAt,
     updatedAt: row.updatedAt,
@@ -96,6 +104,61 @@ export class ProductivityService {
     private readonly inbox: InboxService,
   ) {}
 
+  // ---- Who may use it -----------------------------------------------------
+
+  /// Working out and publishing productivity is for the people an admin has
+  /// chosen, whatever their access level: a manager has no say in it by default.
+  async assertAccess(user: AuthUser) {
+    if (!(await this.hasAccess(user.id))) {
+      throw new ForbiddenException('You have not been given access to provider productivity.');
+    }
+  }
+
+  async hasAccess(employeeId: string): Promise<boolean> {
+    const person = await this.prisma.employee.findUnique({
+      where: { id: employeeId },
+      select: { canManageProductivity: true },
+    });
+    return person?.canManageProductivity === true;
+  }
+
+  async accessList() {
+    return this.prisma.employee.findMany({
+      where: { canManageProductivity: true },
+      select: { id: true, firstName: true, lastName: true, preferredName: true },
+      orderBy: [{ lastName: 'asc' }, { firstName: 'asc' }],
+    });
+  }
+
+  async setAccess(employeeId: string, allowed: boolean) {
+    await this.assertPerson(employeeId);
+    await this.prisma.employee.update({
+      where: { id: employeeId },
+      data: { canManageProductivity: allowed },
+    });
+    return this.accessList();
+  }
+
+  /// The staff to choose from, for someone with access who cannot list staff
+  /// otherwise. Providers (a job role with the clinical forms) are marked.
+  async people() {
+    const rows = await this.prisma.employee.findMany({
+      where: { employmentStatus: { in: ['ACTIVE', 'ON_LEAVE'] } },
+      select: {
+        id: true,
+        firstName: true,
+        lastName: true,
+        preferredName: true,
+        jobRoles: { select: { jobRole: { select: { usesClinicalForms: true } } } },
+      },
+      orderBy: [{ lastName: 'asc' }, { firstName: 'asc' }],
+    });
+    return rows.map(({ jobRoles, ...person }) => ({
+      ...person,
+      isProvider: jobRoles.some((membership) => membership.jobRole.usesClinicalForms),
+    }));
+  }
+
   // ---- Plans -------------------------------------------------------------
 
   /// Everybody who has a plan, for the manager's list.
@@ -108,6 +171,7 @@ export class ProductivityService {
         expectedPerInterval: true,
         multiplier: true,
         categories: true,
+        carriesBalance: true,
         employee: { select: { id: true, firstName: true, lastName: true, preferredName: true } },
       },
       orderBy: [{ employee: { lastName: 'asc' } }, { employee: { firstName: 'asc' } }],
@@ -125,6 +189,7 @@ export class ProductivityService {
         expectedPerInterval: true,
         multiplier: true,
         categories: true,
+        carriesBalance: true,
       },
     });
     return row ? this.presentPlan(row) : null;
@@ -139,6 +204,7 @@ export class ProductivityService {
       expectedPerInterval: dto.expectedPerInterval ?? null,
       multiplier: dto.multiplier ?? null,
       categories,
+      carriesBalance: dto.carriesBalance ?? true,
     };
     await this.prisma.productivityPlan.upsert({
       where: { employeeId },
@@ -161,6 +227,7 @@ export class ProductivityService {
     expectedPerInterval: number | null;
     multiplier: Prisma.Decimal | null;
     categories: string[];
+    carriesBalance: boolean;
     employee?: { id: string; firstName: string; lastName: string; preferredName: string | null };
   }) {
     return {
@@ -171,6 +238,7 @@ export class ProductivityService {
       expectedPerInterval: row.expectedPerInterval,
       multiplier: row.multiplier === null ? null : Number(row.multiplier.toString()),
       categories: row.categories,
+      carriesBalance: row.carriesBalance,
     };
   }
 
@@ -178,12 +246,26 @@ export class ProductivityService {
 
   async statements(employeeId: string) {
     await this.assertPerson(employeeId);
+    return (await this.withBalances(employeeId)).reverse();
+  }
+
+  /// Every statement of one provider, oldest first, each with what was carried
+  /// in, what is payable and what is still owed after it. Worked out over all of
+  /// them, so a change to an early period reaches the later ones.
+  private async withBalances(employeeId: string) {
     const rows = await this.prisma.productivityStatement.findMany({
       where: { employeeId },
       select: STATEMENT_SELECT,
-      orderBy: { startDate: 'desc' },
+      orderBy: { startDate: 'asc' },
     });
-    return rows.map(presentStatement);
+    const shown = rows.map(presentStatement);
+    const balances = runningBalances(
+      shown.map((statement) => ({
+        amountCents: statement.totals.amountCents,
+        carriesBalance: statement.carriesBalance,
+      })),
+    );
+    return shown.map((statement, at) => ({ ...statement, balance: balances[at] }));
   }
 
   /// A new draft, laid out from the provider's plan: the right number of
@@ -221,6 +303,7 @@ export class ProductivityService {
         startDate: day(laidOut[0].startDate),
         endDate: day(laidOut[laidOut.length - 1].endDate),
         multiplier: plan?.multiplier ?? null,
+        carriesBalance: plan?.carriesBalance ?? false,
         createdById: user.id,
         intervals: {
           create: laidOut.map((interval, position) => ({
@@ -236,7 +319,7 @@ export class ProductivityService {
       },
       select: STATEMENT_SELECT,
     });
-    return presentStatement(created);
+    return this.one(created.id);
   }
 
   /// Saves the statement as the form shows it. If it is published the
@@ -249,7 +332,7 @@ export class ProductivityService {
     await this.assertNoOverlap(existing.employeeId, start, end, id);
 
     const note = dto.note?.trim() ? dto.note.trim() : null;
-    const saved = await this.prisma.$transaction(async (tx) => {
+    await this.prisma.$transaction(async (tx) => {
       // Replaced whole, like the form: what is shown is what is kept.
       await tx.productivityInterval.deleteMany({ where: { statementId: id } });
       return tx.productivityStatement.update({
@@ -282,30 +365,28 @@ export class ProductivityService {
     if (existing.publishedAt) {
       await this.tell(existing.employeeId, 'updated', start, end);
     }
-    return presentStatement(saved);
+    return this.one(id);
   }
 
   async publish(id: string, user: AuthUser) {
     const existing = await this.findRaw(id);
-    if (existing.publishedAt) return presentStatement(await this.load(id));
-    const saved = await this.prisma.productivityStatement.update({
+    if (existing.publishedAt) return this.one(id);
+    await this.prisma.productivityStatement.update({
       where: { id },
       data: { publishedAt: new Date(), publishedById: user.id },
-      select: STATEMENT_SELECT,
     });
     await this.tell(existing.employeeId, 'ready', iso(existing.startDate), iso(existing.endDate));
-    return presentStatement(saved);
+    return this.one(id);
   }
 
   /// Back to a draft: the provider can no longer read it.
   async unpublish(id: string) {
     await this.findRaw(id);
-    const saved = await this.prisma.productivityStatement.update({
+    await this.prisma.productivityStatement.update({
       where: { id },
       data: { publishedAt: null, publishedById: null },
-      select: STATEMENT_SELECT,
     });
-    return presentStatement(saved);
+    return this.one(id);
   }
 
   async remove(id: string) {
@@ -319,17 +400,15 @@ export class ProductivityService {
   /// Published statements about the signed-in person, newest first. There is
   /// no way to ask for anybody else's: the person comes from the session.
   async mine(user: AuthUser) {
-    const rows = await this.prisma.productivityStatement.findMany({
-      where: { employeeId: user.id, publishedAt: { not: null } },
-      select: STATEMENT_SELECT,
-      orderBy: { startDate: 'desc' },
-    });
-    // Nothing about who made it or who else it concerns.
-    return rows.map((row) => {
-      const { employee: _employee, ...statement } = presentStatement(row);
-      void _employee;
-      return statement;
-    });
+    // Balances are worked out over everything, then only the published are shown.
+    const all = await this.withBalances(user.id);
+    return all
+      .filter((statement) => statement.published)
+      .map((statement) => {
+        const { employee: _employee, ...rest } = statement;
+        void _employee;
+        return rest;
+      });
   }
 
   /// Whether the person has anything to read, to decide whether their
@@ -343,13 +422,13 @@ export class ProductivityService {
 
   // ---- Checks -------------------------------------------------------------
 
-  private async load(id: string) {
-    const row = await this.prisma.productivityStatement.findUnique({
-      where: { id },
-      select: STATEMENT_SELECT,
-    });
-    if (!row) throw new NotFoundException('That statement does not exist.');
-    return row;
+  /// One statement with its balance, which depends on its neighbours.
+  private async one(id: string) {
+    const row = await this.findRaw(id);
+    const all = await this.withBalances(row.employeeId);
+    const found = all.find((statement) => statement.id === id);
+    if (!found) throw new NotFoundException('That statement does not exist.');
+    return found;
   }
 
   private async findRaw(id: string) {

@@ -85,3 +85,46 @@ export function planIntervals(
   }
   return out;
 }
+
+export interface BalanceInput {
+  /// Null when the statement has no money in it: it neither adds nor breaks a run.
+  amountCents: number | null;
+  carriesBalance: boolean;
+}
+
+export interface Balance {
+  /// A shortfall brought in from earlier periods (zero or negative).
+  carriedInCents: number;
+  /// What is paid for this period once any shortfall is netted off (never negative
+  /// when the balance is carried).
+  payableCents: number | null;
+  /// A shortfall still standing after this period (zero or negative).
+  carriedOutCents: number;
+}
+
+/**
+ * The running balance (Dominguez, September 2026). Statements in date order.
+ * A period that falls short is not paid out as a negative: the shortfall is
+ * carried into the next periods and netted off what they earn, until it clears.
+ * -$800 followed by +$4,700 pays $3,900; -$800 then +$300 pays nothing and
+ * still owes $500.
+ *
+ * A statement that does not carry its balance is paid as it stands and starts
+ * the count again; one with no money in it changes nothing.
+ */
+export function runningBalances(rows: BalanceInput[]): Balance[] {
+  let carried = 0;
+  return rows.map((row) => {
+    if (row.amountCents === null) {
+      return { carriedInCents: 0, payableCents: null, carriedOutCents: 0 };
+    }
+    if (!row.carriesBalance) {
+      carried = 0;
+      return { carriedInCents: 0, payableCents: row.amountCents, carriedOutCents: 0 };
+    }
+    const carriedIn = carried;
+    const owed = carriedIn + row.amountCents;
+    carried = Math.min(owed, 0);
+    return { carriedInCents: carriedIn, payableCents: Math.max(owed, 0), carriedOutCents: carried };
+  });
+}

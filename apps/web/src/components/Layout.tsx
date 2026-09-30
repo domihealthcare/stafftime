@@ -32,7 +32,6 @@ const MANAGE = [
   { to: '/closing', label: 'Closing checklists' },
   { to: '/checklists', label: 'Onboarding & Offboarding' },
   { to: '/credentials', label: 'Licenses' },
-  { to: '/productivity', label: 'Provider productivity' },
   { to: '/job-roles', label: 'Job roles' },
   { to: '/export', label: 'Export' },
 ];
@@ -44,6 +43,8 @@ const OWN_PERSONNEL = [
   { to: '/checklists', label: 'Your onboarding' },
 ];
 /// A provider's own published productivity, once a manager has published any.
+/// Chosen by an admin, not by access level, so it is added separately below.
+const PRODUCTIVITY_MANAGE = { to: '/productivity', label: 'Provider productivity' };
 const OWN_PRODUCTIVITY = [{ to: '/my-productivity', label: 'Your productivity' }];
 const ADMINISTER = [
   { to: '/staff', label: 'Staff' },
@@ -168,7 +169,11 @@ export function Layout() {
             />
             <NavMenu
               label="Manage"
-              items={[...(isManager ? MANAGE : []), ...(isAdmin ? ADMINISTER : [])]}
+              items={[
+                ...(isManager ? MANAGE : []),
+                ...(isAdmin ? ADMINISTER : []),
+                ...(employee?.canManageProductivity || isAdmin ? [PRODUCTIVITY_MANAGE] : []),
+              ]}
               className={linkClasses}
             />
           </nav>

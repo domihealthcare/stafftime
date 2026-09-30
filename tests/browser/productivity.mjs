@@ -66,10 +66,11 @@ await signIn(admin, 'admin@domihealthcare.com');
 
 const frankie = (await call(doc, '/profile')).body;
 const providerRole = (await call(admin, '/job-roles')).body.find((r) => r.name === 'Provider');
-await call(admin, `/job-roles/${providerRole.id}/members`, {
+const joined = await call(admin, `/job-roles/${providerRole.id}/members`, {
   method: 'POST',
   body: JSON.stringify({ employeeId: frankie.id }),
 });
+if (joined.status >= 300) throw new Error(`making Frankie a Provider answered ${joined.status}`);
 
 const openPage = async () => {
   await mgr.goto(`${BASE}/productivity`, { waitUntil: 'networkidle' });
@@ -79,12 +80,49 @@ const choose = async (label) => {
   await mgr.getByLabel('Provider', { exact: true }).selectOption({ label });
 };
 
-await step('managers have it under Manage; an ordinary employee does not, and is refused', async () => {
+await step('a manager has no say in it until an admin chooses them: no menu item, and refused', async () => {
+  if ((await menuItems(mgr, 'Manage')).includes('Provider productivity')) throw new Error('shown before access was given');
+  await mgr.goto(`${BASE}/productivity`, { waitUntil: 'networkidle' });
+  await mgr.getByText('Provider productivity is only for the people an admin has chosen.').waitFor({ timeout: 10000 });
+  if ((await mgr.getByTestId('productivity-access').count()) > 0) throw new Error('a manager sees the access list');
+  for (const path of ['/productivity/plans', '/productivity/people', '/productivity/access']) {
+    const got = await call(mgr, path);
+    if (got.status !== 403) throw new Error(`${path} answered ${got.status} to a manager without access`);
+  }
+});
+
+await step('an admin chooses who: gives Morgan access, and it can be taken away and given back', async () => {
+  await admin.goto(`${BASE}/productivity`, { waitUntil: 'networkidle' });
+  const card = admin.getByTestId('productivity-access');
+  await card.waitFor({ timeout: 10000 });
+  await card.getByLabel('Give access to').selectOption({ label: 'Morgan Manager' });
+  await card.getByRole('button', { name: 'Give access' }).click();
+  await card.getByText('Morgan Manager').waitFor({ timeout: 10000 });
+  await card.getByRole('button', { name: 'Take access away from Morgan Manager' }).click();
+  await admin.getByRole('alertdialog').getByRole('button', { name: 'Keep it' }).click();
+  await card.getByText('Morgan Manager').waitFor({ timeout: 5000 });
+  await card.getByRole('button', { name: 'Take access away from Morgan Manager' }).click();
+  await admin.getByRole('alertdialog').getByRole('button', { name: 'Yes, take it away' }).click();
+  await card.getByText('Nobody yet.').waitFor({ timeout: 10000 });
+  await card.getByLabel('Give access to').selectOption({ label: 'Morgan Manager' });
+  await card.getByRole('button', { name: 'Give access' }).click();
+  await card.getByText('Morgan Manager').waitFor({ timeout: 10000 });
+});
+
+await step('only admins can change the list', async () => {
+  const me = (await call(mgr, '/profile')).body;
+  const got = await call(mgr, `/productivity/access/${me.id}`, { method: 'DELETE' });
+  if (got.status !== 403) throw new Error(`a manager changing the list answered ${got.status}`);
+});
+
+await mgr.reload({ waitUntil: 'networkidle' });
+
+await step('once chosen it is under Manage; an ordinary employee does not have it, and is refused', async () => {
   if (!(await menuItems(mgr, 'Manage')).includes('Provider productivity')) throw new Error('not under Manage');
   const manage = await other.getByRole('button', { name: 'Manage', exact: true }).count();
   if (manage > 0) throw new Error('an employee has a Manage menu');
   await other.goto(`${BASE}/productivity`, { waitUntil: 'networkidle' });
-  await other.getByText('Provider productivity is for managers and admins.').waitFor({ timeout: 10000 });
+  await other.getByText('Provider productivity is only for the people an admin has chosen.').waitFor({ timeout: 10000 });
   for (const path of ['/productivity/plans', `/productivity/statements?employeeId=${frankie.id}`]) {
     const got = await call(other, path);
     if (got.status !== 403) throw new Error(`${path} answered ${got.status} to an employee`);
@@ -136,7 +174,7 @@ await step('typing the sheet’s counts works out 323 against 300: +23, $1,150.0
   await worked.getByText('300', { exact: true }).waitFor({ timeout: 5000 });
   await worked.getByText('323', { exact: true }).waitFor({ timeout: 5000 });
   await worked.getByText('+23', { exact: true }).waitFor({ timeout: 5000 });
-  await worked.getByText('$1,150.00', { exact: true }).waitFor({ timeout: 5000 });
+  await worked.getByText('$1,150.00', { exact: true }).first().waitFor({ timeout: 5000 });
   await mgr.getByLabel('Note').fill('Paid 07.05.24');
   await mgr.screenshot({ path: `${OUT}/productivity-editor.png` });
   await mgr.getByRole('button', { name: 'Save draft' }).click();
@@ -202,6 +240,33 @@ await step('the next statement follows on by itself; a short period stays negati
   await card.getByText('-$800.00').first().waitFor({ timeout: 5000 });
 });
 
+await step('the running balance: -$800 is carried into the next period, which pays $1,700 not $2,500', async () => {
+  await mgr.getByRole('button', { name: '+ New statement' }).click();
+  await mgr.getByRole('button', { name: 'Start', exact: true }).click();
+  await mgr.getByLabel('Interval 1 from').waitFor({ timeout: 10000 });
+  if ((await mgr.getByLabel('Interval 1 from').inputValue()) !== '2026-08-02') throw new Error('did not follow on');
+  await mgr.getByLabel('Interval 1 patients').fill('180');
+  await mgr.getByLabel('Interval 2 patients').fill('170');
+  const worked = mgr.getByLabel('Worked out');
+  await worked.getByText('$2,500.00', { exact: true }).waitFor({ timeout: 5000 });
+  await worked.getByText('To pay (after -$800.00 brought forward)').waitFor({ timeout: 5000 });
+  await worked.getByText('$1,700.00', { exact: true }).waitFor({ timeout: 5000 });
+  await mgr.getByRole('button', { name: 'Save and publish' }).click();
+  const card = mgr.getByTestId('productivity-2026-08-02');
+  await card.getByText('Brought forward').waitFor({ timeout: 10000 });
+  await card.getByText('$1,700.00').first().waitFor({ timeout: 5000 });
+  // The short period itself pays nothing, and says what is carried.
+  const short = mgr.getByTestId('productivity-2026-07-05');
+  await short.getByText('Carried forward').waitFor({ timeout: 5000 });
+  await short.getByText('$0.00').first().waitFor({ timeout: 5000 });
+  // The provider sees the same.
+  await doc.goto(`${BASE}/my-productivity`, { waitUntil: 'networkidle' });
+  const theirs = doc.getByTestId('productivity-2026-08-02');
+  await theirs.getByText('Brought forward').waitFor({ timeout: 10000 });
+  await theirs.getByText('$1,700.00').first().waitFor({ timeout: 5000 });
+  await doc.getByText(/\$2,850\.00 in all/).waitFor({ timeout: 5000 });
+});
+
 await step('two statements may not cover the same days', async () => {
   await mgr.getByRole('button', { name: '+ New statement' }).click();
   await mgr.getByLabel('First day').fill('2026-06-20');
@@ -213,10 +278,10 @@ await step('two statements may not cover the same days', async () => {
 await step('the provider reads only their own, with this year’s total', async () => {
   await doc.reload({ waitUntil: 'networkidle' });
   const mine = (await call(doc, '/productivity/mine')).body;
-  if (mine.length !== 2) throw new Error(`${mine.length} statements`);
+  if (mine.length !== 3) throw new Error(`${mine.length} statements`);
   if (mine.some((s) => 'employee' in s)) throw new Error('names another person');
   await doc.getByText(/2026 so far:/).waitFor({ timeout: 5000 });
-  await doc.getByText(/\$350\.00 in all/).waitFor({ timeout: 5000 });
+  await doc.getByText(/\$2,850\.00 in all/).waitFor({ timeout: 5000 });
 });
 
 await step('nobody else can read them: not a colleague, not by asking for Frankie', async () => {
@@ -234,7 +299,7 @@ await step('unpublishing takes it away from the provider again', async () => {
   await mgr.getByRole('alertdialog').getByRole('button', { name: 'Yes, unpublish' }).click();
   await card.getByText('Draft', { exact: true }).waitFor({ timeout: 10000 });
   const mine = (await call(doc, '/productivity/mine')).body;
-  if (mine.length !== 1) throw new Error(`${mine.length} left for the provider`);
+  if (mine.length !== 2) throw new Error(`${mine.length} left for the provider`);
 });
 
 await step('a provider with no plan still works: a bare count, no target, no money', async () => {

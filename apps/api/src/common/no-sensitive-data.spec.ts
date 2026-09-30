@@ -217,6 +217,7 @@ describe('what this app deliberately does not store', () => {
     );
     expect(fieldsOf('ProductivityStatement')).toEqual(
       [
+        'carriesBalance',
         'createdAt',
         'createdBy',
         'createdById',

@@ -2776,10 +2776,29 @@ published (`hasProductivity` on `/auth/me`), with this year's total. It sits
 under Manage rather than Resources because it is for managers; moving it is a
 one-line change in `Layout.tsx`.
 
-**Not built** (waiting on a decision, see `docs/open-questions.md`): bonuses
-are not sent to payroll or the ADP export, and negative periods are not
-netted against later ones automatically (the sheet does this by hand, in the
-note).
+**Running balance** (Dominguez, 30 September 2026). A period that falls short is
+not paid out as a negative: the shortfall is carried into the provider's next
+statements and netted off what they earn until it clears (-$800 then +$4,700
+pays $3,900; -$800 then +$300 pays nothing and still owes $500). On by default
+per plan (`carriesBalance`), copied onto each statement when it is made; one
+that does not carry is paid as it stands and starts the count again, and one
+with no money in it changes nothing (`runningBalances` in
+`productivity-math.ts`). Worked out over *all* of a provider's statements in
+date order, on every read, so correcting an early period reaches the later
+ones. A provider sees the balance carried in from an earlier draft without
+seeing the draft.
+
+**Who may use it** (Dominguez, 30 September 2026). Not the manager access
+level: `Employee.canManageProductivity`, a list an admin chooses in the app
+(bottom of the Provider productivity screen; admins only). A migration started
+it with Dominguez and Angelica Dominguez. Every manager-side route checks it
+(`assertAccess`), the menu item appears only for those on it, and an admin who
+is not on it sees only the list, to add themselves. The staff picker for those
+on the list is `GET /productivity/people`, since they need not be able to list
+staff otherwise. Providers still read only their own published statements.
+
+**Not in payroll.** Decided: the amounts are not in the ADP export or any
+other payroll file. Bonuses are paid separately, and "Paid on" is recorded here.
 
 **Going live.** *Start using it for real* clears the statements made while
 testing (they are test data) and keeps each provider's plan.

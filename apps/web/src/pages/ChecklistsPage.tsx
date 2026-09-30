@@ -6,12 +6,7 @@ import { Alert, Badge, Card, EmptyState, PageHeading, Spinner } from '../compone
 import { ApiError, api } from '../lib/api';
 import { formatCalendarDate } from '../lib/format';
 import { useIsAdmin, useIsManager, useSession } from '../lib/session';
-import type {
-  Checklist,
-  ChecklistKind,
-  ChecklistTemplate,
-  Employee,
-} from '../lib/types';
+import type { Checklist, ChecklistKind, ChecklistTemplate, Employee } from '../lib/types';
 
 type StateFilter = 'open' | 'completed' | 'all';
 
@@ -54,9 +49,7 @@ export function ChecklistsPage() {
   // Replaces one checklist in place, so ticking a task off does not collapse
   // the card you are working in.
   const replace = useCallback((updated: Checklist) => {
-    setChecklists((current) =>
-      current.map((item) => (item.id === updated.id ? updated : item)),
-    );
+    setChecklists((current) => current.map((item) => (item.id === updated.id ? updated : item)));
   }, []);
 
   const mine = useMemo(
@@ -115,7 +108,11 @@ export function ChecklistsPage() {
                   : 'text-slate-600 hover:bg-slate-100'
               }`}
             >
-              {option === 'open' ? 'In progress' : option === 'completed' ? 'Finished' : 'Everything'}
+              {option === 'open'
+                ? 'In progress'
+                : option === 'completed'
+                  ? 'Finished'
+                  : 'Everything'}
             </button>
           ))}
         </div>
@@ -177,9 +174,7 @@ export function ChecklistsPage() {
       )}
 
       {!isManager && mine.length === 0 && (
-        <EmptyState>
-          You have no checklist at the moment. Nothing to do here.
-        </EmptyState>
+        <EmptyState>You have no checklist at the moment. Nothing to do here.</EmptyState>
       )}
 
       {isManager && templates.length > 0 && (
@@ -188,9 +183,9 @@ export function ChecklistsPage() {
             Templates
           </h2>
           <p className="mb-3 text-sm text-slate-600">
-            Starting points, not gospel — edit them to match how the practice actually
-            works. Changing a template never alters a checklist already under way, so
-            what somebody signed stays what they signed.
+            Starting points, not gospel — edit them to match how the practice actually works.
+            Changing a template never alters a checklist already under way, so what somebody signed
+            stays what they signed.
           </p>
 
           {isAdmin && !newTemplateKind && (
@@ -292,9 +287,7 @@ function ChecklistCard({
               <Badge tone="success">finished</Badge>
             ) : (
               checklist.overdueCount > 0 && (
-                <Badge tone="danger">
-                  {checklist.overdueCount} overdue
-                </Badge>
+                <Badge tone="danger">{checklist.overdueCount} overdue</Badge>
               )
             )}
           </div>

@@ -200,21 +200,18 @@ export function CalendarLinkCard() {
             </div>
             <div>
               <p className="font-medium">Outlook</p>
-              <p className="text-slate-600">
-                Add calendar → Subscribe from web → paste.
-              </p>
+              <p className="text-slate-600">Add calendar → Subscribe from web → paste.</p>
             </div>
           </div>
 
           <p className="mt-4 rounded-lg bg-amber-50 px-3 py-2 text-xs text-amber-900 ring-1 ring-inset ring-amber-200">
-            Keep this address to yourself. Anyone who has it can see your schedule without
-            signing in — that is how calendar subscriptions work. If it gets out, regenerate
-            it below.
+            Keep this address to yourself. Anyone who has it can see your schedule without signing
+            in — that is how calendar subscriptions work. If it gets out, regenerate it below.
           </p>
 
           <p className="mt-3 text-xs text-slate-500">
-            Calendars usually check for changes every few hours, so a new shift may take a
-            while to appear.
+            Calendars usually check for changes every few hours, so a new shift may take a while to
+            appear.
           </p>
 
           <div className="mt-3 flex flex-wrap gap-3">

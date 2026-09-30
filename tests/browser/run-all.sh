@@ -37,6 +37,7 @@ reset_state() {
     -c "delete from employee_credentials;" \
     -c "delete from productivity_statements;" \
     -c "delete from productivity_plans;" \
+    -c "update employees set \"canManageProductivity\" = false;" \
     -c "delete from credential_types where name not in ('Medical license', 'CDS registration', 'DEA registration', 'Medical malpractice insurance', 'ACLS', 'BLS', 'Student-Athlete Cardiac Assessment Certificate', 'Flu vaccine', 'TB test');" \
     -c "update employees set \"employmentStatus\" = 'ACTIVE', \"wantsDailyDigest\" = true;" \
     -c "delete from practice_settings;" \

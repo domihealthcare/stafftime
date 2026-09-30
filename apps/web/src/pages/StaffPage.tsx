@@ -157,20 +157,23 @@ export function StaffPage() {
       {imported !== null && (
         <div className="mb-4">
           <Alert tone="success">
-            {imported} {imported === 1 ? 'person' : 'people'} added. Nobody has been emailed yet
-            — send the welcome emails when you are ready.
+            {imported} {imported === 1 ? 'person' : 'people'} added. Nobody has been emailed yet —
+            send the welcome emails when you are ready.
           </Alert>
         </div>
       )}
 
       {waiting.length > 0 && !loading && (
-        <Card className="mb-4 flex flex-wrap items-center justify-between gap-3 p-4" testId="welcome-everyone">
+        <Card
+          className="mb-4 flex flex-wrap items-center justify-between gap-3 p-4"
+          testId="welcome-everyone"
+        >
           <p className="text-sm text-slate-700">
             <strong>
               {waiting.length} {waiting.length === 1 ? 'person has' : 'people have'}
             </strong>{' '}
-            not been sent a welcome email — the link to choose their password, with how to put
-            Domi Staff on their phone.
+            not been sent a welcome email — the link to choose their password, with how to put Domi
+            Staff on their phone.
           </p>
           <button
             type="button"

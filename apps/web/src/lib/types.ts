@@ -101,6 +101,9 @@ export interface Employee extends EmployeeSummary {
   /// Signed-in person only: a manager has published productivity numbers for
   /// them, so "Your productivity" appears under Team.
   hasProductivity?: boolean;
+  /// Signed-in person only: an admin has given them provider productivity to
+  /// work out and publish, whatever their access level.
+  canManageProductivity?: boolean;
 }
 
 export interface Shift {
@@ -1125,6 +1128,7 @@ export interface ProductivityPlan {
   expectedPerInterval: number | null;
   multiplier: number | null;
   categories: string[];
+  carriesBalance: boolean;
 }
 
 export interface ProductivityCount {
@@ -1160,9 +1164,24 @@ export interface ProductivityStatement {
   multiplier: number | null;
   paidOn: string | null;
   note: string | null;
+  /// A short period is carried forward and netted off the next ones.
+  carriesBalance: boolean;
   published: boolean;
   publishedAt: string | null;
   updatedAt: string;
   intervals: ProductivityInterval[];
   totals: ProductivityTotals;
+  balance: ProductivityBalance;
+}
+
+/// The running balance (September 2026): a shortfall brought in, what is paid
+/// for this period once it is netted off, and any shortfall still standing.
+export interface ProductivityBalance {
+  carriedInCents: number;
+  payableCents: number | null;
+  carriedOutCents: number;
+}
+
+export interface ProductivityPerson extends PersonName {
+  isProvider: boolean;
 }

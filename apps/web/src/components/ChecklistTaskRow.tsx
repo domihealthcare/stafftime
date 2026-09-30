@@ -62,9 +62,7 @@ export function ChecklistTaskRow({
             {overdue && <Badge tone="danger">overdue</Badge>}
           </div>
 
-          {task.description && (
-            <p className="mt-1 text-sm text-slate-600">{task.description}</p>
-          )}
+          {task.description && <p className="mt-1 text-sm text-slate-600">{task.description}</p>}
 
           <p className="mt-1 text-xs text-slate-500">
             For {OWNER_LABEL[task.owner]}
@@ -76,9 +74,7 @@ export function ChecklistTaskRow({
               } ${task.completedBy.lastName} on ${formatDate(task.completedAt)}`}
           </p>
 
-          {task.note && (
-            <p className="mt-1 text-xs italic text-slate-500">“{task.note}”</p>
-          )}
+          {task.note && <p className="mt-1 text-xs italic text-slate-500">“{task.note}”</p>}
         </div>
 
         {canComplete && (

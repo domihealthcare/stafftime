@@ -164,8 +164,8 @@ export function SettingsPage() {
                     : 'Monday'}
                 </strong>
                 {payStart ? ', the pay period’s first day' : ' until a pay period is set'}: each pay
-                period is two weeks, and hours past the overtime line in either week are overtime
-                — on the schedule, the dashboard and the payroll export.
+                period is two weeks, and hours past the overtime line in either week are overtime —
+                on the schedule, the dashboard and the payroll export.
               </p>
             </div>
           </div>

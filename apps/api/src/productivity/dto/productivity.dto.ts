@@ -3,6 +3,7 @@ import {
   ArrayMaxSize,
   ArrayMinSize,
   IsArray,
+  IsBoolean,
   IsISO8601,
   IsInt,
   IsNumber,
@@ -55,6 +56,11 @@ export class SavePlanDto {
   @MinLength(1, { each: true })
   @MaxLength(40, { each: true })
   categories?: string[];
+
+  /// Carry a short period forward as a running balance. On unless said otherwise.
+  @IsOptional()
+  @IsBoolean()
+  carriesBalance?: boolean;
 }
 
 export class NewStatementDto {

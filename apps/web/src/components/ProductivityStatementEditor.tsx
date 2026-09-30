@@ -348,6 +348,18 @@ export function ProductivityStatementEditor({
             <dd className="text-lg font-semibold tabular-nums">{formatMoney(live.amountCents)}</dd>
           </div>
         )}
+        {live.amountCents !== null && statement.carriesBalance && (
+          <div>
+            <dt className="text-xs uppercase tracking-wide text-slate-500">
+              To pay
+              {statement.balance.carriedInCents !== 0 &&
+                ` (after ${formatMoney(statement.balance.carriedInCents)} brought forward)`}
+            </dt>
+            <dd className="text-lg font-semibold tabular-nums">
+              {formatMoney(Math.max(statement.balance.carriedInCents + live.amountCents, 0))}
+            </dd>
+          </div>
+        )}
       </dl>
 
       <div className="mt-4 flex flex-wrap gap-2">

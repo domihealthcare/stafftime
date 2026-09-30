@@ -1,4 +1,4 @@
-import { addDaysIso, planIntervals, toCents, totals } from './productivity-math';
+import { addDaysIso, planIntervals, runningBalances, toCents, totals } from './productivity-math';
 
 describe('totals', () => {
   it("reproduces the practice's sheet: 169 + 154 against 300 at $50", () => {
@@ -94,5 +94,46 @@ describe('planIntervals', () => {
 
   it('crosses a year end', () => {
     expect(addDaysIso('2026-12-28', 7)).toBe('2027-01-04');
+  });
+});
+
+describe('runningBalances', () => {
+  const carry = (amountCents: number | null) => ({ amountCents, carriesBalance: true });
+
+  it('nets a shortfall off the next period: -$800 then +$4,700 pays $3,900', () => {
+    expect(runningBalances([carry(-80_000), carry(470_000)])).toEqual([
+      { carriedInCents: 0, payableCents: 0, carriedOutCents: -80_000 },
+      { carriedInCents: -80_000, payableCents: 390_000, carriedOutCents: 0 },
+    ]);
+  });
+
+  it('keeps carrying until it clears', () => {
+    const [, second, third] = runningBalances([carry(-80_000), carry(30_000), carry(100_000)]);
+    expect(second).toEqual({ carriedInCents: -80_000, payableCents: 0, carriedOutCents: -50_000 });
+    expect(third).toEqual({ carriedInCents: -50_000, payableCents: 50_000, carriedOutCents: 0 });
+  });
+
+  it('pays a good period in full when nothing is owed', () => {
+    expect(runningBalances([carry(115_000)])[0]).toEqual({
+      carriedInCents: 0,
+      payableCents: 115_000,
+      carriedOutCents: 0,
+    });
+  });
+
+  it('pays a negative as it stands, and starts again, when the statement does not carry', () => {
+    const rows = runningBalances([
+      carry(-80_000),
+      { amountCents: -20_000, carriesBalance: false },
+      carry(50_000),
+    ]);
+    expect(rows[1]).toEqual({ carriedInCents: 0, payableCents: -20_000, carriedOutCents: 0 });
+    expect(rows[2].carriedInCents).toBe(0);
+  });
+
+  it('a statement with no money in it changes nothing', () => {
+    const rows = runningBalances([carry(-80_000), carry(null), carry(100_000)]);
+    expect(rows[1].payableCents).toBeNull();
+    expect(rows[2]).toEqual({ carriedInCents: -80_000, payableCents: 20_000, carriedOutCents: 0 });
   });
 });
