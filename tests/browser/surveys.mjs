@@ -1,5 +1,6 @@
 import { chromium } from 'playwright';
 import { mkdirSync } from 'node:fs';
+import { openMenu } from './nav.mjs';
 
 const OUT = process.argv[2] || new URL('./shots/', import.meta.url).pathname;
 mkdirSync(OUT, { recursive: true });
@@ -25,7 +26,7 @@ async function signIn(page, email) {
 }
 
 async function openSurveys(page) {
-  await page.getByRole('button', { name: 'Team', exact: true }).click();
+  await openMenu(page, 'Team');
   await page.getByRole('navigation').getByRole('link', { name: 'Surveys', exact: true }).click();
   await page.getByRole('heading', { name: 'Surveys and feedback' }).waitFor({ timeout: 15000 });
 }

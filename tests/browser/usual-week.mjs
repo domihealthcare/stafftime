@@ -1,5 +1,6 @@
 import { chromium } from 'playwright';
 import { mkdirSync } from 'node:fs';
+import { showRegularShifts } from './nav.mjs';
 
 const OUT = process.argv[2] || new URL('./shots/', import.meta.url).pathname;
 mkdirSync(OUT, { recursive: true });
@@ -142,6 +143,7 @@ await step('the rota has each day as it was set, eight weeks of them', async () 
 });
 
 await step('they are listed as regular shifts, each with a way back to the week', async () => {
+  await showRegularShifts(page);
   const list = page.getByTestId('standing-shift').filter({ hasText: 'Ada Admin' });
   await list.first().waitFor({ timeout: 5000 });
   if ((await list.count()) !== 3) throw new Error(`${await list.count()} listed`);
@@ -168,6 +170,7 @@ await step('a change leaves the days that did not change alone', async () => {
 });
 
 await step('the replaced regular shifts, which never ran, are gone from the list', async () => {
+  await showRegularShifts(page);
   const list = page.getByTestId('standing-shift').filter({ hasText: 'Ada Admin' });
   await page.waitForTimeout(500);
   const texts = await list.allInnerTexts();

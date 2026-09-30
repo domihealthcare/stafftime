@@ -4,6 +4,8 @@ import { TIME_OFF_CHANGED, api } from '../lib/api';
 import { AccountMenu } from './AccountMenu';
 import { SloganStrip, Wordmark } from './Brand';
 import { NavMenu } from './NavMenu';
+import { PhoneTabBar } from './PhoneTabBar';
+import { useIsPhone } from '../lib/use-is-phone';
 import { NotificationBell } from './NotificationBell';
 import { useIsAdmin, useIsManager, useSession } from '../lib/session';
 import { Spinner } from './ui';
@@ -88,11 +90,23 @@ function useRouteAnnouncer(main: React.RefObject<HTMLElement>) {
 }
 
 export function Layout() {
-  const mainRef = useRef<HTMLElement>(null);
-  useRouteAnnouncer(mainRef);
+  const isPhone = useIsPhone();
   const isManager = useIsManager();
   const isAdmin = useIsAdmin();
   const { employee } = useSession();
+  // What Team and Manage hold — on a laptop in the header, on a phone under More.
+  const teamItems = [
+    ...TEAM,
+    ...(!isManager && employee?.seesOwnPersonnelTabs ? OWN_PERSONNEL : []),
+    ...(employee?.hasProductivity ? OWN_PRODUCTIVITY : []),
+  ];
+  const manageItems = [
+    ...(isManager ? MANAGE : []),
+    ...(isAdmin ? ADMINISTER : []),
+    ...(employee?.canManageProductivity || isAdmin ? [PRODUCTIVITY_MANAGE] : []),
+  ];
+  const mainRef = useRef<HTMLElement>(null);
+  useRouteAnnouncer(mainRef);
   const [pendingPto, setPendingPto] = useState(0);
 
   // A badge on the tab, so a manager does not have to go looking for requests.
@@ -180,49 +194,35 @@ export function Layout() {
 
               `relative` so that on a phone a menu opens across the whole nav,
               wherever its button landed. */}
-          <nav
-            aria-label="Main"
-            className="relative col-span-2 flex flex-wrap gap-1 sm:col-span-1 sm:items-center sm:gap-x-1 sm:gap-y-1"
-          >
-            <NavLink to="/" end className={linkClasses}>
-              Clock
-            </NavLink>
-            <NavLink to="/news" className={linkClasses}>
-              News
-            </NavLink>
-            <NavLink to="/schedule" className={linkClasses}>
-              Schedule
-            </NavLink>
-            <NavLink to="/timesheet" className={linkClasses}>
-              Timesheet
-            </NavLink>
-            <NavLink to="/time-off" className={linkClasses}>
-              Time off
-              {pendingPto > 0 && (
-                <span className="ml-1.5 rounded-full bg-amber-100 px-1.5 py-0.5 text-xs font-semibold text-amber-800">
-                  {pendingPto}
-                </span>
-              )}
-            </NavLink>
-            <NavMenu
-              label="Team"
-              items={[
-                ...TEAM,
-                ...(!isManager && employee?.seesOwnPersonnelTabs ? OWN_PERSONNEL : []),
-                ...(employee?.hasProductivity ? OWN_PRODUCTIVITY : []),
-              ]}
-              className={linkClasses}
-            />
-            <NavMenu
-              label="Manage"
-              items={[
-                ...(isManager ? MANAGE : []),
-                ...(isAdmin ? ADMINISTER : []),
-                ...(employee?.canManageProductivity || isAdmin ? [PRODUCTIVITY_MANAGE] : []),
-              ]}
-              className={linkClasses}
-            />
-          </nav>
+          {!isPhone && (
+            <nav
+              aria-label="Main"
+              className="relative col-span-2 flex flex-wrap gap-1 sm:col-span-1 sm:items-center sm:gap-x-1 sm:gap-y-1"
+            >
+              <NavLink to="/" end className={linkClasses}>
+                Clock
+              </NavLink>
+              <NavLink to="/news" className={linkClasses}>
+                News
+              </NavLink>
+              <NavLink to="/schedule" className={linkClasses}>
+                Schedule
+              </NavLink>
+              <NavLink to="/timesheet" className={linkClasses}>
+                Timesheet
+              </NavLink>
+              <NavLink to="/time-off" className={linkClasses}>
+                Time off
+                {pendingPto > 0 && (
+                  <span className="ml-1.5 rounded-full bg-amber-100 px-1.5 py-0.5 text-xs font-semibold text-amber-800">
+                    {pendingPto}
+                  </span>
+                )}
+              </NavLink>
+              <NavMenu label="Team" items={teamItems} className={linkClasses} />
+              <NavMenu label="Manage" items={manageItems} className={linkClasses} />
+            </nav>
+          )}
         </div>
       </header>
       <SloganStrip />
@@ -231,7 +231,7 @@ export function Layout() {
         id="main"
         ref={mainRef}
         tabIndex={-1}
-        className="mx-auto max-w-6xl px-4 py-6 focus:outline-none"
+        className="mx-auto max-w-6xl px-4 py-6 pb-24 focus:outline-none sm:pb-6"
       >
         {/* Screens load when first opened; the header stays while they do. */}
         <Suspense
@@ -244,6 +244,9 @@ export function Layout() {
           <Outlet />
         </Suspense>
       </main>
+      {isPhone && (
+        <PhoneTabBar pendingPto={pendingPto} teamItems={teamItems} manageItems={manageItems} />
+      )}
     </div>
   );
 }

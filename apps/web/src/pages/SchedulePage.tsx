@@ -51,7 +51,9 @@ import {
   placeToShift,
 } from '../components/PlaceSelect';
 import { RepeatShiftsForm } from '../components/RepeatShiftsForm';
-import { RotaTable, type RotaGrouping } from '../components/RotaTable';
+import { RotaLegend, RotaTable, type RotaGrouping } from '../components/RotaTable';
+import { REMOTE_COLOUR, locationColourFn, tint } from '../lib/shift-colours';
+import { jobRoleHex } from '../lib/job-role-colours';
 import { StandingShiftsCard } from '../components/StandingShiftsCard';
 import { Alert, Card, EmptyState, PageHeading, Spinner, buttonClass } from '../components/ui';
 import { NeedsAttention } from '../components/NeedsAttention';
@@ -693,7 +695,13 @@ export function SchedulePage() {
                 : ` — ${scopedShiftCount} shift${scopedShiftCount === 1 ? '' : 's'} this month.`}
             </p>
           )}
+          <RotaLegend
+            locations={locations}
+            colourOf={locationColourFn(locations)}
+            jobRoles={jobRoles}
+          />
           <MonthGrid
+            colourOf={locationColourFn(locations)}
             days={days}
             monthStart={monthStart}
             shiftsByDay={shiftsByDay}
@@ -1263,6 +1271,7 @@ function OvertimeNotice({
  * removed.
  */
 function MonthGrid({
+  colourOf,
   days,
   monthStart,
   shiftsByDay,
@@ -1271,6 +1280,8 @@ function MonthGrid({
   showNames,
   onPickDay,
 }: {
+  /// An office's colour, the same as the week's.
+  colourOf: (locationId: string) => string;
   days: Date[];
   monthStart: Date;
   shiftsByDay: Map<string, Shift[]>;
@@ -1284,7 +1295,9 @@ function MonthGrid({
   onPickDay: (day: Date) => void;
 }) {
   const today = new Date().toDateString();
-  // Three lines is what fits before a square starts scrolling on a laptop.
+  // On a phone a square is forty pixels wide, so it shows three and counts the
+  // rest. From `sm` up the square grows to list every shift — a manager reads
+  // the month to see who is on, and "+4 more" answers nothing.
   const MAX_LINES = 3;
 
   return (
@@ -1325,7 +1338,7 @@ function MonthGrid({
           // at one — and the rest is one tap away in the week.
           const described = dayShifts.map((shift) =>
             showNames
-              ? (shift.employee?.firstName ?? 'Open')
+              ? `${shift.employee?.firstName ?? 'Open'} ${formatTimeCompact(shift.startsAt)}–${formatTimeCompact(shift.endsAt)}`
               : `${formatTimeCompact(shift.startsAt)}–${formatTimeCompact(shift.endsAt)}`,
           );
           const shortened = dayShifts.map((shift) =>
@@ -1350,7 +1363,7 @@ function MonthGrid({
                   ? ` — event${dayEvents.length === 1 ? '' : 's'}: ${dayEvents.map((event) => event.title).join(', ')}`
                   : ''
               }`}
-              className={`min-h-[72px] rounded-lg border p-1.5 text-left align-top transition hover:border-brand-400 hover:bg-brand-50 sm:min-h-[104px] sm:p-2 ${
+              className={`flex min-h-[72px] flex-col justify-start rounded-lg border p-1.5 text-left align-top transition hover:border-brand-400 hover:bg-brand-50 sm:min-h-[104px] sm:p-2 ${
                 isToday ? 'border-brand-500 ring-1 ring-brand-500' : 'border-slate-200'
               } ${outside ? 'bg-slate-50 opacity-60' : 'bg-white'}`}
             >
@@ -1390,17 +1403,43 @@ function MonthGrid({
                 <span className="mt-1 block text-[11px] text-slate-300 sm:text-xs">—</span>
               ) : (
                 <span className="mt-0.5 block space-y-0.5">
-                  {described.slice(0, MAX_LINES).map((line, index) => (
-                    <span
-                      key={`${line}-${index}`}
-                      className="block truncate rounded bg-brand-50 px-1 text-[10px] leading-4 text-brand-900 sm:text-[11px] sm:leading-5"
-                    >
-                      <span className="sm:hidden">{shortened[index]}</span>
-                      <span className="hidden sm:inline">{line}</span>
-                    </span>
-                  ))}
+                  {dayShifts.map((shift, index) => {
+                    const remote = shift.isRemote === true;
+                    const open = !shift.employee;
+                    const base = remote ? REMOTE_COLOUR : colourOf(shift.locationId);
+                    const roleColour = shift.jobRole ? jobRoleHex(shift.jobRole.colour) : null;
+                    const draft = shift.status === 'DRAFT';
+                    return (
+                      <span
+                        key={shift.id}
+                        title={[
+                          described[index],
+                          remote ? 'work from home' : shift.location?.name,
+                          shift.jobRole?.name,
+                        ]
+                          .filter(Boolean)
+                          .join(' · ')}
+                        style={
+                          open
+                            ? { borderLeftColor: roleColour ?? '#d97706' }
+                            : {
+                                backgroundColor: draft ? '#ffffff' : tint(base, '1f'),
+                                borderLeftColor: roleColour ?? base,
+                              }
+                        }
+                        className={`block truncate rounded border-l-4 px-1 text-[10px] leading-4 text-slate-900 sm:text-[11px] sm:leading-5 ${
+                          open ? 'bg-amber-100 text-amber-950' : ''
+                        } ${draft ? 'border border-l-4 border-dashed border-slate-300' : ''} ${
+                          index >= MAX_LINES ? 'hidden sm:block' : ''
+                        }`}
+                      >
+                        <span className="sm:hidden">{shortened[index]}</span>
+                        <span className="hidden sm:inline">{described[index]}</span>
+                      </span>
+                    );
+                  })}
                   {described.length > MAX_LINES && (
-                    <span className="block px-1 text-[10px] text-slate-500 sm:text-[11px]">
+                    <span className="block px-1 text-[10px] text-slate-600 sm:hidden">
                       +{described.length - MAX_LINES} more
                     </span>
                   )}

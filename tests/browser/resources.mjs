@@ -1,5 +1,6 @@
 import { chromium } from 'playwright';
 import { mkdirSync } from 'node:fs';
+import { openMenu } from './nav.mjs';
 
 const OUT = process.argv[2] || new URL('./shots/', import.meta.url).pathname;
 mkdirSync(OUT, { recursive: true });
@@ -25,7 +26,7 @@ async function signIn(page, email) {
 }
 
 async function go(page, menu, link) {
-  await page.getByRole('button', { name: menu, exact: true }).click();
+  await openMenu(page, menu);
   await page.getByRole('navigation').getByRole('link', { name: link, exact: true }).click();
 }
 
@@ -279,17 +280,17 @@ await step('someone in two roles sees both, and nothing else', async () => {
   await ctx.close();
 });
 
-await step('the admin top bar fits in three rows on a phone', async () => {
+await step('the admin header is a single row on a phone, with Manage under More', async () => {
   const ctx = await browser.newContext({ viewport: { width: 390, height: 844 }, isMobile: true });
   const adm = await ctx.newPage();
   await signIn(adm, 'admin@domihealthcare.com');
   await adm.screenshot({ path: `${OUT}/83-top-bar-phone.png` });
   const height = await adm.locator('header').evaluate((el) => el.getBoundingClientRect().height);
-  // Padding, the name, and three rows of links at 44px each (the smallest
-  // comfortable touch target). Laid out flat, an admin's fifteen screens took five.
-  if (height > 24 + 28 + 3 * 44) throw new Error(`the header is ${height}px tall`);
+  // Padding and the name: the links live in the bottom bar. Laid out flat, an
+  // admin's fifteen screens took five rows of the header.
+  if (height > 24 + 28 + 44) throw new Error(`the header is ${height}px tall`);
 
-  await adm.getByRole('button', { name: 'Manage', exact: true }).click();
+  await openMenu(adm, 'Manage');
   for (const name of ['Job roles', 'Export', 'Staff', 'Kiosks', 'Locations']) {
     const link = adm.getByRole('link', { name, exact: true });
     await link.waitFor({ timeout: 5000 });

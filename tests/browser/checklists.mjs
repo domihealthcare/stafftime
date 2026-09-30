@@ -1,5 +1,6 @@
 import { chromium } from 'playwright';
 import { mkdirSync } from 'node:fs';
+import { openMenu } from './nav.mjs';
 
 const OUT = process.argv[2] || new URL('./shots/', import.meta.url).pathname;
 mkdirSync(OUT, { recursive: true });
@@ -28,7 +29,7 @@ const admin = await browser.newPage({ viewport: { width: 1280, height: 1200 } })
 admin.on('pageerror', (e) => errors.push(`pageerror: ${e.message}`));
 await signIn(admin, 'admin@domihealthcare.com');
 // Under Manage since September 2026, not on the top bar.
-await admin.getByRole('button', { name: 'Manage', exact: true }).click();
+await openMenu(admin, 'Manage');
 await admin.getByRole('link', { name: 'Onboarding & Offboarding', exact: true }).click();
 
 await step('an admin starts with nothing on the go', async () => {
@@ -155,7 +156,7 @@ const mgrCtx = await browser.newContext({ viewport: { width: 1280, height: 1000 
 const manager = await mgrCtx.newPage();
 manager.on('pageerror', (e) => errors.push(`pageerror: ${e.message}`));
 await signIn(manager, 'manager@domihealthcare.com');
-await manager.getByRole('button', { name: 'Manage', exact: true }).click();
+await openMenu(manager, 'Manage');
 await manager.getByRole('link', { name: 'Onboarding & Offboarding', exact: true }).click();
 
 await step('a manager runs the checklist', async () => {

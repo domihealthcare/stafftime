@@ -1,5 +1,6 @@
 import { chromium } from 'playwright';
 import { mkdirSync } from 'node:fs';
+import { showRegularShifts } from './nav.mjs';
 
 const OUT = process.argv[2] || new URL('./shots/', import.meta.url).pathname;
 mkdirSync(OUT, { recursive: true });
@@ -129,6 +130,7 @@ await step('every one of them belongs to the regular shift', async () => {
 
 await step('it is listed under Regular shifts', async () => {
   const card = page.getByTestId('standing-shifts-card');
+  await showRegularShifts(page);
   // Scoped to the list: the usual-week picker above it names everybody too.
   await card.getByTestId('standing-shift').getByText('Frankie Front-Desk').waitFor({ timeout: 10000 });
   await card.getByText(/Mondays, 9:00 AM–5:00 PM · North Bergen/).waitFor({ timeout: 5000 });
@@ -154,9 +156,32 @@ await step('Frankie is told once, that it has no end date', async () => {
   await frankie.context().close();
 });
 
+await step('the list stays hidden until asked for, and can be searched', async () => {
+  await page.goto(`${BASE}/schedule?week=${key(firstMonday)}`, { waitUntil: 'networkidle' });
+  const card = page.getByTestId('standing-shifts-card');
+  await card.getByRole('button', { name: /^Show the \d+ regular shifts?$/ }).waitFor({ timeout: 10000 });
+  if ((await card.getByTestId('standing-shift').count()) !== 0) throw new Error('the list was open by itself');
+  await showRegularShifts(page);
+  await card.getByLabel('Search regular shifts').fill('zzzz-nobody');
+  await card.getByText('Nobody matches', { exact: false }).waitFor({ timeout: 5000 });
+  await card.getByLabel('Search regular shifts').fill('Frankie');
+  await card.getByTestId('standing-shift').first().waitFor({ timeout: 5000 });
+});
+
+await step('the month shows every shift, tinted by office with the job role as a stripe', async () => {
+  await page.goto(`${BASE}/schedule?week=${key(firstMonday)}`, { waitUntil: 'networkidle' });
+  await page.getByRole('button', { name: 'Month', exact: true }).click();
+  const grid = page.getByTestId('month-grid');
+  await grid.waitFor({ timeout: 10000 });
+  const tinted = await grid.locator('[style*="border-left-color"]').count();
+  if (tinted === 0) throw new Error('no shift in the month wears a colour');
+  await page.getByTestId('rota-legend').waitFor({ timeout: 5000 });
+});
+
 await step('stopping it asks first, then takes off the shifts after the last day', async () => {
   await page.goto(`${BASE}/schedule?week=${key(firstMonday)}`, { waitUntil: 'networkidle' });
   const card = page.getByTestId('standing-shifts-card');
+  await showRegularShifts(page);
   await card.getByRole('button', { name: 'Stop…' }).click();
   await card.getByLabel('Last day it runs').fill(key(thirdMonday));
   await card.getByRole('button', { name: 'Stop it' }).click();
@@ -187,6 +212,7 @@ await step('a repeat with an end date makes no regular shift', async () => {
   if (await page.getByTestId('plan-standing').count())
     throw new Error('it was treated as having no end date');
   const card = page.getByTestId('standing-shifts-card');
+  await showRegularShifts(page);
   if ((await card.getByTestId('standing-shift').count()) !== 1)
     throw new Error('a second regular shift appeared');
 });

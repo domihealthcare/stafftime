@@ -1,5 +1,6 @@
 import { chromium } from 'playwright';
 import { mkdirSync } from 'node:fs';
+import { openMenu } from './nav.mjs';
 
 // Working from home: a manager marks a shift as work from home, and during it
 // the person clocks in from anywhere — no location asked for, none recorded —
@@ -106,7 +107,7 @@ frankie.on('pageerror', (e) => errors.push(`colleague pageerror: ${e.message}`))
 await signIn(frankie, 'frontdesk@domihealthcare.com');
 
 await step('the Directory shows Morgan working from home, not at an office', async () => {
-  await frankie.getByRole('button', { name: 'Team', exact: true }).click();
+  await openMenu(frankie, 'Team');
   await frankie.getByRole('navigation').getByRole('link', { name: 'Directory', exact: true }).click();
   const home = frankie.getByTestId('in-now-home');
   await home.waitFor({ timeout: 15000 });

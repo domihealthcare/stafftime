@@ -1,6 +1,7 @@
 import { chromium } from 'playwright';
 import { readFileSync } from 'node:fs';
 import { mkdirSync } from 'node:fs';
+import { openMenu } from './nav.mjs';
 // Screenshots go wherever the caller says, or into ./shots (gitignored).
 const OUT = process.argv[2] || new URL('./shots/', import.meta.url).pathname;
 mkdirSync(OUT, { recursive: true });
@@ -31,7 +32,7 @@ const mgrCtx = await browser.newContext({ viewport: { width: 1280, height: 1000 
 const mgr = await mgrCtx.newPage();
 mgr.on('pageerror', (e) => errors.push(`pageerror: ${e.message}`));
 await signIn(mgr, 'manager@domihealthcare.com');
-await mgr.getByRole('button', { name: 'Manage', exact: true }).click();
+await openMenu(mgr, 'Manage');
 await mgr.getByRole('link', { name: 'Export' }).click();
 await mgr.getByText('Export timesheets').waitFor({ timeout: 10000 });
 
@@ -99,7 +100,7 @@ await step('the saved report still produces a working file', async () => {
 const admCtx = await browser.newContext({ viewport: { width: 1280, height: 1000 } });
 const adm = await admCtx.newPage();
 await signIn(adm, 'admin@domihealthcare.com');
-await adm.getByRole('button', { name: 'Manage', exact: true }).click();
+await openMenu(adm, 'Manage');
 await adm.getByRole('link', { name: 'Export' }).click();
 
 await step('a shared report is visible to another manager, attributed to its owner', async () => {

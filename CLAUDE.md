@@ -489,8 +489,17 @@ Beyond the phases, the parts worth knowing about before picking up work:
   New buttons should use them; the rest move over as their screens are touched.
   Batch D: on the Schedule "Worth a look" starts as a one-line summary that opens on a
   tap (`NeedsAttention collapsible`), and the colour key is a `<details>` (open on a
-  wide screen, closed on a phone). Not done: the phone header, whose two rows and
-  slogan strip were chosen by Dominguez — a change there needs his call.
+  wide screen, closed on a phone). The phone header's two rows became a bottom tab
+  bar — see the next entry.
+- **Schedule and phone navigation** (30 September 2026, Dominguez): the Regular
+  shifts list is hidden behind "Show the N regular shifts", with a search box and
+  eight at a time. The month view lists **every** shift on a laptop (a phone still shows
+  three and counts the rest), tinted by office with the job role as the stripe, with
+  the same key as the week (`lib/shift-colours.ts`, shared). On a phone the navigation
+  is a **bottom tab bar** — Clock, Schedule, Timesheet, Time off, More (News, Team,
+  Manage inside) — and the header is one row; from `sm` up it is the header nav as
+  before. Only one of the two is ever on the page (`useIsPhone`), so each link
+  appears once. Browser tests open menus through `tests/browser/nav.mjs`.
 - **Version on the Help page** — "About this version": the build date and
   commit baked in when the bundle is built (`VERCEL_GIT_COMMIT_SHA` on Vercel,
   git locally), whether it is the test or live site, and — because

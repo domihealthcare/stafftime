@@ -1,4 +1,5 @@
 import { useDialog } from './useDialog';
+import { REMOTE_COLOUR, locationColourFn, tint } from '../lib/shift-colours';
 import { useMemo, useState } from 'react';
 import { birthdayName } from '../lib/birthday';
 import { ApiError, api } from '../lib/api';
@@ -49,9 +50,6 @@ import {
 import { Alert, buttonClass } from './ui';
 
 export type RotaGrouping = 'person' | 'location' | 'role';
-
-/// Location marks, in the order the colour-blind-checked palette validates them.
-const LOCATION_COLOURS = ['#2a78d6', '#eb6834', '#1baf7a', '#e87ba4', '#008300', '#4a3aa7'];
 
 interface Row {
   key: string;
@@ -153,10 +151,7 @@ export function RotaTable({
 
   const dayKeys = days.map((day) => localDate(day));
   const colourOf = useMemo(() => {
-    const map = new Map(
-      locations.map((location, i) => [location.id, LOCATION_COLOURS[i % LOCATION_COLOURS.length]]),
-    );
-    return (id: string) => map.get(id) ?? '#94a3b8';
+    return locationColourFn(locations);
   }, [locations]);
 
   const live = shifts.filter((shift) => shift.status !== 'CANCELLED');
@@ -728,12 +723,6 @@ function TimeOffChip({ request }: { request: PtoRequest }) {
   );
 }
 
-/// Working from home wears the palette's violet, apart from both offices.
-const REMOTE_COLOUR = '#4a3aa7';
-
-/// A colour at low strength, as a background tint behind dark text.
-const tint = (hex: string, alpha: string) => `${hex}${alpha}`;
-
 function ShiftChip({
   shift,
   colour,
@@ -832,7 +821,7 @@ function ShiftChip({
 }
 
 /// What the colours mean, once, above the rota.
-function RotaLegend({
+export function RotaLegend({
   locations,
   colourOf,
   jobRoles,
