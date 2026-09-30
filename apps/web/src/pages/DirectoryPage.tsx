@@ -2,6 +2,8 @@ import { Avatar } from '../components/Avatar';
 import { formatBirthday } from '../lib/birthday';
 import { JobRoleTag } from '../components/JobRoleTag';
 import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useNavigate, useSearchParams } from 'react-router-dom';
+import { usePersonMenu } from '../components/PersonMenu';
 import {
   Alert,
   Badge,
@@ -35,6 +37,15 @@ export function DirectoryPage() {
   const [location, setLocation] = useState('');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  // "See profile" from a right-click arrives as ?person=id.
+  const [searchParams, setSearchParams] = useSearchParams();
+  const onlyPerson = searchParams.get('person');
+  const navigate = useNavigate();
+  const personMenu = usePersonMenu({
+    onSeeSchedule: isManager
+      ? (person) => navigate(`/schedule?person=${encodeURIComponent(person.id)}`)
+      : undefined,
+  });
 
   const load = useCallback(async () => {
     try {
@@ -77,6 +88,7 @@ export function DirectoryPage() {
   const shown = useMemo(() => {
     const needle = search.trim().toLowerCase();
     return people.filter((person) => {
+      if (onlyPerson && person.id !== onlyPerson) return false;
       if (jobRole && !person.jobRoles.some((role) => role.id === jobRole)) return false;
       if (location && !person.locations.some((place) => place.id === location)) return false;
       if (!needle) return true;
@@ -90,7 +102,7 @@ export function DirectoryPage() {
         .toLowerCase();
       return haystack.includes(needle);
     });
-  }, [people, search, jobRole, location]);
+  }, [people, search, jobRole, location, onlyPerson]);
 
   if (loading) return <Spinner label="Loading the directory" />;
 
@@ -189,6 +201,19 @@ export function DirectoryPage() {
         </select>
       </div>
 
+      {onlyPerson && (
+        <p className="mb-3 text-sm text-slate-700">
+          Showing one person.{' '}
+          <button
+            type="button"
+            onClick={() => setSearchParams({})}
+            className="font-medium text-brand-700 underline"
+          >
+            Show everyone
+          </button>
+        </p>
+      )}
+
       {shown.length === 0 ? (
         <EmptyState>Nobody matches that.</EmptyState>
       ) : (
@@ -197,12 +222,16 @@ export function DirectoryPage() {
             <PersonCard
               key={person.id}
               person={person}
+              onContextMenu={(event) =>
+                personMenu.open(event, { id: person.id, name: displayName(person) })
+              }
               isYou={person.id === employee?.id}
               canResetPin={isManager && person.id !== employee?.id}
             />
           ))}
         </div>
       )}
+      {personMenu.menu}
     </div>
   );
 }
@@ -211,7 +240,9 @@ function PersonCard({
   person,
   isYou,
   canResetPin,
+  onContextMenu,
 }: {
+  onContextMenu: (event: React.MouseEvent) => void;
   person: DirectoryEntry;
   isYou: boolean;
   canResetPin: boolean;
@@ -219,7 +250,7 @@ function PersonCard({
   const name = displayName(person);
   return (
     <Card className="p-4" testId={`person-${name}`}>
-      <div className="flex gap-3">
+      <div className="flex gap-3" onContextMenu={onContextMenu}>
         <Avatar person={person} size="lg" />
         <div className="min-w-0 flex-1">
           <div className="flex flex-wrap items-center gap-2">

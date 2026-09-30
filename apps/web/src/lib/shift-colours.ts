@@ -1,5 +1,5 @@
 /// The colours a shift wears, shared by the week and the month so the two agree:
-/// its office as the tint, its job role as the stripe on the left.
+/// its office fills it, its job role outlines it (Dominguez, 30 September 2026).
 
 /// Location marks, in the order the colour-blind-checked palette validates them.
 /// Offices take these in order, so they do not depend on what the office is called.
@@ -17,4 +17,23 @@ export function locationColourFn(locations: { id: string }[]): (id: string) => s
     locations.map((location, i) => [location.id, LOCATION_COLOURS[i % LOCATION_COLOURS.length]]),
   );
   return (id) => map.get(id) ?? '#94a3b8';
+}
+
+/// The inline colours of a shift's chip: the office tints the inside, the job
+/// role draws the outline. A shift with no role is outlined in its office's
+/// colour. An open shift keeps its amber inside and takes only the outline.
+/// A draft is dashed by its callers and a shade lighter here.
+export function shiftChipStyle({
+  base,
+  roleColour,
+  open,
+  draft,
+}: {
+  base: string;
+  roleColour: string | null;
+  open: boolean;
+  draft: boolean;
+}): { backgroundColor?: string; borderColor: string } {
+  const borderColor = roleColour ?? (open ? '#d97706' : base);
+  return open ? { borderColor } : { backgroundColor: tint(base, draft ? '14' : '33'), borderColor };
 }

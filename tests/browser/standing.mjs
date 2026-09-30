@@ -168,12 +168,12 @@ await step('the list stays hidden until asked for, and can be searched', async (
   await card.getByTestId('standing-shift').first().waitFor({ timeout: 5000 });
 });
 
-await step('the month shows every shift, tinted by office with the job role as a stripe', async () => {
+await step('the month shows every shift, tinted by office with the job role as the outline', async () => {
   await page.goto(`${BASE}/schedule?week=${key(firstMonday)}`, { waitUntil: 'networkidle' });
   await page.getByRole('button', { name: 'Month', exact: true }).click();
   const grid = page.getByTestId('month-grid');
   await grid.waitFor({ timeout: 10000 });
-  const tinted = await grid.locator('[style*="border-left-color"]').count();
+  const tinted = await grid.locator('[style*="border-color"]').count();
   if (tinted === 0) throw new Error('no shift in the month wears a colour');
   await page.getByTestId('rota-legend').waitFor({ timeout: 5000 });
 });

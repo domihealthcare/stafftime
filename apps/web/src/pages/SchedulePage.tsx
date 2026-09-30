@@ -51,8 +51,9 @@ import {
   placeToShift,
 } from '../components/PlaceSelect';
 import { RepeatShiftsForm } from '../components/RepeatShiftsForm';
+import { usePersonMenu } from '../components/PersonMenu';
 import { RotaLegend, RotaTable, type RotaGrouping } from '../components/RotaTable';
-import { REMOTE_COLOUR, locationColourFn, tint } from '../lib/shift-colours';
+import { REMOTE_COLOUR, locationColourFn, shiftChipStyle } from '../lib/shift-colours';
 import { jobRoleHex } from '../lib/job-role-colours';
 import { StandingShiftsCard } from '../components/StandingShiftsCard';
 import { Alert, Card, EmptyState, PageHeading, Spinner, buttonClass } from '../components/ui';
@@ -119,6 +120,25 @@ export function SchedulePage() {
     setWeekStart(startOfWeek(day));
     setMonthStart(startOfMonth(day));
   }, [askedWeek]);
+  // Right-clicking somebody: "See schedule" is their month, on its own.
+  const personMenu = usePersonMenu({
+    onSeeSchedule: (person) => {
+      setPersonFilter(person.id);
+      setView('month');
+      try {
+        window.localStorage.setItem(VIEW_KEY, 'month');
+      } catch {
+        // As above.
+      }
+    },
+  });
+  // …and the Directory's version of it arrives as ?person=id.
+  const askedPerson = searchParams.get('person');
+  useEffect(() => {
+    if (!askedPerson) return;
+    setPersonFilter(askedPerson);
+    setView('month');
+  }, [askedPerson]);
   const [shifts, setShifts] = useState<Shift[]>([]);
   const [employees, setEmployees] = useState<Employee[]>([]);
   const [locations, setLocations] = useState<Location[]>([]);
@@ -709,6 +729,7 @@ export function SchedulePage() {
             birthdays={birthdaysByDay(birthdays)}
             // One person picked: their times, as staff see their own month.
             showNames={isManager && !personFilter}
+            onPersonMenu={isManager ? personMenu.open : undefined}
             onPickDay={(day) => {
               setWeekStart(startOfWeek(day));
               setView('week');
@@ -739,6 +760,7 @@ export function SchedulePage() {
           locationFilter={locationFilter}
           roleFilter={roleFilter}
           canEdit={isManager}
+          onPersonMenu={isManager ? personMenu.open : undefined}
           selfId={isManager ? undefined : me?.id}
           onChanged={() => void load()}
           onPlanned={(result) => {
@@ -831,6 +853,7 @@ export function SchedulePage() {
           {isManager ? 'Availability — yours and the team’s' : 'When you can’t work'}
         </Link>
       </div>
+      {personMenu.menu}
     </div>
   );
 }
@@ -1278,8 +1301,11 @@ function MonthGrid({
   events,
   birthdays,
   showNames,
+  onPersonMenu,
   onPickDay,
 }: {
+  /// Right-click on somebody's shift: their profile, their schedule. Managers only.
+  onPersonMenu?: (event: React.MouseEvent, person: { id: string; name: string }) => void;
   /// An office's colour, the same as the week's.
   colourOf: (locationId: string) => string;
   days: Date[];
@@ -1419,17 +1445,19 @@ function MonthGrid({
                         ]
                           .filter(Boolean)
                           .join(' · ')}
-                        style={
-                          open
-                            ? { borderLeftColor: roleColour ?? '#d97706' }
-                            : {
-                                backgroundColor: draft ? '#ffffff' : tint(base, '1f'),
-                                borderLeftColor: roleColour ?? base,
-                              }
+                        onContextMenu={
+                          onPersonMenu && shift.employee
+                            ? (event) =>
+                                onPersonMenu(event, {
+                                  id: shift.employee!.id,
+                                  name: `${shift.employee!.firstName} ${shift.employee!.lastName}`,
+                                })
+                            : undefined
                         }
-                        className={`block truncate rounded border-l-4 px-1 text-[10px] leading-4 text-slate-900 sm:text-[11px] sm:leading-5 ${
+                        style={shiftChipStyle({ base, roleColour, open, draft })}
+                        className={`block truncate rounded border-2 px-1 text-[10px] leading-4 text-slate-900 sm:text-[11px] sm:leading-5 ${
                           open ? 'bg-amber-100 text-amber-950' : ''
-                        } ${draft ? 'border border-l-4 border-dashed border-slate-300' : ''} ${
+                        } ${draft ? 'border-dashed' : ''} ${
                           index >= MAX_LINES ? 'hidden sm:block' : ''
                         }`}
                       >
