@@ -89,6 +89,15 @@ await step('a large photo is cropped square and shrunk before it is sent', async
   const sent = frankie.waitForRequest((r) => r.url().endsWith('/api/profile/photo') && r.method() === 'PUT');
   const saved = frankie.waitForResponse((r) => r.url().endsWith('/api/profile/photo') && r.request().method() === 'PUT');
   await frankie.locator('#profilePhoto').setInputFiles({ name: 'me.png', mimeType: 'image/png', buffer: Buffer.from(png, 'base64') });
+  // Nothing is sent until the picture has been fitted to the circle and saved.
+  const crop = frankie.getByTestId('photo-crop');
+  await crop.waitFor({ timeout: 10000 });
+  await crop.getByLabel('Zoom').fill('2');
+  const frame = crop.getByRole('group', { name: /Photo position/ });
+  await frame.focus();
+  await frankie.keyboard.press('ArrowLeft');
+  await frankie.keyboard.press('ArrowUp');
+  await crop.getByRole('button', { name: 'Use this photo' }).click();
   const body = JSON.parse((await sent).postData());
   if (!body.image.startsWith('data:image/jpeg;base64,')) throw new Error('the photo was not re-encoded as a JPEG');
   if (!(await saved).ok()) throw new Error('the photo was refused');

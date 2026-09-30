@@ -60,6 +60,8 @@ await step('Work from home is in the Location list, with no separate tick box', 
 });
 
 await step('an open shift is an office slot, so it cannot be worked from home', async () => {
+  const t = mgr.getByTestId('open-rows-toggle');
+  if ((await t.getAttribute('aria-pressed')) === 'false') await t.click();
   await mgr.getByRole('button', { name: /^Add an open shift at North Bergen on Tuesday/ }).click();
   const dialog = mgr.getByRole('dialog', { name: 'Open shift' });
   const options = await dialog.getByLabel('Location').locator('option').allTextContents();

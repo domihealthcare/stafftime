@@ -756,6 +756,48 @@ describe('ShiftPlanningService', () => {
     });
   });
 
+  describe('publishing drafts together', () => {
+    const draft = (id: string, employeeId: string | null, day: string) => ({
+      id,
+      employeeId,
+      startsAt: new Date(`${day}T13:00:00.000Z`),
+      location: { timezone: NJ },
+    });
+
+    it('publishes them in one update and tells each person once', async () => {
+      const { service, prisma, inbox } = build({
+        sourceShifts: [
+          draft('a', 'emp-1', '2026-09-22'),
+          draft('b', 'emp-1', '2026-09-23'),
+          draft('c', 'emp-2', '2026-09-23'),
+          draft('d', null, '2026-09-24'),
+        ],
+      });
+      prisma.shift.updateMany.mockResolvedValue({ count: 4 });
+
+      const result = await service.publishMany(['a', 'b', 'c', 'd']);
+
+      expect(result).toEqual({ published: 4, skipped: 0 });
+      expect(prisma.shift.updateMany).toHaveBeenCalledTimes(1);
+      // emp-1 has two shifts and emp-2 one: two notices, and none for the open shift.
+      expect(inbox.notify).toHaveBeenCalledTimes(2);
+      expect(inbox.notify).toHaveBeenCalledWith(
+        ['emp-1'],
+        expect.objectContaining({ title: '2 new shifts on your schedule' }),
+      );
+    });
+
+    it('counts anything that is no longer a draft as skipped, not an error', async () => {
+      const { service, prisma, inbox } = build({ sourceShifts: [] });
+
+      const result = await service.publishMany(['gone', 'published']);
+
+      expect(result).toEqual({ published: 0, skipped: 2 });
+      expect(prisma.shift.updateMany).not.toHaveBeenCalled();
+      expect(inbox.notify).not.toHaveBeenCalled();
+    });
+  });
+
   describe('copying a week', () => {
     const sourceShift = {
       employeeId: 'emp-1',

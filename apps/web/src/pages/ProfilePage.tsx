@@ -4,6 +4,7 @@ import { Link } from 'react-router-dom';
 import { Avatar } from '../components/Avatar';
 import { JobRoleTag } from '../components/JobRoleTag';
 import { useConfirm } from '../components/ConfirmDialog';
+import { PhotoCropDialog, readPicture } from '../components/PhotoCropDialog';
 import { Alert, Card, PageHeading, Spinner, buttonClass } from '../components/ui';
 import { ApiError, api } from '../lib/api';
 import { useSession } from '../lib/session';
@@ -14,60 +15,6 @@ const ROLE_LABELS: Record<string, string> = {
   MANAGER: 'Manager',
   ADMIN: 'Administrator',
 };
-
-/// Side of the square every photo is stored at. Sharp at twice the largest
-/// avatar the app draws (96 px), and small enough to stay well under the
-/// server's limit.
-const PHOTO_SIDE = 256;
-
-/**
- * Crops a picture to its centre square, shrinks it and re-encodes it as a
- * JPEG, in the browser. Re-encoding also drops everything a phone camera
- * attaches to a photo — where it was taken included — before it leaves the
- * device.
- */
-async function preparePhoto(file: File): Promise<string> {
-  // Read as a data: URL rather than a blob: one — the deployed CSP allows
-  // images from 'self' and data: only, and loosening it for this is not worth it.
-  const url = await new Promise<string>((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onload = () => resolve(String(reader.result));
-    reader.onerror = () => reject(new Error('unreadable'));
-    reader.readAsDataURL(file);
-  });
-  {
-    const image = await new Promise<HTMLImageElement>((resolve, reject) => {
-      const img = new Image();
-      img.onload = () => resolve(img);
-      img.onerror = () => reject(new Error('unreadable'));
-      img.src = url;
-    });
-    const side = Math.min(image.naturalWidth, image.naturalHeight);
-    const canvas = document.createElement('canvas');
-    canvas.width = PHOTO_SIDE;
-    canvas.height = PHOTO_SIDE;
-    const context = canvas.getContext('2d');
-    if (!context) throw new Error('unreadable');
-    context.fillStyle = '#ffffff';
-    context.fillRect(0, 0, PHOTO_SIDE, PHOTO_SIDE);
-    context.drawImage(
-      image,
-      (image.naturalWidth - side) / 2,
-      (image.naturalHeight - side) / 2,
-      side,
-      side,
-      0,
-      0,
-      PHOTO_SIDE,
-      PHOTO_SIDE,
-    );
-    for (const quality of [0.85, 0.7, 0.55]) {
-      const data = canvas.toDataURL('image/jpeg', quality);
-      if (data.length < 180_000) return data;
-    }
-    return canvas.toDataURL('image/jpeg', 0.4);
-  }
-}
 
 /// How you appear to colleagues: your photo, the name you go by, and how to
 /// reach you.
@@ -81,6 +28,8 @@ export function ProfilePage() {
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
   const fileInput = useRef<HTMLInputElement>(null);
+  /// A picture chosen and waiting to be fitted into the circle.
+  const [cropping, setCropping] = useState<{ url: string; image: HTMLImageElement } | null>(null);
 
   function show(next: Profile) {
     setProfile(next);
@@ -127,26 +76,32 @@ export function ProfilePage() {
     }
   }
 
+  /// Choosing a file opens the fitting step; nothing is sent until it is saved.
   async function choosePhoto(file: File | undefined) {
     if (!file) return;
-    setPhotoBusy(true);
     setError(null);
     setNotice(null);
     try {
-      let image: string;
-      try {
-        image = await preparePhoto(file);
-      } catch {
-        throw new Error('That file is not a picture this browser can open. Try a JPEG or PNG.');
-      }
+      setCropping(await readPicture(file));
+    } catch {
+      setError('That file is not a picture this browser can open. Try a JPEG or PNG.');
+    } finally {
+      if (fileInput.current) fileInput.current.value = '';
+    }
+  }
+
+  async function savePhoto(image: string) {
+    setPhotoBusy(true);
+    try {
       show(await api.setPhoto(image));
       await refresh();
+      setCropping(null);
       setNotice('Photo updated.');
     } catch (err) {
+      setCropping(null);
       setError(err instanceof Error ? err.message : 'Could not use that photo.');
     } finally {
       setPhotoBusy(false);
-      if (fileInput.current) fileInput.current.value = '';
     }
   }
 
@@ -232,11 +187,22 @@ export function ProfilePage() {
               )}
             </div>
             <p className="mt-2 text-xs text-slate-500">
-              A photo of you, cropped square. Colleagues see it; take it down whenever you like.
+              A photo of you — move and zoom it to fit the circle. Colleagues see it; take it down
+              whenever you like.
             </p>
           </div>
         </div>
       </Card>
+
+      {cropping && (
+        <PhotoCropDialog
+          url={cropping.url}
+          image={cropping.image}
+          busy={photoBusy}
+          onCancel={() => !photoBusy && setCropping(null)}
+          onSave={(jpeg) => void savePhoto(jpeg)}
+        />
+      )}
 
       <Card className="mb-4 p-5">
         <form onSubmit={(event) => void save(event)} className="grid gap-4 sm:grid-cols-2">

@@ -215,6 +215,16 @@ export class CopyWeekDto {
   status?: ShiftStatus;
 }
 
+/// Publishes drafts together: the ones the manager picked, or a week's worth.
+export class PublishShiftsDto {
+  @IsArray()
+  @ArrayNotEmpty()
+  @ArrayMaxSize(500)
+  @ArrayUnique()
+  @IsUUID('4', { each: true })
+  ids!: string[];
+}
+
 export class QueryCoverageDto {
   @IsDateString()
   from!: string;

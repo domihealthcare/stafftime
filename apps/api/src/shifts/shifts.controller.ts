@@ -22,6 +22,7 @@ import { OvertimeCheckDto } from './dto/overtime-check.dto';
 import { QueryShiftsDto } from './dto/query-shifts.dto';
 import {
   CopyWeekDto,
+  PublishShiftsDto,
   QueryCoverageDto,
   RepeatShiftsDto,
   SetWeeklyScheduleDto,
@@ -95,6 +96,15 @@ export class ShiftsController {
   @HttpCode(HttpStatus.OK)
   copyWeek(@Body() dto: CopyWeekDto, @CurrentUser() user: AuthUser) {
     return this.planning.copyWeek(dto, user.id);
+  }
+
+  /// Publishes several drafts at once. Each person is told once, however many
+  /// of their shifts went out.
+  @Post('publish')
+  @Roles(Role.MANAGER)
+  @HttpCode(HttpStatus.OK)
+  publish(@Body() dto: PublishShiftsDto) {
+    return this.planning.publishMany(dto.ids);
   }
 
   /// Day-by-day staffing, and the gaps.
