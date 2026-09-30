@@ -1,3 +1,4 @@
+import { useDialog } from './useDialog';
 import { useCallback, useEffect, useId, useState } from 'react';
 import { ApiError, api } from '../lib/api';
 import { formatCalendarDate, formatTimeCompact, localDate } from '../lib/format';
@@ -181,6 +182,7 @@ export function EventDialog({
   onClose: () => void;
 }) {
   const confirm = useConfirm();
+  const dialog = useDialog(onClose);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   /// For a date in a series: which dates to remove, asked before the usual
@@ -228,7 +230,8 @@ export function EventDialog({
         role="dialog"
         aria-modal="true"
         aria-label={event.title}
-        className="w-full max-w-md rounded-xl bg-white p-4 shadow-xl"
+        {...dialog}
+        className="w-full max-w-md rounded-xl bg-white p-4 shadow-xl outline-none"
       >
         <div className="mb-3 flex items-start justify-between gap-3">
           <h2 className="text-base font-semibold text-slate-900">

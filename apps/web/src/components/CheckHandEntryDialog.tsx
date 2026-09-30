@@ -4,6 +4,7 @@ import { handEntryReasonLabel } from '../lib/hand-entry';
 import { formatDate, formatTime } from '../lib/format';
 import type { TimeEntry } from '../lib/types';
 import { Alert } from './ui';
+import { useDialog } from './useDialog';
 
 /**
  * Saying somebody has found out why hours had to be entered by hand, which
@@ -37,14 +38,17 @@ export function CheckHandEntryDialog({
     }
   }
 
+  const dialog = useDialog(onClose);
+
   return (
-    <div
-      className="fixed inset-0 z-50 flex items-end justify-center bg-slate-900/40 p-4 sm:items-center"
-      role="dialog"
-      aria-modal="true"
-      aria-labelledby="check-hand-entry-title"
-    >
-      <div className="w-full max-w-md rounded-xl bg-white p-5 shadow-xl">
+    <div className="fixed inset-0 z-50 flex items-end justify-center bg-slate-900/40 p-4 sm:items-center">
+      <div
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="check-hand-entry-title"
+        {...dialog}
+        className="w-full max-w-md rounded-xl bg-white p-5 shadow-xl outline-none"
+      >
         <h2 id="check-hand-entry-title" className="text-lg font-semibold text-slate-900">
           Looked into why
         </h2>

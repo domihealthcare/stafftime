@@ -4,6 +4,7 @@ import { HAND_ENTRY_REASONS } from '../lib/hand-entry';
 import { localDate } from '../lib/format';
 import type { Employee, HandEntryReason } from '../lib/types';
 import { Alert } from './ui';
+import { useDialog } from './useDialog';
 
 const field =
   'mt-1 w-full rounded-lg border-slate-300 text-sm shadow-sm focus:border-brand-600 focus:ring-brand-600';
@@ -111,14 +112,17 @@ export function AddHoursDialog({
 
   const chosenReason = HAND_ENTRY_REASONS.find((option) => option.value === reason);
 
+  const dialog = useDialog(onClose);
+
   return (
-    <div
-      className="fixed inset-0 z-50 flex items-end justify-center overflow-y-auto bg-slate-900/40 p-4 sm:items-center"
-      role="dialog"
-      aria-modal="true"
-      aria-labelledby="add-hours-title"
-    >
-      <div className="w-full max-w-md rounded-xl bg-white p-5 shadow-xl">
+    <div className="fixed inset-0 z-50 flex items-end justify-center overflow-y-auto bg-slate-900/40 p-4 sm:items-center">
+      <div
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="add-hours-title"
+        {...dialog}
+        className="w-full max-w-md rounded-xl bg-white p-5 shadow-xl outline-none"
+      >
         <h2 id="add-hours-title" className="text-lg font-semibold text-slate-900">
           Add hours
         </h2>

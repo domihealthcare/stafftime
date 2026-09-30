@@ -1,3 +1,4 @@
+import { useDialog } from './useDialog';
 import { useMemo, useState } from 'react';
 import { birthdayName } from '../lib/birthday';
 import { ApiError, api } from '../lib/api';
@@ -910,6 +911,7 @@ function Dialog({
   onClose: () => void;
   children: React.ReactNode;
 }) {
+  const dialog = useDialog(onClose);
   return (
     <div
       className="fixed inset-0 z-40 flex items-end justify-center bg-slate-900/30 p-4 sm:items-center"
@@ -919,7 +921,8 @@ function Dialog({
         role="dialog"
         aria-modal="true"
         aria-label={title}
-        className="w-full max-w-sm rounded-xl bg-white p-4 shadow-xl"
+        {...dialog}
+        className="w-full max-w-sm rounded-xl bg-white p-4 shadow-xl outline-none"
       >
         <div className="mb-3 flex items-start justify-between gap-3">
           <h2 className="text-base font-semibold text-slate-900">{title}</h2>

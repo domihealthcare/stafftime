@@ -480,8 +480,11 @@ Beyond the phases, the parts worth knowing about before picking up work:
   on the page background; pages are left-aligned to the header instead of centred.
   Batch B: the "Worth a look" banner shows three lines per section with "Show N more";
   Time off puts a manager's requests first and the balances and policy under them; Staff
-  has a search box. Still to do from the audit: shared Button/Field/Modal components,
-  dialogs' Escape and focus handling, the Schedule's stack of banners.
+  has a search box. Batch C, part one: `components/useDialog.ts` gives a pop-up focus on
+  open, a Tab that stays inside, Escape to close and focus handed back; the shift,
+  event, correct-entry, add-hours and hand-entry dialogs use it (new pop-ups should).
+  Still to do from the audit: shared Button and Field components, the Schedule's stack
+  of banners.
 - **Version on the Help page** — "About this version": the build date and
   commit baked in when the bundle is built (`VERCEL_GIT_COMMIT_SHA` on Vercel,
   git locally), whether it is the test or live site, and — because
