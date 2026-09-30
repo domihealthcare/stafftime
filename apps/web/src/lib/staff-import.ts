@@ -100,17 +100,7 @@ const HEADINGS: [Field, string[]][] = [
   ['offices', ['office', 'offices', 'location', 'locations', 'site', 'sites', 'worksat']],
   [
     'jobRoles',
-    [
-      'jobrole',
-      'jobroles',
-      'position',
-      'positions',
-      'title',
-      'jobtitle',
-      'role',
-      'roles',
-      'department',
-    ],
+    ['jobrole', 'jobroles', 'position', 'positions', 'title', 'jobtitle', 'role', 'roles', 'department'],
   ],
 ];
 
@@ -226,8 +216,7 @@ export function readBirthday(value: string): { month: number; day: number } | nu
   }
   const named = /^([a-z]+)\.?\s+(\d{1,2})$/i.exec(text);
   if (named) {
-    const month =
-      MONTH_NAMES.findIndex((name) => name.startsWith(named[1].toLowerCase().slice(0, 3))) + 1;
+    const month = MONTH_NAMES.findIndex((name) => name.startsWith(named[1].toLowerCase().slice(0, 3))) + 1;
     if (month > 0 && named[1].length >= 3 && readDate(`2000-${month}-${named[2]}`)) {
       return { month, day: Number(named[2]) };
     }
@@ -279,7 +268,8 @@ export function readStaffList(
     }
   });
 
-  const hasName = columns.has('fullName') || (columns.has('firstName') && columns.has('lastName'));
+  const hasName =
+    columns.has('fullName') || (columns.has('firstName') && columns.has('lastName'));
   if (!columns.has('email') || !hasName) {
     return {
       ...empty,
@@ -335,8 +325,7 @@ export function readStaffList(
     if (email) inThisList.set(email, index + 1);
 
     const phone = cell('phone');
-    if (phone && phone.replace(/\D/g, '').length < 7)
-      problems.push(`"${phone}" is not a phone number`);
+    if (phone && phone.replace(/\D/g, '').length < 7) problems.push(`"${phone}" is not a phone number`);
 
     // Optional (September 2026): left blank, it can be filled in later on the
     // Staff screen. "7/2026" — a month and year — means the 1st of the month.
@@ -347,8 +336,7 @@ export function readStaffList(
         ? readDate(`${monthYear[1]}/1/${monthYear[2]}`)
         : readDate(hireText)
       : null;
-    if (hireText && !hireDate)
-      problems.push(`Cannot read the hire date "${hireText}" — use 3/1/2024`);
+    if (hireText && !hireDate) problems.push(`Cannot read the hire date "${hireText}" — use 3/1/2024`);
 
     const accessText = squash(cell('role'));
     let role: Role = 'EMPLOYEE';
@@ -394,8 +382,7 @@ export function readStaffList(
     const matchedRoles: Pick<JobRole, 'id' | 'name'>[] = [];
     for (const name of splitList(cell('jobRoles'))) {
       const key = squash(name);
-      const jobRole =
-        roleByKey.get(ROLE_ALIASES[key] ?? key) ?? roleByKey.get(key.replace(/s$/, ''));
+      const jobRole = roleByKey.get(ROLE_ALIASES[key] ?? key) ?? roleByKey.get(key.replace(/s$/, ''));
       if (!jobRole) problems.push(`No job role called "${name}"`);
       else if (!matchedRoles.includes(jobRole)) matchedRoles.push(jobRole);
     }

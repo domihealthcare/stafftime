@@ -25,8 +25,8 @@ export function PtoBalanceCard({ balance }: { balance: PtoBalance }) {
 
       {balance.unpaidAndOther > 0 && (
         <p className="mt-3 text-xs text-slate-500">
-          Plus {balance.unpaidAndOther} day{balance.unpaidAndOther === 1 ? '' : 's'} of unpaid or
-          bereavement leave, which does not come out of either allowance.
+          Plus {balance.unpaidAndOther} day{balance.unpaidAndOther === 1 ? '' : 's'} of
+          unpaid or bereavement leave, which does not come out of either allowance.
         </p>
       )}
     </Card>
@@ -54,7 +54,9 @@ function Allowance({ label, allowance }: { label: string; allowance: AllowanceBa
 
       <dl className="mt-2 space-y-0.5 text-xs text-slate-600">
         <Line term="Allowance" value={allowance.entitled} />
-        {allowance.carriedOver > 0 && <Line term="Carried over" value={allowance.carriedOver} />}
+        {allowance.carriedOver > 0 && (
+          <Line term="Carried over" value={allowance.carriedOver} />
+        )}
         {allowance.usedBefore > 0 && (
           <Line term="Taken before Domi Staff" value={allowance.usedBefore} />
         )}
@@ -64,13 +66,15 @@ function Allowance({ label, allowance }: { label: string; allowance: AllowanceBa
             value={Math.round((allowance.used - allowance.usedBefore) * 10) / 10}
           />
         )}
-        {allowance.pending > 0 && <Line term="Awaiting approval" value={allowance.pending} />}
+        {allowance.pending > 0 && (
+          <Line term="Awaiting approval" value={allowance.pending} />
+        )}
       </dl>
 
       {over && (
         <p className="mt-2 text-xs font-medium text-rose-700">
-          {Math.abs(allowance.remaining)} day{Math.abs(allowance.remaining) === 1 ? '' : 's'} over
-          the allowance.
+          {Math.abs(allowance.remaining)} day{Math.abs(allowance.remaining) === 1 ? '' : 's'}{' '}
+          over the allowance.
         </p>
       )}
     </div>

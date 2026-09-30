@@ -21,7 +21,9 @@ export function LoginPage() {
     try {
       await signIn(email, password);
     } catch (err) {
-      setError(err instanceof ApiError ? err.message : 'Could not sign in. Please try again.');
+      setError(
+        err instanceof ApiError ? err.message : 'Could not sign in. Please try again.',
+      );
       setPassword('');
     } finally {
       setBusy(false);
@@ -79,7 +81,10 @@ export function LoginPage() {
         </Card>
 
         <p className="mt-4 text-center text-sm">
-          <Link to="/forgot-password" className="font-medium text-brand-700 hover:text-brand-900">
+          <Link
+            to="/forgot-password"
+            className="font-medium text-brand-700 hover:text-brand-900"
+          >
             Forgotten your password?
           </Link>
         </p>

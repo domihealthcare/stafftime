@@ -76,7 +76,9 @@ export function PasswordField({
       {requirement && (
         <p
           id={describedBy}
-          className={`mt-1 text-xs ${requirement.met ? 'text-emerald-700' : 'text-slate-500'}`}
+          className={`mt-1 text-xs ${
+            requirement.met ? 'text-emerald-700' : 'text-slate-500'
+          }`}
         >
           <span aria-hidden>{requirement.met ? '✓ ' : '· '}</span>
           {requirement.label}

@@ -31,8 +31,8 @@ export function KioskPairing({ onPaired }: { onPaired: () => void }) {
           <BrandLogo className="mx-auto mb-4 h-24 w-auto" />
           <h1 className="text-2xl font-semibold text-slate-900">Set up this kiosk</h1>
           <p className="mt-2 text-sm text-slate-600">
-            An administrator can generate a pairing code from Kiosks in the web app. It is valid for
-            15 minutes.
+            An administrator can generate a pairing code from Kiosks in the web app. It is
+            valid for 15 minutes.
           </p>
         </div>
 
@@ -73,7 +73,8 @@ export function KioskPairing({ onPaired }: { onPaired: () => void }) {
         </form>
 
         <p className="mt-4 text-center text-xs text-slate-500">
-          Once set up, this tablet stays signed in to its location. Staff clock in with their PIN.
+          Once set up, this tablet stays signed in to its location. Staff clock in with their
+          PIN.
         </p>
       </div>
     </div>

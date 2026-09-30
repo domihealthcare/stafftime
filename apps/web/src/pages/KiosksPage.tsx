@@ -41,7 +41,10 @@ export function KiosksPage() {
 
   return (
     <div className="mx-auto max-w-4xl">
-      <PageHeading title="Kiosks" subtitle="Front-desk tablets, and the PINs staff use on them." />
+      <PageHeading
+        title="Kiosks"
+        subtitle="Front-desk tablets, and the PINs staff use on them."
+      />
 
       <NeedsAttention sections={['silentKiosks']} />
 
@@ -75,8 +78,8 @@ export function KiosksPage() {
             </Card>
           ) : devices.length === 0 ? (
             <EmptyState>
-              No kiosks yet. Add one, then open <code className="font-mono">/kiosk</code> on the
-              tablet and enter the pairing code.
+              No kiosks yet. Add one, then open <code className="font-mono">/kiosk</code> on
+              the tablet and enter the pairing code.
             </EmptyState>
           ) : (
             <div className="space-y-2">
@@ -97,8 +100,8 @@ export function KiosksPage() {
       <section>
         <h2 className="mb-1 text-lg font-semibold text-slate-900">Staff PINs</h2>
         <p className="mb-3 text-sm text-slate-600">
-          Only staff with a PIN appear on the kiosk. PINs are stored hashed and cannot be read back
-          — if someone forgets theirs, set a new one.
+          Only staff with a PIN appear on the kiosk. PINs are stored hashed and cannot be
+          read back — if someone forgets theirs, set a new one.
         </p>
         {loading ? (
           <Card className="p-6">
@@ -123,7 +126,13 @@ export function KiosksPage() {
   );
 }
 
-function PairingCodeCard({ device, onDismiss }: { device: NewKioskDevice; onDismiss: () => void }) {
+function PairingCodeCard({
+  device,
+  onDismiss,
+}: {
+  device: NewKioskDevice;
+  onDismiss: () => void;
+}) {
   return (
     <Card className="border-brand-200 bg-brand-50 p-5">
       <h3 className="text-sm font-semibold text-brand-900">

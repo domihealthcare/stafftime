@@ -81,7 +81,11 @@ export function PlanResultNotice({
         </div>
       )}
 
-      <button type="button" onClick={onDismiss} className="mt-2 text-xs font-medium underline">
+      <button
+        type="button"
+        onClick={onDismiss}
+        className="mt-2 text-xs font-medium underline"
+      >
         Dismiss
       </button>
     </Alert>

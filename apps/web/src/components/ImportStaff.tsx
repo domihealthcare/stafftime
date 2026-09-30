@@ -7,26 +7,8 @@ import { Alert, Card } from './ui';
 
 const EXAMPLE = [
   ['First name', 'Last name', 'Email', 'Phone', 'Office', 'Job role', 'Hire date', 'Access'],
-  [
-    'Jane',
-    'Doe',
-    'jane.doe@domihealthcare.com',
-    '201-555-0100',
-    'North Bergen',
-    'Front Desk',
-    '3/1/2024',
-    'Employee',
-  ],
-  [
-    'Sam',
-    'Lee',
-    'sam.lee@domihealthcare.com',
-    '',
-    'Both',
-    'Medical Assistant, Front Desk',
-    '6/15/2023',
-    '',
-  ],
+  ['Jane', 'Doe', 'jane.doe@domihealthcare.com', '201-555-0100', 'North Bergen', 'Front Desk', '3/1/2024', 'Employee'],
+  ['Sam', 'Lee', 'sam.lee@domihealthcare.com', '', 'Both', 'Medical Assistant, Front Desk', '6/15/2023', ''],
 ];
 
 /**
@@ -81,9 +63,8 @@ export function ImportStaff({
     <Card className="p-4" testId="import-staff">
       <h2 className="text-base font-semibold text-slate-900">Add several people</h2>
       <p className="mt-1 text-sm text-slate-600">
-        In Excel or Google Sheets, select your list{' '}
-        <strong>including the row of column names</strong>, copy it, and paste it below. You will
-        see everybody before anything is saved.
+        In Excel or Google Sheets, select your list <strong>including the row of column names</strong>
+        , copy it, and paste it below. You will see everybody before anything is saved.
       </p>
       <details className="mt-2 text-sm text-slate-600">
         <summary className="cursor-pointer font-medium text-brand-700">Which columns?</summary>
@@ -93,14 +74,13 @@ export function ImportStaff({
             Bergen, West New York, or Both).
           </p>
           <p>
-            <strong>Optional:</strong> Hire date (7/2026 means the 1st of July), Phone, Job role
-            (several separated by commas), Access (Employee, Manager or Admin — Employee if left
-            blank), Pay type (Hourly or Salaried), Goes by, ADP File #, Birthday (only the month and
-            day are kept — the year is dropped).
+            <strong>Optional:</strong> Hire date (7/2026 means the 1st of July), Phone, Job role (several separated by commas), Access
+            (Employee, Manager or Admin — Employee if left blank), Pay type (Hourly or Salaried),
+            Goes by, ADP File #, Birthday (only the month and day are kept — the year is dropped).
           </p>
           <p>
-            Any other column is ignored and not kept — leave social security numbers and pay rates
-            out of it anyway.
+            Any other column is ignored and not kept — leave social security numbers and pay
+            rates out of it anyway.
           </p>
           <div className="overflow-x-auto">
             <table className="mt-1 text-xs">
@@ -141,13 +121,11 @@ export function ImportStaff({
 
       {preview.used.length > 0 && !preview.error && (
         <p className="mt-2 text-xs text-slate-600" data-testid="import-columns">
-          Reading{' '}
-          {preview.used.map((column) => `“${column.heading}” as ${column.field}`).join(', ')}.
+          Reading {preview.used.map((column) => `“${column.heading}” as ${column.field}`).join(', ')}.
           {preview.ignored.length > 0 && (
             <span className="text-amber-800">
               {' '}
-              Ignoring {preview.ignored.map((heading) => `“${heading}”`).join(', ')} — not brought
-              in.
+              Ignoring {preview.ignored.map((heading) => `“${heading}”`).join(', ')} — not brought in.
             </span>
           )}
         </p>
@@ -188,9 +166,7 @@ export function ImportStaff({
                     )}
                   </td>
                   <td className="py-1.5 pr-3 align-top text-slate-700">{row.offices.join(', ')}</td>
-                  <td className="py-1.5 pr-3 align-top text-slate-700">
-                    {row.jobRoles.join(', ')}
-                  </td>
+                  <td className="py-1.5 pr-3 align-top text-slate-700">{row.jobRoles.join(', ')}</td>
                   <td className="py-1.5 align-top">
                     {row.problems.length === 0 ? (
                       <span className="text-emerald-700">Ready</span>

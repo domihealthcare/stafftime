@@ -56,10 +56,12 @@ export function NotificationsPage() {
       <Card className="p-4">
         <div className="flex flex-wrap items-start justify-between gap-3">
           <div className="min-w-0">
-            <h2 className="text-sm font-semibold text-slate-900">The nightly round-up</h2>
+            <h2 className="text-sm font-semibold text-slate-900">
+              The nightly round-up
+            </h2>
             <p className="mt-1 text-sm text-slate-600">
-              One email, once a night, listing what needs a look. It is only sent on nights when
-              there is something to say — most nights there is not.
+              One email, once a night, listing what needs a look. It is only sent on
+              nights when there is something to say — most nights there is not.
             </p>
           </div>
 
@@ -101,8 +103,8 @@ export function NotificationsPage() {
 
         {!isManager && (
           <p className="mt-3 text-xs text-slate-500">
-            This round-up is only sent to managers and administrators, so this setting does not
-            currently change anything for you.
+            This round-up is only sent to managers and administrators, so this setting
+            does not currently change anything for you.
           </p>
         )}
       </Card>

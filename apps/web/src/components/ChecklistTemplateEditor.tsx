@@ -1,6 +1,11 @@
 import { useState } from 'react';
 import { ApiError, api } from '../lib/api';
-import type { ChecklistKind, ChecklistTemplate, TaskOwner, TemplateTaskInput } from '../lib/types';
+import type {
+  ChecklistKind,
+  ChecklistTemplate,
+  TaskOwner,
+  TemplateTaskInput,
+} from '../lib/types';
 import { Alert } from './ui';
 
 /// A task while it is being edited. `dueOffsetDays` is split into a direction
@@ -164,9 +169,7 @@ export function ChecklistTemplateEditor({
             value={name}
             onChange={(event) => setName(event.target.value)}
             placeholder={
-              editingKind === 'ONBOARDING'
-                ? 'New hire — Domi Healthcare'
-                : 'Departure — Domi Healthcare'
+              editingKind === 'ONBOARDING' ? 'New hire — Domi Healthcare' : 'Departure — Domi Healthcare'
             }
             className="w-full rounded-lg border border-slate-300 px-2 py-1.5"
           />
@@ -266,6 +269,7 @@ export function ChecklistTemplateEditor({
                       <span className="text-slate-600">days</span>
                     </label>
                   )}
+
                 </div>
               </div>
 
@@ -319,8 +323,9 @@ export function ChecklistTemplateEditor({
       )}
 
       <p className="mt-3 text-xs text-slate-500">
-        Editing a template never changes a checklist that is already under way — those keep the
-        wording they were started with, so what somebody signed stays what they signed.
+        Editing a template never changes a checklist that is already under way — those
+        keep the wording they were started with, so what somebody signed stays what they
+        signed.
       </p>
 
       <div className="mt-3 flex items-center gap-2">

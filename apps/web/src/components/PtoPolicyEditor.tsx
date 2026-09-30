@@ -4,18 +4,8 @@ import type { PtoPolicy } from '../lib/types';
 import { Alert, Card } from './ui';
 
 const MONTHS = [
-  'January',
-  'February',
-  'March',
-  'April',
-  'May',
-  'June',
-  'July',
-  'August',
-  'September',
-  'October',
-  'November',
-  'December',
+  'January', 'February', 'March', 'April', 'May', 'June',
+  'July', 'August', 'September', 'October', 'November', 'December',
 ];
 
 /// Admin-only editor for the practice's time-off rules. Everyone else sees the
@@ -207,7 +197,8 @@ export function PtoPolicyEditor({
             <span>
               Prorate a new hire&rsquo;s first year
               <span className="block text-xs text-slate-500">
-                Someone starting in July gets about half the year&rsquo;s days, not all of them.
+                Someone starting in July gets about half the year&rsquo;s days, not all of
+                them.
               </span>
             </span>
           </label>
