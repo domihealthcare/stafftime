@@ -50,7 +50,11 @@ function statementRow(over: Record<string, unknown> = {}) {
 /* eslint-disable @typescript-eslint/no-explicit-any */
 function build(options: { existing?: unknown; clash?: unknown; plan?: unknown } = {}) {
   const prisma: Record<string, any> = {
-    employee: { findUnique: jest.fn().mockResolvedValue({ id: 'doc-1' }) },
+    employee: {
+      findUnique: jest.fn().mockResolvedValue({ id: 'doc-1' }),
+      findFirst: jest.fn().mockResolvedValue({ id: 'doc-1' }),
+      findMany: jest.fn().mockResolvedValue([]),
+    },
     productivityPlan: {
       findUnique: jest.fn().mockResolvedValue(options.plan ?? null),
       findMany: jest.fn().mockResolvedValue([]),
@@ -353,6 +357,34 @@ describe('the running balance', () => {
     const shown = await service.mine(provider);
     expect(shown).toHaveLength(1);
     expect(shown[0].id).toBe('st-b');
+  });
+});
+
+describe('provider job roles only', () => {
+  it('will not make a plan for somebody who is not in a provider job role', async () => {
+    const { service, prisma } = build();
+    prisma.employee.findFirst.mockResolvedValue(null);
+    await expect(
+      service.savePlan('doc-1', { intervalWeeks: 2, intervalsPerStatement: 1 }),
+    ).rejects.toBeInstanceOf(BadRequestException);
+    expect(prisma.productivityPlan.upsert).not.toHaveBeenCalled();
+  });
+
+  it('will not start a statement for them either', async () => {
+    const { service, prisma } = build();
+    prisma.employee.findFirst.mockResolvedValue(null);
+    await expect(
+      service.create({ employeeId: 'doc-1', startDate: '2026-06-01' }, manager),
+    ).rejects.toBeInstanceOf(BadRequestException);
+    expect(prisma.productivityStatement.create).not.toHaveBeenCalled();
+  });
+
+  it('lists only people in a role that carries the clinical forms', async () => {
+    const { service, prisma } = build();
+    await service.people();
+    expect(prisma.employee.findMany.mock.calls[0][0].where.jobRoles).toEqual({
+      some: { jobRole: { usesClinicalForms: true } },
+    });
   });
 });
 

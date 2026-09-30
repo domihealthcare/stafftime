@@ -11,7 +11,6 @@ import type {
   CredentialType,
   PayrollExportRecord,
   PersonName,
-  ProductivityPerson,
   ProductivityPlan,
   ProductivityStatement,
   PayrollTarget,
@@ -1026,7 +1025,7 @@ export const api = {
     request<PersonName[]>(`/productivity/access/${employeeId}`, { method: 'PUT' }),
   revokeProductivityAccess: (employeeId: string) =>
     request<PersonName[]>(`/productivity/access/${employeeId}`, { method: 'DELETE' }),
-  productivityPeople: () => request<ProductivityPerson[]>('/productivity/people'),
+  productivityPeople: () => request<PersonName[]>('/productivity/people'),
   productivityPlans: () => request<ProductivityPlan[]>('/productivity/plans'),
   productivityPlan: (employeeId: string) =>
     request<ProductivityPlan | null>(`/productivity/plans/${employeeId}`),

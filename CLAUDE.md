@@ -634,7 +634,9 @@ Beyond the phases, the parts worth knowing about before picking up work:
   practice's *Patients & Providers* sheet). Manage → **Provider productivity**
   — **only for people an admin has chosen** (`canManageProductivity`, a list at
   the bottom of that screen, admins only; started with Dominguez and Angelica
-  Dominguez; access level brings nothing): for each provider, a **statement** per period of
+  Dominguez; access level brings nothing), and **for provider job roles only**
+  (a job role with *uses clinical forms* — plans and statements can only be
+  made for people in one): for each provider, a **statement** per period of
   intervals (two weeks on the sheet), each with the patients **expected** and
   **seen**, a **multiplier** on the difference (169 + 154 against 300 at $50
   is $1,150) and a paid date and short note. A short period is **carried

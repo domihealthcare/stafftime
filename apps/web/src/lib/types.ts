@@ -1182,6 +1182,3 @@ export interface ProductivityBalance {
   carriedOutCents: number;
 }
 
-export interface ProductivityPerson extends PersonName {
-  isProvider: boolean;
-}

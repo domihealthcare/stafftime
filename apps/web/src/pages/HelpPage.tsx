@@ -902,10 +902,11 @@ const MANAGERS: Section[] = [
           <>
             <p>
               <Screen>Manage → Provider productivity</Screen> replaces the Patients &amp; Providers
-              sheet. Choose a provider, then <strong>+ New statement</strong>. For each interval
-              (two weeks on the sheet) fill in the patients <em>expected</em> and the patients{' '}
-              <em>seen</em>; the difference and what it is worth work themselves out as you type. A
-              short period stays negative, as on the sheet.
+              sheet. Choose a provider (anybody in the Provider job role) then{' '}
+              <strong>+ New statement</strong>. For each interval (two weeks on the sheet) fill in
+              the patients <em>expected</em> and the patients <em>seen</em>; the difference and what
+              it is worth work themselves out as you type. A short period stays negative, as on the
+              sheet.
             </p>
             <p>
               Every provider&rsquo;s model differs, so nothing is compulsory. Under{' '}
