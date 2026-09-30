@@ -38,6 +38,9 @@ export async function clearTestData(prisma: PrismaClient) {
     const events = await tx.practiceEvent.deleteMany({});
     // Their invitees go with them; the rules they repeated by, here.
     await tx.practiceEventSeries.deleteMany({});
+    // Worked-out productivity and its counts; each provider's plan is set-up
+    // and stays (it goes with a demo person, being theirs).
+    const productivity = await tx.productivityStatement.deleteMany({});
     const feedback = await tx.feedback.deleteMany({});
     const notifications = await tx.notification.deleteMany({});
     const reports = await tx.reportPreset.deleteMany({});
@@ -57,6 +60,7 @@ export async function clearTestData(prisma: PrismaClient) {
       posts: posts.count,
       surveys: surveys.count,
       events: events.count,
+      productivityStatements: productivity.count,
       suggestions: feedback.count,
       notifications: notifications.count,
       payrollExports: exports.count,
@@ -83,6 +87,7 @@ export async function previewTestData(prisma: PrismaClient) {
     posts,
     surveys,
     events,
+    productivityStatements,
     suggestions,
     notifications,
     payrollExports,
@@ -101,6 +106,7 @@ export async function previewTestData(prisma: PrismaClient) {
     prisma.announcement.count(),
     prisma.survey.count(),
     prisma.practiceEvent.count(),
+    prisma.productivityStatement.count(),
     prisma.feedback.count(),
     prisma.notification.count(),
     prisma.payrollExport.count(),
@@ -126,6 +132,7 @@ export async function previewTestData(prisma: PrismaClient) {
     posts,
     surveys,
     events,
+    productivityStatements,
     suggestions,
     notifications,
     payrollExports,

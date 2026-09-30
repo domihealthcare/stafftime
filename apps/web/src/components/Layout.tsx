@@ -42,6 +42,10 @@ const OWN_PERSONNEL = [
   { to: '/credentials', label: 'Your licenses' },
   { to: '/checklists', label: 'Your onboarding' },
 ];
+/// A provider's own published productivity, once a manager has published any.
+/// Chosen by an admin, not by access level, so it is added separately below.
+const PRODUCTIVITY_MANAGE = { to: '/productivity', label: 'Provider productivity' };
+const OWN_PRODUCTIVITY = [{ to: '/my-productivity', label: 'Your productivity' }];
 const ADMINISTER = [
   { to: '/staff', label: 'Staff' },
   { to: '/kiosks', label: 'Kiosks' },
@@ -205,12 +209,17 @@ export function Layout() {
               items={[
                 ...TEAM,
                 ...(!isManager && employee?.seesOwnPersonnelTabs ? OWN_PERSONNEL : []),
+                ...(employee?.hasProductivity ? OWN_PRODUCTIVITY : []),
               ]}
               className={linkClasses}
             />
             <NavMenu
               label="Manage"
-              items={[...(isManager ? MANAGE : []), ...(isAdmin ? ADMINISTER : [])]}
+              items={[
+                ...(isManager ? MANAGE : []),
+                ...(isAdmin ? ADMINISTER : []),
+                ...(employee?.canManageProductivity || isAdmin ? [PRODUCTIVITY_MANAGE] : []),
+              ]}
               className={linkClasses}
             />
           </nav>

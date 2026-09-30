@@ -10,6 +10,10 @@ import type {
   CredentialStanding,
   CredentialType,
   PayrollExportRecord,
+  PersonName,
+  ProductivityPerson,
+  ProductivityPlan,
+  ProductivityStatement,
   PayrollTarget,
   ChecklistKind,
   ChecklistTaskStatus,
@@ -1012,6 +1016,68 @@ export const api = {
     }),
   removeCredentialType: (id: string) =>
     request<CredentialType>(`/credential-types/${id}`, { method: 'DELETE' }),
+
+  /// Provider productivity. A provider reads only their own published
+  /// statements; the rest is for managers and admins.
+  myProductivity: () => request<Omit<ProductivityStatement, 'employee'>[]>('/productivity/mine'),
+  /// Who may work out provider productivity — chosen by an admin.
+  productivityAccess: () => request<PersonName[]>('/productivity/access'),
+  grantProductivityAccess: (employeeId: string) =>
+    request<PersonName[]>(`/productivity/access/${employeeId}`, { method: 'PUT' }),
+  revokeProductivityAccess: (employeeId: string) =>
+    request<PersonName[]>(`/productivity/access/${employeeId}`, { method: 'DELETE' }),
+  productivityPeople: () => request<ProductivityPerson[]>('/productivity/people'),
+  productivityPlans: () => request<ProductivityPlan[]>('/productivity/plans'),
+  productivityPlan: (employeeId: string) =>
+    request<ProductivityPlan | null>(`/productivity/plans/${employeeId}`),
+  saveProductivityPlan: (
+    employeeId: string,
+    body: {
+      intervalWeeks: number;
+      intervalsPerStatement: number;
+      expectedPerInterval: number | null;
+      multiplier: number | null;
+      categories: string[];
+      carriesBalance: boolean;
+    },
+  ) =>
+    request<ProductivityPlan>(`/productivity/plans/${employeeId}`, {
+      method: 'PUT',
+      body: JSON.stringify(body),
+    }),
+  removeProductivityPlan: (employeeId: string) =>
+    request<{ removed: boolean }>(`/productivity/plans/${employeeId}`, { method: 'DELETE' }),
+  productivityStatements: (employeeId: string) =>
+    request<ProductivityStatement[]>(`/productivity/statements${toQuery({ employeeId })}`),
+  newProductivityStatement: (employeeId: string, startDate?: string) =>
+    request<ProductivityStatement>('/productivity/statements', {
+      method: 'POST',
+      body: JSON.stringify({ employeeId, startDate }),
+    }),
+  saveProductivityStatement: (
+    id: string,
+    body: {
+      intervals: {
+        startDate: string;
+        endDate: string;
+        expected: number | null;
+        counts: { label: string; count: number }[];
+      }[];
+      multiplier: number | null;
+      paidOn: string | null;
+      note: string | null;
+    },
+  ) =>
+    request<ProductivityStatement>(`/productivity/statements/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify(body),
+    }),
+  publishProductivityStatement: (id: string) =>
+    request<ProductivityStatement>(`/productivity/statements/${id}/publish`, { method: 'POST' }),
+  unpublishProductivityStatement: (id: string) =>
+    request<ProductivityStatement>(`/productivity/statements/${id}/unpublish`, { method: 'POST' }),
+  deleteProductivityStatement: (id: string) =>
+    request<{ removed: boolean }>(`/productivity/statements/${id}`, { method: 'DELETE' }),
 
   /// Meetings and practice events overlapping [from, to), as ISO instants.
   events: (from: string, to: string) =>

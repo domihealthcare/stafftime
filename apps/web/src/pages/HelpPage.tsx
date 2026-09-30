@@ -520,6 +520,32 @@ const PROVIDERS: Section[] = [
   },
 ];
 
+const PRODUCTIVITY: Section[] = [
+  {
+    title: 'Your productivity',
+    topics: [
+      {
+        question: 'Where do I see mine?',
+        answer: (
+          <>
+            <p>
+              <Screen>Team → Your productivity</Screen>. Your manager works out each period and
+              publishes it when it is ready; you are told under the bell. Each one shows the
+              patients expected and seen in every interval, the difference, and &mdash; where your
+              arrangement has one &mdash; the multiplier and the amount. A short period shows as a
+              negative.
+            </p>
+            <p>
+              Only you can see yours. If a number looks wrong, tell your manager: they can correct
+              it and you will be told it was updated.
+            </p>
+          </>
+        ),
+      },
+    ],
+  },
+];
+
 const MANAGERS: Section[] = [
   {
     title: 'Hours and payroll',
@@ -870,6 +896,38 @@ const MANAGERS: Section[] = [
           </>
         ),
       },
+      {
+        question: 'Provider productivity',
+        answer: (
+          <>
+            <p>
+              <Screen>Manage → Provider productivity</Screen> replaces the Patients &amp; Providers
+              sheet. Choose a provider, then <strong>+ New statement</strong>. For each interval
+              (two weeks on the sheet) fill in the patients <em>expected</em> and the patients{' '}
+              <em>seen</em>; the difference and what it is worth work themselves out as you type. A
+              short period stays negative, as on the sheet.
+            </p>
+            <p>
+              Every provider&rsquo;s model differs, so nothing is compulsory. Under{' '}
+              <strong>How theirs is counted</strong> you can set the length of an interval, how many
+              make one statement, the patients expected, the multiplier and kinds of visit to count
+              separately (for example In-Office and Hospital) &mdash; all optional, and only the
+              starting point for each new statement. Leave the expected boxes empty for a provider
+              with no target, and the multiplier empty for one with no money in it.
+            </p>
+            <p>
+              Only the people an admin has chosen see this screen; admins choose them at the bottom
+              of it. A statement is a private <strong>draft</strong> until you press{' '}
+              <strong>Publish</strong>. Then that provider, and nobody else, can read it under{' '}
+              <Screen>Team → Your productivity</Screen> and is told it is ready.{' '}
+              <strong>Unpublish</strong> takes it back. Add a <strong>Paid on</strong> date or a
+              short note (&ldquo;Paid with 08.15.25&rdquo;) &mdash; the provider reads the note, so
+              never put a patient&rsquo;s name or details in it. Only counts are kept, never
+              patients.
+            </p>
+          </>
+        ),
+      },
     ],
   },
   {
@@ -1079,7 +1137,13 @@ export function HelpPage() {
   const [params, setParams] = useSearchParams();
   const guide = isManager && params.get('guide') === 'managers' ? 'managers' : 'staff';
   const sections =
-    guide === 'managers' ? MANAGERS : [...STAFF, ...(employee?.usesClinicalForms ? PROVIDERS : [])];
+    guide === 'managers'
+      ? MANAGERS
+      : [
+          ...STAFF,
+          ...(employee?.usesClinicalForms ? PROVIDERS : []),
+          ...(employee?.hasProductivity ? PRODUCTIVITY : []),
+        ];
 
   const tab = (key: 'staff' | 'managers', label: string) => (
     <button

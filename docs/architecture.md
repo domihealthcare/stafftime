@@ -2722,3 +2722,84 @@ downloaded; changing anything else does.
 **Help.** Providers get a *For providers* section on the Help page (where it
 is, privacy, prior visits, the care plan, after the visit in eCW); the
 managers guide says how to give a provider the form.
+
+## Provider productivity
+
+Added 30 September 2026 at Dominguez's request, replacing the practice's
+*Patients & Providers* Google Sheet. Managers and admins work out each
+provider's productivity for a period and **publish** it; the provider it is
+about can then read it, and nobody else can.
+
+**The sheet, as a model.** A row of the sheet is a *statement*: two consecutive
+two-week *intervals*, each with the patients expected (150) and the patients
+seen (169, 154). Expected 300, actual 323, difference 23, multiplier $50,
+amount $1,150. A short period is negative (74 + 210 = 284, -16, -$800) and is
+kept negative, not floored. "Paid 07.05.24" and "CLOSED IN MATERNITY" are the
+`paidOn` date and a short `note`.
+
+**Everything is optional**, because every provider's model is a little
+different: a `ProductivityPlan` (one per provider, defaults only) holds the
+interval length in weeks, intervals per statement, patients expected per
+interval, the multiplier and the kinds of visit counted separately
+("In-Office", "Hospital"). With no target there is a bare count; with a target
+but no multiplier there is a difference and no money; with a multiplier but
+no target every patient counted is worth the multiplier. A statement **copies**
+what it needs from the plan when it is made, so changing a plan never
+rewrites a period already worked out. A provider with no plan at all still
+works: one two-week interval, one count.
+
+**Tables** (`ProductivityPlan`, `ProductivityStatement`, `ProductivityInterval`,
+`ProductivityCount`): a statement's dates are kept in step with its intervals
+(saved whole, like the form), two statements for one provider may not overlap
+(the same patients would be counted twice), and a count is a label and a
+number and nothing else. The only free text is the statement's short `note`,
+which the screen tells managers never to put a patient's name in. The schema
+guard in `no-sensitive-data.spec.ts` pins the exact fields.
+
+**The sums** live in `productivity/productivity-math.ts` and are worked in
+whole cents; `apps/web/src/lib/productivity.ts` repeats them so the editor can
+show the result as numbers are typed. The server works them out again on every
+read, so what is shown afterwards is the server's.
+
+**Who sees what.** Everything under `/productivity` except `mine` is
+`@Roles(MANAGER)`. `GET /productivity/mine` takes the person from the session,
+never the request, returns published statements only and carries no name.
+Unpublishing takes a statement away from the provider again. Editing a
+published statement asks first, and tells the provider it was updated.
+Publishing rings their bell (`NotificationKind.PRODUCTIVITY`) with the dates
+and no numbers, as every notification.
+
+**Screens.** Manager: *Manage → Provider productivity* (provider picker with
+providers first, then *Statements* and *How theirs is counted*). Provider:
+*Team → Your productivity* (`/my-productivity`), shown only once something is
+published (`hasProductivity` on `/auth/me`), with this year's total. It sits
+under Manage rather than Resources because it is for managers; moving it is a
+one-line change in `Layout.tsx`.
+
+**Running balance** (Dominguez, 30 September 2026). A period that falls short is
+not paid out as a negative: the shortfall is carried into the provider's next
+statements and netted off what they earn until it clears (-$800 then +$4,700
+pays $3,900; -$800 then +$300 pays nothing and still owes $500). On by default
+per plan (`carriesBalance`), copied onto each statement when it is made; one
+that does not carry is paid as it stands and starts the count again, and one
+with no money in it changes nothing (`runningBalances` in
+`productivity-math.ts`). Worked out over *all* of a provider's statements in
+date order, on every read, so correcting an early period reaches the later
+ones. A provider sees the balance carried in from an earlier draft without
+seeing the draft.
+
+**Who may use it** (Dominguez, 30 September 2026). Not the manager access
+level: `Employee.canManageProductivity`, a list an admin chooses in the app
+(bottom of the Provider productivity screen; admins only). A migration started
+it with Dominguez and Angelica Dominguez. Every manager-side route checks it
+(`assertAccess`), the menu item appears only for those on it, and an admin who
+is not on it sees only the list, to add themselves. The staff picker for those
+on the list is `GET /productivity/people`, since they need not be able to list
+staff otherwise. Providers still read only their own published statements.
+
+**Not in payroll.** Decided: the amounts are not in the ADP export or any
+other payroll file. Bonuses are paid separately, and "Paid on" is recorded here.
+
+**Going live.** *Start using it for real* clears the statements made while
+testing (they are test data) and keeps each provider's plan.
+
