@@ -489,8 +489,8 @@ Beyond the phases, the parts worth knowing about before picking up work:
   New buttons should use them; the rest move over as their screens are touched.
   Batch D: on the Schedule "Worth a look" starts as a one-line summary that opens on a
   tap (`NeedsAttention collapsible`), and the colour key is a `<details>` (open on a
-  wide screen, closed on a phone). Not done: the phone header, whose two rows and
-  slogan strip were chosen by Dominguez — a change there needs his call.
+  wide screen, closed on a phone). The phone header's two rows became a bottom tab
+  bar — see the next entry.
 - **Schedule and phone navigation** (30 September 2026, Dominguez): the Regular
   shifts list is hidden behind "Show the N regular shifts", with a search box and
   eight at a time. The month view lists **every** shift on a laptop (a phone still shows
