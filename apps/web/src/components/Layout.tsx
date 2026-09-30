@@ -32,6 +32,7 @@ const MANAGE = [
   { to: '/closing', label: 'Closing checklists' },
   { to: '/checklists', label: 'Onboarding & Offboarding' },
   { to: '/credentials', label: 'Licenses' },
+  { to: '/productivity', label: 'Provider productivity' },
   { to: '/job-roles', label: 'Job roles' },
   { to: '/export', label: 'Export' },
 ];
@@ -42,6 +43,8 @@ const OWN_PERSONNEL = [
   { to: '/credentials', label: 'Your licenses' },
   { to: '/checklists', label: 'Your onboarding' },
 ];
+/// A provider's own published productivity, once a manager has published any.
+const OWN_PRODUCTIVITY = [{ to: '/my-productivity', label: 'Your productivity' }];
 const ADMINISTER = [
   { to: '/staff', label: 'Staff' },
   { to: '/kiosks', label: 'Kiosks' },
@@ -159,6 +162,7 @@ export function Layout() {
               items={[
                 ...TEAM,
                 ...(!isManager && employee?.seesOwnPersonnelTabs ? OWN_PERSONNEL : []),
+                ...(employee?.hasProductivity ? OWN_PRODUCTIVITY : []),
               ]}
               className={linkClasses}
             />

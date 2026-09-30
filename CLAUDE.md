@@ -611,6 +611,22 @@ Beyond the phases, the parts worth knowing about before picking up work:
   is in `clinical/cognitive-assessment/config.ts`. Leaving, Back, reloading
   and Sign out all ask first. See *The clinical forms* in
   `docs/architecture.md`.
+- **Provider productivity** (30 September 2026, Dominguez — replaces the
+  practice's *Patients & Providers* sheet). Manage → **Provider productivity**
+  (managers and admins): for each provider, a **statement** per period of
+  intervals (two weeks on the sheet), each with the patients **expected** and
+  **seen**, a **multiplier** on the difference (169 + 154 against 300 at $50
+  is $1,150; a short period stays negative) and a paid date and short note. A
+  statement is a private draft until **published**; the provider can then read
+  theirs, and only theirs, under Team → **Your productivity** (and is told on
+  the bell, with no numbers in it). Every provider's model differs, so
+  **everything is optional**: a per-provider *plan* only sets defaults
+  (interval length, intervals per statement, expected per interval, multiplier,
+  kinds of visit like In-Office / Hospital), a statement copies them when it is
+  made, and it can be a bare count, a count against a target, or with money.
+  Counts only — never a patient (the schema guard pins the fields; the note is
+  the one free-text box and says so). Not in the payroll export. See *Provider
+  productivity* in `docs/architecture.md`.
 - **Tests**: ~870 unit tests, and ~495 end-to-end checks in `tests/browser`
   driven against a real API, a real Postgres and a real Chromium. Both run in CI
   on every push. The convention is to run the browser suites twice — once

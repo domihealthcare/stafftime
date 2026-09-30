@@ -305,6 +305,10 @@ model Employee {
   notifications             Notification[]
   createdEvents             PracticeEvent[]         @relation("EventCreatedBy")
   eventInvites              PracticeEventInvitee[]  @relation("EventInvitee")
+  productivityPlan          ProductivityPlan?       @relation("ProductivityPlanSubject")
+  productivityStatements    ProductivityStatement[] @relation("ProductivityStatementSubject")
+  createdProductivity       ProductivityStatement[] @relation("ProductivityStatementCreatedBy")
+  publishedProductivity     ProductivityStatement[] @relation("ProductivityStatementPublishedBy")
 
   @@index([employmentStatus])
   @@map("employees")
@@ -1701,6 +1705,7 @@ enum NotificationKind {
   CHECKLIST_STARTED
   ANNOUNCEMENT
   EVENT
+  PRODUCTIVITY
 }
 
 /// Something the app wants one person to know, shown under the bell in the
@@ -1910,4 +1915,112 @@ model GoogleCalendar {
   updatedAt   DateTime  @updatedAt
 
   @@map("google_calendar")
+}
+
+/// How a provider's productivity is counted (Dominguez, September 2026, from
+/// the practice's Patients & Providers sheet).
+///
+/// Every provider's model is a little different, so a plan is only a set of
+/// defaults for the statements made under it, and every part of it is
+/// optional: with no target there is just a count; with no multiplier there
+/// is no money; with no categories there is one number a period. A statement
+/// copies what it needs when it is made, so changing a plan never rewrites a
+/// period already worked out.
+///
+/// Patients are counted, never named: nothing here identifies one.
+model ProductivityPlan {
+  id         String @id @default(uuid()) @db.Uuid
+  employeeId String @unique @db.Uuid
+
+  /// Length of one counting interval — two weeks on the sheet, a pay period.
+  intervalWeeks         Int      @default(2)
+  /// How many intervals make one statement. The sheet adds two.
+  intervalsPerStatement Int      @default(1)
+  /// Patients expected in one interval (the sheet's "Base = 150 pts"). Null
+  /// when there is no target.
+  expectedPerInterval   Int?
+  /// Dollars for each patient above (or below) the expected number, or for
+  /// each patient when there is no target. Null when the plan carries no money.
+  multiplier            Decimal? @db.Decimal(10, 2)
+  /// Kinds of visit counted separately, in this order: "In-Office", "Hospital".
+  /// Empty means one number.
+  categories            String[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  employee Employee @relation("ProductivityPlanSubject", fields: [employeeId], references: [id], onDelete: Cascade)
+
+  @@map("productivity_plans")
+}
+
+/// One provider's productivity for one period — a row of the sheet. Private
+/// to managers and admins while it is a draft; once published, the provider
+/// it is about can read it, and nobody else can.
+model ProductivityStatement {
+  id         String @id @default(uuid()) @db.Uuid
+  employeeId String @db.Uuid
+
+  /// The first and last day covered, kept in step with the intervals.
+  startDate DateTime @db.Date
+  endDate   DateTime @db.Date
+
+  /// Dollars per patient, copied from the plan when the statement was made and
+  /// changeable here. Null when there is no money in it.
+  multiplier Decimal?  @db.Decimal(10, 2)
+  /// When it was paid, if it has been.
+  paidOn     DateTime? @db.Date
+  /// A short word for the provider: "Paid with 08.15.25", "Closed in maternity
+  /// leave". Never a patient's name.
+  note       String?
+
+  /// Null while a draft. Set, the provider can read it.
+  publishedAt   DateTime?
+  publishedById String?   @db.Uuid
+  createdById   String?   @db.Uuid
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  employee    Employee               @relation("ProductivityStatementSubject", fields: [employeeId], references: [id], onDelete: Cascade)
+  createdBy   Employee?              @relation("ProductivityStatementCreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
+  publishedBy Employee?              @relation("ProductivityStatementPublishedBy", fields: [publishedById], references: [id], onDelete: SetNull)
+  intervals   ProductivityInterval[]
+
+  @@index([employeeId, startDate])
+  @@index([employeeId, publishedAt])
+  @@map("productivity_statements")
+}
+
+/// One counting interval inside a statement, with the number expected of it.
+model ProductivityInterval {
+  id          String   @id @default(uuid()) @db.Uuid
+  statementId String   @db.Uuid
+  position    Int
+  startDate   DateTime @db.Date
+  endDate     DateTime @db.Date
+  /// Null when there is no target for this interval.
+  expected    Int?
+
+  statement ProductivityStatement @relation(fields: [statementId], references: [id], onDelete: Cascade)
+  counts    ProductivityCount[]
+
+  @@index([statementId, position])
+  @@map("productivity_intervals")
+}
+
+/// Patients seen in an interval, of one kind. A number and a label, and
+/// nothing else, on purpose (see the schema guard in no-sensitive-data.spec).
+model ProductivityCount {
+  id         String @id @default(uuid()) @db.Uuid
+  intervalId String @db.Uuid
+  /// The plan's category ("In-Office"), or "Patients" when there are none.
+  label      String
+  /// Where it sits among the interval's counts, so they read in the plan's order.
+  position   Int    @default(0)
+  count      Int
+
+  interval ProductivityInterval @relation(fields: [intervalId], references: [id], onDelete: Cascade)
+
+  @@unique([intervalId, label])
+  @@map("productivity_counts")
 }

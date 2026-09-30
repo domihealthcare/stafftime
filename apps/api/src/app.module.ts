@@ -12,6 +12,7 @@ import { ChecklistsModule } from './checklists/checklists.module';
 import { SessionAuthGuard } from './common/auth/session.guard';
 import { validateEnv } from './config/env.validation';
 import { CredentialsModule } from './credentials/credentials.module';
+import { ProductivityModule } from './productivity/productivity.module';
 import { DirectoryModule } from './directory/directory.module';
 import { ProfileModule } from './profile/profile.module';
 import { EmailModule } from './email/email.module';
@@ -56,6 +57,7 @@ import { TimeEntriesModule } from './time-entries/time-entries.module';
     PtoModule,
     ChecklistsModule,
     CredentialsModule,
+    ProductivityModule,
     AnnouncementsModule,
     JobRolesModule,
     DirectoryModule,

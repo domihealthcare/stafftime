@@ -210,8 +210,15 @@ export class AuthController {
         },
       },
     });
+    // A provider whose productivity has been published reads it under Team;
+    // everybody else never sees the link.
+    const hasProductivity =
+      (await this.prisma.productivityStatement.count({
+        where: { employeeId, publishedAt: { not: null } },
+      })) > 0;
     return {
       ...employee,
+      hasProductivity,
       /// Whether their own licenses and onboarding are under Team — Providers,
       /// as the practice has it. Managers and admins have them under Manage.
       seesOwnPersonnelTabs: jobRoles.some((membership) => membership.jobRole.seesOwnPersonnelTabs),

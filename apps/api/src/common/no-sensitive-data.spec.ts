@@ -188,4 +188,52 @@ describe('what this app deliberately does not store', () => {
       }
     }
   });
+  /// Provider productivity (September 2026) counts patients; it must never name
+  /// one. A count is a number and a label, and the only free text anywhere in it
+  /// is the short note on a statement, which the screen tells managers not to
+  /// put a patient's name in.
+  it('counts patients in productivity statements without identifying any', () => {
+    const fieldsOf = (name: string) =>
+      model(name)
+        .split('\n')
+        .map((line) => line.trim())
+        .filter((line) => line && !line.startsWith('//') && !line.startsWith('@@'))
+        .map((line) => line.split(/\s+/)[0])
+        .sort();
+    expect(fieldsOf('ProductivityCount')).toEqual(
+      ['count', 'id', 'interval', 'intervalId', 'label', 'position'].sort(),
+    );
+    expect(fieldsOf('ProductivityInterval')).toEqual(
+      [
+        'counts',
+        'endDate',
+        'expected',
+        'id',
+        'position',
+        'startDate',
+        'statement',
+        'statementId',
+      ].sort(),
+    );
+    expect(fieldsOf('ProductivityStatement')).toEqual(
+      [
+        'createdAt',
+        'createdBy',
+        'createdById',
+        'employee',
+        'employeeId',
+        'endDate',
+        'id',
+        'intervals',
+        'multiplier',
+        'note',
+        'paidOn',
+        'publishedAt',
+        'publishedBy',
+        'publishedById',
+        'startDate',
+        'updatedAt',
+      ].sort(),
+    );
+  });
 });

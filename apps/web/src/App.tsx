@@ -29,6 +29,12 @@ const DirectoryPage = lazy(() =>
 const JobRolesPage = lazy(() =>
   import('./pages/JobRolesPage').then((m) => ({ default: m.JobRolesPage })),
 );
+const ProductivityPage = lazy(() =>
+  import('./pages/ProductivityPage').then((m) => ({ default: m.ProductivityPage })),
+);
+const MyProductivityPage = lazy(() =>
+  import('./pages/MyProductivityPage').then((m) => ({ default: m.MyProductivityPage })),
+);
 const NewsPage = lazy(() => import('./pages/NewsPage').then((m) => ({ default: m.NewsPage })));
 const HelpPage = lazy(() => import('./pages/HelpPage').then((m) => ({ default: m.HelpPage })));
 const ProfilePage = lazy(() =>
@@ -168,6 +174,8 @@ function Routed() {
           <Route path="checklists" element={<ChecklistsPage />} />
           <Route path="closing" element={<ClosingPage />} />
           <Route path="credentials" element={<CredentialsPage />} />
+          <Route path="productivity" element={<ProductivityPage />} />
+          <Route path="my-productivity" element={<MyProductivityPage />} />
           <Route path="export" element={<ExportPage />} />
           <Route path="staff" element={<StaffPage />} />
           <Route path="kiosks" element={<KiosksPage />} />
