@@ -735,8 +735,6 @@ export function SchedulePage() {
         <EventDialog
           event={openEvent}
           canEdit={isManager}
-          showEmptyOpen={showEmptyOpen}
-          onShowEmptyOpen={setShowEmptyOpen}
           onClose={() => setOpenEvent(null)}
           onEdit={() => {
             setEventForm({ event: openEvent });
@@ -862,6 +860,8 @@ export function SchedulePage() {
           locationFilter={locationFilter}
           roleFilter={roleFilter}
           canEdit={isManager}
+          showEmptyOpen={showEmptyOpen}
+          onShowEmptyOpen={setShowEmptyOpen}
           onPersonMenu={isManager ? openPersonMenu : undefined}
           selfId={isManager ? undefined : me?.id}
           onChanged={() => void load()}
