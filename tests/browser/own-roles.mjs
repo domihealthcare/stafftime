@@ -112,7 +112,7 @@ await step('the server refuses a shift as a role she does not hold', async () =>
   if (refused.status !== 400) throw new Error(`answered ${refused.status}`);
   if (!/not in Provider/.test(JSON.stringify(refused.body)))
     throw new Error(`said ${JSON.stringify(refused.body)}`);
-  // …and, in two roles, one with none given.
+  // …and, in two roles, one with none given gets her first — never "any".
   const vague = await api('/shifts', {
     method: 'POST',
     body: JSON.stringify({
@@ -122,7 +122,10 @@ await step('the server refuses a shift as a role she does not hold', async () =>
       endsAt: end.toISOString(),
     }),
   });
-  if (vague.status !== 400) throw new Error(`with no role it answered ${vague.status}`);
+  if (vague.status !== 201) throw new Error(`with no role it answered ${vague.status}`);
+  made.push(vague.body.id);
+  if (vague.body.jobRoleId !== role('Front Desk').id)
+    throw new Error(`with no role it was given ${vague.body.jobRole?.name ?? 'none'}`);
 });
 
 await step('an open Front Desk shift can only be given to somebody in Front Desk', async () => {

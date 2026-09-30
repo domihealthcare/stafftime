@@ -10,8 +10,9 @@ import { PrismaService } from '../prisma/prisma.service';
  * - A role they hold is used as asked.
  * - A role they do not hold is refused, by name, so the manager knows to add
  *   them to it on Staff first.
- * - No role at all: with one role, that one; with several, they are asked to
- *   choose; with none yet, the shift has none.
+ * - No role at all: their first, in the practice's order — the screens always
+ *   send one, so this is for anything else that makes a shift; with none yet,
+ *   the shift has none.
  */
 export async function heldJobRole(
   prisma: PrismaService,
@@ -39,9 +40,7 @@ export async function heldJobRole(
     );
   }
 
-  if (roles.length === 0) return null;
-  if (roles.length === 1) return roles[0].id;
-  throw new BadRequestException(`Say which of their job roles it is for: ${names(roles)}.`);
+  return roles[0]?.id ?? null;
 }
 
 function names(roles: { name: string }[]): string {

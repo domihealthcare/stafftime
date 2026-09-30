@@ -360,8 +360,8 @@ Beyond the phases, the parts worth knowing about before picking up work:
   assigning an open shift) offers only the chosen person's roles — no "Any"
   or "Not specified"; with one role it is that one. Assigning an open shift
   with a role lists only people in it. The server enforces it
-  (`shifts/held-job-role.ts`): a role they do not hold is refused, none
-  given with several held is refused, none given with one held uses it.
+  (`shifts/held-job-role.ts`): a role they do not hold is refused; none
+  given (only possible outside the screens) uses their first.
   Open shifts keep any role or none. Shifts saved before are left as they
   were until edited.
 - **Weeks start on Sunday on screen** (September 2026, Dominguez): week

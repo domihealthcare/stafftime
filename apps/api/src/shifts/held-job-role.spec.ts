@@ -42,10 +42,8 @@ describe('heldJobRole — somebody’s shift is for one of their own job roles',
     await expect(heldJobRole(prisma([FRONT_DESK]), 'emp', undefined)).resolves.toBe('fd');
   });
 
-  it('with none asked for and several held, asks which — there is no "any"', async () => {
-    await expect(heldJobRole(prisma([FRONT_DESK, MA]), 'emp', null)).rejects.toThrow(
-      'Say which of their job roles it is for: Front Desk or Medical Assistant.',
-    );
+  it('with none asked for and several held, uses their first — never "any"', async () => {
+    await expect(heldJobRole(prisma([FRONT_DESK, MA]), 'emp', null)).resolves.toBe('fd');
   });
 
   it('somebody with no job role yet gets a shift with none', async () => {

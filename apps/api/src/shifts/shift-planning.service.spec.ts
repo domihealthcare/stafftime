@@ -270,21 +270,20 @@ describe('ShiftPlanningService', () => {
       expect(prisma.employeeJobRole.findMany).not.toHaveBeenCalled();
     });
 
-    it('a usual week asks which role when they hold several', async () => {
-      const { service } = build({
+    it('a usual week day with no role given gets their first', async () => {
+      const { service, created } = build({
         heldRoles: [
           { id: 'fd', name: 'Front Desk' },
           { id: 'ma', name: 'Medical Assistant' },
         ],
       });
-      await expect(
-        service.setWeek(
-          'emp-1',
-          { days: [{ dayOfWeek: 1, locationId: 'loc-1', startTime: '09:00', endTime: '17:00' }] },
-          'mgr-1',
-          new Date('2026-09-29T14:00:00Z'),
-        ),
-      ).rejects.toThrow('Say which of their job roles it is for: Front Desk or Medical Assistant.');
+      await service.setWeek(
+        'emp-1',
+        { days: [{ dayOfWeek: 1, locationId: 'loc-1', startTime: '09:00', endTime: '17:00' }] },
+        'mgr-1',
+        new Date('2026-09-29T14:00:00Z'),
+      );
+      expect(created.every((shift) => shift.jobRoleId === 'fd')).toBe(true);
     });
   });
 

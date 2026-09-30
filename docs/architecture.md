@@ -995,9 +995,10 @@ repeats, a standing shift's edit and each day of a usual week:
 
 - a role they hold is used;
 - a role they do not hold is refused, by name, with theirs listed;
-- no role, with one held: that one — so a client that sends none still gets
-  it right; with several: refused, asking which; with none held: no role
-  (and the screens say to add them to one on Staff).
+- no role given: their first, in the practice's order — the screens always
+  send one, so this only catches other callers, which still get one of
+  theirs; with none held: no role (and the screens say to add them to one on
+  Staff).
 
 On `PATCH /shifts/:id` it runs only when the person or the role changes, so
 a shift saved before the rule can still be moved or published. Open shifts
