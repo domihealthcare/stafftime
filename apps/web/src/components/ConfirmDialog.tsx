@@ -7,6 +7,7 @@ import {
   useState,
   type ReactNode,
 } from 'react';
+import { buttonClass } from './ui';
 
 export interface ConfirmOptions {
   /// The question, as the heading: "Remove this shift?"
@@ -152,7 +153,7 @@ function ConfirmModal({
             ref={cancelRef}
             type="button"
             onClick={() => onAnswer(false)}
-            className="rounded-lg border border-slate-300 px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50"
+            className={buttonClass('secondary', 'md')}
           >
             {cancelLabel}
           </button>

@@ -1,7 +1,7 @@
 import { BrandLogo } from '../components/Brand';
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Alert, Card } from '../components/ui';
+import { Alert, Card, Field, inputClass } from '../components/ui';
 import { ApiError, api } from '../lib/api';
 
 /**
@@ -40,36 +40,33 @@ export function ForgotPasswordPage() {
         <h1 className="mb-1 text-center text-2xl font-semibold text-slate-900">
           Reset your password
         </h1>
-        <p className="mb-6 text-center text-sm text-slate-600">
-          We will email you a link.
-        </p>
+        <p className="mb-6 text-center text-sm text-slate-600">We will email you a link.</p>
 
         <Card className="p-6">
           {sent ? (
             <>
               <Alert tone="success">{sent}</Alert>
               <p className="mt-3 text-sm text-slate-600">
-                The link works once and stops working after 30 minutes. Check the spam
-                folder if it does not turn up.
+                The link works once and stops working after 30 minutes. Check the spam folder if it
+                does not turn up.
               </p>
             </>
           ) : (
             <form onSubmit={(event) => void submit(event)} className="space-y-4">
-              <div>
-                <label htmlFor="email" className="block text-sm font-medium text-slate-700">
-                  Email
-                </label>
-                <input
-                  id="email"
-                  type="email"
-                  required
-                  autoFocus
-                  autoComplete="email"
-                  value={email}
-                  onChange={(event) => setEmail(event.target.value)}
-                  className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2"
-                />
-              </div>
+              <Field label="Email">
+                {(field) => (
+                  <input
+                    {...field}
+                    type="email"
+                    required
+                    autoFocus
+                    autoComplete="email"
+                    value={email}
+                    onChange={(event) => setEmail(event.target.value)}
+                    className={inputClass}
+                  />
+                )}
+              </Field>
 
               {error && <Alert>{error}</Alert>}
 

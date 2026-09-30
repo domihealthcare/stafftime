@@ -2,7 +2,15 @@ import { useCallback, useEffect, useState } from 'react';
 import { ApiError, api, type KioskDevice, type NewKioskDevice } from '../lib/api';
 import { formatDateTime } from '../lib/format';
 import type { Employee, Location } from '../lib/types';
-import { Alert, Badge, Card, EmptyState, PageHeading, Spinner } from '../components/ui';
+import {
+  Alert,
+  Badge,
+  Card,
+  EmptyState,
+  PageHeading,
+  Spinner,
+  buttonClass,
+} from '../components/ui';
 import { NeedsAttention } from '../components/NeedsAttention';
 import { useConfirm } from '../components/ConfirmDialog';
 
@@ -41,10 +49,7 @@ export function KiosksPage() {
 
   return (
     <div className="max-w-4xl">
-      <PageHeading
-        title="Kiosks"
-        subtitle="Front-desk tablets, and the PINs staff use on them."
-      />
+      <PageHeading title="Kiosks" subtitle="Front-desk tablets, and the PINs staff use on them." />
 
       <NeedsAttention sections={['silentKiosks']} />
 
@@ -78,8 +83,8 @@ export function KiosksPage() {
             </Card>
           ) : devices.length === 0 ? (
             <EmptyState>
-              No kiosks yet. Add one, then open <code className="font-mono">/kiosk</code> on
-              the tablet and enter the pairing code.
+              No kiosks yet. Add one, then open <code className="font-mono">/kiosk</code> on the
+              tablet and enter the pairing code.
             </EmptyState>
           ) : (
             <div className="space-y-2">
@@ -100,8 +105,8 @@ export function KiosksPage() {
       <section>
         <h2 className="mb-1 text-lg font-semibold text-slate-900">Staff PINs</h2>
         <p className="mb-3 text-sm text-slate-600">
-          Only staff with a PIN appear on the kiosk. PINs are stored hashed and cannot be
-          read back — if someone forgets theirs, set a new one.
+          Only staff with a PIN appear on the kiosk. PINs are stored hashed and cannot be read back
+          — if someone forgets theirs, set a new one.
         </p>
         {loading ? (
           <Card className="p-6">
@@ -126,13 +131,7 @@ export function KiosksPage() {
   );
 }
 
-function PairingCodeCard({
-  device,
-  onDismiss,
-}: {
-  device: NewKioskDevice;
-  onDismiss: () => void;
-}) {
+function PairingCodeCard({ device, onDismiss }: { device: NewKioskDevice; onDismiss: () => void }) {
   return (
     <Card className="border-brand-200 bg-brand-50 p-5">
       <h3 className="text-sm font-semibold text-brand-900">
@@ -195,11 +194,7 @@ function AddDeviceForm({
 
   if (!open) {
     return (
-      <button
-        type="button"
-        onClick={() => setOpen(true)}
-        className="rounded-lg bg-brand-600 px-4 py-2 text-sm font-medium text-white hover:bg-brand-700"
-      >
+      <button type="button" onClick={() => setOpen(true)} className={buttonClass('primary', 'md')}>
         + Add kiosk
       </button>
     );
@@ -245,14 +240,14 @@ function AddDeviceForm({
           <button
             type="submit"
             disabled={busy || name.trim().length < 2 || !locationId}
-            className="rounded-lg bg-brand-600 px-4 py-2 text-sm font-medium text-white hover:bg-brand-700 disabled:opacity-60"
+            className={buttonClass('primary', 'md')}
           >
             {busy ? 'Adding…' : 'Add kiosk'}
           </button>
           <button
             type="button"
             onClick={() => setOpen(false)}
-            className="rounded-lg border border-slate-300 px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50"
+            className={buttonClass('secondary', 'md')}
           >
             Cancel
           </button>
@@ -454,7 +449,7 @@ function PinRow({
             type="button"
             disabled={busy || pin.length < 4}
             onClick={() => void save()}
-            className="rounded-lg bg-brand-600 px-3 py-2 text-sm font-medium text-white hover:bg-brand-700 disabled:opacity-60"
+            className={buttonClass('primary', 'md')}
           >
             {busy ? 'Saving…' : 'Save'}
           </button>
@@ -465,7 +460,7 @@ function PinRow({
               setPin('');
               setProblem(null);
             }}
-            className="rounded-lg border border-slate-300 px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50"
+            className={buttonClass('secondary', 'md')}
           >
             Cancel
           </button>

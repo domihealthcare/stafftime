@@ -1,12 +1,7 @@
 import { useState } from 'react';
 import { ApiError, api } from '../lib/api';
-import type {
-  ChecklistKind,
-  ChecklistTemplate,
-  TaskOwner,
-  TemplateTaskInput,
-} from '../lib/types';
-import { Alert } from './ui';
+import type { ChecklistKind, ChecklistTemplate, TaskOwner, TemplateTaskInput } from '../lib/types';
+import { Alert, buttonClass } from './ui';
 
 /// A task while it is being edited. `dueOffsetDays` is split into a direction
 /// and a number of days, because "7 days before the start date" is how a person
@@ -169,7 +164,9 @@ export function ChecklistTemplateEditor({
             value={name}
             onChange={(event) => setName(event.target.value)}
             placeholder={
-              editingKind === 'ONBOARDING' ? 'New hire — Domi Healthcare' : 'Departure — Domi Healthcare'
+              editingKind === 'ONBOARDING'
+                ? 'New hire — Domi Healthcare'
+                : 'Departure — Domi Healthcare'
             }
             className="w-full rounded-lg border border-slate-300 px-2 py-1.5"
           />
@@ -269,7 +266,6 @@ export function ChecklistTemplateEditor({
                       <span className="text-slate-600">days</span>
                     </label>
                   )}
-
                 </div>
               </div>
 
@@ -311,7 +307,7 @@ export function ChecklistTemplateEditor({
       <button
         type="button"
         onClick={() => setTasks((current) => [...current, blankTask()])}
-        className="mt-3 rounded-lg border border-slate-300 px-3 py-1.5 text-sm font-medium text-slate-700 hover:bg-slate-50"
+        className={`mt-3 ${buttonClass('secondary', 'sm')}`}
       >
         + Add a task
       </button>
@@ -323,9 +319,8 @@ export function ChecklistTemplateEditor({
       )}
 
       <p className="mt-3 text-xs text-slate-500">
-        Editing a template never changes a checklist that is already under way — those
-        keep the wording they were started with, so what somebody signed stays what they
-        signed.
+        Editing a template never changes a checklist that is already under way — those keep the
+        wording they were started with, so what somebody signed stays what they signed.
       </p>
 
       <div className="mt-3 flex items-center gap-2">
@@ -333,7 +328,7 @@ export function ChecklistTemplateEditor({
           type="button"
           disabled={saving}
           onClick={() => void save()}
-          className="rounded-lg bg-brand-600 px-4 py-2 text-sm font-semibold text-white hover:bg-brand-700 disabled:opacity-60"
+          className={buttonClass('primary', 'md')}
         >
           {saving ? 'Saving…' : template ? 'Save the template' : 'Create the template'}
         </button>

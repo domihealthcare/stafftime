@@ -1,6 +1,14 @@
 import { useCallback, useEffect, useState } from 'react';
 import { useConfirm } from '../components/ConfirmDialog';
-import { Alert, Badge, Card, EmptyState, PageHeading, Spinner } from '../components/ui';
+import {
+  Alert,
+  Badge,
+  Card,
+  EmptyState,
+  PageHeading,
+  Spinner,
+  buttonClass,
+} from '../components/ui';
 import { ApiError, api } from '../lib/api';
 import { formatCalendarDate } from '../lib/format';
 import { useIsManager } from '../lib/session';
@@ -233,7 +241,7 @@ function AnswerForm({ surveyId, onDone }: { surveyId: string; onDone: () => void
         type="button"
         disabled={busy || Object.keys(values).length === 0}
         onClick={() => void send()}
-        className="mt-4 rounded-lg bg-brand-600 px-4 py-2 text-sm font-semibold text-white hover:bg-brand-700 disabled:opacity-60"
+        className={`mt-4 ${buttonClass('primary', 'md')}`}
       >
         {busy ? 'Sending…' : 'Send anonymously'}
       </button>
@@ -298,7 +306,7 @@ function SuggestionBox() {
               setBusy(false);
             }
           }}
-          className="mt-2 rounded-lg bg-brand-600 px-4 py-2 text-sm font-semibold text-white hover:bg-brand-700 disabled:opacity-60"
+          className={`mt-2 ${buttonClass('primary', 'md')}`}
         >
           {busy ? 'Sending…' : 'Send anonymously'}
         </button>
@@ -343,7 +351,7 @@ function ManageSurveys({
           <button
             type="button"
             onClick={() => setEditing('new')}
-            className="rounded-lg bg-brand-600 px-4 py-2 text-sm font-semibold text-white hover:bg-brand-700"
+            className={buttonClass('primary', 'md')}
           >
             + New survey
           </button>
@@ -441,7 +449,7 @@ function ManagedSurvey({
                 type="button"
                 disabled={busy}
                 onClick={() => void act(() => api.openSurvey(survey.id))}
-                className="rounded-lg bg-brand-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-brand-700 disabled:opacity-60"
+                className={buttonClass('primary', 'sm')}
               >
                 Send it
               </button>
@@ -789,7 +797,7 @@ function SurveyBuilder({
             busy || title.trim().length < 2 || questions.some((q) => q.prompt.trim().length < 2)
           }
           onClick={() => void save()}
-          className="rounded-lg bg-brand-600 px-4 py-2 text-sm font-semibold text-white hover:bg-brand-700 disabled:opacity-60"
+          className={buttonClass('primary', 'md')}
         >
           {busy ? 'Saving…' : 'Save as draft'}
         </button>

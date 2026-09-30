@@ -3,7 +3,7 @@ import { api } from '../lib/api';
 import { handEntryReasonLabel } from '../lib/hand-entry';
 import { formatDate, formatTime } from '../lib/format';
 import type { TimeEntry } from '../lib/types';
-import { Alert } from './ui';
+import { Alert, buttonClass } from './ui';
 import { useDialog } from './useDialog';
 
 /**
@@ -81,18 +81,10 @@ export function CheckHandEntryDialog({
           {error && <Alert>{error}</Alert>}
 
           <div className="flex gap-2 pt-1">
-            <button
-              type="submit"
-              disabled={busy}
-              className="rounded-lg bg-brand-600 px-4 py-2 text-sm font-medium text-white hover:bg-brand-700 disabled:opacity-60"
-            >
+            <button type="submit" disabled={busy} className={buttonClass('primary', 'md')}>
               {busy ? 'Saving…' : 'Mark as looked into'}
             </button>
-            <button
-              type="button"
-              onClick={onClose}
-              className="rounded-lg border border-slate-300 px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50"
-            >
+            <button type="button" onClick={onClose} className={buttonClass('secondary', 'md')}>
               Cancel
             </button>
           </div>

@@ -20,3 +20,14 @@
     }
   }
 }
+
+@layer components {
+  /* The forms plugin focuses fields in its own blue; this is the practice's. */
+  input:focus,
+  input[type]:focus,
+  select:focus,
+  textarea:focus {
+    --tw-ring-color: theme('colors.brand.600');
+    border-color: theme('colors.brand.600');
+  }
+}

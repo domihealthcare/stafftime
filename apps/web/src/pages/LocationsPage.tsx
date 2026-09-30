@@ -4,7 +4,7 @@ import { metresToWholeFeet } from '../lib/distance';
 import { distanceInMeters } from '../lib/geo';
 import { GeolocationRefused, getCurrentPosition } from '../lib/geolocation';
 import type { Location, UpdateLocationInput } from '../lib/types';
-import { Alert, Badge, Card, PageHeading, Spinner } from '../components/ui';
+import { Alert, Badge, Card, PageHeading, Spinner, buttonClass } from '../components/ui';
 
 /**
  * Admin screen for the two things that decide whether clock-in works: where a
@@ -52,7 +52,7 @@ export function LocationsPage() {
         <button
           type="button"
           onClick={() => setAdding((open) => !open)}
-          className="rounded-lg bg-brand-600 px-4 py-2 text-sm font-medium text-white hover:bg-brand-700"
+          className={buttonClass('primary', 'md')}
         >
           {adding ? 'Cancel' : '+ Add a location'}
         </button>
@@ -160,9 +160,7 @@ function LocationCard({
       );
     } catch (err) {
       setProblem(
-        err instanceof GeolocationRefused
-          ? err.message
-          : 'Could not read this device position.',
+        err instanceof GeolocationRefused ? err.message : 'Could not read this device position.',
       );
     } finally {
       setLocating(false);
@@ -232,7 +230,10 @@ function LocationCard({
         </div>
 
         <div>
-          <label htmlFor={`city-${location.id}`} className="block text-sm font-medium text-slate-700">
+          <label
+            htmlFor={`city-${location.id}`}
+            className="block text-sm font-medium text-slate-700"
+          >
             City
           </label>
           <input
@@ -246,7 +247,10 @@ function LocationCard({
 
         <div className="grid grid-cols-2 gap-3">
           <div>
-            <label htmlFor={`state-${location.id}`} className="block text-sm font-medium text-slate-700">
+            <label
+              htmlFor={`state-${location.id}`}
+              className="block text-sm font-medium text-slate-700"
+            >
               State
             </label>
             <input
@@ -259,7 +263,10 @@ function LocationCard({
             />
           </div>
           <div>
-            <label htmlFor={`zip-${location.id}`} className="block text-sm font-medium text-slate-700">
+            <label
+              htmlFor={`zip-${location.id}`}
+              className="block text-sm font-medium text-slate-700"
+            >
               ZIP
             </label>
             <input
@@ -281,7 +288,7 @@ function LocationCard({
             type="button"
             onClick={() => void captureCurrentPosition()}
             disabled={locating}
-            className="rounded-lg bg-brand-600 px-3 py-2 text-sm font-medium text-white hover:bg-brand-700 disabled:opacity-60"
+            className={buttonClass('primary', 'md')}
           >
             {locating ? 'Finding you…' : 'Use my current location'}
           </button>
@@ -289,7 +296,10 @@ function LocationCard({
 
         <div className="mt-3 grid gap-3 sm:grid-cols-3">
           <div>
-            <label htmlFor={`lat-${location.id}`} className="block text-sm font-medium text-slate-700">
+            <label
+              htmlFor={`lat-${location.id}`}
+              className="block text-sm font-medium text-slate-700"
+            >
               Latitude
             </label>
             <input
@@ -302,7 +312,10 @@ function LocationCard({
             />
           </div>
           <div>
-            <label htmlFor={`lng-${location.id}`} className="block text-sm font-medium text-slate-700">
+            <label
+              htmlFor={`lng-${location.id}`}
+              className="block text-sm font-medium text-slate-700"
+            >
               Longitude
             </label>
             <input
@@ -340,9 +353,9 @@ function LocationCard({
         )}
 
         <p className="mt-2 text-xs text-slate-500">
-          Too tight and staff cannot clock in at their own desk; too loose and the parking
-          lot across the street counts. Try clocking in from the far corner of the office
-          before settling on a number.
+          Too tight and staff cannot clock in at their own desk; too loose and the parking lot
+          across the street counts. Try clocking in from the far corner of the office before
+          settling on a number.
         </p>
       </div>
 
@@ -359,8 +372,8 @@ function LocationCard({
           className={`${field} font-mono text-sm`}
         />
         <p className="mt-1 text-xs text-slate-500">
-          Comma separated. Used as a fallback when a browser will not share its location —
-          only useful if this office has a static IP.
+          Comma separated. Used as a fallback when a browser will not share its location — only
+          useful if this office has a static IP.
         </p>
       </div>
 
@@ -547,7 +560,7 @@ function AddLocationForm({ onCreated }: { onCreated: () => void }) {
               type="button"
               onClick={() => void captureHere()}
               disabled={locating}
-              className="rounded-lg bg-brand-600 px-3 py-2 text-sm font-medium text-white hover:bg-brand-700 disabled:opacity-60"
+              className={buttonClass('primary', 'md')}
             >
               {locating ? 'Finding you…' : 'Use my current location'}
             </button>
@@ -597,8 +610,8 @@ function AddLocationForm({ onCreated }: { onCreated: () => void }) {
             </div>
           </div>
           <p className="mt-2 text-xs text-slate-500">
-            Rough coordinates are fine for now — correct them from your phone at the front
-            desk before anyone clocks in.
+            Rough coordinates are fine for now — correct them from your phone at the front desk
+            before anyone clocks in.
           </p>
         </div>
 

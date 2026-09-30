@@ -46,7 +46,7 @@ import {
   isClosure,
   useClosureCheck,
 } from './PracticeEvents';
-import { Alert } from './ui';
+import { Alert, buttonClass } from './ui';
 
 export type RotaGrouping = 'person' | 'location' | 'role';
 
@@ -1126,7 +1126,7 @@ function ShiftDialog({
             type="button"
             disabled={busy || !person || person === shift.employeeId}
             onClick={() => void assign()}
-            className="rounded-lg bg-brand-600 px-3 py-1.5 text-sm font-semibold text-white hover:bg-brand-700 disabled:opacity-60"
+            className={buttonClass('primary', 'sm')}
           >
             {open ? 'Assign' : 'Change'}
           </button>
@@ -1172,7 +1172,7 @@ function ShiftDialog({
             type="button"
             disabled={busy}
             onClick={() => void takeOff()}
-            className="rounded-lg border border-slate-300 px-3 py-1.5 text-sm font-medium text-slate-700 hover:bg-slate-50 disabled:opacity-60"
+            className={buttonClass('secondary', 'sm')}
           >
             Make it an open shift
           </button>
@@ -1181,7 +1181,7 @@ function ShiftDialog({
           type="button"
           disabled={busy}
           onClick={() => void act(() => api.updateShift(shift.id, { isRemote: !shift.isRemote }))}
-          className="rounded-lg border border-slate-300 px-3 py-1.5 text-sm font-medium text-slate-700 hover:bg-slate-50 disabled:opacity-60"
+          className={buttonClass('secondary', 'sm')}
         >
           {shift.isRemote ? 'Make it at the office' : 'Make it work from home'}
         </button>
@@ -1190,7 +1190,7 @@ function ShiftDialog({
             type="button"
             disabled={busy}
             onClick={() => void act(() => api.updateShift(shift.id, { status: 'PUBLISHED' }))}
-            className="rounded-lg border border-slate-300 px-3 py-1.5 text-sm font-medium text-slate-700 hover:bg-slate-50 disabled:opacity-60"
+            className={buttonClass('secondary', 'sm')}
           >
             Publish
           </button>
@@ -1494,7 +1494,7 @@ function QuickAddDialog({
               end <= start ||
               (repeat && (repeatDays.length === 0 || (!noEnd && !until)))
             }
-            className="rounded-lg bg-brand-600 px-4 py-2 text-sm font-semibold text-white hover:bg-brand-700 disabled:opacity-60"
+            className={buttonClass('primary', 'md')}
           >
             {busy ? 'Adding…' : repeat ? 'Add the shifts' : 'Add shift'}
           </button>

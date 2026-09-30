@@ -16,7 +16,15 @@ import { PtoBalanceCard } from '../components/PtoBalanceCard';
 import { PtoPolicyEditor } from '../components/PtoPolicyEditor';
 import { StaffPtoBalances } from '../components/StaffPtoBalances';
 import { useConfirm } from '../components/ConfirmDialog';
-import { Alert, Badge, Card, EmptyState, PageHeading, Spinner } from '../components/ui';
+import {
+  Alert,
+  Badge,
+  Card,
+  EmptyState,
+  PageHeading,
+  Spinner,
+  buttonClass,
+} from '../components/ui';
 
 const TYPE_LABELS: Record<PtoType, string> = PTO_TYPE_LABELS;
 
@@ -150,7 +158,7 @@ export function TimeOffPage() {
         <button
           type="button"
           onClick={() => setShowForm((open) => !open)}
-          className="rounded-lg bg-brand-600 px-4 py-2 text-sm font-medium text-white hover:bg-brand-700"
+          className={buttonClass('primary', 'md')}
         >
           {showForm ? 'Cancel' : '+ Request time off'}
         </button>
@@ -299,7 +307,7 @@ function RequestCard({
                 type="button"
                 disabled={busy}
                 onClick={() => void act(() => api.reviewPto(request.id, 'APPROVED'))}
-                className="rounded-lg bg-brand-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-brand-700 disabled:opacity-60"
+                className={buttonClass('primary', 'sm')}
               >
                 {busy ? '…' : 'Approve'}
               </button>
@@ -307,7 +315,7 @@ function RequestCard({
                 type="button"
                 disabled={busy}
                 onClick={() => setDenying(true)}
-                className="rounded-lg border border-slate-300 px-3 py-1.5 text-sm font-medium text-slate-700 hover:bg-slate-50"
+                className={buttonClass('secondary', 'sm')}
               >
                 Deny
               </button>
@@ -400,7 +408,7 @@ function RequestCard({
                 setDenying(false);
                 setReason('');
               }}
-              className="rounded-lg border border-slate-300 px-3 py-1.5 text-sm font-medium text-slate-700 hover:bg-slate-50"
+              className={buttonClass('secondary', 'sm')}
             >
               Cancel
             </button>

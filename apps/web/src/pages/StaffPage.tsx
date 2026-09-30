@@ -7,7 +7,15 @@ import { useConfirm } from '../components/ConfirmDialog';
 import { ImportStaff } from '../components/ImportStaff';
 import { JobRoleTag } from '../components/JobRoleTag';
 import { ROLE_LABELS, StaffEditor } from '../components/StaffEditor';
-import { Alert, Badge, Card, EmptyState, PageHeading, Spinner } from '../components/ui';
+import {
+  Alert,
+  Badge,
+  Card,
+  EmptyState,
+  PageHeading,
+  Spinner,
+  buttonClass,
+} from '../components/ui';
 
 /// Admin screen for adding staff and giving them a way in. Without this the
 /// only route to a second account is the API by hand.
@@ -145,7 +153,7 @@ export function StaffPage() {
               setImporting((open) => !open);
               setAdding(false);
             }}
-            className="rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50"
+            className={buttonClass('secondary', 'md')}
           >
             {importing ? 'Cancel' : 'Add several people'}
           </button>
@@ -155,7 +163,7 @@ export function StaffPage() {
               setAdding((open) => !open);
               setImporting(false);
             }}
-            className="rounded-lg bg-brand-600 px-4 py-2 text-sm font-medium text-white hover:bg-brand-700"
+            className={buttonClass('primary', 'md')}
           >
             {adding ? 'Cancel' : '+ Add someone'}
           </button>
@@ -197,7 +205,7 @@ export function StaffPage() {
             type="button"
             disabled={welcoming}
             onClick={() => void welcomeEveryone()}
-            className="rounded-lg bg-brand-600 px-4 py-2 text-sm font-semibold text-white hover:bg-brand-700 disabled:opacity-60"
+            className={buttonClass('primary', 'md')}
           >
             {welcoming ? 'Sending…' : 'Send welcome emails'}
           </button>
@@ -367,7 +375,7 @@ function StaffCard({
             type="button"
             onClick={onEdit}
             aria-label={`Edit ${person.firstName} ${person.lastName}`}
-            className="rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-sm font-medium text-slate-700 hover:bg-slate-50"
+            className={buttonClass('secondary', 'sm')}
           >
             Edit
           </button>

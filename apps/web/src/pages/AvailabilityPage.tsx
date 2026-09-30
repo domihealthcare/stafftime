@@ -1,7 +1,15 @@
 import { useCallback, useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useConfirm } from '../components/ConfirmDialog';
-import { Alert, Badge, Card, EmptyState, PageHeading, Spinner } from '../components/ui';
+import {
+  Alert,
+  Badge,
+  Card,
+  EmptyState,
+  PageHeading,
+  Spinner,
+  buttonClass,
+} from '../components/ui';
 import { ApiError, api } from '../lib/api';
 import { displayName, formatCalendarDate, localDate, WEEK_ORDER } from '../lib/format';
 import { useIsManager } from '../lib/session';
@@ -110,7 +118,7 @@ export function AvailabilityPage() {
           <button
             type="button"
             onClick={() => setAdding(true)}
-            className="rounded-lg bg-brand-600 px-4 py-2 text-sm font-semibold text-white hover:bg-brand-700"
+            className={buttonClass('primary', 'md')}
           >
             + Add a time you can’t work
           </button>
@@ -399,7 +407,7 @@ function RuleForm({
           type="button"
           disabled={busy || (kind === 'ONE_OFF' && date === '')}
           onClick={() => void save()}
-          className="rounded-lg bg-brand-600 px-4 py-2 text-sm font-semibold text-white hover:bg-brand-700 disabled:opacity-60"
+          className={buttonClass('primary', 'md')}
         >
           {busy ? 'Saving…' : 'Save'}
         </button>

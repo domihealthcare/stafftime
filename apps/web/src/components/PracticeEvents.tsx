@@ -16,7 +16,7 @@ import type {
 import { useConfirm, type ConfirmOptions } from './ConfirmDialog';
 import { InviteePicker, NOBODY, type InviteeSelection } from './InviteePicker';
 import { RepeatPicker } from './RepeatPicker';
-import { Alert, Card } from './ui';
+import { Alert, Card, buttonClass } from './ui';
 
 /**
  * Practice events on the schedule: office meetings, provider meetings, a
@@ -348,7 +348,7 @@ export function EventDialog({
                 <button
                   type="button"
                   onClick={() => setChoosing(false)}
-                  className="rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-sm font-medium text-slate-700 hover:bg-slate-50"
+                  className={buttonClass('secondary', 'sm')}
                 >
                   Keep them
                 </button>
@@ -367,7 +367,7 @@ export function EventDialog({
               type="button"
               disabled={busy}
               onClick={onEdit}
-              className="rounded-lg bg-brand-600 px-3 py-1.5 text-sm font-semibold text-white hover:bg-brand-700 disabled:opacity-60"
+              className={buttonClass('primary', 'sm')}
             >
               Edit
             </button>
@@ -957,18 +957,10 @@ export function EventForm({
         )}
 
         <div className="flex justify-end gap-2 sm:col-span-2">
-          <button
-            type="button"
-            onClick={onCancel}
-            className="rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-sm font-medium text-slate-700 hover:bg-slate-50"
-          >
+          <button type="button" onClick={onCancel} className={buttonClass('secondary', 'sm')}>
             Cancel
           </button>
-          <button
-            type="submit"
-            disabled={busy}
-            className="rounded-lg bg-brand-600 px-3 py-1.5 text-sm font-semibold text-white hover:bg-brand-700 disabled:opacity-60"
-          >
+          <button type="submit" disabled={busy} className={buttonClass('primary', 'sm')}>
             {busy ? 'Saving…' : event ? 'Save changes' : closed ? 'Add closure' : 'Add event'}
           </button>
         </div>
@@ -1241,11 +1233,7 @@ export function ClosuresCard({
 
       {canEdit && (
         <div className="mt-3 flex flex-wrap gap-2">
-          <button
-            type="button"
-            onClick={onAdd}
-            className="rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-sm font-medium text-slate-700 hover:bg-slate-50"
-          >
+          <button type="button" onClick={onAdd} className={buttonClass('secondary', 'sm')}>
             + Add closure
           </button>
           {closures && closures.length > 0 && (
@@ -1253,7 +1241,7 @@ export function ClosuresCard({
               type="button"
               disabled={busy}
               onClick={() => void copy()}
-              className="rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-sm font-medium text-slate-700 hover:bg-slate-50 disabled:opacity-60"
+              className={buttonClass('secondary', 'sm')}
             >
               {busy ? 'Copying…' : `Copy these into ${year + 1}`}
             </button>

@@ -3,7 +3,7 @@ import { ApiError, api } from '../lib/api';
 import { HAND_ENTRY_REASONS } from '../lib/hand-entry';
 import { localDate } from '../lib/format';
 import type { Employee, HandEntryReason } from '../lib/types';
-import { Alert } from './ui';
+import { Alert, buttonClass } from './ui';
 import { useDialog } from './useDialog';
 
 const field =
@@ -294,15 +294,11 @@ export function AddHoursDialog({
             <button
               type="submit"
               disabled={busy || !canSave}
-              className="rounded-lg bg-brand-600 px-4 py-2 text-sm font-medium text-white hover:bg-brand-700 disabled:opacity-60"
+              className={buttonClass('primary', 'md')}
             >
               {busy ? 'Adding…' : exportedWarning ? 'Add them anyway' : 'Add hours'}
             </button>
-            <button
-              type="button"
-              onClick={onClose}
-              className="rounded-lg border border-slate-300 px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50"
-            >
+            <button type="button" onClick={onClose} className={buttonClass('secondary', 'md')}>
               Cancel
             </button>
           </div>

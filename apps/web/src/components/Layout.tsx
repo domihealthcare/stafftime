@@ -176,7 +176,10 @@ export function Layout() {
 
               `relative` so that on a phone a menu opens across the whole nav,
               wherever its button landed. */}
-          <nav aria-label="Main" className="relative col-span-2 flex flex-wrap gap-1 sm:col-span-1 sm:items-center sm:gap-x-1 sm:gap-y-1">
+          <nav
+            aria-label="Main"
+            className="relative col-span-2 flex flex-wrap gap-1 sm:col-span-1 sm:items-center sm:gap-x-1 sm:gap-y-1"
+          >
             <NavLink to="/" end className={linkClasses}>
               Clock
             </NavLink>
@@ -215,7 +218,12 @@ export function Layout() {
       </header>
       <SloganStrip />
 
-      <main id="main" ref={mainRef} tabIndex={-1} className="mx-auto max-w-6xl px-4 py-6 focus:outline-none">
+      <main
+        id="main"
+        ref={mainRef}
+        tabIndex={-1}
+        className="mx-auto max-w-6xl px-4 py-6 focus:outline-none"
+      >
         {/* Screens load when first opened; the header stays while they do. */}
         <Suspense
           fallback={

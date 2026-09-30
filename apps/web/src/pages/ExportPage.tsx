@@ -11,7 +11,15 @@ import { formatCalendarDate, formatDateTime } from '../lib/format';
 import type { DayRange, Location, PayrollExportRecord, PayrollTarget } from '../lib/types';
 import { DateRangePicker, presetRanges, usePresetRange } from '../components/DateRangePicker';
 import { useConfirm } from '../components/ConfirmDialog';
-import { Alert, Badge, Card, EmptyState, PageHeading, Spinner } from '../components/ui';
+import {
+  Alert,
+  Badge,
+  Card,
+  EmptyState,
+  PageHeading,
+  Spinner,
+  buttonClass,
+} from '../components/ui';
 
 const STATUS_CHOICES = [
   { value: 'APPROVED', label: 'Approved', hint: 'Signed off by a manager' },
@@ -364,7 +372,7 @@ export function ExportPage() {
               type="button"
               disabled={presetName.trim().length === 0}
               onClick={() => void savePreset()}
-              className="mt-3 rounded-lg bg-brand-600 px-4 py-2 text-sm font-medium text-white hover:bg-brand-700 disabled:opacity-60"
+              className={`mt-3 ${buttonClass('primary', 'md')}`}
             >
               Save report
             </button>

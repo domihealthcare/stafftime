@@ -4,7 +4,7 @@ import { Link } from 'react-router-dom';
 import { Avatar } from '../components/Avatar';
 import { JobRoleTag } from '../components/JobRoleTag';
 import { useConfirm } from '../components/ConfirmDialog';
-import { Alert, Card, PageHeading, Spinner } from '../components/ui';
+import { Alert, Card, PageHeading, Spinner, buttonClass } from '../components/ui';
 import { ApiError, api } from '../lib/api';
 import { useSession } from '../lib/session';
 import type { Profile } from '../lib/types';
@@ -301,7 +301,7 @@ export function ProfilePage() {
             <button
               type="submit"
               disabled={busy || !changed}
-              className="rounded-lg bg-brand-600 px-4 py-2 text-sm font-semibold text-white hover:bg-brand-700 disabled:opacity-60"
+              className={buttonClass('primary', 'md')}
             >
               {busy ? 'Saving…' : 'Save profile'}
             </button>
@@ -469,11 +469,7 @@ function PinCard({ profile, onSaved }: { profile: Profile; onSaved: (next: Profi
           </div>
         )}
         <div className="sm:col-span-3">
-          <button
-            type="submit"
-            disabled={busy || !ready}
-            className="rounded-lg bg-brand-600 px-4 py-2 text-sm font-semibold text-white hover:bg-brand-700 disabled:opacity-60"
-          >
+          <button type="submit" disabled={busy || !ready} className={buttonClass('primary', 'md')}>
             {busy ? 'Saving…' : profile.hasPin ? 'Change PIN' : 'Set PIN'}
           </button>
         </div>

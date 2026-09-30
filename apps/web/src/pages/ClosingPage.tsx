@@ -13,7 +13,15 @@ import type {
   SupplyRequest,
 } from '../lib/types';
 import { NeedsAttention } from '../components/NeedsAttention';
-import { Alert, Badge, Card, EmptyState, PageHeading, Spinner } from '../components/ui';
+import {
+  Alert,
+  Badge,
+  Card,
+  EmptyState,
+  PageHeading,
+  Spinner,
+  buttonClass,
+} from '../components/ui';
 
 type Tab = 'records' | 'supplies' | 'edit';
 
@@ -310,7 +318,7 @@ function Supplies() {
                             setError(err instanceof ApiError ? err.message : 'Could not save.'),
                           );
                       }}
-                      className="rounded-lg border border-slate-300 bg-white px-3 py-1 text-sm font-medium text-slate-700 hover:bg-slate-50"
+                      className={buttonClass('secondary', 'sm')}
                     >
                       Mark ordered
                     </button>
@@ -689,7 +697,7 @@ function ItemEditor({
               'Saved.',
             )
           }
-          className="rounded-lg bg-brand-600 px-3 py-1 font-semibold text-white hover:bg-brand-700"
+          className={buttonClass('primary', 'sm')}
         >
           Save
         </button>
@@ -742,10 +750,7 @@ function AddItem({ sectionId, change }: { sectionId: string; change: Change }) {
           </option>
         ))}
       </select>
-      <button
-        type="submit"
-        className="rounded-lg border border-slate-300 bg-white px-3 py-1 text-sm font-medium text-slate-700 hover:bg-slate-50"
-      >
+      <button type="submit" className={buttonClass('secondary', 'sm')}>
         Add
       </button>
     </form>
@@ -773,10 +778,7 @@ function AddSection({ jobRoleId, change }: { jobRoleId: string; change: Change }
         onChange={(event) => setTitle(event.target.value)}
         className="min-w-0 flex-1 rounded-lg border border-slate-300 px-2 py-1 text-sm"
       />
-      <button
-        type="submit"
-        className="rounded-lg border border-slate-300 bg-white px-3 py-1 text-sm font-medium text-slate-700 hover:bg-slate-50"
-      >
+      <button type="submit" className={buttonClass('secondary', 'sm')}>
         Add section
       </button>
     </form>

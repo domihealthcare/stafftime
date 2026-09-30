@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { api } from '../lib/api';
 import { addDays, addMonths, localDate, startOfMonth, startOfWeek } from '../lib/format';
 import type { DayRange, PayPeriodInfo } from '../lib/types';
+import { buttonClass } from './ui';
 
 type PresetKey =
   'this-week' | 'last-week' | 'this-pay-period' | 'last-pay-period' | 'this-month' | 'last-month';
@@ -135,7 +136,7 @@ export function DateRangePicker({
           type="button"
           aria-label="Previous period"
           onClick={() => onChange(step(value, -1))}
-          className="rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-sm font-medium text-slate-700 hover:bg-slate-50"
+          className={buttonClass('secondary', 'sm')}
         >
           ←
         </button>
@@ -146,7 +147,7 @@ export function DateRangePicker({
           type="button"
           aria-label="Next period"
           onClick={() => onChange(step(value, 1))}
-          className="rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-sm font-medium text-slate-700 hover:bg-slate-50"
+          className={buttonClass('secondary', 'sm')}
         >
           →
         </button>

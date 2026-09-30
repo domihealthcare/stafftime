@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { ApiError, api, type CalendarInviteStatus } from '../lib/api';
-import { Alert, Card } from './ui';
+import { Alert, Card, buttonClass } from './ui';
 
 /**
  * How calendar invites are going, for admins (September 2026): shifts and
@@ -100,7 +100,7 @@ export function CalendarInvitesCard() {
             type="button"
             onClick={() => void sendNow()}
             disabled={busy}
-            className="mt-4 rounded-lg bg-brand-600 px-4 py-2 text-sm font-semibold text-white hover:bg-brand-700 disabled:opacity-60"
+            className={`mt-4 ${buttonClass('primary', 'md')}`}
           >
             {busy ? 'Sending…' : 'Send now'}
           </button>

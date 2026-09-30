@@ -2,7 +2,15 @@ import { Avatar } from '../components/Avatar';
 import { formatBirthday } from '../lib/birthday';
 import { JobRoleTag } from '../components/JobRoleTag';
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { Alert, Badge, Card, EmptyState, PageHeading, Spinner } from '../components/ui';
+import {
+  Alert,
+  Badge,
+  Card,
+  EmptyState,
+  PageHeading,
+  Spinner,
+  buttonClass,
+} from '../components/ui';
 import { ApiError, api } from '../lib/api';
 import { displayName, formatTime } from '../lib/format';
 import { useIsManager, useSession } from '../lib/session';
@@ -331,7 +339,7 @@ function PinReset({ person }: { person: DirectoryEntry }) {
             type="button"
             disabled={busy || pin.length < 4}
             onClick={() => void save()}
-            className="rounded-lg bg-brand-600 px-3 py-1 text-sm font-semibold text-white hover:bg-brand-700 disabled:opacity-60"
+            className={buttonClass('primary', 'sm')}
           >
             {busy ? 'Saving…' : 'Set PIN'}
           </button>

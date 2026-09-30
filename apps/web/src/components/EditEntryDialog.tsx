@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { ApiError, api } from '../lib/api';
 import { formatCalendarDate, toLocalInputValue } from '../lib/format';
 import type { TimeEntry } from '../lib/types';
-import { Alert } from './ui';
+import { Alert, buttonClass } from './ui';
 import { useDialog } from './useDialog';
 
 /**
@@ -180,15 +180,11 @@ export function EditEntryDialog({
             <button
               type="submit"
               disabled={busy || !canSave}
-              className="rounded-lg bg-brand-600 px-4 py-2 text-sm font-medium text-white hover:bg-brand-700 disabled:opacity-60"
+              className={buttonClass('primary', 'md')}
             >
               {busy ? 'Saving…' : exportedWarning ? 'Correct it anyway' : 'Save correction'}
             </button>
-            <button
-              type="button"
-              onClick={onClose}
-              className="rounded-lg border border-slate-300 px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50"
-            >
+            <button type="button" onClick={onClose} className={buttonClass('secondary', 'md')}>
               Cancel
             </button>
           </div>

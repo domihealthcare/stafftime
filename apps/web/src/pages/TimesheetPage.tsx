@@ -8,7 +8,15 @@ import { AddHoursDialog } from '../components/AddHoursDialog';
 import { CheckHandEntryDialog } from '../components/CheckHandEntryDialog';
 import { DateRangePicker, presetRanges, toInstants } from '../components/DateRangePicker';
 import { EditEntryDialog } from '../components/EditEntryDialog';
-import { Alert, Badge, Card, EmptyState, PageHeading, Spinner } from '../components/ui';
+import {
+  Alert,
+  Badge,
+  Card,
+  EmptyState,
+  PageHeading,
+  Spinner,
+  buttonClass,
+} from '../components/ui';
 import { NeedsAttention } from '../components/NeedsAttention';
 
 export function TimesheetPage() {
@@ -97,7 +105,7 @@ export function TimesheetPage() {
             <button
               type="button"
               onClick={() => void openAddHours()}
-              className="rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-sm font-medium text-slate-700 hover:bg-slate-50"
+              className={buttonClass('secondary', 'sm')}
             >
               + Add hours
             </button>
