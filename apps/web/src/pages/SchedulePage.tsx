@@ -191,6 +191,7 @@ export function SchedulePage() {
   }
   const [planResult, setPlanResult] = useState<PlanResult | null>(null);
   const confirmAsk = useConfirm();
+  const [showEmptyOpen, setShowEmptyOpen] = useState(false);
   const [publishedNote, setPublishedNote] = useState<string | null>(null);
   /// Bumped when a regular shift (no end date) is made, to refresh their list.
   const [standingVersion, setStandingVersion] = useState(0);
@@ -734,6 +735,8 @@ export function SchedulePage() {
         <EventDialog
           event={openEvent}
           canEdit={isManager}
+          showEmptyOpen={showEmptyOpen}
+          onShowEmptyOpen={setShowEmptyOpen}
           onClose={() => setOpenEvent(null)}
           onEdit={() => {
             setEventForm({ event: openEvent });

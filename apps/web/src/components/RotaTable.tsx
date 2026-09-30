@@ -109,6 +109,8 @@ export function RotaTable({
   roleFilter,
   canEdit,
   onPersonMenu,
+  showEmptyOpen,
+  onShowEmptyOpen,
   selfId,
   onChanged,
   onPlanned,
@@ -142,6 +144,11 @@ export function RotaTable({
   canEdit: boolean;
   /// Right-click on a person or their shift: profile, schedule. Managers only.
   onPersonMenu?: (event: React.MouseEvent, person: { id: string; name: string }) => void;
+  /// Open-shift rows with nothing in them stay out of the way until asked for
+  /// (a row for every office and job role is a lot of empty table). Held by
+  /// the page, because the table is rebuilt after every save.
+  showEmptyOpen: boolean;
+  onShowEmptyOpen: (show: boolean) => void;
   /// For staff: only their own row.
   selfId?: string;
   onChanged: () => void;
@@ -150,9 +157,6 @@ export function RotaTable({
   onError: (message: string) => void;
 }) {
   const [menu, setMenu] = useState<Shift | null>(null);
-  /// Open-shift rows with nothing in them stay out of the way until asked for
-  /// (a row for every office and job role is a lot of empty table).
-  const [showEmptyOpen, setShowEmptyOpen] = useState(false);
   const [adding, setAdding] = useState<{ row: Row; day: Date } | null>(null);
 
   const dayKeys = days.map((day) => localDate(day));
@@ -409,7 +413,7 @@ export function RotaTable({
               type="button"
               data-testid="open-rows-toggle"
               aria-pressed={showEmptyOpen}
-              onClick={() => setShowEmptyOpen((shown) => !shown)}
+              onClick={() => onShowEmptyOpen(!showEmptyOpen)}
               className="font-medium text-brand-700 underline"
             >
               {showEmptyOpen ? 'Hide the empty ones' : 'Show them to add one'}

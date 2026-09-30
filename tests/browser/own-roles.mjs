@@ -77,6 +77,8 @@ await step('in two roles, she is offered exactly those two', async () => {
 });
 
 await step('an open shift can still be for any role', async () => {
+  const t = mgr.getByTestId('open-rows-toggle');
+  if ((await t.getAttribute('aria-pressed')) === 'false') await t.click();
   await mgr.getByRole('button', { name: /^Add an open shift at North Bergen on Tuesday/ }).click();
   const dialog = mgr.getByRole('dialog', { name: 'Open shift' });
   const listed = await options(dialog.getByLabel('Job role'));
