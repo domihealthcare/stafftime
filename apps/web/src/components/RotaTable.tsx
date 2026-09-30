@@ -150,6 +150,9 @@ export function RotaTable({
   onError: (message: string) => void;
 }) {
   const [menu, setMenu] = useState<Shift | null>(null);
+  /// Open-shift rows with nothing in them stay out of the way until asked for
+  /// (a row for every office and job role is a lot of empty table).
+  const [showEmptyOpen, setShowEmptyOpen] = useState(false);
   const [adding, setAdding] = useState<{ row: Row; day: Date } | null>(null);
 
   const dayKeys = days.map((day) => localDate(day));
@@ -396,6 +399,24 @@ export function RotaTable({
         </div>
       )}
 
+      {canEdit &&
+        sections.some((section) =>
+          section.rows.some((row) => row.kind === 'open' && row.shifts.length === 0),
+        ) && (
+          <p className="mb-2 text-xs text-slate-600">
+            Rows for open shifts show only when there are some.{' '}
+            <button
+              type="button"
+              data-testid="open-rows-toggle"
+              aria-pressed={showEmptyOpen}
+              onClick={() => setShowEmptyOpen((shown) => !shown)}
+              className="font-medium text-brand-700 underline"
+            >
+              {showEmptyOpen ? 'Hide the empty ones' : 'Show them to add one'}
+            </button>
+          </p>
+        )}
+
       <RotaLegend locations={locations} colourOf={colourOf} jobRoles={jobRoles} />
       <div
         className="overflow-x-auto rounded-xl border border-slate-200 bg-white shadow-sm"
@@ -520,7 +541,15 @@ export function RotaTable({
                   </th>
                 </tr>
               )}
-              {section.rows.map((row) => {
+              {section.rows.map((row, rowIndex) => {
+                if (row.kind === 'open' && row.shifts.length === 0 && !showEmptyOpen) return null;
+                /// Every other person is shaded, so the eye can stay on one row.
+                const shaded =
+                  row.kind === 'person' &&
+                  section.rows.slice(0, rowIndex).filter((other) => other.kind === 'person')
+                    .length %
+                    2 ===
+                    1;
                 const total = round1(row.shifts.reduce((sum, shift) => sum + hoursOf(shift), 0));
                 const standing =
                   row.kind === 'person' && row.person ? weekStanding(row.person.id) : null;
@@ -532,7 +561,7 @@ export function RotaTable({
                     data-testid={
                       row.kind === 'open' ? `open-row-${row.sublabel}` : `rota-row-${row.label}`
                     }
-                    className={`border-b border-slate-100 ${row.kind === 'open' ? (row.shifts.length > 0 ? 'bg-amber-50/60' : 'bg-slate-50/40') : over ? 'bg-rose-50/60' : 'hover:bg-slate-50/60'}`}
+                    className={`border-b-2 border-slate-200 ${row.kind === 'open' ? (row.shifts.length > 0 ? 'bg-amber-50/60' : 'bg-slate-50/40') : over ? 'bg-rose-50/60' : shaded ? 'bg-slate-50' : 'bg-white'}`}
                   >
                     <th
                       scope="row"
@@ -545,7 +574,7 @@ export function RotaTable({
                               })
                           : undefined
                       }
-                      className={`sticky left-0 z-10 px-3 py-2 text-left font-normal ${row.kind === 'open' ? (row.shifts.length > 0 ? 'bg-amber-50' : 'bg-slate-50') : over ? 'border-l-4 border-rose-600 bg-rose-50' : 'bg-white'}`}
+                      className={`sticky left-0 z-10 px-3 py-2 text-left font-normal ${row.kind === 'open' ? (row.shifts.length > 0 ? 'bg-amber-50' : 'bg-slate-50') : over ? 'border-l-4 border-rose-600 bg-rose-50' : shaded ? 'bg-slate-50' : 'bg-white'}`}
                     >
                       <span className="flex items-center gap-2">
                         {row.person ? (
@@ -647,11 +676,26 @@ export function RotaTable({
                     <td
                       className={`px-3 py-2 text-right tabular-nums ${over ? 'font-semibold text-rose-800' : 'text-slate-700'}`}
                     >
-                      {row.kind === 'open'
-                        ? row.shifts.length > 0
-                          ? `${row.shifts.length} open`
-                          : ''
-                        : `${total} h`}
+                      {row.kind === 'open' ? (
+                        row.shifts.length > 0 ? (
+                          `${row.shifts.length} open`
+                        ) : (
+                          ''
+                        )
+                      ) : (
+                        <span className="inline-flex items-center justify-end gap-1.5">
+                          {over && (
+                            <span
+                              data-testid="week-ot-flag"
+                              title="Over the overtime line this week"
+                              className="rounded bg-rose-600 px-1.5 py-0.5 text-xs font-bold uppercase tracking-wide text-white"
+                            >
+                              OT
+                            </span>
+                          )}
+                          {`${total} h`}
+                        </span>
+                      )}
                       {standing && (
                         <span
                           data-testid={`week-standing-${standing.level}`}

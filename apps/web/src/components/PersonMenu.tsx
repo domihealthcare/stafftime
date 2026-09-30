@@ -9,8 +9,15 @@ export interface MenuPerson {
   name: string;
 }
 
+/// A line a page adds for this one click: "Publish 3 draft shifts".
+export interface MenuExtra {
+  label: string;
+  run: () => void;
+}
+
 interface Open {
   person: MenuPerson;
+  extra: MenuExtra[];
   x: number;
   y: number;
 }
@@ -24,7 +31,7 @@ interface Open {
  * Staff record only for managers.
  */
 export function usePersonMenu(options: { onSeeSchedule?: (person: MenuPerson) => void } = {}): {
-  open: (event: React.MouseEvent, person: MenuPerson) => void;
+  open: (event: React.MouseEvent, person: MenuPerson, extra?: MenuExtra[]) => void;
   menu: ReactNode;
 } {
   const [state, setState] = useState<Open | null>(null);
@@ -35,11 +42,14 @@ export function usePersonMenu(options: { onSeeSchedule?: (person: MenuPerson) =>
 
   const close = useCallback(() => setState(null), []);
 
-  const open = useCallback((event: React.MouseEvent, person: MenuPerson) => {
-    event.preventDefault();
-    event.stopPropagation();
-    setState({ person, x: event.clientX, y: event.clientY });
-  }, []);
+  const open = useCallback(
+    (event: React.MouseEvent, person: MenuPerson, extra: MenuExtra[] = []) => {
+      event.preventDefault();
+      event.stopPropagation();
+      setState({ person, extra, x: event.clientX, y: event.clientY });
+    },
+    [],
+  );
 
   useEffect(() => {
     if (!state) return;
@@ -71,6 +81,7 @@ export function usePersonMenu(options: { onSeeSchedule?: (person: MenuPerson) =>
     if (onSeeSchedule) {
       items.push({ label: 'See schedule', run: () => onSeeSchedule(person) });
     }
+    items.push(...state.extra);
     if (isManager) {
       items.push({
         label: 'Open in Staff',

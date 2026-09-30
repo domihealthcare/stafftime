@@ -40,6 +40,12 @@ await mgr.getByTestId('week-grid').waitFor({ timeout: 15000 });
 await mgr.getByRole('button', { name: 'Next →' }).click();
 await mgr.getByText('Coverage this week').waitFor({ timeout: 15000 });
 
+await step('with nothing open the open-shift rows stay folded away until asked for', async () => {
+  await mgr.getByTestId('open-rows-toggle').waitFor({ timeout: 10000 });
+  if ((await openRow('North Bergen').count()) > 0) throw new Error('an empty open row is showing');
+  await mgr.getByTestId('open-rows-toggle').click();
+});
+
 await step('an office with nothing open has an open-shift row, and no flag', async () => {
   await openRow('North Bergen').waitFor({ timeout: 10000 });
   await openRow('West New York').waitFor({ timeout: 5000 });

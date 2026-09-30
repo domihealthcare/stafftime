@@ -948,6 +948,12 @@ export const api = {
       status?: string;
     },
   ) => request<Shift>(`/shifts/${id}`, { method: 'PATCH', body: JSON.stringify(body) }),
+  /// Publishes several drafts at once; each person is told once.
+  publishShifts: (ids: string[]) =>
+    request<{ published: number; skipped: number }>('/shifts/publish', {
+      method: 'POST',
+      body: JSON.stringify({ ids }),
+    }),
   deleteShift: (id: string) => request<unknown>(`/shifts/${id}`, { method: 'DELETE' }),
 
   listChecklists: (params: Record<string, string | undefined> = {}) =>

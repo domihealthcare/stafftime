@@ -500,6 +500,16 @@ Beyond the phases, the parts worth knowing about before picking up work:
   Manage inside) — and the header is one row; from `sm` up it is the header nav as
   before. Only one of the two is ever on the page (`useIsPhone`), so each link
   appears once. Browser tests open menus through `tests/browser/nav.mjs`.
+- **Publishing, open rows, photo fitting** (30 September 2026, Dominguez): drafts
+  are published together — a **Publish all N** banner above the rota for the
+  week or month on screen, and **Publish N draft shifts** on the right-click
+  menu of a person (`POST /shifts/publish`, `publishMany`; each person is told
+  once, overtime once on the crossing). Open-shift rows with nothing in them
+  are folded away until "Show them to add one". Person rows are shaded
+  alternately with a heavier line between, and a week over the overtime line
+  wears an **OT** pill beside the total. A profile photo is **moved and zoomed
+  into the circle** before it is saved (`PhotoCropDialog`); it is still cropped,
+  shrunk and re-encoded in the browser, so nothing about the rule changed.
 - **Version on the Help page** — "About this version": the build date and
   commit baked in when the bundle is built (`VERCEL_GIT_COMMIT_SHA` on Vercel,
   git locally), whether it is the test or live site, and — because

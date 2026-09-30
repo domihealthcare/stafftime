@@ -190,6 +190,8 @@ export function SchedulePage() {
     if (what !== 'shift') window.scrollTo({ top: 0, behavior: 'smooth' });
   }
   const [planResult, setPlanResult] = useState<PlanResult | null>(null);
+  const confirmAsk = useConfirm();
+  const [publishedNote, setPublishedNote] = useState<string | null>(null);
   /// Bumped when a regular shift (no end date) is made, to refresh their list.
   const [standingVersion, setStandingVersion] = useState(0);
   const [copying, setCopying] = useState(false);
@@ -325,6 +327,64 @@ export function SchedulePage() {
     );
   }, [employees, shifts, personFilter, roleFilter, locationFilter, roleMembers]);
   const pickedPerson = employees.find((person) => person.id === personFilter) ?? null;
+
+  /// Drafts on screen — the week or the month being looked at — that staff
+  /// cannot see yet, narrowed by the same filters as the rota.
+  const draftsOnScreen = useMemo(
+    () =>
+      shifts.filter(
+        (candidate) =>
+          candidate.status === 'DRAFT' &&
+          (!personFilter || candidate.employeeId === personFilter) &&
+          atPlace(candidate, locationFilter) &&
+          forRole(candidate, roleFilter, roleMembers),
+      ),
+    [shifts, personFilter, locationFilter, roleFilter, roleMembers],
+  );
+  const period = view === 'week' ? 'this week' : 'this month';
+
+  /// Publishes drafts together, after one question — staff are told, so it is
+  /// not something to do by a stray click.
+  async function publishDrafts(list: Shift[], whose: string) {
+    const count = list.length;
+    const ok = await confirmAsk({
+      title: `Publish ${count} draft shift${count === 1 ? '' : 's'}?`,
+      body: `${whose} will be able to see ${count === 1 ? 'it' : 'them'}, and each person is told once.`,
+      confirmLabel: 'Yes, publish',
+      cancelLabel: 'Not yet',
+      tone: 'neutral',
+    });
+    if (!ok) return;
+    try {
+      const result = await api.publishShifts(list.map((shift) => shift.id));
+      setPublishedNote(
+        `Published ${result.published} shift${result.published === 1 ? '' : 's'}.` +
+          (result.skipped > 0 ? ` ${result.skipped} had already changed.` : ''),
+      );
+      await load();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Could not publish those shifts.');
+    }
+  }
+
+  /// The right-click menu, with "Publish N drafts" when the person has any.
+  const openPersonMenu = (event: React.MouseEvent, person: { id: string; name: string }) => {
+    const mine = shifts.filter(
+      (candidate) => candidate.status === 'DRAFT' && candidate.employeeId === person.id,
+    );
+    personMenu.open(
+      event,
+      person,
+      mine.length > 0
+        ? [
+            {
+              label: `Publish ${mine.length} draft shift${mine.length === 1 ? '' : 's'} ${period}`,
+              run: () => void publishDrafts(mine, person.name),
+            },
+          ]
+        : [],
+    );
+  };
   /// What the month is narrowed to, in words: "Frankie Front-Desk",
   /// "Medical Assistant at North Bergen". Null when it shows everybody.
   const monthScope = useMemo(() => {
@@ -450,6 +510,45 @@ export function SchedulePage() {
             overtime={coverage.overtime}
             thresholdHours={coverage.overtimeThresholdHours}
           />
+        </div>
+      )}
+
+      {isManager && publishedNote && (
+        <div
+          role="status"
+          data-testid="published-note"
+          className="mb-4 flex items-center justify-between gap-2 rounded-lg bg-emerald-50 px-3 py-2 text-sm text-emerald-900 ring-1 ring-inset ring-emerald-200"
+        >
+          <span>{publishedNote}</span>
+          <button
+            type="button"
+            onClick={() => setPublishedNote(null)}
+            className="font-medium underline"
+          >
+            Dismiss
+          </button>
+        </div>
+      )}
+
+      {isManager && draftsOnScreen.length > 0 && (
+        <div
+          role="status"
+          data-testid="drafts-banner"
+          className="mb-4 flex flex-wrap items-center justify-between gap-2 rounded-lg bg-slate-100 px-3 py-2 text-sm text-slate-800 ring-1 ring-inset ring-slate-300"
+        >
+          <span>
+            <strong>
+              {draftsOnScreen.length} draft shift{draftsOnScreen.length === 1 ? '' : 's'}
+            </strong>{' '}
+            {period} that staff cannot see yet.
+          </span>
+          <button
+            type="button"
+            onClick={() => void publishDrafts(draftsOnScreen, 'Everybody on them')}
+            className={buttonClass('primary', 'sm')}
+          >
+            Publish {draftsOnScreen.length === 1 ? 'it' : `all ${draftsOnScreen.length}`}
+          </button>
         </div>
       )}
 
@@ -729,7 +828,7 @@ export function SchedulePage() {
             birthdays={birthdaysByDay(birthdays)}
             // One person picked: their times, as staff see their own month.
             showNames={isManager && !personFilter}
-            onPersonMenu={isManager ? personMenu.open : undefined}
+            onPersonMenu={isManager ? openPersonMenu : undefined}
             onPickDay={(day) => {
               setWeekStart(startOfWeek(day));
               setView('week');
@@ -760,7 +859,7 @@ export function SchedulePage() {
           locationFilter={locationFilter}
           roleFilter={roleFilter}
           canEdit={isManager}
-          onPersonMenu={isManager ? personMenu.open : undefined}
+          onPersonMenu={isManager ? openPersonMenu : undefined}
           selfId={isManager ? undefined : me?.id}
           onChanged={() => void load()}
           onPlanned={(result) => {

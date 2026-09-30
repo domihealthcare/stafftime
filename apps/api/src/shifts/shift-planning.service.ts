@@ -906,6 +906,58 @@ export class ShiftPlanningService {
   }
 
   /**
+   * Publishes several drafts in one go.
+   *
+   * Only drafts are touched — an id that is already published, cancelled or
+   * gone is counted as skipped, never an error, so a stale screen can still
+   * press the button. Each person hears once ("4 new shifts on your schedule"),
+   * not once per shift, and hears about overtime once, on the crossing.
+   */
+  async publishMany(ids: string[]): Promise<{ published: number; skipped: number }> {
+    const drafts = await this.prisma.shift.findMany({
+      where: { id: { in: ids }, status: ShiftStatus.DRAFT },
+      select: {
+        id: true,
+        employeeId: true,
+        startsAt: true,
+        location: { select: { timezone: true } },
+      },
+    });
+    if (drafts.length === 0) return { published: 0, skipped: ids.length };
+
+    const startsOn = await this.settings.workweekStartsOn();
+    const people = [
+      ...new Set(drafts.flatMap((shift) => (shift.employeeId ? [shift.employeeId] : []))),
+    ];
+    const weeks = [
+      ...new Set(
+        drafts.map((shift) => weekStartIn(shift.startsAt, shift.location.timezone, startsOn)),
+      ),
+    ];
+    const before = await this.overtime.snapshot(people, weeks);
+
+    // Guarded by status again, so two managers pressing at once publish each once.
+    const done = await this.prisma.shift.updateMany({
+      where: { id: { in: drafts.map((shift) => shift.id) }, status: ShiftStatus.DRAFT },
+      data: { status: ShiftStatus.PUBLISHED },
+    });
+
+    const datesFor = new Map<string, string[]>();
+    for (const shift of drafts) {
+      if (!shift.employeeId) continue;
+      datesFor.set(shift.employeeId, [
+        ...(datesFor.get(shift.employeeId) ?? []),
+        localDateIn(shift.startsAt, shift.location.timezone),
+      ]);
+    }
+    for (const [employeeId, dates] of datesFor) {
+      await this.tellAboutNewShifts(employeeId, dates.length, dates);
+    }
+    await this.overtime.announceNewOvertime(before, people, weeks);
+    return { published: done.count, skipped: ids.length - done.count };
+  }
+
+  /**
    * Day-by-day staffing for a window: who is on, how many hours are covered,
    * who is away, and who the rota is about to push into overtime.
    *

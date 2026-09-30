@@ -676,7 +676,9 @@ const MANAGERS: Section[] = [
               <strong>Right-click</strong> somebody&rsquo;s name or shift — on the week, in the
               month, or on their Directory card — for <strong>See profile</strong>,{' '}
               <strong>See schedule</strong> (their month, on its own) and{' '}
-              <strong>Open in Staff</strong>.
+              <strong>Open in Staff</strong>, and <strong>Publish N draft shifts</strong> when that
+              person has drafts. The bar above the rota that counts drafts has{' '}
+              <strong>Publish all</strong> for everything on screen at once.
             </li>
             <li>
               Time off is in each person&rsquo;s row: hatched grey once approved, &ldquo;Asked
