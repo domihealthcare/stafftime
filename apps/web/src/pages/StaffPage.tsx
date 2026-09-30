@@ -98,7 +98,7 @@ export function StaffPage() {
   );
 
   return (
-    <div className="mx-auto max-w-3xl">
+    <div className="max-w-3xl">
       <PageHeading
         title="Staff"
         subtitle="Who works here, what they can see, and how they sign in."

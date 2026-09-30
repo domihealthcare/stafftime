@@ -176,6 +176,7 @@ export function ClockPage() {
 
   return (
     <div className="mx-auto max-w-md space-y-4">
+      <h1 className="sr-only">Clock</h1>
       <PrimaryAnnouncement />
       <MyOvertimeNotice />
 

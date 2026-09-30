@@ -626,7 +626,7 @@ export function EventForm({
               type="button"
               aria-pressed={kind === option}
               onClick={() => chooseKind(option)}
-              className={`rounded-md px-3 py-1 text-sm font-medium ${
+              className={`rounded-md px-3 py-1 text-sm font-medium max-sm:py-2.5 ${
                 kind === option
                   ? 'bg-brand-50 text-brand-800'
                   : 'text-slate-600 hover:text-slate-900'

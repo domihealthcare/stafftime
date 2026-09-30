@@ -176,7 +176,7 @@ export function ChecklistTemplateEditor({
         </label>
         <label className="text-sm">
           <span className="mb-1 block font-medium text-slate-700">
-            Description <span className="font-normal text-slate-400">(optional)</span>
+            Description <span className="font-normal text-slate-500">(optional)</span>
           </span>
           <input
             aria-label="Template description"
@@ -200,7 +200,7 @@ export function ChecklistTemplateEditor({
         {tasks.map((task, index) => (
           <li key={task.key} className="rounded-lg border border-slate-200 p-3">
             <div className="flex items-start gap-2">
-              <span className="mt-2 w-5 shrink-0 text-xs text-slate-400">{index + 1}.</span>
+              <span className="mt-2 w-5 shrink-0 text-xs text-slate-500">{index + 1}.</span>
               <div className="min-w-0 flex-1 space-y-2">
                 <input
                   aria-label={`Task ${index + 1} title`}
@@ -279,7 +279,7 @@ export function ChecklistTemplateEditor({
                   aria-label={`Move task ${index + 1} up`}
                   disabled={index === 0}
                   onClick={() => move(index, -1)}
-                  className="rounded px-1.5 text-slate-400 hover:text-slate-900 disabled:opacity-30"
+                  className="rounded px-1.5 text-slate-500 hover:text-slate-900 disabled:opacity-30"
                 >
                   ↑
                 </button>
@@ -288,7 +288,7 @@ export function ChecklistTemplateEditor({
                   aria-label={`Move task ${index + 1} down`}
                   disabled={index === tasks.length - 1}
                   onClick={() => move(index, 1)}
-                  className="rounded px-1.5 text-slate-400 hover:text-slate-900 disabled:opacity-30"
+                  className="rounded px-1.5 text-slate-500 hover:text-slate-900 disabled:opacity-30"
                 >
                   ↓
                 </button>
@@ -298,7 +298,7 @@ export function ChecklistTemplateEditor({
                   onClick={() =>
                     setTasks((current) => current.filter((item) => item.key !== task.key))
                   }
-                  className="rounded px-1.5 text-slate-400 hover:text-rose-700"
+                  className="rounded px-1.5 text-slate-500 hover:text-rose-700"
                 >
                   ✕
                 </button>

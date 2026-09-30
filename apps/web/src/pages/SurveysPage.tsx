@@ -57,7 +57,7 @@ export function SurveysPage() {
   const answered = surveys.filter((survey) => survey.status === 'OPEN' && survey.answered);
 
   return (
-    <div className="mx-auto max-w-3xl">
+    <div className="max-w-3xl">
       <PageHeading
         title="Surveys and feedback"
         subtitle="Short anonymous check-ins, and a suggestion box that is always open."
@@ -490,7 +490,7 @@ function ManagedSurvey({
                 });
                 if (sure) await act(() => api.deleteSurvey(survey.id));
               }}
-              className="text-xs font-medium text-slate-400 hover:text-rose-700"
+              className="text-xs font-medium text-slate-500 hover:text-rose-700"
             >
               Delete
             </button>
@@ -646,7 +646,7 @@ function SurveyBuilder({
         </label>
         <label className="text-sm sm:col-span-2">
           <span className="mb-1 block font-medium text-slate-700">
-            A line of introduction <span className="font-normal text-slate-400">(optional)</span>
+            A line of introduction <span className="font-normal text-slate-500">(optional)</span>
           </span>
           <input
             aria-label="Introduction"
@@ -739,7 +739,7 @@ function SurveyBuilder({
                 <button
                   type="button"
                   onClick={() => setQuestions((current) => current.filter((_, i) => i !== index))}
-                  className="ml-auto text-xs font-medium text-slate-400 hover:text-rose-700"
+                  className="ml-auto text-xs font-medium text-slate-500 hover:text-rose-700"
                 >
                   Remove
                 </button>

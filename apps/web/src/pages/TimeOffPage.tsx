@@ -77,7 +77,7 @@ export function TimeOffPage() {
   ).length;
 
   return (
-    <div className="mx-auto max-w-3xl">
+    <div className="max-w-3xl">
       <PageHeading
         title="Time off"
         subtitle={isManager ? 'Requests from the team, and your own.' : 'Your time off requests.'}

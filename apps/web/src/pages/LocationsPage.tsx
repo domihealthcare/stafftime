@@ -36,7 +36,7 @@ export function LocationsPage() {
   }, [load]);
 
   return (
-    <div className="mx-auto max-w-3xl">
+    <div className="max-w-3xl">
       <PageHeading
         title="Locations"
         subtitle="Where each office is, and how close staff must be to clock in."

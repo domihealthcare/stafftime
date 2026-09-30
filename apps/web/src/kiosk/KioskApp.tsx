@@ -385,7 +385,7 @@ function Confirmation({ result, onDone }: { result: KioskPunchResult; onDone: ()
         <p className="mt-2 text-sm text-amber-700">Recorded as late for your shift.</p>
       )}
 
-      <p className="mt-6 text-xs text-slate-400">Tap anywhere to continue</p>
+      <p className="mt-6 text-xs text-slate-500">Tap anywhere to continue</p>
     </button>
   );
 }

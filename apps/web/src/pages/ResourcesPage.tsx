@@ -43,7 +43,7 @@ export function ResourcesPage() {
   const roleSections = sections.filter((section) => section.jobRole !== null);
 
   return (
-    <div className="mx-auto max-w-4xl">
+    <div className="max-w-4xl">
       <PageHeading
         title="Resources"
         subtitle={
@@ -267,7 +267,7 @@ function ResourceRow({
                   setBusy(false);
                 }
               }}
-              className="font-medium text-slate-400 hover:text-rose-700"
+              className="font-medium text-slate-500 hover:text-rose-700"
             >
               Delete
             </button>
@@ -400,7 +400,7 @@ function ResourceForm({
             </label>
             <label className="text-sm sm:col-span-2">
               <span className="mb-1 block font-medium text-slate-700">
-                A line about it <span className="font-normal text-slate-400">(optional)</span>
+                A line about it <span className="font-normal text-slate-500">(optional)</span>
               </span>
               <input
                 aria-label="A line about it"

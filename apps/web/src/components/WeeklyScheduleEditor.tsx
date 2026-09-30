@@ -270,7 +270,7 @@ export function WeeklyScheduleEditor({
                         className="rounded border-slate-300 text-brand-600 focus:ring-brand-600"
                       />
                       {dayName}
-                      {!row.works && <span className="font-normal text-slate-400">— off</span>}
+                      {!row.works && <span className="font-normal text-slate-500">— off</span>}
                     </label>
                     {row.works && working.length > 1 && (
                       <button

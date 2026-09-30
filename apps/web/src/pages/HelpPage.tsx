@@ -1098,7 +1098,7 @@ export function HelpPage() {
   );
 
   return (
-    <div className="mx-auto max-w-3xl">
+    <div className="max-w-3xl">
       <PageHeading
         title="Help"
         subtitle="How to do the everyday things. Stuck on something not covered here? Ask a manager."

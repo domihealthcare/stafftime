@@ -8,3 +8,15 @@
     -webkit-tap-highlight-color: transparent;
   }
 }
+
+@layer components {
+  /* A small inline link or button gets a finger-sized target on a phone
+     without changing how it looks: padding out, margin back in. */
+  @media (pointer: coarse), (max-width: 639px) {
+    .tap {
+      display: inline-block;
+      padding-block: 0.75rem;
+      margin-block: -0.75rem;
+    }
+  }
+}

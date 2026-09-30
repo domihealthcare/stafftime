@@ -400,7 +400,7 @@ export function SchedulePage() {
                 }
                 setView(option);
               }}
-              className={`rounded-md px-3 py-1 text-sm font-medium transition ${
+              className={`rounded-md px-3 py-1 text-sm font-medium max-sm:py-2.5 transition ${
                 view === option
                   ? 'bg-brand-50 text-brand-800'
                   : 'text-slate-600 hover:text-slate-900'
@@ -464,7 +464,7 @@ export function SchedulePage() {
                         // A remembered preference is a convenience, not a feature.
                       }
                     }}
-                    className={`rounded-md px-3 py-1 text-sm font-medium ${
+                    className={`rounded-md px-3 py-1 text-sm font-medium max-sm:py-2.5 ${
                       grouping === option
                         ? 'bg-brand-50 text-brand-800'
                         : 'text-slate-600 hover:text-slate-900'
@@ -957,7 +957,7 @@ function NewShiftForm({
           <label htmlFor="shift-role" className="block text-sm font-medium text-slate-700">
             Job role{' '}
             {employeeId === OPEN_SHIFT && (
-              <span className="font-normal text-slate-400">(who should fill it)</span>
+              <span className="font-normal text-slate-500">(who should fill it)</span>
             )}
           </label>
           <JobRoleSelect

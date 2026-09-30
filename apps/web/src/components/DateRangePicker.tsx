@@ -122,7 +122,7 @@ export function DateRangePicker({
   const showDates = custom || !active;
 
   const chip = (selected: boolean) =>
-    `rounded-lg px-3 py-1.5 text-xs font-medium ring-1 ring-inset transition disabled:cursor-not-allowed disabled:opacity-50 ${
+    `rounded-lg px-3 py-1.5 text-xs font-medium max-sm:py-2.5 ring-1 ring-inset transition disabled:cursor-not-allowed disabled:opacity-50 ${
       selected
         ? 'bg-brand-600 text-white ring-brand-600'
         : 'bg-white text-slate-700 ring-slate-300 hover:bg-slate-50'

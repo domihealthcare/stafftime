@@ -266,7 +266,7 @@ export function ExportPage() {
   }
 
   return (
-    <div className="mx-auto max-w-3xl">
+    <div className="max-w-3xl">
       <PageHeading
         title="Export timesheets"
         subtitle="Produce a spreadsheet of hours for a period. Choose what goes in it."
@@ -317,7 +317,7 @@ export function ExportPage() {
                     type="button"
                     onClick={() => void deletePreset(preset.id, preset.name)}
                     aria-label={`Delete ${preset.name}`}
-                    className="px-1.5 py-1.5 text-xs text-slate-400 hover:text-rose-600"
+                    className="px-1.5 py-1.5 text-xs text-slate-500 hover:text-rose-600"
                   >
                     ×
                   </button>
@@ -758,7 +758,7 @@ function ExportHistory({
                   ? record.failureReason
                   : `${record.entryCount} entries · ${record.employeeCount} people · ${record.totalHours} hours`}
               </p>
-              <p className="mt-0.5 text-xs text-slate-400">
+              <p className="mt-0.5 text-xs text-slate-500">
                 {record.target} · {formatDateTime(record.generatedAt)}
                 {record.generatedBy &&
                   ` · ${record.generatedBy.firstName} ${record.generatedBy.lastName}`}

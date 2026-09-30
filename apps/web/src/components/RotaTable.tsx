@@ -491,7 +491,7 @@ export function RotaTable({
                     ))}
                   </td>
                 ))}
-                <td className="px-3 py-2 text-right align-top text-xs text-slate-400">Not hours</td>
+                <td className="px-3 py-2 text-right align-top text-xs text-slate-500">Not hours</td>
               </tr>
             )}
           </thead>
@@ -616,7 +616,7 @@ export function RotaTable({
                                 // Big enough to see and to hit with a thumb, on a
                                 // phone as on a computer, and under the shifts
                                 // rather than over them.
-                                className={`flex w-full items-center justify-center rounded-md font-semibold leading-none text-slate-400 hover:bg-brand-50 hover:text-brand-700 focus:text-brand-700 ${
+                                className={`flex w-full items-center justify-center rounded-md font-semibold leading-none text-slate-500 hover:bg-brand-50 hover:text-brand-700 focus:text-brand-700 ${
                                   inCell.length === 0 ? 'min-h-10 text-2xl' : 'min-h-8 text-xl'
                                 }`}
                               >

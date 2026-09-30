@@ -52,7 +52,7 @@ export function JobRolesPage() {
   if (loading) return <Spinner label="Loading job roles" />;
 
   return (
-    <div className="mx-auto max-w-4xl">
+    <div className="max-w-4xl">
       <PageHeading
         title="Job roles"
         subtitle="What people do here. Someone can be in more than one, and each role has its own resources."
@@ -205,7 +205,7 @@ function RoleCard({
               if (sure)
                 await act(() => api.deleteJobRole(role.id), onDeleted, 'Could not delete that.');
             }}
-            className="font-medium text-slate-400 hover:text-rose-700"
+            className="font-medium text-slate-500 hover:text-rose-700"
           >
             Delete
           </button>
@@ -345,7 +345,7 @@ function RoleForm({
         </label>
         <label className="text-sm">
           <span className="mb-1 block font-medium text-slate-700">
-            Description <span className="font-normal text-slate-400">(optional)</span>
+            Description <span className="font-normal text-slate-500">(optional)</span>
           </span>
           <input
             aria-label="Description"

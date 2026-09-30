@@ -40,7 +40,7 @@ export function KiosksPage() {
   }, [load]);
 
   return (
-    <div className="mx-auto max-w-4xl">
+    <div className="max-w-4xl">
       <PageHeading
         title="Kiosks"
         subtitle="Front-desk tablets, and the PINs staff use on them."

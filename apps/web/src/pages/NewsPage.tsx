@@ -36,7 +36,7 @@ export function NewsPage() {
   if (loading) return <Spinner label="Loading the news" />;
 
   return (
-    <div className="mx-auto max-w-3xl">
+    <div className="max-w-3xl">
       <PageHeading
         title="News"
         subtitle={
@@ -191,7 +191,7 @@ function PostCard({
               });
               if (sure) await act(() => api.deleteAnnouncement(post.id), 'Could not delete that.');
             }}
-            className="font-medium text-slate-400 hover:text-rose-700"
+            className="font-medium text-slate-500 hover:text-rose-700"
           >
             Delete
           </button>

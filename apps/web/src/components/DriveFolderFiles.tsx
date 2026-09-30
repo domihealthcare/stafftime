@@ -60,7 +60,7 @@ export function DriveFolderFiles({ resourceId }: { resourceId: string }) {
                       {file.name}
                     </a>
                     {file.modifiedAt && (
-                      <span className="shrink-0 text-xs text-slate-400">
+                      <span className="shrink-0 text-xs text-slate-500">
                         {new Date(file.modifiedAt).toLocaleDateString(undefined, {
                           month: 'short',
                           day: 'numeric',

@@ -71,7 +71,7 @@ export function TimesheetPage() {
   );
 
   return (
-    <div className="mx-auto max-w-4xl">
+    <div className="max-w-4xl">
       <PageHeading
         title="Timesheet"
         subtitle={
@@ -419,23 +419,23 @@ function EntryActions({
   return (
     <div className="flex items-center gap-2">
       {entry.status === 'APPROVED' ? (
-        <span className="text-xs text-slate-400">Approved</span>
+        <span className="text-xs text-slate-500">Approved</span>
       ) : entry.clockOutAt ? (
         <button
           type="button"
           onClick={onApprove}
           disabled={busy}
-          className="rounded-lg bg-brand-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-brand-700 disabled:opacity-60"
+          className="rounded-lg bg-brand-600 px-3 py-1.5 text-xs font-medium max-sm:py-2.5 text-white hover:bg-brand-700 disabled:opacity-60"
         >
           {busy ? 'Approving…' : 'Approve'}
         </button>
       ) : (
-        <span className="text-xs text-slate-400">Still open</span>
+        <span className="text-xs text-slate-500">Still open</span>
       )}
       <button
         type="button"
         onClick={onCorrect}
-        className="text-xs font-medium text-slate-500 hover:text-slate-900"
+        className="tap text-xs font-medium text-slate-500 hover:text-slate-900"
       >
         Correct
       </button>
@@ -465,7 +465,7 @@ function Flags({ entry }: { entry: TimeEntry }) {
   if (entry.status === 'NEEDS_REVIEW') flags.push({ label: 'Needs review', tone: 'danger' });
 
   if (flags.length === 0) {
-    return <span className="text-xs text-slate-400">—</span>;
+    return <span className="text-xs text-slate-500">—</span>;
   }
 
   return (

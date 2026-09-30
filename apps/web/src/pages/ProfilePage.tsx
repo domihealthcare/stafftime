@@ -175,7 +175,7 @@ export function ProfilePage() {
   const field = 'mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm';
 
   return (
-    <div className="mx-auto max-w-2xl">
+    <div className="max-w-2xl">
       <PageHeading title="Your profile" subtitle="How colleagues see you in the Directory." />
 
       {error && (
@@ -256,7 +256,7 @@ export function ProfilePage() {
           </label>
           <label className="text-sm" htmlFor="pronouns">
             <span className="block font-medium text-slate-800">
-              Pronouns <span className="font-normal text-slate-400">(optional)</span>
+              Pronouns <span className="font-normal text-slate-500">(optional)</span>
             </span>
             <input
               id="pronouns"
@@ -286,7 +286,7 @@ export function ProfilePage() {
           </label>
           <label className="text-sm sm:col-span-2" htmlFor="about">
             <span className="block font-medium text-slate-800">
-              About you <span className="font-normal text-slate-400">(optional, one line)</span>
+              About you <span className="font-normal text-slate-500">(optional, one line)</span>
             </span>
             <input
               id="about"

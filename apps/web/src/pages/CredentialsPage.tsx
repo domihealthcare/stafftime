@@ -483,7 +483,7 @@ function CredentialTypesPanel({
                 <button
                   type="button"
                   onClick={() => void remove(type)}
-                  className="text-xs font-medium text-slate-400 hover:text-rose-700"
+                  className="text-xs font-medium text-slate-500 hover:text-rose-700"
                 >
                   Remove
                 </button>
@@ -579,7 +579,7 @@ function CredentialTypeEditor({
         </label>
         <label className="text-sm">
           <span className="mb-1 block font-medium text-slate-700">
-            Renewed every <span className="font-normal text-slate-400">(months, optional)</span>
+            Renewed every <span className="font-normal text-slate-500">(months, optional)</span>
           </span>
           <input
             aria-label="Renewed every (months)"
@@ -721,7 +721,7 @@ function CredentialCard({
                   setBusy(false);
                 }
               }}
-              className="text-xs font-medium text-slate-400 hover:text-rose-700"
+              className="text-xs font-medium text-slate-500 hover:text-rose-700"
             >
               Delete
             </button>
@@ -931,7 +931,7 @@ function CredentialForm({
 
         <label className="text-sm">
           <span className="mb-1 block font-medium text-slate-700">
-            Done on <span className="font-normal text-slate-400">(optional)</span>
+            Done on <span className="font-normal text-slate-500">(optional)</span>
           </span>
           <input
             aria-label="Done on"
@@ -962,7 +962,7 @@ function CredentialForm({
 
         <label className="text-sm">
           <span className="mb-1 block font-medium text-slate-700">
-            Issued by <span className="font-normal text-slate-400">(optional)</span>
+            Issued by <span className="font-normal text-slate-500">(optional)</span>
           </span>
           <input
             aria-label="Issued by"

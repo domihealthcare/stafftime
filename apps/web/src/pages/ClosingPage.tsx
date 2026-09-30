@@ -43,7 +43,7 @@ export function ClosingPage() {
   }
 
   return (
-    <div className="mx-auto max-w-5xl">
+    <div className="max-w-5xl">
       <PageHeading
         title="Closing checklists"
         subtitle="What Front Desk and Medical Assistants confirm when they clock out."
@@ -67,7 +67,7 @@ export function ClosingPage() {
             type="button"
             aria-pressed={tab === value}
             onClick={() => setTab(value)}
-            className={`rounded-md px-3 py-1 text-sm font-medium ${
+            className={`rounded-md px-3 py-1 text-sm font-medium max-sm:py-2.5 ${
               tab === value ? 'bg-brand-50 text-brand-800' : 'text-slate-600 hover:text-slate-900'
             }`}
           >

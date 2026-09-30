@@ -83,7 +83,7 @@ export function SettingsPage() {
   }
 
   return (
-    <div className="mx-auto max-w-2xl">
+    <div className="max-w-2xl">
       <PageHeading
         title="Practice settings"
         subtitle="Rules that apply to everybody. Changing one takes effect immediately."

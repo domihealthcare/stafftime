@@ -53,7 +53,7 @@ export function AvailabilityPage() {
   const oneOff = mine?.rules.filter((rule) => rule.kind === 'ONE_OFF') ?? [];
 
   return (
-    <div className="mx-auto max-w-3xl">
+    <div className="max-w-3xl">
       <Link to="/schedule" className="text-sm font-medium text-brand-700 hover:text-brand-900">
         ← Schedule
       </Link>
@@ -368,7 +368,7 @@ function RuleForm({
 
         <label className="text-sm sm:col-span-2">
           <span className="mb-1 block font-medium text-slate-700">
-            Why <span className="font-normal text-slate-400">(optional — managers see this)</span>
+            Why <span className="font-normal text-slate-500">(optional — managers see this)</span>
           </span>
           <input
             aria-label="Why"
