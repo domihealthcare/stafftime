@@ -161,20 +161,12 @@ await step('an open Front Desk shift can only be given to somebody in Front Desk
 });
 
 await step('the month by job role counts the shifts for that role, not all its people do', async () => {
-  // Next month: the 10th as a Medical Assistant at North Bergen, the 11th as
-  // Front Desk from home.
-  const first = new Date();
-  first.setDate(1);
-  first.setMonth(first.getMonth() + 1);
-  const at = (date, hour) => {
-    const d = new Date(first);
-    d.setDate(date);
-    d.setHours(hour, 0, 0, 0);
-    return d.toISOString();
-  };
+  // January 2027, which the runner clears between suites: the 12th as a
+  // Medical Assistant at North Bergen, the 13th as Front Desk from home.
+  const at = (date, hour) => new Date(2027, 0, date, hour).toISOString();
   for (const [date, jobRole, isRemote] of [
-    [10, 'Medical Assistant', false],
-    [11, 'Front Desk', true],
+    [12, 'Medical Assistant', false],
+    [13, 'Front Desk', true],
   ]) {
     const shift = await api('/shifts', {
       method: 'POST',
@@ -188,12 +180,12 @@ await step('the month by job role counts the shifts for that role, not all its p
         status: 'PUBLISHED',
       }),
     });
-    if (shift.status !== 201) throw new Error(`making the ${jobRole} shift answered ${shift.status}`);
+    if (shift.status !== 201)
+      throw new Error(`making the ${jobRole} shift answered ${shift.status}: ${JSON.stringify(shift.body)}`);
     made.push(shift.body.id);
   }
-  await mgr.goto(`${BASE}/schedule`, { waitUntil: 'networkidle' });
+  await mgr.goto(`${BASE}/schedule?week=2027-01-12`, { waitUntil: 'networkidle' });
   await mgr.getByRole('button', { name: 'Month', exact: true }).click();
-  await mgr.getByRole('button', { name: 'Next →' }).click();
   await mgr.getByTestId('month-grid').waitFor({ timeout: 10000 });
   await mgr.getByLabel('Show job role').selectOption({ label: 'Medical Assistant' });
   await mgr.getByLabel('Show location').selectOption({ label: 'North Bergen' });
