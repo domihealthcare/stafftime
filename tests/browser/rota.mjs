@@ -126,6 +126,9 @@ await step('taking somebody off makes it open again', async () => {
 });
 
 await step('an open shift can be added straight into a day, for another office', async () => {
+  // The reload above folded the empty open rows away again.
+  const toggle = mgr.getByTestId('open-rows-toggle');
+  if ((await toggle.getAttribute('aria-pressed')) === 'false') await toggle.click();
   const add = openRow('West New York').getByRole('button', { name: /^Add an open shift at West New York on / }).first();
   await add.click();
   const dialog = mgr.getByRole('dialog', { name: 'Open shift' });
