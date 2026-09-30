@@ -44,6 +44,10 @@ const OWN_PERSONNEL = [
   { to: '/credentials', label: 'Your licenses' },
   { to: '/checklists', label: 'Your onboarding' },
 ];
+/// A provider's own published productivity, once a manager has published any.
+/// Chosen by an admin, not by access level, so it is added separately below.
+const PRODUCTIVITY_MANAGE = { to: '/productivity', label: 'Provider productivity' };
+const OWN_PRODUCTIVITY = [{ to: '/my-productivity', label: 'Your productivity' }];
 const ADMINISTER = [
   { to: '/staff', label: 'Staff' },
   { to: '/kiosks', label: 'Kiosks' },
@@ -87,11 +91,22 @@ function useRouteAnnouncer(main: React.RefObject<HTMLElement>) {
 
 export function Layout() {
   const isPhone = useIsPhone();
-  const mainRef = useRef<HTMLElement>(null);
-  useRouteAnnouncer(mainRef);
   const isManager = useIsManager();
   const isAdmin = useIsAdmin();
   const { employee } = useSession();
+  // What Team and Manage hold — on a laptop in the header, on a phone under More.
+  const teamItems = [
+    ...TEAM,
+    ...(!isManager && employee?.seesOwnPersonnelTabs ? OWN_PERSONNEL : []),
+    ...(employee?.hasProductivity ? OWN_PRODUCTIVITY : []),
+  ];
+  const manageItems = [
+    ...(isManager ? MANAGE : []),
+    ...(isAdmin ? ADMINISTER : []),
+    ...(employee?.canManageProductivity || isAdmin ? [PRODUCTIVITY_MANAGE] : []),
+  ];
+  const mainRef = useRef<HTMLElement>(null);
+  useRouteAnnouncer(mainRef);
   const [pendingPto, setPendingPto] = useState(0);
 
   // A badge on the tab, so a manager does not have to go looking for requests.
@@ -204,19 +219,8 @@ export function Layout() {
                   </span>
                 )}
               </NavLink>
-              <NavMenu
-                label="Team"
-                items={[
-                  ...TEAM,
-                  ...(!isManager && employee?.seesOwnPersonnelTabs ? OWN_PERSONNEL : []),
-                ]}
-                className={linkClasses}
-              />
-              <NavMenu
-                label="Manage"
-                items={[...(isManager ? MANAGE : []), ...(isAdmin ? ADMINISTER : [])]}
-                className={linkClasses}
-              />
+              <NavMenu label="Team" items={teamItems} className={linkClasses} />
+              <NavMenu label="Manage" items={manageItems} className={linkClasses} />
             </nav>
           )}
         </div>
@@ -241,14 +245,7 @@ export function Layout() {
         </Suspense>
       </main>
       {isPhone && (
-        <PhoneTabBar
-          pendingPto={pendingPto}
-          teamItems={[
-            ...TEAM,
-            ...(!isManager && employee?.seesOwnPersonnelTabs ? OWN_PERSONNEL : []),
-          ]}
-          manageItems={[...(isManager ? MANAGE : []), ...(isAdmin ? ADMINISTER : [])]}
-        />
+        <PhoneTabBar pendingPto={pendingPto} teamItems={teamItems} manageItems={manageItems} />
       )}
     </div>
   );

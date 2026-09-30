@@ -98,6 +98,12 @@ export interface Employee extends EmployeeSummary {
   /// Signed-in person only: their job role gives them the clinical forms
   /// under Team (Providers).
   usesClinicalForms?: boolean;
+  /// Signed-in person only: a manager has published productivity numbers for
+  /// them, so "Your productivity" appears under Team.
+  hasProductivity?: boolean;
+  /// Signed-in person only: an admin has given them provider productivity to
+  /// work out and publish, whatever their access level.
+  canManageProductivity?: boolean;
 }
 
 export interface Shift {
@@ -385,6 +391,7 @@ export interface TestDataCounts {
   posts: number;
   surveys: number;
   events: number;
+  productivityStatements: number;
   suggestions: number;
   notifications: number;
   payrollExports: number;
@@ -1110,3 +1117,68 @@ export interface Profile {
   jobRoles: { id: string; name: string; colour: string }[];
   locations: { id: string; name: string; isPrimary: boolean }[];
 }
+
+/// How a provider's productivity is counted (September 2026). Every part is
+/// optional; it only supplies defaults for the statements made under it.
+export interface ProductivityPlan {
+  employeeId: string;
+  employee?: PersonName;
+  intervalWeeks: number;
+  intervalsPerStatement: number;
+  expectedPerInterval: number | null;
+  multiplier: number | null;
+  categories: string[];
+  carriesBalance: boolean;
+}
+
+export interface ProductivityCount {
+  label: string;
+  count: number;
+}
+
+export interface ProductivityInterval {
+  id?: string;
+  position: number;
+  /// YYYY-MM-DD
+  startDate: string;
+  endDate: string;
+  expected: number | null;
+  counts: ProductivityCount[];
+  actual: number;
+}
+
+export interface ProductivityTotals {
+  expected: number | null;
+  actual: number;
+  difference: number | null;
+  multiplierCents: number | null;
+  amountCents: number | null;
+}
+
+export interface ProductivityStatement {
+  id: string;
+  employeeId: string;
+  employee?: PersonName;
+  startDate: string;
+  endDate: string;
+  multiplier: number | null;
+  paidOn: string | null;
+  note: string | null;
+  /// A short period is carried forward and netted off the next ones.
+  carriesBalance: boolean;
+  published: boolean;
+  publishedAt: string | null;
+  updatedAt: string;
+  intervals: ProductivityInterval[];
+  totals: ProductivityTotals;
+  balance: ProductivityBalance;
+}
+
+/// The running balance (September 2026): a shortfall brought in, what is paid
+/// for this period once it is netted off, and any shortfall still standing.
+export interface ProductivityBalance {
+  carriedInCents: number;
+  payableCents: number | null;
+  carriedOutCents: number;
+}
+
