@@ -7,7 +7,7 @@ import { AdpSettingsCard } from '../components/AdpSettingsCard';
 import { CalendarInvitesCard } from '../components/CalendarInvitesCard';
 import { DemoDataCard } from '../components/DemoDataCard';
 import { GoLiveCard } from '../components/GoLiveCard';
-import { Alert, Card, PageHeading, Spinner } from '../components/ui';
+import { Alert, Card, PageHeading, Spinner, buttonClass } from '../components/ui';
 
 /// The two rules the practice sets for itself. Both arrived as defaults in the
 /// code and both turned out to be a guess about how Domi actually works.
@@ -83,7 +83,7 @@ export function SettingsPage() {
   }
 
   return (
-    <div className="mx-auto max-w-2xl">
+    <div className="max-w-2xl">
       <PageHeading
         title="Practice settings"
         subtitle="Rules that apply to everybody. Changing one takes effect immediately."
@@ -164,8 +164,8 @@ export function SettingsPage() {
                     : 'Monday'}
                 </strong>
                 {payStart ? ', the pay period’s first day' : ' until a pay period is set'}: each pay
-                period is two weeks, and hours past the overtime line in either week are overtime
-                — on the schedule, the dashboard and the payroll export.
+                period is two weeks, and hours past the overtime line in either week are overtime —
+                on the schedule, the dashboard and the payroll export.
               </p>
             </div>
           </div>
@@ -176,7 +176,7 @@ export function SettingsPage() {
                 type="button"
                 disabled={busy || !changed}
                 onClick={() => void save()}
-                className="rounded-lg bg-brand-600 px-4 py-2 text-sm font-semibold text-white hover:bg-brand-700 disabled:opacity-60"
+                className={buttonClass('primary', 'md')}
               >
                 {busy ? 'Saving…' : 'Save'}
               </button>

@@ -7,7 +7,7 @@ import { timeOffOn } from '../lib/time-off';
 import type { Employee, JobRole, Location, PracticeEvent, PtoRequest, Shift } from '../lib/types';
 import { BrandLogoForPrint } from '../components/Brand';
 import { eventsOnDay, eventTimeLabel, isClosure } from '../components/PracticeEvents';
-import { Alert, Spinner } from '../components/ui';
+import { Alert, Spinner, buttonClass } from '../components/ui';
 
 /// "2026-09-27" as a local midnight, not UTC — a week that starts on Sunday
 /// must not print as Saturday west of Greenwich.
@@ -159,23 +159,20 @@ export function RotaPrintPage() {
       {/* The controls: on screen only, never on paper. */}
       <div className="border-b border-slate-200 bg-white print:hidden">
         <div className="mx-auto flex max-w-6xl flex-wrap items-center gap-2 px-4 py-3">
-          <Link
-            to="/schedule"
-            className="rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-sm font-medium text-slate-700 hover:bg-slate-50"
-          >
+          <Link to="/schedule" className={buttonClass('secondary', 'sm')}>
             ← Back to the schedule
           </Link>
           <button
             type="button"
             onClick={() => goToWeek(-7)}
-            className="rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-sm font-medium text-slate-700 hover:bg-slate-50"
+            className={buttonClass('secondary', 'sm')}
           >
             ← Previous week
           </button>
           <button
             type="button"
             onClick={() => goToWeek(7)}
-            className="rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-sm font-medium text-slate-700 hover:bg-slate-50"
+            className={buttonClass('secondary', 'sm')}
           >
             Next week →
           </button>
@@ -198,7 +195,7 @@ export function RotaPrintPage() {
           <button
             type="button"
             onClick={() => window.print()}
-            className="rounded-lg bg-brand-600 px-4 py-1.5 text-sm font-semibold text-white hover:bg-brand-700"
+            className={buttonClass('primary', 'md')}
           >
             Print
           </button>

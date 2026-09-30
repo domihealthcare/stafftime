@@ -17,7 +17,7 @@ import type {
 import { useConfirm } from './ConfirmDialog';
 import { JobRoleSelect, rolesHeldBy } from './JobRoleSelect';
 import { PlaceSelect, WORK_FROM_HOME, homeOfficeOf, placeToShift } from './PlaceSelect';
-import { Alert } from './ui';
+import { Alert, buttonClass } from './ui';
 
 /// One day of the usual week, as the grid holds it.
 interface DayRow {
@@ -270,7 +270,7 @@ export function WeeklyScheduleEditor({
                         className="rounded border-slate-300 text-brand-600 focus:ring-brand-600"
                       />
                       {dayName}
-                      {!row.works && <span className="font-normal text-slate-400">— off</span>}
+                      {!row.works && <span className="font-normal text-slate-500">— off</span>}
                     </label>
                     {row.works && working.length > 1 && (
                       <button
@@ -370,7 +370,7 @@ export function WeeklyScheduleEditor({
               type="button"
               disabled={busy || !dirty || !from || badDays.length > 0}
               onClick={() => void save()}
-              className="rounded-lg bg-brand-600 px-4 py-2 text-sm font-semibold text-white hover:bg-brand-700 disabled:opacity-60"
+              className={buttonClass('primary', 'md')}
             >
               {busy ? 'Saving…' : 'Save their week'}
             </button>

@@ -1,3 +1,4 @@
+import { useDialog } from './useDialog';
 import { useMemo, useState } from 'react';
 import { birthdayName } from '../lib/birthday';
 import { ApiError, api } from '../lib/api';
@@ -45,7 +46,7 @@ import {
   isClosure,
   useClosureCheck,
 } from './PracticeEvents';
-import { Alert } from './ui';
+import { Alert, buttonClass } from './ui';
 
 export type RotaGrouping = 'person' | 'location' | 'role';
 
@@ -491,7 +492,7 @@ export function RotaTable({
                     ))}
                   </td>
                 ))}
-                <td className="px-3 py-2 text-right align-top text-xs text-slate-400">Not hours</td>
+                <td className="px-3 py-2 text-right align-top text-xs text-slate-500">Not hours</td>
               </tr>
             )}
           </thead>
@@ -616,7 +617,7 @@ export function RotaTable({
                                 // Big enough to see and to hit with a thumb, on a
                                 // phone as on a computer, and under the shifts
                                 // rather than over them.
-                                className={`flex w-full items-center justify-center rounded-md font-semibold leading-none text-slate-400 hover:bg-brand-50 hover:text-brand-700 focus:text-brand-700 ${
+                                className={`flex w-full items-center justify-center rounded-md font-semibold leading-none text-slate-500 hover:bg-brand-50 hover:text-brand-700 focus:text-brand-700 ${
                                   inCell.length === 0 ? 'min-h-10 text-2xl' : 'min-h-8 text-xl'
                                 }`}
                               >
@@ -848,56 +849,63 @@ function RotaLegend({
     />
   );
   return (
-    <div
-      className="mb-2 flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-slate-600"
+    <details
+      // Open on a screen wide enough to spare the room, closed on a phone.
+      open={typeof window === 'undefined' || window.innerWidth >= 640}
+      className="mb-2 text-xs text-slate-600"
       data-testid="rota-legend"
     >
-      {locations
-        .filter((location) => location.isActive !== false)
-        .map((location) => (
-          <span key={location.id} className="inline-flex items-center gap-1.5">
-            {swatch(colourOf(location.id))}
-            {location.name}
-          </span>
-        ))}
-      <span className="inline-flex items-center gap-1.5">
-        {swatch(REMOTE_COLOUR)}
-        Work from home
-      </span>
-      <span className="inline-flex items-center gap-1.5">
-        <span
-          aria-hidden="true"
-          className="inline-block h-3 w-5 rounded-sm bg-amber-100 ring-1 ring-inset ring-amber-300"
-        />
-        Open shift
-      </span>
-      <span className="inline-flex items-center gap-1.5">
-        <span
-          aria-hidden="true"
-          className="inline-block h-3 w-5 rounded-sm border border-dashed border-slate-400 bg-white"
-        />
-        Draft
-      </span>
-      <span className="inline-flex items-center gap-1.5">
-        <span
-          aria-hidden="true"
-          className="inline-block h-3 w-5 rounded-sm ring-1 ring-inset ring-slate-300"
-          style={OFF_HATCH}
-        />
-        Time off
-      </span>
-      <span className="basis-full sm:basis-auto">Stripe on the left, the job role:</span>
-      {jobRoles.map((role) => (
-        <span key={role.id} className="inline-flex items-center gap-1.5">
+      <summary className="mb-1 cursor-pointer select-none py-1 font-medium text-slate-700 max-sm:py-2">
+        Key
+      </summary>
+      <div className="flex flex-wrap items-center gap-x-4 gap-y-1">
+        {locations
+          .filter((location) => location.isActive !== false)
+          .map((location) => (
+            <span key={location.id} className="inline-flex items-center gap-1.5">
+              {swatch(colourOf(location.id))}
+              {location.name}
+            </span>
+          ))}
+        <span className="inline-flex items-center gap-1.5">
+          {swatch(REMOTE_COLOUR)}
+          Work from home
+        </span>
+        <span className="inline-flex items-center gap-1.5">
           <span
             aria-hidden="true"
-            className="inline-block h-3 w-1 rounded-sm"
-            style={{ backgroundColor: jobRoleHex(role.colour) }}
+            className="inline-block h-3 w-5 rounded-sm bg-amber-100 ring-1 ring-inset ring-amber-300"
           />
-          {role.name}
+          Open shift
         </span>
-      ))}
-    </div>
+        <span className="inline-flex items-center gap-1.5">
+          <span
+            aria-hidden="true"
+            className="inline-block h-3 w-5 rounded-sm border border-dashed border-slate-400 bg-white"
+          />
+          Draft
+        </span>
+        <span className="inline-flex items-center gap-1.5">
+          <span
+            aria-hidden="true"
+            className="inline-block h-3 w-5 rounded-sm ring-1 ring-inset ring-slate-300"
+            style={OFF_HATCH}
+          />
+          Time off
+        </span>
+        <span className="basis-full sm:basis-auto">Stripe on the left, the job role:</span>
+        {jobRoles.map((role) => (
+          <span key={role.id} className="inline-flex items-center gap-1.5">
+            <span
+              aria-hidden="true"
+              className="inline-block h-3 w-1 rounded-sm"
+              style={{ backgroundColor: jobRoleHex(role.colour) }}
+            />
+            {role.name}
+          </span>
+        ))}
+      </div>
+    </details>
   );
 }
 
@@ -910,6 +918,7 @@ function Dialog({
   onClose: () => void;
   children: React.ReactNode;
 }) {
+  const dialog = useDialog(onClose);
   return (
     <div
       className="fixed inset-0 z-40 flex items-end justify-center bg-slate-900/30 p-4 sm:items-center"
@@ -919,7 +928,8 @@ function Dialog({
         role="dialog"
         aria-modal="true"
         aria-label={title}
-        className="w-full max-w-sm rounded-xl bg-white p-4 shadow-xl"
+        {...dialog}
+        className="w-full max-w-sm rounded-xl bg-white p-4 shadow-xl outline-none"
       >
         <div className="mb-3 flex items-start justify-between gap-3">
           <h2 className="text-base font-semibold text-slate-900">{title}</h2>
@@ -1123,7 +1133,7 @@ function ShiftDialog({
             type="button"
             disabled={busy || !person || person === shift.employeeId}
             onClick={() => void assign()}
-            className="rounded-lg bg-brand-600 px-3 py-1.5 text-sm font-semibold text-white hover:bg-brand-700 disabled:opacity-60"
+            className={buttonClass('primary', 'sm')}
           >
             {open ? 'Assign' : 'Change'}
           </button>
@@ -1169,7 +1179,7 @@ function ShiftDialog({
             type="button"
             disabled={busy}
             onClick={() => void takeOff()}
-            className="rounded-lg border border-slate-300 px-3 py-1.5 text-sm font-medium text-slate-700 hover:bg-slate-50 disabled:opacity-60"
+            className={buttonClass('secondary', 'sm')}
           >
             Make it an open shift
           </button>
@@ -1178,7 +1188,7 @@ function ShiftDialog({
           type="button"
           disabled={busy}
           onClick={() => void act(() => api.updateShift(shift.id, { isRemote: !shift.isRemote }))}
-          className="rounded-lg border border-slate-300 px-3 py-1.5 text-sm font-medium text-slate-700 hover:bg-slate-50 disabled:opacity-60"
+          className={buttonClass('secondary', 'sm')}
         >
           {shift.isRemote ? 'Make it at the office' : 'Make it work from home'}
         </button>
@@ -1187,7 +1197,7 @@ function ShiftDialog({
             type="button"
             disabled={busy}
             onClick={() => void act(() => api.updateShift(shift.id, { status: 'PUBLISHED' }))}
-            className="rounded-lg border border-slate-300 px-3 py-1.5 text-sm font-medium text-slate-700 hover:bg-slate-50 disabled:opacity-60"
+            className={buttonClass('secondary', 'sm')}
           >
             Publish
           </button>
@@ -1491,7 +1501,7 @@ function QuickAddDialog({
               end <= start ||
               (repeat && (repeatDays.length === 0 || (!noEnd && !until)))
             }
-            className="rounded-lg bg-brand-600 px-4 py-2 text-sm font-semibold text-white hover:bg-brand-700 disabled:opacity-60"
+            className={buttonClass('primary', 'md')}
           >
             {busy ? 'Adding…' : repeat ? 'Add the shifts' : 'Add shift'}
           </button>

@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { ApiError, api } from '../lib/api';
 import type { PtoAdjustment, PtoPolicy, StaffBalance } from '../lib/types';
-import { Alert, Card, Spinner } from './ui';
+import { Alert, Card, Spinner, buttonClass } from './ui';
 
 /**
  * Everybody's time off this policy year, for managers and admins — and the
@@ -260,18 +260,10 @@ function AdjustForm({
         </div>
       )}
       <div className="mt-3 flex gap-2">
-        <button
-          type="submit"
-          disabled={busy}
-          className="rounded-lg bg-brand-600 px-3 py-1.5 text-sm font-semibold text-white hover:bg-brand-700 disabled:opacity-60"
-        >
+        <button type="submit" disabled={busy} className={buttonClass('primary', 'sm')}>
           {busy ? 'Saving…' : 'Save'}
         </button>
-        <button
-          type="button"
-          onClick={onCancel}
-          className="rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-sm font-medium text-slate-700 hover:bg-slate-50"
-        >
+        <button type="button" onClick={onCancel} className={buttonClass('secondary', 'sm')}>
           Cancel
         </button>
       </div>

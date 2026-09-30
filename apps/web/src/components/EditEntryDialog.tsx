@@ -2,7 +2,8 @@ import { useState } from 'react';
 import { ApiError, api } from '../lib/api';
 import { formatCalendarDate, toLocalInputValue } from '../lib/format';
 import type { TimeEntry } from '../lib/types';
-import { Alert } from './ui';
+import { Alert, buttonClass } from './ui';
+import { useDialog } from './useDialog';
 
 /**
  * Manager correction of a punch.
@@ -60,7 +61,8 @@ export function EditEntryDialog({
       await api.editTimeEntry(entry.id, {
         // Only send what the manager actually touched.
         clockInAt: inChanged ? new Date(clockInAt).toISOString() : undefined,
-        clockOutAt: outChanged && clockOutAt !== '' ? new Date(clockOutAt).toISOString() : undefined,
+        clockOutAt:
+          outChanged && clockOutAt !== '' ? new Date(clockOutAt).toISOString() : undefined,
         // Emptying a field that had a value is a deliberate "this punch is missing".
         clearClockOut: initialOut !== '' && clockOutAt === '' ? true : undefined,
         editReason,
@@ -80,14 +82,17 @@ export function EditEntryDialog({
     }
   }
 
+  const dialog = useDialog(onClose);
+
   return (
-    <div
-      className="fixed inset-0 z-50 flex items-end justify-center bg-slate-900/40 p-4 sm:items-center"
-      role="dialog"
-      aria-modal="true"
-      aria-labelledby="edit-entry-title"
-    >
-      <div className="w-full max-w-md rounded-xl bg-white p-5 shadow-xl">
+    <div className="fixed inset-0 z-50 flex items-end justify-center bg-slate-900/40 p-4 sm:items-center">
+      <div
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="edit-entry-title"
+        {...dialog}
+        className="w-full max-w-md rounded-xl bg-white p-5 shadow-xl outline-none"
+      >
         <h2 id="edit-entry-title" className="text-lg font-semibold text-slate-900">
           Correct time entry
         </h2>
@@ -100,9 +105,8 @@ export function EditEntryDialog({
 
         {entry.payroll?.exported && !exportedWarning && (
           <p className="mt-2 text-xs text-amber-700">
-            These hours went to payroll on{' '}
-            {formatCalendarDate(entry.payroll.exportedAt as string)}. A correction now has to
-            reach a later pay run.
+            These hours went to payroll on {formatCalendarDate(entry.payroll.exportedAt as string)}.
+            A correction now has to reach a later pay run.
           </p>
         )}
 
@@ -138,9 +142,7 @@ export function EditEntryDialog({
               Leave empty for a missing punch — it stays flagged for review.
             </p>
             {outBeforeIn && (
-              <p className="mt-1 text-xs text-rose-600">
-                Clock-out must be after clock-in.
-              </p>
+              <p className="mt-1 text-xs text-rose-600">Clock-out must be after clock-in.</p>
             )}
           </div>
 
@@ -165,8 +167,8 @@ export function EditEntryDialog({
 
           {exportedWarning && (
             <Alert tone="warning">
-              {exportedWarning} Press save again to make the correction anyway — it will be
-              flagged so it can go out in the next run.
+              {exportedWarning} Press save again to make the correction anyway — it will be flagged
+              so it can go out in the next run.
             </Alert>
           )}
 
@@ -178,19 +180,11 @@ export function EditEntryDialog({
             <button
               type="submit"
               disabled={busy || !canSave}
-              className="rounded-lg bg-brand-600 px-4 py-2 text-sm font-medium text-white hover:bg-brand-700 disabled:opacity-60"
+              className={buttonClass('primary', 'md')}
             >
-              {busy
-                ? 'Saving…'
-                : exportedWarning
-                  ? 'Correct it anyway'
-                  : 'Save correction'}
+              {busy ? 'Saving…' : exportedWarning ? 'Correct it anyway' : 'Save correction'}
             </button>
-            <button
-              type="button"
-              onClick={onClose}
-              className="rounded-lg border border-slate-300 px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50"
-            >
+            <button type="button" onClick={onClose} className={buttonClass('secondary', 'md')}>
               Cancel
             </button>
           </div>

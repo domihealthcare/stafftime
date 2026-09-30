@@ -29,7 +29,7 @@ export function ResourcePage() {
   }, [id]);
 
   return (
-    <div className="mx-auto max-w-3xl">
+    <div className="max-w-3xl">
       <Link to="/resources" className="text-sm font-medium text-brand-700 hover:text-brand-900">
         ← Resources
       </Link>

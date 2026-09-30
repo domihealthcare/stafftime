@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { ApiError, api, type AdpStatus } from '../lib/api';
-import { Alert, Badge, Card, Spinner } from './ui';
+import { Alert, Badge, Card, Spinner, buttonClass } from './ui';
 
 /// ADP's column names start with these three; hours can go in any of the rest.
 const REQUIRED = 3;
@@ -256,7 +256,7 @@ export function AdpSettingsCard({ isAdmin }: { isAdmin: boolean }) {
             type="button"
             disabled={busy || !changed}
             onClick={() => void save()}
-            className="rounded-lg bg-brand-600 px-4 py-2 text-sm font-semibold text-white hover:bg-brand-700 disabled:opacity-60"
+            className={buttonClass('primary', 'md')}
           >
             {busy ? 'Saving…' : 'Save ADP settings'}
           </button>

@@ -1,4 +1,4 @@
-import { Suspense, useEffect, useState } from 'react';
+import { Suspense, useEffect, useRef, useState } from 'react';
 import { Link, NavLink, Outlet, useLocation } from 'react-router-dom';
 import { TIME_OFF_CHANGED, api } from '../lib/api';
 import { AccountMenu } from './AccountMenu';
@@ -12,7 +12,7 @@ import { Spinner } from './ui';
 /// the padding is small — the row, not the padding, sets the width. From `sm`
 /// up they are ordinary inline pills again.
 const linkClasses = ({ isActive }: { isActive: boolean }) =>
-  `flex-auto whitespace-nowrap rounded-lg px-1 py-2 text-center text-sm font-medium transition sm:flex-none sm:px-3 sm:text-left ${
+  `inline-flex min-h-11 flex-auto items-center justify-center whitespace-nowrap rounded-lg px-1 py-2 text-center text-sm font-medium transition focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-600 sm:min-h-0 sm:flex-none sm:justify-start sm:px-3 sm:text-left ${
     isActive
       ? 'bg-brand-50 text-brand-800'
       : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'
@@ -52,7 +52,44 @@ const ADMINISTER = [
   { to: '/locations', label: 'Locations' },
 ];
 
+const APP_NAME = 'Domi Staff';
+
+/// A page change in a single-page app is silent: the tab keeps its old title
+/// and a screen reader or keyboard user is left wherever they were. So after
+/// each change the tab is named for the screen ("Timesheet · Domi Staff", from
+/// its heading, so no page has to say it twice) and focus moves to the content.
+/// Screens load lazily, so this waits for the heading to appear.
+function useRouteAnnouncer(main: React.RefObject<HTMLElement>) {
+  const { pathname } = useLocation();
+  const first = useRef(true);
+  useEffect(() => {
+    const element = main.current;
+    if (!element) return;
+    const skipFocus = first.current; // Do not steal focus from the first load.
+    first.current = false;
+    let done = false;
+    const apply = () => {
+      const heading = element.querySelector('h1')?.textContent?.trim();
+      if (!heading) return false;
+      document.title = heading === APP_NAME ? APP_NAME : `${heading} · ${APP_NAME}`;
+      if (!skipFocus && !done) element.focus({ preventScroll: true });
+      done = true;
+      return true;
+    };
+    if (apply()) return;
+    const observer = new MutationObserver(() => apply() && observer.disconnect());
+    observer.observe(element, { childList: true, subtree: true });
+    const stop = window.setTimeout(() => observer.disconnect(), 5000);
+    return () => {
+      observer.disconnect();
+      window.clearTimeout(stop);
+    };
+  }, [pathname, main]);
+}
+
 export function Layout() {
+  const mainRef = useRef<HTMLElement>(null);
+  useRouteAnnouncer(mainRef);
   const isManager = useIsManager();
   const isAdmin = useIsAdmin();
   const { employee } = useSession();
@@ -91,6 +128,12 @@ export function Layout() {
 
   return (
     <div className="min-h-screen bg-slate-100">
+      <a
+        href="#main"
+        className="sr-only focus:not-sr-only focus:absolute focus:left-2 focus:top-2 focus:z-50 focus:rounded-lg focus:bg-white focus:px-4 focus:py-2 focus:text-sm focus:font-semibold focus:text-brand-800 focus:shadow-lg focus:ring-2 focus:ring-brand-600"
+      >
+        Skip to content
+      </a>
       <header className="border-b border-slate-200 border-t-4 border-t-brand-600 bg-white">
         {/* One layout, two shapes, and every element appears exactly once so
             that a link or the account button is never ambiguous to a test or a
@@ -137,7 +180,10 @@ export function Layout() {
 
               `relative` so that on a phone a menu opens across the whole nav,
               wherever its button landed. */}
-          <nav className="relative col-span-2 flex flex-wrap gap-1 sm:col-span-1 sm:items-center sm:gap-x-1 sm:gap-y-1">
+          <nav
+            aria-label="Main"
+            className="relative col-span-2 flex flex-wrap gap-1 sm:col-span-1 sm:items-center sm:gap-x-1 sm:gap-y-1"
+          >
             <NavLink to="/" end className={linkClasses}>
               Clock
             </NavLink>
@@ -181,7 +227,12 @@ export function Layout() {
       </header>
       <SloganStrip />
 
-      <main className="mx-auto max-w-6xl px-4 py-6">
+      <main
+        id="main"
+        ref={mainRef}
+        tabIndex={-1}
+        className="mx-auto max-w-6xl px-4 py-6 focus:outline-none"
+      >
         {/* Screens load when first opened; the header stays while they do. */}
         <Suspense
           fallback={

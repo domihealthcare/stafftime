@@ -53,7 +53,7 @@ import {
 import { RepeatShiftsForm } from '../components/RepeatShiftsForm';
 import { RotaTable, type RotaGrouping } from '../components/RotaTable';
 import { StandingShiftsCard } from '../components/StandingShiftsCard';
-import { Alert, Card, EmptyState, PageHeading, Spinner } from '../components/ui';
+import { Alert, Card, EmptyState, PageHeading, Spinner, buttonClass } from '../components/ui';
 import { NeedsAttention } from '../components/NeedsAttention';
 import { useConfirm } from '../components/ConfirmDialog';
 import {
@@ -334,6 +334,7 @@ export function SchedulePage() {
       />
 
       <NeedsAttention
+        collapsible
         sections={['shiftsInClosures', 'openShifts', 'unpublishedRota', 'shiftsForLeavers']}
       />
 
@@ -351,7 +352,7 @@ export function SchedulePage() {
               ? setWeekStart((current) => addDays(current, -7))
               : setMonthStart((current) => addMonths(current, -1))
           }
-          className="rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-sm font-medium text-slate-700 hover:bg-slate-50"
+          className={buttonClass('secondary', 'sm')}
         >
           ← Previous
         </button>
@@ -361,7 +362,7 @@ export function SchedulePage() {
             setWeekStart(startOfWeek(new Date()));
             setMonthStart(startOfMonth(new Date()));
           }}
-          className="rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-sm font-medium text-slate-700 hover:bg-slate-50"
+          className={buttonClass('secondary', 'sm')}
         >
           {view === 'week' ? 'This week' : 'This month'}
         </button>
@@ -372,7 +373,7 @@ export function SchedulePage() {
               ? setWeekStart((current) => addDays(current, 7))
               : setMonthStart((current) => addMonths(current, 1))
           }
-          className="rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-sm font-medium text-slate-700 hover:bg-slate-50"
+          className={buttonClass('secondary', 'sm')}
         >
           Next →
         </button>
@@ -400,7 +401,7 @@ export function SchedulePage() {
                 }
                 setView(option);
               }}
-              className={`rounded-md px-3 py-1 text-sm font-medium transition ${
+              className={`rounded-md px-3 py-1 text-sm font-medium max-sm:py-2.5 transition ${
                 view === option
                   ? 'bg-brand-50 text-brand-800'
                   : 'text-slate-600 hover:text-slate-900'
@@ -464,7 +465,7 @@ export function SchedulePage() {
                         // A remembered preference is a convenience, not a feature.
                       }
                     }}
-                    className={`rounded-md px-3 py-1 text-sm font-medium ${
+                    className={`rounded-md px-3 py-1 text-sm font-medium max-sm:py-2.5 ${
                       grouping === option
                         ? 'bg-brand-50 text-brand-800'
                         : 'text-slate-600 hover:text-slate-900'
@@ -516,7 +517,7 @@ export function SchedulePage() {
           {view === 'week' && (
             <Link
               to={`/schedule/print?week=${localDate(weekStart)}${locationFilter && locationFilter !== WORK_FROM_HOME_FILTER ? `&location=${locationFilter}` : ''}`}
-              className="rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-sm font-medium text-slate-700 hover:bg-slate-50"
+              className={buttonClass('secondary', 'sm')}
             >
               Print
             </Link>
@@ -525,7 +526,7 @@ export function SchedulePage() {
             type="button"
             disabled={copying}
             onClick={() => void copyPreviousWeek()}
-            className="rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-sm font-medium text-slate-700 hover:bg-slate-50 disabled:opacity-60"
+            className={buttonClass('secondary', 'sm')}
           >
             {copying ? 'Copying…' : 'Copy last week into this one'}
           </button>
@@ -535,7 +536,7 @@ export function SchedulePage() {
               aria-haspopup="menu"
               aria-expanded={addMenu}
               onClick={() => setAddMenu((open) => !open)}
-              className="rounded-lg bg-brand-600 px-3 py-1.5 text-sm font-semibold text-white hover:bg-brand-700"
+              className={buttonClass('primary', 'sm')}
             >
               + Add
             </button>
@@ -818,10 +819,7 @@ export function SchedulePage() {
 
       <div className="mt-3 grid gap-3 sm:grid-cols-[1fr_auto] sm:items-start">
         <CalendarLinkCard />
-        <Link
-          to="/availability"
-          className="inline-block rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50"
-        >
+        <Link to="/availability" className={`inline-block ${buttonClass('secondary', 'md')}`}>
           {isManager ? 'Availability — yours and the team’s' : 'When you can’t work'}
         </Link>
       </div>
@@ -957,7 +955,7 @@ function NewShiftForm({
           <label htmlFor="shift-role" className="block text-sm font-medium text-slate-700">
             Job role{' '}
             {employeeId === OPEN_SHIFT && (
-              <span className="font-normal text-slate-400">(who should fill it)</span>
+              <span className="font-normal text-slate-500">(who should fill it)</span>
             )}
           </label>
           <JobRoleSelect
@@ -1034,15 +1032,11 @@ function NewShiftForm({
           <button
             type="submit"
             disabled={busy || !employeeId || !locationId}
-            className="rounded-lg bg-brand-600 px-4 py-2 text-sm font-medium text-white hover:bg-brand-700 disabled:opacity-60"
+            className={buttonClass('primary', 'md')}
           >
             {busy ? 'Saving…' : 'Create shift'}
           </button>
-          <button
-            type="button"
-            onClick={onCancel}
-            className="rounded-lg border border-slate-300 px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50"
-          >
+          <button type="button" onClick={onCancel} className={buttonClass('secondary', 'md')}>
             Cancel
           </button>
         </div>

@@ -16,7 +16,7 @@ import {
   homeOfficeOf,
   placeToShift,
 } from './PlaceSelect';
-import { Alert, Card } from './ui';
+import { Alert, Card, buttonClass } from './ui';
 import { JobRoleSelect } from './JobRoleSelect';
 import { WeekdayToggles } from './WeekdayToggles';
 import { WeeklyScheduleEditor } from './WeeklyScheduleEditor';
@@ -276,7 +276,7 @@ export function StandingShiftsCard({
                           setStopping(null);
                           weekBox.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
                         }}
-                        className="rounded-lg border border-slate-300 bg-white px-3 py-1 text-sm font-medium text-slate-700 hover:bg-slate-50"
+                        className={buttonClass('secondary', 'sm')}
                       >
                         Their week…
                       </button>
@@ -284,7 +284,7 @@ export function StandingShiftsCard({
                     <button
                       type="button"
                       onClick={() => startEdit(item)}
-                      className="rounded-lg border border-slate-300 bg-white px-3 py-1 text-sm font-medium text-slate-700 hover:bg-slate-50"
+                      className={buttonClass('secondary', 'sm')}
                     >
                       Edit…
                     </button>
@@ -296,7 +296,7 @@ export function StandingShiftsCard({
                         setLastDate(localDate(new Date()));
                         setResult(null);
                       }}
-                      className="rounded-lg border border-slate-300 bg-white px-3 py-1 text-sm font-medium text-slate-700 hover:bg-slate-50"
+                      className={buttonClass('secondary', 'sm')}
                     >
                       Stop…
                     </button>
@@ -391,7 +391,7 @@ export function StandingShiftsCard({
                         busy || !fromDate || days.length === 0 || !place || endTime <= startTime
                       }
                       onClick={() => void saveEdit()}
-                      className="rounded-lg bg-brand-600 px-3 py-1.5 text-sm font-semibold text-white hover:bg-brand-700 disabled:opacity-60"
+                      className={buttonClass('primary', 'sm')}
                     >
                       {busy ? 'Saving…' : 'Save changes'}
                     </button>

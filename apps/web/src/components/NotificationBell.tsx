@@ -228,7 +228,7 @@ export function NotificationBell() {
                         {item.body && (
                           <span className="mt-0.5 block text-xs text-slate-600">{item.body}</span>
                         )}
-                        <span className="mt-0.5 block text-xs text-slate-400">
+                        <span className="mt-0.5 block text-xs text-slate-500">
                           {timeAgo(item.createdAt)}
                         </span>
                       </span>
@@ -244,7 +244,7 @@ export function NotificationBell() {
               <Link
                 to="/notifications"
                 onClick={() => setOpen(false)}
-                className="text-xs font-medium text-slate-500 hover:text-slate-900"
+                className="tap text-xs font-medium text-slate-500 hover:text-slate-900"
               >
                 Email settings
               </Link>

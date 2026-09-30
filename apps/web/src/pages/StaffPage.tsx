@@ -7,7 +7,15 @@ import { useConfirm } from '../components/ConfirmDialog';
 import { ImportStaff } from '../components/ImportStaff';
 import { JobRoleTag } from '../components/JobRoleTag';
 import { ROLE_LABELS, StaffEditor } from '../components/StaffEditor';
-import { Alert, Badge, Card, EmptyState, PageHeading, Spinner } from '../components/ui';
+import {
+  Alert,
+  Badge,
+  Card,
+  EmptyState,
+  PageHeading,
+  Spinner,
+  buttonClass,
+} from '../components/ui';
 
 /// Admin screen for adding staff and giving them a way in. Without this the
 /// only route to a second account is the API by hand.
@@ -26,6 +34,7 @@ export function StaffPage() {
     null,
   );
   const confirm = useConfirm();
+  const [search, setSearch] = useState('');
   const [showTerminated, setShowTerminated] = useState(false);
   /// Whose details are open in the editor.
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -93,12 +102,20 @@ export function StaffPage() {
     }
   }
 
+  const needle = search.trim().toLowerCase();
   const visible = staff.filter(
-    (person) => showTerminated || person.employmentStatus !== 'TERMINATED',
+    (person) =>
+      (showTerminated || person.employmentStatus !== 'TERMINATED') &&
+      (needle === '' ||
+        [person.firstName, person.lastName, person.preferredName, person.email]
+          .filter(Boolean)
+          .join(' ')
+          .toLowerCase()
+          .includes(needle)),
   );
 
   return (
-    <div className="mx-auto max-w-3xl">
+    <div className="max-w-3xl">
       <PageHeading
         title="Staff"
         subtitle="Who works here, what they can see, and how they sign in."
@@ -109,6 +126,15 @@ export function StaffPage() {
           <Alert>{error}</Alert>
         </div>
       )}
+
+      <input
+        aria-label="Search staff"
+        type="search"
+        value={search}
+        onChange={(event) => setSearch(event.target.value)}
+        placeholder="Search by name or email"
+        className="mb-3 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm"
+      />
 
       <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
         <label className="flex items-center gap-2 text-sm text-slate-600">
@@ -127,7 +153,7 @@ export function StaffPage() {
               setImporting((open) => !open);
               setAdding(false);
             }}
-            className="rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50"
+            className={buttonClass('secondary', 'md')}
           >
             {importing ? 'Cancel' : 'Add several people'}
           </button>
@@ -137,7 +163,7 @@ export function StaffPage() {
               setAdding((open) => !open);
               setImporting(false);
             }}
-            className="rounded-lg bg-brand-600 px-4 py-2 text-sm font-medium text-white hover:bg-brand-700"
+            className={buttonClass('primary', 'md')}
           >
             {adding ? 'Cancel' : '+ Add someone'}
           </button>
@@ -157,26 +183,29 @@ export function StaffPage() {
       {imported !== null && (
         <div className="mb-4">
           <Alert tone="success">
-            {imported} {imported === 1 ? 'person' : 'people'} added. Nobody has been emailed yet
-            — send the welcome emails when you are ready.
+            {imported} {imported === 1 ? 'person' : 'people'} added. Nobody has been emailed yet —
+            send the welcome emails when you are ready.
           </Alert>
         </div>
       )}
 
       {waiting.length > 0 && !loading && (
-        <Card className="mb-4 flex flex-wrap items-center justify-between gap-3 p-4" testId="welcome-everyone">
+        <Card
+          className="mb-4 flex flex-wrap items-center justify-between gap-3 p-4"
+          testId="welcome-everyone"
+        >
           <p className="text-sm text-slate-700">
             <strong>
               {waiting.length} {waiting.length === 1 ? 'person has' : 'people have'}
             </strong>{' '}
-            not been sent a welcome email — the link to choose their password, with how to put
-            Domi Staff on their phone.
+            not been sent a welcome email — the link to choose their password, with how to put Domi
+            Staff on their phone.
           </p>
           <button
             type="button"
             disabled={welcoming}
             onClick={() => void welcomeEveryone()}
-            className="rounded-lg bg-brand-600 px-4 py-2 text-sm font-semibold text-white hover:bg-brand-700 disabled:opacity-60"
+            className={buttonClass('primary', 'md')}
           >
             {welcoming ? 'Sending…' : 'Send welcome emails'}
           </button>
@@ -234,7 +263,11 @@ export function StaffPage() {
           <Spinner label="Loading staff" />
         </Card>
       ) : visible.length === 0 ? (
-        <EmptyState>Nobody here yet. Add your managers to get started.</EmptyState>
+        <EmptyState>
+          {needle
+            ? `Nobody matches “${search.trim()}”.`
+            : 'Nobody here yet. Add your managers to get started.'}
+        </EmptyState>
       ) : (
         <div className="space-y-3">
           {visible.map((person) => (
@@ -342,7 +375,7 @@ function StaffCard({
             type="button"
             onClick={onEdit}
             aria-label={`Edit ${person.firstName} ${person.lastName}`}
-            className="rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-sm font-medium text-slate-700 hover:bg-slate-50"
+            className={buttonClass('secondary', 'sm')}
           >
             Edit
           </button>

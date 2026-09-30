@@ -159,6 +159,8 @@ await step('scheduling somebody while the office is closed warns, asks, and then
 await step('the Schedule banner lists the shift inside the closure', async () => {
   await manager.reload({ waitUntil: 'networkidle' });
   const banner = manager.getByTestId('needs-attention');
+  // On the Schedule the banner starts as a one-line summary; open it.
+  await banner.getByRole('button', { name: /Worth a look/ }).click();
   await banner.getByText('Shifts while an office is closed').waitFor({ timeout: 10000 });
   const text = await banner.innerText();
   if (!text.includes('Christmas Day') || !text.includes('Frankie Front-Desk at North Bergen')) {

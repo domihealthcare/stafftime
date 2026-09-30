@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { ApiError, api } from '../lib/api';
 import { formatCalendarDate, formatDate, localDate } from '../lib/format';
 import type { Checklist, ChecklistTask, ChecklistTaskStatus } from '../lib/types';
-import { Badge } from './ui';
+import { Badge, buttonClass } from './ui';
 
 const OWNER_LABEL: Record<ChecklistTask['owner'], string> = {
   EMPLOYEE: 'the new hire',
@@ -62,9 +62,7 @@ export function ChecklistTaskRow({
             {overdue && <Badge tone="danger">overdue</Badge>}
           </div>
 
-          {task.description && (
-            <p className="mt-1 text-sm text-slate-600">{task.description}</p>
-          )}
+          {task.description && <p className="mt-1 text-sm text-slate-600">{task.description}</p>}
 
           <p className="mt-1 text-xs text-slate-500">
             For {OWNER_LABEL[task.owner]}
@@ -76,9 +74,7 @@ export function ChecklistTaskRow({
               } ${task.completedBy.lastName} on ${formatDate(task.completedAt)}`}
           </p>
 
-          {task.note && (
-            <p className="mt-1 text-xs italic text-slate-500">“{task.note}”</p>
-          )}
+          {task.note && <p className="mt-1 text-xs italic text-slate-500">“{task.note}”</p>}
         </div>
 
         {canComplete && (
@@ -89,7 +85,7 @@ export function ChecklistTaskRow({
                   type="button"
                   disabled={busy}
                   onClick={() => void setStatus('DONE')}
-                  className="rounded-lg bg-brand-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-brand-700 disabled:opacity-60"
+                  className={buttonClass('primary', 'sm')}
                 >
                   Mark done
                 </button>
@@ -97,7 +93,7 @@ export function ChecklistTaskRow({
                   type="button"
                   disabled={busy}
                   onClick={() => setSkipping((open) => !open)}
-                  className="rounded-lg border border-slate-300 px-3 py-1.5 text-xs font-medium text-slate-700 hover:bg-slate-50"
+                  className={buttonClass('secondary', 'sm')}
                 >
                   Not applicable
                 </button>
@@ -107,7 +103,7 @@ export function ChecklistTaskRow({
                 type="button"
                 disabled={busy}
                 onClick={() => void setStatus('PENDING')}
-                className="rounded-lg border border-slate-300 px-3 py-1.5 text-xs font-medium text-slate-700 hover:bg-slate-50"
+                className={buttonClass('secondary', 'sm')}
               >
                 Reopen
               </button>

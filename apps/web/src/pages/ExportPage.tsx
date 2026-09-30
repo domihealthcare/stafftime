@@ -11,7 +11,15 @@ import { formatCalendarDate, formatDateTime } from '../lib/format';
 import type { DayRange, Location, PayrollExportRecord, PayrollTarget } from '../lib/types';
 import { DateRangePicker, presetRanges, usePresetRange } from '../components/DateRangePicker';
 import { useConfirm } from '../components/ConfirmDialog';
-import { Alert, Badge, Card, EmptyState, PageHeading, Spinner } from '../components/ui';
+import {
+  Alert,
+  Badge,
+  Card,
+  EmptyState,
+  PageHeading,
+  Spinner,
+  buttonClass,
+} from '../components/ui';
 
 const STATUS_CHOICES = [
   { value: 'APPROVED', label: 'Approved', hint: 'Signed off by a manager' },
@@ -266,7 +274,7 @@ export function ExportPage() {
   }
 
   return (
-    <div className="mx-auto max-w-3xl">
+    <div className="max-w-3xl">
       <PageHeading
         title="Export timesheets"
         subtitle="Produce a spreadsheet of hours for a period. Choose what goes in it."
@@ -317,7 +325,7 @@ export function ExportPage() {
                     type="button"
                     onClick={() => void deletePreset(preset.id, preset.name)}
                     aria-label={`Delete ${preset.name}`}
-                    className="px-1.5 py-1.5 text-xs text-slate-400 hover:text-rose-600"
+                    className="px-1.5 py-1.5 text-xs text-slate-500 hover:text-rose-600"
                   >
                     ×
                   </button>
@@ -364,7 +372,7 @@ export function ExportPage() {
               type="button"
               disabled={presetName.trim().length === 0}
               onClick={() => void savePreset()}
-              className="mt-3 rounded-lg bg-brand-600 px-4 py-2 text-sm font-medium text-white hover:bg-brand-700 disabled:opacity-60"
+              className={`mt-3 ${buttonClass('primary', 'md')}`}
             >
               Save report
             </button>
@@ -758,7 +766,7 @@ function ExportHistory({
                   ? record.failureReason
                   : `${record.entryCount} entries · ${record.employeeCount} people · ${record.totalHours} hours`}
               </p>
-              <p className="mt-0.5 text-xs text-slate-400">
+              <p className="mt-0.5 text-xs text-slate-500">
                 {record.target} · {formatDateTime(record.generatedAt)}
                 {record.generatedBy &&
                   ` · ${record.generatedBy.firstName} ${record.generatedBy.lastName}`}

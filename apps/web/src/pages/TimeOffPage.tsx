@@ -16,7 +16,15 @@ import { PtoBalanceCard } from '../components/PtoBalanceCard';
 import { PtoPolicyEditor } from '../components/PtoPolicyEditor';
 import { StaffPtoBalances } from '../components/StaffPtoBalances';
 import { useConfirm } from '../components/ConfirmDialog';
-import { Alert, Badge, Card, EmptyState, PageHeading, Spinner } from '../components/ui';
+import {
+  Alert,
+  Badge,
+  Card,
+  EmptyState,
+  PageHeading,
+  Spinner,
+  buttonClass,
+} from '../components/ui';
 
 const TYPE_LABELS: Record<PtoType, string> = PTO_TYPE_LABELS;
 
@@ -76,13 +84,8 @@ export function TimeOffPage() {
     (request) => request.status === 'PENDING' && request.employeeId !== employee?.id,
   ).length;
 
-  return (
-    <div className="mx-auto max-w-3xl">
-      <PageHeading
-        title="Time off"
-        subtitle={isManager ? 'Requests from the team, and your own.' : 'Your time off requests.'}
-      />
-
+  const summary = (
+    <>
       {balance && (
         <div className="mb-4">
           <PtoBalanceCard balance={balance} />
@@ -108,6 +111,17 @@ export function TimeOffPage() {
           <StaffPtoBalances policy={policy} onChanged={() => void load()} />
         </div>
       )}
+    </>
+  );
+
+  return (
+    <div className="max-w-3xl">
+      <PageHeading
+        title="Time off"
+        subtitle={isManager ? 'Requests from the team, and your own.' : 'Your time off requests.'}
+      />
+
+      {!isManager && summary}
 
       {isManager && pendingForMe > 0 && (
         <div className="mb-4">
@@ -144,7 +158,7 @@ export function TimeOffPage() {
         <button
           type="button"
           onClick={() => setShowForm((open) => !open)}
-          className="rounded-lg bg-brand-600 px-4 py-2 text-sm font-medium text-white hover:bg-brand-700"
+          className={buttonClass('primary', 'md')}
         >
           {showForm ? 'Cancel' : '+ Request time off'}
         </button>
@@ -183,6 +197,15 @@ export function TimeOffPage() {
               onError={setError}
             />
           ))}
+        </div>
+      )}
+
+      {isManager && (
+        <div className="mt-8">
+          <h2 className="mb-3 text-sm font-semibold uppercase tracking-wide text-slate-600">
+            Balances and policy
+          </h2>
+          {summary}
         </div>
       )}
     </div>
@@ -284,7 +307,7 @@ function RequestCard({
                 type="button"
                 disabled={busy}
                 onClick={() => void act(() => api.reviewPto(request.id, 'APPROVED'))}
-                className="rounded-lg bg-brand-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-brand-700 disabled:opacity-60"
+                className={buttonClass('primary', 'sm')}
               >
                 {busy ? '…' : 'Approve'}
               </button>
@@ -292,7 +315,7 @@ function RequestCard({
                 type="button"
                 disabled={busy}
                 onClick={() => setDenying(true)}
-                className="rounded-lg border border-slate-300 px-3 py-1.5 text-sm font-medium text-slate-700 hover:bg-slate-50"
+                className={buttonClass('secondary', 'sm')}
               >
                 Deny
               </button>
@@ -385,7 +408,7 @@ function RequestCard({
                 setDenying(false);
                 setReason('');
               }}
-              className="rounded-lg border border-slate-300 px-3 py-1.5 text-sm font-medium text-slate-700 hover:bg-slate-50"
+              className={buttonClass('secondary', 'sm')}
             >
               Cancel
             </button>

@@ -285,9 +285,9 @@ await step('the admin top bar fits in three rows on a phone', async () => {
   await signIn(adm, 'admin@domihealthcare.com');
   await adm.screenshot({ path: `${OUT}/83-top-bar-phone.png` });
   const height = await adm.locator('header').evaluate((el) => el.getBoundingClientRect().height);
-  // Padding, the name, and three rows of links at about 40px each. Laid out
-  // flat, an admin's fifteen screens took five.
-  if (height > 24 + 28 + 3 * 42) throw new Error(`the header is ${height}px tall`);
+  // Padding, the name, and three rows of links at 44px each (the smallest
+  // comfortable touch target). Laid out flat, an admin's fifteen screens took five.
+  if (height > 24 + 28 + 3 * 44) throw new Error(`the header is ${height}px tall`);
 
   await adm.getByRole('button', { name: 'Manage', exact: true }).click();
   for (const name of ['Job roles', 'Export', 'Staff', 'Kiosks', 'Locations']) {

@@ -77,6 +77,19 @@ await step('the list has one Edit button per person, and nothing that removes an
   }
 });
 
+await step('the search box narrows the list, and says so when nobody matches', async () => {
+  const cards = admin.locator('[data-testid^="staff-"]').filter({ hasText: '@' });
+  const all = await cards.count();
+  await admin.getByLabel('Search staff').fill('sasha');
+  await admin.getByTestId('staff-imp-sasha@example.com').waitFor({ timeout: 5000 });
+  const some = await cards.count();
+  if (!(some >= 1 && some < all)) throw new Error(`searching left ${some} of ${all} cards`);
+  await admin.getByLabel('Search staff').fill('zzzz-nobody');
+  await admin.getByText('Nobody matches', { exact: false }).waitFor({ timeout: 5000 });
+  await admin.getByLabel('Search staff').fill('');
+  await admin.getByTestId('staff-imp-sasha@example.com').waitFor({ timeout: 5000 });
+});
+
 await step('an admin fills in somebody’s email, phone and the name they go by', async () => {
   await admin.getByRole('button', { name: 'Edit Sasha Staffsuite' }).click();
   await editor.getByRole('heading', { name: 'Sasha Staffsuite' }).waitFor({ timeout: 10000 });

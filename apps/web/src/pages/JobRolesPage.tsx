@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useConfirm } from '../components/ConfirmDialog';
-import { Alert, Card, EmptyState, PageHeading, Spinner } from '../components/ui';
+import { Alert, Card, EmptyState, PageHeading, Spinner, buttonClass } from '../components/ui';
 import { ApiError, api } from '../lib/api';
 import { displayName } from '../lib/format';
 import {
@@ -52,7 +52,7 @@ export function JobRolesPage() {
   if (loading) return <Spinner label="Loading job roles" />;
 
   return (
-    <div className="mx-auto max-w-4xl">
+    <div className="max-w-4xl">
       <PageHeading
         title="Job roles"
         subtitle="What people do here. Someone can be in more than one, and each role has its own resources."
@@ -90,7 +90,7 @@ export function JobRolesPage() {
           <button
             type="button"
             onClick={() => setAdding(true)}
-            className="rounded-lg bg-brand-600 px-4 py-2 text-sm font-semibold text-white hover:bg-brand-700"
+            className={buttonClass('primary', 'md')}
           >
             + New job role
           </button>
@@ -185,7 +185,7 @@ function RoleCard({
           <button
             type="button"
             onClick={() => setEditing(true)}
-            className="rounded-lg border border-slate-300 px-3 py-1.5 font-medium text-slate-700 hover:bg-slate-50"
+            className={buttonClass('secondary', 'sm')}
           >
             Edit
           </button>
@@ -205,7 +205,7 @@ function RoleCard({
               if (sure)
                 await act(() => api.deleteJobRole(role.id), onDeleted, 'Could not delete that.');
             }}
-            className="font-medium text-slate-400 hover:text-rose-700"
+            className="font-medium text-slate-500 hover:text-rose-700"
           >
             Delete
           </button>
@@ -276,7 +276,7 @@ function RoleCard({
                 'Could not add them.',
               )
             }
-            className="rounded-lg border border-slate-300 px-3 py-1.5 text-sm font-medium text-slate-700 hover:bg-slate-50 disabled:opacity-60"
+            className={buttonClass('secondary', 'sm')}
           >
             Add
           </button>
@@ -345,7 +345,7 @@ function RoleForm({
         </label>
         <label className="text-sm">
           <span className="mb-1 block font-medium text-slate-700">
-            Description <span className="font-normal text-slate-400">(optional)</span>
+            Description <span className="font-normal text-slate-500">(optional)</span>
           </span>
           <input
             aria-label="Description"
@@ -430,7 +430,7 @@ function RoleForm({
           type="button"
           disabled={busy || name.trim().length < 2}
           onClick={() => void save()}
-          className="rounded-lg bg-brand-600 px-4 py-2 text-sm font-semibold text-white hover:bg-brand-700 disabled:opacity-60"
+          className={buttonClass('primary', 'md')}
         >
           {busy ? 'Saving…' : role ? 'Save' : 'Create it'}
         </button>
