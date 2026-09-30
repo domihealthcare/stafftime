@@ -2,7 +2,15 @@ import { Avatar } from '../components/Avatar';
 import { formatBirthday } from '../lib/birthday';
 import { JobRoleTag } from '../components/JobRoleTag';
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { Alert, Badge, Card, EmptyState, PageHeading, Spinner } from '../components/ui';
+import {
+  Alert,
+  Badge,
+  Card,
+  EmptyState,
+  PageHeading,
+  Spinner,
+  buttonClass,
+} from '../components/ui';
 import { ApiError, api } from '../lib/api';
 import { displayName, formatTime } from '../lib/format';
 import { useIsManager, useSession } from '../lib/session';
@@ -87,7 +95,7 @@ export function DirectoryPage() {
   if (loading) return <Spinner label="Loading the directory" />;
 
   return (
-    <div className="mx-auto max-w-5xl">
+    <div className="max-w-5xl">
       <PageHeading
         title="Directory"
         subtitle="Everyone at the practice, how to reach them, and who is in right now."
@@ -248,14 +256,14 @@ function PersonCard({
           <div className="mt-2 flex flex-col gap-0.5 text-sm">
             <a
               href={`mailto:${person.email}`}
-              className="truncate text-brand-700 hover:text-brand-900"
+              className="tap truncate text-brand-700 hover:text-brand-900"
             >
               {person.email}
             </a>
             {person.phone && (
               <a
                 href={`tel:${person.phone.replace(/[^\d+]/g, '')}`}
-                className="text-brand-700 hover:text-brand-900"
+                className="tap text-brand-700 hover:text-brand-900"
               >
                 {person.phone}
               </a>
@@ -331,7 +339,7 @@ function PinReset({ person }: { person: DirectoryEntry }) {
             type="button"
             disabled={busy || pin.length < 4}
             onClick={() => void save()}
-            className="rounded-lg bg-brand-600 px-3 py-1 text-sm font-semibold text-white hover:bg-brand-700 disabled:opacity-60"
+            className={buttonClass('primary', 'sm')}
           >
             {busy ? 'Saving…' : 'Set PIN'}
           </button>
@@ -347,7 +355,7 @@ function PinReset({ person }: { person: DirectoryEntry }) {
         <button
           type="button"
           onClick={() => setOpen(true)}
-          className="text-sm font-medium text-slate-500 hover:text-slate-800"
+          className="tap text-sm font-medium text-slate-500 hover:text-slate-800"
         >
           Set a new tablet PIN
         </button>

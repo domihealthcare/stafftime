@@ -1,7 +1,15 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useConfirm } from '../components/ConfirmDialog';
 import { NeedsAttention } from '../components/NeedsAttention';
-import { Alert, Badge, Card, EmptyState, PageHeading, Spinner } from '../components/ui';
+import {
+  Alert,
+  Badge,
+  Card,
+  EmptyState,
+  PageHeading,
+  Spinner,
+  buttonClass,
+} from '../components/ui';
 import { ApiError, api } from '../lib/api';
 import { formatCalendarDate } from '../lib/format';
 import { useIsAdmin, useIsManager } from '../lib/session';
@@ -209,7 +217,7 @@ export function CredentialsPage() {
               <button
                 type="button"
                 onClick={() => setAdding('blank')}
-                className="rounded-lg bg-brand-600 px-4 py-2 text-sm font-semibold text-white hover:bg-brand-700"
+                className={buttonClass('primary', 'md')}
               >
                 + Record one
               </button>
@@ -415,7 +423,7 @@ function CredentialTypesPanel({
           <button
             type="button"
             onClick={() => setEditing('new')}
-            className="rounded-lg bg-brand-600 px-4 py-2 text-sm font-semibold text-white hover:bg-brand-700"
+            className={buttonClass('primary', 'md')}
           >
             + New license type
           </button>
@@ -476,14 +484,14 @@ function CredentialTypesPanel({
                 <button
                   type="button"
                   onClick={() => setEditing(type)}
-                  className="rounded-lg border border-slate-300 px-3 py-1.5 text-xs font-medium text-slate-700 hover:bg-slate-50"
+                  className={buttonClass('secondary', 'sm')}
                 >
                   Edit
                 </button>
                 <button
                   type="button"
                   onClick={() => void remove(type)}
-                  className="text-xs font-medium text-slate-400 hover:text-rose-700"
+                  className="text-xs font-medium text-slate-500 hover:text-rose-700"
                 >
                   Remove
                 </button>
@@ -579,7 +587,7 @@ function CredentialTypeEditor({
         </label>
         <label className="text-sm">
           <span className="mb-1 block font-medium text-slate-700">
-            Renewed every <span className="font-normal text-slate-400">(months, optional)</span>
+            Renewed every <span className="font-normal text-slate-500">(months, optional)</span>
           </span>
           <input
             aria-label="Renewed every (months)"
@@ -635,7 +643,7 @@ function CredentialTypeEditor({
           type="button"
           disabled={busy || name.trim().length < 2 || !monthsValid}
           onClick={() => void save()}
-          className="rounded-lg bg-brand-600 px-4 py-2 text-sm font-semibold text-white hover:bg-brand-700 disabled:opacity-60"
+          className={buttonClass('primary', 'md')}
         >
           {busy ? 'Saving…' : 'Save license type'}
         </button>
@@ -694,7 +702,7 @@ function CredentialCard({
             <button
               type="button"
               onClick={() => setRenewing((open) => !open)}
-              className="rounded-lg border border-slate-300 px-3 py-1.5 text-xs font-medium text-slate-700 hover:bg-slate-50"
+              className={buttonClass('secondary', 'sm')}
             >
               {renewing ? 'Cancel' : 'Renew'}
             </button>
@@ -721,7 +729,7 @@ function CredentialCard({
                   setBusy(false);
                 }
               }}
-              className="text-xs font-medium text-slate-400 hover:text-rose-700"
+              className="text-xs font-medium text-slate-500 hover:text-rose-700"
             >
               Delete
             </button>
@@ -797,7 +805,7 @@ function RenewalForm({
         type="button"
         disabled={busy}
         onClick={() => void save()}
-        className="rounded-lg bg-brand-600 px-4 py-2 text-sm font-semibold text-white hover:bg-brand-700 disabled:opacity-60"
+        className={buttonClass('primary', 'md')}
       >
         {busy ? 'Saving…' : 'Save the renewal'}
       </button>
@@ -931,7 +939,7 @@ function CredentialForm({
 
         <label className="text-sm">
           <span className="mb-1 block font-medium text-slate-700">
-            Done on <span className="font-normal text-slate-400">(optional)</span>
+            Done on <span className="font-normal text-slate-500">(optional)</span>
           </span>
           <input
             aria-label="Done on"
@@ -962,7 +970,7 @@ function CredentialForm({
 
         <label className="text-sm">
           <span className="mb-1 block font-medium text-slate-700">
-            Issued by <span className="font-normal text-slate-400">(optional)</span>
+            Issued by <span className="font-normal text-slate-500">(optional)</span>
           </span>
           <input
             aria-label="Issued by"
@@ -989,7 +997,7 @@ function CredentialForm({
           type="button"
           disabled={busy || !ready}
           onClick={() => void save()}
-          className="rounded-lg bg-brand-600 px-4 py-2 text-sm font-semibold text-white hover:bg-brand-700 disabled:opacity-60"
+          className={buttonClass('primary', 'md')}
         >
           {busy ? 'Saving…' : 'Record it'}
         </button>

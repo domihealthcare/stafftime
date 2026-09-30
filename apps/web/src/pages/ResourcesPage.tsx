@@ -3,7 +3,15 @@ import { useCallback, useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useConfirm } from '../components/ConfirmDialog';
 import { DriveFolderFiles, isDriveFolder } from '../components/DriveFolderFiles';
-import { Alert, Badge, Card, EmptyState, PageHeading, Spinner } from '../components/ui';
+import {
+  Alert,
+  Badge,
+  Card,
+  EmptyState,
+  PageHeading,
+  Spinner,
+  buttonClass,
+} from '../components/ui';
 import { ApiError, api } from '../lib/api';
 import { useIsManager, useSession } from '../lib/session';
 import type { Resource, ResourceKind, ResourceSection } from '../lib/types';
@@ -43,7 +51,7 @@ export function ResourcesPage() {
   const roleSections = sections.filter((section) => section.jobRole !== null);
 
   return (
-    <div className="mx-auto max-w-4xl">
+    <div className="max-w-4xl">
       <PageHeading
         title="Resources"
         subtitle={
@@ -242,7 +250,7 @@ function ResourceRow({
             <button
               type="button"
               onClick={() => setEditing(true)}
-              className="rounded-lg border border-slate-300 px-3 py-1.5 font-medium text-slate-700 hover:bg-slate-50"
+              className={buttonClass('secondary', 'sm')}
             >
               Edit
             </button>
@@ -267,7 +275,7 @@ function ResourceRow({
                   setBusy(false);
                 }
               }}
-              className="font-medium text-slate-400 hover:text-rose-700"
+              className="font-medium text-slate-500 hover:text-rose-700"
             >
               Delete
             </button>
@@ -400,7 +408,7 @@ function ResourceForm({
             </label>
             <label className="text-sm sm:col-span-2">
               <span className="mb-1 block font-medium text-slate-700">
-                A line about it <span className="font-normal text-slate-400">(optional)</span>
+                A line about it <span className="font-normal text-slate-500">(optional)</span>
               </span>
               <input
                 aria-label="A line about it"
@@ -442,7 +450,7 @@ function ResourceForm({
           type="button"
           disabled={busy || !ready}
           onClick={() => void save()}
-          className="rounded-lg bg-brand-600 px-4 py-2 text-sm font-semibold text-white hover:bg-brand-700 disabled:opacity-60"
+          className={buttonClass('primary', 'md')}
         >
           {busy ? 'Saving…' : resource ? 'Save changes' : 'Add it'}
         </button>

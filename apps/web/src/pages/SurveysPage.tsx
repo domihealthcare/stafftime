@@ -1,6 +1,14 @@
 import { useCallback, useEffect, useState } from 'react';
 import { useConfirm } from '../components/ConfirmDialog';
-import { Alert, Badge, Card, EmptyState, PageHeading, Spinner } from '../components/ui';
+import {
+  Alert,
+  Badge,
+  Card,
+  EmptyState,
+  PageHeading,
+  Spinner,
+  buttonClass,
+} from '../components/ui';
 import { ApiError, api } from '../lib/api';
 import { formatCalendarDate } from '../lib/format';
 import { useIsManager } from '../lib/session';
@@ -57,7 +65,7 @@ export function SurveysPage() {
   const answered = surveys.filter((survey) => survey.status === 'OPEN' && survey.answered);
 
   return (
-    <div className="mx-auto max-w-3xl">
+    <div className="max-w-3xl">
       <PageHeading
         title="Surveys and feedback"
         subtitle="Short anonymous check-ins, and a suggestion box that is always open."
@@ -233,7 +241,7 @@ function AnswerForm({ surveyId, onDone }: { surveyId: string; onDone: () => void
         type="button"
         disabled={busy || Object.keys(values).length === 0}
         onClick={() => void send()}
-        className="mt-4 rounded-lg bg-brand-600 px-4 py-2 text-sm font-semibold text-white hover:bg-brand-700 disabled:opacity-60"
+        className={`mt-4 ${buttonClass('primary', 'md')}`}
       >
         {busy ? 'Sending…' : 'Send anonymously'}
       </button>
@@ -298,7 +306,7 @@ function SuggestionBox() {
               setBusy(false);
             }
           }}
-          className="mt-2 rounded-lg bg-brand-600 px-4 py-2 text-sm font-semibold text-white hover:bg-brand-700 disabled:opacity-60"
+          className={`mt-2 ${buttonClass('primary', 'md')}`}
         >
           {busy ? 'Sending…' : 'Send anonymously'}
         </button>
@@ -343,7 +351,7 @@ function ManageSurveys({
           <button
             type="button"
             onClick={() => setEditing('new')}
-            className="rounded-lg bg-brand-600 px-4 py-2 text-sm font-semibold text-white hover:bg-brand-700"
+            className={buttonClass('primary', 'md')}
           >
             + New survey
           </button>
@@ -441,7 +449,7 @@ function ManagedSurvey({
                 type="button"
                 disabled={busy}
                 onClick={() => void act(() => api.openSurvey(survey.id))}
-                className="rounded-lg bg-brand-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-brand-700 disabled:opacity-60"
+                className={buttonClass('primary', 'sm')}
               >
                 Send it
               </button>
@@ -490,7 +498,7 @@ function ManagedSurvey({
                 });
                 if (sure) await act(() => api.deleteSurvey(survey.id));
               }}
-              className="text-xs font-medium text-slate-400 hover:text-rose-700"
+              className="text-xs font-medium text-slate-500 hover:text-rose-700"
             >
               Delete
             </button>
@@ -646,7 +654,7 @@ function SurveyBuilder({
         </label>
         <label className="text-sm sm:col-span-2">
           <span className="mb-1 block font-medium text-slate-700">
-            A line of introduction <span className="font-normal text-slate-400">(optional)</span>
+            A line of introduction <span className="font-normal text-slate-500">(optional)</span>
           </span>
           <input
             aria-label="Introduction"
@@ -739,7 +747,7 @@ function SurveyBuilder({
                 <button
                   type="button"
                   onClick={() => setQuestions((current) => current.filter((_, i) => i !== index))}
-                  className="ml-auto text-xs font-medium text-slate-400 hover:text-rose-700"
+                  className="ml-auto text-xs font-medium text-slate-500 hover:text-rose-700"
                 >
                   Remove
                 </button>
@@ -789,7 +797,7 @@ function SurveyBuilder({
             busy || title.trim().length < 2 || questions.some((q) => q.prompt.trim().length < 2)
           }
           onClick={() => void save()}
-          className="rounded-lg bg-brand-600 px-4 py-2 text-sm font-semibold text-white hover:bg-brand-700 disabled:opacity-60"
+          className={buttonClass('primary', 'md')}
         >
           {busy ? 'Saving…' : 'Save as draft'}
         </button>

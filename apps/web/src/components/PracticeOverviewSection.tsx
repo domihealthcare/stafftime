@@ -200,7 +200,7 @@ function CardHeading({ title, to }: { title: string; to: string }) {
   return (
     <div className="flex items-baseline justify-between gap-2">
       <h3 className="text-sm font-semibold text-slate-900">{title}</h3>
-      <Link to={to} className="text-xs font-medium text-brand-700 hover:text-brand-900">
+      <Link to={to} className="tap text-xs font-medium text-brand-700 hover:text-brand-900">
         Open →
       </Link>
     </div>

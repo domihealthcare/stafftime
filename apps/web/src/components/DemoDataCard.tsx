@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { ApiError, api } from '../lib/api';
 import type { DemoSummary } from '../lib/types';
-import { Alert, Card } from '../components/ui';
+import { Alert, Card, buttonClass } from '../components/ui';
 
 /**
  * Fills a test deployment with something worth looking at.
@@ -49,16 +49,15 @@ export function DemoDataCard() {
     <Card className="mt-6 p-4">
       <h2 className="text-sm font-semibold text-slate-900">Demo data</h2>
       <p className="mt-1 text-sm text-slate-600">
-        Fills this test deployment with five realistic weeks — eight more staff across
-        both offices, rotas, punches that are mostly fine and occasionally not, time off
-        in every state, and a checklist part-way through. An empty timesheet tells a
-        practice manager nothing.
+        Fills this test deployment with five realistic weeks — eight more staff across both offices,
+        rotas, punches that are mostly fine and occasionally not, time off in every state, and a
+        checklist part-way through. An empty timesheet tells a practice manager nothing.
       </p>
 
       <p className="mt-2 text-sm text-amber-900">
-        It <span className="font-medium">replaces</span> every shift, punch, time-off
-        request and checklist already in this deployment. Your account, your locations
-        and your checklist templates are left alone.
+        It <span className="font-medium">replaces</span> every shift, punch, time-off request and
+        checklist already in this deployment. Your account, your locations and your checklist
+        templates are left alone.
       </p>
 
       {error && (
@@ -74,8 +73,8 @@ export function DemoDataCard() {
             <ul className="mt-1 space-y-0.5 text-xs">
               <li>{summary.staffAdded} staff added</li>
               <li>
-                {summary.shifts} shifts and {summary.timeEntries} punches,{' '}
-                {summary.flaggedEntries} of them flagged for a look
+                {summary.shifts} shifts and {summary.timeEntries} punches, {summary.flaggedEntries}{' '}
+                of them flagged for a look
               </li>
               <li>
                 {summary.timeOffRequests} time off requests, {summary.checklists} checklist
@@ -83,8 +82,8 @@ export function DemoDataCard() {
             </ul>
             <p className="mt-2 text-xs">
               Every demo account signs in with{' '}
-              <span className="font-mono">{summary.sharedPassword}</span> — which is why
-              this only works on a test deployment.
+              <span className="font-mono">{summary.sharedPassword}</span> — which is why this only
+              works on a test deployment.
             </p>
           </Alert>
         </div>
@@ -108,7 +107,7 @@ export function DemoDataCard() {
               type="button"
               disabled={busy}
               onClick={() => setConfirming(false)}
-              className="rounded-lg border border-slate-300 px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50"
+              className={buttonClass('secondary', 'md')}
             >
               Cancel
             </button>
@@ -117,7 +116,7 @@ export function DemoDataCard() {
           <button
             type="button"
             onClick={() => setConfirming(true)}
-            className="rounded-lg border border-slate-300 px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50"
+            className={buttonClass('secondary', 'md')}
           >
             {summary ? 'Load it again' : 'Load demo data'}
           </button>

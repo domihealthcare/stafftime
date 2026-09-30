@@ -10,6 +10,10 @@ export default {
       // lightness, so a tint and a hover read as the same colour. White text
       // on 600 is 6.0:1 and on 700 is 7.7:1.
       colors: {
+        // Slate's own 500 is 4.3:1 on the page's slate-100 — under AA for small
+        // text, and hint text is set in it about 270 times. Darkened a step so
+        // it is 5.4:1 there and the hint/body distinction survives.
+        slate: { 500: '#566579' },
         brand: {
           50: '#f0f8fe',
           100: '#dbeefd',

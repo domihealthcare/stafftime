@@ -5,7 +5,7 @@ import { ApiError, api } from '../lib/api';
 import type { CredentialStanding, Employee, JobRole, Location, Role } from '../lib/types';
 import { PASSWORD_RULE, meetsPasswordRule } from '../lib/password';
 import { useConfirm } from './ConfirmDialog';
-import { Alert, Badge } from './ui';
+import { Alert, Badge, buttonClass } from './ui';
 import { WeeklyScheduleEditor } from './WeeklyScheduleEditor';
 
 export const ROLE_LABELS: Record<Role, string> = {
@@ -474,7 +474,7 @@ export function StaffEditor({
                   phoneProblem !== null ||
                   birthdayHalf
                 }
-                className="rounded-lg bg-brand-600 px-5 py-2 text-sm font-semibold text-white hover:bg-brand-700 disabled:opacity-60"
+                className={buttonClass('primary', 'md')}
               >
                 {busy ? 'Saving…' : 'Save changes'}
               </button>
@@ -704,7 +704,7 @@ function SigningIn({ person, onChanged }: { person: Employee; onChanged: () => v
             type="button"
             disabled={busy}
             onClick={() => void sendWelcome()}
-            className="rounded-lg bg-brand-600 px-3 py-2 text-sm font-medium text-white hover:bg-brand-700 disabled:opacity-60"
+            className={buttonClass('primary', 'md')}
           >
             {welcomedAt ? 'Send the welcome email again' : 'Send welcome email'}
           </button>

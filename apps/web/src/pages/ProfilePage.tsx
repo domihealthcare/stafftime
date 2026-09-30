@@ -4,7 +4,7 @@ import { Link } from 'react-router-dom';
 import { Avatar } from '../components/Avatar';
 import { JobRoleTag } from '../components/JobRoleTag';
 import { useConfirm } from '../components/ConfirmDialog';
-import { Alert, Card, PageHeading, Spinner } from '../components/ui';
+import { Alert, Card, PageHeading, Spinner, buttonClass } from '../components/ui';
 import { ApiError, api } from '../lib/api';
 import { useSession } from '../lib/session';
 import type { Profile } from '../lib/types';
@@ -175,7 +175,7 @@ export function ProfilePage() {
   const field = 'mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm';
 
   return (
-    <div className="mx-auto max-w-2xl">
+    <div className="max-w-2xl">
       <PageHeading title="Your profile" subtitle="How colleagues see you in the Directory." />
 
       {error && (
@@ -256,7 +256,7 @@ export function ProfilePage() {
           </label>
           <label className="text-sm" htmlFor="pronouns">
             <span className="block font-medium text-slate-800">
-              Pronouns <span className="font-normal text-slate-400">(optional)</span>
+              Pronouns <span className="font-normal text-slate-500">(optional)</span>
             </span>
             <input
               id="pronouns"
@@ -286,7 +286,7 @@ export function ProfilePage() {
           </label>
           <label className="text-sm sm:col-span-2" htmlFor="about">
             <span className="block font-medium text-slate-800">
-              About you <span className="font-normal text-slate-400">(optional, one line)</span>
+              About you <span className="font-normal text-slate-500">(optional, one line)</span>
             </span>
             <input
               id="about"
@@ -301,7 +301,7 @@ export function ProfilePage() {
             <button
               type="submit"
               disabled={busy || !changed}
-              className="rounded-lg bg-brand-600 px-4 py-2 text-sm font-semibold text-white hover:bg-brand-700 disabled:opacity-60"
+              className={buttonClass('primary', 'md')}
             >
               {busy ? 'Saving…' : 'Save profile'}
             </button>
@@ -469,11 +469,7 @@ function PinCard({ profile, onSaved }: { profile: Profile; onSaved: (next: Profi
           </div>
         )}
         <div className="sm:col-span-3">
-          <button
-            type="submit"
-            disabled={busy || !ready}
-            className="rounded-lg bg-brand-600 px-4 py-2 text-sm font-semibold text-white hover:bg-brand-700 disabled:opacity-60"
-          >
+          <button type="submit" disabled={busy || !ready} className={buttonClass('primary', 'md')}>
             {busy ? 'Saving…' : profile.hasPin ? 'Change PIN' : 'Set PIN'}
           </button>
         </div>

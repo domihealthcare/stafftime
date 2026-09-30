@@ -1,7 +1,15 @@
 import { useCallback, useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useConfirm } from '../components/ConfirmDialog';
-import { Alert, Badge, Card, EmptyState, PageHeading, Spinner } from '../components/ui';
+import {
+  Alert,
+  Badge,
+  Card,
+  EmptyState,
+  PageHeading,
+  Spinner,
+  buttonClass,
+} from '../components/ui';
 import { ApiError, api } from '../lib/api';
 import { displayName, formatCalendarDate, localDate, WEEK_ORDER } from '../lib/format';
 import { useIsManager } from '../lib/session';
@@ -53,7 +61,7 @@ export function AvailabilityPage() {
   const oneOff = mine?.rules.filter((rule) => rule.kind === 'ONE_OFF') ?? [];
 
   return (
-    <div className="mx-auto max-w-3xl">
+    <div className="max-w-3xl">
       <Link to="/schedule" className="text-sm font-medium text-brand-700 hover:text-brand-900">
         ← Schedule
       </Link>
@@ -110,7 +118,7 @@ export function AvailabilityPage() {
           <button
             type="button"
             onClick={() => setAdding(true)}
-            className="rounded-lg bg-brand-600 px-4 py-2 text-sm font-semibold text-white hover:bg-brand-700"
+            className={buttonClass('primary', 'md')}
           >
             + Add a time you can’t work
           </button>
@@ -368,7 +376,7 @@ function RuleForm({
 
         <label className="text-sm sm:col-span-2">
           <span className="mb-1 block font-medium text-slate-700">
-            Why <span className="font-normal text-slate-400">(optional — managers see this)</span>
+            Why <span className="font-normal text-slate-500">(optional — managers see this)</span>
           </span>
           <input
             aria-label="Why"
@@ -399,7 +407,7 @@ function RuleForm({
           type="button"
           disabled={busy || (kind === 'ONE_OFF' && date === '')}
           onClick={() => void save()}
-          className="rounded-lg bg-brand-600 px-4 py-2 text-sm font-semibold text-white hover:bg-brand-700 disabled:opacity-60"
+          className={buttonClass('primary', 'md')}
         >
           {busy ? 'Saving…' : 'Save'}
         </button>

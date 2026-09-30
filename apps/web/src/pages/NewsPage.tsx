@@ -1,6 +1,14 @@
 import { useCallback, useEffect, useState } from 'react';
 import { useConfirm } from '../components/ConfirmDialog';
-import { Alert, Badge, Card, EmptyState, PageHeading, Spinner } from '../components/ui';
+import {
+  Alert,
+  Badge,
+  Card,
+  EmptyState,
+  PageHeading,
+  Spinner,
+  buttonClass,
+} from '../components/ui';
 import { ApiError, api } from '../lib/api';
 import { useIsAdmin } from '../lib/session';
 import type { Announcement } from '../lib/types';
@@ -36,7 +44,7 @@ export function NewsPage() {
   if (loading) return <Spinner label="Loading the news" />;
 
   return (
-    <div className="mx-auto max-w-3xl">
+    <div className="max-w-3xl">
       <PageHeading
         title="News"
         subtitle={
@@ -67,7 +75,7 @@ export function NewsPage() {
             <button
               type="button"
               onClick={() => setWriting(true)}
-              className="rounded-lg bg-brand-600 px-4 py-2 text-sm font-semibold text-white hover:bg-brand-700"
+              className={buttonClass('primary', 'md')}
             >
               + New post
             </button>
@@ -165,7 +173,7 @@ function PostCard({
                   'Could not make that the primary post.',
                 )
               }
-              className="rounded-lg border border-slate-300 px-3 py-1.5 font-medium text-slate-700 hover:bg-slate-50"
+              className={buttonClass('secondary', 'sm')}
             >
               Make primary
             </button>
@@ -173,7 +181,7 @@ function PostCard({
           <button
             type="button"
             onClick={() => setEditing(true)}
-            className="rounded-lg border border-slate-300 px-3 py-1.5 font-medium text-slate-700 hover:bg-slate-50"
+            className={buttonClass('secondary', 'sm')}
           >
             Edit
           </button>
@@ -191,7 +199,7 @@ function PostCard({
               });
               if (sure) await act(() => api.deleteAnnouncement(post.id), 'Could not delete that.');
             }}
-            className="font-medium text-slate-400 hover:text-rose-700"
+            className="font-medium text-slate-500 hover:text-rose-700"
           >
             Delete
           </button>
@@ -303,7 +311,7 @@ function PostForm({
           type="button"
           disabled={busy || title.trim().length < 2 || body.trim() === ''}
           onClick={() => void save()}
-          className="rounded-lg bg-brand-600 px-4 py-2 text-sm font-semibold text-white hover:bg-brand-700 disabled:opacity-60"
+          className={buttonClass('primary', 'md')}
         >
           {busy ? 'Saving…' : post ? 'Save changes' : 'Post it'}
         </button>

@@ -19,7 +19,6 @@ export function BrandLogoForPrint({ className = 'h-12 w-auto' }: { className?: s
   return <img src="/brand/domi-healthcare-slogan-black.png" alt={SLOGAN} className={className} />;
 }
 
-
 /// "Domi Staff" as it appears in the header: the roof mark, the practice's
 /// name heavy in its dark blue, the app's in grey. Bolder since September 2026,
 /// as Dominguez asked.

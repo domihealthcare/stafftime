@@ -158,7 +158,7 @@ export function RepeatShiftsForm({
             <label htmlFor="repeat-role" className="block text-sm font-medium text-slate-700">
               Job role{' '}
               {employeeId === OPEN && (
-                <span className="font-normal text-slate-400">(who should fill them)</span>
+                <span className="font-normal text-slate-500">(who should fill them)</span>
               )}
             </label>
             <JobRoleSelect

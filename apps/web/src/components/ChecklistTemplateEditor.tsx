@@ -1,12 +1,7 @@
 import { useState } from 'react';
 import { ApiError, api } from '../lib/api';
-import type {
-  ChecklistKind,
-  ChecklistTemplate,
-  TaskOwner,
-  TemplateTaskInput,
-} from '../lib/types';
-import { Alert } from './ui';
+import type { ChecklistKind, ChecklistTemplate, TaskOwner, TemplateTaskInput } from '../lib/types';
+import { Alert, buttonClass } from './ui';
 
 /// A task while it is being edited. `dueOffsetDays` is split into a direction
 /// and a number of days, because "7 days before the start date" is how a person
@@ -169,14 +164,16 @@ export function ChecklistTemplateEditor({
             value={name}
             onChange={(event) => setName(event.target.value)}
             placeholder={
-              editingKind === 'ONBOARDING' ? 'New hire — Domi Healthcare' : 'Departure — Domi Healthcare'
+              editingKind === 'ONBOARDING'
+                ? 'New hire — Domi Healthcare'
+                : 'Departure — Domi Healthcare'
             }
             className="w-full rounded-lg border border-slate-300 px-2 py-1.5"
           />
         </label>
         <label className="text-sm">
           <span className="mb-1 block font-medium text-slate-700">
-            Description <span className="font-normal text-slate-400">(optional)</span>
+            Description <span className="font-normal text-slate-500">(optional)</span>
           </span>
           <input
             aria-label="Template description"
@@ -200,7 +197,7 @@ export function ChecklistTemplateEditor({
         {tasks.map((task, index) => (
           <li key={task.key} className="rounded-lg border border-slate-200 p-3">
             <div className="flex items-start gap-2">
-              <span className="mt-2 w-5 shrink-0 text-xs text-slate-400">{index + 1}.</span>
+              <span className="mt-2 w-5 shrink-0 text-xs text-slate-500">{index + 1}.</span>
               <div className="min-w-0 flex-1 space-y-2">
                 <input
                   aria-label={`Task ${index + 1} title`}
@@ -269,7 +266,6 @@ export function ChecklistTemplateEditor({
                       <span className="text-slate-600">days</span>
                     </label>
                   )}
-
                 </div>
               </div>
 
@@ -279,7 +275,7 @@ export function ChecklistTemplateEditor({
                   aria-label={`Move task ${index + 1} up`}
                   disabled={index === 0}
                   onClick={() => move(index, -1)}
-                  className="rounded px-1.5 text-slate-400 hover:text-slate-900 disabled:opacity-30"
+                  className="rounded px-1.5 text-slate-500 hover:text-slate-900 disabled:opacity-30"
                 >
                   ↑
                 </button>
@@ -288,7 +284,7 @@ export function ChecklistTemplateEditor({
                   aria-label={`Move task ${index + 1} down`}
                   disabled={index === tasks.length - 1}
                   onClick={() => move(index, 1)}
-                  className="rounded px-1.5 text-slate-400 hover:text-slate-900 disabled:opacity-30"
+                  className="rounded px-1.5 text-slate-500 hover:text-slate-900 disabled:opacity-30"
                 >
                   ↓
                 </button>
@@ -298,7 +294,7 @@ export function ChecklistTemplateEditor({
                   onClick={() =>
                     setTasks((current) => current.filter((item) => item.key !== task.key))
                   }
-                  className="rounded px-1.5 text-slate-400 hover:text-rose-700"
+                  className="rounded px-1.5 text-slate-500 hover:text-rose-700"
                 >
                   ✕
                 </button>
@@ -311,7 +307,7 @@ export function ChecklistTemplateEditor({
       <button
         type="button"
         onClick={() => setTasks((current) => [...current, blankTask()])}
-        className="mt-3 rounded-lg border border-slate-300 px-3 py-1.5 text-sm font-medium text-slate-700 hover:bg-slate-50"
+        className={`mt-3 ${buttonClass('secondary', 'sm')}`}
       >
         + Add a task
       </button>
@@ -323,9 +319,8 @@ export function ChecklistTemplateEditor({
       )}
 
       <p className="mt-3 text-xs text-slate-500">
-        Editing a template never changes a checklist that is already under way — those
-        keep the wording they were started with, so what somebody signed stays what they
-        signed.
+        Editing a template never changes a checklist that is already under way — those keep the
+        wording they were started with, so what somebody signed stays what they signed.
       </p>
 
       <div className="mt-3 flex items-center gap-2">
@@ -333,7 +328,7 @@ export function ChecklistTemplateEditor({
           type="button"
           disabled={saving}
           onClick={() => void save()}
-          className="rounded-lg bg-brand-600 px-4 py-2 text-sm font-semibold text-white hover:bg-brand-700 disabled:opacity-60"
+          className={buttonClass('primary', 'md')}
         >
           {saving ? 'Saving…' : template ? 'Save the template' : 'Create the template'}
         </button>

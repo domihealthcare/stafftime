@@ -38,6 +38,23 @@ await step('a correction requires a reason before it can be saved', async () => 
   if (await save.isEnabled()) throw new Error('save was enabled with no reason given');
 });
 
+await step('the dialog takes the focus, keeps Tab inside, closes on Escape and hands the focus back', async () => {
+  const inside = () => page.evaluate(() => !!document.activeElement?.closest('[role=dialog]'));
+  if (!(await inside())) throw new Error('focus did not move into the dialog when it opened');
+  for (let i = 0; i < 25; i += 1) {
+    await page.keyboard.press('Tab');
+    if (!(await inside())) throw new Error(`Tab left the dialog on press ${i + 1}`);
+  }
+  await page.keyboard.press('Shift+Tab');
+  if (!(await inside())) throw new Error('Shift+Tab left the dialog');
+  await page.keyboard.press('Escape');
+  await page.getByRole('dialog').waitFor({ state: 'detached', timeout: 5000 });
+  const back = await page.evaluate(() => document.activeElement?.textContent?.trim());
+  if (back !== 'Correct') throw new Error(`focus went to "${back}", not the button that opened it`);
+  await page.getByRole('button', { name: 'Correct' }).first().click();
+  await page.getByRole('dialog').waitFor({ timeout: 10000 });
+});
+
 await page.screenshot({ path: `${OUT}/10-correct-dialog.png`, fullPage: true });
 
 await step('a correction saves, flags the entry as edited and shows the reason', async () => {

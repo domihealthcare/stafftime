@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { ApiError, api } from '../lib/api';
 import type { TestDataCounts, TestDataPreview } from '../lib/types';
 import { useConfirm } from './ConfirmDialog';
-import { Alert, Card } from './ui';
+import { Alert, Card, buttonClass } from './ui';
 
 const LABELS: [keyof TestDataCounts, string][] = [
   ['demoStaff', 'demo staff accounts'],
@@ -26,9 +26,7 @@ const LABELS: [keyof TestDataCounts, string][] = [
 const ACCESS: Record<string, string> = { ADMIN: 'Admin', MANAGER: 'Manager', EMPLOYEE: 'Employee' };
 
 function listed(counts: TestDataCounts) {
-  return LABELS.filter(([key]) => counts[key] > 0).map(
-    ([key, label]) => `${counts[key]} ${label}`,
-  );
+  return LABELS.filter(([key]) => counts[key] > 0).map(([key, label]) => `${counts[key]} ${label}`);
 }
 
 /**
@@ -94,10 +92,10 @@ export function GoLiveCard() {
     <Card className="mt-6 p-4" testId="go-live">
       <h2 className="text-sm font-semibold text-slate-900">Start using it for real</h2>
       <p className="mt-1 text-sm text-slate-600">
-        Clears out the testing — the demo staff, who all share one password, and every shift,
-        punch, request, post and survey made while trying the app out. Your set-up stays: the
-        offices and their pins, these settings, the ADP set-up, job roles, closing checklists,
-        checklist templates, resources, kiosks and every real account.
+        Clears out the testing — the demo staff, who all share one password, and every shift, punch,
+        request, post and survey made while trying the app out. Your set-up stays: the offices and
+        their pins, these settings, the ADP set-up, job roles, closing checklists, checklist
+        templates, resources, kiosks and every real account.
       </p>
 
       {error && (
@@ -133,8 +131,8 @@ export function GoLiveCard() {
               ))}
             </ul>
             <p className="mt-2 text-xs text-slate-500">
-              Anybody here you made up while testing? Mark them as no longer employed on the
-              Staff screen.
+              Anybody here you made up while testing? Mark them as no longer employed on the Staff
+              screen.
             </p>
           </div>
         </div>
@@ -158,8 +156,7 @@ export function GoLiveCard() {
                 button with it.
               </li>
               <li>
-                Send the welcome emails from the Staff screen, so everybody can choose a
-                password.
+                Send the welcome emails from the Staff screen, so everybody can choose a password.
               </li>
             </ol>
           </Alert>
@@ -181,7 +178,7 @@ export function GoLiveCard() {
               type="button"
               disabled={busy}
               onClick={() => setPreview(null)}
-              className="rounded-lg border border-slate-300 px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50"
+              className={buttonClass('secondary', 'md')}
             >
               Cancel
             </button>
@@ -191,7 +188,7 @@ export function GoLiveCard() {
             type="button"
             disabled={busy}
             onClick={() => void look()}
-            className="rounded-lg border border-slate-300 px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50 disabled:opacity-60"
+            className={buttonClass('secondary', 'md')}
           >
             {busy ? 'Looking…' : 'See what would be cleared'}
           </button>
