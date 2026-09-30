@@ -1,5 +1,6 @@
 import { chromium } from 'playwright';
 import { mkdirSync } from 'node:fs';
+import { openMenu } from './nav.mjs';
 // Screenshots go wherever the caller says, or into ./shots (gitignored).
 const OUT = process.argv[2] || new URL('./shots/', import.meta.url).pathname;
 mkdirSync(OUT, { recursive: true });
@@ -28,7 +29,7 @@ await admin.getByText('Not clocked in').waitFor({ timeout: 15000 });
 
 let pairingCode;
 await step('admin sees a Kiosks tab and can add a device', async () => {
-  await admin.getByRole('button', { name: 'Manage', exact: true }).click();
+  await openMenu(admin, 'Manage');
   await admin.getByRole('link', { name: 'Kiosks' }).click();
   await admin.getByRole('button', { name: '+ Add kiosk' }).waitFor({ timeout: 10000 });
   await admin.getByRole('button', { name: '+ Add kiosk' }).click();

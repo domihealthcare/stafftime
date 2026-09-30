@@ -1,6 +1,7 @@
 import { chromium } from 'playwright';
 import { clockOut } from './clock-out.mjs';
 import { mkdirSync } from 'node:fs';
+import { openMenu } from './nav.mjs';
 
 const OUT = process.argv[2] || new URL('./shots/', import.meta.url).pathname;
 mkdirSync(OUT, { recursive: true });
@@ -26,7 +27,7 @@ async function signIn(page, email) {
 }
 
 async function openDirectory(page) {
-  await page.getByRole('button', { name: 'Team', exact: true }).click();
+  await openMenu(page, 'Team');
   await page.getByRole('navigation').getByRole('link', { name: 'Directory', exact: true }).click();
   await page.getByRole('heading', { name: 'Directory' }).waitFor({ timeout: 15000 });
 }

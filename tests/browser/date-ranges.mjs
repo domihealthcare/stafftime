@@ -1,5 +1,6 @@
 import { chromium } from 'playwright';
 import { mkdirSync } from 'node:fs';
+import { openMenu } from './nav.mjs';
 
 const OUT = process.argv[2] || new URL('./shots/', import.meta.url).pathname;
 mkdirSync(OUT, { recursive: true });
@@ -146,7 +147,7 @@ await step('months step by months, and Custom takes any two dates', async () => 
 });
 
 await step('the Export screen opens on the last pay period', async () => {
-  await admin.getByRole('button', { name: 'Manage', exact: true }).click();
+  await openMenu(admin, 'Manage');
   await admin.getByRole('navigation').getByRole('link', { name: 'Export', exact: true }).click();
   await chip(admin, 'Last pay period').waitFor({ timeout: 15000 });
   await admin.waitForFunction(() =>

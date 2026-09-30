@@ -1,5 +1,6 @@
 import { chromium } from 'playwright';
 import { mkdirSync } from 'node:fs';
+import { openMenu } from './nav.mjs';
 // Screenshots go wherever the caller says, or into ./shots (gitignored).
 const OUT = process.argv[2] || new URL('./shots/', import.meta.url).pathname;
 mkdirSync(OUT, { recursive: true });
@@ -54,7 +55,7 @@ await page.screenshot({ path: `${OUT}/33-setup-done.png`, fullPage: true });
 
 // From here on: the journey an administrator actually takes on day one.
 await step('a fresh practice is told it has no locations yet', async () => {
-  await page.getByRole('button', { name: 'Manage', exact: true }).click();
+  await openMenu(page, 'Manage');
   await page.getByRole('link', { name: 'Locations', exact: true }).click();
   await page.getByText(/No locations yet/).waitFor({ timeout: 10000 });
 });
@@ -72,7 +73,7 @@ await step('an admin can add the first office', async () => {
 });
 
 await step('an admin can add their first manager', async () => {
-  await page.getByRole('button', { name: 'Manage', exact: true }).click();
+  await openMenu(page, 'Manage');
   await page.getByRole('link', { name: 'Staff', exact: true }).click();
   await page.getByRole('button', { name: '+ Add someone' }).click();
   await page.getByLabel('First name').fill('Morgan');

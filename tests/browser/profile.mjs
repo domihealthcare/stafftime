@@ -1,6 +1,7 @@
 import { chromium } from 'playwright';
 import { mkdirSync } from 'node:fs';
 import { pickFromAccountMenu } from './account-menu.mjs';
+import { openMenu } from './nav.mjs';
 
 // Your profile: the name you go by, pronouns, phone, a line about you, and a
 // photo — and colleagues seeing all of it in the Directory.
@@ -28,7 +29,7 @@ async function signIn(page, email) {
 }
 
 async function openDirectory(page) {
-  await page.getByRole('button', { name: 'Team', exact: true }).click();
+  await openMenu(page, 'Team');
   await page.getByRole('navigation').getByRole('link', { name: 'Directory', exact: true }).click();
   await page.getByRole('heading', { name: 'Directory' }).waitFor({ timeout: 15000 });
 }

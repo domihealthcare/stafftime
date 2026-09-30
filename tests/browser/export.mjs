@@ -1,6 +1,7 @@
 import { chromium } from 'playwright';
 import { existsSync, statSync, readFileSync } from 'node:fs';
 import { mkdirSync } from 'node:fs';
+import { openMenu } from './nav.mjs';
 // Screenshots go wherever the caller says, or into ./shots (gitignored).
 const OUT = process.argv[2] || new URL('./shots/', import.meta.url).pathname;
 mkdirSync(OUT, { recursive: true });
@@ -47,7 +48,7 @@ mgr.on('pageerror', (e) => errors.push(`pageerror: ${e.message}`));
 await signIn(mgr, 'manager@domihealthcare.com');
 
 await step('a manager can open the export screen', async () => {
-  await mgr.getByRole('button', { name: 'Manage', exact: true }).click();
+  await openMenu(mgr, 'Manage');
   await mgr.getByRole('link', { name: 'Export' }).click();
   await mgr.getByText('Export timesheets').waitFor({ timeout: 10000 });
 });

@@ -21,6 +21,9 @@ import { JobRoleSelect } from './JobRoleSelect';
 import { WeekdayToggles } from './WeekdayToggles';
 import { WeeklyScheduleEditor } from './WeeklyScheduleEditor';
 
+/// How many regular shifts the list shows before "Show more".
+const LIST_PAGE = 8;
+
 /// "Mondays and Thursdays", Sunday first as the calendar reads.
 function whichDays(days: number[]): string {
   const names = WEEK_ORDER.filter((day) => days.includes(day)).map(
@@ -78,6 +81,11 @@ export function StandingShiftsCard({
   const [error, setError] = useState<string | null>(null);
   /// Whose usual week is open for setting, if anybody's.
   const [weekOf, setWeekOf] = useState('');
+  /// The list is hidden until asked for: with a practice's worth of people it
+  /// is a long page, and most visits are to add one, not to read them all.
+  const [listOpen, setListOpen] = useState(false);
+  const [query, setQuery] = useState('');
+  const [limit, setLimit] = useState(LIST_PAGE);
   const weekPerson = employees.find((e) => e.id === weekOf);
   const weekBox = useRef<HTMLDivElement>(null);
 
@@ -194,6 +202,10 @@ export function StandingShiftsCard({
 
   const running = (standing ?? []).filter((item) => !item.endsOn);
   const ending = (standing ?? []).filter((item) => item.endsOn);
+  const needle = query.trim().toLowerCase();
+  const visibleItems = [...running, ...ending].filter(
+    (item) => needle === '' || `${who(item)} ${item.location.name}`.toLowerCase().includes(needle),
+  );
 
   return (
     <Wrap bare={bare} testId="standing-shifts-card">
@@ -246,196 +258,238 @@ export function StandingShiftsCard({
       {standing === null ? null : standing.length === 0 ? (
         <p className="mt-2 text-sm text-slate-500">None yet.</p>
       ) : (
-        <ul className="mt-2 divide-y divide-slate-100">
-          {[...running, ...ending].map((item) => (
-            <li key={item.id} className="py-2 text-sm" data-testid="standing-shift">
-              <div className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1">
-                <span className="font-medium text-slate-900">{who(item)}</span>
-                <span className="text-slate-600">
-                  {whichDays(item.daysOfWeek)}, {clock(item.startTime)}–{clock(item.endTime)} ·{' '}
-                  {item.location.name}
-                  {item.isRemote ? ' · from home' : ''}
-                  {item.status === 'DRAFT' ? ' · as drafts' : ''}
-                </span>
-              </div>
-              <div className="mt-0.5 flex flex-wrap items-center justify-between gap-2 text-xs text-slate-500">
-                <span>
-                  Since {formatCalendarDate(item.startsOn, { year: false })}
-                  {item.endsOn
-                    ? ` · ends ${formatCalendarDate(item.endsOn, { year: false })}`
-                    : ' · no end date'}
-                </span>
-                {!item.endsOn && stopping !== item.id && editing?.id !== item.id && (
-                  <span className="flex gap-2">
-                    {item.employeeId && (
+        <div className="mt-3">
+          <button
+            type="button"
+            aria-expanded={listOpen}
+            onClick={() => setListOpen((open) => !open)}
+            className={buttonClass('secondary', 'sm')}
+          >
+            {listOpen
+              ? 'Hide the list'
+              : `Show the ${standing.length} regular shift${standing.length === 1 ? '' : 's'}`}
+          </button>
+        </div>
+      )}
+      {standing !== null && standing.length > 0 && listOpen && (
+        <>
+          <input
+            type="search"
+            aria-label="Search regular shifts"
+            value={query}
+            onChange={(event) => {
+              setQuery(event.target.value);
+              setLimit(LIST_PAGE);
+            }}
+            placeholder="Search by person or office"
+            className="mt-3 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm sm:max-w-xs"
+          />
+          <ul className="mt-2 divide-y divide-slate-100">
+            {visibleItems.slice(0, limit).map((item) => (
+              <li key={item.id} className="py-2 text-sm" data-testid="standing-shift">
+                <div className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1">
+                  <span className="font-medium text-slate-900">{who(item)}</span>
+                  <span className="text-slate-600">
+                    {whichDays(item.daysOfWeek)}, {clock(item.startTime)}–{clock(item.endTime)} ·{' '}
+                    {item.location.name}
+                    {item.isRemote ? ' · from home' : ''}
+                    {item.status === 'DRAFT' ? ' · as drafts' : ''}
+                  </span>
+                </div>
+                <div className="mt-0.5 flex flex-wrap items-center justify-between gap-2 text-xs text-slate-500">
+                  <span>
+                    Since {formatCalendarDate(item.startsOn, { year: false })}
+                    {item.endsOn
+                      ? ` · ends ${formatCalendarDate(item.endsOn, { year: false })}`
+                      : ' · no end date'}
+                  </span>
+                  {!item.endsOn && stopping !== item.id && editing?.id !== item.id && (
+                    <span className="flex gap-2">
+                      {item.employeeId && (
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setWeekOf(item.employeeId!);
+                            setEditing(null);
+                            setStopping(null);
+                            weekBox.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                          }}
+                          className={buttonClass('secondary', 'sm')}
+                        >
+                          Their week…
+                        </button>
+                      )}
+                      <button
+                        type="button"
+                        onClick={() => startEdit(item)}
+                        className={buttonClass('secondary', 'sm')}
+                      >
+                        Edit…
+                      </button>
                       <button
                         type="button"
                         onClick={() => {
-                          setWeekOf(item.employeeId!);
+                          setStopping(item.id);
                           setEditing(null);
-                          setStopping(null);
-                          weekBox.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                          setLastDate(localDate(new Date()));
+                          setResult(null);
                         }}
                         className={buttonClass('secondary', 'sm')}
                       >
-                        Their week…
+                        Stop…
                       </button>
-                    )}
-                    <button
-                      type="button"
-                      onClick={() => startEdit(item)}
-                      className={buttonClass('secondary', 'sm')}
-                    >
-                      Edit…
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setStopping(item.id);
-                        setEditing(null);
-                        setLastDate(localDate(new Date()));
-                        setResult(null);
-                      }}
-                      className={buttonClass('secondary', 'sm')}
-                    >
-                      Stop…
-                    </button>
-                  </span>
-                )}
-              </div>
-              {editing?.id === item.id && (
-                <div className="mt-2 space-y-3 rounded-lg bg-slate-50 p-3">
-                  <fieldset>
-                    <legend className="text-xs font-medium text-slate-700">Days</legend>
-                    <WeekdayToggles days={days} onChange={setDays} />
-                  </fieldset>
-                  <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-                    <label className="text-sm text-slate-700">
-                      <span className="block text-xs font-medium">Starts</span>
-                      <input
-                        type="time"
-                        value={startTime}
-                        onChange={(event) => setStartTime(event.target.value)}
-                        className="mt-0.5 w-full rounded-lg border-slate-300 py-1.5 text-sm shadow-sm"
-                      />
-                    </label>
-                    <label className="text-sm text-slate-700">
-                      <span className="block text-xs font-medium">Ends</span>
-                      <input
-                        type="time"
-                        value={endTime}
-                        onChange={(event) => setEndTime(event.target.value)}
-                        className="mt-0.5 w-full rounded-lg border-slate-300 py-1.5 text-sm shadow-sm"
-                      />
-                    </label>
-                    <label className="text-sm text-slate-700">
-                      <span className="block text-xs font-medium">Location</span>
-                      <PlaceSelect
-                        id={`standing-place-${item.id}`}
-                        value={place}
-                        onChange={setPlace}
-                        offices={
-                          person(item)
-                            ? locations.filter((l) =>
-                                person(item)!.locations.some((a) => a.locationId === l.id),
-                              )
-                            : locations
-                        }
-                        allowHome={Boolean(item.employeeId)}
-                        className="mt-0.5 w-full rounded-lg border-slate-300 py-1.5 text-sm shadow-sm"
-                      />
-                    </label>
-                    <label className="text-sm text-slate-700">
-                      <span className="block text-xs font-medium">Job role</span>
-                      <JobRoleSelect
-                        id={`standing-role-${item.id}`}
-                        value={jobRoleId}
-                        onChange={setJobRoleId}
-                        jobRoles={jobRoles}
-                        personId={item.employeeId ?? undefined}
-                        open={!item.employeeId}
-                        className="mt-0.5 w-full rounded-lg border-slate-300 py-1.5 text-sm shadow-sm"
-                      />
-                    </label>
-                  </div>
-                  {place === WORK_FROM_HOME && <WorkFromHomeNote />}
-                  {!item.employeeId && (
-                    <label className="block text-sm text-slate-700">
-                      <span className="block text-xs font-medium">How many each day</span>
-                      <input
-                        type="number"
-                        min={1}
-                        max={10}
-                        value={openCount}
-                        onChange={(event) =>
-                          setOpenCount(Math.max(1, Math.min(10, Number(event.target.value) || 1)))
-                        }
-                        className="mt-0.5 w-24 rounded-lg border-slate-300 py-1.5 text-sm shadow-sm"
-                      />
-                    </label>
+                    </span>
                   )}
-                  <div className="flex flex-wrap items-end gap-2">
+                </div>
+                {editing?.id === item.id && (
+                  <div className="mt-2 space-y-3 rounded-lg bg-slate-50 p-3">
+                    <fieldset>
+                      <legend className="text-xs font-medium text-slate-700">Days</legend>
+                      <WeekdayToggles days={days} onChange={setDays} />
+                    </fieldset>
+                    <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+                      <label className="text-sm text-slate-700">
+                        <span className="block text-xs font-medium">Starts</span>
+                        <input
+                          type="time"
+                          value={startTime}
+                          onChange={(event) => setStartTime(event.target.value)}
+                          className="mt-0.5 w-full rounded-lg border-slate-300 py-1.5 text-sm shadow-sm"
+                        />
+                      </label>
+                      <label className="text-sm text-slate-700">
+                        <span className="block text-xs font-medium">Ends</span>
+                        <input
+                          type="time"
+                          value={endTime}
+                          onChange={(event) => setEndTime(event.target.value)}
+                          className="mt-0.5 w-full rounded-lg border-slate-300 py-1.5 text-sm shadow-sm"
+                        />
+                      </label>
+                      <label className="text-sm text-slate-700">
+                        <span className="block text-xs font-medium">Location</span>
+                        <PlaceSelect
+                          id={`standing-place-${item.id}`}
+                          value={place}
+                          onChange={setPlace}
+                          offices={
+                            person(item)
+                              ? locations.filter((l) =>
+                                  person(item)!.locations.some((a) => a.locationId === l.id),
+                                )
+                              : locations
+                          }
+                          allowHome={Boolean(item.employeeId)}
+                          className="mt-0.5 w-full rounded-lg border-slate-300 py-1.5 text-sm shadow-sm"
+                        />
+                      </label>
+                      <label className="text-sm text-slate-700">
+                        <span className="block text-xs font-medium">Job role</span>
+                        <JobRoleSelect
+                          id={`standing-role-${item.id}`}
+                          value={jobRoleId}
+                          onChange={setJobRoleId}
+                          jobRoles={jobRoles}
+                          personId={item.employeeId ?? undefined}
+                          open={!item.employeeId}
+                          className="mt-0.5 w-full rounded-lg border-slate-300 py-1.5 text-sm shadow-sm"
+                        />
+                      </label>
+                    </div>
+                    {place === WORK_FROM_HOME && <WorkFromHomeNote />}
+                    {!item.employeeId && (
+                      <label className="block text-sm text-slate-700">
+                        <span className="block text-xs font-medium">How many each day</span>
+                        <input
+                          type="number"
+                          min={1}
+                          max={10}
+                          value={openCount}
+                          onChange={(event) =>
+                            setOpenCount(Math.max(1, Math.min(10, Number(event.target.value) || 1)))
+                          }
+                          className="mt-0.5 w-24 rounded-lg border-slate-300 py-1.5 text-sm shadow-sm"
+                        />
+                      </label>
+                    )}
+                    <div className="flex flex-wrap items-end gap-2">
+                      <label className="text-sm text-slate-700">
+                        <span className="block text-xs font-medium">Change applies from</span>
+                        <input
+                          type="date"
+                          min={localDate(new Date())}
+                          value={fromDate}
+                          onChange={(event) => setFromDate(event.target.value)}
+                          className="mt-0.5 rounded-lg border-slate-300 py-1.5 text-sm shadow-sm"
+                        />
+                      </label>
+                      <button
+                        type="button"
+                        disabled={
+                          busy || !fromDate || days.length === 0 || !place || endTime <= startTime
+                        }
+                        onClick={() => void saveEdit()}
+                        className={buttonClass('primary', 'sm')}
+                      >
+                        {busy ? 'Saving…' : 'Save changes'}
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setEditing(null)}
+                        className="px-2 py-1.5 text-sm text-slate-600 hover:underline"
+                      >
+                        Cancel
+                      </button>
+                    </div>
+                  </div>
+                )}
+                {stopping === item.id && (
+                  <div className="mt-2 flex flex-wrap items-end gap-2 rounded-lg bg-slate-50 p-2">
                     <label className="text-sm text-slate-700">
-                      <span className="block text-xs font-medium">Change applies from</span>
+                      <span className="block text-xs font-medium">Last day it runs</span>
                       <input
                         type="date"
-                        min={localDate(new Date())}
-                        value={fromDate}
-                        onChange={(event) => setFromDate(event.target.value)}
-                        className="mt-0.5 rounded-lg border-slate-300 py-1.5 text-sm shadow-sm"
+                        value={lastDate}
+                        onChange={(event) => setLastDate(event.target.value)}
+                        className="mt-0.5 rounded-lg border-slate-300 py-1.5 text-sm shadow-sm focus:border-brand-600 focus:ring-brand-600"
                       />
                     </label>
                     <button
                       type="button"
-                      disabled={
-                        busy || !fromDate || days.length === 0 || !place || endTime <= startTime
-                      }
-                      onClick={() => void saveEdit()}
-                      className={buttonClass('primary', 'sm')}
+                      disabled={busy || !lastDate}
+                      onClick={() => void stop(item)}
+                      className="rounded-lg bg-rose-600 px-3 py-1.5 text-sm font-semibold text-white hover:bg-rose-700 disabled:opacity-60"
                     >
-                      {busy ? 'Saving…' : 'Save changes'}
+                      {busy ? 'Stopping…' : 'Stop it'}
                     </button>
                     <button
                       type="button"
-                      onClick={() => setEditing(null)}
+                      onClick={() => setStopping(null)}
                       className="px-2 py-1.5 text-sm text-slate-600 hover:underline"
                     >
                       Cancel
                     </button>
                   </div>
-                </div>
-              )}
-              {stopping === item.id && (
-                <div className="mt-2 flex flex-wrap items-end gap-2 rounded-lg bg-slate-50 p-2">
-                  <label className="text-sm text-slate-700">
-                    <span className="block text-xs font-medium">Last day it runs</span>
-                    <input
-                      type="date"
-                      value={lastDate}
-                      onChange={(event) => setLastDate(event.target.value)}
-                      className="mt-0.5 rounded-lg border-slate-300 py-1.5 text-sm shadow-sm focus:border-brand-600 focus:ring-brand-600"
-                    />
-                  </label>
-                  <button
-                    type="button"
-                    disabled={busy || !lastDate}
-                    onClick={() => void stop(item)}
-                    className="rounded-lg bg-rose-600 px-3 py-1.5 text-sm font-semibold text-white hover:bg-rose-700 disabled:opacity-60"
-                  >
-                    {busy ? 'Stopping…' : 'Stop it'}
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setStopping(null)}
-                    className="px-2 py-1.5 text-sm text-slate-600 hover:underline"
-                  >
-                    Cancel
-                  </button>
-                </div>
-              )}
-            </li>
-          ))}
-        </ul>
+                )}
+              </li>
+            ))}
+          </ul>
+          {visibleItems.length === 0 && (
+            <p className="mt-2 text-sm text-slate-500">
+              Nobody matches &ldquo;{query.trim()}&rdquo;.
+            </p>
+          )}
+          {visibleItems.length > limit && (
+            <button
+              type="button"
+              onClick={() => setLimit((current) => current + LIST_PAGE)}
+              className={`mt-2 ${buttonClass('secondary', 'sm')}`}
+            >
+              Show {Math.min(LIST_PAGE, visibleItems.length - limit)} more (
+              {visibleItems.length - limit} left)
+            </button>
+          )}
+        </>
       )}
 
       {result && (

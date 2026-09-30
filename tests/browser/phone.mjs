@@ -1,6 +1,7 @@
 import { chromium } from 'playwright';
 import { clockOut } from './clock-out.mjs';
 import { mkdirSync } from 'node:fs';
+import { openMenu, openMore } from './nav.mjs';
 // Screenshots go wherever the caller says, or into ./shots (gitignored).
 const OUT = process.argv[2] || new URL('./shots/', import.meta.url).pathname;
 mkdirSync(OUT, { recursive: true });
@@ -91,7 +92,7 @@ await step('a punch can be made and closed from a phone', async () => {
 });
 
 await step('a checklist can be started from a phone', async () => {
-  await page.getByRole('button', { name: 'Manage', exact: true }).click();
+  await openMenu(page, 'Manage');
   await page.getByRole('navigation').getByRole('link', { name: 'Onboarding & Offboarding', exact: true }).click();
   await page.getByRole('button', { name: 'Start a checklist' }).click();
   await assertNoSidewaysScroll(page, 'Start a checklist');
@@ -119,15 +120,17 @@ const MENU = {
 };
 
 async function openMenuFor(page, name) {
-  if (MENU[name]) await page.getByRole('button', { name: MENU[name], exact: true }).click();
+  // News sits straight under More on a phone; the rest inside Team or Manage.
+  if (name === 'News') await openMore(page);
+  else if (MENU[name]) await openMenu(page, MENU[name]);
 }
 
-await step('the top bar reads Clock, News, Schedule, Timesheet, Time off', async () => {
+await step('the bottom bar reads Clock, Schedule, Timesheet, Time off, More', async () => {
   // Schedule before Timesheet (Dominguez, September 2026): it is the one
-  // people open most.
+  // people open most. News and the rest are under More.
   const links = await page.getByRole('navigation').getByRole('link').allInnerTexts();
   const order = links.map((text) => text.trim().split(/\s/)[0]).filter((word) => word);
-  if (order.slice(0, 5).join() !== 'Clock,News,Schedule,Timesheet,Time')
+  if (order.slice(0, 4).join() !== 'Clock,Schedule,Timesheet,Time' || (await page.getByRole('button', { name: 'More', exact: true }).count()) !== 1)
     throw new Error(`the top bar reads ${order.join(', ')}`);
 });
 
@@ -146,7 +149,7 @@ await step('every navigation link is reachable without scrolling sideways', asyn
     if (!box) throw new Error(`${name} is not visible`);
     if (box.x < -1 || box.x + box.width > PHONE.width + 1)
       throw new Error(`${name} sits at ${Math.round(box.x)}–${Math.round(box.x + box.width)}px, off a ${PHONE.width}px screen`);
-    if (MENU[name]) await page.keyboard.press('Escape');
+    if (MENU[name] || name === 'News') await page.keyboard.press('Escape');
   }
 });
 
@@ -234,7 +237,7 @@ await step('the month view fits a phone', async () => {
 await page.screenshot({ path: `${OUT}/53a-phone-month.png`, fullPage: true });
 
 await step('an open checklist fits a phone', async () => {
-  await page.getByRole('button', { name: 'Manage', exact: true }).click();
+  await openMenu(page, 'Manage');
   await page.getByRole('navigation').getByRole('link', { name: 'Onboarding & Offboarding', exact: true }).click();
   await page.getByRole('button', { name: /onboarding/ }).first().click();
   await page.getByText('Form I-9 completed and verified').first().waitFor({ timeout: 15000 });

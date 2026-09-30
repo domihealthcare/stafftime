@@ -1,5 +1,6 @@
 import { chromium } from 'playwright';
 import { mkdirSync } from 'node:fs';
+import { openMenu } from './nav.mjs';
 
 // Closing checklists: what Front Desk and MAs confirm when they clock out, the
 // manager's view of them and of the restock list, editing the lists — and
@@ -40,7 +41,7 @@ const call = (page, path, init = {}) =>
   );
 
 const menuItems = async (page, label) => {
-  await page.getByRole('button', { name: label, exact: true }).click();
+  await openMenu(page, label);
   const names = await page.getByRole('navigation').getByRole('link').allInnerTexts();
   await page.keyboard.press('Escape');
   return names.map((n) => n.trim());
@@ -177,7 +178,7 @@ await step('staff cannot read the records, the restock list or the templates', a
 // ------------------------------------------------------------------ managers
 
 const openClosing = async () => {
-  await mgr.getByRole('button', { name: 'Manage', exact: true }).click();
+  await openMenu(mgr, 'Manage');
   await mgr.getByRole('navigation').getByRole('link', { name: 'Closing checklists', exact: true }).click();
   await mgr.getByRole('heading', { name: 'Closing checklists' }).waitFor({ timeout: 15000 });
 };
