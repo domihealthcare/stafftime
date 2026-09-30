@@ -356,13 +356,14 @@ await step('✕ goes back to everyone', async () => {
 
 // --- a group's month: a job role, an office, or both ---
 
-await step('the month narrows to one job role at one office (MAs in North Bergen)', async () => {
+await step('the month narrows to one job role at one office (Front Desk in North Bergen)', async () => {
   // Frankie is Front Desk and Medical Assistant at North Bergen; Max is an MA
-  // at West New York. The rota above is all Frankie's, at North Bergen.
-  await page.getByLabel('Show job role').selectOption({ label: 'Medical Assistant' });
+  // at West New York. The rota above is all Frankie's, at North Bergen, and
+  // made as Front Desk — her first role, which the forms pick for her.
+  await page.getByLabel('Show job role').selectOption({ label: 'Front Desk' });
   await page.getByLabel('Show location').selectOption({ label: 'North Bergen' });
   const shown = await page.getByTestId('month-person').innerText();
-  if (!/^Only Medical Assistant at North Bergen — [1-9]\d* shifts? this month\.$/.test(shown))
+  if (!/^Only Front Desk at North Bergen — [1-9]\d* shifts? this month\.$/.test(shown))
     throw new Error(`the month says "${shown}"`);
   // A group is several people, so the squares go back to names.
   const monday = page.getByTestId('month-grid').getByRole('button').nth(1);
@@ -370,6 +371,16 @@ await step('the month narrows to one job role at one office (MAs in North Bergen
   if (!/1 shift: Frankie/.test(label ?? '')) throw new Error(`Monday reads "${label}"`);
 });
 await page.screenshot({ path: `${OUT}/39d-month-group.png`, fullPage: true });
+
+await step('a job role shows the shifts for that role, not everything its people work', async () => {
+  // Frankie is an MA too, but none of these shifts are MA shifts (Dominguez,
+  // September 2026: Provider in North Bergen showed more than it should).
+  await page.getByLabel('Show job role').selectOption({ label: 'Medical Assistant' });
+  await page.getByText('Only Medical Assistant at North Bergen — no shifts this month.').waitFor({
+    timeout: 5000,
+  });
+  await page.getByLabel('Show job role').selectOption({ label: 'Front Desk' });
+});
 
 await step('the person list only offers people in that group', async () => {
   await personBox.click();
@@ -385,7 +396,7 @@ await step('the person list only offers people in that group', async () => {
 
 await step('the other office leaves North Bergen shifts out', async () => {
   await page.getByLabel('Show location').selectOption({ label: 'West New York' });
-  await page.getByText('Only Medical Assistant at West New York — no shifts this month.').waitFor({
+  await page.getByText('Only Front Desk at West New York — no shifts this month.').waitFor({
     timeout: 5000,
   });
 });

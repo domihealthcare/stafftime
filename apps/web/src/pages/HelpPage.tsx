@@ -892,12 +892,20 @@ const MANAGERS: Section[] = [
       {
         question: 'Job roles and their colours',
         answer: (
-          <p>
-            <Screen>Manage → Job roles</Screen>. Add, rename or remove roles, choose each one's
-            colour, and put people in them — somebody can be in several. A job role decides which
-            resources somebody sees, and nothing else: being in "Manager" gives no extra power in
-            the app.
-          </p>
+          <>
+            <p>
+              <Screen>Manage → Job roles</Screen>. Add, rename or remove roles, choose each one's
+              colour, and put people in them — somebody can be in several. A job role decides which
+              resources somebody sees, and nothing else: being in "Manager" gives no extra power in
+              the app.
+            </p>
+            <p className="mt-2">
+              A shift for somebody is always for one of <em>their</em> job roles: the Job role list
+              on every shift form only offers the roles they are in, and with one role it is simply
+              that one. To put somebody on a shift as something else, add them to that role here
+              first. Open shifts can still be for any role.
+            </p>
+          </>
         ),
       },
       {

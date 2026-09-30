@@ -21,7 +21,8 @@ export class CreateShiftDto {
   @IsUUID('4')
   locationId!: string;
 
-  /// What job the shift is for, when that matters (Front Desk, MA…).
+  /// What job the shift is for (Front Desk, MA…). For somebody's shift, one
+  /// of the roles they hold — see `held-job-role.ts`; for an open one, any.
   @IsOptional()
   @ValidateIf((_, value) => value !== null)
   @IsUUID('4')

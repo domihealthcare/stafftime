@@ -17,6 +17,7 @@ import {
   placeToShift,
 } from './PlaceSelect';
 import { Alert, Card } from './ui';
+import { JobRoleSelect } from './JobRoleSelect';
 import { WeekdayToggles } from './WeekdayToggles';
 import { WeeklyScheduleEditor } from './WeeklyScheduleEditor';
 
@@ -346,18 +347,15 @@ export function StandingShiftsCard({
                     </label>
                     <label className="text-sm text-slate-700">
                       <span className="block text-xs font-medium">Job role</span>
-                      <select
+                      <JobRoleSelect
+                        id={`standing-role-${item.id}`}
                         value={jobRoleId}
-                        onChange={(event) => setJobRoleId(event.target.value)}
+                        onChange={setJobRoleId}
+                        jobRoles={jobRoles}
+                        personId={item.employeeId ?? undefined}
+                        open={!item.employeeId}
                         className="mt-0.5 w-full rounded-lg border-slate-300 py-1.5 text-sm shadow-sm"
-                      >
-                        <option value="">Not specified</option>
-                        {jobRoles.map((role) => (
-                          <option key={role.id} value={role.id}>
-                            {role.name}
-                          </option>
-                        ))}
-                      </select>
+                      />
                     </label>
                   </div>
                   {place === WORK_FROM_HOME && <WorkFromHomeNote />}

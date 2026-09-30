@@ -25,11 +25,18 @@ describe('ShiftPlanningService', () => {
       series?: unknown;
       dueSeries?: unknown[];
       employee?: unknown;
+      /// The job roles emp-1 holds.
+      heldRoles?: { id: string; name: string }[];
     } = {},
   ) {
     const created: Record<string, unknown>[] = [];
     const inbox = { notify: jest.fn() };
     const prisma = {
+      employeeJobRole: {
+        findMany: jest
+          .fn()
+          .mockResolvedValue((options.heldRoles ?? []).map((jobRole) => ({ jobRole }))),
+      },
       employee: {
         findUnique: jest
           .fn()
@@ -238,6 +245,45 @@ describe('ShiftPlanningService', () => {
         location: { id: 'loc-1', name: 'Old Office', timezone: NJ, isActive: false },
       });
       await expect(service.repeat(repeat(), 'mgr-1')).rejects.toThrow(/not an active/);
+    });
+  });
+
+  describe('job roles on somebody’s shifts', () => {
+    it('puts their only job role on the shifts when none is given', async () => {
+      const { service, created } = build({ heldRoles: [{ id: 'fd', name: 'Front Desk' }] });
+      await service.repeat(repeat(), 'mgr-1');
+      expect(created.every((shift) => shift.jobRoleId === 'fd')).toBe(true);
+    });
+
+    it('refuses a job role they do not hold', async () => {
+      const { service, prisma } = build({ heldRoles: [{ id: 'ma', name: 'Medical Assistant' }] });
+      prisma.jobRole.findUnique.mockResolvedValue({ name: 'Front Desk' });
+      await expect(service.repeat(repeat({ jobRoleId: 'fd' }), 'mgr-1')).rejects.toThrow(
+        'They are not in Front Desk.',
+      );
+    });
+
+    it('open shifts keep any job role, or none', async () => {
+      const { service, created, prisma } = build();
+      await service.repeat(repeat({ employeeId: undefined, jobRoleId: 'fd' }), 'mgr-1');
+      expect(created[0].jobRoleId).toBe('fd');
+      expect(prisma.employeeJobRole.findMany).not.toHaveBeenCalled();
+    });
+
+    it('a usual week day with no role given gets their first', async () => {
+      const { service, created } = build({
+        heldRoles: [
+          { id: 'fd', name: 'Front Desk' },
+          { id: 'ma', name: 'Medical Assistant' },
+        ],
+      });
+      await service.setWeek(
+        'emp-1',
+        { days: [{ dayOfWeek: 1, locationId: 'loc-1', startTime: '09:00', endTime: '17:00' }] },
+        'mgr-1',
+        new Date('2026-09-29T14:00:00Z'),
+      );
+      expect(created.every((shift) => shift.jobRoleId === 'fd')).toBe(true);
     });
   });
 

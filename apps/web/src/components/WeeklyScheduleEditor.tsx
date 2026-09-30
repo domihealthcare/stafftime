@@ -15,6 +15,7 @@ import type {
   WeeklyScheduleResult,
 } from '../lib/types';
 import { useConfirm } from './ConfirmDialog';
+import { JobRoleSelect, rolesHeldBy } from './JobRoleSelect';
 import { PlaceSelect, WORK_FROM_HOME, homeOfficeOf, placeToShift } from './PlaceSelect';
 import { Alert } from './ui';
 
@@ -46,11 +47,15 @@ function hoursOf(row: DayRow): number {
 }
 
 /// Their regular shifts still running, read back as a week. A day two of
-/// them cover is shown once, and said.
+/// them cover is shown once, and said. Every day's job role is one of theirs
+/// (`held`, their first by default), as the server insists.
 function weekFrom(
   standing: StandingShift[],
   fallbackPlace: string,
+  held: string[],
 ): { week: Week; doubled: number[] } {
+  const roleFor = (jobRoleId?: string) =>
+    jobRoleId && held.includes(jobRoleId) ? jobRoleId : (held[0] ?? '');
   const week: Week = {};
   const doubled: number[] = [];
   for (const day of WEEK_ORDER) {
@@ -59,7 +64,7 @@ function weekFrom(
       startTime: '09:00',
       endTime: '17:00',
       place: fallbackPlace,
-      jobRoleId: '',
+      jobRoleId: roleFor(),
     };
   }
   for (const series of standing) {
@@ -73,7 +78,7 @@ function weekFrom(
         startTime: series.startTime,
         endTime: series.endTime,
         place: series.isRemote ? WORK_FROM_HOME : series.locationId,
-        jobRoleId: series.jobRole?.id ?? '',
+        jobRoleId: roleFor(series.jobRole?.id),
       };
     }
   }
@@ -82,7 +87,7 @@ function weekFrom(
 
 /**
  * Somebody's usual week, set in one go (asked for by Dominguez, September
- * 2026): each day off, or hours, a place and — if it matters — a job role.
+ * 2026): each day off, or hours, a place and which of their job roles.
  * Saved as their regular shifts with no end date, which keep the rota filled
  * eight weeks ahead; days with the same hours and place share one.
  *
@@ -111,6 +116,8 @@ export function WeeklyScheduleEditor({
     [locations, person.locations],
   );
   const homeOffice = homeOfficeOf(person);
+  const held = useMemo(() => rolesHeldBy(person.id, jobRoles), [person.id, jobRoles]);
+  const heldIds = held.map((role) => role.id).join();
   const [saved, setSaved] = useState<{ week: Week; doubled: number[] } | null>(null);
   const [week, setWeek] = useState<Week | null>(null);
   const [from, setFrom] = useState(() => localDate(new Date()));
@@ -124,12 +131,16 @@ export function WeeklyScheduleEditor({
       .standingShifts()
       .then((all) => {
         const theirs = all.filter((s) => s.employeeId === person.id && !s.endsOn);
-        const read = weekFrom(theirs, homeOffice || offices[0]?.id || '');
+        const read = weekFrom(
+          theirs,
+          homeOffice || offices[0]?.id || '',
+          heldIds ? heldIds.split(',') : [],
+        );
         setSaved(read);
         setWeek(read.week);
       })
       .catch(() => setProblem('Could not load their regular shifts.'));
-  }, [person.id, homeOffice, offices]);
+  }, [person.id, homeOffice, offices, heldIds]);
 
   useEffect(() => {
     load();
@@ -238,6 +249,12 @@ export function WeeklyScheduleEditor({
         <Alert tone="warning">Give them an office first — a shift has to be somewhere.</Alert>
       ) : (
         <>
+          {held.length === 0 && (
+            <p className="mb-2 text-xs text-amber-700" data-testid="no-job-role">
+              They are not in any job role yet, so their shifts will have none. Add them to one on
+              Staff to put it on their shifts.
+            </p>
+          )}
           <ul className="divide-y divide-slate-100 rounded-lg border border-slate-200">
             {WEEK_ORDER.map((day) => {
               const row = week[day];
@@ -291,19 +308,17 @@ export function WeeklyScheduleEditor({
                         allowHome
                         className={FIELD}
                       />
-                      <select
-                        aria-label={`${dayName} job role`}
-                        value={row.jobRoleId}
-                        onChange={(event) => change(day, { jobRoleId: event.target.value })}
-                        className={FIELD}
-                      >
-                        <option value="">Any job role</option>
-                        {jobRoles.map((role) => (
-                          <option key={role.id} value={role.id}>
-                            {role.name}
-                          </option>
-                        ))}
-                      </select>
+                      {held.length > 0 && (
+                        <JobRoleSelect
+                          id={`week-role-${person.id}-${day}`}
+                          label={`${dayName} job role`}
+                          value={row.jobRoleId}
+                          onChange={(jobRoleId) => change(day, { jobRoleId })}
+                          jobRoles={jobRoles}
+                          personId={person.id}
+                          className={FIELD}
+                        />
+                      )}
                       {row.endTime <= row.startTime && (
                         <p className="col-span-full text-xs text-amber-700">
                           It has to end after it starts. An overnight shift goes in a day at a time.

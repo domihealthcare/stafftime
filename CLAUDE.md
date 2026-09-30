@@ -354,6 +354,16 @@ Beyond the phases, the parts worth knowing about before picking up work:
   sharing hours and place share one — so nothing else changed. A later save
   only touches the days that changed; the person is told once. One shift a
   day. See *A usual week* in `docs/architecture.md`.
+- **A shift's job role is one the person holds** (29 September 2026,
+  Dominguez: "I shouldn't have the option to be 'any job role'"). Every shift
+  form (add, ＋ on the rota, repeating, regular-shift edit, usual week,
+  assigning an open shift) offers only the chosen person's roles — no "Any"
+  or "Not specified"; with one role it is that one. Assigning an open shift
+  with a role lists only people in it. The server enforces it
+  (`shifts/held-job-role.ts`): a role they do not hold is refused; none
+  given (only possible outside the screens) uses their first.
+  Open shifts keep any role or none. Shifts saved before are left as they
+  were until edited.
 - **Weeks start on Sunday on screen** (September 2026, Dominguez): week
   view, month, printed rota, "This week" shortcuts, weekday pickers.
   Display only.
