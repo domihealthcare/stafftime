@@ -139,24 +139,17 @@ export class ProductivityService {
     return this.accessList();
   }
 
-  /// The staff to choose from, for someone with access who cannot list staff
-  /// otherwise. Providers (a job role with the clinical forms) are marked.
+  /// The providers to choose from: people in a job role that carries the
+  /// clinical forms (Provider). Provider productivity is for them alone.
   async people() {
-    const rows = await this.prisma.employee.findMany({
-      where: { employmentStatus: { in: ['ACTIVE', 'ON_LEAVE'] } },
-      select: {
-        id: true,
-        firstName: true,
-        lastName: true,
-        preferredName: true,
-        jobRoles: { select: { jobRole: { select: { usesClinicalForms: true } } } },
+    return this.prisma.employee.findMany({
+      where: {
+        employmentStatus: { in: ['ACTIVE', 'ON_LEAVE'] },
+        jobRoles: { some: { jobRole: { usesClinicalForms: true } } },
       },
+      select: { id: true, firstName: true, lastName: true, preferredName: true },
       orderBy: [{ lastName: 'asc' }, { firstName: 'asc' }],
     });
-    return rows.map(({ jobRoles, ...person }) => ({
-      ...person,
-      isProvider: jobRoles.some((membership) => membership.jobRole.usesClinicalForms),
-    }));
   }
 
   // ---- Plans -------------------------------------------------------------
@@ -196,7 +189,7 @@ export class ProductivityService {
   }
 
   async savePlan(employeeId: string, dto: SavePlanDto) {
-    await this.assertPerson(employeeId);
+    await this.assertProvider(employeeId);
     const categories = this.cleanLabels(dto.categories ?? []);
     const data = {
       intervalWeeks: dto.intervalWeeks,
@@ -272,7 +265,7 @@ export class ProductivityService {
   /// intervals of the right length, each with its target and a zero for every
   /// category, ready to be filled in.
   async create(dto: NewStatementDto, user: AuthUser) {
-    await this.assertPerson(dto.employeeId);
+    await this.assertProvider(dto.employeeId);
     const plan = await this.plan(dto.employeeId);
 
     let start = dto.startDate;
@@ -446,6 +439,21 @@ export class ProductivityService {
       select: { id: true },
     });
     if (!person) throw new NotFoundException('That person does not exist.');
+  }
+
+  /// Plans and new statements are for people in a provider job role only.
+  /// Statements already made stay readable if somebody later leaves the role.
+  private async assertProvider(employeeId: string) {
+    await this.assertPerson(employeeId);
+    const provider = await this.prisma.employee.findFirst({
+      where: { id: employeeId, jobRoles: { some: { jobRole: { usesClinicalForms: true } } } },
+      select: { id: true },
+    });
+    if (!provider) {
+      throw new BadRequestException(
+        'Provider productivity is only for people in a provider job role. Add them to one under Manage → Job roles first.',
+      );
+    }
   }
 
   private assertRealDay(value: string) {

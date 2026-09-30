@@ -7,13 +7,7 @@ import { ApiError, api } from '../lib/api';
 import { displayName } from '../lib/format';
 import { useIsAdmin, useSession } from '../lib/session';
 import { formatMoney, parseCount, parseMoney } from '../lib/productivity';
-import type {
-  Employee,
-  PersonName,
-  ProductivityPerson,
-  ProductivityPlan,
-  ProductivityStatement,
-} from '../lib/types';
+import type { Employee, PersonName, ProductivityPlan, ProductivityStatement } from '../lib/types';
 
 type Tab = 'statements' | 'plan';
 
@@ -54,7 +48,7 @@ export function ProductivityPage() {
 }
 
 function ManagerProductivity() {
-  const [staff, setStaff] = useState<ProductivityPerson[]>([]);
+  const [staff, setStaff] = useState<PersonName[]>([]);
   const [plans, setPlans] = useState<ProductivityPlan[]>([]);
   const [personId, setPersonId] = useState('');
   const [tab, setTab] = useState<Tab>('statements');
@@ -80,14 +74,10 @@ function ManagerProductivity() {
     void loadPeople();
   }, [loadPeople]);
 
-  // Providers first: anybody in a job role that carries the clinical forms.
-  const { providers, others } = useMemo(() => {
-    const byName = (a: PersonName, b: PersonName) => displayName(a).localeCompare(displayName(b));
-    return {
-      providers: staff.filter((person) => person.isProvider).sort(byName),
-      others: staff.filter((person) => !person.isProvider).sort(byName),
-    };
-  }, [staff]);
+  const providers = useMemo(
+    () => [...staff].sort((a, b) => displayName(a).localeCompare(displayName(b))),
+    [staff],
+  );
 
   const planOf = (id: string) => plans.find((plan) => plan.employeeId === id) ?? null;
 
@@ -115,31 +105,24 @@ function ManagerProductivity() {
           className={INPUT}
         >
           <option value="">Choose somebody…</option>
-          {providers.length > 0 && (
-            <optgroup label="Providers">
-              {providers.map((person) => (
-                <option key={person.id} value={person.id}>
-                  {displayName(person)}
-                  {planOf(person.id) ? ' ✓' : ''}
-                </option>
-              ))}
-            </optgroup>
-          )}
-          <optgroup label={providers.length > 0 ? 'Everyone else' : 'Staff'}>
-            {others.map((person) => (
-              <option key={person.id} value={person.id}>
-                {displayName(person)}
-                {planOf(person.id) ? ' ✓' : ''}
-              </option>
-            ))}
-          </optgroup>
+          {providers.map((person) => (
+            <option key={person.id} value={person.id}>
+              {displayName(person)}
+              {planOf(person.id) ? ' ✓' : ''}
+            </option>
+          ))}
         </select>
         <span className="mt-1 block text-xs text-slate-500">
           ✓ marks anybody with a plan set up.
         </span>
       </label>
 
-      {!personId ? (
+      {providers.length === 0 ? (
+        <EmptyState>
+          Nobody is in a provider job role yet. Add people to Provider under Manage → Job roles and
+          they will be listed here.
+        </EmptyState>
+      ) : !personId ? (
         <EmptyState>Choose a provider to see or start their statements.</EmptyState>
       ) : (
         <>

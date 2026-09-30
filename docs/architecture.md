@@ -2797,6 +2797,13 @@ is not on it sees only the list, to add themselves. The staff picker for those
 on the list is `GET /productivity/people`, since they need not be able to list
 staff otherwise. Providers still read only their own published statements.
 
+**Providers only** (Dominguez, 30 September 2026). Plans and new statements
+can only be made for people in a job role that carries the clinical forms
+(Provider); the server refuses anyone else (`assertProvider`) and the picker
+(`GET /productivity/people`) lists only them. Statements already made stay
+readable and editable if somebody later leaves the role. The list of who may
+*use* the screen is separate and can be anyone.
+
 **Not in payroll.** Decided: the amounts are not in the ADP export or any
 other payroll file. Bonuses are paid separately, and "Paid on" is recorded here.
 

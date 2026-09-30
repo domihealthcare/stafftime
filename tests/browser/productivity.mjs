@@ -70,6 +70,7 @@ const joined = await call(admin, `/job-roles/${providerRole.id}/members`, {
   method: 'POST',
   body: JSON.stringify({ employeeId: frankie.id }),
 });
+const max = (await call(other, '/profile')).body;
 if (joined.status >= 300) throw new Error(`making Frankie a Provider answered ${joined.status}`);
 
 const openPage = async () => {
@@ -131,12 +132,15 @@ await step('once chosen it is under Manage; an ordinary employee does not have i
 
 await openPage();
 
-await step('providers are listed first', async () => {
-  const groups = await mgr.getByLabel('Provider', { exact: true }).locator('optgroup').evaluateAll(
-    (nodes) => nodes.map((n) => [n.label, [...n.querySelectorAll('option')].map((o) => o.textContent.trim())]),
-  );
-  if (groups[0][0] !== 'Providers' || !groups[0][1].some((n) => n.startsWith('Frankie'))) {
-    throw new Error(JSON.stringify(groups));
+await step('only people in a provider job role are listed, and non-providers are refused', async () => {
+  const names = await mgr.getByLabel('Provider', { exact: true }).locator('option').allInnerTexts();
+  if (names.join('|') !== 'Choose somebody…|Frankie Front-Desk') throw new Error(names.join('|'));
+  for (const [method, path, body] of [
+    ['PUT', `/productivity/plans/${max.id}`, { intervalWeeks: 2, intervalsPerStatement: 1 }],
+    ['POST', '/productivity/statements', { employeeId: max.id, startDate: '2026-06-07' }],
+  ]) {
+    const got = await call(mgr, path, { method, body: JSON.stringify(body) });
+    if (got.status !== 400) throw new Error(`${method} ${path} answered ${got.status} for a non-provider`);
   }
 });
 
@@ -302,6 +306,12 @@ await step('unpublishing takes it away from the provider again', async () => {
   if (mine.length !== 2) throw new Error(`${mine.length} left for the provider`);
 });
 
+await call(admin, `/job-roles/${providerRole.id}/members`, {
+  method: 'POST',
+  body: JSON.stringify({ employeeId: max.id }),
+});
+await mgr.reload({ waitUntil: 'networkidle' });
+
 await step('a provider with no plan still works: a bare count, no target, no money', async () => {
   await choose('Max Assistant');
   await mgr.getByRole('button', { name: '+ New statement' }).click();
@@ -338,6 +348,7 @@ await step('phone width: the statement view has no sideways scroll', async () =>
 
 // Clean up the membership this suite added.
 await call(admin, `/job-roles/${providerRole.id}/members/${frankie.id}`, { method: 'DELETE' });
+await call(admin, `/job-roles/${providerRole.id}/members/${max.id}`, { method: 'DELETE' });
 await browser.close();
 if (errors.length) {
   console.log(`\n${errors.length} failing`);
