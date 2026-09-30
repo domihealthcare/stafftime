@@ -478,8 +478,10 @@ Beyond the phases, the parts worth knowing about before picking up work:
   links and small inline links have 44px touch targets on a phone (the `.tap` class in
   `index.css`); `slate-500` was darkened in `tailwind.config.js` so hint text passes AA
   on the page background; pages are left-aligned to the header instead of centred.
-  Still to do from the audit: shared Button/Field/Modal components, dialogs' Escape and
-  focus handling, the Schedule's stack of banners, grouped alerts on Timesheet.
+  Batch B: the "Worth a look" banner shows three lines per section with "Show N more";
+  Time off puts a manager's requests first and the balances and policy under them; Staff
+  has a search box. Still to do from the audit: shared Button/Field/Modal components,
+  dialogs' Escape and focus handling, the Schedule's stack of banners.
 - **Version on the Help page** — "About this version": the build date and
   commit baked in when the bundle is built (`VERCEL_GIT_COMMIT_SHA` on Vercel,
   git locally), whether it is the test or live site, and — because

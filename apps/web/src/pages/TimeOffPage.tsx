@@ -76,13 +76,8 @@ export function TimeOffPage() {
     (request) => request.status === 'PENDING' && request.employeeId !== employee?.id,
   ).length;
 
-  return (
-    <div className="max-w-3xl">
-      <PageHeading
-        title="Time off"
-        subtitle={isManager ? 'Requests from the team, and your own.' : 'Your time off requests.'}
-      />
-
+  const summary = (
+    <>
       {balance && (
         <div className="mb-4">
           <PtoBalanceCard balance={balance} />
@@ -108,6 +103,17 @@ export function TimeOffPage() {
           <StaffPtoBalances policy={policy} onChanged={() => void load()} />
         </div>
       )}
+    </>
+  );
+
+  return (
+    <div className="max-w-3xl">
+      <PageHeading
+        title="Time off"
+        subtitle={isManager ? 'Requests from the team, and your own.' : 'Your time off requests.'}
+      />
+
+      {!isManager && summary}
 
       {isManager && pendingForMe > 0 && (
         <div className="mb-4">
@@ -183,6 +189,15 @@ export function TimeOffPage() {
               onError={setError}
             />
           ))}
+        </div>
+      )}
+
+      {isManager && (
+        <div className="mt-8">
+          <h2 className="mb-3 text-sm font-semibold uppercase tracking-wide text-slate-600">
+            Balances and policy
+          </h2>
+          {summary}
         </div>
       )}
     </div>

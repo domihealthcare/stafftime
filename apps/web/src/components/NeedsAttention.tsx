@@ -27,6 +27,11 @@ const HEADINGS: Record<keyof Attention, string> = {
   suppliesNeeded: 'Supplies to order',
 };
 
+/// How many lines a section shows before "Show N more". A dozen people with
+/// the same problem is a screenful on a phone, ahead of the thing the manager
+/// came for; the count in the toggle still says how many there are.
+const SHOWN_AT_FIRST = 3;
+
 /**
  * The same list the nightly email sends, shown on the screen it belongs to.
  *
@@ -38,6 +43,7 @@ const HEADINGS: Record<keyof Attention, string> = {
 export function NeedsAttention({ sections }: { sections: (keyof Attention)[] }) {
   const isManager = useIsManager();
   const [attention, setAttention] = useState<Attention | null>(null);
+  const [expanded, setExpanded] = useState<Set<string>>(new Set());
 
   useEffect(() => {
     if (!isManager) return;
@@ -63,18 +69,40 @@ export function NeedsAttention({ sections }: { sections: (keyof Attention)[] }) 
     >
       <p className="text-sm font-semibold text-amber-900">Worth a look</p>
       <div className="mt-2 space-y-2">
-        {showing.map((section) => (
-          <div key={section}>
-            <p className="text-xs font-medium uppercase tracking-wide text-amber-800">
-              {HEADINGS[section]}
-            </p>
-            <ul className="mt-0.5 space-y-0.5 text-sm text-amber-900">
-              {attention[section].map((line) => (
-                <li key={line}>· {line}</li>
-              ))}
-            </ul>
-          </div>
-        ))}
+        {showing.map((section) => {
+          const lines = attention[section];
+          const open = expanded.has(section);
+          const hidden = open ? 0 : Math.max(0, lines.length - SHOWN_AT_FIRST);
+          return (
+            <div key={section}>
+              <p className="text-xs font-medium uppercase tracking-wide text-amber-800">
+                {HEADINGS[section]}
+              </p>
+              <ul className="mt-0.5 space-y-0.5 text-sm text-amber-900">
+                {(open ? lines : lines.slice(0, SHOWN_AT_FIRST)).map((line) => (
+                  <li key={line}>· {line}</li>
+                ))}
+              </ul>
+              {(hidden > 0 || (open && lines.length > SHOWN_AT_FIRST)) && (
+                <button
+                  type="button"
+                  aria-expanded={open}
+                  onClick={() =>
+                    setExpanded((current) => {
+                      const next = new Set(current);
+                      if (open) next.delete(section);
+                      else next.add(section);
+                      return next;
+                    })
+                  }
+                  className="tap mt-0.5 text-sm font-medium text-amber-900 underline hover:text-amber-950"
+                >
+                  {open ? 'Show fewer' : `Show ${hidden} more`}
+                </button>
+              )}
+            </div>
+          );
+        })}
       </div>
     </div>
   );

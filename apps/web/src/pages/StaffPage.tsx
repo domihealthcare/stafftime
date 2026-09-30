@@ -26,6 +26,7 @@ export function StaffPage() {
     null,
   );
   const confirm = useConfirm();
+  const [search, setSearch] = useState('');
   const [showTerminated, setShowTerminated] = useState(false);
   /// Whose details are open in the editor.
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -93,8 +94,16 @@ export function StaffPage() {
     }
   }
 
+  const needle = search.trim().toLowerCase();
   const visible = staff.filter(
-    (person) => showTerminated || person.employmentStatus !== 'TERMINATED',
+    (person) =>
+      (showTerminated || person.employmentStatus !== 'TERMINATED') &&
+      (needle === '' ||
+        [person.firstName, person.lastName, person.preferredName, person.email]
+          .filter(Boolean)
+          .join(' ')
+          .toLowerCase()
+          .includes(needle)),
   );
 
   return (
@@ -109,6 +118,15 @@ export function StaffPage() {
           <Alert>{error}</Alert>
         </div>
       )}
+
+      <input
+        aria-label="Search staff"
+        type="search"
+        value={search}
+        onChange={(event) => setSearch(event.target.value)}
+        placeholder="Search by name or email"
+        className="mb-3 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm"
+      />
 
       <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
         <label className="flex items-center gap-2 text-sm text-slate-600">
@@ -157,20 +175,23 @@ export function StaffPage() {
       {imported !== null && (
         <div className="mb-4">
           <Alert tone="success">
-            {imported} {imported === 1 ? 'person' : 'people'} added. Nobody has been emailed yet
-            — send the welcome emails when you are ready.
+            {imported} {imported === 1 ? 'person' : 'people'} added. Nobody has been emailed yet —
+            send the welcome emails when you are ready.
           </Alert>
         </div>
       )}
 
       {waiting.length > 0 && !loading && (
-        <Card className="mb-4 flex flex-wrap items-center justify-between gap-3 p-4" testId="welcome-everyone">
+        <Card
+          className="mb-4 flex flex-wrap items-center justify-between gap-3 p-4"
+          testId="welcome-everyone"
+        >
           <p className="text-sm text-slate-700">
             <strong>
               {waiting.length} {waiting.length === 1 ? 'person has' : 'people have'}
             </strong>{' '}
-            not been sent a welcome email — the link to choose their password, with how to put
-            Domi Staff on their phone.
+            not been sent a welcome email — the link to choose their password, with how to put Domi
+            Staff on their phone.
           </p>
           <button
             type="button"
@@ -234,7 +255,11 @@ export function StaffPage() {
           <Spinner label="Loading staff" />
         </Card>
       ) : visible.length === 0 ? (
-        <EmptyState>Nobody here yet. Add your managers to get started.</EmptyState>
+        <EmptyState>
+          {needle
+            ? `Nobody matches “${search.trim()}”.`
+            : 'Nobody here yet. Add your managers to get started.'}
+        </EmptyState>
       ) : (
         <div className="space-y-3">
           {visible.map((person) => (
