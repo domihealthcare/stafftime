@@ -334,6 +334,7 @@ export function SchedulePage() {
       />
 
       <NeedsAttention
+        collapsible
         sections={['shiftsInClosures', 'openShifts', 'unpublishedRota', 'shiftsForLeavers']}
       />
 

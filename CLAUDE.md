@@ -486,8 +486,11 @@ Beyond the phases, the parts worth knowing about before picking up work:
   Part two: `buttonClass('primary' | 'secondary', 'sm' | 'md')`, `inputClass` and a `Field`
   (label, hint, error wired for screen readers) in `components/ui.tsx`; about 110
   buttons use the helper, and input focus is the brand blue everywhere (`index.css`).
-  New buttons should use them; the rest move over as their screens are touched. Still
-  to do from the audit: the Schedule's stack of banners and the phone header.
+  New buttons should use them; the rest move over as their screens are touched.
+  Batch D: on the Schedule "Worth a look" starts as a one-line summary that opens on a
+  tap (`NeedsAttention collapsible`), and the colour key is a `<details>` (open on a
+  wide screen, closed on a phone). Not done: the phone header, whose two rows and
+  slogan strip were chosen by Dominguez — a change there needs his call.
 - **Version on the Help page** — "About this version": the build date and
   commit baked in when the bundle is built (`VERCEL_GIT_COMMIT_SHA` on Vercel,
   git locally), whether it is the test or live site, and — because

@@ -121,6 +121,8 @@ await step('marking somebody as left raises it on the schedule', async () => {
   await admin.getByRole('link', { name: /^Schedule/ }).first().click();
   const banner = admin.getByTestId('needs-attention');
   await banner.waitFor({ timeout: 20000 });
+  // On the Schedule the banner starts as a one-line summary; open it.
+  await banner.getByRole('button', { name: /Worth a look/ }).click();
 
   const text = await banner.innerText();
   if (!/Shifts for people who have left/i.test(text))

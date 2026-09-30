@@ -78,6 +78,8 @@ await mgr.screenshot({ path: `${OUT}/102-rota-open.png`, fullPage: true });
 await step('the round-up flags open shifts in the next fortnight', async () => {
   // The banner is read when the screen opens, like every other banner.
   await mgr.reload({ waitUntil: 'networkidle' });
+  // On the Schedule the banner starts as a one-line summary; open it.
+  await mgr.getByTestId('needs-attention').getByRole('button', { name: /Worth a look/ }).click();
   await mgr.getByText('Open shifts nobody is on yet', { exact: true }).waitFor({ timeout: 10000 });
   // Two a Saturday, and how many Saturdays land in the fortnight depends on
   // today's weekday — two of them from a Saturday on. The count itself is unit

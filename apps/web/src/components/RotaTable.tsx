@@ -849,56 +849,63 @@ function RotaLegend({
     />
   );
   return (
-    <div
-      className="mb-2 flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-slate-600"
+    <details
+      // Open on a screen wide enough to spare the room, closed on a phone.
+      open={typeof window === 'undefined' || window.innerWidth >= 640}
+      className="mb-2 text-xs text-slate-600"
       data-testid="rota-legend"
     >
-      {locations
-        .filter((location) => location.isActive !== false)
-        .map((location) => (
-          <span key={location.id} className="inline-flex items-center gap-1.5">
-            {swatch(colourOf(location.id))}
-            {location.name}
-          </span>
-        ))}
-      <span className="inline-flex items-center gap-1.5">
-        {swatch(REMOTE_COLOUR)}
-        Work from home
-      </span>
-      <span className="inline-flex items-center gap-1.5">
-        <span
-          aria-hidden="true"
-          className="inline-block h-3 w-5 rounded-sm bg-amber-100 ring-1 ring-inset ring-amber-300"
-        />
-        Open shift
-      </span>
-      <span className="inline-flex items-center gap-1.5">
-        <span
-          aria-hidden="true"
-          className="inline-block h-3 w-5 rounded-sm border border-dashed border-slate-400 bg-white"
-        />
-        Draft
-      </span>
-      <span className="inline-flex items-center gap-1.5">
-        <span
-          aria-hidden="true"
-          className="inline-block h-3 w-5 rounded-sm ring-1 ring-inset ring-slate-300"
-          style={OFF_HATCH}
-        />
-        Time off
-      </span>
-      <span className="basis-full sm:basis-auto">Stripe on the left, the job role:</span>
-      {jobRoles.map((role) => (
-        <span key={role.id} className="inline-flex items-center gap-1.5">
+      <summary className="mb-1 cursor-pointer select-none py-1 font-medium text-slate-700 max-sm:py-2">
+        Key
+      </summary>
+      <div className="flex flex-wrap items-center gap-x-4 gap-y-1">
+        {locations
+          .filter((location) => location.isActive !== false)
+          .map((location) => (
+            <span key={location.id} className="inline-flex items-center gap-1.5">
+              {swatch(colourOf(location.id))}
+              {location.name}
+            </span>
+          ))}
+        <span className="inline-flex items-center gap-1.5">
+          {swatch(REMOTE_COLOUR)}
+          Work from home
+        </span>
+        <span className="inline-flex items-center gap-1.5">
           <span
             aria-hidden="true"
-            className="inline-block h-3 w-1 rounded-sm"
-            style={{ backgroundColor: jobRoleHex(role.colour) }}
+            className="inline-block h-3 w-5 rounded-sm bg-amber-100 ring-1 ring-inset ring-amber-300"
           />
-          {role.name}
+          Open shift
         </span>
-      ))}
-    </div>
+        <span className="inline-flex items-center gap-1.5">
+          <span
+            aria-hidden="true"
+            className="inline-block h-3 w-5 rounded-sm border border-dashed border-slate-400 bg-white"
+          />
+          Draft
+        </span>
+        <span className="inline-flex items-center gap-1.5">
+          <span
+            aria-hidden="true"
+            className="inline-block h-3 w-5 rounded-sm ring-1 ring-inset ring-slate-300"
+            style={OFF_HATCH}
+          />
+          Time off
+        </span>
+        <span className="basis-full sm:basis-auto">Stripe on the left, the job role:</span>
+        {jobRoles.map((role) => (
+          <span key={role.id} className="inline-flex items-center gap-1.5">
+            <span
+              aria-hidden="true"
+              className="inline-block h-3 w-1 rounded-sm"
+              style={{ backgroundColor: jobRoleHex(role.colour) }}
+            />
+            {role.name}
+          </span>
+        ))}
+      </div>
+    </details>
   );
 }
 

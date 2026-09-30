@@ -40,7 +40,17 @@ const SHOWN_AT_FIRST = 3;
  * cannot load is not worth an error message on a screen somebody came to for
  * something else.
  */
-export function NeedsAttention({ sections }: { sections: (keyof Attention)[] }) {
+export function NeedsAttention({
+  sections,
+  collapsible = false,
+}: {
+  sections: (keyof Attention)[];
+  /// On a screen whose real content is further down (the Schedule), start as a
+  /// one-line summary that opens on a tap, so the banner does not push it off
+  /// the screen. Everywhere else it is already the point of the visit.
+  collapsible?: boolean;
+}) {
+  const [shown, setShown] = useState(!collapsible);
   const isManager = useIsManager();
   const [attention, setAttention] = useState<Attention | null>(null);
   const [expanded, setExpanded] = useState<Set<string>>(new Set());
@@ -67,8 +77,23 @@ export function NeedsAttention({ sections }: { sections: (keyof Attention)[] }) 
       data-testid="needs-attention"
       className="mb-6 rounded-xl bg-amber-50 p-4 ring-1 ring-inset ring-amber-200"
     >
-      <p className="text-sm font-semibold text-amber-900">Worth a look</p>
-      <div className="mt-2 space-y-2">
+      {collapsible ? (
+        <button
+          type="button"
+          aria-expanded={shown}
+          onClick={() => setShown((open) => !open)}
+          className="flex w-full items-start gap-2 text-left text-sm text-amber-900"
+        >
+          <span aria-hidden="true">{shown ? '▾' : '▸'}</span>
+          <span>
+            <span className="font-semibold">Worth a look</span>
+            {!shown && <> · {showing.map((section) => HEADINGS[section]).join(' · ')}</>}
+          </span>
+        </button>
+      ) : (
+        <p className="text-sm font-semibold text-amber-900">Worth a look</p>
+      )}
+      <div className={`mt-2 space-y-2 ${shown ? '' : 'hidden'}`}>
         {showing.map((section) => {
           const lines = attention[section];
           const open = expanded.has(section);
