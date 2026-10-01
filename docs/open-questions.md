@@ -219,18 +219,12 @@ conditions); see *The CCM care plan* in `docs/architecture.md`.
       "Gerente de Atención" for Care Manager, "proveedor de salud" for
       provider, "referido" for referral; first-person adjectives are
       masculine ("cómodo").
-- [ ] **Billing to check four ICD-10 codes on the list**: M54.5 (Chronic back
-      pain) was retired in October 2021 — M54.50/M54.51/M54.59; M85.8
-      (Osteopenia) needs another digit — M85.80…M85.89; K74.0 (Hepatic
-      fibrosis) needs another digit since October 2022 — K74.00/01/02; and
-      G47.30 is sleep apnea *unspecified* — obstructive is G47.33. They are
-      printed as given until told otherwise (`conditions.ts`).
 - [ ] **Forms for the conditions that have none**: Aneurysm, Anxiety, Autism,
       Constipation, COPD, Crohn's, CVA/Stroke, Depression, Dizziness/Vertigo,
       GERD, Hepatic fibrosis, HLD, Hyperthyroidism, Osteopenia and Psoriasis
       show the shared choices for now. HTN and Osteoporosis use lists made
-      from the sample care plan, Alzheimer's the Dementia form's and Chronic
-      back pain the Chronic pain form's — a clinician to check those.
+      from the sample care plan and Alzheimer's the Dementia form's — a
+      clinician to check those.
 - [ ] **A clinician to check a few phrases** the translation flagged: the
       iron advice ("wait at least 2 hours before having these foods" — before
       or after the dose?), and two phrases in the second person among

@@ -5,22 +5,24 @@ import { PHRASES, PLAN_LISTS } from './phrases';
 
 /**
  * The chronic conditions a care plan can cover — the practice's CCM
- * diagnosis list (Dominguez, October 2026), with its ICD-10 codes as given.
+ * diagnosis list (Dominguez, October 2026), with its ICD-10 codes.
  *
  * `label` is the list's own short name and `name` the one a care plan
  * heading uses ("Hypertension Care Plan"); `esLabel` and `es` are the same in
  * Spanish. `plan` names the list of choices in phrases.ts:
  * - its own Google Form where there was one;
- * - Alzheimer's uses the Dementia form and Chronic back pain the Chronic
- *   pain form, the nearest there were;
+ * - Alzheimer's uses the Dementia form, the nearest there was;
  * - HTN and Osteoporosis use lists made from the sample care plan;
  * - the rest use `shared` — the choices most forms have in common — until
  *   they have a form of their own. Typed answers work for all of them.
  *
- * The codes are printed on the care plan as they are here. Billing to check
- * three of them (see docs/open-questions.md): M54.5 was retired in October
- * 2021 (M54.50 and on), and M85.8 and K74.0 need another digit (M85.80…,
- * K74.00…).
+ * The codes are printed on the care plan as they are here. Three were
+ * changed from the list as given (Dominguez, 1 October 2026): M85.8 and
+ * K74.0 are not billable without another digit, so Osteopenia is M85.80
+ * (unspecified site) and Hepatic fibrosis K74.00 (unspecified); OSA is
+ * G47.33 (obstructive) rather than G47.30 (sleep apnea, unspecified).
+ * Chronic back pain (M54.5, retired in 2021) was taken off the list:
+ * Chronic pain (G89.29) covers it.
  */
 export interface Condition {
   value: string;
@@ -89,15 +91,6 @@ export const CONDITIONS: Condition[] = [
     'Congestive Heart Failure (CHF)',
     'ICC',
     'Insuficiencia Cardíaca Congestiva (ICC)',
-  ),
-  c(
-    'chronic-back-pain',
-    'Chronic Back Pain',
-    'M54.5',
-    'chronic-pain',
-    'Chronic Back Pain',
-    'Dolor de espalda crónico',
-    'Dolor de Espalda Crónico',
   ),
   c(
     'chronic-pain',
@@ -186,7 +179,7 @@ export const CONDITIONS: Condition[] = [
   c(
     'hepatic-fibrosis',
     'Hepatic Fibrosis',
-    'K74.0',
+    'K74.00',
     'shared',
     'Hepatic Fibrosis',
     'Fibrosis hepática',
@@ -216,13 +209,13 @@ export const CONDITIONS: Condition[] = [
   c(
     'osa',
     'OSA',
-    'G47.30',
+    'G47.33',
     'osa',
     'Obstructive Sleep Apnea (OSA)',
     'AOS',
     'Apnea Obstructiva del Sueño (AOS)',
   ),
-  c('osteopenia', 'Osteopenia', 'M85.8', 'shared', 'Osteopenia', 'Osteopenia', 'Osteopenia'),
+  c('osteopenia', 'Osteopenia', 'M85.80', 'shared', 'Osteopenia', 'Osteopenia', 'Osteopenia'),
   c(
     'osteoporosis',
     'Osteoporosis',

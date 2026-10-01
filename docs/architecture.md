@@ -2785,12 +2785,18 @@ is signed in is printed as **Prepared by**, with their letters.
 - **Numbers to track**: height (inches), weight (lbs) and blood pressure
   required, as on the form; HgbA1c, cholesterol, triglycerides, INR and GFR
   when there is one.
-- **Chronic conditions**: the practice's CCM list (`conditions.ts`, 38 and
+- **Chronic conditions**: the practice's CCM list (`conditions.ts`, 37 and
   "Other chronic condition" with its name and ICD-10 typed), searchable, **at
   least two** (CCM needs two or more). Each one chosen adds a section with
   its form's six questions — desired outcomes, symptoms, long-term goals,
   interventions, care team support, barriers — each with an **Other** box,
   the **targeted SMART goal** (typed, as on the forms) and problems notes.
+
+**Codes changed from the list as given** (Dominguez, 1 October 2026):
+Osteopenia M85.8 → **M85.80** and Hepatic fibrosis K74.0 → **K74.00** (both
+were category headings, not billable), OSA G47.30 → **G47.33** (obstructive,
+not unspecified), and **Chronic back pain** (M54.5, retired in October 2021)
+taken off — **Chronic pain** (G89.29) covers it.
 
 **The choices** are in `phrases.ts`: each phrase written once in English and
 Spanish (485 from the 19 condition forms, typos fixed, wording otherwise as
@@ -2798,8 +2804,7 @@ written — including their "my"), and `PLAN_LISTS` naming which phrases each
 plan offers per question. 19 conditions have their own form. **HTN** and
 **Osteoporosis** had none: their lists are made from the sample care plan
 Dominguez shared (with the blood-pressure items from the CAD and CHF forms
-for HTN). **Alzheimer's** uses the Dementia form and **Chronic back pain**
-the Chronic pain form. The rest use `shared` — the phrases five or more
+for HTN). **Alzheimer's** uses the Dementia form. The rest use `shared` — the phrases five or more
 forms have in common — and say so on screen until they get forms of their
 own. Adding a form is adding its phrases and a list, and pointing the
 condition at it.

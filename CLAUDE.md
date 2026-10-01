@@ -681,7 +681,7 @@ Beyond the phases, the parts worth knowing about before picking up work:
   managers and admins** (Dominguez; `lib/clinical-access.ts` — unlike 99483,
   access level counts here). The general care plan question for question as
   on the Google Form, then **at least two chronic conditions** from the
-  practice's CCM list (38 with ICD-10, plus "Other"); each adds its form's
+  practice's CCM list (37 with ICD-10, plus "Other"); each adds its form's
   questions (outcomes, symptoms, long-term goals, SMART goal — typed,
   interventions, care team support, barriers), every one with an Other box.
   One PDF, **English, Spanish or both** (English then Spanish on a fresh page,
@@ -690,11 +690,12 @@ Beyond the phases, the parts worth knowing about before picking up work:
   checks it; the two forms share `clinical/common/`. Choices in
   `ccm-care-plan/phrases.ts` (each phrase once, English and Spanish — Spanish
   awaiting a native speaker). 19 conditions have their own form; HTN and
-  Osteoporosis come from the sample care plan, Alzheimer's borrows Dementia's
-  and Chronic back pain Chronic pain's; the rest show the shared choices
-  until they get a form. **Four ICD-10 codes on the list need billing's look**
-  (M54.5, M85.8, K74.0, G47.30) — see `docs/open-questions.md`. See *The CCM
-  care plan* in `docs/architecture.md`.
+  Osteoporosis come from the sample care plan, Alzheimer's borrows Dementia's;
+  the rest show the shared choices until they get a form. Codes fixed from
+  the list as given (Dominguez, 1 October 2026): Osteopenia M85.80, Hepatic
+  fibrosis K74.00, OSA G47.33; Chronic back pain (M54.5, retired) dropped in
+  favour of Chronic pain (G89.29). See *The CCM care plan* in
+  `docs/architecture.md`.
 - **Provider productivity** (30 September 2026, Dominguez — replaces the
   practice's *Patients & Providers* sheet). Manage → **Provider productivity**
   — **only for people an admin has chosen** (`canManageProductivity`, a list at
