@@ -3,6 +3,7 @@ import { ConfigService } from '@nestjs/config';
 import { EmploymentStatus, NotificationKind, PtoStatus, PtoType, Role } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import type { DigestContents } from './digest.service';
+import { digestEmail } from './digest-email';
 import { EMAIL_SENDER, EmailResult, EmailSender } from './email-sender';
 import { InboxService } from './inbox.service';
 import { type WelcomeDetails, welcomeEmail } from './welcome-email';
@@ -175,38 +176,31 @@ export class NotificationsService {
   }
 
   /**
-   * The nightly round-up of what nobody has got to yet.
-   *
-   * Sections with nothing in them are left out entirely rather than printed
-   * empty. An email that is mostly "nothing to report" teaches people to skim
-   * past it, and then they skim past the one that matters.
+   * The nightly round-up of what nobody has got to yet — laid out in
+   * `digest-email.ts`. Sections with nothing in them are left out entirely
+   * rather than printed empty: an email that is mostly "nothing to report"
+   * teaches people to skim past it, and then they skim past the one that
+   * matters.
    */
   async dailyDigest(to: string, firstName: string, contents: DigestContents): Promise<void> {
-    const section = (heading: string, lines: string[]) =>
-      lines.length === 0 ? [] : ['', heading, ...lines.map((line) => `  · ${line}`)];
-
-    await this.dispatch(to, 'What needs a look today', [
-      `Hello ${firstName},`,
-      // Roughly in the order somebody would act: the things that are broken
-      // right now, then the things with a deadline, then the paperwork.
-      ...section('Kiosk tablets that have gone quiet:', contents.silentKiosks),
-      ...section('Next week is not published yet:', contents.unpublishedRota),
-      ...section('Shifts for people who have left:', contents.shiftsForLeavers),
-      ...section('Open shifts nobody is on yet:', contents.openShifts),
-      ...section('Shifts while an office is closed:', contents.shiftsInClosures),
-      ...section('Closing checklists with something missed:', contents.closingGaps),
-      ...section('Supplies to order:', contents.suppliesNeeded),
-      ...section('Credentials that have already lapsed:', contents.expiredCredentials),
-      ...section('Credentials expiring soon:', contents.expiringCredentials),
-      ...section('Required licenses not on file:', contents.missingCredentials),
-      ...section('Hours entered by hand — find out why:', contents.handEntries),
-      ...section('Hours not approved yet:', contents.unapprovedHours),
-      ...section('Checklist tasks past their due date:', contents.overdueTasks),
-      ...section('Punches with no clock-out:', contents.missingPunches),
-      ...section('Time off waiting on a decision:', contents.undecidedTimeOff),
-      '',
-      `Everything here is in the app: ${this.appUrl}`,
-    ]);
+    const message = digestEmail({
+      firstName,
+      contents,
+      appUrl: this.appUrl,
+      isTest: this.config.get<string>('APP_ENVIRONMENT') === 'test',
+    });
+    try {
+      await this.email.send({
+        to,
+        subject: this.prefixed(message.subject),
+        text: message.text,
+        html: message.html,
+      });
+    } catch (error: unknown) {
+      this.logger.error(
+        `Digest to ${to} failed: ${error instanceof Error ? error.message : error}`,
+      );
+    }
   }
 
   /// The reset link itself. Sent to an address that may not belong to anyone —

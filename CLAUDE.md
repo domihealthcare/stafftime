@@ -287,6 +287,10 @@ Beyond the phases, the parts worth knowing about before picking up work:
   something missed, supplies to order. The same lists appear as banners on the
   screens where each thing gets fixed, from one service, so the email and the
   app cannot disagree. Managers can turn the email off; nothing is lost by it.
+  Since October 2026 it is laid out (`email/digest-email.ts`): a subject
+  naming the most urgent things, three tiers — sort out today, coming up, when
+  you have a minute — each section linking to its screen, and HTML as well as
+  plain text.
   **Email is live** (24 September 2026): Resend, sending as
   `Domi Staff <no-reply@domihealthcare.com>`, with its DKIM and `send`/`rsend`
   records in the domain's DNS at **Wix**; a password reset was received.
