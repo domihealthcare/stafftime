@@ -2745,6 +2745,80 @@ downloaded; changing anything else does.
 is, privacy, prior visits, the care plan, after the visit in eCW); the
 managers guide says how to give a provider the form.
 
+## The CCM care plan
+
+Asked for by Dominguez (1 October 2026): the practice's chronic care
+management care plan, which was a set of Google Forms — **Care Plan -
+General** and one per chronic condition — turned into one form in the app.
+`apps/web/src/clinical/ccm-care-plan/`, at `/clinical/care-plan`, linked from
+the **Provider** section of **Resources** beside the 99483 form.
+
+**Same rules as the 99483 form** (see *The clinical forms*, above): it lives
+in React state only, the folder is under the same lint rule, the page is one
+lazily loaded piece with its PDF code, leaving asks first, and
+`tests/browser/care-plan.mjs` fills in a fake patient and fails if any of it
+reaches a request or browser storage. The two forms share
+`clinical/common/` — the inputs (`fields.tsx`), the choice helpers, dates,
+`printable.ts`, the PDF writer, the leave guard and the section card.
+
+**Who sees it.** Providers (a job role with `usesClinicalForms`) **and
+managers and admins** (Dominguez) — unlike the 99483 form, where access
+level brings nothing. Both checks are in `lib/clinical-access.ts`. Whoever
+is signed in is printed as **Prepared by**, with their letters.
+
+**The shape** follows the Google Forms question for question:
+
+- **Patient**: first and last name, patient ID, date of birth, the date it
+  was done, primary language (English, Spanish or another, typed).
+- **General care plan**: overall health (Excellent–Poor), ADLs and IADLs
+  needing help (or N/A), falls, pain (with an optional description), whether
+  they understand their conditions, life planning documents
+  (Yes/No/Maybe), recommended diet (the form's ten, or other) and exercise
+  days (5–7, 3–4, 1–2, none).
+- **Support**: providers seen (typed, one a line, or "none"), whether
+  support is adequate, who can help (one a line, or "no one") and resources
+  they struggle to get (with a **None** the Google Form lacked).
+- **Allergies and medications**: NKDA or what they are allergic to, a tick
+  that medications were reviewed with them from the EHR, problems taking
+  them, picking them up, stopping when better or worse, reporting side
+  effects — the last three in the form's own first-person wording.
+- **Numbers to track**: height (inches), weight (lbs) and blood pressure
+  required, as on the form; HgbA1c, cholesterol, triglycerides, INR and GFR
+  when there is one.
+- **Chronic conditions**: the practice's CCM list (`conditions.ts`, 38 and
+  "Other chronic condition" with its name and ICD-10 typed), searchable, **at
+  least two** (CCM needs two or more). Each one chosen adds a section with
+  its form's six questions — desired outcomes, symptoms, long-term goals,
+  interventions, care team support, barriers — each with an **Other** box,
+  the **targeted SMART goal** (typed, as on the forms) and problems notes.
+
+**The choices** are in `phrases.ts`: each phrase written once in English and
+Spanish (485 from the 19 condition forms, typos fixed, wording otherwise as
+written — including their "my"), and `PLAN_LISTS` naming which phrases each
+plan offers per question. 19 conditions have their own form. **HTN** and
+**Osteoporosis** had none: their lists are made from the sample care plan
+Dominguez shared (with the blood-pressure items from the CAD and CHF forms
+for HTN). **Alzheimer's** uses the Dementia form and **Chronic back pain**
+the Chronic pain form. The rest use `shared` — the phrases five or more
+forms have in common — and say so on screen until they get forms of their
+own. Adding a form is adding its phrases and a list, and pointing the
+condition at it.
+
+**The PDF** (`pdf.ts`, `text.ts`): one file,
+`CarePlan_[patient ID]_[date].pdf` (`_ES`, or `_EN-ES` for both), in
+**English, Spanish, or both** — both is English first, then the Spanish on a
+fresh page, the way the practice's own care plans were laid out. It starts
+as both when the primary language is Spanish, until somebody picks. Every
+page carries the letterhead lines (both offices, phone and fax), the
+patient's line and "Confidential". The general care plan is written as
+sentences ("Overall physical health is rated as "Fair.""), the numbers as a
+table (height and weight in cm and kg in Spanish), then "Chronic Diagnoses:
+HTN (I10), DM (E11.8)" and a heading per condition with what was ticked
+under each question. Anything typed is printed as typed in either language —
+nothing is sent away to be translated. **The Spanish needs a native
+speaker's read** (`NEEDS_NATIVE_SPEAKER_REVIEW` in `config.ts`; the form says
+so beside the language choice, never on the PDF).
+
 ## Provider productivity
 
 Added 30 September 2026 at Dominguez's request, replacing the practice's

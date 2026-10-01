@@ -35,9 +35,9 @@ import {
   type ElementKey,
 } from '../config';
 import { caregiverName, fastLabel, problemFor } from '../care-plan';
-import { practiceTimestamp, usDate } from '../dates';
+import { practiceTimestamp, usDate } from '../../common/dates';
 import type { AssessmentForm } from '../form';
-import { PdfWriter } from './writer';
+import { PdfWriter } from '../../common/pdf-writer';
 
 /**
  * PDF 1: the clinical note, uploaded to the chart in eCW Documents.

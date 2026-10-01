@@ -1,5 +1,5 @@
 import { PDFDocument, StandardFonts, rgb, type PDFFont, type PDFPage } from 'pdf-lib';
-import { printable } from '../printable';
+import { printable } from './printable';
 
 /**
  * A small page-layout helper on top of pdf-lib: text that wraps, pages that
@@ -141,6 +141,12 @@ export class PdfWriter {
   /// block, like the attestation and its signature line, in one piece.
   keep(points: number) {
     this.ensure(points);
+  }
+
+  /// Starts the next part on a fresh page — the Spanish half of a care plan
+  /// printed in both languages.
+  pageBreak() {
+    if (this.y < TOP) this.newPage();
   }
 
   /// Keeps a group of label-and-answer rows (with a subheading over them) on

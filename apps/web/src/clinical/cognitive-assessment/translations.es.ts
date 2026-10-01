@@ -15,49 +15,7 @@ export const NEEDS_NATIVE_SPEAKER_REVIEW = true;
 
 export type HandoutLanguage = 'en' | 'es';
 
-const MONTHS = {
-  en: [
-    'January',
-    'February',
-    'March',
-    'April',
-    'May',
-    'June',
-    'July',
-    'August',
-    'September',
-    'October',
-    'November',
-    'December',
-  ],
-  // needs native-speaker review
-  es: [
-    'enero',
-    'febrero',
-    'marzo',
-    'abril',
-    'mayo',
-    'junio',
-    'julio',
-    'agosto',
-    'septiembre',
-    'octubre',
-    'noviembre',
-    'diciembre',
-  ],
-};
-
-/// "September 29, 2026" / "29 de septiembre de 2026" — spelled out, so
-/// nobody has to guess which number is the month.
-export function longDate(iso: string, language: HandoutLanguage): string {
-  const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(iso);
-  if (!match) return iso;
-  const [, year, month, day] = match;
-  const name = MONTHS[language][Number(month) - 1];
-  return language === 'es'
-    ? `${Number(day)} de ${name} de ${year}`
-    : `${name} ${Number(day)}, ${year}`;
-}
+export { longDate } from '../common/dates';
 
 /// The handout's own words.
 export const HANDOUT_STRINGS = {

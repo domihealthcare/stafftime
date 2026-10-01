@@ -1,9 +1,8 @@
 import { createContext, useContext, useState, type ReactNode } from 'react';
-import { toggleChoice } from './form';
-import type { Choice } from './config';
+import { toggleChoice, type Choice } from './choices';
 
 /**
- * The inputs the 99483 form is built from.
+ * The inputs the clinical forms are built from.
  *
  * Every one of them is set so the browser keeps nothing of what is typed:
  * autocomplete off and no `name` (browsers file remembered entries by name),
@@ -325,6 +324,7 @@ export function CheckGroup({
   options,
   required,
   hint,
+  wide,
 }: {
   path: string;
   label: string;
@@ -333,6 +333,8 @@ export function CheckGroup({
   options: Choice[];
   required?: boolean;
   hint?: ReactNode;
+  /// Fewer, wider columns, for choices that are whole sentences.
+  wide?: boolean;
 }) {
   const { id, problem } = useField(path);
   return (
@@ -340,7 +342,11 @@ export function CheckGroup({
       <Label as="legend" required={required}>
         {label}
       </Label>
-      <div className="grid grid-cols-2 gap-1.5 sm:grid-cols-3 lg:grid-cols-4">
+      <div
+        className={`grid gap-1.5 ${
+          wide ? 'grid-cols-1 sm:grid-cols-2' : 'grid-cols-2 sm:grid-cols-3 lg:grid-cols-4'
+        }`}
+      >
         {options.map((option) => {
           const checked = values.includes(option.value);
           return (

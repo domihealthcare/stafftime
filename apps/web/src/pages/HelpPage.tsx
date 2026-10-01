@@ -1,5 +1,6 @@
 import type { ReactNode } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
+import { canUseCarePlan } from '../lib/clinical-access';
 import { useIsManager, useSession } from '../lib/session';
 import { PASSWORD_RULE } from '../lib/password';
 import { PageHeading } from '../components/ui';
@@ -419,6 +420,79 @@ const STAFF: Section[] = [
             shown on timesheets. Clocking in from home records nothing about where you are. Your
             tablet PIN is stored scrambled, so nobody can read it back. It holds no social security
             number, no ID numbers and no personnel documents — those stay in your personnel file.
+          </p>
+        ),
+      },
+    ],
+  },
+];
+
+/// For anybody who can make a CCM care plan: providers, managers and admins.
+const CARE_PLAN: Section[] = [
+  {
+    title: 'CCM care plan',
+    topics: [
+      {
+        question: 'Where is it, and how does it work?',
+        answer: (
+          <>
+            <p>
+              <Screen>Team</Screen> → <Screen>Resources</Screen> → the <Screen>Provider</Screen>{' '}
+              section → <strong>CCM care plan</strong>. Providers, managers and admins have it.
+            </p>
+            <ul>
+              <li>
+                Fill in the patient, then the general care plan, support, allergies and medications,
+                and the numbers to track — the same questions as the practice&rsquo;s Google Form.
+              </li>
+              <li>
+                Choose at least two chronic conditions. Each adds its own section with the questions
+                from its form: desired outcomes, symptoms, long-term goals, the SMART goal,
+                interventions, how the care team will help and barriers.
+              </li>
+              <li>
+                Anything missing is listed at the bottom; tap an item to jump to it. The PDF can
+                only be made when that list is empty.
+              </li>
+              <li>
+                Choose <strong>English</strong>, <strong>Español</strong> or{' '}
+                <strong>English and Español</strong> (one PDF, English first), download it, then
+                tell it the PDF arrived — that clears the form.
+              </li>
+            </ul>
+          </>
+        ),
+      },
+      {
+        question: 'Does the care plan form keep anything?',
+        answer: (
+          <p>
+            No. What you type stays on your device and is never sent to Domi Staff or saved in it —
+            leaving, reloading or signing out clears it, and it asks first. The PDF is a patient
+            record on your device: upload it to eCW Documents, give the patient their copy, then
+            delete it.
+          </p>
+        ),
+      },
+      {
+        question: 'Spanish, and what you type',
+        answer: (
+          <p>
+            The questions&rsquo; answers and every ticked choice are printed in Spanish for a
+            Spanish copy, and height and weight in centimetres and kilograms. Anything you type —
+            names, providers, the SMART goal, &ldquo;Other&rdquo; — is printed exactly as typed, so
+            write it in Spanish if the patient reads Spanish. If somebody&rsquo;s primary language
+            is Spanish the PDF starts as English and Español.
+          </p>
+        ),
+      },
+      {
+        question: 'A condition with no form of its own',
+        answer: (
+          <p>
+            Conditions the practice has no form for yet (COPD, depression, GERD and others) show the
+            choices most of the forms share, and say so. Use the <strong>Other</strong> boxes for
+            anything else.
           </p>
         ),
       },
@@ -1168,10 +1242,11 @@ export function HelpPage() {
   const guide = isManager && params.get('guide') === 'managers' ? 'managers' : 'staff';
   const sections =
     guide === 'managers'
-      ? MANAGERS
+      ? [...MANAGERS, ...CARE_PLAN]
       : [
           ...STAFF,
           ...(employee?.usesClinicalForms ? PROVIDERS : []),
+          ...(employee && canUseCarePlan(employee) ? CARE_PLAN : []),
           ...(employee?.hasProductivity ? PRODUCTIVITY : []),
         ];
 

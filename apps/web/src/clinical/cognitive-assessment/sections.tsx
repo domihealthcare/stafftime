@@ -48,7 +48,7 @@ import {
   Select,
   TextArea,
   TextField,
-} from './fields';
+} from '../common/fields';
 import { hasConcern, type AssessmentForm, type CarePlanEntry, type Completion } from './form';
 
 /// The parts of the form that are groups of answers (everything but the

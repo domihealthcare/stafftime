@@ -2,13 +2,14 @@ import {
   CARE_PLAN_AREAS,
   DEFAULT_PRIOR,
   ELEMENTS,
-  NONE,
   type CarePlanArea,
   type ElementKey,
   type PlanningItem,
   type RequirementKey,
 } from './config';
 import type { HandoutLanguage } from './translations.es';
+
+export { hasConcern, toggleChoice } from '../common/choices';
 
 /**
  * The 99483 form as it is being filled in.
@@ -198,19 +199,6 @@ export function emptyForm(dos: string): AssessmentForm {
     },
     handoutLanguage: 'en',
   };
-}
-
-/// Ticking a box in a list that has a "None": None clears the rest, and
-/// anything else clears None — so "None" and a concern are never both ticked.
-export function toggleChoice(current: string[], value: string, on: boolean): string[] {
-  if (!on) return current.filter((item) => item !== value);
-  if (value === NONE) return [NONE];
-  return [...current.filter((item) => item !== NONE && item !== value), value];
-}
-
-/// Whether a list has anything ticked besides "None".
-export function hasConcern(values: string[]): boolean {
-  return values.some((value) => value !== NONE);
 }
 
 export function isPrior(form: AssessmentForm, key: ElementKey): boolean {

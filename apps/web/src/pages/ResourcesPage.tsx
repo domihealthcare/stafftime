@@ -13,6 +13,7 @@ import {
   buttonClass,
 } from '../components/ui';
 import { ApiError, api } from '../lib/api';
+import { canUseCarePlan, canUseCognitiveAssessment } from '../lib/clinical-access';
 import { useIsManager, useSession } from '../lib/session';
 import type { Resource, ResourceKind, ResourceSection } from '../lib/types';
 
@@ -477,30 +478,52 @@ function hostOf(url: string): string {
 
 /**
  * The clinical forms, first in the Provider section (September 2026,
- * Dominguez: "provider resources, not Team"). Only for people whose job role
- * uses them — a manager looking over the section sees that it is there.
+ * Dominguez: "provider resources, not Team"). The 99483 form is only for
+ * people whose job role uses the clinical forms; the CCM care plan also for
+ * managers and admins (October 2026). Anybody else looking over the section
+ * sees that they are there.
  */
 function ClinicalTools() {
   const { employee } = useSession();
-  if (!employee?.usesClinicalForms) {
+  const cognitive = employee ? canUseCognitiveAssessment(employee) : false;
+  const carePlan = employee ? canUseCarePlan(employee) : false;
+  if (!cognitive && !carePlan) {
     return (
       <p className="mb-2 text-xs text-slate-500">
-        Providers also see the cognitive assessment (99483) form here.
+        Providers also see the cognitive assessment (99483) and CCM care plan forms here.
       </p>
     );
   }
   return (
-    <Card className="mb-2 border-brand-200 bg-brand-50 p-3" testId="clinical-tools">
-      <Link
-        to="/clinical/99483"
-        className="block text-sm font-semibold text-brand-800 hover:text-brand-900"
-      >
-        Cognitive assessment (99483) →
-      </Link>
-      <p className="mt-0.5 text-xs text-slate-600">
-        Fill it in during the visit; download the note for eCW and the care plan for the patient.
-        Nothing is saved.
-      </p>
+    <Card className="mb-2 space-y-2 border-brand-200 bg-brand-50 p-3" testId="clinical-tools">
+      {cognitive && (
+        <div>
+          <Link
+            to="/clinical/99483"
+            className="block text-sm font-semibold text-brand-800 hover:text-brand-900"
+          >
+            Cognitive assessment (99483) →
+          </Link>
+          <p className="mt-0.5 text-xs text-slate-600">
+            Fill it in during the visit; download the note for eCW and the care plan for the
+            patient. Nothing is saved.
+          </p>
+        </div>
+      )}
+      {carePlan && (
+        <div>
+          <Link
+            to="/clinical/care-plan"
+            className="block text-sm font-semibold text-brand-800 hover:text-brand-900"
+          >
+            CCM care plan →
+          </Link>
+          <p className="mt-0.5 text-xs text-slate-600">
+            The general care plan and two or more chronic conditions, as one PDF in English, Spanish
+            or both. Nothing is saved.
+          </p>
+        </div>
+      )}
     </Card>
   );
 }

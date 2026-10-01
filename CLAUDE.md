@@ -63,10 +63,11 @@ This is a timekeeping app, not a payroll or HR system. It deliberately stores:
   the browser, before anything is sent, and the schema guard fails on any
   other birth field
 
-The **99483 clinical form** (September 2026) is the one screen that handles
-patient details, and it keeps them out of the app too: they are typed, made
-into a PDF and downloaded entirely in the provider's browser, and never sent
-or stored (see *Clinical forms* below).
+The **clinical forms** — 99483 (September 2026) and the CCM care plan
+(October 2026) — are the only screens that handle patient details, and they
+keep them out of the app too: they are typed, made into a PDF and downloaded
+entirely in the browser, and never sent or stored (see *Clinical forms* and
+*CCM care plan* below).
 
 **Staff profiles** (October 2026, confirmed by Dominguez) are the one step back
 from "not an HR system": an **admin** may keep somebody's **home address**,
@@ -674,6 +675,26 @@ Beyond the phases, the parts worth knowing about before picking up work:
   is in `clinical/cognitive-assessment/config.ts`. Leaving, Back, reloading
   and Sign out all ask first. See *The clinical forms* in
   `docs/architecture.md`.
+- **CCM care plan** (1 October 2026, Dominguez — replaces the practice's
+  Google Forms "Care Plan - General" and one per condition). Resources →
+  **Provider** → **CCM care plan** (`/clinical/care-plan`), for **providers,
+  managers and admins** (Dominguez; `lib/clinical-access.ts` — unlike 99483,
+  access level counts here). The general care plan question for question as
+  on the Google Form, then **at least two chronic conditions** from the
+  practice's CCM list (38 with ICD-10, plus "Other"); each adds its form's
+  questions (outcomes, symptoms, long-term goals, SMART goal — typed,
+  interventions, care team support, barriers), every one with an Other box.
+  One PDF, **English, Spanish or both** (English then Spanish on a fresh page,
+  like the practice's own; starts as both for a Spanish speaker). Same
+  privacy as 99483: nothing sent or stored, `tests/browser/care-plan.mjs`
+  checks it; the two forms share `clinical/common/`. Choices in
+  `ccm-care-plan/phrases.ts` (each phrase once, English and Spanish — Spanish
+  awaiting a native speaker). 19 conditions have their own form; HTN and
+  Osteoporosis come from the sample care plan, Alzheimer's borrows Dementia's
+  and Chronic back pain Chronic pain's; the rest show the shared choices
+  until they get a form. **Four ICD-10 codes on the list need billing's look**
+  (M54.5, M85.8, K74.0, G47.30) — see `docs/open-questions.md`. See *The CCM
+  care plan* in `docs/architecture.md`.
 - **Provider productivity** (30 September 2026, Dominguez — replaces the
   practice's *Patients & Providers* sheet). Manage → **Provider productivity**
   — **only for people an admin has chosen** (`canManageProductivity`, a list at

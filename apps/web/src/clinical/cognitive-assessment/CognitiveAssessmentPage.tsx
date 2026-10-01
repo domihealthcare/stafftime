@@ -1,13 +1,12 @@
-import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
-import { useBlocker } from 'react-router-dom';
-import { useConfirm } from '../../components/ConfirmDialog';
+import { useCallback, useMemo, useRef, useState } from 'react';
 import { Alert, Card, PageHeading } from '../../components/ui';
 import { localDate } from '../../lib/format';
 import { useSession } from '../../lib/session';
 import type { Employee } from '../../lib/types';
-import { setUnsavedWork } from '../../lib/unsaved-work';
 import { ELEMENTS, type ElementKey } from './config';
-import { Confirm, FieldContext } from './fields';
+import { Confirm, FieldContext } from '../common/fields';
+import { DownloadButton, FormSection } from '../common/layout';
+import { savePdf, useLeaveGuard } from '../common/leave-guard';
 import { emptyForm, isPrior, type AssessmentForm } from './form';
 import { carePlanFilename, carePlanPdf } from './pdf/care-plan-handout';
 import { clinicalNotePdf, noteFilename, type Provider } from './pdf/clinical-note';
@@ -55,7 +54,6 @@ const UNSAVED = 'the cognitive assessment you are filling in';
 type Made = { note: boolean; handout: HandoutLanguage | null; snapshot: string };
 
 function AssessmentScreen({ employee }: { employee: Employee }) {
-  const confirm = useConfirm();
   // A fresh prefix for every field id on each visit: nothing a browser could
   // file a remembered answer under.
   const [prefix] = useState(() => `ca${Math.random().toString(36).slice(2, 8)}`);
@@ -112,9 +110,9 @@ function AssessmentScreen({ employee }: { employee: Employee }) {
     setMaking(which);
     try {
       if (which === 'note') {
-        save(await clinicalNotePdf(form, provider, new Date()), noteFilename(form));
+        savePdf(await clinicalNotePdf(form, provider, new Date()), noteFilename(form));
       } else {
-        save(await carePlanPdf(form, provider, form.handoutLanguage), carePlanFilename(form));
+        savePdf(await carePlanPdf(form, provider, form.handoutLanguage), carePlanFilename(form));
       }
       setMade((before) => {
         const base: Made =
@@ -144,43 +142,7 @@ function AssessmentScreen({ employee }: { employee: Employee }) {
     window.scrollTo({ top: 0 });
   }
 
-  // ------------------------------------------------------- leaving the page
-  useEffect(() => {
-    setUnsavedWork(dirty ? UNSAVED : null);
-    if (!dirty) return;
-    // Closing the tab or reloading: the browser asks, in its own words.
-    const warn = (event: BeforeUnloadEvent) => {
-      event.preventDefault();
-      event.returnValue = '';
-    };
-    window.addEventListener('beforeunload', warn);
-    return () => window.removeEventListener('beforeunload', warn);
-  }, [dirty]);
-  useEffect(() => () => setUnsavedWork(null), []);
-
-  // A link or the Back button: asked in the app's own pop-up.
-  const blocker = useBlocker(
-    ({ currentLocation, nextLocation }) =>
-      dirty && currentLocation.pathname !== nextLocation.pathname,
-  );
-  useEffect(() => {
-    if (blocker.state !== 'blocked') return;
-    let live = true;
-    void confirm({
-      title: 'Leave and lose what you have entered?',
-      body: 'This form is not saved anywhere. If you leave, everything on it is cleared and cannot be got back.',
-      confirmLabel: 'Leave and clear it',
-      cancelLabel: 'Stay on the form',
-      tone: 'danger',
-    }).then((leave) => {
-      if (!live) return;
-      if (leave) blocker.proceed();
-      else blocker.reset();
-    });
-    return () => {
-      live = false;
-    };
-  }, [blocker, confirm]);
+  useLeaveGuard(dirty, UNSAVED);
 
   // -------------------------------------------------------------- the page
   const sectionDone = (key: SectionKey) => !problems.some((problem) => problem.section === key);
@@ -268,17 +230,17 @@ function AssessmentScreen({ employee }: { employee: Employee }) {
         </nav>
 
         <div className="space-y-4">
-          <Section
+          <FormSection
             prefix={prefix}
             sectionKey="requirements"
             label="✓"
             title="Requirements for 99483"
           >
             <RequirementsSection form={form} update={update} />
-          </Section>
-          <Section prefix={prefix} sectionKey="visit" label="0" title="Patient and visit">
+          </FormSection>
+          <FormSection prefix={prefix} sectionKey="visit" label="0" title="Patient and visit">
             <VisitSection form={form} update={update} provider={provider} />
-          </Section>
+          </FormSection>
           {ELEMENTS.map((element) => {
             const prior = isPrior(form, element.key);
             const open =
@@ -289,7 +251,7 @@ function AssessmentScreen({ employee }: { employee: Employee }) {
                 completion: { ...current.completion, [element.key]: mode },
               }));
             return (
-              <Section
+              <FormSection
                 key={element.key}
                 prefix={prefix}
                 sectionKey={element.key}
@@ -339,7 +301,7 @@ function AssessmentScreen({ employee }: { employee: Employee }) {
                     return <Body form={form} update={update} required={!prior} />;
                   })()
                 )}
-              </Section>
+              </FormSection>
             );
           })}
         </div>
@@ -438,39 +400,6 @@ function AssessmentScreen({ employee }: { employee: Employee }) {
   );
 }
 
-function DownloadButton({
-  label,
-  detail,
-  making,
-  disabled,
-  done,
-  onClick,
-}: {
-  label: string;
-  detail: string;
-  making: boolean;
-  disabled: boolean;
-  done: boolean;
-  onClick: () => void;
-}) {
-  return (
-    <div>
-      <button
-        type="button"
-        onClick={onClick}
-        disabled={disabled}
-        className="min-h-[48px] w-full rounded-lg bg-brand-600 px-3 text-base font-semibold text-white hover:bg-brand-700 disabled:opacity-60"
-      >
-        {making ? 'Making it…' : label}
-      </button>
-      <p className="mt-1 text-xs text-slate-500">
-        {detail}
-        {done && <span className="ml-1 font-medium text-emerald-700">— ✓ downloaded</span>}
-      </p>
-    </div>
-  );
-}
-
 /// "Handout: English ▾" — a secondary choice, opened when needed.
 function LanguagePicker({
   value,
@@ -525,58 +454,4 @@ function LanguagePicker({
       )}
     </div>
   );
-}
-
-function Section({
-  prefix,
-  sectionKey,
-  label,
-  title,
-  aside,
-  children,
-}: {
-  prefix: string;
-  sectionKey: SectionKey;
-  label: string;
-  title: string;
-  aside?: ReactNode;
-  children: ReactNode;
-}) {
-  const headingId = `${prefix}-heading-${sectionKey}`;
-  return (
-    <section
-      id={`${prefix}-section-${sectionKey}`}
-      aria-labelledby={headingId}
-      className="scroll-mt-28"
-      data-testid={`section-${sectionKey}`}
-    >
-      <Card className="p-4 sm:p-5">
-        <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
-          <h2 id={headingId} className="text-base font-semibold text-slate-900 sm:text-lg">
-            <span className="mr-2 inline-flex h-7 min-w-[28px] items-center justify-center rounded-md bg-brand-600 px-1.5 text-sm text-white">
-              {label}
-            </span>
-            {title}
-          </h2>
-          {aside}
-        </div>
-        {children}
-      </Card>
-    </section>
-  );
-}
-
-/// Hands the file to the browser as a download. It never leaves the device:
-/// the link points at the bytes in this page's memory.
-function save(bytes: Uint8Array, filename: string) {
-  const url = URL.createObjectURL(new Blob([bytes as BlobPart], { type: 'application/pdf' }));
-  const link = document.createElement('a');
-  link.href = url;
-  link.download = filename;
-  document.body.appendChild(link);
-  link.click();
-  link.remove();
-  // Long enough for a slow phone to start the download; the page's memory
-  // is the only place the file is held either way.
-  window.setTimeout(() => URL.revokeObjectURL(url), 60_000);
 }

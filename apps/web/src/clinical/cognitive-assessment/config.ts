@@ -12,17 +12,9 @@
  * Nothing in this file is about a patient. It is the blank form.
  */
 
-export interface Choice {
-  value: string;
-  label: string;
-}
+import { NONE, choices, type Choice } from '../common/choices';
 
-const choices = (...labels: [string, string][]): Choice[] =>
-  labels.map(([value, label]) => ({ value, label }));
-
-/// The value every "none" choice uses, so the form can treat them alike:
-/// picking it clears the others, picking anything else clears it.
-export const NONE = 'none';
+export { NONE, labelOf, type Choice } from '../common/choices';
 
 // ------------------------------------------------------------- requirements
 
@@ -525,8 +517,3 @@ export type ElementKey = (typeof ELEMENTS)[number]['key'];
 /// Elements that start as "completed at a prior visit" (Dominguez, September
 /// 2026): the cognition-focused history and exam is usually done then.
 export const DEFAULT_PRIOR: ElementKey[] = ['A'];
-
-/// The label for a stored value, or the value itself if it is not in the list.
-export function labelOf(list: readonly Choice[], value: string): string {
-  return list.find((choice) => choice.value === value)?.label ?? value;
-}

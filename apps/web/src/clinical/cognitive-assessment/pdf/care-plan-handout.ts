@@ -25,7 +25,7 @@ import {
   type HandoutLanguage,
 } from '../translations.es';
 import { providerName, safeMrn, type Provider } from './clinical-note';
-import { PdfWriter } from './writer';
+import { PdfWriter } from '../../common/pdf-writer';
 
 /**
  * PDF 2: the patient and care partner's copy of the care plan, in plain

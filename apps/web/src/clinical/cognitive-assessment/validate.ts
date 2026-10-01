@@ -6,9 +6,9 @@ import {
   REQUIREMENTS,
   type ElementKey,
 } from './config';
-import { dayNumber } from './dates';
+import { dayNumber } from '../common/dates';
 import { isPrior, type AssessmentForm } from './form';
-import { unprintableCharacters } from './printable';
+import { unprintableCharacters } from '../common/printable';
 
 /**
  * What still stands between the form and the PDFs.
