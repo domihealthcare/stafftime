@@ -122,6 +122,17 @@ export function startOfMonth(date: Date): Date {
   return result;
 }
 
+/// The month a week belongs to, for switching between Week and Month: the
+/// month today is in when the week holds today, otherwise the month holding
+/// most of it (its Wednesday). Not the month the week starts in — on Thursday
+/// 1 October that week starts on Sunday 27 September, and Month opened on
+/// September.
+export function monthOfWeek(weekStart: Date, today: Date = new Date()): Date {
+  const start = startOfWeek(weekStart);
+  if (today >= start && today < addDays(start, 7)) return startOfMonth(today);
+  return startOfMonth(addDays(start, 3));
+}
+
 /// Steps whole months from the first of a month.
 ///
 /// Always call it on a date that is already the first. `setMonth` on the 31st

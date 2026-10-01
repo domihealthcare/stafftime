@@ -8,6 +8,13 @@ mkdirSync(OUT, { recursive: true });
 // Defaults to the dev server; point at `vite preview` to test the built bundle
 // with the deployed security headers applied.
 const BASE = process.env.BASE_URL || 'http://127.0.0.1:5173';
+
+// A period around today rather than a fixed month: the hours the earlier suites
+// punched are from today, so a hard-coded September found none once October
+// came. A day past today too, as the runner's date is UTC's, not New Jersey's.
+const isoDay = (offset) => new Date(Date.now() + offset * 86_400_000).toISOString().slice(0, 10);
+const PERIOD_FROM = isoDay(-30);
+const PERIOD_TO = isoDay(1);
 const DOWNLOADS = '/tmp/pw-downloads';
 const browser = await chromium.launch(
   // Fall back to whatever Playwright downloaded when CHROMIUM_PATH is unset.
@@ -63,8 +70,8 @@ await step('columns come from the server, grouped', async () => {
 await step('the preview reports what the file will contain', async () => {
   // Widen the period so the seeded entries are certainly inside it.
   await mgr.getByRole('button', { name: 'Custom', exact: true }).click();
-  await mgr.getByLabel('From').fill('2026-09-01');
-  await mgr.getByLabel('To (included)').fill('2026-09-30');
+  await mgr.getByLabel('From').fill(PERIOD_FROM);
+  await mgr.getByLabel('To (included)').fill(PERIOD_TO);
   await mgr.getByText(/entries ·/).waitFor({ timeout: 15000 });
   const text = await mgr.getByText(/entries ·/).innerText();
   if (!/\d+ entries · \d+ (person|people) · [\d.]+ hours/.test(text))
@@ -80,7 +87,8 @@ await step('downloading produces a real .xlsx', async () => {
   const path = `${DOWNLOADS}/${download.suggestedFilename()}`;
   await download.saveAs(path);
 
-  if (!/^domi-timesheet_2026-09-01_to_2026-10-01\.xlsx$/.test(download.suggestedFilename()))
+  // The file is named by the period, its end exclusive.
+  if (download.suggestedFilename() !== `domi-timesheet_${PERIOD_FROM}_to_${isoDay(2)}.xlsx`)
     throw new Error(`unexpected filename: ${download.suggestedFilename()}`);
   if (!existsSync(path)) throw new Error('no file saved');
   if (statSync(path).size < 1000) throw new Error('file suspiciously small');

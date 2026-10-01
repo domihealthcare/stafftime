@@ -1746,7 +1746,7 @@ else.
 
 `DigestService` runs from the maintenance job, because that is already the one
 thing that happens every night whether anybody is looking or not. What goes in
-it is `AttentionService`'s job — the same nine lists the banners read, so the
+it is `AttentionService`'s job — the same lists the banners read, so the
 email and the app cannot disagree. This is only about sending it.
 
 Three rules make it worth reading:
@@ -1768,6 +1768,28 @@ anyway.
 
 Each line names the person and the thing, so the email can be acted on without
 opening the app.
+
+**How it reads** (`email/digest-email.ts`, October 2026 — Dominguez found the
+plain list "very bland"). Only the presentation changed; the lists are still
+`AttentionService`'s.
+
+- **The subject says what is in it**: the count in the most pressing tier and
+  the first two things by name — "4 to sort out today: next week isn't
+  published, 1 license has lapsed". The same "What needs a look today" every
+  morning was easy to stop seeing.
+- **Three tiers, by how soon**: *Sort out today* (a quiet kiosk, next week
+  unpublished, shifts for leavers, lapsed licenses, missing clock-outs),
+  *Coming up* (time off, open shifts, shifts in closures, licenses lapsing,
+  unapproved hours) and *When you have a minute* (closing gaps, supplies, hand
+  entries, required licenses not on file, overdue checklist tasks). A count for
+  each sits at the top; empty tiers and sections are left out.
+- **Each section links to the screen with its banner**, shows at most
+  `SHOWN_PER_SECTION` (5) lines, and counts the rest.
+- **HTML as well as text**, laid out like the welcome email (brand blue,
+  tables and inline styles); the text version has the same order and links.
+  The person or place before the " — " is in bold. Everything is escaped —
+  supply names and hand-entry notes are typed by staff.
+- **How to turn it off** is at the bottom (Email settings).
 
 It cannot fail the job it runs inside. Tidying up and telling people are
 separate concerns, and a mail provider having a bad night must not stop expired

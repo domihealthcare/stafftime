@@ -255,6 +255,37 @@ describe('NotificationsService', () => {
     expect(sent[0].subject).toBe('[Test] Reset your Domi password');
   });
 
+  it('sends the nightly round-up laid out, saying what is in it in the subject', async () => {
+    const { service, sent } = build('test');
+    await service.dailyDigest('morgan@domihealthcare.com', 'Morgan', {
+      ...Object.fromEntries(
+        [
+          'expiredCredentials',
+          'expiringCredentials',
+          'missingCredentials',
+          'overdueTasks',
+          'missingPunches',
+          'undecidedTimeOff',
+          'silentKiosks',
+          'unpublishedRota',
+          'unapprovedHours',
+          'handEntries',
+          'shiftsForLeavers',
+          'openShifts',
+          'shiftsInClosures',
+          'closingGaps',
+          'suppliesNeeded',
+        ].map((key) => [key, []]),
+      ),
+      undecidedTimeOff: ['Frankie Front — Nov 3, 2026'],
+    } as never);
+
+    const message = sent[0] as { subject: string; text: string; html?: string };
+    expect(message.subject).toBe('[Test] 1 coming up: 1 time-off request to decide');
+    expect(message.text).toContain('Frankie Front — Nov 3, 2026');
+    expect(message.html).toContain('https://staff.domihealthcare.com/time-off');
+  });
+
   it('does not mark production mail', async () => {
     const { service, sent } = build('production');
     service.passwordReset('a@b.com', 'Frankie', 'https://example.com/x', 30);

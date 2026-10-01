@@ -8,6 +8,7 @@ import {
   formatTimeCompact,
   localDate,
   monthGrid,
+  monthOfWeek,
   startOfMonth,
   startOfWeek,
   toLocalInputValue,
@@ -476,8 +477,8 @@ export function SchedulePage() {
                   // A remembered preference is a convenience, not a feature.
                 }
                 if (option === 'month') {
-                  setMonthStart(startOfMonth(weekStart));
-                } else if (startOfMonth(weekStart).getTime() !== monthStart.getTime()) {
+                  setMonthStart(monthOfWeek(weekStart));
+                } else if (monthOfWeek(weekStart).getTime() !== monthStart.getTime()) {
                   // Coming back to a different month than you left: land on its
                   // first week rather than on a week you are no longer looking at.
                   setWeekStart(startOfWeek(monthStart));
