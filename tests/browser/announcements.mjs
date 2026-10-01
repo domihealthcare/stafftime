@@ -169,7 +169,7 @@ await step('an employee reads the news on a phone and cannot write it', async ()
   await primaryCard(emp).getByText('Snow closure').waitFor({ timeout: 15000 });
   await emp.screenshot({ path: `${OUT}/72-home-announcement-phone.png`, fullPage: true });
 
-  await primaryCard(emp).getByRole('link', { name: 'All news →' }).click();
+  await emp.getByTestId('home-news').getByRole('link', { name: 'All news →' }).click();
   await emp.getByRole('heading', { name: 'Welcome to the staff app' }).waitFor({ timeout: 15000 });
 
   if ((await emp.getByRole('button', { name: '+ New post' }).count()) > 0)

@@ -170,7 +170,7 @@ const staffCtx = await browser.newContext({ viewport: { width: 390, height: 844 
 const frankie = await staffCtx.newPage();
 frankie.on('pageerror', (e) => errors.push(`pageerror: ${e.message}`));
 
-await step('Frankie sees it on the Clock screen', async () => {
+await step('Frankie sees it on Home', async () => {
   await signIn(frankie, 'frontdesk@domihealthcare.com');
   const mine = frankie.getByTestId('my-overtime');
   await mine.getByText('Your schedule puts you into overtime').waitFor({ timeout: 15000 });
