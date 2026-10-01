@@ -216,6 +216,40 @@ await step('the new-shift form can make a shift work from home', async () => {
   if (saved.location?.name !== 'North Bergen') throw new Error(`counted under ${saved.location?.name}`);
 });
 
+// Fixed October 2026: with two shifts in a day, Home looked only at the first,
+// so an office shift in the morning hid a work-from-home one in the afternoon.
+await step('an earlier office shift the same day does not hide the work-from-home one', async () => {
+  const officeId = await mgr.evaluate(async (wfhId) => {
+    const wfh = await fetch(`/api/shifts/${wfhId}`).then((r) => r.json());
+    const dayStart = new Date(); dayStart.setHours(0, 0, 0, 0);
+    const endsAt = new Date(new Date(wfh.startsAt).getTime() - 5 * 60_000);
+    const startsAt = new Date(Math.max(endsAt.getTime() - 2 * 3_600_000, dayStart.getTime()));
+    // Just after midnight there is no room for one before it; nothing to show then.
+    if (endsAt.getTime() - startsAt.getTime() < 5 * 60_000) return null;
+    const response = await fetch('/api/shifts', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        employeeId: wfh.employeeId,
+        locationId: wfh.locationId,
+        startsAt: startsAt.toISOString(),
+        endsAt: endsAt.toISOString(),
+        status: 'PUBLISHED',
+        notes: 'wfh-suite',
+      }),
+    });
+    if (!response.ok) throw new Error(`could not make the office shift: ${await response.text()}`);
+    return (await response.json()).id;
+  }, shiftId);
+  if (officeId === null) {
+    console.log('      (skipped: too close to midnight for an earlier shift)');
+    return;
+  }
+  await goTo(mgr, 'Home');
+  await mgr.getByText(/Today’s shift: .* · Work from home/).waitFor({ timeout: 15000 });
+  await mgr.getByRole('button', { name: 'Clock in — working from home' }).waitFor({ timeout: 5000 });
+});
+
 await browser.close();
 console.log(`\n${errors.length === 0 ? 'ALL WORK-FROM-HOME CHECKS PASSED' : `PROBLEMS (${errors.length}):`}`);
 errors.forEach((e) => console.log(' - ' + e));

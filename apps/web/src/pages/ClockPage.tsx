@@ -12,6 +12,10 @@ import { Alert, Badge, Card, Spinner } from '../components/ui';
 
 type Status = 'loading' | 'ready' | 'working';
 
+/// How early a work-from-home shift can be clocked into — the server's
+/// REMOTE_EARLY_MINUTES.
+const REMOTE_EARLY_MINUTES = 30;
+
 /**
  * Home (October 2026, Dominguez — option B; it was the Clock screen): the
  * clock-in card and the news on the left two-thirds, and on the right third
@@ -21,7 +25,9 @@ type Status = 'loading' | 'ready' | 'working';
 export function ClockPage() {
   const { employee } = useSession();
   const [entry, setEntry] = useState<TimeEntry | null>(null);
-  const [todaysShift, setTodaysShift] = useState<Shift | null>(null);
+  /// Today's shifts, earliest first — somebody can have two (an office shift in
+  /// the morning, working from home in the afternoon).
+  const [todaysShifts, setTodaysShifts] = useState<Shift[]>([]);
   const [locationId, setLocationId] = useState<string>('');
   /// Once somebody picks an office themselves, the defaults below leave it alone.
   const [pickedByHand, setPickedByHand] = useState(false);
@@ -55,7 +61,11 @@ export function ClockPage() {
           : [],
       );
       // A removed shift is kept as CANCELLED; it is not today's shift.
-      setTodaysShift(shifts.find((shift) => shift.status !== 'CANCELLED') ?? null);
+      setTodaysShifts(
+        shifts
+          .filter((shift) => shift.status !== 'CANCELLED')
+          .sort((a, b) => a.startsAt.localeCompare(b.startsAt)),
+      );
       setError(null);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Could not load your status.');
@@ -79,6 +89,27 @@ export function ClockPage() {
     return () => document.removeEventListener('visibilitychange', refresh);
   }, [load]);
 
+  // A work-from-home shift on now (from half an hour before it starts, as the
+  // server allows): no location needed, and none is asked for or sent. Any of
+  // today's shifts can be it, not only the first (fixed October 2026: an
+  // office shift in the morning hid a work-from-home one in the afternoon).
+  const now = Date.now();
+  const remoteShift =
+    todaysShifts.find(
+      (shift) =>
+        shift.isRemote &&
+        shift.status === 'PUBLISHED' &&
+        new Date(shift.startsAt).getTime() - REMOTE_EARLY_MINUTES * 60_000 <= now &&
+        now < new Date(shift.endsAt).getTime(),
+    ) ?? null;
+  // The shift the card talks about: that one, else the one on now or next,
+  // else the day's last.
+  const todaysShift =
+    remoteShift ??
+    todaysShifts.find((shift) => now < new Date(shift.endsAt).getTime()) ??
+    todaysShifts[todaysShifts.length - 1] ??
+    null;
+
   // Default to the office of today's shift, else the primary office, else the
   // only one they have. Everybody works at both offices, so "primary" alone
   // sent people at West New York to North Bergen (and the server now finds the
@@ -94,26 +125,19 @@ export function ClockPage() {
 
   // Keep the elapsed-time readout ticking while clocked in. It shows whole
   // minutes, so a quarter-minute keeps it right without redrawing every second.
+  // With a work-from-home shift today it ticks anyway, so the page notices
+  // when the shift's window opens without being reloaded.
+  const remoteToday = todaysShifts.some((shift) => shift.isRemote);
   useEffect(() => {
-    if (!entry || entry.clockOutAt) {
+    if ((!entry || entry.clockOutAt) && !remoteToday) {
       return;
     }
     const timer = window.setInterval(() => forceTick((n) => n + 1), 15_000);
     return () => window.clearInterval(timer);
-  }, [entry]);
+  }, [entry, remoteToday]);
 
   const isClockedIn = entry !== null && entry.clockOutAt === null;
 
-  // A work-from-home shift on now (from half an hour before it starts, as the
-  // server allows): no location needed, and none is asked for or sent.
-  const now = Date.now();
-  const remoteShift =
-    todaysShift?.isRemote &&
-    todaysShift.status === 'PUBLISHED' &&
-    new Date(todaysShift.startsAt).getTime() - 30 * 60_000 <= now &&
-    now < new Date(todaysShift.endsAt).getTime()
-      ? todaysShift
-      : null;
   const remote = isClockedIn ? entry?.clockInVerification === 'REMOTE' : remoteShift !== null;
 
   async function punch(direction: 'in' | 'out', closingAnswers?: ClosingSubmission) {

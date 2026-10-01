@@ -78,7 +78,12 @@ is due in. The kiosk never takes this path — it is at an office by definition.
 
 The web page asks for no position during a work-from-home shift
 (`ClockPage`), and says so under the button; `tests/browser/wfh.mjs` fails if
-it does.
+it does. The page looks at **all** of the day's shifts for one on now, as the
+server does (`findRemoteShift`): until October 2026 it looked only at the
+first, so somebody with an office shift in the morning and a work-from-home
+one in the afternoon was asked for their location in the afternoon. The
+standing per-person flag was offered again then and turned down again
+(Dominguez): work from home stays on the rota.
 
 Two rules worth knowing about:
 

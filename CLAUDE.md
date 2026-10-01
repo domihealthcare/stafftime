@@ -349,6 +349,10 @@ Beyond the phases, the parts worth knowing about before picking up work:
   tick box beside an office; the shift is counted under the person's main
   office (`homeOfficeOf`, `components/PlaceSelect.tsx`). The ＋ on the rota
   can also **repeat** a shift (the same as Repeating shifts, from that day).
+  Still tied to shifts, not a standing permission (confirmed again by
+  Dominguez, October 2026). Fixed then: with two shifts in a day Home looked
+  only at the first, so an office shift in the morning hid a work-from-home
+  one later; it now uses whichever of the day's shifts is on.
 - **Tablet PINs are chosen by staff** on their profile (confirmed with their
   password); the profile shows only that one is set and since when, never the
   PIN. Managers and admins can set a replacement from the Directory, never
