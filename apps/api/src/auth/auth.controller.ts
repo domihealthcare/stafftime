@@ -207,7 +207,15 @@ export class AuthController {
           },
         },
         jobRoles: {
-          select: { jobRole: { select: { seesOwnPersonnelTabs: true, usesClinicalForms: true } } },
+          select: {
+            jobRole: {
+              select: {
+                seesOwnPersonnelTabs: true,
+                usesClinicalForms: true,
+                usesWellnessForm: true,
+              },
+            },
+          },
         },
       },
     });
@@ -226,6 +234,9 @@ export class AuthController {
       /// Whether the clinical forms are under Resources → Forms — Providers. Job role only:
       /// being a manager or admin does not bring them.
       usesClinicalForms: jobRoles.some((membership) => membership.jobRole.usesClinicalForms),
+      /// Whether the Annual Wellness Visit form is under Resources → Forms — Providers and
+      /// Medical Assistants by job role; managers and admins have it anyway.
+      usesWellnessForm: jobRoles.some((membership) => membership.jobRole.usesWellnessForm),
     };
   }
 }

@@ -66,7 +66,10 @@ await step('somebody who is not a provider, manager or admin has no link, and th
   const desk = await ctx.newPage();
   await signIn(desk, 'frontdesk@domihealthcare.com');
   await desk.goto(`${BASE}/resources`, { waitUntil: 'networkidle' });
-  if ((await desk.getByTestId('clinical-tools').count()) > 0) throw new Error('the link is on Resources');
+  // Frankie is a Medical Assistant too, so Forms holds the wellness form — but no care plan.
+  const forms = desk.getByTestId('clinical-tools');
+  await forms.getByRole('link', { name: /^Annual Wellness Visit/ }).waitFor({ timeout: 10000 });
+  if ((await forms.getByRole('link', { name: /^Care plan/ }).count()) > 0) throw new Error('the link is on Resources');
   await desk.goto(`${BASE}/clinical/care-plan`, { waitUntil: 'networkidle' });
   await desk.getByText('This form is for providers, managers and admins.').waitFor({ timeout: 10000 });
   if ((await desk.getByLabel(/First name/).count()) > 0) throw new Error('the form is shown');

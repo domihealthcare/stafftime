@@ -1,7 +1,11 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { api } from '../lib/api';
-import { canUseCarePlan, canUseCognitiveAssessment } from '../lib/clinical-access';
+import {
+  canUseCarePlan,
+  canUseCognitiveAssessment,
+  canUseWellnessForm,
+} from '../lib/clinical-access';
 import { formatDate, localDate } from '../lib/format';
 import { useIsManager, useSession } from '../lib/session';
 import type { Announcement, PracticeEvent, Survey } from '../lib/types';
@@ -95,7 +99,10 @@ export function HomeNews() {
 export function QuickActions() {
   const { employee } = useSession();
   const forms =
-    employee !== null && (canUseCarePlan(employee) || canUseCognitiveAssessment(employee));
+    employee !== null &&
+    (canUseCarePlan(employee) ||
+      canUseCognitiveAssessment(employee) ||
+      canUseWellnessForm(employee));
   const button =
     'inline-flex min-h-10 items-center rounded-lg border border-slate-300 bg-white px-3 text-sm font-medium text-slate-700 hover:bg-slate-50';
   return (

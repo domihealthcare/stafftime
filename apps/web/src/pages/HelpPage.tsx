@@ -1,6 +1,6 @@
 import type { ReactNode } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
-import { canUseCarePlan } from '../lib/clinical-access';
+import { canUseCarePlan, canUseWellnessForm } from '../lib/clinical-access';
 import { useIsManager, useSession } from '../lib/session';
 import { PASSWORD_RULE } from '../lib/password';
 import { PageHeading } from '../components/ui';
@@ -497,6 +497,70 @@ const CARE_PLAN: Section[] = [
             Conditions the practice has no form for yet (COPD, depression, GERD and others) show the
             choices most of the forms share, and say so. Use the <strong>Other</strong> boxes for
             anything else.
+          </p>
+        ),
+      },
+    ],
+  },
+];
+
+/// For anybody with the Annual Wellness Visit form: providers, medical assistants,
+/// managers and admins.
+const WELLNESS: Section[] = [
+  {
+    title: 'Annual Wellness Visit',
+    topics: [
+      {
+        question: 'Who does which page?',
+        answer: (
+          <>
+            <p>
+              <Screen>Resources</Screen> → <Screen>Forms</Screen> →{' '}
+              <strong>Annual Wellness Visit</strong> — the practice&rsquo;s Annual Wellness
+              Supplement Form, one page at a time.
+            </p>
+            <ul>
+              <li>
+                <strong>Page 2, preventive services</strong> — the medical assistant. For each
+                service tick Yes, No or Offered/Refused; for a Yes, the date it was done
+                (MM/DD/YYYY, or just the month and year, or the year) and the result if there is
+                one.
+              </li>
+              <li>
+                <strong>Page 1, the questionnaire</strong> — the provider, with the patient: social
+                history and functional ability, then the SPMSQ. Choose the patient&rsquo;s preferred
+                language first and the questions are shown in it, to read as written.
+              </li>
+            </ul>
+            <p>
+              Providers open on page 1 and everybody else on page 2; the buttons at the top switch.
+              Each page has its own PDF — <em>AWV Questionnaire</em> and{' '}
+              <em>AWV Preventive Services</em> — signed electronically by whoever made it. Upload
+              both to eCW Documents.
+            </p>
+          </>
+        ),
+      },
+      {
+        question: 'The SPMSQ score',
+        answer: (
+          <p>
+            Mark each answer correct or incorrect — what the patient actually said is not kept — and
+            choose their education. The score is worked out as on the paper form: 0&ndash;2
+            incorrect is normal, 3&ndash;4 mild, 5&ndash;7 moderate and 8 or more severe cognitive
+            impairment, with one more incorrect allowed for grade school or less and one less for
+            education beyond high school.
+          </p>
+        ),
+      },
+      {
+        question: 'Does it keep anything?',
+        answer: (
+          <p>
+            No. Like the other forms, what you type stays on your device and is never sent to Domi
+            Staff or saved in it. Page 1 printed in <strong>English and Spanish</strong> gives the
+            English first, then the Spanish. Once you say a PDF arrived that page is cleared (and
+            the patient too, unless the other page has answers on it).
           </p>
         ),
       },
@@ -1251,11 +1315,12 @@ export function HelpPage() {
   const guide = isManager && params.get('guide') === 'managers' ? 'managers' : 'staff';
   const sections =
     guide === 'managers'
-      ? [...MANAGERS, ...CARE_PLAN]
+      ? [...MANAGERS, ...CARE_PLAN, ...WELLNESS]
       : [
           ...STAFF,
           ...(employee?.usesClinicalForms ? PROVIDERS : []),
           ...(employee && canUseCarePlan(employee) ? CARE_PLAN : []),
+          ...(employee && canUseWellnessForm(employee) ? WELLNESS : []),
           ...(employee?.hasProductivity ? PRODUCTIVITY : []),
         ];
 

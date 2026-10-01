@@ -94,7 +94,8 @@ export function TextField({
   suffix,
 }: {
   path: string;
-  label: string;
+  /// A question in two languages is a node: the patient's, then the English.
+  label: ReactNode;
   value: string;
   onChange: (value: string) => void;
   required?: boolean;
@@ -238,7 +239,8 @@ export function RadioGroup({
   hint,
 }: {
   path: string;
-  label: string;
+  /// A question in two languages is a node: the patient's, then the English.
+  label: ReactNode;
   value: string;
   onChange: (value: string) => void;
   options: Choice[];
@@ -327,7 +329,8 @@ export function CheckGroup({
   wide,
 }: {
   path: string;
-  label: string;
+  /// A question in two languages is a node: the patient's, then the English.
+  label: ReactNode;
   values: string[];
   onChange: (values: string[]) => void;
   options: Choice[];

@@ -103,6 +103,11 @@ const CognitiveAssessmentPage = lazy(() =>
 const CarePlanPage = lazy(() =>
   import('./clinical/ccm-care-plan/CarePlanPage').then((m) => ({ default: m.CarePlanPage })),
 );
+const WellnessVisitPage = lazy(() =>
+  import('./clinical/wellness-visit/WellnessVisitPage').then((m) => ({
+    default: m.WellnessVisitPage,
+  })),
+);
 const TimesheetPage = lazy(() =>
   import('./pages/TimesheetPage').then((m) => ({ default: m.TimesheetPage })),
 );
@@ -189,6 +194,7 @@ function Routed() {
           <Route path="locations" element={<LocationsPage />} />
           <Route path="clinical/99483" element={<CognitiveAssessmentPage />} />
           <Route path="clinical/care-plan" element={<CarePlanPage />} />
+          <Route path="clinical/wellness" element={<WellnessVisitPage />} />
           <Route path="*" element={<ClockPage />} />
         </Route>
       </Routes>

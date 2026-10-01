@@ -1306,6 +1306,11 @@ model JobRole {
   /// The forms run in the browser and store nothing, so this shows a screen
   /// and grants no access to anything.
   usesClinicalForms      Boolean                 @default(false)
+  /// People in this role get the Annual Wellness Visit form under Resources →
+  /// Forms (October 2026, Dominguez): Medical Assistants fill in its second
+  /// page, providers its first. Starts true for Provider and Medical
+  /// Assistant. Like the other forms it stores nothing — a screen, no power.
+  usesWellnessForm       Boolean                 @default(false)
 
   @@map("job_roles")
 }

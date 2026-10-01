@@ -21,6 +21,10 @@ export class CreateJobRoleDto {
   @IsBoolean()
   usesClinicalForms?: boolean;
 
+  @IsOptional()
+  @IsBoolean()
+  usesWellnessForm?: boolean;
+
   @IsString()
   @MinLength(2)
   @MaxLength(60)
@@ -49,6 +53,12 @@ export class UpdateJobRoleDto {
   @IsOptional()
   @IsBoolean()
   usesClinicalForms?: boolean;
+
+  /// Whether people in this role get the Annual Wellness Visit form under
+  /// Resources → Forms (Providers and Medical Assistants). It keeps nothing either.
+  @IsOptional()
+  @IsBoolean()
+  usesWellnessForm?: boolean;
 
   @IsOptional()
   @IsString()

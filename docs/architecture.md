@@ -2897,6 +2897,69 @@ read the one list `validate.ts` makes. The red messages under the fields
 still wait until somebody first tries for a PDF, so a blank form is amber,
 not red.
 
+## The Annual Wellness Visit form
+
+Asked for by Dominguez (1 October 2026): the practice's **Annual Wellness
+Supplement Form** (the two-page Word form, 02.2024) as a third clinical form.
+`apps/web/src/clinical/wellness-visit/`, at `/clinical/wellness`, linked from
+**Resources → Forms**.
+
+**Same rules as the other two** (see *The clinical forms*): React state only,
+the same lint rule on the folder, one lazily loaded piece with its PDF code,
+leaving asks first, and `tests/browser/wellness.mjs` fills in a fake patient
+and fails if any of it reaches a request or browser storage. It shares
+`clinical/common/` and the care plan's `LETTERHEAD`.
+
+**Two pages, two people, two PDFs** (Dominguez): the **Medical Assistant**
+does **page 2**, preventive services, and the **provider** does **page 1**,
+the questionnaire, with the patient. Nothing is saved, and the two are
+usually on different devices, so each page is filled in and downloaded on
+its own — `MM-DD-YYYY AWV Preventive Services.pdf` and
+`MM-DD-YYYY AWV Questionnaire.pdf`, each signed electronically by whoever
+made it — and both go to eCW Documents. Buttons at the top switch pages; a
+provider (a job role with `usesClinicalForms`) opens on page 1 and everybody
+else on page 2 (`wellnessStartPage`). Only the patient's line (name, date of
+birth, date of visit) is shared between the pages, for when one person does
+both. Saying a PDF arrived clears that page, and the patient too unless the
+other page has answers.
+
+**Who sees it.** A new job-role setting, `JobRole.usesWellnessForm`
+("People in this role get the Annual Wellness Visit form", on Job roles),
+started on for **Provider** and **Medical Assistant** by the
+`20261001020000_wellness_form` migration and the seed; **managers and
+admins** have it anyway, as with the care plan (`canUseWellnessForm` in
+`lib/clinical-access.ts`). Like `usesClinicalForms` it shows a screen and
+grants nothing — the form keeps nothing on the server to grant access to.
+
+**Page 1, in the patient's preferred language** (Dominguez). The provider
+picks English or Spanish first; in Spanish every question and choice is shown
+in Spanish, to read to the patient as written, with the English in small
+type under each question. The PDF is **English, or English and Spanish**
+(starting as both for Spanish), like the other forms. The questions are the
+paper form's 18, in its order and wording (`config.ts`, each with its
+Spanish), with its follow-ups — "Yes; which?", "No; who do you live with?",
+glasses, hearing aids, the 0–10 pain scale (the faces picture is left out),
+days a week and minutes a day, how many falls, which kind of leakage, help
+with ADLs / IADLs, which safety items the home is missing, which memory
+problem. Then the **SPMSQ** (Pfeiffer): each of the ten marked only
+**correct or incorrect** — never what the patient said (their phone number,
+birthday, mother's maiden name). Education is asked because the form's own
+scoring depends on it: one more error allowed with grade school or less, one
+fewer with more than high school (`scoreSpmsq`), then 0–2 normal, 3–4 mild,
+5–7 moderate, 8+ severe.
+
+**Page 2, in English.** The form's 20 services with their frequencies;
+each needs **Yes / No / Offered/Refused**. A Yes needs the **date
+completed**, typed, because the MA often knows only the month or year:
+MM/DD/YYYY, MM/YYYY or YYYY, not after the visit (`serviceDay`). The Pos /
+Neg result, on the services the form gives one, is optional ("not recorded"
+on the PDF).
+
+**The Spanish** was written for this form and **has not yet been read by a
+native speaker**: `NEEDS_NATIVE_SPEAKER_REVIEW` is `true`, so the screen says
+so beside the Spanish and the print choice — never on the PDF. Set it to
+`false` once it has been read, as was done for the other two.
+
 ## Provider productivity
 
 Added 30 September 2026 at Dominguez's request, replacing the practice's

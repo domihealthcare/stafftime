@@ -13,7 +13,11 @@ import {
   buttonClass,
 } from '../components/ui';
 import { ApiError, api } from '../lib/api';
-import { canUseCarePlan, canUseCognitiveAssessment } from '../lib/clinical-access';
+import {
+  canUseCarePlan,
+  canUseCognitiveAssessment,
+  canUseWellnessForm,
+} from '../lib/clinical-access';
 import { useIsManager, useSession } from '../lib/session';
 import type { Resource, ResourceKind, ResourceSection } from '../lib/types';
 
@@ -486,7 +490,8 @@ function FormsSection() {
   const { employee } = useSession();
   const cognitive = employee ? canUseCognitiveAssessment(employee) : false;
   const carePlan = employee ? canUseCarePlan(employee) : false;
-  if (!cognitive && !carePlan) return null;
+  const wellness = employee ? canUseWellnessForm(employee) : false;
+  if (!cognitive && !carePlan && !wellness) return null;
   return (
     <section aria-label="Forms" data-testid="forms-section">
       <h2 className="mb-2 text-sm font-semibold uppercase tracking-wide text-slate-600">Forms</h2>
@@ -516,6 +521,21 @@ function FormsSection() {
             <p className="mt-0.5 text-xs text-slate-600">
               For CCM and APCM: the general care plan and two or more chronic conditions, as one PDF
               in English, or English and Spanish. Nothing is saved.
+            </p>
+          </div>
+        )}
+        {wellness && (
+          <div>
+            <Link
+              to="/clinical/wellness"
+              className="block text-sm font-semibold text-brand-800 hover:text-brand-900"
+            >
+              Annual Wellness Visit →
+            </Link>
+            <p className="mt-0.5 text-xs text-slate-600">
+              The Annual Wellness Supplement Form: the medical assistant does page 2 (preventive
+              services), the provider page 1 in the patient&rsquo;s language. Each page downloads
+              for eCW. Nothing is saved.
             </p>
           </div>
         )}

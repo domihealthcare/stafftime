@@ -98,6 +98,9 @@ export interface Employee extends EmployeeSummary {
   /// Signed-in person only: their job role gives them the clinical forms
   /// in the account menu (Providers).
   usesClinicalForms?: boolean;
+  /// Signed-in person only: their job role gives them the Annual Wellness
+  /// Visit form (Providers and Medical Assistants).
+  usesWellnessForm?: boolean;
   /// Signed-in person only: a manager has published productivity numbers for
   /// them, so "Your productivity" appears in the account menu.
   hasProductivity?: boolean;
@@ -777,6 +780,8 @@ export interface JobRole {
   seesOwnPersonnelTabs?: boolean;
   /// People in it get the clinical forms under Resources → Forms.
   usesClinicalForms?: boolean;
+  /// People in it get the Annual Wellness Visit form under Resources → Forms.
+  usesWellnessForm?: boolean;
 }
 
 export type ResourceKind = 'LINK' | 'PAGE';

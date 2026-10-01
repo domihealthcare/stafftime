@@ -62,15 +62,18 @@ async function seedJobRoles() {
     const seesOwnPersonnelTabs = name === 'Provider';
     // Providers get the clinical forms too (the 99483 cognitive assessment).
     const usesClinicalForms = name === 'Provider';
+    // The Annual Wellness Visit form: the MA does its second page, the provider its first.
+    const usesWellnessForm = name === 'Provider' || name === 'Medical Assistant';
     await prisma.jobRole.upsert({
       where: { name },
-      update: { seesOwnPersonnelTabs, usesClinicalForms },
+      update: { seesOwnPersonnelTabs, usesClinicalForms, usesWellnessForm },
       create: {
         name,
         sortOrder: (index + 1) * 10,
         colour: JOB_ROLE_COLOURS[index],
         seesOwnPersonnelTabs,
         usesClinicalForms,
+        usesWellnessForm,
       },
     });
   }

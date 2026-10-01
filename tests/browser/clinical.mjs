@@ -84,7 +84,10 @@ await step('somebody who is not a Provider sees no link to it, and the page says
   const nav = await page.getByRole('navigation').getByRole('link').allInnerTexts();
   if (nav.some((t) => /cognitive|braincheck/i.test(t))) throw new Error(`navigation: ${nav.join(', ')}`);
   await page.goto(`${BASE}/resources`, { waitUntil: 'networkidle' });
-  if ((await page.getByTestId('clinical-tools').count()) > 0) throw new Error('the link is on Resources');
+  // Frankie is a Medical Assistant too, so Forms holds the wellness form — and only that.
+  const forms = page.getByTestId('clinical-tools');
+  await forms.getByRole('link', { name: /^Annual Wellness Visit/ }).waitFor({ timeout: 10000 });
+  if ((await forms.getByRole('link', { name: /BrainCheck/ }).count()) > 0) throw new Error('the link is on Resources');
   await page.goto(`${BASE}/clinical/99483`, { waitUntil: 'networkidle' });
   await page.getByText('This form is for providers.').waitFor({ timeout: 10000 });
   if ((await page.getByLabel(/Patient name/).count()) > 0) throw new Error('the form is shown');

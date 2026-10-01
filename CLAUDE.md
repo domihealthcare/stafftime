@@ -63,8 +63,9 @@ This is a timekeeping app, not a payroll or HR system. It deliberately stores:
   the browser, before anything is sent, and the schema guard fails on any
   other birth field
 
-The **clinical forms** — 99483 (September 2026) and the CCM care plan
-(October 2026) — are the only screens that handle patient details, and they
+The **clinical forms** — 99483 (September 2026), the CCM care plan
+(October 2026) and the Annual Wellness Visit (October 2026) — are the only
+screens that handle patient details, and they
 keep them out of the app too: they are typed, made into a PDF and downloaded
 entirely in the browser, and never sent or stored (see *Clinical forms* and
 *CCM care plan* below).
@@ -736,6 +737,21 @@ Beyond the phases, the parts worth knowing about before picking up work:
 - **"CCM care plan" is just "Care plan"** (October 2026, Dominguez — the
   practice uses it for **APCM** as well as CCM): on Resources → Forms, the
   page, Help and the file name. The code keeps `ccm-care-plan/`.
+- **Annual Wellness Visit** (1 October 2026, Dominguez — the practice's
+  Annual Wellness Supplement Form, 02.2024). Resources → **Forms** →
+  **Annual Wellness Visit** (`/clinical/wellness`), for job roles with
+  **uses the wellness form** (`JobRole.usesWellnessForm`, started on for
+  Provider and Medical Assistant) and managers and admins. Two pages done
+  separately, each its own PDF for eCW: the **MA does page 2** (preventive
+  services — Yes / No / Offered-Refused, a date for a Yes, result optional)
+  and the **provider page 1** (social history and functional ability, then
+  the SPMSQ, scored with the form's education allowance), **in the
+  patient's preferred language** — in Spanish the questions are shown in
+  Spanish with the English under them, and the PDF is English, or English
+  and Spanish. Providers open on page 1, everybody else on page 2. Same
+  privacy as the other two (`tests/browser/wellness.mjs`). **The Spanish
+  still needs a native speaker's read** (`NEEDS_NATIVE_SPEAKER_REVIEW`). See
+  *The Annual Wellness Visit form* in `docs/architecture.md`.
 - **Provider productivity** (30 September 2026, Dominguez — replaces the
   practice's *Patients & Providers* sheet). Manage → **Provider productivity**
   — **only for people an admin has chosen** (`canManageProductivity`, a list at

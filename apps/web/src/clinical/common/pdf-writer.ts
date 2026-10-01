@@ -101,11 +101,12 @@ export class PdfWriter {
   }
 
   /// A label and its answer side by side, each wrapping in its own column.
-  field(label: string, value: string) {
+  /// A wider label column suits a question and its answer (the wellness form).
+  field(label: string, value: string, labelWidth = LABEL_WIDTH) {
     const size = 10;
     const leading = size * 1.3;
-    const labelLines = this.wrap(`${label}`, this.bold, size, LABEL_WIDTH - 10);
-    const valueLines = this.wrap(value, this.regular, size, CONTENT - LABEL_WIDTH);
+    const labelLines = this.wrap(`${label}`, this.bold, size, labelWidth - 10);
+    const valueLines = this.wrap(value, this.regular, size, CONTENT - labelWidth);
     const rows = Math.max(labelLines.length, valueLines.length);
     // A short answer stays in one piece; a long one may run on to the next page.
     if (rows <= 6) this.ensure(rows * leading);
@@ -113,7 +114,7 @@ export class PdfWriter {
       this.ensure(leading);
       this.y -= size;
       if (labelLines[row]) this.draw(labelLines[row], LEFT, this.bold, size, INK);
-      if (valueLines[row]) this.draw(valueLines[row], LEFT + LABEL_WIDTH, this.regular, size, INK);
+      if (valueLines[row]) this.draw(valueLines[row], LEFT + labelWidth, this.regular, size, INK);
       this.y -= leading - size;
     }
     this.y -= 3;

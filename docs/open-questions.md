@@ -221,6 +221,21 @@ conditions); see *The CCM care plan* in `docs/architecture.md`.
       precautions you can implement…").
 - [ ] **The logo** is not on the PDF (text letterhead only); add it if wanted.
 
+## Annual Wellness Visit form (built October 2026)
+
+Built from the practice's Annual Wellness Supplement Form (02.2024); see
+*The Annual Wellness Visit form* in `docs/architecture.md`.
+
+- [ ] **A native speaker to read the Spanish** of page 1 (the questions,
+      choices and the SPMSQ in `wellness-visit/config.ts`, and the PDF's
+      words in `pdf.ts`), then set `NEEDS_NATIVE_SPEAKER_REVIEW` to `false`.
+- [ ] **Check the choices made while building it**: education is asked for
+      the SPMSQ score (the paper form scores by it but has no box for it); on
+      page 2 the date completed is required for a Yes and the Pos / Neg
+      result is optional; the pain faces picture is left out (the 0–10
+      number is kept).
+- [ ] **Try one of each PDF in eCW Documents**, as was done for the others.
+
 ## Product decisions
 
 - [ ] **Who may correct a timesheet** — any manager, or only the employee's own
