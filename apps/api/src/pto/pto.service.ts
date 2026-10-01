@@ -8,13 +8,20 @@ import {
 import { EmploymentStatus, Prisma, PtoStatus, Role, ShiftStatus } from '@prisma/client';
 import { AuthUser } from '../common/auth/auth-user';
 import { countDays, isoDate, toUtcDate } from '../common/util/calendar-date.util';
+import { practiceToday } from '../common/util/zoned-time.util';
 import { NotificationsService } from '../email/notifications.service';
 import { PrismaService } from '../prisma/prisma.service';
-import { CreatePtoRequestDto, QueryPtoRequestsDto, ReviewPtoRequestDto } from './dto/pto.dto';
+import {
+  CreatePtoRequestDto,
+  QueryPtoRequestsDto,
+  RecordPtoDto,
+  ReviewPtoRequestDto,
+} from './dto/pto.dto';
 
 const REQUEST_INCLUDE = {
   employee: { select: { id: true, firstName: true, lastName: true, preferredName: true } },
   reviewedBy: { select: { id: true, firstName: true, lastName: true } },
+  recordedBy: { select: { id: true, firstName: true, lastName: true } },
 } satisfies Prisma.PtoRequestInclude;
 
 /// Longest single request we will accept, as a guard against a mis-typed year.
@@ -69,6 +76,80 @@ export class PtoService {
     await this.notifyQuietly(() => this.notifications.ptoRequested(request.id));
 
     return this.decorate(request);
+  }
+
+  /**
+   * Time off somebody has already taken, written down by an admin — the
+   * back-log from before Domi Staff, or a sick day nobody asked for in the
+   * app (October 2026, Dominguez). Approved from the start, so it comes off
+   * their balance like any other; nobody is notified, because nothing is
+   * being decided.
+   */
+  async record(dto: RecordPtoDto, actor: AuthUser) {
+    if (dto.employeeId === actor.id) {
+      throw new ForbiddenException(
+        'You cannot record your own time off. Ask another administrator.',
+      );
+    }
+    const { startDate, endDate } = this.parseDates(dto.startDate, dto.endDate);
+    if (dto.isHalfDay && startDate.getTime() !== endDate.getTime()) {
+      throw new BadRequestException('A half day has to be a single date.');
+    }
+    if (endDate > practiceToday()) {
+      throw new BadRequestException(
+        'This is for time off already taken. Days still to come are asked for on the Time off screen.',
+      );
+    }
+
+    const employee = await this.prisma.employee.findUnique({
+      where: { id: dto.employeeId },
+      select: { id: true },
+    });
+    if (!employee) {
+      throw new NotFoundException(`Employee ${dto.employeeId} not found`);
+    }
+
+    await this.assertNoOverlap(dto.employeeId, startDate, endDate);
+
+    const now = new Date();
+    const recorded = await this.prisma.ptoRequest.create({
+      data: {
+        employeeId: dto.employeeId,
+        type: dto.type,
+        status: PtoStatus.APPROVED,
+        startDate,
+        endDate,
+        isHalfDay: dto.isHalfDay ?? false,
+        reviewedById: actor.id,
+        reviewedAt: now,
+        reviewNote: dto.comment?.trim() || null,
+        recordedById: actor.id,
+      },
+      include: REQUEST_INCLUDE,
+    });
+    this.logger.log(`Time off ${recorded.id} recorded for ${dto.employeeId} by ${actor.id}`);
+    return this.decorate(recorded);
+  }
+
+  /**
+   * Takes back time off an admin recorded by mistake. Only a recorded entry:
+   * a request somebody made stays on file however it ended (see cancel).
+   */
+  async removeRecorded(id: string) {
+    const entry = await this.prisma.ptoRequest.findUnique({
+      where: { id },
+      select: { id: true, recordedById: true },
+    });
+    if (!entry) {
+      throw new NotFoundException(`Request ${id} not found`);
+    }
+    if (entry.recordedById === null) {
+      throw new BadRequestException(
+        'Only time off recorded after the fact can be removed. A request stays on file — cancel it instead.',
+      );
+    }
+    await this.prisma.ptoRequest.delete({ where: { id } });
+    return { deleted: true };
   }
 
   async findAll(query: QueryPtoRequestsDto, actor: AuthUser) {

@@ -67,6 +67,9 @@ import type {
   ClosingTemplateRole,
   ClosingTemplateSection,
   StaffBalance,
+  StaffRecord,
+  EmploymentChangeInput,
+  PersonalRecordFields,
   SupplyRequest,
 } from './types';
 
@@ -552,6 +555,21 @@ export const api = {
   cancelPto: (id: string) =>
     request<PtoRequest>(`/pto/${id}/cancel`, { method: 'PATCH' }).then(timeOffChanged),
   ptoConflicts: (id: string) => request<ConflictingShift[]>(`/pto/${id}/conflicts`),
+  /// Time off already taken, written down by an admin on a staff profile.
+  recordPto: (body: {
+    employeeId: string;
+    type: string;
+    startDate: string;
+    endDate: string;
+    isHalfDay?: boolean;
+    comment?: string;
+  }) =>
+    request<PtoRequest>('/pto/record', { method: 'POST', body: JSON.stringify(body) }).then(
+      timeOffChanged,
+    ),
+  removeRecordedPto: (id: string) =>
+    request<{ deleted: boolean }>(`/pto/${id}/recorded`, { method: 'DELETE' }).then(timeOffChanged),
+
   ptoPolicy: () => request<PtoPolicy>('/pto/policy'),
   updatePtoPolicy: (body: Partial<Omit<PtoPolicy, 'id'>>) =>
     request<PtoPolicy>('/pto/policy', { method: 'PATCH', body: JSON.stringify(body) }),
@@ -741,6 +759,27 @@ export const api = {
   listLocations: (includeInactive = false) =>
     request<Location[]>(`/locations${includeInactive ? '?includeInactive=true' : ''}`),
   listEmployees: () => request<Employee[]>('/employees'),
+  employee: (id: string) => request<Employee>(`/employees/${id}`),
+
+  // ------------------------------------------------- staff profiles (admins only)
+  staffRecord: (employeeId: string) => request<StaffRecord>(`/staff-records/${employeeId}`),
+  updatePersonalRecord: (employeeId: string, body: Partial<PersonalRecordFields>) =>
+    request<StaffRecord>(`/staff-records/${employeeId}/personal`, {
+      method: 'PUT',
+      body: JSON.stringify(body),
+    }),
+  addEmploymentChange: (employeeId: string, body: EmploymentChangeInput) =>
+    request<StaffRecord>(`/staff-records/${employeeId}/changes`, {
+      method: 'POST',
+      body: JSON.stringify(body),
+    }),
+  updateEmploymentChange: (id: string, body: EmploymentChangeInput) =>
+    request<StaffRecord>(`/staff-records/changes/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify(body),
+    }),
+  removeEmploymentChange: (id: string) =>
+    request<StaffRecord>(`/staff-records/changes/${id}`, { method: 'DELETE' }),
 
   currentEntry: () => request<TimeEntry | null>('/time-entries/current'),
   clockIn: (payload: ClockInPayload) =>

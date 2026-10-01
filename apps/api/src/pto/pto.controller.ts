@@ -1,6 +1,7 @@
 import {
   Body,
   Controller,
+  Delete,
   Get,
   HttpCode,
   HttpStatus,
@@ -19,6 +20,7 @@ import {
   AdjustPtoBalanceDto,
   CreatePtoRequestDto,
   QueryPtoRequestsDto,
+  RecordPtoDto,
   ReviewPtoRequestDto,
   UpdatePtoPolicyDto,
 } from './dto/pto.dto';
@@ -79,6 +81,21 @@ export class PtoController {
   @Post()
   create(@Body() dto: CreatePtoRequestDto, @CurrentUser() user: AuthUser) {
     return this.pto.create(dto, user);
+  }
+
+  /// Time off already taken, written down on a staff profile. Admins only,
+  /// like the profile itself.
+  @Post('record')
+  @Roles(Role.ADMIN)
+  record(@Body() dto: RecordPtoDto, @CurrentUser() user: AuthUser) {
+    return this.pto.record(dto, user);
+  }
+
+  @Delete(':id/recorded')
+  @Roles(Role.ADMIN)
+  @HttpCode(HttpStatus.OK)
+  removeRecorded(@Param('id', ParseUUIDPipe) id: string) {
+    return this.pto.removeRecorded(id);
   }
 
   /// Managers see everyone's; employees are scoped to their own.

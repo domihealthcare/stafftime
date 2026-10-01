@@ -2,11 +2,17 @@ import type { AllowanceBalance, PtoBalance } from '../lib/types';
 import { Card } from './ui';
 
 /// What the person actually wants to know before asking for time off.
-export function PtoBalanceCard({ balance }: { balance: PtoBalance }) {
+export function PtoBalanceCard({
+  balance,
+  title = 'Your balance',
+}: {
+  balance: PtoBalance;
+  title?: string;
+}) {
   return (
     <Card className="p-4">
       <div className="flex flex-wrap items-baseline justify-between gap-2">
-        <h2 className="text-sm font-semibold text-slate-900">Your balance</h2>
+        <h2 className="text-sm font-semibold text-slate-900">{title}</h2>
         <span className="text-xs text-slate-500">
           {balance.policyYear} policy year · to{' '}
           {new Date(`${balance.yearEnd}T00:00:00Z`).toLocaleDateString(undefined, {

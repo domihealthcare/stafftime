@@ -842,6 +842,18 @@ const MANAGERS: Section[] = [
         ),
       },
       {
+        question: 'Writing down time off day by day (admins)',
+        answer: (
+          <p>
+            On somebody&rsquo;s profile (<Screen>Manage → Staff</Screen>, press their name), press{' '}
+            <strong>Record time off already taken</strong>: Sick or PTO, the days, and a comment if
+            you like. It counts as approved and comes off their balance; nobody is notified, and it
+            can be removed from the same place. Use it or the total under <strong>Adjust</strong>{' '}
+            for the same days, not both — both would count them twice.
+          </p>
+        ),
+      },
+      {
         question: 'Starting or leaving',
         answer: (
           <p>
@@ -1021,6 +1033,13 @@ const MANAGERS: Section[] = [
               <strong>Edit</strong> on somebody&rsquo;s card to change their email, phone, access
               (Employee, Manager or Admin), job roles, offices and ADP File #, send their welcome
               email, or give them a temporary password or tablet PIN.
+            </li>
+            <li>
+              Press somebody&rsquo;s <strong>name</strong> (or <strong>Profile</strong>) for their
+              staff profile: contact details, home address, emergency contact, hire date, pay and
+              position over time — each raise and promotion with the day it took effect — and their
+              time off. Only admins can open it; the address, emergency contact and pay are shown
+              nowhere else, not to managers and not in the payroll export.
             </li>
             <li>
               When somebody leaves: <strong>Edit</strong>, then <strong>… has left</strong> at the

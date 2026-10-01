@@ -68,6 +68,15 @@ patient details, and it keeps them out of the app too: they are typed, made
 into a PDF and downloaded entirely in the provider's browser, and never sent
 or stored (see *Clinical forms* below).
 
+**Staff profiles** (October 2026, confirmed by Dominguez) are the one step back
+from "not an HR system": an **admin** may keep somebody's **home address**,
+**emergency contact**, and **pay and position over time** (each raise and
+promotion with the day it took effect). Admins only — not managers, not the
+person, not the Directory, not the payroll export. They live in their own tables
+(`EmployeePersonalRecord`, `EmploymentChange`), read only by `src/staff-records/`
+and never added to `Employee`, and the schema guard pins their fields. Still no
+identity numbers, documents, licence numbers or date of birth.
+
 Nothing is uploaded to the app, with **one deliberate exception**: a
 **profile photo** of yourself (confirmed by Dominguez, September 2026). The
 browser crops it square, shrinks it to 256 px and re-encodes it as a small
@@ -602,6 +611,18 @@ Beyond the phases, the parts worth knowing about before picking up work:
   ("Angelica D", so two Angelicas are told apart). Read-only on Your profile. `GET
   /directory/birthdays?from&to` (any signed-in person, two months at most); a
   29 February birthday shows on the 28th in other years.
+- **Staff profiles** (1 October 2026, Dominguez): on Manage → Staff an admin
+  presses a name (or **Profile**) for `/staff/:id` — employment (hire date,
+  position now, pay type, offices, ADP File #), contact (work email, phone,
+  **home address**, **emergency contact**), **Pay and position** (a history of
+  changes: Started / Promotion / Pay change / New position, a title, a rate per
+  hour or per year, a comment; "now" is the latest in force) and **Time off**
+  (this year's balance and every request). **Record time off already taken**
+  writes down past Sick or PTO days with an **optional comment**. It is an
+  approved request from the start (`PtoRequest.recordedById`), so it comes off
+  the balance. Nobody is told, it can be removed, and it can't be for yourself
+  or for future days. Managers see the Staff screen as before. See *Staff
+  profiles* in `docs/architecture.md`.
 - **Time off is Sick or PTO** (September 2026, Dominguez): a new request is
   one or the other, starting on Sick (PTO once the person's sick days are
   used up); `VACATION` is shown as "PTO". Older kinds stay readable. For the
@@ -675,7 +696,7 @@ Beyond the phases, the parts worth knowing about before picking up work:
   Counts only — never a patient (the schema guard pins the fields; the note is
   the one free-text box and says so). **Not in the payroll export** (decided). See *Provider
   productivity* in `docs/architecture.md`.
-- **Tests**: ~870 unit tests, and ~495 end-to-end checks in `tests/browser`
+- **Tests**: ~1,130 unit tests, and ~505 end-to-end checks in `tests/browser`
   driven against a real API, a real Postgres and a real Chromium. Both run in CI
   on every push. The convention is to run the browser suites twice — once
   against the dev server, once against `vite preview`, which applies the

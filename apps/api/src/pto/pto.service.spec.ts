@@ -61,6 +61,7 @@ describe('PtoService', () => {
           ...data,
         })),
         count: jest.fn().mockResolvedValue(3),
+        delete: jest.fn().mockResolvedValue({}),
       },
       shift: { findMany: jest.fn().mockResolvedValue([]) },
     };
@@ -389,6 +390,87 @@ describe('PtoService', () => {
       // Up to the end of the 5th, not its midnight start.
       expect(where.startsAt).toEqual({ lt: new Date('2026-11-06T00:00:00.000Z') });
       expect(where.endsAt).toEqual({ gt: new Date('2026-11-03T00:00:00.000Z') });
+    });
+  });
+  describe('recording time off already taken', () => {
+    const admin = { id: 'adm-1', email: 'dominguez@domihealthcare.com', role: Role.ADMIN };
+    const backlog = (overrides: Record<string, unknown> = {}) => ({
+      employeeId: 'emp-1',
+      type: PtoType.SICK,
+      startDate: '2026-03-02',
+      endDate: '2026-03-03',
+      ...overrides,
+    });
+
+    beforeAll(() =>
+      jest.useFakeTimers({
+        now: new Date('2026-10-01T15:00:00Z'),
+        doNotFake: ['nextTick', 'setImmediate'],
+      }),
+    );
+    afterAll(() => jest.useRealTimers());
+
+    it('is approved from the start, by and for the record, with the comment kept', async () => {
+      const { service, prisma, notifications } = build();
+      const recorded = await service.record(
+        backlog({ comment: '  Doctor’s note on file  ' }),
+        admin,
+      );
+
+      const data = prisma.ptoRequest.create.mock.calls[0][0].data;
+      expect(data.status).toBe(PtoStatus.APPROVED);
+      expect(data.recordedById).toBe('adm-1');
+      expect(data.reviewedById).toBe('adm-1');
+      expect(data.reviewNote).toBe('Doctor’s note on file');
+      expect(recorded.days).toBe(2);
+      // Nothing is being decided, so nobody is told.
+      expect(notifications.ptoRequested).not.toHaveBeenCalled();
+      expect(notifications.ptoDecided).not.toHaveBeenCalled();
+    });
+
+    it('leaves the comment out when there is none', async () => {
+      const { service, prisma } = build();
+      await service.record(backlog(), admin);
+      expect(prisma.ptoRequest.create.mock.calls[0][0].data.reviewNote).toBeNull();
+    });
+
+    it('takes today but not days still to come', async () => {
+      const { service } = build();
+      await expect(
+        service.record(backlog({ startDate: '2026-10-01', endDate: '2026-10-01' }), admin),
+      ).resolves.toBeDefined();
+      await expect(
+        service.record(backlog({ startDate: '2026-10-01', endDate: '2026-10-02' }), admin),
+      ).rejects.toThrow(BadRequestException);
+    });
+
+    it('refuses your own', async () => {
+      const { service } = build();
+      await expect(service.record(backlog({ employeeId: 'adm-1' }), admin)).rejects.toThrow(
+        ForbiddenException,
+      );
+    });
+
+    it('refuses days already booked, so nothing is counted twice', async () => {
+      const { service } = build({
+        overlap: {
+          id: 'pto-9',
+          status: PtoStatus.APPROVED,
+          startDate: new Date('2026-03-03T00:00:00.000Z'),
+          endDate: new Date('2026-03-03T00:00:00.000Z'),
+        },
+      });
+      await expect(service.record(backlog(), admin)).rejects.toThrow(/overlaps an approved/);
+    });
+
+    it('can be taken back, but a request somebody made cannot', async () => {
+      const recorded = build({ request: { id: 'pto-1', recordedById: 'adm-1' } });
+      await expect(recorded.service.removeRecorded('pto-1')).resolves.toEqual({ deleted: true });
+      expect(recorded.prisma.ptoRequest.delete).toHaveBeenCalledWith({ where: { id: 'pto-1' } });
+
+      const asked = build({ request: { id: 'pto-2', recordedById: null } });
+      await expect(asked.service.removeRecorded('pto-2')).rejects.toThrow(BadRequestException);
+      expect(asked.prisma.ptoRequest.delete).not.toHaveBeenCalled();
     });
   });
 });
