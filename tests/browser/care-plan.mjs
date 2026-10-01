@@ -46,6 +46,8 @@ const PATIENT_ID = 'TEST-0002';
 const SECRETS = [LAST, PATIENT_ID, 'Testsupport', 'Testcardio', 'penicillin-fake', 'walk-fake'];
 
 const today = new Intl.DateTimeFormat('en-CA', { timeZone: 'America/New_York' }).format(new Date());
+// Downloads are named "MM-DD-YYYY Title.pdf", with nothing about the patient.
+const fileDate = `${today.slice(5, 7)}-${today.slice(8, 10)}-${today.slice(0, 4)}`;
 
 const ctx = await browser.newContext({
   viewport: { width: 1024, height: 1366 },
@@ -213,7 +215,7 @@ await step('the whole form, filled in with a fake patient, makes one PDF in both
     page.waitForEvent('download', { timeout: 20000 }),
     page.getByRole('button', { name: 'Download the care plan' }).click(),
   ]);
-  const expected = `CarePlan_${PATIENT_ID}_${today}_EN-ES.pdf`;
+  const expected = `${fileDate} CCM Care Plan.pdf`;
   if (download.suggestedFilename() !== expected) throw new Error(`file ${download.suggestedFilename()}`);
   const path = `${OUT}/${expected}`;
   await download.saveAs(path);
@@ -277,7 +279,7 @@ await step('and in English alone', async () => {
     page.waitForEvent('download', { timeout: 20000 }),
     page.getByRole('button', { name: 'Download the care plan' }).click(),
   ]);
-  const expected = `CarePlan_${PATIENT_ID}_${today}.pdf`;
+  const expected = `${fileDate} CCM Care Plan.pdf`;
   if (download.suggestedFilename() !== expected) throw new Error(download.suggestedFilename());
   const path = `${OUT}/en-${download.suggestedFilename()}`;
   await download.saveAs(path);

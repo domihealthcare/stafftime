@@ -585,9 +585,9 @@ const PROVIDERS: Section[] = [
         question: 'After the visit: eCW',
         answer: (
           <p>
-            Upload the note (<strong>99483_Note_…pdf</strong>) to the patient&rsquo;s chart in eCW
+            Upload the note (<strong>MM-DD-YYYY BrainCheck Note.pdf</strong>) to the patient&rsquo;s chart in eCW
             Documents and reference it in the progress note for the date of service. Give the
-            patient and care partner the handout (<strong>99483_CarePlan_…pdf</strong>), then delete
+            patient and care partner the handout (<strong>MM-DD-YYYY BrainCheck Care Plan.pdf</strong>), then delete
             both files from the device.
           </p>
         ),

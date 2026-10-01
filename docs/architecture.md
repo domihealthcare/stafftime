@@ -2724,11 +2724,14 @@ blocks; jsPDF ships an HTML-to-picture path we must not use). Helvetica
 covers English and Spanish; `printable.ts` composes accents and swaps a few
 look-alikes (≥ → >=), and anything else is listed as a problem to retype.
 
-- **The note** — `99483_Note_[MRN]_[date].pdf`: patient, DOB, MRN, DOS and
+- **The note** — `MM-DD-YYYY BrainCheck Note.pdf` (by the date of service): patient, DOB, MRN, DOS and
   "Page X of Y" on every page; the requirements confirmed; each element and
   how it was completed; the care plan; the attestation with the minutes
   entered, the provider, a time stamp and a signature line; the eCW footer.
-- **The handout** — `99483_CarePlan_[MRN]_[date].pdf`, laid out after
+- **The handout** — `MM-DD-YYYY BrainCheck Care Plan.pdf`, **signed
+  electronically** by the provider signed in ("Electronically signed by …
+  on 10/01/2026 2:14 PM ET", in each language's half; Dominguez, October
+  2026), laid out after
   BrainCheck's cognitive care plan (the sample Dominguez shared): prepared
   by, practice, patient, care partner and date; per area a line of plain
   explanation, "Our goals" and "Things to try"; planning ahead as a
@@ -2814,7 +2817,7 @@ own. Adding a form is adding its phrases and a list, and pointing the
 condition at it.
 
 **The PDF** (`pdf.ts`, `text.ts`): one file,
-`CarePlan_[patient ID]_[date].pdf` (`_EN-ES` for both), in **English, or
+`MM-DD-YYYY CCM Care Plan.pdf`, in **English, or
 English and Spanish** — the only two choices (Dominguez, October 2026); both
 is English first, then the Spanish on a fresh page, the way the practice's
 own care plans were laid out. It starts
@@ -2829,6 +2832,16 @@ under each question. Anything typed is printed as typed in either language —
 nothing is sent away to be translated. **The Spanish needs a native
 speaker's read** (`NEEDS_NATIVE_SPEAKER_REVIEW` in `config.ts`; the form says
 so beside the language choice, never on the PDF).
+
+### File names
+
+Both forms name their downloads **`MM-DD-YYYY Title.pdf`** — the date of
+service (or the day the care plan was done) and a short title: *BrainCheck
+Note*, *BrainCheck Care Plan*, *CCM Care Plan* (Dominguez, October 2026:
+"MM/DD/YYYY Title"; a "/" is not allowed in a file name, so dashes). Nothing
+about the patient is in the name — no MRN, no patient ID — because names
+show in download lists and on shared devices. Two the same day get "(1)"
+from the browser. `pdfFilename` in `clinical/common/dates.ts`.
 
 ### What is still needed, on both forms
 

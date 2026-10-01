@@ -1,4 +1,4 @@
-import { practiceTimestamp, usDate } from '../common/dates';
+import { pdfFilename, practiceTimestamp, usDate } from '../common/dates';
 import { PdfWriter } from '../common/pdf-writer';
 import { LETTERHEAD, type Language, type PdfLanguage } from './config';
 import type { CarePlanForm } from './form';
@@ -21,16 +21,9 @@ export interface Preparer {
 export const preparerName = (preparer: Preparer) =>
   preparer.credentials ? `${preparer.name}, ${preparer.credentials}` : preparer.name;
 
-/// "CarePlan_12345_2026-10-01_ES.pdf". The patient ID keeps only letters,
-/// digits and dashes, so it cannot make an odd file name.
+/// "10-01-2026 CCM Care Plan.pdf", by the date it was done.
 export function carePlanFilename(form: CarePlanForm): string {
-  const id =
-    form.patient.patientId
-      .trim()
-      .replace(/[^A-Za-z0-9-]+/g, '-')
-      .replace(/^-+|-+$/g, '') || 'no-ID';
-  const suffix = form.pdfLanguage === 'both' ? '_EN-ES' : '';
-  return `CarePlan_${id}_${form.patient.conductedOn}${suffix}.pdf`;
+  return pdfFilename(form.patient.conductedOn, 'CCM Care Plan');
 }
 
 export async function carePlanPdf(

@@ -15,6 +15,16 @@ export function usDate(value: string): string {
   return match ? `${match[2]}/${match[3]}/${match[1]}` : value;
 }
 
+/// A downloaded PDF's name: "10-01-2026 CCM Care Plan.pdf" — the date as
+/// MM-DD-YYYY and a short title (Dominguez, October 2026: "MM/DD/YYYY
+/// Title"; a "/" cannot be in a file name, so dashes). Nothing about the
+/// patient: the name shows in download lists and on shared devices.
+export function pdfFilename(iso: string, title: string): string {
+  const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(iso);
+  const date = match ? `${match[2]}-${match[3]}-${match[1]}` : 'undated';
+  return `${date} ${title}.pdf`;
+}
+
 /// "09/29/2026 2:14 PM ET", in the practice's time, for the PDF's stamps.
 export function practiceTimestamp(at: Date): string {
   const parts = Object.fromEntries(

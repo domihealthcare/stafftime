@@ -68,6 +68,8 @@ const SECRETS = [PATIENT, 'Testpatient', MRN, 'Testhistorian', 'oxybutynin-fake'
 // New Jersey's day, as the provider's device has it.
 const today = new Intl.DateTimeFormat('en-CA', { timeZone: 'America/New_York' }).format(new Date());
 const usDate = (iso) => `${iso.slice(5, 7)}/${iso.slice(8, 10)}/${iso.slice(0, 4)}`;
+// Downloads are named "MM-DD-YYYY Title.pdf", with nothing about the patient.
+const fileDate = (iso) => usDate(iso).replace(/\//g, '-');
 
 // Frankie works the front desk; for this suite they are also a Provider.
 const ctx = await browser.newContext({
@@ -298,7 +300,7 @@ await step('the whole form, filled in with a fake patient, makes the note', asyn
     page.waitForEvent('download', { timeout: 20000 }),
     page.getByRole('button', { name: 'Download the note' }).click(),
   ]);
-  const expected = `99483_Note_${MRN}_${today}.pdf`;
+  const expected = `${fileDate(today)} BrainCheck Note.pdf`;
   if (download.suggestedFilename() !== expected) throw new Error(`file ${download.suggestedFilename()}`);
   const path = `${OUT}/${expected}`;
   await download.saveAs(path);
@@ -342,13 +344,13 @@ await step('the handout is in plain English, with the plan and nothing clinical'
     page.waitForEvent('download', { timeout: 20000 }),
     page.getByRole('button', { name: 'Download the handout' }).click(),
   ]);
-  const expected = `99483_CarePlan_${MRN}_${today}.pdf`;
+  const expected = `${fileDate(today)} BrainCheck Care Plan.pdf`;
   if (download.suggestedFilename() !== expected) throw new Error(`file ${download.suggestedFilename()}`);
   const path = `${OUT}/en-${expected}`;
   await download.saveAs(path);
   const pages = await pdfPages(path);
   const all = pages.join(' ');
-  for (const piece of ['Your memory care plan', 'Prepared by', 'Care partner John Testhistorian, son', 'Our goals', 'Things to try', 'Small changes at home make a big difference', 'Remove tripping hazards', 'Planning ahead', 'Financial power of attorney Not yet', 'Support group', '1-800-272-3900', 'Safety tips', 'Your next visit', 'In 3 months', 'Confidential', '201-528-3664']) {
+  for (const piece of ['Your memory care plan', 'Prepared by', 'Care partner John Testhistorian, son', 'Our goals', 'Things to try', 'Small changes at home make a big difference', 'Remove tripping hazards', 'Planning ahead', 'Financial power of attorney Not yet', 'Support group', '1-800-272-3900', 'Safety tips', 'Your next visit', 'In 3 months', 'Confidential', '201-528-3664', 'Signature', 'Electronically signed by Frankie', 'APN-C on']) {
     if (!all.includes(piece)) throw new Error(`the handout lacks "${piece}"`);
   }
   for (const clinical of ['FAST', 'PHQ-9', 'MRN', 'modifier', 'Stage 4']) {
@@ -370,7 +372,7 @@ await step('and in English and Spanish, flagged on screen as not yet checked by 
     page.waitForEvent('download', { timeout: 20000 }),
     page.getByRole('button', { name: 'Download the handout' }).click(),
   ]);
-  if (!download.suggestedFilename().endsWith('_EN-ES.pdf')) throw new Error(download.suggestedFilename());
+  if (download.suggestedFilename() !== `${fileDate(today)} BrainCheck Care Plan.pdf`) throw new Error(download.suggestedFilename());
   const path = `${OUT}/es-${download.suggestedFilename()}`;
   await download.saveAs(path);
   const pages = await pdfPages(path);
@@ -378,7 +380,7 @@ await step('and in English and Spanish, flagged on screen as not yet checked by 
   // English first, then the Spanish starting on a page of its own.
   const spanishStarts = pages.findIndex((text) => text.includes('Su plan de cuidado de la memoria'));
   if (spanishStarts < 1 || !pages[0].includes('Your memory care plan')) throw new Error(`Spanish starts on page ${spanishStarts + 1}`);
-  for (const piece of ['Your memory care plan', 'Our goals', 'Su plan de cuidado de la memoria', 'Preparado por', 'Nuestras metas', 'Qué puede hacer', 'Planificar con anticipación', 'Consejos de seguridad', 'En 3 meses', 'Confidencial', 'al 201-528-3664']) {
+  for (const piece of ['Your memory care plan', 'Our goals', 'Su plan de cuidado de la memoria', 'Preparado por', 'Nuestras metas', 'Qué puede hacer', 'Planificar con anticipación', 'Consejos de seguridad', 'En 3 meses', 'Confidencial', 'al 201-528-3664', 'Electronically signed by Frankie', 'Firmado electrónicamente por Frankie']) {
     if (!all.includes(piece)) throw new Error(`the Spanish handout lacks "${piece}"`);
   }
   if (all.includes('native speaker') || all.includes('not yet been checked')) throw new Error('the review note is on the handout');

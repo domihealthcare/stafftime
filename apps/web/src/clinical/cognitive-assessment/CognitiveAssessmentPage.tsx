@@ -123,7 +123,10 @@ function AssessmentScreen({ employee }: { employee: Employee }) {
       if (which === 'note') {
         savePdf(await clinicalNotePdf(form, provider, new Date()), noteFilename(form));
       } else {
-        savePdf(await carePlanPdf(form, provider, form.handoutLanguage), carePlanFilename(form));
+        savePdf(
+          await carePlanPdf(form, provider, form.handoutLanguage, new Date()),
+          carePlanFilename(form),
+        );
       }
       setMade((before) => {
         const base: Made =
@@ -338,7 +341,7 @@ function AssessmentScreen({ employee }: { employee: Employee }) {
                 label="Download the handout"
                 detail={`Care plan for the patient, in ${
                   form.handoutLanguage === 'both' ? 'English and Spanish' : 'English'
-                }`}
+                } — signed electronically in your name`}
                 making={making === 'handout'}
                 disabled={making !== null}
                 done={current?.handout === form.handoutLanguage}

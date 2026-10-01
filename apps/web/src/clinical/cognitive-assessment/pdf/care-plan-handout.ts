@@ -24,7 +24,8 @@ import {
   longDate,
   type HandoutLanguage,
 } from '../translations.es';
-import { providerName, safeMrn, type Provider } from './clinical-note';
+import { providerName, type Provider } from './clinical-note';
+import { pdfFilename, practiceTimestamp } from '../../common/dates';
 import type { PrintLanguage } from '../../common/layout';
 import { PdfWriter } from '../../common/pdf-writer';
 
@@ -41,9 +42,9 @@ import { PdfWriter } from '../../common/pdf-writer';
  * the provider typed is printed as they typed it.
  */
 
+/// "09-29-2026 BrainCheck Care Plan.pdf", by the date of service.
 export function carePlanFilename(form: AssessmentForm): string {
-  const suffix = form.handoutLanguage === 'both' ? '_EN-ES' : '';
-  return `99483_CarePlan_${safeMrn(form.visit.mrn)}_${form.visit.dos}${suffix}.pdf`;
+  return pdfFilename(form.visit.dos, 'BrainCheck Care Plan');
 }
 
 const has = (text: string) => text.trim() !== '';
@@ -51,20 +52,24 @@ const has = (text: string) => text.trim() !== '';
 const SIZE = 11.5;
 
 /// In English, or in English and then Spanish on fresh pages (Dominguez,
-/// October 2026: only those two).
+/// October 2026: only those two). Signed electronically by the provider —
+/// the person signed in — when it is made; each language's half carries the
+/// signature in its own words.
 export async function carePlanPdf(
   form: AssessmentForm,
   provider: Provider,
   print: PrintLanguage,
+  signedAt: Date,
 ): Promise<Uint8Array> {
   const en = HANDOUT_STRINGS.en;
   const es = HANDOUT_STRINGS.es;
   const both = print === 'both';
   const pdf = await PdfWriter.create(both ? `${en.title} / ${es.title}` : en.title);
-  writeHandout(pdf, form, provider, 'en');
+  const stamp = practiceTimestamp(signedAt);
+  writeHandout(pdf, form, provider, 'en', stamp);
   if (both) {
     pdf.pageBreak();
-    writeHandout(pdf, form, provider, 'es');
+    writeHandout(pdf, form, provider, 'es', stamp);
   }
   const { visit } = form;
   const name = visit.patientName.trim();
@@ -81,6 +86,7 @@ function writeHandout(
   form: AssessmentForm,
   provider: Provider,
   language: HandoutLanguage,
+  signedAt: string,
 ) {
   const words = HANDOUT_STRINGS[language];
   const es = language === 'es';
@@ -184,4 +190,9 @@ function writeHandout(
 
   pdf.gap(6);
   pdf.paragraph(words.questions(PRACTICE_PHONE), { size: SIZE });
+
+  // The provider's electronic signature (Dominguez, October 2026).
+  pdf.keep(60);
+  pdf.gap(12);
+  pdf.field(words.signature, words.signedBy(providerName(provider), signedAt));
 }

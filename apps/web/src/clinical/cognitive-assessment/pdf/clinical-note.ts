@@ -35,7 +35,7 @@ import {
   type ElementKey,
 } from '../config';
 import { caregiverName, fastLabel, problemFor } from '../care-plan';
-import { practiceTimestamp, usDate } from '../../common/dates';
+import { pdfFilename, practiceTimestamp, usDate } from '../../common/dates';
 import type { AssessmentForm } from '../form';
 import { PdfWriter } from '../../common/pdf-writer';
 
@@ -54,19 +54,9 @@ export interface Provider {
   credentials: string;
 }
 
-/// "99483_Note_TEST-0001_2026-09-29.pdf". The MRN keeps only letters, digits
-/// and dashes, so it cannot make an odd file name.
+/// "09-29-2026 BrainCheck Note.pdf", by the date of service.
 export function noteFilename(form: AssessmentForm): string {
-  return `99483_Note_${safeMrn(form.visit.mrn)}_${form.visit.dos}.pdf`;
-}
-
-export function safeMrn(mrn: string): string {
-  return (
-    mrn
-      .trim()
-      .replace(/[^A-Za-z0-9-]+/g, '-')
-      .replace(/^-+|-+$/g, '') || 'no-MRN'
-  );
+  return pdfFilename(form.visit.dos, 'BrainCheck Note');
 }
 
 /// The patient's line at the top of every page.
