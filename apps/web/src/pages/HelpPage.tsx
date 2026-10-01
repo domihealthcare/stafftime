@@ -30,7 +30,7 @@ const STAFF: Section[] = [
         answer: (
           <>
             <p>
-              Open <Screen>Clock</Screen> and press the big button. The first time, your phone asks
+              Open <Screen>Home</Screen> and press the big button. The first time, your phone asks
               whether the app may use your location — say yes. It checks you are at one of your
               offices, and only at the moment you press the button.
             </p>
@@ -99,7 +99,7 @@ const STAFF: Section[] = [
           <>
             <p>
               When a manager has put you down for a <strong>work-from-home shift</strong>,{' '}
-              <Screen>Clock</Screen> says <strong>Clock in — working from home</strong> from half an
+              <Screen>Home</Screen> says <strong>Clock in — working from home</strong> from half an
               hour before it starts until it ends. No location is asked for or recorded, and the
               punch is marked &ldquo;Work from home&rdquo;.
             </p>
@@ -251,7 +251,7 @@ const STAFF: Section[] = [
         answer: (
           <p>
             If your published schedule puts you past the practice&rsquo;s weekly overtime line (40
-            hours, both offices together), a red notice appears on <Screen>Clock</Screen> and{' '}
+            hours, both offices together), a red notice appears on <Screen>Home</Screen> and{' '}
             <Screen>Schedule</Screen>, and you get an email when it first happens. If it is not what
             you agreed, talk to your manager before the week starts.
           </p>
@@ -277,9 +277,11 @@ const STAFF: Section[] = [
         question: 'How do I ask for time off?',
         answer: (
           <p>
-            Open <Screen>Time off</Screen>, choose <strong>Sick</strong> or <strong>PTO</strong> and
-            the dates, and send it. Your balance is shown on the same screen. You get an email when
-            a manager decides, with their reason if they give one.
+            Press <strong>Request time off</strong> on <Screen>Home</Screen> or on{' '}
+            <Screen>Schedule</Screen>, choose <strong>Sick</strong> or <strong>PTO</strong> and the
+            dates, and send it. Your days left and what you have asked for are on the Schedule;{' '}
+            <strong>All your time off</strong> there shows the rest. You get an email when a manager
+            decides, with their reason if they give one.
           </p>
         ),
       },
@@ -292,8 +294,9 @@ const STAFF: Section[] = [
         question: 'Where is the practice news?',
         answer: (
           <p>
-            The most important post is at the top of <Screen>Clock</Screen> when you sign in. All
-            posts are under <Screen>News</Screen>, newest first.
+            On <Screen>Home</Screen>, under the clock: the most important post in full, then the
+            latest few. <strong>All news</strong> lists every post, newest first (on a phone, News
+            is also under <Screen>More</Screen>).
           </p>
         ),
       },
@@ -301,9 +304,9 @@ const STAFF: Section[] = [
         question: 'How do I find a colleague?',
         answer: (
           <p>
-            <Screen>Team → Directory</Screen> lists everybody with their work email, phone number,
-            job roles and offices. <strong>In now</strong> means they are clocked in at the moment.
-            Each job role has its own colour, so you can tell at a glance who is front desk, MA or
+            <Screen>Directory</Screen> lists everybody with their work email, phone number, job
+            roles and offices. <strong>In now</strong> means they are clocked in at the moment. Each
+            job role has its own colour, so you can tell at a glance who is front desk, MA or
             provider.
           </p>
         ),
@@ -312,8 +315,8 @@ const STAFF: Section[] = [
         question: 'Whose birthday is it?',
         answer: (
           <p>
-            Birthdays in the coming week are on the <Screen>Clock</Screen> screen, with a cake on
-            the day in the <Screen>Schedule</Screen> and on each person&rsquo;s card in the{' '}
+            Birthdays in the coming week are on <Screen>Home</Screen>, with a cake on the day in the{' '}
+            <Screen>Schedule</Screen> and on each person&rsquo;s card in the{' '}
             <Screen>Directory</Screen>. Only the month and day are kept — never the year. Yours is
             on <Screen>Your profile</Screen>; if it is wrong or missing, ask a manager.
           </p>
@@ -323,8 +326,8 @@ const STAFF: Section[] = [
         question: 'Where are the links and guides for my job?',
         answer: (
           <p>
-            <Screen>Team → Resources</Screen>. You see the resources for everyone, plus those for
-            each of your job roles.
+            <Screen>Resources</Screen>. You see the resources for everyone, plus those for each of
+            your job roles.
           </p>
         ),
       },
@@ -339,8 +342,9 @@ const STAFF: Section[] = [
             </p>
             <p>
               Results only appear once a survey is closed and at least three people have answered.
-              The <strong>suggestion box</strong> on <Screen>Team → Surveys</Screen> is always open
-              and keeps only your message and the day it arrived.
+              Surveys waiting for you are on <Screen>Home</Screen>, with the{' '}
+              <strong>suggestion box</strong>, which is always open and keeps only your message and
+              the day it arrived.
             </p>
           </>
         ),
@@ -437,8 +441,8 @@ const CARE_PLAN: Section[] = [
         answer: (
           <>
             <p>
-              <Screen>Team</Screen> → <Screen>Resources</Screen> → <Screen>Forms</Screen>, at the
-              top → <strong>Care plan</strong>. Providers, managers and admins have it.
+              <Screen>Resources</Screen> → <Screen>Forms</Screen>, at the top →{' '}
+              <strong>Care plan</strong>. Providers, managers and admins have it.
             </p>
             <ul>
               <li>
@@ -510,9 +514,9 @@ const PROVIDERS: Section[] = [
         answer: (
           <>
             <p>
-              <Screen>Team</Screen> → <Screen>Resources</Screen> → <Screen>Forms</Screen>, at the
-              top → <strong>BrainCheck care plan</strong> — the cognitive assessment and care plan,
-              billed as CPT 99483.
+              <Screen>Resources</Screen> → <Screen>Forms</Screen>, at the top →{' '}
+              <strong>BrainCheck care plan</strong> — the cognitive assessment and care plan, billed
+              as CPT 99483.
             </p>
             <ul>
               <li>Tick the requirements at the top first — all four are needed to bill 99483.</li>
@@ -606,11 +610,11 @@ const PRODUCTIVITY: Section[] = [
         answer: (
           <>
             <p>
-              <Screen>Team → Your productivity</Screen>. Your manager works out each period and
-              publishes it when it is ready; you are told under the bell. Each one shows the
-              patients expected and seen in every interval, the difference, and &mdash; where your
-              arrangement has one &mdash; the multiplier and the amount. A short period shows as a
-              negative.
+              <Screen>Your productivity</Screen>, in the account menu. Your manager works out each
+              period and publishes it when it is ready; you are told under the bell. Each one shows
+              the patients expected and seen in every interval, the difference, and &mdash; where
+              your arrangement has one &mdash; the multiplier and the amount. A short period shows
+              as a negative.
             </p>
             <p>
               Only you can see yours. If a number looks wrong, tell your manager: they can correct
@@ -842,7 +846,7 @@ const MANAGERS: Section[] = [
         question: 'Somebody has forgotten their tablet PIN',
         answer: (
           <p>
-            In <Screen>Team → Directory</Screen>, under their name, choose{' '}
+            In <Screen>Directory</Screen>, under their name, choose{' '}
             <strong>Set a new tablet PIN</strong> and tell them it in person. They can change it to
             one of their own on their profile. Nobody can see a PIN once it is set — you can only
             replace it.
@@ -900,9 +904,11 @@ const MANAGERS: Section[] = [
         question: 'How do I decide a time-off request?',
         answer: (
           <p>
-            The <Screen>Time off</Screen> tab shows a count of what is waiting. Each request shows
-            what is already scheduled in those dates before you decide. Approving does not cancel
-            shifts — the coverage strip flags the clash, and you reassign cover.
+            The <Screen>Schedule</Screen> tab shows a count of what is waiting, and the requests are
+            at the top of the Schedule to approve or decline there.{' '}
+            <Screen>Manage → Time off &amp; balances</Screen> shows each one with what is already
+            scheduled in those dates before you decide. Approving does not cancel shifts — the
+            coverage strip flags the clash, and you reassign cover.
           </p>
         ),
       },
@@ -910,11 +916,11 @@ const MANAGERS: Section[] = [
         question: 'Putting in time off people took before Domi Staff',
         answer: (
           <p>
-            On <Screen>Time off</Screen>, open <strong>Staff balances</strong> and press{' '}
-            <strong>Adjust</strong> beside the person. Enter the PTO and sick days they had already
-            taken this year; anything booked in the app counts by itself. Somebody on a different
-            yearly amount (part-time, long service) gets their own there too — leave it blank for
-            the practice&rsquo;s.
+            On <Screen>Manage → Time off &amp; balances</Screen>, open{' '}
+            <strong>Staff balances</strong> and press <strong>Adjust</strong> beside the person.
+            Enter the PTO and sick days they had already taken this year; anything booked in the app
+            counts by itself. Somebody on a different yearly amount (part-time, long service) gets
+            their own there too — leave it blank for the practice&rsquo;s.
           </p>
         ),
       },
@@ -937,7 +943,7 @@ const MANAGERS: Section[] = [
             <Screen>Manage → Onboarding &amp; Offboarding</Screen> tracks each step for a new hire
             or a leaver — who did it and when. The paperwork itself stays in the personnel file;
             nothing is uploaded here. Front Desk and MA staff do not see it, so tick their own tasks
-            for them; Providers see theirs under Team.
+            for them; Providers see theirs in the account menu (Your onboarding).
           </p>
         ),
       },
@@ -1019,7 +1025,7 @@ const MANAGERS: Section[] = [
               Only the people an admin has chosen see this screen; admins choose them at the bottom
               of it. A statement is a private <strong>draft</strong> until you press{' '}
               <strong>Publish</strong>. Then that provider, and nobody else, can read it under{' '}
-              <Screen>Team → Your productivity</Screen> and is told it is ready.{' '}
+              <Screen>Your productivity</Screen> (account menu) and is told it is ready.{' '}
               <strong>Unpublish</strong> takes it back. Add a <strong>Paid on</strong> date or a
               short note (&ldquo;Paid with 08.15.25&rdquo;) &mdash; the provider reads the note, so
               never put a patient&rsquo;s name or details in it. Only counts are kept, never
@@ -1070,8 +1076,8 @@ const MANAGERS: Section[] = [
         question: 'Adding resources',
         answer: (
           <p>
-            On <Screen>Team → Resources</Screen>, add a link (Drive, ADP, a vendor portal) or write
-            a page, for everyone or for one job role. There are no uploads.
+            On <Screen>Resources</Screen>, add a link (Drive, ADP, a vendor portal) or write a page,
+            for everyone or for one job role. There are no uploads.
           </p>
         ),
       },
@@ -1079,7 +1085,7 @@ const MANAGERS: Section[] = [
         question: 'Running a survey',
         answer: (
           <p>
-            On <Screen>Team → Surveys</Screen>, write the questions (1–5 rating, pick one, or a
+            On <Screen>Manage → Surveys</Screen>, write the questions (1–5 rating, pick one, or a
             written answer) and choose who it is for: everyone, a job role or a location. You see
             how many have answered, never who. Results appear once you close it, and only if at
             least three people answered — ask a small group and there may be nothing to show.
@@ -1320,7 +1326,7 @@ export function HelpPage() {
         <p className="mt-8 text-sm text-slate-500">
           Something not working?{' '}
           <Link to="/" className="font-medium text-brand-700 underline">
-            Back to Clock
+            Back to Home
           </Link>{' '}
           and tell a manager what the screen said.
         </p>

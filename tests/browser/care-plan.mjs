@@ -297,7 +297,7 @@ await step('and in English alone', async () => {
 });
 
 await step('leaving by a link asks first, and staying keeps the form', async () => {
-  await page.getByRole('navigation').getByRole('link', { name: 'Clock', exact: true }).click();
+  await page.getByRole('navigation').getByRole('link', { name: 'Home', exact: true }).click();
   const dialog = page.getByRole('alertdialog');
   await dialog.getByText('Leave and lose what you have entered?').waitFor({ timeout: 5000 });
   await dialog.getByRole('button', { name: 'Stay on the form' }).click();
@@ -311,7 +311,7 @@ await step('saying it downloaded clears the form', async () => {
   await page.getByText('The form is cleared.').waitFor({ timeout: 5000 });
   if ((await section('patient').getByLabel(/Last name/).inputValue()) !== '') throw new Error('name still there');
   if ((await page.locator('[data-testid^="section-plan:"]').count()) > 0) throw new Error('condition plans still there');
-  await page.getByRole('navigation').getByRole('link', { name: 'Clock', exact: true }).click();
+  await page.getByRole('navigation').getByRole('link', { name: 'Home', exact: true }).click();
   await page.getByText(/Not clocked in|On the clock/).first().waitFor({ timeout: 10000 });
 });
 

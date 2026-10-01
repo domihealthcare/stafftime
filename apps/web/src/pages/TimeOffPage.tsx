@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { ApiError, api } from '../lib/api';
 import { formatCalendarDate } from '../lib/format';
 import { useIsAdmin, useIsManager, useSession } from '../lib/session';
@@ -45,7 +46,9 @@ export function TimeOffPage() {
   const [staff, setStaff] = useState<Employee[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [showForm, setShowForm] = useState(false);
+  // "+ Request time off" on the Schedule and Home lands here with the form open.
+  const [searchParams] = useSearchParams();
+  const [showForm, setShowForm] = useState(() => searchParams.get('request') === '1');
   const [filter, setFilter] = useState<'ALL' | PtoStatus>('PENDING');
 
   const load = useCallback(async () => {

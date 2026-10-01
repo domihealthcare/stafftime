@@ -44,7 +44,7 @@ export class UpdateJobRoleDto {
   seesOwnPersonnelTabs?: boolean;
 
   /// Whether people in this role get the clinical forms (the 99483 cognitive
-  /// assessment) under Team. The forms run in the browser and keep nothing,
+  /// assessment) under Resources → Forms. The forms run in the browser and keep nothing,
   /// so this shows a screen and nothing more — no power.
   @IsOptional()
   @IsBoolean()

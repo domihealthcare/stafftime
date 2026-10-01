@@ -1,6 +1,6 @@
 import { chromium } from 'playwright';
 import { mkdirSync } from 'node:fs';
-import { openMenu } from './nav.mjs';
+import { goTo } from './nav.mjs';
 
 // Working from home: a manager marks a shift as work from home, and during it
 // the person clocks in from anywhere — no location asked for, none recorded —
@@ -107,8 +107,7 @@ frankie.on('pageerror', (e) => errors.push(`colleague pageerror: ${e.message}`))
 await signIn(frankie, 'frontdesk@domihealthcare.com');
 
 await step('the Directory shows Morgan working from home, not at an office', async () => {
-  await openMenu(frankie, 'Team');
-  await frankie.getByRole('navigation').getByRole('link', { name: 'Directory', exact: true }).click();
+  await goTo(frankie, 'Directory');
   const home = frankie.getByTestId('in-now-home');
   await home.waitFor({ timeout: 15000 });
   await home.getByText('Morgan', { exact: false }).waitFor({ timeout: 5000 });
@@ -133,7 +132,7 @@ await step('a punch from home cannot be claimed without a work-from-home shift',
 });
 
 await step('clocking out from home works without a location too', async () => {
-  await mgr.getByRole('link', { name: 'Clock', exact: true }).click().catch(() => {});
+  await mgr.getByRole('link', { name: 'Home', exact: true }).click().catch(() => {});
   const punched = mgr.waitForResponse((r) => r.url().endsWith('/api/time-entries/clock-out'));
   await mgr.getByRole('button', { name: 'Clock out' }).click();
   if (!(await punched).ok()) throw new Error('clock-out refused');
@@ -143,13 +142,13 @@ await step('clocking out from home works without a location too', async () => {
 });
 
 await step('the timesheet labels the punch Work from home', async () => {
-  await mgr.getByRole('link', { name: 'Timesheet', exact: true }).first().click();
+  await goTo(mgr, 'Timesheet');
   await mgr.getByText('Work from home').first().waitFor({ timeout: 15000 });
 });
 
 // The rota: the office fills the shift, the job role outlines it, violet for home.
 await step('the rota has a key to its colours', async () => {
-  await mgr.getByRole('link', { name: 'Schedule' }).click();
+  await goTo(mgr, 'Schedule');
   const legend = mgr.getByTestId('rota-legend');
   await legend.waitFor({ timeout: 15000 });
   for (const text of ['North Bergen', 'West New York', 'Work from home', 'Open shift', 'Draft', 'Front Desk', 'Manager'])

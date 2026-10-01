@@ -335,8 +335,8 @@ Beyond the phases, the parts worth knowing about before picking up work:
   gate. Ticks and numbers only, no free text (schema guard enforces it).
   Managers edit the lists in the app; `src/closing/default-checklists.ts` is
   only the starting point. **Licenses and Onboarding & Offboarding** moved off
-  the top bar: under Manage for managers/admins, under Team ("Your licenses",
-  "Your onboarding") for roles with `seesOwnPersonnelTabs` (Provider); Front
+  the top bar: under Manage for managers/admins, in the account menu ("Your
+  licenses", "Your onboarding") for roles with `seesOwnPersonnelTabs` (Provider); Front
   Desk and MA staff do not see them.
 - **Work from home** (September 2026): a manager marks a shift work from home
   (`Shift.isRemote`). While a published one is on — from 30 minutes before it
@@ -418,7 +418,8 @@ Beyond the phases, the parts worth knowing about before picking up work:
   email provider. Your own only; deleted by the nightly job after 90 days.
   The old "Notifications" menu item (the nightly email) is now **Email
   settings**.
-- **News** is its own tab in the top bar, no longer under Team.
+- **News** is on Home (October 2026, see *Navigation and Home*), with **All
+  news** for the full list; on a phone also under More.
 - **Practice events** (September 2026, asked for by Dominguez): office,
   admin and provider meetings and things like a wellness day. Managers and
   admins add them from Schedule → **+ Add event** — timed or all day (one day
@@ -510,9 +511,8 @@ Beyond the phases, the parts worth knowing about before picking up work:
   eight at a time. The month view lists **every** shift on a laptop (a phone still shows
   three and counts the rest), tinted by office with the job role as the stripe, with
   the same key as the week (`lib/shift-colours.ts`, shared). On a phone the navigation
-  is a **bottom tab bar** — Clock, Schedule, Timesheet, Time off, More (News, Team,
-  Manage inside) — and the header is one row; from `sm` up it is the header nav as
-  before. Only one of the two is ever on the page (`useIsPhone`), so each link
+  is a **bottom tab bar** and the header is one row; from `sm` up it is the header
+  nav (both rearranged in October 2026 — see *Navigation and Home*). Only one of the two is ever on the page (`useIsPhone`), so each link
   appears once. Browser tests open menus through `tests/browser/nav.mjs`.
 - **Publishing, open rows, photo fitting** (30 September 2026, Dominguez): drafts
   are published together — a **Publish all N** banner above the rota for the
@@ -633,9 +633,29 @@ Beyond the phases, the parts worth knowing about before picking up work:
   (blank: worked out) and their own yearly amount (blank: the practice's) —
   `PtoStartingPoint`, `PtoAllowance`; see *The switch-over* in
   `docs/architecture.md`.
-- **Schedule layout** (September 2026, Dominguez): the top bar reads Clock,
-  News, **Schedule, Timesheet**, Time off; the month (or the week's dates) is
-  a large heading right above the calendar, under the buttons.
+- **Schedule layout** (September 2026, Dominguez): the month (or the week's
+  dates) is a large heading right above the calendar, under the buttons.
+- **Navigation and Home** (1 October 2026, Dominguez — option B of three
+  mockups, "please use the icons"): the laptop header reads **Home · Schedule ·
+  Timesheet · Directory · Resources · Manage ▾**, each with a small line icon
+  (`components/NavIcons.tsx`, no icon library); the phone's bottom bar is
+  **Home · Schedule · Directory · Resources · More** (More: Timesheet, News,
+  Surveys, and Manage). The **Team** menu and the **Time off** and **News**
+  tabs are gone. **Home** (was Clock, `pages/ClockPage.tsx`) is two-thirds /
+  one-third on a laptop: the clock card and then the news (primary post in
+  full, three more, "All news") on the left; on the right Quick (Request time
+  off, availability, Forms for those who have them, Help), birthdays this week,
+  holidays and events in the next 30 days, and surveys waiting with the
+  suggestion box (`components/HomeCards.tsx`). On a phone they stack, clock
+  first. **Time off lives in the Schedule** (`components/ScheduleTimeOff.tsx`):
+  a "+ Request time off" button, "Your time off" (days left, upcoming
+  requests), and for managers the requests to decide with Approve / Decline;
+  the pending count is a badge on **Schedule**. The full Time off screen is
+  still `/time-off` — **Manage → Time off & balances** for managers, "All your
+  time off" for staff. **Manage** gained Time off & balances and Surveys.
+  Somebody's own licenses, onboarding (Provider) and productivity moved to the
+  **account menu**. Browser tests get around with `goTo`, `navLink`,
+  `openNews` and `openTimeOff` in `tests/browser/nav.mjs`.
 - **Demo data** loads from a button (account menu → Practice settings), not
   only from a terminal — whoever sets a deployment up is in a browser. Admin
   only, and refuses unless `APP_ENVIRONMENT` is `test`: it replaces every shift
@@ -729,7 +749,7 @@ Beyond the phases, the parts worth knowing about before picking up work:
   forward as a running balance**, netted off the next periods until it clears
   (per plan, on by default). A
   statement is a private draft until **published**; the provider can then read
-  theirs, and only theirs, under Team → **Your productivity** (and is told on
+  theirs, and only theirs, under **Your productivity** in the account menu (and is told on
   the bell, with no numbers in it). Every provider's model differs, so
   **everything is optional**: a per-provider *plan* only sets defaults
   (interval length, intervals per statement, expected per interval, multiplier,

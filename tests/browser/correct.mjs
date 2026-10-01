@@ -1,4 +1,5 @@
 import { chromium } from 'playwright';
+import { goTo } from './nav.mjs';
 import { mkdirSync } from 'node:fs';
 // Screenshots go wherever the caller says, or into ./shots (gitignored).
 const OUT = process.argv[2] || new URL('./shots/', import.meta.url).pathname;
@@ -28,7 +29,7 @@ const ctx = await browser.newContext({ viewport: { width: 1280, height: 900 } })
 const page = await ctx.newPage();
 await page.goto(`${BASE}/`, { waitUntil: 'networkidle' });
 await signInAs(page, 'manager@domihealthcare.com');
-await page.getByRole('link', { name: 'Timesheet' }).click();
+await goTo(page, 'Timesheet');
 await page.getByRole('table').waitFor({ timeout: 10000 });
 
 await step('a correction requires a reason before it can be saved', async () => {

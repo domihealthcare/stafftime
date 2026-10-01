@@ -1,5 +1,6 @@
 import { chromium } from 'playwright';
 import { mkdirSync } from 'node:fs';
+import { openTimeOff } from './nav.mjs';
 // Screenshots go wherever the caller says, or into ./shots (gitignored).
 const OUT = process.argv[2] || new URL('./shots/', import.meta.url).pathname;
 mkdirSync(OUT, { recursive: true });
@@ -42,7 +43,7 @@ emp.on('pageerror', (e) => errors.push(`employee pageerror: ${e.message}`));
 await signIn(emp, 'frontdesk@domihealthcare.com');
 
 await step('an employee can reach Time off', async () => {
-  await emp.getByRole('link', { name: /Time off/ }).click();
+  await openTimeOff(emp);
   await emp.getByText('Your time off requests').waitFor({ timeout: 10000 });
 });
 
@@ -110,17 +111,18 @@ const mgr = await mgrCtx.newPage();
 mgr.on('pageerror', (e) => errors.push(`manager pageerror: ${e.message}`));
 await signIn(mgr, 'manager@domihealthcare.com');
 
-await step('the Time off tab carries a badge of pending requests', async () => {
+await step('the Schedule tab carries a badge of pending time-off requests', async () => {
   // The count arrives just after the page does, so wait for it rather than
-  // reading the tab the instant sign-in finishes.
-  const link = mgr.getByRole('link', { name: /Time off/ });
+  // reading the tab the instant sign-in finishes. Time off has no tab of its
+  // own since October 2026; the badge is on Schedule.
+  const link = mgr.getByRole('navigation').getByRole('link', { name: /^Schedule/ });
   await link.filter({ hasText: /\d/ }).waitFor({ timeout: 10000 }).catch(() => undefined);
   const text = await link.innerText();
   if (!/\d/.test(text)) throw new Error(`expected a count in the tab, got "${text}"`);
 });
 
 await step('a manager sees the request and who it is from', async () => {
-  await mgr.getByRole('link', { name: /Time off/ }).click();
+  await openTimeOff(mgr);
   await cards(mgr).getByText('Family trip').waitFor({ timeout: 10000 });
   await cards(mgr).getByText(/Frankie Front-Desk/).first().waitFor({ timeout: 5000 });
 });
@@ -135,7 +137,7 @@ await step('denying demands a reason before it can be sent', async () => {
 });
 
 const badgeCount = async () =>
-  Number((await mgr.getByRole('link', { name: /Time off/ }).first().innerText()).match(/\d+/)?.[0] ?? 0);
+  Number((await mgr.getByRole('navigation').getByRole('link', { name: /^Schedule/ }).innerText()).match(/\d+/)?.[0] ?? 0);
 
 await step('approving clears the request out of the pending queue', async () => {
   const before = await badgeCount();
@@ -144,10 +146,10 @@ await step('approving clears the request out of the pending queue', async () => 
   await cards(mgr)
     .getByText('Family trip')
     .waitFor({ state: 'hidden', timeout: 15000 });
-  // And the badge on the tab follows, without a reload.
+  // And the badge on the Schedule tab follows, without a reload.
   await mgr.waitForFunction(
     (expected) => {
-      const link = [...document.querySelectorAll('a')].find((a) => a.textContent.startsWith('Time off'));
+      const link = document.querySelector('nav[aria-label="Main"] a[href="/schedule"]');
       return Number(link?.textContent.match(/\d+/)?.[0] ?? 0) === expected;
     },
     before - 1,
@@ -166,7 +168,7 @@ await step('the approved request is filed under Approved, with who decided it', 
 
 await step('the employee sees the decision', async () => {
   await emp.reload({ waitUntil: 'networkidle' });
-  await emp.getByRole('link', { name: /Time off/ }).click();
+  await openTimeOff(emp);
   await emp.getByRole('button', { name: 'All', exact: true }).click();
   await cards(emp).getByText('Approved').first().waitFor({ timeout: 15000 });
 });

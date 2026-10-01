@@ -1,5 +1,6 @@
 import { chromium } from 'playwright';
 import { mkdirSync } from 'node:fs';
+import { openTimeOff } from './nav.mjs';
 // Screenshots go wherever the caller says, or into ./shots (gitignored).
 const OUT = process.argv[2] || new URL('./shots/', import.meta.url).pathname;
 mkdirSync(OUT, { recursive: true });
@@ -32,7 +33,7 @@ const admCtx = await browser.newContext({ viewport: { width: 1280, height: 1100 
 const adm = await admCtx.newPage();
 adm.on('pageerror', (e) => errors.push(`admin pageerror: ${e.message}`));
 await signIn(adm, 'admin@domihealthcare.com');
-await adm.getByRole('link', { name: /Time off/ }).click();
+await openTimeOff(adm);
 
 await step('the policy defaults to 15 PTO, 5 sick, 5 carried over', async () => {
   await adm.getByText(/15 days PTO · 5 sick days · 5 days carried over/).waitFor({ timeout: 15000 });
@@ -77,7 +78,7 @@ const empCtx = await browser.newContext({ viewport: { width: 420, height: 1000 }
 const emp = await empCtx.newPage();
 emp.on('pageerror', (e) => errors.push(`employee pageerror: ${e.message}`));
 await signIn(emp, 'frontdesk@domihealthcare.com');
-await emp.getByRole('link', { name: /Time off/ }).click();
+await openTimeOff(emp);
 
 await step('an employee can read the policy', async () => {
   await emp.getByText(/15 days PTO · 5 sick days/).waitFor({ timeout: 15000 });

@@ -93,13 +93,13 @@ export interface Employee extends EmployeeSummary {
   lastLoginAt?: string | null;
   locations: { locationId: string; isPrimary: boolean; location: LocationSummary }[];
   /// Signed-in person only: their job role shows them their own licenses and
-  /// onboarding under Team (Providers).
+  /// onboarding in the account menu (Providers).
   seesOwnPersonnelTabs?: boolean;
   /// Signed-in person only: their job role gives them the clinical forms
-  /// under Team (Providers).
+  /// in the account menu (Providers).
   usesClinicalForms?: boolean;
   /// Signed-in person only: a manager has published productivity numbers for
-  /// them, so "Your productivity" appears under Team.
+  /// them, so "Your productivity" appears in the account menu.
   hasProductivity?: boolean;
   /// Signed-in person only: an admin has given them provider productivity to
   /// work out and publish, whatever their access level.
@@ -773,9 +773,9 @@ export interface JobRole {
   sortOrder: number;
   resourceCount: number;
   members: PersonName[];
-  /// People in it see their own licenses and onboarding under Team.
+  /// People in it see their own licenses and onboarding in the account menu.
   seesOwnPersonnelTabs?: boolean;
-  /// People in it get the clinical forms under Team.
+  /// People in it get the clinical forms under Resources → Forms.
   usesClinicalForms?: boolean;
 }
 

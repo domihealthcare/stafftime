@@ -1,4 +1,5 @@
 import { chromium } from 'playwright';
+import { goTo } from './nav.mjs';
 import { mkdirSync } from 'node:fs';
 
 // Time off on the rota, and the rota on paper for the break-room wall.
@@ -93,7 +94,7 @@ await mgr.evaluate(async ([id, mon]) => {
   }
 }, [wedId, MON]);
 
-await mgr.getByRole('link', { name: 'Schedule' }).click();
+await goTo(mgr, 'Schedule');
 await mgr.getByTestId('week-grid').waitFor({ timeout: 15000 });
 await mgr.getByRole('button', { name: 'Next →' }).click();
 await mgr.getByText('Coverage this week').waitFor({ timeout: 15000 });
@@ -128,7 +129,7 @@ await step('adding a shift on somebody’s day off says so first', async () => {
 });
 
 await step('staff see their own time off in their row', async () => {
-  await frankie.getByRole('link', { name: 'Schedule' }).click();
+  await goTo(frankie, 'Schedule');
   await frankie.getByTestId('week-grid').waitFor({ timeout: 15000 });
   await frankie.getByRole('button', { name: 'Next →' }).click();
   await frankie.locator('[data-testid="time-off"][data-status="APPROVED"]').waitFor({ timeout: 10000 });

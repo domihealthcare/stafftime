@@ -211,7 +211,7 @@ export class AuthController {
         },
       },
     });
-    // A provider whose productivity has been published reads it under Team;
+    // A provider whose productivity has been published reads it from the account menu;
     // everybody else never sees the link.
     const hasProductivity =
       (await this.prisma.productivityStatement.count({
@@ -220,10 +220,10 @@ export class AuthController {
     return {
       ...employee,
       hasProductivity,
-      /// Whether their own licenses and onboarding are under Team — Providers,
+      /// Whether their own licenses and onboarding are in the account menu — Providers,
       /// as the practice has it. Managers and admins have them under Manage.
       seesOwnPersonnelTabs: jobRoles.some((membership) => membership.jobRole.seesOwnPersonnelTabs),
-      /// Whether the clinical forms are under Team — Providers. Job role only:
+      /// Whether the clinical forms are under Resources → Forms — Providers. Job role only:
       /// being a manager or admin does not bring them.
       usesClinicalForms: jobRoles.some((membership) => membership.jobRole.usesClinicalForms),
     };

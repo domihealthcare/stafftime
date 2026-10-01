@@ -1,5 +1,6 @@
 import { chromium } from 'playwright';
 import { mkdirSync } from 'node:fs';
+import { openAccountMenu } from './account-menu.mjs';
 
 // Provider productivity (September 2026): managers work out each provider's
 // patients expected and seen per interval, with a multiplier on the
@@ -25,7 +26,7 @@ const signIn = async (page, email, password = 'shift-change-2026') => {
   await page.getByLabel('Password', { exact: true }).fill(password);
   await page.getByRole('button', { name: 'Sign in' }).click();
   // Max is seeded with a temporary password, to be changed on first sign-in.
-  const unlocked = page.getByRole('link', { name: 'Schedule' });
+  const unlocked = page.getByRole('navigation').getByRole('link', { name: /^Schedule/ });
   const mustChange = page.getByText('Choose a new password');
   await unlocked.or(mustChange).first().waitFor({ timeout: 20000 });
   if (await mustChange.isVisible()) {
@@ -50,6 +51,13 @@ const call = (page, path, init = {}) =>
 const menuItems = async (page, label) => {
   await page.getByRole('button', { name: label, exact: true }).click();
   const names = await page.getByRole('navigation').getByRole('link').allInnerTexts();
+  await page.keyboard.press('Escape');
+  return names.map((n) => n.trim());
+};
+/// A provider's own productivity is in the account menu (October 2026).
+const accountMenuItems = async (page) => {
+  await openAccountMenu(page);
+  const names = await page.getByRole('menuitem').allInnerTexts();
   await page.keyboard.press('Escape');
   return names.map((n) => n.trim());
 };
@@ -198,7 +206,7 @@ await step('a bad number is refused before it is sent', async () => {
 
 await step('while it is a draft the provider sees nothing at all', async () => {
   await doc.reload({ waitUntil: 'networkidle' });
-  if ((await menuItems(doc, 'Team')).includes('Your productivity')) throw new Error('the link shows on a draft');
+  if ((await accountMenuItems(doc)).includes('Your productivity')) throw new Error('the link shows on a draft');
   const mine = await call(doc, '/productivity/mine');
   if (mine.status !== 200 || mine.body.length !== 0) throw new Error(`mine: ${JSON.stringify(mine)}`);
 });
@@ -208,7 +216,7 @@ await step('publishing asks first, and then the provider can read it', async () 
   await mgr.getByRole('alertdialog').getByRole('button', { name: 'Yes, publish' }).click();
   await mgr.getByTestId('productivity-2026-06-07').getByText('Published', { exact: true }).waitFor({ timeout: 10000 });
   await doc.reload({ waitUntil: 'networkidle' });
-  if (!(await menuItems(doc, 'Team')).includes('Your productivity')) throw new Error('no link for the provider');
+  if (!(await accountMenuItems(doc)).includes('Your productivity')) throw new Error('no link for the provider');
   await doc.goto(`${BASE}/my-productivity`, { waitUntil: 'networkidle' });
   const card = doc.getByTestId('productivity-2026-06-07');
   await card.getByText('$1,150.00').first().waitFor({ timeout: 10000 });

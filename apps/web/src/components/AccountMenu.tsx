@@ -94,6 +94,40 @@ export function AccountMenu() {
             <NavLink to="/profile" role="menuitem" className={item} onClick={() => setOpen(false)}>
               Your profile
             </NavLink>
+            {/* What is somebody's own lives here with the rest of what is
+                theirs (October 2026, when the Team menu went). Licenses and
+                onboarding for job roles that keep them (Provider) — a manager
+                has them under Manage; productivity once one is published. */}
+            {!isManager && employee?.seesOwnPersonnelTabs && (
+              <>
+                <NavLink
+                  to="/credentials"
+                  role="menuitem"
+                  className={item}
+                  onClick={() => setOpen(false)}
+                >
+                  Your licenses
+                </NavLink>
+                <NavLink
+                  to="/checklists"
+                  role="menuitem"
+                  className={item}
+                  onClick={() => setOpen(false)}
+                >
+                  Your onboarding
+                </NavLink>
+              </>
+            )}
+            {employee?.hasProductivity && (
+              <NavLink
+                to="/my-productivity"
+                role="menuitem"
+                className={item}
+                onClick={() => setOpen(false)}
+              >
+                Your productivity
+              </NavLink>
+            )}
             {isManager && (
               <>
                 <NavLink

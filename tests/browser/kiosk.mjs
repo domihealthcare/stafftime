@@ -1,6 +1,6 @@
 import { chromium } from 'playwright';
 import { mkdirSync } from 'node:fs';
-import { openMenu } from './nav.mjs';
+import { goTo, openMenu } from './nav.mjs';
 // Screenshots go wherever the caller says, or into ./shots (gitignored).
 const OUT = process.argv[2] || new URL('./shots/', import.meta.url).pathname;
 mkdirSync(OUT, { recursive: true });
@@ -165,7 +165,7 @@ await step('revoking the device stops the tablet working', async () => {
 
 // The punches above must still be on the timesheet, marked as kiosk-verified.
 await step('kiosk punches appear on the manager timesheet as Kiosk-verified', async () => {
-  await admin.getByRole('link', { name: 'Timesheet' }).click();
+  await goTo(admin, 'Timesheet');
   await admin.getByRole('table').waitFor({ timeout: 10000 });
   await admin.getByText('Kiosk').first().waitFor({ timeout: 10000 });
 });

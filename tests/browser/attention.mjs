@@ -8,7 +8,7 @@
 import { chromium } from 'playwright';
 import { mkdirSync } from 'node:fs';
 import { accountMenuHas, pickFromAccountMenu } from './account-menu.mjs';
-import { openMenu } from './nav.mjs';
+import { goTo, openMenu } from './nav.mjs';
 
 const OUT = process.argv[2] || new URL('./shots/', import.meta.url).pathname;
 mkdirSync(OUT, { recursive: true });
@@ -81,7 +81,7 @@ await step('next week is published at every office', () => admin.evaluate(async 
 
 await step('a quiet practice shows no banner at all', async () => {
   // Worth asserting: a banner that is always there is wallpaper within a week.
-  await admin.getByRole('link', { name: /^Schedule/ }).first().click();
+  await goTo(admin, 'Schedule');
   await admin.getByText('Coverage this week').waitFor({ timeout: 15000 });
   await admin.waitForTimeout(1000);
 
@@ -119,7 +119,7 @@ await step('marking somebody as left raises it on the schedule', async () => {
   // success looks like here — not a badge appearing on it.
   await card.waitFor({ state: 'detached', timeout: 15000 });
 
-  await admin.getByRole('link', { name: /^Schedule/ }).first().click();
+  await goTo(admin, 'Schedule');
   const banner = admin.getByTestId('needs-attention');
   await banner.waitFor({ timeout: 20000 });
   // On the Schedule the banner starts as a one-line summary; open it.
@@ -248,7 +248,7 @@ await step('changing the threshold changes what the rota warns about', async () 
 
   // The seeded rota is a single 8-hour shift today, which is over 20 for
   // nobody — so build a week that clears the new line but not the old one.
-  await admin.getByRole('link', { name: /^Schedule/ }).first().click();
+  await goTo(admin, 'Schedule');
   await admin.getByRole('button', { name: '+ Add', exact: true }).click();
   await admin.getByRole('menuitem', { name: 'Repeating shifts', exact: true }).click();
   // Not Frankie: an earlier step in this suite marks them as no longer
@@ -298,7 +298,7 @@ await step('putting it back makes the warning go away again', async () => {
   if (!saveResponse.ok()) throw new Error(`the save answered ${saveResponse.status()}`);
   await admin.getByText('Saved.', { exact: true }).waitFor({ timeout: 15000 });
 
-  await admin.getByRole('link', { name: /^Schedule/ }).first().click();
+  await goTo(admin, 'Schedule');
   await admin.getByTestId('month-grid').waitFor({ timeout: 15000 });
   for (let i = 0; i < 12; i += 1) {
     if (/March 2027/.test(await admin.locator('main').innerText())) break;

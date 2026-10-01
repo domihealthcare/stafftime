@@ -1,4 +1,5 @@
 import { chromium } from 'playwright';
+import { goTo } from './nav.mjs';
 import { mkdirSync } from 'node:fs';
 // Screenshots go wherever the caller says, or into ./shots (gitignored).
 const OUT = process.argv[2] || new URL('./shots/', import.meta.url).pathname;
@@ -48,7 +49,7 @@ await step('the banner is on the kiosk screen too', async () => {
 });
 
 await step('the schedule offers calendar syncing', async () => {
-  await page.getByRole('link', { name: 'Schedule' }).click();
+  await goTo(page, 'Schedule');
   await page.getByText('Your calendar').waitFor({ timeout: 15000 });
 });
 

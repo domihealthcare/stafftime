@@ -1,7 +1,7 @@
 import { chromium } from 'playwright';
 import { clockOut } from './clock-out.mjs';
 import { mkdirSync } from 'node:fs';
-import { openMenu } from './nav.mjs';
+import { goTo, openMenu } from './nav.mjs';
 // Screenshots go wherever the caller says, or into ./shots (gitignored).
 const OUT = process.argv[2] || new URL('./shots/', import.meta.url).pathname;
 mkdirSync(OUT, { recursive: true });
@@ -113,7 +113,7 @@ await step('the period shown is the last day in the file, not the day after', as
 });
 
 await step('the timesheet now says those hours have gone to payroll', async () => {
-  await page.getByRole('link', { name: /^Timesheet/ }).first().click();
+  await goTo(page, 'Timesheet');
   await page.getByRole('button', { name: 'Correct' }).locator('visible=true').first().click();
   await page.getByText(/went to payroll on/).waitFor({ timeout: 15000 });
 });
@@ -157,7 +157,7 @@ await step('a run can be voided without losing it', async () => {
 });
 
 await step('a voided run no longer locks the hours it contained', async () => {
-  await page.getByRole('link', { name: /^Timesheet/ }).first().click();
+  await goTo(page, 'Timesheet');
   await page.getByRole('button', { name: 'Correct' }).locator('visible=true').first().click();
 
   if ((await page.getByText(/went to payroll on/).count()) > 0)

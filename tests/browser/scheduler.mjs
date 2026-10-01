@@ -1,4 +1,5 @@
 import { chromium } from 'playwright';
+import { goTo } from './nav.mjs';
 import { mkdirSync } from 'node:fs';
 // Screenshots go wherever the caller says, or into ./shots (gitignored).
 const OUT = process.argv[2] || new URL('./shots/', import.meta.url).pathname;
@@ -23,7 +24,7 @@ await page.getByLabel('Email').fill('manager@domihealthcare.com');
 await page.getByLabel('Password', { exact: true }).fill('shift-change-2026');
 await page.getByRole('button', { name: 'Sign in' }).click();
 await page.getByText('Not clocked in').waitFor({ timeout: 15000 });
-await page.getByRole('link', { name: 'Schedule' }).click();
+await goTo(page, 'Schedule');
 
 await step('a manager sees a coverage summary for the week', async () => {
   await page.getByText('Coverage this week').waitFor({ timeout: 15000 });
@@ -419,7 +420,7 @@ await step('an employee is not offered the person picker', async () => {
   await emp.getByLabel('Password', { exact: true }).fill('shift-change-2026');
   await emp.getByRole('button', { name: 'Sign in' }).click();
   await emp.getByText('Not clocked in').waitFor({ timeout: 15000 });
-  await emp.getByRole('link', { name: 'Schedule' }).click();
+  await goTo(emp, 'Schedule');
   await emp.getByRole('button', { name: 'Month', exact: true }).click();
   await emp.getByTestId('month-grid').waitFor({ timeout: 15000 });
   if ((await emp.getByRole('combobox', { name: 'Show person' }).count()) > 0)
@@ -449,7 +450,7 @@ await step('an employee sees when they are on, not their own name', async () => 
   await emp.getByLabel('Password', { exact: true }).fill('shift-change-2026');
   await emp.getByRole('button', { name: 'Sign in' }).click();
   await emp.getByText('Not clocked in').waitFor({ timeout: 15000 });
-  await emp.getByRole('link', { name: 'Schedule' }).click();
+  await goTo(emp, 'Schedule');
   await emp.getByRole('button', { name: 'Month', exact: true }).click();
   await emp.getByTestId('month-grid').waitFor({ timeout: 15000 });
 
@@ -483,7 +484,7 @@ await step('an employee sees neither the planning tools nor coverage', async () 
   await emp.getByLabel('Password', { exact: true }).fill('shift-change-2026');
   await emp.getByRole('button', { name: 'Sign in' }).click();
   await emp.getByText('Not clocked in').waitFor({ timeout: 15000 });
-  await emp.getByRole('link', { name: 'Schedule' }).click();
+  await goTo(emp, 'Schedule');
   await emp.getByText('Your upcoming shifts').waitFor({ timeout: 10000 });
 
   for (const name of ['+ Add', /Copy last week/]) {

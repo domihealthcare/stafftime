@@ -1,4 +1,5 @@
 import { chromium } from 'playwright';
+import { goTo } from './nav.mjs';
 import { mkdirSync } from 'node:fs';
 // Screenshots go wherever the caller says, or into ./shots (gitignored).
 const OUT = process.argv[2] || new URL('./shots/', import.meta.url).pathname;
@@ -161,7 +162,7 @@ await step('an ended session goes back to sign-in on the next tap', async () => 
     fetch('/api/auth/sessions', { method: 'DELETE' }).then((r) => r.json()),
   );
   if (!ended.signedOut) throw new Error('nothing was signed out');
-  await stale.getByRole('link', { name: 'Timesheet' }).first().click();
+  await goTo(stale, 'Timesheet');
   await stale.getByRole('button', { name: 'Sign in' }).waitFor({ timeout: 10000 });
 });
 

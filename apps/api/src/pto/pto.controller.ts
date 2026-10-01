@@ -104,7 +104,7 @@ export class PtoController {
     return this.pto.findAll(query, user);
   }
 
-  /// Drives the badge on the Time off tab.
+  /// Drives the badge on the Schedule tab.
   @Get('pending-count')
   pendingCount(@CurrentUser() user: AuthUser) {
     return this.pto.pendingCount(user);

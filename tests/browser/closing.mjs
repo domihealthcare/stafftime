@@ -1,6 +1,7 @@
 import { chromium } from 'playwright';
 import { mkdirSync } from 'node:fs';
 import { openMenu } from './nav.mjs';
+import { openAccountMenu } from './account-menu.mjs';
 
 // Closing checklists: what Front Desk and MAs confirm when they clock out, the
 // manager's view of them and of the restock list, editing the lists — and
@@ -46,6 +47,13 @@ const menuItems = async (page, label) => {
   await page.keyboard.press('Escape');
   return names.map((n) => n.trim());
 };
+/// Somebody's own licenses and onboarding live in the account menu (October 2026).
+const accountMenuItems = async (page) => {
+  await openAccountMenu(page);
+  const names = await page.getByRole('menuitem').allInnerTexts();
+  await page.keyboard.press('Escape');
+  return names.map((n) => n.trim());
+};
 
 // Frankie works Front Desk and MA, on a phone, at the North Bergen desk.
 const fdCtx = await browser.newContext({
@@ -74,8 +82,8 @@ await signIn(mgr, 'manager@domihealthcare.com');
 await step('Front Desk and MA staff see no Licenses or Onboarding anywhere', async () => {
   const bar = await frankie.getByRole('navigation').getByRole('link').allInnerTexts();
   if (bar.some((t) => /Checklists|Licenses/.test(t))) throw new Error(`top bar: ${bar.join(', ')}`);
-  const team = await menuItems(frankie, 'Team');
-  if (team.some((t) => /licenses|onboarding/i.test(t))) throw new Error(`Team menu: ${team.join(', ')}`);
+  if ((await accountMenuItems(frankie)).some((t) => /licenses|onboarding/i.test(t)))
+    throw new Error(`account menu: ${(await accountMenuItems(frankie)).join(', ')}`);
 });
 
 await step('managers find them under Manage, with Closing checklists, not on the top bar', async () => {
@@ -86,7 +94,7 @@ await step('managers find them under Manage, with Closing checklists, not on the
     if (!manage.includes(name)) throw new Error(`Manage lacks ${name}: ${manage.join(', ')}`);
 });
 
-await step('a Provider sees their own under Team', async () => {
+await step('a Provider sees their own in the account menu', async () => {
   const roles = (await call(mgr, '/job-roles')).body;
   const provider = roles.find((r) => r.name === 'Provider');
   if (!provider.seesOwnPersonnelTabs) throw new Error('Provider does not have the flag');
@@ -97,9 +105,9 @@ await step('a Provider sees their own under Team', async () => {
   });
   if (added.status >= 300) throw new Error(`adding answered ${added.status}`);
   await frankie.reload({ waitUntil: 'networkidle' });
-  const team = await menuItems(frankie, 'Team');
+  const mine = await accountMenuItems(frankie);
   for (const name of ['Your licenses', 'Your onboarding'])
-    if (!team.includes(name)) throw new Error(`Team lacks ${name}: ${team.join(', ')}`);
+    if (!mine.includes(name)) throw new Error(`account menu lacks ${name}: ${mine.join(', ')}`);
   await call(mgr, `/job-roles/${provider.id}/members/${me.id}`, { method: 'DELETE' });
   await frankie.reload({ waitUntil: 'networkidle' });
 });

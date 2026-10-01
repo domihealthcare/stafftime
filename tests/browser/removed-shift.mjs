@@ -1,4 +1,5 @@
 import { chromium } from 'playwright';
+import { goTo } from './nav.mjs';
 import { mkdirSync } from 'node:fs';
 // A published shift that is removed is kept as CANCELLED. The week always left
 // it out; the month showed it, and the Clock screen could call it "Today's
@@ -21,7 +22,7 @@ const signInAs = async (page, email) => {
   await page.getByLabel('Email').fill(email);
   await page.getByLabel('Password', { exact: true }).fill('shift-change-2026');
   await page.getByRole('button', { name: 'Sign in' }).click();
-  await page.getByRole('link', { name: 'Schedule' }).waitFor({ timeout: 20000 });
+  await page.getByRole('navigation').getByRole('link', { name: /^Schedule/ }).waitFor({ timeout: 20000 });
 };
 
 /// Calls the API as whoever the page is signed in as.
@@ -67,7 +68,7 @@ const shift = await call(admin, '/shifts', {
 if (shift.status !== 201) throw new Error(`the shift answered ${shift.status}`);
 
 const monthCell = async () => {
-  await frankie.getByRole('link', { name: 'Schedule' }).click();
+  await goTo(frankie, 'Schedule');
   await frankie.getByRole('button', { name: 'Month', exact: true }).click();
   const cell = frankie.locator(`button[aria-label^="${dayLabel} —"]`);
   await cell.waitFor({ timeout: 10000 });

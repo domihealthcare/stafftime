@@ -1,6 +1,6 @@
 import { chromium } from 'playwright';
 import { mkdirSync } from 'node:fs';
-import { openMore } from './nav.mjs';
+import { openMore, openNews } from './nav.mjs';
 
 // The bell beside your name: notifications that are yours alone — a new post,
 // a shift added to your schedule, your time off decided — with an unread count,
@@ -54,8 +54,8 @@ await signIn(frankie, 'frontdesk@domihealthcare.com');
 const bell = (page) => page.getByRole('button', { name: /^Notifications/ });
 const panel = (page) => page.getByRole('dialog', { name: 'Notifications' });
 
-await step('News is a tab of its own, not tucked under Team', async () => {
-  // On a phone News is under More; on a laptop it is a tab of its own.
+await step('News is on Home, and under More on a phone', async () => {
+  await openNews(frankie);
   await openMore(frankie);
   await frankie
     .getByRole('navigation')

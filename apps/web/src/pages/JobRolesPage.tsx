@@ -396,7 +396,7 @@ function RoleForm({
           className="mt-0.5 rounded border-slate-300"
         />
         <span>
-          People in this role see their own licenses and onboarding, under Team
+          People in this role see their own licenses and onboarding, in their account menu
           <span className="block text-xs text-slate-500">
             On for Provider. Their own records only — it gives no extra access.
           </span>

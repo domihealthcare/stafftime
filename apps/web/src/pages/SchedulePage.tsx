@@ -59,6 +59,7 @@ import { jobRoleHex } from '../lib/job-role-colours';
 import { StandingShiftsCard } from '../components/StandingShiftsCard';
 import { Alert, Card, EmptyState, PageHeading, Spinner, buttonClass } from '../components/ui';
 import { NeedsAttention } from '../components/NeedsAttention';
+import { RequestTimeOffButton, RequestsToDecide, YourTimeOff } from '../components/ScheduleTimeOff';
 import { useConfirm } from '../components/ConfirmDialog';
 import {
   confirmOvertime,
@@ -212,6 +213,8 @@ export function SchedulePage() {
   const rangeStart = days[0];
   const rangeEnd = useMemo(() => addDays(days[days.length - 1], 1), [days]);
 
+  /// Bumped when a time-off decision is made here, so "Your time off" refreshes.
+  const [timeOffKey, setTimeOffKey] = useState(0);
   const load = useCallback(async () => {
     setLoading(true);
     try {
@@ -422,6 +425,16 @@ export function SchedulePage() {
         sections={['shiftsInClosures', 'openShifts', 'unpublishedRota', 'shiftsForLeavers']}
       />
 
+      {/* Time off lives here now it has no tab (October 2026): requests to
+          decide for a manager, and everybody's own days left. */}
+      <RequestsToDecide
+        onDecided={() => {
+          setTimeOffKey((n) => n + 1);
+          void load();
+        }}
+      />
+      <YourTimeOff refreshKey={timeOffKey} />
+
       {!isManager && ownWeeks && ownWeeks.length > 0 && (
         <div className="mb-4">
           <MyOvertimeNotice weeks={ownWeeks} />
@@ -464,36 +477,39 @@ export function SchedulePage() {
 
         {/* Switching keeps you where you were: a week in March goes to March,
             and picking a day in March goes back to that week — not to today. */}
-        <div className="ml-auto flex rounded-lg border border-slate-300 bg-white p-0.5">
-          {(['week', 'month'] as const).map((option) => (
-            <button
-              key={option}
-              type="button"
-              aria-pressed={view === option}
-              onClick={() => {
-                try {
-                  window.localStorage.setItem(VIEW_KEY, option);
-                } catch {
-                  // A remembered preference is a convenience, not a feature.
-                }
-                if (option === 'month') {
-                  setMonthStart(monthOfWeek(weekStart));
-                } else if (monthOfWeek(weekStart).getTime() !== monthStart.getTime()) {
-                  // Coming back to a different month than you left: land on its
-                  // first week rather than on a week you are no longer looking at.
-                  setWeekStart(startOfWeek(monthStart));
-                }
-                setView(option);
-              }}
-              className={`rounded-md px-3 py-1 text-sm font-medium max-sm:py-2.5 transition ${
-                view === option
-                  ? 'bg-brand-50 text-brand-800'
-                  : 'text-slate-600 hover:text-slate-900'
-              }`}
-            >
-              {option === 'week' ? 'Week' : 'Month'}
-            </button>
-          ))}
+        <div className="ml-auto flex flex-wrap items-center gap-2">
+          <RequestTimeOffButton />
+          <div className="flex rounded-lg border border-slate-300 bg-white p-0.5">
+            {(['week', 'month'] as const).map((option) => (
+              <button
+                key={option}
+                type="button"
+                aria-pressed={view === option}
+                onClick={() => {
+                  try {
+                    window.localStorage.setItem(VIEW_KEY, option);
+                  } catch {
+                    // A remembered preference is a convenience, not a feature.
+                  }
+                  if (option === 'month') {
+                    setMonthStart(monthOfWeek(weekStart));
+                  } else if (monthOfWeek(weekStart).getTime() !== monthStart.getTime()) {
+                    // Coming back to a different month than you left: land on its
+                    // first week rather than on a week you are no longer looking at.
+                    setWeekStart(startOfWeek(monthStart));
+                  }
+                  setView(option);
+                }}
+                className={`rounded-md px-3 py-1 text-sm font-medium max-sm:py-2.5 transition ${
+                  view === option
+                    ? 'bg-brand-50 text-brand-800'
+                    : 'text-slate-600 hover:text-slate-900'
+                }`}
+              >
+                {option === 'week' ? 'Week' : 'Month'}
+              </button>
+            ))}
+          </div>
         </div>
       </div>
 

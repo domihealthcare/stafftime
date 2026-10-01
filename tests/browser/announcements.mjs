@@ -1,4 +1,5 @@
 import { chromium } from 'playwright';
+import { openNews } from './nav.mjs';
 import { mkdirSync } from 'node:fs';
 
 const OUT = process.argv[2] || new URL('./shots/', import.meta.url).pathname;
@@ -62,7 +63,7 @@ await step('the home screen has no gap before anything is posted', async () => {
   if ((await primaryCard(admin).count()) > 0) throw new Error('an empty announcement showed');
 });
 
-await admin.getByRole('link', { name: 'News', exact: true }).click();
+await openNews(admin);
 
 await step('the first post is primary whether ticked or not', async () => {
   await admin.getByText('Nothing has been posted yet.').waitFor({ timeout: 15000 });
@@ -139,14 +140,14 @@ await step('an edit is saved and says it was edited', async () => {
 await admin.screenshot({ path: `${OUT}/70-news.png`, fullPage: true });
 
 await step('the home screen leads with the primary post', async () => {
-  await admin.getByRole('link', { name: 'Clock', exact: true }).click();
+  await admin.getByRole('link', { name: 'Home', exact: true }).click();
   await primaryCard(admin).getByText('Parking').waitFor({ timeout: 15000 });
   await primaryCard(admin).getByText('Use the back lot from Tuesday.').waitFor({ timeout: 5000 });
 });
 await admin.screenshot({ path: `${OUT}/71-home-announcement.png`, fullPage: true });
 
 await step('deleting the primary hands it to the newest post left', async () => {
-  await admin.getByRole('link', { name: 'News', exact: true }).click();
+  await openNews(admin);
   const parking = card(admin, 'Parking');
   await parking.getByRole('button', { name: 'Delete', exact: true }).click();
   // Asked in a pop-up, which says what happens to the primary.
@@ -197,7 +198,7 @@ await step('a manager can read but not write', async () => {
   const ctx = await browser.newContext({ viewport: { width: 1280, height: 1000 } });
   const mgr = await ctx.newPage();
   await signIn(mgr, 'manager@domihealthcare.com');
-  await mgr.getByRole('link', { name: 'News', exact: true }).click();
+  await openNews(mgr);
   await mgr.getByRole('heading', { name: 'Snow closure' }).waitFor({ timeout: 15000 });
   if ((await mgr.getByRole('button', { name: '+ New post' }).count()) > 0)
     throw new Error('a manager was offered the post form');

@@ -1,4 +1,5 @@
 import { chromium } from 'playwright';
+import { goTo } from './nav.mjs';
 import { mkdirSync } from 'node:fs';
 
 // The rota: a row per person, open shifts per office flagged until somebody
@@ -35,7 +36,7 @@ const openRow = (place) => mgr.getByTestId(`open-row-${place}`);
 const openChips = () => mgr.getByTestId('week-grid').getByTestId('open-shift');
 
 // Next week, so everything is in the future and inside the round-up's window.
-await mgr.getByRole('link', { name: 'Schedule' }).click();
+await goTo(mgr, 'Schedule');
 await mgr.getByTestId('week-grid').waitFor({ timeout: 15000 });
 await mgr.getByRole('button', { name: 'Next →' }).click();
 await mgr.getByText('Coverage this week').waitFor({ timeout: 15000 });
@@ -175,7 +176,7 @@ emp.on('pageerror', (e) => errors.push(`employee pageerror: ${e.message}`));
 await signIn(emp, 'frontdesk@domihealthcare.com');
 
 await step('staff see their own row, with no open shifts and no editing', async () => {
-  await emp.getByRole('link', { name: 'Schedule' }).click();
+  await goTo(emp, 'Schedule');
   await emp.getByTestId('week-grid').waitFor({ timeout: 15000 });
   await emp.getByTestId('rota-row-Your shifts').waitFor({ timeout: 5000 });
   if ((await emp.getByTestId('open-shift').count()) > 0) throw new Error('staff were shown open shifts');

@@ -6,12 +6,18 @@ import { useSession } from '../lib/session';
 import type { ApplicableSection, ClosingSubmission, Shift, TimeEntry } from '../lib/types';
 import { ClosingChecklistForm } from '../components/ClosingChecklistForm';
 import { BirthdaysThisWeek } from '../components/BirthdaysThisWeek';
-import { PrimaryAnnouncement } from '../components/PrimaryAnnouncement';
+import { ComingUp, HomeNews, QuickActions, SurveysCard } from '../components/HomeCards';
 import { MyOvertimeNotice } from '../components/OvertimeAlerts';
 import { Alert, Badge, Card, Spinner } from '../components/ui';
 
 type Status = 'loading' | 'ready' | 'working';
 
+/**
+ * Home (October 2026, Dominguez — option B; it was the Clock screen): the
+ * clock-in card and the news on the left two-thirds, and on the right third
+ * quick buttons, birthdays, holidays and what is coming up, and surveys. On a
+ * phone they stack — the clock first, the news last.
+ */
 export function ClockPage() {
   const { employee } = useSession();
   const [entry, setEntry] = useState<TimeEntry | null>(null);
@@ -175,137 +181,154 @@ export function ClockPage() {
   const busy = status === 'working';
 
   return (
-    <div className="mx-auto max-w-md space-y-4">
-      <h1 className="sr-only">Clock</h1>
-      <PrimaryAnnouncement />
-      <MyOvertimeNotice />
+    <div className="grid items-start gap-4 lg:grid-cols-3 lg:grid-rows-[auto_1fr] lg:gap-6">
+      <h1 className="sr-only">Home</h1>
+      <div className="space-y-4 lg:col-span-2 lg:row-start-1" data-testid="home-clock">
+        <MyOvertimeNotice />
 
-      <Card className="p-6 text-center">
-        <p className="text-sm text-slate-500">
-          {greeting()}, {employee.preferredName ?? employee.firstName}
-        </p>
+        <Card className="p-6 text-center">
+          <p className="text-sm text-slate-500">
+            {greeting()}, {employee.preferredName ?? employee.firstName}
+          </p>
 
-        {status === 'loading' ? (
-          <div className="mt-6 flex justify-center">
-            <Spinner label="Checking your status" />
-          </div>
-        ) : isClockedIn && entry ? (
-          <>
-            <p className="mt-4 text-3xl font-semibold tabular-nums text-slate-900">
-              {formatDuration(entry.clockInAt, null)}
-            </p>
-            <p className="mt-1 text-sm text-slate-600">
-              Clocked in at {formatTime(entry.clockInAt)}
-              {remote ? ' · Working from home' : entry.location ? ` · ${entry.location.name}` : ''}
-            </p>
-            <div className="mt-3 flex justify-center gap-2">
-              <Badge tone="success">On the clock</Badge>
-              {entry.isLate && <Badge tone="warning">Late</Badge>}
+          {status === 'loading' ? (
+            <div className="mt-6 flex justify-center">
+              <Spinner label="Checking your status" />
             </div>
-          </>
-        ) : (
-          <>
-            <p className="mt-4 text-2xl font-semibold text-slate-900">Not clocked in</p>
-            {todaysShift ? (
+          ) : isClockedIn && entry ? (
+            <>
+              <p className="mt-4 text-3xl font-semibold tabular-nums text-slate-900">
+                {formatDuration(entry.clockInAt, null)}
+              </p>
               <p className="mt-1 text-sm text-slate-600">
-                Today&rsquo;s shift: {formatTime(todaysShift.startsAt)} –{' '}
-                {formatTime(todaysShift.endsAt)}
-                {todaysShift.isRemote
-                  ? ' · Work from home'
-                  : todaysShift.location
-                    ? ` · ${todaysShift.location.name}`
+                Clocked in at {formatTime(entry.clockInAt)}
+                {remote
+                  ? ' · Working from home'
+                  : entry.location
+                    ? ` · ${entry.location.name}`
                     : ''}
               </p>
-            ) : (
-              <p className="mt-1 text-sm text-slate-500">No shift scheduled today.</p>
-            )}
-          </>
-        )}
-      </Card>
-
-      {!isClockedIn && !remote && assignedLocations.length > 1 && (
-        <Card className="p-4">
-          <label htmlFor="location" className="block text-sm font-medium text-slate-700">
-            Location
-          </label>
-          <select
-            id="location"
-            value={locationId}
-            onChange={(event) => {
-              setPickedByHand(true);
-              setLocationId(event.target.value);
-            }}
-            className="mt-1 w-full rounded-lg border-slate-300 py-2.5 text-base shadow-sm focus:border-brand-600 focus:ring-brand-600"
-          >
-            {assignedLocations.map((assignment) => (
-              <option key={assignment.locationId} value={assignment.locationId}>
-                {assignment.location.name}
-              </option>
-            ))}
-          </select>
-        </Card>
-      )}
-
-      {error && (
-        <Alert>
-          <p>{error}</p>
-          {offerKiosk && (
-            <p className="mt-2 text-xs">
-              The front-desk kiosk does not need location access and always works on site.
-            </p>
+              <div className="mt-3 flex justify-center gap-2">
+                <Badge tone="success">On the clock</Badge>
+                {entry.isLate && <Badge tone="warning">Late</Badge>}
+              </div>
+            </>
+          ) : (
+            <>
+              <p className="mt-4 text-2xl font-semibold text-slate-900">Not clocked in</p>
+              {todaysShift ? (
+                <p className="mt-1 text-sm text-slate-600">
+                  Today&rsquo;s shift: {formatTime(todaysShift.startsAt)} –{' '}
+                  {formatTime(todaysShift.endsAt)}
+                  {todaysShift.isRemote
+                    ? ' · Work from home'
+                    : todaysShift.location
+                      ? ` · ${todaysShift.location.name}`
+                      : ''}
+                </p>
+              ) : (
+                <p className="mt-1 text-sm text-slate-500">No shift scheduled today.</p>
+              )}
+            </>
           )}
-        </Alert>
-      )}
-
-      {closing && isClockedIn ? (
-        <Card className="p-4">
-          <ClosingChecklistForm
-            sections={checklist}
-            busy={busy}
-            onSubmit={(answers) => void punch('out', answers)}
-            onSkip={() => void punch('out', { skipped: true })}
-            onCancel={() => setClosing(false)}
-          />
         </Card>
-      ) : assignedLocations.length === 0 ? (
-        <Alert tone="warning">
-          You are not assigned to a location yet, so you cannot clock in. Ask a manager to assign
-          you to North Bergen or West New York.
-        </Alert>
-      ) : (
-        <button
-          type="button"
-          onClick={() =>
-            isClockedIn && checklist.length > 0
-              ? setClosing(true)
-              : void punch(isClockedIn ? 'out' : 'in')
-          }
-          disabled={busy || status === 'loading'}
-          className={`w-full rounded-xl px-6 py-5 text-lg font-semibold text-white shadow-sm transition disabled:cursor-not-allowed disabled:opacity-60 ${
-            isClockedIn
-              ? 'bg-slate-700 hover:bg-slate-800 active:bg-slate-900'
-              : 'bg-brand-600 hover:bg-brand-700 active:bg-brand-800'
-          }`}
-        >
-          {busy
-            ? remote
-              ? 'Working…'
-              : 'Checking your location…'
-            : isClockedIn
-              ? 'Clock out'
-              : remote
-                ? 'Clock in — working from home'
-                : 'Clock in'}
-        </button>
-      )}
 
-      <p className="px-2 text-center text-xs text-slate-500">
-        {remote
-          ? 'Working from home: no location is asked for or recorded.'
-          : 'Clocking in from a browser shares your location with Domi Healthcare to confirm you are on site. It is recorded with your time entry.'}
-      </p>
+        {!isClockedIn && !remote && assignedLocations.length > 1 && (
+          <Card className="p-4">
+            <label htmlFor="location" className="block text-sm font-medium text-slate-700">
+              Location
+            </label>
+            <select
+              id="location"
+              value={locationId}
+              onChange={(event) => {
+                setPickedByHand(true);
+                setLocationId(event.target.value);
+              }}
+              className="mt-1 w-full rounded-lg border-slate-300 py-2.5 text-base shadow-sm focus:border-brand-600 focus:ring-brand-600"
+            >
+              {assignedLocations.map((assignment) => (
+                <option key={assignment.locationId} value={assignment.locationId}>
+                  {assignment.location.name}
+                </option>
+              ))}
+            </select>
+          </Card>
+        )}
 
-      <BirthdaysThisWeek />
+        {error && (
+          <Alert>
+            <p>{error}</p>
+            {offerKiosk && (
+              <p className="mt-2 text-xs">
+                The front-desk kiosk does not need location access and always works on site.
+              </p>
+            )}
+          </Alert>
+        )}
+
+        {closing && isClockedIn ? (
+          <Card className="p-4">
+            <ClosingChecklistForm
+              sections={checklist}
+              busy={busy}
+              onSubmit={(answers) => void punch('out', answers)}
+              onSkip={() => void punch('out', { skipped: true })}
+              onCancel={() => setClosing(false)}
+            />
+          </Card>
+        ) : assignedLocations.length === 0 ? (
+          <Alert tone="warning">
+            You are not assigned to a location yet, so you cannot clock in. Ask a manager to assign
+            you to North Bergen or West New York.
+          </Alert>
+        ) : (
+          <button
+            type="button"
+            onClick={() =>
+              isClockedIn && checklist.length > 0
+                ? setClosing(true)
+                : void punch(isClockedIn ? 'out' : 'in')
+            }
+            disabled={busy || status === 'loading'}
+            className={`w-full rounded-xl px-6 py-5 text-lg font-semibold text-white shadow-sm transition disabled:cursor-not-allowed disabled:opacity-60 ${
+              isClockedIn
+                ? 'bg-slate-700 hover:bg-slate-800 active:bg-slate-900'
+                : 'bg-brand-600 hover:bg-brand-700 active:bg-brand-800'
+            }`}
+          >
+            {busy
+              ? remote
+                ? 'Working…'
+                : 'Checking your location…'
+              : isClockedIn
+                ? 'Clock out'
+                : remote
+                  ? 'Clock in — working from home'
+                  : 'Clock in'}
+          </button>
+        )}
+
+        <p className="px-2 text-center text-xs text-slate-500">
+          {remote
+            ? 'Working from home: no location is asked for or recorded.'
+            : 'Clocking in from a browser shares your location with Domi Healthcare to confirm you are on site. It is recorded with your time entry.'}
+        </p>
+      </div>
+
+      <aside
+        aria-label="Quick and coming up"
+        className="space-y-4 lg:col-start-3 lg:row-span-2 lg:row-start-1"
+      >
+        <QuickActions />
+        <BirthdaysThisWeek />
+        <ComingUp />
+        <SurveysCard />
+      </aside>
+
+      <div className="lg:col-span-2 lg:row-start-2">
+        <HomeNews />
+      </div>
     </div>
   );
 }

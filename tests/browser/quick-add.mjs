@@ -1,4 +1,5 @@
 import { chromium } from 'playwright';
+import { goTo } from './nav.mjs';
 import { mkdirSync } from 'node:fs';
 // The + in a rota cell (Dominguez, September 2026): Work from home is a place
 // in the Location list rather than a tick box beside an office, and a shift
@@ -25,7 +26,7 @@ await mgr.goto(`${BASE}/`, { waitUntil: 'networkidle' });
 await mgr.getByLabel('Email').fill('manager@domihealthcare.com');
 await mgr.getByLabel('Password', { exact: true }).fill('shift-change-2026');
 await mgr.getByRole('button', { name: 'Sign in' }).click();
-await mgr.getByRole('link', { name: 'Schedule' }).click();
+await goTo(mgr, 'Schedule');
 await mgr.getByRole('button', { name: 'Week', exact: true }).click();
 // Next week, so every day in it is still ahead.
 await mgr.getByRole('button', { name: 'Next →' }).click();

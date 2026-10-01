@@ -1,4 +1,5 @@
 import { chromium } from 'playwright';
+import { goTo } from './nav.mjs';
 import { mkdirSync } from 'node:fs';
 // License types (Dominguez, September 2026): what the practice asks for, which
 // job roles need each one — required or optional — and how often it renews.
@@ -28,7 +29,7 @@ const signIn = async (page, email) => {
   await page.getByLabel('Email').fill(email);
   await page.getByLabel('Password', { exact: true }).fill('shift-change-2026');
   await page.getByRole('button', { name: 'Sign in' }).click();
-  await page.getByRole('link', { name: 'Schedule' }).waitFor({ timeout: 20000 });
+  await page.getByRole('navigation').getByRole('link', { name: /^Schedule/ }).waitFor({ timeout: 20000 });
 };
 
 const mgr = await (await browser.newContext({ viewport: { width: 1280, height: 1100 } })).newPage();

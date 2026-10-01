@@ -20,7 +20,7 @@ const INPUT = 'w-full rounded-lg border border-slate-300 px-2 py-1.5 text-sm';
  * expected and seen in each interval of a period, a multiplier on the
  * difference, and what was paid. A statement stays a private draft until it is
  * published, and then that provider — and only that provider — can read it
- * under Team → Your productivity.
+ * under Your productivity (account menu).
  *
  * Every provider's model is a little different, so nothing is compulsory: a
  * plan only supplies defaults, and a statement can be a bare count, a count
@@ -434,7 +434,7 @@ function Statements({ employeeId, plan }: { employeeId: string; plan: Productivi
   async function publish(statement: ProductivityStatement) {
     const ok = await confirm({
       title: 'Publish this statement?',
-      body: 'The provider can then read these numbers under Team → Your productivity, and is told it is ready. Nobody else can. You can take it back to a draft.',
+      body: 'The provider can then read these numbers under Your productivity in their account menu, and is told it is ready. Nobody else can. You can take it back to a draft.',
       confirmLabel: 'Yes, publish',
       cancelLabel: 'Not yet',
       tone: 'neutral',

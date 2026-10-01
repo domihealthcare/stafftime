@@ -1,4 +1,5 @@
 import { chromium } from 'playwright';
+import { goTo } from './nav.mjs';
 import { mkdirSync } from 'node:fs';
 
 const OUT = process.argv[2] || new URL('./shots/', import.meta.url).pathname;
@@ -52,7 +53,7 @@ await signIn(frankie, 'frontdesk@domihealthcare.com');
 
 let firstOpen = '';
 await step('staff reach it from the Schedule page and are told which weeks are fixed', async () => {
-  await frankie.getByRole('link', { name: 'Schedule', exact: true }).click();
+  await goTo(frankie, 'Schedule');
   await frankie.getByRole('link', { name: 'When you can’t work' }).click();
   await frankie.getByRole('heading', { name: 'When you can’t work' }).waitFor({ timeout: 15000 });
   await frankie.getByText(/The schedule is published up to/).waitFor({ timeout: 10000 });
@@ -137,7 +138,7 @@ await step('the scheduler warns about a shift on a time somebody can’t work, b
   });
   if (created.status !== 201) throw new Error(`the shift was refused: ${created.status} ${JSON.stringify(created.body)}`);
 
-  await mgr.getByRole('link', { name: 'Schedule', exact: true }).click();
+  await goTo(mgr, 'Schedule');
   await mgr.getByRole('button', { name: 'Week', exact: true }).click();
   await mgr.getByRole('button', { name: 'Next →' }).click();
   const notice = mgr.getByTestId('availability-notice');

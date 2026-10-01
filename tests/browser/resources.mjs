@@ -1,6 +1,6 @@
 import { chromium } from 'playwright';
 import { mkdirSync } from 'node:fs';
-import { openMenu } from './nav.mjs';
+import { goTo, openMenu } from './nav.mjs';
 
 const OUT = process.argv[2] || new URL('./shots/', import.meta.url).pathname;
 mkdirSync(OUT, { recursive: true });
@@ -135,7 +135,7 @@ await step('a manager puts somebody in a role and takes them out again', async (
 await mgr.screenshot({ path: `${OUT}/80-job-roles.png`, fullPage: true });
 
 await step('Resources opens with a section for everyone and one per role', async () => {
-  await go(mgr, 'Team', 'Resources');
+  await goTo(mgr, 'Resources');
   for (const name of ['Everyone', 'Front Desk', 'Medical Assistant', 'Provider', 'Billing & Coding']) {
     await section(mgr, name).waitFor({ timeout: 15000 });
   }
@@ -244,7 +244,7 @@ await step('someone in two roles sees both, and nothing else', async () => {
   const emp = await ctx.newPage();
   emp.on('pageerror', (e) => errors.push(`employee pageerror: ${e.message}`));
   await signIn(emp, 'frontdesk@domihealthcare.com');
-  await go(emp, 'Team', 'Resources');
+  await goTo(emp, 'Resources');
 
   await section(emp, 'Everyone').waitFor({ timeout: 15000 });
   await section(emp, 'Front Desk').getByRole('link', { name: /Phone scripts/ }).waitFor({ timeout: 5000 });

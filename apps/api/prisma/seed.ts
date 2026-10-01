@@ -57,7 +57,7 @@ const DEV_JOB_ROLES: Record<string, string[]> = {
 
 async function seedJobRoles() {
   for (const [index, name] of JOB_ROLES.entries()) {
-    // Providers see their own licenses and onboarding under Team; nobody else
+    // Providers see their own licenses and onboarding in the account menu; nobody else
     // does by job role (September 2026).
     const seesOwnPersonnelTabs = name === 'Provider';
     // Providers get the clinical forms too (the 99483 cognitive assessment).

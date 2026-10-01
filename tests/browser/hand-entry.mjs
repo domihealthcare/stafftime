@@ -1,4 +1,5 @@
 import { chromium } from 'playwright';
+import { goTo } from './nav.mjs';
 import { mkdirSync } from 'node:fs';
 // Hours entered by hand (September 2026): a manager adds a day with no punch,
 // with a reason, and it stays on "Worth a look" until somebody else has looked
@@ -16,7 +17,7 @@ const signInAs = async (page, email, password = 'shift-change-2026') => {
   await page.getByLabel('Email').fill(email);
   await page.getByLabel('Password', { exact: true }).fill(password);
   await page.getByRole('button', { name: 'Sign in' }).click();
-  await page.getByRole('link', { name: 'Timesheet' }).waitFor({ timeout: 10000 });
+  await page.getByRole('navigation').getByRole('link', { name: /^Schedule/ }).waitFor({ timeout: 10000 });
 };
 
 const step = async (name, fn) => {
@@ -34,7 +35,7 @@ const DAY = `${lastSunday.getFullYear()}-${pad(lastSunday.getMonth() + 1)}-${pad
 // ---------------------------------------------------------------- the manager
 const manager = await (await browser.newContext({ viewport: { width: 1280, height: 900 } })).newPage();
 await signInAs(manager, 'manager@domihealthcare.com');
-await manager.getByRole('link', { name: 'Timesheet' }).click();
+await goTo(manager, 'Timesheet');
 
 await step('Add hours needs who, when, why and what happened before it saves', async () => {
   await manager.getByRole('button', { name: '+ Add hours' }).click();
@@ -102,7 +103,7 @@ await manager.screenshot({ path: `${OUT}/hand-entry-2-timesheet.png`, fullPage: 
 // ------------------------------------------------------------ the employee
 const staff = await (await browser.newContext({ viewport: { width: 390, height: 844 } })).newPage();
 await signInAs(staff, 'frontdesk@domihealthcare.com');
-await staff.getByRole('link', { name: 'Timesheet' }).click();
+await goTo(staff, 'Timesheet');
 
 await step('staff see their hand-entered day and why, but cannot add hours', async () => {
   await staff.getByRole('button', { name: 'Last week' }).click();
@@ -115,7 +116,7 @@ await step('staff see their hand-entered day and why, but cannot add hours', asy
 // ----------------------------------------------------------- somebody else
 const admin = await (await browser.newContext({ viewport: { width: 1280, height: 900 } })).newPage();
 await signInAs(admin, 'admin@domihealthcare.com');
-await admin.getByRole('link', { name: 'Timesheet' }).click();
+await goTo(admin, 'Timesheet');
 
 await step('another manager marks it looked into, with what they found, and it leaves the list', async () => {
   await admin.getByRole('button', { name: 'Last week' }).click();

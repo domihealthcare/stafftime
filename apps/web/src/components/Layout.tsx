@@ -3,6 +3,7 @@ import { Link, NavLink, Outlet, useLocation } from 'react-router-dom';
 import { TIME_OFF_CHANGED, api } from '../lib/api';
 import { AccountMenu } from './AccountMenu';
 import { SloganStrip, Wordmark } from './Brand';
+import { NavIcon } from './NavIcons';
 import { NavMenu } from './NavMenu';
 import { PhoneTabBar } from './PhoneTabBar';
 import { useIsPhone } from '../lib/use-is-phone';
@@ -14,40 +15,26 @@ import { Spinner } from './ui';
 /// the padding is small — the row, not the padding, sets the width. From `sm`
 /// up they are ordinary inline pills again.
 const linkClasses = ({ isActive }: { isActive: boolean }) =>
-  `inline-flex min-h-11 flex-auto items-center justify-center whitespace-nowrap rounded-lg px-1 py-2 text-center text-sm font-medium transition focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-600 sm:min-h-0 sm:flex-none sm:justify-start sm:px-3 sm:text-left ${
+  `inline-flex min-h-11 flex-auto items-center justify-center gap-1.5 whitespace-nowrap rounded-lg px-1 py-2 text-center text-sm font-medium transition focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-600 sm:min-h-0 sm:flex-none sm:justify-start sm:px-3 sm:text-left ${
     isActive
       ? 'bg-brand-50 text-brand-800'
       : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'
   }`;
 
-/// The practice's shared screens: who is here, and where things are. News has
-/// its own tab in the bar (asked for by Dominguez, September 2026).
-const TEAM = [
-  { to: '/directory', label: 'Directory' },
-  { to: '/resources', label: 'Resources' },
-  { to: '/surveys', label: 'Surveys' },
-];
-
-/// Running the practice.
+/// Running the practice. Time off and Surveys joined it when their tabs went
+/// (October 2026, Dominguez): staff reach time off from Schedule and Home,
+/// and surveys from Home and News.
 const MANAGE = [
   { to: '/dashboard', label: 'Dashboard' },
+  { to: '/time-off', label: 'Time off & balances' },
+  { to: '/surveys', label: 'Surveys' },
   { to: '/closing', label: 'Closing checklists' },
   { to: '/checklists', label: 'Onboarding & Offboarding' },
   { to: '/credentials', label: 'Licenses' },
   { to: '/job-roles', label: 'Job roles' },
   { to: '/export', label: 'Export' },
 ];
-/// Their own licenses and onboarding, for people whose job role keeps them
-/// (Providers). Front Desk and MAs do not see these at all — decided with
-/// Dominguez, September 2026; a manager keeps theirs.
-const OWN_PERSONNEL = [
-  { to: '/credentials', label: 'Your licenses' },
-  { to: '/checklists', label: 'Your onboarding' },
-];
-/// A provider's own published productivity, once a manager has published any.
-/// Chosen by an admin, not by access level, so it is added separately below.
 const PRODUCTIVITY_MANAGE = { to: '/productivity', label: 'Provider productivity' };
-const OWN_PRODUCTIVITY = [{ to: '/my-productivity', label: 'Your productivity' }];
 const ADMINISTER = [
   { to: '/staff', label: 'Staff' },
   { to: '/kiosks', label: 'Kiosks' },
@@ -94,12 +81,9 @@ export function Layout() {
   const isManager = useIsManager();
   const isAdmin = useIsAdmin();
   const { employee } = useSession();
-  // What Team and Manage hold — on a laptop in the header, on a phone under More.
-  const teamItems = [
-    ...TEAM,
-    ...(!isManager && employee?.seesOwnPersonnelTabs ? OWN_PERSONNEL : []),
-    ...(employee?.hasProductivity ? OWN_PRODUCTIVITY : []),
-  ];
+  // What Manage holds — on a laptop in the header, on a phone under More.
+  // Somebody's own licenses, onboarding and productivity are in the account
+  // menu, with the rest of what is theirs.
   const manageItems = [
     ...(isManager ? MANAGE : []),
     ...(isAdmin ? ADMINISTER : []),
@@ -178,49 +162,53 @@ export function Layout() {
             <AccountMenu />
           </div>
 
-          {/* The everyday screens are links of their own. The practice-wide
-              ones sit under Team and Manage: laid out flat, an admin's fifteen
-              destinations would fill a phone's first screen before the page
-              even started. The Clock link is always first, so a punch is never
-              behind a menu.
+          {/* The everyday screens are links of their own, each with its icon
+              (October 2026, Dominguez — option B of three renderings): Home
+              first, so a punch is never behind a menu, then Schedule (which
+              carries time off and its badge), Timesheet, Directory and
+              Resources. News is on Home. What only managers need sits under
+              Manage. On a phone the bottom bar takes over (PhoneTabBar).
 
-              On a phone the links wrap onto rows and each grows to share out
-              its row, so every row runs edge to edge instead of ending wherever
-              the words stop. This was an even grid of equal columns until News
-              became a tab of its own: nine equal cells need three rows at 390px,
-              but the words themselves fit in two (about 330px and 290px of the
-              358 available) once each is only as wide as it needs to be. On a
-              320px phone it drops to three rows rather than clipping a word.
-
-              `relative` so that on a phone a menu opens across the whole nav,
-              wherever its button landed. */}
+              `relative` so a menu opens against the nav. */}
           {!isPhone && (
             <nav
               aria-label="Main"
-              className="relative col-span-2 flex flex-wrap gap-1 sm:col-span-1 sm:items-center sm:gap-x-1 sm:gap-y-1"
+              className="relative col-span-2 flex flex-wrap gap-1 sm:col-span-1 sm:items-center sm:gap-x-0.5 sm:gap-y-1"
             >
               <NavLink to="/" end className={linkClasses}>
-                Clock
-              </NavLink>
-              <NavLink to="/news" className={linkClasses}>
-                News
+                <NavIcon name="home" />
+                Home
               </NavLink>
               <NavLink to="/schedule" className={linkClasses}>
+                <NavIcon name="schedule" />
                 Schedule
-              </NavLink>
-              <NavLink to="/timesheet" className={linkClasses}>
-                Timesheet
-              </NavLink>
-              <NavLink to="/time-off" className={linkClasses}>
-                Time off
                 {pendingPto > 0 && (
-                  <span className="ml-1.5 rounded-full bg-amber-100 px-1.5 py-0.5 text-xs font-semibold text-amber-800">
+                  <span
+                    className="ml-0.5 rounded-full bg-amber-100 px-1.5 py-0.5 text-xs font-semibold text-amber-800"
+                    title={`${pendingPto} time-off request${pendingPto === 1 ? '' : 's'} to decide`}
+                  >
                     {pendingPto}
                   </span>
                 )}
               </NavLink>
-              <NavMenu label="Team" items={teamItems} className={linkClasses} />
-              <NavMenu label="Manage" items={manageItems} className={linkClasses} />
+              <NavLink to="/timesheet" className={linkClasses}>
+                <NavIcon name="timesheet" />
+                Timesheet
+              </NavLink>
+              <NavLink to="/directory" className={linkClasses}>
+                <NavIcon name="directory" />
+                Directory
+              </NavLink>
+              <NavLink to="/resources" className={linkClasses}>
+                <NavIcon name="resources" />
+                Resources
+              </NavLink>
+              <NavMenu
+                label="Manage"
+                icon={<NavIcon name="manage" />}
+                items={manageItems}
+                className={linkClasses}
+              />
             </nav>
           )}
         </div>
@@ -244,9 +232,7 @@ export function Layout() {
           <Outlet />
         </Suspense>
       </main>
-      {isPhone && (
-        <PhoneTabBar pendingPto={pendingPto} teamItems={teamItems} manageItems={manageItems} />
-      )}
+      {isPhone && <PhoneTabBar pendingPto={pendingPto} manageItems={manageItems} />}
     </div>
   );
 }

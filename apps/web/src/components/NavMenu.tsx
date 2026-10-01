@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { NavLink, useLocation } from 'react-router-dom';
 
 export interface NavMenuItem {
@@ -15,10 +15,13 @@ export interface NavMenuItem {
  */
 export function NavMenu({
   label,
+  icon,
   items,
   className,
 }: {
   label: string;
+  /// Shown before the label, like the tabs beside it.
+  icon?: ReactNode;
   items: NavMenuItem[];
   className: (state: { isActive: boolean }) => string;
 }) {
@@ -61,13 +64,14 @@ export function NavMenu({
         onClick={() => setOpen((shown) => !shown)}
         className={`w-full sm:w-auto ${className({ isActive })}`}
       >
+        {icon}
         {label}
-        <span aria-hidden className="ml-1 text-slate-400">
+        <span aria-hidden className="text-slate-400">
           ▾
         </span>
       </button>
       {open && (
-        <div className="absolute inset-x-0 z-20 mt-1 rounded-xl border border-slate-200 bg-white p-1 shadow-lg sm:inset-x-auto sm:left-0 sm:w-48">
+        <div className="absolute inset-x-0 z-20 mt-1 rounded-xl border border-slate-200 bg-white p-1 shadow-lg sm:inset-x-auto sm:right-0 sm:w-56">
           {items.map((item) => (
             <NavLink
               key={item.to}

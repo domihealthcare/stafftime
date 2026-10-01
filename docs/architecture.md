@@ -1332,6 +1332,41 @@ Two things it caught:
   file picker was `shrink-0`. On a phone the actions now sit under the task
   rather than beside it.
 
+### Navigation and Home (October 2026)
+
+Dominguez did not like Directory and Resources hidden under a Team menu, and
+Time off did not need a tab of its own. Of three mockups, option B was chosen,
+with icons:
+
+- **Laptop header**: Home · Schedule · Timesheet · Directory · Resources ·
+  Manage ▾. Each link has a small line icon beside its word, never instead of
+  it (`components/NavIcons.tsx` — inline SVG, so no icon library to load).
+- **Phone bottom bar**: Home · Schedule · Directory · Resources · More. More
+  holds Timesheet, News and Surveys (for staff; a manager's Surveys is under
+  Manage, so it is on the page once) and the Manage group. Timesheet went
+  under More because staff open it far less than the Schedule; managers
+  approving hours are one extra tap away, which they accepted.
+- **Home** replaced the Clock screen at `/`. On a laptop it is a three-column
+  grid: the clock and then the news take two columns, the right column holds
+  Quick, birthdays, holidays and events, and surveys. The right column spans
+  both rows, so a long news list never pushes it down. On a phone it stacks
+  in source order — the clock first, so a punch is never below the fold.
+  Every card fails quietly: a card that cannot load is not worth an error
+  between somebody and the clock-in button.
+- **Time off in the Schedule**: rather than a tab, the Schedule carries a
+  "+ Request time off" button (the Time off screen with its form open,
+  `/time-off?request=1`), "Your time off", and for a manager the requests to
+  decide, approved or declined in place (declining asks first). The badge of
+  pending requests moved from the Time off tab to Schedule. The Time off
+  screen itself is unchanged — balances, policy, history, the switch-over —
+  and is Manage → Time off & balances.
+- **Personal links** (your licenses, onboarding, productivity) moved to the
+  account menu, beside Your profile, since the Team menu that held them went.
+
+`tests/browser/nav.mjs` has `goTo(page, name)` and `navLink`, which find a link
+wherever it is on the current layout (header, bottom bar, More, Manage), plus
+`openNews` and `openTimeOff` for the two screens without a tab.
+
 ### The timesheet is a table or a list, depending on room
 
 Below `sm` the timesheet renders each entry as a card instead of a row. Eight
@@ -1830,8 +1865,8 @@ A job role with resources cannot be deleted until they are moved or removed:
 they were written for somebody, and deleting a role should not quietly throw
 that work away. Its members just stop being in it.
 
-The Team / Manage menus in the top bar are disclosures of ordinary links, not
-ARIA menus, so the links stay links to assistive tech and to the browser suites.
+The Manage menu in the top bar is a disclosure of ordinary links, not an ARIA
+menu, so the links stay links to assistive tech and to the browser suites.
 
 ### Job-role colours
 
@@ -1968,7 +2003,7 @@ resets them. From then on they are the managers' (Manage → Closing
 checklists → Edit lists).
 
 `JobRole.seesOwnPersonnelTabs` (true for Provider) puts "Your licenses" and
-"Your onboarding" under Team. It is visibility of one's own records, not
+"Your onboarding" in the account menu (under Team until October 2026). It is visibility of one's own records, not
 access: the endpoints were already scoped to the caller.
 
 ## Profiles and photos
@@ -2910,7 +2945,7 @@ and no numbers, as every notification.
 
 **Screens.** Manager: *Manage → Provider productivity* (provider picker with
 providers first, then *Statements* and *How theirs is counted*). Provider:
-*Team → Your productivity* (`/my-productivity`), shown only once something is
+*Your productivity* in the account menu (`/my-productivity`), shown only once something is
 published (`hasProductivity` on `/auth/me`), with this year's total. It sits
 under Manage rather than Resources because it is for managers; moving it is a
 one-line change in `Layout.tsx`.

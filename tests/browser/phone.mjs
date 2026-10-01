@@ -1,7 +1,7 @@
 import { chromium } from 'playwright';
 import { clockOut } from './clock-out.mjs';
 import { mkdirSync } from 'node:fs';
-import { openMenu, openMore } from './nav.mjs';
+import { goTo, navLink, openMenu } from './nav.mjs';
 // Screenshots go wherever the caller says, or into ./shots (gitignored).
 const OUT = process.argv[2] || new URL('./shots/', import.meta.url).pathname;
 mkdirSync(OUT, { recursive: true });
@@ -74,8 +74,8 @@ await step('the sign-in screen fits a phone', async () => {
 
 await signIn(page, 'admin@domihealthcare.com');
 
-await step('the clock screen fits a phone', async () => {
-  await assertNoSidewaysScroll(page, 'Clock');
+await step('the home screen fits a phone', async () => {
+  await assertNoSidewaysScroll(page, 'Home');
 });
 
 // The screens below need something on them. This suite makes its own rather
@@ -103,53 +103,34 @@ await step('a checklist can be started from a phone', async () => {
 });
 await page.screenshot({ path: `${OUT}/50-phone-clock.png`, fullPage: true });
 
-/// Which top-bar menu a screen sits under, if any.
-const MENU = {
-  Directory: 'Team',
-  Resources: 'Team',
-  Surveys: 'Team',
-  Dashboard: 'Manage',
-  'Closing checklists': 'Manage',
-  'Onboarding & Offboarding': 'Manage',
-  Licenses: 'Manage',
-  'Job roles': 'Manage',
-  Export: 'Manage',
-  Staff: 'Manage',
-  Kiosks: 'Manage',
-  Locations: 'Manage',
-};
+/// The screens that open from More (and, inside it, Manage) on a phone.
+const UNDER_MORE = new Set([
+  'Timesheet', 'News', 'Time off', 'Surveys', 'Dashboard', 'Closing checklists',
+  'Onboarding & Offboarding', 'Licenses', 'Job roles', 'Export', 'Staff', 'Kiosks', 'Locations',
+]);
 
-async function openMenuFor(page, name) {
-  // News sits straight under More on a phone; the rest inside Team or Manage.
-  if (name === 'News') await openMore(page);
-  else if (MENU[name]) await openMenu(page, MENU[name]);
-}
-
-await step('the bottom bar reads Clock, Schedule, Timesheet, Time off, More', async () => {
-  // Schedule before Timesheet (Dominguez, September 2026): it is the one
-  // people open most. News and the rest are under More.
+await step('the bottom bar reads Home, Schedule, Directory, Resources, More', async () => {
+  // October 2026, Dominguez (option B): Time off is inside Schedule, News on
+  // Home, and Timesheet with the rest under More.
   const links = await page.getByRole('navigation').getByRole('link').allInnerTexts();
   const order = links.map((text) => text.trim().split(/\s/)[0]).filter((word) => word);
-  if (order.slice(0, 4).join() !== 'Clock,Schedule,Timesheet,Time' || (await page.getByRole('button', { name: 'More', exact: true }).count()) !== 1)
-    throw new Error(`the top bar reads ${order.join(', ')}`);
+  if (order.join() !== 'Home,Schedule,Directory,Resources' || (await page.getByRole('button', { name: 'More', exact: true }).count()) !== 1)
+    throw new Error(`the bottom bar reads ${order.join(', ')}`);
 });
 
 await step('every navigation link is reachable without scrolling sideways', async () => {
-  // The everyday screens sit in the top bar; the rest open from Team and
+  // The everyday screens sit in the bottom bar; the rest open from More and
   // Manage. Either way, nothing may run off the edge of the phone.
   for (const name of [
-    'Clock', 'News', 'Schedule', 'Timesheet', 'Time off',
-    'Directory', 'Resources', 'Surveys', 'Dashboard', 'Closing checklists',
-    'Onboarding & Offboarding', 'Licenses', 'Job roles', 'Export', 'Staff', 'Kiosks', 'Locations',
+    'Home', 'Schedule', 'Directory', 'Resources', ...UNDER_MORE,
   ]) {
-    await openMenuFor(page, name);
-    const link = page.getByRole('navigation').getByRole('link', { name: new RegExp(`^${name}`) }).first();
+    const link = await navLink(page, name);
     if ((await link.count()) === 0) throw new Error(`${name} is missing from the nav`);
     const box = await link.boundingBox();
     if (!box) throw new Error(`${name} is not visible`);
     if (box.x < -1 || box.x + box.width > PHONE.width + 1)
       throw new Error(`${name} sits at ${Math.round(box.x)}–${Math.round(box.x + box.width)}px, off a ${PHONE.width}px screen`);
-    if (MENU[name] || name === 'News') await page.keyboard.press('Escape');
+    if (UNDER_MORE.has(name)) await page.keyboard.press('Escape');
   }
 });
 
@@ -172,14 +153,13 @@ for (const [label, screen] of [
   ['Locations', 'Locations'],
 ]) {
   await step(`the ${screen.toLowerCase()} screen fits a phone`, async () => {
-    await openMenuFor(page, label);
-    await page.getByRole('navigation').getByRole('link', { name: new RegExp(`^${label}`) }).first().click();
+    await (await navLink(page, label)).click();
     await assertNoSidewaysScroll(page, screen);
   });
 }
 
 await step('a manager can approve hours without scrolling sideways to find the button', async () => {
-  await page.getByRole('link', { name: /^Timesheet/ }).first().click();
+  await (await navLink(page, 'Timesheet')).click();
   const approve = page.getByRole('button', { name: 'Approve' }).first();
   await approve.waitFor({ timeout: 15000 });
 
@@ -191,7 +171,7 @@ await step('a manager can approve hours without scrolling sideways to find the b
 await page.screenshot({ path: `${OUT}/51-phone-timesheet.png`, fullPage: true });
 
 await step('the rota scrolls inside itself on a phone, keeping names in view', async () => {
-  await page.getByRole('link', { name: /^Schedule/ }).first().click();
+  await goTo(page, 'Schedule');
   await page.getByText('Coverage this week').waitFor({ timeout: 15000 });
   // The page itself never scrolls sideways; the rota is a table that does,
   // in its own box, with the name column pinned.
@@ -222,7 +202,7 @@ await step('the month view fits a phone', async () => {
   // Seven columns is about fifty pixels each at this width, which is exactly
   // why the month view shows counts rather than shift cards. If it ever goes
   // back to names, this is what should notice.
-  await page.getByRole('link', { name: /^Schedule/ }).first().click();
+  await goTo(page, 'Schedule');
   await page.getByRole('button', { name: 'Month', exact: true }).click();
   await page.getByTestId('month-grid').waitFor({ timeout: 15000 });
   await assertNoSidewaysScroll(page, 'Month view');
@@ -252,7 +232,7 @@ await step('an open checklist fits a phone', async () => {
 await page.screenshot({ path: `${OUT}/54-phone-checklist.png`, fullPage: true });
 
 await step('the correction dialog fits a phone', async () => {
-  await page.getByRole('link', { name: /^Timesheet/ }).first().click();
+  await (await navLink(page, 'Timesheet')).click();
   // The desktop table is still in the DOM, just hidden, so ask for the button
   // that is actually on screen rather than the first one in document order.
   await page.getByRole('button', { name: 'Correct' }).locator('visible=true').first().click();
@@ -276,10 +256,15 @@ await step('an employee sees a phone-sized app too', async () => {
   await signIn(emp, 'frontdesk@domihealthcare.com');
 
   // Onboarding and Licenses are not theirs to see (September 2026).
-  for (const name of ['Timesheet', 'Schedule', 'Time off']) {
-    await emp.getByRole('link', { name: new RegExp(`^${name}`) }).first().click();
+  for (const name of ['Schedule', 'Directory', 'Resources', 'Timesheet', 'Surveys']) {
+    await (await navLink(emp, name)).click();
     await assertNoSidewaysScroll(emp, `${name} (employee)`);
   }
+  // Time off has no tab; it is reached from the Schedule.
+  await (await navLink(emp, 'Schedule')).click();
+  await emp.getByTestId('your-time-off').getByRole('link', { name: /All your time off/ }).click();
+  await emp.getByRole('heading', { name: /Time off/ }).first().waitFor({ timeout: 15000 });
+  await assertNoSidewaysScroll(emp, 'Time off (employee)');
   await emp.screenshot({ path: `${OUT}/56-phone-employee.png`, fullPage: true });
   await empCtx.close();
 });

@@ -1,4 +1,5 @@
 import { chromium } from 'playwright';
+import { goTo } from './nav.mjs';
 import { mkdirSync, readFileSync } from 'node:fs';
 
 // Overtime, as the rota is built: the scheduler warns while a shift is being
@@ -75,7 +76,7 @@ const frankieRow = () => mgr.getByTestId('rota-row-Frankie Front-Desk');
 await step('a week close to the line but not over it leaves nothing standing on the rota', async () => {
   // "Close" is for the moment of scheduling; once a rota is agreed, only
   // actually going over is worth a warning.
-  await mgr.getByRole('link', { name: /^Schedule/ }).first().click();
+  await goTo(mgr, 'Schedule');
   await mgr.getByRole('button', { name: 'Next →' }).click();
   await frankieRow().getByText('36 h').waitFor({ timeout: 15000 });
   await mgr.waitForTimeout(1000);
@@ -179,7 +180,7 @@ await step('Frankie sees it on the Clock screen', async () => {
 await frankie.screenshot({ path: `${OUT}/113-overtime-staff.png`, fullPage: true });
 
 await step('and on the Schedule, where the week in question carries its total', async () => {
-  await frankie.getByRole('link', { name: /^Schedule/ }).first().click();
+  await goTo(frankie, 'Schedule');
   await frankie.getByTestId('my-overtime').getByText('Your schedule puts you into overtime').waitFor({ timeout: 15000 });
   await frankie.getByRole('button', { name: 'Next →' }).click();
   await frankie.getByTestId('week-standing-over').getByText('4 h overtime').waitFor({ timeout: 10000 });

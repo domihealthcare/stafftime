@@ -1,6 +1,6 @@
 import { chromium } from 'playwright';
 import { mkdirSync } from 'node:fs';
-import { openMenu } from './nav.mjs';
+import { goTo, openMenu } from './nav.mjs';
 
 const OUT = process.argv[2] || new URL('./shots/', import.meta.url).pathname;
 mkdirSync(OUT, { recursive: true });
@@ -65,7 +65,7 @@ emp.on('pageerror', (e) => errors.push(`employee pageerror: ${e.message}`));
 await signIn(emp, 'frontdesk@domihealthcare.com');
 
 await step('before a pay period is set, the pay-period shortcuts wait and say why', async () => {
-  await emp.getByRole('link', { name: 'Timesheet', exact: true }).click();
+  await goTo(emp, 'Timesheet');
   await chip(emp, 'This week').waitFor({ timeout: 15000 });
   if (!(await pressed(chip(emp, 'This week')))) throw new Error('the timesheet did not open on this week');
   if (await chip(emp, 'This pay period').isEnabled()) throw new Error('"This pay period" was usable with no start set');

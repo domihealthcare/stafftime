@@ -1,4 +1,5 @@
 import { chromium } from 'playwright';
+import { goTo } from './nav.mjs';
 import { clockOut } from './clock-out.mjs';
 
 import { mkdirSync } from 'node:fs';
@@ -70,7 +71,7 @@ await step('elapsed timer is running', async () => {
 });
 
 await step('timesheet shows the open punch, stacked rather than as a table', async () => {
-  await page.getByRole('link', { name: 'Timesheet' }).click();
+  await goTo(page, 'Timesheet');
   // The wide table is still in the DOM at this width, just hidden, so ask for
   // the badge that is actually on screen rather than the first in document
   // order.
@@ -99,7 +100,7 @@ await step('the same timesheet becomes a table once there is room for one', asyn
 });
 
 await step('schedule shows the week', async () => {
-  await page.getByRole('link', { name: 'Schedule' }).click();
+  await goTo(page, 'Schedule');
   await page.getByText('Your upcoming shifts').waitFor({ timeout: 10000 });
 });
 await page.screenshot({ path: `${OUT}/04-schedule-employee.png`, fullPage: true });
@@ -110,7 +111,7 @@ await step('employee cannot add shifts', async () => {
 });
 
 await step('clock out', async () => {
-  await page.getByRole('link', { name: 'Clock' }).click();
+  await page.getByRole('link', { name: 'Home', exact: true }).click();
   await clockOut(page);
   await page.getByText('Not clocked in').waitFor({ timeout: 15000 });
 });
@@ -124,7 +125,7 @@ await step('switch user to the manager', async () => {
 });
 
 await step('manager sees everyone on the timesheet', async () => {
-  await page.getByRole('link', { name: 'Timesheet' }).click();
+  await goTo(page, 'Timesheet');
   await page.getByRole('table').waitFor({ timeout: 10000 });
   const headers = await page.locator('thead th').allInnerTexts();
   if (!headers.some((h) => /employee/i.test(h))) throw new Error(`manager missing Employee column: ${headers}`);
@@ -139,7 +140,7 @@ await step('manager approves a completed entry', async () => {
 });
 
 await step('manager sees the shift scheduler', async () => {
-  await page.getByRole('link', { name: 'Schedule' }).click();
+  await goTo(page, 'Schedule');
   await page.getByRole('button', { name: '+ Add', exact: true }).waitFor({ timeout: 10000 });
 });
 await page.screenshot({ path: `${OUT}/06-schedule-manager.png`, fullPage: true });

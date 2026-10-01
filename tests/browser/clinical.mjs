@@ -40,13 +40,6 @@ const call = (page, path, init = {}) =>
     [path, init],
   );
 
-const menuItems = async (page, label) => {
-  await page.getByRole('button', { name: label, exact: true }).click();
-  const names = await page.getByRole('navigation').getByRole('link').allInnerTexts();
-  await page.keyboard.press('Escape');
-  return names.map((n) => n.trim());
-};
-
 /// Each page's text, as a PDF reader would find it — which only works if the
 /// PDF holds real text rather than a picture of some.
 async function pdfPages(path) {
@@ -88,8 +81,8 @@ const me = (await call(page, '/profile')).body;
 const provider = (await call(admin, '/job-roles')).body.find((r) => r.name === 'Provider');
 
 await step('somebody who is not a Provider sees no link to it, and the page says so', async () => {
-  const team = await menuItems(page, 'Team');
-  if (team.some((t) => /cognitive/i.test(t))) throw new Error(`Team menu: ${team.join(', ')}`);
+  const nav = await page.getByRole('navigation').getByRole('link').allInnerTexts();
+  if (nav.some((t) => /cognitive|braincheck/i.test(t))) throw new Error(`navigation: ${nav.join(', ')}`);
   await page.goto(`${BASE}/resources`, { waitUntil: 'networkidle' });
   if ((await page.getByTestId('clinical-tools').count()) > 0) throw new Error('the link is on Resources');
   await page.goto(`${BASE}/clinical/99483`, { waitUntil: 'networkidle' });
@@ -115,8 +108,8 @@ await step('in the Provider job role, it is under Resources → Forms as the Bra
   });
   if (titled.status >= 300) throw new Error(`setting letters answered ${titled.status}`);
   await page.goto(`${BASE}/`, { waitUntil: 'networkidle' });
-  const team = await menuItems(page, 'Team');
-  if (team.some((t) => /cognitive/i.test(t))) throw new Error(`still in the Team menu: ${team.join(', ')}`);
+  const nav = await page.getByRole('navigation').getByRole('link').allInnerTexts();
+  if (nav.some((t) => /cognitive|braincheck/i.test(t))) throw new Error(`in the navigation: ${nav.join(', ')}`);
   await page.goto(`${BASE}/resources`, { waitUntil: 'networkidle' });
   const tools = page.getByTestId('forms-section').getByTestId('clinical-tools');
   await tools.getByRole('link', { name: /^BrainCheck care plan/ }).click();
@@ -389,7 +382,7 @@ await step('and in English and Spanish, with no "not yet checked" note now the S
 });
 
 await step('leaving by a link asks first, and staying keeps the form', async () => {
-  await page.getByRole('navigation').getByRole('link', { name: 'Clock', exact: true }).click();
+  await page.getByRole('navigation').getByRole('link', { name: 'Home', exact: true }).click();
   const dialog = page.getByRole('alertdialog');
   await dialog.getByText('Leave and lose what you have entered?').waitFor({ timeout: 5000 });
   await dialog.getByRole('button', { name: 'Stay on the form' }).click();
@@ -423,7 +416,7 @@ await step('saying both downloaded clears the form', async () => {
   if ((await section('visit').getByLabel(/Patient name/).inputValue()) !== '') throw new Error('patient name still there');
   if ((await section('requirements').getByLabel(/Who \(name and relationship\)/).count()) > 0) throw new Error('historian still there');
   // Nothing left to lose, so leaving no longer asks.
-  await page.getByRole('navigation').getByRole('link', { name: 'Clock', exact: true }).click();
+  await page.getByRole('navigation').getByRole('link', { name: 'Home', exact: true }).click();
   await page.getByText(/Not clocked in|On the clock/).first().waitFor({ timeout: 10000 });
 });
 

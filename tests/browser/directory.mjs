@@ -1,7 +1,7 @@
 import { chromium } from 'playwright';
 import { clockOut } from './clock-out.mjs';
 import { mkdirSync } from 'node:fs';
-import { openMenu } from './nav.mjs';
+import { goTo } from './nav.mjs';
 
 const OUT = process.argv[2] || new URL('./shots/', import.meta.url).pathname;
 mkdirSync(OUT, { recursive: true });
@@ -27,8 +27,7 @@ async function signIn(page, email) {
 }
 
 async function openDirectory(page) {
-  await openMenu(page, 'Team');
-  await page.getByRole('navigation').getByRole('link', { name: 'Directory', exact: true }).click();
+  await goTo(page, 'Directory');
   await page.getByRole('heading', { name: 'Directory' }).waitFor({ timeout: 15000 });
 }
 
@@ -53,7 +52,7 @@ await step('nobody is in before anybody clocks in', async () => {
 });
 
 await step('clocking in puts somebody under In now, at the right office', async () => {
-  await frankie.getByRole('link', { name: 'Clock', exact: true }).click();
+  await frankie.getByRole('link', { name: 'Home', exact: true }).click();
   await frankie.getByRole('button', { name: 'Clock in' }).click();
   await frankie.getByText('On the clock').waitFor({ timeout: 20000 });
 
@@ -139,7 +138,7 @@ await step('a manager sees since when', async () => {
 });
 
 await step('clocking out takes them off In now', async () => {
-  await frankie.getByRole('link', { name: 'Clock', exact: true }).click();
+  await frankie.getByRole('link', { name: 'Home', exact: true }).click();
   await clockOut(frankie);
   await frankie.getByText('Not clocked in').waitFor({ timeout: 20000 });
   await openDirectory(frankie);
