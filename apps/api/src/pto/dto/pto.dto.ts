@@ -49,6 +49,32 @@ export class CreatePtoRequestDto {
   employeeId?: string;
 }
 
+/// Time off already taken, written down by an admin (October 2026): the
+/// back-log from before Domi Staff, or a day nobody asked for in the app.
+export class RecordPtoDto {
+  @IsUUID('4')
+  employeeId!: string;
+
+  @IsIn(REQUESTABLE_PTO_TYPES, { message: 'Time off is either Sick or PTO.' })
+  type!: PtoType;
+
+  @IsDateString()
+  startDate!: string;
+
+  @IsDateString()
+  endDate!: string;
+
+  @IsOptional()
+  @IsBoolean()
+  isHalfDay?: boolean;
+
+  /// Optional — "called out, came back with a doctor's note".
+  @IsOptional()
+  @IsString()
+  @Length(0, 500)
+  comment?: string;
+}
+
 export class ReviewPtoRequestDto {
   @IsEnum(PtoStatus, { message: 'A decision must be APPROVED or DENIED.' })
   @Transform(({ value }) => (typeof value === 'string' ? value.toUpperCase() : value))

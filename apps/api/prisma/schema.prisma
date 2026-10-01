@@ -288,30 +288,38 @@ model Employee {
   enteredTimeEntries  TimeEntry[]        @relation("TimeEntryEnteredBy")
   checkedHandEntries  TimeEntry[]        @relation("TimeEntryHandEntryCheckedBy")
 
-  checklists                EmployeeChecklist[]     @relation("EmployeeChecklistSubject")
-  createdChecklists         EmployeeChecklist[]     @relation("EmployeeChecklistCreatedBy")
-  createdChecklistTemplates ChecklistTemplate[]     @relation("ChecklistTemplateCreatedBy")
-  completedChecklistTasks   EmployeeChecklistTask[] @relation("ChecklistTaskCompletedBy")
-  passwordResetTokens       PasswordResetToken[]    @relation("PasswordResetSubject")
-  payrollExports            PayrollExport[]         @relation("PayrollExportGeneratedBy")
-  credentials               EmployeeCredential[]    @relation("CredentialSubject")
-  recordedCredentials       EmployeeCredential[]    @relation("CredentialRecordedBy")
-  announcements             Announcement[]          @relation("AnnouncementAuthor")
+  checklists                EmployeeChecklist[]      @relation("EmployeeChecklistSubject")
+  createdChecklists         EmployeeChecklist[]      @relation("EmployeeChecklistCreatedBy")
+  createdChecklistTemplates ChecklistTemplate[]      @relation("ChecklistTemplateCreatedBy")
+  completedChecklistTasks   EmployeeChecklistTask[]  @relation("ChecklistTaskCompletedBy")
+  passwordResetTokens       PasswordResetToken[]     @relation("PasswordResetSubject")
+  payrollExports            PayrollExport[]          @relation("PayrollExportGeneratedBy")
+  credentials               EmployeeCredential[]     @relation("CredentialSubject")
+  recordedCredentials       EmployeeCredential[]     @relation("CredentialRecordedBy")
+  announcements             Announcement[]           @relation("AnnouncementAuthor")
   jobRoles                  EmployeeJobRole[]
-  createdResources          Resource[]              @relation("ResourceCreatedBy")
+  createdResources          Resource[]               @relation("ResourceCreatedBy")
   unavailability            Unavailability[]
-  createdSurveys            Survey[]                @relation("SurveyCreatedBy")
+  createdSurveys            Survey[]                 @relation("SurveyCreatedBy")
   surveysTaken              SurveyParticipant[]
   notifications             Notification[]
-  createdEvents             PracticeEvent[]         @relation("EventCreatedBy")
-  eventInvites              PracticeEventInvitee[]  @relation("EventInvitee")
+  createdEvents             PracticeEvent[]          @relation("EventCreatedBy")
+  eventInvites              PracticeEventInvitee[]   @relation("EventInvitee")
   /// May work out and publish provider productivity. Chosen by an admin,
   /// separate from the access level: a manager has no say in it by default.
-  canManageProductivity     Boolean                 @default(false)
-  productivityPlan          ProductivityPlan?       @relation("ProductivityPlanSubject")
-  productivityStatements    ProductivityStatement[] @relation("ProductivityStatementSubject")
-  createdProductivity       ProductivityStatement[] @relation("ProductivityStatementCreatedBy")
-  publishedProductivity     ProductivityStatement[] @relation("ProductivityStatementPublishedBy")
+  canManageProductivity     Boolean                  @default(false)
+  productivityPlan          ProductivityPlan?        @relation("ProductivityPlanSubject")
+  productivityStatements    ProductivityStatement[]  @relation("ProductivityStatementSubject")
+  createdProductivity       ProductivityStatement[]  @relation("ProductivityStatementCreatedBy")
+  publishedProductivity     ProductivityStatement[]  @relation("ProductivityStatementPublishedBy")
+  /// The admins-only side of somebody (October 2026): address, emergency
+  /// contact, and pay and position over time. In their own tables, never on
+  /// this row, which goes out with every rota, timesheet and directory card.
+  personalRecord            EmployeePersonalRecord?  @relation("PersonalRecordSubject")
+  updatedPersonalRecords    EmployeePersonalRecord[] @relation("PersonalRecordUpdatedBy")
+  employmentChanges         EmploymentChange[]       @relation("EmploymentChangeSubject")
+  recordedEmploymentChanges EmploymentChange[]       @relation("EmploymentChangeRecordedBy")
+  recordedPtoRequests       PtoRequest[]             @relation("PtoRecordedBy")
 
   @@index([employmentStatus])
   @@map("employees")
@@ -527,11 +535,19 @@ model PtoRequest {
 
   cancelledAt DateTime?
 
+  /// Set when an admin wrote down time off somebody had already taken — the
+  /// back-log from before Domi Staff, or a day nobody asked for in the app —
+  /// rather than it being asked for (October 2026, Dominguez). Such a row is
+  /// APPROVED from the start and counts against the balance like any other;
+  /// its comment, if any, is the reviewNote.
+  recordedById String? @db.Uuid
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
   employee   Employee  @relation("PtoRequester", fields: [employeeId], references: [id], onDelete: Cascade)
   reviewedBy Employee? @relation("PtoReviewer", fields: [reviewedById], references: [id], onDelete: SetNull)
+  recordedBy Employee? @relation("PtoRecordedBy", fields: [recordedById], references: [id], onDelete: SetNull)
 
   @@index([employeeId, startDate])
   @@index([status, startDate])
@@ -2033,4 +2049,88 @@ model ProductivityCount {
 
   @@unique([intervalId, label])
   @@map("productivity_counts")
+}
+
+// ---------------------------------------------------------------------------
+// Staff profiles — the admins-only record (October 2026)
+// ---------------------------------------------------------------------------
+
+/// Somebody's home address and who to call in an emergency (October 2026,
+/// Dominguez — a deliberate change to *Data this app does not hold*). Read and
+/// changed only by admins, on the person's staff profile.
+///
+/// Its own table rather than columns on Employee, on purpose: an Employee row
+/// is included with shifts, punches, time off and the Directory all over the
+/// API, and one careless `include` would send a home address with a rota.
+/// Nothing reads this table but the staff-records module.
+model EmployeePersonalRecord {
+  employeeId String @id @db.Uuid
+
+  addressLine1 String?
+  addressLine2 String?
+  city         String?
+  state        String?
+  postalCode   String?
+
+  emergencyContactName         String?
+  /// "Mother", "Husband", "Roommate".
+  emergencyContactRelationship String?
+  emergencyContactPhone        String?
+
+  updatedById String?  @db.Uuid
+  updatedAt   DateTime @updatedAt
+
+  employee  Employee  @relation("PersonalRecordSubject", fields: [employeeId], references: [id], onDelete: Cascade)
+  updatedBy Employee? @relation("PersonalRecordUpdatedBy", fields: [updatedById], references: [id], onDelete: SetNull)
+
+  @@map("employee_personal_records")
+}
+
+enum EmploymentChangeKind {
+  /// Where they started: first position and pay.
+  HIRED
+  PROMOTION
+  /// A raise, or any other change to pay alone.
+  PAY_CHANGE
+  /// A new position that is not a promotion — a move sideways.
+  POSITION_CHANGE
+  OTHER
+}
+
+enum PayRateUnit {
+  HOURLY
+  YEARLY
+}
+
+/// Pay and position over time, one row per change (October 2026, Dominguez:
+/// "amount $ making and when that amount has been changed … any promotions,
+/// day promotions are given"). What somebody is paid now is the latest row
+/// with a rate; their position now is the latest row with a position.
+///
+/// Admins only, like EmployeePersonalRecord. A record, not a source for pay:
+/// ADP pays people, and the payroll export never reads this.
+model EmploymentChange {
+  id          String               @id @default(uuid()) @db.Uuid
+  employeeId  String               @db.Uuid
+  /// The day it took effect.
+  effectiveOn DateTime             @db.Date
+  kind        EmploymentChangeKind
+
+  /// A job title — "Lead Medical Assistant" — free text, since titles and
+  /// job roles are not the same list. Null when only pay changed.
+  position String?
+  /// Both or neither (a database constraint), never negative.
+  payRate  Decimal?     @db.Decimal(10, 2)
+  payUnit  PayRateUnit?
+  note     String?
+
+  recordedById String?  @db.Uuid
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  employee   Employee  @relation("EmploymentChangeSubject", fields: [employeeId], references: [id], onDelete: Cascade)
+  recordedBy Employee? @relation("EmploymentChangeRecordedBy", fields: [recordedById], references: [id], onDelete: SetNull)
+
+  @@index([employeeId, effectiveOn])
+  @@map("employment_changes")
 }

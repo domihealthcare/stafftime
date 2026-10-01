@@ -283,6 +283,7 @@ function RequestCard({
                 {request.employee.lastName}
               </>
             )}
+            {request.recordedBy && <> · recorded after the fact</>}
           </p>
           {request.notes && (
             <p className="mt-2 text-sm text-slate-700">&ldquo;{request.notes}&rdquo;</p>

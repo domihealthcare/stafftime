@@ -186,6 +186,9 @@ export interface PtoRequest {
   reviewedAt: string | null;
   employee?: { id: string; firstName: string; lastName: string; preferredName: string | null };
   reviewedBy?: { id: string; firstName: string; lastName: string } | null;
+  /// Set when an admin wrote down time off already taken, rather than it
+  /// being asked for (the back-log). Its comment is the reviewNote.
+  recordedBy?: { id: string; firstName: string; lastName: string } | null;
 }
 
 export interface ConflictingShift {
@@ -1182,3 +1185,52 @@ export interface ProductivityBalance {
   carriedOutCents: number;
 }
 
+// ---------------------------------------------------------------------------
+// Staff profiles — the admins-only record (October 2026)
+// ---------------------------------------------------------------------------
+
+export interface PersonalRecordFields {
+  addressLine1: string | null;
+  addressLine2: string | null;
+  city: string | null;
+  state: string | null;
+  postalCode: string | null;
+  emergencyContactName: string | null;
+  emergencyContactRelationship: string | null;
+  emergencyContactPhone: string | null;
+}
+
+export interface PersonalRecord extends PersonalRecordFields {
+  updatedAt: string | null;
+  updatedBy: string | null;
+}
+
+export type EmploymentChangeKind =
+  'HIRED' | 'PROMOTION' | 'PAY_CHANGE' | 'POSITION_CHANGE' | 'OTHER';
+export type PayRateUnit = 'HOURLY' | 'YEARLY';
+
+export interface EmploymentChangeInput {
+  /// "2026-10-01"
+  effectiveOn: string;
+  kind: EmploymentChangeKind;
+  position: string | null;
+  payRate: number | null;
+  payUnit: PayRateUnit | null;
+  note: string | null;
+}
+
+export interface EmploymentChange extends EmploymentChangeInput {
+  id: string;
+  recordedBy: string | null;
+  createdAt: string;
+}
+
+export interface StaffRecord {
+  personal: PersonalRecord;
+  /// Newest first.
+  changes: EmploymentChange[];
+  current: {
+    position: { value: string; since: string } | null;
+    pay: { rate: number; unit: PayRateUnit; since: string } | null;
+  };
+}

@@ -36,10 +36,67 @@ describe('what this app deliberately does not store', () => {
     'passportNumber',
   ];
 
-  it.each(['Employee', 'EmployeeCredential'])('has no identity numbers on %s', (name) => {
-    const body = model(name).toLowerCase();
-    for (const field of forbidden) {
-      expect(body).not.toContain(field.toLowerCase());
+  it.each(['Employee', 'EmployeeCredential', 'EmployeePersonalRecord', 'EmploymentChange'])(
+    'has no identity numbers on %s',
+    (name) => {
+      const body = model(name).toLowerCase();
+      for (const field of forbidden) {
+        expect(body).not.toContain(field.toLowerCase());
+      }
+    },
+  );
+
+  /// Staff profiles (October 2026, Dominguez) are the one deliberate step back
+  /// from "not an HR system": an admin may keep somebody's home address, an
+  /// emergency contact, and their pay and position over time. Decided out
+  /// loud — and pinned here, so neither table grows a column without the
+  /// same conversation, and none of it moves onto Employee, whose row goes
+  /// out with rotas, timesheets and the Directory.
+  it('keeps the admins-only staff record to what was agreed, off the Employee row', () => {
+    const fieldsOf = (name: string) =>
+      model(name)
+        .split('\n')
+        .map((line) => line.trim())
+        .filter((line) => line && !line.startsWith('//') && !line.startsWith('@@'))
+        .map((line) => line.split(/\s+/)[0])
+        .sort();
+    expect(fieldsOf('EmployeePersonalRecord')).toEqual(
+      [
+        'addressLine1',
+        'addressLine2',
+        'city',
+        'emergencyContactName',
+        'emergencyContactPhone',
+        'emergencyContactRelationship',
+        'employee',
+        'employeeId',
+        'postalCode',
+        'state',
+        'updatedAt',
+        'updatedBy',
+        'updatedById',
+      ].sort(),
+    );
+    expect(fieldsOf('EmploymentChange')).toEqual(
+      [
+        'createdAt',
+        'effectiveOn',
+        'employee',
+        'employeeId',
+        'id',
+        'kind',
+        'note',
+        'payRate',
+        'payUnit',
+        'position',
+        'recordedBy',
+        'recordedById',
+        'updatedAt',
+      ].sort(),
+    );
+    const employeeFields = fieldsOf('Employee');
+    for (const field of employeeFields) {
+      expect(field).not.toMatch(/^(address|street|city|postal|zip|emergency|salary|wage|payRate)/i);
     }
   });
 

@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
+import { Link } from 'react-router-dom';
 import { localDate } from '../lib/format';
 import { ApiError, api } from '../lib/api';
 import { useSession } from '../lib/session';
@@ -279,6 +280,7 @@ export function StaffPage() {
               person={person}
               jobRoles={jobRoles}
               isMe={person.id === me?.id}
+              canOpenProfile={me?.role === 'ADMIN'}
               onEdit={() => {
                 setLeft(null);
                 setEditingId(person.id);
@@ -312,12 +314,15 @@ function StaffCard({
   person,
   jobRoles,
   isMe,
+  canOpenProfile,
   onEdit,
 }: {
   person: Employee;
   /// Every job role, with its members — which of them this person is in.
   jobRoles: JobRole[];
   isMe: boolean;
+  /// Admins only: the name opens their staff profile (address, pay, time off).
+  canOpenProfile: boolean;
   onEdit: () => void;
 }) {
   const heldRoles = jobRoles.filter((jobRole) =>
@@ -330,7 +335,18 @@ function StaffCard({
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div className={`min-w-0 ${terminated ? 'opacity-60' : ''}`}>
           <p className="font-medium text-slate-900">
-            {person.firstName} {person.lastName}
+            {canOpenProfile ? (
+              <Link
+                to={`/staff/${person.id}`}
+                className="text-brand-700 underline-offset-2 hover:underline"
+              >
+                {person.firstName} {person.lastName}
+              </Link>
+            ) : (
+              <>
+                {person.firstName} {person.lastName}
+              </>
+            )}
             {person.preferredName && person.preferredName !== person.firstName && (
               <span className="ml-1 font-normal text-slate-500">(“{person.preferredName}”)</span>
             )}
@@ -374,6 +390,15 @@ function StaffCard({
           </Badge>
           {terminated && <Badge tone="danger">Former</Badge>}
           {person.hasKioskPin && <Badge tone="success">PIN</Badge>}
+          {canOpenProfile && (
+            <Link
+              to={`/staff/${person.id}`}
+              aria-label={`Profile of ${person.firstName} ${person.lastName}`}
+              className={buttonClass('secondary', 'sm')}
+            >
+              Profile
+            </Link>
+          )}
           <button
             type="button"
             onClick={onEdit}

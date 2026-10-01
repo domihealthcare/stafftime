@@ -32,6 +32,7 @@ import { DemoModule } from './demo/demo.module';
 import { SettingsModule } from './settings/settings.module';
 import { SetupModule } from './setup/setup.module';
 import { ShiftsModule } from './shifts/shifts.module';
+import { StaffRecordsModule } from './staff-records/staff-records.module';
 import { SurveysModule } from './surveys/surveys.module';
 import { TimeEntriesModule } from './time-entries/time-entries.module';
 
@@ -62,6 +63,7 @@ import { TimeEntriesModule } from './time-entries/time-entries.module';
     JobRolesModule,
     DirectoryModule,
     ProfileModule,
+    StaffRecordsModule,
     AvailabilityModule,
     SurveysModule,
     DashboardModule,

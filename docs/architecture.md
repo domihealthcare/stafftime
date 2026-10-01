@@ -2832,3 +2832,50 @@ other payroll file. Bonuses are paid separately, and "Paid on" is recorded here.
 **Going live.** *Start using it for real* clears the statements made while
 testing (they are test data) and keeps each provider's plan.
 
+
+## Staff profiles (October 2026)
+
+Asked for by Dominguez: pressing a name on the Staff screen should open
+everything the practice keeps about that person — address, phone, emergency
+contact, time off, what they are paid and when that changed, position, hire
+date and promotions. **Admins only.** This is a deliberate change to *Data
+this app does not hold* (confirmed by Dominguez when asked, 1 October 2026):
+until then the app held nothing from the personnel side.
+
+How it is kept on a short leash:
+
+- **Own tables, own module.** `EmployeePersonalRecord` (address, emergency
+  contact) and `EmploymentChange` (pay and position over time) are separate
+  from `Employee` on purpose. An Employee row is included with shifts,
+  punches, time off and the Directory all over the API, so one careless
+  `include` would send a home address out with a rota. Only
+  `src/staff-records/` reads these tables, and every route there is
+  `@Roles(ADMIN)` at class level. Each read and write is logged (who, whose).
+- **Pinned by the schema guard.** `no-sensitive-data.spec.ts` lists the
+  exact fields of both tables, and fails if an address, emergency contact
+  or pay column turns up on `Employee`. Adding a column means having the
+  conversation again.
+- **Not a pay source.** ADP pays people. The payroll export never reads
+  `EmploymentChange`, and nothing else in the app shows it.
+
+**Pay and position** is a history, one row per change: the day it took
+effect, what changed (Started, Promotion, Pay change, New position, Other),
+an optional job title (free text, since titles and job roles are different
+lists), an optional rate with **per hour or per year** (both or neither,
+never negative — also database constraints), and a comment. "Position now"
+and "Pay now" are the latest row with each, leaving out rows dated after
+today (a raise agreed for next month), using New Jersey's today.
+
+**Time off on the profile** shows this year's balance and every request on
+file. **Record time off already taken** (`POST /pto/record`, admins) writes
+down past days — the backlog from before Domi Staff, or a day nobody asked
+for in the app — as a `PtoRequest` that is `APPROVED` from the start, with
+`recordedById` set and the optional comment in `reviewNote` (so the person
+sees it on their own Time off screen, like any approval note). Because it is
+an ordinary approved request, it comes off the balance with no change to the
+balance maths. Rules: not your own, not after today, no overlap with a
+request already on file, nobody notified. A recorded entry can be removed
+(`DELETE /pto/:id/recorded`); a request somebody made cannot (cancel it).
+The older **Adjust** totals stay for people with only totals to hand. The
+form warns when a person has such a total, because recording the same days
+both ways counts them twice.

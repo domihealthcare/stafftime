@@ -71,6 +71,9 @@ const RotaPrintPage = lazy(() =>
   import('./pages/RotaPrintPage').then((m) => ({ default: m.RotaPrintPage })),
 );
 const StaffPage = lazy(() => import('./pages/StaffPage').then((m) => ({ default: m.StaffPage })));
+const StaffProfilePage = lazy(() =>
+  import('./pages/StaffProfilePage').then((m) => ({ default: m.StaffProfilePage })),
+);
 const ChecklistsPage = lazy(() =>
   import('./pages/ChecklistsPage').then((m) => ({ default: m.ChecklistsPage })),
 );
@@ -178,6 +181,7 @@ function Routed() {
           <Route path="my-productivity" element={<MyProductivityPage />} />
           <Route path="export" element={<ExportPage />} />
           <Route path="staff" element={<StaffPage />} />
+          <Route path="staff/:id" element={<StaffProfilePage />} />
           <Route path="kiosks" element={<KiosksPage />} />
           <Route path="locations" element={<LocationsPage />} />
           <Route path="clinical/99483" element={<CognitiveAssessmentPage />} />
