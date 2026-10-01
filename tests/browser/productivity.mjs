@@ -230,7 +230,8 @@ await step('the bell tells them, without any numbers in it', async () => {
   const inbox = await call(doc, '/notifications');
   const item = inbox.body.items.find((n) => n.kind === 'PRODUCTIVITY');
   if (!item) throw new Error('no notification');
-  if (/\$|1,?150|323/.test(JSON.stringify(item))) throw new Error(`numbers in the bell: ${JSON.stringify(item)}`);
+  // Only what the person reads: the id is a random UUID, which can hold "323" by chance.
+  if (/\$|1,?150|323/.test(`${item.title} ${item.body}`)) throw new Error(`numbers in the bell: ${JSON.stringify(item)}`);
   if (item.link !== '/my-productivity') throw new Error(`links to ${item.link}`);
 });
 
