@@ -654,13 +654,15 @@ Beyond the phases, the parts worth knowing about before picking up work:
   overtime counts the whole week at every office; a repeat PIN within
   `KIOSK_REPEAT_SECONDS` (120) is not a clock-out; screens load when first
   opened and `/assets` is cached for a year.
-- **Clinical forms — CPT 99483** (29 September 2026, Dominguez; Phases 1–3
-  built). Resources → **Provider** → **Cognitive assessment
-  (99483)**, for job roles with **uses clinical forms** (Provider only;
-  access level brings nothing). The provider fills it in during the visit
+- **Clinical forms — CPT 99483, shown as "BrainCheck care plan"** (29
+  September 2026, Dominguez; Phases 1–3 built; renamed and moved October
+  2026). Resources → **Forms** (its own section, first on the page) →
+  **BrainCheck care plan**, for job roles with **uses clinical forms**
+  (Provider only; access level brings nothing). The clinical note keeps the
+  CPT name. The provider fills it in during the visit
   and downloads the **clinical note** for eCW Documents and the **care plan
-  handout** for the patient, in **English or Spanish** (Spanish awaiting a
-  native speaker's read). **Patient details (PHI) never leave the browser
+  handout** for the patient, in **English, or English and Spanish** (only
+  those two, Dominguez; Spanish awaiting a native speaker's read). **Patient details (PHI) never leave the browser
   or stay in it**: no request, no table, no browser storage — a lint rule on
   `src/clinical/`, the schema guard and `tests/browser/clinical.mjs` hold it
   there. Shape, as reworked with Dominguez: **requirements ticked first**
@@ -677,15 +679,17 @@ Beyond the phases, the parts worth knowing about before picking up work:
   `docs/architecture.md`.
 - **CCM care plan** (1 October 2026, Dominguez — replaces the practice's
   Google Forms "Care Plan - General" and one per condition). Resources →
-  **Provider** → **CCM care plan** (`/clinical/care-plan`), for **providers,
+  **Forms** → **CCM care plan** (`/clinical/care-plan`), for **providers,
   managers and admins** (Dominguez; `lib/clinical-access.ts` — unlike 99483,
   access level counts here). The general care plan question for question as
   on the Google Form, then **at least two chronic conditions** from the
   practice's CCM list (37 with ICD-10, plus "Other"); each adds its form's
   questions (outcomes, symptoms, long-term goals, SMART goal — typed,
   interventions, care team support, barriers), every one with an Other box.
-  One PDF, **English, Spanish or both** (English then Spanish on a fresh page,
-  like the practice's own; starts as both for a Spanish speaker). Same
+  One PDF, **English, or English and Spanish** (only those two, Dominguez;
+  English then Spanish on a fresh page, like the practice's own; starts as
+  both for a Spanish speaker). The Spanish translates words, not measures:
+  height stays in inches and weight in pounds. Same
   privacy as 99483: nothing sent or stored, `tests/browser/care-plan.mjs`
   checks it; the two forms share `clinical/common/`. Choices in
   `ccm-care-plan/phrases.ts` (each phrase once, English and Spanish — Spanish
@@ -696,6 +700,11 @@ Beyond the phases, the parts worth knowing about before picking up work:
   fibrosis K74.00, OSA G47.33; Chronic back pain (M54.5, retired) dropped in
   favour of Chronic pain (G89.29). See *The CCM care plan* in
   `docs/architecture.md`.
+- **Both clinical forms show what is still needed** (October 2026,
+  Dominguez): each section's card has an amber edge and "N still needed"
+  (green "✓ Complete" when done) with its missing items listed as buttons
+  that jump to the answer; the sticky bar counts per section and overall;
+  the full list sits above the downloads. All in `clinical/common/layout.tsx`.
 - **Provider productivity** (30 September 2026, Dominguez — replaces the
   practice's *Patients & Providers* sheet). Manage → **Provider productivity**
   — **only for people an admin has chosen** (`canManageProductivity`, a list at

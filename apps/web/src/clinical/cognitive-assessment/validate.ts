@@ -21,7 +21,7 @@ import { unprintableCharacters } from '../common/printable';
 export type SectionKey = 'requirements' | 'visit' | ElementKey;
 
 export const SECTIONS: { key: SectionKey; label: string; title: string }[] = [
-  { key: 'requirements', label: '✓', title: 'Requirements' },
+  { key: 'requirements', label: 'R', title: 'Requirements' },
   { key: 'visit', label: '0', title: 'Patient and visit' },
   ...ELEMENTS.map((element) => ({ key: element.key, label: element.key, title: element.title })),
 ];

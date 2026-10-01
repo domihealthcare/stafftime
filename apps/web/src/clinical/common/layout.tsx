@@ -1,6 +1,36 @@
 import type { ReactNode } from 'react';
 import { Card } from '../../components/ui';
 
+/**
+ * The pieces both clinical forms are laid out with: a numbered card per
+ * section that says what it still needs, the sticky progress bar, the list of
+ * everything missing, the language choice and the download button.
+ *
+ * What is still needed is shown all the time, not only after a PDF is tried
+ * (Dominguez, October 2026: "should be easier to see"): each section's card
+ * says how many things it needs and lists them, each one a button that jumps
+ * to its answer. The red messages under the fields themselves still wait for
+ * a first try, so a blank form is not a wall of red.
+ */
+
+/// One thing still needed: which section, which answer (a dotted path the
+/// page turns into a field id) and what to do.
+export interface Pending {
+  section: string;
+  field: string;
+  message: string;
+}
+
+export interface SectionInfo {
+  key: string;
+  label: string;
+  title: string;
+}
+
+/// What a PDF is printed in: English, or English and then Spanish on fresh
+/// pages (Dominguez, October 2026: only these two).
+export type PrintLanguage = 'en' | 'both';
+
 /// One numbered card of a clinical form, findable from its progress bar.
 export function FormSection({
   prefix,
@@ -8,6 +38,8 @@ export function FormSection({
   label,
   title,
   aside,
+  pending,
+  onJump,
   children,
 }: {
   prefix: string;
@@ -15,17 +47,24 @@ export function FormSection({
   label: string;
   title: string;
   aside?: ReactNode;
+  /// What this section still needs.
+  pending: Pending[];
+  onJump: (item: Pending) => void;
   children: ReactNode;
 }) {
   const headingId = `${prefix}-heading-${sectionKey}`;
+  const complete = pending.length === 0;
   return (
     <section
       id={`${prefix}-section-${sectionKey}`}
       aria-labelledby={headingId}
-      className="scroll-mt-28"
+      className="scroll-mt-32"
       data-testid={`section-${sectionKey}`}
+      data-complete={complete}
     >
-      <Card className="p-4 sm:p-5">
+      <Card
+        className={`border-l-4 p-4 sm:p-5 ${complete ? 'border-l-emerald-500' : 'border-l-amber-400'}`}
+      >
         <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
           <h2 id={headingId} className="text-base font-semibold text-slate-900 sm:text-lg">
             <span className="mr-2 inline-flex h-7 min-w-[28px] items-center justify-center rounded-md bg-brand-600 px-1.5 text-sm text-white">
@@ -33,11 +72,225 @@ export function FormSection({
             </span>
             {title}
           </h2>
-          {aside}
+          <div className="flex flex-wrap items-center gap-2">
+            {aside}
+            <StatusBadge count={pending.length} />
+          </div>
         </div>
+        {!complete && (
+          <div
+            className="mb-4 rounded-lg bg-amber-50 px-3 py-2 ring-1 ring-inset ring-amber-200"
+            data-testid="pending-here"
+          >
+            <p className="text-xs font-semibold uppercase tracking-wide text-amber-900">
+              Still needed here
+            </p>
+            <ul className="mt-1 space-y-0.5">
+              {pending.map((item, index) => (
+                <li key={`${item.field}-${index}`}>
+                  <button
+                    type="button"
+                    onClick={() => onJump(item)}
+                    className="text-left text-sm text-amber-950 underline decoration-amber-400 underline-offset-2 hover:decoration-amber-700"
+                  >
+                    {item.message}
+                  </button>
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
         {children}
       </Card>
     </section>
+  );
+}
+
+function StatusBadge({ count }: { count: number }) {
+  return count === 0 ? (
+    <span className="inline-flex items-center rounded-full bg-emerald-50 px-2.5 py-1 text-xs font-semibold text-emerald-800 ring-1 ring-inset ring-emerald-200">
+      ✓ Complete
+    </span>
+  ) : (
+    <span className="inline-flex items-center rounded-full bg-amber-100 px-2.5 py-1 text-xs font-semibold text-amber-900 ring-1 ring-inset ring-amber-300">
+      {count} still needed
+    </span>
+  );
+}
+
+/// The bar that stays at the top while the form scrolls: a pill per section
+/// (green with a tick when complete, amber with its count when not), and how
+/// much is left overall — a button down to the full list.
+export function ProgressBar({
+  sections,
+  pending,
+  ready,
+  onSection,
+  onShowList,
+}: {
+  sections: SectionInfo[];
+  pending: Pending[];
+  /// "Ready for the PDF" / "Ready for the PDFs".
+  ready: string;
+  onSection: (key: string) => void;
+  onShowList: () => void;
+}) {
+  const left = (key: string) => pending.filter((item) => item.section === key).length;
+  const done = sections.filter((section) => left(section.key) === 0).length;
+  return (
+    <nav
+      aria-label="Sections"
+      className="sticky top-0 z-10 -mx-4 mb-4 border-b border-slate-200 bg-slate-100/95 px-4 py-2 backdrop-blur"
+    >
+      <div className="flex flex-wrap items-center justify-between gap-2 text-sm">
+        <span className="text-slate-700">
+          <span className="font-semibold text-slate-900">{done}</span> of {sections.length} sections
+          complete
+        </span>
+        {pending.length === 0 ? (
+          <span
+            className="rounded-full bg-emerald-600 px-3 py-1 text-xs font-semibold text-white"
+            data-testid="progress-ready"
+          >
+            ✓ {ready}
+          </span>
+        ) : (
+          <button
+            type="button"
+            onClick={onShowList}
+            className="rounded-full bg-amber-500 px-3 py-1 text-xs font-semibold text-white hover:bg-amber-600"
+            data-testid="progress-left"
+          >
+            {pending.length} thing{pending.length === 1 ? '' : 's'} still needed — see the list
+          </button>
+        )}
+      </div>
+      <div className="mt-2 flex gap-1.5 overflow-x-auto pb-1">
+        {sections.map((section) => {
+          const count = left(section.key);
+          const complete = count === 0;
+          return (
+            <button
+              key={section.key}
+              type="button"
+              title={complete ? section.title : `${section.title}: ${count} still needed`}
+              onClick={() => onSection(section.key)}
+              data-complete={complete}
+              className={`relative min-h-[36px] min-w-[40px] shrink-0 rounded-lg px-2 text-sm font-semibold ring-1 ring-inset ${
+                complete
+                  ? 'bg-emerald-50 text-emerald-800 ring-emerald-300'
+                  : 'bg-amber-50 text-amber-900 ring-amber-300'
+              }`}
+            >
+              {complete ? '✓ ' : ''}
+              {section.label}
+              {!complete && (
+                <span className="ml-1 rounded-full bg-amber-500 px-1.5 text-[11px] font-bold text-white">
+                  {count}
+                </span>
+              )}
+            </button>
+          );
+        })}
+      </div>
+    </nav>
+  );
+}
+
+/// Everything still needed, by section, beside the downloads.
+export function PendingList({
+  sections,
+  pending,
+  onJump,
+}: {
+  sections: SectionInfo[];
+  pending: Pending[];
+  onJump: (item: Pending) => void;
+}) {
+  if (pending.length === 0) {
+    return (
+      <p className="mt-1 rounded-lg bg-emerald-50 px-3 py-2 text-sm font-medium text-emerald-800 ring-1 ring-inset ring-emerald-200">
+        ✓ Everything required is filled in.
+      </p>
+    );
+  }
+  return (
+    <div
+      className="mt-2 rounded-lg bg-amber-50 p-3 ring-1 ring-inset ring-amber-200"
+      data-testid="missing-checklist"
+    >
+      <p className="text-sm font-semibold text-amber-950">Still needed ({pending.length}):</p>
+      <ul className="mt-2 max-h-72 space-y-1 overflow-y-auto">
+        {pending.map((item, index) => {
+          const section = sections.find((s) => s.key === item.section);
+          return (
+            <li key={`${item.field}-${index}`}>
+              <button
+                type="button"
+                onClick={() => onJump(item)}
+                className="w-full rounded-lg px-2 py-1.5 text-left text-sm text-slate-800 hover:bg-amber-100"
+              >
+                <span className="font-semibold text-slate-900">{section?.title ?? ''}:</span>{' '}
+                {item.message}
+              </button>
+            </li>
+          );
+        })}
+      </ul>
+    </div>
+  );
+}
+
+/// English, or English and Spanish — the only two ways a PDF is printed.
+export function LanguageChoice({
+  value,
+  onChange,
+  spanishUnchecked,
+}: {
+  value: PrintLanguage;
+  onChange: (language: PrintLanguage) => void;
+  /// The Spanish has not yet been read by a native speaker.
+  spanishUnchecked: boolean;
+}) {
+  const options: { value: PrintLanguage; label: string }[] = [
+    { value: 'en', label: 'English' },
+    { value: 'both', label: 'English and Spanish' },
+  ];
+  return (
+    <fieldset>
+      <legend className="mb-1 text-sm font-medium text-slate-800">Print in</legend>
+      <div className="flex flex-wrap gap-1.5" role="radiogroup" aria-label="Language">
+        {options.map((option) => (
+          <label
+            key={option.value}
+            className={`flex min-h-[40px] cursor-pointer items-center gap-2 rounded-lg border px-3 py-1.5 text-sm ${
+              value === option.value
+                ? 'border-brand-600 bg-brand-50 font-medium text-brand-900'
+                : 'border-slate-300 bg-white text-slate-700 hover:bg-slate-50'
+            }`}
+          >
+            <input
+              type="radio"
+              checked={value === option.value}
+              onChange={() => onChange(option.value)}
+              className="border-slate-300 text-brand-600 focus:ring-brand-600"
+            />
+            {option.label}
+          </label>
+        ))}
+      </div>
+      {value === 'both' && (
+        <p className="mt-1 text-xs text-slate-600">
+          English first, then the same in Spanish on the pages after it. Anything typed is printed
+          as typed.
+          {spanishUnchecked && (
+            <span className="block text-amber-800">
+              The Spanish has not yet been checked by a native speaker.
+            </span>
+          )}
+        </p>
+      )}
+    </fieldset>
   );
 }
 

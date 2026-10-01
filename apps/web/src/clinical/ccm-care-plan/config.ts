@@ -25,9 +25,10 @@ export interface Bilingual {
 }
 
 export type Language = 'en' | 'es';
-/// What a care plan PDF is printed in: one language, or both one after the
-/// other — the way the practice's own care plans were (English, then Spanish).
-export type PdfLanguage = Language | 'both';
+/// What a care plan PDF is printed in: English, or English and then Spanish
+/// on fresh pages, the way the practice's own care plans were — the only two
+/// choices (Dominguez, October 2026).
+export type { PrintLanguage as PdfLanguage } from '../common/layout';
 
 /// Set to false once somebody fluent has read all of the Spanish here, in
 /// phrases.ts and in text.ts. While it is true the form says so beside the
@@ -216,8 +217,9 @@ export const REPORTS_SIDE_EFFECTS = bi(
 // ------------------------------------------------------- numbers to track
 
 /// Height, weight and blood pressure are required, as on the Google Form;
-/// the rest only when there is one to record. The Spanish care plan shows
-/// height and weight in centimetres and kilograms, worked out from these.
+/// the rest only when there is one to record. The Spanish care plan keeps
+/// the same units — inches and pounds — and translates only the words
+/// (Dominguez, October 2026).
 export const VITALS = [
   { key: 'height', label: 'Height', es: 'Estatura', unit: 'inches', required: true },
   { key: 'weight', label: 'Weight', es: 'Peso', unit: 'lbs', required: true },

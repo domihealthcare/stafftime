@@ -2627,9 +2627,13 @@ cognitive assessment and care plan services. A provider fills it in during
 the visit and downloads two PDFs: the **clinical note** for **eClinicalWorks
 Documents** (the progress note in eCW only points to it, so it carries all
 the clinical and billing detail), and the **care plan handout** for the
-patient and caregiver, in **English or Spanish**.
-`apps/web/src/clinical/cognitive-assessment/`, at `/clinical/99483`, linked
-from the **Provider** section of **Resources** (not the Team menu).
+patient and caregiver, in **English, or English and Spanish** (English
+first, then the same in Spanish on fresh pages — the only two choices since
+October 2026). Staff see it as the **BrainCheck care plan** (October 2026,
+Dominguez); the clinical note keeps the CPT name, which is what eCW and
+billing need. `apps/web/src/clinical/cognitive-assessment/`, at
+`/clinical/99483`, linked from **Resources → Forms**, a section of its own
+first on the page (October 2026; it was inside the Provider section).
 
 **No patient details ever leave the browser, or stay in it.** This is the one
 screen in Domi Staff that handles patient information (PHI), and it does so
@@ -2751,7 +2755,7 @@ Asked for by Dominguez (1 October 2026): the practice's chronic care
 management care plan, which was a set of Google Forms — **Care Plan -
 General** and one per chronic condition — turned into one form in the app.
 `apps/web/src/clinical/ccm-care-plan/`, at `/clinical/care-plan`, linked from
-the **Provider** section of **Resources** beside the 99483 form.
+**Resources → Forms** beside the BrainCheck care plan.
 
 **Same rules as the 99483 form** (see *The clinical forms*, above): it lives
 in React state only, the folder is under the same lint rule, the page is one
@@ -2810,19 +2814,34 @@ own. Adding a form is adding its phrases and a list, and pointing the
 condition at it.
 
 **The PDF** (`pdf.ts`, `text.ts`): one file,
-`CarePlan_[patient ID]_[date].pdf` (`_ES`, or `_EN-ES` for both), in
-**English, Spanish, or both** — both is English first, then the Spanish on a
-fresh page, the way the practice's own care plans were laid out. It starts
+`CarePlan_[patient ID]_[date].pdf` (`_EN-ES` for both), in **English, or
+English and Spanish** — the only two choices (Dominguez, October 2026); both
+is English first, then the Spanish on a fresh page, the way the practice's
+own care plans were laid out. It starts
 as both when the primary language is Spanish, until somebody picks. Every
 page carries the letterhead lines (both offices, phone and fax), the
 patient's line and "Confidential". The general care plan is written as
 sentences ("Overall physical health is rated as "Fair.""), the numbers as a
-table (height and weight in cm and kg in Spanish), then "Chronic Diagnoses:
+table (in Spanish too, height stays in inches and weight in pounds — only
+the words are translated, Dominguez), then "Chronic Diagnoses:
 HTN (I10), DM (E11.8)" and a heading per condition with what was ticked
 under each question. Anything typed is printed as typed in either language —
 nothing is sent away to be translated. **The Spanish needs a native
 speaker's read** (`NEEDS_NATIVE_SPEAKER_REVIEW` in `config.ts`; the form says
 so beside the language choice, never on the PDF).
+
+### What is still needed, on both forms
+
+Asked for by Dominguez (October 2026: "should be easier to see"). Every
+section card (`FormSection` in `clinical/common/layout.tsx`) has an amber
+left edge and an "N still needed" badge until it is complete, then a green
+edge and "✓ Complete"; its missing items are listed at the top of the card
+as buttons that jump to (and focus) the answer. The sticky bar
+(`ProgressBar`) counts what each section still needs and the total, with a
+button down to the full list (`PendingList`) above the downloads. All three
+read the one list `validate.ts` makes. The red messages under the fields
+still wait until somebody first tries for a PDF, so a blank form is amber,
+not red.
 
 ## Provider productivity
 

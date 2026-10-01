@@ -5,7 +5,15 @@ import { useSession } from '../../lib/session';
 import type { Employee } from '../../lib/types';
 import { ELEMENTS, type ElementKey } from './config';
 import { Confirm, FieldContext } from '../common/fields';
-import { DownloadButton, FormSection } from '../common/layout';
+import {
+  DownloadButton,
+  FormSection,
+  LanguageChoice,
+  PendingList,
+  ProgressBar,
+  type Pending,
+  type PrintLanguage,
+} from '../common/layout';
 import { savePdf, useLeaveGuard } from '../common/leave-guard';
 import { emptyForm, isPrior, type AssessmentForm } from './form';
 import { carePlanFilename, carePlanPdf } from './pdf/care-plan-handout';
@@ -19,15 +27,17 @@ import {
   VisitSection,
   type Update,
 } from './sections';
-import { NEEDS_NATIVE_SPEAKER_REVIEW, type HandoutLanguage } from './translations.es';
+import { NEEDS_NATIVE_SPEAKER_REVIEW } from './translations.es';
 import { SECTIONS, validate, type SectionKey } from './validate';
 
 /**
- * CPT 99483 — cognitive assessment and care plan (September 2026, Dominguez).
+ * The BrainCheck care plan — CPT 99483, cognitive assessment and care plan
+ * (September 2026, Dominguez; shown as "BrainCheck care plan" since October
+ * 2026, while the clinical note keeps the CPT name).
  *
  * A provider fills this in during the visit and downloads two PDFs: the
  * clinical note for eCW Documents, and the care plan handout for the patient
- * and caregiver, in English or Spanish. The form runs entirely in the
+ * and caregiver, in English, or English and Spanish. The form runs entirely in the
  * browser: what is typed is never sent to the server, never written to the
  * browser's storage, and is gone when the page closes. This folder may not
  * import the API client (see .eslintrc.cjs), and the browser suite watches
@@ -38,7 +48,7 @@ export function CognitiveAssessmentPage() {
   if (!employee?.usesClinicalForms) {
     return (
       <div className="mx-auto max-w-2xl">
-        <PageHeading title="Cognitive assessment (99483)" />
+        <PageHeading title="BrainCheck care plan" />
         <Card className="p-5 text-sm text-slate-700">
           This form is for providers. If you should have it, ask a manager to add you to the
           Provider job role.
@@ -49,9 +59,9 @@ export function CognitiveAssessmentPage() {
   return <AssessmentScreen employee={employee} />;
 }
 
-const UNSAVED = 'the cognitive assessment you are filling in';
+const UNSAVED = 'the BrainCheck care plan you are filling in';
 
-type Made = { note: boolean; handout: HandoutLanguage | null; snapshot: string };
+type Made = { note: boolean; handout: PrintLanguage | null; snapshot: string };
 
 function AssessmentScreen({ employee }: { employee: Employee }) {
   // A fresh prefix for every field id on each visit: nothing a browser could
@@ -98,13 +108,14 @@ function AssessmentScreen({ employee }: { employee: Employee }) {
   const current = made && made.snapshot === snapshot ? made : null;
   const dirty = JSON.stringify(form) !== untouched;
   const checklist = useRef<HTMLDivElement>(null);
+  const showList = () => checklist.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
 
   async function download(which: 'note' | 'handout') {
     setFailure(null);
     setCleared(false);
     if (problems.length > 0) {
       setShowProblems(true);
-      checklist.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      showList();
       return;
     }
     setMaking(which);
@@ -145,15 +156,17 @@ function AssessmentScreen({ employee }: { employee: Employee }) {
   useLeaveGuard(dirty, UNSAVED);
 
   // -------------------------------------------------------------- the page
-  const sectionDone = (key: SectionKey) => !problems.some((problem) => problem.section === key);
-  const done = SECTIONS.filter((section) => sectionDone(section.key)).length;
+  const pendingIn = (key: SectionKey) => problems.filter((problem) => problem.section === key);
+  const sectionDone = (key: SectionKey) => pendingIn(key).length === 0;
   const [opened, setOpened] = useState<Set<ElementKey>>(new Set());
 
-  const jumpTo = (key: SectionKey) =>
+  const jumpTo = (key: string) =>
     document
       .getElementById(`${prefix}-section-${key}`)
       ?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-  const focusField = (path: string, section: SectionKey) => {
+  const focusField = (item: Pending) => {
+    const path = item.field;
+    const section = item.section as SectionKey;
     if (section !== 'requirements' && section !== 'visit') {
       setOpened((open) => new Set(open).add(section));
     }
@@ -177,8 +190,8 @@ function AssessmentScreen({ employee }: { employee: Employee }) {
       {/* translate="no": a browser's "translate this page" sends the text away. */}
       <div className="mx-auto max-w-4xl" translate="no" data-testid="cognitive-assessment">
         <PageHeading
-          title="Cognitive assessment (99483)"
-          subtitle="Stays on this device — nothing is sent or saved. Download both PDFs at the end: the note for eCW, the care plan for the patient."
+          title="BrainCheck care plan"
+          subtitle="Cognitive assessment and care plan (CPT 99483). Stays on this device — nothing is sent or saved. Download both PDFs at the end: the note for eCW, the care plan for the patient."
         />
 
         {cleared && (
@@ -190,55 +203,33 @@ function AssessmentScreen({ employee }: { employee: Employee }) {
           </div>
         )}
 
-        {/* Progress: a tick for each section with nothing missing. */}
-        <nav
-          aria-label="Sections"
-          className="sticky top-0 z-10 -mx-4 mb-4 border-b border-slate-200 bg-slate-100/95 px-4 py-2 backdrop-blur"
-        >
-          <div className="flex items-center justify-between gap-3 text-xs text-slate-600">
-            <span>
-              <span className="font-semibold text-slate-900">{done}</span> of {SECTIONS.length}{' '}
-              complete
-            </span>
-            <span>
-              {problems.length === 0
-                ? 'Ready for the PDFs'
-                : `${problems.length} thing${problems.length === 1 ? '' : 's'} still needed`}
-            </span>
-          </div>
-          <div className="mt-2 flex gap-1.5 overflow-x-auto pb-1">
-            {SECTIONS.map((section) => {
-              const complete = sectionDone(section.key);
-              return (
-                <button
-                  key={section.key}
-                  type="button"
-                  title={section.title}
-                  onClick={() => jumpTo(section.key)}
-                  data-complete={complete}
-                  className={`min-h-[36px] min-w-[40px] shrink-0 rounded-lg px-2 text-sm font-semibold ring-1 ring-inset ${
-                    complete
-                      ? 'bg-emerald-50 text-emerald-800 ring-emerald-200'
-                      : 'bg-white text-slate-700 ring-slate-300'
-                  }`}
-                >
-                  {section.label}
-                </button>
-              );
-            })}
-          </div>
-        </nav>
+        <ProgressBar
+          sections={SECTIONS}
+          pending={problems}
+          ready="Ready for the PDFs"
+          onSection={jumpTo}
+          onShowList={showList}
+        />
 
         <div className="space-y-4">
           <FormSection
             prefix={prefix}
             sectionKey="requirements"
-            label="✓"
+            label="R"
             title="Requirements for 99483"
+            pending={pendingIn('requirements')}
+            onJump={focusField}
           >
             <RequirementsSection form={form} update={update} />
           </FormSection>
-          <FormSection prefix={prefix} sectionKey="visit" label="0" title="Patient and visit">
+          <FormSection
+            prefix={prefix}
+            sectionKey="visit"
+            label="0"
+            title="Patient and visit"
+            pending={pendingIn('visit')}
+            onJump={focusField}
+          >
             <VisitSection form={form} update={update} provider={provider} />
           </FormSection>
           {ELEMENTS.map((element) => {
@@ -257,6 +248,8 @@ function AssessmentScreen({ employee }: { employee: Employee }) {
                 sectionKey={element.key}
                 label={element.key}
                 title={element.title}
+                pending={pendingIn(element.key)}
+                onJump={focusField}
                 aside={
                   <CompletionSwitch
                     elementKey={element.key}
@@ -306,45 +299,24 @@ function AssessmentScreen({ employee }: { employee: Employee }) {
           })}
         </div>
 
-        {/* What is missing, and the downloads. */}
-        <div ref={checklist} className="mt-6 scroll-mt-4">
+        {/* What is missing, the handout's language, and the downloads. */}
+        <div ref={checklist} className="mt-6 scroll-mt-32">
           <Card className="p-4 sm:p-5">
-            <div className="flex flex-wrap items-center justify-between gap-2">
-              <h2 className="text-lg font-semibold text-slate-900">PDFs</h2>
-              <LanguagePicker
+            <h2 className="text-lg font-semibold text-slate-900">PDFs</h2>
+            <PendingList sections={SECTIONS} pending={problems} onJump={focusField} />
+
+            <div className="mt-4">
+              <LanguageChoice
                 value={form.handoutLanguage}
                 onChange={(language) =>
                   setForm((current) => ({ ...current, handoutLanguage: language }))
                 }
+                spanishUnchecked={NEEDS_NATIVE_SPEAKER_REVIEW}
               />
+              <p className="mt-1 text-xs text-slate-500">
+                For the handout. The note for eCW is always in English.
+              </p>
             </div>
-            {problems.length === 0 ? (
-              <p className="mt-1 text-sm text-emerald-800">Everything required is filled in.</p>
-            ) : (
-              <div className="mt-2" data-testid="missing-checklist">
-                <p className="text-sm text-slate-700">Still needed ({problems.length}):</p>
-                <ul className="mt-2 max-h-72 space-y-1 overflow-y-auto">
-                  {problems.map((problem, index) => {
-                    const section = SECTIONS.find((s) => s.key === problem.section);
-                    return (
-                      <li key={`${problem.field}-${index}`}>
-                        <button
-                          type="button"
-                          onClick={() => focusField(problem.field, problem.section)}
-                          className="w-full rounded-lg px-2 py-1.5 text-left text-sm text-slate-800 hover:bg-slate-100"
-                        >
-                          <span className="font-semibold text-slate-900">
-                            {/* "✓." would read as done: name the requirements instead. */}
-                            {problem.section === 'requirements' ? 'Requirements' : section?.label}.
-                          </span>{' '}
-                          {problem.message}
-                        </button>
-                      </li>
-                    );
-                  })}
-                </ul>
-              </div>
-            )}
 
             {failure && (
               <div className="mt-3">
@@ -352,8 +324,7 @@ function AssessmentScreen({ employee }: { employee: Employee }) {
               </div>
             )}
 
-            {/* The two downloads side by side; the handout's language is the small
-                choice beside the heading (Dominguez, September 2026). */}
+            {/* The two downloads side by side. Print either from its PDF. */}
             <div className="mt-4 grid grid-cols-2 gap-3">
               <DownloadButton
                 label="Download the note"
@@ -366,7 +337,7 @@ function AssessmentScreen({ employee }: { employee: Employee }) {
               <DownloadButton
                 label="Download the handout"
                 detail={`Care plan for the patient, in ${
-                  form.handoutLanguage === 'es' ? 'Spanish' : 'English'
+                  form.handoutLanguage === 'both' ? 'English and Spanish' : 'English'
                 }`}
                 making={making === 'handout'}
                 disabled={making !== null}
@@ -397,61 +368,5 @@ function AssessmentScreen({ employee }: { employee: Employee }) {
         </div>
       </div>
     </FieldContext.Provider>
-  );
-}
-
-/// "Handout: English ▾" — a secondary choice, opened when needed.
-function LanguagePicker({
-  value,
-  onChange,
-}: {
-  value: HandoutLanguage;
-  onChange: (language: HandoutLanguage) => void;
-}) {
-  const [open, setOpen] = useState(false);
-  const names: Record<HandoutLanguage, string> = { en: 'English', es: 'Español' };
-  return (
-    <div className="relative text-sm">
-      <button
-        type="button"
-        aria-expanded={open}
-        onClick={() => setOpen((shown) => !shown)}
-        className="rounded-lg px-2 py-1 text-slate-600 hover:bg-slate-100"
-      >
-        Handout: <span className="font-medium text-slate-900">{names[value]}</span> ▾
-      </button>
-      {open && (
-        <div
-          role="radiogroup"
-          aria-label="Handout language"
-          className="absolute right-0 z-20 mt-1 w-40 rounded-lg border border-slate-200 bg-white p-1 shadow-lg"
-        >
-          {(Object.keys(names) as HandoutLanguage[]).map((language) => (
-            <label
-              key={language}
-              className={`flex cursor-pointer items-center gap-2 rounded-md px-2 py-1.5 ${
-                value === language ? 'bg-brand-50 font-medium text-brand-900' : 'text-slate-700'
-              }`}
-            >
-              <input
-                type="radio"
-                checked={value === language}
-                onChange={() => {
-                  onChange(language);
-                  setOpen(false);
-                }}
-                className="border-slate-300 text-brand-600 focus:ring-brand-600"
-              />
-              {names[language]}
-            </label>
-          ))}
-        </div>
-      )}
-      {value === 'es' && NEEDS_NATIVE_SPEAKER_REVIEW && (
-        <p className="mt-1 max-w-[16rem] text-right text-xs text-amber-800">
-          Spanish not yet checked by a native speaker.
-        </p>
-      )}
-    </div>
   );
 }

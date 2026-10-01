@@ -25,11 +25,12 @@ import {
   type HandoutLanguage,
 } from '../translations.es';
 import { providerName, safeMrn, type Provider } from './clinical-note';
+import type { PrintLanguage } from '../../common/layout';
 import { PdfWriter } from '../../common/pdf-writer';
 
 /**
  * PDF 2: the patient and care partner's copy of the care plan, in plain
- * words, in English or Spanish.
+ * words, in English, or English and then Spanish.
  *
  * Laid out after BrainCheck's cognitive care plan, which the practice
  * already uses (September 2026): who it is for and from, then each area with
@@ -41,21 +42,48 @@ import { PdfWriter } from '../../common/pdf-writer';
  */
 
 export function carePlanFilename(form: AssessmentForm): string {
-  return `99483_CarePlan_${safeMrn(form.visit.mrn)}_${form.visit.dos}.pdf`;
+  const suffix = form.handoutLanguage === 'both' ? '_EN-ES' : '';
+  return `99483_CarePlan_${safeMrn(form.visit.mrn)}_${form.visit.dos}${suffix}.pdf`;
 }
 
 const has = (text: string) => text.trim() !== '';
 /// Larger than the note: this one is read by patients and families.
 const SIZE = 11.5;
 
+/// In English, or in English and then Spanish on fresh pages (Dominguez,
+/// October 2026: only those two).
 export async function carePlanPdf(
   form: AssessmentForm,
   provider: Provider,
-  language: HandoutLanguage,
+  print: PrintLanguage,
 ): Promise<Uint8Array> {
+  const en = HANDOUT_STRINGS.en;
+  const es = HANDOUT_STRINGS.es;
+  const both = print === 'both';
+  const pdf = await PdfWriter.create(both ? `${en.title} / ${es.title}` : en.title);
+  writeHandout(pdf, form, provider, 'en');
+  if (both) {
+    pdf.pageBreak();
+    writeHandout(pdf, form, provider, 'es');
+  }
+  const { visit } = form;
+  const name = visit.patientName.trim();
+  const confidential = both ? `${en.confidential} / ${es.confidential}` : en.confidential;
+  return pdf.finish({
+    title: `${en.footer} — ${confidential}`,
+    lines: [en.header(name, longDate(visit.dob, 'en'), longDate(visit.dos, 'en'))],
+    footer: `${confidential}. ${en.questions(PRACTICE_PHONE)}`,
+  });
+}
+
+function writeHandout(
+  pdf: PdfWriter,
+  form: AssessmentForm,
+  provider: Provider,
+  language: HandoutLanguage,
+) {
   const words = HANDOUT_STRINGS[language];
   const es = language === 'es';
-  const pdf = await PdfWriter.create(words.title);
   const { visit, J, I } = form;
   const name = visit.patientName.trim();
   const partner = form.H.caregiver === 'none' ? '' : caregiverName(form);
@@ -156,11 +184,4 @@ export async function carePlanPdf(
 
   pdf.gap(6);
   pdf.paragraph(words.questions(PRACTICE_PHONE), { size: SIZE });
-
-  return pdf.finish({
-    title: `${words.footer} — ${words.confidential}`,
-    lines: [words.header(name, longDate(visit.dob, language), longDate(visit.dos, language))],
-    footer: `${words.confidential}. ${words.questions(PRACTICE_PHONE)}`,
-    pageLabel: es ? (page, pages) => `Página ${page} de ${pages}` : undefined,
-  });
 }

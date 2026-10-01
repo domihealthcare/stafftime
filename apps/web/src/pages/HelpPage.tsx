@@ -437,8 +437,8 @@ const CARE_PLAN: Section[] = [
         answer: (
           <>
             <p>
-              <Screen>Team</Screen> → <Screen>Resources</Screen> → the <Screen>Provider</Screen>{' '}
-              section → <strong>CCM care plan</strong>. Providers, managers and admins have it.
+              <Screen>Team</Screen> → <Screen>Resources</Screen> → <Screen>Forms</Screen>, at the
+              top → <strong>CCM care plan</strong>. Providers, managers and admins have it.
             </p>
             <ul>
               <li>
@@ -455,9 +455,9 @@ const CARE_PLAN: Section[] = [
                 only be made when that list is empty.
               </li>
               <li>
-                Choose <strong>English</strong>, <strong>Español</strong> or{' '}
-                <strong>English and Español</strong> (one PDF, English first), download it, then
-                tell it the PDF arrived — that clears the form.
+                Choose <strong>English</strong> or <strong>English and Spanish</strong> (one PDF,
+                English first, then the same in Spanish), download it, then tell it the PDF arrived
+                — that clears the form.
               </li>
             </ul>
           </>
@@ -478,11 +478,11 @@ const CARE_PLAN: Section[] = [
         question: 'Spanish, and what you type',
         answer: (
           <p>
-            The questions&rsquo; answers and every ticked choice are printed in Spanish for a
-            Spanish copy, and height and weight in centimetres and kilograms. Anything you type —
-            names, providers, the SMART goal, &ldquo;Other&rdquo; — is printed exactly as typed, so
-            write it in Spanish if the patient reads Spanish. If somebody&rsquo;s primary language
-            is Spanish the PDF starts as English and Español.
+            The questions&rsquo; answers and every ticked choice are printed in Spanish in the
+            Spanish half; height stays in inches and weight in pounds. Anything you type — names,
+            providers, the SMART goal, &ldquo;Other&rdquo; — is printed exactly as typed, so write
+            it in Spanish if the patient reads Spanish. If somebody&rsquo;s primary language is
+            Spanish the PDF starts as English and Spanish.
           </p>
         ),
       },
@@ -503,15 +503,16 @@ const CARE_PLAN: Section[] = [
 /// For people whose job role uses the clinical forms (Providers).
 const PROVIDERS: Section[] = [
   {
-    title: 'For providers: cognitive assessment (99483)',
+    title: 'For providers: BrainCheck care plan',
     topics: [
       {
         question: 'Where is it, and how does it work?',
         answer: (
           <>
             <p>
-              <Screen>Team</Screen> → <Screen>Resources</Screen> → the <Screen>Provider</Screen>{' '}
-              section → <strong>Cognitive assessment (99483)</strong>.
+              <Screen>Team</Screen> → <Screen>Resources</Screen> → <Screen>Forms</Screen>, at the
+              top → <strong>BrainCheck care plan</strong> — the cognitive assessment and care plan,
+              billed as CPT 99483.
             </p>
             <ul>
               <li>Tick the requirements at the top first — all four are needed to bill 99483.</li>
@@ -520,7 +521,8 @@ const PROVIDERS: Section[] = [
                 your staff record.
               </li>
               <li>
-                Work down A to J. The bar at the top ticks off each section as it is complete.
+                Work down A to J. Each section says what it still needs, and the bar at the top
+                ticks it off once it is complete.
               </li>
               <li>
                 Anything missing is listed at the bottom; tap an item to jump to it. The PDFs can
@@ -572,9 +574,9 @@ const PROVIDERS: Section[] = [
               needs a goal and something that will be done.
             </p>
             <p>
-              Ticked goals and actions go on the handout in plain words, in English or Spanish
-              (choose beside <strong>PDFs</strong>). Anything you type is printed as typed, so write
-              it in Spanish for a Spanish handout.
+              Ticked goals and actions go on the handout in plain words, in <strong>English</strong>
+              , or <strong>English and Spanish</strong> (English first, then the same in Spanish) —
+              choose under <strong>PDFs</strong>. Anything you type is printed as typed.
             </p>
           </>
         ),
@@ -1205,7 +1207,7 @@ const MANAGERS: Section[] = [
         ),
       },
       {
-        question: 'Giving a provider the cognitive assessment (99483)',
+        question: 'Giving a provider the BrainCheck care plan',
         answer: (
           <p>
             Add them to the <strong>Provider</strong> job role (<Screen>Job roles</Screen>) — the

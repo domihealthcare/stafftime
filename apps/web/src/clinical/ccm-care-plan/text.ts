@@ -113,17 +113,20 @@ function listed(list: readonly Bilingual[], values: string[], language: Language
 const dateIn = (iso: string, language: Language) =>
   language === 'es' ? longDate(iso, 'es') : longDate(iso, 'en');
 
-/// 63 inches → "63 inches (5 ft 3 in)" / "160 cm".
+/// 63 inches → "63 inches (5 ft 3 in)" / "63 pulgadas (5 pies 3 pulg.)" —
+/// the same units in both languages, only the words translated.
 function height(inches: string, language: Language): string {
   const value = Number(inches);
-  if (language === 'es') return `${Math.round(value * 2.54)} cm`;
   const feet = Math.floor(value / 12);
   const rest = Math.round((value - feet * 12) * 10) / 10;
-  return `${inches.trim()} inches (${feet} ft ${rest} in)`;
+  return language === 'es'
+    ? `${inches.trim()} pulgadas (${feet} pies ${rest} pulg.)`
+    : `${inches.trim()} inches (${feet} ft ${rest} in)`;
 }
 
-function weight(lbs: string, language: Language): string {
-  return language === 'es' ? `${Math.round(Number(lbs) * 0.45359237)} kg` : `${lbs.trim()} lbs`;
+/// "154 lbs" in both languages.
+function weight(lbs: string): string {
+  return `${lbs.trim()} lbs`;
 }
 
 /// The general care plan's sentences, in the order of the practice's form.
@@ -390,7 +393,7 @@ export function carePlanText(
       const value = vitals[vital.key].trim();
       const label = language === 'es' ? vital.es : vital.label;
       if (vital.key === 'height') return [label, height(value, language)];
-      if (vital.key === 'weight') return [label, weight(value, language)];
+      if (vital.key === 'weight') return [label, weight(value)];
       return [label, vital.unit ? `${value} ${vital.unit}` : value];
     },
   );

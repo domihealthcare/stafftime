@@ -75,11 +75,13 @@ await step('somebody who is not a provider, manager or admin has no link, and th
 
 await signIn(page, 'manager@domihealthcare.com');
 
-await step('a manager finds it under Resources → Provider, without the 99483 form', async () => {
+await step('a manager finds it under Resources → Forms, without the BrainCheck care plan', async () => {
   await page.goto(`${BASE}/resources`, { waitUntil: 'networkidle' });
-  const tools = page.getByTestId('section-Provider').getByTestId('clinical-tools');
-  if ((await tools.getByRole('link', { name: /Cognitive assessment/ }).count()) > 0)
-    throw new Error('a manager who is not a provider is offered the 99483 form');
+  const tools = page.getByTestId('forms-section').getByTestId('clinical-tools');
+  if ((await tools.getByRole('link', { name: /BrainCheck/ }).count()) > 0)
+    throw new Error('a manager who is not a provider is offered the BrainCheck care plan');
+  if ((await page.getByTestId('section-Provider').getByTestId('clinical-tools').count()) > 0)
+    throw new Error('the forms are still in the Provider section');
   await tools.getByRole('link', { name: /CCM care plan/ }).click();
   await page.getByTestId('ccm-care-plan').waitFor({ timeout: 15000 });
 });
@@ -92,6 +94,17 @@ await step('it is prepared by the person signed in, and starts on today', async 
   if (!/Prepared by .+/.test(line)) throw new Error(`preparer line: "${line}"`);
   const date = await section('patient').getByLabel(/Conducted on/).inputValue();
   if (date !== today) throw new Error(`starts on ${date}`);
+});
+
+await step('each section says what it still needs, before anybody tries for a PDF', async () => {
+  const general = section('general');
+  if ((await general.getAttribute('data-complete')) !== 'false') throw new Error('general reads as complete');
+  await general.getByText(/still needed/).first().waitFor({ timeout: 5000 });
+  await general.getByTestId('pending-here').getByRole('button', { name: 'Rate overall physical health.' }).click();
+  await page.waitForTimeout(300);
+  const focused = await page.evaluate(() => document.activeElement?.closest('fieldset')?.id ?? '');
+  if (!focused.endsWith('general-healthRating')) throw new Error(`focus went to "${focused}"`);
+  await page.getByTestId('progress-left').getByText(/still needed/).waitFor({ timeout: 5000 });
 });
 
 await step('an empty form makes no PDF, and asks for two conditions', async () => {
@@ -123,11 +136,13 @@ await step('each condition chosen adds its own form’s questions', async () => 
   if ((await section('plan:copd').count()) > 0) throw new Error('COPD still has a section');
 });
 
-await step('a Spanish speaker’s care plan starts as English and Español', async () => {
+await step('a Spanish speaker’s care plan starts as English and Spanish — one of only two choices', async () => {
   await pick(section('patient'), /^Primary language/, 'Spanish');
-  const both = page.getByRole('radiogroup', { name: 'Language' }).getByLabel('English and Español');
-  if (!(await both.isChecked())) throw new Error('not switched to both');
-  await page.getByText('Spanish not yet checked by a native speaker.').waitFor({ timeout: 5000 });
+  const group = page.getByRole('radiogroup', { name: 'Language' });
+  const choices = await group.getByRole('radio').count();
+  if (choices !== 2) throw new Error(`${choices} language choices`);
+  if (!(await group.getByLabel('English and Spanish').isChecked())) throw new Error('not switched to both');
+  await page.getByText('The Spanish has not yet been checked by a native speaker.').waitFor({ timeout: 5000 });
 });
 
 await step('the whole form, filled in with a fake patient, makes one PDF in both languages', async () => {
@@ -189,6 +204,9 @@ await step('the whole form, filled in with a fake patient, makes one PDF in both
   await pick(dm, /\(barriers\)/, 'Financial constraints');
 
   await page.getByText('Everything required is filled in.').waitFor({ timeout: 5000 });
+  await page.getByTestId('progress-ready').waitFor({ timeout: 5000 });
+  if ((await page.locator('[data-testid^="section-"][data-complete="false"]').count()) > 0)
+    throw new Error('a section still reads as incomplete');
   await page.screenshot({ path: `${OUT}/care-plan-filled.png`, fullPage: false });
 
   const [download] = await Promise.all([
@@ -235,8 +253,9 @@ await step('the whole form, filled in with a fake patient, makes one PDF in both
     'Dieta recomendada: dieta cardíaca (baja en grasas, baja en sodio/sal).',
     'Ningún día de ejercicio en la última semana.',
     'Proveedores incluyen:',
-    '160 cm',
-    '70 kg',
+    // Same units in Spanish: only the words are translated.
+    'Estatura 63 pulgadas (5 pies 3 pulg.)',
+    'Peso 154 lbs',
     'HTA (I10), DM (E11.8)',
     'Plan de Atención para Hipertensión',
     'Vivir una vida más larga y saludable',
@@ -252,21 +271,22 @@ await step('the whole form, filled in with a fake patient, makes one PDF in both
   if (pages[spanishStarts].includes('General Care Plan')) throw new Error('the Spanish page carries English');
 });
 
-await step('and in Spanish alone', async () => {
-  await page.getByRole('radiogroup', { name: 'Language' }).getByLabel('Español', { exact: true }).check();
+await step('and in English alone', async () => {
+  await page.getByRole('radiogroup', { name: 'Language' }).getByLabel('English', { exact: true }).check();
   const [download] = await Promise.all([
     page.waitForEvent('download', { timeout: 20000 }),
     page.getByRole('button', { name: 'Download the care plan' }).click(),
   ]);
-  if (!download.suggestedFilename().endsWith('_ES.pdf')) throw new Error(download.suggestedFilename());
-  const path = `${OUT}/es-${download.suggestedFilename()}`;
+  const expected = `CarePlan_${PATIENT_ID}_${today}.pdf`;
+  if (download.suggestedFilename() !== expected) throw new Error(download.suggestedFilename());
+  const path = `${OUT}/en-${download.suggestedFilename()}`;
   await download.saveAs(path);
   const pages = await pdfPages(path);
   const all = pages.join(' ');
-  for (const piece of ['Plan de Atención', 'Página 1 de', 'Confidencial', 'Realizado el', 'Fecha de nacimiento 12 de enero de 1943'])
-    if (!all.includes(piece)) throw new Error(`the Spanish care plan lacks "${piece}"`);
-  for (const english of ['General Care Plan', 'Overall physical health', 'Hypertension Care Plan'])
-    if (all.includes(english)) throw new Error(`the Spanish care plan shows "${english}"`);
+  for (const piece of ['General Care Plan', 'Hypertension Care Plan', 'Page 1 of', 'Confidential', '63 inches (5 ft 3 in)'])
+    if (!all.includes(piece)) throw new Error(`the English care plan lacks "${piece}"`);
+  for (const spanish of ['Plan de Atención', 'Confidencial', 'Realizado el'])
+    if (all.includes(spanish)) throw new Error(`the English care plan shows "${spanish}"`);
   if (all.includes('native speaker')) throw new Error('the review note is on the care plan');
 });
 

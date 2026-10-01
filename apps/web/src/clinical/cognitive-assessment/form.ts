@@ -7,7 +7,7 @@ import {
   type PlanningItem,
   type RequirementKey,
 } from './config';
-import type { HandoutLanguage } from './translations.es';
+import type { PrintLanguage } from '../common/layout';
 
 export { hasConcern, toggleChoice } from '../common/choices';
 
@@ -113,7 +113,8 @@ export interface AssessmentForm {
     followUpDate: string;
     followUpPlan: string;
   };
-  handoutLanguage: HandoutLanguage;
+  /// The handout: English, or English and Spanish.
+  handoutLanguage: PrintLanguage;
 }
 
 export function emptyForm(dos: string): AssessmentForm {

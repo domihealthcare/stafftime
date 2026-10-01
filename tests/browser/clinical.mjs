@@ -101,7 +101,7 @@ await step('Provider starts with the clinical forms switched on, and nobody else
   if (on.join() !== 'Provider') throw new Error(`on for: ${on.join(', ')}`);
 });
 
-await step('in the Provider job role, it is under Resources → Provider, not the Team menu', async () => {
+await step('in the Provider job role, it is under Resources → Forms as the BrainCheck care plan', async () => {
   const added = await call(admin, `/job-roles/${provider.id}/members`, {
     method: 'POST',
     body: JSON.stringify({ employeeId: me.id }),
@@ -116,8 +116,8 @@ await step('in the Provider job role, it is under Resources → Provider, not th
   const team = await menuItems(page, 'Team');
   if (team.some((t) => /cognitive/i.test(t))) throw new Error(`still in the Team menu: ${team.join(', ')}`);
   await page.goto(`${BASE}/resources`, { waitUntil: 'networkidle' });
-  const tools = page.getByTestId('section-Provider').getByTestId('clinical-tools');
-  await tools.getByRole('link', { name: /Cognitive assessment \(99483\)/ }).click();
+  const tools = page.getByTestId('forms-section').getByTestId('clinical-tools');
+  await tools.getByRole('link', { name: /^BrainCheck care plan/ }).click();
   await page.getByTestId('cognitive-assessment').waitFor({ timeout: 15000 });
 });
 
@@ -360,25 +360,28 @@ await step('the handout is in plain English, with the plan and nothing clinical'
   });
 });
 
-await step('and in Spanish, flagged on screen as not yet checked by a native speaker', async () => {
-  // A small choice beside the heading, opened when needed.
-  if ((await page.getByRole('radiogroup', { name: 'Handout language' }).count()) > 0)
-    throw new Error('the language choice is open before it is asked for');
-  await page.getByRole('button', { name: /^Handout: English/ }).click();
-  await page.getByRole('radiogroup', { name: 'Handout language' }).getByText('Español').click();
-  await page.getByText('Spanish not yet checked by a native speaker.').waitFor({ timeout: 5000 });
+await step('and in English and Spanish, flagged on screen as not yet checked by a native speaker', async () => {
+  // Only two choices: English, or English and Spanish.
+  const choices = await page.getByRole('radiogroup', { name: 'Language' }).getByRole('radio').count();
+  if (choices !== 2) throw new Error(`${choices} language choices`);
+  await page.getByRole('radiogroup', { name: 'Language' }).getByLabel('English and Spanish').check();
+  await page.getByText('The Spanish has not yet been checked by a native speaker.').waitFor({ timeout: 5000 });
   const [download] = await Promise.all([
     page.waitForEvent('download', { timeout: 20000 }),
     page.getByRole('button', { name: 'Download the handout' }).click(),
   ]);
+  if (!download.suggestedFilename().endsWith('_EN-ES.pdf')) throw new Error(download.suggestedFilename());
   const path = `${OUT}/es-${download.suggestedFilename()}`;
   await download.saveAs(path);
   const pages = await pdfPages(path);
   const all = pages.join(' ');
-  for (const piece of ['Su plan de cuidado de la memoria', 'Preparado por', 'Nuestras metas', 'Qué puede hacer', 'Planificar con anticipación', 'Consejos de seguridad', 'En 3 meses', 'Página 1 de', 'Confidencial', 'al 201-528-3664']) {
+  // English first, then the Spanish starting on a page of its own.
+  const spanishStarts = pages.findIndex((text) => text.includes('Su plan de cuidado de la memoria'));
+  if (spanishStarts < 1 || !pages[0].includes('Your memory care plan')) throw new Error(`Spanish starts on page ${spanishStarts + 1}`);
+  for (const piece of ['Your memory care plan', 'Our goals', 'Su plan de cuidado de la memoria', 'Preparado por', 'Nuestras metas', 'Qué puede hacer', 'Planificar con anticipación', 'Consejos de seguridad', 'En 3 meses', 'Confidencial', 'al 201-528-3664']) {
     if (!all.includes(piece)) throw new Error(`the Spanish handout lacks "${piece}"`);
   }
-  if (all.includes('native speaker') || all.includes('review')) throw new Error('the review note is on the handout');
+  if (all.includes('native speaker') || all.includes('not yet been checked')) throw new Error('the review note is on the handout');
 });
 
 await step('leaving by a link asks first, and staying keeps the form', async () => {
@@ -470,7 +473,7 @@ await step('there is no file input on the form', async () => {
 
 await step('Help has a section for providers', async () => {
   await page.goto(`${BASE}/help`, { waitUntil: 'networkidle' });
-  await page.getByRole('heading', { name: /For providers: cognitive assessment/ }).waitFor({ timeout: 10000 });
+  await page.getByRole('heading', { name: /For providers: BrainCheck care plan/ }).waitFor({ timeout: 10000 });
   await page.getByText('Is anything saved? (patient privacy)').waitFor({ timeout: 5000 });
 });
 

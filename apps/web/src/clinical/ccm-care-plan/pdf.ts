@@ -6,8 +6,8 @@ import { WORDS, carePlanText } from './text';
 
 /**
  * The care plan as a PDF, made in the browser — for eCW Documents and for
- * the patient, in English, Spanish or both (English first, then Spanish on
- * a fresh page, as the practice's own care plans were laid out).
+ * the patient, in English, or English and Spanish (English first, then
+ * Spanish on a fresh page, as the practice's own care plans were laid out).
  *
  * Every page carries the practice's letterhead lines and the patient's line;
  * the footer says it is confidential. Typed answers are printed as typed.
@@ -29,7 +29,7 @@ export function carePlanFilename(form: CarePlanForm): string {
       .trim()
       .replace(/[^A-Za-z0-9-]+/g, '-')
       .replace(/^-+|-+$/g, '') || 'no-ID';
-  const suffix = { en: '', es: '_ES', both: '_EN-ES' }[form.pdfLanguage];
+  const suffix = form.pdfLanguage === 'both' ? '_EN-ES' : '';
   return `CarePlan_${id}_${form.patient.conductedOn}${suffix}.pdf`;
 }
 
@@ -38,7 +38,7 @@ export async function carePlanPdf(
   preparer: Preparer,
   generatedAt: Date,
 ): Promise<Uint8Array> {
-  const languages: Language[] = form.pdfLanguage === 'both' ? ['en', 'es'] : [form.pdfLanguage];
+  const languages: Language[] = form.pdfLanguage === 'both' ? ['en', 'es'] : ['en'];
   const pdf = await PdfWriter.create(titleFor(form.pdfLanguage));
 
   languages.forEach((language, index) => {
@@ -47,11 +47,10 @@ export async function carePlanPdf(
   });
 
   const { patient } = form;
-  const only = form.pdfLanguage === 'es' ? WORDS.es : WORDS.en;
   const confidential =
     form.pdfLanguage === 'both'
       ? `${WORDS.en.confidential} / ${WORDS.es.confidential}`
-      : only.confidential;
+      : WORDS.en.confidential;
   return pdf.finish({
     title: `${LETTERHEAD.name} — ${titleFor(form.pdfLanguage)}`,
     lines: [
@@ -59,13 +58,12 @@ export async function carePlanPdf(
       `Tel: ${LETTERHEAD.phone}  |  Fax: ${LETTERHEAD.fax}`,
       `${patient.firstName.trim()} ${patient.lastName.trim()}  |  DOB: ${usDate(patient.dob)}  |  ID: ${patient.patientId.trim()}`,
     ],
-    footer: `${confidential}. ${only.questions(LETTERHEAD.phone)} ${practiceTimestamp(generatedAt)}`,
-    pageLabel: form.pdfLanguage === 'es' ? WORDS.es.page : undefined,
+    footer: `${confidential}. ${WORDS.en.questions(LETTERHEAD.phone)} ${practiceTimestamp(generatedAt)}`,
   });
 }
 
 function titleFor(language: PdfLanguage): string {
-  return language === 'both' ? `${WORDS.en.title} / ${WORDS.es.title}` : WORDS[language].title;
+  return language === 'both' ? `${WORDS.en.title} / ${WORDS.es.title}` : WORDS.en.title;
 }
 
 function write(pdf: PdfWriter, form: CarePlanForm, language: Language, preparedBy: string) {

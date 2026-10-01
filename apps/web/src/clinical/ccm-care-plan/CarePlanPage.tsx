@@ -5,9 +5,17 @@ import { canUseCarePlan } from '../../lib/clinical-access';
 import { useSession } from '../../lib/session';
 import type { Employee } from '../../lib/types';
 import { FieldContext } from '../common/fields';
-import { DownloadButton, FormSection } from '../common/layout';
+import {
+  DownloadButton,
+  FormSection,
+  LanguageChoice,
+  PendingList,
+  ProgressBar,
+  type Pending,
+  type SectionInfo,
+} from '../common/layout';
 import { savePdf, useLeaveGuard } from '../common/leave-guard';
-import { NEEDS_NATIVE_SPEAKER_REVIEW, type PdfLanguage, type VitalKey } from './config';
+import { NEEDS_NATIVE_SPEAKER_REVIEW, type VitalKey } from './config';
 import { conditionOf, conditionTitle } from './conditions';
 import { emptyForm, planFor, type CarePlanForm, type ConditionPlan } from './form';
 import { carePlanFilename, carePlanPdf, preparerName, type Preparer } from './pdf';
@@ -26,14 +34,14 @@ import { FIXED_SECTIONS, planSection, validate } from './validate';
 /**
  * CCM care plan (October 2026, Dominguez): the general care plan every
  * patient gets, then a plan for each chronic condition chosen (at least two),
- * made into one PDF in English, Spanish or both.
+ * made into one PDF in English, or English and Spanish.
  *
  * For providers (a job role with the clinical forms), managers and admins —
- * unlike the 99483 form, whose access level brings nothing. Like it, the form
- * runs entirely in the browser: what is typed is never sent to the server,
- * never written to the browser's storage, and is gone when the page closes.
- * This folder may not import the API client (see .eslintrc.cjs), and the
- * browser suite watches every request while it is filled in.
+ * unlike the BrainCheck care plan, whose access level brings nothing. Like it,
+ * the form runs entirely in the browser: what is typed is never sent to the
+ * server, never written to the browser's storage, and is gone when the page
+ * closes. This folder may not import the API client (see .eslintrc.cjs), and
+ * the browser suite watches every request while it is filled in.
  */
 export function CarePlanPage() {
   const { employee } = useSession();
@@ -52,12 +60,6 @@ export function CarePlanPage() {
 
 const UNSAVED = 'the care plan you are filling in';
 
-const LANGUAGES: { value: PdfLanguage; label: string }[] = [
-  { value: 'en', label: 'English' },
-  { value: 'es', label: 'Español' },
-  { value: 'both', label: 'English and Español' },
-];
-
 function CarePlanScreen({ employee }: { employee: Employee }) {
   const [prefix] = useState(() => `cp${Math.random().toString(36).slice(2, 8)}`);
   const idFor = useCallback((path: string) => `${prefix}-${path.replace(/[.:]/g, '-')}`, [prefix]);
@@ -73,8 +75,8 @@ function CarePlanScreen({ employee }: { employee: Employee }) {
 
   const [form, setForm] = useState<CarePlanForm>(() => emptyForm(localDate(new Date())));
   const [untouched, setUntouched] = useState(() => JSON.stringify(form));
-  // Until somebody picks the PDF's language, a Spanish speaker's care plan
-  // is printed in both, as the practice's were.
+  // Until somebody picks the language, a Spanish speaker's care plan is
+  // printed in English and Spanish, as the practice's were.
   const [languagePicked, setLanguagePicked] = useState(false);
 
   const update = useCallback<Update>(
@@ -122,7 +124,7 @@ function CarePlanScreen({ employee }: { employee: Employee }) {
   );
   const fieldContext = useMemo(() => ({ idFor, problemFor }), [idFor, problemFor]);
 
-  const sections = [
+  const sections: SectionInfo[] = [
     ...FIXED_SECTIONS.map((section) => ({ ...section, key: section.key as string })),
     ...form.conditions.map((condition) => ({
       key: planSection(condition),
@@ -130,6 +132,7 @@ function CarePlanScreen({ employee }: { employee: Employee }) {
       title: conditionTitle(form, condition),
     })),
   ];
+  const pendingIn = (key: string) => problems.filter((problem) => problem.section === key);
 
   // ---------------------------------------------------- the PDF, and after
   const [made, setMade] = useState<string | null>(null);
@@ -140,13 +143,14 @@ function CarePlanScreen({ employee }: { employee: Employee }) {
   const downloaded = made === snapshot;
   const dirty = snapshot !== untouched;
   const checklist = useRef<HTMLDivElement>(null);
+  const showList = () => checklist.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
 
   async function download() {
     setFailure(null);
     setCleared(false);
     if (problems.length > 0) {
       setShowProblems(true);
-      checklist.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      showList();
       return;
     }
     setMaking(true);
@@ -176,15 +180,12 @@ function CarePlanScreen({ employee }: { employee: Employee }) {
   useLeaveGuard(dirty, UNSAVED);
 
   // ---------------------------------------------------------------- the page
-  const sectionDone = (key: string) => !problems.some((problem) => problem.section === key);
-  const done = sections.filter((section) => sectionDone(section.key)).length;
-
   const jumpTo = (key: string) =>
     document
       .getElementById(`${prefix}-section-${key}`)
       ?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-  const focusField = (path: string, section: string) => {
-    const element = document.getElementById(idFor(path));
+  const focusField = ({ field, section }: Pending) => {
+    const element = document.getElementById(idFor(field));
     if (!element) {
       jumpTo(section);
       return;
@@ -195,6 +196,12 @@ function CarePlanScreen({ employee }: { employee: Employee }) {
       : element.querySelector<HTMLElement>('input, select, textarea');
     target?.focus({ preventScroll: true });
   };
+  const sectionProps = (key: string) => ({
+    prefix,
+    sectionKey: key,
+    pending: pendingIn(key),
+    onJump: focusField,
+  });
 
   return (
     <FieldContext.Provider value={fieldContext}>
@@ -202,7 +209,7 @@ function CarePlanScreen({ employee }: { employee: Employee }) {
       <div className="mx-auto max-w-4xl" translate="no" data-testid="ccm-care-plan">
         <PageHeading
           title="CCM care plan"
-          subtitle="Stays on this device — nothing is sent or saved. Download the care plan at the end, in English, Spanish or both."
+          subtitle="Stays on this device — nothing is sent or saved. Download the care plan at the end, in English, or English and Spanish."
         />
 
         {cleared && (
@@ -214,66 +221,31 @@ function CarePlanScreen({ employee }: { employee: Employee }) {
           </div>
         )}
 
-        <nav
-          aria-label="Sections"
-          className="sticky top-0 z-10 -mx-4 mb-4 border-b border-slate-200 bg-slate-100/95 px-4 py-2 backdrop-blur"
-        >
-          <div className="flex items-center justify-between gap-3 text-xs text-slate-600">
-            <span>
-              <span className="font-semibold text-slate-900">{done}</span> of {sections.length}{' '}
-              complete
-            </span>
-            <span>
-              {problems.length === 0
-                ? 'Ready for the PDF'
-                : `${problems.length} thing${problems.length === 1 ? '' : 's'} still needed`}
-            </span>
-          </div>
-          <div className="mt-2 flex gap-1.5 overflow-x-auto pb-1">
-            {sections.map((section) => {
-              const complete = sectionDone(section.key);
-              return (
-                <button
-                  key={section.key}
-                  type="button"
-                  title={section.title}
-                  onClick={() => jumpTo(section.key)}
-                  data-complete={complete}
-                  className={`min-h-[36px] min-w-[40px] shrink-0 rounded-lg px-2 text-sm font-semibold ring-1 ring-inset ${
-                    complete
-                      ? 'bg-emerald-50 text-emerald-800 ring-emerald-200'
-                      : 'bg-white text-slate-700 ring-slate-300'
-                  }`}
-                >
-                  {section.label}
-                </button>
-              );
-            })}
-          </div>
-        </nav>
+        <ProgressBar
+          sections={sections}
+          pending={problems}
+          ready="Ready for the PDF"
+          onSection={jumpTo}
+          onShowList={showList}
+        />
 
         <div className="space-y-4">
-          <FormSection prefix={prefix} sectionKey="patient" label="1" title="Patient">
+          <FormSection {...sectionProps('patient')} label="1" title="Patient">
             <PatientSection form={form} update={update} preparedBy={preparerName(preparer)} />
           </FormSection>
-          <FormSection prefix={prefix} sectionKey="general" label="2" title="General care plan">
+          <FormSection {...sectionProps('general')} label="2" title="General care plan">
             <GeneralSection form={form} update={update} />
           </FormSection>
-          <FormSection prefix={prefix} sectionKey="support" label="3" title="Support">
+          <FormSection {...sectionProps('support')} label="3" title="Support">
             <SupportSection form={form} update={update} />
           </FormSection>
-          <FormSection
-            prefix={prefix}
-            sectionKey="medications"
-            label="4"
-            title="Allergies and medications"
-          >
+          <FormSection {...sectionProps('medications')} label="4" title="Allergies and medications">
             <MedicationsSection form={form} update={update} />
           </FormSection>
-          <FormSection prefix={prefix} sectionKey="vitals" label="5" title="Numbers to track">
+          <FormSection {...sectionProps('vitals')} label="5" title="Numbers to track">
             <VitalsSection form={form} setVital={setVital} />
           </FormSection>
-          <FormSection prefix={prefix} sectionKey="conditions" label="6" title="Chronic conditions">
+          <FormSection {...sectionProps('conditions')} label="6" title="Chronic conditions">
             <ConditionsSection
               form={form}
               toggle={toggleCondition}
@@ -288,8 +260,7 @@ function CarePlanScreen({ employee }: { employee: Employee }) {
           {form.conditions.map((condition) => (
             <FormSection
               key={condition}
-              prefix={prefix}
-              sectionKey={planSection(condition)}
+              {...sectionProps(planSection(condition))}
               label={conditionOf(condition)?.label ?? condition}
               title={conditionTitle(form, condition)}
             >
@@ -299,65 +270,21 @@ function CarePlanScreen({ employee }: { employee: Employee }) {
         </div>
 
         {/* What is missing, the language, and the download. */}
-        <div ref={checklist} className="mt-6 scroll-mt-4">
+        <div ref={checklist} className="mt-6 scroll-mt-32">
           <Card className="p-4 sm:p-5">
             <h2 className="text-lg font-semibold text-slate-900">The care plan</h2>
-            {problems.length === 0 ? (
-              <p className="mt-1 text-sm text-emerald-800">Everything required is filled in.</p>
-            ) : (
-              <div className="mt-2" data-testid="missing-checklist">
-                <p className="text-sm text-slate-700">Still needed ({problems.length}):</p>
-                <ul className="mt-2 max-h-72 space-y-1 overflow-y-auto">
-                  {problems.map((problem, index) => {
-                    const section = sections.find((s) => s.key === problem.section);
-                    return (
-                      <li key={`${problem.field}-${index}`}>
-                        <button
-                          type="button"
-                          onClick={() => focusField(problem.field, problem.section)}
-                          className="w-full rounded-lg px-2 py-1.5 text-left text-sm text-slate-800 hover:bg-slate-100"
-                        >
-                          <span className="font-semibold text-slate-900">{section?.label}.</span>{' '}
-                          {problem.message}
-                        </button>
-                      </li>
-                    );
-                  })}
-                </ul>
-              </div>
-            )}
+            <PendingList sections={sections} pending={problems} onJump={focusField} />
 
-            <fieldset className="mt-4">
-              <legend className="mb-1 text-sm font-medium text-slate-800">Print it in</legend>
-              <div className="flex flex-wrap gap-1.5" role="radiogroup" aria-label="Language">
-                {LANGUAGES.map((language) => (
-                  <label
-                    key={language.value}
-                    className={`flex min-h-[38px] cursor-pointer items-center gap-2 rounded-lg border px-2.5 py-1.5 text-sm ${
-                      form.pdfLanguage === language.value
-                        ? 'border-brand-600 bg-brand-50 font-medium text-brand-900'
-                        : 'border-slate-300 bg-white text-slate-700 hover:bg-slate-50'
-                    }`}
-                  >
-                    <input
-                      type="radio"
-                      checked={form.pdfLanguage === language.value}
-                      onChange={() => {
-                        setLanguagePicked(true);
-                        setForm((current) => ({ ...current, pdfLanguage: language.value }));
-                      }}
-                      className="border-slate-300 text-brand-600 focus:ring-brand-600"
-                    />
-                    {language.label}
-                  </label>
-                ))}
-              </div>
-              {form.pdfLanguage !== 'en' && NEEDS_NATIVE_SPEAKER_REVIEW && (
-                <p className="mt-1 text-xs text-amber-800">
-                  Spanish not yet checked by a native speaker. Typed answers are printed as typed.
-                </p>
-              )}
-            </fieldset>
+            <div className="mt-4">
+              <LanguageChoice
+                value={form.pdfLanguage}
+                onChange={(language) => {
+                  setLanguagePicked(true);
+                  setForm((current) => ({ ...current, pdfLanguage: language }));
+                }}
+                spanishUnchecked={NEEDS_NATIVE_SPEAKER_REVIEW}
+              />
+            </div>
 
             {failure && (
               <div className="mt-3">
@@ -369,8 +296,8 @@ function CarePlanScreen({ employee }: { employee: Employee }) {
               <DownloadButton
                 label="Download the care plan"
                 detail={`For eCW Documents and the patient — ${
-                  LANGUAGES.find((l) => l.value === form.pdfLanguage)?.label
-                }`}
+                  form.pdfLanguage === 'both' ? 'English and Spanish' : 'English'
+                }. Print it from the PDF.`}
                 making={making}
                 disabled={making}
                 done={downloaded}
