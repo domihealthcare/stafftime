@@ -21,9 +21,10 @@ export interface Preparer {
 export const preparerName = (preparer: Preparer) =>
   preparer.credentials ? `${preparer.name}, ${preparer.credentials}` : preparer.name;
 
-/// "10-01-2026 CCM Care Plan.pdf", by the date it was done.
+/// "10-01-2026 Care Plan.pdf", by the date it was done — just "Care Plan",
+/// since the practice uses it for APCM as well as CCM (Dominguez).
 export function carePlanFilename(form: CarePlanForm): string {
-  return pdfFilename(form.patient.conductedOn, 'CCM Care Plan');
+  return pdfFilename(form.patient.conductedOn, 'Care Plan');
 }
 
 export async function carePlanPdf(
@@ -34,9 +35,10 @@ export async function carePlanPdf(
   const languages: Language[] = form.pdfLanguage === 'both' ? ['en', 'es'] : ['en'];
   const pdf = await PdfWriter.create(titleFor(form.pdfLanguage));
 
+  const stamp = practiceTimestamp(generatedAt);
   languages.forEach((language, index) => {
     if (index > 0) pdf.pageBreak();
-    write(pdf, form, language, preparerName(preparer));
+    write(pdf, form, language, preparerName(preparer), stamp);
   });
 
   const { patient } = form;
@@ -51,7 +53,7 @@ export async function carePlanPdf(
       `Tel: ${LETTERHEAD.phone}  |  Fax: ${LETTERHEAD.fax}`,
       `${patient.firstName.trim()} ${patient.lastName.trim()}  |  DOB: ${usDate(patient.dob)}  |  ID: ${patient.patientId.trim()}`,
     ],
-    footer: `${confidential}. ${WORDS.en.questions(LETTERHEAD.phone)} ${practiceTimestamp(generatedAt)}`,
+    footer: `${confidential}. ${WORDS.en.questions(LETTERHEAD.phone)} ${stamp}`,
   });
 }
 
@@ -59,7 +61,13 @@ function titleFor(language: PdfLanguage): string {
   return language === 'both' ? `${WORDS.en.title} / ${WORDS.es.title}` : WORDS.en.title;
 }
 
-function write(pdf: PdfWriter, form: CarePlanForm, language: Language, preparedBy: string) {
+function write(
+  pdf: PdfWriter,
+  form: CarePlanForm,
+  language: Language,
+  preparedBy: string,
+  signedAt: string,
+) {
   const text = carePlanText(form, language, preparedBy);
 
   pdf.title(text.title);
@@ -89,4 +97,10 @@ function write(pdf: PdfWriter, form: CarePlanForm, language: Language, preparedB
       pdf.bullets(part.items);
     }
   }
+
+  // Signed electronically by whoever made it — the person signed in
+  // (Dominguez, October 2026) — in each language's half.
+  pdf.keep(60);
+  pdf.gap(12);
+  pdf.field(WORDS[language].signature, WORDS[language].signedBy(preparedBy, signedAt));
 }

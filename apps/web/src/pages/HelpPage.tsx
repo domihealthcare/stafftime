@@ -427,10 +427,10 @@ const STAFF: Section[] = [
   },
 ];
 
-/// For anybody who can make a CCM care plan: providers, managers and admins.
+/// For anybody who can make a care plan (CCM and APCM): providers, managers and admins.
 const CARE_PLAN: Section[] = [
   {
-    title: 'CCM care plan',
+    title: 'Care plan (CCM and APCM)',
     topics: [
       {
         question: 'Where is it, and how does it work?',
@@ -438,7 +438,7 @@ const CARE_PLAN: Section[] = [
           <>
             <p>
               <Screen>Team</Screen> → <Screen>Resources</Screen> → <Screen>Forms</Screen>, at the
-              top → <strong>CCM care plan</strong>. Providers, managers and admins have it.
+              top → <strong>Care plan</strong>. Providers, managers and admins have it.
             </p>
             <ul>
               <li>
@@ -585,10 +585,11 @@ const PROVIDERS: Section[] = [
         question: 'After the visit: eCW',
         answer: (
           <p>
-            Upload the note (<strong>MM-DD-YYYY BrainCheck Note.pdf</strong>) to the patient&rsquo;s chart in eCW
-            Documents and reference it in the progress note for the date of service. Give the
-            patient and care partner the handout (<strong>MM-DD-YYYY BrainCheck Care Plan.pdf</strong>), then delete
-            both files from the device.
+            Upload the note (<strong>MM-DD-YYYY BrainCheck Note.pdf</strong>) to the patient&rsquo;s
+            chart in eCW Documents and reference it in the progress note for the date of service.
+            Give the patient and care partner the handout (
+            <strong>MM-DD-YYYY Your Memory Care Plan.pdf</strong>), then delete both files from the
+            device.
           </p>
         ),
       },

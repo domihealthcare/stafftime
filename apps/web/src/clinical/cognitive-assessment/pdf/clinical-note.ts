@@ -135,7 +135,8 @@ export async function clinicalNotePdf(
   pdf.gap(4);
   pdf.field('Provider', providerName(provider));
   pdf.field('Date and time', stamp);
-  pdf.signatureLine('Signature:');
+  // Signed electronically by the provider signed in (Dominguez, October 2026).
+  pdf.field('Signature', `Electronically signed by ${providerName(provider)} on ${stamp}.`);
 
   return pdf.finish({
     title: NOTE_TITLE,

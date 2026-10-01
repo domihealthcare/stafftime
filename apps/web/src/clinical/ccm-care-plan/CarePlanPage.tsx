@@ -48,7 +48,7 @@ export function CarePlanPage() {
   if (!employee || !canUseCarePlan(employee)) {
     return (
       <div className="mx-auto max-w-2xl">
-        <PageHeading title="CCM care plan" />
+        <PageHeading title="Care plan" />
         <Card className="p-5 text-sm text-slate-700">
           This form is for providers, managers and admins. If you should have it, ask a manager.
         </Card>
@@ -208,8 +208,8 @@ function CarePlanScreen({ employee }: { employee: Employee }) {
       {/* translate="no": a browser's "translate this page" sends the text away. */}
       <div className="mx-auto max-w-4xl" translate="no" data-testid="ccm-care-plan">
         <PageHeading
-          title="CCM care plan"
-          subtitle="Stays on this device — nothing is sent or saved. Download the care plan at the end, in English, or English and Spanish."
+          title="Care plan"
+          subtitle="For CCM and APCM. Stays on this device — nothing is sent or saved. Download the care plan at the end, in English, or English and Spanish."
         />
 
         {cleared && (
@@ -297,7 +297,7 @@ function CarePlanScreen({ employee }: { employee: Employee }) {
                 label="Download the care plan"
                 detail={`For eCW Documents and the patient — ${
                   form.pdfLanguage === 'both' ? 'English and Spanish' : 'English'
-                }. Print it from the PDF.`}
+                }, signed electronically in your name. Print it from the PDF.`}
                 making={making}
                 disabled={making}
                 done={downloaded}

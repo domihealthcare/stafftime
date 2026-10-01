@@ -15,7 +15,7 @@ export function usDate(value: string): string {
   return match ? `${match[2]}/${match[3]}/${match[1]}` : value;
 }
 
-/// A downloaded PDF's name: "10-01-2026 CCM Care Plan.pdf" — the date as
+/// A downloaded PDF's name: "10-01-2026 Care Plan.pdf" — the date as
 /// MM-DD-YYYY and a short title (Dominguez, October 2026: "MM/DD/YYYY
 /// Title"; a "/" cannot be in a file name, so dashes). Nothing about the
 /// patient: the name shows in download lists and on shared devices.

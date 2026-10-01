@@ -705,11 +705,16 @@ Beyond the phases, the parts worth knowing about before picking up work:
   (green "✓ Complete" when done) with its missing items listed as buttons
   that jump to the answer; the sticky bar counts per section and overall;
   the full list sits above the downloads. All in `clinical/common/layout.tsx`.
-- **PDF names and signature** (October 2026, Dominguez): downloads are named
+- **PDF names and signatures** (October 2026, Dominguez): downloads are named
   `MM-DD-YYYY Title.pdf` (dashes — a "/" cannot be in a file name), short
-  titles, nothing about the patient: *BrainCheck Note*, *BrainCheck Care
-  Plan*, *CCM Care Plan*. The BrainCheck care plan handout is **signed
-  electronically** by the provider signed in, with the date and time.
+  titles, nothing about the patient: *BrainCheck Note* (for eCW), *Your
+  Memory Care Plan* (the patient's handout), *Care Plan*. **All three PDFs
+  are signed electronically** by the person signed in ("Electronically signed
+  by … on 10/01/2026 3:09 PM ET"; Spanish halves "Firmado electrónicamente
+  por …") — no blank signature line.
+- **"CCM care plan" is just "Care plan"** (October 2026, Dominguez — the
+  practice uses it for **APCM** as well as CCM): on Resources → Forms, the
+  page, Help and the file name. The code keeps `ccm-care-plan/`.
 - **Provider productivity** (30 September 2026, Dominguez — replaces the
   practice's *Patients & Providers* sheet). Manage → **Provider productivity**
   — **only for people an admin has chosen** (`canManageProductivity`, a list at

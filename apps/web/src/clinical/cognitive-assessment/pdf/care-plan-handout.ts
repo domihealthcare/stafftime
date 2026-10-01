@@ -42,9 +42,10 @@ import { PdfWriter } from '../../common/pdf-writer';
  * the provider typed is printed as they typed it.
  */
 
-/// "09-29-2026 BrainCheck Care Plan.pdf", by the date of service.
+/// "09-29-2026 Your Memory Care Plan.pdf", by the date of service — the
+/// patient's own copy, named for them (Dominguez, October 2026).
 export function carePlanFilename(form: AssessmentForm): string {
-  return pdfFilename(form.visit.dos, 'BrainCheck Care Plan');
+  return pdfFilename(form.visit.dos, 'Your Memory Care Plan');
 }
 
 const has = (text: string) => text.trim() !== '';

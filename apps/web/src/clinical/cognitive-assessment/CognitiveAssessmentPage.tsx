@@ -331,7 +331,7 @@ function AssessmentScreen({ employee }: { employee: Employee }) {
             <div className="mt-4 grid grid-cols-2 gap-3">
               <DownloadButton
                 label="Download the note"
-                detail="Clinical note, for eCW Documents"
+                detail="Clinical note, for eCW Documents — signed electronically in your name"
                 making={making === 'note'}
                 disabled={making !== null}
                 done={current?.note ?? false}

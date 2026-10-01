@@ -84,7 +84,7 @@ await step('a manager finds it under Resources → Forms, without the BrainCheck
     throw new Error('a manager who is not a provider is offered the BrainCheck care plan');
   if ((await page.getByTestId('section-Provider').getByTestId('clinical-tools').count()) > 0)
     throw new Error('the forms are still in the Provider section');
-  await tools.getByRole('link', { name: /CCM care plan/ }).click();
+  await tools.getByRole('link', { name: /^Care plan/ }).click();
   await page.getByTestId('ccm-care-plan').waitFor({ timeout: 15000 });
 });
 
@@ -215,7 +215,7 @@ await step('the whole form, filled in with a fake patient, makes one PDF in both
     page.waitForEvent('download', { timeout: 20000 }),
     page.getByRole('button', { name: 'Download the care plan' }).click(),
   ]);
-  const expected = `${fileDate} CCM Care Plan.pdf`;
+  const expected = `${fileDate} Care Plan.pdf`;
   if (download.suggestedFilename() !== expected) throw new Error(`file ${download.suggestedFilename()}`);
   const path = `${OUT}/${expected}`;
   await download.saveAs(path);
@@ -248,6 +248,8 @@ await step('the whole form, filled in with a fake patient, makes one PDF in both
     'Targeted SMART goal',
     'walk-fake 20 minutes',
     'Diabetes Mellitus Care Plan',
+    'Electronically signed by',
+    'Firmado electrónicamente por',
     'Tingling in feet',
     // And again in Spanish.
     'Plan de Atención General',
@@ -279,7 +281,7 @@ await step('and in English alone', async () => {
     page.waitForEvent('download', { timeout: 20000 }),
     page.getByRole('button', { name: 'Download the care plan' }).click(),
   ]);
-  const expected = `${fileDate} CCM Care Plan.pdf`;
+  const expected = `${fileDate} Care Plan.pdf`;
   if (download.suggestedFilename() !== expected) throw new Error(download.suggestedFilename());
   const path = `${OUT}/en-${download.suggestedFilename()}`;
   await download.saveAs(path);
@@ -344,7 +346,7 @@ await step('there is no file input on the form', async () => {
 
 await step('Help has a section on it', async () => {
   await page.goto(`${BASE}/help`, { waitUntil: 'networkidle' });
-  await page.getByRole('heading', { name: 'CCM care plan' }).waitFor({ timeout: 10000 });
+  await page.getByRole('heading', { name: 'Care plan (CCM and APCM)' }).waitFor({ timeout: 10000 });
 });
 
 await browser.close();

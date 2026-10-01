@@ -333,7 +333,7 @@ await step('the whole form, filled in with a fake patient, makes the note', asyn
     'Financial power of attorney Not yet',
     'Health care proxy',
     `Total time on the date of service (${usDate(today)}): 65 minutes`,
-    'Signature:',
+    'Electronically signed by Frankie',
   ]) {
     if (!all.includes(piece)) throw new Error(`the note lacks "${piece}"`);
   }
@@ -344,7 +344,7 @@ await step('the handout is in plain English, with the plan and nothing clinical'
     page.waitForEvent('download', { timeout: 20000 }),
     page.getByRole('button', { name: 'Download the handout' }).click(),
   ]);
-  const expected = `${fileDate(today)} BrainCheck Care Plan.pdf`;
+  const expected = `${fileDate(today)} Your Memory Care Plan.pdf`;
   if (download.suggestedFilename() !== expected) throw new Error(`file ${download.suggestedFilename()}`);
   const path = `${OUT}/en-${expected}`;
   await download.saveAs(path);
@@ -372,7 +372,7 @@ await step('and in English and Spanish, flagged on screen as not yet checked by 
     page.waitForEvent('download', { timeout: 20000 }),
     page.getByRole('button', { name: 'Download the handout' }).click(),
   ]);
-  if (download.suggestedFilename() !== `${fileDate(today)} BrainCheck Care Plan.pdf`) throw new Error(download.suggestedFilename());
+  if (download.suggestedFilename() !== `${fileDate(today)} Your Memory Care Plan.pdf`) throw new Error(download.suggestedFilename());
   const path = `${OUT}/es-${download.suggestedFilename()}`;
   await download.saveAs(path);
   const pages = await pdfPages(path);
