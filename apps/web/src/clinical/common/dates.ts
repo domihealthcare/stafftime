@@ -58,7 +58,6 @@ const MONTHS = {
     'November',
     'December',
   ],
-  // needs native-speaker review
   es: [
     'enero',
     'febrero',

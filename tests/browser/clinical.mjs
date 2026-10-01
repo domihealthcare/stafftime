@@ -362,12 +362,14 @@ await step('the handout is in plain English, with the plan and nothing clinical'
   });
 });
 
-await step('and in English and Spanish, flagged on screen as not yet checked by a native speaker', async () => {
+await step('and in English and Spanish, with no "not yet checked" note now the Spanish is approved', async () => {
   // Only two choices: English, or English and Spanish.
   const choices = await page.getByRole('radiogroup', { name: 'Language' }).getByRole('radio').count();
   if (choices !== 2) throw new Error(`${choices} language choices`);
   await page.getByRole('radiogroup', { name: 'Language' }).getByLabel('English and Spanish').check();
-  await page.getByText('The Spanish has not yet been checked by a native speaker.').waitFor({ timeout: 5000 });
+  await page.getByText(/English first, then the same in Spanish/).waitFor({ timeout: 5000 });
+  if ((await page.getByText(/not yet been checked by a native speaker/).count()) > 0)
+    throw new Error('the review note is still shown');
   const [download] = await Promise.all([
     page.waitForEvent('download', { timeout: 20000 }),
     page.getByRole('button', { name: 'Download the handout' }).click(),

@@ -194,16 +194,12 @@ Phases 1–3 are built: the form (reworked twice with Dominguez on 29
 September 2026), the clinical note, the English/Spanish handout (laid out
 after BrainCheck's care plan) and a providers' section on Help.
 
-- [ ] **A native speaker to read the Spanish** in
-      `apps/web/src/clinical/cognitive-assessment/translations.es.ts`, then
-      set `NEEDS_NATIVE_SPEAKER_REVIEW` to false.
 - [ ] **A provider to check the clinical wording in `config.ts`**: the FAST
       stage descriptions (paraphrased from Reisberg's FAST), the care plan
       goals and actions, and which answers suggest which (`care-plan.ts`).
 - [ ] **Billing (Coronis) to check**: the conflicting same-day codes, the
       telehealth reminder (modifier 95 / place of service by payer), and the
       **G2212 threshold** (`G2212_THRESHOLD_MINUTES`, `null` until they give it).
-- [ ] **Try one fake-patient PDF in eCW** before real use.
 - [ ] **Set the letters after each provider's name** (Staff → Edit).
 - [ ] **Tuning after a provider has used it** in a few visits.
 
@@ -212,13 +208,6 @@ after BrainCheck's care plan) and a providers' section on Help.
 Built from the practice's Google Forms (Care Plan - General and 19
 conditions); see *The CCM care plan* in `docs/architecture.md`.
 
-- [ ] **A native speaker to read the Spanish** in
-      `apps/web/src/clinical/ccm-care-plan/` — `phrases.ts` (every choice),
-      `config.ts` and `text.ts` — then set `NEEDS_NATIVE_SPEAKER_REVIEW` to
-      false. Choices made to match the practice's earlier Spanish care plan:
-      "Gerente de Atención" for Care Manager, "proveedor de salud" for
-      provider, "referido" for referral; first-person adjectives are
-      masculine ("cómodo").
 - [ ] **Forms for the conditions that have none**: Aneurysm, Anxiety, Autism,
       Constipation, COPD, Crohn's, CVA/Stroke, Depression, Dizziness/Vertigo,
       GERD, Hepatic fibrosis, HLD, Hyperthyroidism, Osteopenia and Psoriasis
@@ -230,7 +219,6 @@ conditions); see *The CCM care plan* in `docs/architecture.md`.
       or after the dose?), and two phrases in the second person among
       first-person ones ("Discuss your asthma action plan…", "Verbalize
       precautions you can implement…").
-- [ ] **Try one fake-patient care plan in eCW** before real use.
 - [ ] **The logo** is not on the PDF (text letterhead only); add it if wanted.
 
 ## Product decisions

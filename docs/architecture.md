@@ -2743,9 +2743,11 @@ look-alikes (≥ → >=), and anything else is listed as a problem to retype.
   (no scores, stages or MRN). Dates are spelled out ("29 de
   septiembre de 2026") so nobody guesses which number is the month. Chosen
   lines are translated; anything typed is printed as typed. **All Spanish is
-  in `translations.es.ts`, marked for native-speaker review**; while
-  `NEEDS_NATIVE_SPEAKER_REVIEW` is true the form says so beside the language
-  switch, never on the handout.
+  in `translations.es.ts`**, read and approved by a native speaker (October
+  2026). `NEEDS_NATIVE_SPEAKER_REVIEW` is now false; set it back to true
+  while new Spanish waits for the same read, and the form says so beside the
+  language choice (never on the handout). A fake-patient PDF of each form
+  was tried in eCW before real use (October 2026).
 
 Switching the handout's language does not undo the note already
 downloaded; changing anything else does.
@@ -2834,9 +2836,7 @@ table (in Spanish too, height stays in inches and weight in pounds — only
 the words are translated, Dominguez), then "Chronic Diagnoses:
 HTN (I10), DM (E11.8)" and a heading per condition with what was ticked
 under each question. Anything typed is printed as typed in either language —
-nothing is sent away to be translated. **The Spanish needs a native
-speaker's read** (`NEEDS_NATIVE_SPEAKER_REVIEW` in `config.ts`; the form says
-so beside the language choice, never on the PDF).
+nothing is sent away to be translated. The Spanish was **read and approved by a native speaker** (October 2026; `NEEDS_NATIVE_SPEAKER_REVIEW` in `config.ts` is false).
 
 ### File names
 

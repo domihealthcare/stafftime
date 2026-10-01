@@ -8,7 +8,7 @@
  * printed in English, Spanish or both. The condition plans' choices are in
  * phrases.ts and conditions.ts.
  *
- * ⚠ The Spanish needs a native speaker's read, like the 99483 handout's —
+ * The Spanish was read and approved by a native speaker (October 2026) —
  * see NEEDS_NATIVE_SPEAKER_REVIEW.
  *
  * Nothing in this file is about a patient. It is the blank form.
@@ -30,10 +30,11 @@ export type Language = 'en' | 'es';
 /// choices (Dominguez, October 2026).
 export type { PrintLanguage as PdfLanguage } from '../common/layout';
 
-/// Set to false once somebody fluent has read all of the Spanish here, in
-/// phrases.ts and in text.ts. While it is true the form says so beside the
+/// The Spanish here, in phrases.ts and in text.ts was read and approved by a
+/// native speaker (Dominguez, October 2026). Set it back to true while new
+/// Spanish waits for the same read: the form then says so beside the
 /// language choice — never on the care plan itself.
-export const NEEDS_NATIVE_SPEAKER_REVIEW = true;
+export const NEEDS_NATIVE_SPEAKER_REVIEW = false;
 
 const bi = (...rows: [string, string, string][]): Bilingual[] =>
   rows.map(([value, label, es]) => ({ value, label, es }));

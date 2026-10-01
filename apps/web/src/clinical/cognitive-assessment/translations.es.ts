@@ -1,17 +1,16 @@
 /**
  * Spanish for the patient's handout (PDF 2).
  *
- * ⚠ NEEDS NATIVE-SPEAKER REVIEW — every line in this file. It was written
- * carefully but not by a native speaker, and it goes to patients and their
- * families. Once somebody fluent has read it through, set
- * NEEDS_NATIVE_SPEAKER_REVIEW to false; while it is true, the form says so
- * beside the language switch (never on the handout itself).
+ * Read through by a native speaker and approved (Dominguez, October 2026).
+ * Anything added later should be read the same way before it reaches
+ * patients: set NEEDS_NATIVE_SPEAKER_REVIEW back to true meanwhile, and the
+ * form says so beside the language choice (never on the handout itself).
  *
  * Keys match the `value`s in config.ts. A choice with no line here is printed
  * in English, so adding one to config.ts means adding its Spanish here too.
  */
 
-export const NEEDS_NATIVE_SPEAKER_REVIEW = true;
+export const NEEDS_NATIVE_SPEAKER_REVIEW = false;
 
 export type HandoutLanguage = 'en' | 'es';
 
@@ -54,7 +53,6 @@ export const HANDOUT_STRINGS = {
       `${name}  |  Date of birth: ${dob}  |  Visit: ${date}`,
     footer: 'Domi Healthcare — memory care plan',
   },
-  // needs native-speaker review
   es: {
     title: 'Su plan de cuidado de la memoria',
     preparedFor: (name: string, date: string, provider: string) =>
@@ -92,7 +90,6 @@ export const HANDOUT_STRINGS = {
   },
 };
 
-// needs native-speaker review
 export const ES_AREAS: Record<string, string> = {
   cognition: 'Memoria y pensamiento',
   function: 'Actividades diarias',
@@ -102,8 +99,7 @@ export const ES_AREAS: Record<string, string> = {
   caregiver: 'Apoyo para quien cuida',
 };
 
-/// A line of plain explanation under each area's heading. Needs
-/// native-speaker review.
+/// A line of plain explanation under each area's heading..
 export const ES_INTROS: Record<string, string> = {
   cognition:
     'Los cambios en la memoria y el pensamiento pueden hacer más difíciles las cosas de cada día. Mantenerse activo, seguir una rutina y venir a sus citas con nosotros ayudan.',
@@ -119,14 +115,14 @@ export const ES_INTROS: Record<string, string> = {
     'Cuidar a alguien con pérdida de memoria es valioso y también es un trabajo duro. Quien cuida también necesita apoyo.',
 };
 
-/// Planning ahead. Needs native-speaker review.
+/// Planning ahead.
 export const ES_PLANNING: Record<string, string> = {
   financialPoa: 'Poder notarial para asuntos económicos',
   healthcareProxy: 'Representante para decisiones de salud (poder notarial médico)',
   lifeSupport: 'Deseos sobre el soporte vital conversados',
 };
 
-/// Care plan goals, keyed "area:value". Needs native-speaker review.
+/// Care plan goals, keyed "area:value".
 export const ES_GOALS: Record<string, string> = {
   'cognition:keep-skills': 'Mantener la memoria y el pensamiento lo más fuertes posible',
   'cognition:understand': 'Entender el diagnóstico y qué esperar',
@@ -148,7 +144,7 @@ export const ES_GOALS: Record<string, string> = {
     'Planificar con anticipación las decisiones legales, económicas y de salud',
 };
 
-/// Care plan actions, keyed "area:value". Needs native-speaker review.
+/// Care plan actions, keyed "area:value".
 export const ES_ACTIONS: Record<string, string> = {
   'cognition:exercise': 'Hacer ejercicio físico con regularidad, según pueda',
   'cognition:engage': 'Mantenerse activo social y mentalmente: conversar, pasatiempos, grupos',
@@ -195,7 +191,6 @@ export const ES_ACTIONS: Record<string, string> = {
   'caregiver:social-work': 'Trabajo social para ayudar a encontrar apoyo',
 };
 
-// needs native-speaker review
 export const ES_REFERRALS: Record<string, string> = {
   'adult-day': 'Programa de día para adultos',
   'support-group': 'Grupo de apoyo',
@@ -208,7 +203,6 @@ export const ES_REFERRALS: Record<string, string> = {
   'alz-association': 'Asociación de Alzheimer',
 };
 
-// needs native-speaker review
 export const ES_SAFETY_TIPS: Record<string, string> = {
   contacts: 'Tenga una lista de contactos de emergencia junto al teléfono.',
   medicines: 'Guarde los medicamentos en un solo lugar, en sus frascos con etiqueta.',
@@ -216,7 +210,6 @@ export const ES_SAFETY_TIPS: Record<string, string> = {
   help: 'En caso de emergencia, llame al 911.',
 };
 
-// needs native-speaker review
 export const ES_FOLLOW_UP: Record<string, string> = {
   '2-weeks': '2 semanas',
   '4-weeks': '4 semanas',

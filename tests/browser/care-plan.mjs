@@ -144,7 +144,9 @@ await step('a Spanish speaker’s care plan starts as English and Spanish — on
   const choices = await group.getByRole('radio').count();
   if (choices !== 2) throw new Error(`${choices} language choices`);
   if (!(await group.getByLabel('English and Spanish').isChecked())) throw new Error('not switched to both');
-  await page.getByText('The Spanish has not yet been checked by a native speaker.').waitFor({ timeout: 5000 });
+  await page.getByText(/English first, then the same in Spanish/).waitFor({ timeout: 5000 });
+  if ((await page.getByText(/not yet been checked by a native speaker/).count()) > 0)
+    throw new Error('the review note is still shown');
 });
 
 await step('the whole form, filled in with a fake patient, makes one PDF in both languages', async () => {

@@ -12,9 +12,10 @@
  * PHRASES with an id nobody has used, then to a list. Never reuse or change
  * an id — it is only a name, but keeping it fixed keeps things simple.
  *
- * ⚠ The Spanish needs a native speaker's read (NEEDS_NATIVE_SPEAKER_REVIEW
- * in config.ts). It was written to match the practice's existing Spanish
- * care plans: "Gerente de Atención" for Care Manager, "proveedor de salud"
+ * The Spanish was read and approved by a native speaker (October 2026; a
+ * new phrase should be read the same way — NEEDS_NATIVE_SPEAKER_REVIEW in
+ * config.ts). It was written to match the practice's existing Spanish care
+ * plans: "Gerente de Atención" for Care Manager, "proveedor de salud"
  * for provider, "referido" for referral.
  */
 

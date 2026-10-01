@@ -662,7 +662,8 @@ Beyond the phases, the parts worth knowing about before picking up work:
   CPT name. The provider fills it in during the visit
   and downloads the **clinical note** for eCW Documents and the **care plan
   handout** for the patient, in **English, or English and Spanish** (only
-  those two, Dominguez; Spanish awaiting a native speaker's read). **Patient details (PHI) never leave the browser
+  those two, Dominguez; Spanish read and approved by a native speaker, and a
+  test PDF tried in eCW, October 2026). **Patient details (PHI) never leave the browser
   or stay in it**: no request, no table, no browser storage — a lint rule on
   `src/clinical/`, the schema guard and `tests/browser/clinical.mjs` hold it
   there. Shape, as reworked with Dominguez: **requirements ticked first**
@@ -693,7 +694,7 @@ Beyond the phases, the parts worth knowing about before picking up work:
   privacy as 99483: nothing sent or stored, `tests/browser/care-plan.mjs`
   checks it; the two forms share `clinical/common/`. Choices in
   `ccm-care-plan/phrases.ts` (each phrase once, English and Spanish — Spanish
-  awaiting a native speaker). 19 conditions have their own form; HTN and
+  approved by a native speaker, October 2026). 19 conditions have their own form; HTN and
   Osteoporosis come from the sample care plan, Alzheimer's borrows Dementia's;
   the rest show the shared choices until they get a form. Codes fixed from
   the list as given (Dominguez, 1 October 2026): Osteopenia M85.80, Hepatic

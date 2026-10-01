@@ -27,8 +27,7 @@ import { lines, planFor, type CarePlanForm } from './form';
  * is printed exactly as typed, in either language — nothing is ever sent
  * away to be translated.
  *
- * ⚠ The Spanish here needs a native speaker's read
- * (NEEDS_NATIVE_SPEAKER_REVIEW in config.ts).
+ * The Spanish was read and approved by a native speaker (October 2026).
  */
 
 export interface CarePlanText {
@@ -68,7 +67,6 @@ export const WORDS = {
     confidential: 'Confidential',
     questions: (phone: string) => `Questions? Call Domi Healthcare at ${phone}.`,
   },
-  // needs native-speaker review
   es: {
     title: 'Plan de Atención',
     conductedOn: 'Realizado el',
