@@ -8,6 +8,13 @@ mkdirSync(OUT, { recursive: true });
 // Defaults to the dev server; point at `vite preview` to test the built bundle
 // with the deployed security headers applied.
 const BASE = process.env.BASE_URL || 'http://127.0.0.1:5173';
+
+// A period around today rather than a fixed month: the hours the earlier suites
+// punched are from today, so a hard-coded September found none once October
+// came. A day past today too, as the runner's date is UTC's, not New Jersey's.
+const isoDay = (offset) => new Date(Date.now() + offset * 86_400_000).toISOString().slice(0, 10);
+const PERIOD_FROM = isoDay(-30);
+const PERIOD_TO = isoDay(1);
 const browser = await chromium.launch(
   // Fall back to whatever Playwright downloaded when CHROMIUM_PATH is unset.
   process.env.CHROMIUM_PATH ? { executablePath: process.env.CHROMIUM_PATH } : {},
@@ -82,8 +89,8 @@ await step('changing the settings then applying the report restores them', async
 
 await step('the saved report still produces a working file', async () => {
   await mgr.getByRole('button', { name: 'Custom', exact: true }).click();
-  await mgr.getByLabel('From').fill('2026-09-01');
-  await mgr.getByLabel('To (included)').fill('2026-09-30');
+  await mgr.getByLabel('From').fill(PERIOD_FROM);
+  await mgr.getByLabel('To (included)').fill(PERIOD_TO);
   await mgr.getByText(/entries ·/).waitFor({ timeout: 15000 });
 
   const [download] = await Promise.all([
