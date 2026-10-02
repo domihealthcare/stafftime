@@ -8,9 +8,11 @@ import { Card } from '../../components/ui';
  *
  * What is still needed is shown all the time, not only after a PDF is tried
  * (Dominguez, October 2026: "should be easier to see"): each section's card
- * says how many things it needs and lists them, each one a button that jumps
- * to its answer. The red messages under the fields themselves still wait for
- * a first try, so a blank form is not a wall of red.
+ * says how many things it needs, and the list — each one a button that jumps
+ * to its answer — opens from there. It starts folded (Dominguez, October
+ * 2026: a blank section's list of eighteen crowded the form on a phone). The
+ * red messages under the fields themselves still wait for a first try, so a
+ * blank form is not a wall of red.
  */
 
 /// One thing still needed: which section, which answer (a dotted path the
@@ -78,13 +80,16 @@ export function FormSection({
           </div>
         </div>
         {!complete && (
-          <div
-            className="mb-4 rounded-lg bg-amber-50 px-3 py-2 ring-1 ring-inset ring-amber-200"
+          <details
+            className="group mb-4 rounded-lg bg-amber-50 px-3 py-2 ring-1 ring-inset ring-amber-200"
             data-testid="pending-here"
           >
-            <p className="text-xs font-semibold uppercase tracking-wide text-amber-900">
-              Still needed here
-            </p>
+            <summary className="flex min-h-[32px] cursor-pointer list-none items-center gap-1.5 text-xs font-semibold uppercase tracking-wide text-amber-900 [&::-webkit-details-marker]:hidden">
+              <span aria-hidden="true" className="transition group-open:rotate-90">
+                ▸
+              </span>
+              Show what is still needed here
+            </summary>
             <ul className="mt-1 space-y-0.5">
               {pending.map((item, index) => (
                 <li key={`${item.field}-${index}`}>
@@ -98,7 +103,7 @@ export function FormSection({
                 </li>
               ))}
             </ul>
-          </div>
+          </details>
         )}
         {children}
       </Card>

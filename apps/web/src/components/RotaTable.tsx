@@ -431,9 +431,9 @@ export function RotaTable({
             <tr className="border-b border-slate-200 bg-slate-50 text-left">
               <th
                 scope="col"
-                className="sticky left-0 z-10 w-48 bg-slate-50 px-3 py-2 font-medium text-slate-600"
+                className="sticky left-0 z-10 w-48 bg-slate-50 px-3 py-2 font-medium text-slate-600 max-sm:w-16 max-sm:px-1.5"
               >
-                {selfId ? 'Week' : 'Person'}
+                <span className="max-sm:sr-only">{selfId ? 'Week' : 'Person'}</span>
               </th>
               {days.map((day, index) => {
                 const cov = coverage?.find((entry) => entry.date === dayKeys[index]);
@@ -499,9 +499,9 @@ export function RotaTable({
               <tr className="border-b border-slate-200 bg-white" data-testid="rota-events-row">
                 <th
                   scope="row"
-                  className="sticky left-0 z-10 bg-white px-3 py-2 text-left align-top text-sm font-medium text-slate-700"
+                  className="sticky left-0 z-10 bg-white px-3 py-2 text-left align-top text-sm font-medium text-slate-700 max-sm:px-1.5 max-sm:text-center"
                 >
-                  <span aria-hidden="true">📅</span> Events
+                  <span aria-hidden="true">📅</span> <span className="max-sm:sr-only">Events</span>
                 </th>
                 {dayKeys.map((key) => (
                   <td key={key} className="space-y-1 px-1.5 py-1.5 align-top">
@@ -578,9 +578,12 @@ export function RotaTable({
                               })
                           : undefined
                       }
-                      className={`sticky left-0 z-10 px-3 py-2 text-left font-normal ${row.kind === 'open' ? (row.shifts.length > 0 ? 'bg-amber-50' : 'bg-slate-50') : over ? 'border-l-4 border-rose-600 bg-rose-50' : shaded ? 'bg-slate-50' : 'bg-white'}`}
+                      className={`sticky left-0 z-10 px-3 py-2 text-left font-normal max-sm:px-1.5 ${row.kind === 'open' ? (row.shifts.length > 0 ? 'bg-amber-50' : 'bg-slate-50') : over ? 'border-l-4 border-rose-600 bg-rose-50' : shaded ? 'bg-slate-50' : 'bg-white'}`}
                     >
-                      <span className="flex items-center gap-2">
+                      {/* On a phone the name folds down to the photo and a first
+                          name under it, so the week has the width (Dominguez,
+                          October 2026); the full name stays for screen readers. */}
+                      <span className="flex items-center gap-2 max-sm:flex-col max-sm:gap-0.5">
                         {row.person ? (
                           <Avatar person={row.person} size="sm" />
                         ) : (
@@ -593,12 +596,18 @@ export function RotaTable({
                         )}
                         <span className="min-w-0">
                           <span
-                            className={`block truncate font-semibold ${row.kind === 'open' && row.shifts.length > 0 ? 'text-amber-900' : 'text-slate-900'}`}
+                            className={`block truncate font-semibold max-sm:sr-only ${row.kind === 'open' && row.shifts.length > 0 ? 'text-amber-900' : 'text-slate-900'}`}
                           >
                             {row.label}
                           </span>
+                          <span
+                            aria-hidden="true"
+                            className="block max-w-[3.25rem] truncate text-center text-[11px] leading-tight text-slate-700 sm:hidden"
+                          >
+                            {row.person ? row.person.preferredName || row.person.firstName : 'Open'}
+                          </span>
                           {row.sublabel && (
-                            <span className="block truncate text-xs text-slate-500">
+                            <span className="block truncate text-xs text-slate-500 max-sm:sr-only">
                               {row.sublabel}
                             </span>
                           )}

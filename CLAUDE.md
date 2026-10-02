@@ -640,6 +640,16 @@ Beyond the phases, the parts worth knowing about before picking up work:
   `docs/architecture.md`.
 - **Schedule layout** (September 2026, Dominguez): the month (or the week's
   dates) is a large heading right above the calendar, under the buttons.
+- **The Schedule on a phone** (October 2026, Dominguez): a manager's phone
+  **starts on their own schedule** (week and month), with **Show everyone**
+  beside it; on a laptop, where rotas are built, it starts on everyone. The
+  person picker now works in the week as well as the month. In the rota the
+  **name column folds to the photo and first name** on a phone (full name
+  kept for screen readers), and the buttons above sit in full-width rows.
+  `tests/browser/schedule-phone.mjs`.
+- **"Still needed here" starts folded** on the clinical forms (October 2026,
+  Dominguez — eighteen lines crowded a phone): each section shows its count,
+  and the list opens from "Show what is still needed here".
 - **Navigation and Home** (1 October 2026, Dominguez — option B of three
   mockups, "please use the icons"): the laptop header reads **Home · Schedule ·
   Timesheet · Directory · Resources · Manage ▾**, each with a small line icon

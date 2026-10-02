@@ -117,7 +117,7 @@ export function PersonPicker({
         }
         onKeyDown={onKeyDown}
         className={`w-full rounded-lg border border-slate-300 bg-white py-1.5 pl-2 text-sm placeholder:text-slate-700 focus:border-brand-600 focus:outline-none focus:ring-1 focus:ring-brand-600 focus:placeholder:text-slate-400 ${
-          chosen ? 'pr-14' : 'pr-7'
+          chosen ? 'pr-14 max-sm:pr-16' : 'pr-7'
         }`}
       />
       {chosen && !open && (
@@ -125,7 +125,7 @@ export function PersonPicker({
           type="button"
           onClick={() => pick('')}
           aria-label="Show everyone"
-          className="absolute right-7 top-1/2 -translate-y-1/2 rounded-full px-1 text-xs text-slate-500 hover:bg-slate-100 hover:text-slate-800"
+          className="absolute right-7 top-1/2 -translate-y-1/2 rounded-full px-1 text-xs text-slate-500 hover:bg-slate-100 hover:text-slate-800 max-sm:px-2.5 max-sm:py-1.5 max-sm:text-sm"
         >
           ✕
         </button>

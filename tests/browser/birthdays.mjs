@@ -113,7 +113,9 @@ await step('the Schedule has a cake on the day, for everybody, and on the person
   const under = await header.first().innerText();
   if (!/Frankie F\b/.test(under)) throw new Error(`under the day: ${under}`);
   // Their own row carries it only on their own birthday — and Frankie's is today.
-  const sameWeek = key(inTwoDays) <= key(new Date(today.getTime() + ((7 - ((today.getDay() + 6) % 7)) - 1) * 86_400_000));
+  // Weeks start on Sunday on screen, so the week ends on Saturday (it assumed
+  // Monday, and failed every Friday and Saturday).
+  const sameWeek = key(inTwoDays) <= key(new Date(today.getTime() + (6 - today.getDay()) * 86_400_000));
   await frankie.getByTestId('birthday-chip').first().waitFor({ timeout: 5000 });
   if (sameWeek) await frankie.getByTestId(`birthday-${key(inTwoDays)}`).first().waitFor({ timeout: 5000 });
 

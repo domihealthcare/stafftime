@@ -105,7 +105,12 @@ await step('each section says what it still needs, before anybody tries for a PD
   const general = section('general');
   if ((await general.getAttribute('data-complete')) !== 'false') throw new Error('general reads as complete');
   await general.getByText(/still needed/).first().waitFor({ timeout: 5000 });
-  await general.getByTestId('pending-here').getByRole('button', { name: 'Rate overall physical health.' }).click();
+  // The list starts folded (October 2026) — the count shows, the items open from it.
+  const here = general.getByTestId('pending-here');
+  if (await here.getByRole('button', { name: 'Rate overall physical health.' }).isVisible())
+    throw new Error('the list starts open');
+  await here.getByText('Show what is still needed here').click();
+  await here.getByRole('button', { name: 'Rate overall physical health.' }).click();
   await page.waitForTimeout(300);
   const focused = await page.evaluate(() => document.activeElement?.closest('fieldset')?.id ?? '');
   if (!focused.endsWith('general-healthRating')) throw new Error(`focus went to "${focused}"`);

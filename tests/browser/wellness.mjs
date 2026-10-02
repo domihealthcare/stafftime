@@ -350,10 +350,9 @@ await step(
     await pick(h, /capacidad para concentrarse/, 'No');
 
     const s = section('spmsq');
-    const items = s.getByRole('group');
     for (let i = 0; i < 10; i++) {
-      await items
-        .nth(i)
+      // By number: the folded "still needed" list is a group too.
+      await group(s, new RegExp(`^${i + 1}\\.`))
         .getByLabel(i < 3 ? 'Incorrecto' : 'Correcto', { exact: true })
         .check();
     }

@@ -16,6 +16,7 @@ import {
 import { birthdayName, birthdaysByDay } from '../lib/birthday';
 import { atPlace, forRole, WORK_FROM_HOME_FILTER } from '../lib/shift-filters';
 import { useIsManager, useSession } from '../lib/session';
+import { useIsPhone } from '../lib/use-is-phone';
 import type {
   BirthdayEntry,
   Coverage,
@@ -76,6 +77,7 @@ const GROUPING_KEY = 'domi.schedule.grouping';
 export function SchedulePage() {
   const isManager = useIsManager();
   const { employee: me } = useSession();
+  const isPhone = useIsPhone();
   /// Everyone together, by office, or by job role — remembered like the view.
   const [grouping, setGrouping] = useState<RotaGrouping>(() => {
     try {
@@ -87,9 +89,13 @@ export function SchedulePage() {
   });
   const [locationFilter, setLocationFilter] = useState('');
   const [roleFilter, setRoleFilter] = useState('');
-  /// The month view, one person's shifts only ('' for everyone). Kept while
-  /// moving between months, so a manager can page through somebody's autumn.
-  const [personFilter, setPersonFilter] = useState('');
+  /// One person's shifts only ('' for everyone), in the week and the month.
+  /// Kept while moving between weeks and months, so a manager can page
+  /// through somebody's autumn. On a phone a manager starts on their own
+  /// schedule, as staff do (Dominguez, October 2026) — a phone is for
+  /// checking when you are on; the rota is built on a laptop, which starts on
+  /// everyone.
+  const [personFilter, setPersonFilter] = useState(() => (isManager && isPhone && me ? me.id : ''));
   const [jobRoles, setJobRoles] = useState<JobRole[]>([]);
   const [adding, setAdding] = useState(false);
   /// A week at a time to build a rota, a month at a time to see the shape of
@@ -441,45 +447,50 @@ export function SchedulePage() {
         </div>
       )}
 
+      {/* On a phone: Previous, This week and Next share one row, and the
+          time-off button and Week / Month the next — each row the full width,
+          rather than wrapping wherever they happen to run out of room. */}
       <div className="mb-4 flex flex-wrap items-center gap-2">
-        <button
-          type="button"
-          onClick={() =>
-            view === 'week'
-              ? setWeekStart((current) => addDays(current, -7))
-              : setMonthStart((current) => addMonths(current, -1))
-          }
-          className={buttonClass('secondary', 'sm')}
-        >
-          ← Previous
-        </button>
-        <button
-          type="button"
-          onClick={() => {
-            setWeekStart(startOfWeek(new Date()));
-            setMonthStart(startOfMonth(new Date()));
-          }}
-          className={buttonClass('secondary', 'sm')}
-        >
-          {view === 'week' ? 'This week' : 'This month'}
-        </button>
-        <button
-          type="button"
-          onClick={() =>
-            view === 'week'
-              ? setWeekStart((current) => addDays(current, 7))
-              : setMonthStart((current) => addMonths(current, 1))
-          }
-          className={buttonClass('secondary', 'sm')}
-        >
-          Next →
-        </button>
+        <div className="grid w-full grid-cols-3 gap-2 sm:flex sm:w-auto">
+          <button
+            type="button"
+            onClick={() =>
+              view === 'week'
+                ? setWeekStart((current) => addDays(current, -7))
+                : setMonthStart((current) => addMonths(current, -1))
+            }
+            className={buttonClass('secondary', 'sm')}
+          >
+            ← Previous
+          </button>
+          <button
+            type="button"
+            onClick={() => {
+              setWeekStart(startOfWeek(new Date()));
+              setMonthStart(startOfMonth(new Date()));
+            }}
+            className={buttonClass('secondary', 'sm')}
+          >
+            {view === 'week' ? 'This week' : 'This month'}
+          </button>
+          <button
+            type="button"
+            onClick={() =>
+              view === 'week'
+                ? setWeekStart((current) => addDays(current, 7))
+                : setMonthStart((current) => addMonths(current, 1))
+            }
+            className={buttonClass('secondary', 'sm')}
+          >
+            Next →
+          </button>
+        </div>
 
         {/* Switching keeps you where you were: a week in March goes to March,
             and picking a day in March goes back to that week — not to today. */}
-        <div className="ml-auto flex flex-wrap items-center gap-2">
+        <div className="flex w-full items-center gap-2 sm:ml-auto sm:w-auto">
           <RequestTimeOffButton />
-          <div className="flex rounded-lg border border-slate-300 bg-white p-0.5">
+          <div className="flex flex-1 rounded-lg border border-slate-300 bg-white p-0.5 sm:flex-none">
             {(['week', 'month'] as const).map((option) => (
               <button
                 key={option}
@@ -500,7 +511,7 @@ export function SchedulePage() {
                   }
                   setView(option);
                 }}
-                className={`rounded-md px-3 py-1 text-sm font-medium max-sm:py-2.5 transition ${
+                className={`rounded-md px-3 py-1 text-sm font-medium max-sm:flex-1 max-sm:py-2.5 transition ${
                   view === option
                     ? 'bg-brand-50 text-brand-800'
                     : 'text-slate-600 hover:text-slate-900'
@@ -581,7 +592,7 @@ export function SchedulePage() {
           {view === 'week' && (
             <>
               <div
-                className="flex rounded-lg border border-slate-300 bg-white p-0.5"
+                className="flex rounded-lg border border-slate-300 bg-white p-0.5 max-sm:w-full"
                 role="group"
                 aria-label="Show the rota"
               >
@@ -604,7 +615,7 @@ export function SchedulePage() {
                         // A remembered preference is a convenience, not a feature.
                       }
                     }}
-                    className={`rounded-md px-3 py-1 text-sm font-medium max-sm:py-2.5 ${
+                    className={`rounded-md px-3 py-1 text-sm font-medium max-sm:flex-1 max-sm:px-1 max-sm:py-2.5 ${
                       grouping === option
                         ? 'bg-brand-50 text-brand-800'
                         : 'text-slate-600 hover:text-slate-900'
@@ -620,7 +631,7 @@ export function SchedulePage() {
             aria-label="Show location"
             value={locationFilter}
             onChange={(event) => setLocationFilter(event.target.value)}
-            className="rounded-lg border border-slate-300 bg-white py-1.5 pl-2 pr-8 text-sm"
+            className="rounded-lg border border-slate-300 bg-white py-1.5 pl-2 pr-8 text-sm max-sm:min-w-0 max-sm:flex-1"
           >
             <option value="">All locations</option>
             {locations.map((location) => (
@@ -634,7 +645,7 @@ export function SchedulePage() {
             aria-label="Show job role"
             value={roleFilter}
             onChange={(event) => setRoleFilter(event.target.value)}
-            className="rounded-lg border border-slate-300 bg-white py-1.5 pl-2 pr-8 text-sm"
+            className="rounded-lg border border-slate-300 bg-white py-1.5 pl-2 pr-8 text-sm max-sm:min-w-0 max-sm:flex-1"
           >
             <option value="">All job roles</option>
             {jobRoles.map((role) => (
@@ -643,78 +654,88 @@ export function SchedulePage() {
               </option>
             ))}
           </select>
-          {view === 'month' && (
-            <PersonPicker
-              label="Show person"
-              value={personFilter}
-              onChange={setPersonFilter}
-              employees={pickablePeople}
-              jobRoles={jobRoles}
-            />
-          )}
-          <span className="flex-1" />
-          {view === 'week' && (
-            <Link
-              to={`/schedule/print?week=${localDate(weekStart)}${locationFilter && locationFilter !== WORK_FROM_HOME_FILTER ? `&location=${locationFilter}` : ''}`}
-              className={buttonClass('secondary', 'sm')}
-            >
-              Print
-            </Link>
-          )}
-          <button
-            type="button"
-            disabled={copying}
-            onClick={() => void copyPreviousWeek()}
-            className={buttonClass('secondary', 'sm')}
-          >
-            {copying ? 'Copying…' : 'Copy last week into this one'}
-          </button>
-          <div className="relative">
+          <PersonPicker
+            label="Show person"
+            value={personFilter}
+            onChange={setPersonFilter}
+            employees={pickablePeople}
+            jobRoles={jobRoles}
+          />
+          <span className="flex-1 max-sm:hidden" />
+          <div className="flex w-full items-center gap-2 sm:w-auto">
+            {view === 'week' && (
+              <Link
+                to={`/schedule/print?week=${localDate(weekStart)}${locationFilter && locationFilter !== WORK_FROM_HOME_FILTER ? `&location=${locationFilter}` : ''}`}
+                className={buttonClass('secondary', 'sm')}
+              >
+                Print
+              </Link>
+            )}
             <button
               type="button"
-              aria-haspopup="menu"
-              aria-expanded={addMenu}
-              onClick={() => setAddMenu((open) => !open)}
-              className={buttonClass('primary', 'sm')}
+              disabled={copying}
+              onClick={() => void copyPreviousWeek()}
+              className={`${buttonClass('secondary', 'sm')} max-sm:flex-1`}
             >
-              + Add
+              {copying ? (
+                'Copying…'
+              ) : (
+                <>
+                  Copy last week<span className="max-sm:hidden"> into this one</span>
+                </>
+              )}
             </button>
-            {addMenu && (
-              <>
-                <button
-                  type="button"
-                  aria-label="Close menu"
-                  tabIndex={-1}
-                  onClick={() => setAddMenu(false)}
-                  className="fixed inset-0 z-10 cursor-default"
-                />
-                <div
-                  role="menu"
-                  className="absolute right-0 z-20 mt-1 w-64 rounded-lg border border-slate-200 bg-white py-1 shadow-lg"
-                >
-                  {(
-                    [
-                      ['Shift', 'One shift for one person', 'shift'],
-                      ['Repeating shifts', 'Days each week, with or without an end date', 'repeat'],
-                      ['Event', 'A meeting or something on the calendar', 'event'],
-                      ['Holiday or closure', 'An office shut, once or every year', 'closure'],
-                    ] as const
-                  ).map(([label, hint, what]) => (
-                    <button
-                      key={what}
-                      type="button"
-                      role="menuitem"
-                      aria-label={label}
-                      onClick={() => openAdd(what)}
-                      className="block w-full px-3 py-2 text-left hover:bg-slate-50"
-                    >
-                      <span className="block text-sm font-medium text-slate-900">{label}</span>
-                      <span className="block text-xs text-slate-500">{hint}</span>
-                    </button>
-                  ))}
-                </div>
-              </>
-            )}
+            <div className="relative">
+              <button
+                type="button"
+                aria-haspopup="menu"
+                aria-expanded={addMenu}
+                onClick={() => setAddMenu((open) => !open)}
+                className={buttonClass('primary', 'sm')}
+              >
+                + Add
+              </button>
+              {addMenu && (
+                <>
+                  <button
+                    type="button"
+                    aria-label="Close menu"
+                    tabIndex={-1}
+                    onClick={() => setAddMenu(false)}
+                    className="fixed inset-0 z-10 cursor-default"
+                  />
+                  <div
+                    role="menu"
+                    className="absolute right-0 z-20 mt-1 w-64 rounded-lg border border-slate-200 bg-white py-1 shadow-lg"
+                  >
+                    {(
+                      [
+                        ['Shift', 'One shift for one person', 'shift'],
+                        [
+                          'Repeating shifts',
+                          'Days each week, with or without an end date',
+                          'repeat',
+                        ],
+                        ['Event', 'A meeting or something on the calendar', 'event'],
+                        ['Holiday or closure', 'An office shut, once or every year', 'closure'],
+                      ] as const
+                    ).map(([label, hint, what]) => (
+                      <button
+                        key={what}
+                        type="button"
+                        role="menuitem"
+                        aria-label={label}
+                        onClick={() => openAdd(what)}
+                        className="block w-full px-3 py-2 text-left hover:bg-slate-50"
+                      >
+                        <span className="block text-sm font-medium text-slate-900">{label}</span>
+                        <span className="block text-xs text-slate-500">{hint}</span>
+                      </button>
+                    ))}
+                  </div>
+                </>
+              )}
+            </div>
           </div>
         </div>
       )}
@@ -859,35 +880,55 @@ export function SchedulePage() {
           />
         </>
       ) : (
-        <RotaTable
-          days={days}
-          shifts={shifts}
-          employees={isManager ? employees : me ? [me] : []}
-          locations={locations}
-          jobRoles={jobRoles}
-          coverage={isManager ? (coverage?.days ?? null) : null}
-          timeOff={timeOff}
-          birthdays={birthdays}
-          events={events}
-          onOpenEvent={setOpenEvent}
-          overtimeThresholdHours={coverage?.overtimeThresholdHours ?? 40}
-          overtime={coverage?.overtime}
-          ownWeeks={ownWeeks ?? undefined}
-          grouping={grouping}
-          locationFilter={locationFilter}
-          roleFilter={roleFilter}
-          canEdit={isManager}
-          showEmptyOpen={showEmptyOpen}
-          onShowEmptyOpen={setShowEmptyOpen}
-          onPersonMenu={isManager ? openPersonMenu : undefined}
-          selfId={isManager ? undefined : me?.id}
-          onChanged={() => void load()}
-          onPlanned={(result) => {
-            setPlanResult(result);
-            if (result.standing) setStandingVersion((v) => v + 1);
-          }}
-          onError={setError}
-        />
+        <>
+          {isManager && pickedPerson && (
+            <p className="mb-2 text-sm text-slate-700" data-testid="week-person">
+              Only <span className="font-semibold">{displayName(pickedPerson)}</span> this week.
+            </p>
+          )}
+          <RotaTable
+            days={days}
+            // One person picked: their row alone — no open shifts either.
+            shifts={
+              isManager && personFilter
+                ? shifts.filter((shift) => shift.employeeId === personFilter)
+                : shifts
+            }
+            employees={
+              isManager
+                ? personFilter
+                  ? employees.filter((person) => person.id === personFilter)
+                  : employees
+                : me
+                  ? [me]
+                  : []
+            }
+            locations={locations}
+            jobRoles={jobRoles}
+            coverage={isManager ? (coverage?.days ?? null) : null}
+            timeOff={timeOff}
+            birthdays={birthdays}
+            events={events}
+            onOpenEvent={setOpenEvent}
+            overtimeThresholdHours={coverage?.overtimeThresholdHours ?? 40}
+            overtime={coverage?.overtime}
+            ownWeeks={ownWeeks ?? undefined}
+            grouping={grouping}
+            locationFilter={locationFilter}
+            roleFilter={roleFilter}
+            canEdit={isManager}
+            showEmptyOpen={showEmptyOpen}
+            onShowEmptyOpen={setShowEmptyOpen}
+            onPersonMenu={isManager ? openPersonMenu : undefined}
+            selfId={isManager ? undefined : me?.id}
+            onChanged={() => void load()}
+            onPlanned={(result) => {
+              setPlanResult(result);
+              if (result.standing) setStandingVersion((v) => v + 1);
+            }}
+            onError={setError}
+          />
+        </>
       )}
 
       {/* The day-by-day strip is a week's worth of squares and only reads as
