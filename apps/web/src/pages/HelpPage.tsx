@@ -308,11 +308,12 @@ const STAFF: Section[] = [
             <Screen>Directory</Screen> lists everybody with their work email, phone number, job
             roles and offices. <strong>In now</strong> means they are clocked in at the moment.{' '}
             <strong>Working from home today</strong> lists who is clocked in from home, and anybody
-            whose shift today is from home but who has not clocked in yet, with their hours. Each
-            job role has its own colour, so you can tell at a glance who is front desk, MA or
-            provider. <strong>Office extensions</strong> lists every desk phone and person by
-            section, as on the practice’s sheet. A “from home” number rings that person’s mobile on
-            the days they work from home — on those days their card shows it first.
+            whose shift today is from home but who has not clocked in yet — point at a name (or tap
+            it on a phone) to see their hours. Each job role has its own colour, so you can tell at
+            a glance who is front desk, MA or provider. <strong>Office extensions</strong> lists
+            every desk phone and person by section, as on the practice’s sheet. A “from home” number
+            rings that person’s mobile on the days they work from home — on those days their card
+            shows it first.
           </p>
         ),
       },

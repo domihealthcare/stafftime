@@ -366,7 +366,10 @@ Beyond the phases, the parts worth knowing about before picking up work:
 - **Working from home today in the Directory** (2 October 2026, Dominguez):
   the box under the office boxes is always shown — who is clocked in from
   home now, then anybody with a published work-from-home shift today who is
-  not in yet, with its hours ("not in yet"), and a badge on their card.
+  not in yet ("not in yet"), and a badge on their card. Their **hours are in
+  a note on the name** (and on the badge), shown on hover, a tap on a phone,
+  or keyboard focus — not on the line (Dominguez, October 2026;
+  `components/HoverNote.tsx`).
   Everybody sees it: the one, narrow exception to staff not seeing each
   other's shifts (today, from home, hours only). `homeToday` in
   `DirectoryService.list`.

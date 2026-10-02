@@ -79,6 +79,29 @@ await step('before clocking in, the Directory already shows Morgan working from 
   await home.getByText('not in yet', { exact: false }).waitFor({ timeout: 5000 });
   await mgr.getByTestId('person-Morgan Manager').getByText(/Working from home today/).waitFor({ timeout: 5000 });
   await mgr.screenshot({ path: `${OUT}/109-directory-home-today.png` });
+});
+
+await step('the hours are not on the line, but pointing at the name shows them', async () => {
+  const home = mgr.getByTestId('in-now-home');
+  const hours = /\d{1,2}:\d{2}\s?[AP]M–\d{1,2}:\d{2}\s?[AP]M/;
+  if (hours.test(await home.getByTestId('home-later').evaluate((li) => {
+    // What is on screen, leaving out the note that only opens on a hover.
+    const copy = li.cloneNode(true);
+    copy.querySelectorAll('[role=tooltip]').forEach((note) => note.remove());
+    return copy.textContent;
+  }))) throw new Error('the hours are shown on the line');
+  const name = home.getByTestId('home-name');
+  await name.hover();
+  const note = home.getByRole('tooltip');
+  await note.waitFor({ state: 'visible', timeout: 5000 });
+  if (!hours.test(await note.innerText())) throw new Error(`the note says "${await note.innerText()}"`);
+  await mgr.screenshot({ path: `${OUT}/109b-directory-hover-hours.png` });
+  // The card's badge has no hours either, and gives them the same way.
+  const badge = mgr.getByTestId('person-Morgan Manager').getByTestId('home-today-badge');
+  if (hours.test(await badge.innerText())) throw new Error('the badge shows the hours');
+  await badge.hover();
+  await mgr.getByTestId('person-Morgan Manager').getByRole('tooltip').getByText(hours).waitFor({ state: 'visible', timeout: 5000 });
+  await mgr.mouse.move(0, 0);
   await goTo(mgr, 'Home');
 });
 
@@ -127,6 +150,9 @@ await step('the Directory shows Morgan working from home, not at an office', asy
   await frankie.getByTestId('person-Morgan Manager').getByText('In now · Working from home').waitFor({ timeout: 5000 });
   // Once in, Morgan is listed as in now, not as still to come.
   if ((await home.getByTestId('home-later').count()) > 0) throw new Error('Morgan is still listed as not in yet');
+  // On a phone there is no hover: a tap on the name shows the hours.
+  await home.getByTestId('home-name').click();
+  await home.getByRole('tooltip').getByText(/Working from home \d/).waitFor({ state: 'visible', timeout: 5000 });
 });
 await frankie.screenshot({ path: `${OUT}/111-directory-from-home.png`, fullPage: true });
 
