@@ -405,6 +405,16 @@ Beyond the phases, the parts worth knowing about before picking up work:
   loads the sheet and matches a line to an account only when exactly one
   current member of staff has that first and last name — **check the
   matches on the live site** and fix any in Edit.
+- **Notes on a shift** (2 October 2026, Dominguez: "so I can write 7-12
+  upstairs and 12-3 downstairs"): `Shift.notes` had always been in the
+  schema (and on the calendar feed and invites) but no screen wrote it. Now
+  a **Notes** box on every way of adding a shift (＋ on the rota, + Add) and
+  in the shift's pop-up (**Save note**; empty it to remove). Shown on the
+  rota chip (📝), a 📝 in the month, under today's shift on Home and on the
+  printed rota. A changed note on a published shift rings the person's bell
+  (`shift-notices.ts`). 500 characters at most. Staff only ever see their
+  own shifts' notes in the app; the printed rota shows everybody's.
+  `tests/browser/shift-notes.mjs`.
 - **Tablet PINs are chosen by staff** on their profile (confirmed with their
   password); the profile shows only that one is set and since when, never the
   PIN. Managers and admins can set a replacement from the Directory, never

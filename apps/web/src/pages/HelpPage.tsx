@@ -921,6 +921,19 @@ const MANAGERS: Section[] = [
         ),
       },
       {
+        question: 'A note on a shift',
+        answer: (
+          <p>
+            Write it in <strong>Notes</strong> when you add a shift, or click a shift on the rota,
+            type in its Notes box and press <strong>Save note</strong> — say{' '}
+            <em>7–12 upstairs, 12–3 downstairs</em>. It shows on the shift with 📝, on their Home
+            screen that day, on their phone calendar and on the printed rota. If the shift is
+            published they are told under the bell when the note changes. Empty the box and save to
+            take a note off.
+          </p>
+        ),
+      },
+      {
         question: 'Somebody has forgotten their tablet PIN',
         answer: (
           <p>

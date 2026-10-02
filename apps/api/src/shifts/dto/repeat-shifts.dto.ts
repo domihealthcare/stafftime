@@ -15,6 +15,7 @@ import {
   IsUUID,
   Matches,
   Max,
+  MaxLength,
   Min,
   ValidateIf,
   ValidateNested,
@@ -81,8 +82,10 @@ export class RepeatShiftsDto {
   @IsEnum(ShiftStatus)
   status?: ShiftStatus;
 
+  /// The manager's note, on every shift it makes.
   @IsOptional()
   @IsString()
+  @MaxLength(500)
   notes?: string;
 }
 

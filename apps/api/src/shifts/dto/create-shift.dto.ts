@@ -6,7 +6,7 @@ import {
   IsOptional,
   IsString,
   IsUUID,
-  Length,
+  MaxLength,
   ValidateIf,
 } from 'class-validator';
 
@@ -43,8 +43,11 @@ export class CreateShiftDto {
   @IsEnum(ShiftStatus)
   status?: ShiftStatus;
 
+  /// The manager's note — "7–12 upstairs, 12–3 downstairs". Shown to the
+  /// person on it, and on the printed rota. On an edit, null (or blank)
+  /// clears it.
   @IsOptional()
   @IsString()
-  @Length(1, 500)
-  notes?: string;
+  @MaxLength(500)
+  notes?: string | null;
 }

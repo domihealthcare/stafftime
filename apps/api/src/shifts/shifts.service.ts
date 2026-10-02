@@ -24,6 +24,11 @@ const SHIFT_INCLUDE = {
   jobRole: { select: { id: true, name: true, colour: true } },
 } satisfies Prisma.ShiftInclude;
 
+/// A shift's note as typed, or null when there is nothing in it.
+function cleanNote(note: string | null | undefined): string | null {
+  return note?.trim() || null;
+}
+
 @Injectable()
 export class ShiftsService {
   constructor(
@@ -50,7 +55,15 @@ export class ShiftsService {
       ? await this.watchOvertime(employeeId, [{ startsAt, locationId: dto.locationId }])
       : null;
     const shift = await this.prisma.shift.create({
-      data: { ...dto, employeeId, jobRoleId, startsAt, endsAt, createdById },
+      data: {
+        ...dto,
+        employeeId,
+        jobRoleId,
+        startsAt,
+        endsAt,
+        notes: cleanNote(dto.notes),
+        createdById,
+      },
       include: SHIFT_INCLUDE,
     });
     await watch?.();
@@ -121,7 +134,13 @@ export class ShiftsService {
       : null;
     const shift = await this.prisma.shift.update({
       where: { id },
-      data: { ...data, startsAt, endsAt },
+      // `notes: null` (or blank) clears the note; absent leaves it.
+      data: {
+        ...data,
+        startsAt,
+        endsAt,
+        ...(dto.notes === undefined ? {} : { notes: cleanNote(dto.notes) }),
+      },
       include: SHIFT_INCLUDE,
     });
     await watch?.();

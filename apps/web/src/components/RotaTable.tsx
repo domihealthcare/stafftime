@@ -48,6 +48,7 @@ import {
   useClosureCheck,
 } from './PracticeEvents';
 import { Alert, buttonClass } from './ui';
+import { noteToSend, ShiftNoteField } from './ShiftNote';
 
 export type RotaGrouping = 'person' | 'location' | 'role';
 
@@ -832,6 +833,7 @@ function ShiftChip({
     shift.jobRole?.name,
     draft ? 'draft' : null,
     warning ? `warning: ${warning}` : null,
+    shift.notes ? `note: ${shift.notes}` : null,
   ]
     .filter(Boolean)
     .join(', ');
@@ -854,6 +856,15 @@ function ShiftChip({
                 .filter(Boolean)
                 .join(' · ')
             : place}
+        </span>
+      )}
+      {shift.notes && (
+        <span
+          className="mt-0.5 block whitespace-pre-line break-words text-[11px] italic text-slate-700"
+          data-testid="shift-note"
+        >
+          <span aria-hidden="true">📝 </span>
+          {shift.notes}
         </span>
       )}
     </>
@@ -1035,6 +1046,8 @@ function ShiftDialog({
   const [person, setPerson] = useState(shift.employeeId ?? '');
   /// For a shift with no job role: which of the chosen person's it is for.
   const [asRole, setAsRole] = useState('');
+  const [note, setNote] = useState(shift.notes ?? '');
+  const noteChanged = noteToSend(note) !== (shift.notes ?? null);
   const [busy, setBusy] = useState(false);
   const [problem, setProblem] = useState<string | null>(null);
   const confirm = useConfirm();
@@ -1230,6 +1243,30 @@ function ShiftDialog({
         )}
       </div>
 
+      <div className="mt-4">
+        <ShiftNoteField value={note} onChange={setNote} label="Notes" />
+        {noteChanged && (
+          <div className="mt-2 flex gap-2">
+            <button
+              type="button"
+              disabled={busy}
+              onClick={() => void act(() => api.updateShift(shift.id, { notes: noteToSend(note) }))}
+              className={buttonClass('primary', 'sm')}
+            >
+              Save note
+            </button>
+            <button
+              type="button"
+              disabled={busy}
+              onClick={() => setNote(shift.notes ?? '')}
+              className={buttonClass('secondary', 'sm')}
+            >
+              Undo
+            </button>
+          </div>
+        )}
+      </div>
+
       {problem && (
         <div className="mt-3">
           <Alert>{problem}</Alert>
@@ -1319,6 +1356,7 @@ function QuickAddDialog({
   const [start, setStart] = useState('09:00');
   const [end, setEnd] = useState('17:00');
   const [publish, setPublish] = useState(true);
+  const [note, setNote] = useState('');
   const [repeat, setRepeat] = useState(false);
   /// 1 = Monday … 7 = Sunday; starts on the day that was clicked.
   const [repeatDays, setRepeatDays] = useState<number[]>(() => [((day.getDay() + 6) % 7) + 1]);
@@ -1377,6 +1415,7 @@ function QuickAddDialog({
           from: localDate(day),
           ...(noEnd ? {} : { until }),
           status: publish ? 'PUBLISHED' : 'DRAFT',
+          notes: noteToSend(note) ?? undefined,
         });
         onPlanned?.(result);
         onCreated();
@@ -1392,6 +1431,7 @@ function QuickAddDialog({
         startsAt: at(start).toISOString(),
         endsAt: at(end).toISOString(),
         status: publish ? 'PUBLISHED' : 'DRAFT',
+        notes: noteToSend(note),
       });
       onCreated();
     } catch (err) {
@@ -1471,6 +1511,9 @@ function QuickAddDialog({
             open={!row.person}
             className={field}
           />
+        </div>
+        <div className="col-span-2">
+          <ShiftNoteField value={note} onChange={setNote} />
         </div>
         <div className="col-span-2">
           <label className="flex items-center gap-2 text-sm text-slate-700" htmlFor="quick-repeat">

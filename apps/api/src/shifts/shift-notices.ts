@@ -8,6 +8,8 @@ export interface NoticeShift {
   startsAt: Date;
   endsAt: Date;
   isRemote: boolean;
+  /// The manager's note on it ("7–12 upstairs, 12–3 downstairs").
+  notes?: string | null;
   location: { name: string; timezone: string };
 }
 
@@ -66,7 +68,7 @@ export function shiftNotices(
       notice: {
         kind: NotificationKind.SCHEDULE_CHANGED,
         title: `New shift: ${describeShift(after!)}`,
-        body: `${where(after!)}.`,
+        body: `${where(after!)}.${after!.notes ? ` ${noteLine(after!.notes)}` : ''}`,
         link: '/schedule',
       },
     });
@@ -77,17 +79,36 @@ export function shiftNotices(
       before!.endsAt.getTime() !== after!.endsAt.getTime() ||
       before!.location.name !== after!.location.name ||
       before!.isRemote !== after!.isRemote;
+    const noteBefore = before!.notes ?? null;
+    const noteAfter = after!.notes ?? null;
+    const noteChanged = noteBefore !== noteAfter;
     if (moved) {
       notices.push({
         employeeId: now,
         notice: {
           kind: NotificationKind.SCHEDULE_CHANGED,
           title: `Shift changed: ${describeShift(after!)}`,
-          body: `${where(after!)}. Was ${describeShift(before!)}, ${where(before!)}.`,
+          body: `${where(after!)}. Was ${describeShift(before!)}, ${where(before!)}.${
+            noteChanged ? ` ${noteLine(noteAfter)}` : ''
+          }`,
+          link: '/schedule',
+        },
+      });
+    } else if (noteChanged) {
+      notices.push({
+        employeeId: now,
+        notice: {
+          kind: NotificationKind.SCHEDULE_CHANGED,
+          title: `Shift note ${noteAfter ? 'changed' : 'removed'}: ${describeShift(after!)}`,
+          body: `${where(after!)}. ${noteLine(noteAfter)}`,
           link: '/schedule',
         },
       });
     }
   }
   return notices;
+}
+
+function noteLine(note: string | null) {
+  return note ? `Note: ${note}` : 'It no longer has a note.';
 }
