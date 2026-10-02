@@ -911,8 +911,9 @@ export function RotaLegend({
   );
   return (
     <details
-      // Open on a screen wide enough to spare the room, closed on a phone.
-      open={typeof window === 'undefined' || window.innerWidth >= 640}
+      // Open from the start, on a phone too (Dominguez, October 2026): the
+      // colours mean nothing until you have read it. Tap "Key" to fold it.
+      open
       className="mb-2 text-xs text-slate-600"
       data-testid="rota-legend"
     >

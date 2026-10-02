@@ -351,7 +351,9 @@ const STAFF: Section[] = [
               The <strong>suggestion box</strong> is on <Screen>Home</Screen> too, and always open:
               press <strong>Drop a note in</strong>, pick what sort of note it is if you like (an
               idea, something not working, a shout-out or a question), write it and send it. Only
-              your message, the sort you picked and the day it arrived are kept. The managers are
+              your message, the sort you picked and the day it arrived are kept — never your name or
+              the time — so nobody, managers and admins included, can find out who sent it.
+              <strong>Truly anonymous — how?</strong> on the card says the rest. The managers are
               told the next morning that something is waiting, and read it in the app.
             </p>
           </>

@@ -375,7 +375,9 @@ Beyond the phases, the parts worth knowing about before picking up work:
   four kinds of note** (idea, not working, shout-out, question — not one
   rotating question, which read as "only for shout-outs"); each opens a
   pop-up with that kind picked (`Feedback.kind`, optional), and on sending
-  the note drops into the box. **Managers are told** while any are not dealt with: a count
+  the note drops into the box. **Truly anonymous — how?** on the card, and
+  **Is it really anonymous?** in the pop-up, say in plain words what is and
+  is not kept (`HowItIsAnonymous`) — every line must stay true. **Managers are told** while any are not dealt with: a count
   and the oldest day (never the words) in the nightly email and on a Surveys
   banner (`newSuggestions` in `AttentionService`), and "N waiting to be read"
   on Home. Not on the bell — it would stamp the minute.
@@ -541,8 +543,10 @@ Beyond the phases, the parts worth knowing about before picking up work:
   buttons use the helper, and input focus is the brand blue everywhere (`index.css`).
   New buttons should use them; the rest move over as their screens are touched.
   Batch D: on the Schedule "Worth a look" starts as a one-line summary that opens on a
-  tap (`NeedsAttention collapsible`), and the colour key is a `<details>` (open on a
-  wide screen, closed on a phone). The phone header's two rows became a bottom tab
+  tap (`NeedsAttention collapsible`), and the colour key is a `<details>` — open
+  from the start on every screen since October 2026 (Dominguez), and it lists the
+  job roles' outline colours for staff too (the Schedule used to load job roles
+  for managers only, so staff saw "Outline, the job role:" with nothing after it). The phone header's two rows became a bottom tab
   bar — see the next entry.
 - **Schedule and phone navigation** (30 September 2026, Dominguez): the Regular
   shifts list is hidden behind "Show the N regular shifts", with a search box and

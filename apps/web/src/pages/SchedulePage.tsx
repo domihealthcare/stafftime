@@ -244,19 +244,24 @@ export function SchedulePage() {
         .then(setBirthdays)
         .catch(() => setBirthdays([]));
 
+      // The job roles, for everybody: the key names each one's outline colour,
+      // and staff were seeing "Outline, the job role:" with nothing after it.
+      api
+        .jobRoles()
+        .then(setJobRoles)
+        .catch(() => setJobRoles([]));
+
       // Only managers may list staff or read coverage.
       if (isManager) {
-        const [staff, weekCoverage, roles] = await Promise.all([
+        const [staff, weekCoverage] = await Promise.all([
           api.listEmployees(),
           api.coverage({
             from: localDate(rangeStart),
             to: localDate(days[days.length - 1]),
           }),
-          api.jobRoles(),
         ]);
         setEmployees(staff);
         setCoverage(weekCoverage);
-        setJobRoles(roles);
       } else {
         setOwnWeeks(await api.myOvertime().catch(() => []));
       }

@@ -59,12 +59,50 @@ export function feedbackKindLabel(kind: FeedbackKind | null): string | null {
 
 const ANONYMOUS_LINE = 'Anonymous — no name and no time are kept, only the day it arrives.';
 
+/// What "anonymous" means here, in plain words (Dominguez, October 2026: "put
+/// something explaining that the suggestion box really is anonymous"). Every
+/// line has to stay true: see `FeedbackService`, the `Feedback` model and the
+/// guard in no-sensitive-data.spec.ts.
+export function HowItIsAnonymous() {
+  return (
+    <div className="text-sm text-slate-700" data-testid="how-anonymous">
+      <ul className="list-disc space-y-1 pl-5">
+        <li>
+          <strong>Your name is not saved with it.</strong> The note is not linked to you or your
+          account in any way.
+        </li>
+        <li>
+          <strong>No time is kept</strong> — only the day it arrived, so nobody can match it to who
+          was on a break or at the desk.
+        </li>
+        <li>
+          <strong>Nobody can find out who wrote it</strong> — not managers, not admins. There is no
+          screen, report or export that could show it, because the app never kept it.
+        </li>
+        <li>
+          The managers’ morning email only says <em>that</em> something is waiting, never what it
+          says.
+        </li>
+        <li>
+          You have to be signed in to send one, so the box is not open to the whole internet — but
+          who you are is dropped as soon as the note is in.
+        </li>
+      </ul>
+      <p className="mt-2 text-xs text-slate-500">
+        The one thing the app cannot hide is what you write: a very specific detail can still give
+        you away.
+      </p>
+    </div>
+  );
+}
+
 /// The card on Home and on the Surveys page.
 export function SuggestionBoxCard() {
   const isManager = useIsManager();
   /// Open with this sort picked; `null` is open with none picked.
   const [open, setOpen] = useState<FeedbackKind | null | false>(false);
   const [waiting, setWaiting] = useState(0);
+  const [explaining, setExplaining] = useState(false);
 
   useEffect(() => {
     if (!isManager) return;
@@ -115,9 +153,15 @@ export function SuggestionBoxCard() {
         </ul>
       </div>
       <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1 border-t border-slate-100 px-4 py-2 text-xs text-slate-500">
-        <span>
-          <span aria-hidden="true">🔒</span> Anonymous
-        </span>
+        <button
+          type="button"
+          aria-expanded={explaining}
+          aria-controls="suggestion-anonymous"
+          onClick={() => setExplaining((shown) => !shown)}
+          className="tap font-medium text-slate-600 hover:text-slate-900"
+        >
+          <span aria-hidden="true">🔒</span> Truly anonymous — how?
+        </button>
         {isManager && waiting > 0 && (
           <Link
             to="/surveys#suggestion-inbox"
@@ -128,6 +172,11 @@ export function SuggestionBoxCard() {
           </Link>
         )}
       </div>
+      {explaining && (
+        <div id="suggestion-anonymous" className="border-t border-slate-100 px-4 py-3">
+          <HowItIsAnonymous />
+        </div>
+      )}
       {open !== false && <SuggestionDialog initialKind={open} onClose={() => setOpen(false)} />}
     </Card>
   );
@@ -251,9 +300,14 @@ function SuggestionDialog({
               onChange={(event) => setMessage(event.target.value)}
               className="mt-3 w-full rounded-lg border-slate-300 text-sm shadow-sm focus:border-brand-600 focus:ring-brand-600"
             />
-            <p className="mt-1 text-xs text-slate-500">
-              Bear in mind a very specific detail can give you away.
-            </p>
+            <details className="mt-2 rounded-lg bg-slate-50 px-3 py-2">
+              <summary className="cursor-pointer select-none text-sm font-medium text-slate-700">
+                <span aria-hidden="true">🔒</span> Is it really anonymous?
+              </summary>
+              <div className="mt-2">
+                <HowItIsAnonymous />
+              </div>
+            </details>
             {error && (
               <div className="mt-2">
                 <Alert>{error}</Alert>

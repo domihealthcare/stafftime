@@ -93,6 +93,26 @@ await step('on a laptop a manager still starts on everyone', async () => {
   await laptopCtx.close();
 });
 
+await step('on a phone the key starts open, and names every job role’s outline — for staff too', async () => {
+  for (const email of ['manager@domihealthcare.com', 'frontdesk@domihealthcare.com']) {
+    const ctx = await browser.newContext({ viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true });
+    const page = await ctx.newPage();
+    page.on('pageerror', (e) => errors.push(`pageerror: ${e.message}`));
+    await signIn(page, email);
+    await goTo(page, 'Schedule');
+    const legend = page.getByTestId('rota-legend').first();
+    await legend.waitFor({ timeout: 15000 });
+    if (!(await legend.evaluate((el) => el.open))) throw new Error(`${email}: the key starts folded`);
+    for (const role of ['Front Desk', 'Medical Assistant', 'Provider']) {
+      if (!(await legend.getByText(role, { exact: true }).isVisible()))
+        throw new Error(`${email}: the key does not show ${role}`);
+    }
+    await legend.scrollIntoViewIfNeeded();
+    await page.screenshot({ path: `${OUT}/schedule-phone-key-${email.split('@')[0]}.png` });
+    await ctx.close();
+  }
+});
+
 await browser.close();
 console.log(`\n${errors.length === 0 ? 'ALL SCHEDULE PHONE CHECKS PASSED' : `PROBLEMS (${errors.length}):`}`);
 errors.forEach((e) => console.log(' - ' + e));

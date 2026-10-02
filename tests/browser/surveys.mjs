@@ -216,6 +216,25 @@ await step('Home has the suggestion box as a card with a box on it, not a link',
     throw new Error('staff see the count of suggestions waiting');
 });
 
+await step('the card and the pop-up both explain how it is anonymous', async () => {
+  const card = frankie.getByTestId('suggestion-box-card');
+  const how = card.getByRole('button', { name: /Truly anonymous — how\?/ });
+  await how.click();
+  const explained = card.getByTestId('how-anonymous');
+  await explained.getByText('Your name is not saved with it.').waitFor({ timeout: 5000 });
+  await explained.getByText(/not managers, not admins/).waitFor({ timeout: 5000 });
+  await frankie.screenshot({ path: `${OUT}/suggestion-how-anonymous.png`, fullPage: true });
+  await how.click();
+  await explained.waitFor({ state: 'detached', timeout: 5000 });
+
+  await card.getByRole('button', { name: /Drop a note in/ }).click();
+  const dialog = frankie.getByRole('dialog', { name: 'Drop a note in the box' });
+  await dialog.getByText('Is it really anonymous?').click();
+  await dialog.getByTestId('how-anonymous').getByText('No time is kept', { exact: false }).waitFor({ timeout: 5000 });
+  await dialog.getByRole('button', { name: 'Cancel' }).click();
+  await dialog.waitFor({ state: 'detached', timeout: 5000 });
+});
+
 await step('pressing a sort of note on the card opens the pop-up with it picked', async () => {
   await frankie.getByTestId('suggestion-box-card').getByRole('button', { name: 'A shout-out' }).click();
   const dialog = frankie.getByRole('dialog', { name: 'Drop a note in the box' });
