@@ -2081,8 +2081,10 @@ Colleagues see where somebody is; only managers see when they clocked in.
 **Working from home today** (October 2026, Dominguez) is always on screen,
 beside the office boxes (three across on a laptop, like the cards below): who is clocked in from home now, then anybody with a
 **published work-from-home shift today** (New Jersey's today) that has not
-ended and who is not in yet, with its hours — so colleagues know not to look
-for them at the desk before they clock in. Everybody signed in sees it. It is
+ended and who is not in yet — so colleagues know not to look for them at the
+desk before they clock in. The hours are a note on the name rather than on the
+line (`HoverNote`: hover, a tap on a phone, or keyboard focus; always in the
+page for screen readers). Everybody signed in sees it. It is
 the one place staff see anything of a colleague's shifts, and deliberately
 narrow: only work-from-home shifts, only today's, only the hours (the query
 selects `startsAt` and `endsAt` and nothing else). Office shifts, drafts and

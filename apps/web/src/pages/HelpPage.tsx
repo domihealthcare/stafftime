@@ -308,11 +308,12 @@ const STAFF: Section[] = [
             <Screen>Directory</Screen> lists everybody with their work email, phone number, job
             roles and offices. <strong>In now</strong> means they are clocked in at the moment.{' '}
             <strong>Working from home today</strong> lists who is clocked in from home, and anybody
-            whose shift today is from home but who has not clocked in yet, with their hours. Each
-            job role has its own colour, so you can tell at a glance who is front desk, MA or
-            provider. <strong>Office extensions</strong> lists every desk phone and person by
-            section, as on the practice’s sheet. A “from home” number rings that person’s mobile on
-            the days they work from home — on those days their card shows it first.
+            whose shift today is from home but who has not clocked in yet — point at a name (or tap
+            it on a phone) to see their hours. Each job role has its own colour, so you can tell at
+            a glance who is front desk, MA or provider. <strong>Office extensions</strong> lists
+            every desk phone and person by section, as on the practice’s sheet. A “from home” number
+            rings that person’s mobile on the days they work from home — on those days their card
+            shows it first.
           </p>
         ),
       },
@@ -446,7 +447,7 @@ const STAFF: Section[] = [
 /// For anybody who can make a care plan (CCM and APCM): providers, managers and admins.
 const CARE_PLAN: Section[] = [
   {
-    title: 'Care plan (CCM and APCM)',
+    title: 'APCM Care Plan (also for CCM)',
     topics: [
       {
         question: 'Where is it, and how does it work?',
@@ -454,7 +455,7 @@ const CARE_PLAN: Section[] = [
           <>
             <p>
               <Screen>Resources</Screen> → <Screen>Forms</Screen>, at the top →{' '}
-              <strong>Care plan</strong>. Providers, managers and admins have it.
+              <strong>APCM Care Plan</strong>. Providers, managers and admins have it.
             </p>
             <ul>
               <li>
@@ -583,7 +584,7 @@ const WELLNESS: Section[] = [
 /// For people whose job role uses the clinical forms (Providers).
 const PROVIDERS: Section[] = [
   {
-    title: 'For providers: BrainCheck care plan',
+    title: 'For providers: BrainCheck Care Plan',
     topics: [
       {
         question: 'Where is it, and how does it work?',
@@ -591,7 +592,7 @@ const PROVIDERS: Section[] = [
           <>
             <p>
               <Screen>Resources</Screen> → <Screen>Forms</Screen>, at the top →{' '}
-              <strong>BrainCheck care plan</strong> — the cognitive assessment and care plan, billed
+              <strong>BrainCheck Care Plan</strong> — the cognitive assessment and care plan, billed
               as CPT 99483.
             </p>
             <ul>
@@ -1315,7 +1316,7 @@ const MANAGERS: Section[] = [
         ),
       },
       {
-        question: 'Giving a provider the BrainCheck care plan',
+        question: 'Giving a provider the BrainCheck Care Plan',
         answer: (
           <p>
             Add them to the <strong>Provider</strong> job role (<Screen>Job roles</Screen>) — the

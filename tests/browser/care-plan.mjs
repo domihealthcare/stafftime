@@ -69,7 +69,7 @@ await step('somebody who is not a provider, manager or admin has no link, and th
   // Frankie is a Medical Assistant too, so Forms holds the wellness form — but no care plan.
   const forms = desk.getByTestId('clinical-tools');
   await forms.getByRole('link', { name: /^Annual Wellness Visit/ }).waitFor({ timeout: 10000 });
-  if ((await forms.getByRole('link', { name: /^Care plan/ }).count()) > 0) throw new Error('the link is on Resources');
+  if ((await forms.getByRole('link', { name: /^APCM Care Plan/ }).count()) > 0) throw new Error('the link is on Resources');
   await desk.goto(`${BASE}/clinical/care-plan`, { waitUntil: 'networkidle' });
   await desk.getByText('This form is for providers, managers and admins.').waitFor({ timeout: 10000 });
   if ((await desk.getByLabel(/First name/).count()) > 0) throw new Error('the form is shown');
@@ -87,7 +87,7 @@ await step('a manager finds it under Resources → Forms, without the BrainCheck
     throw new Error('a manager who is not a provider is offered the BrainCheck care plan');
   if ((await page.getByTestId('section-Provider').getByTestId('clinical-tools').count()) > 0)
     throw new Error('the forms are still in the Provider section');
-  await tools.getByRole('link', { name: /^Care plan/ }).click();
+  await tools.getByRole('link', { name: /^APCM Care Plan/ }).click();
   await page.getByTestId('ccm-care-plan').waitFor({ timeout: 15000 });
 });
 
@@ -356,7 +356,7 @@ await step('there is no file input on the form', async () => {
 
 await step('Help has a section on it', async () => {
   await page.goto(`${BASE}/help`, { waitUntil: 'networkidle' });
-  await page.getByRole('heading', { name: 'Care plan (CCM and APCM)' }).waitFor({ timeout: 10000 });
+  await page.getByRole('heading', { name: 'APCM Care Plan (also for CCM)' }).waitFor({ timeout: 10000 });
 });
 
 await browser.close();

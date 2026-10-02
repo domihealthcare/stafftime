@@ -1,6 +1,7 @@
 import { formatBirthday } from '../lib/birthday';
 import { formatTime } from '../lib/format';
 import type { DirectoryEntry, OfficeExtension } from '../lib/types';
+import { HoverNote } from './HoverNote';
 import { Badge } from './ui';
 
 /// Where somebody is right now, as the Directory says it: in now (and since
@@ -22,13 +23,19 @@ export function PresenceBadges({
       )}
       {entry.homeToday && !entry.onNow?.remote && (
         <Badge tone="info">
-          Working from home today · {formatTime(entry.homeToday.startsAt)}–
-          {formatTime(entry.homeToday.endsAt)}
+          <HoverNote note={homeHours(entry.homeToday)} testId="home-today-badge">
+            Working from home today
+          </HoverNote>
         </Badge>
       )}
       {entry.onLeave && <Badge tone="warning">On leave</Badge>}
     </>
   );
+}
+
+/// A work-from-home shift's hours, for a hover note.
+export function homeHours(shift: { startsAt: string; endsAt: string }): string {
+  return `Working from home ${formatTime(shift.startsAt)}–${formatTime(shift.endsAt)}`;
 }
 
 /// Email and phone that open the mail app and the dialler, and the birthday —

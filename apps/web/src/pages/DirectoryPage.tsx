@@ -1,12 +1,13 @@
 import { Avatar } from '../components/Avatar';
 import { JobRoleTag } from '../components/JobRoleTag';
-import { ContactLines, PresenceBadges } from '../components/PersonDetails';
+import { HoverNote } from '../components/HoverNote';
+import { ContactLines, PresenceBadges, homeHours } from '../components/PersonDetails';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { usePersonMenu } from '../components/PersonMenu';
 import { Alert, Card, EmptyState, PageHeading, Spinner, buttonClass } from '../components/ui';
 import { ApiError, api } from '../lib/api';
-import { displayName, formatTime } from '../lib/format';
+import { displayName } from '../lib/format';
 import { useIsManager, useSession } from '../lib/session';
 import type { DirectoryEntry, OfficeExtension } from '../lib/types';
 import { OfficeExtensionsCard, extensionOf } from '../components/OfficeExtensions';
@@ -288,7 +289,8 @@ function PersonCard({
 }
 
 /// Who is working from home today: clocked in from home now, then anybody
-/// with a work-from-home shift today who is not on yet. Always on screen, so
+/// with a work-from-home shift today who is not on yet. Their hours are in a
+/// note on the name, not on the line (Dominguez, October 2026). Always on screen, so
 /// "nobody" is an answer and not a missing box.
 function HomeToday({
   people,
@@ -319,7 +321,14 @@ function HomeToday({
             <li key={person.id} className="flex items-baseline gap-1.5">
               <span aria-hidden className="h-2 w-2 shrink-0 rounded-full bg-violet-500" />
               <span>
-                {displayName(person)} <span className="text-slate-500">· in now{dial(person)}</span>
+                {person.homeToday ? (
+                  <HoverNote note={homeHours(person.homeToday)} testId="home-name">
+                    {displayName(person)}
+                  </HoverNote>
+                ) : (
+                  displayName(person)
+                )}{' '}
+                <span className="text-slate-500">· in now{dial(person)}</span>
               </span>
             </li>
           ))}
@@ -330,11 +339,10 @@ function HomeToday({
                 className="h-2 w-2 shrink-0 rounded-full ring-1 ring-inset ring-violet-500"
               />
               <span>
-                {displayName(person)}{' '}
-                <span className="text-slate-500">
-                  · {formatTime(person.homeToday!.startsAt)}–{formatTime(person.homeToday!.endsAt)},
-                  not in yet{dial(person)}
-                </span>
+                <HoverNote note={homeHours(person.homeToday!)} testId="home-name">
+                  {displayName(person)}
+                </HoverNote>{' '}
+                <span className="text-slate-500">· not in yet{dial(person)}</span>
               </span>
             </li>
           ))}

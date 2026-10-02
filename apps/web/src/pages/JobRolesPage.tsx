@@ -415,7 +415,7 @@ function RoleForm({
         <span>
           People in this role get the clinical forms, under Resources → Forms
           <span className="block text-xs text-slate-500">
-            On for Provider: the BrainCheck care plan (CPT 99483). The forms run on the
+            On for Provider: the BrainCheck Care Plan (CPT 99483). The forms run on the
             provider&rsquo;s own device and keep nothing, so this gives no access to anything.
           </span>
         </span>
