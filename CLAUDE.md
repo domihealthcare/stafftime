@@ -371,13 +371,21 @@ Beyond the phases, the parts worth knowing about before picking up work:
   other's shifts (today, from home, hours only). `homeToday` in
   `DirectoryService.list`.
 - **The suggestion box on Home** (2 October 2026, Dominguez: "creative in
-  how it's viewed … even like a pop up"): a card with a drawn box and a
-  question of the day opens a pop-up — pick a kind (idea, not working,
-  shout-out, question; `Feedback.kind`, optional), write, and the note drops
-  into the box. **Managers are told** while any are not dealt with: a count
+  how it's viewed … even like a pop up"): a card with a drawn box and **all
+  four kinds of note** (idea, not working, shout-out, question — not one
+  rotating question, which read as "only for shout-outs"); each opens a
+  pop-up with that kind picked (`Feedback.kind`, optional), and on sending
+  the note drops into the box. **Managers are told** while any are not dealt with: a count
   and the oldest day (never the words) in the nightly email and on a Surveys
   banner (`newSuggestions` in `AttentionService`), and "N waiting to be read"
   on Home. Not on the bell — it would stamp the minute.
+- **Directory and Staff side by side** (2 October 2026, Dominguez): both are
+  **three columns** on a laptop (two on a tablet, one on a phone), and the
+  Directory's top row is North Bergen · West New York · Working from home
+  today. A **Staff card says everything a Directory card does** — photo,
+  pronouns, "about you", in now / working from home / on leave, tappable
+  email and phone, birthday — plus access, ADP File #, PIN and password
+  status, Profile and Edit. Shared pieces in `components/PersonDetails.tsx`.
 - **Tablet PINs are chosen by staff** on their profile (confirmed with their
   password); the profile shows only that one is set and since when, never the
   PIN. Managers and admins can set a replacement from the Directory, never

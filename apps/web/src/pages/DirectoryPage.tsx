@@ -1,18 +1,10 @@
 import { Avatar } from '../components/Avatar';
-import { formatBirthday } from '../lib/birthday';
 import { JobRoleTag } from '../components/JobRoleTag';
+import { ContactLines, PresenceBadges } from '../components/PersonDetails';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { usePersonMenu } from '../components/PersonMenu';
-import {
-  Alert,
-  Badge,
-  Card,
-  EmptyState,
-  PageHeading,
-  Spinner,
-  buttonClass,
-} from '../components/ui';
+import { Alert, Card, EmptyState, PageHeading, Spinner, buttonClass } from '../components/ui';
 import { ApiError, api } from '../lib/api';
 import { displayName, formatTime } from '../lib/format';
 import { useIsManager, useSession } from '../lib/session';
@@ -108,7 +100,7 @@ export function DirectoryPage() {
   if (loading) return <Spinner label="Loading the directory" />;
 
   return (
-    <div className="max-w-5xl">
+    <div className="max-w-6xl">
       <PageHeading
         title="Directory"
         subtitle="Everyone at the practice, how to reach them, and who is in right now."
@@ -120,7 +112,7 @@ export function DirectoryPage() {
         </div>
       )}
 
-      <section aria-label="In now" className="mb-6 grid gap-3 sm:grid-cols-2">
+      <section aria-label="In now" className="mb-6 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
         {locations.map((place) => {
           // At the office — somebody on a work-from-home shift is listed apart.
           const here = people.filter(
@@ -202,7 +194,7 @@ export function DirectoryPage() {
       {shown.length === 0 ? (
         <EmptyState>Nobody matches that.</EmptyState>
       ) : (
-        <div className="grid gap-3 sm:grid-cols-2">
+        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
           {shown.map((person) => (
             <PersonCard
               key={person.id}
@@ -246,19 +238,7 @@ function PersonCard({
               )}
               {isYou && <span className="ml-1 font-normal text-slate-500">(you)</span>}
             </h2>
-            {person.onNow && (
-              <Badge tone="success">
-                In now · {person.onNow.remote ? 'Working from home' : person.onNow.location.name}
-                {person.onNow.since && ` since ${formatTime(person.onNow.since)}`}
-              </Badge>
-            )}
-            {person.homeToday && !person.onNow?.remote && (
-              <Badge tone="info">
-                Working from home today · {formatTime(person.homeToday.startsAt)}–
-                {formatTime(person.homeToday.endsAt)}
-              </Badge>
-            )}
-            {person.onLeave && <Badge tone="warning">On leave</Badge>}
+            <PresenceBadges entry={person} />
           </div>
 
           {person.jobRoles.length > 0 && (
@@ -275,28 +255,7 @@ function PersonCard({
           )}
           {person.about && <p className="mt-1 text-sm text-slate-700">{person.about}</p>}
 
-          <div className="mt-2 flex flex-col gap-0.5 text-sm">
-            <a
-              href={`mailto:${person.email}`}
-              className="tap truncate text-brand-700 hover:text-brand-900"
-            >
-              {person.email}
-            </a>
-            {person.phone && (
-              <a
-                href={`tel:${person.phone.replace(/[^\d+]/g, '')}`}
-                className="tap text-brand-700 hover:text-brand-900"
-              >
-                {person.phone}
-              </a>
-            )}
-            {formatBirthday(person.birthdayMonth, person.birthdayDay) && (
-              <span className="text-slate-600" data-testid="directory-birthday">
-                <span aria-hidden="true">🎂</span> Birthday{' '}
-                {formatBirthday(person.birthdayMonth, person.birthdayDay)}
-              </span>
-            )}
-          </div>
+          <ContactLines person={person} />
         </div>
       </div>
       {canResetPin && <PinReset person={person} />}
@@ -313,31 +272,34 @@ function HomeToday({ people }: { people: DirectoryEntry[] }) {
     .filter((person) => person.homeToday && !person.onNow?.remote)
     .sort((a, b) => a.homeToday!.startsAt.localeCompare(b.homeToday!.startsAt));
   return (
-    <Card className="p-4 sm:col-span-2" testId="in-now-home">
+    <Card className="p-4 sm:col-span-2 lg:col-span-1" testId="in-now-home">
       <p className="text-xs font-medium uppercase tracking-wide text-slate-500">
         Working from home today
       </p>
       {now.length === 0 && later.length === 0 ? (
         <p className="mt-1 text-sm text-slate-500">Nobody is working from home today.</p>
       ) : (
-        <ul className="mt-1 flex flex-wrap gap-x-3 gap-y-1 text-sm text-slate-800">
+        <ul className="mt-1 space-y-1 text-sm text-slate-800">
           {now.map((person) => (
-            <li key={person.id} className="flex items-center gap-1.5">
-              <span aria-hidden className="h-2 w-2 rounded-full bg-violet-500" />
-              {displayName(person)}
-              <span className="text-slate-500">· in now</span>
+            <li key={person.id} className="flex items-baseline gap-1.5">
+              <span aria-hidden className="h-2 w-2 shrink-0 rounded-full bg-violet-500" />
+              <span>
+                {displayName(person)} <span className="text-slate-500">· in now</span>
+              </span>
             </li>
           ))}
           {later.map((person) => (
-            <li key={person.id} className="flex items-center gap-1.5" data-testid="home-later">
+            <li key={person.id} className="flex items-baseline gap-1.5" data-testid="home-later">
               <span
                 aria-hidden
-                className="h-2 w-2 rounded-full ring-1 ring-inset ring-violet-500"
+                className="h-2 w-2 shrink-0 rounded-full ring-1 ring-inset ring-violet-500"
               />
-              {displayName(person)}
-              <span className="text-slate-500">
-                · {formatTime(person.homeToday!.startsAt)}–{formatTime(person.homeToday!.endsAt)},
-                not in yet
+              <span>
+                {displayName(person)}{' '}
+                <span className="text-slate-500">
+                  · {formatTime(person.homeToday!.startsAt)}–{formatTime(person.homeToday!.endsAt)},
+                  not in yet
+                </span>
               </span>
             </li>
           ))}

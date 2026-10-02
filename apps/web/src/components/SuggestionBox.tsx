@@ -9,8 +9,9 @@ import { useDialog } from './useDialog';
 /**
  * The suggestion box, as something you can see rather than a link (October
  * 2026, Dominguez: "creative in how it's viewed … even like a pop up"). A card
- * with a box on it and a question that changes each day; pressing it opens a
- * pop-up where you can say what sort of note it is, write it, and watch it go
+ * with a box on it and the four sorts of note it takes — all four, so nobody
+ * reads it as "only for shout-outs" (Dominguez, the same day) — each of which
+ * opens the pop-up with that sort picked. There you write it and watch it go
  * into the box.
  *
  * Nothing about the rules changed: the message, the kind picked (four values
@@ -56,31 +57,14 @@ export function feedbackKindLabel(kind: FeedbackKind | null): string | null {
   return found ? `${found.emoji} ${found.label}` : null;
 }
 
-/// One a day, the same for everybody that day, so the card is a little
-/// different each time somebody opens Home.
-const DAILY_QUESTIONS = [
-  'What would make your day a little easier?',
-  'Anyone you’d like to give a shout-out?',
-  'Something not working the way it should?',
-  'What’s one thing patients keep asking about?',
-  'What should we stop doing?',
-  'What went really well this week?',
-  'If you could fix one thing at your office, what would it be?',
-];
-
-export function questionOfTheDay(now = new Date()): string {
-  const day = Math.floor(Date.UTC(now.getFullYear(), now.getMonth(), now.getDate()) / 86_400_000);
-  return DAILY_QUESTIONS[day % DAILY_QUESTIONS.length];
-}
-
 const ANONYMOUS_LINE = 'Anonymous — no name and no time are kept, only the day it arrives.';
 
 /// The card on Home and on the Surveys page.
 export function SuggestionBoxCard() {
   const isManager = useIsManager();
-  const [open, setOpen] = useState(false);
+  /// Open with this sort picked; `null` is open with none picked.
+  const [open, setOpen] = useState<FeedbackKind | null | false>(false);
   const [waiting, setWaiting] = useState(0);
-  const question = questionOfTheDay();
 
   useEffect(() => {
     if (!isManager) return;
@@ -96,21 +80,40 @@ export function SuggestionBoxCard() {
 
   return (
     <Card className="overflow-hidden p-0" testId="suggestion-box-card">
-      <button
-        type="button"
-        onClick={() => setOpen(true)}
-        aria-haspopup="dialog"
-        className="group flex w-full items-center gap-4 bg-gradient-to-br from-brand-50 via-white to-amber-50 p-4 text-left hover:from-brand-100"
-      >
-        <BoxPicture className="h-16 w-16 shrink-0 transition-transform duration-200 group-hover:-rotate-3 group-hover:scale-105" />
-        <span className="min-w-0">
-          <span className="block text-sm font-semibold text-slate-900">Suggestion box</span>
-          <span className="mt-0.5 block text-sm italic text-slate-700">“{question}”</span>
-          <span className="mt-2 inline-flex items-center gap-1 rounded-full bg-brand-600 px-3 py-1 text-xs font-semibold text-white group-hover:bg-brand-700">
-            Drop a note in <span aria-hidden="true">✉</span>
-          </span>
-        </span>
-      </button>
+      <div className="bg-gradient-to-br from-brand-50 via-white to-amber-50 p-4">
+        <div className="flex items-center gap-4">
+          <BoxPicture className="h-16 w-16 shrink-0" />
+          <div className="min-w-0">
+            <h2 className="text-sm font-semibold text-slate-900">Suggestion box</h2>
+            <p className="mt-0.5 text-sm text-slate-700">
+              Anything you’d like the managers to know.
+            </p>
+            <button
+              type="button"
+              onClick={() => setOpen(null)}
+              aria-haspopup="dialog"
+              className="mt-2 inline-flex items-center gap-1 rounded-full bg-brand-600 px-3 py-1 text-xs font-semibold text-white hover:bg-brand-700"
+            >
+              Drop a note in <span aria-hidden="true">✉</span>
+            </button>
+          </div>
+        </div>
+        <ul aria-label="What it is for" className="mt-3 flex flex-wrap gap-1.5">
+          {FEEDBACK_KINDS.map((entry) => (
+            <li key={entry.kind}>
+              <button
+                type="button"
+                onClick={() => setOpen(entry.kind)}
+                aria-haspopup="dialog"
+                className="inline-flex min-h-11 items-center gap-1 rounded-full bg-white/80 px-2.5 py-1 text-xs text-slate-700 ring-1 ring-inset ring-slate-200 hover:bg-white hover:ring-brand-300 sm:min-h-0"
+              >
+                <span aria-hidden="true">{entry.emoji}</span>
+                {entry.label}
+              </button>
+            </li>
+          ))}
+        </ul>
+      </div>
       <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1 border-t border-slate-100 px-4 py-2 text-xs text-slate-500">
         <span>
           <span aria-hidden="true">🔒</span> Anonymous
@@ -125,13 +128,19 @@ export function SuggestionBoxCard() {
           </Link>
         )}
       </div>
-      {open && <SuggestionDialog onClose={() => setOpen(false)} />}
+      {open !== false && <SuggestionDialog initialKind={open} onClose={() => setOpen(false)} />}
     </Card>
   );
 }
 
-function SuggestionDialog({ onClose }: { onClose: () => void }) {
-  const [kind, setKind] = useState<FeedbackKind | null>(null);
+function SuggestionDialog({
+  initialKind,
+  onClose,
+}: {
+  initialKind: FeedbackKind | null;
+  onClose: () => void;
+}) {
+  const [kind, setKind] = useState<FeedbackKind | null>(initialKind);
   const [message, setMessage] = useState('');
   const [busy, setBusy] = useState(false);
   const [sent, setSent] = useState(false);
@@ -236,7 +245,9 @@ function SuggestionDialog({ onClose }: { onClose: () => void }) {
               rows={5}
               maxLength={2000}
               value={message}
-              placeholder={chosen?.prompt ?? questionOfTheDay()}
+              placeholder={
+                chosen?.prompt ?? 'An idea, something not working, a shout-out or a question…'
+              }
               onChange={(event) => setMessage(event.target.value)}
               className="mt-3 w-full rounded-lg border-slate-300 text-sm shadow-sm focus:border-brand-600 focus:ring-brand-600"
             />

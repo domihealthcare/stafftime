@@ -207,7 +207,9 @@ await step('a manager sees no profile link, and the API refuses them the record'
   await manager.goto(`${BASE}/staff`, { waitUntil: 'networkidle' });
   const card = manager.getByTestId('staff-imp-robin@example.com');
   await card.getByRole('button', { name: /^Edit / }).waitFor();
-  if (await card.getByRole('link').count()) throw new Error('a manager has a profile link');
+  // The card's email and phone are links (as in the Directory); none goes to a profile.
+  if (await card.locator('a[href^="/staff/"]').count()) throw new Error('a manager has a profile link');
+  if (!(await card.locator('a[href^="mailto:"]').count())) throw new Error('the email is not a link');
   const statuses = await manager.evaluate(async (id) => {
     const record = await fetch(`/api/staff-records/${id}`);
     const backlog = await fetch('/api/pto/record', {

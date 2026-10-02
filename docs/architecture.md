@@ -2079,7 +2079,7 @@ home yesterday — the missing punch is already chased by *What needs a look*.
 Colleagues see where somebody is; only managers see when they clocked in.
 
 **Working from home today** (October 2026, Dominguez) is always on screen,
-under the office boxes: who is clocked in from home now, then anybody with a
+beside the office boxes (three across on a laptop, like the cards below): who is clocked in from home now, then anybody with a
 **published work-from-home shift today** (New Jersey's today) that has not
 ended and who is not in yet, with its hours — so colleagues know not to look
 for them at the desk before they clock in. Everybody signed in sees it. It is
@@ -2087,6 +2087,14 @@ the one place staff see anything of a colleague's shifts, and deliberately
 narrow: only work-from-home shifts, only today's, only the hours (the query
 selects `startsAt` and `endsAt` and nothing else). Office shifts, drafts and
 other days stay out of it. With nobody, it says so rather than disappearing.
+
+**The Staff screen shows the same card, and more** (October 2026, Dominguez):
+it loads the Directory alongside the staff list and shows its photo,
+pronouns, "about you", presence badges, contact links and birthday through
+the same components (`components/PersonDetails.tsx`), so the two cannot
+describe somebody differently; access, ADP File #, PIN, password status,
+Profile and Edit sit underneath. Former staff are not in the Directory, so
+their cards show only what the staff list has.
 
 ## Availability
 
@@ -2148,8 +2156,10 @@ warns that a very specific detail can still give somebody away; no design can
 fix that.
 
 **On Home, as a pop-up** (October 2026, Dominguez: "creative in how it's
-viewed … even like a pop up"): a card with a drawn box and a question that
-changes each day opens a pop-up (`components/SuggestionBox.tsx`). The sender
+viewed … even like a pop up"): a card with a drawn box and the four kinds of
+note opens a pop-up (`components/SuggestionBox.tsx`). It first showed one
+question a day; a shout-out question made it read as a shout-out box, so the
+card names all four, and each opens the pop-up with that kind picked. The sender
 can pick what sort of note it is — an idea, something not working, a
 shout-out, a question (`Feedback.kind`, optional; four values everybody
 shares, so it says nothing about who) — and on sending the note drops into the

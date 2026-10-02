@@ -3,7 +3,9 @@ import { Link } from 'react-router-dom';
 import { localDate } from '../lib/format';
 import { ApiError, api } from '../lib/api';
 import { useSession } from '../lib/session';
-import type { Employee, JobRole, Location, Role } from '../lib/types';
+import type { DirectoryEntry, Employee, JobRole, Location, Role } from '../lib/types';
+import { Avatar } from '../components/Avatar';
+import { ContactLines, PresenceBadges } from '../components/PersonDetails';
 import { useConfirm } from '../components/ConfirmDialog';
 import { ImportStaff } from '../components/ImportStaff';
 import { JobRoleTag } from '../components/JobRoleTag';
@@ -25,6 +27,9 @@ export function StaffPage() {
   const [staff, setStaff] = useState<Employee[]>([]);
   const [locations, setLocations] = useState<Location[]>([]);
   const [jobRoles, setJobRoles] = useState<JobRole[]>([]);
+  /// The Directory's view of each person — in now, working from home, "about
+  /// you" — so a card here says everything a Directory card does.
+  const [directory, setDirectory] = useState<Map<string, DirectoryEntry>>(new Map());
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [adding, setAdding] = useState(false);
@@ -48,12 +53,15 @@ export function StaffPage() {
   const load = useCallback(async () => {
     setLoading(true);
     try {
-      const [staffData, locationData, roleData] = await Promise.all([
+      const [staffData, locationData, roleData, directoryData] = await Promise.all([
         api.listEmployees(),
         api.listLocations(),
         api.jobRoles(),
+        // Extra, not essential: without it the cards just say less.
+        api.directory().catch(() => [] as DirectoryEntry[]),
       ]);
       setStaff(staffData);
+      setDirectory(new Map(directoryData.map((entry) => [entry.id, entry])));
       setLocations(locationData);
       setJobRoles(roleData);
       setError(null);
@@ -119,7 +127,7 @@ export function StaffPage() {
   );
 
   return (
-    <div className="max-w-3xl">
+    <div className="max-w-6xl">
       <PageHeading
         title="Staff"
         subtitle="Who works here, what they can see, and how they sign in."
@@ -273,11 +281,12 @@ export function StaffPage() {
             : 'Nobody here yet. Add your managers to get started.'}
         </EmptyState>
       ) : (
-        <div className="space-y-3">
+        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
           {visible.map((person) => (
             <StaffCard
               key={person.id}
               person={person}
+              entry={directory.get(person.id)}
               jobRoles={jobRoles}
               isMe={person.id === me?.id}
               canOpenProfile={me?.role === 'ADMIN'}
@@ -312,12 +321,15 @@ export function StaffPage() {
 
 function StaffCard({
   person,
+  entry,
   jobRoles,
   isMe,
   canOpenProfile,
   onEdit,
 }: {
   person: Employee;
+  /// The same person as the Directory has them; none for former staff.
+  entry?: DirectoryEntry;
   /// Every job role, with its members — which of them this person is in.
   jobRoles: JobRole[];
   isMe: boolean;
@@ -331,31 +343,34 @@ function StaffCard({
   const terminated = person.employmentStatus === 'TERMINATED';
 
   return (
-    <Card testId={`staff-${person.email}`} className="p-4">
-      <div className="flex flex-wrap items-start justify-between gap-3">
-        <div className={`min-w-0 ${terminated ? 'opacity-60' : ''}`}>
-          <p className="font-medium text-slate-900">
-            {canOpenProfile ? (
-              <Link
-                to={`/staff/${person.id}`}
-                className="text-brand-700 underline-offset-2 hover:underline"
-              >
-                {person.firstName} {person.lastName}
-              </Link>
-            ) : (
-              <>
-                {person.firstName} {person.lastName}
-              </>
-            )}
-            {person.preferredName && person.preferredName !== person.firstName && (
-              <span className="ml-1 font-normal text-slate-500">(“{person.preferredName}”)</span>
-            )}
-            {isMe && <span className="ml-2 text-xs font-normal text-slate-500">(you)</span>}
-          </p>
-          <p className="text-sm text-slate-600">
-            {person.email}
-            {person.phone && <span className="text-slate-500"> · {person.phone}</span>}
-          </p>
+    <Card testId={`staff-${person.email}`} className="flex flex-col p-4">
+      <div className={`flex gap-3 ${terminated ? 'opacity-60' : ''}`}>
+        <Avatar person={person} size="lg" />
+        <div className="min-w-0 flex-1">
+          <div className="flex flex-wrap items-center gap-2">
+            <p className="font-semibold text-slate-900">
+              {canOpenProfile ? (
+                <Link
+                  to={`/staff/${person.id}`}
+                  className="text-brand-700 underline-offset-2 hover:underline"
+                >
+                  {person.firstName} {person.lastName}
+                </Link>
+              ) : (
+                <>
+                  {person.firstName} {person.lastName}
+                </>
+              )}
+              {person.preferredName && person.preferredName !== person.firstName && (
+                <span className="ml-1 font-normal text-slate-500">(“{person.preferredName}”)</span>
+              )}
+              {person.pronouns && (
+                <span className="ml-1 text-sm font-normal text-slate-500">({person.pronouns})</span>
+              )}
+              {isMe && <span className="ml-1 text-xs font-normal text-slate-500">(you)</span>}
+            </p>
+            {entry && <PresenceBadges entry={entry} />}
+          </div>
           {heldRoles.length > 0 && (
             <p className="mt-1 flex flex-wrap gap-1" data-testid="staff-job-roles">
               {heldRoles.map((jobRole) => (
@@ -363,50 +378,56 @@ function StaffCard({
               ))}
             </p>
           )}
-          <p className="mt-1 text-xs text-slate-500">
+          <p className="text-xs text-slate-500">
             {person.locations.map((l) => l.location.name).join(', ') || 'No location assigned'}
           </p>
-          {!terminated && (
-            <p className="text-xs text-slate-500">
-              {person.adpFileNumber ? `ADP File # ${person.adpFileNumber}` : 'No ADP File # yet'}
-            </p>
-          )}
-          {!terminated && person.hasPassword === false && (
-            <p className="mt-1 text-xs text-amber-800">
-              Has not chosen a password yet
-              {person.welcomeSentAt
-                ? ` · welcome email sent ${new Date(person.welcomeSentAt).toLocaleDateString(
-                    'en-US',
-                    { month: 'short', day: 'numeric' },
-                  )}`
-                : ' · not sent a welcome email'}
-            </p>
-          )}
+          {entry?.about && <p className="mt-1 text-sm text-slate-700">{entry.about}</p>}
+          <ContactLines person={person} />
         </div>
+      </div>
 
-        <div className="flex flex-wrap items-center gap-2">
+      <div className="mt-3 border-t border-slate-100 pt-3 sm:mt-auto">
+        {!terminated && (
+          <p className="text-xs text-slate-500">
+            {person.adpFileNumber ? `ADP File # ${person.adpFileNumber}` : 'No ADP File # yet'}
+          </p>
+        )}
+        {!terminated && person.hasPassword === false && (
+          <p className="mt-1 text-xs text-amber-800">
+            Has not chosen a password yet
+            {person.welcomeSentAt
+              ? ` · welcome email sent ${new Date(person.welcomeSentAt).toLocaleDateString(
+                  'en-US',
+                  { month: 'short', day: 'numeric' },
+                )}`
+              : ' · not sent a welcome email'}
+          </p>
+        )}
+        <div className="mt-2 flex flex-wrap items-center gap-2">
           <Badge tone={person.role === 'EMPLOYEE' ? 'neutral' : 'info'}>
             {ROLE_LABELS[person.role]} access
           </Badge>
           {terminated && <Badge tone="danger">Former</Badge>}
           {person.hasKioskPin && <Badge tone="success">PIN</Badge>}
-          {canOpenProfile && (
-            <Link
-              to={`/staff/${person.id}`}
-              aria-label={`Profile of ${person.firstName} ${person.lastName}`}
+          <span className="ml-auto flex gap-2">
+            {canOpenProfile && (
+              <Link
+                to={`/staff/${person.id}`}
+                aria-label={`Profile of ${person.firstName} ${person.lastName}`}
+                className={buttonClass('secondary', 'sm')}
+              >
+                Profile
+              </Link>
+            )}
+            <button
+              type="button"
+              onClick={onEdit}
+              aria-label={`Edit ${person.firstName} ${person.lastName}`}
               className={buttonClass('secondary', 'sm')}
             >
-              Profile
-            </Link>
-          )}
-          <button
-            type="button"
-            onClick={onEdit}
-            aria-label={`Edit ${person.firstName} ${person.lastName}`}
-            className={buttonClass('secondary', 'sm')}
-          >
-            Edit
-          </button>
+              Edit
+            </button>
+          </span>
         </div>
       </div>
     </Card>

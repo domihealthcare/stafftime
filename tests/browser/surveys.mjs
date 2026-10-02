@@ -207,9 +207,23 @@ await step('Home has the suggestion box as a card with a box on it, not a link',
   await card.waitFor({ timeout: 15000 });
   await card.locator('svg').first().waitFor({ timeout: 5000 });
   await card.getByText('Drop a note in').waitFor({ timeout: 5000 });
+  // Every sort of note is named on the card, so it does not read as one kind only.
+  for (const kind of ['An idea', 'Something’s not working', 'A shout-out', 'A question']) {
+    await card.getByRole('button', { name: kind }).waitFor({ timeout: 5000 });
+  }
   // A staff member is not shown how many are waiting.
   if ((await frankie.getByTestId('suggestions-waiting').count()) > 0)
     throw new Error('staff see the count of suggestions waiting');
+});
+
+await step('pressing a sort of note on the card opens the pop-up with it picked', async () => {
+  await frankie.getByTestId('suggestion-box-card').getByRole('button', { name: 'A shout-out' }).click();
+  const dialog = frankie.getByRole('dialog', { name: 'Drop a note in the box' });
+  await dialog.waitFor({ timeout: 5000 });
+  if ((await dialog.getByRole('button', { name: 'A shout-out' }).getAttribute('aria-pressed')) !== 'true')
+    throw new Error('the sort pressed on the card was not picked');
+  await dialog.getByRole('button', { name: 'Cancel' }).click();
+  await dialog.waitFor({ state: 'detached', timeout: 5000 });
 });
 
 await step('the pop-up takes a kind and a message, and the note goes in the box', async () => {
