@@ -306,7 +306,9 @@ const STAFF: Section[] = [
         answer: (
           <p>
             <Screen>Directory</Screen> lists everybody with their work email, phone number, job
-            roles and offices. <strong>In now</strong> means they are clocked in at the moment. Each
+            roles and offices. <strong>In now</strong> means they are clocked in at the moment.{' '}
+            <strong>Working from home today</strong> lists who is clocked in from home, and anybody
+            whose shift today is from home but who has not clocked in yet, with their hours. Each
             job role has its own colour, so you can tell at a glance who is front desk, MA or
             provider.
           </p>

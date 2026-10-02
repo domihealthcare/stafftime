@@ -72,6 +72,16 @@ const shiftId = await mgr.evaluate(async () => {
   return (await response.json()).id;
 });
 
+await step('before clocking in, the Directory already shows Morgan working from home today', async () => {
+  await goTo(mgr, 'Directory');
+  const home = mgr.getByTestId('in-now-home');
+  await home.getByTestId('home-later').getByText('Morgan', { exact: false }).waitFor({ timeout: 15000 });
+  await home.getByText('not in yet', { exact: false }).waitFor({ timeout: 5000 });
+  await mgr.getByTestId('person-Morgan Manager').getByText(/Working from home today/).waitFor({ timeout: 5000 });
+  await mgr.screenshot({ path: `${OUT}/109-directory-home-today.png` });
+  await goTo(mgr, 'Home');
+});
+
 await step('the Clock screen offers to clock in from home, and says nothing is recorded', async () => {
   await mgr.reload({ waitUntil: 'networkidle' });
   await mgr.getByText(/Today’s shift: .* · Work from home/).waitFor({ timeout: 15000 });
@@ -115,6 +125,8 @@ await step('the Directory shows Morgan working from home, not at an office', asy
   if ((await office.count()) > 0 && (await office.getByText('Morgan').count()) > 0)
     throw new Error('Morgan is shown at North Bergen as well');
   await frankie.getByTestId('person-Morgan Manager').getByText('In now · Working from home').waitFor({ timeout: 5000 });
+  // Once in, Morgan is listed as in now, not as still to come.
+  if ((await home.getByTestId('home-later').count()) > 0) throw new Error('Morgan is still listed as not in yet');
 });
 await frankie.screenshot({ path: `${OUT}/111-directory-from-home.png`, fullPage: true });
 

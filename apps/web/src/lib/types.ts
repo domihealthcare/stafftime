@@ -848,6 +848,8 @@ export interface DirectoryEntry {
   locations: { id: string; name: string; isPrimary: boolean }[];
   /// Clocked in now. `since` is only sent to managers.
   onNow: { location: { id: string; name: string }; remote?: boolean; since?: string } | null;
+  /// A published work-from-home shift today that has not ended yet.
+  homeToday: { startsAt: string; endsAt: string } | null;
 }
 
 /// Somebody's birthday falling on `date` (YYYY-MM-DD) in the range asked for.

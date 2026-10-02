@@ -1,7 +1,13 @@
 import { BadRequestException, Injectable } from '@nestjs/common';
-import { EmploymentStatus, Role } from '@prisma/client';
+import { EmploymentStatus, Role, ShiftStatus } from '@prisma/client';
 import { AuthUser } from '../common/auth/auth-user';
 import { birthdaysBetween } from '../common/birthday';
+import {
+  PRACTICE_ZONE,
+  addDaysTo,
+  localDateIn,
+  zonedTimeToUtc,
+} from '../common/util/zoned-time.util';
 import { PrismaService } from '../prisma/prisma.service';
 
 /// An open punch older than this is a forgotten clock-out, not somebody at
@@ -17,6 +23,11 @@ export const ON_NOW_WINDOW_HOURS = 16;
  * personnel side — pay type, hire date, status — and nobody who has left.
  * Birthdays (month and day, no year) are here too, since September 2026, so
  * colleagues can wish each other a happy birthday.
+ *
+ * And who is working from home today (October 2026, Dominguez): a published
+ * work-from-home shift today that has not yet ended, so colleagues know not
+ * to look for them at the desk even before they clock in. Only that one fact
+ * and its hours — nobody's office shifts, which staff still do not see.
  */
 @Injectable()
 export class DirectoryService {
@@ -29,7 +40,12 @@ export class DirectoryService {
    */
   async birthdays(from: string, to: string) {
     const day = /^\d{4}-\d{2}-\d{2}$/;
-    if (!day.test(from) || !day.test(to) || Number.isNaN(Date.parse(from)) || Number.isNaN(Date.parse(to))) {
+    if (
+      !day.test(from) ||
+      !day.test(to) ||
+      Number.isNaN(Date.parse(from)) ||
+      Number.isNaN(Date.parse(to))
+    ) {
       throw new BadRequestException('from and to are dates, YYYY-MM-DD.');
     }
     const span = (Date.parse(to) - Date.parse(from)) / 86_400_000;
@@ -64,6 +80,12 @@ export class DirectoryService {
 
   async list(actor: AuthUser, now = new Date()) {
     const since = new Date(now.getTime() - ON_NOW_WINDOW_HOURS * 3_600_000);
+    // The end of today at the practice, not the server's UTC day.
+    const tomorrow = zonedTimeToUtc(
+      addDaysTo(localDateIn(now, PRACTICE_ZONE), 1),
+      '00:00',
+      PRACTICE_ZONE,
+    );
 
     const people = await this.prisma.employee.findMany({
       where: { employmentStatus: { in: [EmploymentStatus.ACTIVE, EmploymentStatus.ON_LEAVE] } },
@@ -97,6 +119,17 @@ export class DirectoryService {
           orderBy: { clockInAt: 'desc' },
           take: 1,
         },
+        shifts: {
+          where: {
+            isRemote: true,
+            status: ShiftStatus.PUBLISHED,
+            startsAt: { lt: tomorrow },
+            endsAt: { gt: now },
+          },
+          select: { startsAt: true, endsAt: true },
+          orderBy: { startsAt: 'asc' },
+          take: 1,
+        },
       },
       orderBy: [{ firstName: 'asc' }, { lastName: 'asc' }],
     });
@@ -105,27 +138,30 @@ export class DirectoryService {
     // to know they are in, and where.
     const showSince = actor.role !== Role.EMPLOYEE;
 
-    return people.map(({ jobRoles, locations, timeEntries, employmentStatus, ...person }) => {
-      const open = timeEntries[0];
-      return {
-        ...person,
-        onLeave: employmentStatus === EmploymentStatus.ON_LEAVE,
-        jobRoles: jobRoles
-          .map((row) => row.jobRole)
-          .sort((a, b) => a.sortOrder - b.sortOrder || a.name.localeCompare(b.name))
-          .map(({ id, name, colour }) => ({ id, name, colour })),
-        locations: locations
-          .sort((a, b) => Number(b.isPrimary) - Number(a.isPrimary))
-          .map((row) => ({ ...row.location, isPrimary: row.isPrimary })),
-        onNow: open
-          ? {
-              location: open.location,
-              // Clocked in to a work-from-home shift: in, but not at the office.
-              remote: open.clockInVerification === 'REMOTE',
-              ...(showSince ? { since: open.clockInAt } : {}),
-            }
-          : null,
-      };
-    });
+    return people.map(
+      ({ jobRoles, locations, timeEntries, shifts, employmentStatus, ...person }) => {
+        const open = timeEntries[0];
+        return {
+          ...person,
+          onLeave: employmentStatus === EmploymentStatus.ON_LEAVE,
+          jobRoles: jobRoles
+            .map((row) => row.jobRole)
+            .sort((a, b) => a.sortOrder - b.sortOrder || a.name.localeCompare(b.name))
+            .map(({ id, name, colour }) => ({ id, name, colour })),
+          locations: locations
+            .sort((a, b) => Number(b.isPrimary) - Number(a.isPrimary))
+            .map((row) => ({ ...row.location, isPrimary: row.isPrimary })),
+          onNow: open
+            ? {
+                location: open.location,
+                // Clocked in to a work-from-home shift: in, but not at the office.
+                remote: open.clockInVerification === 'REMOTE',
+                ...(showSince ? { since: open.clockInAt } : {}),
+              }
+            : null,
+          homeToday: shifts[0] ? { startsAt: shifts[0].startsAt, endsAt: shifts[0].endsAt } : null,
+        };
+      },
+    );
   }
 }

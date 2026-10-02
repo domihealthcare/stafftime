@@ -2078,6 +2078,16 @@ forgotten clock-out, and should not tell the front desk somebody is in who went
 home yesterday — the missing punch is already chased by *What needs a look*.
 Colleagues see where somebody is; only managers see when they clocked in.
 
+**Working from home today** (October 2026, Dominguez) is always on screen,
+under the office boxes: who is clocked in from home now, then anybody with a
+**published work-from-home shift today** (New Jersey's today) that has not
+ended and who is not in yet, with its hours — so colleagues know not to look
+for them at the desk before they clock in. Everybody signed in sees it. It is
+the one place staff see anything of a colleague's shifts, and deliberately
+narrow: only work-from-home shifts, only today's, only the hours (the query
+selects `startsAt` and `endsAt` and nothing else). Office shifts, drafts and
+other days stay out of it. With nobody, it says so rather than disappearing.
+
 ## Availability
 
 Staff say when they cannot work: a weekday every week, or one date, either all

@@ -363,6 +363,13 @@ Beyond the phases, the parts worth knowing about before picking up work:
   no location or IP. With no shift at all, an office gives no warning and
   home does. `tests/browser/clock-place.mjs`; see *Working from home* in
   `docs/architecture.md`.
+- **Working from home today in the Directory** (2 October 2026, Dominguez):
+  the box under the office boxes is always shown — who is clocked in from
+  home now, then anybody with a published work-from-home shift today who is
+  not in yet, with its hours ("not in yet"), and a badge on their card.
+  Everybody sees it: the one, narrow exception to staff not seeing each
+  other's shifts (today, from home, hours only). `homeToday` in
+  `DirectoryService.list`.
 - **Tablet PINs are chosen by staff** on their profile (confirmed with their
   password); the profile shows only that one is set and since when, never the
   PIN. Managers and admins can set a replacement from the Directory, never

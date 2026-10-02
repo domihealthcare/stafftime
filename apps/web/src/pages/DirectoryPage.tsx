@@ -26,7 +26,8 @@ const REFRESH_MS = 60_000;
  * Who works here, how to reach them, and who is in right now.
  *
  * "In now" comes from live clock-ins, so the front desk can answer "is Dr. X
- * in West New York today?" without phoning round.
+ * in West New York today?" without phoning round. Working from home also
+ * lists who has a work-from-home shift today and has not clocked in yet.
  */
 export function DirectoryPage() {
   const { employee } = useSession();
@@ -145,23 +146,7 @@ export function DirectoryPage() {
             </Card>
           );
         })}
-        {people.some((person) => person.onNow?.remote) && (
-          <Card className="p-4 sm:col-span-2" testId="in-now-home">
-            <p className="text-xs font-medium uppercase tracking-wide text-slate-500">
-              Working from home now
-            </p>
-            <ul className="mt-1 flex flex-wrap gap-x-3 gap-y-1 text-sm text-slate-800">
-              {people
-                .filter((person) => person.onNow?.remote)
-                .map((person) => (
-                  <li key={person.id} className="flex items-center gap-1.5">
-                    <span aria-hidden className="h-2 w-2 rounded-full bg-violet-500" />
-                    {displayName(person)}
-                  </li>
-                ))}
-            </ul>
-          </Card>
-        )}
+        <HomeToday people={people} />
       </section>
 
       <div className="mb-4 grid gap-2 sm:grid-cols-3">
@@ -267,6 +252,12 @@ function PersonCard({
                 {person.onNow.since && ` since ${formatTime(person.onNow.since)}`}
               </Badge>
             )}
+            {person.homeToday && !person.onNow?.remote && (
+              <Badge tone="info">
+                Working from home today · {formatTime(person.homeToday.startsAt)}–
+                {formatTime(person.homeToday.endsAt)}
+              </Badge>
+            )}
             {person.onLeave && <Badge tone="warning">On leave</Badge>}
           </div>
 
@@ -309,6 +300,49 @@ function PersonCard({
         </div>
       </div>
       {canResetPin && <PinReset person={person} />}
+    </Card>
+  );
+}
+
+/// Who is working from home today: clocked in from home now, then anybody
+/// with a work-from-home shift today who is not on yet. Always on screen, so
+/// "nobody" is an answer and not a missing box.
+function HomeToday({ people }: { people: DirectoryEntry[] }) {
+  const now = people.filter((person) => person.onNow?.remote);
+  const later = people
+    .filter((person) => person.homeToday && !person.onNow?.remote)
+    .sort((a, b) => a.homeToday!.startsAt.localeCompare(b.homeToday!.startsAt));
+  return (
+    <Card className="p-4 sm:col-span-2" testId="in-now-home">
+      <p className="text-xs font-medium uppercase tracking-wide text-slate-500">
+        Working from home today
+      </p>
+      {now.length === 0 && later.length === 0 ? (
+        <p className="mt-1 text-sm text-slate-500">Nobody is working from home today.</p>
+      ) : (
+        <ul className="mt-1 flex flex-wrap gap-x-3 gap-y-1 text-sm text-slate-800">
+          {now.map((person) => (
+            <li key={person.id} className="flex items-center gap-1.5">
+              <span aria-hidden className="h-2 w-2 rounded-full bg-violet-500" />
+              {displayName(person)}
+              <span className="text-slate-500">· in now</span>
+            </li>
+          ))}
+          {later.map((person) => (
+            <li key={person.id} className="flex items-center gap-1.5" data-testid="home-later">
+              <span
+                aria-hidden
+                className="h-2 w-2 rounded-full ring-1 ring-inset ring-violet-500"
+              />
+              {displayName(person)}
+              <span className="text-slate-500">
+                · {formatTime(person.homeToday!.startsAt)}–{formatTime(person.homeToday!.endsAt)},
+                not in yet
+              </span>
+            </li>
+          ))}
+        </ul>
+      )}
     </Card>
   );
 }
