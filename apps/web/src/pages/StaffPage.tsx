@@ -3,7 +3,15 @@ import { Link } from 'react-router-dom';
 import { localDate } from '../lib/format';
 import { ApiError, api } from '../lib/api';
 import { useSession } from '../lib/session';
-import type { DirectoryEntry, Employee, JobRole, Location, Role } from '../lib/types';
+import type {
+  DirectoryEntry,
+  Employee,
+  JobRole,
+  Location,
+  OfficeExtension,
+  Role,
+} from '../lib/types';
+import { extensionOf } from '../components/OfficeExtensions';
 import { Avatar } from '../components/Avatar';
 import { ContactLines, PresenceBadges } from '../components/PersonDetails';
 import { useConfirm } from '../components/ConfirmDialog';
@@ -30,6 +38,7 @@ export function StaffPage() {
   /// The Directory's view of each person — in now, working from home, "about
   /// you" — so a card here says everything a Directory card does.
   const [directory, setDirectory] = useState<Map<string, DirectoryEntry>>(new Map());
+  const [extensions, setExtensions] = useState<OfficeExtension[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [adding, setAdding] = useState(false);
@@ -53,15 +62,17 @@ export function StaffPage() {
   const load = useCallback(async () => {
     setLoading(true);
     try {
-      const [staffData, locationData, roleData, directoryData] = await Promise.all([
+      const [staffData, locationData, roleData, directoryData, extensionData] = await Promise.all([
         api.listEmployees(),
         api.listLocations(),
         api.jobRoles(),
         // Extra, not essential: without it the cards just say less.
         api.directory().catch(() => [] as DirectoryEntry[]),
+        api.extensions().catch(() => [] as OfficeExtension[]),
       ]);
       setStaff(staffData);
       setDirectory(new Map(directoryData.map((entry) => [entry.id, entry])));
+      setExtensions(extensionData);
       setLocations(locationData);
       setJobRoles(roleData);
       setError(null);
@@ -287,6 +298,7 @@ export function StaffPage() {
               key={person.id}
               person={person}
               entry={directory.get(person.id)}
+              extension={extensionOf(extensions, person.id)}
               jobRoles={jobRoles}
               isMe={person.id === me?.id}
               canOpenProfile={me?.role === 'ADMIN'}
@@ -322,6 +334,7 @@ export function StaffPage() {
 function StaffCard({
   person,
   entry,
+  extension,
   jobRoles,
   isMe,
   canOpenProfile,
@@ -330,6 +343,8 @@ function StaffCard({
   person: Employee;
   /// The same person as the Directory has them; none for former staff.
   entry?: DirectoryEntry;
+  /// Their line on the office extensions list, if any.
+  extension: OfficeExtension | null;
   /// Every job role, with its members — which of them this person is in.
   jobRoles: JobRole[];
   isMe: boolean;
@@ -382,7 +397,11 @@ function StaffCard({
             {person.locations.map((l) => l.location.name).join(', ') || 'No location assigned'}
           </p>
           {entry?.about && <p className="mt-1 text-sm text-slate-700">{entry.about}</p>}
-          <ContactLines person={person} />
+          <ContactLines
+            person={person}
+            extension={extension}
+            fromHomeToday={Boolean(entry?.onNow?.remote || entry?.homeToday)}
+          />
         </div>
       </div>
 

@@ -388,6 +388,20 @@ Beyond the phases, the parts worth knowing about before picking up work:
   pronouns, "about you", in now / working from home / on leave, tappable
   email and phone, birthday — plus access, ADP File #, PIN and password
   status, Profile and Edit. Shared pieces in `components/PersonDetails.tsx`.
+- **Office extensions in the Directory** (2 October 2026, Dominguez — from
+  the practice's *Office Extensions* sheet, 04.2024–08.2026): a card under
+  the search box, a column per section (Providers, Admin Team, Front Desk &
+  Outdesk, Misc), searchable. A person's **5xx number rings their mobile on
+  their work-from-home day** (`homeExtension`, `homeDays` as written, e.g.
+  "Thursday") — an extension, not their mobile number. Managers and admins
+  **Edit** it (add, reorder, remove, match a line to a person); a matched
+  person shows "Ext. 121 · 521 from home (Thursday)" on their Directory and
+  Staff cards, and on a day working from home "Ext. 521 today" first, and in
+  the Working from home box. `OfficeExtension`, saved whole
+  (`PUT /directory/extensions`); migration `20261002030000_office_extensions`
+  loads the sheet and matches a line to an account only when exactly one
+  current member of staff has that first and last name — **check the
+  matches on the live site** and fix any in Edit.
 - **Tablet PINs are chosen by staff** on their profile (confirmed with their
   password); the profile shows only that one is set and since when, never the
   PIN. Managers and admins can set a replacement from the Directory, never

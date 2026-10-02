@@ -1,6 +1,6 @@
 import { formatBirthday } from '../lib/birthday';
 import { formatTime } from '../lib/format';
-import type { DirectoryEntry } from '../lib/types';
+import type { DirectoryEntry, OfficeExtension } from '../lib/types';
 import { Badge } from './ui';
 
 /// Where somebody is right now, as the Directory says it: in now (and since
@@ -35,6 +35,8 @@ export function PresenceBadges({
 /// month and day only. As on a Directory card.
 export function ContactLines({
   person,
+  extension,
+  fromHomeToday = false,
 }: {
   person: {
     email: string;
@@ -42,10 +44,37 @@ export function ContactLines({
     birthdayMonth?: number | null;
     birthdayDay?: number | null;
   };
+  /// Their line on the office extensions list, if they have one.
+  extension?: OfficeExtension | null;
+  /// Working from home today: their from-home number is the one to dial.
+  fromHomeToday?: boolean;
 }) {
   const birthday = formatBirthday(person.birthdayMonth ?? null, person.birthdayDay ?? null);
   return (
     <div className="mt-2 flex flex-col gap-0.5 text-sm">
+      {extension && (
+        <span className="text-slate-700" data-testid="person-extension">
+          <span aria-hidden="true">☎</span>{' '}
+          {fromHomeToday && extension.homeExtension ? (
+            <>
+              <strong className="tabular-nums">Ext. {extension.homeExtension}</strong> today — they
+              are working from home
+              <span className="text-slate-500"> (office {extension.extension})</span>
+            </>
+          ) : (
+            <>
+              <span className="tabular-nums">Ext. {extension.extension}</span>
+              {extension.homeExtension && (
+                <span className="text-slate-500">
+                  {' '}
+                  · {extension.homeExtension} from home
+                  {extension.homeDays && ` (${extension.homeDays})`}
+                </span>
+              )}
+            </>
+          )}
+        </span>
+      )}
       <a
         href={`mailto:${person.email}`}
         className="tap truncate text-brand-700 hover:text-brand-900"

@@ -8,7 +8,8 @@ import { Alert, Card, EmptyState, PageHeading, Spinner, buttonClass } from '../c
 import { ApiError, api } from '../lib/api';
 import { displayName, formatTime } from '../lib/format';
 import { useIsManager, useSession } from '../lib/session';
-import type { DirectoryEntry } from '../lib/types';
+import type { DirectoryEntry, OfficeExtension } from '../lib/types';
+import { OfficeExtensionsCard, extensionOf } from '../components/OfficeExtensions';
 
 /// Long enough that the list is not a stale picture of the morning, short
 /// enough not to matter to the server.
@@ -25,6 +26,7 @@ export function DirectoryPage() {
   const { employee } = useSession();
   const isManager = useIsManager();
   const [people, setPeople] = useState<DirectoryEntry[]>([]);
+  const [extensions, setExtensions] = useState<OfficeExtension[]>([]);
   const [search, setSearch] = useState('');
   const [jobRole, setJobRole] = useState('');
   const [location, setLocation] = useState('');
@@ -42,7 +44,13 @@ export function DirectoryPage() {
 
   const load = useCallback(async () => {
     try {
-      setPeople(await api.directory());
+      const [found, lines] = await Promise.all([
+        api.directory(),
+        // The extensions are extra: without them the Directory still works.
+        api.extensions().catch(() => null),
+      ]);
+      setPeople(found);
+      if (lines) setExtensions(lines);
       setError(null);
     } catch (cause) {
       setError(cause instanceof ApiError ? cause.message : 'Could not load the directory.');
@@ -138,7 +146,7 @@ export function DirectoryPage() {
             </Card>
           );
         })}
-        <HomeToday people={people} />
+        <HomeToday people={people} extensions={extensions} />
       </section>
 
       <div className="mb-4 grid gap-2 sm:grid-cols-3">
@@ -178,6 +186,15 @@ export function DirectoryPage() {
         </select>
       </div>
 
+      {!onlyPerson && (
+        <OfficeExtensionsCard
+          lines={extensions}
+          search={search}
+          canEdit={isManager}
+          onSaved={setExtensions}
+        />
+      )}
+
       {onlyPerson && (
         <p className="mb-3 text-sm text-slate-700">
           Showing one person.{' '}
@@ -204,6 +221,7 @@ export function DirectoryPage() {
               }
               isYou={person.id === employee?.id}
               canResetPin={isManager && person.id !== employee?.id}
+              extension={extensionOf(extensions, person.id)}
             />
           ))}
         </div>
@@ -217,12 +235,14 @@ function PersonCard({
   person,
   isYou,
   canResetPin,
+  extension,
   onContextMenu,
 }: {
   onContextMenu: (event: React.MouseEvent) => void;
   person: DirectoryEntry;
   isYou: boolean;
   canResetPin: boolean;
+  extension: OfficeExtension | null;
 }) {
   const name = displayName(person);
   return (
@@ -255,7 +275,11 @@ function PersonCard({
           )}
           {person.about && <p className="mt-1 text-sm text-slate-700">{person.about}</p>}
 
-          <ContactLines person={person} />
+          <ContactLines
+            person={person}
+            extension={extension}
+            fromHomeToday={Boolean(person.onNow?.remote || person.homeToday)}
+          />
         </div>
       </div>
       {canResetPin && <PinReset person={person} />}
@@ -266,7 +290,18 @@ function PersonCard({
 /// Who is working from home today: clocked in from home now, then anybody
 /// with a work-from-home shift today who is not on yet. Always on screen, so
 /// "nobody" is an answer and not a missing box.
-function HomeToday({ people }: { people: DirectoryEntry[] }) {
+function HomeToday({
+  people,
+  extensions,
+}: {
+  people: DirectoryEntry[];
+  extensions: OfficeExtension[];
+}) {
+  /// The number that rings them at home, where the list has one.
+  const dial = (person: DirectoryEntry) => {
+    const number = extensionOf(extensions, person.id)?.homeExtension;
+    return number ? ` · ext. ${number}` : '';
+  };
   const now = people.filter((person) => person.onNow?.remote);
   const later = people
     .filter((person) => person.homeToday && !person.onNow?.remote)
@@ -284,7 +319,7 @@ function HomeToday({ people }: { people: DirectoryEntry[] }) {
             <li key={person.id} className="flex items-baseline gap-1.5">
               <span aria-hidden className="h-2 w-2 shrink-0 rounded-full bg-violet-500" />
               <span>
-                {displayName(person)} <span className="text-slate-500">· in now</span>
+                {displayName(person)} <span className="text-slate-500">· in now{dial(person)}</span>
               </span>
             </li>
           ))}
@@ -298,7 +333,7 @@ function HomeToday({ people }: { people: DirectoryEntry[] }) {
                 {displayName(person)}{' '}
                 <span className="text-slate-500">
                   · {formatTime(person.homeToday!.startsAt)}–{formatTime(person.homeToday!.endsAt)},
-                  not in yet
+                  not in yet{dial(person)}
                 </span>
               </span>
             </li>

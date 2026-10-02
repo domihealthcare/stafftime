@@ -320,6 +320,8 @@ model Employee {
   employmentChanges         EmploymentChange[]       @relation("EmploymentChangeSubject")
   recordedEmploymentChanges EmploymentChange[]       @relation("EmploymentChangeRecordedBy")
   recordedPtoRequests       PtoRequest[]             @relation("PtoRecordedBy")
+  /// Their line on the office extensions list, if they have one.
+  officeExtensions          OfficeExtension[]
 
   @@index([employmentStatus])
   @@map("employees")
@@ -2155,4 +2157,32 @@ model EmploymentChange {
 
   @@index([employeeId, effectiveOn])
   @@map("employment_changes")
+}
+
+/// The practice's phone extensions, as on its "Office Extensions" sheet
+/// (October 2026, Dominguez), shown in the Directory and kept by managers.
+///
+/// A line is a person ("Kayla Bermeo") or a phone ("NB Front Desk"), in a
+/// section ("Admin Team"). `homeExtension` is the 5xx number that rings the
+/// person's mobile on the days they work from home (`homeDays`, as written —
+/// "Thursday"). It is an extension, not their mobile number, which the app
+/// does not hold. A person line may be matched to their account so their
+/// Directory card shows it too.
+model OfficeExtension {
+  id            String  @id @default(uuid()) @db.Uuid
+  section       String
+  label         String
+  extension     String
+  homeExtension String?
+  homeDays      String?
+  employeeId    String? @db.Uuid
+  /// The whole list's order: sections appear in the order of their first line.
+  sortOrder     Int
+
+  updatedAt DateTime @updatedAt
+
+  employee Employee? @relation(fields: [employeeId], references: [id], onDelete: SetNull)
+
+  @@index([sortOrder])
+  @@map("office_extensions")
 }

@@ -310,7 +310,9 @@ const STAFF: Section[] = [
             <strong>Working from home today</strong> lists who is clocked in from home, and anybody
             whose shift today is from home but who has not clocked in yet, with their hours. Each
             job role has its own colour, so you can tell at a glance who is front desk, MA or
-            provider.
+            provider. <strong>Office extensions</strong> lists every desk phone and person by
+            section, as on the practice’s sheet. A “from home” number rings that person’s mobile on
+            the days they work from home — on those days their card shows it first.
           </p>
         ),
       },
@@ -1164,6 +1166,18 @@ const MANAGERS: Section[] = [
             written answer) and choose who it is for: everyone, a job role or a location. You see
             how many have answered, never who. Results appear once you close it, and only if at
             least three people answered — ask a small group and there may be nothing to show.
+          </p>
+        ),
+      },
+      {
+        question: 'Changing the office extensions',
+        answer: (
+          <p>
+            In <Screen>Directory</Screen>, press <strong>Edit</strong> on Office extensions. Each
+            line has a section, a name or phone, the extension, and for a person their from-home
+            number and the days they work from home. Match a line to a person and it shows on their
+            Directory card too. Use ↑ ↓ to reorder and ✕ to remove, then{' '}
+            <strong>Save extensions</strong>.
           </p>
         ),
       },

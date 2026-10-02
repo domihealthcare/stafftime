@@ -853,6 +853,20 @@ export interface DirectoryEntry {
   homeToday: { startsAt: string; endsAt: string } | null;
 }
 
+/// A line on the office extensions list: a person or a phone, in a section.
+/// `homeExtension` rings the person's mobile on their work-from-home days.
+export interface OfficeExtension {
+  id: string;
+  section: string;
+  label: string;
+  extension: string;
+  homeExtension: string | null;
+  homeDays: string | null;
+  employeeId: string | null;
+}
+
+export type OfficeExtensionInput = Omit<OfficeExtension, 'id'>;
+
 /// Somebody's birthday falling on `date` (YYYY-MM-DD) in the range asked for.
 export interface BirthdayEntry {
   id: string;

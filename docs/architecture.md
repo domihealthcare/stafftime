@@ -2088,6 +2088,18 @@ narrow: only work-from-home shifts, only today's, only the hours (the query
 selects `startsAt` and `endsAt` and nothing else). Office shifts, drafts and
 other days stay out of it. With nobody, it says so rather than disappearing.
 
+**Office extensions** (October 2026, Dominguez, from the practice's sheet)
+live in `OfficeExtension`: a line per person or phone, in a section, ordered
+as a whole and saved as a whole (`PUT /directory/extensions`, managers) —
+it is one short list a manager corrects in one go, like the sheet. The 5xx
+"from home" number rings a person's mobile on their work-from-home days; it
+is an extension, not the mobile number, which the app does not hold.
+`homeDays` is free text as on the sheet ("Thursday") rather than weekdays,
+because the cards use the work-from-home *shift* to decide when to show the
+from-home number first, not the note. The starting list came in by
+migration; a line is matched to an account there only when exactly one
+current member of staff has that first and last name.
+
 **The Staff screen shows the same card, and more** (October 2026, Dominguez):
 it loads the Directory alongside the staff list and shows its photo,
 pronouns, "about you", presence badges, contact links and birthday through
