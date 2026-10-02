@@ -345,9 +345,14 @@ const STAFF: Section[] = [
             </p>
             <p>
               Results only appear once a survey is closed and at least three people have answered.
-              Surveys waiting for you are on <Screen>Home</Screen>, with the{' '}
-              <strong>suggestion box</strong>, which is always open and keeps only your message and
-              the day it arrived.
+              Surveys waiting for you are on <Screen>Home</Screen>.
+            </p>
+            <p>
+              The <strong>suggestion box</strong> is on <Screen>Home</Screen> too, and always open:
+              press <strong>Drop a note in</strong>, pick what sort of note it is if you like (an
+              idea, something not working, a shout-out or a question), write it and send it. Only
+              your message, the sort you picked and the day it arrived are kept. The managers are
+              told the next morning that something is waiting, and read it in the app.
             </p>
           </>
         ),
@@ -1157,6 +1162,18 @@ const MANAGERS: Section[] = [
             written answer) and choose who it is for: everyone, a job role or a location. You see
             how many have answered, never who. Results appear once you close it, and only if at
             least three people answered — ask a small group and there may be nothing to show.
+          </p>
+        ),
+      },
+      {
+        question: 'The suggestion box',
+        answer: (
+          <p>
+            Notes from the suggestion box are under <Screen>Manage → Surveys</Screen>, at the
+            bottom, with what sort of note each is (an idea, something not working, a shout-out or a
+            question) and the day it arrived — never who sent it or when in the day. While any are
+            waiting, Home says how many, and the nightly email says so too, without the words. Press{' '}
+            <strong>Mark as dealt with</strong> once you have, and it stops being chased.
           </p>
         ),
       },

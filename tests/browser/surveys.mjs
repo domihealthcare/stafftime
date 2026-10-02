@@ -201,31 +201,76 @@ await step('a survey for a job role with fewer than three people says results wi
   await mgr.getByRole('button', { name: 'Cancel' }).click();
 });
 
-await step('the suggestion box keeps the message and the day, nothing else', async () => {
-  await frankie.reload({ waitUntil: 'networkidle' });
-  await frankie.getByLabel('Your suggestion').fill('Could we have a second printer at West New York?');
-  await frankie.getByRole('button', { name: 'Send anonymously' }).click();
-  await frankie.getByText('Sent anonymously. Thank you.').waitFor({ timeout: 10000 });
+await step('Home has the suggestion box as a card with a box on it, not a link', async () => {
+  await goTo(frankie, 'Home');
+  const card = frankie.getByTestId('suggestion-box-card');
+  await card.waitFor({ timeout: 15000 });
+  await card.locator('svg').first().waitFor({ timeout: 5000 });
+  await card.getByText('Drop a note in').waitFor({ timeout: 5000 });
+  // A staff member is not shown how many are waiting.
+  if ((await frankie.getByTestId('suggestions-waiting').count()) > 0)
+    throw new Error('staff see the count of suggestions waiting');
+});
 
+await step('the pop-up takes a kind and a message, and the note goes in the box', async () => {
+  await frankie.getByTestId('suggestion-box-card').getByRole('button', { name: /Drop a note in/ }).click();
+  const dialog = frankie.getByRole('dialog', { name: 'Drop a note in the box' });
+  await dialog.waitFor({ timeout: 5000 });
+  await frankie.screenshot({ path: `${OUT}/suggestion-dialog.png` });
+  await dialog.getByRole('button', { name: 'An idea' }).click();
+  if ((await dialog.getByRole('button', { name: 'An idea' }).getAttribute('aria-pressed')) !== 'true')
+    throw new Error('the kind did not stay picked');
+  await dialog.getByLabel('Your suggestion').fill('Could we have a second printer at West New York?');
+  const posted = frankie.waitForResponse((r) => r.url().endsWith('/api/feedback') && r.request().method() === 'POST');
+  await dialog.getByRole('button', { name: 'Send anonymously' }).click();
+  const body = JSON.parse((await posted).request().postData() ?? '{}');
+  if (Object.keys(body).sort().join(',') !== 'kind,message') throw new Error(`sent ${Object.keys(body).join(', ')}`);
+  await frankie.getByRole('dialog', { name: 'In the box!' }).getByText('Sent anonymously. Thank you.').waitFor({ timeout: 10000 });
+  await frankie.waitForTimeout(1200);
+  await frankie.screenshot({ path: `${OUT}/suggestion-sent.png` });
+  await frankie.getByRole('button', { name: 'Done' }).click();
+  await frankie.getByRole('dialog').waitFor({ state: 'detached', timeout: 5000 });
+});
+
+await step('the suggestion box keeps the message, the kind and the day, nothing else', async () => {
   const inbox = (await json(mgr, '/feedback')).body;
   const message = inbox.find((m) => m.message.startsWith('Could we have a second printer'));
   if (!message) throw new Error('the manager did not receive it');
-  if (Object.keys(message).sort().join(',') !== 'archivedAt,id,message,receivedOn')
+  if (Object.keys(message).sort().join(',') !== 'archivedAt,id,kind,message,receivedOn')
     throw new Error(`the message carries ${Object.keys(message).join(', ')}`);
+  if (message.kind !== 'IDEA') throw new Error(`kind is ${message.kind}`);
   if (!/T00:00:00(\.000)?Z$/.test(message.receivedOn)) throw new Error(`receivedOn has a time: ${message.receivedOn}`);
 
   const staffRead = await json(frankie, '/feedback');
   if (staffRead.status !== 403) throw new Error(`staff reading the box answered ${staffRead.status}`);
 });
 
-await step('a manager reads the box and marks a message dealt with', async () => {
-  await mgr.reload({ waitUntil: 'networkidle' });
+await step('managers are told something is waiting — the count, never the words', async () => {
+  const attention = (await json(mgr, '/attention')).body;
+  const lines = attention.newSuggestions ?? [];
+  if (!lines.some((line) => /suggestions? waiting to be read/.test(line)))
+    throw new Error(`newSuggestions: ${JSON.stringify(lines)}`);
+  if (lines.some((line) => line.includes('printer'))) throw new Error('the round-up carries the words');
+
+  await goTo(mgr, 'Home');
+  const waiting = mgr.getByTestId('suggestions-waiting');
+  await waiting.waitFor({ timeout: 15000 });
+  await mgr.screenshot({ path: `${OUT}/suggestion-home-manager.png`, fullPage: true });
+  await waiting.click();
+  await mgr.waitForURL(/\/surveys#suggestion-inbox/, { timeout: 10000 });
+  await mgr.getByTestId('needs-attention').getByText('In the suggestion box').waitFor({ timeout: 10000 });
+});
+
+await step('a manager reads the box, sees the kind, and marks a message dealt with', async () => {
   const card = mgr.getByTestId('feedback-message').filter({ hasText: 'second printer' });
   await card.waitFor({ timeout: 10000 });
+  await card.getByText('💡 An idea').waitFor({ timeout: 5000 });
   await card.getByRole('button', { name: 'Mark as dealt with' }).click();
   await card.waitFor({ state: 'detached', timeout: 10000 });
   await mgr.getByRole('button', { name: 'Show dealt with' }).click();
   await mgr.getByTestId('feedback-message').filter({ hasText: 'second printer' }).waitFor({ timeout: 10000 });
+  const after = (await json(mgr, '/attention')).body;
+  if ((after.newSuggestions ?? []).length > 0) throw new Error('still chased once dealt with');
 });
 
 await step('nothing here takes a file', async () => {

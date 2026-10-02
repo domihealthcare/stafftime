@@ -1692,11 +1692,14 @@ model SurveyParticipant {
 
 /// The suggestion box. The message and the day it arrived; nothing else.
 model Feedback {
-  id         String    @id @default(uuid()) @db.Uuid
+  id         String        @id @default(uuid()) @db.Uuid
   message    String
+  /// What sort of note it is, if the sender picked one on the pop-up (October
+  /// 2026). Four values shared by everybody, so it says nothing about who.
+  kind       FeedbackKind?
   /// A day, not a time: to the minute, a timestamp says who was on their
   /// break when it arrived.
-  receivedOn DateTime  @db.Date
+  receivedOn DateTime      @db.Date
   /// A manager has dealt with it.
   archivedAt DateTime?
 
@@ -2106,6 +2109,14 @@ enum EmploymentChangeKind {
   /// A new position that is not a promotion — a move sideways.
   POSITION_CHANGE
   OTHER
+}
+
+/// The kinds of note the suggestion box offers.
+enum FeedbackKind {
+  IDEA
+  PROBLEM
+  SHOUT_OUT
+  QUESTION
 }
 
 enum PayRateUnit {

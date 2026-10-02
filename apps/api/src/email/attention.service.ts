@@ -10,11 +10,7 @@ import {
   TimeEntryStatus,
 } from '@prisma/client';
 import { addUtcDays } from '../common/util/calendar-date.util';
-import {
-  PRACTICE_ZONE,
-  practiceDayStart,
-  practiceToday,
-} from '../common/util/zoned-time.util';
+import { PRACTICE_ZONE, practiceDayStart, practiceToday } from '../common/util/zoned-time.util';
 import { loadStanding } from '../credentials/standing-query';
 import { PrismaService } from '../prisma/prisma.service';
 import { PracticeSettingsService } from '../settings/practice-settings.service';
@@ -77,6 +73,7 @@ export interface DigestContents {
   shiftsInClosures: string[];
   closingGaps: string[];
   suppliesNeeded: string[];
+  newSuggestions: string[];
 }
 
 /**
@@ -212,7 +209,30 @@ export class AttentionService {
       missingCredentials: await this.missingCredentials(),
       shiftsInClosures: await this.shiftsInClosures(today, on),
       ...(await this.gatherClosing(today, day)),
+      newSuggestions: await this.newSuggestions(day),
     };
+  }
+
+  /**
+   * The suggestion box, as a count: how many are waiting and since which day
+   * (October 2026, Dominguez — "tell managers"). Never the words: the email
+   * leaves the app, and what somebody wrote anonymously stays on the Surveys
+   * screen. Nor the bell — a notification is stamped to the minute, and the box
+   * promises to keep only the day. Until a manager marks them dealt with.
+   */
+  private async newSuggestions(day: (date: Date) => string): Promise<string[]> {
+    const waiting = await this.prisma.feedback.aggregate({
+      where: { archivedAt: null },
+      _count: { _all: true },
+      _min: { receivedOn: true },
+    });
+    const count = waiting._count._all;
+    if (count === 0 || !waiting._min.receivedOn) return [];
+    return [
+      count === 1
+        ? `1 suggestion waiting to be read, from ${day(waiting._min.receivedOn)}`
+        : `${count} suggestions waiting to be read, the oldest from ${day(waiting._min.receivedOn)}`,
+    ];
   }
 
   /**

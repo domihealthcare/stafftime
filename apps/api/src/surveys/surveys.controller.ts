@@ -94,7 +94,7 @@ export class FeedbackController {
   /// keeps nothing from it.
   @Post()
   post(@Body() dto: FeedbackInput) {
-    return this.feedback.post(dto.message);
+    return this.feedback.post(dto.message, dto.kind);
   }
 
   @Get()

@@ -25,6 +25,7 @@ const HEADINGS: Record<keyof Attention, string> = {
   undecidedTimeOff: 'Time off waiting on a decision',
   closingGaps: 'Closing checklists with something missed',
   suppliesNeeded: 'Supplies to order',
+  newSuggestions: 'In the suggestion box',
 };
 
 /// How many lines a section shows before "Show N more". A dozen people with

@@ -474,6 +474,7 @@ export interface Attention {
   shiftsInClosures: string[];
   closingGaps: string[];
   suppliesNeeded: string[];
+  newSuggestions: string[];
 }
 
 // ---------------------------------------------------------------------------
@@ -1028,9 +1029,12 @@ export type SurveyResults =
       })[];
     };
 
+export type FeedbackKind = 'IDEA' | 'PROBLEM' | 'SHOUT_OUT' | 'QUESTION';
+
 export interface FeedbackMessage {
   id: string;
   message: string;
+  kind: FeedbackKind | null;
   receivedOn: string;
   archivedAt: string | null;
 }

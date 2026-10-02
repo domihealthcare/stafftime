@@ -159,6 +159,14 @@ const SECTIONS: SectionSpec[] = [
     subject: () => 'supplies to order',
   },
   {
+    key: 'newSuggestions',
+    tier: 'soon',
+    heading: 'In the suggestion box',
+    path: '/surveys',
+    screen: 'Surveys',
+    subject: () => 'something in the suggestion box',
+  },
+  {
     key: 'handEntries',
     tier: 'later',
     heading: 'Hours entered by hand — find out why',

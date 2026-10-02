@@ -1,4 +1,4 @@
-import { SurveyAudience, SurveyQuestionKind } from '@prisma/client';
+import { FeedbackKind, SurveyAudience, SurveyQuestionKind } from '@prisma/client';
 import { Type } from 'class-transformer';
 import {
   ArrayMaxSize,
@@ -97,4 +97,9 @@ export class FeedbackInput {
   @MinLength(3)
   @MaxLength(2000)
   message!: string;
+
+  /// What sort of note it is, if they picked one.
+  @IsOptional()
+  @IsEnum(FeedbackKind)
+  kind?: FeedbackKind;
 }

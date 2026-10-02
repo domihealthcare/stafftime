@@ -2147,6 +2147,21 @@ box is not open to the internet, and nothing from the session is kept. The UI
 warns that a very specific detail can still give somebody away; no design can
 fix that.
 
+**On Home, as a pop-up** (October 2026, Dominguez: "creative in how it's
+viewed … even like a pop up"): a card with a drawn box and a question that
+changes each day opens a pop-up (`components/SuggestionBox.tsx`). The sender
+can pick what sort of note it is — an idea, something not working, a
+shout-out, a question (`Feedback.kind`, optional; four values everybody
+shares, so it says nothing about who) — and on sending the note drops into the
+box (`motion-safe:` only). The Surveys page uses the same card.
+
+**Managers are told** (same month, Dominguez): while anything is not yet
+marked dealt with, the round-up carries `newSuggestions` — a count and the
+oldest day, **never the words**, since the email leaves the app — in the
+nightly email (*Coming up*, linking to Surveys) and as a banner on the Surveys
+page; Home shows managers "N waiting to be read". **Not the bell**: a
+notification is stamped to the minute, which would undo "only the day".
+
 Limits worth knowing: somebody with direct database access could in principle
 correlate rows by their physical order. The promise is about the app — no
 screen, report, export or log connects a person to what they said — and the

@@ -44,6 +44,29 @@ export default {
           'sans-serif',
         ],
       },
+      // The suggestion box: the note dropping into the slot once it is sent,
+      // and the box giving a little bump as it lands. Used behind `motion-safe:`
+      // so nobody who asked their phone for less motion gets it.
+      keyframes: {
+        'note-drop': {
+          '0%': { transform: 'translateY(-26px) rotate(-10deg)', opacity: '1' },
+          '55%': { transform: 'translateY(2px) rotate(0deg)', opacity: '1' },
+          '100%': { transform: 'translateY(26px) rotate(0deg)', opacity: '0' },
+        },
+        'box-bump': {
+          '0%, 100%': { transform: 'translateY(0) scale(1)' },
+          '50%': { transform: 'translateY(3px) scale(1.03, 0.97)' },
+        },
+        'fade-up': {
+          '0%': { transform: 'translateY(6px)', opacity: '0' },
+          '100%': { transform: 'translateY(0)', opacity: '1' },
+        },
+      },
+      animation: {
+        'note-drop': 'note-drop 900ms ease-in forwards',
+        'box-bump': 'box-bump 350ms ease-out 650ms',
+        'fade-up': 'fade-up 300ms ease-out 800ms both',
+      },
     },
   },
   // The form markup across this app is written for this plugin: inputs carry a

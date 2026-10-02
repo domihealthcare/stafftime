@@ -33,6 +33,7 @@ import type {
   JobRole,
   Location,
   PayPeriodInfo,
+  FeedbackKind,
   FeedbackMessage,
   Survey,
   SurveyAudience,
@@ -1220,10 +1221,10 @@ export const api = {
       body: JSON.stringify({ answers }),
     }),
 
-  sendFeedback: (message: string) =>
+  sendFeedback: (message: string, kind?: FeedbackKind) =>
     request<{ received: boolean }>('/feedback', {
       method: 'POST',
-      body: JSON.stringify({ message }),
+      body: JSON.stringify({ message, ...(kind ? { kind } : {}) }),
     }),
   feedback: (archived = false) =>
     request<FeedbackMessage[]>(`/feedback${archived ? '?archived=true' : ''}`),

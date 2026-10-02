@@ -1,5 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { useConfirm } from '../components/ConfirmDialog';
+import { NeedsAttention } from '../components/NeedsAttention';
+import { SuggestionBoxCard, feedbackKindLabel } from '../components/SuggestionBox';
 import {
   Alert,
   Badge,
@@ -70,6 +72,8 @@ export function SurveysPage() {
         title="Surveys and feedback"
         subtitle="Short anonymous check-ins, and a suggestion box that is always open."
       />
+
+      <NeedsAttention sections={['newSuggestions']} />
 
       {error && (
         <div className="mb-4">
@@ -249,68 +253,14 @@ function AnswerForm({ surveyId, onDone }: { surveyId: string; onDone: () => void
   );
 }
 
+/// The suggestion box: the same card and pop-up as on Home.
 function SuggestionBox() {
-  const [message, setMessage] = useState('');
-  const [busy, setBusy] = useState(false);
-  const [sent, setSent] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-
   return (
     <section aria-label="Suggestion box" className="mb-8">
       <h2 className="mb-2 text-sm font-semibold uppercase tracking-wide text-slate-600">
         Suggestion box
       </h2>
-      <Card className="p-4">
-        <p className="text-sm text-slate-700">
-          Anything you would like the managers to know — an idea, a problem, something that went
-          well.
-        </p>
-        <p className="mt-1 text-xs text-slate-500">
-          {ANONYMOUS} Only the day it arrived is kept. Bear in mind a very specific detail can give
-          you away.
-        </p>
-        {sent && (
-          <div className="mt-3">
-            <Alert tone="success">Sent anonymously. Thank you.</Alert>
-          </div>
-        )}
-        <textarea
-          aria-label="Your suggestion"
-          rows={4}
-          maxLength={2000}
-          value={message}
-          onChange={(event) => {
-            setMessage(event.target.value);
-            setSent(false);
-          }}
-          className="mt-3 w-full rounded-lg border border-slate-300 px-2 py-1.5 text-sm"
-        />
-        {error && (
-          <div className="mt-2">
-            <Alert>{error}</Alert>
-          </div>
-        )}
-        <button
-          type="button"
-          disabled={busy || message.trim().length < 3}
-          onClick={async () => {
-            setBusy(true);
-            setError(null);
-            try {
-              await api.sendFeedback(message.trim());
-              setMessage('');
-              setSent(true);
-            } catch (cause) {
-              setError(cause instanceof ApiError ? cause.message : 'Could not send that.');
-            } finally {
-              setBusy(false);
-            }
-          }}
-          className={`mt-2 ${buttonClass('primary', 'md')}`}
-        >
-          {busy ? 'Sending…' : 'Send anonymously'}
-        </button>
-      </Card>
+      <SuggestionBoxCard />
     </section>
   );
 }
@@ -831,8 +781,16 @@ function Inbox() {
     void load();
   }, [load]);
 
+  // "N waiting to be read" on Home links here; the box is at the bottom.
+  const loaded = messages !== null;
+  useEffect(() => {
+    if (loaded && window.location.hash === '#suggestion-inbox') {
+      document.getElementById('suggestion-inbox')?.scrollIntoView({ block: 'start' });
+    }
+  }, [loaded]);
+
   return (
-    <section aria-label="What people have said" className="mb-8">
+    <section id="suggestion-inbox" aria-label="What people have said" className="mb-8 scroll-mt-4">
       <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
         <h2 className="text-sm font-semibold uppercase tracking-wide text-slate-600">
           In the suggestion box
@@ -854,6 +812,11 @@ function Inbox() {
         <div className="space-y-2">
           {messages.map((message) => (
             <Card key={message.id} className="p-3" testId="feedback-message">
+              {feedbackKindLabel(message.kind) && (
+                <p className="mb-1">
+                  <Badge tone="info">{feedbackKindLabel(message.kind)}</Badge>
+                </p>
+              )}
               <p className="whitespace-pre-line text-sm text-slate-800">{message.message}</p>
               <div className="mt-2 flex items-center justify-between text-xs text-slate-500">
                 <span>{formatCalendarDate(message.receivedOn)}</span>

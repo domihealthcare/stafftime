@@ -370,6 +370,14 @@ Beyond the phases, the parts worth knowing about before picking up work:
   Everybody sees it: the one, narrow exception to staff not seeing each
   other's shifts (today, from home, hours only). `homeToday` in
   `DirectoryService.list`.
+- **The suggestion box on Home** (2 October 2026, Dominguez: "creative in
+  how it's viewed … even like a pop up"): a card with a drawn box and a
+  question of the day opens a pop-up — pick a kind (idea, not working,
+  shout-out, question; `Feedback.kind`, optional), write, and the note drops
+  into the box. **Managers are told** while any are not dealt with: a count
+  and the oldest day (never the words) in the nightly email and on a Surveys
+  banner (`newSuggestions` in `AttentionService`), and "N waiting to be read"
+  on Home. Not on the bell — it would stamp the minute.
 - **Tablet PINs are chosen by staff** on their profile (confirmed with their
   password); the profile shows only that one is set and since when, never the
   PIN. Managers and admins can set a replacement from the Directory, never
