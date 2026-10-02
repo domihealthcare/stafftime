@@ -980,9 +980,10 @@ export const api = {
     startsAt: string;
     endsAt: string;
     status?: string;
+    notes?: string | null;
   }) => request<Shift>('/shifts', { method: 'POST', body: JSON.stringify(body) }),
   /// Put somebody on a shift, take them off it (`employeeId: null` leaves it
-  /// open), or change its times or job role.
+  /// open), or change its times, job role or note (`notes: null` clears it).
   updateShift: (
     id: string,
     body: {
@@ -992,6 +993,7 @@ export const api = {
       startsAt?: string;
       endsAt?: string;
       status?: string;
+      notes?: string | null;
     },
   ) => request<Shift>(`/shifts/${id}`, { method: 'PATCH', body: JSON.stringify(body) }),
   /// Publishes several drafts at once; each person is told once.

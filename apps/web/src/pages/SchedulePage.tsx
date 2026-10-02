@@ -59,6 +59,7 @@ import { REMOTE_COLOUR, locationColourFn, shiftChipStyle } from '../lib/shift-co
 import { jobRoleHex } from '../lib/job-role-colours';
 import { StandingShiftsCard } from '../components/StandingShiftsCard';
 import { Alert, Card, EmptyState, PageHeading, Spinner, buttonClass } from '../components/ui';
+import { noteToSend, ShiftNoteField } from '../components/ShiftNote';
 import { NeedsAttention } from '../components/NeedsAttention';
 import { RequestTimeOffButton, RequestsToDecide, YourTimeOff } from '../components/ScheduleTimeOff';
 import { useConfirm } from '../components/ConfirmDialog';
@@ -1049,6 +1050,7 @@ function NewShiftForm({
   const [place, setPlace] = useState('');
   const [startsAt, setStartsAt] = useState(() => defaultInput(defaultDate, 9));
   const [endsAt, setEndsAt] = useState(() => defaultInput(defaultDate, 17));
+  const [note, setNote] = useState('');
   const [busy, setBusy] = useState(false);
   const confirm = useConfirm();
 
@@ -1107,6 +1109,7 @@ function NewShiftForm({
         startsAt: new Date(startsAt).toISOString(),
         endsAt: new Date(endsAt).toISOString(),
         status: 'PUBLISHED',
+        notes: noteToSend(note),
       });
       onCreated();
     } catch (err) {
@@ -1211,6 +1214,10 @@ function NewShiftForm({
             onChange={(event) => setEndsAt(event.target.value)}
             className="mt-1 w-full rounded-lg border-slate-300 text-sm shadow-sm focus:border-brand-600 focus:ring-brand-600"
           />
+        </div>
+
+        <div className="sm:col-span-2">
+          <ShiftNoteField value={note} onChange={setNote} />
         </div>
 
         {closures.length > 0 && (
@@ -1607,6 +1614,7 @@ function MonthGrid({
                           described[index],
                           remote ? 'work from home' : shift.location?.name,
                           shift.jobRole?.name,
+                          shift.notes ? `📝 ${shift.notes}` : null,
                         ]
                           .filter(Boolean)
                           .join(' · ')}
@@ -1626,6 +1634,12 @@ function MonthGrid({
                           index >= MAX_LINES ? 'hidden sm:block' : ''
                         }`}
                       >
+                        {shift.notes && (
+                          <span data-testid="month-shift-note">
+                            <span aria-hidden="true">📝 </span>
+                            <span className="sr-only">Note: {shift.notes}. </span>
+                          </span>
+                        )}
                         <span className="sm:hidden">{shortened[index]}</span>
                         <span className="hidden sm:inline">{described[index]}</span>
                       </span>

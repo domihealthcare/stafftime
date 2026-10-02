@@ -58,6 +58,40 @@ describe('shiftNotices', () => {
     );
   });
 
+  it('gives the note with a new shift', () => {
+    const [notice] = shiftNotices(null, shift({ notes: '9–12 upstairs, 12–5 downstairs' }));
+    expect(notice.notice.body).toBe('North Bergen. Note: 9–12 upstairs, 12–5 downstairs');
+  });
+
+  it('tells them when only the note changes, or goes', () => {
+    const [changed] = shiftNotices(shift({ notes: 'Upstairs' }), shift({ notes: 'Downstairs' }));
+    expect(changed.notice.title).toBe('Shift note changed: Wed, Sep 30, 9:00 AM–5:00 PM');
+    expect(changed.notice.body).toBe('North Bergen. Note: Downstairs');
+
+    const [added] = shiftNotices(shift(), shift({ notes: 'Upstairs' }));
+    expect(added.notice.title).toBe('Shift note changed: Wed, Sep 30, 9:00 AM–5:00 PM');
+
+    const [removed] = shiftNotices(shift({ notes: 'Upstairs' }), shift({ notes: null }));
+    expect(removed.notice.title).toBe('Shift note removed: Wed, Sep 30, 9:00 AM–5:00 PM');
+    expect(removed.notice.body).toBe('North Bergen. It no longer has a note.');
+  });
+
+  it('puts a changed note in the one notice when the times change too', () => {
+    const notices = shiftNotices(
+      shift(),
+      shift({ startsAt: new Date('2026-09-30T14:00:00Z'), notes: 'Downstairs' }),
+    );
+    expect(notices).toHaveLength(1);
+    expect(notices[0].notice.body).toBe(
+      'North Bergen. Was Wed, Sep 30, 9:00 AM–5:00 PM, North Bergen. Note: Downstairs',
+    );
+  });
+
+  it('says nothing about a note on a draft', () => {
+    const draft = { status: ShiftStatus.DRAFT };
+    expect(shiftNotices(shift(draft), shift({ ...draft, notes: 'Upstairs' }))).toEqual([]);
+  });
+
   it('says nothing when nothing they would notice changed', () => {
     expect(shiftNotices(shift(), shift())).toEqual([]);
   });

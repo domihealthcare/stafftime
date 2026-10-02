@@ -315,6 +315,16 @@ export function ClockPage() {
               )}
             </>
           )}
+          {status !== 'loading' && todaysShift?.notes && (
+            <p
+              className="mt-2 whitespace-pre-line text-sm italic text-slate-700"
+              data-testid="todays-shift-note"
+            >
+              <span aria-hidden="true">📝 </span>
+              <span className="sr-only">Note on today&rsquo;s shift: </span>
+              {todaysShift.notes}
+            </p>
+          )}
         </Card>
 
         {!isClockedIn && status !== 'loading' && assignedLocations.length > 0 && (

@@ -362,6 +362,14 @@ export function RotaPrintPage() {
                                           .join(' · ')}
                                       </span>
                                     )}
+                                    {shift.notes && (
+                                      <span
+                                        className="block whitespace-pre-line text-xs italic text-slate-700"
+                                        data-testid="print-shift-note"
+                                      >
+                                        {shift.notes}
+                                      </span>
+                                    )}
                                   </span>
                                 ))}
                                 {!off && mine.length === 0 && (
