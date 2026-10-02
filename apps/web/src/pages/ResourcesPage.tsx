@@ -482,7 +482,7 @@ function hostOf(url: string): string {
 /**
  * Forms, first on the page (October 2026, Dominguez: "a Forms section of
  * the resources") — the clinical forms, filled in and made into PDFs in the
- * browser. The BrainCheck care plan (CPT 99483) is only for people whose job role
+ * browser. The BrainCheck Care Plan (CPT 99483) is only for people whose job role
  * uses the clinical forms; the care plan (CCM and APCM) also for managers and admins.
  * Anybody with neither sees no section at all.
  */
@@ -502,7 +502,7 @@ function FormsSection() {
               to="/clinical/99483"
               className="block text-sm font-semibold text-brand-800 hover:text-brand-900"
             >
-              BrainCheck care plan →
+              BrainCheck Care Plan →
             </Link>
             <p className="mt-0.5 text-xs text-slate-600">
               Cognitive assessment and care plan (CPT 99483). Fill it in during the visit; download
@@ -516,7 +516,7 @@ function FormsSection() {
               to="/clinical/care-plan"
               className="block text-sm font-semibold text-brand-800 hover:text-brand-900"
             >
-              Care plan →
+              APCM Care Plan →
             </Link>
             <p className="mt-0.5 text-xs text-slate-600">
               For CCM and APCM: the general care plan and two or more chronic conditions, as one PDF
@@ -541,7 +541,7 @@ function FormsSection() {
         )}
         {!cognitive && (
           <p className="text-xs text-slate-500">
-            Providers also have the BrainCheck care plan here.
+            Providers also have the BrainCheck Care Plan here.
           </p>
         )}
       </Card>

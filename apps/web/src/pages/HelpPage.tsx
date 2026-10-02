@@ -447,7 +447,7 @@ const STAFF: Section[] = [
 /// For anybody who can make a care plan (CCM and APCM): providers, managers and admins.
 const CARE_PLAN: Section[] = [
   {
-    title: 'Care plan (CCM and APCM)',
+    title: 'APCM Care Plan (also for CCM)',
     topics: [
       {
         question: 'Where is it, and how does it work?',
@@ -455,7 +455,7 @@ const CARE_PLAN: Section[] = [
           <>
             <p>
               <Screen>Resources</Screen> → <Screen>Forms</Screen>, at the top →{' '}
-              <strong>Care plan</strong>. Providers, managers and admins have it.
+              <strong>APCM Care Plan</strong>. Providers, managers and admins have it.
             </p>
             <ul>
               <li>
@@ -584,7 +584,7 @@ const WELLNESS: Section[] = [
 /// For people whose job role uses the clinical forms (Providers).
 const PROVIDERS: Section[] = [
   {
-    title: 'For providers: BrainCheck care plan',
+    title: 'For providers: BrainCheck Care Plan',
     topics: [
       {
         question: 'Where is it, and how does it work?',
@@ -592,7 +592,7 @@ const PROVIDERS: Section[] = [
           <>
             <p>
               <Screen>Resources</Screen> → <Screen>Forms</Screen>, at the top →{' '}
-              <strong>BrainCheck care plan</strong> — the cognitive assessment and care plan, billed
+              <strong>BrainCheck Care Plan</strong> — the cognitive assessment and care plan, billed
               as CPT 99483.
             </p>
             <ul>
@@ -1316,7 +1316,7 @@ const MANAGERS: Section[] = [
         ),
       },
       {
-        question: 'Giving a provider the BrainCheck care plan',
+        question: 'Giving a provider the BrainCheck Care Plan',
         answer: (
           <p>
             Add them to the <strong>Provider</strong> job role (<Screen>Job roles</Screen>) — the

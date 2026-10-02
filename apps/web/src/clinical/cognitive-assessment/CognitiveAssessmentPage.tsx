@@ -31,8 +31,8 @@ import { NEEDS_NATIVE_SPEAKER_REVIEW } from './translations.es';
 import { SECTIONS, validate, type SectionKey } from './validate';
 
 /**
- * The BrainCheck care plan — CPT 99483, cognitive assessment and care plan
- * (September 2026, Dominguez; shown as "BrainCheck care plan" since October
+ * The BrainCheck Care Plan — CPT 99483, cognitive assessment and care plan
+ * (September 2026, Dominguez; shown as "BrainCheck Care Plan" since October
  * 2026, while the clinical note keeps the CPT name).
  *
  * A provider fills this in during the visit and downloads two PDFs: the
@@ -48,7 +48,7 @@ export function CognitiveAssessmentPage() {
   if (!employee?.usesClinicalForms) {
     return (
       <div className="mx-auto max-w-2xl">
-        <PageHeading title="BrainCheck care plan" />
+        <PageHeading title="BrainCheck Care Plan" />
         <Card className="p-5 text-sm text-slate-700">
           This form is for providers. If you should have it, ask a manager to add you to the
           Provider job role.
@@ -59,7 +59,7 @@ export function CognitiveAssessmentPage() {
   return <AssessmentScreen employee={employee} />;
 }
 
-const UNSAVED = 'the BrainCheck care plan you are filling in';
+const UNSAVED = 'the BrainCheck Care Plan you are filling in';
 
 type Made = { note: boolean; handout: PrintLanguage | null; snapshot: string };
 
@@ -193,7 +193,7 @@ function AssessmentScreen({ employee }: { employee: Employee }) {
       {/* translate="no": a browser's "translate this page" sends the text away. */}
       <div className="mx-auto max-w-4xl" translate="no" data-testid="cognitive-assessment">
         <PageHeading
-          title="BrainCheck care plan"
+          title="BrainCheck Care Plan"
           subtitle="Cognitive assessment and care plan (CPT 99483). Stays on this device — nothing is sent or saved. Download both PDFs at the end: the note for eCW, the care plan for the patient."
         />
 

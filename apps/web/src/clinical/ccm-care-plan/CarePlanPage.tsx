@@ -37,7 +37,7 @@ import { FIXED_SECTIONS, planSection, validate } from './validate';
  * made into one PDF in English, or English and Spanish.
  *
  * For providers (a job role with the clinical forms), managers and admins —
- * unlike the BrainCheck care plan, whose access level brings nothing. Like it,
+ * unlike the BrainCheck Care Plan, whose access level brings nothing. Like it,
  * the form runs entirely in the browser: what is typed is never sent to the
  * server, never written to the browser's storage, and is gone when the page
  * closes. This folder may not import the API client (see .eslintrc.cjs), and
@@ -48,7 +48,7 @@ export function CarePlanPage() {
   if (!employee || !canUseCarePlan(employee)) {
     return (
       <div className="mx-auto max-w-2xl">
-        <PageHeading title="Care plan" />
+        <PageHeading title="APCM Care Plan" />
         <Card className="p-5 text-sm text-slate-700">
           This form is for providers, managers and admins. If you should have it, ask a manager.
         </Card>
@@ -208,7 +208,7 @@ function CarePlanScreen({ employee }: { employee: Employee }) {
       {/* translate="no": a browser's "translate this page" sends the text away. */}
       <div className="mx-auto max-w-4xl" translate="no" data-testid="ccm-care-plan">
         <PageHeading
-          title="Care plan"
+          title="APCM Care Plan"
           subtitle="For CCM and APCM. Stays on this device — nothing is sent or saved. Download the care plan at the end, in English, or English and Spanish."
         />
 

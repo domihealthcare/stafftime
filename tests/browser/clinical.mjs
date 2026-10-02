@@ -115,7 +115,7 @@ await step('in the Provider job role, it is under Resources → Forms as the Bra
   if (nav.some((t) => /cognitive|braincheck/i.test(t))) throw new Error(`in the navigation: ${nav.join(', ')}`);
   await page.goto(`${BASE}/resources`, { waitUntil: 'networkidle' });
   const tools = page.getByTestId('forms-section').getByTestId('clinical-tools');
-  await tools.getByRole('link', { name: /^BrainCheck care plan/ }).click();
+  await tools.getByRole('link', { name: /^BrainCheck Care Plan/ }).click();
   await page.getByTestId('cognitive-assessment').waitFor({ timeout: 15000 });
 });
 
@@ -473,7 +473,7 @@ await step('there is no file input on the form', async () => {
 
 await step('Help has a section for providers', async () => {
   await page.goto(`${BASE}/help`, { waitUntil: 'networkidle' });
-  await page.getByRole('heading', { name: /For providers: BrainCheck care plan/ }).waitFor({ timeout: 10000 });
+  await page.getByRole('heading', { name: /For providers: BrainCheck Care Plan/ }).waitFor({ timeout: 10000 });
   await page.getByText('Is anything saved? (patient privacy)').waitFor({ timeout: 5000 });
 });
 

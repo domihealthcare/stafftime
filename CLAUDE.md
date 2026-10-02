@@ -743,10 +743,10 @@ Beyond the phases, the parts worth knowing about before picking up work:
   overtime counts the whole week at every office; a repeat PIN within
   `KIOSK_REPEAT_SECONDS` (120) is not a clock-out; screens load when first
   opened and `/assets` is cached for a year.
-- **Clinical forms — CPT 99483, shown as "BrainCheck care plan"** (29
+- **Clinical forms — CPT 99483, shown as "BrainCheck Care Plan"** (29
   September 2026, Dominguez; Phases 1–3 built; renamed and moved October
   2026). Resources → **Forms** (its own section, first on the page) →
-  **BrainCheck care plan**, for job roles with **uses clinical forms**
+  **BrainCheck Care Plan**, for job roles with **uses clinical forms**
   (Provider only; access level brings nothing). The clinical note keeps the
   CPT name. The provider fills it in during the visit
   and downloads the **clinical note** for eCW Documents and the **care plan
@@ -802,9 +802,13 @@ Beyond the phases, the parts worth knowing about before picking up work:
   are signed electronically** by the person signed in ("Electronically signed
   by … on 10/01/2026 3:09 PM ET"; Spanish halves "Firmado electrónicamente
   por …") — no blank signature line.
-- **"CCM care plan" is just "Care plan"** (October 2026, Dominguez — the
-  practice uses it for **APCM** as well as CCM): on Resources → Forms, the
-  page, Help and the file name. The code keeps `ccm-care-plan/`.
+- **"CCM care plan" is now "APCM Care Plan"** (October 2026, Dominguez — the
+  practice uses it for **APCM** as well as CCM; first renamed "Care plan",
+  then "APCM Care Plan" the same week): on Resources → Forms, the page
+  heading and Help. The downloaded file is still *Care Plan* (not asked to
+  change), and the code keeps `ccm-care-plan/`. **"BrainCheck Care Plan"** is
+  written with capitals wherever it is a name (Resources, the page, Help, Job
+  roles).
 - **Annual Wellness Visit** (1 October 2026, Dominguez — the practice's
   Annual Wellness Supplement Form, 02.2024). Resources → **Forms** →
   **Annual Wellness Visit** (`/clinical/wellness`), for job roles with
