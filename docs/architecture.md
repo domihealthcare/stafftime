@@ -76,9 +76,28 @@ one place a manager already looks: the rota. Outside such a shift the ordinary
 geofence/IP rules apply, so a remote punch cannot be claimed on a day somebody
 is due in. The kiosk never takes this path — it is at an office by definition.
 
-The web page asks for no position during a work-from-home shift
-(`ClockPage`), and says so under the button; `tests/browser/wfh.mjs` fails if
-it does. The page looks at **all** of the day's shifts for one on now, as the
+**Since 2 October 2026 home can be chosen any day** (Dominguez). Home's
+Location list offers every one of the person's offices and Work from home,
+the place of today's shift first. Choosing somewhere other than the shift —
+the other office, or home with no work-from-home shift — warns on the page,
+offers an optional reason and asks in a pop-up; then it is allowed, because
+plans change (a member of staff moved to the other office, somebody approved
+to work from home for the day). The server works out "somewhere other" for
+itself from the published shift nearest now (`findShiftNear`, the same
+four-hour window a punch is matched to a shift by), and records it as
+`isOtherPlace` with the reason (`otherPlaceReason`, kept only then); the
+timesheet shows it as **Not where scheduled**. This loosens the rule above:
+a remote punch can now be claimed on a day somebody is due in — the warning,
+the flag and the manager's approval of the timesheet are the check, not a
+refusal. `ClockInDto.workFromHome` says which was chosen; a page that does
+not send it (one open from before the change) gets the old behaviour, home
+only during a work-from-home shift. An office punch is unchanged: the
+location check still applies. The time clock is always an office punch, and
+is flagged the same way when it is not the shift's office.
+
+The web page asks for no position when home is chosen (`ClockPage`), and
+says so under the button; `tests/browser/wfh.mjs` and
+`tests/browser/clock-place.mjs` fail if it does. The page looks at **all** of the day's shifts for one on now, as the
 server does (`findRemoteShift`): until October 2026 it looked only at the
 first, so somebody with an office shift in the morning and a work-from-home
 one in the afternoon was asked for their location in the afternoon. The

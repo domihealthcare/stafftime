@@ -207,7 +207,7 @@ export function TimesheetPage() {
                     </tr>
                     {/* The reason for a correction is a sentence, so it gets a
                       line rather than being squeezed into the flags column. */}
-                    {(entry.editReason || entry.enteredByHandAt) && (
+                    {(entry.editReason || entry.enteredByHandAt || entry.otherPlaceReason) && (
                       <tr className="border-none">
                         <td colSpan={isManager ? 8 : 6} className="px-4 pb-3 pt-0">
                           <HandEntryLine
@@ -216,6 +216,7 @@ export function TimesheetPage() {
                             selfId={employee?.id}
                             onCheck={() => setChecking(entry)}
                           />
+                          <OtherPlaceLine entry={entry} />
                           {entry.editReason && (
                             <p className="text-xs text-slate-500">
                               <span className="font-medium">Corrected:</span> {entry.editReason}
@@ -280,6 +281,7 @@ export function TimesheetPage() {
                   </div>
                 )}
 
+                <OtherPlaceLine entry={entry} />
                 {entry.editReason && (
                   <p className="mt-1 text-xs text-slate-500">
                     <span className="font-medium">Corrected:</span> {entry.editReason}
@@ -356,6 +358,7 @@ function hasFlags(entry: TimeEntry): boolean {
     entry.isEarlyDeparture ||
     entry.isMissingPunch ||
     entry.isManuallyEdited ||
+    Boolean(entry.isOtherPlace) ||
     Boolean(entry.enteredByHandAt) ||
     entry.status === 'NEEDS_REVIEW'
   );
@@ -451,6 +454,16 @@ function EntryActions({
   );
 }
 
+/// Why they clocked in somewhere other than their shift, in their words.
+function OtherPlaceLine({ entry }: { entry: TimeEntry }) {
+  if (!entry.isOtherPlace || !entry.otherPlaceReason) return null;
+  return (
+    <p className="text-xs text-slate-500" data-testid="other-place-reason">
+      <span className="font-medium">Not where scheduled:</span> {entry.otherPlaceReason}
+    </p>
+  );
+}
+
 function VerificationBadge({ entry }: { entry: TimeEntry }) {
   const label: Record<string, string> = {
     GEOFENCE: 'On-site GPS',
@@ -468,6 +481,8 @@ function Flags({ entry }: { entry: TimeEntry }) {
   if (entry.isLate) flags.push({ label: 'Late', tone: 'warning' });
   if (entry.isEarlyDeparture) flags.push({ label: 'Left early', tone: 'warning' });
   if (entry.isMissingPunch) flags.push({ label: 'Missing punch', tone: 'danger' });
+  // Somewhere other than the shift: allowed, after a warning (October 2026).
+  if (entry.isOtherPlace) flags.push({ label: 'Not where scheduled', tone: 'warning' });
   if (entry.enteredByHandAt) flags.push({ label: 'Entered by hand', tone: 'warning' });
   if (entry.isManuallyEdited) flags.push({ label: 'Edited', tone: 'info' });
   if (entry.status === 'NEEDS_REVIEW') flags.push({ label: 'Needs review', tone: 'danger' });

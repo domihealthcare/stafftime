@@ -252,6 +252,10 @@ export interface ClockInPayload {
   longitude?: number;
   accuracyMeters?: number;
   employeeId?: string;
+  /// Working from home — any day, flagged when there is no work-from-home shift.
+  workFromHome?: boolean;
+  /// Why somewhere other than the shift, if they said.
+  otherPlaceReason?: string;
 }
 
 export interface ClockOutPayload {

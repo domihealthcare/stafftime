@@ -791,6 +791,12 @@ model TimeEntry {
   isEarlyDeparture Boolean @default(false)
   isManuallyEdited Boolean @default(false)
   isMissingPunch   Boolean @default(false)
+  /// Clocked in somewhere other than the shift they were on — another office,
+  /// or from home with no work-from-home shift (October 2026, Dominguez). It
+  /// is allowed, after a warning, and shown on the timesheet with the reason
+  /// they gave, if any.
+  isOtherPlace     Boolean @default(false)
+  otherPlaceReason String?
 
   /// Audit trail for manual edits and approvals.
   editedById   String?   @db.Uuid

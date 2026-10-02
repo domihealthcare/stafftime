@@ -9,8 +9,12 @@ import { BirthdaysThisWeek } from '../components/BirthdaysThisWeek';
 import { ComingUp, HomeNews, QuickActions, SurveysCard } from '../components/HomeCards';
 import { MyOvertimeNotice } from '../components/OvertimeAlerts';
 import { Alert, Badge, Card, Spinner } from '../components/ui';
+import { useConfirm } from '../components/ConfirmDialog';
 
 type Status = 'loading' | 'ready' | 'working';
+
+/// The "office" that is working from home, in the place list.
+const HOME = 'home';
 
 /// How early a work-from-home shift can be clocked into — the server's
 /// REMOTE_EARLY_MINUTES.
@@ -28,8 +32,13 @@ export function ClockPage() {
   /// Today's shifts, earliest first — somebody can have two (an office shift in
   /// the morning, working from home in the afternoon).
   const [todaysShifts, setTodaysShifts] = useState<Shift[]>([]);
-  const [locationId, setLocationId] = useState<string>('');
-  /// Once somebody picks an office themselves, the defaults below leave it alone.
+  /// Where they are clocking in: one of their offices, or HOME. Every one is
+  /// offered every day (October 2026, Dominguez); the shift's comes first.
+  const [place, setPlace] = useState<string>('');
+  /// Why somewhere other than the shift — optional.
+  const [otherReason, setOtherReason] = useState('');
+  const confirm = useConfirm();
+  /// Once somebody picks a place themselves, the defaults below leave it alone.
   const [pickedByHand, setPickedByHand] = useState(false);
   const [status, setStatus] = useState<Status>('loading');
   const [error, setError] = useState<string | null>(null);
@@ -110,7 +119,27 @@ export function ClockPage() {
     todaysShifts[todaysShifts.length - 1] ??
     null;
 
-  // Default to the office of today's shift, else the primary office, else the
+  const primaryOffice = (assignedLocations.find((l) => l.isPrimary) ?? assignedLocations[0])
+    ?.locationId;
+  /// Where today's shift is — HOME for a work-from-home one — if it is one of
+  /// the places they can pick.
+  const shiftPlace = !todaysShift
+    ? null
+    : todaysShift.isRemote
+      ? HOME
+      : (assignedLocations.find((l) => l.locationId === todaysShift.locationId)?.locationId ??
+        null);
+  /// The shift's place first, then their other offices, then home.
+  const places = useMemo(() => {
+    const all = [
+      ...assignedLocations.map((l) => ({ value: l.locationId, label: l.location.name })),
+      { value: HOME, label: 'Work from home' },
+    ];
+    const first = all.find((option) => option.value === shiftPlace);
+    return first ? [first, ...all.filter((option) => option !== first)] : all;
+  }, [assignedLocations, shiftPlace]);
+
+  // Default to the place of today's shift, else the primary office, else the
   // only one they have. Everybody works at both offices, so "primary" alone
   // sent people at West New York to North Bergen (and the server now finds the
   // right one anyway, if they are standing at the other).
@@ -118,10 +147,8 @@ export function ClockPage() {
     if (pickedByHand || assignedLocations.length === 0) {
       return;
     }
-    const shiftOffice = assignedLocations.find((l) => l.locationId === todaysShift?.locationId);
-    const primary = assignedLocations.find((l) => l.isPrimary) ?? assignedLocations[0];
-    setLocationId((shiftOffice ?? primary).locationId);
-  }, [assignedLocations, todaysShift, pickedByHand]);
+    setPlace(shiftPlace ?? primaryOffice);
+  }, [assignedLocations, shiftPlace, primaryOffice, pickedByHand]);
 
   // Keep the elapsed-time readout ticking while clocked in. It shows whole
   // minutes, so a quarter-minute keeps it right without redrawing every second.
@@ -138,7 +165,35 @@ export function ClockPage() {
 
   const isClockedIn = entry !== null && entry.clockOutAt === null;
 
-  const remote = isClockedIn ? entry?.clockInVerification === 'REMOTE' : remoteShift !== null;
+  const remote = isClockedIn ? entry?.clockInVerification === 'REMOTE' : place === HOME;
+  /// Somewhere other than the shift: another office than its own, or home
+  /// without a work-from-home shift. Allowed, with a warning first.
+  const elsewhere =
+    !isClockedIn && place !== '' && (shiftPlace ? place !== shiftPlace : place === HOME);
+  const placeName = (value: string | null) =>
+    places.find((option) => option.value === value)?.label ?? '';
+  const elsewhereNote = !elsewhere
+    ? null
+    : todaysShift
+      ? `Your shift today is ${todaysShift.isRemote ? 'from home' : `at ${placeName(shiftPlace) || todaysShift.location?.name || 'another office'}`}.`
+      : 'You have no work-from-home shift today.';
+
+  /// The warning before clocking in somewhere other than the shift.
+  async function clockInChecked() {
+    if (elsewhere) {
+      const go = await confirm({
+        title: place === HOME ? 'Clock in from home?' : `Clock in at ${placeName(place)}?`,
+        body: `${elsewhereNote} You can still clock in here — it will show on your timesheet${
+          otherReason.trim() ? ', with your reason' : ''
+        }, so your manager can see why.`,
+        confirmLabel: place === HOME ? 'Clock in from home' : `Clock in at ${placeName(place)}`,
+        cancelLabel: 'Go back',
+        tone: 'neutral',
+      });
+      if (!go) return;
+    }
+    await punch('in');
+  }
 
   async function punch(direction: 'in' | 'out', closingAnswers?: ClosingSubmission) {
     setStatus('working');
@@ -172,13 +227,17 @@ export function ClockPage() {
       const updated =
         direction === 'in'
           ? await api.clockIn({
-              locationId: remoteShift?.locationId ?? locationId,
+              // From home it is counted under the shift's office, else their main one.
+              locationId: place === HOME ? (todaysShift?.locationId ?? primaryOffice ?? '') : place,
               method: detectClockMethod(),
+              workFromHome: place === HOME,
+              ...(elsewhere && otherReason.trim() ? { otherPlaceReason: otherReason.trim() } : {}),
               ...coords,
             })
           : await api.clockOut({ ...coords, closing: closingAnswers });
 
       setEntry(direction === 'in' ? updated : null);
+      if (direction === 'in') setOtherReason('');
       setClosing(false);
       setError(null);
       setOfferKiosk(false);
@@ -257,26 +316,53 @@ export function ClockPage() {
           )}
         </Card>
 
-        {!isClockedIn && !remote && assignedLocations.length > 1 && (
+        {!isClockedIn && status !== 'loading' && assignedLocations.length > 0 && (
           <Card className="p-4">
             <label htmlFor="location" className="block text-sm font-medium text-slate-700">
               Location
             </label>
             <select
               id="location"
-              value={locationId}
+              value={place}
               onChange={(event) => {
                 setPickedByHand(true);
-                setLocationId(event.target.value);
+                setPlace(event.target.value);
               }}
               className="mt-1 w-full rounded-lg border-slate-300 py-2.5 text-base shadow-sm focus:border-brand-600 focus:ring-brand-600"
             >
-              {assignedLocations.map((assignment) => (
-                <option key={assignment.locationId} value={assignment.locationId}>
-                  {assignment.location.name}
+              {places.map((option) => (
+                <option key={option.value} value={option.value}>
+                  {option.label}
+                  {option.value === shiftPlace ? ' — your shift' : ''}
                 </option>
               ))}
             </select>
+            {elsewhereNote && (
+              <div
+                className="mt-3 rounded-lg bg-amber-50 p-3 text-sm text-amber-950 ring-1 ring-inset ring-amber-200"
+                data-testid="other-place"
+              >
+                <p>
+                  <span className="font-semibold">{elsewhereNote}</span> You can still clock in
+                  here; it will show on your timesheet.
+                </p>
+                <label htmlFor="other-reason" className="mt-2 block text-sm font-medium">
+                  Why? <span className="font-normal text-amber-900">(optional)</span>
+                </label>
+                <input
+                  id="other-reason"
+                  value={otherReason}
+                  onChange={(event) => setOtherReason(event.target.value)}
+                  maxLength={200}
+                  placeholder={
+                    place === HOME
+                      ? 'e.g. Approved to work from home today'
+                      : 'e.g. Covering at this office'
+                  }
+                  className="mt-1 w-full rounded-lg border-amber-300 py-2 text-base shadow-sm placeholder:text-amber-800/60 focus:border-brand-600 focus:ring-brand-600 sm:text-sm"
+                />
+              </div>
+            )}
           </Card>
         )}
 
@@ -312,7 +398,9 @@ export function ClockPage() {
             onClick={() =>
               isClockedIn && checklist.length > 0
                 ? setClosing(true)
-                : void punch(isClockedIn ? 'out' : 'in')
+                : isClockedIn
+                  ? void punch('out')
+                  : void clockInChecked()
             }
             disabled={busy || status === 'loading'}
             className={`w-full rounded-xl px-6 py-5 text-lg font-semibold text-white shadow-sm transition disabled:cursor-not-allowed disabled:opacity-60 ${

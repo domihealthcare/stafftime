@@ -98,14 +98,15 @@ const STAFF: Section[] = [
         answer: (
           <>
             <p>
-              When a manager has put you down for a <strong>work-from-home shift</strong>,{' '}
-              <Screen>Home</Screen> says <strong>Clock in — working from home</strong> from half an
-              hour before it starts until it ends. No location is asked for or recorded, and the
-              punch is marked &ldquo;Work from home&rdquo;.
+              On <Screen>Home</Screen>, choose <strong>Work from home</strong> as the Location, then{' '}
+              <strong>Clock in — working from home</strong>. No location is asked for or recorded,
+              and the punch is marked &ldquo;Work from home&rdquo;. With a work-from-home shift on,
+              it is already chosen for you.
             </p>
             <p>
-              Any other time, the usual office check applies. If you are working from home and your
-              shift does not say so, ask a manager to change it.
+              Without a work-from-home shift you can still do it — say you were approved to work
+              from home today. You will see a warning and can say why; it shows on your timesheet as
+              &ldquo;Not where scheduled&rdquo;, with your reason, for your manager to see.
             </p>
           </>
         ),
@@ -900,9 +901,10 @@ const MANAGERS: Section[] = [
             shift and choose <strong>Make it work from home</strong>. Once it is published, that
             person can clock in from anywhere from half an hour before it starts until it ends, with
             no location asked for or recorded. Behind the scenes it is counted under their main
-            office, so the office view of the rota and the reports still add up. Outside a
-            work-from-home shift the usual office check applies, so nobody can clock in from home on
-            a day they are due in.
+            office, so the office view of the rota and the reports still add up. Anybody can also
+            choose Work from home — or their other office — on a day the rota has them elsewhere,
+            after a warning; the punch is marked <strong>Not where scheduled</strong> on the
+            timesheet with the reason they gave, so check it before approving the hours.
           </p>
         ),
       },

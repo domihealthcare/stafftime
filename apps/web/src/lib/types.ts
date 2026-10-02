@@ -150,6 +150,10 @@ export interface TimeEntry {
   isEarlyDeparture: boolean;
   isManuallyEdited: boolean;
   isMissingPunch: boolean;
+  /// Clocked in somewhere other than their shift — another office, or from
+  /// home with no work-from-home shift — with the reason they gave, if any.
+  isOtherPlace?: boolean;
+  otherPlaceReason?: string | null;
   editReason: string | null;
   /// Set when a manager entered the whole day by hand — there was no punch.
   enteredByHandAt?: string | null;

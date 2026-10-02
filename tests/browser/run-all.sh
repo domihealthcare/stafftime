@@ -79,7 +79,7 @@ reset_state() {
 
 # The scheduler suite builds its rotas in February 2027 so that clearing them
 # cannot touch the shift the seed puts on today's date.
-SUITES="${SUITES:-drive refusals correct auth kiosk export locations pto pto-policy presets calendar scheduler checklists phone reset payroll credentials privacy race attention announcements resources directory availability surveys dashboard date-ranges help adp profile rota wfh overtime bell rota-print closing install golive staff staff-profile birthdays events closures recurring standing usual-week own-roles hand-entry removed-shift quick-add credential-types clinical care-plan wellness productivity schedule-phone}"
+SUITES="${SUITES:-drive refusals correct auth kiosk export locations pto pto-policy presets calendar scheduler checklists phone reset payroll credentials privacy race attention announcements resources directory availability surveys dashboard date-ranges help adp profile rota wfh overtime bell rota-print closing install golive staff staff-profile birthdays events closures recurring standing usual-week own-roles hand-entry removed-shift quick-add credential-types clinical care-plan wellness productivity schedule-phone clock-place}"
 
 # Full output per suite goes to a file, and only the step lines are printed, so
 # a failure's detail is still there to read rather than truncated away.

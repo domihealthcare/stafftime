@@ -91,9 +91,8 @@ spreadsheets it generates itself.
 punch, but on a short leash: never returned with a timesheet, readable one entry
 at a time by an admin and logged when it is, and deleted by the nightly job
 after 90 days. Staff-facing wording is drafted in `docs/location-disclosure.md`
-and still needs a read by whoever advises on employment matters. A punch during
-a **work-from-home shift** records no location and no IP at all — only that it
-was from home.
+and still needs a read by whoever advises on employment matters. A punch **from
+home** records no location and no IP at all — only that it was from home.
 
 The reasoning: this is the app people open on their phones and on a shared
 front-desk tablet. Putting the practice's most sensitive records behind that is
@@ -349,10 +348,21 @@ Beyond the phases, the parts worth knowing about before picking up work:
   tick box beside an office; the shift is counted under the person's main
   office (`homeOfficeOf`, `components/PlaceSelect.tsx`). The ＋ on the rota
   can also **repeat** a shift (the same as Repeating shifts, from that day).
-  Still tied to shifts, not a standing permission (confirmed again by
-  Dominguez, October 2026). Fixed then: with two shifts in a day Home looked
-  only at the first, so an office shift in the morning hid a work-from-home
-  one later; it now uses whichever of the day's shifts is on.
+  Fixed in October 2026: with two shifts in a day Home looked only at the
+  first, so an office shift in the morning hid a work-from-home one later.
+- **Choosing where to clock in** (2 October 2026, Dominguez — this replaced
+  "work from home only during a work-from-home shift"): Home's Location list
+  offers **all of the person's offices and Work from home, every day**, the
+  place of today's shift first ("— your shift"). Picking somewhere else —
+  the other office, or home with no work-from-home shift — shows a warning
+  with an optional **Why?** box, then a pop-up to confirm; it is allowed
+  (somebody moved to the other office, or approved to work from home that
+  day). The punch is flagged `TimeEntry.isOtherPlace` with
+  `otherPlaceReason`, shown on the timesheet as **Not where scheduled** with
+  the reason. An office still needs the location check; home still records
+  no location or IP. With no shift at all, an office gives no warning and
+  home does. `tests/browser/clock-place.mjs`; see *Working from home* in
+  `docs/architecture.md`.
 - **Tablet PINs are chosen by staff** on their profile (confirmed with their
   password); the profile shows only that one is set and since when, never the
   PIN. Managers and admins can set a replacement from the Directory, never

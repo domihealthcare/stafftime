@@ -64,6 +64,8 @@ const TIME_ENTRY_SELECT = {
   isEarlyDeparture: true,
   isManuallyEdited: true,
   isMissingPunch: true,
+  isOtherPlace: true,
+  otherPlaceReason: true,
   editedById: true,
   editedAt: true,
   editReason: true,
@@ -135,19 +137,35 @@ export class TimeEntriesService {
       );
     }
 
-    // Working from home: a published remote shift covering now is the
-    // permission. No office check, and — as promised to staff — no location
-    // or IP recorded. The kiosk is always an office punch.
-    const remoteShift =
-      dto.method === ClockMethod.KIOSK ? null : await this.findRemoteShift(employeeId, new Date());
-    if (remoteShift) {
-      return this.createEntry({
-        employeeId,
-        locationId: remoteShift.locationId,
-        shift: remoteShift,
-        method: dto.method,
-        verification: VerificationMethod.REMOTE,
-      });
+    const now = new Date();
+    // The shift they are on, or about to be, wherever it is — to tell whether
+    // they are clocking in somewhere else.
+    const scheduled = await this.findShiftNear(employeeId, now);
+    const otherPlace = (isOther: boolean) => ({
+      isOtherPlace: isOther,
+      otherPlaceReason: isOther ? dto.otherPlaceReason?.trim() || null : null,
+    });
+
+    // Working from home. No office check, and — as promised to staff — no
+    // location or IP recorded. Chosen on the phone any day (October 2026,
+    // Dominguez: somebody may be approved to work from home for the day);
+    // without a work-from-home shift it is allowed, after a warning, and
+    // flagged as somewhere other than the shift. A page that does not say
+    // (an older one) works from home only during a work-from-home shift, as
+    // before. The kiosk is always an office punch.
+    if (dto.method !== ClockMethod.KIOSK && dto.workFromHome !== false) {
+      const remoteShift = await this.findRemoteShift(employeeId, now);
+      if (remoteShift || dto.workFromHome === true) {
+        const shift = remoteShift ?? scheduled;
+        return this.createEntry({
+          employeeId,
+          locationId: shift?.locationId ?? (await this.officeForHome(employeeId, dto.locationId)),
+          shift,
+          method: dto.method,
+          verification: VerificationMethod.REMOTE,
+          ...otherPlace(!remoteShift && !scheduled?.isRemote),
+        });
+      }
     }
 
     const location = await this.loadVerifiableLocation(dto.locationId);
@@ -183,7 +201,7 @@ export class TimeEntriesService {
       throw new ForbiddenException(outcome.reason);
     }
 
-    const shift = await this.findMatchingShift(employeeId, locationId, new Date());
+    const shift = await this.findMatchingShift(employeeId, locationId, now);
     return this.createEntry({
       employeeId,
       locationId,
@@ -194,6 +212,10 @@ export class TimeEntriesService {
       longitude: dto.longitude,
       accuracyMeters: dto.accuracyMeters,
       ip,
+      // At an office, but not the one of the shift — or the shift was from home.
+      ...otherPlace(
+        scheduled !== null && (scheduled.isRemote || scheduled.locationId !== locationId),
+      ),
     });
   }
 
@@ -207,6 +229,8 @@ export class TimeEntriesService {
     longitude?: number;
     accuracyMeters?: number;
     ip?: string | null;
+    isOtherPlace?: boolean;
+    otherPlaceReason?: string | null;
   }) {
     const { employeeId, shift } = input;
     const clockInAt = new Date();
@@ -241,6 +265,8 @@ export class TimeEntriesService {
               clockInIp: input.ip ?? null,
               clockInVerification: input.verification,
               isLate: shift ? this.isLate(clockInAt, shift.startsAt) : false,
+              isOtherPlace: input.isOtherPlace ?? false,
+              otherPlaceReason: input.otherPlaceReason ?? null,
             },
             select: TIME_ENTRY_SELECT,
           });
@@ -827,6 +853,39 @@ export class TimeEntriesService {
       select: { id: true, locationId: true, startsAt: true, endsAt: true },
       orderBy: { startsAt: 'asc' },
     });
+  }
+
+  /// Their published shift on at `at`, or nearest to it within the same window
+  /// as a punch is matched to a shift — at any office, or from home.
+  private findShiftNear(employeeId: string, at: Date) {
+    const windowMs = SHIFT_MATCH_WINDOW_MINUTES * 60_000;
+    return this.prisma.shift.findFirst({
+      where: {
+        employeeId,
+        status: ShiftStatus.PUBLISHED,
+        startsAt: { lte: new Date(at.getTime() + windowMs) },
+        endsAt: { gte: new Date(at.getTime() - windowMs) },
+      },
+      select: { id: true, startsAt: true, endsAt: true, locationId: true, isRemote: true },
+      orderBy: { startsAt: 'asc' },
+    });
+  }
+
+  /// Which office a punch from home with no shift is counted under: the one
+  /// the page sent if it is theirs, else their main office, else any of theirs.
+  private async officeForHome(employeeId: string, asked: string): Promise<string> {
+    const rows = await this.prisma.employeeLocation.findMany({
+      where: { employeeId, location: { isActive: true } },
+      select: { locationId: true, isPrimary: true },
+    });
+    const mine =
+      rows.find((row) => row.locationId === asked) ?? rows.find((row) => row.isPrimary) ?? rows[0];
+    if (!mine) {
+      throw new ForbiddenException(
+        'You are not assigned to an office yet, so you cannot clock in.',
+      );
+    }
+    return mine.locationId;
   }
 
   private findMatchingShift(employeeId: string, locationId: string, at: Date) {
