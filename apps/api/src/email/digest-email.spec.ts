@@ -17,6 +17,7 @@ const empty = (): DigestContents => ({
   shiftsInClosures: [],
   closingGaps: [],
   suppliesNeeded: [],
+  newSuggestions: [],
 });
 
 const appUrl = 'https://staff.domihealthcare.com';
@@ -53,6 +54,15 @@ describe('digestEmail', () => {
         suppliesNeeded: ['North Bergen — 1 to order: gloves'],
       }).subject,
     ).toBe('2 coming up: 2 time-off requests to decide');
+  });
+
+  it('says the suggestion box has something in it, and links to it, without the words', () => {
+    const { subject, text, html } = build({
+      newSuggestions: ['2 suggestions waiting to be read, the oldest from Sep 30, 2026'],
+    });
+    expect(subject).toBe('1 coming up: something in the suggestion box');
+    expect(text).toContain('2 suggestions waiting to be read, the oldest from Sep 30, 2026');
+    expect(html).toContain(`${appUrl}/surveys`);
   });
 
   it('sorts sections by how soon they need doing, and counts each tier', () => {

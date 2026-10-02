@@ -33,6 +33,9 @@ import type {
   JobRole,
   Location,
   PayPeriodInfo,
+  FeedbackKind,
+  OfficeExtension,
+  OfficeExtensionInput,
   FeedbackMessage,
   Survey,
   SurveyAudience,
@@ -1173,6 +1176,12 @@ export const api = {
   /// Surveys, licenses, checklists, closing and what is waiting on a manager.
   practiceOverview: () => request<PracticeOverview>('/dashboard/practice'),
   directory: () => request<DirectoryEntry[]>('/directory'),
+  extensions: () => request<OfficeExtension[]>('/directory/extensions'),
+  saveExtensions: (lines: OfficeExtensionInput[]) =>
+    request<OfficeExtension[]>('/directory/extensions', {
+      method: 'PUT',
+      body: JSON.stringify({ lines }),
+    }),
   profile: () => request<Profile>('/profile'),
   updateProfile: (body: {
     preferredName?: string;
@@ -1220,10 +1229,10 @@ export const api = {
       body: JSON.stringify({ answers }),
     }),
 
-  sendFeedback: (message: string) =>
+  sendFeedback: (message: string, kind?: FeedbackKind) =>
     request<{ received: boolean }>('/feedback', {
       method: 'POST',
-      body: JSON.stringify({ message }),
+      body: JSON.stringify({ message, ...(kind ? { kind } : {}) }),
     }),
   feedback: (archived = false) =>
     request<FeedbackMessage[]>(`/feedback${archived ? '?archived=true' : ''}`),

@@ -2078,6 +2078,36 @@ forgotten clock-out, and should not tell the front desk somebody is in who went
 home yesterday — the missing punch is already chased by *What needs a look*.
 Colleagues see where somebody is; only managers see when they clocked in.
 
+**Working from home today** (October 2026, Dominguez) is always on screen,
+beside the office boxes (three across on a laptop, like the cards below): who is clocked in from home now, then anybody with a
+**published work-from-home shift today** (New Jersey's today) that has not
+ended and who is not in yet, with its hours — so colleagues know not to look
+for them at the desk before they clock in. Everybody signed in sees it. It is
+the one place staff see anything of a colleague's shifts, and deliberately
+narrow: only work-from-home shifts, only today's, only the hours (the query
+selects `startsAt` and `endsAt` and nothing else). Office shifts, drafts and
+other days stay out of it. With nobody, it says so rather than disappearing.
+
+**Office extensions** (October 2026, Dominguez, from the practice's sheet)
+live in `OfficeExtension`: a line per person or phone, in a section, ordered
+as a whole and saved as a whole (`PUT /directory/extensions`, managers) —
+it is one short list a manager corrects in one go, like the sheet. The 5xx
+"from home" number rings a person's mobile on their work-from-home days; it
+is an extension, not the mobile number, which the app does not hold.
+`homeDays` is free text as on the sheet ("Thursday") rather than weekdays,
+because the cards use the work-from-home *shift* to decide when to show the
+from-home number first, not the note. The starting list came in by
+migration; a line is matched to an account there only when exactly one
+current member of staff has that first and last name.
+
+**The Staff screen shows the same card, and more** (October 2026, Dominguez):
+it loads the Directory alongside the staff list and shows its photo,
+pronouns, "about you", presence badges, contact links and birthday through
+the same components (`components/PersonDetails.tsx`), so the two cannot
+describe somebody differently; access, ADP File #, PIN, password status,
+Profile and Edit sit underneath. Former staff are not in the Directory, so
+their cards show only what the staff list has.
+
 ## Availability
 
 Staff say when they cannot work: a weekday every week, or one date, either all
@@ -2136,6 +2166,23 @@ the minute says who was at the front desk. A session is needed to post, so the
 box is not open to the internet, and nothing from the session is kept. The UI
 warns that a very specific detail can still give somebody away; no design can
 fix that.
+
+**On Home, as a pop-up** (October 2026, Dominguez: "creative in how it's
+viewed … even like a pop up"): a card with a drawn box and the four kinds of
+note opens a pop-up (`components/SuggestionBox.tsx`). It first showed one
+question a day; a shout-out question made it read as a shout-out box, so the
+card names all four, and each opens the pop-up with that kind picked. The sender
+can pick what sort of note it is — an idea, something not working, a
+shout-out, a question (`Feedback.kind`, optional; four values everybody
+shares, so it says nothing about who) — and on sending the note drops into the
+box (`motion-safe:` only). The Surveys page uses the same card.
+
+**Managers are told** (same month, Dominguez): while anything is not yet
+marked dealt with, the round-up carries `newSuggestions` — a count and the
+oldest day, **never the words**, since the email leaves the app — in the
+nightly email (*Coming up*, linking to Surveys) and as a banner on the Surveys
+page; Home shows managers "N waiting to be read". **Not the bell**: a
+notification is stamped to the minute, which would undo "only the day".
 
 Limits worth knowing: somebody with direct database access could in principle
 correlate rows by their physical order. The promise is about the app — no

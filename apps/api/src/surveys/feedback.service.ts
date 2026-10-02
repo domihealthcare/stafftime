@@ -1,4 +1,5 @@
 import { Injectable, Logger, NotFoundException } from '@nestjs/common';
+import { FeedbackKind } from '@prisma/client';
 import { localDateIn } from '../common/util/zoned-time.util';
 import { PrismaService } from '../prisma/prisma.service';
 
@@ -15,10 +16,11 @@ export class FeedbackService {
 
   constructor(private readonly prisma: PrismaService) {}
 
-  async post(message: string, now = new Date()) {
+  async post(message: string, kind?: FeedbackKind, now = new Date()) {
     await this.prisma.feedback.create({
       data: {
         message: message.trim(),
+        kind: kind ?? null,
         receivedOn: new Date(`${localDateIn(now, 'America/New_York')}T00:00:00Z`),
       },
     });

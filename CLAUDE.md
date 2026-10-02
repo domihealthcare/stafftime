@@ -363,6 +363,45 @@ Beyond the phases, the parts worth knowing about before picking up work:
   no location or IP. With no shift at all, an office gives no warning and
   home does. `tests/browser/clock-place.mjs`; see *Working from home* in
   `docs/architecture.md`.
+- **Working from home today in the Directory** (2 October 2026, Dominguez):
+  the box under the office boxes is always shown — who is clocked in from
+  home now, then anybody with a published work-from-home shift today who is
+  not in yet, with its hours ("not in yet"), and a badge on their card.
+  Everybody sees it: the one, narrow exception to staff not seeing each
+  other's shifts (today, from home, hours only). `homeToday` in
+  `DirectoryService.list`.
+- **The suggestion box on Home** (2 October 2026, Dominguez: "creative in
+  how it's viewed … even like a pop up"): a card with a drawn box and **all
+  four kinds of note** (idea, not working, shout-out, question — not one
+  rotating question, which read as "only for shout-outs"); each opens a
+  pop-up with that kind picked (`Feedback.kind`, optional), and on sending
+  the note drops into the box. **Truly anonymous — how?** on the card, and
+  **Is it really anonymous?** in the pop-up, say in plain words what is and
+  is not kept (`HowItIsAnonymous`) — every line must stay true. **Managers are told** while any are not dealt with: a count
+  and the oldest day (never the words) in the nightly email and on a Surveys
+  banner (`newSuggestions` in `AttentionService`), and "N waiting to be read"
+  on Home. Not on the bell — it would stamp the minute.
+- **Directory and Staff side by side** (2 October 2026, Dominguez): both are
+  **three columns** on a laptop (two on a tablet, one on a phone), and the
+  Directory's top row is North Bergen · West New York · Working from home
+  today. A **Staff card says everything a Directory card does** — photo,
+  pronouns, "about you", in now / working from home / on leave, tappable
+  email and phone, birthday — plus access, ADP File #, PIN and password
+  status, Profile and Edit. Shared pieces in `components/PersonDetails.tsx`.
+- **Office extensions in the Directory** (2 October 2026, Dominguez — from
+  the practice's *Office Extensions* sheet, 04.2024–08.2026): a card under
+  the search box, a column per section (Providers, Admin Team, Front Desk &
+  Outdesk, Misc), searchable. A person's **5xx number rings their mobile on
+  their work-from-home day** (`homeExtension`, `homeDays` as written, e.g.
+  "Thursday") — an extension, not their mobile number. Managers and admins
+  **Edit** it (add, reorder, remove, match a line to a person); a matched
+  person shows "Ext. 121 · 521 from home (Thursday)" on their Directory and
+  Staff cards, and on a day working from home "Ext. 521 today" first, and in
+  the Working from home box. `OfficeExtension`, saved whole
+  (`PUT /directory/extensions`); migration `20261002030000_office_extensions`
+  loads the sheet and matches a line to an account only when exactly one
+  current member of staff has that first and last name — **check the
+  matches on the live site** and fix any in Edit.
 - **Tablet PINs are chosen by staff** on their profile (confirmed with their
   password); the profile shows only that one is set and since when, never the
   PIN. Managers and admins can set a replacement from the Directory, never
@@ -518,8 +557,10 @@ Beyond the phases, the parts worth knowing about before picking up work:
   buttons use the helper, and input focus is the brand blue everywhere (`index.css`).
   New buttons should use them; the rest move over as their screens are touched.
   Batch D: on the Schedule "Worth a look" starts as a one-line summary that opens on a
-  tap (`NeedsAttention collapsible`), and the colour key is a `<details>` (open on a
-  wide screen, closed on a phone). The phone header's two rows became a bottom tab
+  tap (`NeedsAttention collapsible`), and the colour key is a `<details>` — open
+  from the start on every screen since October 2026 (Dominguez), and it lists the
+  job roles' outline colours for staff too (the Schedule used to load job roles
+  for managers only, so staff saw "Outline, the job role:" with nothing after it). The phone header's two rows became a bottom tab
   bar — see the next entry.
 - **Schedule and phone navigation** (30 September 2026, Dominguez): the Regular
   shifts list is hidden behind "Show the N regular shifts", with a search box and

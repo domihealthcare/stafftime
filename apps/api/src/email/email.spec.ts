@@ -275,6 +275,7 @@ describe('NotificationsService', () => {
           'shiftsInClosures',
           'closingGaps',
           'suppliesNeeded',
+          'newSuggestions',
         ].map((key) => [key, []]),
       ),
       undecidedTimeOff: ['Frankie Front — Nov 3, 2026'],

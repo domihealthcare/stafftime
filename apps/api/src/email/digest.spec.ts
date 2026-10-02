@@ -24,6 +24,8 @@ function build(
     closureShifts?: unknown[];
     closingRecords?: unknown[];
     supplies?: unknown[];
+    /// The days the suggestions not yet dealt with arrived, oldest first.
+    suggestions?: Date[];
     locations?: unknown[];
     staff?: { id: string; firstName: string; lastName: string }[];
     /// People with the job roles and credentials the license standing reads.
@@ -69,6 +71,12 @@ function build(
     practiceEvent: { findMany: jest.fn().mockResolvedValue(data.closures ?? []) },
     closingRecord: { findMany: jest.fn().mockResolvedValue(data.closingRecords ?? []) },
     supplyRequest: { findMany: jest.fn().mockResolvedValue(data.supplies ?? []) },
+    feedback: {
+      aggregate: jest.fn().mockResolvedValue({
+        _count: { _all: data.suggestions?.length ?? 0 },
+        _min: { receivedOn: data.suggestions?.[0] ?? null },
+      }),
+    },
     employee: {
       // Two different questions go through this one method: who should be
       // emailed, and what a handful of employee ids are called. Answering both
@@ -418,12 +426,24 @@ describe('DigestService — what is going wrong at the office', () => {
               {
                 credentialTypeId: 'dea',
                 required: true,
-                credentialType: { id: 'dea', name: 'DEA registration', kind: 'REGISTRATION', renewalMonths: 36, sortOrder: 3 },
+                credentialType: {
+                  id: 'dea',
+                  name: 'DEA registration',
+                  kind: 'REGISTRATION',
+                  renewalMonths: 36,
+                  sortOrder: 3,
+                },
               },
               {
                 credentialTypeId: 'bls',
                 required: false,
-                credentialType: { id: 'bls', name: 'BLS', kind: 'LIFE_SUPPORT', renewalMonths: 24, sortOrder: 6 },
+                credentialType: {
+                  id: 'bls',
+                  name: 'BLS',
+                  kind: 'LIFE_SUPPORT',
+                  renewalMonths: 24,
+                  sortOrder: 6,
+                },
               },
             ],
           },
@@ -442,7 +462,9 @@ describe('DigestService — what is going wrong at the office', () => {
     it('says nothing once one is on file, even if it has lapsed (that is chased as lapsed)', async () => {
       const { attention } = build({
         standing: [
-          provider([{ id: 'c1', name: 'DEA', credentialTypeId: 'dea', expiresOn: day('2020-01-01') }]),
+          provider([
+            { id: 'c1', name: 'DEA', credentialTypeId: 'dea', expiresOn: day('2020-01-01') },
+          ]),
         ],
       });
       expect((await attention.gather()).missingCredentials).toEqual([]);
@@ -680,6 +702,32 @@ describe('DigestService — what is going wrong at the office', () => {
       expect((await attention.gather()).suppliesNeeded).toEqual([
         'North Bergen — 2 to order: Gloves S/M/L (asked 3 times), Lidocaine',
         'West New York — 1 to order: Electrodes',
+      ]);
+    });
+  });
+
+  describe('the suggestion box', () => {
+    it('says nothing when the box is empty', async () => {
+      const { attention } = build({});
+      expect((await attention.gather()).newSuggestions).toEqual([]);
+    });
+
+    it('counts what is waiting and says since when, never what it says', async () => {
+      const { attention, prisma } = build({
+        suggestions: [new Date('2026-09-30T00:00:00Z'), new Date('2026-10-01T00:00:00Z')],
+      });
+      expect((await attention.gather()).newSuggestions).toEqual([
+        '2 suggestions waiting to be read, the oldest from Sep 30, 2026',
+      ]);
+      const [args] = prisma.feedback.aggregate.mock.calls[0];
+      expect(args.where).toEqual({ archivedAt: null });
+      expect(JSON.stringify(args)).not.toContain('message');
+    });
+
+    it('says one in the singular', async () => {
+      const { attention } = build({ suggestions: [new Date('2026-10-01T00:00:00Z')] });
+      expect((await attention.gather()).newSuggestions).toEqual([
+        '1 suggestion waiting to be read, from Oct 1, 2026',
       ]);
     });
   });

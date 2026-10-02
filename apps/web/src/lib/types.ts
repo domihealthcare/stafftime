@@ -474,6 +474,7 @@ export interface Attention {
   shiftsInClosures: string[];
   closingGaps: string[];
   suppliesNeeded: string[];
+  newSuggestions: string[];
 }
 
 // ---------------------------------------------------------------------------
@@ -848,7 +849,23 @@ export interface DirectoryEntry {
   locations: { id: string; name: string; isPrimary: boolean }[];
   /// Clocked in now. `since` is only sent to managers.
   onNow: { location: { id: string; name: string }; remote?: boolean; since?: string } | null;
+  /// A published work-from-home shift today that has not ended yet.
+  homeToday: { startsAt: string; endsAt: string } | null;
 }
+
+/// A line on the office extensions list: a person or a phone, in a section.
+/// `homeExtension` rings the person's mobile on their work-from-home days.
+export interface OfficeExtension {
+  id: string;
+  section: string;
+  label: string;
+  extension: string;
+  homeExtension: string | null;
+  homeDays: string | null;
+  employeeId: string | null;
+}
+
+export type OfficeExtensionInput = Omit<OfficeExtension, 'id'>;
 
 /// Somebody's birthday falling on `date` (YYYY-MM-DD) in the range asked for.
 export interface BirthdayEntry {
@@ -1026,9 +1043,12 @@ export type SurveyResults =
       })[];
     };
 
+export type FeedbackKind = 'IDEA' | 'PROBLEM' | 'SHOUT_OUT' | 'QUESTION';
+
 export interface FeedbackMessage {
   id: string;
   message: string;
+  kind: FeedbackKind | null;
   receivedOn: string;
   archivedAt: string | null;
 }

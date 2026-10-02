@@ -25,6 +25,7 @@ function person(over: Record<string, unknown> = {}) {
       { isPrimary: true, location: { id: 'nb', name: 'North Bergen' } },
     ],
     timeEntries: [{ clockInAt: clockedIn, location: { id: 'nb', name: 'North Bergen' } }],
+    shifts: [],
     ...over,
   };
 }
@@ -97,6 +98,38 @@ describe('DirectoryService', () => {
     ]);
     const [row] = await service.list(employee, NOW);
     expect(row.onNow).toEqual({ location: { id: 'nb', name: 'North Bergen' }, remote: true });
+  });
+
+  it('looks for a published work-from-home shift today that has not ended', async () => {
+    const { service, prisma } = build();
+    await service.list(employee, NOW);
+
+    const { select } = prisma.employee.findMany.mock.calls[0][0];
+    expect(select.shifts.where).toEqual({
+      isRemote: true,
+      status: 'PUBLISHED',
+      // Midnight tonight in New Jersey (EDT), not the server's UTC midnight.
+      startsAt: { lt: new Date('2026-09-23T04:00:00Z') },
+      endsAt: { gt: NOW },
+    });
+    // When, and nothing else about the shift.
+    expect(select.shifts.select).toEqual({ startsAt: true, endsAt: true });
+  });
+
+  it('says who is working from home today, before they clock in', async () => {
+    const startsAt = new Date('2026-09-22T17:00:00Z');
+    const endsAt = new Date('2026-09-22T21:00:00Z');
+    const { service } = build([person({ timeEntries: [], shifts: [{ startsAt, endsAt }] })]);
+    const [row] = await service.list(employee, NOW);
+    expect(row.onNow).toBeNull();
+    expect(row.homeToday).toEqual({ startsAt, endsAt });
+    expect(row).not.toHaveProperty('shifts');
+  });
+
+  it('says nothing about home when there is no work-from-home shift today', async () => {
+    const { service } = build();
+    const [row] = await service.list(employee, NOW);
+    expect(row.homeToday).toBeNull();
   });
 
   it('says nobody is on when there is no open punch', async () => {

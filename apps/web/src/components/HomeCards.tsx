@@ -201,8 +201,8 @@ function when(event: PracticeEvent): string {
 
 // ---------------------------------------------------------------- surveys
 
-/// Surveys waiting for this person, and the suggestion box, which is always
-/// open — so the card is always there.
+/// Surveys waiting for this person, when there are any. The suggestion box has
+/// its own card (`SuggestionBoxCard`), just under this one, which is always there.
 export function SurveysCard() {
   const isManager = useIsManager();
   const [waiting, setWaiting] = useState<Survey[]>([]);
@@ -226,25 +226,20 @@ export function SurveysCard() {
     };
   }, [isManager]);
 
+  if (waiting.length === 0) return null;
+
   return (
     <Card className="p-4" testId="surveys-card">
-      <h2 className="text-sm font-semibold text-slate-900">Surveys &amp; suggestions</h2>
-      {waiting.length > 0 ? (
-        <ul className="mt-2 space-y-1 text-sm">
-          {waiting.slice(0, 3).map((survey) => (
-            <li key={survey.id}>
-              <Link to="/surveys" className={linkClass}>
-                {survey.title} →
-              </Link>
-            </li>
-          ))}
-        </ul>
-      ) : (
-        <p className="mt-1 text-sm text-slate-600">No survey waiting for you.</p>
-      )}
-      <Link to="/surveys" className={`mt-2 inline-block ${linkClass}`}>
-        Suggestion box — anonymous →
-      </Link>
+      <h2 className="text-sm font-semibold text-slate-900">Surveys waiting for you</h2>
+      <ul className="mt-2 space-y-1 text-sm">
+        {waiting.slice(0, 3).map((survey) => (
+          <li key={survey.id}>
+            <Link to="/surveys" className={linkClass}>
+              {survey.title} →
+            </Link>
+          </li>
+        ))}
+      </ul>
     </Card>
   );
 }

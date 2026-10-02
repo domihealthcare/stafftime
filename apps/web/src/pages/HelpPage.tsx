@@ -306,9 +306,13 @@ const STAFF: Section[] = [
         answer: (
           <p>
             <Screen>Directory</Screen> lists everybody with their work email, phone number, job
-            roles and offices. <strong>In now</strong> means they are clocked in at the moment. Each
+            roles and offices. <strong>In now</strong> means they are clocked in at the moment.{' '}
+            <strong>Working from home today</strong> lists who is clocked in from home, and anybody
+            whose shift today is from home but who has not clocked in yet, with their hours. Each
             job role has its own colour, so you can tell at a glance who is front desk, MA or
-            provider.
+            provider. <strong>Office extensions</strong> lists every desk phone and person by
+            section, as on the practice’s sheet. A “from home” number rings that person’s mobile on
+            the days they work from home — on those days their card shows it first.
           </p>
         ),
       },
@@ -343,9 +347,16 @@ const STAFF: Section[] = [
             </p>
             <p>
               Results only appear once a survey is closed and at least three people have answered.
-              Surveys waiting for you are on <Screen>Home</Screen>, with the{' '}
-              <strong>suggestion box</strong>, which is always open and keeps only your message and
-              the day it arrived.
+              Surveys waiting for you are on <Screen>Home</Screen>.
+            </p>
+            <p>
+              The <strong>suggestion box</strong> is on <Screen>Home</Screen> too, and always open:
+              press <strong>Drop a note in</strong>, pick what sort of note it is if you like (an
+              idea, something not working, a shout-out or a question), write it and send it. Only
+              your message, the sort you picked and the day it arrived are kept — never your name or
+              the time — so nobody, managers and admins included, can find out who sent it.
+              <strong>Truly anonymous — how?</strong> on the card says the rest. The managers are
+              told the next morning that something is waiting, and read it in the app.
             </p>
           </>
         ),
@@ -1155,6 +1166,30 @@ const MANAGERS: Section[] = [
             written answer) and choose who it is for: everyone, a job role or a location. You see
             how many have answered, never who. Results appear once you close it, and only if at
             least three people answered — ask a small group and there may be nothing to show.
+          </p>
+        ),
+      },
+      {
+        question: 'Changing the office extensions',
+        answer: (
+          <p>
+            In <Screen>Directory</Screen>, press <strong>Edit</strong> on Office extensions. Each
+            line has a section, a name or phone, the extension, and for a person their from-home
+            number and the days they work from home. Match a line to a person and it shows on their
+            Directory card too. Use ↑ ↓ to reorder and ✕ to remove, then{' '}
+            <strong>Save extensions</strong>.
+          </p>
+        ),
+      },
+      {
+        question: 'The suggestion box',
+        answer: (
+          <p>
+            Notes from the suggestion box are under <Screen>Manage → Surveys</Screen>, at the
+            bottom, with what sort of note each is (an idea, something not working, a shout-out or a
+            question) and the day it arrived — never who sent it or when in the day. While any are
+            waiting, Home says how many, and the nightly email says so too, without the words. Press{' '}
+            <strong>Mark as dealt with</strong> once you have, and it stops being chased.
           </p>
         ),
       },

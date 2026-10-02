@@ -7,6 +7,7 @@ import type { ApplicableSection, ClosingSubmission, Shift, TimeEntry } from '../
 import { ClosingChecklistForm } from '../components/ClosingChecklistForm';
 import { BirthdaysThisWeek } from '../components/BirthdaysThisWeek';
 import { ComingUp, HomeNews, QuickActions, SurveysCard } from '../components/HomeCards';
+import { SuggestionBoxCard } from '../components/SuggestionBox';
 import { MyOvertimeNotice } from '../components/OvertimeAlerts';
 import { Alert, Badge, Card, Spinner } from '../components/ui';
 import { useConfirm } from '../components/ConfirmDialog';
@@ -436,6 +437,7 @@ export function ClockPage() {
         <BirthdaysThisWeek />
         <ComingUp />
         <SurveysCard />
+        <SuggestionBoxCard />
       </aside>
 
       <div className="lg:col-span-2 lg:row-start-2">

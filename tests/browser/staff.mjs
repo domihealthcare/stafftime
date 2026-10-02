@@ -77,6 +77,43 @@ await step('the list has one Edit button per person, and nothing that removes an
   }
 });
 
+await step('a card says everything the Directory card does, three to a row on a laptop', async () => {
+  // The admin's own pronouns and "about you", as they would set them on their profile.
+  const saved = await admin.evaluate(async () => {
+    const r = await fetch('/api/profile', {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ pronouns: 'they/them', about: 'Ask me about the ADP set-up.' }),
+    });
+    return r.ok;
+  });
+  if (!saved) throw new Error('could not set the profile');
+  await admin.reload({ waitUntil: 'networkidle' });
+  const card = admin.getByTestId('staff-admin@domihealthcare.com');
+  await card.getByText('(they/them)').waitFor({ timeout: 15000 });
+  await card.getByText('Ask me about the ADP set-up.').waitFor({ timeout: 5000 });
+  const mail = await card.getByRole('link', { name: 'admin@domihealthcare.com' }).getAttribute('href');
+  if (mail !== 'mailto:admin@domihealthcare.com') throw new Error(`email links to ${mail}`);
+  if (!(await card.getByRole('link', { name: /555/ }).first().getAttribute('href'))?.startsWith('tel:'))
+    throw new Error('the phone number does not dial');
+  // The access, ADP and Edit are still there, as before.
+  await card.getByText('Admin access').waitFor({ timeout: 5000 });
+  await card.getByRole('button', { name: /^Edit / }).waitFor({ timeout: 5000 });
+
+  const lefts = await admin.locator('[data-testid^="staff-"][data-testid*="@"]').evaluateAll((cards) =>
+    [...new Set(cards.slice(0, 6).map((c) => Math.round(c.getBoundingClientRect().left)))],
+  );
+  if (lefts.length !== 3) throw new Error(`cards sit in ${lefts.length} columns`);
+  await admin.screenshot({ path: `${OUT}/staff-three-columns.png`, fullPage: false });
+  await admin.evaluate(() =>
+    fetch('/api/profile', {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ pronouns: '', about: '' }),
+    }),
+  );
+});
+
 await step('the search box narrows the list, and says so when nobody matches', async () => {
   const cards = admin.locator('[data-testid^="staff-"]').filter({ hasText: '@' });
   const all = await cards.count();
