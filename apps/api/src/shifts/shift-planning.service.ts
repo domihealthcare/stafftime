@@ -34,6 +34,14 @@ import {
   UpdateStandingShiftDto,
 } from './dto/repeat-shifts.dto';
 import { OvertimeService } from './overtime.service';
+import {
+  capitalised,
+  isEveryWeek,
+  onPattern,
+  patternPhrase,
+  patternProblem,
+  RepeatPattern,
+} from './repeat-pattern';
 
 /// Guards against a mis-typed year turning into three thousand shifts.
 const MAX_GENERATED_SHIFTS = 200;
@@ -130,6 +138,16 @@ export class ShiftPlanningService {
     if (dates.length === 0) {
       throw new BadRequestException('The last date cannot be before the first.');
     }
+    const everyWeeks = dto.everyWeeks ?? 1;
+    const weeksOfMonth = [...(dto.weeksOfMonth ?? [])].sort();
+    const pattern: RepeatPattern = {
+      daysOfWeek: dto.daysOfWeek,
+      everyWeeks,
+      weeksOfMonth,
+      cycleFrom: from,
+    };
+    const wrong = patternProblem(pattern);
+    if (wrong) throw new BadRequestException(wrong);
     if (dates.length > MAX_SPAN_DAYS) {
       throw new BadRequestException(
         `That spans ${dates.length} days. Plan at most ${MAX_SPAN_DAYS} days at a time.`,
@@ -144,9 +162,13 @@ export class ShiftPlanningService {
       : (dto.jobRoleId ?? null);
     if (!dto.employeeId && jobRoleId) await this.requireJobRole(jobRoleId);
 
-    const wanted = dates.filter((date) => dto.daysOfWeek.includes(isoWeekdayOf(date)));
+    const wanted = dates.filter((date) => onPattern(date, pattern));
     if (wanted.length === 0) {
-      throw new BadRequestException('None of those weekdays fall inside that date range.');
+      throw new BadRequestException(
+        isEveryWeek(pattern)
+          ? 'None of those weekdays fall inside that date range.'
+          : `${capitalised(patternPhrase(pattern))} does not fall inside that date range.`,
+      );
     }
     if (wanted.length > MAX_GENERATED_SHIFTS) {
       throw new BadRequestException(
@@ -184,6 +206,9 @@ export class ShiftPlanningService {
             isRemote: dto.isRemote ?? false,
             openCount: perDay,
             daysOfWeek: [...dto.daysOfWeek].sort(),
+            everyWeeks,
+            weeksOfMonth,
+            cycleFrom: everyWeeks > 1 ? asDate(from) : null,
             startTime: dto.startTime,
             endTime: dto.endTime,
             status,
@@ -215,7 +240,7 @@ export class ShiftPlanningService {
         dto.employeeId,
         result.created,
         result.dates,
-        standing ? { daysOfWeek: dto.daysOfWeek, from } : undefined,
+        standing ? patternPhrase(pattern) : undefined,
       );
     }
     return {
@@ -272,7 +297,7 @@ export class ShiftPlanningService {
 
       if (working) {
         const candidates = datesBetween(addDaysTo(filled, 1), last)
-          .filter((date) => series.daysOfWeek.includes(isoWeekdayOf(date)))
+          .filter((date) => onPattern(date, patternOf(series)))
           .map((date) => ({
             date,
             startsAt: zonedTimeToUtc(date, series.startTime, series.location.timezone),
@@ -315,6 +340,9 @@ export class ShiftPlanningService {
         employeeId: true,
         locationId: true,
         daysOfWeek: true,
+        everyWeeks: true,
+        weeksOfMonth: true,
+        cycleFrom: true,
         startTime: true,
         endTime: true,
         openCount: true,
@@ -364,6 +392,25 @@ export class ShiftPlanningService {
     const daysOfWeek = [...dto.daysOfWeek].sort();
     const openCount = series.employeeId ? 1 : (dto.openCount ?? series.openCount);
     const isRemote = dto.isRemote ?? series.isRemote;
+    // Every few weeks keeps its rhythm through a change of hours; a new
+    // rhythm starts in the week the change does.
+    const everyWeeks = dto.everyWeeks ?? series.everyWeeks;
+    const weeksOfMonth = [...(dto.weeksOfMonth ?? series.weeksOfMonth)].sort();
+    const cycleFrom =
+      everyWeeks === 1
+        ? null
+        : everyWeeks === series.everyWeeks
+          ? (series.cycleFrom ?? series.startsOn)
+          : asDate(from);
+    const pattern = patternOf({
+      daysOfWeek,
+      everyWeeks,
+      weeksOfMonth,
+      cycleFrom,
+      startsOn: series.startsOn,
+    });
+    const wrong = patternProblem(pattern);
+    if (wrong) throw new BadRequestException(wrong);
 
     // Shifts on or after `from` that have not started. Time already worked, or
     // with punches against it, is never touched.
@@ -382,6 +429,9 @@ export class ShiftPlanningService {
         isRemote,
         openCount,
         daysOfWeek,
+        everyWeeks,
+        weeksOfMonth,
+        cycleFrom,
         startTime: dto.startTime,
         endTime: dto.endTime,
       },
@@ -395,9 +445,7 @@ export class ShiftPlanningService {
     });
     await this.prisma.shift.updateMany({ where: going, data: { status: ShiftStatus.CANCELLED } });
 
-    const dates = datesBetween(from, filled).filter((date) =>
-      daysOfWeek.includes(isoWeekdayOf(date)),
-    );
+    const dates = datesBetween(from, filled).filter((date) => onPattern(date, pattern));
     const result = await this.createAll(
       dates.map((date) => ({
         date,
@@ -422,7 +470,7 @@ export class ShiftPlanningService {
       await this.inbox.notify([series.employeeId], {
         kind: NotificationKind.SCHEDULE_CHANGED,
         title: 'Your regular shift has changed',
-        body: `${weekdaysPhrase(daysOfWeek)} from ${shortDay(from)}.`,
+        body: `${capitalised(patternPhrase(pattern))} from ${shortDay(from)}.`,
         link: '/schedule',
       });
     }
@@ -487,7 +535,7 @@ export class ShiftPlanningService {
           published.length === 1
             ? 'A shift taken off your schedule'
             : `${published.length} shifts taken off your schedule`,
-        body: `${weekdaysPhrase(series.daysOfWeek)} after ${shortDay(lastDate)} — that regular shift has ended.`,
+        body: `${capitalised(patternPhrase(patternOf(series)))} after ${shortDay(lastDate)} — that regular shift has ended.`,
         link: '/schedule',
       });
     }
@@ -589,8 +637,10 @@ export class ShiftPlanningService {
     }
     for (const group of wanted.values()) group.daysOfWeek.sort();
 
+    // A usual week is made of every-week regular shifts. One on certain weeks
+    // only — the first Saturday of the month — is left running beside it.
     const current = await this.prisma.shiftSeries.findMany({
-      where: { employeeId, endsOn: null },
+      where: { employeeId, endsOn: null, everyWeeks: 1, weeksOfMonth: { isEmpty: true } },
       include: { location: { select: { timezone: true } } },
       orderBy: { startsOn: 'asc' },
     });
@@ -1192,7 +1242,8 @@ export class ShiftPlanningService {
     employeeId: string,
     count: number,
     dates: string[],
-    standing?: { daysOfWeek: number[]; from: string },
+    /// For a regular shift: which days, in words — "Mondays".
+    standing?: string,
   ) {
     if (count === 0) return;
     const sorted = [...dates].sort();
@@ -1202,7 +1253,7 @@ export class ShiftPlanningService {
       await this.inbox.notify([employeeId], {
         kind: NotificationKind.SCHEDULE_CHANGED,
         title: 'A regular shift on your schedule',
-        body: `${weekdaysPhrase(standing.daysOfWeek)} from ${shortDay(first)}, with no end date.`,
+        body: `${capitalised(standing)} from ${shortDay(first)}, with no end date.`,
         link: '/schedule',
       });
       return;
@@ -1398,6 +1449,22 @@ function standingHorizon(date: string): string {
 
 function laterOf(a: string, b: string): string {
   return a > b ? a : b;
+}
+
+/// A regular shift's days and weeks, as `onPattern` reads them.
+function patternOf(series: {
+  daysOfWeek: number[];
+  everyWeeks: number;
+  weeksOfMonth: number[];
+  cycleFrom: Date | null;
+  startsOn: Date;
+}): RepeatPattern {
+  return {
+    daysOfWeek: series.daysOfWeek,
+    everyWeeks: series.everyWeeks,
+    weeksOfMonth: series.weeksOfMonth,
+    cycleFrom: isoDate(series.cycleFrom ?? series.startsOn),
+  };
 }
 
 /// A plain date as Prisma's `@db.Date` wants it.

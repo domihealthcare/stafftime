@@ -426,6 +426,15 @@ Beyond the phases, the parts worth knowing about before picking up work:
   removed by hand stays removed. Listed under Schedule → **Regular shifts**,
   stopped there from a chosen last day (later shifts cancelled or deleted,
   person told once).
+- **Which weeks** (October 2026, Dominguez: "1st Saturday of the month -
+  stuff like that"): repeating shifts, the ＋ on the rota and a regular
+  shift's Edit choose every week, every 2–4 weeks, or **certain weeks of the
+  month** (1st–4th, last; several at once), with the first few dates shown
+  before saving. `ShiftSeries.everyWeeks` / `weeksOfMonth` / `cycleFrom`;
+  one rule in `shifts/repeat-pattern.ts`, mirrored in the web's
+  `lib/repeat-pattern.ts`. A usual week only reads and replaces every-week
+  ones. See *Which weeks* in `docs/architecture.md`;
+  `tests/browser/repeat-weeks.mjs`.
 - **A usual week** (29 September 2026, Dominguez: a salaried person with
   different hours or offices each day needed a regular shift per day): under
   Schedule → Regular shifts (**Set somebody's usual week**, or **Their
@@ -874,7 +883,7 @@ Beyond the phases, the parts worth knowing about before picking up work:
   Counts only — never a patient (the schema guard pins the fields; the note is
   the one free-text box and says so). **Not in the payroll export** (decided). See *Provider
   productivity* in `docs/architecture.md`.
-- **Tests**: ~1,130 unit tests, and ~505 end-to-end checks in `tests/browser`
+- **Tests**: ~1,175 unit tests, and ~515 end-to-end checks in `tests/browser`
   driven against a real API, a real Postgres and a real Chromium. Both run in CI
   on every push. The convention is to run the browser suites twice — once
   against the dev server, once against `vite preview`, which applies the

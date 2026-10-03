@@ -903,6 +903,9 @@ export const api = {
     startTime: string;
     endTime: string;
     daysOfWeek: number[];
+    /// Every week when absent; see `lib/repeat-pattern.ts`.
+    everyWeeks?: number;
+    weeksOfMonth?: number[];
     from: string;
     /// Absent: no end date — a standing shift.
     until?: string;
@@ -921,6 +924,8 @@ export const api = {
       startTime: string;
       endTime: string;
       daysOfWeek: number[];
+      everyWeeks?: number;
+      weeksOfMonth?: number[];
       from?: string;
     },
   ) =>

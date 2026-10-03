@@ -724,22 +724,31 @@ model Shift {
 /// published ones cancelled, as a single removal would), and it writes no
 /// more.
 model ShiftSeries {
-  id         String      @id @default(uuid()) @db.Uuid
+  id           String      @id @default(uuid()) @db.Uuid
   /// Null for standing **open shifts** — a slot filled week after week.
-  employeeId String?     @db.Uuid
-  locationId String      @db.Uuid
-  jobRoleId  String?     @db.Uuid
-  isRemote   Boolean     @default(false)
+  employeeId   String?     @db.Uuid
+  locationId   String      @db.Uuid
+  jobRoleId    String?     @db.Uuid
+  isRemote     Boolean     @default(false)
   /// Open shifts only: how many slots each day.
-  openCount  Int         @default(1)
+  openCount    Int         @default(1)
   /// 1 = Monday … 7 = Sunday.
-  daysOfWeek Int[]
+  daysOfWeek   Int[]
+  /// Which weeks, as well as which days (October 2026: "the first Saturday
+  /// of the month"). See `shifts/repeat-pattern.ts`. Every week by default.
+  /// Every 1 week, or every 2–4, counted from the week of `cycleFrom`.
+  everyWeeks   Int         @default(1)
+  /// Only certain weeks of the month: 1–4, or -1 for the last. Empty: not by
+  /// the month.
+  weeksOfMonth Int[]       @default([])
+  /// Every 2+ weeks: a date in a week it is on.
+  cycleFrom    DateTime?   @db.Date
   /// "08:00", on the office's own clock.
-  startTime  String
-  endTime    String
+  startTime    String
+  endTime      String
   /// What the shifts it writes are made as: drafts to review, or published.
-  status     ShiftStatus
-  notes      String?
+  status       ShiftStatus
+  notes        String?
 
   /// Its first date, and — once stopped — its last. Null: no end date.
   startsOn      DateTime  @db.Date
