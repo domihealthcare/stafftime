@@ -487,6 +487,16 @@ Beyond the phases, the parts worth knowing about before picking up work:
   settings**.
 - **News** is on Home (October 2026, see *Navigation and Home*), with **All
   news** for the full list; on a phone also under More.
+- **Likes, comments and polls on News** (3 October 2026, Dominguez): anybody
+  signed in likes a post, comments under it and votes in its poll — **all by
+  name** (Dominguez chose named votes; unlike pulse surveys, polls are not
+  anonymous, and the poll says so). Admins add a poll with the post (**+ Add a
+  poll**: question, 2–10 choices, optionally pick several); the choices are
+  fixed once anybody votes, and the admin can **Close voting**. The writer
+  edits and deletes their own comment; **managers and admins delete
+  anybody's**. A comment rings the bell for the post's writer and earlier
+  commenters. Votable and likeable on Home too. See *Likes, comments and
+  polls* in `docs/architecture.md`; `tests/browser/news-social.mjs`.
 - **Practice events** (September 2026, asked for by Dominguez): office,
   admin and provider meetings and things like a wellness day. Managers and
   admins add them from Schedule → **+ Add event** — timed or all day (one day

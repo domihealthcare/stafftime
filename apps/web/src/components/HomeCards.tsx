@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { api } from '../lib/api';
 import {
   canUseCarePlan,
@@ -9,6 +9,7 @@ import {
 import { formatDate, localDate } from '../lib/format';
 import { useIsManager, useSession } from '../lib/session';
 import type { Announcement, PracticeEvent, Survey } from '../lib/types';
+import { PollView, PostActions } from './PostSocial';
 import { Card } from './ui';
 
 /**
@@ -24,9 +25,15 @@ const linkClass = 'text-sm font-medium text-brand-700 hover:text-brand-900';
 // ------------------------------------------------------------------- news
 
 /// The primary post in full, then the next few newest as headlines — News no
-/// longer has a tab of its own, so this is where people read it.
+/// longer has a tab of its own, so this is where people read it. The primary
+/// can be liked and voted on here; comments are read and written on News.
 export function HomeNews() {
+  const navigate = useNavigate();
   const [posts, setPosts] = useState<Announcement[] | null>(null);
+  const replace = (updated: Announcement) =>
+    setPosts(
+      (current) => current?.map((post) => (post.id === updated.id ? updated : post)) ?? null,
+    );
 
   useEffect(() => {
     let cancelled = false;
@@ -67,7 +74,24 @@ export function HomeNews() {
                 Announcement · {formatDate(primary.createdAt)}
               </p>
               <h3 className="mt-1 font-semibold text-slate-900">{primary.title}</h3>
-              <p className="mt-1 whitespace-pre-line text-sm text-slate-700">{primary.body}</p>
+              {primary.body && (
+                <p className="mt-1 whitespace-pre-line text-sm text-slate-700">{primary.body}</p>
+              )}
+              <PollView post={primary} onChange={replace} />
+              <PostActions
+                post={primary}
+                onChange={replace}
+                onComment={() => navigate(`/news#post-${primary.id}`)}
+              />
+              {primary.comments.length > 0 && (
+                <Link to={`/news#post-${primary.id}`} className={`mt-1 inline-block ${linkClass}`}>
+                  Read the{' '}
+                  {primary.comments.length === 1
+                    ? 'comment'
+                    : `${primary.comments.length} comments`}{' '}
+                  →
+                </Link>
+              )}
             </article>
           )}
           {others.length > 0 && (
@@ -75,13 +99,21 @@ export function HomeNews() {
               {others.map((post) => (
                 <Link
                   key={post.id}
-                  to="/news"
+                  to={`/news#post-${post.id}`}
                   className="block px-4 py-3 hover:bg-slate-50"
                   data-testid="home-news-item"
                 >
-                  <p className="text-xs text-slate-500">{formatDate(post.createdAt)}</p>
+                  <p className="text-xs text-slate-500">
+                    {formatDate(post.createdAt)}
+                    {post.poll && ' · Poll'}
+                    {post.likes.length > 0 && ` · ♥ ${post.likes.length}`}
+                    {post.comments.length > 0 &&
+                      ` · ${post.comments.length} ${post.comments.length === 1 ? 'comment' : 'comments'}`}
+                  </p>
                   <p className="font-medium text-slate-900">{post.title}</p>
-                  <p className="line-clamp-2 text-sm text-slate-600">{post.body}</p>
+                  <p className="line-clamp-2 text-sm text-slate-600">
+                    {post.body || post.poll?.question}
+                  </p>
                 </Link>
               ))}
             </Card>

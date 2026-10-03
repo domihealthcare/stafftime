@@ -302,6 +302,26 @@ const STAFF: Section[] = [
         ),
       },
       {
+        question: 'Can I like, comment on or vote in a post?',
+        answer: (
+          <>
+            <p>
+              Yes. Under every post, <strong>Like</strong> and <strong>Comment</strong>; a post with
+              a poll has its choices in it — tap one to vote, tap another to change your mind, or{' '}
+              <strong>Take my vote back</strong>. On Home you can like and vote on the top post;
+              comments are on <Screen>News</Screen>.
+            </p>
+            <p className="mt-2">
+              <strong>All of it is under your name</strong>: everybody can see who liked a post, who
+              wrote a comment and who picked what in a poll. (Surveys are different — those are
+              anonymous.) You can change or delete your own comments; managers can delete any.
+              Whoever wrote the post, and everybody who has already commented, gets a note on the
+              bell when somebody comments. Never write anything about a patient.
+            </p>
+          </>
+        ),
+      },
+      {
         question: 'How do I find a colleague?',
         answer: (
           <p>
@@ -414,8 +434,9 @@ const STAFF: Section[] = [
             Your notifications — things that are just for you: a shift added to, changed on or taken
             off your schedule, a meeting, event or office closure added, moved or cancelled, your
             time off decided, overtime on your schedule, a survey waiting for you, your checklist
-            starting, and new posts on <Screen>News</Screen>. The red number is how many you have
-            not read. Choose one to go straight to it; they are kept for 90 days.
+            starting, new posts on <Screen>News</Screen>, and comments on posts you wrote or
+            commented on. The red number is how many you have not read. Choose one to go straight to
+            it; they are kept for 90 days.
           </p>
         ),
       },
@@ -1349,7 +1370,12 @@ const MANAGERS: Section[] = [
         answer: (
           <p>
             On <Screen>News</Screen>, write, edit or remove posts. One post is always the primary
-            one shown at the top of everybody's home screen; tick another to move it.
+            one shown at the top of everybody's home screen; tick another to move it.{' '}
+            <strong>+ Add a poll</strong> on a post asks a question with two to ten choices (tick{' '}
+            <strong>People can pick more than one</strong> for tick boxes). Votes are named; for
+            anonymous answers, use a survey. Once anybody has voted the choices are fixed —{' '}
+            <strong>Close voting</strong> on the post stops it, and it can be opened again. Managers
+            and admins can delete anybody's comment.
           </p>
         ),
       },
