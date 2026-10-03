@@ -1,4 +1,10 @@
-import { BadRequestException, ForbiddenException } from '@nestjs/common';
+import {
+  BadGatewayException,
+  BadRequestException,
+  ForbiddenException,
+  NotFoundException,
+  PayloadTooLargeException,
+} from '@nestjs/common';
 import { ResourceKind, Role } from '@prisma/client';
 import { GoogleProblem } from '../google/google-auth.service';
 import { driveFolderIdOf } from '../google/google-drive.client';
@@ -60,10 +66,55 @@ function build(options: { mine?: string[]; one?: unknown; driveOn?: boolean } = 
         id: 'f1',
         name: 'Scripts.pdf',
         isFolder: false,
-        url: 'https://drive.google.com/file/d/f1/view',
+        canOpen: true,
         modifiedAt: null,
       },
     ]),
+    inside: jest.fn(async (_folderId: string, fileId: string) =>
+      fileId === 'subFolder01'
+        ? {
+            id: fileId,
+            name: 'Forms',
+            isFolder: true,
+            canOpen: false,
+            modifiedAt: null,
+            size: null,
+          }
+        : fileId === 'scriptsPdf'
+          ? {
+              id: fileId,
+              name: 'Scripts.pdf',
+              isFolder: false,
+              canOpen: true,
+              modifiedAt: null,
+              size: 10,
+            }
+          : fileId === 'surveyForm'
+            ? {
+                id: fileId,
+                name: 'Survey',
+                isFolder: false,
+                canOpen: false,
+                modifiedAt: null,
+                size: null,
+              }
+            : fileId === 'hugeVideo1'
+              ? {
+                  id: fileId,
+                  name: 'Training.mp4',
+                  isFolder: false,
+                  canOpen: false,
+                  modifiedAt: null,
+                  size: 99 * 1024 * 1024,
+                }
+              : null,
+    ),
+    open: jest.fn(async (fileId: string) => ({
+      name: 'Scripts.pdf',
+      contentType: 'application/pdf',
+      inline: true,
+      body: new Response(`contents of ${fileId}`).body,
+    })),
   };
   return {
     service: new ResourcesService(prisma as never, jobRoles as never, drive as never),
@@ -262,6 +313,94 @@ describe('Drive folders', () => {
     await expect(service.driveFiles('res-1', employee)).resolves.toEqual({
       status: 'unreadable',
       shareWith: null,
+    });
+  });
+  it('lists a folder inside the link’s folder, and nothing outside it', async () => {
+    const { service, drive } = build({ one: resource({ url: FOLDER }) });
+    await expect(service.driveFiles('res-1', employee, 'subFolder01')).resolves.toMatchObject({
+      status: 'ok',
+    });
+    expect(drive.inside).toHaveBeenCalledWith('1AbCdEfGhIjKlMnOp', 'subFolder01');
+    expect(drive.list).toHaveBeenCalledWith('subFolder01');
+
+    drive.list.mockClear();
+    await expect(service.driveFiles('res-1', employee, 'elsewhere01')).rejects.toBeInstanceOf(
+      NotFoundException,
+    );
+    // A file is not a folder to list either.
+    await expect(service.driveFiles('res-1', employee, 'scriptsPdf')).rejects.toBeInstanceOf(
+      NotFoundException,
+    );
+    expect(drive.list).not.toHaveBeenCalled();
+  });
+
+  describe('opening a file', () => {
+    it('hands a file in the folder to somebody who may see the link', async () => {
+      const { service, drive } = build({ one: resource({ url: FOLDER }) });
+      const file = await service.driveFile('res-1', 'scriptsPdf', employee);
+      expect(file).toMatchObject({ name: 'Scripts.pdf', inline: true });
+      expect(drive.inside).toHaveBeenCalledWith('1AbCdEfGhIjKlMnOp', 'scriptsPdf');
+      expect(drive.open).toHaveBeenCalledWith('scriptsPdf');
+    });
+
+    it('keeps it from somebody not in the job role, like the link itself', async () => {
+      const { service, drive } = build({ one: resource({ url: FOLDER }), mine: ['role-ma'] });
+      await expect(service.driveFile('res-1', 'scriptsPdf', employee)).rejects.toBeInstanceOf(
+        ForbiddenException,
+      );
+      expect(drive.inside).not.toHaveBeenCalled();
+      expect(drive.open).not.toHaveBeenCalled();
+    });
+
+    it('opens nothing that is not in the folder, nor a folder, nor from a plain link', async () => {
+      const { service, drive } = build({ one: resource({ url: FOLDER }) });
+      for (const fileId of ['elsewhere01', 'subFolder01']) {
+        await expect(service.driveFile('res-1', fileId, employee)).rejects.toBeInstanceOf(
+          NotFoundException,
+        );
+      }
+      const plain = build();
+      await expect(plain.service.driveFile('res-1', 'scriptsPdf', employee)).rejects.toBeInstanceOf(
+        NotFoundException,
+      );
+      expect(drive.open).not.toHaveBeenCalled();
+      expect(plain.drive.inside).not.toHaveBeenCalled();
+    });
+
+    it('says why a Google Form or a huge file does not open here', async () => {
+      const { service, drive } = build({ one: resource({ url: FOLDER }) });
+      await expect(service.driveFile('res-1', 'surveyForm', employee)).rejects.toThrow(
+        new BadRequestException('That kind of file only opens in Google Drive.'),
+      );
+      await expect(service.driveFile('res-1', 'hugeVideo1', employee)).rejects.toBeInstanceOf(
+        PayloadTooLargeException,
+      );
+      expect(drive.open).not.toHaveBeenCalled();
+    });
+
+    it('says plainly when Google will not hand it over', async () => {
+      const { service, drive } = build({ one: resource({ url: FOLDER }) });
+      drive.open.mockRejectedValue(
+        new GoogleProblem('This file is too large to be exported.', 403),
+      );
+      await expect(service.driveFile('res-1', 'scriptsPdf', employee)).rejects.toThrow(
+        new BadGatewayException(
+          'Google will not turn a document this large into a PDF. Ask a manager for it.',
+        ),
+      );
+      drive.open.mockRejectedValue(new GoogleProblem('Backend error', 500));
+      await expect(service.driveFile('res-1', 'scriptsPdf', employee)).rejects.toBeInstanceOf(
+        BadGatewayException,
+      );
+    });
+  });
+
+  it('gives a manager, and only a manager, the address to share folders with', async () => {
+    await expect(build().service.sections(manager)).resolves.toMatchObject({
+      driveShareWith: 'domi-staff-meet@domi-staff.iam.gserviceaccount.com',
+    });
+    await expect(build().service.sections(employee)).resolves.toMatchObject({
+      driveShareWith: null,
     });
   });
 });

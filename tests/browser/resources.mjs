@@ -158,20 +158,22 @@ await step('a pasted address without https is taken as a web link', async () => 
     url: 'drive.google.com/drive/folders/front-desk',
     body: 'What to say when a patient calls to reschedule.',
   });
-  const link = section(mgr, 'Front Desk').getByRole('link', { name: /Phone scripts/ });
+  // A Drive folder's files open through the app (October 2026), so its own
+  // address is offered to managers only, as "Open in Drive".
+  const link = section(mgr, 'Front Desk').getByRole('link', { name: /Open in Drive/ });
   await link.waitFor({ timeout: 10000 });
   const href = await link.getAttribute('href');
   if (href !== 'https://drive.google.com/drive/folders/front-desk')
     throw new Error(`stored as ${href}`);
   if ((await link.getAttribute('rel')) !== 'noopener noreferrer') throw new Error('link can reach back');
-  await section(mgr, 'Front Desk').getByText('drive.google.com', { exact: true }).waitFor({ timeout: 5000 });
+  await section(mgr, 'Front Desk').getByText('Google Drive folder').waitFor({ timeout: 5000 });
 });
 
 await step('a Drive folder link offers what is in it, and says plainly when it cannot look', async () => {
   // Dominguez, September 2026. Google is not set up on a test machine, so
   // the app says so instead of pretending the folder is empty.
   const card = mgr.getByTestId('resource-Phone scripts');
-  await card.getByRole('button', { name: 'Show what’s in it' }).click();
+  await card.getByRole('button', { name: /Phone scripts/ }).click();
   await card.getByText('The app cannot look inside Drive folders yet').waitFor({ timeout: 10000 });
   // Only ever a list of links out: still nothing on the screen takes a file.
   if ((await mgr.locator('input[type=file]').count()) > 0) throw new Error('a file input appeared');
@@ -247,7 +249,18 @@ await step('someone in two roles sees both, and nothing else', async () => {
   await goTo(emp, 'Resources');
 
   await section(emp, 'Everyone').waitFor({ timeout: 15000 });
-  await section(emp, 'Front Desk').getByRole('link', { name: /Phone scripts/ }).waitFor({ timeout: 5000 });
+  await section(emp, 'Front Desk').getByRole('button', { name: /Phone scripts/ }).waitFor({ timeout: 5000 });
+  // Staff open the files here, not the folder in Drive, which they may have
+  // no access to.
+  if ((await section(emp, 'Front Desk').getByRole('link', { name: /Open in Drive/ }).count()) > 0)
+    throw new Error('an employee was offered the Drive folder itself');
+  // ...unless the app cannot list it (no Google on a test machine): then the
+  // folder in Drive is the fallback, for one still shared "Anyone with the link".
+  await section(emp, 'Front Desk').getByRole('button', { name: /Phone scripts/ }).click();
+  const fallback = section(emp, 'Front Desk').getByRole('link', { name: /Try it in Google Drive/ });
+  await fallback.waitFor({ timeout: 10000 });
+  if ((await fallback.getAttribute('href')) !== 'https://drive.google.com/drive/folders/front-desk')
+    throw new Error('the fallback does not go to the folder');
   await section(emp, 'Medical Assistant').getByRole('link', { name: 'Rooming a patient' }).waitFor({ timeout: 5000 });
   if ((await section(emp, 'Provider').count()) > 0) throw new Error('Frankie saw the Provider section');
   if ((await emp.getByRole('button', { name: /^\+ Add to/ }).count()) > 0)

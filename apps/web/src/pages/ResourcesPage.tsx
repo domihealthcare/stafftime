@@ -1,5 +1,5 @@
 import { JobRoleDot } from '../components/JobRoleTag';
-import { useCallback, useEffect, useState } from 'react';
+import { createContext, useCallback, useContext, useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useConfirm } from '../components/ConfirmDialog';
 import { DriveFolderFiles, isDriveFolder } from '../components/DriveFolderFiles';
@@ -30,15 +30,21 @@ import type { Resource, ResourceKind, ResourceSection } from '../lib/types';
  * Nothing here is a file. A document stays wherever the practice keeps it, and
  * a resource links to it — nothing is uploaded to this app.
  */
+/// The address a manager shares a Drive folder with, for the link form.
+const DriveShareWith = createContext<string | null>(null);
+
 export function ResourcesPage() {
   const isManager = useIsManager();
   const [sections, setSections] = useState<ResourceSection[]>([]);
+  const [driveShareWith, setDriveShareWith] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   const load = useCallback(async () => {
     try {
-      setSections((await api.resources()).sections);
+      const found = await api.resources();
+      setSections(found.sections);
+      setDriveShareWith(found.driveShareWith);
       setError(null);
     } catch (cause) {
       setError(cause instanceof ApiError ? cause.message : 'Could not load resources.');
@@ -56,55 +62,57 @@ export function ResourcesPage() {
   const roleSections = sections.filter((section) => section.jobRole !== null);
 
   return (
-    <div className="max-w-4xl">
-      <PageHeading
-        title="Resources"
-        subtitle={
-          isManager
-            ? 'Links and how-to pages for each job role. Staff see Everyone plus the roles they are in.'
-            : 'Links and how-to pages for you, and for the roles you work in.'
-        }
-      />
+    <DriveShareWith.Provider value={driveShareWith}>
+      <div className="max-w-4xl">
+        <PageHeading
+          title="Resources"
+          subtitle={
+            isManager
+              ? 'Links and how-to pages for each job role. Staff see Everyone plus the roles they are in.'
+              : 'Links and how-to pages for you, and for the roles you work in.'
+          }
+        />
 
-      {error && (
-        <div className="mb-4">
-          <Alert>{error}</Alert>
+        {error && (
+          <div className="mb-4">
+            <Alert>{error}</Alert>
+          </div>
+        )}
+
+        {!isManager && roleSections.length === 0 && (
+          <div className="mb-4">
+            <Alert tone="info">
+              You are not in a job role yet, so you only see what is for everyone. A manager can add
+              you to one.
+            </Alert>
+          </div>
+        )}
+
+        <div className="space-y-6">
+          <FormsSection />
+          {sections.map((section) => (
+            <SectionBlock
+              key={section.jobRole?.id ?? 'everyone'}
+              section={section}
+              sections={sections}
+              canManage={isManager}
+              onChanged={() => void load()}
+              onError={setError}
+            />
+          ))}
         </div>
-      )}
 
-      {!isManager && roleSections.length === 0 && (
-        <div className="mb-4">
-          <Alert tone="info">
-            You are not in a job role yet, so you only see what is for everyone. A manager can add
-            you to one.
-          </Alert>
-        </div>
-      )}
-
-      <div className="space-y-6">
-        <FormsSection />
-        {sections.map((section) => (
-          <SectionBlock
-            key={section.jobRole?.id ?? 'everyone'}
-            section={section}
-            sections={sections}
-            canManage={isManager}
-            onChanged={() => void load()}
-            onError={setError}
-          />
-        ))}
+        {isManager && (
+          <p className="mt-6 text-xs text-slate-500">
+            To add a job role or change who is in one, go to{' '}
+            <Link to="/job-roles" className="font-medium text-brand-700 underline">
+              Job roles
+            </Link>
+            .
+          </p>
+        )}
       </div>
-
-      {isManager && (
-        <p className="mt-6 text-xs text-slate-500">
-          To add a job role or change who is in one, go to{' '}
-          <Link to="/job-roles" className="font-medium text-brand-700 underline">
-            Job roles
-          </Link>
-          .
-        </p>
-      )}
-    </div>
+    </DriveShareWith.Provider>
   );
 }
 
@@ -199,7 +207,9 @@ function ResourceRow({
 }) {
   const [editing, setEditing] = useState(false);
   const [busy, setBusy] = useState(false);
+  const [showFiles, setShowFiles] = useState(false);
   const confirm = useConfirm();
+  const driveFolder = resource.kind === 'LINK' && isDriveFolder(resource.url);
 
   if (editing) {
     return (
@@ -219,8 +229,22 @@ function ResourceRow({
   return (
     <Card className="p-3" testId={`resource-${resource.title}`}>
       <div className="flex flex-wrap items-start justify-between gap-3">
-        <div className="min-w-0">
-          {resource.kind === 'LINK' && resource.url ? (
+        <div className="min-w-0 flex-1">
+          {driveFolder ? (
+            // The files open through the app, so the folder's own Drive
+            // address is no use to somebody without access to it.
+            <button
+              type="button"
+              onClick={() => setShowFiles((shown) => !shown)}
+              aria-expanded={showFiles}
+              className="text-left font-medium text-brand-700 hover:text-brand-900"
+            >
+              <span aria-hidden>{showFiles ? '📂' : '📁'}</span> {resource.title}{' '}
+              <span aria-hidden className="text-xs">
+                {showFiles ? '▾' : '▸'}
+              </span>
+            </button>
+          ) : resource.kind === 'LINK' && resource.url ? (
             <a
               href={resource.url}
               target="_blank"
@@ -239,13 +263,40 @@ function ResourceRow({
             </Link>
           )}
           <p className="mt-0.5 text-xs text-slate-500">
-            {resource.kind === 'LINK' && resource.url ? hostOf(resource.url) : 'Page'}
+            {driveFolder && resource.url ? (
+              <>
+                Google Drive folder
+                {canManage && (
+                  <>
+                    {' · '}
+                    <a
+                      href={resource.url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="font-medium text-slate-600 underline hover:text-slate-900"
+                    >
+                      Open in Drive <span aria-hidden>↗</span>
+                    </a>
+                  </>
+                )}
+              </>
+            ) : resource.kind === 'LINK' && resource.url ? (
+              hostOf(resource.url)
+            ) : (
+              'Page'
+            )}
           </p>
           {resource.kind === 'LINK' && resource.body && (
             <p className="mt-0.5 text-sm text-slate-600">{resource.body}</p>
           )}
-          {resource.kind === 'LINK' && isDriveFolder(resource.url) && (
-            <DriveFolderFiles resourceId={resource.id} />
+          {driveFolder && showFiles && (
+            <div className="mt-2">
+              <DriveFolderFiles
+                resourceId={resource.id}
+                // Managers have Open in Drive above already.
+                fallbackUrl={canManage ? undefined : (resource.url ?? undefined)}
+              />
+            </div>
           )}
         </div>
 
@@ -303,6 +354,7 @@ function ResourceForm({
   onSaved: () => void;
   onCancel: () => void;
 }) {
+  const driveShareWith = useContext(DriveShareWith);
   const [kind, setKind] = useState<ResourceKind>(resource?.kind ?? 'LINK');
   const [section, setSection] = useState(jobRoleId ?? '');
   const [title, setTitle] = useState(resource?.title ?? '');
@@ -406,8 +458,17 @@ function ResourceForm({
                 className="w-full rounded-lg border border-slate-300 px-2 py-1.5"
               />
               <span className="mt-1 block text-xs text-slate-500">
-                A Google Drive folder&rsquo;s address lists what is in it here. Set the folder to{' '}
-                <strong>Anyone with the link</strong> so staff can open the files.
+                A Google Drive folder&rsquo;s address lists what is in it here, and staff open its
+                files through the app — no Google account needed.{' '}
+                {driveShareWith ? (
+                  <>
+                    In Drive, share the folder with{' '}
+                    <strong className="break-all">{driveShareWith}</strong> as a Viewer; it does not
+                    need to be &ldquo;Anyone with the link&rdquo;.
+                  </>
+                ) : (
+                  'Google is not set up yet, so the folder will not be listed.'
+                )}
               </span>
             </label>
             <label className="text-sm sm:col-span-2">
