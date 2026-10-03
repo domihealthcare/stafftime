@@ -766,7 +766,42 @@ export interface Announcement {
   isPrimary: boolean;
   editedAt: string | null;
   createdAt: string;
-  author: { id: string; firstName: string; lastName: string; preferredName: string | null } | null;
+  author: PersonName | null;
+  /// Everybody who liked it, by name — likes are named on purpose.
+  likes: PersonName[];
+  likedByMe: boolean;
+  /// Oldest first, like a conversation.
+  comments: AnnouncementComment[];
+  poll: AnnouncementPoll | null;
+}
+
+export interface AnnouncementComment {
+  id: string;
+  body: string;
+  editedAt: string | null;
+  createdAt: string;
+  author: PersonName & { photoUpdatedAt: string | null };
+}
+
+/// A poll on a post. Votes are named: everybody sees who picked what.
+export interface AnnouncementPoll {
+  id: string;
+  question: string;
+  allowsMultiple: boolean;
+  /// Set while voting is closed.
+  closedAt: string | null;
+  options: { id: string; label: string; voters: PersonName[] }[];
+  /// People who have voted at all — on a tick-box poll, fewer than the votes.
+  voterCount: number;
+  /// The reader's own picks.
+  myChoices: string[];
+}
+
+/// A poll as the admin writes it.
+export interface PollInput {
+  question: string;
+  options: string[];
+  allowsMultiple?: boolean;
 }
 
 export interface PersonName {

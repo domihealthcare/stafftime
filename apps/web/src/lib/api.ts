@@ -3,6 +3,7 @@ import type {
   BirthdayEntry,
   Profile,
   Announcement,
+  PollInput,
   Attention,
   Checklist,
   Credential,
@@ -408,7 +409,9 @@ export interface AppNotification {
     | 'SURVEY_OPEN'
     | 'CHECKLIST_STARTED'
     | 'ANNOUNCEMENT'
-    | 'EVENT';
+    | 'NEWS_COMMENT'
+    | 'EVENT'
+    | 'PRODUCTIVITY';
   title: string;
   body: string | null;
   link: string | null;
@@ -1166,11 +1169,16 @@ export const api = {
   announcements: () => request<Announcement[]>('/announcements'),
   primaryAnnouncement: () =>
     request<{ announcement: Announcement | null }>('/announcements/primary'),
-  createAnnouncement: (body: { title: string; body: string; isPrimary?: boolean }) =>
-    request<Announcement>('/announcements', { method: 'POST', body: JSON.stringify(body) }),
+  createAnnouncement: (body: {
+    title: string;
+    body: string;
+    isPrimary?: boolean;
+    poll?: PollInput;
+  }) => request<Announcement>('/announcements', { method: 'POST', body: JSON.stringify(body) }),
+  /// `poll: null` takes the poll off; leaving it out leaves it as it is.
   updateAnnouncement: (
     id: string,
-    body: Partial<{ title: string; body: string; isPrimary: boolean }>,
+    body: Partial<{ title: string; body: string; isPrimary: boolean; poll: PollInput | null }>,
   ) =>
     request<Announcement>(`/announcements/${id}`, {
       method: 'PATCH',
@@ -1178,6 +1186,31 @@ export const api = {
     }),
   deleteAnnouncement: (id: string) =>
     request<{ deleted: boolean }>(`/announcements/${id}`, { method: 'DELETE' }),
+  likeAnnouncement: (id: string, liked: boolean) =>
+    request<Announcement>(`/announcements/${id}/like`, { method: liked ? 'POST' : 'DELETE' }),
+  commentOnAnnouncement: (id: string, body: string) =>
+    request<Announcement>(`/announcements/${id}/comments`, {
+      method: 'POST',
+      body: JSON.stringify({ body }),
+    }),
+  editAnnouncementComment: (id: string, commentId: string, body: string) =>
+    request<Announcement>(`/announcements/${id}/comments/${commentId}`, {
+      method: 'PATCH',
+      body: JSON.stringify({ body }),
+    }),
+  deleteAnnouncementComment: (id: string, commentId: string) =>
+    request<Announcement>(`/announcements/${id}/comments/${commentId}`, { method: 'DELETE' }),
+  /// Replaces your picks; an empty list takes your vote back.
+  voteInPoll: (id: string, optionIds: string[]) =>
+    request<Announcement>(`/announcements/${id}/vote`, {
+      method: 'PUT',
+      body: JSON.stringify({ optionIds }),
+    }),
+  setPollClosed: (id: string, closed: boolean) =>
+    request<Announcement>(`/announcements/${id}/poll`, {
+      method: 'PATCH',
+      body: JSON.stringify({ closed }),
+    }),
 
   dashboard: (weeks: number) => request<Dashboard>(`/dashboard?weeks=${weeks}`),
   /// Surveys, licenses, checklists, closing and what is waiting on a manager.

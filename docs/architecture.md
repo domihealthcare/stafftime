@@ -1569,6 +1569,8 @@ address.
   still there, because approving leave deliberately does not cancel them.
 - **A password reset is requested** → the link, to an address that may not
   belong to anybody. The service decides that and never says either way.
+- **Somebody comments on a News post** → on the bell only: whoever wrote the
+  post and everybody who commented on it before, never the commenter.
 
 Dates in emails are rendered in UTC from the `@db.Date` values, for the same
 reason the app does: a day is a day wherever you read it.
@@ -1894,6 +1896,44 @@ unique index in the migration (Prisma cannot declare one). "At least one" is
 the service's job: the first post is primary whatever the form said, the flag
 is moved rather than cleared, unticking the primary is refused, and deleting
 the primary hands it to the newest post left.
+
+### Likes, comments and polls (October 2026)
+
+Asked for by Dominguez, who chose every rule below from options put to them:
+
+- **Everything is named.** A like shows who; a comment is under the writer's
+  name; a poll shows who picked what. That is the deliberate difference from
+  a pulse survey, which is truly anonymous — so the poll says "Votes are not
+  anonymous" where people vote, and the poll editor points to surveys for
+  anonymous answers. Nothing about a poll touches the survey tables or their
+  guard.
+- **Anybody signed in** likes, comments and votes. Only admins write posts and
+  polls, as before.
+- **A poll belongs to a post** (`AnnouncementPoll`, one per post), written in
+  the post form with **+ Add a poll**: a question, 2–10 choices, and
+  optionally "People can pick more than one". With a poll the message may be
+  empty; without one it may not. A vote replaces the person's earlier picks
+  (`PUT /announcements/:id/vote`, an empty list takes it back), under a row
+  lock on the poll so two quick taps on a one-choice poll cannot leave two
+  picks. **Once anybody has voted the choices are fixed** — only the
+  question's wording may change — and the admin closes voting instead (and can
+  open it again). Results show to everybody from the first vote.
+- **Comments**: plain text, 2,000 characters, oldest first, the latest three
+  shown until "Show all". The writer edits their own (nobody else may put
+  words under their name — not even an admin) and deletes it; **managers and
+  admins delete anybody's**. The box says everybody signed in reads it and
+  never to write anything about a patient.
+- **The bell**: a comment tells whoever wrote the post and everybody who has
+  commented on it before, never the commenter (`NEWS_COMMENT`, linking to
+  `/news#post-<id>`, which the News page scrolls to). Likes and votes tell
+  nobody.
+- **Home** shows the primary post's poll and Like, so both work there; Comment
+  goes to the post on News, where comments are read and written.
+
+Every action returns the whole post for that reader (`likedByMe`,
+`myChoices`), which the screen puts in place of the old one. Deleting a post —
+or "Start using it for real" — takes its comments, likes and poll with it
+(cascades). `tests/browser/news-social.mjs`.
 
 ## Job roles and resources
 

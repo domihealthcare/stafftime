@@ -297,6 +297,9 @@ model Employee {
   credentials               EmployeeCredential[]     @relation("CredentialSubject")
   recordedCredentials       EmployeeCredential[]     @relation("CredentialRecordedBy")
   announcements             Announcement[]           @relation("AnnouncementAuthor")
+  announcementComments      AnnouncementComment[]
+  announcementLikes         AnnouncementLike[]
+  pollVotes                 AnnouncementPollVote[]
   jobRoles                  EmployeeJobRole[]
   createdResources          Resource[]               @relation("ResourceCreatedBy")
   unavailability            Unavailability[]
@@ -1274,8 +1277,98 @@ model Announcement {
 
   author Employee? @relation("AnnouncementAuthor", fields: [authorId], references: [id], onDelete: SetNull)
 
+  comments AnnouncementComment[]
+  likes    AnnouncementLike[]
+  poll     AnnouncementPoll?
+
   @@index([createdAt])
   @@map("announcements")
+}
+
+/// A comment under a News post (October 2026, Dominguez). Anybody signed in
+/// may write one, under their own name; the writer can change or remove it,
+/// and managers and admins can remove anybody's. Plain text, like the post.
+model AnnouncementComment {
+  id             String    @id @default(uuid()) @db.Uuid
+  announcementId String    @db.Uuid
+  authorId       String    @db.Uuid
+  body           String
+  /// Set when the words change after posting, so readers can tell.
+  editedAt       DateTime?
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  announcement Announcement @relation(fields: [announcementId], references: [id], onDelete: Cascade)
+  author       Employee     @relation(fields: [authorId], references: [id], onDelete: Cascade)
+
+  @@index([announcementId, createdAt])
+  @@map("announcement_comments")
+}
+
+/// Somebody liked a post. Named on purpose (Dominguez, October 2026): the post
+/// shows who liked it. One per person per post.
+model AnnouncementLike {
+  announcementId String   @db.Uuid
+  employeeId     String   @db.Uuid
+  createdAt      DateTime @default(now())
+
+  announcement Announcement @relation(fields: [announcementId], references: [id], onDelete: Cascade)
+  employee     Employee     @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+
+  @@id([announcementId, employeeId])
+  @@map("announcement_likes")
+}
+
+/// A poll on a News post (October 2026, Dominguez): a question and its
+/// choices, written by the admin with the post. **Votes are named** — the
+/// post shows who picked what — which is the difference from a pulse survey,
+/// whose answers are truly anonymous. The choices are fixed once anybody has
+/// voted; the admin can close voting and open it again.
+model AnnouncementPoll {
+  id             String    @id @default(uuid()) @db.Uuid
+  announcementId String    @unique @db.Uuid
+  question       String
+  /// Tick boxes rather than one choice.
+  allowsMultiple Boolean   @default(false)
+  /// Set while voting is closed.
+  closedAt       DateTime?
+  createdAt      DateTime  @default(now())
+
+  announcement Announcement             @relation(fields: [announcementId], references: [id], onDelete: Cascade)
+  options      AnnouncementPollOption[]
+  votes        AnnouncementPollVote[]
+
+  @@map("announcement_polls")
+}
+
+model AnnouncementPollOption {
+  id       String @id @default(uuid()) @db.Uuid
+  pollId   String @db.Uuid
+  label    String
+  position Int
+
+  poll  AnnouncementPoll       @relation(fields: [pollId], references: [id], onDelete: Cascade)
+  votes AnnouncementPollVote[]
+
+  @@index([pollId, position])
+  @@map("announcement_poll_options")
+}
+
+/// One person's pick. A one-choice poll has at most one per person, which the
+/// service keeps by replacing somebody's picks whenever they vote.
+model AnnouncementPollVote {
+  pollId     String   @db.Uuid
+  optionId   String   @db.Uuid
+  employeeId String   @db.Uuid
+  createdAt  DateTime @default(now())
+
+  poll     AnnouncementPoll       @relation(fields: [pollId], references: [id], onDelete: Cascade)
+  option   AnnouncementPollOption @relation(fields: [optionId], references: [id], onDelete: Cascade)
+  employee Employee               @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+
+  @@id([optionId, employeeId])
+  @@index([pollId, employeeId])
+  @@map("announcement_poll_votes")
 }
 
 // ---------------------------------------------------------------------------
@@ -1748,6 +1841,8 @@ enum NotificationKind {
   SURVEY_OPEN
   CHECKLIST_STARTED
   ANNOUNCEMENT
+  /// Somebody commented on a post you wrote or commented on.
+  NEWS_COMMENT
   EVENT
   PRODUCTIVITY
 }
