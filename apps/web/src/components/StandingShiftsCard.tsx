@@ -1,12 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { ApiError, api } from '../lib/api';
-import {
-  displayName,
-  formatCalendarDate,
-  localDate,
-  WEEK_ORDER,
-  WEEKDAY_NAMES,
-} from '../lib/format';
+import { displayName, formatCalendarDate, localDate } from '../lib/format';
+import { describeRepeat, type RepeatWeeks } from '../lib/repeat-pattern';
 import type { Employee, JobRole, Location, StandingShift } from '../lib/types';
 import { useConfirm } from './ConfirmDialog';
 import {
@@ -19,20 +14,11 @@ import {
 import { Alert, Card, buttonClass } from './ui';
 import { JobRoleSelect } from './JobRoleSelect';
 import { WeekdayToggles } from './WeekdayToggles';
+import { RepeatWeeksPicker } from './RepeatWeeksPicker';
 import { WeeklyScheduleEditor } from './WeeklyScheduleEditor';
 
 /// How many regular shifts the list shows before "Show more".
 const LIST_PAGE = 8;
-
-/// "Mondays and Thursdays", Sunday first as the calendar reads.
-function whichDays(days: number[]): string {
-  const names = WEEK_ORDER.filter((day) => days.includes(day)).map(
-    (day) => `${WEEKDAY_NAMES[day - 1]}s`,
-  );
-  if (names.length === 7) return 'Every day';
-  if (names.length <= 1) return names[0] ?? '';
-  return `${names.slice(0, -1).join(', ')} and ${names[names.length - 1]}`;
-}
 
 /// "08:30" → "8:30 AM".
 function clock(time: string): string {
@@ -69,6 +55,7 @@ export function StandingShiftsCard({
   const [stopping, setStopping] = useState<string | null>(null);
   const [editing, setEditing] = useState<StandingShift | null>(null);
   const [days, setDays] = useState<number[]>([]);
+  const [weeks, setWeeks] = useState<RepeatWeeks>({ everyWeeks: 1, weeksOfMonth: [] });
   const [startTime, setStartTime] = useState('09:00');
   const [endTime, setEndTime] = useState('17:00');
   const [place, setPlace] = useState('');
@@ -114,6 +101,7 @@ export function StandingShiftsCard({
     setResult(null);
     setError(null);
     setDays(item.daysOfWeek);
+    setWeeks({ everyWeeks: item.everyWeeks, weeksOfMonth: item.weeksOfMonth });
     setStartTime(item.startTime);
     setEndTime(item.endTime);
     setPlace(item.isRemote ? WORK_FROM_HOME : item.locationId);
@@ -129,8 +117,9 @@ export function StandingShiftsCard({
       title: `Change ${who(editing)}’s regular shift?`,
       body: (
         <p>
-          From {formatCalendarDate(fromDate, { year: false })} on, it becomes {whichDays(days)},{' '}
-          {clock(startTime)}–{clock(endTime)}. Shifts from then are replaced
+          From {formatCalendarDate(fromDate, { year: false })} on, it becomes{' '}
+          {describeRepeat(days, weeks, false)}, {clock(startTime)}–{clock(endTime)}. Shifts from
+          then are replaced
           {editing.employee ? ', and they are told' : ''}. Earlier ones stay as they are.
         </p>
       ),
@@ -149,6 +138,8 @@ export function StandingShiftsCard({
         startTime,
         endTime,
         daysOfWeek: [...days].sort(),
+        everyWeeks: weeks.everyWeeks,
+        weeksOfMonth: weeks.weeksOfMonth,
         from: fromDate,
       });
       setResult(
@@ -171,7 +162,7 @@ export function StandingShiftsCard({
       title: `Stop ${who(item)}’s regular shift?`,
       body: (
         <p>
-          {whichDays(item.daysOfWeek)}, {clock(item.startTime)}–{clock(item.endTime)} at{' '}
+          {describeRepeat(item.daysOfWeek, item)}, {clock(item.startTime)}–{clock(item.endTime)} at{' '}
           {item.location.name}. The last one is on or before{' '}
           {formatCalendarDate(lastDate, { year: false })}; the shifts after that come off the rota
           {item.employee ? ', and they are told' : ''}. Shifts already worked stay.
@@ -290,8 +281,8 @@ export function StandingShiftsCard({
                 <div className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1">
                   <span className="font-medium text-slate-900">{who(item)}</span>
                   <span className="text-slate-600">
-                    {whichDays(item.daysOfWeek)}, {clock(item.startTime)}–{clock(item.endTime)} ·{' '}
-                    {item.location.name}
+                    {describeRepeat(item.daysOfWeek, item)}, {clock(item.startTime)}–
+                    {clock(item.endTime)} · {item.location.name}
                     {item.isRemote ? ' · from home' : ''}
                     {item.status === 'DRAFT' ? ' · as drafts' : ''}
                   </span>
@@ -347,6 +338,20 @@ export function StandingShiftsCard({
                       <legend className="text-xs font-medium text-slate-700">Days</legend>
                       <WeekdayToggles days={days} onChange={setDays} />
                     </fieldset>
+                    <RepeatWeeksPicker
+                      id={`standing-weeks-${item.id}`}
+                      value={weeks}
+                      onChange={setWeeks}
+                      days={days}
+                      from={fromDate}
+                      cycleFrom={
+                        // The server keeps the rhythm unless it changes.
+                        weeks.everyWeeks === item.everyWeeks
+                          ? (item.cycleFrom ?? item.startsOn).slice(0, 10)
+                          : fromDate
+                      }
+                      size="small"
+                    />
                     <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
                       <label className="text-sm text-slate-700">
                         <span className="block text-xs font-medium">Starts</span>

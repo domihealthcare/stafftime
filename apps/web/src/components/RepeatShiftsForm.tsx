@@ -11,6 +11,8 @@ import {
 import { Alert, Card } from './ui';
 import { JobRoleSelect } from './JobRoleSelect';
 import { WeekdayToggles } from './WeekdayToggles';
+import { RepeatWeeksPicker } from './RepeatWeeksPicker';
+import { EVERY_WEEK, firstDates, isEveryWeek, type RepeatWeeks } from '../lib/repeat-pattern';
 
 /// Builds a rota in one go — the alternative being a manager creating forty
 /// shifts by hand.
@@ -38,6 +40,8 @@ export function RepeatShiftsForm({
   const [startTime, setStartTime] = useState('09:00');
   const [endTime, setEndTime] = useState('17:00');
   const [days, setDays] = useState<number[]>([1, 2, 3, 4, 5]);
+  /// Every week, every other week, or "the first Saturday of the month".
+  const [weeks, setWeeks] = useState<RepeatWeeks>(EVERY_WEEK);
   const [from, setFrom] = useState(defaultFrom);
   const [until, setUntil] = useState('');
   /// No last date: "she always works Mondays". Kept eight weeks ahead, every
@@ -90,6 +94,8 @@ export function RepeatShiftsForm({
           startTime,
           endTime,
           daysOfWeek: [...days].sort(),
+          everyWeeks: weeks.everyWeeks,
+          weeksOfMonth: weeks.weeksOfMonth,
           from,
           ...(noEnd ? {} : { until }),
           status: publish ? 'PUBLISHED' : 'DRAFT',
@@ -104,13 +110,16 @@ export function RepeatShiftsForm({
 
   const field =
     'mt-1 w-full rounded-lg border-slate-300 py-2.5 text-base shadow-sm focus:border-brand-600 focus:ring-brand-600';
-  const ready = employeeId && locationId && days.length > 0 && from && (noEnd || until);
+  // Certain weeks only: at least one date has to land in the range (with no
+  // end date there is always a next one).
+  const lands = isEveryWeek(weeks) || noEnd || firstDates(from, days, weeks, 1, until).length > 0;
+  const ready = employeeId && locationId && days.length > 0 && from && (noEnd || until) && lands;
 
   return (
     <Card className="p-5">
       <h3 className="text-sm font-semibold text-slate-900">Repeating shifts</h3>
       <p className="mt-0.5 text-sm text-slate-600">
-        One rota line at a time — days, hours, and how far ahead, or for good.
+        One rota line at a time — days, which weeks, hours, and how far ahead, or for good.
       </p>
 
       <form onSubmit={(event) => void submit(event)} className="mt-4 space-y-4">
@@ -198,6 +207,15 @@ export function RepeatShiftsForm({
             <p className="mt-1 text-xs text-rose-600">Pick at least one day.</p>
           )}
         </fieldset>
+
+        <RepeatWeeksPicker
+          id="repeat-weeks"
+          value={weeks}
+          onChange={setWeeks}
+          days={days}
+          from={from}
+          until={noEnd ? undefined : until}
+        />
 
         <div className="grid grid-cols-2 gap-3">
           <div>

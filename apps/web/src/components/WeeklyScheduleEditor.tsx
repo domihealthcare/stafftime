@@ -18,6 +18,7 @@ import { useConfirm } from './ConfirmDialog';
 import { JobRoleSelect, rolesHeldBy } from './JobRoleSelect';
 import { PlaceSelect, WORK_FROM_HOME, homeOfficeOf, placeToShift } from './PlaceSelect';
 import { Alert, buttonClass } from './ui';
+import { isEveryWeek } from '../lib/repeat-pattern';
 
 /// One day of the usual week, as the grid holds it.
 interface DayRow {
@@ -130,7 +131,9 @@ export function WeeklyScheduleEditor({
     api
       .standingShifts()
       .then((all) => {
-        const theirs = all.filter((s) => s.employeeId === person.id && !s.endsOn);
+        // Their usual week is the every-week ones; the first Saturday of the
+        // month runs beside it and is not changed from here.
+        const theirs = all.filter((s) => s.employeeId === person.id && !s.endsOn && isEveryWeek(s));
         const read = weekFrom(
           theirs,
           homeOffice || offices[0]?.id || '',

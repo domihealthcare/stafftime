@@ -975,6 +975,35 @@ the next ones as the weeks go by.
 - **Go-live and demo data** clear `shift_series` with the shifts, or the
   nightly job would write the test rota back.
 
+### Which weeks: every other week, the first Saturday of the month
+
+Asked for by Dominguez, October 2026 ("repeat shifts on like 1st Saturday of
+the month - stuff like that"). A repeat, the ＋ on the rota and a regular
+shift's Edit all take **Which weeks** under the days
+(`components/RepeatWeeksPicker.tsx`), one of:
+
+- **every week** — as before, and the default;
+- **every 2, 3 or 4 weeks** (`everyWeeks`) — counted in calendar weeks,
+  Sunday first as the rota reads, from the week of `cycleFrom` (the repeat's
+  first day). Editing a regular shift keeps that rhythm through a change of
+  hours; changing *how many* weeks restarts it in the week the change does;
+- **certain weeks of the month** (`weeksOfMonth`: 1–4, -1 for the last) —
+  "the first Saturday" is the one on the 1st–7th, the second on the 8th–14th;
+  "last" is the one with under a week of the month after it, so a fifth
+  Saturday is only ever "last". Several can be ticked (1st and 3rd).
+
+Not both at once. One pure rule, `shifts/repeat-pattern.ts` (`onPattern`),
+decides every date — the repeat, the nightly top-up and Edit all filter
+through it — and `web/src/lib/repeat-pattern.ts` mirrors it so the forms show
+the first few dates before saving. The columns are on `ShiftSeries`, with
+defaults that leave every older regular shift every week; a repeat with an end
+date stores nothing, as before. The bell says it in words ("The first
+Saturday of the month from Sat, Dec 5, with no end date").
+
+A **usual week** is made only of every-week regular shifts: saving one neither
+reads nor stops one on certain weeks, which keeps running beside it (a clash
+on the same day is skipped as usual).
+
 ### A usual week: several regular shifts set at once
 
 Asked for by Dominguez, September 2026: a salaried person on "Mondays 12 to 8
