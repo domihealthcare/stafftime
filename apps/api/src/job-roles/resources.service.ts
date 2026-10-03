@@ -1,14 +1,22 @@
 import {
+  BadGatewayException,
   BadRequestException,
   ForbiddenException,
   Injectable,
   Logger,
   NotFoundException,
+  PayloadTooLargeException,
 } from '@nestjs/common';
 import { Prisma, ResourceKind, Role } from '@prisma/client';
 import { AuthUser } from '../common/auth/auth-user';
 import { GoogleProblem } from '../google/google-auth.service';
-import { driveFolderIdOf, GoogleDriveClient, type DriveFile } from '../google/google-drive.client';
+import {
+  driveFolderIdOf,
+  GoogleDriveClient,
+  MAX_FILE_BYTES,
+  type DriveDownload,
+  type DriveFile,
+} from '../google/google-drive.client';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateResourceDto, UpdateResourceDto } from './dto/resource.dto';
 import { JobRolesService } from './job-roles.service';
@@ -77,6 +85,9 @@ export class ResourcesService {
           resources: forRole(role.id),
         })),
       ],
+      // The address a manager shares a Drive folder with; null until Google
+      // is set up.
+      driveShareWith: isManager ? this.drive.robotEmail : null,
     };
   }
 
@@ -97,8 +108,8 @@ export class ResourcesService {
   }
 
   /**
-   * What is in the Drive folder a link points at (September 2026), for
-   * whoever may see the link. Nothing is kept: each file opens in Drive.
+   * What is in the Drive folder a link points at (September 2026), or in a
+   * folder inside it, for whoever may see the link. Nothing is kept.
    *
    * `off` until Google is set up; `unreadable` when the robot cannot see the
    * folder — a manager is told which address to share it with.
@@ -106,6 +117,7 @@ export class ResourcesService {
   async driveFiles(
     id: string,
     actor: AuthUser,
+    folder?: string,
   ): Promise<
     | { status: 'ok'; files: DriveFile[] }
     | { status: 'off' | 'not-a-folder' }
@@ -116,6 +128,11 @@ export class ResourcesService {
     if (!folderId) return { status: 'not-a-folder' };
     if (!this.drive.available) return { status: 'off' };
     try {
+      if (folder && folder !== folderId) {
+        const inner = await this.drive.inside(folderId, folder);
+        if (!inner?.isFolder) throw new NotFoundException('That folder is not in this one.');
+        return { status: 'ok', files: await this.drive.list(folder) };
+      }
       return { status: 'ok', files: await this.drive.list(folderId) };
     } catch (error) {
       if (!(error instanceof GoogleProblem)) throw error;
@@ -129,6 +146,42 @@ export class ResourcesService {
         // Only a manager can do anything about it.
         shareWith: actor.role === Role.EMPLOYEE ? null : this.drive.robotEmail,
       };
+    }
+  }
+
+  /**
+   * One file from the folder a link points at (October 2026, Dominguez), for
+   * whoever may see the link — so the folder is shared with the robot alone
+   * and staff need no Google account. Handed on as it comes; never kept.
+   */
+  async driveFile(id: string, fileId: string, actor: AuthUser): Promise<DriveDownload> {
+    const row = await this.findOne(id, actor);
+    const folderId = row.kind === ResourceKind.LINK ? driveFolderIdOf(row.url) : null;
+    if (!folderId) throw new NotFoundException('That link is not a Drive folder.');
+    if (!this.drive.available) {
+      throw new NotFoundException('The app cannot open Drive files yet.');
+    }
+    try {
+      const file = await this.drive.inside(folderId, fileId);
+      if (!file || file.isFolder) throw new NotFoundException('That file is not in this folder.');
+      if (!file.canOpen) {
+        if (file.size !== null && file.size > MAX_FILE_BYTES) {
+          throw new PayloadTooLargeException(
+            `That file is too large to open here (over ${MAX_FILE_BYTES / 1024 / 1024} MB). Ask a manager for it.`,
+          );
+        }
+        throw new BadRequestException('That kind of file only opens in Google Drive.');
+      }
+      const download = await this.drive.open(file.id);
+      this.logger.log(`Drive file ${file.id} opened from resource ${id} by ${actor.id}`);
+      return download;
+    } catch (error) {
+      if (!(error instanceof GoogleProblem)) throw error;
+      throw new BadGatewayException(
+        /export.*(size|limit)|too large/i.test(error.reason)
+          ? 'Google will not turn a document this large into a PDF. Ask a manager for it.'
+          : 'Google Drive would not hand the file over. Try again in a minute.',
+      );
     }
   }
 

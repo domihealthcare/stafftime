@@ -333,7 +333,8 @@ const STAFF: Section[] = [
         answer: (
           <p>
             <Screen>Resources</Screen>. You see the resources for everyone, plus those for each of
-            your job roles.
+            your job roles. A Google Drive folder (📁) opens in place: tap a file and it opens in a
+            new tab — no Google account needed.
           </p>
         ),
       },
@@ -1176,7 +1177,11 @@ const MANAGERS: Section[] = [
         answer: (
           <p>
             On <Screen>Resources</Screen>, add a link (Drive, ADP, a vendor portal) or write a page,
-            for everyone or for one job role. There are no uploads.
+            for everyone or for one job role. There are no uploads. For a Google Drive folder, share
+            it in Drive with the app&rsquo;s own address (the form shows it) as a Viewer — not
+            &ldquo;Anyone with the link&rdquo;. Staff then open its files through the app, so nobody
+            needs access in Drive and nothing changes there when somebody joins or leaves. Google
+            Docs, Sheets and Slides open as PDFs; Google Forms open only in Drive.
           </p>
         ),
       },

@@ -548,11 +548,19 @@ Beyond the phases, the parts worth knowing about before picking up work:
   **Off until `GOOGLE_CALENDAR_INVITES=on`**, after the admin adds the scope
   (Part 5 of the guide) — not on the live site yet.
 - **Drive folders on Resources** (September 2026, Dominguez): a Resources
-  link to a Google Drive folder gets **Show what's in it**, listed by the
-  robot itself (`drive.readonly`, no delegation), cached 5 minutes. Files
-  stay in Drive and open there — the app keeps nothing. Folders are shared
-  "Anyone with the link" (Dominguez's choice, for personal accounts). Needs
-  only the Drive API enabled in the Cloud project.
+  link to a Google Drive folder lists its files, read by the robot itself
+  (`drive.readonly`, no delegation), cached 5 minutes. Needs only the Drive
+  API enabled in the Cloud project. **Since October 2026 (Dominguez) the
+  files open through the app** and the folder is shared with the **robot's
+  address only**, not "Anyone with the link" — so staff need no Google
+  account, a forwarded link opens nothing, and nobody changes Drive when
+  staff join or leave. Pressing the folder's name opens the list (folders
+  inside open in place); a file opens in a new tab, streamed from Drive and
+  never kept (Docs, Sheets and Slides as PDFs; Forms only in Drive; 50 MB at
+  most). Only files inside the link's own folder, checked by walking up
+  their parents; only PDFs, pictures, plain text, MP4 and MP3 are shown, the
+  rest saved. Managers keep **Open in Drive**. See *Drive folders on
+  Resources* in `docs/architecture.md`.
 - **Holidays and closures** (September 2026, Dominguez): a `PracticeEvent`
   with `kind: CLOSURE` — Christmas all day, Christmas Eve from 1pm — for
   **both offices or one** (never a job role). Shown with a 🔒 to that office's

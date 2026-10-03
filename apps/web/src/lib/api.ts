@@ -1292,7 +1292,10 @@ export const api = {
   removeJobRoleMember: (id: string, employeeId: string) =>
     request<JobRole>(`/job-roles/${id}/members/${employeeId}`, { method: 'DELETE' }),
 
-  resources: () => request<{ sections: ResourceSection[] }>('/resources'),
+  /// driveShareWith: the address a manager shares a Drive folder with (null
+  /// for staff, and until Google is set up).
+  resources: () =>
+    request<{ sections: ResourceSection[]; driveShareWith: string | null }>('/resources'),
   resource: (id: string) =>
     request<Resource & { jobRole: { id: string; name: string } | null }>(`/resources/${id}`),
   createResource: (body: {
@@ -1306,7 +1309,12 @@ export const api = {
     id: string,
     body: Partial<{ jobRoleId: string | null; title: string; url: string; body: string }>,
   ) => request<Resource>(`/resources/${id}`, { method: 'PATCH', body: JSON.stringify(body) }),
-  resourceFiles: (id: string) => request<DriveFolderListing>(`/resources/${id}/files`),
+  resourceFiles: (id: string, folder?: string) =>
+    request<DriveFolderListing>(`/resources/${id}/files${toQuery({ folder })}`),
+  /// Opened in a new tab, which sends the session cookie like any request.
+  /// The name on the end is only for the tab's title; the server ignores it.
+  resourceFileUrl: (id: string, fileId: string, name: string) =>
+    `/api/resources/${id}/files/${encodeURIComponent(fileId)}/${encodeURIComponent(name)}`,
   deleteResource: (id: string) =>
     request<{ deleted: boolean }>(`/resources/${id}`, { method: 'DELETE' }),
 

@@ -2747,15 +2747,48 @@ detected, since what the feed carries hangs on it.
 ## Drive folders on Resources
 
 A Resources link whose address is a Drive folder
-(`drive.google.com/drive/folders/…`, strictly matched) gets **Show what's in
-it**: `GET /resources/:id/files`, allowed to whoever may see the link, lists
-the folder's files as links into Drive. The robot reads it as itself
-(`drive.readonly`, no delegation — it sees only what is shared with anyone
-with the link or with its own address), cached five minutes per folder. No
-file is fetched or kept, so *Data this app does not hold* still stands. A
-folder it cannot read says so, and tells a manager (only) the robot's address
-to share it with.
+(`drive.google.com/drive/folders/…`, strictly matched) lists what is in it:
+`GET /resources/:id/files` (`?folder=` for a folder inside), allowed to
+whoever may see the link. The robot reads it as itself (`drive.readonly`, no
+delegation — it sees only what is shared with its own address or with anyone
+with the link), cached five minutes per folder. A folder it cannot read says
+so, and tells a manager (only) the robot's address to share it with.
 
+**Files open through the app** (October 2026, Dominguez). The folder used to
+have to be "Anyone with the link" so staff on personal Google accounts could
+open the files in Drive. That meant anybody a link was forwarded to could open
+them too; sharing with each person, or a Google Group, meant changing Drive
+every time somebody joined or left. So the folder is now shared with the robot
+alone, and `GET /resources/:id/files/:fileId[/:name]` hands a file on to
+whoever may see the link — opened in a new tab, which carries the session
+cookie like any request. The name on the end is only so the tab is titled
+with it.
+
+- **Only the link's own folder.** The robot may see other folders, shared for
+  other job roles. The server walks up from the file through its parents
+  (`GoogleDriveClient.inside`, at most ten levels; one parent each since
+  Drive's 2020 change) and opens it only if it reaches the link's folder;
+  "not found" on the way up — above the shared folder the robot sees nothing
+  — means outside. Never the browser's word for where a file is.
+- **Shown or saved, by an allow-list.** PDF, PNG, JPEG, GIF, WebP, plain text,
+  MP4 and MP3 are shown (`inline`); everything else is sent as
+  `application/octet-stream` to be saved. An HTML or SVG file shown at the
+  app's own address would run as the app, signed in as whoever opened it.
+  `nosniff`, and the site's own CSP still applies.
+- **Google's own documents become PDFs** (Docs, Sheets, Slides, Drawings,
+  through Drive's export). Forms, Sites and shortcuts have no file and are
+  listed as "Opens only in Google Drive" — a shortcut could point anywhere, so
+  it is not followed.
+- **Streamed, never kept.** The file is piped from Google to the browser as it
+  arrives (`Cache-Control: private, no-store`), so *Data this app does not
+  hold* still stands, and streaming is also what gets past Vercel's 4.5 MB
+  cap on a function's answer. Up to 50 MB (`MAX_FILE_BYTES`), because the
+  function has 30 seconds; a larger file is listed but says to ask a
+  manager. Google will not export a document over 10 MB as a PDF, and that
+  is said in words too.
+- **A refusal is plain text**, since a person reads it in the new tab.
+- Chrome's PDF viewer was checked to show a PDF under the site's CSP
+  (`object-src 'none'`) before this was built.
 
 ## The clinical forms
 

@@ -813,7 +813,9 @@ export interface DriveFile {
   id: string;
   name: string;
   isFolder: boolean;
-  url: string;
+  /// Whether the app can hand it over: false for a Google Form, a shortcut or
+  /// a file too large.
+  canOpen: boolean;
   modifiedAt: string | null;
 }
 
