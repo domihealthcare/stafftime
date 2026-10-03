@@ -150,19 +150,27 @@ calendars.
 Nothing to switch on beyond enabling the **Google Drive API** (step 13). For
 each folder:
 
-17. In **Drive**, open the folder → **Share** → under **General access**
-    choose **Anyone with the link**, **Viewer** → **Copy link** → **Done**.
-18. In the app: **Resources** → **+ Add to** the job role (or Everyone) → **A
-    link** → paste the folder's address → **Add it**.
+17. In **Drive**, open the folder → **Share** → add the app's robot address
+    (it is shown under the **Web address** box when you add a link in the
+    app, and ends `.iam.gserviceaccount.com`) as a **Viewer**, untick
+    **Notify people** → **Share**. Leave **General access** as
+    **Restricted** — it does not need to be "Anyone with the link".
+18. Copy the folder's address from the browser bar. In the app:
+    **Resources** → **+ Add to** the job role (or Everyone) → **A link** →
+    paste it → **Add it**.
 
-The link then has **Show what's in it**, listing the folder's files; each
-opens in Drive. The app reads the folder as its robot and keeps nothing.
-If it says it cannot see into the folder, check step 17 — or share the
-folder with the robot address it shows.
+Pressing the folder's name in Resources lists its files; each opens in a new
+tab, through the app. Google Docs, Sheets and Slides open as PDFs; Google
+Forms open only in Drive. Staff need no Google account, and nothing in Drive
+changes when somebody joins or leaves: who sees a folder is decided by its job
+role in the app. If the app says it cannot see into the folder, check step 17.
 
-"Anyone with the link" means anybody the link is forwarded to can open the
-files too, which Dominguez chose so that staff on personal Google accounts
-can open them. Keep anything sensitive out of these folders.
+Folders already set to "Anyone with the link" keep working. To close them
+off, share them with the robot (step 17) and then set **General access** back
+to **Restricted**.
+
+Anybody who can see a resource can open, save and pass on its files, so keep
+anything sensitive out of these folders all the same.
 
 ## Undoing it
 

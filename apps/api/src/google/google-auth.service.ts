@@ -81,9 +81,11 @@ export class GoogleAuthService {
   }
 
   /// A request to Google with a timeout; an unreachable Google is a problem.
-  async call(url: string, init: RequestInit): Promise<Response> {
+  /// The timeout covers reading the answer too, so a file being handed on
+  /// asks for longer.
+  async call(url: string, init: RequestInit, timeoutMs = TIMEOUT_MS): Promise<Response> {
     try {
-      return await fetch(url, { ...init, signal: AbortSignal.timeout(TIMEOUT_MS) });
+      return await fetch(url, { ...init, signal: AbortSignal.timeout(timeoutMs) });
     } catch (error) {
       this.logger.error(
         `Could not reach Google: ${error instanceof Error ? error.message : String(error)}`,
