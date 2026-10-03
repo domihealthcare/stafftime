@@ -20,6 +20,7 @@ import {
   ValidateIf,
   ValidateNested,
 } from 'class-validator';
+import { MAX_EVERY_WEEKS, WEEKS_OF_MONTH } from '../repeat-pattern';
 
 /// "Every Tuesday and Thursday, 9 to 5, until March."
 export class RepeatShiftsDto {
@@ -67,6 +68,21 @@ export class RepeatShiftsDto {
   @Min(1, { each: true })
   @Max(7, { each: true })
   daysOfWeek!: number[];
+
+  /// Every week (1, the default), or every 2 to 4 weeks.
+  @IsOptional()
+  @IsInt()
+  @Min(1)
+  @Max(MAX_EVERY_WEEKS)
+  everyWeeks?: number;
+
+  /// Only certain weeks of the month: 1–4 for the first to fourth, -1 for the
+  /// last — "the first Saturday". Absent or empty: every week.
+  @IsOptional()
+  @IsArray()
+  @ArrayUnique()
+  @IsIn(WEEKS_OF_MONTH, { each: true })
+  weeksOfMonth?: number[];
 
   /// First and last calendar date to consider, inclusive. No last date makes
   /// a **standing shift** — "I always work Mondays" — kept filled a few weeks
@@ -133,6 +149,22 @@ export class UpdateStandingShiftDto {
   @Min(1, { each: true })
   @Max(7, { each: true })
   daysOfWeek!: number[];
+
+  /// Absent: as it was. Every week is 1.
+  @IsOptional()
+  @IsInt()
+  @Min(1)
+  @Max(MAX_EVERY_WEEKS)
+  everyWeeks?: number;
+
+  /// Only certain weeks of the month: 1–4 for the first to fourth, -1 for the
+  /// last — "the first Saturday". Absent: as it was; empty: not by
+  /// the month.
+  @IsOptional()
+  @IsArray()
+  @ArrayUnique()
+  @IsIn(WEEKS_OF_MONTH, { each: true })
+  weeksOfMonth?: number[];
 
   /// The first day the change applies to. Absent: today.
   @IsOptional()

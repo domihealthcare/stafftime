@@ -294,6 +294,12 @@ export interface StandingShift {
   locationId: string;
   /// 1 = Monday … 7 = Sunday.
   daysOfWeek: number[];
+  /// 1 is every week; 2–4 every so many (see `lib/repeat-pattern.ts`).
+  everyWeeks: number;
+  /// Certain weeks of the month only: 1–4, -1 for the last. Empty: not.
+  weeksOfMonth: number[];
+  /// Every 2+ weeks: a date in a week it is on. Null: `startsOn`.
+  cycleFrom: string | null;
   startTime: string;
   endTime: string;
   openCount: number;

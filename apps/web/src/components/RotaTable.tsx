@@ -38,6 +38,14 @@ import {
 } from './PlaceSelect';
 import { JobRoleSelect } from './JobRoleSelect';
 import { WeekdayToggles } from './WeekdayToggles';
+import { RepeatWeeksPicker } from './RepeatWeeksPicker';
+import {
+  EVERY_WEEK,
+  firstDates,
+  isEveryWeek,
+  weekOfMonth,
+  type RepeatWeeks,
+} from '../lib/repeat-pattern';
 import {
   ClosureWarning,
   closuresCovering,
@@ -1360,6 +1368,9 @@ function QuickAddDialog({
   const [repeat, setRepeat] = useState(false);
   /// 1 = Monday … 7 = Sunday; starts on the day that was clicked.
   const [repeatDays, setRepeatDays] = useState<number[]>(() => [((day.getDay() + 6) % 7) + 1]);
+  /// Every week unless changed; "certain weeks" starts on this day's week,
+  /// so the ＋ on the first Saturday offers the first Saturday.
+  const [repeatWeeks, setRepeatWeeks] = useState<RepeatWeeks>(EVERY_WEEK);
   const [until, setUntil] = useState(() => {
     const fourWeeks = new Date(day);
     fourWeeks.setDate(fourWeeks.getDate() + 27);
@@ -1412,6 +1423,8 @@ function QuickAddDialog({
           startTime: start,
           endTime: end,
           daysOfWeek: [...repeatDays].sort(),
+          everyWeeks: repeatWeeks.everyWeeks,
+          weeksOfMonth: repeatWeeks.weeksOfMonth,
           from: localDate(day),
           ...(noEnd ? {} : { until }),
           status: publish ? 'PUBLISHED' : 'DRAFT',
@@ -1535,6 +1548,16 @@ function QuickAddDialog({
                   <p className="mt-1 text-xs text-rose-600">Pick at least one day.</p>
                 )}
               </fieldset>
+              <RepeatWeeksPicker
+                id="quick-weeks"
+                value={repeatWeeks}
+                onChange={setRepeatWeeks}
+                days={repeatDays}
+                from={localDate(day)}
+                until={noEnd ? undefined : until}
+                defaultWeek={weekOfMonth(localDate(day))}
+                size="small"
+              />
               {noEnd ? (
                 <p className="text-sm text-slate-700">
                   From this day, with <strong>no end date</strong>.
@@ -1605,7 +1628,12 @@ function QuickAddDialog({
               busy ||
               !locationId ||
               end <= start ||
-              (repeat && (repeatDays.length === 0 || (!noEnd && !until)))
+              (repeat &&
+                (repeatDays.length === 0 ||
+                  (!noEnd && !until) ||
+                  (!noEnd &&
+                    !isEveryWeek(repeatWeeks) &&
+                    firstDates(localDate(day), repeatDays, repeatWeeks, 1, until).length === 0)))
             }
             className={buttonClass('primary', 'md')}
           >

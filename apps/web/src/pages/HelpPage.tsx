@@ -792,6 +792,14 @@ const MANAGERS: Section[] = [
               <strong>Repeat this shift</strong>, pick the days and how long for.
             </li>
             <li>
+              Under the days, <strong>Which weeks</strong> chooses every week, every other week (or
+              every 3 or 4), or <strong>certain weeks of the month</strong> — the 1st, 2nd, 3rd, 4th
+              or last — for a shift like the first Saturday of the month. The first few dates it
+              makes are shown before you save. The 1st Saturday is the one on the 1st to the 7th;
+              &ldquo;Last&rdquo; is the last one, even in a month with five. It works with No end
+              date too, and a regular shift&rsquo;s <strong>Edit…</strong> can change it.
+            </li>
+            <li>
               For somebody who always works the same days, tick <strong>No end date</strong> in
               Repeating shifts. It keeps the rota filled eight weeks ahead, every night, until you
               stop it under <strong>Regular shifts</strong> below the rota: pick the last day, and

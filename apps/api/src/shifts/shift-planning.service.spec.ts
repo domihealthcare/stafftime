@@ -77,6 +77,7 @@ describe('ShiftPlanningService', () => {
         }),
         deleteMany: jest.fn().mockResolvedValue({ count: 2 }),
         updateMany: jest.fn().mockResolvedValue({ count: 3 }),
+        count: jest.fn().mockResolvedValue(0),
       },
       jobRole: { findUnique: jest.fn().mockResolvedValue({ id: 'fd' }) },
       ptoRequest: {
@@ -111,6 +112,33 @@ describe('ShiftPlanningService', () => {
   });
 
   describe('repeating a shift', () => {
+    it('can be the last Friday of each month', async () => {
+      const { service, created } = build();
+      const result = await service.repeat(
+        repeat({ daysOfWeek: [5], weeksOfMonth: [-1], from: '2026-10-01', until: '2026-12-31' }),
+        'mgr-1',
+      );
+      expect(result.dates).toEqual(['2026-10-30', '2026-11-27', '2026-12-25']);
+      expect(created.every((shift) => shift.seriesId === null)).toBe(true);
+    });
+
+    it('says when the weeks chosen miss the dates altogether', async () => {
+      const { service } = build();
+      await expect(
+        service.repeat(
+          repeat({ daysOfWeek: [6], weeksOfMonth: [1], from: '2026-10-05', until: '2026-10-31' }),
+          'mgr-1',
+        ),
+      ).rejects.toThrow('The first Saturday of the month does not fall inside that date range.');
+    });
+
+    it('will not take every few weeks and weeks of the month together', async () => {
+      const { service } = build();
+      await expect(
+        service.repeat(repeat({ everyWeeks: 2, weeksOfMonth: [1] }), 'mgr-1'),
+      ).rejects.toThrow(BadRequestException);
+    });
+
     it('creates one shift per matching weekday', async () => {
       const { service, created } = build();
       const result = await service.repeat(repeat(), 'mgr-1');
@@ -320,6 +348,56 @@ describe('ShiftPlanningService', () => {
       expect(result.standing?.filledThrough).toBe('2026-11-24');
     });
 
+    it('keeps the first Saturday of the month going, and says so', async () => {
+      const { service, prisma, inbox } = build();
+      const result = await service.repeat(
+        mondays({
+          daysOfWeek: [6],
+          weeksOfMonth: [1],
+          from: '2026-10-03',
+          status: ShiftStatus.PUBLISHED,
+        }),
+        'mgr-1',
+        NOW,
+      );
+      // 3 Oct to 28 Nov.
+      expect(result.dates).toEqual(['2026-10-03', '2026-11-07']);
+      expect(prisma.shiftSeries.create).toHaveBeenCalledWith(
+        expect.objectContaining({
+          data: expect.objectContaining({
+            daysOfWeek: [6],
+            everyWeeks: 1,
+            weeksOfMonth: [1],
+            cycleFrom: null,
+          }),
+        }),
+      );
+      expect(inbox.notify.mock.calls[0][1].body).toBe(
+        'The first Saturday of the month from Sat, Oct 3, with no end date.',
+      );
+    });
+
+    it('counts every other week from the week it starts', async () => {
+      const { service, prisma } = build();
+      const result = await service.repeat(
+        mondays({ everyWeeks: 2, from: '2026-10-07' }),
+        'mgr-1',
+        NOW,
+      );
+      // Starting on a Wednesday: the week of Sun 4 Oct is on, so Monday the
+      // 5th is too early, then 19 Oct, 2, 16 and 30 Nov.
+      expect(result.dates).toEqual(['2026-10-19', '2026-11-02', '2026-11-16', '2026-11-30']);
+      expect(prisma.shiftSeries.create).toHaveBeenCalledWith(
+        expect.objectContaining({
+          data: expect.objectContaining({
+            everyWeeks: 2,
+            weeksOfMonth: [],
+            cycleFrom: new Date('2026-10-07T00:00:00Z'),
+          }),
+        }),
+      );
+    });
+
     it('a repeat with a last date makes no standing shift', async () => {
       const { service, prisma, created } = build();
       const result = await service.repeat(repeat(), 'mgr-1', NOW);
@@ -347,6 +425,9 @@ describe('ShiftPlanningService', () => {
         isRemote: false,
         openCount: 1,
         daysOfWeek: [1],
+        everyWeeks: 1,
+        weeksOfMonth: [],
+        cycleFrom: null,
         startTime: '08:00',
         endTime: '16:00',
         status: ShiftStatus.PUBLISHED,
@@ -401,6 +482,38 @@ describe('ShiftPlanningService', () => {
         await service.extendStandingShifts(NOW);
         expect(created).toHaveLength(0);
       });
+
+      it('writes only the first Saturday of the month for one that is', async () => {
+        const { service, created } = build({
+          dueSeries: [
+            series({
+              daysOfWeek: [6],
+              weeksOfMonth: [1],
+              filledThrough: new Date('2026-10-27T00:00:00Z'),
+            }),
+          ],
+        });
+        // 28 Oct to 24 Nov: Saturdays 31 Oct, 7, 14 and 21 Nov — the 7th.
+        expect(await service.extendStandingShifts(NOW)).toBe(1);
+        expect((created[0].startsAt as Date).toISOString()).toBe('2026-11-07T13:00:00.000Z');
+      });
+
+      it('keeps every other week in step from the week it started', async () => {
+        const { service, created } = build({
+          dueSeries: [
+            series({
+              everyWeeks: 2,
+              // Monday 7 September was on: so 21 Sep, 5 and 19 Oct, 2, 16 Nov…
+              cycleFrom: new Date('2026-09-07T00:00:00Z'),
+              filledThrough: new Date('2026-10-27T00:00:00Z'),
+            }),
+          ],
+        });
+        await service.extendStandingShifts(NOW);
+        expect(created.map((shift) => (shift.startsAt as Date).toISOString().slice(0, 10))).toEqual(
+          ['2026-11-02', '2026-11-16'],
+        );
+      });
     });
 
     describe('stopping one', () => {
@@ -408,6 +521,10 @@ describe('ShiftPlanningService', () => {
         id: 'series-1',
         employeeId: 'emp-1',
         daysOfWeek: [1, 4],
+        everyWeeks: 1,
+        weeksOfMonth: [],
+        cycleFrom: null,
+        startsOn: new Date('2026-09-07T00:00:00Z'),
         location: { timezone: NJ },
       };
 
@@ -458,11 +575,123 @@ describe('ShiftPlanningService', () => {
         expect(result.lastDate).toBe('2026-09-29');
       });
 
+      it('names the weeks of one that is not every week', async () => {
+        const { service, prisma, inbox } = build({
+          series: { ...stored, daysOfWeek: [6], weeksOfMonth: [1, 3] },
+        });
+        prisma.shift.findMany.mockResolvedValue([
+          { employeeId: 'emp-1', startsAt: new Date('2026-10-17T12:00:00Z') },
+        ]);
+        await service.stopStanding('series-1', { lastDate: '2026-10-09' }, NOW);
+        expect(inbox.notify.mock.calls[0][1].body).toBe(
+          'The first and third Saturday of the month after Fri, Oct 9 — that regular shift has ended.',
+        );
+      });
+
       it('says so when there is no such standing shift', async () => {
         const { service } = build();
         await expect(service.stopStanding('nope', {}, NOW)).rejects.toThrow(
           'That standing shift does not exist.',
         );
+      });
+    });
+
+    describe('changing one', () => {
+      const stored = {
+        id: 'series-1',
+        employeeId: 'emp-1',
+        locationId: 'loc-1',
+        jobRoleId: null,
+        isRemote: false,
+        openCount: 1,
+        daysOfWeek: [6],
+        everyWeeks: 1,
+        weeksOfMonth: [],
+        cycleFrom: null,
+        startTime: '09:00',
+        endTime: '13:00',
+        status: ShiftStatus.PUBLISHED,
+        notes: null,
+        startsOn: new Date('2026-09-05T00:00:00Z'),
+        endsOn: null,
+        filledThrough: new Date('2026-11-24T00:00:00Z'),
+        createdById: 'mgr-1',
+        location: { timezone: NJ },
+      };
+      const change = (overrides: Record<string, unknown> = {}) => ({
+        locationId: 'loc-1',
+        startTime: '09:00',
+        endTime: '13:00',
+        daysOfWeek: [6],
+        from: '2026-10-01',
+        ...overrides,
+      });
+
+      it('from every Saturday to the first Saturday of the month', async () => {
+        const { service, prisma, created, inbox } = build({ series: stored });
+        const result = await service.updateStanding('series-1', change({ weeksOfMonth: [1] }), NOW);
+
+        expect(prisma.shiftSeries.update).toHaveBeenCalledWith({
+          where: { id: 'series-1' },
+          data: expect.objectContaining({ everyWeeks: 1, weeksOfMonth: [1], cycleFrom: null }),
+        });
+        // 1 Oct to 24 Nov, rewritten: 3 Oct and 7 Nov.
+        expect(result.dates).toEqual(['2026-10-03', '2026-11-07']);
+        expect(created).toHaveLength(2);
+        expect(inbox.notify.mock.calls[0][1].body).toBe(
+          'The first Saturday of the month from Thu, Oct 1.',
+        );
+      });
+
+      it('to every other week, counted from the week the change starts', async () => {
+        const { service, prisma, created } = build({ series: stored });
+        await service.updateStanding(
+          'series-1',
+          change({ everyWeeks: 2, from: '2026-10-10' }),
+          NOW,
+        );
+        expect(prisma.shiftSeries.update).toHaveBeenCalledWith({
+          where: { id: 'series-1' },
+          data: expect.objectContaining({
+            everyWeeks: 2,
+            cycleFrom: new Date('2026-10-10T00:00:00Z'),
+          }),
+        });
+        expect(created.map((shift) => (shift.startsAt as Date).toISOString().slice(0, 10))).toEqual(
+          ['2026-10-10', '2026-10-24', '2026-11-07', '2026-11-21'],
+        );
+      });
+
+      it('keeps the rhythm of every other week through a change of hours', async () => {
+        const { service, prisma, created } = build({
+          series: { ...stored, everyWeeks: 2, cycleFrom: new Date('2026-10-03T00:00:00Z') },
+        });
+        await service.updateStanding(
+          'series-1',
+          change({ endTime: '14:00', from: '2026-10-10' }),
+          NOW,
+        );
+        expect(prisma.shiftSeries.update).toHaveBeenCalledWith({
+          where: { id: 'series-1' },
+          data: expect.objectContaining({
+            everyWeeks: 2,
+            cycleFrom: new Date('2026-10-03T00:00:00Z'),
+          }),
+        });
+        expect(created.map((shift) => (shift.startsAt as Date).toISOString().slice(0, 10))).toEqual(
+          ['2026-10-17', '2026-10-31', '2026-11-14'],
+        );
+      });
+
+      it('keeps what it had when the weeks are not sent', async () => {
+        const { service, prisma } = build({
+          series: { ...stored, weeksOfMonth: [-1] },
+        });
+        await service.updateStanding('series-1', change({ endTime: '14:00' }), NOW);
+        expect(prisma.shiftSeries.update).toHaveBeenCalledWith({
+          where: { id: 'series-1' },
+          data: expect.objectContaining({ everyWeeks: 1, weeksOfMonth: [-1] }),
+        });
       });
     });
 
@@ -531,6 +760,27 @@ describe('ShiftPlanningService', () => {
       expect(result.created).toBe(24);
       expect(created.every((shift) => shift.status === ShiftStatus.PUBLISHED)).toBe(true);
       expect(result.dates[0]).toBe('2026-10-05');
+    });
+
+    it('leaves alone a regular shift that is not every week', async () => {
+      const { service, prisma } = build();
+      await service.setWeek(
+        'emp-1',
+        { from: FROM, days: [day(1, '09:00', '17:00')] },
+        'mgr-1',
+        NOW,
+      );
+      // The first Saturday of the month runs beside a usual week, not in it.
+      expect(prisma.shiftSeries.findMany).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: {
+            employeeId: 'emp-1',
+            endsOn: null,
+            everyWeeks: 1,
+            weeksOfMonth: { isEmpty: true },
+          },
+        }),
+      );
     });
 
     it('works from home on a day marked so', async () => {
