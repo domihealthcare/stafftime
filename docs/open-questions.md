@@ -281,17 +281,26 @@ What is left:
       if a tablet and reader are bought — is PIN enough day to day?
 - [ ] **Kiosk browser setup.** Whatever the device, it wants guided access or
       kiosk browser mode so staff cannot navigate away. Device configuration
-      rather than code. **Under way at North Bergen** (October 2026): an iPad
-      (8th generation, iPadOS 26 — the last it can run, so it wants replacing
-      in a year or two) that is also the tablet patients take BrainCheck
-      Assess on. Owned by a practice Apple Account (an alias that reaches only
-      Dominguez), with Google Home signed in as office@ for the thermostats.
-      Guided Access is on while a patient has it; whether the time clock also
-      stays under Guided Access between patients is being tried. `/kiosk` now
-      installs as its own full-screen **Time Clock** app (see *The time clock
-      on a tablet's home screen* in `docs/architecture.md`), which removes the
-      Safari bar there was to cover. Still to do: pair it inside that app,
-      revoke the Safari pairing, and a first real clock-in at the office.
+      rather than code. **Done at North Bergen** (in use since 5 October
+      2026): an iPad (8th generation, iPadOS 26 — the last it can run, so it
+      wants replacing in a year or two) that is also the tablet patients take
+      BrainCheck Assess on. Owned by a practice Apple Account (an alias that
+      reaches only Dominguez), Google Home signed in as office@ for the
+      thermostats, Screen Time locking installs, deletions, account and
+      passcode changes. Guided Access only while a patient has it. The Time
+      Clock is its own full-screen app (see *The time clock on a tablet's home
+      screen* in `docs/architecture.md`), paired there; first real clock-in 5
+      October 2026. West New York would be set up the same way.
+
+- [ ] **BrainCheck on the shared iPad.** The practice's BrainCheck account is
+      on the web platform (`provider.braincheck.com`, added to the Home Screen
+      as a web app); the iOS app is legacy and will not sign in. Asked of
+      BrainCheck support (October 2026): is there a patient-facing mode so a
+      patient cannot reach the provider screens or other patients, how long
+      until a signed-in session times out, and is Safari on iPadOS 26 on an
+      8th-generation iPad supported. Until then: sign out after each patient.
+      Help → *Giving a patient the BrainCheck test* is to be rewritten to
+      match once the answers are in.
 
 ## Technical to-dos
 

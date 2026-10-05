@@ -81,9 +81,9 @@ const STAFF: Section[] = [
           <>
             <p>
               The time clock is the Domi Staff screen at the front desk — on the office computer or
-              a tablet. Pick your name, type your PIN, and it clocks you in or out. It only shows
-              the people who work at that office. At North Bergen it is the{' '}
-              <strong>Time Clock</strong> app on the front-desk iPad — see{' '}
+              a tablet. Press <strong>Clock in or out</strong>, pick your name, type your PIN, and
+              it clocks you in or out. It only lists the people who work at that office. At North
+              Bergen it is the <strong>Time Clock</strong> app on the front-desk iPad — see{' '}
               <strong>The front-desk iPad</strong>, below.
             </p>
             <p>
@@ -214,7 +214,11 @@ const STAFF: Section[] = [
               If it is not showing the staff list, press the round <strong>Home button</strong>{' '}
               under the screen and tap <strong>Time Clock</strong>.
             </li>
-            <li>Tap your name and type your PIN. It says whether you are now in or out.</li>
+            <li>
+              Press <strong>Clock in or out</strong>, then find your name in the list — type the
+              first letters to narrow it down — and type your PIN. It says whether you are now in or
+              out.
+            </li>
             <li>
               <strong>No PIN yet</strong> under your name? Choose one on your phone first:{' '}
               <Screen>Your profile → Tablet PIN</Screen>. Home reminds you until you have.
@@ -1515,7 +1519,10 @@ const MANAGERS: Section[] = [
             <strong>People can pick more than one</strong> for tick boxes). Votes are named; for
             anonymous answers, use a survey. Once anybody has voted the choices are fixed —{' '}
             <strong>Close voting</strong> on the post stops it, and it can be opened again. Managers
-            and admins can delete anybody's comment.
+            and admins can delete anybody's comment. Tick{' '}
+            <strong>Also show on the front-desk time clock</strong> to put a post on the time
+            clock&rsquo;s main screen too (the newest three ticked) — title and message only.
+            Patients at the desk can see it, so keep it to things they may read.
           </p>
         ),
       },

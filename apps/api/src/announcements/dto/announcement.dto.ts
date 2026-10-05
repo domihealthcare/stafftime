@@ -53,6 +53,11 @@ export class CreateAnnouncementDto {
   @IsBoolean()
   isPrimary?: boolean;
 
+  /// Also shown on the front-desk time clock, where patients can see it.
+  @IsOptional()
+  @IsBoolean()
+  showOnTimeClock?: boolean;
+
   @IsOptional()
   @ValidateNested()
   @Type(() => PollDto)
@@ -76,6 +81,11 @@ export class UpdateAnnouncementDto {
   @IsOptional()
   @IsBoolean()
   isPrimary?: boolean;
+
+  /// Also shown on the front-desk time clock, where patients can see it.
+  @IsOptional()
+  @IsBoolean()
+  showOnTimeClock?: boolean;
 
   /// Left out: the poll stays as it is. `null`: it is taken off. A poll: it
   /// replaces the old one — refused once anybody has voted, unless only the

@@ -767,6 +767,8 @@ export interface Announcement {
   body: string;
   /// Exactly one post is primary while any exist.
   isPrimary: boolean;
+  /// Also shown on the front-desk time clock, where patients can see it.
+  showOnTimeClock: boolean;
   editedAt: string | null;
   createdAt: string;
   author: PersonName | null;
@@ -891,7 +893,7 @@ export interface DirectoryEntry {
   birthdayMonth: number | null;
   birthdayDay: number | null;
   onLeave: boolean;
-  jobRoles: { id: string; name: string; colour: string }[];
+  jobRoles: { id: string; name: string; colour: string; sortOrder?: number }[];
   locations: { id: string; name: string; isPrimary: boolean }[];
   /// Clocked in now. `since` is only sent to managers.
   onNow: { location: { id: string; name: string }; remote?: boolean; since?: string } | null;

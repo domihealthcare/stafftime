@@ -387,7 +387,9 @@ Beyond the phases, the parts worth knowing about before picking up work:
 - **Directory and Staff side by side** (2 October 2026, Dominguez): both are
   **three columns** on a laptop (two on a tablet, one on a phone), and the
   Directory's top row is North Bergen · West New York · Working from home
-  today. A **Staff card says everything a Directory card does** — photo,
+  today. **In now groups people by job role** (5 October 2026, Dominguez),
+  in the practice's order of job roles, each person once under their first
+  role ("Other" for none). A **Staff card says everything a Directory card does** — photo,
   pronouns, "about you", in now / working from home / on leave, tappable
   email and phone, birthday — plus access, ADP File #, PIN and password
   status, Profile and Edit. Shared pieces in `components/PersonDetails.tsx`.
@@ -688,9 +690,18 @@ Beyond the phases, the parts worth knowing about before picking up work:
   webcam snapshot were all turned down. A handbook rule (clocking in for
   somebody else is a disciplinary matter) was chosen instead, drafted in
   `docs/location-disclosure.md`. See *Kiosk* in `docs/open-questions.md`.
-- **An iPad time clock at North Bergen** (October 2026, Dominguez — being set
-  up, not in use yet): an 8th-generation iPad, shared with BrainCheck Assess
-  for patients (Guided Access while a patient has it). Owned by a practice
+- **An iPad time clock at North Bergen** (October 2026, Dominguez — **in use
+  since 5 October 2026**, the first clock-in done that day): an 8th-generation
+  iPad (iPadOS 26, the last it can run — replace in a year or two), shared
+  with BrainCheck Assess for patients (Guided Access while a patient has it,
+  not between patients). **BrainCheck is the web version**,
+  `provider.braincheck.com` added to the Home Screen as a web app: BrainCheck
+  support said the iOS app is for legacy accounts only and the practice's
+  account will not sign in there. Its login is saved in the iPad's Passwords,
+  filled with the iPad passcode. Whether the web version has a patient-facing
+  mode and a session timeout was asked of BrainCheck — Help's *Giving a
+  patient the BrainCheck test* still describes the old app's patient mode and
+  wants rewriting once that is known. Owned by a practice
   Apple Account on `devices@` (an alias reaching only Dominguez — office@ is
   read by all staff); Google Home on it is signed in as office@ so staff can
   change either office's thermostat. `/kiosk` now has its own page
@@ -705,6 +716,12 @@ Beyond the phases, the parts worth knowing about before picking up work:
   without a PIN tagged **No PIN yet** (a tap explains how to choose one; the
   tablet never sets one), and Home shows **Choose your tablet PIN** until they
   do — see *What the keypad will not tell you* in `docs/architecture.md`.
+  **The time clock's main screen** (5 October 2026, Dominguez) shows the News
+  posts ticked **Also show on the front-desk time clock**
+  (`Announcement.showOnTimeClock`, newest three, title and words only — no
+  author, likes, comments or poll, since patients can see it) and one
+  **Clock in or out** button; the names are behind it, in a list with a
+  search box (**Find your name**), not on the main screen. `GET /kiosk/posts`.
 - **Hours entered by hand** (29 September 2026, Dominguez): Timesheet →
   **+ Add hours** (managers) for a day with no punch at all — a reason from a
   short list and a note, never your own hours, never over a punch already

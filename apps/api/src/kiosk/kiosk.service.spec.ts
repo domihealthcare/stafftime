@@ -1,4 +1,10 @@
-import { KioskService, formatPairingCode, hashSecret, normalisePairingCode } from './kiosk.service';
+import {
+  KioskService,
+  TIME_CLOCK_POSTS,
+  formatPairingCode,
+  hashSecret,
+  normalisePairingCode,
+} from './kiosk.service';
 import { createHash } from 'node:crypto';
 
 describe('pairing code helpers', () => {
@@ -43,6 +49,7 @@ describe('KioskService', () => {
         findMany: jest.fn().mockResolvedValue([]),
       },
       employee: { findMany: jest.fn().mockResolvedValue([]) },
+      announcement: { findMany: jest.fn().mockResolvedValue([]) },
     };
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     return { service: new KioskService(prisma as any), prisma };
@@ -192,6 +199,26 @@ describe('KioskService', () => {
       const { service, prisma } = build({ device: live });
       await service.resolveDevice('tok');
       expect(prisma.kioskDevice.update).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('timeClockPosts', () => {
+    it('asks only for posts ticked for the time clock, newest first, a few at most', async () => {
+      const { service, prisma } = build();
+      await service.timeClockPosts();
+
+      const query = prisma.announcement.findMany.mock.calls[0][0];
+      expect(query.where).toEqual({ showOnTimeClock: true });
+      expect(query.orderBy).toEqual({ createdAt: 'desc' });
+      expect(query.take).toBe(TIME_CLOCK_POSTS);
+    });
+
+    it('reads the title and words only — no author, likes, comments or poll', async () => {
+      const { service, prisma } = build();
+      await service.timeClockPosts();
+
+      const select = prisma.announcement.findMany.mock.calls[0][0].select;
+      expect(Object.keys(select).sort()).toEqual(['body', 'createdAt', 'editedAt', 'id', 'title']);
     });
   });
 

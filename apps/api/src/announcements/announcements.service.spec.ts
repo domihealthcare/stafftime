@@ -182,6 +182,38 @@ describe('AnnouncementsService', () => {
     });
   });
 
+  describe('on the time clock', () => {
+    it('keeps a new post off the time clock unless it is ticked', async () => {
+      const { service, announcement } = build();
+      await service.create({ title: 'Parking', body: 'Use the back lot.' }, admin);
+      expect(announcement.create.mock.calls[0][0].data.showOnTimeClock).toBe(false);
+    });
+
+    it('puts a new post on the time clock when ticked', async () => {
+      const { service, announcement } = build();
+      await service.create(
+        { title: 'Flu shots', body: 'Ask at the desk.', showOnTimeClock: true },
+        admin,
+      );
+      expect(announcement.create.mock.calls[0][0].data.showOnTimeClock).toBe(true);
+    });
+
+    it('takes a post off the time clock without marking it edited', async () => {
+      const { service, announcement } = build();
+      await service.update('post-1', { showOnTimeClock: false }, admin);
+
+      const { data } = announcement.update.mock.calls[0][0];
+      expect(data.showOnTimeClock).toBe(false);
+      expect(data.editedAt).toBeUndefined();
+    });
+
+    it('leaves the setting alone when an edit does not mention it', async () => {
+      const { service, announcement } = build();
+      await service.update('post-1', { body: 'Both offices close at 1pm today.' }, admin);
+      expect(announcement.update.mock.calls[0][0].data).not.toHaveProperty('showOnTimeClock');
+    });
+  });
+
   describe('editing', () => {
     it('refuses to untick the primary, because there must always be one', async () => {
       const { service } = build({ one: post({ isPrimary: true }) });

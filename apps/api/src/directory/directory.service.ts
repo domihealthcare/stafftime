@@ -147,7 +147,8 @@ export class DirectoryService {
           jobRoles: jobRoles
             .map((row) => row.jobRole)
             .sort((a, b) => a.sortOrder - b.sortOrder || a.name.localeCompare(b.name))
-            .map(({ id, name, colour }) => ({ id, name, colour })),
+            // sortOrder too, so "In now" can group people in the practice's order.
+            .map(({ id, name, colour, sortOrder }) => ({ id, name, colour, sortOrder })),
           locations: locations
             .sort((a, b) => Number(b.isPrimary) - Number(a.isPrimary))
             .map((row) => ({ ...row.location, isPrimary: row.isPrimary })),
