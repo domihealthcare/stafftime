@@ -1,9 +1,12 @@
 import { useEffect } from 'react';
 import type { JobRole } from '../lib/types';
 
-/// The job roles somebody holds, in the practice's order.
+/// The job roles somebody holds: their main one first, then the practice's order.
 export function rolesHeldBy(personId: string, jobRoles: JobRole[]): JobRole[] {
-  return jobRoles.filter((role) => role.members.some((member) => member.id === personId));
+  const isMain = (role: JobRole) =>
+    role.members.some((member) => member.id === personId && member.isPrimary);
+  const held = jobRoles.filter((role) => role.members.some((member) => member.id === personId));
+  return [...held.filter(isMain), ...held.filter((role) => !isMain(role))];
 }
 
 /**
@@ -41,7 +44,7 @@ export function JobRoleSelect({
   const held = personId ? rolesHeldBy(personId, jobRoles) : [];
   const heldIds = held.map((role) => role.id).join();
 
-  // Keep the value one of theirs: their first role when it is not, and none
+  // Keep the value one of theirs: their main role when it is not, and none
   // when they hold none.
   useEffect(() => {
     if (!personId) return;

@@ -1,7 +1,18 @@
-import { BadRequestException, ForbiddenException } from '@nestjs/common';
+import { BadRequestException, ForbiddenException, NotFoundException } from '@nestjs/common';
 import { PasswordService } from '../auth/password.service';
 import { PinService } from '../kiosk/pin.service';
 import { ProfileService } from './profile.service';
+
+/// A 256 × 256 baseline JPEG header — all the photo checks look at.
+function fakeJpeg(): Buffer {
+  const sof = Buffer.alloc(11);
+  sof.writeUInt16BE(0xffc0, 0);
+  sof.writeUInt16BE(9, 2);
+  sof[4] = 8;
+  sof.writeUInt16BE(256, 5);
+  sof.writeUInt16BE(256, 7);
+  return Buffer.concat([Buffer.from([0xff, 0xd8, 0xff, 0xe0, 0x00, 0x04, 0x00, 0x00]), sof]);
+}
 
 function build(passwordHash: string | null = null) {
   let row: Record<string, unknown> = {
@@ -18,12 +29,20 @@ function build(passwordHash: string | null = null) {
     about: null,
     photoUpdatedAt: null,
     role: 'EMPLOYEE',
-    jobRoles: [{ jobRole: { id: 'fd', name: 'Front Desk', colour: 'blue' } }],
+    jobRoles: [
+      {
+        isPrimary: false,
+        jobRole: { id: 'ma', name: 'Medical Assistant', colour: 'teal', sortOrder: 20 },
+      },
+      { isPrimary: true, jobRole: { id: 'fd', name: 'Front Desk', colour: 'blue', sortOrder: 10 } },
+    ],
     locations: [{ isPrimary: true, location: { id: 'nb', name: 'North Bergen' } }],
   };
   const photos = new Map<string, unknown>();
+  const inbox = { notify: jest.fn(async () => undefined) };
   const prisma = {
     employee: {
+      count: jest.fn(async ({ where }: { where: { id: string } }) => (where.id === 'e1' ? 1 : 0)),
       findUniqueOrThrow: jest.fn(async () => row),
       update: jest.fn(async ({ data }: { data: Record<string, unknown> }) => {
         for (const [k, v] of Object.entries(data)) if (v !== undefined) row = { ...row, [k]: v };
@@ -45,8 +64,14 @@ function build(passwordHash: string | null = null) {
     $transaction: jest.fn(async (ops: Promise<unknown>[]) => Promise.all(ops)),
   };
   return {
-    service: new ProfileService(prisma as never, new PasswordService(), new PinService()),
+    service: new ProfileService(
+      prisma as never,
+      new PasswordService(),
+      new PinService(),
+      inbox as never,
+    ),
     prisma,
+    inbox,
     photos,
     row: () => row,
   };
@@ -56,7 +81,11 @@ describe('your profile', () => {
   it('flattens job roles and offices for the screen', async () => {
     const { service } = build();
     const profile = await service.get('e1');
-    expect(profile.jobRoles).toEqual([{ id: 'fd', name: 'Front Desk', colour: 'blue' }]);
+    // Their main job role first.
+    expect(profile.jobRoles).toEqual([
+      { id: 'fd', name: 'Front Desk', colour: 'blue', isPrimary: true },
+      { id: 'ma', name: 'Medical Assistant', colour: 'teal', isPrimary: false },
+    ]);
     expect(profile.locations).toEqual([{ id: 'nb', name: 'North Bergen', isPrimary: true }]);
   });
 
@@ -75,6 +104,31 @@ describe('your profile', () => {
   it('turns a photo it cannot accept into a clear refusal', async () => {
     const { service } = build();
     await expect(service.setPhoto('e1', 'bm90IGEgcGhvdG8=')).rejects.toThrow(BadRequestException);
+  });
+
+  it('your own photo tells nobody', async () => {
+    const { service, photos, inbox } = build();
+    await service.setPhoto('e1', fakeJpeg().toString('base64'));
+    expect(photos.has('e1')).toBe(true);
+    expect(inbox.notify).not.toHaveBeenCalled();
+  });
+
+  it('a photo an admin puts up for somebody tells them, without the photo', async () => {
+    const { service, photos, inbox } = build();
+    await service.setPhoto('e1', fakeJpeg().toString('base64'), 'admin');
+    expect(photos.has('e1')).toBe(true);
+    expect(inbox.notify).toHaveBeenCalledWith(
+      ['e1'],
+      expect.objectContaining({ kind: 'PROFILE_PHOTO', link: '/profile' }),
+    );
+  });
+
+  it('an admin cannot put a photo on somebody who does not exist', async () => {
+    const { service, photos } = build();
+    await expect(
+      service.setPhoto('nobody', fakeJpeg().toString('base64'), 'admin'),
+    ).rejects.toThrow(NotFoundException);
+    expect(photos.size).toBe(0);
   });
 
   it('removing a photo clears the version too', async () => {

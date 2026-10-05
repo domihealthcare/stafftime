@@ -5,6 +5,7 @@ import { addDays, displayName, formatTimeCompact, localDate, startOfWeek } from 
 import { useIsManager, useSession } from '../lib/session';
 import { timeOffOn } from '../lib/time-off';
 import type { Employee, JobRole, Location, PracticeEvent, PtoRequest, Shift } from '../lib/types';
+import { rolesHeldBy } from '../components/JobRoleSelect';
 import { BrandLogoForPrint } from '../components/Brand';
 import { eventsOnDay, eventTimeLabel, isClosure } from '../components/PracticeEvents';
 import { Alert, Spinner, buttonClass } from '../components/ui';
@@ -118,10 +119,7 @@ export function RotaPrintPage() {
   const drafts = live.filter(
     (shift) => shift.status === 'DRAFT' && (!locationParam || shift.locationId === locationParam),
   ).length;
-  const roleNames = (personId: string) =>
-    jobRoles
-      .filter((role) => role.members.some((member) => member.id === personId))
-      .map((role) => role.name);
+  const roleNames = (personId: string) => rolesHeldBy(personId, jobRoles).map((role) => role.name);
 
   const goToWeek = (offset: number) => {
     const next = new URLSearchParams(params);

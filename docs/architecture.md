@@ -1985,7 +1985,7 @@ roles is literally called "Manager" — if job roles granted anything, tidying
 that list would be a way to hand somebody the payroll export. So a job role
 decides which resources somebody sees and nothing else.
 
-Somebody can hold several (`EmployeeJobRole` is a plain join table). Staff see
+Somebody can hold several (`EmployeeJobRole`). Staff see
 the Everyone section plus their roles'; managers see every role, their own
 marked. Opening another role's page by its address is refused by the API, not
 just hidden by the screen.
@@ -1994,6 +1994,21 @@ A resource is a link or a short written page, **never a file** — see *Data thi
 app does not hold* in `CLAUDE.md`, and the guard in `no-sensitive-data.spec.ts`.
 Links must be http(s): a `javascript:` link would run in a colleague's session.
 An address pasted without a scheme is taken as https.
+
+**Main job role** (October 2026, Dominguez: Angelica Notario works the front
+desk and admin, and was listed under Front Desk; "everyone should have a
+'primary' role"). `EmployeeJobRole.isPrimary` marks one of somebody's roles:
+listed first on the Staff card (with "· main" when they hold several), the
+Directory and Your profile; the one shift forms start on; and the one a shift
+gets when it is made with no role (`held-job-role.ts`). At most one per person
+by a partial unique index; at least one by `job-roles/main-job-role.ts`, which
+hands the flag to their first role in the practice's order whenever they are
+left without — their first role added, their main one taken off, a job role
+deleted. The migration started everybody on that same first role, so nothing
+moved on the day it shipped. An admin chooses it in the Staff editor (shown
+only with two or more roles ticked); `PUT /job-roles/:id/members/:employeeId/main`
+(managers) refuses a role they do not hold. The import makes the first role
+named on a line the main one.
 
 A job role with resources cannot be deleted until they are moved or removed:
 they were written for somebody, and deleting a role should not quietly throw
@@ -2165,6 +2180,13 @@ it can be:
   allows images from `'self'` only), at a URL carrying `photoUpdatedAt`, so it
   can be cached without a stale face ever showing.
 - Its owner can remove it any time; an admin can remove anybody's.
+- **An admin can put one up for somebody** (Dominguez, October 2026: "i
+  should be able to upload pictures for staff avatars"), under *Photo* in the
+  Staff editor — never for themselves there, that is Your profile. Same
+  fitting, same browser re-encoding, same server checks
+  (`PUT /profile/photo/:employeeId`, admins only). The person gets a bell
+  notice (`PROFILE_PHOTO`, no picture in it) and can change or remove it.
+  It is still a photo **of the person**, not a way to store anything else.
 
 ## Help
 
@@ -2190,8 +2212,11 @@ Colleagues see where somebody is; only managers see when they clocked in.
 Each office's box **groups the people in by job role** (Dominguez, 5 October
 2026: "it should show what roles they are"), in the practice's order of job
 roles (`sortOrder`, which the directory now sends with each role); somebody
-with several is listed once, under their first, and anybody with none under
-"Other".
+with several is listed once, and anybody with none under "Other". The role is
+the one **they are working as**: the job role of the shift their open punch is
+linked to (Dominguez: "it should be how they are scheduled"), sent as
+`onNow.jobRole` — the role only, never the shift's times — and otherwise their
+**main job role**.
 
 **Working from home today** (October 2026, Dominguez) is always on screen,
 beside the office boxes (three across on a laptop, like the cards below): who is clocked in from home now, then anybody with a

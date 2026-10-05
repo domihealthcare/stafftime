@@ -424,6 +424,7 @@ export function readStaffList(
               locationIds: matchedOffices.map((office) => office.id),
               // The first office named is where they mostly work.
               primaryLocationId: matchedOffices[0]?.id,
+              // Likewise the first job role named is their main one.
               jobRoleIds: matchedRoles.map((jobRole) => jobRole.id),
             },
     });

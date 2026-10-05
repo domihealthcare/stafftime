@@ -41,6 +41,19 @@ export class ProfileController {
     return this.profiles.setPhoto(user.id, dto.image);
   }
 
+  /// An admin can put up somebody else's photo (Dominguez, October 2026),
+  /// cropped and shrunk in the browser like anybody's own. They are told, and
+  /// can replace or remove it.
+  @Put('photo/:employeeId')
+  @Roles(Role.ADMIN)
+  setSomebodysPhoto(
+    @Param('employeeId', ParseUUIDPipe) employeeId: string,
+    @Body() dto: UploadPhotoDto,
+    @CurrentUser() user: AuthUser,
+  ) {
+    return this.profiles.setPhoto(employeeId, dto.image, user.id);
+  }
+
   @Delete('photo')
   removePhoto(@CurrentUser() user: AuthUser) {
     return this.profiles.removePhoto(user.id, user.id);

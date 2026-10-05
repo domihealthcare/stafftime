@@ -13,6 +13,7 @@ function role(over: Record<string, unknown> = {}) {
     _count: { resources: 0 },
     members: [
       {
+        isPrimary: true,
         employee: {
           id: 'emp-1',
           firstName: 'Frankie',
@@ -25,7 +26,19 @@ function role(over: Record<string, unknown> = {}) {
   };
 }
 
-function build(options: { clash?: boolean; one?: unknown; employee?: unknown } = {}) {
+function build(
+  options: {
+    clash?: boolean;
+    one?: unknown;
+    employee?: unknown;
+    /// The roles somebody holds, as ensureMainJobRole reads them.
+    held?: { jobRoleId: string; isPrimary: boolean }[];
+  } = {},
+) {
+  const held = options.held ?? [
+    { jobRoleId: 'role-1', isPrimary: false },
+    { jobRoleId: 'role-3', isPrimary: false },
+  ];
   const prisma = {
     jobRole: {
       findMany: jest.fn().mockResolvedValue([role()]),
@@ -44,8 +57,14 @@ function build(options: { clash?: boolean; one?: unknown; employee?: unknown } =
     employeeJobRole: {
       upsert: jest.fn().mockResolvedValue({}),
       deleteMany: jest.fn().mockResolvedValue({ count: 1 }),
-      findMany: jest.fn().mockResolvedValue([{ jobRoleId: 'role-1' }, { jobRoleId: 'role-3' }]),
+      findMany: jest.fn(async ({ where }: { where: { employeeId?: string }; orderBy?: unknown }) =>
+        where.employeeId ? held : [{ employeeId: 'emp-1' }],
+      ),
+      update: jest.fn().mockResolvedValue({}),
+      updateMany: jest.fn().mockResolvedValue({ count: 1 }),
+      count: jest.fn().mockResolvedValue(1),
     },
+    $transaction: jest.fn(async (ops: Promise<unknown>[]) => Promise.all(ops)),
   };
   return { service: new JobRolesService(prisma as never), prisma };
 }
@@ -56,7 +75,13 @@ describe('JobRolesService', () => {
     const [row] = await service.findAll();
 
     expect(row.members).toEqual([
-      { id: 'emp-1', firstName: 'Frankie', lastName: 'Front-Desk', preferredName: null },
+      {
+        id: 'emp-1',
+        firstName: 'Frankie',
+        lastName: 'Front-Desk',
+        preferredName: null,
+        isPrimary: true,
+      },
     ]);
     expect(row.resourceCount).toBe(0);
   });
@@ -125,6 +150,78 @@ describe('JobRolesService', () => {
       update: {},
       create: { employeeId: 'emp-2', jobRoleId: 'role-1' },
     });
+  });
+
+  it('makes somebody’s first job role their main one', async () => {
+    const { service, prisma } = build({ held: [{ jobRoleId: 'role-1', isPrimary: false }] });
+    await service.addMember('role-1', 'emp-2', manager);
+
+    expect(prisma.employeeJobRole.update).toHaveBeenCalledWith({
+      where: { employeeId_jobRoleId: { employeeId: 'emp-2', jobRoleId: 'role-1' } },
+      data: { isPrimary: true },
+    });
+  });
+
+  it('leaves their main job role alone when they are added to another', async () => {
+    const { service, prisma } = build({
+      held: [
+        { jobRoleId: 'role-3', isPrimary: true },
+        { jobRoleId: 'role-1', isPrimary: false },
+      ],
+    });
+    await service.addMember('role-1', 'emp-2', manager);
+    expect(prisma.employeeJobRole.update).not.toHaveBeenCalled();
+  });
+
+  it('hands the main job role on, in the practice’s order, when it is taken away', async () => {
+    const { service, prisma } = build({
+      held: [
+        { jobRoleId: 'role-3', isPrimary: false },
+        { jobRoleId: 'role-4', isPrimary: false },
+      ],
+    });
+    await service.removeMember('role-1', 'emp-2', manager);
+
+    const [query] = prisma.employeeJobRole.findMany.mock.calls.at(-1)!;
+    expect(query.orderBy).toEqual([
+      { jobRole: { sortOrder: 'asc' } },
+      { jobRole: { name: 'asc' } },
+    ]);
+    expect(prisma.employeeJobRole.update).toHaveBeenCalledWith({
+      where: { employeeId_jobRoleId: { employeeId: 'emp-2', jobRoleId: 'role-3' } },
+      data: { isPrimary: true },
+    });
+  });
+
+  it('hands it on for the members of a role that is deleted', async () => {
+    const { service, prisma } = build();
+    await service.remove('role-1', manager);
+    expect(prisma.employeeJobRole.findMany).toHaveBeenCalledWith(
+      expect.objectContaining({ where: { employeeId: 'emp-1' } }),
+    );
+  });
+
+  it('makes a role somebody holds their main one, clearing the old one first', async () => {
+    const { service, prisma } = build();
+    await service.setMain('role-1', 'emp-2', manager);
+
+    expect(prisma.employeeJobRole.updateMany).toHaveBeenCalledWith({
+      where: { employeeId: 'emp-2', isPrimary: true, jobRoleId: { not: 'role-1' } },
+      data: { isPrimary: false },
+    });
+    expect(prisma.employeeJobRole.update).toHaveBeenCalledWith({
+      where: { employeeId_jobRoleId: { employeeId: 'emp-2', jobRoleId: 'role-1' } },
+      data: { isPrimary: true },
+    });
+  });
+
+  it('will not make a role somebody does not hold their main one', async () => {
+    const { service, prisma } = build();
+    prisma.employeeJobRole.count.mockResolvedValue(0);
+    await expect(service.setMain('role-1', 'emp-2', manager)).rejects.toThrow(
+      'They are not in Front Desk. Add them to it first, then make it their main job role.',
+    );
+    expect(prisma.employeeJobRole.update).not.toHaveBeenCalled();
   });
 
   it('says so when the person does not exist', async () => {

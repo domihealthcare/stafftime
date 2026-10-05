@@ -455,8 +455,9 @@ function PinReset({ person }: { person: DirectoryEntry }) {
 /**
  * The people in now at one office, grouped by job role (Dominguez, October
  * 2026: "it should show what roles they are"), in the practice's order of job
- * roles. Somebody with several is listed once, under their first; nobody is
- * left out for having none.
+ * roles. Somebody with several is listed once: under the job role of the
+ * shift they clocked in to ("it should be how they are scheduled"), or with
+ * none, their main job role. Nobody is left out for having none.
  */
 function byJobRole(people: DirectoryEntry[]) {
   const groups = new Map<
@@ -464,7 +465,7 @@ function byJobRole(people: DirectoryEntry[]) {
     { key: string; label: string; colour: string | null; order: number; people: DirectoryEntry[] }
   >();
   for (const person of people) {
-    const role = person.jobRoles[0];
+    const role = person.onNow?.jobRole ?? person.jobRoles[0];
     const key = role?.id ?? 'none';
     const group = groups.get(key) ?? {
       key,

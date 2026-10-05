@@ -427,7 +427,8 @@ export interface AppNotification {
     | 'ANNOUNCEMENT'
     | 'NEWS_COMMENT'
     | 'EVENT'
-    | 'PRODUCTIVITY';
+    | 'PRODUCTIVITY'
+    | 'PROFILE_PHOTO';
   title: string;
   body: string | null;
   link: string | null;
@@ -1257,6 +1258,14 @@ export const api = {
   setPhoto: (image: string) =>
     request<Profile>('/profile/photo', { method: 'PUT', body: JSON.stringify({ image }) }),
   removePhoto: () => request<Profile>('/profile/photo', { method: 'DELETE' }),
+  /// Admins: somebody else's photo, put up or taken down for them.
+  setPhotoFor: (employeeId: string, image: string) =>
+    request<Profile>(`/profile/photo/${employeeId}`, {
+      method: 'PUT',
+      body: JSON.stringify({ image }),
+    }),
+  removePhotoFor: (employeeId: string) =>
+    request<Profile>(`/profile/photo/${employeeId}`, { method: 'DELETE' }),
   setOwnPin: (currentPassword: string, pin: string) =>
     request<Profile>('/profile/pin', {
       method: 'PUT',
@@ -1347,6 +1356,8 @@ export const api = {
       method: 'POST',
       body: JSON.stringify({ employeeId }),
     }),
+  setMainJobRole: (id: string, employeeId: string) =>
+    request<JobRole>(`/job-roles/${id}/members/${employeeId}/main`, { method: 'PUT' }),
   removeJobRoleMember: (id: string, employeeId: string) =>
     request<JobRole>(`/job-roles/${id}/members/${employeeId}`, { method: 'DELETE' }),
 

@@ -826,7 +826,8 @@ export interface JobRole {
   colour: string;
   sortOrder: number;
   resourceCount: number;
-  members: PersonName[];
+  /// isPrimary: it is that person's main job role.
+  members: (PersonName & { isPrimary?: boolean })[];
   /// People in it see their own licenses and onboarding in the account menu.
   seesOwnPersonnelTabs?: boolean;
   /// People in it get the clinical forms under Resources → Forms.
@@ -893,10 +894,23 @@ export interface DirectoryEntry {
   birthdayMonth: number | null;
   birthdayDay: number | null;
   onLeave: boolean;
-  jobRoles: { id: string; name: string; colour: string; sortOrder?: number }[];
+  /// Their main job role first (isPrimary), then the practice's order.
+  jobRoles: {
+    id: string;
+    name: string;
+    colour: string;
+    sortOrder?: number;
+    isPrimary?: boolean;
+  }[];
   locations: { id: string; name: string; isPrimary: boolean }[];
-  /// Clocked in now. `since` is only sent to managers.
-  onNow: { location: { id: string; name: string }; remote?: boolean; since?: string } | null;
+  /// Clocked in now. `since` is only sent to managers. `jobRole` is the job
+  /// role of the shift they clocked in to, if it has one.
+  onNow: {
+    location: { id: string; name: string };
+    remote?: boolean;
+    since?: string;
+    jobRole?: { id: string; name: string; colour: string; sortOrder: number } | null;
+  } | null;
   /// A published work-from-home shift today that has not ended yet.
   homeToday: { startsAt: string; endsAt: string } | null;
 }
