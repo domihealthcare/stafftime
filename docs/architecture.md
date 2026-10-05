@@ -1322,6 +1322,46 @@ Its keep-list must name every model that holds a `storageKey`: miss one and the
 sweep quietly deletes live files an hour after they are written. There is a test
 for exactly that.
 
+### Punch reminders
+
+October 2026, Dominguez: "notify the person, 15 minutes after". Two messages,
+to the person themselves, by email and on the bell (`PUNCH_REMINDER`):
+
+- **"You haven't clocked in yet"** — a **published** shift with somebody on it
+  started 15 minutes ago or more, is not over, and they have no punch for it:
+  none still open, none that ran past the shift's start, none begun since. An
+  open punch from earlier counts as clocked in — they cannot clock in again
+  until it is closed, so telling them to would not help (and it is already on
+  the managers' list of missing clock-outs).
+- **"You're still clocked in"** — an open punch, and the latest-ending of their
+  published shifts since it began ended 15 minutes ago or more. Not while
+  another of their shifts is on or starts within half an hour (8–12 then
+  12:30–5, clocked in over lunch). A punch with no shift at all has nothing to
+  measure against and gets nothing; the nightly round-up still lists it the
+  next day.
+
+Neither is sent on approved time off that day (in New Jersey), when a closure
+covers the office at the shift's start, or about a shift that started (or
+ended) more than **2 hours** ago — so the first run after the timer has been
+off does not send a pile of stale ones. Each is sent **once per shift**: a
+`PunchReminder` row (unique on shift and kind) is written *before* the message,
+so a slow run and the next one cannot both send it. A failed email is not
+retried — the row stays, as the bell entry does.
+
+**The timer is outside Vercel.** `GET /api/maintenance/punch-reminders`
+(`maintenance/punch-reminders.service.ts`) has to run every few minutes, and the
+Hobby plan's Vercel Cron runs at most once a day (a more frequent schedule fails
+the deploy). So cron-job.org calls it every 5 minutes, 6am to midnight New
+Jersey time; set-up in `docs/punch-reminders-setup.md`. It has **its own
+secret**, `PUNCH_REMINDER_SECRET`, checked like `CRON_SECRET` (constant time,
+refuses everything when unset) — the secret handed to an outside service opens
+the reminders and nothing else, not the nightly round-up. Moving to Vercel Pro
+would let a `vercel.json` cron call the same route instead, with that secret
+sent by hand (Vercel only sends `CRON_SECRET` itself — so it would be simpler
+then to accept `CRON_SECRET` on this route too).
+
+`tests/browser/punch-reminders.mjs` calls the route as the timer does.
+
 ### Response headers
 
 The web app's headers are set in `vercel.json`: `nosniff`, `X-Frame-Options:

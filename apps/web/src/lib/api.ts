@@ -427,7 +427,8 @@ export interface AppNotification {
     | 'ANNOUNCEMENT'
     | 'NEWS_COMMENT'
     | 'EVENT'
-    | 'PRODUCTIVITY';
+    | 'PRODUCTIVITY'
+    | 'PUNCH_REMINDER';
   title: string;
   body: string | null;
   link: string | null;

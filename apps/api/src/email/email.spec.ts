@@ -304,4 +304,61 @@ describe('NotificationsService', () => {
     await service.ptoDecided('pto-1');
     expect(sent).toHaveLength(0);
   });
+
+  it('reminds somebody to clock in, by email and on the bell, on New Jersey time', async () => {
+    const { service, prisma, sent, inbox } = build();
+    prisma.employee.findUnique.mockResolvedValue({
+      email: 'frankie@domihealthcare.com',
+      firstName: 'Francesca',
+      preferredName: 'Frankie',
+    });
+
+    // 13:00 UTC is 9:00 in New Jersey in October.
+    await service.missedClockIn('emp-frankie', {
+      startsAt: new Date('2026-10-05T13:00:00.000Z'),
+      isRemote: false,
+      locationName: 'North Bergen',
+    });
+
+    expect(inbox.notify).toHaveBeenCalledWith(['emp-frankie'], {
+      kind: 'PUNCH_REMINDER',
+      title: "You haven't clocked in yet",
+      body: 'Your shift at North Bergen started at 9:00 AM.',
+      link: '/',
+    });
+    expect(sent).toHaveLength(1);
+    expect(sent[0].to).toBe('frankie@domihealthcare.com');
+    expect(sent[0].subject).toBe("You haven't clocked in yet");
+    expect(sent[0].text).toContain('Hello Frankie,');
+    expect(sent[0].text).toContain(
+      'Your shift at North Bergen started at 9:00 AM and you have not clocked in.',
+    );
+    expect(sent[0].text).toContain('https://staff.domihealthcare.com');
+  });
+
+  it('reminds somebody still clocked in after a work-from-home shift', async () => {
+    const { service, prisma, sent, inbox } = build();
+    prisma.employee.findUnique.mockResolvedValue({
+      email: 'morgan@domihealthcare.com',
+      firstName: 'Morgan',
+      preferredName: null,
+    });
+
+    await service.missedClockOut('emp-morgan', {
+      endsAt: new Date('2026-10-05T21:30:00.000Z'),
+      isRemote: true,
+      locationName: 'North Bergen',
+    });
+
+    expect(inbox.notify).toHaveBeenCalledWith(
+      ['emp-morgan'],
+      expect.objectContaining({
+        title: "You're still clocked in",
+        body: 'Your work-from-home shift ended at 5:30 PM.',
+      }),
+    );
+    expect(sent[0].subject).toBe("You're still clocked in");
+    expect(sent[0].text).toContain('Hello Morgan,');
+    expect(sent[0].text).toContain('clock out anyway and tell your manager what time you left');
+  });
 });

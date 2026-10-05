@@ -15,6 +15,16 @@ taken off this list, and the answer is written into `CLAUDE.md` or
 - [ ] **Rotate the Neon database password.** Reset it in Neon, paste the new
       pooled and direct strings into `DATABASE_URL` / `DIRECT_DATABASE_URL` in
       Vercel, and redeploy.
+- [ ] **Set up the punch reminders' timer** (built 5 October 2026): a
+      `PUNCH_REMINDER_SECRET` in Vercel and a cron-job.org job calling the app
+      every 5 minutes — `docs/punch-reminders-setup.md`. Until then no
+      reminders go. Once on, worth checking Neon's usage after a week: the
+      calls keep the database awake through the evening.
+- [ ] **Text messages for the punch reminders?** Asked by Dominguez (5 October
+      2026). Not built: needs an SMS provider such as Twilio (about a cent a
+      text plus a number) and US carrier registration (A2P 10DLC, one to three
+      weeks). Email and the bell go meanwhile. Decide whether it is worth it
+      once the email reminders have run for a while.
 - [ ] **Give Vercel previews their own database.** Confirmed by Dominguez
       (29 September 2026): `DATABASE_URL` is one variable set for both Preview
       and Production, so previews use the live database, and a pushed branch's

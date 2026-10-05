@@ -139,6 +139,15 @@ class EnvironmentVariables {
   @MinLength(16)
   CRON_SECRET?: string;
 
+  /// Shared secret for the punch reminders route, called every few minutes by
+  /// an outside timer (docs/punch-reminders-setup.md). Separate from
+  /// CRON_SECRET so the outside service can do that and nothing else. Unset
+  /// means the route refuses everything.
+  @IsOptional()
+  @IsString()
+  @MinLength(16)
+  PUNCH_REMINDER_SECRET?: string;
+
   /// Kiosk PIN lockout, tracked separately from password lockout. Tighter,
   /// because a PIN has far less entropy than a password.
   @Type(() => Number)
