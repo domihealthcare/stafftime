@@ -108,6 +108,65 @@ await step('the page links the manifest and an iPhone icon', async () => {
   await ctx.close();
 });
 
+/**
+ * The time clock has a page of its own, so that a tablet adding /kiosk to its
+ * home screen gets a "Time Clock" app that opens on the time clock, with no
+ * browser bar — while every other page, the sign-in included, still installs
+ * as Domi Staff exactly as before.
+ */
+async function headOf(page) {
+  return page.evaluate(() => ({
+    manifest: document.querySelector('link[rel="manifest"]')?.getAttribute('href'),
+    title: document
+      .querySelector('meta[name="apple-mobile-web-app-title"]')
+      ?.getAttribute('content'),
+  }));
+}
+
+await step('the time clock installs as its own Time Clock app, opening on /kiosk', async () => {
+  const { ctx, page } = await context(DESKTOP);
+  const response = await page.request.get(`${BASE}/kiosk.webmanifest`);
+  if (!response.ok()) throw new Error(`kiosk manifest answered ${response.status()}`);
+  const manifest = await response.json();
+  const expect = {
+    short_name: 'Time Clock',
+    id: '/kiosk',
+    start_url: '/kiosk',
+    scope: '/kiosk',
+    display: 'standalone',
+  };
+  for (const [key, value] of Object.entries(expect)) {
+    if (manifest[key] !== value) throw new Error(`${key} is ${manifest[key]}, expected ${value}`);
+  }
+  for (const icon of manifest.icons) {
+    const image = await page.request.get(`${BASE}${icon.src}`);
+    if (!image.ok()) throw new Error(`${icon.src} answered ${image.status()}`);
+  }
+
+  for (const path of ['/kiosk', '/kiosk/', '/kiosk?from=home']) {
+    await page.goto(`${BASE}${path}`, { waitUntil: 'networkidle' });
+    const head = await headOf(page);
+    if (head.manifest !== '/kiosk.webmanifest' || head.title !== 'Time Clock') {
+      throw new Error(`${path} links ${head.manifest} as "${head.title}"`);
+    }
+    // Still the time clock itself, not a blank page.
+    await page.getByText('Set up this kiosk').waitFor({ timeout: 10000 });
+  }
+  await ctx.close();
+});
+
+await step('every other page still installs as Domi Staff', async () => {
+  const { ctx, page } = await context(DESKTOP);
+  for (const path of ['/', '/schedule', '/kiosks', '/kiosk-something']) {
+    await page.goto(`${BASE}${path}`, { waitUntil: 'networkidle' });
+    const head = await headOf(page);
+    if (head.manifest !== '/manifest.webmanifest' || head.title !== 'Domi Staff') {
+      throw new Error(`${path} links ${head.manifest} as "${head.title}"`);
+    }
+  }
+  await ctx.close();
+});
+
 await step('the app registers no service worker, so nothing pretends to work offline', async () => {
   const { ctx, page } = await context(DESKTOP);
   await page.goto(`${BASE}/`, { waitUntil: 'networkidle' });

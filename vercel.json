@@ -17,6 +17,14 @@
       "destination": "/api"
     },
     {
+      "source": "/kiosk",
+      "destination": "/kiosk.html"
+    },
+    {
+      "source": "/kiosk/",
+      "destination": "/kiosk.html"
+    },
+    {
       "source": "/((?!api/|assets/).*)",
       "destination": "/index.html"
     }

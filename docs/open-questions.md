@@ -281,7 +281,17 @@ What is left:
       if a tablet and reader are bought — is PIN enough day to day?
 - [ ] **Kiosk browser setup.** Whatever the device, it wants guided access or
       kiosk browser mode so staff cannot navigate away. Device configuration
-      rather than code.
+      rather than code. **Under way at North Bergen** (October 2026): an iPad
+      (8th generation, iPadOS 26 — the last it can run, so it wants replacing
+      in a year or two) that is also the tablet patients take BrainCheck
+      Assess on. Owned by a practice Apple Account (an alias that reaches only
+      Dominguez), with Google Home signed in as office@ for the thermostats.
+      Guided Access is on while a patient has it; whether the time clock also
+      stays under Guided Access between patients is being tried. `/kiosk` now
+      installs as its own full-screen **Time Clock** app (see *The time clock
+      on a tablet's home screen* in `docs/architecture.md`), which removes the
+      Safari bar there was to cover. Still to do: pair it inside that app,
+      revoke the Safari pairing, and a first real clock-in at the office.
 
 ## Technical to-dos
 
