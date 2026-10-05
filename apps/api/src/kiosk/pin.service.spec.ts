@@ -57,18 +57,19 @@ describe('PinService', () => {
       expect(ok('98765432')).toBe(false);
     });
 
-    it('rejects a short pattern repeated to fill the length', () => {
+    it('still rejects the most common repeated pairs, from the short list', () => {
       expect(ok('1212')).toBe(false);
       expect(ok('123123')).toBe(false);
-      expect(ok('45454545')).toBe(false);
+      expect(ok('1122')).toBe(false);
     });
 
-    it('rejects years, which are the first thing anyone guesses', () => {
-      expect(ok('1985')).toBe(false);
-      expect(ok('2004')).toBe(false);
-      expect(ok('1975')).toBe(false);
-      // Not a plausible year, so allowed.
-      expect(ok('1850')).toBe(true);
+    it('allows years and other repeated patterns (Dominguez, October 2026)', () => {
+      // Refused until October 2026, which turned away PINs people remember.
+      expect(ok('1911')).toBe(true);
+      expect(ok('1985')).toBe(true);
+      expect(ok('2004')).toBe(true);
+      expect(ok('3636')).toBe(true);
+      expect(ok('45454545')).toBe(true);
     });
 
     it('rejects known keypad favourites', () => {
