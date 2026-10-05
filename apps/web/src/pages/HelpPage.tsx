@@ -82,7 +82,9 @@ const STAFF: Section[] = [
             <p>
               The time clock is the Domi Staff screen at the front desk — on the office computer or
               a tablet. Pick your name, type your PIN, and it clocks you in or out. It only shows
-              the people who work at that office.
+              the people who work at that office. At North Bergen it is the{' '}
+              <strong>Time Clock</strong> app on the front-desk iPad — see{' '}
+              <strong>The front-desk iPad</strong>, below.
             </p>
             <p>
               You choose your own PIN under <Screen>Your profile</Screen> in the account menu: 4 to
@@ -169,6 +171,124 @@ const STAFF: Section[] = [
             for you, with the reason, and it shows on your timesheet as{' '}
             <strong>Entered by hand</strong>. Each time that happens somebody looks into why, so it
             can be put right — a phone setting, or a problem with the app.
+          </p>
+        ),
+      },
+    ],
+  },
+  {
+    // The North Bergen iPad (October 2026): the time clock, shared with BrainCheck
+    // Assess for patients and the Google Home app for the thermostats. Never put
+    // a passcode here — this guide is shown to everybody.
+    title: 'The front-desk iPad',
+    topics: [
+      {
+        question: 'What is the iPad for?',
+        answer: (
+          <>
+            <p>The iPad at the North Bergen front desk does three jobs:</p>
+            <ul>
+              <li>
+                <strong>Time Clock</strong> — clocking in and out. This is what it shows the rest of
+                the time.
+              </li>
+              <li>
+                <strong>BrainCheck</strong> — patients take the BrainCheck Assess test on it.
+              </li>
+              <li>
+                <strong>Google Home</strong> — the thermostats at both offices.
+              </li>
+            </ul>
+            <p>
+              Whatever you use it for, <strong>leave it on Time Clock and on its charger</strong>{' '}
+              when you are done, so the next person can clock in. It is set never to go to sleep.
+            </p>
+          </>
+        ),
+      },
+      {
+        question: 'Clocking in and out on the iPad',
+        answer: (
+          <ol className="list-decimal space-y-1 pl-5">
+            <li>
+              If it is not showing the staff list, press the round <strong>Home button</strong>{' '}
+              under the screen and tap <strong>Time Clock</strong>.
+            </li>
+            <li>Tap your name and type your PIN. It says whether you are now in or out.</li>
+            <li>
+              Clocking out, Front Desk and Medical Assistants get their closing checklist: PIN, the
+              list, then PIN again.
+            </li>
+          </ol>
+        ),
+      },
+      {
+        question: 'It is showing BrainCheck, or will not leave an app',
+        answer: (
+          <>
+            <p>
+              A patient may be taking their test — <strong>do not interrupt</strong>. Clock in on
+              your phone instead, or come back when they are done.
+            </p>
+            <p>
+              If the Home button does nothing, the iPad is locked to one app (Apple&rsquo;s{' '}
+              <em>Guided Access</em>) while a patient has it. Only somebody with the Guided Access
+              code can end it — a manager, or the MA running the test.
+            </p>
+          </>
+        ),
+      },
+      {
+        question: 'It is on the lock screen',
+        answer: (
+          <p>
+            It restarts by itself after an overnight update. Somebody who has the iPad&rsquo;s
+            passcode unlocks it and taps <strong>Time Clock</strong> — it is still set up, nothing
+            needs doing to it. If nobody in the office has the passcode, clock in on your phone and
+            tell a manager.
+          </p>
+        ),
+      },
+      {
+        question: 'Giving a patient the BrainCheck test (MAs and providers)',
+        answer: (
+          <>
+            <ol className="list-decimal space-y-1 pl-5">
+              <li>
+                Press the <strong>Home button</strong>, open <strong>BrainCheck</strong> and set up
+                the patient&rsquo;s test.
+              </li>
+              <li>
+                Turn on <strong>patient mode</strong> in BrainCheck.
+              </li>
+              <li>
+                <strong>Triple-click the Home button</strong> and tap <strong>Start</strong>. The
+                iPad now stays in BrainCheck.
+              </li>
+              <li>Hand it to the patient.</li>
+            </ol>
+            <p>When they have finished:</p>
+            <ol className="list-decimal space-y-1 pl-5">
+              <li>
+                <strong>Triple-click</strong>, type the Guided Access code and tap{' '}
+                <strong>End</strong>.
+              </li>
+              <li>Leave patient mode with BrainCheck&rsquo;s own PIN.</li>
+              <li>
+                Make sure no patient&rsquo;s results are left on the screen, press the{' '}
+                <strong>Home button</strong> and tap <strong>Time Clock</strong>.
+              </li>
+            </ol>
+          </>
+        ),
+      },
+      {
+        question: 'Changing the thermostat',
+        answer: (
+          <p>
+            Press the <strong>Home button</strong>, open <strong>Google Home</strong>, pick the
+            office and change the temperature. It works for West New York from North Bergen too.
+            Then press the <strong>Home button</strong> and tap <strong>Time Clock</strong>.
           </p>
         ),
       },
