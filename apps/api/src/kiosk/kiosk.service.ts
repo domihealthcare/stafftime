@@ -244,16 +244,19 @@ export class KioskService {
     });
   }
 
-  /// The staff a given kiosk may sign in — assigned to its location, still
-  /// employed, and with a PIN set. Anyone without a PIN simply is not offered.
+  /// The staff shown at a given kiosk — assigned to its location and still
+  /// employed. Somebody with no PIN yet is listed too, marked `hasPin: false`,
+  /// so the tablet can tell them how to choose one rather than leave them
+  /// wondering why their name is missing (Dominguez, October 2026). Only
+  /// whether a PIN is set leaves the server, never the hash; and the punch
+  /// still refuses a person with no PIN exactly as it refuses a wrong PIN.
   async listEligibleEmployees(locationId: string) {
     const employees = await this.prisma.employee.findMany({
       where: {
         employmentStatus: 'ACTIVE',
-        pinHash: { not: null },
         locations: { some: { locationId } },
       },
-      select: { id: true, firstName: true, lastName: true, preferredName: true },
+      select: { id: true, firstName: true, lastName: true, preferredName: true, pinHash: true },
       orderBy: [{ firstName: 'asc' }, { lastName: 'asc' }],
     });
 
@@ -261,6 +264,7 @@ export class KioskService {
       id: employee.id,
       firstName: employee.preferredName ?? employee.firstName,
       lastName: employee.lastName,
+      hasPin: employee.pinHash !== null,
     }));
   }
 

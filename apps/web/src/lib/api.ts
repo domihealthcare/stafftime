@@ -288,6 +288,9 @@ export interface KioskEmployee {
   id: string;
   firstName: string;
   lastName: string;
+  /// False until they choose a PIN on their profile; the tablet then shows how
+  /// instead of the keypad.
+  hasPin: boolean;
 }
 
 export interface KioskPunchResult {

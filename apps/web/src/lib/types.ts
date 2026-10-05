@@ -104,6 +104,9 @@ export interface Employee extends EmployeeSummary {
   /// Signed-in person only: a manager has published productivity numbers for
   /// them, so "Your productivity" appears in the account menu.
   hasProductivity?: boolean;
+  /// Signed-in person only: their offices with a working time clock while they
+  /// have no tablet PIN — Home reminds them. Empty once they have one.
+  tabletPinOffices?: string[];
   /// Signed-in person only: an admin has given them provider productivity to
   /// work out and publish, whatever their access level.
   canManageProductivity?: boolean;

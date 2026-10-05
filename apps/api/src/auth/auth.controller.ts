@@ -225,9 +225,31 @@ export class AuthController {
       (await this.prisma.productivityStatement.count({
         where: { employeeId, publishedAt: { not: null } },
       })) > 0;
+    // Somebody with no tablet PIN yet, at an office with a working time clock, is
+    // reminded on Home until they choose one (Dominguez, October 2026). Only
+    // whether a PIN is set is asked; the hash never leaves the database.
+    const hasNoPin =
+      (await this.prisma.employee.count({ where: { id: employeeId, pinHash: null } })) > 0;
+    const tabletPinOffices = hasNoPin
+      ? (
+          await this.prisma.location.findMany({
+            where: {
+              isActive: true,
+              kioskEnabled: true,
+              employees: { some: { employeeId } },
+              kioskDevices: { some: { revokedAt: null, pairedAt: { not: null } } },
+            },
+            select: { name: true },
+            orderBy: { name: 'asc' },
+          })
+        ).map((location) => location.name)
+      : [];
     return {
       ...employee,
       hasProductivity,
+      /// Their offices with a paired time clock, while they have no PIN for it;
+      /// empty once they have one.
+      tabletPinOffices,
       /// Whether their own licenses and onboarding are in the account menu — Providers,
       /// as the practice has it. Managers and admins have them under Manage.
       seesOwnPersonnelTabs: jobRoles.some((membership) => membership.jobRole.seesOwnPersonnelTabs),

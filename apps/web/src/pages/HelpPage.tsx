@@ -216,6 +216,10 @@ const STAFF: Section[] = [
             </li>
             <li>Tap your name and type your PIN. It says whether you are now in or out.</li>
             <li>
+              <strong>No PIN yet</strong> under your name? Choose one on your phone first:{' '}
+              <Screen>Your profile → Tablet PIN</Screen>. Home reminds you until you have.
+            </li>
+            <li>
               Clocking out, Front Desk and Medical Assistants get their closing checklist: PIN, the
               list, then PIN again.
             </li>

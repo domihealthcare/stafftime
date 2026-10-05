@@ -196,14 +196,36 @@ describe('KioskService', () => {
   });
 
   describe('listEligibleEmployees', () => {
-    it('asks only for active staff at this location who have a PIN', async () => {
+    it('asks for active staff at this location, with or without a PIN', async () => {
       const { service, prisma } = build();
       await service.listEligibleEmployees('loc-1');
 
       const where = prisma.employee.findMany.mock.calls[0][0].where;
       expect(where.employmentStatus).toBe('ACTIVE');
-      expect(where.pinHash).toEqual({ not: null });
+      expect(where.pinHash).toBeUndefined();
       expect(where.locations).toEqual({ some: { locationId: 'loc-1' } });
+    });
+
+    it('says whether each person has a PIN, and never hands the hash back', async () => {
+      const { service, prisma } = build();
+      prisma.employee.findMany.mockResolvedValue([
+        {
+          id: 'e1',
+          firstName: 'Ana',
+          lastName: 'Ruiz',
+          preferredName: null,
+          pinHash: '$argon2id$x',
+        },
+        { id: 'e2', firstName: 'Robert', lastName: 'Lee', preferredName: 'Bob', pinHash: null },
+      ]);
+
+      const staff = await service.listEligibleEmployees('loc-1');
+
+      expect(staff).toEqual([
+        { id: 'e1', firstName: 'Ana', lastName: 'Ruiz', hasPin: true },
+        { id: 'e2', firstName: 'Bob', lastName: 'Lee', hasPin: false },
+      ]);
+      expect(JSON.stringify(staff)).not.toContain('argon2');
     });
   });
 });
