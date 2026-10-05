@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { api } from '../lib/api';
 import {
@@ -169,6 +169,14 @@ export function SchedulePage() {
   /// Your own weeks over or close to the overtime line (staff).
   const [ownWeeks, setOwnWeeks] = useState<OwnOvertimeWeek[] | null>(null);
   const [loading, setLoading] = useState(true);
+  /// The range the shifts on screen were loaded for. Switching week ↔ month
+  /// (or to another week) renders once with the new range before its load
+  /// starts; until that range's shifts are in, the spinner shows rather than
+  /// the new grid drawn with the old range's shifts and then swapped out.
+  const [loadedRange, setLoadedRange] = useState<string | null>(null);
+  /// The range most recently asked for: a slower, older load that finishes
+  /// after it is dropped rather than drawn over the newer one.
+  const latestRange = useRef<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [planning, setPlanning] = useState(false);
   const [addMenu, setAddMenu] = useState(false);
@@ -219,10 +227,14 @@ export function SchedulePage() {
 
   const rangeStart = days[0];
   const rangeEnd = useMemo(() => addDays(days[days.length - 1], 1), [days]);
+  const rangeKey = `${rangeStart.toISOString()}/${rangeEnd.toISOString()}`;
 
   /// Bumped when a time-off decision is made here, so "Your time off" refreshes.
   const [timeOffKey, setTimeOffKey] = useState(0);
   const load = useCallback(async () => {
+    const key = `${rangeStart.toISOString()}/${rangeEnd.toISOString()}`;
+    latestRange.current = key;
+    const stale = () => latestRange.current !== key;
     setLoading(true);
     try {
       const [shiftData, locationData, timeOffData, eventData] = await Promise.all([
@@ -233,6 +245,7 @@ export function SchedulePage() {
         // Staff get the ones for them; managers every one, to look after.
         api.events(rangeStart.toISOString(), rangeEnd.toISOString()),
       ]);
+      if (stale()) return;
       setShifts(shiftData);
       setLocations(locationData);
       setTimeOff(timeOffData);
@@ -242,7 +255,9 @@ export function SchedulePage() {
       // failing the schedule over.
       api
         .birthdays(localDate(rangeStart), localDate(days[days.length - 1]))
-        .then(setBirthdays)
+        .then((found) => {
+          if (!stale()) setBirthdays(found);
+        })
         .catch(() => setBirthdays([]));
 
       // The job roles, for everybody: the key names each one's outline colour,
@@ -261,22 +276,31 @@ export function SchedulePage() {
             to: localDate(days[days.length - 1]),
           }),
         ]);
+        if (stale()) return;
         setEmployees(staff);
         setCoverage(weekCoverage);
       } else {
-        setOwnWeeks(await api.myOvertime().catch(() => []));
+        const weeks = await api.myOvertime().catch(() => []);
+        if (stale()) return;
+        setOwnWeeks(weeks);
       }
       setError(null);
     } catch (err) {
+      if (stale()) return;
       setError(err instanceof Error ? err.message : 'Could not load the schedule.');
     } finally {
-      setLoading(false);
+      if (!stale()) {
+        setLoading(false);
+        setLoadedRange(key);
+      }
     }
   }, [rangeStart, rangeEnd, days, isManager]);
 
   useEffect(() => {
     void load();
   }, [load]);
+  /// Loading, or still showing another range's shifts.
+  const waiting = loading || loadedRange !== rangeKey;
 
   /// Pulls the previous week forward. Drafts by default, so the manager checks
   /// it before staff see it.
@@ -845,7 +869,7 @@ export function SchedulePage() {
           rather than seven squeezed columns. Its test id is how the phone
           checks tell it apart from the coverage strip above, which also shows
           weekday names. */}
-      {loading ? (
+      {waiting ? (
         <Card className="p-6">
           <Spinner label="Loading schedule" />
         </Card>
@@ -956,7 +980,7 @@ export function SchedulePage() {
         </div>
       )}
 
-      {!loading &&
+      {!waiting &&
         !shifts.some((shift) => shift.status !== 'CANCELLED') &&
         events.length === 0 &&
         !isManager && (
