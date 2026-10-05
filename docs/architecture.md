@@ -2363,6 +2363,30 @@ and "Not now" is remembered in the browser. Help has the same steps under "Put
 Domi Staff on your phone", for Safari and Chrome on an iPhone, Chrome on
 Android, and Chrome on a computer (installed as its own window).
 
+### The time clock on a tablet's home screen
+
+October 2026, Dominguez, setting up an iPad at North Bergen that is both the
+time clock and the tablet patients take BrainCheck Assess on. Added to the
+home screen from `/kiosk`, the app used to install as Domi Staff: the
+manifest's `start_url` is `/`, so it opened on the sign-in screen. Kept in a
+Safari tab instead, Safari's address bar, back button and Share button had
+to be covered over with Guided Access shapes, and a swipe from the edge
+still went Back.
+
+So `/kiosk` has a page of its own, `kiosk.html`, the same bundle under a
+different head: `kiosk.webmanifest` (`id`, `start_url` and `scope` all
+`/kiosk`, short name "Time Clock") and `apple-mobile-web-app-title` "Time
+Clock". Added to a home screen it is a separate app that opens on the time
+clock with no browser bar. Vite builds both pages (`build.rollupOptions.input`);
+Vercel serves `kiosk.html` at `/kiosk` and `/kiosk/` by two rewrites ahead of
+the SPA fallback, and a small plugin in `vite.config.ts` does the same for
+the dev server and `vite preview`. `index.html` and `manifest.webmanifest`
+are untouched, so phones that already have Domi Staff and every page but
+`/kiosk` install exactly as before. `tests/browser/install.mjs` pins both.
+
+A home-screen web app keeps its own cookies, apart from Safari's, so the
+tablet is paired from inside the Time Clock app, not in Safari first.
+
 ## Going live, adding staff, welcome emails
 
 The move from the test deployment to real use happens in a browser, in three

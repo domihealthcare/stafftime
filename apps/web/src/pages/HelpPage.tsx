@@ -1341,6 +1341,14 @@ const MANAGERS: Section[] = [
               </li>
             </ol>
             <p>
+              <strong>On an iPad or other tablet</strong>, open the same address and first choose{' '}
+              <strong>Share → Add to Home Screen</strong>, leaving <em>Open as Web App</em> on. That
+              makes a <strong>Time Clock</strong> app that opens straight on the time clock, full
+              screen, with no address bar. Pair it inside that app rather than in the browser — the
+              two keep separate cookies. Apple&rsquo;s Guided Access (Settings → Accessibility) can
+              then keep the tablet on it.
+            </p>
+            <p>
               Turning the computer off at night is fine. The time clock is only reported as quiet if
               a whole shift at that office goes by without it being open. After ten wrong PINs in a
               quarter of an hour it stops taking PINs for five minutes, so nobody can sit and guess

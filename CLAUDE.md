@@ -684,6 +684,15 @@ Beyond the phases, the parts worth knowing about before picking up work:
   webcam snapshot were all turned down. A handbook rule (clocking in for
   somebody else is a disciplinary matter) was chosen instead, drafted in
   `docs/location-disclosure.md`. See *Kiosk* in `docs/open-questions.md`.
+- **An iPad time clock at North Bergen** (October 2026, Dominguez — being set
+  up, not in use yet): an 8th-generation iPad, shared with BrainCheck Assess
+  for patients (Guided Access while a patient has it). Owned by a practice
+  Apple Account on `devices@` (an alias reaching only Dominguez — office@ is
+  read by all staff); Google Home on it is signed in as office@ so staff can
+  change either office's thermostat. `/kiosk` now has its own page
+  (`kiosk.html`, `kiosk.webmanifest`) so it installs as a full-screen **Time
+  Clock** app; the Domi Staff install and every other page are unchanged.
+  See *The time clock on a tablet's home screen* in `docs/architecture.md`.
 - **Hours entered by hand** (29 September 2026, Dominguez): Timesheet →
   **+ Add hours** (managers) for a day with no punch at all — a reason from a
   short list and a note, never your own hours, never over a punch already
