@@ -706,6 +706,7 @@ model Shift {
   createdBy   Employee?    @relation("ShiftCreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
   series      ShiftSeries? @relation(fields: [seriesId], references: [id], onDelete: SetNull)
   timeEntries TimeEntry[]
+  reminders   PunchReminder[]
 
   @@index([employeeId, startsAt])
   @@index([locationId, startsAt])
@@ -770,6 +771,30 @@ model ShiftSeries {
 
   @@index([endsOn])
   @@map("shift_series")
+}
+
+enum PunchReminderKind {
+  /// The shift started and they have not clocked in.
+  CLOCK_IN
+  /// The shift ended and they are still clocked in.
+  CLOCK_OUT
+}
+
+/// That somebody was reminded about a punch for a shift (October 2026,
+/// Dominguez: "notify the person, 15 minutes after"). One per shift and kind,
+/// so a check every few minutes tells them once. Written before the message
+/// goes, so two checks running at once cannot both send it. See
+/// `maintenance/punch-reminders.service.ts`.
+model PunchReminder {
+  id      String            @id @default(uuid()) @db.Uuid
+  shiftId String            @db.Uuid
+  kind    PunchReminderKind
+  sentAt  DateTime          @default(now())
+
+  shift Shift @relation(fields: [shiftId], references: [id], onDelete: Cascade)
+
+  @@unique([shiftId, kind])
+  @@map("punch_reminders")
 }
 
 // ---------------------------------------------------------------------------
@@ -1857,6 +1882,8 @@ enum NotificationKind {
   NEWS_COMMENT
   EVENT
   PRODUCTIVITY
+  /// "You haven't clocked in" / "You're still clocked in", 15 minutes after.
+  PUNCH_REMINDER
   /// An admin put up your profile photo for you.
   PROFILE_PHOTO
 }

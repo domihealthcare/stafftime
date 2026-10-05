@@ -428,6 +428,7 @@ export interface AppNotification {
     | 'NEWS_COMMENT'
     | 'EVENT'
     | 'PRODUCTIVITY'
+    | 'PUNCH_REMINDER'
     | 'PROFILE_PHOTO';
   title: string;
   body: string | null;

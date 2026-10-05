@@ -158,8 +158,11 @@ const STAFF: Section[] = [
         question: 'I forgot to clock out.',
         answer: (
           <p>
-            Tell a manager. They correct the time, and the correction is recorded with a reason so
-            nobody has to remember later why it changed. You cannot change your own punches.
+            Clock out as soon as you notice, then tell a manager what time you really left. They
+            correct the time, and the correction is recorded with a reason so nobody has to remember
+            later why it changed. You cannot change your own punches. If you have a shift, the app
+            reminds you by email and under the bell 15 minutes after it ends while you are still
+            clocked in — and 15 minutes after it starts if you have not clocked in.
           </p>
         ),
       },

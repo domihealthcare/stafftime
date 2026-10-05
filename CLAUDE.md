@@ -317,6 +317,17 @@ Beyond the phases, the parts worth knowing about before picking up work:
   records in the domain's DNS at **Wix**; a password reset was received.
   Sends are awaited, never fire-and-forget — on Vercel anything left running
   after the response is frozen, which is why the first attempt never left.
+- **Reminders to clock in and out** (5 October 2026, Dominguez: "notify the
+  person, 15 minutes after"): "You haven't clocked in yet" 15 minutes into a
+  published shift with no punch, and "You're still clocked in" 15 minutes
+  after it ends — to the person, by **email and the bell**, once per shift
+  (`PunchReminder`). Not on approved time off, in a closure, or for a punch
+  with no shift. Vercel's free plan runs its own timer once a day, so
+  **cron-job.org** calls `GET /api/maintenance/punch-reminders` every 5
+  minutes with its own `PUNCH_REMINDER_SECRET` — **not set up on the live site
+  yet**: `docs/punch-reminders-setup.md`. Texts were asked about; not built
+  (needs Twilio and carrier registration — `docs/open-questions.md`). See
+  *Punch reminders* in `docs/architecture.md`.
 - **The rota** (September 2026): the Schedule week is a table — a row per
   person, a column per day — shown for everyone, by location or by job role,
   with filters. **Open shifts** (`Shift.employeeId` null, optional
@@ -886,6 +897,12 @@ Beyond the phases, the parts worth knowing about before picking up work:
   (green "✓ Complete" when done) with its missing items listed as buttons
   that jump to the answer; the sticky bar counts per section and overall;
   the full list sits above the downloads. All in `clinical/common/layout.tsx`.
+  On the **BrainCheck Care Plan** the amber waits until the provider has
+  moved past a section with something required missing (or tried for a
+  PDF); required fields keep their star. Its J has **Tick the suggested
+  ones** in every area (goals and actions) and **Tick all the suggested
+  ones** for the lot, and the "confirm with billing (Coronis)" notes are
+  gone (all October 2026, Dominguez).
 - **PDF names and signatures** (October 2026, Dominguez): downloads are named
   `MM-DD-YYYY Title.pdf` (dashes — a "/" cannot be in a file name), short
   titles, nothing about the patient: *BrainCheck Note* (for eCW), *Your

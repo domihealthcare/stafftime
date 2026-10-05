@@ -1322,6 +1322,46 @@ Its keep-list must name every model that holds a `storageKey`: miss one and the
 sweep quietly deletes live files an hour after they are written. There is a test
 for exactly that.
 
+### Punch reminders
+
+October 2026, Dominguez: "notify the person, 15 minutes after". Two messages,
+to the person themselves, by email and on the bell (`PUNCH_REMINDER`):
+
+- **"You haven't clocked in yet"** — a **published** shift with somebody on it
+  started 15 minutes ago or more, is not over, and they have no punch for it:
+  none still open, none that ran past the shift's start, none begun since. An
+  open punch from earlier counts as clocked in — they cannot clock in again
+  until it is closed, so telling them to would not help (and it is already on
+  the managers' list of missing clock-outs).
+- **"You're still clocked in"** — an open punch, and the latest-ending of their
+  published shifts since it began ended 15 minutes ago or more. Not while
+  another of their shifts is on or starts within half an hour (8–12 then
+  12:30–5, clocked in over lunch). A punch with no shift at all has nothing to
+  measure against and gets nothing; the nightly round-up still lists it the
+  next day.
+
+Neither is sent on approved time off that day (in New Jersey), when a closure
+covers the office at the shift's start, or about a shift that started (or
+ended) more than **2 hours** ago — so the first run after the timer has been
+off does not send a pile of stale ones. Each is sent **once per shift**: a
+`PunchReminder` row (unique on shift and kind) is written *before* the message,
+so a slow run and the next one cannot both send it. A failed email is not
+retried — the row stays, as the bell entry does.
+
+**The timer is outside Vercel.** `GET /api/maintenance/punch-reminders`
+(`maintenance/punch-reminders.service.ts`) has to run every few minutes, and the
+Hobby plan's Vercel Cron runs at most once a day (a more frequent schedule fails
+the deploy). So cron-job.org calls it every 5 minutes, 6am to midnight New
+Jersey time; set-up in `docs/punch-reminders-setup.md`. It has **its own
+secret**, `PUNCH_REMINDER_SECRET`, checked like `CRON_SECRET` (constant time,
+refuses everything when unset) — the secret handed to an outside service opens
+the reminders and nothing else, not the nightly round-up. Moving to Vercel Pro
+would let a `vercel.json` cron call the same route instead, with that secret
+sent by hand (Vercel only sends `CRON_SECRET` itself — so it would be simpler
+then to accept `CRON_SECRET` on this route too).
+
+`tests/browser/punch-reminders.mjs` calls the route as the timer does.
+
 ### Response headers
 
 The web app's headers are set in `vercel.json`: `nosniff`, `X-Frame-Options:
@@ -3012,7 +3052,10 @@ shorter and harder to get wrong):
 - **J, the care plan, is built from the answers** (`care-plan.ts`): each
   area's problem is written from sections A–I (editable), and its goals and
   actions are pick-lists with the ones the answers point to marked
-  **Suggested** and listed first — never ticked for the provider. G's
+  **Suggested** and listed first — never ticked for the provider unless
+  they press **Tick the suggested ones** (in every area; goals and actions
+  both) or **Tick all the suggested ones** at the top of J (Dominguez,
+  October 2026). An area with nothing suggested says so. G's
   safety plan is J's Safety area. Each area needs a goal and an action (or a
   line of its own).
 
@@ -3166,6 +3209,19 @@ button down to the full list (`PendingList`) above the downloads. All three
 read the one list `validate.ts` makes. The red messages under the fields
 still wait until somebody first tries for a PDF, so a blank form is amber,
 not red.
+
+**The BrainCheck Care Plan holds the amber back** (Dominguez, October 2026:
+"only highlight in orange if they move onto the next section and a required
+item is missing"). The page keeps the furthest section the provider has
+tapped or moved into (`reached`; the PDFs card counts as the one after J),
+and only sections before it — or every section, after a first try for a
+PDF — are amber (`flagged` on `FormSection` and `ProgressBar`). An
+unfinished section they have not passed is plain, with a grey "N to fill
+in"; the red star on each required field is unchanged. The other two forms
+pass nothing and keep amber from the start. Its billing notes no longer say
+"confirm with billing (Coronis)": the telehealth reminder ends at the
+modifier and place of service, and the time field gives only the typical
+time until `G2212_THRESHOLD_MINUTES` is set.
 
 ## The Annual Wellness Visit form
 

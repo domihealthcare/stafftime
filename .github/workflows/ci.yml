@@ -64,6 +64,9 @@ jobs:
       NODE_ENV: development
       # The suites punch in and out within seconds; see KIOSK_REPEAT_SECONDS.
       KIOSK_REPEAT_SECONDS: '0'
+      # The punch reminders route refuses everything without its secret;
+      # punch-reminders.mjs calls it the way the outside timer does.
+      PUNCH_REMINDER_SECRET: ci-punch-reminder-secret
       # run-all.sh resets the database between suites.
       PGHOST_LOCAL: 127.0.0.1
       PGPORT_LOCAL: '5432'
