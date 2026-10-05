@@ -30,7 +30,10 @@ function build(existing: string[] = []) {
   const prisma = {
     employee: {
       findMany: jest.fn(async () => existing.map((email) => ({ email }))),
-      create: jest.fn(async ({ data }: { data: Record<string, unknown> }) => ({ ...data, pinHash: null })),
+      create: jest.fn(async ({ data }: { data: Record<string, unknown> }) => ({
+        ...data,
+        pinHash: null,
+      })),
     },
     $transaction: jest.fn(async (fn: (t: typeof tx) => Promise<unknown>) => fn(tx)),
   };
@@ -48,7 +51,8 @@ describe('importing a staff list', () => {
     expect(result.created).toBe(2);
     expect(created[0].email).toBe('jane.doe@domihealthcare.com');
     expect(created[0].locations).toEqual({ create: [{ locationId: NB, isPrimary: true }] });
-    expect(created[0].jobRoles).toEqual({ create: [{ jobRoleId: FD }] });
+    // The first job role named on the line is their main one.
+    expect(created[0].jobRoles).toEqual({ create: [{ jobRoleId: FD, isPrimary: true }] });
     expect(created[1].jobRoles).toBeUndefined();
   });
 

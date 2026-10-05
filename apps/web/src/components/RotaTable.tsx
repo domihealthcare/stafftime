@@ -36,7 +36,7 @@ import {
   homeOfficeOf,
   placeToShift,
 } from './PlaceSelect';
-import { JobRoleSelect } from './JobRoleSelect';
+import { JobRoleSelect, rolesHeldBy } from './JobRoleSelect';
 import { WeekdayToggles } from './WeekdayToggles';
 import { RepeatWeeksPicker } from './RepeatWeeksPicker';
 import {
@@ -239,13 +239,13 @@ export function RotaTable({
     for (const role of jobRoles) map.set(role.id, new Set(role.members.map((member) => member.id)));
     return map;
   }, [jobRoles]);
+  // Their main job role first.
   const roleColourOfPerson = (id: string | null) => {
     if (!id) return null;
-    const first = jobRoles.find((role) => membersOf.get(role.id)?.has(id));
-    return first ? jobRoleHex(first.colour) : null;
+    const main = rolesHeldBy(id, jobRoles)[0];
+    return main ? jobRoleHex(main.colour) : null;
   };
-  const rolesOfPerson = (id: string) =>
-    jobRoles.filter((role) => membersOf.get(role.id)?.has(id)).map((role) => role.name);
+  const rolesOfPerson = (id: string) => rolesHeldBy(id, jobRoles).map((role) => role.name);
 
   // "Work from home" has no office rows: an open shift is always at an office.
   const fromHome = locationFilter === WORK_FROM_HOME_FILTER;

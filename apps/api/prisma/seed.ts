@@ -82,7 +82,12 @@ async function seedJobRoles() {
     await prisma.employeeJobRole.deleteMany({ where: { employeeId: employee.id } });
     const roles = await prisma.jobRole.findMany({ where: { name: { in: names } } });
     await prisma.employeeJobRole.createMany({
-      data: roles.map((role) => ({ employeeId: employee.id, jobRoleId: role.id })),
+      // The first one listed is their main job role.
+      data: roles.map((role) => ({
+        employeeId: employee.id,
+        jobRoleId: role.id,
+        isPrimary: role.name === names[0],
+      })),
     });
   }
 }

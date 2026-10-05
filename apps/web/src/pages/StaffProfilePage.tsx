@@ -16,6 +16,7 @@ import type {
 import { Avatar } from '../components/Avatar';
 import { EmploymentHistoryCard } from '../components/EmploymentHistoryCard';
 import { JobRoleTag } from '../components/JobRoleTag';
+import { rolesHeldBy } from '../components/JobRoleSelect';
 import { ROLE_LABELS, StaffEditor } from '../components/StaffEditor';
 import { StaffTimeOffCard } from '../components/StaffTimeOffCard';
 import {
@@ -99,9 +100,8 @@ export function StaffProfilePage() {
   }
 
   const { person, record, requests, balance, locations, jobRoles } = data;
-  const heldRoles = jobRoles.filter((jobRole) =>
-    jobRole.members.some((member) => member.id === person.id),
-  );
+  // Their main job role first.
+  const heldRoles = rolesHeldBy(person.id, jobRoles);
   const terminated = person.employmentStatus === 'TERMINATED';
   const isMe = person.id === me?.id;
 
@@ -125,8 +125,13 @@ export function StaffProfilePage() {
               {ROLE_LABELS[person.role]} access
             </Badge>
             {terminated && <Badge tone="danger">Former</Badge>}
-            {heldRoles.map((jobRole) => (
-              <JobRoleTag key={jobRole.id} name={jobRole.name} colour={jobRole.colour} />
+            {heldRoles.map((jobRole, index) => (
+              <JobRoleTag
+                key={jobRole.id}
+                name={jobRole.name}
+                colour={jobRole.colour}
+                main={heldRoles.length > 1 && index === 0}
+              />
             ))}
           </div>
         </div>

@@ -526,7 +526,8 @@ const STAFF: Section[] = [
             Menu under your name → <strong>Your profile</strong>. Add a photo, the name you go by,
             pronouns, your phone number and a line about yourself. Colleagues see them in the
             Directory. Your photo is cropped square and shrunk on your phone before it is sent;
-            remove it whenever you like.
+            remove it whenever you like. An admin can also put one up for you — you are told under
+            the bell, and can change it or take it down here.
           </p>
         ),
       },
@@ -1321,6 +1322,13 @@ const MANAGERS: Section[] = [
               that one. To put somebody on a shift as something else, add them to that role here
               first. Open shifts can still be for any role.
             </p>
+            <p className="mt-2">
+              Somebody in several roles has a <strong>main job role</strong>, chosen by an admin
+              under <strong>Edit</strong> on <Screen>Manage → Staff</Screen>. It is listed first,
+              shift forms start on it, and in the Directory&rsquo;s <strong>In now</strong> they are
+              shown under it — unless the shift they clocked in to is for another role, when they
+              are shown under that one. Without a choice it is their first role in this list.
+            </p>
           </>
         ),
       },
@@ -1394,8 +1402,13 @@ const MANAGERS: Section[] = [
             <li>
               <Screen>Manage → Staff</Screen> — add people one at a time or several at once. Press{' '}
               <strong>Edit</strong> on somebody&rsquo;s card to change their email, phone, access
-              (Employee, Manager or Admin), job roles, offices and ADP File #, send their welcome
-              email, or give them a temporary password or tablet PIN.
+              (Employee, Manager or Admin), job roles and their main one, offices and ADP File #,
+              send their welcome email, or give them a temporary password or tablet PIN.
+            </li>
+            <li>
+              Under <strong>Photo</strong> in the same editor you can put up somebody&rsquo;s
+              profile photo — moved and zoomed into the circle and shrunk on your screen, like their
+              own. They are told under the bell, and can change it or take it down on Your profile.
             </li>
             <li>
               Press somebody&rsquo;s <strong>name</strong> (or <strong>Profile</strong>) for their

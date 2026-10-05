@@ -8,6 +8,7 @@ import {
   localDateIn,
   zonedTimeToUtc,
 } from '../common/util/zoned-time.util';
+import { mainFirst } from '../job-roles/main-job-role';
 import { PrismaService } from '../prisma/prisma.service';
 
 /// An open punch older than this is a forgotten clock-out, not somebody at
@@ -103,7 +104,10 @@ export class DirectoryService {
         birthdayDay: true,
         employmentStatus: true,
         jobRoles: {
-          select: { jobRole: { select: { id: true, name: true, sortOrder: true, colour: true } } },
+          select: {
+            isPrimary: true,
+            jobRole: { select: { id: true, name: true, sortOrder: true, colour: true } },
+          },
         },
         locations: {
           where: { location: { isActive: true } },
@@ -115,6 +119,12 @@ export class DirectoryService {
             clockInAt: true,
             clockInVerification: true,
             location: { select: { id: true, name: true } },
+            // The job role of the shift they clocked in to, if it has one.
+            shift: {
+              select: {
+                jobRole: { select: { id: true, name: true, sortOrder: true, colour: true } },
+              },
+            },
           },
           orderBy: { clockInAt: 'desc' },
           take: 1,
@@ -144,11 +154,16 @@ export class DirectoryService {
         return {
           ...person,
           onLeave: employmentStatus === EmploymentStatus.ON_LEAVE,
-          jobRoles: jobRoles
-            .map((row) => row.jobRole)
-            .sort((a, b) => a.sortOrder - b.sortOrder || a.name.localeCompare(b.name))
+          // Their main job role first, then the practice's order.
+          jobRoles: mainFirst(jobRoles.map((row) => ({ ...row.jobRole, isPrimary: row.isPrimary })))
             // sortOrder too, so "In now" can group people in the practice's order.
-            .map(({ id, name, colour, sortOrder }) => ({ id, name, colour, sortOrder })),
+            .map(({ id, name, colour, sortOrder, isPrimary }) => ({
+              id,
+              name,
+              colour,
+              sortOrder,
+              isPrimary,
+            })),
           locations: locations
             .sort((a, b) => Number(b.isPrimary) - Number(a.isPrimary))
             .map((row) => ({ ...row.location, isPrimary: row.isPrimary })),
@@ -157,6 +172,12 @@ export class DirectoryService {
                 location: open.location,
                 // Clocked in to a work-from-home shift: in, but not at the office.
                 remote: open.clockInVerification === 'REMOTE',
+                // What they are working as: the job role of the shift they
+                // clocked in to (Dominguez, October 2026: "it should be how
+                // they are scheduled"); null without one, when the Directory
+                // goes by their main job role. Only the role — never the
+                // shift's times, which colleagues do not see.
+                jobRole: open.shift?.jobRole ?? null,
                 ...(showSince ? { since: open.clockInAt } : {}),
               }
             : null,

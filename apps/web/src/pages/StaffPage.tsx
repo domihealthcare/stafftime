@@ -17,6 +17,7 @@ import { ContactLines, PresenceBadges } from '../components/PersonDetails';
 import { useConfirm } from '../components/ConfirmDialog';
 import { ImportStaff } from '../components/ImportStaff';
 import { JobRoleTag } from '../components/JobRoleTag';
+import { rolesHeldBy } from '../components/JobRoleSelect';
 import { ROLE_LABELS, StaffEditor } from '../components/StaffEditor';
 import {
   Alert,
@@ -352,9 +353,8 @@ function StaffCard({
   canOpenProfile: boolean;
   onEdit: () => void;
 }) {
-  const heldRoles = jobRoles.filter((jobRole) =>
-    jobRole.members.some((member) => member.id === person.id),
-  );
+  // Their main job role first.
+  const heldRoles = rolesHeldBy(person.id, jobRoles);
   const terminated = person.employmentStatus === 'TERMINATED';
 
   return (
@@ -388,8 +388,13 @@ function StaffCard({
           </div>
           {heldRoles.length > 0 && (
             <p className="mt-1 flex flex-wrap gap-1" data-testid="staff-job-roles">
-              {heldRoles.map((jobRole) => (
-                <JobRoleTag key={jobRole.id} name={jobRole.name} colour={jobRole.colour} />
+              {heldRoles.map((jobRole, index) => (
+                <JobRoleTag
+                  key={jobRole.id}
+                  name={jobRole.name}
+                  colour={jobRole.colour}
+                  main={heldRoles.length > 1 && index === 0}
+                />
               ))}
             </p>
           )}

@@ -42,8 +42,14 @@ describe('heldJobRole — somebody’s shift is for one of their own job roles',
     await expect(heldJobRole(prisma([FRONT_DESK]), 'emp', undefined)).resolves.toBe('fd');
   });
 
-  it('with none asked for and several held, uses their first — never "any"', async () => {
-    await expect(heldJobRole(prisma([FRONT_DESK, MA]), 'emp', null)).resolves.toBe('fd');
+  it('with none asked for and several held, uses their main one — never "any"', async () => {
+    const db = prisma([FRONT_DESK, MA]);
+    await expect(heldJobRole(db, 'emp', null)).resolves.toBe('fd');
+    // Main first, then the practice's order: the database puts it at the top.
+    expect(db.employeeJobRole.findMany.mock.calls[0][0].orderBy).toEqual([
+      { isPrimary: 'desc' },
+      { jobRole: { sortOrder: 'asc' } },
+    ]);
   });
 
   it('somebody with no job role yet gets a shift with none', async () => {

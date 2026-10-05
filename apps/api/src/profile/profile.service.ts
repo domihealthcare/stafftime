@@ -5,8 +5,11 @@ import {
   Logger,
   NotFoundException,
 } from '@nestjs/common';
+import { NotificationKind } from '@prisma/client';
 import { PasswordService } from '../auth/password.service';
+import { InboxService } from '../email/inbox.service';
 import { PinService } from '../kiosk/pin.service';
+import { mainFirst } from '../job-roles/main-job-role';
 import { PrismaService } from '../prisma/prisma.service';
 import { UpdateProfileDto } from './dto/profile.dto';
 import { checkPhoto, PhotoError } from './photo';
@@ -26,7 +29,12 @@ const PROFILE_SELECT = {
   pinUpdatedAt: true,
   pinHash: true,
   role: true,
-  jobRoles: { select: { jobRole: { select: { id: true, name: true, colour: true } } } },
+  jobRoles: {
+    select: {
+      isPrimary: true,
+      jobRole: { select: { id: true, name: true, colour: true, sortOrder: true } },
+    },
+  },
   locations: { select: { isPrimary: true, location: { select: { id: true, name: true } } } },
 } as const;
 
@@ -45,6 +53,7 @@ export class ProfileService {
     private readonly prisma: PrismaService,
     private readonly passwords: PasswordService,
     private readonly pins: PinService,
+    private readonly inbox: InboxService,
   ) {}
 
   /// Choose the PIN you clock in with at the front-desk tablet.
@@ -85,7 +94,10 @@ export class ProfileService {
       // Whether a PIN is set, and when — never the PIN, which is only ever
       // stored hashed and so cannot be shown to anybody.
       hasPin: pinHash !== null,
-      jobRoles: jobRoles.map((entry) => entry.jobRole),
+      // Their main job role first.
+      jobRoles: mainFirst(
+        jobRoles.map((entry) => ({ ...entry.jobRole, isPrimary: entry.isPrimary })),
+      ).map(({ id, name, colour, isPrimary }) => ({ id, name, colour, isPrimary })),
       locations: locations.map((entry) => ({ ...entry.location, isPrimary: entry.isPrimary })),
     };
   }
@@ -105,7 +117,13 @@ export class ProfileService {
     return this.get(employeeId);
   }
 
-  async setPhoto(employeeId: string, image: string) {
+  /// Your own, or — for an admin — anybody's, who is then told.
+  async setPhoto(employeeId: string, image: string, setBy: string = employeeId) {
+    const byAdmin = setBy !== employeeId;
+    if (byAdmin) {
+      const exists = await this.prisma.employee.count({ where: { id: employeeId } });
+      if (!exists) throw new NotFoundException('That employee does not exist.');
+    }
     let bytes: Buffer;
     try {
       bytes = checkPhoto(image);
@@ -122,6 +140,15 @@ export class ProfileService {
       }),
       this.prisma.employee.update({ where: { id: employeeId }, data: { photoUpdatedAt: now } }),
     ]);
+    if (byAdmin) {
+      this.logger.log(`Photo for ${employeeId} set by admin ${setBy}`);
+      await this.inbox.notify([employeeId], {
+        kind: NotificationKind.PROFILE_PHOTO,
+        title: 'Your profile photo was added for you',
+        body: 'An admin put up your photo. You can change it or take it down on Your profile.',
+        link: '/profile',
+      });
+    }
     return this.get(employeeId);
   }
 

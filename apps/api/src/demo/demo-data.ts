@@ -39,6 +39,7 @@ import {
   TimeEntryStatus,
   VerificationMethod,
 } from '@prisma/client';
+import { ensureMainJobRole } from '../job-roles/main-job-role';
 
 const DEMO_PASSWORD = 'shift-change-2026';
 const WEEKS_BACK = 3;
@@ -273,6 +274,7 @@ export async function loadDemoData(prisma: PrismaClient) {
       data: roles.map((role) => ({ employeeId: employee.id, jobRoleId: role.id })),
       skipDuplicates: true,
     });
+    await ensureMainJobRole(prisma, [employee.id]);
 
     created.push({ id: employee.id, person });
   }

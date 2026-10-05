@@ -1454,9 +1454,17 @@ model JobRole {
   @@map("job_roles")
 }
 
+/// Somebody may hold several job roles (front desk staff who also work as
+/// MAs). One of them is their **main** job role (October 2026, Dominguez:
+/// "everyone should have a 'primary' role") — first in shift forms, the one a
+/// shift gets when none is named, and where the Directory lists them when
+/// they are in without a shift saying otherwise. At most one per person, by a
+/// partial unique index in the migration; the service keeps "at least one" by
+/// handing the flag on when the main role is taken away.
 model EmployeeJobRole {
   employeeId String   @db.Uuid
   jobRoleId  String   @db.Uuid
+  isPrimary  Boolean  @default(false)
   createdAt  DateTime @default(now())
 
   employee Employee @relation(fields: [employeeId], references: [id], onDelete: Cascade)
@@ -1876,6 +1884,8 @@ enum NotificationKind {
   PRODUCTIVITY
   /// "You haven't clocked in" / "You're still clocked in", 15 minutes after.
   PUNCH_REMINDER
+  /// An admin put up your profile photo for you.
+  PROFILE_PHOTO
 }
 
 /// Something the app wants one person to know, shown under the bell in the

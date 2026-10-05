@@ -4,9 +4,13 @@ import { MONTHS } from '../lib/birthday';
 import { ApiError, api } from '../lib/api';
 import type { CredentialStanding, Employee, JobRole, Location, Role } from '../lib/types';
 import { PASSWORD_RULE, meetsPasswordRule } from '../lib/password';
+import { useIsAdmin } from '../lib/session';
+import { Avatar } from './Avatar';
 import { useConfirm } from './ConfirmDialog';
+import { PhotoCropDialog, readPicture } from './PhotoCropDialog';
 import { Alert, Badge, buttonClass } from './ui';
 import { WeeklyScheduleEditor } from './WeeklyScheduleEditor';
+import { rolesHeldBy } from './JobRoleSelect';
 
 export const ROLE_LABELS: Record<Role, string> = {
   EMPLOYEE: 'Employee',
@@ -50,9 +54,9 @@ export function StaffEditor({
   onLeft: () => void;
 }) {
   const confirm = useConfirm();
-  const heldRoles = jobRoles.filter((jobRole) =>
-    jobRole.members.some((member) => member.id === person.id),
-  );
+  const isAdmin = useIsAdmin();
+  // Their main job role first.
+  const heldRoles = rolesHeldBy(person.id, jobRoles);
   const initial = {
     firstName: person.firstName,
     lastName: person.lastName,
@@ -63,6 +67,7 @@ export function StaffEditor({
     role: person.role,
     payType: person.payType ?? 'HOURLY',
     jobRoleIds: heldRoles.map((jobRole) => jobRole.id),
+    mainJobRoleId: heldRoles[0]?.id ?? '',
     locationIds: person.locations.map((l) => l.locationId),
     hireDate: person.hireDate ? person.hireDate.slice(0, 10) : '',
     birthMonth: person.birthdayMonth ? String(person.birthdayMonth) : '',
@@ -77,10 +82,18 @@ export function StaffEditor({
   /// Their usual week has its own Save; this is whether it has unsaved edits.
   const [weekDirty, setWeekDirty] = useState(false);
   const terminated = person.employmentStatus === 'TERMINATED';
+  /// Their main job role as the form stands: the one chosen while it is still
+  /// ticked, otherwise the first ticked in the practice's order.
+  const mainOf = (values: typeof form) =>
+    values.jobRoleIds.includes(values.mainJobRoleId)
+      ? values.mainJobRoleId
+      : (jobRoles.find((jobRole) => values.jobRoleIds.includes(jobRole.id))?.id ?? '');
+  const ticked = jobRoles.filter((jobRole) => form.jobRoleIds.includes(jobRole.id));
   // Ticking a box off and on again is not a change.
   const comparable = (values: typeof form) =>
     JSON.stringify({
       ...values,
+      mainJobRoleId: mainOf(values),
       jobRoleIds: [...values.jobRoleIds].sort(),
       locationIds: [...values.locationIds].sort(),
     });
@@ -156,6 +169,13 @@ export function StaffEditor({
       }
       for (const id of [...held].filter((id) => !form.jobRoleIds.includes(id))) {
         await api.removeJobRoleMember(id, person.id);
+      }
+      // Then their main one, last, so it is one they now hold.
+      const main = mainOf(form);
+      const rolesChanged =
+        [...form.jobRoleIds].sort().join() !== [...start.jobRoleIds].sort().join();
+      if (main && (main !== start.mainJobRoleId || rolesChanged)) {
+        await api.setMainJobRole(main, person.id);
       }
       onChanged();
       onClose();
@@ -306,8 +326,10 @@ export function StaffEditor({
                 </div>
               </div>
               <p className="mt-3 text-xs text-slate-500">
-                Their photo, pronouns and &ldquo;about you&rdquo; line are theirs to set, on Your
-                profile.
+                Their pronouns and &ldquo;about you&rdquo; line are theirs to set, on Your profile
+                {isAdmin && !isMe && !terminated
+                  ? ' — and their photo, though you can put one up for them under Photo, below.'
+                  : ', and so is their photo.'}
               </p>
             </Section>
 
@@ -367,6 +389,28 @@ export function StaffEditor({
                     </label>
                   ))}
                 </div>
+                {ticked.length > 1 && (
+                  <div className="mt-3 sm:w-1/2 sm:pr-1.5">
+                    <Field
+                      id="edit-main-job-role"
+                      label="Main job role"
+                      hint="Listed first, and what their shifts start on. The Directory shows them under it, unless the shift they clocked in to is for another."
+                    >
+                      <select
+                        id="edit-main-job-role"
+                        value={mainOf(form)}
+                        onChange={(event) => set('mainJobRoleId', event.target.value)}
+                        className={FIELD}
+                      >
+                        {ticked.map((jobRole) => (
+                          <option key={jobRole.id} value={jobRole.id}>
+                            {jobRole.name}
+                          </option>
+                        ))}
+                      </select>
+                    </Field>
+                  </div>
+                )}
               </fieldset>
 
               <fieldset className="mt-4">
@@ -507,6 +551,12 @@ export function StaffEditor({
 
           {!terminated && <LicensesSummary person={person} />}
 
+          {!terminated && isAdmin && !isMe && (
+            <div className="border-t border-slate-100 p-5">
+              <PhotoSection person={person} onChanged={onChanged} />
+            </div>
+          )}
+
           {!terminated && (
             <div className="border-t border-slate-100 p-5">
               <SigningIn person={person} onChanged={onChanged} />
@@ -631,6 +681,138 @@ function shortDate(iso: string): string {
 /// The manager's tools for getting somebody in: the welcome email, a temporary
 /// password, and a tablet PIN. None of them is shown back afterwards except
 /// the temporary password, once.
+/**
+ * Their profile photo, put up or taken down by an admin (Dominguez, October
+ * 2026: "i should be able to upload pictures for staff avatars") — the one
+ * widening of "a photo of yourself". The same browser fitting as anybody's
+ * own: cropped square, shrunk to 256 px and re-encoded as a JPEG, so the
+ * camera's details, location included, never leave this screen. They are told
+ * under the bell, and can change it or take it down on Your profile.
+ */
+function PhotoSection({ person, onChanged }: { person: Employee; onChanged: () => void }) {
+  const confirm = useConfirm();
+  const fileInput = useRef<HTMLInputElement>(null);
+  const [version, setVersion] = useState(person.photoUpdatedAt ?? null);
+  const [cropping, setCropping] = useState<{ url: string; image: HTMLImageElement } | null>(null);
+  const [busy, setBusy] = useState(false);
+  const [problem, setProblem] = useState<string | null>(null);
+  const [notice, setNotice] = useState<string | null>(null);
+
+  async function choose(file: File | undefined) {
+    if (!file) return;
+    setProblem(null);
+    setNotice(null);
+    try {
+      setCropping(await readPicture(file));
+    } catch {
+      setProblem('That file is not a picture this browser can open. Try a JPEG or PNG.');
+    } finally {
+      if (fileInput.current) fileInput.current.value = '';
+    }
+  }
+
+  async function save(image: string) {
+    setBusy(true);
+    try {
+      const saved = await api.setPhotoFor(person.id, image);
+      setVersion(saved.photoUpdatedAt);
+      setCropping(null);
+      setNotice(`Photo saved. ${person.firstName} has been told, and can change it.`);
+      onChanged();
+    } catch (err) {
+      setCropping(null);
+      setProblem(err instanceof Error ? err.message : 'Could not use that photo.');
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function remove() {
+    const sure = await confirm({
+      title: `Remove ${person.firstName}’s photo?`,
+      body: 'Colleagues will see their initials instead.',
+      confirmLabel: 'Yes, remove it',
+      cancelLabel: 'Keep it',
+    });
+    if (!sure) return;
+    setBusy(true);
+    setProblem(null);
+    setNotice(null);
+    try {
+      await api.removePhotoFor(person.id);
+      setVersion(null);
+      setNotice('Photo removed.');
+      onChanged();
+    } catch (err) {
+      setProblem(err instanceof ApiError ? err.message : 'Could not remove that photo.');
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  return (
+    <Section title="Photo">
+      <div className="flex flex-wrap items-center gap-4">
+        <Avatar person={{ ...person, photoUpdatedAt: version }} size="lg" />
+        <div className="min-w-0 flex-1">
+          <div className="flex flex-wrap items-center gap-2">
+            <label
+              htmlFor="staff-photo"
+              className={`cursor-pointer ${buttonClass('secondary', 'sm')} ${
+                busy ? 'pointer-events-none opacity-60' : ''
+              }`}
+            >
+              {busy ? 'Working…' : version ? 'Change photo' : 'Add a photo'}
+            </label>
+            <input
+              ref={fileInput}
+              id="staff-photo"
+              type="file"
+              accept="image/*"
+              className="sr-only"
+              disabled={busy}
+              onChange={(event) => void choose(event.target.files?.[0])}
+            />
+            {version && (
+              <button
+                type="button"
+                disabled={busy}
+                onClick={() => void remove()}
+                className="rounded-lg px-3 py-1.5 text-sm font-medium text-slate-600 hover:bg-slate-100 disabled:opacity-60"
+              >
+                Remove photo
+              </button>
+            )}
+          </div>
+          <p className="mt-2 text-xs text-slate-500">
+            A photo of {person.firstName}, fitted to the circle and shrunk on this screen. They are
+            told, and can change it or take it down on their profile.
+          </p>
+        </div>
+      </div>
+      {notice && (
+        <p role="status" className="mt-2 text-sm font-medium text-emerald-700">
+          {notice}
+        </p>
+      )}
+      {problem && (
+        <div className="mt-2">
+          <Alert>{problem}</Alert>
+        </div>
+      )}
+      {cropping && (
+        <PhotoCropDialog
+          url={cropping.url}
+          image={cropping.image}
+          busy={busy}
+          onCancel={() => !busy && setCropping(null)}
+          onSave={(jpeg) => void save(jpeg)}
+        />
+      )}
+    </Section>
+  );
+}
+
 function SigningIn({ person, onChanged }: { person: Employee; onChanged: () => void }) {
   const [busy, setBusy] = useState(false);
   const [problem, setProblem] = useState<string | null>(null);

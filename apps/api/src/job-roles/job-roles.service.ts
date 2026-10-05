@@ -10,6 +10,7 @@ import { AuthUser } from '../common/auth/auth-user';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateJobRoleDto, UpdateJobRoleDto } from './dto/job-role.dto';
 import { nextFreeColour } from './job-role-colours';
+import { ensureMainJobRole, setMainJobRole } from './main-job-role';
 
 const JOB_ROLE_SELECT = {
   id: true,
@@ -26,6 +27,8 @@ const JOB_ROLE_SELECT = {
     // has tidied the list. They come back if they are rehired.
     where: { employee: { employmentStatus: { not: EmploymentStatus.TERMINATED } } },
     select: {
+      // Whether this is the member's main job role.
+      isPrimary: true,
       employee: {
         select: { id: true, firstName: true, lastName: true, preferredName: true },
       },
@@ -126,7 +129,16 @@ export class JobRolesService {
         }. Move or delete ${role.resourceCount === 1 ? 'it' : 'them'} first.`,
       );
     }
+    const members = await this.prisma.employeeJobRole.findMany({
+      where: { jobRoleId: id },
+      select: { employeeId: true },
+    });
     await this.prisma.jobRole.delete({ where: { id } });
+    // Anybody whose main role this was moves on to their next.
+    await ensureMainJobRole(
+      this.prisma,
+      members.map((member) => member.employeeId),
+    );
     this.logger.log(`Job role ${id} (${role.name}) deleted by ${actor.id}`);
     return { deleted: true };
   }
@@ -145,6 +157,8 @@ export class JobRolesService {
       update: {},
       create: { employeeId, jobRoleId: id },
     });
+    // Their first role is their main one.
+    await ensureMainJobRole(this.prisma, [employeeId]);
     this.logger.log(`Employee ${employeeId} added to job role ${id} by ${actor.id}`);
     return this.findOne(id);
   }
@@ -152,7 +166,25 @@ export class JobRolesService {
   async removeMember(id: string, employeeId: string, actor: AuthUser) {
     await this.findOne(id);
     await this.prisma.employeeJobRole.deleteMany({ where: { employeeId, jobRoleId: id } });
+    // Taking away their main role hands it to their next.
+    await ensureMainJobRole(this.prisma, [employeeId]);
     this.logger.log(`Employee ${employeeId} removed from job role ${id} by ${actor.id}`);
+    return this.findOne(id);
+  }
+
+  /// Makes a role somebody already holds their main one.
+  async setMain(id: string, employeeId: string, actor: AuthUser) {
+    const role = await this.findOne(id);
+    const holds = await this.prisma.employeeJobRole.count({
+      where: { employeeId, jobRoleId: id },
+    });
+    if (!holds) {
+      throw new BadRequestException(
+        `They are not in ${role.name}. Add them to it first, then make it their main job role.`,
+      );
+    }
+    await setMainJobRole(this.prisma, employeeId, id);
+    this.logger.log(`Job role ${id} made the main one of ${employeeId} by ${actor.id}`);
     return this.findOne(id);
   }
 
@@ -182,6 +214,6 @@ function present(row: JobRoleRow) {
   return {
     ...rest,
     resourceCount: _count.resources,
-    members: members.map((member) => member.employee),
+    members: members.map((member) => ({ ...member.employee, isPrimary: member.isPrimary })),
   };
 }

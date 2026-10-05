@@ -10,9 +10,9 @@ import { PrismaService } from '../prisma/prisma.service';
  * - A role they hold is used as asked.
  * - A role they do not hold is refused, by name, so the manager knows to add
  *   them to it on Staff first.
- * - No role at all: their first, in the practice's order — the screens always
- *   send one, so this is for anything else that makes a shift; with none yet,
- *   the shift has none.
+ * - No role at all: their main one (then the practice's order) — the screens
+ *   always send one, so this is for anything else that makes a shift; with
+ *   none yet, the shift has none.
  */
 export async function heldJobRole(
   prisma: PrismaService,
@@ -22,7 +22,7 @@ export async function heldJobRole(
   const held = await prisma.employeeJobRole.findMany({
     where: { employeeId },
     select: { jobRole: { select: { id: true, name: true } } },
-    orderBy: { jobRole: { sortOrder: 'asc' } },
+    orderBy: [{ isPrimary: 'desc' }, { jobRole: { sortOrder: 'asc' } }],
   });
   const roles = held.map((row) => row.jobRole);
 

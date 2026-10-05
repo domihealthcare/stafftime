@@ -17,8 +17,14 @@ function person(over: Record<string, unknown> = {}) {
     phone: '201-555-0100',
     employmentStatus: 'ACTIVE',
     jobRoles: [
-      { jobRole: { id: 'ma', name: 'Medical Assistant', sortOrder: 20, colour: 'orange' } },
-      { jobRole: { id: 'fd', name: 'Front Desk', sortOrder: 10, colour: 'blue' } },
+      {
+        isPrimary: false,
+        jobRole: { id: 'ma', name: 'Medical Assistant', sortOrder: 20, colour: 'orange' },
+      },
+      {
+        isPrimary: false,
+        jobRole: { id: 'fd', name: 'Front Desk', sortOrder: 10, colour: 'blue' },
+      },
     ],
     locations: [
       { isPrimary: false, location: { id: 'wny', name: 'West New York' } },
@@ -71,7 +77,11 @@ describe('DirectoryService', () => {
   it('tells a colleague somebody is in, and where, but not since when', async () => {
     const { service } = build();
     const [row] = await service.list(employee, NOW);
-    expect(row.onNow).toEqual({ location: { id: 'nb', name: 'North Bergen' }, remote: false });
+    expect(row.onNow).toEqual({
+      location: { id: 'nb', name: 'North Bergen' },
+      remote: false,
+      jobRole: null,
+    });
   });
 
   it('tells a manager since when', async () => {
@@ -80,6 +90,7 @@ describe('DirectoryService', () => {
     expect(row.onNow).toEqual({
       location: { id: 'nb', name: 'North Bergen' },
       remote: false,
+      jobRole: null,
       since: clockedIn,
     });
   });
@@ -97,7 +108,11 @@ describe('DirectoryService', () => {
       }),
     ]);
     const [row] = await service.list(employee, NOW);
-    expect(row.onNow).toEqual({ location: { id: 'nb', name: 'North Bergen' }, remote: true });
+    expect(row.onNow).toEqual({
+      location: { id: 'nb', name: 'North Bergen' },
+      remote: true,
+      jobRole: null,
+    });
   });
 
   it('looks for a published work-from-home shift today that has not ended', async () => {
@@ -143,8 +158,8 @@ describe('DirectoryService', () => {
     const [row] = await service.list(employee, NOW);
 
     expect(row.jobRoles).toEqual([
-      { id: 'fd', name: 'Front Desk', colour: 'blue', sortOrder: 10 },
-      { id: 'ma', name: 'Medical Assistant', colour: 'orange', sortOrder: 20 },
+      { id: 'fd', name: 'Front Desk', colour: 'blue', sortOrder: 10, isPrimary: false },
+      { id: 'ma', name: 'Medical Assistant', colour: 'orange', sortOrder: 20, isPrimary: false },
     ]);
     expect(row.locations.map((l: { name: string }) => l.name)).toEqual([
       'North Bergen',
@@ -156,5 +171,35 @@ describe('DirectoryService', () => {
     const { service } = build([person({ employmentStatus: 'ON_LEAVE', timeEntries: [] })]);
     const [row] = await service.list(employee, NOW);
     expect(row.onLeave).toBe(true);
+  });
+
+  it('lists their main job role first, whatever the practice’s order', async () => {
+    const roles = person().jobRoles.map((row) => ({ ...row, isPrimary: row.jobRole.id === 'ma' }));
+    const { service } = build([person({ jobRoles: roles })]);
+    const [row] = await service.list(employee, NOW);
+    expect(row.jobRoles.map((role: { id: string }) => role.id)).toEqual(['ma', 'fd']);
+    expect(row.jobRoles[0].isPrimary).toBe(true);
+  });
+
+  it('says what somebody is working as: the job role of the shift they clocked in to', async () => {
+    const admin = { id: 'adm', name: 'Administrative', sortOrder: 40, colour: 'violet' };
+    const { service, prisma } = build([
+      person({
+        timeEntries: [
+          {
+            clockInAt: clockedIn,
+            location: { id: 'nb', name: 'North Bergen' },
+            shift: { jobRole: admin },
+          },
+        ],
+      }),
+    ]);
+    const [row] = await service.list(employee, NOW);
+    expect(row.onNow?.jobRole).toEqual(admin);
+    // The role only — never the shift's times.
+    const { select } = prisma.employee.findMany.mock.calls[0][0];
+    expect(select.timeEntries.select.shift).toEqual({
+      select: { jobRole: { select: { id: true, name: true, sortOrder: true, colour: true } } },
+    });
   });
 });

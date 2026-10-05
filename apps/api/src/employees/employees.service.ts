@@ -123,8 +123,7 @@ export class EmployeesService {
         const ids: string[] = [];
         for (const [index, person] of people.entries()) {
           row = index;
-          const { locationIds, primaryLocationId, adpFileNumber, jobRoleIds, ...employee } =
-            person;
+          const { locationIds, primaryLocationId, adpFileNumber, jobRoleIds, ...employee } = person;
           const made = await tx.employee.create({
             data: {
               ...employee,
@@ -143,7 +142,13 @@ export class EmployeesService {
                   }
                 : undefined,
               jobRoles: jobRoleIds?.length
-                ? { create: jobRoleIds.map((jobRoleId) => ({ jobRoleId })) }
+                ? {
+                    // The first one named on the line is their main job role.
+                    create: jobRoleIds.map((jobRoleId, index) => ({
+                      jobRoleId,
+                      isPrimary: index === 0,
+                    })),
+                  }
                 : undefined,
             },
             select: { id: true },

@@ -84,6 +84,10 @@ Nothing is uploaded to the app, with **one deliberate exception**: a
 browser crops it square, shrinks it to 256 px and re-encodes it as a small
 JPEG — which drops the camera's metadata, location included — and the server
 accepts nothing else. It is removable by its owner any time, and by an admin.
+Since October 2026 (Dominguez: "i should be able to upload pictures for staff
+avatars") an **admin may also put one up for somebody**, from Edit on the
+Staff screen, fitted and shrunk the same way; the person is told under the
+bell and can change or remove it. Still only a profile photo of the person.
 Apart from that, the only files the app stores are the payroll export
 spreadsheets it generates itself.
 
@@ -163,7 +167,12 @@ Build this as an **adapter/plugin pattern**, not a hardcoded ADP integration:
    - **Job roles and resources** — **managers** (and admins) keep the list of
      job roles and who is in each; the starting list is Front Desk, Medical
      Assistant, Provider, Administrative, Manager. Somebody can hold **several**
-     (front desk staff who also work as MAs; providers who also do admin work).
+     (front desk staff who also work as MAs; providers who also do admin work),
+     and then one is their **main job role** (October 2026, Dominguez:
+     "everyone should have a 'primary' role") — chosen by an admin in the
+     Staff editor, listed first everywhere, what shift forms start on and
+     what a shift without a role gets (`EmployeeJobRole.isPrimary`, one per
+     person, handed on when it is taken away).
      A job role decides which resources somebody sees, which **closing
      checklist** they get at clock-out, and whether they see their own
      licenses and onboarding (Provider) — and **no power**: it is separate
@@ -401,8 +410,9 @@ Beyond the phases, the parts worth knowing about before picking up work:
   **three columns** on a laptop (two on a tablet, one on a phone), and the
   Directory's top row is North Bergen · West New York · Working from home
   today. **In now groups people by job role** (5 October 2026, Dominguez),
-  in the practice's order of job roles, each person once under their first
-  role ("Other" for none). A **Staff card says everything a Directory card does** — photo,
+  in the practice's order of job roles, each person once: under the job
+  role of the **shift they clocked in to** ("it should be how they are
+  scheduled"), otherwise their **main job role** ("Other" for none). A **Staff card says everything a Directory card does** — photo,
   pronouns, "about you", in now / working from home / on leave, tappable
   email and phone, birthday — plus access, ADP File #, PIN and password
   status, Profile and Edit. Shared pieces in `components/PersonDetails.tsx`.

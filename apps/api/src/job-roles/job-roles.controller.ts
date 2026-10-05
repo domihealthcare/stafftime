@@ -3,10 +3,13 @@ import {
   Controller,
   Delete,
   Get,
+  HttpCode,
+  HttpStatus,
   Param,
   ParseUUIDPipe,
   Patch,
   Post,
+  Put,
   UseInterceptors,
 } from '@nestjs/common';
 import { Role } from '@prisma/client';
@@ -60,6 +63,18 @@ export class JobRolesController {
     @CurrentUser() user: AuthUser,
   ) {
     return this.jobRoles.addMember(id, dto.employeeId, user);
+  }
+
+  /// Their main job role — one they already hold.
+  @Put(':id/members/:employeeId/main')
+  @Roles(Role.MANAGER)
+  @HttpCode(HttpStatus.OK)
+  setMain(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Param('employeeId', ParseUUIDPipe) employeeId: string,
+    @CurrentUser() user: AuthUser,
+  ) {
+    return this.jobRoles.setMain(id, employeeId, user);
   }
 
   @Delete(':id/members/:employeeId')
