@@ -262,21 +262,30 @@ const STAFF: Section[] = [
       },
       {
         question: 'Giving a patient the BrainCheck test (MAs and providers)',
+        // The web version (provider.braincheck.com on the Home Screen): the
+        // old app's patient mode is not there. Until BrainCheck says whether
+        // the web version has one and when a session times out, staff sign
+        // out after every patient (docs/open-questions.md).
         answer: (
           <>
             <ol className="list-decimal space-y-1 pl-5">
               <li>
-                Press the <strong>Home button</strong>, open <strong>BrainCheck</strong> and set up
-                the patient&rsquo;s test.
+                Press the <strong>Home button</strong> and tap <strong>BrainCheck</strong>. It is
+                the BrainCheck website, kept on the Home Screen like an app.
               </li>
               <li>
-                Turn on <strong>patient mode</strong> in BrainCheck.
+                If it asks you to sign in, tap the saved login above the keyboard. The iPad asks for
+                its own passcode before it fills it in.
               </li>
+              <li>Set up the patient&rsquo;s test.</li>
               <li>
                 <strong>Triple-click the Home button</strong> and tap <strong>Start</strong>. The
                 iPad now stays in BrainCheck.
               </li>
-              <li>Hand it to the patient.</li>
+              <li>
+                Hand it to the patient, and <strong>stay close</strong>: the iPad cannot leave
+                BrainCheck, but BrainCheck&rsquo;s other screens are still a tap away.
+              </li>
             </ol>
             <p>When they have finished:</p>
             <ol className="list-decimal space-y-1 pl-5">
@@ -284,9 +293,13 @@ const STAFF: Section[] = [
                 <strong>Triple-click</strong>, type the Guided Access code and tap{' '}
                 <strong>End</strong>.
               </li>
-              <li>Leave patient mode with BrainCheck&rsquo;s own PIN.</li>
               <li>
-                Make sure no patient&rsquo;s results are left on the screen, press the{' '}
+                <strong>Sign out of BrainCheck</strong> — every time, even with another patient
+                straight after. Nobody should find the last person&rsquo;s results, or the provider
+                screens, still open.
+              </li>
+              <li>
+                Make sure nothing about the patient is left on the screen, press the{' '}
                 <strong>Home button</strong> and tap <strong>Time Clock</strong>.
               </li>
             </ol>
