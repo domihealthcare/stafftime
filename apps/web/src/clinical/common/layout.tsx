@@ -13,6 +13,12 @@ import { Card } from '../../components/ui';
  * 2026: a blank section's list of eighteen crowded the form on a phone). The
  * red messages under the fields themselves still wait for a first try, so a
  * blank form is not a wall of red.
+ *
+ * A form can hold the amber back until somebody has moved past a section
+ * (`flagged`, used by the BrainCheck Care Plan — Dominguez, October 2026:
+ * "only highlight in orange if they move onto the next section and a
+ * required item is missing"). Until then an unfinished section is plain,
+ * with a quiet count; the required fields keep their star throughout.
  */
 
 /// One thing still needed: which section, which answer (a dotted path the
@@ -41,6 +47,8 @@ export function FormSection({
   title,
   aside,
   pending,
+  flagged = true,
+  onActivity,
   onJump,
   children,
 }: {
@@ -51,11 +59,17 @@ export function FormSection({
   aside?: ReactNode;
   /// What this section still needs.
   pending: Pending[];
+  /// Whether what it still needs is shown in amber. False keeps an unfinished
+  /// section plain, for a form that waits until somebody has moved past it.
+  flagged?: boolean;
+  /// Somebody tapped, clicked or moved into this section.
+  onActivity?: () => void;
   onJump: (item: Pending) => void;
   children: ReactNode;
 }) {
   const headingId = `${prefix}-heading-${sectionKey}`;
   const complete = pending.length === 0;
+  const amber = !complete && flagged;
   return (
     <section
       id={`${prefix}-section-${sectionKey}`}
@@ -63,9 +77,14 @@ export function FormSection({
       className="scroll-mt-32"
       data-testid={`section-${sectionKey}`}
       data-complete={complete}
+      data-flagged={amber}
+      onFocus={onActivity}
+      onPointerDown={onActivity}
     >
       <Card
-        className={`border-l-4 p-4 sm:p-5 ${complete ? 'border-l-emerald-500' : 'border-l-amber-400'}`}
+        className={`border-l-4 p-4 sm:p-5 ${
+          complete ? 'border-l-emerald-500' : amber ? 'border-l-amber-400' : 'border-l-slate-200'
+        }`}
       >
         <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
           <h2 id={headingId} className="text-base font-semibold text-slate-900 sm:text-lg">
@@ -76,10 +95,10 @@ export function FormSection({
           </h2>
           <div className="flex flex-wrap items-center gap-2">
             {aside}
-            <StatusBadge count={pending.length} />
+            <StatusBadge count={pending.length} flagged={flagged} />
           </div>
         </div>
-        {!complete && (
+        {amber && (
           <details
             className="group mb-4 rounded-lg bg-amber-50 px-3 py-2 ring-1 ring-inset ring-amber-200"
             data-testid="pending-here"
@@ -111,10 +130,14 @@ export function FormSection({
   );
 }
 
-function StatusBadge({ count }: { count: number }) {
+function StatusBadge({ count, flagged }: { count: number; flagged: boolean }) {
   return count === 0 ? (
     <span className="inline-flex items-center rounded-full bg-emerald-50 px-2.5 py-1 text-xs font-semibold text-emerald-800 ring-1 ring-inset ring-emerald-200">
       ✓ Complete
+    </span>
+  ) : !flagged ? (
+    <span className="inline-flex items-center rounded-full bg-slate-100 px-2.5 py-1 text-xs font-medium text-slate-600 ring-1 ring-inset ring-slate-200">
+      {count} to fill in
     </span>
   ) : (
     <span className="inline-flex items-center rounded-full bg-amber-100 px-2.5 py-1 text-xs font-semibold text-amber-900 ring-1 ring-inset ring-amber-300">
@@ -130,11 +153,14 @@ export function ProgressBar({
   sections,
   pending,
   ready,
+  flagged = () => true,
   onSection,
   onShowList,
 }: {
   sections: SectionInfo[];
   pending: Pending[];
+  /// Which unfinished sections are shown in amber (see `FormSection`).
+  flagged?: (key: string) => boolean;
   /// "Ready for the PDF" / "Ready for the PDFs".
   ready: string;
   onSection: (key: string) => void;
@@ -142,6 +168,7 @@ export function ProgressBar({
 }) {
   const left = (key: string) => pending.filter((item) => item.section === key).length;
   const done = sections.filter((section) => left(section.key) === 0).length;
+  const anyFlagged = sections.some((section) => left(section.key) > 0 && flagged(section.key));
   return (
     <nav
       aria-label="Sections"
@@ -163,7 +190,11 @@ export function ProgressBar({
           <button
             type="button"
             onClick={onShowList}
-            className="rounded-full bg-amber-500 px-3 py-1 text-xs font-semibold text-white hover:bg-amber-600"
+            className={`rounded-full px-3 py-1 text-xs font-semibold ${
+              anyFlagged
+                ? 'bg-amber-500 text-white hover:bg-amber-600'
+                : 'bg-white text-slate-700 ring-1 ring-inset ring-slate-300 hover:bg-slate-50'
+            }`}
             data-testid="progress-left"
           >
             {pending.length} thing{pending.length === 1 ? '' : 's'} still needed — see the list
@@ -174,6 +205,7 @@ export function ProgressBar({
         {sections.map((section) => {
           const count = left(section.key);
           const complete = count === 0;
+          const amber = !complete && flagged(section.key);
           return (
             <button
               key={section.key}
@@ -181,16 +213,23 @@ export function ProgressBar({
               title={complete ? section.title : `${section.title}: ${count} still needed`}
               onClick={() => onSection(section.key)}
               data-complete={complete}
+              data-flagged={amber}
               className={`relative min-h-[36px] min-w-[40px] shrink-0 rounded-lg px-2 text-sm font-semibold ring-1 ring-inset ${
                 complete
                   ? 'bg-emerald-50 text-emerald-800 ring-emerald-300'
-                  : 'bg-amber-50 text-amber-900 ring-amber-300'
+                  : amber
+                    ? 'bg-amber-50 text-amber-900 ring-amber-300'
+                    : 'bg-white text-slate-700 ring-slate-300'
               }`}
             >
               {complete ? '✓ ' : ''}
               {section.label}
               {!complete && (
-                <span className="ml-1 rounded-full bg-amber-500 px-1.5 text-[11px] font-bold text-white">
+                <span
+                  className={`ml-1 rounded-full px-1.5 text-[11px] font-bold ${
+                    amber ? 'bg-amber-500 text-white' : 'bg-slate-200 text-slate-700'
+                  }`}
+                >
                   {count}
                 </span>
               )}

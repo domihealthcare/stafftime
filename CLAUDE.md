@@ -876,6 +876,12 @@ Beyond the phases, the parts worth knowing about before picking up work:
   (green "✓ Complete" when done) with its missing items listed as buttons
   that jump to the answer; the sticky bar counts per section and overall;
   the full list sits above the downloads. All in `clinical/common/layout.tsx`.
+  On the **BrainCheck Care Plan** the amber waits until the provider has
+  moved past a section with something required missing (or tried for a
+  PDF); required fields keep their star. Its J has **Tick the suggested
+  ones** in every area (goals and actions) and **Tick all the suggested
+  ones** for the lot, and the "confirm with billing (Coronis)" notes are
+  gone (all October 2026, Dominguez).
 - **PDF names and signatures** (October 2026, Dominguez): downloads are named
   `MM-DD-YYYY Title.pdf` (dashes — a "/" cannot be in a file name), short
   titles, nothing about the patient: *BrainCheck Note* (for eCW), *Your
