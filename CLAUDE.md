@@ -693,6 +693,10 @@ Beyond the phases, the parts worth knowing about before picking up work:
   (`kiosk.html`, `kiosk.webmanifest`) so it installs as a full-screen **Time
   Clock** app; the Domi Staff install and every other page are unchanged.
   See *The time clock on a tablet's home screen* in `docs/architecture.md`.
+  Paired inside the Time Clock app (5 October 2026). Staff instructions are
+  on Help → **The front-desk iPad** (clocking in, BrainCheck with Guided
+  Access, thermostats, lock screen) — never a passcode there, it is shown to
+  everybody; `help.mjs` checks for anything that looks like one.
 - **Hours entered by hand** (29 September 2026, Dominguez): Timesheet →
   **+ Add hours** (managers) for a day with no punch at all — a reason from a
   short list and a note, never your own hours, never over a punch already

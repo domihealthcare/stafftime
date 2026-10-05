@@ -85,6 +85,19 @@ await step('the password answer states the current rule', async () => {
   await emp.getByText(/At least 8 characters, including a number/).waitFor({ state: 'visible', timeout: 5000 });
 });
 
+await step('the front-desk iPad has its own section, and says how to give the BrainCheck test', async () => {
+  await emp.getByRole('heading', { name: 'The front-desk iPad' }).waitFor({ timeout: 5000 });
+  await emp.getByText('Giving a patient the BrainCheck test (MAs and providers)').click();
+  await emp.getByText(/Turn on patient mode in BrainCheck/).waitFor({ state: 'visible', timeout: 5000 });
+  // The guide is shown to everybody, so it names the codes but never gives one.
+  // textContent, not innerText: the headings are upper-cased by CSS, and closed answers count too.
+  const text = await emp
+    .locator('section', { has: emp.getByRole('heading', { name: 'The front-desk iPad' }) })
+    .textContent();
+  if (!text?.includes('Guided Access code')) throw new Error('could not read the iPad section');
+  if (/\b\d{4,8}\b/.test(text)) throw new Error('the iPad section has a number in it like a passcode');
+});
+
 await step('asking for the managers guide by address still shows the staff one', async () => {
   await emp.goto(`${BASE}/help?guide=managers`, { waitUntil: 'networkidle' });
   await emp.getByRole('heading', { name: 'Clocking in and out' }).waitFor({ timeout: 10000 });
