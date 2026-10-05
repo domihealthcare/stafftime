@@ -2,6 +2,7 @@ import { Inject, Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { EmploymentStatus, NotificationKind, PtoStatus, PtoType, Role } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
+import { PRACTICE_ZONE } from '../common/util/zoned-time.util';
 import type { DigestContents } from './digest.service';
 import { digestEmail } from './digest-email';
 import { EMAIL_SENDER, EmailResult, EmailSender } from './email-sender';
@@ -175,6 +176,77 @@ export class NotificationsService {
     ]);
   }
 
+  /// "You haven't clocked in yet" — 15 minutes into a published shift with no
+  /// punch (see `maintenance/punch-reminders.service.ts`).
+  async missedClockIn(
+    employeeId: string,
+    shift: { startsAt: Date; isRemote: boolean; locationName: string },
+  ): Promise<void> {
+    const employee = await this.prisma.employee.findUnique({
+      where: { id: employeeId },
+      select: { email: true, firstName: true, preferredName: true },
+    });
+    if (!employee) return;
+
+    const which = shift.isRemote
+      ? 'Your work-from-home shift'
+      : `Your shift at ${shift.locationName}`;
+    const started = `${which} started at ${clockTime(shift.startsAt)}`;
+
+    await this.inbox.notify([employeeId], {
+      kind: NotificationKind.PUNCH_REMINDER,
+      title: "You haven't clocked in yet",
+      body: `${started}.`,
+      link: '/',
+    });
+
+    await this.dispatch(employee.email, "You haven't clocked in yet", [
+      `Hello ${employee.preferredName ?? employee.firstName},`,
+      '',
+      `${started} and you have not clocked in.`,
+      '',
+      `If you are working, clock in now: ${this.appUrl}`,
+      '',
+      'If you are not working today, or the app would not let you clock in, tell your manager.',
+    ]);
+  }
+
+  /// "You're still clocked in" — 15 minutes after their shift ended.
+  async missedClockOut(
+    employeeId: string,
+    shift: { endsAt: Date; isRemote: boolean; locationName: string },
+  ): Promise<void> {
+    const employee = await this.prisma.employee.findUnique({
+      where: { id: employeeId },
+      select: { email: true, firstName: true, preferredName: true },
+    });
+    if (!employee) return;
+
+    const which = shift.isRemote
+      ? 'Your work-from-home shift'
+      : `Your shift at ${shift.locationName}`;
+    const ended = `${which} ended at ${clockTime(shift.endsAt)}`;
+
+    await this.inbox.notify([employeeId], {
+      kind: NotificationKind.PUNCH_REMINDER,
+      title: "You're still clocked in",
+      body: `${ended}.`,
+      link: '/',
+    });
+
+    await this.dispatch(employee.email, "You're still clocked in", [
+      `Hello ${employee.preferredName ?? employee.firstName},`,
+      '',
+      `${ended} and you are still clocked in.`,
+      '',
+      `If you have finished for the day, clock out now: ${this.appUrl}`,
+      '',
+      'If you left earlier, clock out anyway and tell your manager what time you left, so they can correct it.',
+      '',
+      'If you are still working, you can ignore this.',
+    ]);
+  }
+
   /**
    * The nightly round-up of what nobody has got to yet — laid out in
    * `digest-email.ts`. Sections with nothing in them are left out entirely
@@ -276,4 +348,13 @@ function describeRange(start: Date, end: Date, isHalfDay: boolean): string {
     return isHalfDay ? `${format(start)} (half day)` : format(start);
   }
   return `${format(start)} to ${format(end)}`;
+}
+
+/// "9:00 AM", on the practice's clock.
+function clockTime(at: Date): string {
+  return at.toLocaleTimeString('en-US', {
+    timeZone: PRACTICE_ZONE,
+    hour: 'numeric',
+    minute: '2-digit',
+  });
 }

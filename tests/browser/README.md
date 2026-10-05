@@ -47,7 +47,8 @@ first argument.
 | --- | --- | --- |
 | `CHROMIUM_PATH` | whatever Playwright downloaded | Point at a preinstalled Chromium instead of downloading one. |
 | `PGHOST_LOCAL` / `PGPORT_LOCAL` | `127.0.0.1` / `5433` | Where `run-all.sh` resets state between suites. |
-| `API_URL` | `http://127.0.0.1:3000/api` | Only `race.mjs` uses it — it talks to the API directly rather than through the web server's proxy. |
+| `API_URL` | `http://127.0.0.1:3000/api` | `race.mjs` and `punch-reminders.mjs` use it — they talk to the API directly rather than through the web server's proxy. |
+| `PUNCH_REMINDER_SECRET` | none | Must match the API's: `punch-reminders.mjs` calls the reminders route the way the outside timer does. CI sets both. |
 
 ## Things worth knowing
 
