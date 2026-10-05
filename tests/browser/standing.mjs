@@ -173,8 +173,11 @@ await step('the month shows every shift, tinted by office with the job role as t
   await page.getByRole('button', { name: 'Month', exact: true }).click();
   const grid = page.getByTestId('month-grid');
   await grid.waitFor({ timeout: 10000 });
-  const tinted = await grid.locator('[style*="border-color"]').count();
-  if (tinted === 0) throw new Error('no shift in the month wears a colour');
+  // The grid is drawn before the month's shifts arrive: wait for the first one,
+  // rather than counting an empty month on a slow machine.
+  const tinted = grid.locator('[style*="border-color"]');
+  await tinted.first().waitFor({ timeout: 10000 }).catch(() => {});
+  if ((await tinted.count()) === 0) throw new Error('no shift in the month wears a colour');
   await page.getByTestId('rota-legend').waitFor({ timeout: 5000 });
 });
 
