@@ -374,10 +374,13 @@ for that to take effect.
 
 A PIN has almost no entropy, so it gets three layers rather than one:
 
-1. **Policy.** Stricter than the password rules: no repeated digits, no
-   consecutive runs, no repeated short patterns (`1212`), no plausible years,
-   and a list of keypad favourites. `1234`, `0000`, `2580` and `1995` are all
-   refused.
+1. **Policy.** Kept light: no one digit repeated, no consecutive runs, and a
+   short list of the PINs anybody tries first (`1212`, `2580`, `6969`, `1999`,
+   `2000`…). `1234`, `0000` and `2580` are refused. Years and repeated
+   patterns (`1911`, `3636`) used to be refused too, until Dominguez asked in
+   October 2026 for it not to be so strict — they turned away PINs people
+   chose and remember, and the lockouts below and the time clock being the
+   only place a PIN works carry the rest.
 2. **argon2id**, same as passwords. Overkill for four digits on its own, which
    is why it is not on its own.
 3. **Lockout** after 5 wrong attempts for 10 minutes — tighter than the

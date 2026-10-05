@@ -3,8 +3,9 @@ import { hash, verify } from '@node-rs/argon2';
 
 export type PinCheck = { ok: true } | { ok: false; reason: string };
 
-/// Dates, repeated pairs and keypad patterns — the guesses anyone would try
-/// first on a four-digit keypad.
+/// The handful of PINs anyone would try first on a four-digit keypad: repeated
+/// pairs, keypad shapes, and the few years that top every list of common PINs.
+/// Kept short on purpose — see `check`.
 const BANNED_PINS = new Set([
   '0000',
   '1111',
@@ -44,12 +45,20 @@ const BANNED_PINS = new Set([
 ]);
 
 /**
- * PIN rules, which are necessarily stricter than the password rules.
+ * PIN rules.
  *
  * A PIN has almost no entropy — four digits is ten thousand possibilities, and
  * a keypad invites the obvious ones. The defence is three-layered: reject the
- * predictable PINs here, hash what is left with argon2, and lock the account
- * after a handful of wrong attempts (see KioskService).
+ * most predictable PINs here, hash what is left with argon2, and lock the
+ * account after a handful of wrong attempts (see KioskService). A PIN also
+ * works only at a paired time clock, never to sign in.
+ *
+ * Deliberately light since October 2026 (Dominguez: "please don't make it too
+ * strict on the PIN"): every year from 1900 on and every repeated pattern
+ * (3636) used to be refused too, which turned away PINs people chose and
+ * remember — 1911 among them. What is left refuses only the same digit
+ * repeated, a straight run, and the short list above; the lockouts carry the
+ * rest.
  */
 @Injectable()
 export class PinService {
@@ -81,12 +90,6 @@ export class PinService {
     if (isSequential(pin)) {
       return { ok: false, reason: 'A PIN cannot be a run of consecutive digits.' };
     }
-    if (isRepeatedPattern(pin)) {
-      return { ok: false, reason: 'That PIN repeats a short pattern. Choose another.' };
-    }
-    if (looksLikeAYear(pin)) {
-      return { ok: false, reason: 'Avoid years and dates — they are easy to guess.' };
-    }
     return { ok: true };
   }
 
@@ -106,27 +109,4 @@ function isSequential(pin: string): boolean {
     if (step !== -1) descending = false;
   }
   return ascending || descending;
-}
-
-/// "1212", "123123" — a short block repeated to fill the length.
-function isRepeatedPattern(pin: string): boolean {
-  for (let size = 1; size <= pin.length / 2; size += 1) {
-    if (pin.length % size !== 0) {
-      continue;
-    }
-    const block = pin.slice(0, size);
-    if (pin.split('').every((_, index) => pin[index] === block[index % size])) {
-      return true;
-    }
-  }
-  return false;
-}
-
-/// A four-digit PIN that reads as a plausible birth or current year.
-function looksLikeAYear(pin: string): boolean {
-  if (pin.length !== 4) {
-    return false;
-  }
-  const value = Number(pin);
-  return value >= 1900 && value <= new Date().getFullYear() + 1;
 }

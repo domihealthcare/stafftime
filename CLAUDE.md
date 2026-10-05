@@ -418,7 +418,11 @@ Beyond the phases, the parts worth knowing about before picking up work:
 - **Tablet PINs are chosen by staff** on their profile (confirmed with their
   password); the profile shows only that one is set and since when, never the
   PIN. Managers and admins can set a replacement from the Directory, never
-  read one (decided September 2026).
+  read one (decided September 2026). **The PIN rules are light** since
+  October 2026 (Dominguez: "please don't make it too strict"): only one digit
+  repeated, a straight run and a short list of the commonest PINs are
+  refused; years (1911) and patterns (3636) are allowed. The lockouts do the
+  rest (`kiosk/pin.service.ts`).
 - **Regular shifts** (September 2026, Dominguez: "I always work Mondays"):
   Repeating shifts → **No end date** makes a `ShiftSeries`; its shifts are
   written out 8 weeks ahead (`STANDING_DAYS_AHEAD`) and the nightly job

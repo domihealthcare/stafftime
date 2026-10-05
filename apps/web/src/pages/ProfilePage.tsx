@@ -439,7 +439,7 @@ function PinCard({ profile, onSaved }: { profile: Profile; onSaved: (next: Profi
             />
           </label>
           <p className="text-xs text-slate-500 sm:col-span-3">
-            4 to 8 digits. Not a run like 1234, not one digit repeated, not a year.
+            4 to 8 digits. Not a run like 1234 or one digit repeated like 0000.
             {mismatch && (
               <span className="ml-1 font-medium text-rose-700">Those PINs do not match.</span>
             )}
