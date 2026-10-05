@@ -30,6 +30,7 @@ const ANNOUNCEMENT_SELECT = {
   title: true,
   body: true,
   isPrimary: true,
+  showOnTimeClock: true,
   editedAt: true,
   createdAt: true,
   authorId: true,
@@ -82,6 +83,7 @@ function present(row: AnnouncementRow, viewerId: string) {
     title: row.title,
     body: row.body,
     isPrimary: row.isPrimary,
+    showOnTimeClock: row.showOnTimeClock ?? false,
     editedAt: row.editedAt,
     createdAt: row.createdAt,
     author: row.author,
@@ -204,6 +206,7 @@ export class AnnouncementsService {
           title: dto.title.trim(),
           body,
           isPrimary,
+          showOnTimeClock: dto.showOnTimeClock === true,
           authorId: actor.id,
           ...(poll
             ? {
@@ -317,6 +320,7 @@ export class AnnouncementsService {
           title,
           body,
           ...(dto.isPrimary === true ? { isPrimary: true } : {}),
+          ...(dto.showOnTimeClock !== undefined ? { showOnTimeClock: dto.showOnTimeClock } : {}),
           ...(wordsChanged ? { editedAt: new Date() } : {}),
         },
         select: ANNOUNCEMENT_SELECT,

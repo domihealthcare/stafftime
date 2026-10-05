@@ -88,6 +88,15 @@ export class KioskController {
     return this.kiosks.listEligibleEmployees(request.kiosk!.locationId);
   }
 
+  /// News posts chosen for the time clock (Dominguez, October 2026): what
+  /// its main screen shows above the "Clock in or out" button.
+  @Get('posts')
+  @Public()
+  @UseGuards(KioskDeviceGuard)
+  posts() {
+    return this.kiosks.timeClockPosts();
+  }
+
   @Post('punch')
   @Public()
   @UseGuards(KioskDeviceGuard)

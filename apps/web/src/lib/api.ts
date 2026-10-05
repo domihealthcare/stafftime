@@ -284,6 +284,16 @@ export interface KioskSession {
   locationName: string;
 }
 
+/// A News post on the time clock: the words only — no author, likes,
+/// comments or poll, because patients can see the tablet.
+export interface KioskPost {
+  id: string;
+  title: string;
+  body: string;
+  createdAt: string;
+  editedAt: string | null;
+}
+
 export interface KioskEmployee {
   id: string;
   firstName: string;
@@ -331,6 +341,8 @@ export const kioskApi = {
       body: JSON.stringify({ pairingCode }),
     }),
   session: () => request<KioskSession>('/kiosk/session'),
+  /// News posts an admin ticked to show on the time clock, newest first.
+  posts: () => request<KioskPost[]>('/kiosk/posts'),
   employees: () => request<KioskEmployee[]>('/kiosk/employees'),
   punch: (employeeId: string, pin: string, closing?: ClosingSubmission) =>
     request<KioskPunchResult>('/kiosk/punch', {
@@ -1176,12 +1188,19 @@ export const api = {
     title: string;
     body: string;
     isPrimary?: boolean;
+    showOnTimeClock?: boolean;
     poll?: PollInput;
   }) => request<Announcement>('/announcements', { method: 'POST', body: JSON.stringify(body) }),
   /// `poll: null` takes the poll off; leaving it out leaves it as it is.
   updateAnnouncement: (
     id: string,
-    body: Partial<{ title: string; body: string; isPrimary: boolean; poll: PollInput | null }>,
+    body: Partial<{
+      title: string;
+      body: string;
+      isPrimary: boolean;
+      showOnTimeClock: boolean;
+      poll: PollInput | null;
+    }>,
   ) =>
     request<Announcement>(`/announcements/${id}`, {
       method: 'PATCH',

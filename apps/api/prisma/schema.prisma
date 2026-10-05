@@ -1267,6 +1267,10 @@ model Announcement {
   /// Plain text. Line breaks are kept; nothing is interpreted as markup.
   body      String
   isPrimary Boolean @default(false)
+  /// Also shown on the front-desk time clock (October 2026, Dominguez). Off
+  /// unless an admin ticks it: patients can see the tablet, so only the posts
+  /// chosen for it appear there — read-only, no likes, comments or poll.
+  showOnTimeClock Boolean @default(false)
 
   authorId String?   @db.Uuid
   /// Set when the words change after posting, so readers can tell.

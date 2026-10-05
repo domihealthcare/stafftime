@@ -4,6 +4,7 @@ import {
   isKioskUnpaired,
   kioskApi,
   type KioskEmployee,
+  type KioskPost,
   type KioskPunchResult,
   type KioskSession,
 } from '../lib/api';
@@ -30,7 +31,10 @@ const NO_PIN_MS = 20_000;
 type Screen =
   | { name: 'loading' }
   | { name: 'pairing' }
+  /// The main screen: posts chosen for the time clock, and the button.
   | { name: 'staff' }
+  /// Finding your name in the list.
+  | { name: 'choose' }
   /// `closing` is set on the second PIN of a clock-out with a checklist.
   | { name: 'pin'; employee: KioskEmployee; closing?: ClosingSubmission }
   /// Somebody with no PIN yet tapped their name: how to choose one.
@@ -49,6 +53,8 @@ export function KioskApp() {
   const [session, setSession] = useState<KioskSession | null>(null);
   const [screen, setScreen] = useState<Screen>({ name: 'loading' });
   const [staff, setStaff] = useState<KioskEmployee[]>([]);
+  const [posts, setPosts] = useState<KioskPost[]>([]);
+  const [query, setQuery] = useState('');
   const [pin, setPin] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
@@ -62,6 +68,8 @@ export function KioskApp() {
       const current = await kioskApi.session();
       setSession(current);
       setStaff(await kioskApi.employees());
+      // The posts are a nicety: a time clock that cannot load them still clocks.
+      setPosts(await kioskApi.posts().catch(() => []));
       setError(null);
       setScreen({ name: 'staff' });
     } catch (err) {
@@ -100,6 +108,10 @@ export function KioskApp() {
           if (screenRef.current === 'staff') setError(null);
         })
         .catch(() => undefined);
+      kioskApi
+        .posts()
+        .then(setPosts)
+        .catch(() => undefined);
     }, 10 * 60_000);
     return () => window.clearInterval(timer);
   }, [session]);
@@ -110,6 +122,7 @@ export function KioskApp() {
 
   const backToStaff = useCallback(() => {
     setPin('');
+    setQuery('');
     setError(null);
     setScreen({ name: 'staff' });
   }, []);
@@ -119,7 +132,7 @@ export function KioskApp() {
   useEffect(() => {
     window.clearTimeout(idleTimer.current);
     if (busy) return;
-    if (screen.name === 'pin') {
+    if (screen.name === 'pin' || screen.name === 'choose') {
       idleTimer.current = window.setTimeout(backToStaff, IDLE_RESET_MS);
     }
     if (screen.name === 'checklist') {
@@ -129,7 +142,7 @@ export function KioskApp() {
       idleTimer.current = window.setTimeout(backToStaff, NO_PIN_MS);
     }
     return () => window.clearTimeout(idleTimer.current);
-  }, [screen, pin, busy, backToStaff]);
+  }, [screen, pin, query, busy, backToStaff]);
 
   /// Somebody ticking the closing checklist is still there: start its
   /// five minutes again.
@@ -199,12 +212,26 @@ export function KioskApp() {
 
       <main className="mx-auto flex w-full max-w-3xl flex-1 flex-col justify-center p-6">
         {screen.name === 'staff' && (
-          <StaffList
+          <MainScreen
+            posts={posts}
             staff={staff}
             error={error}
+            onClock={() => {
+              setQuery('');
+              setScreen({ name: 'choose' });
+            }}
+          />
+        )}
+
+        {screen.name === 'choose' && (
+          <ChooseName
+            staff={staff}
+            query={query}
+            onQuery={setQuery}
             onPick={(employee) =>
               setScreen(employee.hasPin ? { name: 'pin', employee } : { name: 'no-pin', employee })
             }
+            onCancel={backToStaff}
           />
         )}
 
@@ -252,25 +279,46 @@ export function KioskApp() {
   );
 }
 
-function StaffList({
+/**
+ * The time clock's main screen (Dominguez, October 2026): the News posts an
+ * admin ticked for it, then one button. Names are behind the button rather
+ * than all over the screen, which sits where patients can see it.
+ */
+function MainScreen({
+  posts,
   staff,
   error,
-  onPick,
+  onClock,
 }: {
+  posts: KioskPost[];
   staff: KioskEmployee[];
   error: string | null;
-  onPick: (employee: KioskEmployee) => void;
+  onClock: () => void;
 }) {
   return (
-    <div>
-      <h1 className="mb-6 text-center text-2xl font-semibold text-slate-900">
-        Tap your name to clock in or out
-      </h1>
+    <div className="flex flex-1 flex-col gap-6">
+      {error && <Alert>{error}</Alert>}
 
-      {error && (
-        <div className="mb-4">
-          <Alert>{error}</Alert>
-        </div>
+      {posts.length > 0 ? (
+        <section aria-label="News" className="max-h-[55vh] space-y-4 overflow-y-auto">
+          {posts.map((post) => (
+            <article
+              key={post.id}
+              className="rounded-2xl bg-white p-6 shadow-sm"
+              data-testid="kiosk-post"
+            >
+              <h2 className="text-xl font-semibold text-slate-900">{post.title}</h2>
+              <p className="mt-1 text-xs text-slate-500">{postDate(post.createdAt)}</p>
+              {post.body && (
+                <p className="mt-3 whitespace-pre-line text-base leading-relaxed text-slate-700">
+                  {post.body}
+                </p>
+              )}
+            </article>
+          ))}
+        </section>
+      ) : (
+        <p className="text-center text-xl text-slate-600">Welcome</p>
       )}
 
       {staff.length === 0 && !error ? (
@@ -278,26 +326,112 @@ function StaffList({
           Nobody works at this office yet. An administrator adds people to it from Manage → Staff in
           Domi Staff.
         </Alert>
-      ) : staff.length === 0 ? null : (
-        <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
-          {staff.map((employee) => (
+      ) : (
+        <button
+          type="button"
+          onClick={onClock}
+          disabled={staff.length === 0}
+          className="mx-auto w-full max-w-md rounded-2xl bg-brand-600 px-6 py-6 text-2xl font-semibold text-white shadow-sm transition hover:bg-brand-700 active:scale-95 disabled:opacity-60"
+        >
+          Clock in or out
+        </button>
+      )}
+    </div>
+  );
+}
+
+function postDate(iso: string): string {
+  return new Date(iso).toLocaleDateString(undefined, {
+    weekday: 'long',
+    month: 'long',
+    day: 'numeric',
+  });
+}
+
+/// Letters only, without accents, for "type the start of your name".
+function fold(text: string): string {
+  return text
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase();
+}
+
+/// Finding your name: a search box over the office's staff, A to Z.
+function ChooseName({
+  staff,
+  query,
+  onQuery,
+  onPick,
+  onCancel,
+}: {
+  staff: KioskEmployee[];
+  query: string;
+  onQuery: (query: string) => void;
+  onPick: (employee: KioskEmployee) => void;
+  onCancel: () => void;
+}) {
+  const wanted = fold(query.trim());
+  const shown = wanted
+    ? staff.filter(
+        (employee) =>
+          fold(`${employee.firstName} ${employee.lastName}`)
+            .split(/\s+/)
+            .some((word) => word.startsWith(wanted)) ||
+          fold(`${employee.firstName} ${employee.lastName}`).startsWith(wanted),
+      )
+    : staff;
+
+  return (
+    <div className="mx-auto flex w-full max-w-xl flex-1 flex-col">
+      <div className="mb-4 flex items-center justify-between gap-3">
+        <h1 className="text-2xl font-semibold text-slate-900">Find your name</h1>
+        <button
+          type="button"
+          onClick={onCancel}
+          className="rounded-xl px-4 py-2 text-base font-medium text-slate-600 hover:bg-white"
+        >
+          Back
+        </button>
+      </div>
+      <input
+        type="search"
+        aria-label="Search for your name"
+        value={query}
+        onChange={(event) => onQuery(event.target.value)}
+        placeholder="Type your name"
+        autoComplete="off"
+        autoCorrect="off"
+        spellCheck={false}
+        className="mb-3 w-full rounded-xl border border-slate-300 px-4 py-3 text-lg"
+      />
+      <ul
+        aria-label="Staff"
+        className="max-h-[55vh] divide-y divide-slate-100 overflow-y-auto rounded-2xl bg-white shadow-sm"
+      >
+        {shown.map((employee) => (
+          <li key={employee.id}>
             <button
-              key={employee.id}
               type="button"
               onClick={() => onPick(employee)}
-              className="rounded-2xl bg-white px-4 py-6 text-lg font-medium text-slate-900 shadow-sm transition hover:bg-slate-50 active:scale-95"
+              className="flex w-full items-center justify-between gap-3 px-5 py-4 text-left text-lg text-slate-900 hover:bg-slate-50 active:bg-slate-100"
             >
-              <span className="block">{employee.firstName}</span>
-              <span className="block text-sm font-normal text-slate-500">{employee.lastName}</span>
+              <span>
+                {employee.firstName} {employee.lastName}
+              </span>
               {!employee.hasPin && (
-                <span className="mt-2 inline-block rounded-full bg-amber-50 px-2 py-0.5 text-xs font-medium text-amber-800 ring-1 ring-inset ring-amber-200">
+                <span className="rounded-full bg-amber-50 px-2 py-0.5 text-xs font-medium text-amber-800 ring-1 ring-inset ring-amber-200">
                   No PIN yet
                 </span>
               )}
             </button>
-          ))}
-        </div>
-      )}
+          </li>
+        ))}
+        {shown.length === 0 && (
+          <li className="px-5 py-4 text-base text-slate-500">
+            Nobody here by that name. Check the spelling, or clock in on your phone.
+          </li>
+        )}
+      </ul>
     </div>
   );
 }

@@ -61,6 +61,14 @@ await step('clocking in puts somebody under In now, at the right office', async 
   await inNow(frankie, 'West New York').getByText('Nobody is clocked in.').waitFor({ timeout: 5000 });
 });
 
+await step('In now groups people by job role, under their first one', async () => {
+  // Frankie is Front Desk and MA: listed once, under Front Desk.
+  const office = inNow(frankie, 'North Bergen');
+  await office.getByTestId('in-now-group-Front Desk').getByText('Frankie Front-Desk').waitFor({ timeout: 10000 });
+  if (await office.getByTestId('in-now-group-Medical Assistant').count())
+    throw new Error('Frankie was listed twice, under a second job role too');
+});
+
 await step('a colleague sees who is in and where, but not since when', async () => {
   const badge = person(frankie, 'Frankie Front-Desk').getByText(/^In now · North Bergen/);
   await badge.waitFor({ timeout: 5000 });

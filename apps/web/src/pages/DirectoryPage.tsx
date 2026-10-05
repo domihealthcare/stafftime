@@ -1,5 +1,5 @@
 import { Avatar } from '../components/Avatar';
-import { JobRoleTag } from '../components/JobRoleTag';
+import { JobRoleDot, JobRoleTag } from '../components/JobRoleTag';
 import { HoverNote } from '../components/HoverNote';
 import { ContactLines, PresenceBadges, homeHours } from '../components/PersonDetails';
 import { useCallback, useEffect, useMemo, useState } from 'react';
@@ -135,14 +135,24 @@ export function DirectoryPage() {
               {here.length === 0 ? (
                 <p className="mt-1 text-sm text-slate-500">Nobody is clocked in.</p>
               ) : (
-                <ul className="mt-1 flex flex-wrap gap-x-3 gap-y-1 text-sm text-slate-800">
-                  {here.map((person) => (
-                    <li key={person.id} className="flex items-center gap-1.5">
-                      <span aria-hidden className="h-2 w-2 rounded-full bg-emerald-500" />
-                      {displayName(person)}
-                    </li>
+                <div className="mt-2 space-y-2">
+                  {byJobRole(here).map((group) => (
+                    <div key={group.key} data-testid={`in-now-group-${group.label}`}>
+                      <p className="flex items-center gap-1.5 text-xs font-medium text-slate-600">
+                        <JobRoleDot colour={group.colour} />
+                        {group.label}
+                      </p>
+                      <ul className="mt-0.5 flex flex-wrap gap-x-3 gap-y-1 pl-4 text-sm text-slate-800">
+                        {group.people.map((person) => (
+                          <li key={person.id} className="flex items-center gap-1.5">
+                            <span aria-hidden className="h-2 w-2 rounded-full bg-emerald-500" />
+                            {displayName(person)}
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
                   ))}
-                </ul>
+                </div>
               )}
             </Card>
           );
@@ -440,4 +450,31 @@ function PinReset({ person }: { person: DirectoryEntry }) {
       )}
     </div>
   );
+}
+
+/**
+ * The people in now at one office, grouped by job role (Dominguez, October
+ * 2026: "it should show what roles they are"), in the practice's order of job
+ * roles. Somebody with several is listed once, under their first; nobody is
+ * left out for having none.
+ */
+function byJobRole(people: DirectoryEntry[]) {
+  const groups = new Map<
+    string,
+    { key: string; label: string; colour: string | null; order: number; people: DirectoryEntry[] }
+  >();
+  for (const person of people) {
+    const role = person.jobRoles[0];
+    const key = role?.id ?? 'none';
+    const group = groups.get(key) ?? {
+      key,
+      label: role?.name ?? 'Other',
+      colour: role?.colour ?? null,
+      order: role ? (role.sortOrder ?? 0) : Number.MAX_SAFE_INTEGER,
+      people: [],
+    };
+    group.people.push(person);
+    groups.set(key, group);
+  }
+  return [...groups.values()].sort((a, b) => a.order - b.order || a.label.localeCompare(b.label));
 }

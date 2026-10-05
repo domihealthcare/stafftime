@@ -13,6 +13,8 @@ const CODE_ALPHABET = 'ABCDEFGHJKLMNPQRTUVWXY346789';
 const CODE_LENGTH = 10;
 const PAIRING_TTL_MINUTES = 15;
 const DEVICE_TOKEN_BYTES = 32;
+/// How many ticked News posts the time clock shows, newest first.
+export const TIME_CLOCK_POSTS = 3;
 
 export interface PairedDevice {
   deviceId: string;
@@ -266,6 +268,19 @@ export class KioskService {
       lastName: employee.lastName,
       hasPin: employee.pinHash !== null,
     }));
+  }
+
+  /// The News posts an admin has ticked to show on the time clock, newest
+  /// first, a few at most. Title and words only: no author, likes, comments or
+  /// poll — the tablet sits where patients can see it, and nobody is signed in.
+  /// The same for every office's time clock.
+  async timeClockPosts() {
+    return this.prisma.announcement.findMany({
+      where: { showOnTimeClock: true },
+      select: { id: true, title: true, body: true, createdAt: true, editedAt: true },
+      orderBy: { createdAt: 'desc' },
+      take: TIME_CLOCK_POSTS,
+    });
   }
 
   private generateCode(): string {

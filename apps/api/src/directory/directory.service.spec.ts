@@ -143,8 +143,8 @@ describe('DirectoryService', () => {
     const [row] = await service.list(employee, NOW);
 
     expect(row.jobRoles).toEqual([
-      { id: 'fd', name: 'Front Desk', colour: 'blue' },
-      { id: 'ma', name: 'Medical Assistant', colour: 'orange' },
+      { id: 'fd', name: 'Front Desk', colour: 'blue', sortOrder: 10 },
+      { id: 'ma', name: 'Medical Assistant', colour: 'orange', sortOrder: 20 },
     ]);
     expect(row.locations.map((l: { name: string }) => l.name)).toEqual([
       'North Bergen',

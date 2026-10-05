@@ -415,6 +415,22 @@ set one. On their phone, Home shows **Choose your tablet PIN** while they have
 none and one of their offices has a paired time clock (`tabletPinOffices` on
 the signed-in person); it goes once the PIN is saved.
 
+**Names behind a button, News on the main screen** (Dominguez, 5 October
+2026, the day the North Bergen iPad went into use: "I don't like that all
+the names are there"). The main screen now shows the News posts an admin
+ticked **Also show on the front-desk time clock** (`Announcement.
+showOnTimeClock`, off by default) and one **Clock in or out** button. The
+names are behind it, in **Find your name**: a list, A to Z by first name, with
+a search box that matches the start of any word of the name ("fra", "front"),
+accents ignored; **Back**, or 30 seconds untouched, returns to the main
+screen and clears the search for the next person. Posts are opt-in per post
+because the tablet is where patients stand: `GET /kiosk/posts` sends the
+newest three ticked, title and words only — no author, likes, comments or
+poll — and the time clock fetches them with the staff list, every ten
+minutes. A time clock that cannot load them still clocks. The names were the
+standard time-clock pattern (see *Decisions worth revisiting*, below); this
+answers the worry noted there about the list being on show.
+
 ### The punch itself
 
 One request does PIN check and punch together. There is no intermediate "PIN
@@ -428,11 +444,10 @@ name and a half-typed PIN.
 
 ### Decisions worth revisiting
 
-- **The staff list is visible on the tablet.** It is how you tap your own name,
-  and it is the standard time-clock pattern, but it does show who works at that
-  location to anyone standing at the desk. The alternative — typing an employee
-  number — is slower for a practice this size. Worth revisiting if the tablet
-  ends up somewhere more public than the back of the front desk.
+- **The staff list is behind a button** since October 2026 (see above). It
+  still shows who works at that location to anybody who presses it; typing an
+  employee number instead would hide even that, but is slower for a practice
+  this size.
 - **Badge tap is not built.** The schema stores `badgeId` and a USB badge reader
   behaves like a keyboard, so it is a small addition — but it cannot be written
   responsibly without a reader in hand to test against. See
@@ -2162,6 +2177,11 @@ who have left, or have not started, are not listed; somebody on leave is, marked
 forgotten clock-out, and should not tell the front desk somebody is in who went
 home yesterday — the missing punch is already chased by *What needs a look*.
 Colleagues see where somebody is; only managers see when they clocked in.
+Each office's box **groups the people in by job role** (Dominguez, 5 October
+2026: "it should show what roles they are"), in the practice's order of job
+roles (`sortOrder`, which the directory now sends with each role); somebody
+with several is listed once, under their first, and anybody with none under
+"Other".
 
 **Working from home today** (October 2026, Dominguez) is always on screen,
 beside the office boxes (three across on a laptop, like the cards below): who is clocked in from home now, then anybody with a

@@ -176,6 +176,7 @@ function PostCard({
           <div className="flex flex-wrap items-center gap-2">
             <h2 className="font-semibold text-slate-900">{post.title}</h2>
             {post.isPrimary && <Badge tone="info">Primary</Badge>}
+            {canManage && post.showOnTimeClock && <Badge tone="neutral">On the time clock</Badge>}
           </div>
           <p className="mt-0.5 text-xs text-slate-500">
             {formatPostDate(post.createdAt)}
@@ -263,6 +264,7 @@ function PostForm({
   const [title, setTitle] = useState(post?.title ?? '');
   const [body, setBody] = useState(post?.body ?? '');
   const [isPrimary, setIsPrimary] = useState(post?.isPrimary ?? firstPost);
+  const [onTimeClock, setOnTimeClock] = useState(post?.showOnTimeClock ?? false);
   const [poll, setPoll] = useState<PollDraft | null>(
     post?.poll
       ? {
@@ -293,6 +295,7 @@ function PostForm({
         await api.updateAnnouncement(post.id, {
           ...payload,
           ...(isPrimary && !post.isPrimary ? { isPrimary: true } : {}),
+          ...(onTimeClock !== post.showOnTimeClock ? { showOnTimeClock: onTimeClock } : {}),
           // Only when there is something to say about it: a post that never
           // had a poll and still has none leaves the field out.
           ...(pollInput ? { poll: pollInput } : post.poll ? { poll: null } : {}),
@@ -301,6 +304,7 @@ function PostForm({
         await api.createAnnouncement({
           ...payload,
           isPrimary,
+          showOnTimeClock: onTimeClock,
           ...(pollInput ? { poll: pollInput } : {}),
         });
       }
@@ -363,6 +367,29 @@ function PostForm({
             </span>
           </span>
         </label>
+
+        <div className="flex items-start gap-2 text-sm">
+          <input
+            id="post-on-time-clock"
+            type="checkbox"
+            checked={onTimeClock}
+            onChange={(event) => setOnTimeClock(event.target.checked)}
+            aria-describedby="post-on-time-clock-hint"
+            className="mt-0.5 rounded border-slate-300 text-brand-600 focus:ring-brand-600"
+          />
+          <div>
+            {/* The hint is described-by, not inside the label: its words would
+                otherwise become part of the box's name. */}
+            <label htmlFor="post-on-time-clock" className="font-medium text-slate-700">
+              Also show on the front-desk time clock
+            </label>
+            <p id="post-on-time-clock-hint" className="text-xs text-slate-500">
+              It goes on the time clock&rsquo;s main screen, above the button staff press to clock
+              in. Patients at the desk can see it, so leave this off for anything internal. No
+              likes, comments or poll there.
+            </p>
+          </div>
+        </div>
       </div>
 
       {error && (

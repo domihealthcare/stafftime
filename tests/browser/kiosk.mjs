@@ -61,20 +61,94 @@ await step('a wrong pairing code is refused', async () => {
   await tablet.getByRole('alert').waitFor({ timeout: 10000 });
 });
 
+const clockButton = () => tablet.getByRole('button', { name: 'Clock in or out' });
+const staffList = () => tablet.getByRole('list', { name: 'Staff' });
+/// The names are behind "Clock in or out" (Dominguez, October 2026), not on
+/// the main screen: open the list, if it is not open already.
+const openList = async () => {
+  if (!(await staffList().isVisible())) await clockButton().click();
+  await staffList().waitFor({ timeout: 5000 });
+};
+const pick = async (name) => {
+  await openList();
+  await staffList().getByRole('button', { name }).click();
+};
+
 await step('the real code pairs the tablet to its location', async () => {
   await tablet.getByLabel('Pairing code').fill(pairingCode);
   await tablet.getByRole('button', { name: 'Set up kiosk' }).click();
-  await tablet.getByText('Tap your name to clock in or out').waitFor({ timeout: 15000 });
+  await clockButton().waitFor({ timeout: 15000 });
   await tablet.getByText('North Bergen').first().waitFor({ timeout: 5000 });
 });
 
-await step('the tablet shows only staff at its own location', async () => {
-  const names = await tablet.locator('main button').allInnerTexts();
-  const joined = names.join(' ');
+await step('the main screen shows no names, only the button', async () => {
+  if (await tablet.getByText('Frankie').count()) throw new Error('a name is on the main screen');
+  if (await staffList().count()) throw new Error('the staff list is open before anybody asked');
+});
+
+await step('the list behind the button shows only staff at its own location', async () => {
+  await openList();
+  const joined = (await staffList().getByRole('button').allInnerTexts()).join(' ');
   if (!joined.includes('Frankie')) throw new Error(`expected Frankie at North Bergen: ${joined}`);
   if (joined.includes('Max')) throw new Error(`Max is West New York only, but appeared: ${joined}`);
 });
 await tablet.screenshot({ path: `${OUT}/18-kiosk-staff.png`, fullPage: true });
+
+await step('typing the first letters narrows the list, and Back returns to the main screen', async () => {
+  await tablet.getByLabel('Search for your name').fill('fra');
+  const shown = await staffList().getByRole('button').allInnerTexts();
+  if (shown.length !== 1 || !shown[0].includes('Frankie'))
+    throw new Error(`"fra" left ${JSON.stringify(shown)}`);
+  await tablet.getByLabel('Search for your name').fill('zzz');
+  await staffList().getByText(/Nobody here by that name/).waitFor({ timeout: 5000 });
+  await tablet.getByRole('button', { name: 'Back' }).click();
+  await clockButton().waitFor({ timeout: 5000 });
+  await clockButton().click();
+  if ((await tablet.getByLabel('Search for your name').inputValue()) !== '')
+    throw new Error('the search was still filled in for the next person');
+  await tablet.getByRole('button', { name: 'Back' }).click();
+});
+
+// --- News posts chosen for the time clock (Dominguez, October 2026) ---
+await step('a News post ticked for the time clock is on its main screen; others are not', async () => {
+  const post = async (title, showOnTimeClock) =>
+    admin.request.post(`${BASE}/api/announcements`, {
+      data: { title, body: `${title}, in full.`, showOnTimeClock },
+    });
+  await post('Staff only: rota reminder', false);
+  await post('Flu shots are here', true);
+  await tablet.reload({ waitUntil: 'networkidle' });
+  const posts = tablet.getByTestId('kiosk-post');
+  await posts.first().waitFor({ timeout: 10000 });
+  const text = (await posts.allInnerTexts()).join(' ');
+  if (!text.includes('Flu shots are here') || !text.includes('Flu shots are here, in full.'))
+    throw new Error(`the ticked post is missing: ${text}`);
+  if (text.includes('rota reminder')) throw new Error('a post not ticked for the time clock showed');
+  for (const name of [/like/i, /comment/i]) {
+    if (await tablet.getByRole('button', { name }).count())
+      throw new Error(`the time clock offers ${name}`);
+  }
+});
+await tablet.screenshot({ path: `${OUT}/18a-kiosk-main.png`, fullPage: true });
+
+await step('the News editor has the tick box, and marks posts that are on the time clock', async () => {
+  await admin.goto(`${BASE}/news`, { waitUntil: 'networkidle' });
+  const card = admin.getByTestId(/^post-[0-9a-f-]{36}$/).filter({ hasText: 'Flu shots are here' });
+  await card.getByText('On the time clock').waitFor({ timeout: 10000 });
+  await card.getByRole('button', { name: 'Edit' }).click();
+  const box = admin.getByLabel(/Also show on the front-desk time clock/);
+  if (!(await box.isChecked())) throw new Error('the tick box does not show the post is on');
+  await box.uncheck();
+  const saved = admin.waitForResponse((r) => r.url().includes('/api/announcements/') && r.request().method() === 'PATCH');
+  await admin.getByRole('button', { name: 'Save changes' }).click();
+  const body = (await saved).request().postDataJSON();
+  if (body.showOnTimeClock !== false) throw new Error(`sent ${JSON.stringify(body)}`);
+  await tablet.reload({ waitUntil: 'networkidle' });
+  await clockButton().waitFor({ timeout: 10000 });
+  if (await tablet.getByTestId('kiosk-post').count()) throw new Error('the unticked post stayed on the time clock');
+});
+// Back to Kiosks, where the steps below expect the admin to be.
+await admin.goto(`${BASE}/kiosks`, { waitUntil: 'networkidle' });
 
 await step('the device cookie is not readable by page scripts', async () => {
   const visible = await tablet.evaluate(() => document.cookie);
@@ -85,8 +159,8 @@ await step('the device cookie is not readable by page scripts', async () => {
 
 // --- somebody with no PIN yet (Dominguez, October 2026): listed on the tablet
 // with a tag and told how to choose one, and reminded on Home until they do ---
-const staffList = await (await admin.request.get(`${BASE}/api/employees`)).json();
-const morgan = staffList.find((person) => person.email === 'manager@domihealthcare.com');
+const everybody = await (await admin.request.get(`${BASE}/api/employees`)).json();
+const morgan = everybody.find((person) => person.email === 'manager@domihealthcare.com');
 await admin.request.delete(`${BASE}/api/kiosk/employees/${morgan.id}/pin`);
 const morganCtx = await browser.newContext({ viewport: { width: 390, height: 844 } });
 const morganPage = await morganCtx.newPage();
@@ -94,21 +168,22 @@ morganPage.on('pageerror', (e) => errors.push(`manager pageerror: ${e.message}`)
 
 await step('somebody with no PIN is listed on the tablet, tagged "No PIN yet"', async () => {
   await tablet.reload({ waitUntil: 'networkidle' });
-  const card = tablet.getByRole('button', { name: /Morgan/ });
+  await openList();
+  const card = staffList().getByRole('button', { name: /Morgan/ });
   await card.waitFor({ timeout: 10000 });
   if (!(await card.innerText()).includes('No PIN yet')) throw new Error('Morgan has no "No PIN yet" tag');
-  if ((await tablet.getByRole('button', { name: /Frankie/ }).innerText()).includes('No PIN yet'))
+  if ((await staffList().getByRole('button', { name: /Frankie/ }).innerText()).includes('No PIN yet'))
     throw new Error('Frankie has a PIN but was tagged as having none');
 });
 
 await step('tapping them explains how to choose a PIN, with no keypad, and OK goes back', async () => {
-  await tablet.getByRole('button', { name: /Morgan/ }).click();
+  await pick(/Morgan/);
   await tablet.getByText('You have not chosen a PIN yet.').waitFor({ timeout: 5000 });
   await tablet.getByText(/Your profile/).waitFor({ timeout: 5000 });
   if (await tablet.getByRole('button', { name: 'Confirm PIN' }).count())
     throw new Error('the keypad was offered to somebody with no PIN');
   await tablet.getByRole('button', { name: 'OK' }).click();
-  await tablet.getByText('Tap your name to clock in or out').waitFor({ timeout: 5000 });
+  await clockButton().waitFor({ timeout: 5000 });
 });
 await tablet.screenshot({ path: `${OUT}/18b-kiosk-no-pin.png`, fullPage: true });
 
@@ -154,9 +229,11 @@ await step('the reminder opens the PIN box, and goes once a PIN is chosen', asyn
 
 await step('with a PIN chosen, the tablet drops the tag', async () => {
   await tablet.reload({ waitUntil: 'networkidle' });
-  const card = tablet.getByRole('button', { name: /Morgan/ });
+  await openList();
+  const card = staffList().getByRole('button', { name: /Morgan/ });
   await card.waitFor({ timeout: 10000 });
   if ((await card.innerText()).includes('No PIN yet')) throw new Error('the tag stayed after the PIN was set');
+  await tablet.getByRole('button', { name: 'Back' }).click();
 });
 
 await step('somebody who has a PIN is not reminded', async () => {
@@ -178,7 +255,7 @@ const typePin = async (pin) => {
 };
 
 await step('a wrong PIN is refused and the entry is cleared', async () => {
-  await tablet.getByRole('button', { name: /Frankie/ }).click();
+  await pick(/Frankie/);
   await tablet.getByText('Enter your PIN').waitFor({ timeout: 5000 });
   await typePin('9999');
   await tablet.getByRole('alert').waitFor({ timeout: 10000 });
@@ -197,15 +274,15 @@ await step('the correct PIN, typed on a keyboard, clocks in and confirms', async
 });
 await tablet.screenshot({ path: `${OUT}/20-kiosk-clocked-in.png`, fullPage: true });
 
-await step('the confirmation returns to the staff list by itself', async () => {
-  await tablet.getByText('Tap your name to clock in or out').waitFor({ timeout: 10000 });
+await step('the confirmation returns to the main screen by itself', async () => {
+  await clockButton().waitFor({ timeout: 10000 });
 });
 
 // Frankie works Front Desk and MA, so clocking out starts with the closing
 // checklist — shown after the PIN, with nothing punched until the PIN is given
 // again.
 await step('the same PIN again shows the closing checklist first, and punches nothing yet', async () => {
-  await tablet.getByRole('button', { name: /Frankie/ }).click();
+  await pick(/Frankie/);
   const answered = tablet.waitForResponse((r) => r.url().endsWith('/api/kiosk/punch'));
   await typePin('4817');
   const body = await (await answered).json();
