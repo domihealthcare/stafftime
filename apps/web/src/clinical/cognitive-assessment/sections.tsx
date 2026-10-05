@@ -1,5 +1,5 @@
 import { useContext, useState, type ReactNode } from 'react';
-import { Alert } from '../../components/ui';
+import { Alert, buttonClass } from '../../components/ui';
 import {
   ACP_STATUS,
   ADL_IMPAIRMENTS,
@@ -183,10 +183,10 @@ export function VisitSection({
             inputMode="numeric"
             maxLength={3}
             suffix="minutes"
-            hint={`Typical time ${TYPICAL_MINUTES} minutes. G2212 (prolonged): ${
+            hint={`Typical time ${TYPICAL_MINUTES} minutes.${
               G2212_THRESHOLD_MINUTES === null
-                ? 'confirm threshold with billing (Coronis).'
-                : `may apply from ${G2212_THRESHOLD_MINUTES} minutes — confirm with billing (Coronis).`
+                ? ''
+                : ` G2212 (prolonged) may apply from ${G2212_THRESHOLD_MINUTES} minutes.`
             }`}
             value={visit.totalMinutes}
             onChange={(totalMinutes) => set({ totalMinutes: totalMinutes.replace(/[^\d]/g, '') })}
@@ -801,14 +801,38 @@ export function CarePlanSection({ form, update }: SectionProps) {
   const suggested = suggestions(form);
   const setArea = (area: CarePlanArea, patch: Partial<CarePlanEntry>) =>
     set({ plan: { ...J.plan, [area]: { ...J.plan[area], ...patch } } });
+  // Every suggested goal and action, in every area, that is not yet ticked.
+  const untickedAnywhere = CARE_PLAN_AREAS.some(
+    (area) => untickedSuggestions(J.plan[area.value], area.value, suggested).count > 0,
+  );
+  const tickAllSuggested = () =>
+    set({
+      plan: Object.fromEntries(
+        CARE_PLAN_AREAS.map((area) => [
+          area.value,
+          withSuggestionsTicked(J.plan[area.value], area.value, suggested),
+        ]),
+      ) as AssessmentForm['J']['plan'],
+    });
 
   return (
     <div className="space-y-4">
-      <p className="text-sm text-slate-600">
-        Built from your answers above: items marked <SuggestedTag /> fit what you found. Tick what
-        applies. Goals and actions go on the patient’s handout in plain words, in English or
-        Spanish.
-      </p>
+      <div className="flex flex-wrap items-start justify-between gap-2">
+        <p className="min-w-0 flex-1 text-sm text-slate-600">
+          Built from your answers above: items marked <SuggestedTag /> fit what you found. Tick what
+          applies. Goals and actions go on the patient’s handout in plain words, in English or
+          Spanish.
+        </p>
+        {untickedAnywhere && (
+          <button
+            type="button"
+            onClick={tickAllSuggested}
+            className={buttonClass('secondary', 'sm')}
+          >
+            Tick all the suggested ones
+          </button>
+        )}
+      </div>
       {CARE_PLAN_AREAS.map((area) => (
         <CarePlanAreaBlock
           key={area.value}
@@ -816,8 +840,7 @@ export function CarePlanSection({ form, update }: SectionProps) {
           title={area.label}
           entry={J.plan[area.value]}
           summary={problemSummary(form, area.value)}
-          suggestedGoals={suggested.goals}
-          suggestedActions={suggested.actions}
+          suggested={suggested}
           onChange={(patch) => setArea(area.value, patch)}
         />
       ))}
@@ -887,6 +910,34 @@ export function CarePlanSection({ form, update }: SectionProps) {
   );
 }
 
+type Suggested = ReturnType<typeof suggestions>;
+
+/// The suggested goals and actions of one area that are not ticked yet.
+function untickedSuggestions(entry: CarePlanEntry, area: CarePlanArea, suggested: Suggested) {
+  const goals = CARE_PLAN_GOALS[area]
+    .map((goal) => goal.value)
+    .filter((value) => suggested.goals.has(`${area}:${value}`) && !entry.goals.includes(value));
+  const actions = CARE_PLAN_ACTIONS[area]
+    .map((action) => action.value)
+    .filter((value) => suggested.actions.has(`${area}:${value}`) && !entry.actions.includes(value));
+  return { goals, actions, count: goals.length + actions.length };
+}
+
+/// The area with every suggested goal and action ticked, and nothing else
+/// changed. Still the provider's choice: it only happens when they press it.
+function withSuggestionsTicked(
+  entry: CarePlanEntry,
+  area: CarePlanArea,
+  suggested: Suggested,
+): CarePlanEntry {
+  const missing = untickedSuggestions(entry, area, suggested);
+  return {
+    ...entry,
+    goals: [...entry.goals, ...missing.goals],
+    actions: [...entry.actions, ...missing.actions],
+  };
+}
+
 function SuggestedTag() {
   return (
     <span className="rounded-full bg-amber-100 px-1.5 py-0.5 text-[11px] font-semibold uppercase tracking-wide text-amber-800">
@@ -900,18 +951,17 @@ function CarePlanAreaBlock({
   title,
   entry,
   summary,
-  suggestedGoals,
-  suggestedActions,
+  suggested,
   onChange,
 }: {
   area: CarePlanArea;
   title: string;
   entry: CarePlanEntry;
   summary: string;
-  suggestedGoals: Set<string>;
-  suggestedActions: Set<string>;
+  suggested: Suggested;
   onChange: (patch: Partial<CarePlanEntry>) => void;
 }) {
+  const { goals: suggestedGoals, actions: suggestedActions } = suggested;
   const { idFor, problemFor } = useContext(FieldContext);
   const [editing, setEditing] = useState(false);
   const own = entry.problem !== null;
@@ -921,8 +971,9 @@ function CarePlanAreaBlock({
   const actions = [...CARE_PLAN_ACTIONS[area]].sort(
     byFit((v) => suggestedActions.has(`${area}:${v}`)),
   );
-  const untickedSuggestions = actions.filter(
-    (a) => suggestedActions.has(`${area}:${a.value}`) && !entry.actions.includes(a.value),
+  const unticked = untickedSuggestions(entry, area, suggested).count;
+  const anySuggested = [...suggestedGoals, ...suggestedActions].some((key) =>
+    key.startsWith(`${area}:`),
   );
   const toggle = (list: string[], value: string, on: boolean) =>
     on ? [...list.filter((v) => v !== value), value] : list.filter((v) => v !== value);
@@ -930,6 +981,21 @@ function CarePlanAreaBlock({
   return (
     <fieldset className="rounded-lg border border-slate-200 p-3" data-testid={`care-plan-${area}`}>
       <legend className="px-1 text-sm font-semibold text-slate-900">{title}</legend>
+      <div className="mb-2 flex justify-end" data-testid="suggested-status">
+        {!anySuggested ? (
+          <span className="text-xs text-slate-500">Nothing suggested here from your answers</span>
+        ) : unticked > 0 ? (
+          <button
+            type="button"
+            onClick={() => onChange(withSuggestionsTicked(entry, area, suggested))}
+            className="text-xs font-medium text-brand-700 hover:text-brand-900"
+          >
+            Tick the suggested ones
+          </button>
+        ) : (
+          <span className="text-xs text-emerald-700">✓ The suggested ones are ticked</span>
+        )}
+      </div>
 
       <div className="mb-3 text-sm">
         <span className="font-medium text-slate-700">Problem: </span>
@@ -988,22 +1054,7 @@ function CarePlanAreaBlock({
           <ProblemLine problem={problemFor(`J.plan.${area}.goals`)} />
         </div>
         <div id={idFor(`J.plan.${area}.actions`)}>
-          <div className="mb-1 flex items-center justify-between gap-2">
-            <p className="text-sm font-medium text-slate-700">What will be done</p>
-            {untickedSuggestions.length > 1 && (
-              <button
-                type="button"
-                onClick={() =>
-                  onChange({
-                    actions: [...entry.actions, ...untickedSuggestions.map((a) => a.value)],
-                  })
-                }
-                className="text-xs font-medium text-brand-700 hover:text-brand-900"
-              >
-                Tick the suggested ones
-              </button>
-            )}
-          </div>
+          <p className="mb-1 text-sm font-medium text-slate-700">What will be done</p>
           <div className="space-y-1">
             {actions.map((action) => (
               <PlanTick

@@ -67,7 +67,9 @@ export type RequirementKey = (typeof REQUIREMENTS)[number]['key'];
 export const TYPICAL_MINUTES = 60;
 
 /// G2212 (prolonged service). Left null until billing (Coronis) confirms the
-/// threshold; while it is null the form only shows a note to check with them.
+/// threshold; while it is null the time field says nothing about G2212
+/// (Dominguez, October 2026: the "confirm with billing" notes came off the
+/// form).
 export const G2212_THRESHOLD_MINUTES: number | null = null;
 
 export const VISIT_TYPES = choices(['office', 'In the office'], ['telehealth', 'Telehealth']);
@@ -75,7 +77,7 @@ export const VISIT_TYPES = choices(['office', 'In the office'], ['telehealth', '
 /// Shown when the visit is by telehealth. Payers differ on the modifier and
 /// place of service, so this is a reminder to check, not a rule.
 export const TELEHEALTH_REMINDER =
-  'Telehealth: add the telehealth modifier (95) and place of service this payer expects — confirm with billing (Coronis) if unsure.';
+  'Telehealth: add the telehealth modifier (95) and place of service this payer expects.';
 
 export const MEDICAL_DECISION_MAKING = choices(['moderate', 'Moderate'], ['high', 'High']);
 

@@ -89,6 +89,8 @@ function AssessmentScreen({ employee }: { employee: Employee }) {
   const today = localDate(new Date());
   const problems = useMemo(() => validate(form, today), [form, today]);
   const [showProblems, setShowProblems] = useState(false);
+  // How far down the form the provider has got (see `flagged`, below).
+  const [reached, setReached] = useState(-1);
   const problemFor = useCallback(
     (path: string) =>
       showProblems ? problems.find((problem) => problem.field === path)?.message : undefined,
@@ -152,6 +154,7 @@ function AssessmentScreen({ employee }: { employee: Employee }) {
     setUntouched(JSON.stringify(next));
     setMade(null);
     setShowProblems(false);
+    setReached(-1);
     setCleared(true);
     window.scrollTo({ top: 0 });
   }
@@ -161,6 +164,14 @@ function AssessmentScreen({ employee }: { employee: Employee }) {
   // -------------------------------------------------------------- the page
   const pendingIn = (key: SectionKey) => problems.filter((problem) => problem.section === key);
   const sectionDone = (key: SectionKey) => pendingIn(key).length === 0;
+
+  // A section is shown in amber only once the provider has moved on past it
+  // with something required still missing (Dominguez, October 2026) — or
+  // after a first try for a PDF. `reached` is the furthest section they have
+  // tapped or moved into; the PDFs card counts as the one after J.
+  const reach = (index: number) => setReached((before) => (index > before ? index : before));
+  const indexOf = (key: string) => SECTIONS.findIndex((section) => section.key === key);
+  const flagged = (key: string) => showProblems || indexOf(key) < reached;
   const [opened, setOpened] = useState<Set<ElementKey>>(new Set());
 
   const jumpTo = (key: string) =>
@@ -210,6 +221,7 @@ function AssessmentScreen({ employee }: { employee: Employee }) {
           sections={SECTIONS}
           pending={problems}
           ready="Ready for the PDFs"
+          flagged={flagged}
           onSection={jumpTo}
           onShowList={showList}
         />
@@ -221,6 +233,8 @@ function AssessmentScreen({ employee }: { employee: Employee }) {
             label="R"
             title="Requirements for 99483"
             pending={pendingIn('requirements')}
+            flagged={flagged('requirements')}
+            onActivity={() => reach(indexOf('requirements'))}
             onJump={focusField}
           >
             <RequirementsSection form={form} update={update} />
@@ -231,6 +245,8 @@ function AssessmentScreen({ employee }: { employee: Employee }) {
             label="0"
             title="Patient and visit"
             pending={pendingIn('visit')}
+            flagged={flagged('visit')}
+            onActivity={() => reach(indexOf('visit'))}
             onJump={focusField}
           >
             <VisitSection form={form} update={update} provider={provider} />
@@ -252,6 +268,8 @@ function AssessmentScreen({ employee }: { employee: Employee }) {
                 label={element.key}
                 title={element.title}
                 pending={pendingIn(element.key)}
+                flagged={flagged(element.key)}
+                onActivity={() => reach(indexOf(element.key))}
                 onJump={focusField}
                 aside={
                   <CompletionSwitch
@@ -303,7 +321,12 @@ function AssessmentScreen({ employee }: { employee: Employee }) {
         </div>
 
         {/* What is missing, the handout's language, and the downloads. */}
-        <div ref={checklist} className="mt-6 scroll-mt-32">
+        <div
+          ref={checklist}
+          className="mt-6 scroll-mt-32"
+          onFocus={() => reach(SECTIONS.length)}
+          onPointerDown={() => reach(SECTIONS.length)}
+        >
           <Card className="p-4 sm:p-5">
             <h2 className="text-lg font-semibold text-slate-900">PDFs</h2>
             <PendingList sections={SECTIONS} pending={problems} onJump={focusField} />

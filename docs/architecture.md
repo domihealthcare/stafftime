@@ -3027,7 +3027,10 @@ shorter and harder to get wrong):
 - **J, the care plan, is built from the answers** (`care-plan.ts`): each
   area's problem is written from sections A–I (editable), and its goals and
   actions are pick-lists with the ones the answers point to marked
-  **Suggested** and listed first — never ticked for the provider. G's
+  **Suggested** and listed first — never ticked for the provider unless
+  they press **Tick the suggested ones** (in every area; goals and actions
+  both) or **Tick all the suggested ones** at the top of J (Dominguez,
+  October 2026). An area with nothing suggested says so. G's
   safety plan is J's Safety area. Each area needs a goal and an action (or a
   line of its own).
 
@@ -3181,6 +3184,19 @@ button down to the full list (`PendingList`) above the downloads. All three
 read the one list `validate.ts` makes. The red messages under the fields
 still wait until somebody first tries for a PDF, so a blank form is amber,
 not red.
+
+**The BrainCheck Care Plan holds the amber back** (Dominguez, October 2026:
+"only highlight in orange if they move onto the next section and a required
+item is missing"). The page keeps the furthest section the provider has
+tapped or moved into (`reached`; the PDFs card counts as the one after J),
+and only sections before it — or every section, after a first try for a
+PDF — are amber (`flagged` on `FormSection` and `ProgressBar`). An
+unfinished section they have not passed is plain, with a grey "N to fill
+in"; the red star on each required field is unchanged. The other two forms
+pass nothing and keep amber from the start. Its billing notes no longer say
+"confirm with billing (Coronis)": the telehealth reminder ends at the
+modifier and place of service, and the time field gives only the typical
+time until `G2212_THRESHOLD_MINUTES` is set.
 
 ## The Annual Wellness Visit form
 
