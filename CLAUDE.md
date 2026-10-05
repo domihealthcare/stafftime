@@ -11,6 +11,19 @@ so a future merge is cheap: same conventions, same stack, and every Employee rec
 carries a stable `external_id` field so it can later be matched to EMR staff/provider
 records without a messy migration.
 
+**The code is the starting point for a Staff module in Domi EMR** (decided by
+Dominguez, October 2026). This app stays as it is: Domi Healthcare's own, at
+staff.domihealthcare.com, with its own database. Nothing moves out of that
+database. Domi EMR takes a **one-time copy of the code** and adapts it there into
+an optional module that organizations switch on: many organizations instead of
+one, EMR accounts instead of this app's sign-in, document upload, Domi-specific
+content made into settings. The clinical forms are expected to stay on the EMR's
+clinical side rather than in the module. The EMR repo records which commit here it
+copied from. After that the two codebases go separate ways, so nothing flows
+across by itself: when a fix or feature here would also matter to the EMR
+module, say so, and it can be carried across by hand. This app's rules (*Data this
+app does not hold*, its own database) are unchanged by this.
+
 ## Company context
 - Domi Healthcare: 5-provider primary care practice, two locations — North Bergen, NJ
   and West New York, NJ (domihealthcare.com).
