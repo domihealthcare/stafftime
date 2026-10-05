@@ -284,15 +284,16 @@ export interface KioskSession {
   locationName: string;
 }
 
-/// A News post on the time clock: the words only — no author, likes,
-/// comments or poll, because patients can see the tablet.
-export interface KioskPost {
+/// A News post ticked to show publicly — on the time clock and the sign-in
+/// page: the words only, no author, likes, comments or poll.
+export interface PublicPost {
   id: string;
   title: string;
   body: string;
   createdAt: string;
   editedAt: string | null;
 }
+export type KioskPost = PublicPost;
 
 export interface KioskEmployee {
   id: string;
@@ -1182,6 +1183,8 @@ export const api = {
     request<{ deleted: number }>(`/events/${id}?scope=${scope}`, { method: 'DELETE' }),
 
   announcements: () => request<Announcement[]>('/announcements'),
+  /// The posts ticked to show publicly — needs no session, for the sign-in page.
+  publicPosts: () => request<PublicPost[]>('/announcements/public'),
   primaryAnnouncement: () =>
     request<{ announcement: Announcement | null }>('/announcements/primary'),
   createAnnouncement: (body: {

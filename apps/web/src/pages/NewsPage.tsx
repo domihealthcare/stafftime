@@ -176,7 +176,7 @@ function PostCard({
           <div className="flex flex-wrap items-center gap-2">
             <h2 className="font-semibold text-slate-900">{post.title}</h2>
             {post.isPrimary && <Badge tone="info">Primary</Badge>}
-            {canManage && post.showOnTimeClock && <Badge tone="neutral">On the time clock</Badge>}
+            {canManage && post.showOnTimeClock && <Badge tone="neutral">Public</Badge>}
           </div>
           <p className="mt-0.5 text-xs text-slate-500">
             {formatPostDate(post.createdAt)}
@@ -381,12 +381,12 @@ function PostForm({
             {/* The hint is described-by, not inside the label: its words would
                 otherwise become part of the box's name. */}
             <label htmlFor="post-on-time-clock" className="font-medium text-slate-700">
-              Also show on the front-desk time clock
+              Show publicly — on the time clock and the sign-in page
             </label>
             <p id="post-on-time-clock-hint" className="text-xs text-slate-500">
-              It goes on the time clock&rsquo;s main screen, above the button staff press to clock
-              in. Patients at the desk can see it, so leave this off for anything internal. No
-              likes, comments or poll there.
+              It goes on the front-desk time clock, where patients can see it, and under the sign-in
+              form, which anyone on the internet can open. Leave this off for anything internal.
+              Only the title and message are shown there — no likes, comments or poll.
             </p>
           </div>
         </div>

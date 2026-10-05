@@ -153,7 +153,9 @@ Build this as an **adapter/plugin pattern**, not a hardcoded ADP integration:
    export spreadsheet and the first-run setup page too. The repo, the
    `@stafftime/*` packages and the Vercel project keep their old names.
    - **Announcements** — admins write, edit and remove posts. Seen only after
-     sign-in, never on the public login page. There is **always exactly one
+     sign-in — except posts an admin ticks **Show publicly** (October 2026,
+     Dominguez), which also appear on the time clock and under the sign-in
+     form, title and words only. There is **always exactly one
      primary** post while any exist: it is shown at the top of the home screen,
      ticking another moves it, it cannot be unticked without choosing another,
      and if it is deleted the newest remaining post takes over. All posts are
@@ -717,11 +719,15 @@ Beyond the phases, the parts worth knowing about before picking up work:
   tablet never sets one), and Home shows **Choose your tablet PIN** until they
   do — see *What the keypad will not tell you* in `docs/architecture.md`.
   **The time clock's main screen** (5 October 2026, Dominguez) shows the News
-  posts ticked **Also show on the front-desk time clock**
-  (`Announcement.showOnTimeClock`, newest three, title and words only — no
-  author, likes, comments or poll, since patients can see it) and one
+  posts ticked **Show publicly** (`Announcement.showOnTimeClock`, newest
+  three, title and words only — no author, likes, comments or poll) and one
   **Clock in or out** button; the names are behind it, in a list with a
   search box (**Find your name**), not on the main screen. `GET /kiosk/posts`.
+  The **same posts show under the sign-in form** (Dominguez: "since they are
+  both public appearing … 1 tick for both"), from `GET /announcements/public`
+  — the one News read that needs no session; one query
+  (`announcements/public-posts.ts`) serves both. The column keeps its first
+  name, `showOnTimeClock`; it means "public".
 - **Hours entered by hand** (29 September 2026, Dominguez): Timesheet →
   **+ Add hours** (managers) for a day with no punch at all — a reason from a
   short list and a note, never your own hours, never over a punch already

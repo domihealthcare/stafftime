@@ -12,6 +12,9 @@ import {
 import { Role } from '@prisma/client';
 import { AuthUser } from '../common/auth/auth-user';
 import { CurrentUser } from '../common/auth/current-user.decorator';
+import { Public } from '../common/auth/public.decorator';
+import { PrismaService } from '../prisma/prisma.service';
+import { findPublicPosts } from './public-posts';
 import { Roles } from '../common/auth/roles.decorator';
 import { AnnouncementsService } from './announcements.service';
 import {
@@ -24,11 +27,22 @@ import {
 
 /// Reading needs a session and nothing more; writing posts is admin only.
 /// Liking, commenting and voting are for anybody signed in, under their own
-/// name. None of it is public — the login page can be opened by anyone on the
-/// internet.
+/// name. The one exception is `public`: the posts an admin ticked to show
+/// publicly, title and words only, for the sign-in page — which anyone on the
+/// internet can open — and the front-desk time clock.
 @Controller('announcements')
 export class AnnouncementsController {
-  constructor(private readonly announcements: AnnouncementsService) {}
+  constructor(
+    private readonly announcements: AnnouncementsService,
+    private readonly prisma: PrismaService,
+  ) {}
+
+  /// Before `:id`, which would otherwise take "public" for a post's id.
+  @Get('public')
+  @Public()
+  publicPosts() {
+    return findPublicPosts(this.prisma);
+  }
 
   @Get()
   list(@CurrentUser() user: AuthUser) {

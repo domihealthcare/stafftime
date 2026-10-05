@@ -1,6 +1,6 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { ApiError } from '../lib/api';
+import { ApiError, api, type PublicPost } from '../lib/api';
 import { useSession } from '../lib/session';
 import { BrandLogo } from '../components/Brand';
 import { InstallTip } from '../components/InstallTip';
@@ -13,6 +13,15 @@ export function LoginPage() {
   const [password, setPassword] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  // News posts an admin ticked to show publicly. A nicety: if they cannot be
+  // loaded, the sign-in form is all there is, as before.
+  const [posts, setPosts] = useState<PublicPost[]>([]);
+  useEffect(() => {
+    api
+      .publicPosts()
+      .then(setPosts)
+      .catch(() => undefined);
+  }, []);
 
   async function submit(event: React.FormEvent) {
     event.preventDefault();
@@ -21,9 +30,7 @@ export function LoginPage() {
     try {
       await signIn(email, password);
     } catch (err) {
-      setError(
-        err instanceof ApiError ? err.message : 'Could not sign in. Please try again.',
-      );
+      setError(err instanceof ApiError ? err.message : 'Could not sign in. Please try again.');
       setPassword('');
     } finally {
       setBusy(false);
@@ -81,13 +88,34 @@ export function LoginPage() {
         </Card>
 
         <p className="mt-4 text-center text-sm">
-          <Link
-            to="/forgot-password"
-            className="font-medium text-brand-700 hover:text-brand-900"
-          >
+          <Link to="/forgot-password" className="font-medium text-brand-700 hover:text-brand-900">
             Forgotten your password?
           </Link>
         </p>
+
+        {posts.length > 0 && (
+          <section aria-label="News" className="mt-6 space-y-3">
+            {posts.map((post) => (
+              <article
+                key={post.id}
+                className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm"
+                data-testid="public-post"
+              >
+                <h2 className="font-semibold text-slate-900">{post.title}</h2>
+                <p className="mt-0.5 text-xs text-slate-500">
+                  {new Date(post.createdAt).toLocaleDateString(undefined, {
+                    month: 'long',
+                    day: 'numeric',
+                    year: 'numeric',
+                  })}
+                </p>
+                {post.body && (
+                  <p className="mt-2 whitespace-pre-line text-sm text-slate-700">{post.body}</p>
+                )}
+              </article>
+            ))}
+          </section>
+        )}
 
         <InstallTip />
       </div>

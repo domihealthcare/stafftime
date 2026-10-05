@@ -1519,10 +1519,10 @@ const MANAGERS: Section[] = [
             <strong>People can pick more than one</strong> for tick boxes). Votes are named; for
             anonymous answers, use a survey. Once anybody has voted the choices are fixed —{' '}
             <strong>Close voting</strong> on the post stops it, and it can be opened again. Managers
-            and admins can delete anybody's comment. Tick{' '}
-            <strong>Also show on the front-desk time clock</strong> to put a post on the time
-            clock&rsquo;s main screen too (the newest three ticked) — title and message only.
-            Patients at the desk can see it, so keep it to things they may read.
+            and admins can delete anybody's comment. Tick <strong>Show publicly</strong> to put a
+            post on the front-desk time clock and under the sign-in form too (the newest three
+            ticked) — title and message only. Patients at the desk, and anyone on the internet, can
+            read those, so keep it to things anybody may read.
           </p>
         ),
       },
