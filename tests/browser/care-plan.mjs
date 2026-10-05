@@ -101,6 +101,23 @@ await step('it is prepared by the person signed in, and starts on today', async 
   if (date !== today) throw new Error(`starts on ${date}`);
 });
 
+await step('a section turns amber only once somebody has moved on past it', async () => {
+  const amber = () =>
+    page.locator('[data-testid^="section-"][data-flagged="true"]').evaluateAll((all) =>
+      all.map((el) => el.getAttribute('data-testid')),
+    );
+  if ((await amber()).length > 0) throw new Error(`amber from the start: ${await amber()}`);
+  const general = section('general');
+  if ((await general.getAttribute('data-complete')) !== 'false') throw new Error('general reads as complete');
+  await general.getByText(/to fill in/).waitFor({ timeout: 5000 });
+  if ((await general.getByTestId('pending-here').count()) > 0) throw new Error('the amber list shows from the start');
+  // Working in Support leaves Patient and General behind, unfinished.
+  await section('support').locator('input, textarea, select').first().focus();
+  await page.waitForTimeout(200);
+  const now = await amber();
+  if (now.join() !== 'section-patient,section-general') throw new Error(`amber: ${now.join(', ')}`);
+});
+
 await step('each section says what it still needs, before anybody tries for a PDF', async () => {
   const general = section('general');
   if ((await general.getAttribute('data-complete')) !== 'false') throw new Error('general reads as complete');

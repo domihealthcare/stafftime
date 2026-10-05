@@ -1,4 +1,4 @@
-import type { ReactNode } from 'react';
+import { useCallback, useState, type ReactNode } from 'react';
 import { Card } from '../../components/ui';
 
 /**
@@ -14,11 +14,12 @@ import { Card } from '../../components/ui';
  * red messages under the fields themselves still wait for a first try, so a
  * blank form is not a wall of red.
  *
- * A form can hold the amber back until somebody has moved past a section
- * (`flagged`, used by the BrainCheck Care Plan — Dominguez, October 2026:
- * "only highlight in orange if they move onto the next section and a
- * required item is missing"). Until then an unfinished section is plain,
- * with a quiet count; the required fields keep their star throughout.
+ * The amber is held back until somebody has moved past a section
+ * (`useMovedOn`, below; Dominguez, October 2026: "only highlight in orange if
+ * they move onto the next section and a required item is missing" — first
+ * on the BrainCheck Care Plan, then the other two). Until then an unfinished
+ * section is plain, with a quiet count; the required fields keep their star
+ * throughout.
  */
 
 /// One thing still needed: which section, which answer (a dotted path the
@@ -38,6 +39,29 @@ export interface SectionInfo {
 /// What a PDF is printed in: English, or English and then Spanish on fresh
 /// pages (Dominguez, October 2026: only these two).
 export type PrintLanguage = 'en' | 'both';
+
+/// How far down a form somebody has got, for `flagged` on `FormSection` and
+/// `ProgressBar`: the furthest section they have tapped or moved into, with
+/// the downloads card counting as the one after the last. A section before it
+/// with something still needed is amber; so is every one after a first try
+/// for a PDF (`showAll`).
+export function useMovedOn(sections: SectionInfo[], showAll: boolean) {
+  const [reached, setReached] = useState(-1);
+  const reach = useCallback(
+    (index: number) => setReached((before) => (index > before ? index : before)),
+    [],
+  );
+  const indexOf = (key: string) => sections.findIndex((section) => section.key === key);
+  return {
+    flagged: (key: string) => showAll || indexOf(key) < reached,
+    /// Somebody is working in this section.
+    enter: (key: string) => reach(indexOf(key)),
+    /// Somebody is at the downloads, past every section.
+    enterEnd: () => reach(sections.length),
+    /// A fresh form (or another page of one): nothing passed yet.
+    reset: useCallback(() => setReached(-1), []),
+  };
+}
 
 /// One numbered card of a clinical form, findable from its progress bar.
 export function FormSection({

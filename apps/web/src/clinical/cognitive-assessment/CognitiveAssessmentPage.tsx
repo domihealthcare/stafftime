@@ -13,6 +13,7 @@ import {
   ProgressBar,
   type Pending,
   type PrintLanguage,
+  useMovedOn,
 } from '../common/layout';
 import { savePdf, useLeaveGuard } from '../common/leave-guard';
 import { emptyForm, isPrior, type AssessmentForm } from './form';
@@ -89,8 +90,8 @@ function AssessmentScreen({ employee }: { employee: Employee }) {
   const today = localDate(new Date());
   const problems = useMemo(() => validate(form, today), [form, today]);
   const [showProblems, setShowProblems] = useState(false);
-  // How far down the form the provider has got (see `flagged`, below).
-  const [reached, setReached] = useState(-1);
+  // Amber only for a section the provider has moved on past (see useMovedOn).
+  const movedOn = useMovedOn(SECTIONS, showProblems);
   const problemFor = useCallback(
     (path: string) =>
       showProblems ? problems.find((problem) => problem.field === path)?.message : undefined,
@@ -154,7 +155,7 @@ function AssessmentScreen({ employee }: { employee: Employee }) {
     setUntouched(JSON.stringify(next));
     setMade(null);
     setShowProblems(false);
-    setReached(-1);
+    movedOn.reset();
     setCleared(true);
     window.scrollTo({ top: 0 });
   }
@@ -165,13 +166,6 @@ function AssessmentScreen({ employee }: { employee: Employee }) {
   const pendingIn = (key: SectionKey) => problems.filter((problem) => problem.section === key);
   const sectionDone = (key: SectionKey) => pendingIn(key).length === 0;
 
-  // A section is shown in amber only once the provider has moved on past it
-  // with something required still missing (Dominguez, October 2026) — or
-  // after a first try for a PDF. `reached` is the furthest section they have
-  // tapped or moved into; the PDFs card counts as the one after J.
-  const reach = (index: number) => setReached((before) => (index > before ? index : before));
-  const indexOf = (key: string) => SECTIONS.findIndex((section) => section.key === key);
-  const flagged = (key: string) => showProblems || indexOf(key) < reached;
   const [opened, setOpened] = useState<Set<ElementKey>>(new Set());
 
   const jumpTo = (key: string) =>
@@ -221,7 +215,7 @@ function AssessmentScreen({ employee }: { employee: Employee }) {
           sections={SECTIONS}
           pending={problems}
           ready="Ready for the PDFs"
-          flagged={flagged}
+          flagged={movedOn.flagged}
           onSection={jumpTo}
           onShowList={showList}
         />
@@ -233,8 +227,8 @@ function AssessmentScreen({ employee }: { employee: Employee }) {
             label="R"
             title="Requirements for 99483"
             pending={pendingIn('requirements')}
-            flagged={flagged('requirements')}
-            onActivity={() => reach(indexOf('requirements'))}
+            flagged={movedOn.flagged('requirements')}
+            onActivity={() => movedOn.enter('requirements')}
             onJump={focusField}
           >
             <RequirementsSection form={form} update={update} />
@@ -245,8 +239,8 @@ function AssessmentScreen({ employee }: { employee: Employee }) {
             label="0"
             title="Patient and visit"
             pending={pendingIn('visit')}
-            flagged={flagged('visit')}
-            onActivity={() => reach(indexOf('visit'))}
+            flagged={movedOn.flagged('visit')}
+            onActivity={() => movedOn.enter('visit')}
             onJump={focusField}
           >
             <VisitSection form={form} update={update} provider={provider} />
@@ -268,8 +262,8 @@ function AssessmentScreen({ employee }: { employee: Employee }) {
                 label={element.key}
                 title={element.title}
                 pending={pendingIn(element.key)}
-                flagged={flagged(element.key)}
-                onActivity={() => reach(indexOf(element.key))}
+                flagged={movedOn.flagged(element.key)}
+                onActivity={() => movedOn.enter(element.key)}
                 onJump={focusField}
                 aside={
                   <CompletionSwitch
@@ -324,8 +318,8 @@ function AssessmentScreen({ employee }: { employee: Employee }) {
         <div
           ref={checklist}
           className="mt-6 scroll-mt-32"
-          onFocus={() => reach(SECTIONS.length)}
-          onPointerDown={() => reach(SECTIONS.length)}
+          onFocus={movedOn.enterEnd}
+          onPointerDown={movedOn.enterEnd}
         >
           <Card className="p-4 sm:p-5">
             <h2 className="text-lg font-semibold text-slate-900">PDFs</h2>

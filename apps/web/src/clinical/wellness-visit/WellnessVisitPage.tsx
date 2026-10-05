@@ -12,6 +12,7 @@ import {
   PendingList,
   ProgressBar,
   type Pending,
+  useMovedOn,
 } from '../common/layout';
 import { savePdf, useLeaveGuard } from '../common/leave-guard';
 import { NEEDS_NATIVE_SPEAKER_REVIEW, type Language } from './config';
@@ -140,6 +141,8 @@ function WellnessScreen({ employee }: { employee: Employee }) {
   const fieldContext = useMemo(() => ({ idFor, problemFor }), [idFor, problemFor]);
   const sections = SECTIONS[page];
   const pendingIn = (key: string) => problems.filter((problem) => problem.section === key);
+  // Amber only for a section somebody has moved on past (see useMovedOn).
+  const movedOn = useMovedOn(sections, showProblems);
 
   // ---------------------------------------------------- the PDF, and after
   const [made, setMade] = useState<{ page: Page; snapshot: string } | null>(null);
@@ -155,6 +158,7 @@ function WellnessScreen({ employee }: { employee: Employee }) {
   function switchTo(next: Page) {
     setPage(next);
     setShowProblems(false);
+    movedOn.reset();
     setFailure(null);
     setCleared(null);
     window.scrollTo({ top: 0 });
@@ -205,6 +209,7 @@ function WellnessScreen({ employee }: { employee: Employee }) {
     }
     setMade(null);
     setShowProblems(false);
+    movedOn.reset();
     setCleared(page);
     window.scrollTo({ top: 0 });
   }
@@ -236,6 +241,8 @@ function WellnessScreen({ employee }: { employee: Employee }) {
       label: info.label,
       title: info.title,
       pending: pendingIn(key),
+      flagged: movedOn.flagged(key),
+      onActivity: () => movedOn.enter(key),
       onJump: focusField,
     };
   };
@@ -297,6 +304,7 @@ function WellnessScreen({ employee }: { employee: Employee }) {
           sections={sections}
           pending={problems}
           ready="Ready for the PDF"
+          flagged={movedOn.flagged}
           onSection={jumpTo}
           onShowList={showList}
         />
@@ -342,7 +350,12 @@ function WellnessScreen({ employee }: { employee: Employee }) {
         </div>
 
         {/* What is missing, the language, and the download. */}
-        <div ref={checklist} className="mt-6 scroll-mt-32">
+        <div
+          ref={checklist}
+          className="mt-6 scroll-mt-32"
+          onFocus={movedOn.enterEnd}
+          onPointerDown={movedOn.enterEnd}
+        >
           <Card className="p-4 sm:p-5">
             <h2 className="text-lg font-semibold text-slate-900">
               {page === 1 ? 'Page 1 — the questionnaire' : 'Page 2 — preventive services'}
