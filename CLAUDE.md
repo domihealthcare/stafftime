@@ -733,9 +733,10 @@ Beyond the phases, the parts worth knowing about before picking up work:
   support said the iOS app is for legacy accounts only and the practice's
   account will not sign in there. Its login is saved in the iPad's Passwords,
   filled with the iPad passcode. Whether the web version has a patient-facing
-  mode and a session timeout was asked of BrainCheck — Help's *Giving a
-  patient the BrainCheck test* still describes the old app's patient mode and
-  wants rewriting once that is known. Owned by a practice
+  mode and a session timeout was asked of BrainCheck — meanwhile Help's
+  *Giving a patient the BrainCheck test* is the interim web version (saved
+  login, Guided Access, stay close, **sign out after every patient**; no
+  patient mode), to revisit once they answer. Owned by a practice
   Apple Account on `devices@` (an alias reaching only Dominguez — office@ is
   read by all staff); Google Home on it is signed in as office@ so staff can
   change either office's thermostat. `/kiosk` now has its own page

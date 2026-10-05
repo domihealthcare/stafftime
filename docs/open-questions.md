@@ -309,8 +309,10 @@ What is left:
       patient cannot reach the provider screens or other patients, how long
       until a signed-in session times out, and is Safari on iPadOS 26 on an
       8th-generation iPad supported. Until then: sign out after each patient.
-      Help → *Giving a patient the BrainCheck test* is to be rewritten to
-      match once the answers are in.
+      Help → *Giving a patient the BrainCheck test* was rewritten for the web
+      version (October 2026, interim): saved login, Guided Access, stay
+      close, sign out after every patient — no patient mode. Revisit once the
+      answers are in.
 
 ## Technical to-dos
 

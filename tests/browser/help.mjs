@@ -88,7 +88,11 @@ await step('the password answer states the current rule', async () => {
 await step('the front-desk iPad has its own section, and says how to give the BrainCheck test', async () => {
   await emp.getByRole('heading', { name: 'The front-desk iPad' }).waitFor({ timeout: 5000 });
   await emp.getByText('Giving a patient the BrainCheck test (MAs and providers)').click();
-  await emp.getByText(/Turn on patient mode in BrainCheck/).waitFor({ state: 'visible', timeout: 5000 });
+  // The web version (October 2026): sign out after every patient; the old
+  // app's patient mode and its PIN are gone.
+  await emp.getByText(/Sign out of BrainCheck/).waitFor({ state: 'visible', timeout: 5000 });
+  if ((await emp.getByText(/patient mode|BrainCheck’s own PIN/).count()) > 0)
+    throw new Error('Help still describes the old BrainCheck app');
   // The guide is shown to everybody, so it names the codes but never gives one.
   // textContent, not innerText: the headings are upper-cased by CSS, and closed answers count too.
   const text = await emp
