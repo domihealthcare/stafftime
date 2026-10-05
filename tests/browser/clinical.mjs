@@ -152,6 +152,28 @@ await step('the requirements come first, before the patient', async () => {
     throw new Error('hovering the info button ticked the box');
 });
 
+await step('a section turns amber only once the provider has moved on past it', async () => {
+  // Nothing touched yet: unfinished, but plain — no amber anywhere.
+  const amber = () =>
+    page.locator('[data-testid^="section-"][data-flagged="true"]').evaluateAll((all) =>
+      all.map((el) => el.getAttribute('data-testid')),
+    );
+  if ((await amber()).length > 0) throw new Error(`amber from the start: ${await amber()}`);
+  if ((await page.getByTestId('pending-here').count()) > 0) throw new Error('the amber list shows from the start');
+  await section('requirements').getByText(/to fill in/).waitFor({ timeout: 5000 });
+  // Required answers keep their star.
+  const name = await section('visit').locator('label', { hasText: 'Patient name' }).innerText();
+  if (!name.includes('*')) throw new Error(`no star: "${name}"`);
+  // Working in the patient's details leaves the requirements behind, unticked.
+  await section('visit').getByLabel(/Patient name/).click();
+  await page.waitForTimeout(200);
+  const now = await amber();
+  if (now.join() !== 'section-requirements') throw new Error(`amber: ${now.join(', ')}`);
+  await section('requirements').getByText(/still needed/).first().waitFor({ timeout: 5000 });
+  const pill = page.getByRole('navigation', { name: 'Sections' }).locator('[data-flagged="true"]');
+  if ((await pill.count()) !== 1) throw new Error(`${await pill.count()} pills in amber`);
+});
+
 await step('an empty form makes no PDF, and lists what is missing', async () => {
   let downloaded = false;
   page.once('download', () => (downloaded = true));
@@ -204,6 +226,9 @@ await step('telehealth reminds about modifier 95, and there is no AWV question',
   const v = section('visit');
   await v.getByLabel('Telehealth').check();
   await v.getByText(/telehealth modifier \(95\)/).waitFor({ timeout: 5000 });
+  // The billing notes came off the form (Dominguez, October 2026).
+  if ((await page.getByText(/Coronis|confirm threshold|if unsure/).count()) > 0)
+    throw new Error('a "confirm with billing" note is still shown');
   if ((await page.getByText(/annual wellness visit|AWV/).count()) > 0) throw new Error('the AWV is still asked about');
 });
 
@@ -233,6 +258,32 @@ await step('a safety concern makes the care plan suggest what to do about it', a
   if (await tick.isChecked()) throw new Error('ticked for the provider');
   const problem = await safety.innerText();
   if (!/Home: fall risk/.test(problem)) throw new Error(`problem not built from G: ${problem.slice(0, 120)}`);
+});
+
+await step('"Tick the suggested ones" is in every area, and ticks the goals as well as the actions', async () => {
+  // Every area says where it stands; one with suggestions has the button.
+  for (const area of ['cognition', 'function', 'behavior', 'medications', 'safety', 'caregiver']) {
+    const status = await page.getByTestId(`care-plan-${area}`).getByTestId('suggested-status').innerText();
+    if (!/Tick the suggested ones|Nothing suggested here/.test(status)) throw new Error(`${area}: "${status}"`);
+  }
+  for (const area of ['cognition', 'safety', 'caregiver']) {
+    if ((await page.getByTestId(`care-plan-${area}`).getByRole('button', { name: 'Tick the suggested ones' }).count()) !== 1)
+      throw new Error(`no button in ${area}`);
+  }
+  const safety = page.getByTestId('care-plan-safety');
+  await safety.getByRole('button', { name: 'Tick the suggested ones' }).click();
+  if (!(await safety.getByLabel(/Prevent falls and injuries at home/).isChecked())) throw new Error('the goal was not ticked');
+  if (!(await safety.getByLabel(/Remove tripping hazards/).isChecked())) throw new Error('the action was not ticked');
+  await safety.getByText('✓ The suggested ones are ticked').waitFor({ timeout: 5000 });
+  // One press for every area.
+  await section('J').getByRole('button', { name: 'Tick all the suggested ones' }).click();
+  for (const area of ['cognition', 'behavior', 'medications', 'caregiver']) {
+    await page.getByTestId(`care-plan-${area}`).getByText('✓ The suggested ones are ticked').waitFor({ timeout: 5000 });
+  }
+  if (!(await page.getByTestId('care-plan-cognition').getByLabel(/Keep memory and thinking skills/).isChecked()))
+    throw new Error('a goal elsewhere was not ticked');
+  if ((await section('J').getByRole('button', { name: 'Tick all the suggested ones' }).count()) > 0)
+    throw new Error('the button stays once everything suggested is ticked');
 });
 
 await step('the whole form, filled in with a fake patient, makes the note', async () => {

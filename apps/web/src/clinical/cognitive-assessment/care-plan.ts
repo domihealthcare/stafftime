@@ -26,7 +26,9 @@ import { hasConcern, isPrior, type AssessmentForm } from './form';
  * - `problemSummary` writes each area's problem from sections A to I; the
  *   provider can use it as it is or write their own.
  * - `suggestions` marks the goals and actions the answers point to. They are
- *   only ever suggestions: nothing is ticked for the provider.
+ *   only ever suggestions: nothing is ticked for the provider until they
+ *   press "Tick the suggested ones" (one area, goals and actions) or "Tick
+ *   all the suggested ones" (every area).
  */
 
 const ticked = (values: string[]) => values.filter((value) => value !== NONE);
