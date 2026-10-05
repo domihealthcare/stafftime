@@ -16,14 +16,21 @@ export function PlanResultNotice({
   onDismiss: () => void;
 }) {
   const nothing = result.created === 0;
+  const verb = result.action === 'changed' ? 'changed' : 'created';
 
   return (
     <Alert tone={nothing ? 'warning' : result.skipped.length > 0 ? 'info' : 'success'}>
       <p className="font-medium">
         {nothing
-          ? 'No shifts were created.'
-          : `${result.created} shift${result.created === 1 ? '' : 's'} created.`}
+          ? `No shifts were ${verb}.`
+          : `${result.created} shift${result.created === 1 ? '' : 's'} ${verb}.`}
       </p>
+      {result.regular && (
+        <p className="mt-1 text-sm" data-testid="plan-regular">
+          The regular shift behind them changed too, so the weeks still to be written out come at
+          the new hours.
+        </p>
+      )}
       {result.standing && (
         <p className="mt-1 text-sm" data-testid="plan-standing">
           No end date: written out to{' '}

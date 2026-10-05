@@ -440,6 +440,17 @@ Beyond the phases, the parts worth knowing about before picking up work:
   (`shift-notices.ts`). 500 characters at most. Staff only ever see their
   own shifts' notes in the app; the printed rota shows everybody's.
   `tests/browser/shift-notes.mjs`.
+- **Changing a shift's hours** (5 October 2026, Dominguez: "Gaby is 7-2 but
+  it is changing to 1-8, so instead of Celeste doing 1 by 1, she can just
+  edit all"): the shift's pop-up on the rota has **Hours**; once changed it
+  offers **Just this shift**, **every later Wednesday like it**, or **all of
+  their later 7am–2pm shifts, any day** (same person, office and old hours,
+  not yet started). Changed in place — notes and publishing kept, a clash
+  skipped and listed, the person told once. A regular shift behind them
+  follows (ended the day before and carried on at the new hours), so later
+  weeks do too. `POST /shifts/:id/retime`, `shifts/shift-retime.service.ts`;
+  see *Changing the hours of a shift* in `docs/architecture.md`;
+  `tests/browser/shift-hours.mjs`.
 - **Tablet PINs are chosen by staff** on their profile (confirmed with their
   password); the profile shows only that one is set and since when, never the
   PIN. Managers and admins can set a replacement from the Directory, never

@@ -1081,6 +1081,40 @@ ran and is left out of the Regular shifts list. On screen:
 `components/WeeklyScheduleEditor.tsx`, under Schedule → Regular shifts and in
 the Staff editor (admins).
 
+### Changing the hours of a shift, and the ones like it
+
+Asked for by Dominguez, October 2026: "Gaby is 7-2 but it is changing to 1-8,
+so instead of Celeste doing 1 by 1, she can just edit all". The shift's
+pop-up on the rota has **Hours** (Starts, Ends); once they change it offers
+**Just this shift**, **This and every later Wednesday like it** or **This and
+all of Gaby's later 7am–2pm shifts, any day**.
+`POST /shifts/:id/retime` (managers, `shifts/shift-retime.service.ts`) takes
+`HH:MM` on the office's clock and a scope:
+
+- `ONE` goes through the ordinary `PATCH` path (its bell notice and overtime
+  email), the times rebuilt on the shift's own day in the office's timezone;
+- `SAME_WEEKDAY` / `LATER` change, in place, every shift "like it": the same
+  person (an open shift: the same job role), office, home-or-not and old
+  hours, from this one on, that has not started and is not cancelled — on
+  the same weekday, or any. Notes, drafts and publishing stay. A day where
+  the new hours would overlap another of the person's shifts is skipped and
+  reported (`OVERLAPS_SHIFT`), as a repeat reports it. One bell notice for
+  the lot ("Your 7am–2pm shifts from Wed, Oct 14 are now 1pm–8pm") when any
+  were published; the overtime email on a crossing; the result lists the
+  weeks that go over, like a repeat's.
+
+A **regular shift** behind them (any `seriesId` among them, at the old hours,
+not ended before the day) follows, so the weeks the nightly job has not
+written yet come at the new hours. It is never rewritten from scratch: begun
+before the day, it is ended the day before and carried on as new series —
+the days that move at the new hours, any others at the old — and its shifts
+from the day on are re-pointed at whichever now writes their weekday, so
+stopping or editing it later still finds them. Begun on the day or later, it
+is changed in place (split in two if only one weekday moves). Every-few-weeks
+rhythms keep their `cycleFrom`. On screen the result is the usual plan
+notice, saying "changed" (`PlanResult.action`) and that the regular shift
+followed (`regular`). `tests/browser/shift-hours.mjs`.
+
 ### A shift's job role is always one the person holds
 
 Asked for by Dominguez, September 2026. `heldJobRole` (`shifts/held-job-role.ts`)
