@@ -160,6 +160,38 @@ export function QuickActions() {
   );
 }
 
+// ------------------------------------------------------------- tablet PIN
+
+/// Somebody at an office with a working time clock who has not chosen a PIN
+/// yet (Dominguez, October 2026). Shown on Home only — not the bell, not an
+/// email — and gone once they have one.
+export function TabletPinReminder() {
+  const { employee } = useSession();
+  const offices = employee?.tabletPinOffices ?? [];
+  if (offices.length === 0) return null;
+  const where = offices.length === 1 ? `the ${offices[0]} time clock` : 'the time clocks';
+  return (
+    // Not a Card: its white background would win over the amber that makes this
+    // stand out from the cards around it.
+    <section
+      className="rounded-xl border border-amber-200 bg-amber-50 p-4 shadow-sm"
+      data-testid="tablet-pin-reminder"
+    >
+      <h2 className="text-sm font-semibold text-slate-900">Choose your tablet PIN</h2>
+      <p className="mt-1 text-sm text-slate-700">
+        You need one to clock in on {where} at the front desk. It takes a minute, with your
+        password.
+      </p>
+      <Link
+        to="/profile#tablet-pin"
+        className="mt-3 inline-flex min-h-10 items-center rounded-lg bg-brand-600 px-3 text-sm font-medium text-white hover:bg-brand-700"
+      >
+        Choose a PIN
+      </Link>
+    </section>
+  );
+}
+
 // -------------------------------------------------------------- coming up
 
 /// Holidays and closures, and meetings and events, in the next 30 days — the

@@ -83,6 +83,95 @@ await step('the device cookie is not readable by page scripts', async () => {
   if (!cookie?.httpOnly) throw new Error('kiosk cookie is not httpOnly');
 });
 
+// --- somebody with no PIN yet (Dominguez, October 2026): listed on the tablet
+// with a tag and told how to choose one, and reminded on Home until they do ---
+const staffList = await (await admin.request.get(`${BASE}/api/employees`)).json();
+const morgan = staffList.find((person) => person.email === 'manager@domihealthcare.com');
+await admin.request.delete(`${BASE}/api/kiosk/employees/${morgan.id}/pin`);
+const morganCtx = await browser.newContext({ viewport: { width: 390, height: 844 } });
+const morganPage = await morganCtx.newPage();
+morganPage.on('pageerror', (e) => errors.push(`manager pageerror: ${e.message}`));
+
+await step('somebody with no PIN is listed on the tablet, tagged "No PIN yet"', async () => {
+  await tablet.reload({ waitUntil: 'networkidle' });
+  const card = tablet.getByRole('button', { name: /Morgan/ });
+  await card.waitFor({ timeout: 10000 });
+  if (!(await card.innerText()).includes('No PIN yet')) throw new Error('Morgan has no "No PIN yet" tag');
+  if ((await tablet.getByRole('button', { name: /Frankie/ }).innerText()).includes('No PIN yet'))
+    throw new Error('Frankie has a PIN but was tagged as having none');
+});
+
+await step('tapping them explains how to choose a PIN, with no keypad, and OK goes back', async () => {
+  await tablet.getByRole('button', { name: /Morgan/ }).click();
+  await tablet.getByText('You have not chosen a PIN yet.').waitFor({ timeout: 5000 });
+  await tablet.getByText(/Your profile/).waitFor({ timeout: 5000 });
+  if (await tablet.getByRole('button', { name: 'Confirm PIN' }).count())
+    throw new Error('the keypad was offered to somebody with no PIN');
+  await tablet.getByRole('button', { name: 'OK' }).click();
+  await tablet.getByText('Tap your name to clock in or out').waitFor({ timeout: 5000 });
+});
+await tablet.screenshot({ path: `${OUT}/18b-kiosk-no-pin.png`, fullPage: true });
+
+await step('the tablet still refuses a punch for them, the same as a wrong PIN', async () => {
+  const answer = await tablet.evaluate(async (id) => {
+    const response = await fetch('/api/kiosk/punch', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ employeeId: id, pin: '4817' }),
+    });
+    return response.status;
+  }, morgan.id);
+  if (answer < 400) throw new Error(`a punch with no PIN set answered ${answer}`);
+});
+
+await step('Home reminds them to choose a PIN, naming the office with the time clock', async () => {
+  await morganPage.goto(`${BASE}/`, { waitUntil: 'networkidle' });
+  await morganPage.getByLabel('Email').fill('manager@domihealthcare.com');
+  await morganPage.getByLabel('Password', { exact: true }).fill('shift-change-2026');
+  await morganPage.getByRole('button', { name: 'Sign in' }).click();
+  const reminder = morganPage.getByTestId('tablet-pin-reminder');
+  await reminder.waitFor({ timeout: 15000 });
+  if (!(await reminder.innerText()).includes('North Bergen'))
+    throw new Error(`the reminder does not name North Bergen: ${await reminder.innerText()}`);
+});
+await morganPage.screenshot({ path: `${OUT}/18c-home-pin-reminder.png`, fullPage: true });
+
+await step('the reminder opens the PIN box, and goes once a PIN is chosen', async () => {
+  await morganPage.getByTestId('tablet-pin-reminder').getByRole('link', { name: 'Choose a PIN' }).click();
+  await morganPage.getByTestId('pin-card').waitFor({ timeout: 10000 });
+  await morganPage.waitForFunction(() => document.activeElement?.id === 'newPin', null, { timeout: 5000 });
+  const box = morganPage.getByTestId('pin-card');
+  await box.getByLabel('New PIN').fill('7394');
+  await box.getByLabel('Same again').fill('7394');
+  await box.getByLabel('Your password').fill('shift-change-2026');
+  await box.getByRole('button', { name: 'Set PIN' }).click();
+  await morganPage.getByText('Tablet PIN saved.').waitFor({ timeout: 10000 });
+  await morganPage.goto(`${BASE}/`, { waitUntil: 'networkidle' });
+  await morganPage.getByText('Not clocked in').waitFor({ timeout: 15000 });
+  if (await morganPage.getByTestId('tablet-pin-reminder').count())
+    throw new Error('the reminder stayed after the PIN was chosen');
+});
+
+await step('with a PIN chosen, the tablet drops the tag', async () => {
+  await tablet.reload({ waitUntil: 'networkidle' });
+  const card = tablet.getByRole('button', { name: /Morgan/ });
+  await card.waitFor({ timeout: 10000 });
+  if ((await card.innerText()).includes('No PIN yet')) throw new Error('the tag stayed after the PIN was set');
+});
+
+await step('somebody who has a PIN is not reminded', async () => {
+  const ctx = await browser.newContext();
+  const page = await ctx.newPage();
+  await page.goto(`${BASE}/`, { waitUntil: 'networkidle' });
+  await page.getByLabel('Email').fill('frontdesk@domihealthcare.com');
+  await page.getByLabel('Password', { exact: true }).fill('shift-change-2026');
+  await page.getByRole('button', { name: 'Sign in' }).click();
+  await page.getByText('Not clocked in').waitFor({ timeout: 15000 });
+  if (await page.getByTestId('tablet-pin-reminder').count()) throw new Error('Frankie, who has a PIN, was reminded');
+  await ctx.close();
+});
+await morganCtx.close();
+
 const typePin = async (pin) => {
   for (const digit of pin) await tablet.getByRole('button', { name: digit, exact: true }).click();
   await tablet.getByRole('button', { name: 'Confirm PIN' }).click();

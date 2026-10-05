@@ -24,6 +24,8 @@ const IDLE_RESET_MS = 30_000;
 /// A closing checklist takes longer than a PIN, but one walked away from still
 /// clears itself — nobody should find somebody else's half-ticked list.
 const CHECKLIST_IDLE_RESET_MS = 5 * 60_000;
+/// How long "you have no PIN yet" stays up before the staff list comes back.
+const NO_PIN_MS = 20_000;
 
 type Screen =
   | { name: 'loading' }
@@ -31,6 +33,8 @@ type Screen =
   | { name: 'staff' }
   /// `closing` is set on the second PIN of a clock-out with a checklist.
   | { name: 'pin'; employee: KioskEmployee; closing?: ClosingSubmission }
+  /// Somebody with no PIN yet tapped their name: how to choose one.
+  | { name: 'no-pin'; employee: KioskEmployee }
   | { name: 'checklist'; employee: KioskEmployee; sections: ApplicableSection[] }
   | { name: 'done'; result: KioskPunchResult };
 
@@ -121,6 +125,9 @@ export function KioskApp() {
     if (screen.name === 'checklist') {
       idleTimer.current = window.setTimeout(backToStaff, CHECKLIST_IDLE_RESET_MS);
     }
+    if (screen.name === 'no-pin') {
+      idleTimer.current = window.setTimeout(backToStaff, NO_PIN_MS);
+    }
     return () => window.clearTimeout(idleTimer.current);
   }, [screen, pin, busy, backToStaff]);
 
@@ -195,7 +202,9 @@ export function KioskApp() {
           <StaffList
             staff={staff}
             error={error}
-            onPick={(employee) => setScreen({ name: 'pin', employee })}
+            onPick={(employee) =>
+              setScreen(employee.hasPin ? { name: 'pin', employee } : { name: 'no-pin', employee })
+            }
           />
         )}
 
@@ -235,6 +244,8 @@ export function KioskApp() {
           />
         )}
 
+        {screen.name === 'no-pin' && <NoPinYet employee={screen.employee} onDone={backToStaff} />}
+
         {screen.name === 'done' && <Confirmation result={screen.result} onDone={backToStaff} />}
       </main>
     </div>
@@ -264,8 +275,8 @@ function StaffList({
 
       {staff.length === 0 && !error ? (
         <Alert tone="warning">
-          Nobody at this location has a kiosk PIN yet. An administrator can set them from Kiosks in
-          the web app.
+          Nobody works at this office yet. An administrator adds people to it from Manage → Staff in
+          Domi Staff.
         </Alert>
       ) : staff.length === 0 ? null : (
         <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
@@ -278,10 +289,50 @@ function StaffList({
             >
               <span className="block">{employee.firstName}</span>
               <span className="block text-sm font-normal text-slate-500">{employee.lastName}</span>
+              {!employee.hasPin && (
+                <span className="mt-2 inline-block rounded-full bg-amber-50 px-2 py-0.5 text-xs font-medium text-amber-800 ring-1 ring-inset ring-amber-200">
+                  No PIN yet
+                </span>
+              )}
             </button>
           ))}
         </div>
       )}
+    </div>
+  );
+}
+
+/// Shown instead of the keypad to somebody who has not chosen a PIN. The tablet
+/// never sets one: choosing a PIN takes the person's own password, on their own
+/// phone, so nobody at the desk can set one for a colleague and clock in as them.
+function NoPinYet({ employee, onDone }: { employee: KioskEmployee; onDone: () => void }) {
+  return (
+    <div className="mx-auto w-full max-w-md rounded-2xl bg-white p-8 text-center shadow-sm">
+      <h1 className="text-2xl font-semibold text-slate-900">
+        {employee.firstName} {employee.lastName}
+      </h1>
+      <p className="mt-3 text-lg text-slate-800">You have not chosen a PIN yet.</p>
+      <ol className="mt-4 list-decimal space-y-1 pl-6 text-left text-base text-slate-700">
+        <li>
+          On your phone, open <strong>Domi Staff</strong>.
+        </li>
+        <li>
+          Tap your photo or initials, then <strong>Your profile</strong>.
+        </li>
+        <li>
+          Under <strong>Tablet PIN</strong>, choose 4 to 8 digits.
+        </li>
+      </ol>
+      <p className="mt-4 text-sm text-slate-600">
+        Until then, clock in on your phone. You can use the time clock as soon as it is saved.
+      </p>
+      <button
+        type="button"
+        onClick={onDone}
+        className="mt-6 w-full rounded-xl bg-brand-600 px-4 py-3 text-lg font-medium text-white hover:bg-brand-700"
+      >
+        OK
+      </button>
     </div>
   );
 }

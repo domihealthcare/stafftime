@@ -6,7 +6,13 @@ import { useSession } from '../lib/session';
 import type { ApplicableSection, ClosingSubmission, Shift, TimeEntry } from '../lib/types';
 import { ClosingChecklistForm } from '../components/ClosingChecklistForm';
 import { BirthdaysThisWeek } from '../components/BirthdaysThisWeek';
-import { ComingUp, HomeNews, QuickActions, SurveysCard } from '../components/HomeCards';
+import {
+  ComingUp,
+  HomeNews,
+  QuickActions,
+  SurveysCard,
+  TabletPinReminder,
+} from '../components/HomeCards';
 import { SuggestionBoxCard } from '../components/SuggestionBox';
 import { MyOvertimeNotice } from '../components/OvertimeAlerts';
 import { Alert, Badge, Card, Spinner } from '../components/ui';
@@ -443,6 +449,7 @@ export function ClockPage() {
         aria-label="Quick and coming up"
         className="space-y-4 lg:col-start-3 lg:row-span-2 lg:row-start-1"
       >
+        <TabletPinReminder />
         <QuickActions />
         <BirthdaysThisWeek />
         <ComingUp />

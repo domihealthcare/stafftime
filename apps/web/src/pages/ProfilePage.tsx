@@ -280,6 +280,8 @@ export function ProfilePage() {
         onSaved={(next) => {
           show(next);
           setNotice('Tablet PIN saved.');
+          // Home's "choose your tablet PIN" reminder reads the session.
+          void refresh();
         }}
       />
 
@@ -358,6 +360,18 @@ function PinCard({ profile, onSaved }: { profile: Profile; onSaved: (next: Profi
   const mismatch = again.length > 0 && pin !== again;
   const ready = /^\d{4,8}$/.test(pin) && pin === again && password.length > 0;
 
+  // Home's reminder links here as /profile#tablet-pin: bring the box into view
+  // and put the cursor in it, rather than leave them hunting down the page.
+  const box = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    if (window.location.hash !== '#tablet-pin') return;
+    const timer = window.setTimeout(() => {
+      box.current?.scrollIntoView({ block: 'start' });
+      box.current?.querySelector<HTMLInputElement>('#newPin')?.focus({ preventScroll: true });
+    }, 50);
+    return () => window.clearTimeout(timer);
+  }, []);
+
   async function save(event: React.FormEvent) {
     event.preventDefault();
     setBusy(true);
@@ -378,68 +392,74 @@ function PinCard({ profile, onSaved }: { profile: Profile; onSaved: (next: Profi
   const field = 'mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm';
 
   return (
-    <Card className="mb-4 p-5" testId="pin-card">
-      <h2 className="text-base font-semibold text-slate-900">Tablet PIN</h2>
-      <p className="mt-1 text-sm text-slate-600" data-testid="pin-status">
-        {profile.hasPin && profile.pinUpdatedAt
-          ? `Set on ${new Date(profile.pinUpdatedAt).toLocaleDateString(undefined, { month: 'long', day: 'numeric', year: 'numeric' })}. It is never shown — choose a new one below if you have forgotten it.`
-          : 'Not set yet. You need one to clock in at the front-desk tablet.'}
-      </p>
-      <form onSubmit={(event) => void save(event)} className="mt-3 grid gap-3 sm:grid-cols-3">
-        <label className="text-sm" htmlFor="newPin">
-          <span className="font-medium text-slate-800">New PIN</span>
-          <input
-            id="newPin"
-            type="password"
-            inputMode="numeric"
-            autoComplete="off"
-            maxLength={8}
-            value={pin}
-            onChange={(event) => setPin(event.target.value.replace(/\D/g, ''))}
-            className={field}
-          />
-        </label>
-        <label className="text-sm" htmlFor="newPinAgain">
-          <span className="font-medium text-slate-800">Same again</span>
-          <input
-            id="newPinAgain"
-            type="password"
-            inputMode="numeric"
-            autoComplete="off"
-            maxLength={8}
-            value={again}
-            onChange={(event) => setAgain(event.target.value.replace(/\D/g, ''))}
-            className={field}
-          />
-        </label>
-        <label className="text-sm" htmlFor="pinPassword">
-          <span className="font-medium text-slate-800">Your password</span>
-          <input
-            id="pinPassword"
-            type="password"
-            autoComplete="current-password"
-            value={password}
-            onChange={(event) => setPassword(event.target.value)}
-            className={field}
-          />
-        </label>
-        <p className="text-xs text-slate-500 sm:col-span-3">
-          4 to 8 digits. Not a run like 1234, not one digit repeated, not a year.
-          {mismatch && (
-            <span className="ml-1 font-medium text-rose-700">Those PINs do not match.</span>
-          )}
+    <div id="tablet-pin" ref={box} className="scroll-mt-20">
+      <Card className="mb-4 p-5" testId="pin-card">
+        <h2 className="text-base font-semibold text-slate-900">Tablet PIN</h2>
+        <p className="mt-1 text-sm text-slate-600" data-testid="pin-status">
+          {profile.hasPin && profile.pinUpdatedAt
+            ? `Set on ${new Date(profile.pinUpdatedAt).toLocaleDateString(undefined, { month: 'long', day: 'numeric', year: 'numeric' })}. It is never shown — choose a new one below if you have forgotten it.`
+            : 'Not set yet. You need one to clock in at the front-desk tablet.'}
         </p>
-        {problem && (
+        <form onSubmit={(event) => void save(event)} className="mt-3 grid gap-3 sm:grid-cols-3">
+          <label className="text-sm" htmlFor="newPin">
+            <span className="font-medium text-slate-800">New PIN</span>
+            <input
+              id="newPin"
+              type="password"
+              inputMode="numeric"
+              autoComplete="off"
+              maxLength={8}
+              value={pin}
+              onChange={(event) => setPin(event.target.value.replace(/\D/g, ''))}
+              className={field}
+            />
+          </label>
+          <label className="text-sm" htmlFor="newPinAgain">
+            <span className="font-medium text-slate-800">Same again</span>
+            <input
+              id="newPinAgain"
+              type="password"
+              inputMode="numeric"
+              autoComplete="off"
+              maxLength={8}
+              value={again}
+              onChange={(event) => setAgain(event.target.value.replace(/\D/g, ''))}
+              className={field}
+            />
+          </label>
+          <label className="text-sm" htmlFor="pinPassword">
+            <span className="font-medium text-slate-800">Your password</span>
+            <input
+              id="pinPassword"
+              type="password"
+              autoComplete="current-password"
+              value={password}
+              onChange={(event) => setPassword(event.target.value)}
+              className={field}
+            />
+          </label>
+          <p className="text-xs text-slate-500 sm:col-span-3">
+            4 to 8 digits. Not a run like 1234, not one digit repeated, not a year.
+            {mismatch && (
+              <span className="ml-1 font-medium text-rose-700">Those PINs do not match.</span>
+            )}
+          </p>
+          {problem && (
+            <div className="sm:col-span-3">
+              <Alert>{problem}</Alert>
+            </div>
+          )}
           <div className="sm:col-span-3">
-            <Alert>{problem}</Alert>
+            <button
+              type="submit"
+              disabled={busy || !ready}
+              className={buttonClass('primary', 'md')}
+            >
+              {busy ? 'Saving…' : profile.hasPin ? 'Change PIN' : 'Set PIN'}
+            </button>
           </div>
-        )}
-        <div className="sm:col-span-3">
-          <button type="submit" disabled={busy || !ready} className={buttonClass('primary', 'md')}>
-            {busy ? 'Saving…' : profile.hasPin ? 'Change PIN' : 'Set PIN'}
-          </button>
-        </div>
-      </form>
-    </Card>
+        </form>
+      </Card>
+    </div>
   );
 }

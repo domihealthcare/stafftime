@@ -697,6 +697,10 @@ Beyond the phases, the parts worth knowing about before picking up work:
   on Help → **The front-desk iPad** (clocking in, BrainCheck with Guided
   Access, thermostats, lock screen) — never a passcode there, it is shown to
   everybody; `help.mjs` checks for anything that looks like one.
+  Since 5 October 2026 the time clock lists **everybody** at its office, those
+  without a PIN tagged **No PIN yet** (a tap explains how to choose one; the
+  tablet never sets one), and Home shows **Choose your tablet PIN** until they
+  do — see *What the keypad will not tell you* in `docs/architecture.md`.
 - **Hours entered by hand** (29 September 2026, Dominguez): Timesheet →
   **+ Add hours** (managers) for a day with no punch at all — a reason from a
   short list and a note, never your own hours, never over a punch already

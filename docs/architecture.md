@@ -399,6 +399,19 @@ so timing does not answer either. Employment status is checked only after the
 PIN is proven. The staff list is scoped to the device's own location, so a
 tablet cannot be used to read the whole practice roster.
 
+**Who has no PIN yet is shown, on purpose** (Dominguez, October 2026, when the
+North Bergen iPad listed only the one person who had chosen a PIN). The list
+used to leave out anybody without one, so they could not tell why their name
+was missing. Now everybody at the office is listed, those without a PIN tagged
+**No PIN yet**; tapping one shows how to choose a PIN on their phone instead
+of the keypad. The tablet never sets a PIN — that takes the person's own
+password, or anybody at the desk could set one for a colleague and clock in as
+them — and the punch still refuses somebody with no PIN with the same message
+as a wrong one. The cost, accepted: anybody at the desk can see who has not
+set one. On their phone, Home shows **Choose your tablet PIN** while they have
+none and one of their offices has a paired time clock (`tabletPinOffices` on
+the signed-in person); it goes once the PIN is saved.
+
 ### The punch itself
 
 One request does PIN check and punch together. There is no intermediate "PIN
