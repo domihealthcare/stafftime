@@ -1,10 +1,5 @@
-import {
-  KioskService,
-  TIME_CLOCK_POSTS,
-  formatPairingCode,
-  hashSecret,
-  normalisePairingCode,
-} from './kiosk.service';
+import { PUBLIC_POSTS } from '../announcements/public-posts';
+import { KioskService, formatPairingCode, hashSecret, normalisePairingCode } from './kiosk.service';
 import { createHash } from 'node:crypto';
 
 describe('pairing code helpers', () => {
@@ -203,14 +198,14 @@ describe('KioskService', () => {
   });
 
   describe('timeClockPosts', () => {
-    it('asks only for posts ticked for the time clock, newest first, a few at most', async () => {
+    it('asks only for posts ticked to be public, newest first, a few at most', async () => {
       const { service, prisma } = build();
       await service.timeClockPosts();
 
       const query = prisma.announcement.findMany.mock.calls[0][0];
       expect(query.where).toEqual({ showOnTimeClock: true });
       expect(query.orderBy).toEqual({ createdAt: 'desc' });
-      expect(query.take).toBe(TIME_CLOCK_POSTS);
+      expect(query.take).toBe(PUBLIC_POSTS);
     });
 
     it('reads the title and words only — no author, likes, comments or poll', async () => {

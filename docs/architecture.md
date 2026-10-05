@@ -427,7 +427,17 @@ screen and clears the search for the next person. Posts are opt-in per post
 because the tablet is where patients stand: `GET /kiosk/posts` sends the
 newest three ticked, title and words only — no author, likes, comments or
 poll — and the time clock fetches them with the staff list, every ten
-minutes. A time clock that cannot load them still clocks. The names were the
+minutes. A time clock that cannot load them still clocks.
+
+**The same tick puts a post on the sign-in page** (Dominguez, the same day:
+"since they are both 'public' appearing … 1 tick for both"). That reverses
+"News is seen only after sign-in" for the posts an admin chooses, and only
+for them: `GET /announcements/public` is the one News read that needs no
+session, and it returns exactly what the time clock gets — one query,
+`findPublicPosts` in `announcements/public-posts.ts`, newest three, title and
+words only. The tick box is called **Show publicly** and says that patients
+at the desk and anyone on the internet can read it; the column keeps its
+first name, `showOnTimeClock`, rather than a rename for the sake of it. The names were the
 standard time-clock pattern (see *Decisions worth revisiting*, below); this
 answers the worry noted there about the list being on show.
 

@@ -131,12 +131,34 @@ await step('a News post ticked for the time clock is on its main screen; others 
 });
 await tablet.screenshot({ path: `${OUT}/18a-kiosk-main.png`, fullPage: true });
 
-await step('the News editor has the tick box, and marks posts that are on the time clock', async () => {
+// One tick covers the time clock and the sign-in page (Dominguez: "they are
+// both public").
+await step('the same post is under the sign-in form, for anybody, and nothing else of News is', async () => {
+  const ctx = await browser.newContext({ viewport: { width: 390, height: 844 } });
+  const visitor = await ctx.newPage();
+  await visitor.goto(`${BASE}/`, { waitUntil: 'networkidle' });
+  const posts = visitor.getByTestId('public-post');
+  await posts.first().waitFor({ timeout: 10000 });
+  const text = (await posts.allInnerTexts()).join(' ');
+  if (!text.includes('Flu shots are here')) throw new Error(`the public post is missing: ${text}`);
+  if (text.includes('rota reminder')) throw new Error('a post not ticked showed on the sign-in page');
+  // The rest of News still needs a session.
+  const list = await visitor.request.get(`${BASE}/api/announcements`);
+  if (list.status() !== 401) throw new Error(`News answered ${list.status()} with nobody signed in`);
+  const open = await (await visitor.request.get(`${BASE}/api/announcements/public`)).json();
+  for (const key of ['author', 'likes', 'comments', 'poll']) {
+    if (open.some((post) => key in post)) throw new Error(`the public posts carry ${key}`);
+  }
+  await visitor.screenshot({ path: `${OUT}/18b-login-public-post.png`, fullPage: true });
+  await ctx.close();
+});
+
+await step('the News editor has the one tick box, and marks posts that are public', async () => {
   await admin.goto(`${BASE}/news`, { waitUntil: 'networkidle' });
   const card = admin.getByTestId(/^post-[0-9a-f-]{36}$/).filter({ hasText: 'Flu shots are here' });
-  await card.getByText('On the time clock').waitFor({ timeout: 10000 });
+  await card.getByText('Public', { exact: true }).waitFor({ timeout: 10000 });
   await card.getByRole('button', { name: 'Edit' }).click();
-  const box = admin.getByLabel(/Also show on the front-desk time clock/);
+  const box = admin.getByLabel(/Show publicly/);
   if (!(await box.isChecked())) throw new Error('the tick box does not show the post is on');
   await box.uncheck();
   const saved = admin.waitForResponse((r) => r.url().includes('/api/announcements/') && r.request().method() === 'PATCH');
@@ -146,6 +168,8 @@ await step('the News editor has the tick box, and marks posts that are on the ti
   await tablet.reload({ waitUntil: 'networkidle' });
   await clockButton().waitFor({ timeout: 10000 });
   if (await tablet.getByTestId('kiosk-post').count()) throw new Error('the unticked post stayed on the time clock');
+  const open = await (await tablet.request.get(`${BASE}/api/announcements/public`)).json();
+  if (open.length) throw new Error('the unticked post stayed public for the sign-in page');
 });
 // Back to Kiosks, where the steps below expect the admin to be.
 await admin.goto(`${BASE}/kiosks`, { waitUntil: 'networkidle' });

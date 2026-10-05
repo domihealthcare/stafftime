@@ -6,6 +6,7 @@ import {
   UnauthorizedException,
 } from '@nestjs/common';
 import { createHash, randomBytes, randomInt } from 'node:crypto';
+import { findPublicPosts } from '../announcements/public-posts';
 import { PrismaService } from '../prisma/prisma.service';
 
 /// Unambiguous when read aloud or typed on a tablet: no O/0, I/1, S/5, Z/2.
@@ -13,8 +14,6 @@ const CODE_ALPHABET = 'ABCDEFGHJKLMNPQRTUVWXY346789';
 const CODE_LENGTH = 10;
 const PAIRING_TTL_MINUTES = 15;
 const DEVICE_TOKEN_BYTES = 32;
-/// How many ticked News posts the time clock shows, newest first.
-export const TIME_CLOCK_POSTS = 3;
 
 export interface PairedDevice {
   deviceId: string;
@@ -270,17 +269,10 @@ export class KioskService {
     }));
   }
 
-  /// The News posts an admin has ticked to show on the time clock, newest
-  /// first, a few at most. Title and words only: no author, likes, comments or
-  /// poll — the tablet sits where patients can see it, and nobody is signed in.
-  /// The same for every office's time clock.
+  /// The News posts ticked to show publicly — the same ones the sign-in page
+  /// shows (`findPublicPosts`). The same for every office's time clock.
   async timeClockPosts() {
-    return this.prisma.announcement.findMany({
-      where: { showOnTimeClock: true },
-      select: { id: true, title: true, body: true, createdAt: true, editedAt: true },
-      orderBy: { createdAt: 'desc' },
-      take: TIME_CLOCK_POSTS,
-    });
+    return findPublicPosts(this.prisma);
   }
 
   private generateCode(): string {

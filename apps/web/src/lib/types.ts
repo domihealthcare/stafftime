@@ -767,7 +767,7 @@ export interface Announcement {
   body: string;
   /// Exactly one post is primary while any exist.
   isPrimary: boolean;
-  /// Also shown on the front-desk time clock, where patients can see it.
+  /// Shown publicly: on the front-desk time clock and the sign-in page.
   showOnTimeClock: boolean;
   editedAt: string | null;
   createdAt: string;
