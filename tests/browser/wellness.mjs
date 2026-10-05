@@ -157,6 +157,21 @@ page.on('request', (request) =>
   requests.push({ url: request.url(), body: request.postData() ?? '' }),
 );
 
+await step('a section turns amber only once somebody has moved on past it', async () => {
+  const amber = () =>
+    page
+      .locator('[data-testid^="section-"][data-flagged="true"]')
+      .evaluateAll((all) => all.map((el) => el.getAttribute('data-testid')));
+  if ((await amber()).length > 0) throw new Error(`amber from the start: ${await amber()}`);
+  await section('patient').getByText(/to fill in/).waitFor({ timeout: 5000 });
+  // Starting on the services leaves the patient's details behind, unfinished.
+  await section('services').locator('input, textarea, select').first().focus();
+  await page.waitForTimeout(200);
+  const now = await amber();
+  if (now.join() !== 'section-patient') throw new Error(`amber: ${now.join(', ')}`);
+  await section('patient').getByText(/still needed/).first().waitFor({ timeout: 5000 });
+});
+
 await step('an empty page 2 makes no PDF, and lists what it needs', async () => {
   let downloaded = false;
   page.once('download', () => (downloaded = true));

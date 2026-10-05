@@ -13,6 +13,7 @@ import {
   ProgressBar,
   type Pending,
   type SectionInfo,
+  useMovedOn,
 } from '../common/layout';
 import { savePdf, useLeaveGuard } from '../common/leave-guard';
 import { NEEDS_NATIVE_SPEAKER_REVIEW, type VitalKey } from './config';
@@ -133,6 +134,8 @@ function CarePlanScreen({ employee }: { employee: Employee }) {
     })),
   ];
   const pendingIn = (key: string) => problems.filter((problem) => problem.section === key);
+  // Amber only for a section somebody has moved on past (see useMovedOn).
+  const movedOn = useMovedOn(sections, showProblems);
 
   // ---------------------------------------------------- the PDF, and after
   const [made, setMade] = useState<string | null>(null);
@@ -173,6 +176,7 @@ function CarePlanScreen({ employee }: { employee: Employee }) {
     setLanguagePicked(false);
     setMade(null);
     setShowProblems(false);
+    movedOn.reset();
     setCleared(true);
     window.scrollTo({ top: 0 });
   }
@@ -200,6 +204,8 @@ function CarePlanScreen({ employee }: { employee: Employee }) {
     prefix,
     sectionKey: key,
     pending: pendingIn(key),
+    flagged: movedOn.flagged(key),
+    onActivity: () => movedOn.enter(key),
     onJump: focusField,
   });
 
@@ -225,6 +231,7 @@ function CarePlanScreen({ employee }: { employee: Employee }) {
           sections={sections}
           pending={problems}
           ready="Ready for the PDF"
+          flagged={movedOn.flagged}
           onSection={jumpTo}
           onShowList={showList}
         />
@@ -270,7 +277,12 @@ function CarePlanScreen({ employee }: { employee: Employee }) {
         </div>
 
         {/* What is missing, the language, and the download. */}
-        <div ref={checklist} className="mt-6 scroll-mt-32">
+        <div
+          ref={checklist}
+          className="mt-6 scroll-mt-32"
+          onFocus={movedOn.enterEnd}
+          onPointerDown={movedOn.enterEnd}
+        >
           <Card className="p-4 sm:p-5">
             <h2 className="text-lg font-semibold text-slate-900">The care plan</h2>
             <PendingList sections={sections} pending={problems} onJump={focusField} />

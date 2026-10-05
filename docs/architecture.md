@@ -3210,15 +3210,17 @@ read the one list `validate.ts` makes. The red messages under the fields
 still wait until somebody first tries for a PDF, so a blank form is amber,
 not red.
 
-**The BrainCheck Care Plan holds the amber back** (Dominguez, October 2026:
-"only highlight in orange if they move onto the next section and a required
-item is missing"). The page keeps the furthest section the provider has
-tapped or moved into (`reached`; the PDFs card counts as the one after J),
-and only sections before it — or every section, after a first try for a
-PDF — are amber (`flagged` on `FormSection` and `ProgressBar`). An
-unfinished section they have not passed is plain, with a grey "N to fill
-in"; the red star on each required field is unchanged. The other two forms
-pass nothing and keep amber from the start. Its billing notes no longer say
+**All three forms hold the amber back** (Dominguez, October 2026: "only
+highlight in orange if they move onto the next section and a required item
+is missing" — first the BrainCheck Care Plan, then the APCM Care Plan and
+the Annual Wellness Visit). `useMovedOn` in `layout.tsx` keeps the furthest
+section somebody has tapped or moved into (the downloads card counts as the
+one after the last), and only sections before it — or every section, after
+a first try for a PDF — are amber (`flagged` on `FormSection` and
+`ProgressBar`). An unfinished section they have not passed is plain, with a
+grey "N to fill in"; the red star on each required field is unchanged. It
+starts again on a cleared form, and on the wellness form's other page. The
+BrainCheck Care Plan's billing notes no longer say
 "confirm with billing (Coronis)": the telehealth reminder ends at the
 modifier and place of service, and the time field gives only the typical
 time until `G2212_THRESHOLD_MINUTES` is set.
