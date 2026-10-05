@@ -1267,10 +1267,8 @@ export class ShiftPlanningService {
   }
 
   /// Who a batch of new shifts leaves past the line, in the weeks it touched.
-  private async overtimeAfterPlanning(
-    dates: string[],
-    employeeIds: string[],
-  ): Promise<OvertimeWarning[]> {
+  /// Also asked after a change of hours (`ShiftRetimeService`).
+  async overtimeAfterPlanning(dates: string[], employeeIds: string[]): Promise<OvertimeWarning[]> {
     if (dates.length === 0 || employeeIds.length === 0) return [];
     const people = new Set(employeeIds);
     return (await this.overtimeForWeeksTouching([...dates].sort())).filter((week) =>
@@ -1477,7 +1475,7 @@ function isoDate(date: Date): string {
 }
 
 /// "Tue, Oct 6".
-function shortDay(date: string): string {
+export function shortDay(date: string): string {
   return new Date(`${date}T00:00:00Z`).toLocaleDateString('en-US', {
     timeZone: 'UTC',
     weekday: 'short',
@@ -1526,7 +1524,7 @@ function seriesKey(shape: {
 }
 
 /// "8:30" → "8:30am", "12:00" → "12pm".
-function clockTime(time: string): string {
+export function clockTime(time: string): string {
   const [h, m] = time.split(':').map(Number);
   const hour = h % 12 === 0 ? 12 : h % 12;
   return `${hour}${m ? `:${String(m).padStart(2, '0')}` : ''}${h < 12 ? 'am' : 'pm'}`;

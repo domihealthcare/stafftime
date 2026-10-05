@@ -286,6 +286,10 @@ export interface PlanResult {
   overtime: OvertimeWarning[];
   /// A repeat with no end date: written out this far, and kept going nightly.
   standing?: { id: string; filledThrough: string };
+  /// New hours for shifts already there: `created` counts the ones changed.
+  action?: 'changed';
+  /// A regular shift was changed too, so later weeks follow.
+  regular?: boolean;
 }
 
 /// A regular shift with no end date — "Rosa, every Monday, 8 to 4". Its

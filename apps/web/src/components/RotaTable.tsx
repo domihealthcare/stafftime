@@ -748,6 +748,7 @@ export function RotaTable({
             setMenu(null);
             onChanged();
           }}
+          onPlanned={onPlanned}
           onError={onError}
         />
       )}
@@ -1011,7 +1012,7 @@ function Dialog({
         aria-modal="true"
         aria-label={title}
         {...dialog}
-        className="w-full max-w-sm rounded-xl bg-white p-4 shadow-xl outline-none"
+        className="max-h-full w-full max-w-sm overflow-y-auto rounded-xl bg-white p-4 shadow-xl outline-none"
       >
         <div className="mb-3 flex items-start justify-between gap-3">
           <h2 className="text-base font-semibold text-slate-900">{title}</h2>
@@ -1030,8 +1031,17 @@ function Dialog({
   );
 }
 
+/// "HH:MM" on this browser's clock — the practice's, in New Jersey.
+function clockOf(iso: string): string {
+  const date = new Date(iso);
+  return `${String(date.getHours()).padStart(2, '0')}:${String(date.getMinutes()).padStart(2, '0')}`;
+}
+
+/// Which shifts a change of hours reaches; see `ShiftRetimeService`.
+type RetimeScope = 'ONE' | 'SAME_WEEKDAY' | 'LATER';
+
 /// What can be done to one shift: put somebody in it, take them off it,
-/// publish it, or remove it.
+/// change its hours (and those like it after it), publish it, or remove it.
 function ShiftDialog({
   shift,
   employees,
@@ -1040,6 +1050,7 @@ function ShiftDialog({
   warning,
   onClose,
   onChanged,
+  onPlanned,
   onError,
 }: {
   shift: Shift;
@@ -1049,6 +1060,7 @@ function ShiftDialog({
   warning?: string;
   onClose: () => void;
   onChanged: () => void;
+  onPlanned?: (result: PlanResult) => void;
   onError: (message: string) => void;
 }) {
   const [person, setPerson] = useState(shift.employeeId ?? '');
@@ -1122,6 +1134,84 @@ function ShiftDialog({
       : null;
   const overtimeCheck = useOvertimeCheck(proposed);
 
+  // New hours (Dominguez, October 2026: "Gaby is 7-2 but it is changing to
+  // 1-8, so instead of Celeste doing 1 by 1, she can just edit all").
+  const [startTime, setStartTime] = useState(clockOf(shift.startsAt));
+  const [endTime, setEndTime] = useState(clockOf(shift.endsAt));
+  const [scope, setScope] = useState<RetimeScope>('ONE');
+  const hoursChanged = startTime !== clockOf(shift.startsAt) || endTime !== clockOf(shift.endsAt);
+  const hoursValid =
+    /^\d\d:\d\d$/.test(startTime) && /^\d\d:\d\d$/.test(endTime) && endTime > startTime;
+  const atTime = (time: string) => {
+    const [h, m] = time.split(':').map(Number);
+    const date = new Date(shift.startsAt);
+    date.setHours(h, m, 0, 0);
+    return date.toISOString();
+  };
+  const moved =
+    hoursChanged && hoursValid
+      ? {
+          locationId: shift.locationId,
+          startsAt: atTime(startTime),
+          endsAt: atTime(endTime),
+        }
+      : null;
+  // This one shift's overtime is asked before saving; for many, the result
+  // says which weeks go over, as a repeat does.
+  const movedForOvertime =
+    moved && shift.employeeId && scope === 'ONE'
+      ? { ...moved, employeeId: shift.employeeId, shiftId: shift.id }
+      : null;
+  const hoursOvertime = useOvertimeCheck(movedForOvertime);
+  const closures = useClosureCheck(moved && scope === 'ONE' ? moved : null);
+  const weekdayName = new Date(shift.startsAt).toLocaleDateString(undefined, { weekday: 'long' });
+  const oldHours = `${formatTimeCompact(shift.startsAt)}–${formatTimeCompact(shift.endsAt)}`;
+  const newHours = moved
+    ? `${formatTimeCompact(moved.startsAt)}–${formatTimeCompact(moved.endsAt)}`
+    : '';
+  const place = shift.isRemote ? 'from home' : `at ${shift.location?.name ?? 'this office'}`;
+  const theirs = open ? 'open shift' : `${firstName}’s shift`;
+  const scopeLabels: Record<RetimeScope, string> = {
+    ONE: 'Just this shift',
+    SAME_WEEKDAY: `This and every later ${weekdayName} like it`,
+    LATER: open
+      ? `This and every later open shift like it, any day`
+      : `This and all of ${firstName}’s later ${oldHours} shifts, any day`,
+  };
+
+  async function changeHours() {
+    if (!moved) return;
+    if (scope === 'ONE') {
+      if (!(await confirmClosure(confirm, moved))) return;
+      if (movedForOvertime && !(await confirmOvertime(confirm, movedForOvertime, firstName)))
+        return;
+    } else {
+      const sure = await confirm({
+        title: `Change the hours from ${formatCalendarDate(localDate(new Date(shift.startsAt)), { year: false })} on?`,
+        body: (
+          <>
+            <p>
+              {scope === 'SAME_WEEKDAY' ? `Every ${theirs} on a ${weekdayName}` : `Every ${theirs}`}{' '}
+              {place} at {oldHours}, from this one on, becomes <strong>{newHours}</strong>.
+            </p>
+            <p className="mt-1">
+              Shifts that have started are left as they were, and a regular shift behind them
+              changes too.
+              {!open && shift.status === 'PUBLISHED' && ` ${firstName} is told once.`}
+            </p>
+          </>
+        ),
+        confirmLabel: 'Yes, change them',
+        cancelLabel: 'Not yet',
+      });
+      if (!sure) return;
+    }
+    await act(async () => {
+      const result = await api.retimeShift(shift.id, { startTime, endTime, scope });
+      if (scope !== 'ONE') onPlanned?.(result);
+    });
+  }
+
   async function assign() {
     if (!proposed) return;
     if (!(await confirmOvertime(confirm, proposed, chosenName))) return;
@@ -1190,7 +1280,8 @@ function ShiftDialog({
       {shift.seriesId && (
         <p className="mt-2 text-xs text-slate-500" data-testid="shift-is-regular">
           <span aria-hidden="true">🔁</span> Part of a regular shift with no end date. Changing or
-          removing this one leaves the rest; to end them all, use Regular shifts below the rota.
+          removing this one leaves the rest — unless you change the hours of the later ones too,
+          below. To end them all, use Regular shifts below the rota.
         </p>
       )}
 
@@ -1250,6 +1341,87 @@ function ShiftDialog({
           </div>
         )}
       </div>
+
+      <fieldset className="mt-4" data-testid="shift-hours">
+        <legend className="block text-sm font-medium text-slate-800">Hours</legend>
+        <div className="mt-1 grid grid-cols-2 gap-2">
+          <label className="text-sm" htmlFor="shift-start">
+            <span className="text-slate-600">Starts</span>
+            <input
+              id="shift-start"
+              type="time"
+              required
+              value={startTime}
+              onChange={(event) => setStartTime(event.target.value)}
+              className="mt-0.5 w-full rounded-lg border border-slate-300 px-2 py-1.5 text-sm"
+            />
+          </label>
+          <label className="text-sm" htmlFor="shift-end">
+            <span className="text-slate-600">Ends</span>
+            <input
+              id="shift-end"
+              type="time"
+              required
+              value={endTime}
+              onChange={(event) => setEndTime(event.target.value)}
+              className="mt-0.5 w-full rounded-lg border border-slate-300 px-2 py-1.5 text-sm"
+            />
+          </label>
+        </div>
+        {hoursChanged && !hoursValid && (
+          <p className="mt-1 text-xs text-rose-700">The end has to be after the start.</p>
+        )}
+        {hoursChanged && hoursValid && (
+          <div className="mt-2 space-y-1 rounded-lg bg-slate-50 p-3 ring-1 ring-inset ring-slate-200">
+            <p className="text-sm font-medium text-slate-800">Change</p>
+            {(['ONE', 'SAME_WEEKDAY', 'LATER'] as const).map((value) => (
+              <label key={value} className="flex items-start gap-2 text-sm text-slate-700">
+                <input
+                  type="radio"
+                  name="retime-scope"
+                  value={value}
+                  checked={scope === value}
+                  onChange={() => setScope(value)}
+                  className="mt-0.5 border-slate-300 text-brand-600 focus:ring-brand-600"
+                />
+                <span>{scopeLabels[value]}</span>
+              </label>
+            ))}
+            {scope !== 'ONE' && (
+              <p className="text-xs text-slate-500">
+                {open ? 'Open shifts' : `${firstName}’s shifts`} {place} at {oldHours}, from this
+                one on. A regular shift behind them changes too, so later weeks follow.
+              </p>
+            )}
+            {closures.length > 0 && <ClosureWarning closures={closures} />}
+            {movedForOvertime && hoursOvertime && hoursOvertime.level !== 'ok' && (
+              <OvertimePreview check={hoursOvertime} name={firstName} />
+            )}
+            <div className="flex gap-2 pt-1">
+              <button
+                type="button"
+                disabled={busy}
+                onClick={() => void changeHours()}
+                className={buttonClass('primary', 'sm')}
+              >
+                {scope === 'ONE' ? 'Change the hours' : 'Change them all'}
+              </button>
+              <button
+                type="button"
+                disabled={busy}
+                onClick={() => {
+                  setStartTime(clockOf(shift.startsAt));
+                  setEndTime(clockOf(shift.endsAt));
+                  setScope('ONE');
+                }}
+                className={buttonClass('secondary', 'sm')}
+              >
+                Undo
+              </button>
+            </div>
+          </div>
+        )}
+      </fieldset>
 
       <div className="mt-4">
         <ShiftNoteField value={note} onChange={setNote} label="Notes" />

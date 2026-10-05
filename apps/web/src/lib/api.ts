@@ -1022,6 +1022,12 @@ export const api = {
       notes?: string | null;
     },
   ) => request<Shift>(`/shifts/${id}`, { method: 'PATCH', body: JSON.stringify(body) }),
+  /// New hours ("13:00", on the office's clock) for a shift — this one, the
+  /// same weekday from here on, or every later shift of theirs at its hours.
+  retimeShift: (
+    id: string,
+    body: { startTime: string; endTime: string; scope: 'ONE' | 'SAME_WEEKDAY' | 'LATER' },
+  ) => request<PlanResult>(`/shifts/${id}/retime`, { method: 'POST', body: JSON.stringify(body) }),
   /// Publishes several drafts at once; each person is told once.
   publishShifts: (ids: string[]) =>
     request<{ published: number; skipped: number }>('/shifts/publish', {
