@@ -29,9 +29,11 @@ import {
   StopStandingShiftDto,
   UpdateStandingShiftDto,
 } from './dto/repeat-shifts.dto';
+import { RetimeShiftDto } from './dto/retime-shift.dto';
 import { UpdateShiftDto } from './dto/update-shift.dto';
 import { OvertimeService } from './overtime.service';
 import { ShiftPlanningService } from './shift-planning.service';
+import { ShiftRetimeService } from './shift-retime.service';
 import { ShiftsService } from './shifts.service';
 import { InvitesSyncInterceptor } from '../invites/invites-sync.interceptor';
 
@@ -43,6 +45,7 @@ export class ShiftsController {
     private readonly shifts: ShiftsService,
     private readonly planning: ShiftPlanningService,
     private readonly overtime: OvertimeService,
+    private readonly retiming: ShiftRetimeService,
   ) {}
 
   /// "Every Tuesday and Thursday, 9 to 5, until March" — or, with no last
@@ -164,6 +167,15 @@ export class ShiftsController {
   @Roles(Role.MANAGER)
   update(@Param('id', ParseUUIDPipe) id: string, @Body() dto: UpdateShiftDto) {
     return this.shifts.update(id, dto);
+  }
+
+  /// New hours for a shift — this one, the same weekday from here on, or
+  /// every later shift of theirs at those hours.
+  @Post(':id/retime')
+  @Roles(Role.MANAGER)
+  @HttpCode(HttpStatus.OK)
+  retime(@Param('id', ParseUUIDPipe) id: string, @Body() dto: RetimeShiftDto) {
+    return this.retiming.retime(id, dto);
   }
 
   @Delete(':id')

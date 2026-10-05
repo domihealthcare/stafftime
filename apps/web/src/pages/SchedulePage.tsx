@@ -930,7 +930,7 @@ export function SchedulePage() {
             onChanged={() => void load()}
             onPlanned={(result) => {
               setPlanResult(result);
-              if (result.standing) setStandingVersion((v) => v + 1);
+              if (result.standing || result.regular) setStandingVersion((v) => v + 1);
             }}
             onError={setError}
           />
