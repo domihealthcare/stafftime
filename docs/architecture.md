@@ -1397,6 +1397,45 @@ then to accept `CRON_SECRET` on this route too).
 
 `tests/browser/punch-reminders.mjs` calls the route as the timer does.
 
+### Clocked out at midnight
+
+October 2026, Dominguez: "clock everyone out at 12 … the goal is that the next
+day people are able to clock in (even if they forgot to clock out the day
+prior)". A punch begun on an earlier New Jersey day and still open is closed
+at **the midnight that ended that day** (`AutoClockOutService`,
+`time-entries/auto-clock-out.service.ts`) — with a shift or without one.
+
+**The time recorded is the app's, never a guess** (Dominguez chose "the
+automatic time … as a warning"): midnight, which is nearly always later than
+they left. So the entry is made a warning, both ways:
+
+- **Managers**: `isMissingPunch` true, `NEEDS_REVIEW`, `autoClockedOutAt` set.
+  Listed as *Clock-outs to correct* — the Timesheet banner, the nightly email
+  and the dashboard tile (the old "punches with no clock-out", which are now
+  nearly always closed by morning) — until a manager **corrects** it; the
+  correction (`edit`) sets `isMissingPunch` false, which is what clears it.
+  **It cannot be approved before then** (`approve` refuses, and the Timesheet
+  shows "Correct the time first" in place of Approve): paying midnight as it
+  stands would pay for hours nobody worked. If midnight was right, correcting
+  it to midnight with a reason clears it.
+- **The person**: told on the bell and by email ("You were clocked out
+  automatically … tell your manager what time you finished"), once — the
+  close is a compare-and-set on `clockOutAt: null`, and only the run that
+  closed it tells them.
+
+**When**: whatever looks first. The outside timer (every 5 minutes from 6am,
+first thing in each run, so last night's punch does not count as clocked in
+for this morning's shift), the nightly job (5am, before the round-up so the
+email lists them), and — for one person — whenever they open Home, clock in,
+clock out or use the time clock. So a timer that missed a night never leaves
+anybody stuck: the time clock would otherwise have read yesterday's open punch
+and clocked them *out* at 8am. A punch is closed at its own midnight however
+late it is found.
+
+Not handled: a shift running past midnight (the practice has none) would be
+cut at midnight. No closing checklist is recorded for an automatic clock-out.
+`tests/browser/auto-clock-out.mjs`.
+
 ### Response headers
 
 The web app's headers are set in `vercel.json`: `nosniff`, `X-Frame-Options:

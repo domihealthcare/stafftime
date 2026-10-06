@@ -44,6 +44,7 @@ describe('KioskPunchService', () => {
       timeEntry: { findFirst: jest.fn().mockResolvedValue(options.openEntry ?? null) },
     };
     const timeEntries = {
+      closeForgotten: jest.fn().mockResolvedValue(undefined),
       clockIn: jest.fn().mockResolvedValue({
         clockInAt: new Date('2026-09-21T13:04:00Z'),
         isLate: false,

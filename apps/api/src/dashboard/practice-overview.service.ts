@@ -137,11 +137,19 @@ export class PracticeOverviewService {
       this.prisma.timeEntry.count({
         where: { status: TimeEntryStatus.COMPLETED, clockOutAt: { not: null } },
       }),
+      // Clock-outs to correct: still open from an earlier day, or clocked out
+      // automatically at midnight and not yet corrected.
       this.prisma.timeEntry.count({
         where: {
-          clockOutAt: null,
-          clockInAt: { lt: practiceDayStart() },
           employee: { employmentStatus: { not: EmploymentStatus.TERMINATED } },
+          OR: [
+            { clockOutAt: null, clockInAt: { lt: practiceDayStart() } },
+            {
+              autoClockedOutAt: { not: null },
+              isMissingPunch: true,
+              status: { not: TimeEntryStatus.APPROVED },
+            },
+          ],
         },
       }),
     ]);

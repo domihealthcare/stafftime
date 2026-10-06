@@ -134,14 +134,23 @@ export class AttentionService {
         take: 20,
       }),
 
+      // Clock-outs to correct: a punch still open from an earlier day (rare
+      // now — they are closed at midnight), and one the app clocked out at
+      // midnight that no manager has corrected yet, however old.
       this.prisma.timeEntry.findMany({
         where: {
-          clockOutAt: null,
-          clockInAt: { lt: dayStart, gte: addUtcDays(dayStart, -MISSING_PUNCH_DAYS) },
           status: { not: TimeEntryStatus.APPROVED },
+          OR: [
+            {
+              clockOutAt: null,
+              clockInAt: { lt: dayStart, gte: addUtcDays(dayStart, -MISSING_PUNCH_DAYS) },
+            },
+            { autoClockedOutAt: { not: null }, isMissingPunch: true },
+          ],
         },
         select: {
           clockInAt: true,
+          autoClockedOutAt: true,
           employee: { select: { firstName: true, lastName: true } },
         },
         orderBy: { clockInAt: 'asc' },
@@ -179,6 +188,14 @@ export class AttentionService {
         year: 'numeric',
       });
 
+    /// "8:52 AM", on the practice's clock.
+    const clock = (instant: Date) =>
+      instant.toLocaleTimeString('en-US', {
+        timeZone: PRACTICE_ZONE,
+        hour: 'numeric',
+        minute: '2-digit',
+      });
+
     const expired = credentials.filter((row) => row.expiresOn < today);
     const expiring = credentials.filter((row) => row.expiresOn >= today);
 
@@ -195,8 +212,10 @@ export class AttentionService {
             row.dueAt ? `, due ${day(row.dueAt)}` : ''
           }`,
       ),
-      missingPunches: punches.map(
-        (row) => `${who(row.employee)} — clocked in ${on(row.clockInAt)} and never out`,
+      missingPunches: punches.map((row) =>
+        row.autoClockedOutAt
+          ? `${who(row.employee)} — clocked in ${clock(row.clockInAt)} on ${on(row.clockInAt)}, clocked out automatically at midnight; correct the time`
+          : `${who(row.employee)} — clocked in ${on(row.clockInAt)} and never out`,
       ),
       undecidedTimeOff: timeOff.map(
         (row) =>

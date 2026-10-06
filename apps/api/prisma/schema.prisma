@@ -836,6 +836,12 @@ model TimeEntry {
   /// they gave, if any.
   isOtherPlace     Boolean @default(false)
   otherPlaceReason String?
+  /// Still clocked in at midnight, so the app clocked them out (October 2026,
+  /// Dominguez): `clockOutAt` is that midnight and this is when the app did
+  /// it. The entry is a missing punch for a manager to correct — listed until
+  /// one does (`isMissingPunch` goes false on the correction), and it cannot be
+  /// approved before then. See `time-entries/auto-clock-out.service.ts`.
+  autoClockedOutAt DateTime?
 
   /// Audit trail for manual edits and approvals.
   editedById   String?   @db.Uuid

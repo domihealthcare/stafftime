@@ -8,6 +8,7 @@ import { InboxService } from '../email/inbox.service';
 import { SessionService } from '../auth/session.service';
 import { ShiftPlanningService } from '../shifts/shift-planning.service';
 import { PrismaService } from '../prisma/prisma.service';
+import { AutoClockOutService } from '../time-entries/auto-clock-out.service';
 import {
   LOCATION_RETENTION_DAYS,
   locationRetentionCutoff,
@@ -39,6 +40,8 @@ export interface PurgeReport {
   /// Calendar invites sent, changed or cancelled — shifts and events coming
   /// into range, and anything a save did not get to.
   calendarInvites: number;
+  /// Punches still open from yesterday, clocked out at midnight.
+  autoClockedOut: number;
 }
 
 /**
@@ -66,6 +69,7 @@ export class MaintenanceService {
     private readonly events: EventsService,
     private readonly invites: CalendarInvitesService,
     private readonly planning: ShiftPlanningService,
+    private readonly autoClockOut: AutoClockOutService,
   ) {}
 
   async purge(): Promise<PurgeReport> {
@@ -77,6 +81,8 @@ export class MaintenanceService {
       orphanedFiles: await this.deleteOrphanedFiles(),
       clearedLocations: await this.clearOldPunchLocations(),
       oldNotifications: await this.inbox.purgeOld(),
+      // Before the round-up, so it lists last night's as clock-outs to correct.
+      autoClockedOut: await this.closeForgottenPunches(),
       // Before the round-up and the invites, so both see the new weeks.
       standingShifts: await this.extendStandingShifts(),
       digestSentTo: await this.sendDigest(),
@@ -104,6 +110,23 @@ export class MaintenanceService {
     } catch (error) {
       this.logger.error(
         `Could not send the daily digest: ${error instanceof Error ? error.message : error}`,
+      );
+      return 0;
+    }
+  }
+
+  /**
+   * Anybody still clocked in from yesterday, clocked out at midnight
+   * (`AutoClockOutService`). The outside timer does this too; this is here so
+   * it happens even on a night that timer is off. Never allowed to fail the
+   * tidying up.
+   */
+  private async closeForgottenPunches(): Promise<number> {
+    try {
+      return await this.autoClockOut.closeForgotten();
+    } catch (error) {
+      this.logger.error(
+        `Could not clock out forgotten punches: ${error instanceof Error ? error.message : error}`,
       );
       return 0;
     }

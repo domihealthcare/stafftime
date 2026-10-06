@@ -50,11 +50,7 @@ export function PracticeOverviewSection() {
       <div className="mb-4 grid grid-cols-2 gap-3 lg:grid-cols-4">
         <WaitingTile label="Time off to decide" count={waiting.timeOff} to="/time-off" />
         <WaitingTile label="Hours to approve" count={waiting.unapprovedHours} to="/timesheet" />
-        <WaitingTile
-          label="Punches with no clock-out"
-          count={waiting.missingPunches}
-          to="/timesheet"
-        />
+        <WaitingTile label="Clock-outs to correct" count={waiting.missingPunches} to="/timesheet" />
         <WaitingTile
           label="Hours entered by hand to look into"
           count={waiting.handEntries}

@@ -162,7 +162,10 @@ const STAFF: Section[] = [
             correct the time, and the correction is recorded with a reason so nobody has to remember
             later why it changed. You cannot change your own punches. If you have a shift, the app
             reminds you by email and under the bell 15 minutes after it ends while you are still
-            clocked in — and 15 minutes after it starts if you have not clocked in.
+            clocked in — and 15 minutes after it starts if you have not clocked in. If you are still
+            clocked in at midnight, the app clocks you out at 12:00 AM and tells you, so you can
+            clock in as usual the next day; tell your manager when you really finished, because
+            those hours cannot be approved until they correct the time.
           </p>
         ),
       },

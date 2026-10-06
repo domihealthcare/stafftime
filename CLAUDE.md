@@ -332,6 +332,15 @@ Beyond the phases, the parts worth knowing about before picking up work:
   after a week. Texts were asked about; not built
   (needs Twilio and carrier registration — `docs/open-questions.md`). See
   *Punch reminders* in `docs/architecture.md`.
+- **Clocked out at midnight** (6 October 2026, Dominguez): anybody still
+  clocked in at midnight — shift or no shift — is clocked out **at 12:00 AM**,
+  so they can clock in the next day. The time is the app's, so it is a
+  warning both ways: the person is told (bell and email), and it is a
+  **clock-out to correct** for managers (banner, nightly email, dashboard),
+  which **cannot be approved until a manager corrects the time**
+  (`TimeEntry.autoClockedOutAt`). Done by the 5-minute timer, the nightly job,
+  and for one person whenever they open Home, punch or use the time clock.
+  See *Clocked out at midnight* in `docs/architecture.md`.
 - **The rota** (September 2026): the Schedule week is a table — a row per
   person, a column per day — shown for everyone, by location or by job role,
   with filters. **Open shifts** (`Shift.employeeId` null, optional

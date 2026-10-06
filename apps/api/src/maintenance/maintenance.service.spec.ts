@@ -22,6 +22,7 @@ describe('MaintenanceService', () => {
       sync: jest.fn().mockResolvedValue({ sent: 3, cancelled: 1, failed: 0, remaining: 0 }),
     };
     const planning = { extendStandingShifts: jest.fn().mockResolvedValue(8) };
+    const autoClockOut = { closeForgotten: jest.fn().mockResolvedValue(2) };
 
     return {
       service: new MaintenanceService(
@@ -34,6 +35,7 @@ describe('MaintenanceService', () => {
         events as never,
         invites as never,
         planning as never,
+        autoClockOut as never,
       ),
       prisma,
       sessions,
@@ -43,6 +45,7 @@ describe('MaintenanceService', () => {
       events,
       invites,
       planning,
+      autoClockOut,
     };
   }
 
@@ -60,6 +63,17 @@ describe('MaintenanceService', () => {
       digestSentTo: 2,
       eventReminders: 1,
       calendarInvites: 4,
+      autoClockedOut: 2,
+    });
+  });
+
+  it('still tidies up when forgotten punches cannot be clocked out', async () => {
+    const { service, autoClockOut } = build();
+    autoClockOut.closeForgotten.mockRejectedValue(new Error('database hiccup'));
+    await expect(service.purge()).resolves.toMatchObject({
+      expiredSessions: 7,
+      autoClockedOut: 0,
+      digestSentTo: 2,
     });
   });
 

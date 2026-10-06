@@ -357,6 +357,7 @@ function hasFlags(entry: TimeEntry): boolean {
     entry.isLate ||
     entry.isEarlyDeparture ||
     entry.isMissingPunch ||
+    Boolean(entry.autoClockedOutAt) ||
     entry.isManuallyEdited ||
     Boolean(entry.isOtherPlace) ||
     Boolean(entry.enteredByHandAt) ||
@@ -431,6 +432,9 @@ function EntryActions({
     <div className="flex items-center gap-2">
       {entry.status === 'APPROVED' ? (
         <span className="text-xs text-slate-500">Approved</span>
+      ) : entry.autoClockedOutAt && entry.isMissingPunch ? (
+        // Midnight is not when they left: the real time first, then approval.
+        <span className="text-xs font-medium text-red-700">Correct the time first</span>
       ) : entry.clockOutAt ? (
         <button
           type="button"
@@ -480,7 +484,15 @@ function Flags({ entry }: { entry: TimeEntry }) {
   const flags: { label: string; tone: 'warning' | 'danger' | 'info' }[] = [];
   if (entry.isLate) flags.push({ label: 'Late', tone: 'warning' });
   if (entry.isEarlyDeparture) flags.push({ label: 'Left early', tone: 'warning' });
-  if (entry.isMissingPunch) flags.push({ label: 'Missing punch', tone: 'danger' });
+  if (entry.autoClockedOutAt && entry.isMissingPunch) {
+    // The clock-out is the app's, at midnight — not when they left.
+    // Short, to fit the column; the banner and Correct say the rest.
+    flags.push({ label: 'Clocked out at midnight', tone: 'danger' });
+  } else if (entry.isMissingPunch) {
+    flags.push({ label: 'Missing punch', tone: 'danger' });
+  } else if (entry.autoClockedOutAt) {
+    flags.push({ label: 'Was clocked out automatically', tone: 'info' });
+  }
   // Somewhere other than the shift: allowed, after a warning (October 2026).
   if (entry.isOtherPlace) flags.push({ label: 'Not where scheduled', tone: 'warning' });
   if (entry.enteredByHandAt) flags.push({ label: 'Entered by hand', tone: 'warning' });

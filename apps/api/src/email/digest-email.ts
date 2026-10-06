@@ -97,10 +97,12 @@ const SECTIONS: SectionSpec[] = [
   {
     key: 'missingPunches',
     tier: 'today',
-    heading: 'Punches with no clock-out',
+    // Forgotten clock-outs: closed at midnight by the app since October 2026,
+    // and listed here until a manager puts in the real time.
+    heading: 'Clock-outs to correct',
     path: '/timesheet',
     screen: 'Timesheet',
-    subject: (n) => `${n} missing ${plural(n, 'clock-out', 'clock-outs')}`,
+    subject: (n) => `${n} ${plural(n, 'clock-out', 'clock-outs')} to correct`,
   },
   {
     key: 'undecidedTimeOff',

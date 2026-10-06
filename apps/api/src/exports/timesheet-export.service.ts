@@ -377,12 +377,18 @@ export function describeFlags(entry: {
   isEarlyDeparture: boolean;
   isManuallyEdited: boolean;
   isMissingPunch: boolean;
+  autoClockedOutAt?: Date | null;
 }): string {
   const flags: string[] = [];
   if (entry.isLate) flags.push('Late');
   if (entry.isEarlyDeparture) flags.push('Left early');
   if (entry.isManuallyEdited) flags.push('Edited');
-  if (entry.isMissingPunch) flags.push('Missing punch');
+  // Still clocked in at midnight: the clock-out is the app's, not theirs.
+  if (entry.autoClockedOutAt && entry.isMissingPunch) {
+    flags.push('Clocked out automatically at midnight');
+  } else if (entry.isMissingPunch) {
+    flags.push('Missing punch');
+  }
   return flags.join(', ');
 }
 
