@@ -218,19 +218,25 @@ await step('an office shift is tinted in its office’s colour, not left plain',
 await mgr.screenshot({ path: `${OUT}/112-rota-colours.png`, fullPage: true });
 
 await step('a manager can move a shift from home back to the office, and back again', async () => {
-  await morganChip().click();
-  const toOffice = mgr.waitForResponse((r) => r.url().endsWith(`/api/shifts/${shiftId}`) && r.request().method() === 'PATCH');
-  await mgr.getByRole('button', { name: 'Make it at the office' }).click();
-  if (!(await toOffice).ok()) throw new Error('could not move it to the office');
+  // Under Hours and place in the shift's pop-up; the old one-click button is gone.
+  const move = async (pick, what) => {
+    await morganChip().click();
+    const dialog = mgr.getByRole('dialog', { name: /Morgan/ });
+    if (await dialog.getByRole('button', { name: /^Make it (work from home|at the office)$/ }).count())
+      throw new Error('the old work-from-home button is still there');
+    await pick(dialog.locator('#shift-place'));
+    const saved = mgr.waitForResponse((r) => r.url().endsWith(`/api/shifts/${shiftId}/retime`));
+    await dialog.getByRole('button', { name: 'Change this shift' }).click();
+    if (!(await saved).ok()) throw new Error(`could not move it ${what}`);
+    await dialog.waitFor({ state: 'detached', timeout: 10000 });
+  };
+  await move((list) => list.selectOption({ index: 0 }), 'to the office');
   await mgr.waitForFunction(
     () => document.querySelector('[data-testid="rota-row-Morgan Manager"] [data-remote="true"]') === null,
     null,
     { timeout: 10000 },
   );
-  await morganChip().click();
-  const toHome = mgr.waitForResponse((r) => r.url().endsWith(`/api/shifts/${shiftId}`) && r.request().method() === 'PATCH');
-  await mgr.getByRole('button', { name: 'Make it work from home' }).click();
-  if (!(await toHome).ok()) throw new Error('could not move it back home');
+  await move((list) => list.selectOption({ label: 'Work from home' }), 'back home');
   await mgr.getByTestId('rota-row-Morgan Manager').locator('[data-remote="true"]').first().waitFor({ timeout: 10000 });
 });
 

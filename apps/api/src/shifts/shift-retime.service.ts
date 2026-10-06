@@ -41,6 +41,11 @@ export interface RetimeResult extends PlanResult {
  * cancelled ones, are left alone. Hours are the office's wall clock, as a
  * repeat writes them, so a clock change does not shift them.
  *
+ * The place can move with the hours, or alone (Dominguez, October 2026:
+ * "needs to be able to update location as well"): another of their offices,
+ * or from home. Only an office they work at, and never home for an open
+ * shift.
+ *
  * Each shift is changed in place, so notes, drafts and publishing stay as
  * they were. A new time that would overlap another of the person's shifts is
  * skipped and reported, never forced. A regular shift behind them is changed
@@ -67,7 +72,7 @@ export class ShiftRetimeService {
     }
     const shift = await this.prisma.shift.findUnique({
       where: { id },
-      include: { location: { select: { timezone: true } } },
+      include: { location: { select: { timezone: true, name: true } } },
     });
     if (!shift || shift.status === ShiftStatus.CANCELLED) {
       throw new NotFoundException('That shift does not exist.');
@@ -75,9 +80,41 @@ export class ShiftRetimeService {
 
     const zone = shift.location.timezone;
     const day = localDateIn(shift.startsAt, zone);
+
+    // Where it goes: the same place unless another is asked for.
+    const locationId = dto.locationId ?? shift.locationId;
+    const isRemote = dto.isRemote ?? shift.isRemote;
+    const placeChanged = locationId !== shift.locationId || isRemote !== shift.isRemote;
+    if (isRemote && !shift.employeeId) {
+      throw new BadRequestException(
+        'An open shift is a slot an office needs covered; it cannot be worked from home.',
+      );
+    }
+    const place =
+      locationId === shift.locationId
+        ? shift.location
+        : await this.prisma.location.findUnique({
+            where: { id: locationId },
+            select: { timezone: true, name: true, isActive: true },
+          });
+    if (!place) throw new NotFoundException('That office does not exist.');
+    if ('isActive' in place && !place.isActive) {
+      throw new BadRequestException(`${place.name} is not an active office.`);
+    }
+    if (shift.employeeId && locationId !== shift.locationId) {
+      const assigned = await this.prisma.employeeLocation.findUnique({
+        where: { employeeId_locationId: { employeeId: shift.employeeId, locationId } },
+        select: { employeeId: true },
+      });
+      if (!assigned) {
+        throw new BadRequestException(
+          `They do not work at ${place.name}. Add the office to them on the Staff screen first.`,
+        );
+      }
+    }
     const at = (date: string) => ({
-      startsAt: zonedTimeToUtc(date, dto.startTime, zone),
-      endsAt: zonedTimeToUtc(date, dto.endTime, zone),
+      startsAt: zonedTimeToUtc(date, dto.startTime, place.timezone),
+      endsAt: zonedTimeToUtc(date, dto.endTime, place.timezone),
     });
 
     if (dto.scope === 'ONE') {
@@ -86,6 +123,7 @@ export class ShiftRetimeService {
       await this.shifts.update(id, {
         startsAt: next.startsAt.toISOString(),
         endsAt: next.endsAt.toISOString(),
+        ...(placeChanged ? { locationId, isRemote } : {}),
       });
       return {
         action: 'changed',
@@ -159,7 +197,10 @@ export class ShiftRetimeService {
           continue;
         }
       }
-      await this.prisma.shift.update({ where: { id: other.id }, data: next });
+      await this.prisma.shift.update({
+        where: { id: other.id },
+        data: { ...next, locationId, isRemote },
+      });
       dates.push(other.date);
       if (other.status === ShiftStatus.PUBLISHED) publishedChanged += 1;
     }
@@ -175,8 +216,12 @@ export class ShiftRetimeService {
         weekdays: sameWeekday ? [weekday] : null,
         oldStart,
         oldEnd,
+        oldLocationId: shift.locationId,
+        oldIsRemote: shift.isRemote,
         startTime: dto.startTime,
         endTime: dto.endTime,
+        locationId,
+        isRemote,
         zone,
       });
       if (status) {
@@ -189,19 +234,24 @@ export class ShiftRetimeService {
       await this.overtime.announceNewOvertime(before, [employeeId], weeks);
     }
     if (employeeId && (publishedChanged > 0 || regularPublished)) {
-      const was = `${clockTime(oldStart)}–${clockTime(oldEnd)}`;
-      const hours = `${clockTime(dto.startTime)}–${clockTime(dto.endTime)}`;
+      // The place is named only when it changed.
+      const where = (remote: boolean, name: string) =>
+        placeChanged ? (remote ? ' from home' : ` at ${name}`) : '';
+      const oldWhere = where(shift.isRemote, shift.location.name);
+      const newWhere = where(isRemote, place.name);
+      const oldHours = `${clockTime(oldStart)}–${clockTime(oldEnd)}`;
+      const newHours = `${clockTime(dto.startTime)}–${clockTime(dto.endTime)}`;
       await this.inbox.notify([employeeId], {
         kind: NotificationKind.SCHEDULE_CHANGED,
-        title: 'Your shift times have changed',
+        title: placeChanged ? 'Your shifts have changed' : 'Your shift times have changed',
         body: sameWeekday
-          ? `${weekdaysPhrase([weekday])} from ${shortDay(day)}: ${hours}, not ${was}.`
-          : `Your ${was} shifts from ${shortDay(day)} are now ${hours}.`,
+          ? `${weekdaysPhrase([weekday])} from ${shortDay(day)}: ${newHours}${newWhere}, not ${oldHours}${oldWhere}.`
+          : `Your ${oldHours} shifts${oldWhere} from ${shortDay(day)} are now ${newHours}${newWhere}.`,
         link: '/schedule',
       });
     }
 
-    this.logger.log(`Changed the hours of ${dates.length} shift(s) from ${day}`);
+    this.logger.log(`Changed the hours or place of ${dates.length} shift(s) from ${day}`);
     return {
       action: 'changed',
       regular,
@@ -213,7 +263,7 @@ export class ShiftRetimeService {
   }
 
   /**
-   * Gives a regular shift the new hours from `from` on, for all its days or
+   * Gives a regular shift the new hours and place from `from` on, for all its days or
    * only `weekdays`. A regular shift begun before `from` is ended the day
    * before and carried on as new ones — the days that move at the new hours,
    * any others at the old — so it never claims hours it did not have. Its
@@ -221,7 +271,7 @@ export class ShiftRetimeService {
    * so stopping or editing it later still finds them.
    *
    * Returns the status its shifts are made with, or null if it was left as
-   * it was (other hours, or already ended).
+   * it was (other hours or place, or already ended).
    */
   private async moveSeries(
     seriesId: string,
@@ -231,14 +281,27 @@ export class ShiftRetimeService {
       weekdays: number[] | null;
       oldStart: string;
       oldEnd: string;
+      oldLocationId: string;
+      oldIsRemote: boolean;
       startTime: string;
       endTime: string;
+      locationId: string;
+      isRemote: boolean;
       zone: string;
     },
   ): Promise<ShiftStatus | null> {
     const series = await this.prisma.shiftSeries.findUnique({ where: { id: seriesId } });
     if (!series) return null;
     if (series.startTime !== change.oldStart || series.endTime !== change.oldEnd) return null;
+    if (series.locationId !== change.oldLocationId || series.isRemote !== change.oldIsRemote) {
+      return null;
+    }
+    const moves = {
+      startTime: change.startTime,
+      endTime: change.endTime,
+      locationId: change.locationId,
+      isRemote: change.isRemote,
+    };
     if (series.endsOn && isoDate(series.endsOn) < change.from) return null;
 
     const moved = series.daysOfWeek.filter((d) => !change.weekdays || change.weekdays.includes(d));
@@ -247,10 +310,7 @@ export class ShiftRetimeService {
     const splitting = change.from > isoDate(series.startsOn);
 
     if (!splitting && kept.length === 0) {
-      await this.prisma.shiftSeries.update({
-        where: { id: series.id },
-        data: { startTime: change.startTime, endTime: change.endTime },
-      });
+      await this.prisma.shiftSeries.update({ where: { id: series.id }, data: moves });
       return series.status;
     }
 
@@ -272,12 +332,7 @@ export class ShiftRetimeService {
       startsOn: splitting ? asDate(change.from) : series.startsOn,
     };
     const fresh = await this.prisma.shiftSeries.create({
-      data: {
-        ...shape,
-        daysOfWeek: moved,
-        startTime: change.startTime,
-        endTime: change.endTime,
-      },
+      data: { ...shape, ...moves, daysOfWeek: moved },
       select: { id: true },
     });
 
