@@ -1085,7 +1085,7 @@ const MANAGERS: Section[] = [
         answer: (
           <p>
             Choose <strong>Work from home</strong> as the Location when you make a shift, or click a
-            shift and choose <strong>Make it work from home</strong>. Once it is published, that
+            shift and pick it under <strong>Hours and place</strong>. Once it is published, that
             person can clock in from anywhere from half an hour before it starts until it ends, with
             no location asked for or recorded. Behind the scenes it is counted under their main
             office, so the office view of the rota and the reports still add up. Anybody can also

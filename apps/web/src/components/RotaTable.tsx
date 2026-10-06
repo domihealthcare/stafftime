@@ -1509,14 +1509,6 @@ function ShiftDialog({
             Make it an open shift
           </button>
         )}
-        <button
-          type="button"
-          disabled={busy}
-          onClick={() => void act(() => api.updateShift(shift.id, { isRemote: !shift.isRemote }))}
-          className={buttonClass('secondary', 'sm')}
-        >
-          {shift.isRemote ? 'Make it at the office' : 'Make it work from home'}
-        </button>
         {shift.status === 'DRAFT' && (
           <button
             type="button"

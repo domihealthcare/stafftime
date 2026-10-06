@@ -454,7 +454,8 @@ Beyond the phases, the parts worth knowing about before picking up work:
   Dominguez: "needs to be able to update location as well"): the section is
   **Hours and place**, with a **Location** list (their offices and Work from
   home; an open shift, any office) under the same three choices; a regular
-  shift follows to the new place.
+  shift follows to the new place. The pop-up's old **Make it work from
+  home** button was taken out (Dominguez) — the Location list does it.
 - **Tablet PINs are chosen by staff** on their profile (confirmed with their
   password); the profile shows only that one is set and since when, never the
   PIN. Managers and admins can set a replacement from the Directory, never
