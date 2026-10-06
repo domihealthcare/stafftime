@@ -324,8 +324,12 @@ Beyond the phases, the parts worth knowing about before picking up work:
   (`PunchReminder`). Not on approved time off, in a closure, or for a punch
   with no shift. Vercel's free plan runs its own timer once a day, so
   **cron-job.org** calls `GET /api/maintenance/punch-reminders` every 5
-  minutes with its own `PUNCH_REMINDER_SECRET` — **not set up on the live site
-  yet**: `docs/punch-reminders-setup.md`. Texts were asked about; not built
+  minutes with its own `PUNCH_REMINDER_SECRET` — **live since 5 October
+  2026**: the secret is in Vercel (Production only) and the job, on
+  Dominguez's cron-job.org account, runs every 5 minutes 6am–midnight New
+  York time; checked that night (200 with the secret, 403 without). Set-up
+  and troubleshooting in `docs/punch-reminders-setup.md`; check Neon's usage
+  after a week. Texts were asked about; not built
   (needs Twilio and carrier registration — `docs/open-questions.md`). See
   *Punch reminders* in `docs/architecture.md`.
 - **The rota** (September 2026): the Schedule week is a table — a row per

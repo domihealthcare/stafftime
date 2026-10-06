@@ -1,5 +1,11 @@
 # Set-up: reminders to clock in and out
 
+**Done on the live site, 5 October 2026**: `PUNCH_REMINDER_SECRET` is in
+Vercel (Production only), and the job is on Dominguez's cron-job.org account,
+every 5 minutes from 6am to midnight New York time. Checked the same night:
+200 with the secret, 403 without. The steps below are for setting it up again
+— a new secret, a new timer account, or a second deployment.
+
 With this done, the app tells somebody, by email and under the bell:
 
 - **"You haven't clocked in yet"** — 15 minutes into a published shift with no

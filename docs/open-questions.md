@@ -15,11 +15,10 @@ taken off this list, and the answer is written into `CLAUDE.md` or
 - [ ] **Rotate the Neon database password.** Reset it in Neon, paste the new
       pooled and direct strings into `DATABASE_URL` / `DIRECT_DATABASE_URL` in
       Vercel, and redeploy.
-- [ ] **Set up the punch reminders' timer** (built 5 October 2026): a
-      `PUNCH_REMINDER_SECRET` in Vercel and a cron-job.org job calling the app
-      every 5 minutes — `docs/punch-reminders-setup.md`. Until then no
-      reminders go. Once on, worth checking Neon's usage after a week: the
-      calls keep the database awake through the evening.
+- [ ] **Check Neon's usage after the punch reminders' first week** (timer on
+      since 5 October 2026): the calls every 5 minutes, 6am to midnight, keep
+      the database awake through the evening. If it is too much, narrow the
+      cron-job.org hours to the earliest shift start and latest shift end.
 - [ ] **Text messages for the punch reminders?** Asked by Dominguez (5 October
       2026). Not built: needs an SMS provider such as Twilio (about a cent a
       text plus a number) and US carrier registration (A2P 10DLC, one to three
