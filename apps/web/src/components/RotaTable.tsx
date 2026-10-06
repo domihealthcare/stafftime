@@ -57,6 +57,7 @@ import {
 } from './PracticeEvents';
 import { Alert, buttonClass } from './ui';
 import { noteToSend, ShiftNoteField } from './ShiftNote';
+import { atPracticeTime, practiceClockOf } from '../lib/practice-time';
 
 export type RotaGrouping = 'person' | 'location' | 'role';
 
@@ -1032,11 +1033,10 @@ function Dialog({
   );
 }
 
-/// "HH:MM" on this browser's clock — the practice's, in New Jersey.
-function clockOf(iso: string): string {
-  const date = new Date(iso);
-  return `${String(date.getHours()).padStart(2, '0')}:${String(date.getMinutes()).padStart(2, '0')}`;
-}
+/// "HH:MM" on the practice's clock, which is how the server reads the hours
+/// sent back (`/shifts/:id/retime`). Not the browser's: a laptop set to another
+/// zone would otherwise move the shift by the difference on every save.
+const clockOf = practiceClockOf;
 
 /// Which shifts a change of hours or place reaches; see `ShiftRetimeService`.
 type RetimeScope = 'ONE' | 'SAME_WEEKDAY' | 'LATER';
@@ -1165,12 +1165,8 @@ function ShiftDialog({
   const changed = hoursChanged || placeChanged;
   const hoursValid =
     /^\d\d:\d\d$/.test(startTime) && /^\d\d:\d\d$/.test(endTime) && endTime > startTime;
-  const atTime = (time: string) => {
-    const [h, m] = time.split(':').map(Number);
-    const date = new Date(shift.startsAt);
-    date.setHours(h, m, 0, 0);
-    return date.toISOString();
-  };
+  // The same instant the server will make of these hours, for the overtime check.
+  const atTime = (time: string) => atPracticeTime(shift.startsAt, time);
   const moved =
     changed && hoursValid
       ? {
