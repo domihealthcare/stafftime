@@ -875,6 +875,23 @@ Beyond the phases, the parts worth knowing about before picking up work:
   overtime counts the whole week at every office; a repeat PIN within
   `KIOSK_REPEAT_SECONDS` (120) is not a clock-out; screens load when first
   opened and `/assets` is cached for a year.
+- **Code review, 6 October 2026** (Dominguez: "review / clean up / optimize"):
+  the Staff screen no longer sends anybody's **calendar link token** or lockout
+  counters (a manager could subscribe to a colleague's calendar); a wrong
+  current password is counted against the lockout wherever it is asked, and
+  password and PIN guesses are counted atomically (see *Lockout* in
+  `docs/architecture.md`); "forgot password" takes the same time either way;
+  **staff no longer see their own draft shifts** (the docs always said they
+  could not); a shift with a punch is never cancelled by a regular-shift
+  change; changing a regular shift sends the overtime email; time off,
+  copy-week and coverage use New Jersey's midnight, not UTC's; two managers
+  cannot both decide one request; export file names and the Period note give
+  the real last day (they said the day after); CSV cells cannot run as Excel
+  formulas; a time-off balance is one read, not one per year since hire; Home
+  reads the four newest posts, not every post. `configure-app.ts` is the one
+  place the API is set up, for `main.ts` and the Vercel function alike (the
+  latter had lost its security headers). Not done, waiting on a decision: see
+  *Code review, October 2026* in `docs/open-questions.md`.
 - **Clinical forms — CPT 99483, shown as "BrainCheck Care Plan"** (29
   September 2026, Dominguez; Phases 1–3 built; renamed and moved October
   2026). Resources → **Forms** (its own section, first on the page) →

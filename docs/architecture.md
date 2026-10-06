@@ -236,6 +236,20 @@ Lockout is 8 attempts, then 15 minutes — long enough to stop online guessing,
 short enough that a real person who fat-fingered their password is not calling
 an admin. An admin can reset it sooner by issuing a temporary password.
 
+Since October 2026 (a code review) every place that asks for the current
+password — signing in, changing it, choosing a tablet PIN — counts a wrong one
+against the same lockout (`auth/password-guesses.service.ts`); before, only
+signing in did, so a browser left signed in offered unlimited guesses. Each
+guess is counted *before* the password is checked, by an increment the
+database does itself, so guesses sent all at once cannot each read the same
+count and slip past the limit together. A lockout that has run out starts the
+count afresh, rather than the first typo afterwards locking the account again.
+The time clock's per-person PIN lockout works the same way.
+
+"Forgot password" answers no sooner than 1.5 seconds whether or not the
+address has an account: the same words were not enough when a real address
+took longer, waiting for its email to go.
+
 ### The password policy
 
 **At least 8 characters, including a number** — Dominguez's choice in
@@ -1468,8 +1482,10 @@ app's own origin.
 calendar subscription URL on screen, and that URL is a credential. A referrer
 header is a quiet way for one to end up in somebody else's logs.
 
-The API sets its own equivalents in `main.ts`, because Vercel's header rules do
-not apply once a request is inside the function.
+The API sets its own equivalents in `configure-app.ts`, shared by `main.ts` and
+the Vercel function `api/index.ts`, so its responses carry them wherever it
+runs (a review in October 2026 found the Vercel function had lost them — the
+two files repeated their set-up and had drifted).
 
 A wrong CSP turns the whole app into a blank page, and the deployment is the
 worst place to find that out. So `vite.config.ts` **reads the headers out of

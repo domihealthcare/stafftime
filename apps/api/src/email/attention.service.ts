@@ -99,7 +99,39 @@ export class AttentionService {
     const today = practiceToday();
     const dayStart = practiceDayStart();
 
-    const [credentials, tasks, punches, timeOff] = await Promise.all([
+    const who = (person: { firstName: string; lastName: string }) =>
+      `${person.firstName} ${person.lastName}`;
+    /// A date column (an expiry, a due date, a day off): the date as stored.
+    const day = (date: Date) =>
+      date.toLocaleDateString('en-US', {
+        timeZone: 'UTC',
+        month: 'short',
+        day: 'numeric',
+        year: 'numeric',
+      });
+    /// A moment (a punch, a shift's start): the date it was in New Jersey.
+    const on = (instant: Date) =>
+      instant.toLocaleDateString('en-US', {
+        timeZone: PRACTICE_ZONE,
+        month: 'short',
+        day: 'numeric',
+        year: 'numeric',
+      });
+
+    // Nothing below depends on anything else, so it is all asked for at once
+    // rather than one read after another.
+    const [
+      credentials,
+      tasks,
+      punches,
+      timeOff,
+      operational,
+      handEntries,
+      missingCredentials,
+      shiftsInClosures,
+      closing,
+      newSuggestions,
+    ] = await Promise.all([
       this.prisma.employeeCredential.findMany({
         where: {
           archivedAt: null,
@@ -167,26 +199,13 @@ export class AttentionService {
         orderBy: { startDate: 'asc' },
         take: 20,
       }),
+      this.gatherOperational(today, who, day, on),
+      this.handEntries(who, on),
+      this.missingCredentials(),
+      this.shiftsInClosures(today, on),
+      this.gatherClosing(today, day),
+      this.newSuggestions(day),
     ]);
-
-    const who = (person: { firstName: string; lastName: string }) =>
-      `${person.firstName} ${person.lastName}`;
-    /// A date column (an expiry, a due date, a day off): the date as stored.
-    const day = (date: Date) =>
-      date.toLocaleDateString('en-US', {
-        timeZone: 'UTC',
-        month: 'short',
-        day: 'numeric',
-        year: 'numeric',
-      });
-    /// A moment (a punch, a shift's start): the date it was in New Jersey.
-    const on = (instant: Date) =>
-      instant.toLocaleDateString('en-US', {
-        timeZone: PRACTICE_ZONE,
-        month: 'short',
-        day: 'numeric',
-        year: 'numeric',
-      });
 
     /// "8:52 AM", on the practice's clock.
     const clock = (instant: Date) =>
@@ -223,12 +242,12 @@ export class AttentionService {
             row.startDate.getTime() === row.endDate.getTime() ? '' : ` to ${day(row.endDate)}`
           }`,
       ),
-      ...(await this.gatherOperational(today, who, day, on)),
-      handEntries: await this.handEntries(who, on),
-      missingCredentials: await this.missingCredentials(),
-      shiftsInClosures: await this.shiftsInClosures(today, on),
-      ...(await this.gatherClosing(today, day)),
-      newSuggestions: await this.newSuggestions(day),
+      ...operational,
+      handEntries,
+      missingCredentials,
+      shiftsInClosures,
+      ...closing,
+      newSuggestions,
     };
   }
 

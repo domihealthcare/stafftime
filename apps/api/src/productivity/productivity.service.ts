@@ -404,15 +404,6 @@ export class ProductivityService {
       });
   }
 
-  /// Whether the person has anything to read, to decide whether their
-  /// menu shows the screen at all.
-  async hasPublished(employeeId: string): Promise<boolean> {
-    const count = await this.prisma.productivityStatement.count({
-      where: { employeeId, publishedAt: { not: null } },
-    });
-    return count > 0;
-  }
-
   // ---- Checks -------------------------------------------------------------
 
   /// One statement with its balance, which depends on its neighbours.

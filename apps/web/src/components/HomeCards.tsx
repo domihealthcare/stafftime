@@ -38,7 +38,8 @@ export function HomeNews() {
   useEffect(() => {
     let cancelled = false;
     api
-      .announcements()
+      // The primary and three more are shown; four newest covers them.
+      .announcements(4)
       .then((found) => !cancelled && setPosts(found))
       .catch(() => !cancelled && setPosts([]));
     return () => {

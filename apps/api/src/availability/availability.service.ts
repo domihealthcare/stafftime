@@ -13,14 +13,13 @@ import {
   UnavailabilityKind,
 } from '@prisma/client';
 import { AuthUser } from '../common/auth/auth-user';
-import { addDaysTo, localDateIn, weekStartIn } from '../common/util/zoned-time.util';
+import { addDaysTo, localDateIn, PRACTICE_ZONE, weekStartIn } from '../common/util/zoned-time.util';
 import { PrismaService } from '../prisma/prisma.service';
 import { Rule, describe } from './availability.rules';
 import { CreateUnavailabilityDto } from './dto/availability.dto';
 
 /// Both offices are in New Jersey. Used only to decide what "today" is when
 /// somebody has no location to take a timezone from.
-const PRACTICE_ZONE = 'America/New_York';
 
 /**
  * When staff cannot work.

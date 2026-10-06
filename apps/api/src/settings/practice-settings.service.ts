@@ -1,12 +1,11 @@
 import { Injectable } from '@nestjs/common';
 import { PracticeSettings, Prisma } from '@prisma/client';
-import { localDateIn } from '../common/util/zoned-time.util';
+import { localDateIn, PRACTICE_ZONE } from '../common/util/zoned-time.util';
 import { PrismaService } from '../prisma/prisma.service';
 import { UpdatePracticeSettingsDto } from './dto/practice-settings.dto';
 import { PAY_PERIOD_DAYS, payPeriods, workweekStartsOn } from './pay-period';
 
 /// Both offices are in New Jersey; "today" for a pay period is New Jersey's.
-const PRACTICE_ZONE = 'America/New_York';
 
 /// The only value `PracticeSettings.singleton` ever takes. See the model.
 const SINGLETON = 1;

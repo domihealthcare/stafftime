@@ -1,6 +1,6 @@
 import { BadRequestException, Injectable, ServiceUnavailableException } from '@nestjs/common';
 import { PayType } from '@prisma/client';
-import { localDateIn } from '../../common/util/zoned-time.util';
+import { localDateIn, PRACTICE_ZONE } from '../../common/util/zoned-time.util';
 import { ExportTimesheetDto } from '../dto/export-timesheet.dto';
 import { TimesheetData } from '../timesheet-export.service';
 import { AdpSettingsService, columnsOf } from './adp-settings.service';
@@ -13,7 +13,6 @@ import {
 } from './payroll-exporter';
 
 /// Both offices are in New Jersey.
-const PRACTICE_ZONE = 'America/New_York';
 
 /**
  * ADP TotalSource — the payroll import file, built the way ADP's instructions

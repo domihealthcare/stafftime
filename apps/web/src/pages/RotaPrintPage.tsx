@@ -1,7 +1,14 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { api } from '../lib/api';
-import { addDays, displayName, formatTimeCompact, localDate, startOfWeek } from '../lib/format';
+import {
+  addDays,
+  displayName,
+  formatTimeCompact,
+  localDate,
+  parseDay,
+  startOfWeek,
+} from '../lib/format';
 import { useIsManager, useSession } from '../lib/session';
 import { timeOffOn } from '../lib/time-off';
 import type { Employee, JobRole, Location, PracticeEvent, PtoRequest, Shift } from '../lib/types';
@@ -9,15 +16,6 @@ import { rolesHeldBy } from '../components/JobRoleSelect';
 import { BrandLogoForPrint } from '../components/Brand';
 import { eventsOnDay, eventTimeLabel, isClosure } from '../components/PracticeEvents';
 import { Alert, Spinner, buttonClass } from '../components/ui';
-
-/// "2026-09-27" as a local midnight, not UTC — a week that starts on Sunday
-/// must not print as Saturday west of Greenwich.
-function parseDay(value: string | null): Date | null {
-  if (!value || !/^\d{4}-\d{2}-\d{2}$/.test(value)) return null;
-  const [y, m, d] = value.split('-').map(Number);
-  const date = new Date(y, m - 1, d);
-  return Number.isNaN(date.getTime()) ? null : date;
-}
 
 /**
  * The week's rota on paper, for the break-room wall: one page per office,

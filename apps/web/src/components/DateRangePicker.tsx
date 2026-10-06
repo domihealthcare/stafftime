@@ -15,10 +15,17 @@ interface Preset {
   unavailable?: string;
 }
 
-/// The pay periods, fetched once and shared: every picker on every screen asks
-/// the same question and the answer changes once a fortnight.
+/// The pay periods, fetched once a day and shared: every picker on every
+/// screen asks the same question, and "this pay period" only moves at a date
+/// change — so a tab left open overnight asks again the next day.
 let payPeriodRequest: Promise<PayPeriodInfo | null> | null = null;
+let payPeriodDay = '';
 function loadPayPeriod(): Promise<PayPeriodInfo | null> {
+  const today = localDate(new Date());
+  if (payPeriodDay !== today) {
+    payPeriodDay = today;
+    payPeriodRequest = null;
+  }
   payPeriodRequest ??= api.payPeriod().catch(() => {
     payPeriodRequest = null;
     return null;

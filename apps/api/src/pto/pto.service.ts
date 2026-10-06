@@ -7,8 +7,8 @@ import {
 } from '@nestjs/common';
 import { EmploymentStatus, Prisma, PtoStatus, Role, ShiftStatus } from '@prisma/client';
 import { AuthUser } from '../common/auth/auth-user';
-import { countDays, isoDate, toUtcDate } from '../common/util/calendar-date.util';
-import { practiceToday } from '../common/util/zoned-time.util';
+import { addUtcDays, countDays, isoDate, toUtcDate } from '../common/util/calendar-date.util';
+import { PRACTICE_ZONE, practiceToday, zonedTimeToUtc } from '../common/util/zoned-time.util';
 import { NotificationsService } from '../email/notifications.service';
 import { PrismaService } from '../prisma/prisma.service';
 import {
@@ -218,16 +218,26 @@ export class PtoService {
       throw new BadRequestException('Give a reason when denying a request.');
     }
 
-    const updated = await this.prisma.ptoRequest.update({
-      where: { id },
-      data: {
-        status: dto.decision,
-        reviewedById: actor.id,
-        reviewedAt: new Date(),
-        reviewNote: dto.reviewNote?.trim() || null,
-      },
-      include: REQUEST_INCLUDE,
-    });
+    // Still pending in the write itself, so two managers deciding at the same
+    // moment cannot both succeed (and the person get two answers).
+    let updated;
+    try {
+      updated = await this.prisma.ptoRequest.update({
+        where: { id, status: PtoStatus.PENDING },
+        data: {
+          status: dto.decision,
+          reviewedById: actor.id,
+          reviewedAt: new Date(),
+          reviewNote: dto.reviewNote?.trim() || null,
+        },
+        include: REQUEST_INCLUDE,
+      });
+    } catch (error: unknown) {
+      if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2025') {
+        throw new BadRequestException('Somebody else has just decided that request.');
+      }
+      throw error;
+    }
 
     this.logger.log(`PTO request ${id} ${dto.decision.toLowerCase()} by ${actor.id}`);
     await this.notifyQuietly(() => this.notifications.ptoDecided(updated.id));
@@ -324,7 +334,7 @@ export class PtoService {
         employeeId: request.employeeId,
         status: { not: ShiftStatus.CANCELLED },
         startsAt: { lt: endOfDay(request.endDate) },
-        endsAt: { gt: request.startDate },
+        endsAt: { gt: startOfDay(request.startDate) },
       },
       select: {
         id: true,
@@ -406,8 +416,15 @@ function article(word: string): string {
   return /^[aeiou]/i.test(word) ? 'an' : 'a';
 }
 
+/// The instant a date-only value's day begins at the practice — not UTC
+/// midnight, which is the evening before in New Jersey.
+function startOfDay(date: Date): Date {
+  return zonedTimeToUtc(isoDate(date), '00:00', PRACTICE_ZONE);
+}
+
+/// The instant the day after it begins at the practice.
 function endOfDay(date: Date): Date {
-  return new Date(date.getTime() + 86_400_000);
+  return startOfDay(addUtcDays(date, 1));
 }
 
 function isEndInPast(endDate: Date): boolean {

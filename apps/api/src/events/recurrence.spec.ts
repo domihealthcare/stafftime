@@ -1,4 +1,4 @@
-import { describeRule, occurrenceDates, ruleProblem, weekOfMonth } from './recurrence';
+import { describeRule, occurrenceDates, ruleProblem } from './recurrence';
 
 describe('occurrenceDates', () => {
   it('lands every 2 weeks on a Friday — the office meeting', () => {
@@ -161,13 +161,5 @@ describe('describeRule', () => {
         until: '2027-06-30',
       }),
     ).toBe('Every 3 months on the 22nd until Jun 30, 2027');
-  });
-});
-
-describe('weekOfMonth', () => {
-  it('counts weeks of the month, calling the fifth the last', () => {
-    expect(weekOfMonth('2026-10-02')).toBe(1);
-    expect(weekOfMonth('2026-10-23')).toBe(4);
-    expect(weekOfMonth('2026-10-30')).toBe(-1);
   });
 });

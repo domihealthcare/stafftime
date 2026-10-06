@@ -64,20 +64,32 @@ export function KioskApp() {
   const retryTimer = useRef<number | undefined>(undefined);
   const loadSession = useCallback(async () => {
     window.clearTimeout(retryTimer.current);
+    // Wi-Fi coming back mid-PIN or mid-checklist only refreshes the lists: the
+    // screen is moved on only from starting up, pairing or the main screen.
+    const settled = ['loading', 'pairing', 'staff'].includes(screenRef.current);
+    const toStaff = () => {
+      setPin('');
+      setScreen({ name: 'staff' });
+    };
     try {
       const current = await kioskApi.session();
       setSession(current);
       setStaff(await kioskApi.employees());
       // The posts are a nicety: a time clock that cannot load them still clocks.
       setPosts(await kioskApi.posts().catch(() => []));
-      setError(null);
-      setScreen({ name: 'staff' });
+      if (settled) {
+        setError(null);
+        toStaff();
+      }
     } catch (err) {
       if (isKioskUnpaired(err)) {
+        setPin('');
         setScreen({ name: 'pairing' });
       } else {
-        setError(err instanceof ApiError ? err.message : 'Could not reach the server.');
-        setScreen({ name: 'staff' });
+        if (settled) {
+          setError(err instanceof ApiError ? err.message : 'Could not reach the server.');
+          toStaff();
+        }
         // The computer often starts before its Wi-Fi does: keep trying, rather
         // than sitting dead until somebody thinks to reload the page.
         retryTimer.current = window.setTimeout(() => void loadSession(), 15_000);

@@ -9,6 +9,7 @@ import {
   localDate,
   monthGrid,
   monthOfWeek,
+  parseDay,
   startOfMonth,
   startOfWeek,
   toLocalInputValue,
@@ -309,8 +310,8 @@ export function SchedulePage() {
     setError(null);
     try {
       const result = await api.copyWeek({
-        fromWeekStart: addDays(weekStart, -7).toISOString().slice(0, 10),
-        toWeekStart: weekStart.toISOString().slice(0, 10),
+        fromWeekStart: localDate(addDays(weekStart, -7)),
+        toWeekStart: localDate(weekStart),
       });
       setPlanResult(result);
       await load();
@@ -822,7 +823,7 @@ export function SchedulePage() {
             employees={employees}
             locations={locations}
             jobRoles={jobRoles}
-            defaultFrom={weekStart.toISOString().slice(0, 10)}
+            defaultFrom={localDate(weekStart)}
             onCreated={(result) => {
               setPlanResult(result);
               setPlanning(false);
@@ -1120,10 +1121,12 @@ function NewShiftForm({
 
   async function submit(event: React.FormEvent) {
     event.preventDefault();
-    if (closure && !(await confirmClosure(confirm, closure))) return;
-    if (proposed && !(await confirmOvertime(confirm, proposed, who))) return;
+    if (busy) return;
+    // Busy before the questions, so a double tap cannot make two shifts.
     setBusy(true);
     try {
+      if (closure && !(await confirmClosure(confirm, closure))) return;
+      if (proposed && !(await confirmOvertime(confirm, proposed, who))) return;
       await api.createShift({
         employeeId: employeeId === OPEN_SHIFT ? null : employeeId,
         locationId,
@@ -1686,14 +1689,6 @@ function MonthGrid({
       </p>
     </div>
   );
-}
-
-/// "2026-10-14" as that day at local midnight, or null for anything else.
-function parseDay(value: string | null): Date | null {
-  const match = value?.match(/^(\d{4})-(\d{2})-(\d{2})$/);
-  if (!match) return null;
-  const day = new Date(Number(match[1]), Number(match[2]) - 1, Number(match[3]));
-  return Number.isNaN(day.getTime()) ? null : day;
 }
 
 /// Where a new event starts: the first day on screen, unless that has passed.

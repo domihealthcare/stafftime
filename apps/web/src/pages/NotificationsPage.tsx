@@ -8,14 +8,25 @@ import { Alert, Card } from '../components/ui';
 /// notifications" is a much easier decision to regret when nobody said what
 /// you would stop hearing about.
 const CONTENTS = [
+  // Sort out today
   'Kiosk tablets that have stopped being used',
   'Next week’s rota, when it is close and still unpublished',
   'Shifts still scheduled for people who have left',
-  'Licenses and certifications about to lapse, or already lapsed',
-  'Hours nobody has approved yet',
-  'Checklist tasks past their due date',
+  'Licenses and certifications that have already lapsed',
   'Clock-outs to correct — still clocked in at midnight, so the app clocked them out',
+  // Coming up
   'Time off waiting on a decision',
+  'Open shifts in the next two weeks that nobody is on yet',
+  'Shifts on a day an office is closed',
+  'Licenses and certifications lapsing in the next 60 days',
+  'Hours nobody has approved yet',
+  'Notes in the suggestion box nobody has dealt with — how many, never the words',
+  // When you have a minute
+  'Closing checklists with something missed',
+  'Supplies to order',
+  'Hours entered by hand that nobody has looked into yet',
+  'Required licenses that are not on file',
+  'Checklist tasks past their due date',
 ];
 
 export function NotificationsPage() {
@@ -56,12 +67,10 @@ export function NotificationsPage() {
       <Card className="p-4">
         <div className="flex flex-wrap items-start justify-between gap-3">
           <div className="min-w-0">
-            <h2 className="text-sm font-semibold text-slate-900">
-              The nightly round-up
-            </h2>
+            <h2 className="text-sm font-semibold text-slate-900">The nightly round-up</h2>
             <p className="mt-1 text-sm text-slate-600">
-              One email, once a night, listing what needs a look. It is only sent on
-              nights when there is something to say — most nights there is not.
+              One email, once a night, listing what needs a look. It is only sent on nights when
+              there is something to say — most nights there is not.
             </p>
           </div>
 
@@ -103,8 +112,8 @@ export function NotificationsPage() {
 
         {!isManager && (
           <p className="mt-3 text-xs text-slate-500">
-            This round-up is only sent to managers and administrators, so this setting
-            does not currently change anything for you.
+            This round-up is only sent to managers and administrators, so this setting does not
+            currently change anything for you.
           </p>
         )}
       </Card>

@@ -1,4 +1,5 @@
 import type { DigestContents } from './attention.service';
+import { PRACTICE_ZONE } from '../common/util/zoned-time.util';
 
 /**
  * The nightly round-up, as an email somebody wants to open (Dominguez, October
@@ -255,7 +256,7 @@ function subjectFor(filled: Filled[], counts: number[]): string {
 function greeting(now: Date): string {
   const hour = Number(
     new Intl.DateTimeFormat('en-US', {
-      timeZone: 'America/New_York',
+      timeZone: PRACTICE_ZONE,
       hour: 'numeric',
       hourCycle: 'h23',
     }).format(now),
@@ -267,7 +268,7 @@ function greeting(now: Date): string {
 
 function dateLine(now: Date): string {
   return now.toLocaleDateString('en-US', {
-    timeZone: 'America/New_York',
+    timeZone: PRACTICE_ZONE,
     weekday: 'long',
     month: 'long',
     day: 'numeric',

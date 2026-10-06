@@ -90,14 +90,22 @@ export class SurveysService {
           })
         ).map((row) => row.surveyId),
       );
+      // Which open ones they are in the audience for, in one read rather than
+      // one per survey.
+      const theirs = new Set(
+        (
+          await this.prisma.survey.findMany({
+            where: { status: SurveyStatus.OPEN, ...(await this.audienceFor(actor.id)) },
+            select: { id: true },
+          })
+        ).map((row) => row.id),
+      );
+      const counts = this.audienceCounter();
       return Promise.all(
         rows.map(async (row) => ({
-          ...(await this.forManager(row)),
+          ...(await this.forManager(row, counts)),
           answered: taken.has(row.id),
-          canAnswer:
-            row.status === SurveyStatus.OPEN &&
-            !taken.has(row.id) &&
-            (await this.eligible(row, actor.id)),
+          canAnswer: theirs.has(row.id) && !taken.has(row.id),
         })),
       );
     }
@@ -353,7 +361,8 @@ export class SurveysService {
       select: SURVEY_SELECT,
       orderBy: { openedAt: 'desc' },
     });
-    const surveys = await Promise.all(rows.map((row) => this.forManager(row)));
+    const counts = this.audienceCounter();
+    const surveys = await Promise.all(rows.map((row) => this.forManager(row, counts)));
     // Open ones first: those are the ones still collecting answers.
     surveys.sort(
       (a, b) => Number(b.status === SurveyStatus.OPEN) - Number(a.status === SurveyStatus.OPEN),
@@ -371,12 +380,27 @@ export class SurveysService {
   }
 
   /// A manager's view: who it is for, how many could answer, how many have.
-  private async forManager(row: SurveyRow) {
+  private async forManager(row: SurveyRow, counts = this.audienceCounter()) {
     const { _count, ...rest } = row;
     return {
       ...rest,
       responses: _count.responses,
-      audienceSize: await this.prisma.employee.count({ where: this.audienceWhere(row) }),
+      audienceSize: await counts(row),
+    };
+  }
+
+  /// How many people an audience is, each audience counted once however many
+  /// surveys share it — most are for everyone.
+  private audienceCounter() {
+    const counted = new Map<string, Promise<number>>();
+    return (row: Pick<SurveyRow, 'audience' | 'jobRole' | 'location'>) => {
+      const key = `${row.audience}|${row.jobRole?.id ?? ''}|${row.location?.id ?? ''}`;
+      let count = counted.get(key);
+      if (!count) {
+        count = this.prisma.employee.count({ where: this.audienceWhere(row) });
+        counted.set(key, count);
+      }
+      return count;
     };
   }
 

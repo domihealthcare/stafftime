@@ -6,10 +6,10 @@ import {
   NotFoundException,
   UnauthorizedException,
 } from '@nestjs/common';
-import { ConfigService } from '@nestjs/config';
 import { EmploymentStatus } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { LoginThrottleService } from './login-throttle.service';
+import { PasswordGuessService } from './password-guesses.service';
 import { PasswordService } from './password.service';
 import { IssuedSession, SessionService } from './session.service';
 
@@ -25,19 +25,14 @@ export interface LoginContext {
 @Injectable()
 export class AuthService {
   private readonly logger = new Logger(AuthService.name);
-  private readonly maxAttempts: number;
-  private readonly lockoutMinutes: number;
 
   constructor(
     private readonly prisma: PrismaService,
     private readonly passwords: PasswordService,
     private readonly sessions: SessionService,
     private readonly throttle: LoginThrottleService,
-    config: ConfigService,
-  ) {
-    this.maxAttempts = config.get<number>('MAX_LOGIN_ATTEMPTS', 8);
-    this.lockoutMinutes = config.get<number>('LOCKOUT_MINUTES', 15);
-  }
+    private readonly guesses: PasswordGuessService,
+  ) {}
 
   async login(email: string, password: string, context: LoginContext): Promise<IssuedSession> {
     // Before the lookup and before any hashing, so a throttled address costs
@@ -68,19 +63,14 @@ export class AuthService {
       throw new UnauthorizedException(SIGN_IN_FAILED);
     }
 
-    if (employee.lockedUntil && employee.lockedUntil > new Date()) {
-      const minutes = Math.max(
-        1,
-        Math.ceil((employee.lockedUntil.getTime() - Date.now()) / 60_000),
-      );
-      throw new UnauthorizedException(
-        `Too many failed attempts. Try again in ${minutes} minute${minutes === 1 ? '' : 's'}, or ask an administrator to reset your password.`,
-      );
+    const guess = await this.guesses.check(
+      { ...employee, passwordHash: employee.passwordHash },
+      password,
+    );
+    if (guess.kind === 'locked') {
+      throw new UnauthorizedException(guess.message);
     }
-
-    const correct = await this.passwords.verify(password, employee.passwordHash);
-    if (!correct) {
-      await this.recordFailure(employee.id, employee.failedLoginAttempts);
+    if (guess.kind === 'wrong') {
       await this.throttle.recordFailure(email, context.ipAddress);
       throw new UnauthorizedException(SIGN_IN_FAILED);
     }
@@ -91,9 +81,10 @@ export class AuthService {
       throw new ForbiddenException('This account is no longer active.');
     }
 
+    // The count was cleared by the password check.
     await this.prisma.employee.update({
       where: { id: employee.id },
-      data: { failedLoginAttempts: 0, lockedUntil: null, lastLoginAt: new Date() },
+      data: { lastLoginAt: new Date() },
     });
 
     return this.sessions.issue(employee.id, context);
@@ -119,14 +110,22 @@ export class AuthService {
         firstName: true,
         lastName: true,
         passwordHash: true,
+        failedLoginAttempts: true,
+        lockedUntil: true,
       },
     });
     if (!employee?.passwordHash) {
       throw new NotFoundException('Account not found.');
     }
 
-    const correct = await this.passwords.verify(currentPassword, employee.passwordHash);
-    if (!correct) {
+    const guess = await this.guesses.check(
+      { ...employee, passwordHash: employee.passwordHash },
+      currentPassword,
+    );
+    if (guess.kind === 'locked') {
+      throw new UnauthorizedException(guess.message);
+    }
+    if (guess.kind === 'wrong') {
       throw new UnauthorizedException('Your current password is incorrect.');
     }
 
@@ -192,23 +191,6 @@ export class AuthService {
         lockedUntil: null,
       },
     });
-  }
-
-  private async recordFailure(employeeId: string, previousFailures: number): Promise<void> {
-    const attempts = previousFailures + 1;
-    const locked = attempts >= this.maxAttempts;
-
-    await this.prisma.employee.update({
-      where: { id: employeeId },
-      data: {
-        failedLoginAttempts: attempts,
-        lockedUntil: locked ? new Date(Date.now() + this.lockoutMinutes * 60_000) : null,
-      },
-    });
-
-    if (locked) {
-      this.logger.warn(`Employee ${employeeId} locked out after ${attempts} failed attempts`);
-    }
   }
 }
 

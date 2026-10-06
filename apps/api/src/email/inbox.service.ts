@@ -27,9 +27,9 @@ export interface NewNotification {
  * email (a new post, a survey to answer). Unlike the email, this works whether
  * or not an email provider is configured.
  *
- * Like the email, it is **fire and forget**: nothing waits on it and nothing
- * fails because of it. A time-off approval that errored because a
- * notification row could not be written would be the worse bug.
+ * Like the email, nothing fails because of it: a time-off approval that
+ * errored because a notification row could not be written would be the worse
+ * bug. It is awaited all the same — see `notify`.
  */
 @Injectable()
 export class InboxService {
@@ -37,7 +37,7 @@ export class InboxService {
 
   constructor(private readonly prisma: PrismaService) {}
 
-  /// One row per person. Never awaited by a request handler.
+  /// One row per person. Awaited, and never throws.
   async notify(employeeIds: string[], notification: NewNotification): Promise<void> {
     const ids = [...new Set(employeeIds)];
     if (ids.length === 0) return;

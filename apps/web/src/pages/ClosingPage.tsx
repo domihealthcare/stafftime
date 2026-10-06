@@ -12,6 +12,7 @@ import type {
   Location,
   SupplyRequest,
 } from '../lib/types';
+import { useConfirm } from '../components/ConfirmDialog';
 import { NeedsAttention } from '../components/NeedsAttention';
 import {
   Alert,
@@ -110,6 +111,7 @@ function Records() {
   useEffect(() => {
     let cancelled = false;
     setRecords(null);
+    setError(null);
     api
       .closingRecords(date, locationId || undefined)
       .then((rows) => !cancelled && setRecords(rows))
@@ -150,9 +152,11 @@ function Records() {
       </div>
       {error && <Alert>{error}</Alert>}
       {records === null ? (
-        <Card className="p-6">
-          <Spinner label="Loading clock-outs" />
-        </Card>
+        !error && (
+          <Card className="p-6">
+            <Spinner label="Loading clock-outs" />
+          </Card>
+        )
       ) : records.length === 0 ? (
         <EmptyState>Nobody with a closing checklist clocked out that day.</EmptyState>
       ) : (
@@ -269,7 +273,9 @@ function Supplies() {
   useEffect(load, [load]);
 
   if (rows === null) {
-    return (
+    return error ? (
+      <Alert>{error}</Alert>
+    ) : (
       <Card className="p-6">
         <Spinner label="Loading the restock list" />
       </Card>
@@ -385,7 +391,9 @@ function EditLists() {
   };
 
   if (roles === null) {
-    return (
+    return error ? (
+      <Alert>{error}</Alert>
+    ) : (
       <Card className="p-6">
         <Spinner label="Loading checklists" />
       </Card>
@@ -452,8 +460,8 @@ function SectionEditor({
   locations: Location[];
   change: Change;
 }) {
+  const confirm = useConfirm();
   const [title, setTitle] = useState(section.title);
-  const [confirmRemove, setConfirmRemove] = useState(false);
 
   return (
     <div
@@ -499,35 +507,20 @@ function SectionEditor({
             void change(() => api.moveClosingSection(section.id, direction), 'Moved.')
           }
         />
-        {confirmRemove ? (
-          <span className="flex items-center gap-2 text-sm">
-            <span className="text-rose-800">Remove it and its {section.items.length} lines?</span>
-            <button
-              type="button"
-              onClick={() =>
-                void change(() => api.deleteClosingSection(section.id), 'Section removed.')
-              }
-              className="font-semibold text-rose-700"
-            >
-              Yes, remove
-            </button>
-            <button
-              type="button"
-              onClick={() => setConfirmRemove(false)}
-              className="text-slate-600"
-            >
-              Keep it
-            </button>
-          </span>
-        ) : (
-          <button
-            type="button"
-            onClick={() => setConfirmRemove(true)}
-            className="text-sm text-slate-500 hover:text-rose-700"
-          >
-            Remove section
-          </button>
-        )}
+        <button
+          type="button"
+          onClick={async () => {
+            const sure = await confirm({
+              title: `Remove the ${section.title} section?`,
+              body: `Its ${section.items.length} ${section.items.length === 1 ? 'line goes' : 'lines go'} with it.`,
+              cancelLabel: 'Keep it',
+            });
+            if (sure) await change(() => api.deleteClosingSection(section.id), 'Section removed.');
+          }}
+          className="text-sm text-slate-500 hover:text-rose-700"
+        >
+          Remove section
+        </button>
       </div>
       <ul className="mt-2 divide-y divide-slate-100">
         {section.items.map((item, index) => (
@@ -559,6 +552,7 @@ function ItemEditor({
   locations: Location[];
   change: Change;
 }) {
+  const confirm = useConfirm();
   const [editing, setEditing] = useState(false);
   const [text, setText] = useState(item.text);
   const [kind, setKind] = useState<ClosingItemKind>(item.kind);
@@ -706,7 +700,14 @@ function ItemEditor({
         </button>
         <button
           type="button"
-          onClick={() => void change(() => api.deleteClosingItem(item.id), 'Line removed.')}
+          onClick={async () => {
+            const sure = await confirm({
+              title: 'Remove this line?',
+              body: `“${item.text}” comes off the checklist.`,
+              cancelLabel: 'Keep it',
+            });
+            if (sure) await change(() => api.deleteClosingItem(item.id), 'Line removed.');
+          }}
           className="ml-auto text-rose-700"
         >
           Remove this line
@@ -719,16 +720,20 @@ function ItemEditor({
 function AddItem({ sectionId, change }: { sectionId: string; change: Change }) {
   const [text, setText] = useState('');
   const [kind, setKind] = useState<ClosingItemKind>('TASK');
+  const [busy, setBusy] = useState(false);
   return (
     <form
       className="mt-2 flex flex-wrap items-center gap-2"
       onSubmit={(event) => {
         event.preventDefault();
-        if (!text.trim()) return;
+        if (!text.trim() || busy) return;
+        setBusy(true);
         void change(
           () => api.createClosingItem({ sectionId, kind, text: text.trim() }),
           'Line added.',
-        ).then(() => setText(''));
+        )
+          .then(() => setText(''))
+          .finally(() => setBusy(false));
       }}
     >
       <input
@@ -750,7 +755,7 @@ function AddItem({ sectionId, change }: { sectionId: string; change: Change }) {
           </option>
         ))}
       </select>
-      <button type="submit" className={buttonClass('secondary', 'sm')}>
+      <button type="submit" disabled={busy} className={buttonClass('secondary', 'sm')}>
         Add
       </button>
     </form>
@@ -759,16 +764,20 @@ function AddItem({ sectionId, change }: { sectionId: string; change: Change }) {
 
 function AddSection({ jobRoleId, change }: { jobRoleId: string; change: Change }) {
   const [title, setTitle] = useState('');
+  const [busy, setBusy] = useState(false);
   return (
     <form
       className="mt-3 flex flex-wrap items-center gap-2 border-t border-slate-100 pt-3"
       onSubmit={(event) => {
         event.preventDefault();
-        if (!title.trim()) return;
+        if (!title.trim() || busy) return;
+        setBusy(true);
         void change(
           () => api.createClosingSection({ jobRoleId, title: title.trim() }),
           'Section added.',
-        ).then(() => setTitle(''));
+        )
+          .then(() => setTitle(''))
+          .finally(() => setBusy(false));
       }}
     >
       <input
@@ -778,7 +787,7 @@ function AddSection({ jobRoleId, change }: { jobRoleId: string; change: Change }
         onChange={(event) => setTitle(event.target.value)}
         className="min-w-0 flex-1 rounded-lg border border-slate-300 px-2 py-1 text-sm"
       />
-      <button type="submit" className={buttonClass('secondary', 'sm')}>
+      <button type="submit" disabled={busy} className={buttonClass('secondary', 'sm')}>
         Add section
       </button>
     </form>

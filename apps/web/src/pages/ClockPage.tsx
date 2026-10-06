@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { ApiError, api } from '../lib/api';
 import { formatDuration, formatTime } from '../lib/format';
 import { GeolocationRefused, detectClockMethod, getCurrentPosition } from '../lib/geolocation';
@@ -48,6 +48,10 @@ export function ClockPage() {
   /// Once somebody picks a place themselves, the defaults below leave it alone.
   const [pickedByHand, setPickedByHand] = useState(false);
   const [status, setStatus] = useState<Status>('loading');
+  /// A punch in flight, for the refresh on coming back to the app: the
+  /// location prompt can send the page to the background and back, and a
+  /// refresh then would re-enable the button mid-punch.
+  const punching = useRef(false);
   const [error, setError] = useState<string | null>(null);
   const [offerKiosk, setOfferKiosk] = useState(false);
   /// Their closing checklist for the punch they are in, fetched ahead so that
@@ -99,7 +103,7 @@ export function ClockPage() {
   // what it knew this morning.
   useEffect(() => {
     const refresh = () => {
-      if (document.visibilityState === 'visible') void load();
+      if (document.visibilityState === 'visible' && !punching.current) void load();
     };
     document.addEventListener('visibilitychange', refresh);
     return () => document.removeEventListener('visibilitychange', refresh);
@@ -203,6 +207,7 @@ export function ClockPage() {
   }
 
   async function punch(direction: 'in' | 'out', closingAnswers?: ClosingSubmission) {
+    punching.current = true;
     setStatus('working');
     setError(null);
     setOfferKiosk(false);
@@ -260,6 +265,7 @@ export function ClockPage() {
         setError(err instanceof Error ? err.message : 'Something went wrong.');
       }
     } finally {
+      punching.current = false;
       setStatus('ready');
     }
   }

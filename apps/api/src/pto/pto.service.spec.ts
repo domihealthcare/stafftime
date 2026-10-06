@@ -1,5 +1,5 @@
 import { BadRequestException, ForbiddenException, NotFoundException } from '@nestjs/common';
-import { PtoStatus, PtoType, Role } from '@prisma/client';
+import { Prisma, PtoStatus, PtoType, Role } from '@prisma/client';
 import { countDays, isoDate } from '../common/util/calendar-date.util';
 import { PtoService } from './pto.service';
 
@@ -38,11 +38,13 @@ describe('PtoService', () => {
   ) {
     const prisma = {
       employee: {
-        findUnique: jest.fn().mockResolvedValue(
-          options.employee === undefined
-            ? { id: 'emp-1', employmentStatus: 'ACTIVE', firstName: 'Frankie' }
-            : options.employee,
-        ),
+        findUnique: jest
+          .fn()
+          .mockResolvedValue(
+            options.employee === undefined
+              ? { id: 'emp-1', employmentStatus: 'ACTIVE', firstName: 'Frankie' }
+              : options.employee,
+          ),
       },
       ptoRequest: {
         create: jest.fn().mockImplementation(({ data }) => ({
@@ -205,17 +207,14 @@ describe('PtoService', () => {
 
     it('stops an employee filing for somebody else', async () => {
       const { service } = build();
-      await expect(
-        service.create(request({ employeeId: 'emp-2' }), employee),
-      ).rejects.toThrow(/only request time off for yourself/);
+      await expect(service.create(request({ employeeId: 'emp-2' }), employee)).rejects.toThrow(
+        /only request time off for yourself/,
+      );
     });
 
     it('lets a manager file on behalf of someone who phoned in sick', async () => {
       const { service, prisma } = build();
-      await service.create(
-        request({ employeeId: 'emp-1', type: PtoType.SICK }),
-        manager,
-      );
+      await service.create(request({ employeeId: 'emp-1', type: PtoType.SICK }), manager);
       expect(prisma.ptoRequest.create.mock.calls[0][0].data.employeeId).toBe('emp-1');
     });
   });
@@ -270,6 +269,24 @@ describe('PtoService', () => {
       await expect(
         service.review('pto-1', { decision: PtoStatus.DENIED, reviewNote: 'x' }, manager),
       ).rejects.toThrow(/already been approved/);
+    });
+
+    it('refuses the slower of two managers deciding at once', async () => {
+      const { service, prisma } = build({ request: pending });
+      // Read as pending by both; the write only matches while it still is.
+      prisma.ptoRequest.update.mockRejectedValueOnce(
+        new Prisma.PrismaClientKnownRequestError('No record found', {
+          code: 'P2025',
+          clientVersion: 'test',
+        }),
+      );
+      await expect(
+        service.review('pto-1', { decision: PtoStatus.APPROVED }, manager),
+      ).rejects.toThrow(/Somebody else has just decided/);
+      expect(prisma.ptoRequest.update.mock.calls[0][0].where).toEqual({
+        id: 'pto-1',
+        status: PtoStatus.PENDING,
+      });
     });
 
     it('rejects a decision that is not approve or deny', async () => {
@@ -387,9 +404,11 @@ describe('PtoService', () => {
       await service.conflictingShifts('pto-1');
 
       const where = prisma.shift.findMany.mock.calls[0][0].where;
-      // Up to the end of the 5th, not its midnight start.
-      expect(where.startsAt).toEqual({ lt: new Date('2026-11-06T00:00:00.000Z') });
-      expect(where.endsAt).toEqual({ gt: new Date('2026-11-03T00:00:00.000Z') });
+      // Up to the end of the 5th, not its midnight start — and New Jersey's
+      // days (EST, UTC−5), not UTC's, so an evening shift the night before
+      // is not counted.
+      expect(where.startsAt).toEqual({ lt: new Date('2026-11-06T05:00:00.000Z') });
+      expect(where.endsAt).toEqual({ gt: new Date('2026-11-03T05:00:00.000Z') });
     });
   });
   describe('recording time off already taken', () => {

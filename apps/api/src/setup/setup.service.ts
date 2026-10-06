@@ -7,7 +7,7 @@ import {
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { EmploymentStatus, PayType, Role } from '@prisma/client';
-import { timingSafeEqual } from 'node:crypto';
+import { safeEquals } from '../auth/session.service';
 import { PasswordService } from '../auth/password.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { FirstRunSetupDto } from './setup.dto';
@@ -109,13 +109,4 @@ export class SetupService {
     const token = this.config.get<string>('SETUP_TOKEN');
     return token && token.length >= 8 ? token : undefined;
   }
-}
-
-function safeEquals(a: string, b: string): boolean {
-  const left = Buffer.from(a);
-  const right = Buffer.from(b);
-  if (left.length !== right.length) {
-    return false;
-  }
-  return timingSafeEqual(left, right);
 }

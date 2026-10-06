@@ -1,6 +1,7 @@
 import { ConfigService } from '@nestjs/config';
 import { ForbiddenException, UnauthorizedException } from '@nestjs/common';
 import { AuthService } from './auth.service';
+import { PasswordGuessService } from './password-guesses.service';
 import { PasswordService } from './password.service';
 
 /**
@@ -21,7 +22,15 @@ describe('AuthService', () => {
     const prisma = {
       employee: {
         findUnique: jest.fn().mockResolvedValue(employee),
-        update: jest.fn().mockResolvedValue({}),
+        // Answers the wrong-guess count the way the database would.
+        update: jest.fn().mockImplementation(async ({ data }) => {
+          const count = data.failedLoginAttempts;
+          const previous = Number(employee?.failedLoginAttempts ?? 0);
+          return {
+            failedLoginAttempts:
+              typeof count === 'object' && count !== null ? previous + count.increment : count,
+          };
+        }),
       },
     };
     const sessions = {
@@ -41,9 +50,15 @@ describe('AuthService', () => {
       sessions as any,
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       throttle as any,
-      config,
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      new PasswordGuessService(prisma as any, passwords, config),
     );
-    return { service, prisma, sessions, throttle };
+    /// Everything written to the employee row, in order.
+    const writes = (): Array<Record<string, unknown>> =>
+      prisma.employee.update.mock.calls.map(
+        (call: [{ data: Record<string, unknown> }]) => call[0].data,
+      );
+    return { service, prisma, sessions, throttle, writes };
   }
 
   const active = () => ({
@@ -73,19 +88,16 @@ describe('AuthService', () => {
     });
 
     it('clears the failure counter on success', async () => {
-      const { service, prisma } = build({ ...active(), failedLoginAttempts: 2 });
+      const { service, writes } = build({ ...active(), failedLoginAttempts: 2 });
       await service.login('frankie@domihealthcare.com', 'breakfast lamp 7', {});
-      expect(prisma.employee.update.mock.calls[0][0].data).toMatchObject({
-        failedLoginAttempts: 0,
-        lockedUntil: null,
-      });
+      expect(writes()).toContainEqual({ failedLoginAttempts: 0, lockedUntil: null });
     });
 
     it('rejects the wrong password', async () => {
       const { service } = build(active());
-      await expect(
-        service.login('frankie@domihealthcare.com', 'wrong', {}),
-      ).rejects.toThrow(UnauthorizedException);
+      await expect(service.login('frankie@domihealthcare.com', 'wrong', {})).rejects.toThrow(
+        UnauthorizedException,
+      );
     });
 
     it('gives the same message for an unknown account as for a wrong password', async () => {
@@ -117,10 +129,34 @@ describe('AuthService', () => {
       );
     });
 
-    it('counts a failure', async () => {
-      const { service, prisma } = build({ ...active(), failedLoginAttempts: 0 });
+    it('counts a failure, with an increment the database does itself', async () => {
+      const { service, writes } = build({ ...active(), failedLoginAttempts: 0 });
       await service.login('frankie@domihealthcare.com', 'wrong', {}).catch(() => undefined);
-      expect(prisma.employee.update.mock.calls[0][0].data.failedLoginAttempts).toBe(1);
+      // Not "the count I read, plus one": guesses sent together would all
+      // write the same number.
+      expect(writes()[0]).toEqual({ failedLoginAttempts: { increment: 1 } });
+    });
+
+    it('refuses a guess past the limit without checking it', async () => {
+      // Two guesses still in flight when the limit was reached: this one is
+      // not even tried.
+      const { service, writes } = build({ ...active(), failedLoginAttempts: 3 });
+      await expect(
+        service.login('frankie@domihealthcare.com', 'breakfast lamp 7', {}),
+      ).rejects.toThrow(/Too many failed attempts/);
+      expect(writes()).toHaveLength(1);
+    });
+
+    it('starts the count afresh once a lockout has run out', async () => {
+      const { service, writes } = build({
+        ...active(),
+        failedLoginAttempts: 3,
+        lockedUntil: new Date(Date.now() - 1000),
+      });
+      await service.login('frankie@domihealthcare.com', 'wrong', {}).catch(() => undefined);
+      // One typo after the lockout is one wrong guess, not a fresh lockout.
+      expect(writes()[0]).toEqual({ failedLoginAttempts: 1, lockedUntil: null });
+      expect(writes().some((data) => data.lockedUntil instanceof Date)).toBe(false);
     });
 
     it('records the failure against the address as well as the account', async () => {
@@ -173,9 +209,9 @@ describe('AuthService', () => {
     });
 
     it('locks the account at the configured attempt limit', async () => {
-      const { service, prisma } = build({ ...active(), failedLoginAttempts: 2 });
+      const { service, writes } = build({ ...active(), failedLoginAttempts: 2 });
       await service.login('frankie@domihealthcare.com', 'wrong', {}).catch(() => undefined);
-      expect(prisma.employee.update.mock.calls[0][0].data.lockedUntil).toBeInstanceOf(Date);
+      expect(writes().some((data) => data.lockedUntil instanceof Date)).toBe(true);
     });
 
     it('refuses while locked, even with the correct password', async () => {
@@ -232,20 +268,32 @@ describe('AuthService', () => {
     it('refuses reusing the current password', async () => {
       const { service } = build(active());
       await expect(
-        service.changePassword(
-          'emp-1',
-          'breakfast lamp 7',
-          'breakfast lamp 7',
-          'tok',
-        ),
+        service.changePassword('emp-1', 'breakfast lamp 7', 'breakfast lamp 7', 'tok'),
       ).rejects.toThrow(/different from the current one/);
     });
 
+    it('counts a wrong current password against the lockout', async () => {
+      // A browser left signed in must not offer unlimited guesses.
+      const { service, writes } = build({ ...active(), failedLoginAttempts: 2 });
+      await service
+        .changePassword('emp-1', 'wrong', 'a whole new passphrase', 'tok')
+        .catch(() => undefined);
+      expect(writes()[0]).toEqual({ failedLoginAttempts: { increment: 1 } });
+      expect(writes().some((data) => data.lockedUntil instanceof Date)).toBe(true);
+    });
+
+    it('refuses while the account is locked, even with the right password', async () => {
+      const { service } = build({ ...active(), lockedUntil: new Date(Date.now() + 60_000) });
+      await expect(
+        service.changePassword('emp-1', 'breakfast lamp 7', 'a whole new phrase 9', 'tok'),
+      ).rejects.toThrow(/Too many failed attempts/);
+    });
+
     it('stores a new hash and clears the must-change flag', async () => {
-      const { service, prisma } = build(active());
+      const { service, writes } = build(active());
       await service.changePassword('emp-1', 'breakfast lamp 7', 'a whole new phrase 9', 'tok');
 
-      const data = prisma.employee.update.mock.calls[0][0].data;
+      const data = writes().find((write) => 'passwordHash' in write)!;
       expect(data.passwordHash).toMatch(/^\$argon2id\$/);
       expect(data.passwordHash).not.toBe(goodHash);
       expect(data.mustChangePassword).toBe(false);

@@ -172,6 +172,21 @@ export function localDate(date: Date): string {
   return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`;
 }
 
+/// "2026-10-14" as that day at local midnight, not UTC — a week that starts
+/// on Sunday must not show as Saturday west of Greenwich. Null for anything else.
+export function parseDay(value: string | null): Date | null {
+  const match = value?.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  if (!match) return null;
+  const day = new Date(Number(match[1]), Number(match[2]) - 1, Number(match[3]));
+  return Number.isNaN(day.getTime()) ? null : day;
+}
+
+/// A wall-clock "08:30", as a shift's repeating hours are kept → "8:30 AM".
+export function formatClock(time: string): string {
+  const [h, m] = time.split(':').map(Number);
+  return `${h % 12 === 0 ? 12 : h % 12}:${String(m).padStart(2, '0')} ${h < 12 ? 'AM' : 'PM'}`;
+}
+
 /// What colleagues call somebody: the name they go by, then their surname.
 export function displayName(person: {
   firstName: string;

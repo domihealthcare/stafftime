@@ -8,6 +8,7 @@ import {
   Patch,
   Post,
   Put,
+  Query,
 } from '@nestjs/common';
 import { Role } from '@prisma/client';
 import { AuthUser } from '../common/auth/auth-user';
@@ -44,9 +45,15 @@ export class AnnouncementsController {
     return findPublicPosts(this.prisma);
   }
 
+  /// `?latest=4` for the home screen: the newest few and the primary.
   @Get()
-  list(@CurrentUser() user: AuthUser) {
-    return this.announcements.findAll(user);
+  list(@CurrentUser() user: AuthUser, @Query('latest') latest?: string) {
+    // Anything that is not a small whole number reads every post, as before.
+    const take = Number(latest);
+    return this.announcements.findAll(
+      user,
+      Number.isInteger(take) && take > 0 ? Math.min(take, 20) : undefined,
+    );
   }
 
   /// What the home screen leads with. `null` only before the first post.

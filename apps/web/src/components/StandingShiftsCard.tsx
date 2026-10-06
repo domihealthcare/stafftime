@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { ApiError, api } from '../lib/api';
-import { displayName, formatCalendarDate, localDate } from '../lib/format';
+import { displayName, formatCalendarDate, formatClock, localDate } from '../lib/format';
 import { describeRepeat, type RepeatWeeks } from '../lib/repeat-pattern';
 import type { Employee, JobRole, Location, StandingShift } from '../lib/types';
 import { useConfirm } from './ConfirmDialog';
@@ -19,13 +19,6 @@ import { WeeklyScheduleEditor } from './WeeklyScheduleEditor';
 
 /// How many regular shifts the list shows before "Show more".
 const LIST_PAGE = 8;
-
-/// "08:30" → "8:30 AM".
-function clock(time: string): string {
-  const [h, m] = time.split(':').map(Number);
-  const suffix = h < 12 ? 'AM' : 'PM';
-  return `${h % 12 === 0 ? 12 : h % 12}:${String(m).padStart(2, '0')} ${suffix}`;
-}
 
 /**
  * The regular shifts with no end date — "Rosa, every Monday, 8 to 4" — and
@@ -118,8 +111,8 @@ export function StandingShiftsCard({
       body: (
         <p>
           From {formatCalendarDate(fromDate, { year: false })} on, it becomes{' '}
-          {describeRepeat(days, weeks, false)}, {clock(startTime)}–{clock(endTime)}. Shifts from
-          then are replaced
+          {describeRepeat(days, weeks, false)}, {formatClock(startTime)}–{formatClock(endTime)}.
+          Shifts from then are replaced
           {editing.employee ? ', and they are told' : ''}. Earlier ones stay as they are.
         </p>
       ),
@@ -162,8 +155,8 @@ export function StandingShiftsCard({
       title: `Stop ${who(item)}’s regular shift?`,
       body: (
         <p>
-          {describeRepeat(item.daysOfWeek, item)}, {clock(item.startTime)}–{clock(item.endTime)} at{' '}
-          {item.location.name}. The last one is on or before{' '}
+          {describeRepeat(item.daysOfWeek, item)}, {formatClock(item.startTime)}–
+          {formatClock(item.endTime)} at {item.location.name}. The last one is on or before{' '}
           {formatCalendarDate(lastDate, { year: false })}; the shifts after that come off the rota
           {item.employee ? ', and they are told' : ''}. Shifts already worked stay.
         </p>
@@ -281,8 +274,8 @@ export function StandingShiftsCard({
                 <div className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1">
                   <span className="font-medium text-slate-900">{who(item)}</span>
                   <span className="text-slate-600">
-                    {describeRepeat(item.daysOfWeek, item)}, {clock(item.startTime)}–
-                    {clock(item.endTime)} · {item.location.name}
+                    {describeRepeat(item.daysOfWeek, item)}, {formatClock(item.startTime)}–
+                    {formatClock(item.endTime)} · {item.location.name}
                     {item.isRemote ? ' · from home' : ''}
                     {item.status === 'DRAFT' ? ' · as drafts' : ''}
                   </span>

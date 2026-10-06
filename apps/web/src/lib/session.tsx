@@ -36,7 +36,11 @@ export function SessionProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     // The cookie may already be valid from a previous visit, so ask the server
     // who we are before deciding to show the sign-in screen.
-    void refresh().finally(() => setLoading(false));
+    // Offline or a server error: show the sign-in screen rather than an
+    // unhandled rejection.
+    void refresh()
+      .catch(() => undefined)
+      .finally(() => setLoading(false));
   }, [refresh]);
 
   // The session ended while the app was open: back to the sign-in screen.

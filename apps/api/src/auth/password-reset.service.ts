@@ -7,11 +7,11 @@ import {
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { EmploymentStatus } from '@prisma/client';
-import { createHash, randomBytes } from 'node:crypto';
+import { randomBytes } from 'node:crypto';
 import { NotificationsService } from '../email/notifications.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { PasswordService } from './password.service';
-import { SessionService } from './session.service';
+import { hashToken, SessionService } from './session.service';
 
 /// Deliberately short. A reset link sitting in an inbox is a key to the
 /// account, and most people use one within a minute of asking for it.
@@ -20,6 +20,10 @@ const VALID_MINUTES = 30;
 /// How many links one account may ask for in an hour. Stops somebody using the
 /// reset form to bombard a colleague's inbox.
 const MAX_PER_HOUR = 5;
+
+/// How long a reset request takes to answer at the least, whether or not an
+/// email went — a little over a usual send.
+const MIN_ANSWER_MS = 1_500;
 
 /// A welcome link waits in an inbox until somebody's first day, so it lasts
 /// longer than a reset link — a week — and still works only once.
@@ -58,6 +62,19 @@ export class PasswordResetService {
    * not the caller's business — that is the whole point.
    */
   async request(email: string, ipAddress?: string): Promise<{ message: string }> {
+    // The same answer is not enough if it comes back faster for an address
+    // nobody has: a real one waits for the email to go. So every answer takes
+    // at least as long as sending usually does.
+    const started = Date.now();
+    try {
+      await this.issue(email, ipAddress);
+    } finally {
+      await pause(MIN_ANSWER_MS - (Date.now() - started));
+    }
+    return { message: ALWAYS };
+  }
+
+  private async issue(email: string, ipAddress?: string): Promise<void> {
     const employee = await this.prisma.employee.findUnique({
       where: { email: email.trim().toLowerCase() },
       select: { id: true, email: true, firstName: true, employmentStatus: true },
@@ -65,13 +82,13 @@ export class PasswordResetService {
 
     if (!employee) {
       this.logger.log(`Reset asked for an address with no account (${ipAddress ?? 'no ip'})`);
-      return { message: ALWAYS };
+      return;
     }
     if (employee.employmentStatus === EmploymentStatus.TERMINATED) {
       // Somebody who has left does not get a way back in, and does not get told
       // that is why.
       this.logger.warn(`Reset asked for terminated employee ${employee.id}`);
-      return { message: ALWAYS };
+      return;
     }
 
     const recent = await this.prisma.passwordResetToken.count({
@@ -79,7 +96,7 @@ export class PasswordResetService {
     });
     if (recent >= MAX_PER_HOUR) {
       this.logger.warn(`Reset rate limit hit for employee ${employee.id}`);
-      return { message: ALWAYS };
+      return;
     }
 
     // 32 bytes, url-safe, never stored in the clear.
@@ -101,7 +118,6 @@ export class PasswordResetService {
     );
 
     this.logger.log(`Reset link issued for employee ${employee.id}`);
-    return { message: ALWAYS };
   }
 
   /**
@@ -115,7 +131,15 @@ export class PasswordResetService {
     const record = await this.prisma.passwordResetToken.findUnique({
       where: { tokenHash: hashToken(token) },
       include: {
-        employee: { select: { id: true, email: true, employmentStatus: true } },
+        employee: {
+          select: {
+            id: true,
+            email: true,
+            firstName: true,
+            lastName: true,
+            employmentStatus: true,
+          },
+        },
       },
     });
 
@@ -129,7 +153,9 @@ export class PasswordResetService {
     if (!record || record.usedAt || record.expiresAt < new Date()) throw refusal;
     if (record.employee.employmentStatus === EmploymentStatus.TERMINATED) throw refusal;
 
-    const verdict = this.passwords.check(newPassword, { email: record.employee.email });
+    // Their name too, so a first password from a welcome link is held to the
+    // same "not your name" rule as any other.
+    const verdict = this.passwords.check(newPassword, record.employee);
     if (!verdict.ok) throw new BadRequestException(verdict.reason);
 
     const passwordHash = await this.passwords.hash(newPassword);
@@ -303,10 +329,8 @@ export class PasswordResetService {
   }
 }
 
-function hashToken(token: string): string {
-  return createHash('sha256').update(token).digest('hex');
-}
-
 function pause(ms: number): Promise<void> {
-  return process.env.NODE_ENV === 'test' ? Promise.resolve() : new Promise((r) => setTimeout(r, ms));
+  return process.env.NODE_ENV === 'test'
+    ? Promise.resolve()
+    : new Promise((r) => setTimeout(r, ms));
 }

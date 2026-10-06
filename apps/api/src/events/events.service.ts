@@ -286,16 +286,6 @@ export class EventsService {
     return rows.length;
   }
 
-  /**
-   * "Copy last year's holidays": every closure that started in `fromYear`,
-   * put on the same date the year after — same times, same offices — for a
-   * manager to check. Holidays that move (Thanksgiving) land on the wrong
-   * day and are fixed by hand; that is why nothing repeats by itself.
-   *
-   * A closure already there (same name, same start) is skipped, so pressing
-   * it twice does nothing the second time. A 29 February is skipped too,
-   * rather than guessed.
-   */
   /// The same closure on the same date in each of the next `years` years, as
   /// separate one-off closures (a moving holiday can then be fixed one year at
   /// a time). Returns how many were made.
@@ -329,6 +319,16 @@ export class EventsService {
     return made;
   }
 
+  /**
+   * "Copy last year's holidays": every closure that started in `fromYear`,
+   * put on the same date the year after — same times, same offices — for a
+   * manager to check. Holidays that move (Thanksgiving) land on the wrong
+   * day and are fixed by hand; that is why nothing repeats by itself.
+   *
+   * A closure already there (same name, same start) is skipped, so pressing
+   * it twice does nothing the second time. A 29 February is skipped too,
+   * rather than guessed.
+   */
   async copyClosures(fromYear: number, actor: AuthUser) {
     const toYear = fromYear + 1;
     const rows = await this.prisma.practiceEvent.findMany({
@@ -827,14 +827,6 @@ function seriesBody(first: EventRow, repeat: NonNullable<Checked['repeat']>): st
   return `${describeRule(repeat.firstDate, repeat.rule)}. First: ${describeWhen(first)}${
     first.place ? ` · ${first.place}` : ''
   }.`;
-}
-
-/// Whether a closure shuts the office a shift is at.
-export function closureCovers(
-  closure: { audience: EventAudience; locationId: string | null },
-  locationId: string,
-): boolean {
-  return closure.audience === EventAudience.EVERYONE || closure.locationId === locationId;
 }
 
 /// What the screens get. An all-day event also carries its days, worked out

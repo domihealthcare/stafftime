@@ -124,13 +124,6 @@ export function occurrenceDates(firstDate: string, rule: RepeatRule): string[] {
   return dates;
 }
 
-/// The week of the month a date is in, as the form offers it: 1–4, or -1
-/// for the last when it is the fifth.
-export function weekOfMonth(date: string): number {
-  const week = Math.ceil(Number(date.slice(8, 10)) / 7);
-  return week > 4 ? -1 : week;
-}
-
 /// "Every 2 weeks on Mon and Fri until Dec 31, 2026", for the screens and
 /// the bell. `firstDate` supplies the weekday of a monthly series.
 export function describeRule(firstDate: string, rule: RepeatRule): string {

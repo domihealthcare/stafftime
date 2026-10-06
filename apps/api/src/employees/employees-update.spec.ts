@@ -8,7 +8,12 @@ function build() {
   const writes: Record<string, unknown>[] = [];
   const prisma = {
     employee: {
-      findUnique: jest.fn(async () => ({ id: ID, pinHash: null, passwordHash: 'x', locations: [] })),
+      findUnique: jest.fn(async () => ({
+        id: ID,
+        pinHash: null,
+        passwordHash: 'x',
+        locations: [],
+      })),
       update: jest.fn(async ({ data }: { data: Record<string, unknown> }) => {
         writes.push(data);
         return { id: ID, ...data, pinHash: null, passwordHash: 'x', locations: [] };
@@ -66,6 +71,36 @@ describe('editing somebody on the Staff screen', () => {
     await expect(service.update(ID, { email: 'taken@x.com' })).rejects.toThrow(
       new ConflictException('Somebody else already signs in with that email.'),
     );
+  });
+});
+
+describe('what the Staff screen is sent', () => {
+  it('never includes the calendar link token or the lockout counters', async () => {
+    const { service, prisma } = build();
+    prisma.employee.update.mockResolvedValueOnce({
+      id: ID,
+      pinHash: 'p',
+      passwordHash: 'x',
+      calendarToken: 'secret-feed-token',
+      failedLoginAttempts: 2,
+      lockedUntil: null,
+      pinFailedAttempts: 1,
+      pinLockedUntil: null,
+      locations: [],
+    } as never);
+    const sent = await service.update(ID, { adpFileNumber: '001234' });
+    for (const field of [
+      'pinHash',
+      'passwordHash',
+      'calendarToken',
+      'failedLoginAttempts',
+      'lockedUntil',
+      'pinFailedAttempts',
+      'pinLockedUntil',
+    ]) {
+      expect(sent).not.toHaveProperty(field);
+    }
+    expect(sent).toMatchObject({ hasKioskPin: true, hasPassword: true });
   });
 });
 
