@@ -1126,6 +1126,15 @@ rhythms keep their `cycleFrom`. On screen the result is the usual plan
 notice, saying "changed" (`PlanResult.action`) and that the regular shift
 followed (`regular`). `tests/browser/shift-hours.mjs`.
 
+**The hours are New Jersey's in the pop-up, whatever the browser's zone**
+(fixed 6 October 2026). The server reads `startTime` / `endTime` on the
+office's clock, so the pop-up fills its time boxes, and works out the instant
+for the overtime check, on the practice's clock too (`lib/practice-time.ts`),
+not with the browser's `getHours()`. Before, a browser in another zone moved
+the shift by the difference on every save: the CI browser runs in UTC, so
+moving a shift to the office and back put it 8 hours later, and `wfh.mjs`
+failed. Every other screen sends exact instants, so only this one needed it.
+
 ### A shift's job role is always one the person holds
 
 Asked for by Dominguez, September 2026. `heldJobRole` (`shifts/held-job-role.ts`)
