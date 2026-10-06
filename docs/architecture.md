@@ -1386,7 +1386,8 @@ retried — the row stays, as the bell entry does.
 (`maintenance/punch-reminders.service.ts`) has to run every few minutes, and the
 Hobby plan's Vercel Cron runs at most once a day (a more frequent schedule fails
 the deploy). So cron-job.org calls it every 5 minutes, 6am to midnight New
-Jersey time; set-up in `docs/punch-reminders-setup.md`. It has **its own
+Jersey time (live since 5 October 2026); set-up in
+`docs/punch-reminders-setup.md`. It has **its own
 secret**, `PUNCH_REMINDER_SECRET`, checked like `CRON_SECRET` (constant time,
 refuses everything when unset) — the secret handed to an outside service opens
 the reminders and nothing else, not the nightly round-up. Moving to Vercel Pro

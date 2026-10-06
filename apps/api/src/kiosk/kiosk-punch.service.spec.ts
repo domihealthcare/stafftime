@@ -24,7 +24,12 @@ describe('KioskPunchService', () => {
     employee: Record<string, unknown> | null,
     options: { openEntry?: unknown; checklist?: unknown[]; kiosk?: Record<string, unknown> } = {},
   ) {
-    const kiosk = { pinFailures: 0, pinFailuresSince: null, pinPausedUntil: null, ...options.kiosk };
+    const kiosk = {
+      pinFailures: 0,
+      pinFailuresSince: null,
+      pinPausedUntil: null,
+      ...options.kiosk,
+    };
     const prisma = {
       kioskDevice: {
         findUnique: jest.fn(async () => kiosk),
@@ -138,12 +143,10 @@ describe('KioskPunchService', () => {
 
     it('repeats a clock-out made under two minutes ago instead of clocking in', async () => {
       const { service, timeEntries, prisma } = build(active());
-      prisma.timeEntry.findFirst
-        .mockResolvedValueOnce(null)
-        .mockResolvedValueOnce({
-          clockInAt: new Date(Date.now() - 8 * 3_600_000),
-          clockOutAt: new Date(Date.now() - 20_000),
-        });
+      prisma.timeEntry.findFirst.mockResolvedValueOnce(null).mockResolvedValueOnce({
+        clockInAt: new Date(Date.now() - 8 * 3_600_000),
+        clockOutAt: new Date(Date.now() - 20_000),
+      });
       const result = await service.punch(device, 'emp-1', '4817');
       expect(result.action).toBe('CLOCKED_OUT');
       expect(result.workedMinutes).toBe(480);
@@ -152,7 +155,11 @@ describe('KioskPunchService', () => {
 
     it('clocks out as usual once the two minutes are up', async () => {
       const { service, timeEntries } = build(active(), {
-        openEntry: { id: 'e-1', clockInAt: new Date(Date.now() - 3 * 60_000), locationId: 'loc-nb' },
+        openEntry: {
+          id: 'e-1',
+          clockInAt: new Date(Date.now() - 3 * 60_000),
+          locationId: 'loc-nb',
+        },
       });
       const result = await service.punch(device, 'emp-1', '4817');
       expect(result.action).toBe('CLOCKED_OUT');
@@ -316,10 +323,19 @@ describe('KioskPunchService', () => {
     });
 
     it('does the same hashing work for an unknown employee, so timing does not leak', async () => {
-      const { service } = build(null);
-      const started = Date.now();
-      await service.punch(device, 'emp-x', '4817').catch(() => undefined);
-      expect(Date.now() - started).toBeGreaterThan(5);
+      // Checked by what is called, not by a stopwatch: a fast machine finished
+      // the real hash in 5ms and failed a "more than 5ms" check (October 2026).
+      const verify = jest.spyOn(PinService.prototype, 'verify');
+      try {
+        const { service } = build(null);
+        await service.punch(device, 'emp-x', '4817').catch(() => undefined);
+        expect(verify).toHaveBeenCalledTimes(1);
+        expect(verify).toHaveBeenCalledWith('4817', expect.stringMatching(/^\$argon2id\$/));
+        // And it really hashed, rather than returning early.
+        await expect(verify.mock.results[0].value).resolves.toBe(false);
+      } finally {
+        verify.mockRestore();
+      }
     });
 
     it('treats an employee with no PIN set as an ordinary failure', async () => {
