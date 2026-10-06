@@ -24,7 +24,7 @@ function shiftOn(
     seriesId: null as string | null,
     startsAt: zonedTimeToUtc(date, from, NJ),
     endsAt: zonedTimeToUtc(date, to, NJ),
-    location: { timezone: NJ },
+    location: { timezone: NJ, name: 'North Bergen' },
     ...extra,
   };
 }
@@ -34,6 +34,8 @@ describe('ShiftRetimeService', () => {
     shifts: ReturnType<typeof shiftOn>[];
     series?: unknown;
     clashOn?: string[];
+    /// Whether Gaby works at an office she is moved to.
+    assigned?: boolean;
   }) {
     const byId = new Map(options.shifts.map((s) => [s.id, s]));
     const updates: { id: string; startsAt: Date; endsAt: Date }[] = [];
@@ -53,6 +55,16 @@ describe('ShiftRetimeService', () => {
           return {};
         }),
         updateMany: jest.fn().mockResolvedValue({ count: 1 }),
+      },
+      location: {
+        findUnique: jest.fn(({ where }) =>
+          where.id === 'wny' ? { timezone: NJ, name: 'West New York', isActive: true } : null,
+        ),
+      },
+      employeeLocation: {
+        findUnique: jest
+          .fn()
+          .mockResolvedValue(options.assigned === false ? null : { employeeId: 'gaby' }),
       },
       shiftSeries: {
         findUnique: jest.fn().mockResolvedValue(options.series ?? null),
@@ -237,7 +249,7 @@ describe('ShiftRetimeService', () => {
       expect(prisma.shiftSeries.create).not.toHaveBeenCalled();
       expect(prisma.shiftSeries.update).toHaveBeenCalledWith({
         where: { id: 's1' },
-        data: { startTime: '13:00', endTime: '20:00' },
+        data: { startTime: '13:00', endTime: '20:00', locationId: 'nb', isRemote: false },
       });
     });
 
@@ -253,6 +265,119 @@ describe('ShiftRetimeService', () => {
       );
       expect(result.regular).toBe(false);
       expect(prisma.shiftSeries.update).not.toHaveBeenCalled();
+    });
+  });
+  describe('moving the place as well', () => {
+    it('moves one shift to the other office through the ordinary update', async () => {
+      const { service, shifts } = build({ shifts: [shiftOn('wed', '2026-10-14')] });
+      await service.retime(
+        'wed',
+        { startTime: '07:00', endTime: '14:00', locationId: 'wny', isRemote: false, scope: 'ONE' },
+        NOW,
+      );
+      expect(shifts.update).toHaveBeenCalledWith('wed', {
+        startsAt: '2026-10-14T11:00:00.000Z',
+        endsAt: '2026-10-14T18:00:00.000Z',
+        locationId: 'wny',
+        isRemote: false,
+      });
+    });
+
+    it('moves every later one, and names both places in the notice', async () => {
+      const { service, updates, inbox } = build({
+        shifts: [shiftOn('wed', '2026-10-14'), shiftOn('thu', '2026-10-15')],
+      });
+      await service.retime(
+        'wed',
+        { startTime: '07:00', endTime: '14:00', locationId: 'wny', scope: 'LATER' },
+        NOW,
+      );
+      expect(updates).toEqual([
+        expect.objectContaining({ id: 'wed', locationId: 'wny', isRemote: false }),
+        expect.objectContaining({ id: 'thu', locationId: 'wny', isRemote: false }),
+      ]);
+      expect(inbox.notify.mock.calls[0][1]).toEqual(
+        expect.objectContaining({
+          title: 'Your shifts have changed',
+          body: 'Your 7am–2pm shifts at North Bergen from Wed, Oct 14 are now 7am–2pm at West New York.',
+        }),
+      );
+    });
+
+    it('can make them work from home', async () => {
+      const { service, updates, inbox } = build({ shifts: [shiftOn('wed', '2026-10-14')] });
+      await service.retime(
+        'wed',
+        { startTime: '07:00', endTime: '14:00', isRemote: true, scope: 'SAME_WEEKDAY' },
+        NOW,
+      );
+      expect(updates[0]).toEqual(expect.objectContaining({ locationId: 'nb', isRemote: true }));
+      expect(inbox.notify.mock.calls[0][1].body).toBe(
+        'Wednesdays from Wed, Oct 14: 7am–2pm from home, not 7am–2pm at North Bergen.',
+      );
+    });
+
+    it('refuses an office they do not work at', async () => {
+      const { service, updates } = build({
+        shifts: [shiftOn('wed', '2026-10-14')],
+        assigned: false,
+      });
+      await expect(
+        service.retime(
+          'wed',
+          { startTime: '07:00', endTime: '14:00', locationId: 'wny', scope: 'LATER' },
+          NOW,
+        ),
+      ).rejects.toThrow('They do not work at West New York');
+      expect(updates).toEqual([]);
+    });
+
+    it('refuses home for an open shift', async () => {
+      const { service } = build({
+        shifts: [shiftOn('open', '2026-10-14', '07:00', '14:00', { employeeId: null })],
+      });
+      await expect(
+        service.retime(
+          'open',
+          { startTime: '07:00', endTime: '14:00', isRemote: true, scope: 'ONE' },
+          NOW,
+        ),
+      ).rejects.toBeInstanceOf(BadRequestException);
+    });
+
+    it('carries a regular shift to the new office', async () => {
+      const { service, prisma } = build({
+        shifts: [shiftOn('wed', '2026-10-14', '07:00', '14:00', { seriesId: 's1' })],
+        series: {
+          id: 's1',
+          employeeId: 'gaby',
+          locationId: 'nb',
+          jobRoleId: 'ma',
+          isRemote: false,
+          openCount: 1,
+          daysOfWeek: [3],
+          everyWeeks: 1,
+          weeksOfMonth: [],
+          cycleFrom: null,
+          startTime: '07:00',
+          endTime: '14:00',
+          status: ShiftStatus.PUBLISHED,
+          notes: null,
+          startsOn: new Date('2026-10-14T00:00:00Z'),
+          endsOn: null,
+          filledThrough: new Date('2026-11-30T00:00:00Z'),
+          createdById: 'celeste',
+        },
+      });
+      await service.retime(
+        'wed',
+        { startTime: '13:00', endTime: '20:00', locationId: 'wny', scope: 'LATER' },
+        NOW,
+      );
+      expect(prisma.shiftSeries.update).toHaveBeenCalledWith({
+        where: { id: 's1' },
+        data: { startTime: '13:00', endTime: '20:00', locationId: 'wny', isRemote: false },
+      });
     });
   });
 });
