@@ -58,22 +58,43 @@ describe('PunchRemindersService', () => {
           : jest.fn().mockResolvedValue({}),
       },
     };
+    const autoClockOut = { closeForgotten: jest.fn().mockResolvedValue(0) };
     const notifications = {
       missedClockIn: jest.fn().mockResolvedValue(undefined),
       missedClockOut: jest.fn().mockResolvedValue(undefined),
     };
     return {
-      service: new PunchRemindersService(prisma as never, notifications as never),
+      service: new PunchRemindersService(
+        prisma as never,
+        notifications as never,
+        autoClockOut as never,
+      ),
+      autoClockOut,
       prisma,
       notifications,
     };
   }
 
+  it('first clocks out anybody still clocked in from yesterday, and says how many', async () => {
+    const { service, autoClockOut, prisma } = build();
+    autoClockOut.closeForgotten.mockResolvedValue(3);
+    await expect(service.run(now)).resolves.toEqual({ autoClockedOut: 3, clockIn: 0, clockOut: 0 });
+    expect(autoClockOut.closeForgotten).toHaveBeenCalledWith({ now });
+    // Before looking for shifts nobody has clocked in for.
+    expect(autoClockOut.closeForgotten.mock.invocationCallOrder[0]).toBeLessThan(
+      prisma.shift.findMany.mock.invocationCallOrder[0],
+    );
+  });
+
   describe('clocking in', () => {
     it('tells somebody 15 minutes into a shift they have not clocked in for', async () => {
       const { service, notifications, prisma } = build({ starting: [nineOClock] });
 
-      await expect(service.run(now)).resolves.toEqual({ clockIn: 1, clockOut: 0 });
+      await expect(service.run(now)).resolves.toEqual({
+        autoClockedOut: 0,
+        clockIn: 1,
+        clockOut: 0,
+      });
       expect(prisma.punchReminder.create).toHaveBeenCalledWith({
         data: { shiftId: 'shift-nine', kind: 'CLOCK_IN' },
       });
@@ -104,7 +125,11 @@ describe('PunchRemindersService', () => {
 
     it('says nothing to somebody who has clocked in', async () => {
       const { service, notifications, prisma } = build({ starting: [nineOClock], punches: 1 });
-      await expect(service.run(now)).resolves.toEqual({ clockIn: 0, clockOut: 0 });
+      await expect(service.run(now)).resolves.toEqual({
+        autoClockedOut: 0,
+        clockIn: 0,
+        clockOut: 0,
+      });
       expect(notifications.missedClockIn).not.toHaveBeenCalled();
       expect(prisma.punchReminder.create).not.toHaveBeenCalled();
     });
@@ -165,7 +190,11 @@ describe('PunchRemindersService', () => {
 
     it('sends nothing when another run has already claimed it', async () => {
       const { service, notifications } = build({ starting: [nineOClock], alreadyClaimed: true });
-      await expect(service.run(now)).resolves.toEqual({ clockIn: 0, clockOut: 0 });
+      await expect(service.run(now)).resolves.toEqual({
+        autoClockedOut: 0,
+        clockIn: 0,
+        clockOut: 0,
+      });
       expect(notifications.missedClockIn).not.toHaveBeenCalled();
     });
   });
@@ -187,7 +216,11 @@ describe('PunchRemindersService', () => {
         theirShifts: [endedAtNine],
       });
 
-      await expect(service.run(now)).resolves.toEqual({ clockIn: 0, clockOut: 1 });
+      await expect(service.run(now)).resolves.toEqual({
+        autoClockedOut: 0,
+        clockIn: 0,
+        clockOut: 1,
+      });
       expect(prisma.punchReminder.create).toHaveBeenCalledWith({
         data: { shiftId: 'shift-early', kind: 'CLOCK_OUT' },
       });

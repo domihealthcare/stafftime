@@ -133,6 +133,9 @@ export class KioskPunchService {
     });
 
     const displayName = employee.preferredName ?? employee.firstName;
+    // Still clocked in from yesterday? Closed at its midnight first, so this
+    // tap clocks them in for today rather than out of yesterday.
+    await this.timeEntries.closeForgotten(employee.id);
     const open = await this.prisma.timeEntry.findFirst({
       where: { employeeId: employee.id, clockOutAt: null },
       select: { id: true, clockInAt: true, locationId: true },

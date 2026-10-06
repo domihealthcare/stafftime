@@ -105,7 +105,7 @@ describe('digestEmail', () => {
   it(`shows ${SHOWN_PER_SECTION} lines a section and counts the rest`, () => {
     const lines = Array.from({ length: SHOWN_PER_SECTION + 3 }, (_, i) => `Person ${i} — late`);
     const { text, html } = build({ missingPunches: lines });
-    expect(text).toContain(`Punches with no clock-out (${lines.length})`);
+    expect(text).toContain(`Clock-outs to correct (${lines.length})`);
     expect(text).toContain(`Person ${SHOWN_PER_SECTION - 1} — late`);
     expect(text).not.toContain(`Person ${SHOWN_PER_SECTION} — late`);
     expect(text).toContain('…and 3 more');

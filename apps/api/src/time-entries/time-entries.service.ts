@@ -31,6 +31,7 @@ import { ClockInDto } from './dto/clock-in.dto';
 import { ClockOutDto } from './dto/clock-out.dto';
 import { EditTimeEntryDto } from './dto/edit-time-entry.dto';
 import { QueryTimeEntriesDto } from './dto/query-time-entries.dto';
+import { AutoClockOutService } from './auto-clock-out.service';
 import { LocationVerificationService, VerifiableLocation } from './location-verification.service';
 
 /**
@@ -66,6 +67,7 @@ const TIME_ENTRY_SELECT = {
   isMissingPunch: true,
   isOtherPlace: true,
   otherPlaceReason: true,
+  autoClockedOutAt: true,
   editedById: true,
   editedAt: true,
   editReason: true,
@@ -118,6 +120,8 @@ export class TimeEntriesService {
     /// Optional so the many punch tests that are not about checklists need
     /// not build one.
     @Optional() private readonly closing?: ClosingService,
+    /// Optional for the same reason: most punch tests are not about midnight.
+    @Optional() private readonly autoClockOut?: AutoClockOutService,
   ) {
     this.graceMinutes = config.get<number>('PUNCH_GRACE_MINUTES', 5);
   }
@@ -136,6 +140,8 @@ export class TimeEntriesService {
         `Employee is ${employee.employmentStatus.toLowerCase().replace('_', ' ')} and cannot clock in.`,
       );
     }
+    // Yesterday's forgotten punch never stands in the way of today's.
+    await this.closeForgotten(employeeId);
 
     const now = new Date();
     // The shift they are on, or about to be, wherever it is — to tell whether
@@ -326,6 +332,9 @@ export class TimeEntriesService {
       throw new ForbiddenException('You may only clock yourself out.');
     }
 
+    // A punch from an earlier day was closed at its midnight; clocking out of
+    // it now would record this morning instead.
+    await this.closeForgotten(employeeId);
     const open = await this.findOpenEntry(employeeId);
     if (!open) {
       throw new ConflictException('No open time entry to clock out of.');
@@ -450,7 +459,10 @@ export class TimeEntriesService {
   }
 
   /// The employee's currently open punch, if any — drives the clock-in/out button.
+  /// A punch left open from an earlier day is closed at its midnight first, so
+  /// Home offers today's clock-in rather than yesterday's clock-out.
   async findCurrent(employeeId: string) {
+    await this.closeForgotten(employeeId);
     const open = await this.prisma.timeEntry.findFirst({
       where: { employeeId, clockOutAt: null },
       select: TIME_ENTRY_SELECT,
@@ -768,6 +780,14 @@ export class TimeEntriesService {
     if (!entry.clockOutAt) {
       throw new BadRequestException('Cannot approve a time entry that is still open.');
     }
+    // Midnight is when the app clocked them out, not when they left: paying it
+    // as it stands would pay for hours nobody worked. Correcting the time
+    // (even to midnight, if that was right) clears the missing punch.
+    if (entry.autoClockedOutAt && entry.isMissingPunch) {
+      throw new BadRequestException(
+        'They were clocked out automatically at midnight. Correct the clock-out time first, then approve.',
+      );
+    }
 
     const approved = await this.prisma.timeEntry.update({
       where: { id },
@@ -780,6 +800,13 @@ export class TimeEntriesService {
     });
 
     return withPayroll(approved);
+  }
+
+  /// Closes this person's punch left open from an earlier day, at its midnight
+  /// (`AutoClockOutService`). Called wherever they are about to punch, so
+  /// nobody is ever stuck on yesterday's.
+  async closeForgotten(employeeId: string): Promise<void> {
+    await this.autoClockOut?.closeForgotten({ employeeId });
   }
 
   // -------------------------------------------------------------------------

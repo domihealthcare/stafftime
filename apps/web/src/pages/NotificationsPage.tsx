@@ -14,7 +14,7 @@ const CONTENTS = [
   'Licenses and certifications about to lapse, or already lapsed',
   'Hours nobody has approved yet',
   'Checklist tasks past their due date',
-  'Punches with no clock-out',
+  'Clock-outs to correct — still clocked in at midnight, so the app clocked them out',
   'Time off waiting on a decision',
 ];
 

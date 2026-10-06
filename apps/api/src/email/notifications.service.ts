@@ -247,6 +247,41 @@ export class NotificationsService {
     ]);
   }
 
+  /// "You were clocked out automatically" — still clocked in at midnight (see
+  /// `time-entries/auto-clock-out.service.ts`). A warning: the clock-out time
+  /// is almost certainly wrong, and only they know the right one.
+  async autoClockedOut(
+    employeeId: string,
+    entry: { clockInAt: Date; clockOutAt: Date },
+  ): Promise<void> {
+    const employee = await this.prisma.employee.findUnique({
+      where: { id: employeeId },
+      select: { email: true, firstName: true, preferredName: true },
+    });
+    if (!employee) return;
+
+    const since = `${clockTime(entry.clockInAt)} on ${practiceDay(entry.clockInAt)}`;
+
+    await this.inbox.notify([employeeId], {
+      kind: NotificationKind.PUNCH_REMINDER,
+      title: 'You were clocked out automatically',
+      body: `Still clocked in at midnight (since ${since}), so the app clocked you out at ${clockTime(entry.clockOutAt)}. Tell your manager what time you finished.`,
+      link: '/timesheet',
+    });
+
+    await this.dispatch(employee.email, 'You were clocked out automatically', [
+      `Hello ${employee.preferredName ?? employee.firstName},`,
+      '',
+      `You were still clocked in at midnight — since ${since} — so the app clocked you out at ${clockTime(entry.clockOutAt)}.`,
+      '',
+      'That is probably not when you finished. Tell your manager what time you really left, so they can correct it before your hours are approved.',
+      '',
+      'You can clock in today as usual.',
+      '',
+      `Your timesheet: ${this.appUrl}/timesheet`,
+    ]);
+  }
+
   /**
    * The nightly round-up of what nobody has got to yet — laid out in
    * `digest-email.ts`. Sections with nothing in them are left out entirely
@@ -356,5 +391,15 @@ function clockTime(at: Date): string {
     timeZone: PRACTICE_ZONE,
     hour: 'numeric',
     minute: '2-digit',
+  });
+}
+
+/// "Mon, Oct 5", on the practice's calendar.
+function practiceDay(at: Date): string {
+  return at.toLocaleDateString('en-US', {
+    timeZone: PRACTICE_ZONE,
+    weekday: 'short',
+    month: 'short',
+    day: 'numeric',
   });
 }

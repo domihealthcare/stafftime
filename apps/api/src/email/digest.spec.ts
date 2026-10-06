@@ -164,6 +164,28 @@ describe('DigestService', () => {
     expect(contents.overdueTasks[0]).toBe('Frankie Front-Desk — Form I-9, due Sep 10, 2026');
   });
 
+  it('lists a punch the app clocked out at midnight as a clock-out to correct', async () => {
+    const { attention, prisma } = build({
+      punches: [
+        {
+          // 8:52 AM in New Jersey.
+          clockInAt: new Date('2026-10-05T12:52:00.000Z'),
+          autoClockedOutAt: new Date('2026-10-06T10:00:00.000Z'),
+          employee: frankie,
+        },
+      ],
+    });
+
+    const contents = await attention.gather();
+    expect(contents.missingPunches[0]).toBe(
+      'Frankie Front-Desk — clocked in 8:52 AM on Oct 5, 2026, clocked out automatically at midnight; correct the time',
+    );
+    // Until a manager corrects it, however old — but never once approved.
+    const where = prisma.timeEntry.findMany.mock.calls[0][0].where;
+    expect(where.status).toEqual({ not: 'APPROVED' });
+    expect(where.OR).toContainEqual({ autoClockedOutAt: { not: null }, isMissingPunch: true });
+  });
+
   it('renders a single-day request without a pointless range', async () => {
     const { attention } = build({
       timeOff: [{ startDate: day('2026-11-03'), endDate: day('2026-11-03'), employee: frankie }],

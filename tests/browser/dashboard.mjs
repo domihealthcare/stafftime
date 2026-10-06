@@ -135,7 +135,7 @@ await step('across the practice: what is waiting, licenses, surveys, checklists 
   await mgr.goto(`${BASE}/dashboard`, { waitUntil: 'networkidle' });
   const overview = mgr.getByTestId('practice-overview');
   await overview.getByText('Across the practice').waitFor({ timeout: 15000 });
-  for (const tile of ['Time off to decide', 'Hours to approve', 'Punches with no clock-out', 'Hours entered by hand to look into']) {
+  for (const tile of ['Time off to decide', 'Hours to approve', 'Clock-outs to correct', 'Hours entered by hand to look into']) {
     await overview.getByTestId(`waiting-${tile}`).waitFor({ timeout: 5000 });
   }
   // The demo providers have none of the licenses a provider needs on file.

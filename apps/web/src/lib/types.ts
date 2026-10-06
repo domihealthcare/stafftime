@@ -157,6 +157,10 @@ export interface TimeEntry {
   /// home with no work-from-home shift — with the reason they gave, if any.
   isOtherPlace?: boolean;
   otherPlaceReason?: string | null;
+  /// Still clocked in at midnight, so the app clocked them out then (October
+  /// 2026). While `isMissingPunch` is also true, a manager still has to put
+  /// in the real time, and it cannot be approved.
+  autoClockedOutAt?: string | null;
   editReason: string | null;
   /// Set when a manager entered the whole day by hand — there was no punch.
   enteredByHandAt?: string | null;

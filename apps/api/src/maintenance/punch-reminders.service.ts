@@ -9,6 +9,7 @@ import {
   ShiftStatus,
 } from '@prisma/client';
 import { NotificationsService } from '../email/notifications.service';
+import { AutoClockOutService } from '../time-entries/auto-clock-out.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { localDateIn, PRACTICE_ZONE } from '../common/util/zoned-time.util';
 
@@ -35,6 +36,9 @@ export interface PunchReminderReport {
   clockIn: number;
   /// People told they are still clocked in after their shift ended.
   clockOut: number;
+  /// Punches left open past midnight, closed at that midnight (and the person
+  /// told) — see `AutoClockOutService`.
+  autoClockedOut: number;
 }
 
 /**
@@ -59,10 +63,14 @@ export class PunchRemindersService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly notifications: NotificationsService,
+    private readonly autoClockOut: AutoClockOutService,
   ) {}
 
   async run(now: Date = new Date()): Promise<PunchReminderReport> {
     const report = {
+      // First, so last night's forgotten punch does not count as clocked in
+      // for this morning's shift.
+      autoClockedOut: await this.autoClockOut.closeForgotten({ now }),
       clockIn: await this.remindToClockIn(now),
       clockOut: await this.remindToClockOut(now),
     };

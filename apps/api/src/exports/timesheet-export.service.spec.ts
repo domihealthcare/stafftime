@@ -71,6 +71,9 @@ describe('describeFlags', () => {
 
   it('lists every flag that is set', () => {
     expect(describeFlags({ ...base, isLate: true, isManuallyEdited: true })).toBe('Late, Edited');
+    expect(
+      describeFlags({ ...base, isMissingPunch: true, autoClockedOutAt: new Date('2026-10-06') }),
+    ).toBe('Clocked out automatically at midnight');
   });
 });
 
@@ -270,7 +273,7 @@ describe('TimesheetExportService', () => {
       expect(data.totals[0].overtimeHours).toBe(5);
     });
 
-    it('counts each week from the pay period\'s first weekday', async () => {
+    it("counts each week from the pay period's first weekday", async () => {
       // Monday to Friday, 9 hours a day. From Monday that is one 45-hour week;
       // with a pay period that starts on a Wednesday, Monday and Tuesday
       // close one week (18 hours) and Wednesday to Friday open the next (27).
