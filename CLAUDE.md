@@ -847,8 +847,8 @@ Beyond the phases, the parts worth knowing about before picking up work:
   full, three more, "All news") on the left; on the right Quick (Request time
   off, availability, Forms for those who have them, Help), birthdays this week,
   holidays and events in the next 30 days, and surveys waiting with the
-  suggestion box (`components/HomeCards.tsx`). On a phone they stack, clock
-  first. **Time off lives in the Schedule** (`components/ScheduleTimeOff.tsx`):
+  suggestion box (`components/HomeCards.tsx`). On a phone they stack: clock
+  first, then the news (Dominguez, October 2026), then the rest. **Time off lives in the Schedule** (`components/ScheduleTimeOff.tsx`):
   a "+ Request time off" button, "Your time off" (days left, upcoming
   requests), and for managers the requests to decide with Approve / Decline;
   the pending count is a badge on **Schedule**. The full Time off screen is

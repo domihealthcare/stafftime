@@ -451,6 +451,12 @@ export function ClockPage() {
         </p>
       </div>
 
+      {/* Before the aside so a phone, where the columns stack, shows the news
+          straight under the clock; on a laptop the grid keeps it in the left column. */}
+      <div className="lg:col-span-2 lg:col-start-1 lg:row-start-2">
+        <HomeNews />
+      </div>
+
       <aside
         aria-label="Quick and coming up"
         className="space-y-4 lg:col-start-3 lg:row-span-2 lg:row-start-1"
@@ -462,10 +468,6 @@ export function ClockPage() {
         <SurveysCard />
         <SuggestionBoxCard />
       </aside>
-
-      <div className="lg:col-span-2 lg:row-start-2">
-        <HomeNews />
-      </div>
     </div>
   );
 }
