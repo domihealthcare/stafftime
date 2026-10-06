@@ -78,6 +78,18 @@ await step('the home screen fits a phone', async () => {
   await assertNoSidewaysScroll(page, 'Home');
 });
 
+await step('on a phone the news comes straight under the clock, before the Quick cards', async () => {
+  // The columns stack on a phone; the news used to land at the very bottom,
+  // under every card of the right-hand column.
+  await page.getByTestId('home-news').waitFor({ timeout: 20000 });
+  const top = async (locator) => (await locator.boundingBox()).y;
+  const clock = await top(page.getByTestId('home-clock'));
+  const news = await top(page.getByTestId('home-news'));
+  const aside = await top(page.getByRole('complementary', { name: 'Quick and coming up' }));
+  if (!(clock < news && news < aside))
+    throw new Error(`expected clock < news < Quick, got ${clock} / ${news} / ${aside}`);
+});
+
 // The screens below need something on them. This suite makes its own rather
 // than depending on whatever suite happened to run before it.
 await step('a punch can be made and closed from a phone', async () => {

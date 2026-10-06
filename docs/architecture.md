@@ -1578,7 +1578,9 @@ with icons:
   grid: the clock and then the news take two columns, the right column holds
   Quick, birthdays, holidays and events, and surveys. The right column spans
   both rows, so a long news list never pushes it down. On a phone it stacks
-  in source order — the clock first, so a punch is never below the fold.
+  in source order — the clock first, so a punch is never below the fold, then
+  the news (Dominguez, October 2026: it had been at the very bottom, under
+  every card of the right column), then the right column.
   Every card fails quietly: a card that cannot load is not worth an error
   between somebody and the clock-in button.
 - **Time off in the Schedule**: rather than a tab, the Schedule carries a
