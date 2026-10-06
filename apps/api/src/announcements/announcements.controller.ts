@@ -4,7 +4,6 @@ import {
   Delete,
   Get,
   Param,
-  ParseIntPipe,
   ParseUUIDPipe,
   Patch,
   Post,
@@ -48,13 +47,12 @@ export class AnnouncementsController {
 
   /// `?latest=4` for the home screen: the newest few and the primary.
   @Get()
-  list(
-    @CurrentUser() user: AuthUser,
-    @Query('latest', new ParseIntPipe({ optional: true })) latest?: number,
-  ) {
+  list(@CurrentUser() user: AuthUser, @Query('latest') latest?: string) {
+    // Anything that is not a small whole number reads every post, as before.
+    const take = Number(latest);
     return this.announcements.findAll(
       user,
-      latest === undefined ? undefined : Math.min(Math.max(latest, 1), 20),
+      Number.isInteger(take) && take > 0 ? Math.min(take, 20) : undefined,
     );
   }
 

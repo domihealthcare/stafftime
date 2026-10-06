@@ -49,6 +49,9 @@ await step('an employee sees no Export, Kiosks or Locations tab', async () => {
 const mgrCtx = await browser.newContext({
   viewport: { width: 1280, height: 1000 },
   acceptDownloads: true,
+  // The practice's browsers are on New Jersey time, and the file is named by
+  // New Jersey's dates; a runner on UTC would read the period a day early.
+  timezoneId: 'America/New_York',
 });
 const mgr = await mgrCtx.newPage();
 mgr.on('pageerror', (e) => errors.push(`pageerror: ${e.message}`));
@@ -87,8 +90,9 @@ await step('downloading produces a real .xlsx', async () => {
   const path = `${DOWNLOADS}/${download.suggestedFilename()}`;
   await download.saveAs(path);
 
-  // The file is named by the period, its end exclusive.
-  if (download.suggestedFilename() !== `domi-timesheet_${PERIOD_FROM}_to_${isoDay(2)}.xlsx`)
+  // The file is named by the days it covers, the last one included — as the
+  // "To (included)" box says (it used to name the day after).
+  if (download.suggestedFilename() !== `domi-timesheet_${PERIOD_FROM}_to_${PERIOD_TO}.xlsx`)
     throw new Error(`unexpected filename: ${download.suggestedFilename()}`);
   if (!existsSync(path)) throw new Error('no file saved');
   if (statSync(path).size < 1000) throw new Error('file suspiciously small');
