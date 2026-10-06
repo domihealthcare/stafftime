@@ -750,6 +750,7 @@ export function RotaTable({
           }}
           onPlanned={onPlanned}
           onError={onError}
+          locations={locations}
         />
       )}
       {adding && (
@@ -1037,15 +1038,17 @@ function clockOf(iso: string): string {
   return `${String(date.getHours()).padStart(2, '0')}:${String(date.getMinutes()).padStart(2, '0')}`;
 }
 
-/// Which shifts a change of hours reaches; see `ShiftRetimeService`.
+/// Which shifts a change of hours or place reaches; see `ShiftRetimeService`.
 type RetimeScope = 'ONE' | 'SAME_WEEKDAY' | 'LATER';
 
 /// What can be done to one shift: put somebody in it, take them off it,
-/// change its hours (and those like it after it), publish it, or remove it.
+/// change its hours or place (and those like it after it), publish it, or
+/// remove it.
 function ShiftDialog({
   shift,
   employees,
   jobRoles,
+  locations,
   allShifts,
   warning,
   onClose,
@@ -1056,6 +1059,7 @@ function ShiftDialog({
   shift: Shift;
   employees: Employee[];
   jobRoles: JobRole[];
+  locations: Location[];
   allShifts: Shift[];
   warning?: string;
   onClose: () => void;
@@ -1135,11 +1139,30 @@ function ShiftDialog({
   const overtimeCheck = useOvertimeCheck(proposed);
 
   // New hours (Dominguez, October 2026: "Gaby is 7-2 but it is changing to
-  // 1-8, so instead of Celeste doing 1 by 1, she can just edit all").
+  // 1-8, so instead of Celeste doing 1 by 1, she can just edit all") — and a
+  // new place ("needs to be able to update location as well").
   const [startTime, setStartTime] = useState(clockOf(shift.startsAt));
   const [endTime, setEndTime] = useState(clockOf(shift.endsAt));
+  const startingPlace = shift.isRemote ? WORK_FROM_HOME : shift.locationId;
+  const [placeValue, setPlaceValue] = useState(startingPlace);
   const [scope, setScope] = useState<RetimeScope>('ONE');
+  const worker = employees.find((p) => p.id === shift.employeeId);
+  // Their offices (the one it is at, whatever); for an open shift, any.
+  const offices = open
+    ? locations
+    : locations.filter(
+        (location) =>
+          location.id === shift.locationId ||
+          worker?.locations.some((a) => a.locationId === location.id),
+      );
+  // A shift moved home stays counted under the office it was at, or their main one.
+  const newPlace = placeToShift(
+    placeValue,
+    shift.isRemote ? shift.locationId : homeOfficeOf(worker) || shift.locationId,
+  );
+  const placeChanged = placeValue !== startingPlace;
   const hoursChanged = startTime !== clockOf(shift.startsAt) || endTime !== clockOf(shift.endsAt);
+  const changed = hoursChanged || placeChanged;
   const hoursValid =
     /^\d\d:\d\d$/.test(startTime) && /^\d\d:\d\d$/.test(endTime) && endTime > startTime;
   const atTime = (time: string) => {
@@ -1149,9 +1172,9 @@ function ShiftDialog({
     return date.toISOString();
   };
   const moved =
-    hoursChanged && hoursValid
+    changed && hoursValid
       ? {
-          locationId: shift.locationId,
+          locationId: newPlace.locationId,
           startsAt: atTime(startTime),
           endsAt: atTime(endTime),
         }
@@ -1170,13 +1193,17 @@ function ShiftDialog({
     ? `${formatTimeCompact(moved.startsAt)}–${formatTimeCompact(moved.endsAt)}`
     : '';
   const place = shift.isRemote ? 'from home' : `at ${shift.location?.name ?? 'this office'}`;
+  const newPlaceLabel = newPlace.isRemote
+    ? 'from home'
+    : `at ${locations.find((location) => location.id === newPlace.locationId)?.name ?? 'that office'}`;
+  const becomes = `${newHours}${placeChanged ? ` ${newPlaceLabel}` : ''}`;
   const theirs = open ? 'open shift' : `${firstName}’s shift`;
   const scopeLabels: Record<RetimeScope, string> = {
     ONE: 'Just this shift',
     SAME_WEEKDAY: `This and every later ${weekdayName} like it`,
     LATER: open
       ? `This and every later open shift like it, any day`
-      : `This and all of ${firstName}’s later ${oldHours} shifts, any day`,
+      : `This and all of ${firstName}’s later ${oldHours} shifts ${place}, any day`,
   };
 
   async function changeHours() {
@@ -1187,12 +1214,12 @@ function ShiftDialog({
         return;
     } else {
       const sure = await confirm({
-        title: `Change the hours from ${formatCalendarDate(localDate(new Date(shift.startsAt)), { year: false })} on?`,
+        title: `Change them from ${formatCalendarDate(localDate(new Date(shift.startsAt)), { year: false })} on?`,
         body: (
           <>
             <p>
               {scope === 'SAME_WEEKDAY' ? `Every ${theirs} on a ${weekdayName}` : `Every ${theirs}`}{' '}
-              {place} at {oldHours}, from this one on, becomes <strong>{newHours}</strong>.
+              {place}, {oldHours}, from this one on, becomes <strong>{becomes}</strong>.
             </p>
             <p className="mt-1">
               Shifts that have started are left as they were, and a regular shift behind them
@@ -1207,7 +1234,12 @@ function ShiftDialog({
       if (!sure) return;
     }
     await act(async () => {
-      const result = await api.retimeShift(shift.id, { startTime, endTime, scope });
+      const result = await api.retimeShift(shift.id, {
+        startTime,
+        endTime,
+        scope,
+        ...(placeChanged ? newPlace : {}),
+      });
       if (scope !== 'ONE') onPlanned?.(result);
     });
   }
@@ -1280,8 +1312,8 @@ function ShiftDialog({
       {shift.seriesId && (
         <p className="mt-2 text-xs text-slate-500" data-testid="shift-is-regular">
           <span aria-hidden="true">🔁</span> Part of a regular shift with no end date. Changing or
-          removing this one leaves the rest — unless you change the hours of the later ones too,
-          below. To end them all, use Regular shifts below the rota.
+          removing this one leaves the rest — unless you change the hours or place of the later ones
+          too, below. To end them all, use Regular shifts below the rota.
         </p>
       )}
 
@@ -1343,7 +1375,7 @@ function ShiftDialog({
       </div>
 
       <fieldset className="mt-4" data-testid="shift-hours">
-        <legend className="block text-sm font-medium text-slate-800">Hours</legend>
+        <legend className="block text-sm font-medium text-slate-800">Hours and place</legend>
         <div className="mt-1 grid grid-cols-2 gap-2">
           <label className="text-sm" htmlFor="shift-start">
             <span className="text-slate-600">Starts</span>
@@ -1368,10 +1400,22 @@ function ShiftDialog({
             />
           </label>
         </div>
-        {hoursChanged && !hoursValid && (
+        <label className="mt-2 block text-sm" htmlFor="shift-place">
+          <span className="text-slate-600">Location</span>
+          <PlaceSelect
+            id="shift-place"
+            value={placeValue}
+            onChange={setPlaceValue}
+            offices={offices}
+            allowHome={!open}
+            className="mt-0.5 w-full rounded-lg border border-slate-300 px-2 py-1.5 text-sm"
+          />
+        </label>
+        {placeChanged && newPlace.isRemote && <WorkFromHomeNote />}
+        {changed && !hoursValid && (
           <p className="mt-1 text-xs text-rose-700">The end has to be after the start.</p>
         )}
-        {hoursChanged && hoursValid && (
+        {changed && hoursValid && (
           <div className="mt-2 space-y-1 rounded-lg bg-slate-50 p-3 ring-1 ring-inset ring-slate-200">
             <p className="text-sm font-medium text-slate-800">Change</p>
             {(['ONE', 'SAME_WEEKDAY', 'LATER'] as const).map((value) => (
@@ -1389,8 +1433,8 @@ function ShiftDialog({
             ))}
             {scope !== 'ONE' && (
               <p className="text-xs text-slate-500">
-                {open ? 'Open shifts' : `${firstName}’s shifts`} {place} at {oldHours}, from this
-                one on. A regular shift behind them changes too, so later weeks follow.
+                {open ? 'Open shifts' : `${firstName}’s shifts`} {place}, {oldHours}, from this one
+                on. A regular shift behind them changes too, so later weeks follow.
               </p>
             )}
             {closures.length > 0 && <ClosureWarning closures={closures} />}
@@ -1404,7 +1448,7 @@ function ShiftDialog({
                 onClick={() => void changeHours()}
                 className={buttonClass('primary', 'sm')}
               >
-                {scope === 'ONE' ? 'Change the hours' : 'Change them all'}
+                {scope === 'ONE' ? 'Change this shift' : 'Change them all'}
               </button>
               <button
                 type="button"
@@ -1412,6 +1456,7 @@ function ShiftDialog({
                 onClick={() => {
                   setStartTime(clockOf(shift.startsAt));
                   setEndTime(clockOf(shift.endsAt));
+                  setPlaceValue(startingPlace);
                   setScope('ONE');
                 }}
                 className={buttonClass('secondary', 'sm')}
@@ -1464,14 +1509,6 @@ function ShiftDialog({
             Make it an open shift
           </button>
         )}
-        <button
-          type="button"
-          disabled={busy}
-          onClick={() => void act(() => api.updateShift(shift.id, { isRemote: !shift.isRemote }))}
-          className={buttonClass('secondary', 'sm')}
-        >
-          {shift.isRemote ? 'Make it at the office' : 'Make it work from home'}
-        </button>
         {shift.status === 'DRAFT' && (
           <button
             type="button"

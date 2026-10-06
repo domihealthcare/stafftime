@@ -6,6 +6,8 @@ import { mkdirSync } from 'node:fs';
 // just edit all"): just this shift, every later one on the same weekday, or
 // all of the person's later shifts at those hours — the regular shift behind
 // them following, so weeks not written out yet come at the new hours too.
+// And the place with them ("needs to be able to update location as well"):
+// another of their offices, or work from home.
 const OUT = process.argv[2] || new URL('./shots/', import.meta.url).pathname;
 mkdirSync(OUT, { recursive: true });
 const BASE = process.env.BASE_URL || 'http://127.0.0.1:5173';
@@ -62,7 +64,7 @@ const frankieHours = () =>
       };
       return shifts
         .filter((s) => s.employee?.firstName === 'Frankie' && s.status !== 'CANCELLED')
-        .map((s) => ({ day: day(s.startsAt), hours: `${hhmm(s.startsAt)}–${hhmm(s.endsAt)}`, weekday: new Date(s.startsAt).getDay() }))
+        .map((s) => ({ day: day(s.startsAt), hours: `${hhmm(s.startsAt)}–${hhmm(s.endsAt)}`, weekday: new Date(s.startsAt).getDay(), isRemote: s.isRemote }))
         .sort((a, b) => a.day.localeCompare(b.day));
     },
     { from: `${key(monday)}T04:00:00Z`, to: `${key(plusDays(monday, 70))}T00:00:00Z` },
@@ -119,7 +121,7 @@ await step('the pop-up shows the hours, and offers the choice only once they cha
 await step('just this shift changes only the one', async () => {
   const dialog = mgr.getByRole('dialog', { name: /Frankie/ });
   const saved = mgr.waitForResponse((r) => /\/api\/shifts\/[^/]+\/retime$/.test(r.url()));
-  await dialog.getByRole('button', { name: 'Change the hours' }).click();
+  await dialog.getByRole('button', { name: 'Change this shift' }).click();
   if (!(await saved).ok()) throw new Error('the change was refused');
   await dialog.waitFor({ state: 'detached', timeout: 10000 });
   const all = await frankieHours();
@@ -136,7 +138,7 @@ await step('every later Wednesday changes, Fridays stay as they were', async () 
   await dialog.getByLabel('Ends').fill('20:00');
   await dialog.getByRole('radio', { name: /every later Wednesday like it/ }).check();
   await dialog.getByRole('button', { name: 'Change them all' }).click();
-  const confirm = mgr.getByRole('alertdialog').or(mgr.getByRole('dialog', { name: /Change the hours from/ }));
+  const confirm = mgr.getByRole('alertdialog').or(mgr.getByRole('dialog', { name: /Change them from/ }));
   await confirm.getByText('1pm–8pm').first().waitFor({ timeout: 10000 });
   const saved = mgr.waitForResponse((r) => /\/api\/shifts\/[^/]+\/retime$/.test(r.url()));
   await confirm.getByRole('button', { name: 'Yes, change them' }).click();
@@ -179,12 +181,41 @@ await step('all later shifts at those hours change, any day', async () => {
   if (!rest || rest.startTime !== '12:00') throw new Error(`the regular Mon/Fri reads ${JSON.stringify(rest)}`);
 });
 
+await step('the place moves too: their later shifts go to work from home', async () => {
+  await openWeek();
+  await chips().filter({ hasText: '12pm–6pm' }).first().click(); // the Friday
+  const dialog = mgr.getByRole('dialog', { name: /Frankie/ });
+  const place = dialog.getByLabel('Location');
+  const offered = await place.locator('option').allInnerTexts();
+  if (offered.join('|') !== 'North Bergen|Work from home')
+    throw new Error(`the Location list offers ${offered.join(', ')}`);
+  await place.selectOption({ label: 'Work from home' });
+  await dialog.getByRole('radio', { name: /all of Frankie’s later 12pm–6pm shifts at North Bergen/ }).check();
+  await mgr.screenshot({ path: `${OUT}/shift-place-dialog.png` });
+  await dialog.getByRole('button', { name: 'Change them all' }).click();
+  await mgr.getByText('12pm–6pm from home').first().waitFor({ timeout: 10000 });
+  const saved = mgr.waitForResponse((r) => /\/api\/shifts\/[^/]+\/retime$/.test(r.url()));
+  await mgr.getByRole('button', { name: 'Yes, change them' }).click();
+  if (!(await saved).ok()) throw new Error('the change was refused');
+  const all = await frankieHours();
+  const stillIn = all.filter((s) => s.hours === '12:00–18:00' && !s.isRemote);
+  if (stillIn.length) throw new Error(`still at the office: ${JSON.stringify(stillIn)}`);
+  const wednesdaysHome = all.filter((s) => s.weekday === 3 && s.isRemote);
+  if (wednesdaysHome.length) throw new Error(`Wednesdays moved home too: ${JSON.stringify(wednesdaysHome)}`);
+  const standing = await mgr.evaluate(() => fetch('/api/shifts/standing').then((r) => r.json()));
+  const rest = standing.find(
+    (s) => s.employee?.firstName === 'Frankie' && s.daysOfWeek.join() === '1,5' && !s.endsOn,
+  );
+  if (!rest || !rest.isRemote) throw new Error(`the regular Mon/Fri reads ${JSON.stringify(rest)}`);
+});
+
 await step('Frankie is told under the bell', async () => {
   const me = await signIn('frontdesk@domihealthcare.com');
   await me.getByRole('button', { name: /^Notifications/ }).click();
   const panel = me.getByRole('dialog', { name: 'Notifications' });
   await panel.getByText('Your shift times have changed').first().waitFor({ timeout: 10000 });
   await panel.getByText(/Wednesdays from .*: 1pm–8pm, not 7am–2pm\./).waitFor({ timeout: 10000 });
+  await panel.getByText(/12pm–6pm shifts at North Bergen from .* are now 12pm–6pm from home\./).waitFor({ timeout: 10000 });
 });
 
 await step('an end before the start is refused', async () => {

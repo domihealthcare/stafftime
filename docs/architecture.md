@@ -1081,15 +1081,26 @@ ran and is left out of the Regular shifts list. On screen:
 `components/WeeklyScheduleEditor.tsx`, under Schedule → Regular shifts and in
 the Staff editor (admins).
 
-### Changing the hours of a shift, and the ones like it
+### Changing the hours or place of a shift, and the ones like it
 
 Asked for by Dominguez, October 2026: "Gaby is 7-2 but it is changing to 1-8,
 so instead of Celeste doing 1 by 1, she can just edit all". The shift's
 pop-up on the rota has **Hours** (Starts, Ends); once they change it offers
 **Just this shift**, **This and every later Wednesday like it** or **This and
 all of Gaby's later 7am–2pm shifts, any day**.
+**The place moves too** (6 October 2026, Dominguez: "needs to be able to
+update location as well"): the same section has **Location** — the person's
+offices and Work from home (an open shift: any office, never home) — and the
+section is called **Hours and place**. Hours, place or both change under the
+same three choices.
 `POST /shifts/:id/retime` (managers, `shifts/shift-retime.service.ts`) takes
-`HH:MM` on the office's clock and a scope:
+`HH:MM` on the office's clock, optionally `locationId` / `isRemote`, and a
+scope. A new office must be one the person works at and active; home is
+refused for an open shift. "Like it" is still matched on the **old** place;
+the notice names both places when the place changed ("Your 12pm–6pm shifts
+at North Bergen from Fri, Oct 23 are now 12pm–6pm from home"). A regular
+shift follows only if it was at the old place, and carries the new one. The
+scopes:
 
 - `ONE` goes through the ordinary `PATCH` path (its bell notice and overtime
   email), the times rebuilt on the shift's own day in the office's timezone;

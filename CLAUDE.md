@@ -462,8 +462,13 @@ Beyond the phases, the parts worth knowing about before picking up work:
   skipped and listed, the person told once. A regular shift behind them
   follows (ended the day before and carried on at the new hours), so later
   weeks do too. `POST /shifts/:id/retime`, `shifts/shift-retime.service.ts`;
-  see *Changing the hours of a shift* in `docs/architecture.md`;
-  `tests/browser/shift-hours.mjs`.
+  see *Changing the hours or place of a shift* in `docs/architecture.md`;
+  `tests/browser/shift-hours.mjs`. **The place too** (6 October 2026,
+  Dominguez: "needs to be able to update location as well"): the section is
+  **Hours and place**, with a **Location** list (their offices and Work from
+  home; an open shift, any office) under the same three choices; a regular
+  shift follows to the new place. The pop-up's old **Make it work from
+  home** button was taken out (Dominguez) — the Location list does it.
 - **Tablet PINs are chosen by staff** on their profile (confirmed with their
   password); the profile shows only that one is set and since when, never the
   PIN. Managers and admins can set a replacement from the Directory, never

@@ -1088,7 +1088,7 @@ const MANAGERS: Section[] = [
         answer: (
           <p>
             Choose <strong>Work from home</strong> as the Location when you make a shift, or click a
-            shift and choose <strong>Make it work from home</strong>. Once it is published, that
+            shift and pick it under <strong>Hours and place</strong>. Once it is published, that
             person can clock in from anywhere from half an hour before it starts until it ends, with
             no location asked for or recorded. Behind the scenes it is counted under their main
             office, so the office view of the rota and the reports still add up. Anybody can also
@@ -1099,12 +1099,13 @@ const MANAGERS: Section[] = [
         ),
       },
       {
-        question: 'Changing somebody’s hours',
+        question: 'Changing somebody’s hours or office',
         answer: (
           <>
             <p>
-              Click the shift on the rota and change <strong>Starts</strong> and{' '}
-              <strong>Ends</strong> under <strong>Hours</strong>. Then choose what to change:
+              Click the shift on the rota and change <strong>Starts</strong>, <strong>Ends</strong>{' '}
+              or <strong>Location</strong> (another of their offices, or Work from home) under{' '}
+              <strong>Hours and place</strong>. Then choose what to change:
             </p>
             <ul className="mt-2 list-disc space-y-1 pl-5">
               <li>
@@ -1117,14 +1118,16 @@ const MANAGERS: Section[] = [
               </li>
               <li>
                 <strong>This and all of their later shifts at those hours</strong> — the same, on
-                any day: when somebody&rsquo;s 7 to 2 becomes 1 to 8 for good.
+                any day: when somebody&rsquo;s 7 to 2 becomes 1 to 8 for good, or they move to the
+                other office.
               </li>
             </ul>
             <p className="mt-2">
               A shift that has started is left alone, and a day where the new hours would overlap
               another of their shifts is skipped and listed. If the shifts come from a regular
-              shift, that changes too, so the weeks not on the rota yet come at the new hours. They
-              are told once under the bell if the shifts were published.
+              shift, that changes too, so the weeks not on the rota yet follow. Only an office they
+              work at is offered; add another on the Staff screen first. They are told once under
+              the bell if the shifts were published.
             </p>
           </>
         ),
