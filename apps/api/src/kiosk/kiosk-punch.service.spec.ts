@@ -15,6 +15,16 @@ describe('KioskPunchService', () => {
     locationName: 'North Bergen',
   };
 
+  /// A write as the database would apply it, increments included.
+  function applied(row: Record<string, unknown>, data: Record<string, unknown>) {
+    const result: Record<string, unknown> = { ...row };
+    for (const [key, value] of Object.entries(data)) {
+      const increment = (value as { increment?: number } | null)?.increment;
+      result[key] = increment === undefined ? value : Number(row[key] ?? 0) + increment;
+    }
+    return result;
+  }
+
   let pinHash: string;
   beforeAll(async () => {
     pinHash = await pins.hash('4817');
@@ -34,12 +44,15 @@ describe('KioskPunchService', () => {
       kioskDevice: {
         findUnique: jest.fn(async () => kiosk),
         update: jest.fn(async ({ data }: { data: Record<string, unknown> }) =>
-          Object.assign(kiosk, data),
+          Object.assign(kiosk, applied(kiosk, data)),
         ),
       },
       employee: {
         findUnique: jest.fn().mockResolvedValue(employee),
-        update: jest.fn().mockResolvedValue({}),
+        // Answers the wrong-PIN count the way the database would.
+        update: jest.fn(async ({ data }: { data: Record<string, unknown> }) =>
+          applied(employee ?? {}, data),
+        ),
       },
       timeEntry: { findFirst: jest.fn().mockResolvedValue(options.openEntry ?? null) },
     };
@@ -274,16 +287,42 @@ describe('KioskPunchService', () => {
       expect(timeEntries.clockOut).not.toHaveBeenCalled();
     });
 
-    it('counts the failure', async () => {
+    it('counts the failure, with an increment the database does itself', async () => {
       const { service, prisma } = build(active());
       await service.punch(device, 'emp-1', '9999').catch(() => undefined);
-      expect(prisma.employee.update.mock.calls[0][0].data.pinFailedAttempts).toBe(1);
+      expect(prisma.employee.update.mock.calls[0][0].data).toEqual({
+        pinFailedAttempts: { increment: 1 },
+      });
     });
 
     it('locks the keypad at the attempt limit', async () => {
       const { service, prisma } = build({ ...active(), pinFailedAttempts: 2 });
       await service.punch(device, 'emp-1', '9999').catch(() => undefined);
-      expect(prisma.employee.update.mock.calls[0][0].data.pinLockedUntil).toBeInstanceOf(Date);
+      expect(prisma.employee.update.mock.calls[1][0].data.pinLockedUntil).toBeInstanceOf(Date);
+    });
+
+    it('refuses a PIN past the limit without checking it', async () => {
+      // Others sent at the same moment used up the attempts.
+      const { service, timeEntries } = build({ ...active(), pinFailedAttempts: 3 });
+      await expect(service.punch(device, 'emp-1', '4817')).rejects.toThrow(
+        /Too many incorrect PINs/,
+      );
+      expect(timeEntries.clockIn).not.toHaveBeenCalled();
+    });
+
+    it('starts the count afresh once a lockout has run out', async () => {
+      const { service, prisma } = build({
+        ...active(),
+        pinFailedAttempts: 3,
+        pinLockedUntil: new Date(Date.now() - 1000),
+      });
+      await service.punch(device, 'emp-1', '9999').catch(() => undefined);
+      // One slip after the lockout is one wrong PIN, not another lockout.
+      expect(prisma.employee.update.mock.calls[0][0].data).toEqual({
+        pinFailedAttempts: 1,
+        pinLockedUntil: null,
+      });
+      expect(prisma.employee.update).toHaveBeenCalledTimes(1);
     });
 
     it('keeps refusing while locked, even once the PIN is right', async () => {

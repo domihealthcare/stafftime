@@ -8,7 +8,7 @@ import { Prisma, Role } from '@prisma/client';
 import { AuthUser } from '../common/auth/auth-user';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateCredentialTypeDto, UpdateCredentialTypeDto } from './dto/credential-type.dto';
-import { StandingLine, loadStanding } from './standing-query';
+import { loadStanding } from './standing-query';
 
 const TYPE_SELECT = {
   id: true,
@@ -149,20 +149,6 @@ export class CredentialTypesService {
 
   private standingOf(only: string | undefined) {
     return loadStanding(this.prisma, only);
-  }
-
-  /// Required licenses somebody does not have on file at all. Lapsed ones are
-  /// already chased as lapsed; this is the gap nothing else would show.
-  async missingRequired(): Promise<{ name: string; line: StandingLine }[]> {
-    const everyone = await this.standingOf(undefined);
-    return everyone.flatMap((person) =>
-      person.lines
-        .filter((line) => line.required && line.state === 'MISSING')
-        .map((line) => ({
-          name: `${person.employee.firstName} ${person.employee.lastName}`,
-          line,
-        })),
-    );
   }
 
   private async assertNameFree(name: string, exceptId?: string) {

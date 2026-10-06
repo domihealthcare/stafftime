@@ -45,7 +45,7 @@ export class EmployeesController {
   @Get()
   @Roles(Role.MANAGER)
   findAll(
-    @Query('locationId') locationId?: string,
+    @Query('locationId', new ParseUUIDPipe({ optional: true })) locationId?: string,
     @Query('status', new ParseEnumPipe(EmploymentStatus, { optional: true }))
     status?: EmploymentStatus,
   ) {

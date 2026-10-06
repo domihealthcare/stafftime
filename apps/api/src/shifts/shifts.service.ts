@@ -1,6 +1,6 @@
 import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import { Prisma, ShiftStatus } from '@prisma/client';
-import { weekStartIn } from '../common/util/zoned-time.util';
+import { PRACTICE_ZONE, weekStartIn } from '../common/util/zoned-time.util';
 import { InboxService } from '../email/inbox.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateShiftDto } from './dto/create-shift.dto';
@@ -71,12 +71,15 @@ export class ShiftsService {
     return shift;
   }
 
-  findAll(query: QueryShiftsDto) {
+  /// `withoutDrafts` is for staff, who never see a draft: asking for drafts
+  /// then gives nothing, and asking for no status in particular leaves them out.
+  async findAll(query: QueryShiftsDto, { withoutDrafts = false } = {}) {
+    if (withoutDrafts && query.status === ShiftStatus.DRAFT) return [];
     return this.prisma.shift.findMany({
       where: {
         employeeId: query.employeeId,
         locationId: query.locationId,
-        status: query.status,
+        status: query.status ?? (withoutDrafts ? { not: ShiftStatus.DRAFT } : undefined),
         startsAt: query.from ? { gte: new Date(query.from) } : undefined,
         endsAt: query.to ? { lte: new Date(query.to) } : undefined,
       },
@@ -169,7 +172,7 @@ export class ShiftsService {
     const weeks = [
       ...new Set(
         touched.map((t) =>
-          weekStartIn(t.startsAt, zones.get(t.locationId) ?? 'America/New_York', startsOn),
+          weekStartIn(t.startsAt, zones.get(t.locationId) ?? PRACTICE_ZONE, startsOn),
         ),
       ),
     ];

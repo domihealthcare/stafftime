@@ -92,12 +92,6 @@ export class PinService {
     }
     return { ok: true };
   }
-
-  /// Digits only, so the keypad can show how many are left without ever
-  /// revealing the PIN itself.
-  mask(pin: string): string {
-    return '•'.repeat(pin.length);
-  }
 }
 
 function isSequential(pin: string): boolean {

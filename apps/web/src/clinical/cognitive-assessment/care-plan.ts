@@ -17,7 +17,7 @@ import {
   labelOf,
   type CarePlanArea,
 } from './config';
-import { hasConcern, isPrior, type AssessmentForm } from './form';
+import { isPrior, type AssessmentForm } from './form';
 
 /**
  * The care plan, built from what the provider has already answered
@@ -256,13 +256,6 @@ export function suggestions(form: AssessmentForm): { goals: Set<string>; actions
   when(H.caregiver === 'none', 'caregiver:g:plan-help', 'caregiver:social-work');
 
   return { goals, actions };
-}
-
-/// Whether anything in G is a safety concern, so the care plan's Safety area
-/// needs an action.
-export function safetyConcern(form: AssessmentForm): boolean {
-  const { G } = form;
-  return hasConcern(G.homeConcerns) || DRIVING_CONCERNS.includes(G.driving) || G.firearms === 'yes';
 }
 
 /// The FAST stage with its description: "Stage 4 — Needs help with…".

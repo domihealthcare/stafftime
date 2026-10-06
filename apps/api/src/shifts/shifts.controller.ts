@@ -13,7 +13,7 @@ import {
   Query,
   UseInterceptors,
 } from '@nestjs/common';
-import { Role } from '@prisma/client';
+import { Role, ShiftStatus } from '@prisma/client';
 import { AuthUser } from '../common/auth/auth-user';
 import { CurrentUser } from '../common/auth/current-user.decorator';
 import { Roles } from '../common/auth/roles.decorator';
@@ -144,20 +144,26 @@ export class ShiftsController {
     return this.shifts.create(dto, user.id);
   }
 
-  /// Managers see the whole schedule; employees only ever see their own shifts.
+  /// Managers see the whole schedule; employees only ever see their own
+  /// shifts, and never a draft — a shift reaches them when it is published.
   @Get()
   findAll(@Query() query: QueryShiftsDto, @CurrentUser() user: AuthUser) {
-    const scoped: QueryShiftsDto =
-      user.role === Role.EMPLOYEE ? { ...query, employeeId: user.id } : query;
-    return this.shifts.findAll(scoped);
+    if (user.role === Role.EMPLOYEE) {
+      return this.shifts.findAll({ ...query, employeeId: user.id }, { withoutDrafts: true });
+    }
+    return this.shifts.findAll(query);
   }
 
-  /// Staff may read their own shifts only, as with the list above; to anybody
-  /// else's the answer is the same as for one that does not exist.
+  /// Staff may read their own published (or cancelled) shifts only, as with
+  /// the list above; to anybody else's, or a draft, the answer is the same as
+  /// for one that does not exist.
   @Get(':id')
   async findOne(@Param('id', ParseUUIDPipe) id: string, @CurrentUser() user: AuthUser) {
     const shift = await this.shifts.findOne(id);
-    if (user.role === Role.EMPLOYEE && shift.employeeId !== user.id) {
+    if (
+      user.role === Role.EMPLOYEE &&
+      (shift.employeeId !== user.id || shift.status === ShiftStatus.DRAFT)
+    ) {
       throw new NotFoundException(`Shift ${id} not found`);
     }
     return shift;

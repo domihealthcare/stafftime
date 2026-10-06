@@ -1,7 +1,7 @@
 import { BadRequestException, Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { ClosingItemKind, Prisma } from '@prisma/client';
 import { toUtcDate } from '../common/util/calendar-date.util';
-import { isoWeekdayOf, localDateIn } from '../common/util/zoned-time.util';
+import { isoWeekdayOf, localDateIn, PRACTICE_ZONE } from '../common/util/zoned-time.util';
 import { PrismaService } from '../prisma/prisma.service';
 import { DEFAULT_CHECKLISTS } from './default-checklists';
 import {
@@ -85,7 +85,7 @@ export class ClosingService {
         include: TEMPLATE_INCLUDE,
       }),
     ]);
-    const weekday = isoWeekdayOf(localDateIn(at, location?.timezone ?? 'America/New_York'));
+    const weekday = isoWeekdayOf(localDateIn(at, location?.timezone ?? PRACTICE_ZONE));
 
     const sections: ApplicableSection[] = [];
     for (const role of roles) {

@@ -7,6 +7,7 @@ import {
 } from '@nestjs/common';
 import { EmploymentStatus, Prisma } from '@prisma/client';
 import { assertBirthday } from '../common/birthday';
+import { practiceToday } from '../common/util/zoned-time.util';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateEmployeeDto } from './dto/create-employee.dto';
 import { ImportedEmployeeDto } from './dto/import-employees.dto';
@@ -19,7 +20,18 @@ const EMPLOYEE_INCLUDE = {
 } satisfies Prisma.EmployeeInclude;
 
 /// Never return credential columns to a client.
-const HIDDEN_FIELDS = ['pinHash', 'passwordHash'] as const;
+/// Never sent to a browser. The calendar token is the private calendar link's
+/// credential — anybody holding it can read that person's shifts and time off —
+/// and the lockout counters are nobody's business but the server's.
+const HIDDEN_FIELDS = [
+  'pinHash',
+  'passwordHash',
+  'calendarToken',
+  'failedLoginAttempts',
+  'lockedUntil',
+  'pinFailedAttempts',
+  'pinLockedUntil',
+] as const;
 
 /// Sign-in looks addresses up in lower case, so they are stored that way: an
 /// address typed as "Jane.Doe@…" would otherwise never sign in.
@@ -253,19 +265,11 @@ export class EmployeesService {
       where: { id },
       data: {
         employmentStatus: EmploymentStatus.TERMINATED,
-        terminationDate: terminationDate ? new Date(terminationDate) : new Date(),
+        terminationDate: terminationDate ? new Date(terminationDate) : practiceToday(),
       },
       include: EMPLOYEE_INCLUDE,
     });
     return this.strip(updated);
-  }
-
-  async isAssignedToLocation(employeeId: string, locationId: string): Promise<boolean> {
-    const assignment = await this.prisma.employeeLocation.findUnique({
-      where: { employeeId_locationId: { employeeId, locationId } },
-      select: { employeeId: true },
-    });
-    return assignment !== null;
   }
 
   private assertPrimaryIsAssigned(locationIds?: string[], primaryLocationId?: string) {
@@ -302,7 +306,7 @@ export class EmployeesService {
    */
   private strip<T extends Record<string, unknown>>(
     employee: T,
-  ): Omit<T, 'pinHash' | 'passwordHash'> & { hasKioskPin: boolean; hasPassword: boolean } {
+  ): Omit<T, (typeof HIDDEN_FIELDS)[number]> & { hasKioskPin: boolean; hasPassword: boolean } {
     const copy = {
       ...employee,
       hasKioskPin: employee.pinHash !== null,

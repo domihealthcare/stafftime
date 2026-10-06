@@ -101,18 +101,29 @@ export class KioskPunchService {
     }
 
     if (employee.pinLockedUntil && employee.pinLockedUntil > new Date()) {
-      const minutes = Math.max(
-        1,
-        Math.ceil((employee.pinLockedUntil.getTime() - Date.now()) / 60_000),
-      );
+      throw new UnauthorizedException(personLocked(employee.pinLockedUntil));
+    }
+
+    // The guess is counted before the PIN is checked, by the database itself,
+    // so PINs sent all at once cannot each read the same count and slip past
+    // the limit together. A lockout that has run out starts the count afresh,
+    // rather than the first slip afterwards locking them out again.
+    const { pinFailedAttempts: attempt } = await this.prisma.employee.update({
+      where: { id: employee.id },
+      data: employee.pinLockedUntil
+        ? { pinFailedAttempts: 1, pinLockedUntil: null }
+        : { pinFailedAttempts: { increment: 1 } },
+      select: { pinFailedAttempts: true },
+    });
+    if (attempt > this.maxAttempts) {
       throw new UnauthorizedException(
-        `Too many incorrect PINs. Try again in ${minutes} minute${minutes === 1 ? '' : 's'}, or ask a manager.`,
+        personLocked(new Date(Date.now() + this.lockoutMinutes * 60_000)),
       );
     }
 
     const correct = await this.pins.verify(pin, employee.pinHash);
     if (!correct) {
-      await this.recordPinFailure(employee.id, employee.pinFailedAttempts);
+      if (attempt >= this.maxAttempts) await this.lockPin(employee.id, attempt);
       await this.recordDeviceFailure(device.deviceId);
       throw new UnauthorizedException(PIN_REJECTED);
     }
@@ -158,12 +169,17 @@ export class KioskPunchService {
     }
     if (!open && this.repeatWindowMs > 0) {
       const justLeft = await this.prisma.timeEntry.findFirst({
-        where: { employeeId: employee.id, clockOutAt: { gte: new Date(now - this.repeatWindowMs) } },
+        where: {
+          employeeId: employee.id,
+          clockOutAt: { gte: new Date(now - this.repeatWindowMs) },
+        },
         select: { clockInAt: true, clockOutAt: true },
         orderBy: { clockOutAt: 'desc' },
       });
       if (justLeft?.clockOutAt) {
-        this.logger.log(`Kiosk ${device.deviceId}: ${employee.id} repeated a clock-out; not reversed`);
+        this.logger.log(
+          `Kiosk ${device.deviceId}: ${employee.id} repeated a clock-out; not reversed`,
+        );
         return {
           action: 'CLOCKED_OUT',
           employeeName: displayName,
@@ -287,7 +303,17 @@ export class KioskPunchService {
     const windowOpen =
       state.pinFailuresSince &&
       now.getTime() - state.pinFailuresSince.getTime() < DEVICE_WINDOW_MINUTES * 60_000;
-    const failures = windowOpen ? state.pinFailures + 1 : 1;
+    // Added by the database while the window is open, so wrong PINs sent at
+    // once are all counted.
+    const failures = windowOpen
+      ? (
+          await this.prisma.kioskDevice.update({
+            where: { id: deviceId },
+            data: { pinFailures: { increment: 1 } },
+            select: { pinFailures: true },
+          })
+        ).pinFailures
+      : 1;
 
     if (failures >= DEVICE_MAX_FAILURES) {
       await this.prisma.kioskDevice.update({
@@ -301,31 +327,26 @@ export class KioskPunchService {
       this.logger.warn(`Kiosk ${deviceId} paused after ${failures} wrong PINs`);
       return;
     }
-    await this.prisma.kioskDevice.update({
-      where: { id: deviceId },
-      data: {
-        pinFailures: failures,
-        pinFailuresSince: windowOpen ? state.pinFailuresSince : now,
-      },
-    });
-  }
-
-  private async recordPinFailure(employeeId: string, previousFailures: number): Promise<void> {
-    const attempts = previousFailures + 1;
-    const locked = attempts >= this.maxAttempts;
-
-    await this.prisma.employee.update({
-      where: { id: employeeId },
-      data: {
-        pinFailedAttempts: attempts,
-        pinLockedUntil: locked ? new Date(Date.now() + this.lockoutMinutes * 60_000) : null,
-      },
-    });
-
-    if (locked) {
-      this.logger.warn(`Employee ${employeeId} kiosk-locked after ${attempts} wrong PINs`);
+    if (!windowOpen) {
+      await this.prisma.kioskDevice.update({
+        where: { id: deviceId },
+        data: { pinFailures: 1, pinFailuresSince: now },
+      });
     }
   }
+
+  private async lockPin(employeeId: string, attempts: number): Promise<void> {
+    await this.prisma.employee.update({
+      where: { id: employeeId },
+      data: { pinLockedUntil: new Date(Date.now() + this.lockoutMinutes * 60_000) },
+    });
+    this.logger.warn(`Employee ${employeeId} kiosk-locked after ${attempts} wrong PINs`);
+  }
+}
+
+function personLocked(until: Date): string {
+  const minutes = Math.max(1, Math.ceil((until.getTime() - Date.now()) / 60_000));
+  return `Too many incorrect PINs. Try again in ${minutes} minute${minutes === 1 ? '' : 's'}, or ask a manager.`;
 }
 
 /// A real argon2 hash of a PIN nobody knows, so a nonexistent account costs the

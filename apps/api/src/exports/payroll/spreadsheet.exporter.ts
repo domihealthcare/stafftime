@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { TimesheetData } from '../timesheet-export.service';
-import { buildTimesheetCsv, buildTimesheetWorkbook } from '../workbook';
+import { buildTimesheetCsv, buildTimesheetWorkbook, periodDays } from '../workbook';
 import {
   PayrollExportOptions,
   PayrollExporter,
@@ -49,14 +49,14 @@ export class SpreadsheetExporter implements PayrollExporter {
 /// "domi-timesheet_2026-09-07_to_2026-09-20_north-bergen" — a name somebody can
 /// still find in six months, and the one the app has always produced.
 export function filenameFor(data: TimesheetData): string {
-  const day = (date: Date) => date.toISOString().slice(0, 10);
   const slug = (value: string) =>
     value
       .toLowerCase()
       .replace(/[^a-z0-9]+/g, '-')
       .replace(/(^-|-$)/g, '');
 
-  const parts = ['domi-timesheet', day(data.meta.from), 'to', day(data.meta.to)];
+  const { first, last } = periodDays(data.meta);
+  const parts = ['domi-timesheet', first, 'to', last];
   if (data.meta.locationName) {
     parts.push(slug(data.meta.locationName));
   }

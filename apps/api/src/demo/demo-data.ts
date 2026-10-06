@@ -441,8 +441,6 @@ export async function loadDemoData(prisma: PrismaClient) {
   };
 }
 
-export type DemoDataSummary = Awaited<ReturnType<typeof loadDemoData>>;
-
 /// The one thing this script must never do is invent hours on a live payroll.
 function assertNotProduction() {
   const environment = process.env.APP_ENVIRONMENT ?? 'production';

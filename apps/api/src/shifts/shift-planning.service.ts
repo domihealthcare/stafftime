@@ -419,7 +419,19 @@ export class ShiftPlanningService {
       seriesId: id,
       status: { not: ShiftStatus.CANCELLED },
       startsAt: { gte: cutoff > now ? cutoff : now },
+      timeEntries: { none: {} },
     } satisfies Prisma.ShiftWhereInput;
+
+    // The weeks the rewrite reaches, measured before it, so the person hears
+    // once if new hours take one of them over the line.
+    const startsOn = await this.settings.workweekStartsOn();
+    const weeks = [
+      ...new Set(datesBetween(from, filled).map((date) => weekStartOf(date, startsOn))),
+    ];
+    const before =
+      series.employeeId && series.status === ShiftStatus.PUBLISHED && weeks.length > 0
+        ? await this.overtime.snapshot([series.employeeId], weeks)
+        : null;
 
     await this.prisma.shiftSeries.update({
       where: { id },
@@ -440,9 +452,7 @@ export class ShiftPlanningService {
     const published = await this.prisma.shift.count({
       where: { ...going, status: ShiftStatus.PUBLISHED },
     });
-    await this.prisma.shift.deleteMany({
-      where: { ...going, status: ShiftStatus.DRAFT, timeEntries: { none: {} } },
-    });
+    await this.prisma.shift.deleteMany({ where: { ...going, status: ShiftStatus.DRAFT } });
     await this.prisma.shift.updateMany({ where: going, data: { status: ShiftStatus.CANCELLED } });
 
     const dates = datesBetween(from, filled).filter((date) => onPattern(date, pattern));
@@ -473,6 +483,9 @@ export class ShiftPlanningService {
         body: `${capitalised(patternPhrase(pattern))} from ${shortDay(from)}.`,
         link: '/schedule',
       });
+    }
+    if (before && series.employeeId) {
+      await this.overtime.announceNewOvertime(before, [series.employeeId], weeks);
     }
 
     this.logger.log(`Changed standing shift ${id} from ${from}`);
@@ -509,10 +522,12 @@ export class ShiftPlanningService {
       data: { endsOn: asDate(lastDate) },
     });
 
+    // One with a punch against it is never touched.
     const going = {
       seriesId: id,
       status: { not: ShiftStatus.CANCELLED },
       startsAt: { gte: after },
+      timeEntries: { none: {} },
     } satisfies Prisma.ShiftWhereInput;
 
     const published = await this.prisma.shift.findMany({
@@ -521,7 +536,7 @@ export class ShiftPlanningService {
       orderBy: { startsAt: 'asc' },
     });
     const deleted = await this.prisma.shift.deleteMany({
-      where: { ...going, status: ShiftStatus.DRAFT, timeEntries: { none: {} } },
+      where: { ...going, status: ShiftStatus.DRAFT },
     });
     const cancelled = await this.prisma.shift.updateMany({
       where: going,
@@ -819,6 +834,7 @@ export class ShiftPlanningService {
           seriesId,
           status: { not: ShiftStatus.CANCELLED },
           startsAt: { gte: cutoff > now ? cutoff : now },
+          timeEntries: { none: {} },
         },
         select: { id: true, startsAt: true, status: true },
       })
@@ -831,8 +847,9 @@ export class ShiftPlanningService {
     const deleted = await this.prisma.shift.deleteMany({
       where: { id: { in: ids }, status: ShiftStatus.DRAFT, timeEntries: { none: {} } },
     });
+    // A punch made since the list was read still keeps its shift.
     const cancelled = await this.prisma.shift.updateMany({
-      where: { id: { in: ids }, status: { not: ShiftStatus.CANCELLED } },
+      where: { id: { in: ids }, status: { not: ShiftStatus.CANCELLED }, timeEntries: { none: {} } },
       data: { status: ShiftStatus.CANCELLED },
     });
     return {
@@ -865,9 +882,11 @@ export class ShiftPlanningService {
         locationId: dto.locationId,
         employeeId: dto.employeeIds?.length ? { in: dto.employeeIds } : undefined,
         status: { not: ShiftStatus.CANCELLED },
+        // The week as New Jersey has it: midnight there, not midnight UTC,
+        // which is the evening before.
         startsAt: {
-          gte: new Date(`${fromStart}T00:00:00Z`),
-          lt: new Date(`${addDaysTo(fromStart, 7)}T00:00:00Z`),
+          gte: zonedTimeToUtc(fromStart, '00:00', PRACTICE_ZONE),
+          lt: zonedTimeToUtc(addDaysTo(fromStart, 7), '00:00', PRACTICE_ZONE),
         },
       },
       select: {
@@ -1023,15 +1042,19 @@ export class ShiftPlanningService {
       throw new BadRequestException('Ask for a window between one day and two months.');
     }
 
+    // Leave and availability are plain dates, compared as dates. Shifts are
+    // moments, so their window runs midnight to midnight in New Jersey.
     const windowStart = new Date(`${from}T00:00:00Z`);
     const windowEnd = new Date(`${addDaysTo(to, 1)}T00:00:00Z`);
+    const shiftsFrom = zonedTimeToUtc(from, '00:00', PRACTICE_ZONE);
+    const shiftsUntil = zonedTimeToUtc(addDaysTo(to, 1), '00:00', PRACTICE_ZONE);
 
     const [shifts, leave] = await Promise.all([
       this.prisma.shift.findMany({
         where: {
           locationId: query.locationId,
           status: { not: ShiftStatus.CANCELLED },
-          startsAt: { gte: windowStart, lt: windowEnd },
+          startsAt: { gte: shiftsFrom, lt: shiftsUntil },
         },
         include: SHIFT_INCLUDE,
         orderBy: { startsAt: 'asc' },

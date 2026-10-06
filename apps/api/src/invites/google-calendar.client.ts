@@ -45,6 +45,9 @@ export class GoogleCalendarClient {
   private readonly logger = new Logger(GoogleCalendarClient.name);
   private readonly switchedOn: boolean;
   private calendarId: string | null = null;
+  /// The calendar being looked up or made, shared by everybody who asks
+  /// meanwhile — parallel saves would otherwise each make a calendar.
+  private pending: Promise<string> | null = null;
 
   constructor(
     config: ConfigService,
@@ -104,15 +107,28 @@ export class GoogleCalendarClient {
   private async forgetCalendar(): Promise<void> {
     this.logger.warn('The Domi Staff calendar has gone; a new one will be made');
     this.calendarId = null;
+    this.pending = null;
     await this.prisma.$transaction([
       this.prisma.googleCalendar.updateMany({ data: { calendarId: null } }),
       this.prisma.calendarInvite.deleteMany({}),
     ]);
   }
 
-  /// The "Domi Staff" calendar, made the first time it is needed.
-  private async calendar(): Promise<string> {
-    if (this.calendarId) return this.calendarId;
+  /// The "Domi Staff" calendar, made the first time it is needed — once,
+  /// however many invites are being sent at the same moment.
+  private calendar(): Promise<string> {
+    if (this.calendarId) return Promise.resolve(this.calendarId);
+    if (!this.pending) {
+      this.pending = this.findOrMakeCalendar().catch((error: unknown) => {
+        // A failure is not remembered: the next send tries again.
+        this.pending = null;
+        throw error;
+      });
+    }
+    return this.pending;
+  }
+
+  private async findOrMakeCalendar(): Promise<string> {
     const stored = await this.prisma.googleCalendar.findUnique({ where: { singleton: SINGLETON } });
     if (stored?.calendarId) return (this.calendarId = stored.calendarId);
 

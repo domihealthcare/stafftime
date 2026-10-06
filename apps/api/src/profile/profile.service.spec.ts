@@ -1,4 +1,6 @@
 import { BadRequestException, ForbiddenException, NotFoundException } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
+import { PasswordGuessService } from '../auth/password-guesses.service';
 import { PasswordService } from '../auth/password.service';
 import { PinService } from '../kiosk/pin.service';
 import { ProfileService } from './profile.service';
@@ -19,6 +21,8 @@ function build(passwordHash: string | null = null) {
     pinHash: null,
     pinUpdatedAt: null,
     passwordHash,
+    failedLoginAttempts: 0,
+    lockedUntil: null,
     id: 'e1',
     firstName: 'Frankie',
     lastName: 'Front-Desk',
@@ -45,7 +49,11 @@ function build(passwordHash: string | null = null) {
       count: jest.fn(async ({ where }: { where: { id: string } }) => (where.id === 'e1' ? 1 : 0)),
       findUniqueOrThrow: jest.fn(async () => row),
       update: jest.fn(async ({ data }: { data: Record<string, unknown> }) => {
-        for (const [k, v] of Object.entries(data)) if (v !== undefined) row = { ...row, [k]: v };
+        for (const [k, v] of Object.entries(data)) {
+          if (v === undefined) continue;
+          const increment = (v as { increment?: number } | null)?.increment;
+          row = { ...row, [k]: increment === undefined ? v : Number(row[k]) + increment };
+        }
         return row;
       }),
     },
@@ -66,7 +74,7 @@ function build(passwordHash: string | null = null) {
   return {
     service: new ProfileService(
       prisma as never,
-      new PasswordService(),
+      new PasswordGuessService(prisma as never, new PasswordService(), new ConfigService()),
       new PinService(),
       inbox as never,
     ),
@@ -154,6 +162,13 @@ describe('your profile', () => {
     it('is refused with the wrong password', async () => {
       const { service } = build(await passwords.hash('harbour lantern 7'));
       await expect(service.setOwnPin('e1', 'guess', '4817')).rejects.toThrow(ForbiddenException);
+    });
+
+    it('counts a wrong password against signing in', async () => {
+      // Otherwise a browser left signed in offers unlimited guesses at it.
+      const { service, row } = build(await passwords.hash('harbour lantern 7'));
+      await service.setOwnPin('e1', 'guess', '4817').catch(() => undefined);
+      expect(row().failedLoginAttempts).toBe(1);
     });
 
     it('is held to the same rules as any PIN', async () => {

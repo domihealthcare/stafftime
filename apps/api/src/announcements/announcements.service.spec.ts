@@ -302,6 +302,28 @@ describe('AnnouncementsService', () => {
     });
   });
 
+  describe('the home screen', () => {
+    it('reads only the newest few, plus an older primary post', async () => {
+      const { service, announcement } = build({ next: post({ id: 'old', isPrimary: true }) });
+      const posts = await service.findAll(staff, 4);
+      expect(announcement.findMany.mock.calls[0][0].take).toBe(4);
+      expect(posts.map((p) => p.id)).toEqual(['post-1', 'old']);
+    });
+
+    it('does not ask again when the primary is among the newest', async () => {
+      const { service, announcement } = build();
+      announcement.findMany.mockResolvedValueOnce([post({ isPrimary: true })]);
+      await service.findAll(staff, 4);
+      expect(announcement.findFirst).not.toHaveBeenCalled();
+    });
+
+    it('reads every post for the News page', async () => {
+      const { service, announcement } = build();
+      await service.findAll(staff);
+      expect(announcement.findMany.mock.calls[0][0].take).toBeUndefined();
+    });
+  });
+
   describe('what a reader is sent', () => {
     it('names who liked a post and who voted for what, and marks the reader’s own', async () => {
       const angelica = person('emp-1', 'Angelica', 'Diaz');

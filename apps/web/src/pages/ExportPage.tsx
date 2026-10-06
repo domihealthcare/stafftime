@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   ApiError,
   api,
@@ -64,6 +64,8 @@ export function ExportPage() {
   const [presets, setPresets] = useState<ReportPreset[]>([]);
   const [activePresetId, setActivePresetId] = useState<string | null>(null);
   const [savingPreset, setSavingPreset] = useState(false);
+  /// A save in flight: one press, one saved report.
+  const [savingPresetNow, setSavingPresetNow] = useState(false);
   const confirm = useConfirm();
   // Its own error, not the page's: the preview refreshes on a timer and clears
   // the page error, which would silently wipe a message about a saved report.
@@ -139,20 +141,27 @@ export function ExportPage() {
     ],
   );
 
+  /// Numbers each preview asked for: a slower, older answer that lands after
+  /// a newer question is dropped rather than drawn over it.
+  const previewSeq = useRef(0);
   const refreshPreview = useCallback(async () => {
+    const seq = ++previewSeq.current;
     if (!from || !to || statuses.length === 0 || selected.length === 0) {
       setPreview(null);
       return;
     }
     setPreviewing(true);
     try {
-      setPreview(await api.previewExport({ ...options, to: endExclusive(to) }));
+      const answer = await api.previewExport({ ...options, to: endExclusive(to) });
+      if (seq !== previewSeq.current) return;
+      setPreview(answer);
       setError(null);
     } catch (err) {
+      if (seq !== previewSeq.current) return;
       setPreview(null);
       setError(err instanceof ApiError ? err.message : 'Could not check that period.');
     } finally {
-      setPreviewing(false);
+      if (seq === previewSeq.current) setPreviewing(false);
     }
   }, [options, from, to, statuses.length, selected.length]);
 
@@ -181,6 +190,8 @@ export function ExportPage() {
   }
 
   async function savePreset() {
+    if (savingPresetNow) return;
+    setSavingPresetNow(true);
     setPresetError(null);
     try {
       await api.saveReportPreset({
@@ -203,6 +214,8 @@ export function ExportPage() {
       await loadPresets();
     } catch (err) {
       setPresetError(err instanceof ApiError ? err.message : 'Could not save that report.');
+    } finally {
+      setSavingPresetNow(false);
     }
   }
 
@@ -370,7 +383,7 @@ export function ExportPage() {
             </p>
             <button
               type="button"
-              disabled={presetName.trim().length === 0}
+              disabled={presetName.trim().length === 0 || savingPresetNow}
               onClick={() => void savePreset()}
               className={`mt-3 ${buttonClass('primary', 'md')}`}
             >

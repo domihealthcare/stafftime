@@ -1,6 +1,7 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { EmploymentStatus, Prisma, PtoPolicy, PtoStatus, PtoType } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
+import { practiceToday } from '../common/util/zoned-time.util';
 import { AdjustPtoBalanceDto, UpdatePtoPolicyDto } from './dto/pto.dto';
 
 /**
@@ -70,9 +71,7 @@ const SINGLETON = 1;
 
 /// Postgres's "duplicate key" as Prisma reports it.
 function isUniqueViolation(error: unknown): boolean {
-  return (
-    error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2002'
-  );
+  return error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2002';
 }
 
 @Injectable()
@@ -135,7 +134,16 @@ export class PtoPolicyService {
    * optionally what really carried into it. Both feed the walk as well.
    */
   async balanceFor(employeeId: string, year?: number): Promise<PtoBalance> {
-    const policy = await this.get();
+    return (await this.balanceWithTerms(employeeId, await this.get(), year)).balance;
+  }
+
+  /// The balance, with the allowance and starting points it was worked out from
+  /// — the staff list shows those too, so it need not read them again.
+  private async balanceWithTerms(
+    employeeId: string,
+    policy: PtoPolicy,
+    year?: number,
+  ): Promise<{ balance: PtoBalance; person: PersonalTerms }> {
     const employee = await this.prisma.employee.findUniqueOrThrow({
       where: { id: employeeId },
       select: {
@@ -155,7 +163,7 @@ export class PtoPolicyService {
       },
     });
 
-    const policyYear = year ?? this.policyYearOf(new Date(), policy);
+    const policyYear = year ?? this.policyYearOf(practiceToday(), policy);
     const { start, end } = this.yearBounds(policyYear, policy);
     const person: PersonalTerms = {
       hireDate: employee.hireDate,
@@ -166,12 +174,19 @@ export class PtoPolicyService {
     };
     const startingPoint = person.startingPoints.get(policyYear);
 
+    // With no hire date on record, carry-over is counted from when they were
+    // added to the app — nothing before that was booked here anyway.
+    const since = employee.hireDate ?? employee.createdAt;
+    // One read for this year and every year the carry-over walks back
+    // through; each year is picked out below by daysWithin, which counts
+    // nothing outside it.
+    const firstYear = Math.min(this.policyYearOf(since, policy), policyYear);
     const requests = await this.prisma.ptoRequest.findMany({
       where: {
         employeeId,
         status: { in: [PtoStatus.PENDING, PtoStatus.APPROVED] },
         startDate: { lt: end },
-        endDate: { gte: start },
+        endDate: { gte: this.yearBounds(firstYear, policy).start },
       },
       select: {
         type: true,
@@ -187,25 +202,16 @@ export class PtoPolicyService {
         .filter((r) => TYPE_BUCKET[r.type] === bucket && r.status === status)
         .reduce((sum, r) => sum + daysWithin(r, start, end), 0);
 
-    // With no hire date on record, carry-over is counted from when they were
-    // added to the app — nothing before that was booked here anyway.
-    const since = employee.hireDate ?? employee.createdAt;
-    const carriedVacation = await this.carryOverInto(
-      employeeId,
+    const approved = requests.filter((r) => r.status === PtoStatus.APPROVED);
+    const carriedVacation = this.carryOverInto(
+      approved,
       policyYear,
       policy,
       since,
       person,
       'vacation',
     );
-    const carriedSick = await this.carryOverInto(
-      employeeId,
-      policyYear,
-      policy,
-      since,
-      person,
-      'sick',
-    );
+    const carriedSick = this.carryOverInto(approved, policyYear, policy, since, person, 'sick');
 
     const vacationEntitled = this.entitlementFor(
       policyYear,
@@ -220,7 +226,7 @@ export class PtoPolicyService {
       yearlyDays(policy, person, 'sick'),
     );
 
-    return {
+    const balance: PtoBalance = {
       employeeId,
       policyYear,
       yearStart: start.toISOString().slice(0, 10),
@@ -243,6 +249,7 @@ export class PtoPolicyService {
         .filter((r) => TYPE_BUCKET[r.type] === null && r.status === PtoStatus.APPROVED)
         .reduce((sum, r) => sum + daysWithin(r, start, end), 0),
     };
+    return { balance, person };
   }
 
   /**
@@ -255,11 +262,12 @@ export class PtoPolicyService {
       orderBy: [{ firstName: 'asc' }, { lastName: 'asc' }],
       select: { id: true, firstName: true, lastName: true, preferredName: true, email: true },
     });
+    const policy = await this.get();
     const rows: StaffBalance[] = [];
-    // One at a time: a practice's worth of staff, and each balance is a few
+    // One at a time: a practice's worth of staff, and each balance is two
     // small reads. Not worth holding many connections open at once.
     for (const person of staff) {
-      rows.push(await this.staffBalance(person.id, person));
+      rows.push(await this.staffBalance(person.id, person, policy));
     }
     return rows;
   }
@@ -277,7 +285,7 @@ export class PtoPolicyService {
     if (!person) throw new NotFoundException('Nobody by that id.');
 
     const policy = await this.get();
-    const policyYear = this.policyYearOf(new Date(), policy);
+    const policyYear = this.policyYearOf(practiceToday(), policy);
     const allowance = {
       vacationDaysPerYear: dto.vacationDaysPerYear ?? null,
       sickDaysPerYear: dto.sickDaysPerYear ?? null,
@@ -303,20 +311,17 @@ export class PtoPolicyService {
         update: startingPoint,
       }),
     ]);
-    return this.staffBalance(employeeId, person);
+    return this.staffBalance(employeeId, person, policy);
   }
 
   private async staffBalance(
     employeeId: string,
     person: StaffBalance['employee'],
+    policy: PtoPolicy,
   ): Promise<StaffBalance> {
-    const balance = await this.balanceFor(employeeId);
-    const [allowance, startingPoint] = await Promise.all([
-      this.prisma.ptoAllowance.findUnique({ where: { employeeId } }),
-      this.prisma.ptoStartingPoint.findUnique({
-        where: { employeeId_policyYear: { employeeId, policyYear: balance.policyYear } },
-      }),
-    ]);
+    const { balance, person: terms } = await this.balanceWithTerms(employeeId, policy);
+    const allowance = terms.allowance;
+    const startingPoint = terms.startingPoints.get(balance.policyYear);
     return {
       employee: person,
       balance,
@@ -375,14 +380,15 @@ export class PtoPolicyService {
     return round1(fullEntitlement * (remainingDays / yearDays));
   }
 
-  private async carryOverInto(
-    employeeId: string,
+  /// `approved` is every approved request from the first year walked on.
+  private carryOverInto(
+    approved: Array<{ type: PtoType; startDate: Date; endDate: Date; isHalfDay: boolean }>,
     policyYear: number,
     policy: PtoPolicy,
     since: Date,
     person: PersonalTerms,
     bucket: 'vacation' | 'sick',
-  ): Promise<number> {
+  ): number {
     // What a manager said really carried in wins over any working-out.
     const stated = carriedOverStated(person.startingPoints.get(policyYear), bucket);
     if (stated !== null) return round1(stated);
@@ -408,18 +414,8 @@ export class PtoPolicyService {
         yearlyDays(policy, person, bucket),
       );
 
-      const requests = await this.prisma.ptoRequest.findMany({
-        where: {
-          employeeId,
-          status: PtoStatus.APPROVED,
-          startDate: { lt: end },
-          endDate: { gte: start },
-        },
-        select: { type: true, startDate: true, endDate: true, isHalfDay: true },
-      });
-
       const used =
-        requests
+        approved
           .filter((r) => TYPE_BUCKET[r.type] === bucket)
           .reduce((sum, r) => sum + daysWithin(r, start, end), 0) +
         (bucket === 'vacation' ? (point?.vacationUsed ?? 0) : (point?.sickUsed ?? 0));
@@ -439,12 +435,8 @@ export class PtoPolicyService {
 
   /// Half-open: [start, end).
   yearBounds(policyYear: number, policy: PtoPolicy): { start: Date; end: Date } {
-    const start = new Date(
-      Date.UTC(policyYear, policy.yearStartMonth - 1, policy.yearStartDay),
-    );
-    const end = new Date(
-      Date.UTC(policyYear + 1, policy.yearStartMonth - 1, policy.yearStartDay),
-    );
+    const start = new Date(Date.UTC(policyYear, policy.yearStartMonth - 1, policy.yearStartDay));
+    const end = new Date(Date.UTC(policyYear + 1, policy.yearStartMonth - 1, policy.yearStartDay));
     return { start, end };
   }
 }

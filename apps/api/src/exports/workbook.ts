@@ -1,4 +1,5 @@
 import { Workbook } from 'exceljs';
+import { localDateIn, PRACTICE_ZONE } from '../common/util/zoned-time.util';
 import { TIMESHEET_COLUMNS, type TimesheetColumnKey } from './columns';
 import type { TimesheetData } from './timesheet-export.service';
 
@@ -34,9 +35,7 @@ function buildEntriesSheet(workbook: Workbook, data: TimesheetData) {
     views: [{ state: 'frozen', ySplit: 1 }],
   });
 
-  const definitions = data.meta.columns.map(
-    (key) => TIMESHEET_COLUMNS.find((c) => c.key === key)!,
-  );
+  const definitions = data.meta.columns.map((key) => TIMESHEET_COLUMNS.find((c) => c.key === key)!);
 
   sheet.columns = definitions.map((definition) => ({
     header: definition.label,
@@ -47,11 +46,7 @@ function buildEntriesSheet(workbook: Workbook, data: TimesheetData) {
   styleHeader(sheet.getRow(1));
 
   for (const row of data.rows) {
-    sheet.addRow(
-      Object.fromEntries(
-        data.meta.columns.map((key) => [key, row.values[key] ?? '']),
-      ),
-    );
+    sheet.addRow(Object.fromEntries(data.meta.columns.map((key) => [key, row.values[key] ?? ''])));
   }
 
   formatHoursColumn(sheet, data.meta.columns);
@@ -147,15 +142,19 @@ function buildSummarySheet(workbook: Workbook, data: TimesheetData) {
   }
 
   // The provenance of the file, so a printed copy still says what it covers.
+  const period = periodDays(data.meta);
   sheet.addRow([]);
   const notes = [
-    ['Period', `${data.meta.from.toISOString().slice(0, 10)} to ${data.meta.to.toISOString().slice(0, 10)}`],
+    ['Period', `${period.first} to ${period.last}`],
     ['Location', data.meta.locationName ?? 'All locations'],
     ['Generated', data.meta.generatedAt.toISOString()],
     ['Entries', String(data.meta.entryCount)],
   ];
   if (data.meta.openEntryCount > 0) {
-    notes.push(['Open entries included', `${data.meta.openEntryCount} (no clock-out, counted as 0 hours)`]);
+    notes.push([
+      'Open entries included',
+      `${data.meta.openEntryCount} (no clock-out, counted as 0 hours)`,
+    ]);
   }
   if (showOvertime) {
     notes.push([
@@ -179,10 +178,7 @@ function styleHeader(row: import('exceljs').Row) {
   row.height = 22;
 }
 
-function formatHoursColumn(
-  sheet: import('exceljs').Worksheet,
-  columns: TimesheetColumnKey[],
-) {
+function formatHoursColumn(sheet: import('exceljs').Worksheet, columns: TimesheetColumnKey[]) {
   if (!columns.includes('hours')) {
     return;
   }
@@ -215,21 +211,32 @@ function columnLetter(index: number): string {
   return letter;
 }
 
+/// The first and last days a run covers, as New Jersey calendar dates. The
+/// period runs from local midnight to local midnight (4 or 5 a.m. UTC), so
+/// reading the dates in UTC would name the day after the last one.
+export function periodDays(meta: { from: Date; to: Date }): { first: string; last: string } {
+  return {
+    first: localDateIn(meta.from, PRACTICE_ZONE),
+    last: localDateIn(new Date(meta.to.getTime() - 1), PRACTICE_ZONE),
+  };
+}
+
 function round2(value: number): number {
   return Math.round(value * 100) / 100;
 }
 
 /// CSV fallback, for anything that would rather have plain text than a workbook.
 export function buildTimesheetCsv(data: TimesheetData): string {
-  const definitions = data.meta.columns.map(
-    (key) => TIMESHEET_COLUMNS.find((c) => c.key === key)!,
-  );
+  const definitions = data.meta.columns.map((key) => TIMESHEET_COLUMNS.find((c) => c.key === key)!);
 
   const escape = (value: string | number | null): string => {
     if (value === null || value === undefined) {
       return '';
     }
-    const text = String(value);
+    let text = String(value);
+    // A cell starting = + - @ would be run as a formula by Excel, and some
+    // text here — the name somebody goes by — is typed by staff themselves.
+    if (typeof value === 'string' && /^[=+\-@\t\r]/.test(text)) text = `'${text}`;
     return /[",\n]/.test(text) ? `"${text.replace(/"/g, '""')}"` : text;
   };
 

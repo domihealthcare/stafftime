@@ -4,10 +4,12 @@ import {
   Delete,
   Get,
   Param,
+  ParseIntPipe,
   ParseUUIDPipe,
   Patch,
   Post,
   Put,
+  Query,
 } from '@nestjs/common';
 import { Role } from '@prisma/client';
 import { AuthUser } from '../common/auth/auth-user';
@@ -44,9 +46,16 @@ export class AnnouncementsController {
     return findPublicPosts(this.prisma);
   }
 
+  /// `?latest=4` for the home screen: the newest few and the primary.
   @Get()
-  list(@CurrentUser() user: AuthUser) {
-    return this.announcements.findAll(user);
+  list(
+    @CurrentUser() user: AuthUser,
+    @Query('latest', new ParseIntPipe({ optional: true })) latest?: number,
+  ) {
+    return this.announcements.findAll(
+      user,
+      latest === undefined ? undefined : Math.min(Math.max(latest, 1), 20),
+    );
   }
 
   /// What the home screen leads with. `null` only before the first post.

@@ -6,7 +6,7 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { NotificationKind } from '@prisma/client';
-import { PasswordService } from '../auth/password.service';
+import { PasswordGuessService } from '../auth/password-guesses.service';
 import { InboxService } from '../email/inbox.service';
 import { PinService } from '../kiosk/pin.service';
 import { mainFirst } from '../job-roles/main-job-role';
@@ -51,7 +51,7 @@ export class ProfileService {
 
   constructor(
     private readonly prisma: PrismaService,
-    private readonly passwords: PasswordService,
+    private readonly guesses: PasswordGuessService,
     private readonly pins: PinService,
     private readonly inbox: InboxService,
   ) {}
@@ -60,14 +60,20 @@ export class ProfileService {
   async setOwnPin(employeeId: string, currentPassword: string, pin: string) {
     const person = await this.prisma.employee.findUniqueOrThrow({
       where: { id: employeeId },
-      select: { passwordHash: true },
+      select: { id: true, passwordHash: true, failedLoginAttempts: true, lockedUntil: true },
     });
-    if (
-      !person.passwordHash ||
-      !(await this.passwords.verify(currentPassword, person.passwordHash))
-    ) {
+    if (!person.passwordHash) {
       throw new ForbiddenException('That password is not right.');
     }
+    // Wrong guesses count against signing in, like everywhere a password is
+    // asked for. A 403, not a 401: this is about the password, and a 401 would
+    // sign them out.
+    const guess = await this.guesses.check(
+      { ...person, passwordHash: person.passwordHash },
+      currentPassword,
+    );
+    if (guess.kind === 'locked') throw new ForbiddenException(guess.message);
+    if (guess.kind === 'wrong') throw new ForbiddenException('That password is not right.');
     const verdict = this.pins.check(pin);
     if (!verdict.ok) throw new BadRequestException(verdict.reason);
     await this.prisma.employee.update({

@@ -188,14 +188,6 @@ function filenameFromDisposition(header: string | null): string {
   return /filename="([^"]+)"/i.exec(header)?.[1] ?? 'document';
 }
 
-/// Set when the server says a temporary password must be replaced before
-/// anything else will work.
-export const PASSWORD_CHANGE_REQUIRED = 'PASSWORD_CHANGE_REQUIRED';
-
-export function isPasswordChangeRequired(error: unknown): boolean {
-  return error instanceof ApiError && error.code === PASSWORD_CHANGE_REQUIRED;
-}
-
 /**
  * Pulls the machine-readable hint out of an error body.
  *
@@ -1198,7 +1190,9 @@ export const api = {
   deleteEvent: (id: string, scope: 'one' | 'following' = 'one') =>
     request<{ deleted: number }>(`/events/${id}?scope=${scope}`, { method: 'DELETE' }),
 
-  announcements: () => request<Announcement[]>('/announcements'),
+  /// `latest`: only the newest few, plus the primary post wherever it falls.
+  announcements: (latest?: number) =>
+    request<Announcement[]>(latest ? `/announcements?latest=${latest}` : '/announcements'),
   /// The posts ticked to show publicly — needs no session, for the sign-in page.
   publicPosts: () => request<PublicPost[]>('/announcements/public'),
   primaryAnnouncement: () =>

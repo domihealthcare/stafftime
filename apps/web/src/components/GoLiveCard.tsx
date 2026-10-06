@@ -18,7 +18,6 @@ const LABELS: [keyof TestDataCounts, string][] = [
   ['surveys', 'surveys'],
   ['events', 'events'],
   ['productivityStatements', 'provider productivity statements'],
-  ['productivityStatements', 'provider productivity statements'],
   ['suggestions', 'suggestion box messages'],
   ['notifications', 'notifications'],
   ['payrollExports', 'payroll exports'],

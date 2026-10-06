@@ -1,4 +1,4 @@
-import { Fragment, useCallback, useEffect, useState } from 'react';
+import { Fragment, useCallback, useEffect, useRef, useState } from 'react';
 import { api } from '../lib/api';
 import { durationHours, formatDate, formatTime } from '../lib/format';
 import { useIsManager, useSession } from '../lib/session';
@@ -36,16 +36,22 @@ export function TimesheetPage() {
   /// Bumped after a change that the "Worth a look" banner reports on.
   const [bannerKey, setBannerKey] = useState(0);
 
+  /// Numbers each load: a slower, older one (last week's, say) that finishes
+  /// after a newer one is dropped rather than drawn over it.
+  const loadSeq = useRef(0);
   const load = useCallback(async () => {
+    const seq = ++loadSeq.current;
     setLoading(true);
     try {
       const data = await api.listTimeEntries(toInstants(range));
+      if (seq !== loadSeq.current) return;
       setEntries(data);
       setError(null);
     } catch (err) {
+      if (seq !== loadSeq.current) return;
       setError(err instanceof Error ? err.message : 'Could not load timesheet.');
     } finally {
-      setLoading(false);
+      if (seq === loadSeq.current) setLoading(false);
     }
   }, [range]);
 

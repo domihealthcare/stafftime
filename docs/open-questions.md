@@ -334,3 +334,32 @@ What is left:
 - [ ] **Generate the frontend's API types from the server** instead of
       hand-maintaining `apps/web/src/lib/types.ts`. Today a server-side rename
       compiles fine and breaks at runtime.
+
+## Code review, October 2026 — found but not changed
+
+Each needs a decision, or was not worth the risk on a live system without one.
+
+- [ ] **Availability is locked about two months ahead wherever there are
+      regular shifts.** Staff can only change availability for weeks whose
+      rota is not yet published, and the "last published week" is found from
+      any published shift — but regular shifts are written and published 8
+      weeks ahead every night. So at an office with one, the Availability
+      screen says changes count from about two months out. Fix if wanted:
+      leave regular-shift shifts out of that check
+      (`availability.service.ts`, `window()`). Changes what "published" means
+      there, so it is Dominguez's call.
+- [ ] **Correcting a punch keeps its Late / Left early flags.** A late punch
+      corrected to the real start time still says "Late" (on the dashboard and
+      in the export's Flags column), and a midnight auto clock-out corrected to
+      3pm against a 5pm shift never gets "Left early". Recomputing them on a
+      correction is a small change in `time-entries.service.ts` `edit()` — but
+      keeping the original flag could be wanted as a record of what happened.
+- [ ] **Adding many shifts at once is three reads per date** (`createAll` in
+      `shift-planning.service.ts`): a 200-shift repeat is ~600 round trips to
+      the database in one request. Fine at today's sizes; the fix (read the
+      person's shifts and leave once, write with one `createMany`) touches the
+      most-used code in the scheduler, so it waits for a quiet moment.
+- [ ] **The punch-reminder job asks once per shift and per open punch**, every
+      5 minutes — about 30 small reads a run for ~15 staff. Batching it is easy
+      but the tests are written around the exact queries. Worth doing if Neon's
+      usage turns out high.

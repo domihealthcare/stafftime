@@ -16,8 +16,9 @@ const data: TimesheetData = {
   totals: [],
   entryIds: ['te-1', 'te-2', 'te-3'],
   meta: {
-    from: new Date('2026-09-07T00:00:00.000Z'),
-    to: new Date('2026-09-21T00:00:00.000Z'),
+    // New Jersey midnights (EDT), as the export is asked for them.
+    from: new Date('2026-09-07T04:00:00.000Z'),
+    to: new Date('2026-09-21T04:00:00.000Z'),
     columns: [],
     locationName: 'North Bergen',
     entryCount: 3,
@@ -146,7 +147,7 @@ describe('running an export', () => {
     expect(storage.put).toHaveBeenCalled();
     expect(created[0].storageKey).toBe('2026/09/3f6a5c1d2e4b8a7f9c0d1e2f3a4b5c6d');
     expect(created[0].checksum).toBe('deadbeef');
-    expect(file.filename).toBe('domi-timesheet_2026-09-07_to_2026-09-21_north-bergen.xlsx');
+    expect(file.filename).toBe('domi-timesheet_2026-09-07_to_2026-09-20_north-bergen.xlsx');
   });
 
   it('keeps everything needed to run it again', async () => {
@@ -245,11 +246,11 @@ describe('the history', () => {
 
 describe('filenames', () => {
   it('is something somebody can still find in six months', () => {
-    expect(filenameFor(data)).toBe('domi-timesheet_2026-09-07_to_2026-09-21_north-bergen');
+    expect(filenameFor(data)).toBe('domi-timesheet_2026-09-07_to_2026-09-20_north-bergen');
   });
 
   it('leaves the location out when the run covered all of them', () => {
     const everywhere = { ...data, meta: { ...data.meta, locationName: null } };
-    expect(filenameFor(everywhere)).toBe('domi-timesheet_2026-09-07_to_2026-09-21');
+    expect(filenameFor(everywhere)).toBe('domi-timesheet_2026-09-07_to_2026-09-20');
   });
 });

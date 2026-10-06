@@ -151,11 +151,24 @@ export class AnnouncementsService {
 
   /// Newest first, the primary among them where it falls — the News page reads
   /// like a blog, and the home screen shows the primary separately.
-  async findAll(viewer: AuthUser) {
+  ///
+  /// With `latest`, only that many of the newest, plus the primary wherever it
+  /// falls — all the home screen shows. Every post carries its likes, comments
+  /// and votes, so reading the whole history to show four would get slower with
+  /// every post ever written.
+  async findAll(viewer: AuthUser, latest?: number) {
     const rows = await this.prisma.announcement.findMany({
       select: ANNOUNCEMENT_SELECT,
       orderBy: { createdAt: 'desc' },
+      ...(latest !== undefined ? { take: latest } : {}),
     });
+    if (latest !== undefined && !rows.some((row) => row.isPrimary)) {
+      const primary = await this.prisma.announcement.findFirst({
+        where: { isPrimary: true },
+        select: ANNOUNCEMENT_SELECT,
+      });
+      if (primary) rows.push(primary);
+    }
     return rows.map((row) => present(row, viewer.id));
   }
 
@@ -170,6 +183,16 @@ export class AnnouncementsService {
 
   async findOne(id: string, viewer: AuthUser) {
     return present(await this.findRow(id), viewer.id);
+  }
+
+  /// Just whether it is there: the full read, likes and comments and all, is
+  /// for when the post itself is needed.
+  private async assertExists(id: string): Promise<void> {
+    const found = await this.prisma.announcement.findUnique({
+      where: { id },
+      select: { id: true },
+    });
+    if (!found) throw new NotFoundException('That announcement does not exist.');
   }
 
   private async findRow(id: string) {
@@ -189,6 +212,7 @@ export class AnnouncementsService {
     }
 
     const row = await this.prisma.$transaction(async (tx) => {
+      await lockPrimary(tx);
       // The first post is primary whatever the form said: the rule is that
       // there always is one, and until now there was nothing to be it.
       const hasPrimary = (await tx.announcement.count({ where: { isPrimary: true } })) > 0;
@@ -283,6 +307,7 @@ export class AnnouncementsService {
     }
 
     const row = await this.prisma.$transaction(async (tx) => {
+      await lockPrimary(tx);
       if (dto.isPrimary === true && !existing.isPrimary) {
         await tx.announcement.updateMany({
           where: { isPrimary: true },
@@ -335,6 +360,7 @@ export class AnnouncementsService {
     const existing = await this.findRow(id);
 
     await this.prisma.$transaction(async (tx) => {
+      await lockPrimary(tx);
       await tx.announcement.delete({ where: { id } });
 
       // Deleting the primary hands it to the newest post left, so the home
@@ -358,7 +384,7 @@ export class AnnouncementsService {
 
   /// Liking twice is the same as liking once.
   async like(id: string, actor: AuthUser) {
-    await this.findRow(id);
+    await this.assertExists(id);
     await this.prisma.announcementLike.createMany({
       data: [{ announcementId: id, employeeId: actor.id }],
       skipDuplicates: true,
@@ -367,7 +393,7 @@ export class AnnouncementsService {
   }
 
   async unlike(id: string, actor: AuthUser) {
-    await this.findRow(id);
+    await this.assertExists(id);
     await this.prisma.announcementLike.deleteMany({
       where: { announcementId: id, employeeId: actor.id },
     });
@@ -505,13 +531,27 @@ export class AnnouncementsService {
 
   /// Admins close voting, and can open it again.
   async setPollClosed(id: string, closed: boolean, actor: AuthUser) {
-    const post = await this.findRow(id);
-    if (!post.poll) throw new NotFoundException('That post has no poll.');
+    await this.assertExists(id);
+    const poll = await this.prisma.announcementPoll.findUnique({
+      where: { announcementId: id },
+      select: { id: true, closedAt: true },
+    });
+    if (!poll) throw new NotFoundException('That post has no poll.');
     await this.prisma.announcementPoll.update({
-      where: { id: post.poll.id },
-      data: { closedAt: closed ? (post.poll.closedAt ?? new Date()) : null },
+      where: { id: poll.id },
+      data: { closedAt: closed ? (poll.closedAt ?? new Date()) : null },
     });
     this.logger.log(`Poll on announcement ${id} ${closed ? 'closed' : 'reopened'} by ${actor.id}`);
     return this.findOne(id, actor);
   }
 }
+
+/// Posting, editing and deleting take turns over which post is primary. Two
+/// admins at once could otherwise each read the old state — and leave no
+/// primary at all, or both try to be it. Held until the transaction ends.
+async function lockPrimary(tx: Prisma.TransactionClient): Promise<void> {
+  await tx.$executeRaw`SELECT pg_advisory_xact_lock(${PRIMARY_LOCK}::bigint)`;
+}
+
+/// Any fixed number; only this file takes it.
+const PRIMARY_LOCK = 724_001;

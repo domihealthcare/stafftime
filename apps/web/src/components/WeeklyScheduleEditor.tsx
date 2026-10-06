@@ -3,6 +3,7 @@ import { ApiError, api } from '../lib/api';
 import {
   displayName,
   formatCalendarDate,
+  formatClock,
   localDate,
   WEEK_ORDER,
   WEEKDAY_NAMES,
@@ -34,12 +35,6 @@ type Week = Record<number, DayRow>;
 
 const FIELD =
   'w-full rounded-lg border-slate-300 py-1.5 text-sm shadow-sm focus:border-brand-600 focus:ring-brand-600';
-
-/// "08:30" → "8:30 AM".
-function clock(time: string): string {
-  const [h, m] = time.split(':').map(Number);
-  return `${h % 12 === 0 ? 12 : h % 12}:${String(m).padStart(2, '0')} ${h < 12 ? 'AM' : 'PM'}`;
-}
 
 function hoursOf(row: DayRow): number {
   const [sh, sm] = row.startTime.split(':').map(Number);
@@ -119,6 +114,9 @@ export function WeeklyScheduleEditor({
   const homeOffice = homeOfficeOf(person);
   const held = useMemo(() => rolesHeldBy(person.id, jobRoles), [person.id, jobRoles]);
   const heldIds = held.map((role) => role.id).join();
+  // Keyed on ids, not the arrays: the Staff screen fetches its lists again
+  // after a photo or PIN change, and that must not wipe edits in progress.
+  const firstOffice = offices[0]?.id ?? '';
   const [saved, setSaved] = useState<{ week: Week; doubled: number[] } | null>(null);
   const [week, setWeek] = useState<Week | null>(null);
   const [from, setFrom] = useState(() => localDate(new Date()));
@@ -134,16 +132,12 @@ export function WeeklyScheduleEditor({
         // Their usual week is the every-week ones; the first Saturday of the
         // month runs beside it and is not changed from here.
         const theirs = all.filter((s) => s.employeeId === person.id && !s.endsOn && isEveryWeek(s));
-        const read = weekFrom(
-          theirs,
-          homeOffice || offices[0]?.id || '',
-          heldIds ? heldIds.split(',') : [],
-        );
+        const read = weekFrom(theirs, homeOffice || firstOffice, heldIds ? heldIds.split(',') : []);
         setSaved(read);
         setWeek(read.week);
       })
       .catch(() => setProblem('Could not load their regular shifts.'));
-  }, [person.id, homeOffice, offices, heldIds]);
+  }, [person.id, homeOffice, firstOffice, heldIds]);
 
   useEffect(() => {
     load();
@@ -199,7 +193,8 @@ export function WeeklyScheduleEditor({
             <ul className="list-disc pl-5">
               {working.map((day) => (
                 <li key={day}>
-                  {WEEKDAY_NAMES[day - 1]}s, {clock(week[day].startTime)}–{clock(week[day].endTime)}
+                  {WEEKDAY_NAMES[day - 1]}s, {formatClock(week[day].startTime)}–
+                  {formatClock(week[day].endTime)}
                   {week[day].place === WORK_FROM_HOME
                     ? ', from home'
                     : `, ${locations.find((l) => l.id === week[day].place)?.name ?? ''}`}

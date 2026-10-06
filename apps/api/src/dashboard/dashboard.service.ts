@@ -1,12 +1,11 @@
 import { Injectable } from '@nestjs/common';
 import { PtoStatus, ShiftStatus } from '@prisma/client';
-import { addDaysTo, localDateIn, weekStartOf } from '../common/util/zoned-time.util';
+import { addDaysTo, localDateIn, PRACTICE_ZONE, weekStartOf } from '../common/util/zoned-time.util';
 import { PrismaService } from '../prisma/prisma.service';
 import { PracticeSettingsService } from '../settings/practice-settings.service';
 import { ShiftPlanningService } from '../shifts/shift-planning.service';
 import { summarise } from './dashboard.summary';
 
-const PRACTICE_ZONE = 'America/New_York';
 export const MAX_WEEKS = 26;
 
 /**

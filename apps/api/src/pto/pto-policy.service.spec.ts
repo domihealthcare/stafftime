@@ -41,13 +41,21 @@ describe('daysWithin', () => {
 
   it('counts an inclusive range', () => {
     expect(
-      daysWithin({ startDate: day('2026-03-02'), endDate: day('2026-03-06'), isHalfDay: false }, start, end),
+      daysWithin(
+        { startDate: day('2026-03-02'), endDate: day('2026-03-06'), isHalfDay: false },
+        start,
+        end,
+      ),
     ).toBe(5);
   });
 
   it('counts a half day as half', () => {
     expect(
-      daysWithin({ startDate: day('2026-03-02'), endDate: day('2026-03-02'), isHalfDay: true }, start, end),
+      daysWithin(
+        { startDate: day('2026-03-02'), endDate: day('2026-03-02'), isHalfDay: true },
+        start,
+        end,
+      ),
     ).toBe(0.5);
   });
 
@@ -61,7 +69,11 @@ describe('daysWithin', () => {
 
   it('is zero for a request entirely outside the year', () => {
     expect(
-      daysWithin({ startDate: day('2025-05-01'), endDate: day('2025-05-05'), isHalfDay: false }, start, end),
+      daysWithin(
+        { startDate: day('2025-05-01'), endDate: day('2025-05-05'), isHalfDay: false },
+        start,
+        end,
+      ),
     ).toBe(0);
   });
 });
@@ -152,7 +164,7 @@ describe('PtoPolicyService', () => {
       });
     });
 
-    it('reads the winner\'s row when two first requests race', async () => {
+    it("reads the winner's row when two first requests race", async () => {
       // The Time off screen asks for the policy and for a balance at once, and
       // a balance needs the policy too, so the very first page load is two
       // concurrent creates. Without the unique column both used to succeed and
@@ -227,6 +239,16 @@ describe('PtoPolicyService', () => {
       expect(balance.sick).toMatchObject({ entitled: 5 });
     });
 
+    it('reads every year it walks back through in one query', async () => {
+      const { service, prisma } = build({ hireDate: day('2020-01-01') });
+      await service.balanceFor('emp-1', 2026);
+      // Six years of carry-over, both allowances: still one read.
+      expect(prisma.ptoRequest.findMany).toHaveBeenCalledTimes(1);
+      expect(prisma.ptoRequest.findMany.mock.calls[0][0].where.endDate).toEqual({
+        gte: day('2020-01-01'),
+      });
+    });
+
     it('counts carry-over only from when they were added to the app', async () => {
       const { service, prisma } = build({ hireDate: null, createdAt: day('2026-09-25') });
       await service.balanceFor('emp-1', 2026);
@@ -237,8 +259,7 @@ describe('PtoPolicyService', () => {
 
   describe('a full-year employee', () => {
     /// Hired on the first day of the year under test, so nothing carries in.
-    const thisYearOnly = (requests?: unknown[]) =>
-      build({ requests, hireDate: day('2026-01-01') });
+    const thisYearOnly = (requests?: unknown[]) => build({ requests, hireDate: day('2026-01-01') });
 
     it('starts the year with the full entitlement', async () => {
       const { service } = thisYearOnly();

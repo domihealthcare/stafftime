@@ -12,6 +12,7 @@ import { NotificationsService } from '../email/notifications.service';
 import { AutoClockOutService } from '../time-entries/auto-clock-out.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { localDateIn, PRACTICE_ZONE } from '../common/util/zoned-time.util';
+import { toUtcDate } from '../common/util/calendar-date.util';
 
 /// How long after a shift starts (or ends) somebody is reminded to clock in
 /// (or out). Dominguez, October 2026: "notify the person, 15 minutes after".
@@ -191,7 +192,7 @@ export class PunchRemindersService {
   /// Approved time off on the day the shift starts, in New Jersey. A shift
   /// left on a day off is the manager's to tidy up, not a reason to nag.
   private async onLeave(employeeId: string, startsAt: Date): Promise<boolean> {
-    const day = new Date(`${localDateIn(startsAt, PRACTICE_ZONE)}T00:00:00.000Z`);
+    const day = toUtcDate(localDateIn(startsAt, PRACTICE_ZONE));
     const count = await this.prisma.ptoRequest.count({
       where: {
         employeeId,

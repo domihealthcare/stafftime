@@ -84,6 +84,27 @@ describe('GoogleCalendarClient', () => {
     });
   });
 
+  it('makes one calendar when several invites go out at once', async () => {
+    const { client, google, prisma } = build();
+    await Promise.all([
+      client.put('shifta', BODY),
+      client.put('shiftb', BODY),
+      client.cancel('shiftc'),
+    ]);
+    const made = google.call.mock.calls.filter(([url]) => String(url).endsWith('/calendars'));
+    expect(made).toHaveLength(1);
+    expect(prisma.googleCalendar.findUnique).toHaveBeenCalledTimes(1);
+  });
+
+  it('tries again to make the calendar after a failed attempt', async () => {
+    const { client, google } = build();
+    google.call.mockResolvedValueOnce(reply(403, { error: { message: 'Not allowed' } }));
+    await expect(client.put('shifta', BODY)).rejects.toThrow('Not allowed');
+    await client.put('shifta', BODY);
+    const made = google.call.mock.calls.filter(([url]) => String(url).endsWith('/calendars'));
+    expect(made).toHaveLength(2);
+  });
+
   it('sends the invite with its own id, emailing the person, hiding other guests', async () => {
     const { client, google } = build({ stored: 'domi@group.calendar.google.com' });
     await client.put('shiftabc', BODY);

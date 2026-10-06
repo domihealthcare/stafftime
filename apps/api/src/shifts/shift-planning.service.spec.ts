@@ -85,18 +85,23 @@ describe('ShiftPlanningService', () => {
         findMany: jest.fn().mockResolvedValue([]),
       },
     };
+    const overtime = fakeOvertime();
     return {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       service: new ShiftPlanningService(
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         prisma as any,
         fakeSettings(),
-        fakeOvertime(),
+        overtime,
         inbox as never,
       ),
       prisma,
       created,
       inbox,
+      overtime: overtime as unknown as {
+        snapshot: jest.Mock;
+        announceNewOvertime: jest.Mock;
+      },
     };
   }
 
@@ -569,6 +574,15 @@ describe('ShiftPlanningService', () => {
         );
       });
 
+      it('never touches a shift with a punch against it', async () => {
+        const { service, prisma } = build({ series: stored });
+        await service.stopStanding('series-1', { lastDate: '2026-10-09' }, NOW);
+        const noPunch = expect.objectContaining({ timeEntries: { none: {} } });
+        expect(prisma.shift.findMany.mock.calls[0][0].where).toEqual(noPunch);
+        expect(prisma.shift.deleteMany.mock.calls[0][0].where).toEqual(noPunch);
+        expect(prisma.shift.updateMany.mock.calls[0][0].where).toEqual(noPunch);
+      });
+
       it('stops today when no day is given', async () => {
         const { service } = build({ series: stored });
         const result = await service.stopStanding('series-1', {}, NOW);
@@ -681,6 +695,43 @@ describe('ShiftPlanningService', () => {
         expect(created.map((shift) => (shift.startsAt as Date).toISOString().slice(0, 10))).toEqual(
           ['2026-10-17', '2026-10-31', '2026-11-14'],
         );
+      });
+
+      it('leaves a shift with a punch against it alone', async () => {
+        const { service, prisma } = build({ series: stored });
+        await service.updateStanding('series-1', change({ endTime: '14:00' }), NOW);
+        const noPunch = expect.objectContaining({ timeEntries: { none: {} } });
+        expect(prisma.shift.count.mock.calls[0][0].where).toEqual(noPunch);
+        expect(prisma.shift.deleteMany.mock.calls[0][0].where).toEqual(noPunch);
+        expect(prisma.shift.updateMany.mock.calls[0][0].where).toEqual(noPunch);
+      });
+
+      it('measures overtime before the change and tells the person after', async () => {
+        const { service, prisma, overtime } = build({ series: stored });
+        await service.updateStanding('series-1', change({ endTime: '18:00' }), NOW);
+
+        const [people, weeks] = overtime.snapshot.mock.calls[0];
+        expect(people).toEqual(['emp-1']);
+        // 1 Oct to 24 Nov, in Monday weeks (the test settings' pay period).
+        expect(weeks[0]).toBe('2026-09-28');
+        expect(weeks[weeks.length - 1]).toBe('2026-11-23');
+        expect(overtime.snapshot.mock.invocationCallOrder[0]).toBeLessThan(
+          prisma.shift.deleteMany.mock.invocationCallOrder[0],
+        );
+        expect(overtime.announceNewOvertime).toHaveBeenCalledWith(
+          expect.any(Map),
+          ['emp-1'],
+          weeks,
+        );
+      });
+
+      it('does not measure overtime for a regular shift kept as drafts', async () => {
+        const { service, overtime } = build({
+          series: { ...stored, status: ShiftStatus.DRAFT },
+        });
+        await service.updateStanding('series-1', change({ endTime: '18:00' }), NOW);
+        expect(overtime.snapshot).not.toHaveBeenCalled();
+        expect(overtime.announceNewOvertime).not.toHaveBeenCalled();
       });
 
       it('keeps what it had when the weeks are not sent', async () => {
@@ -849,6 +900,22 @@ describe('ShiftPlanningService', () => {
         data: { endsOn: new Date('2026-10-03T00:00:00Z') },
       });
       expect(prisma.shiftSeries.create).toHaveBeenCalledTimes(1);
+    });
+
+    it('never takes off a shift with a punch against it', async () => {
+      const { service, prisma } = build({ dueSeries: [stored()] });
+      prisma.shift.findMany.mockResolvedValueOnce([
+        { id: 'mon', startsAt: new Date('2026-10-05T13:00:00Z'), status: ShiftStatus.PUBLISHED },
+      ]);
+      await service.setWeek(
+        'emp-1',
+        { from: FROM, days: [day(1, '12:00', '20:00')] },
+        'mgr-1',
+        NOW,
+      );
+      const noPunch = expect.objectContaining({ timeEntries: { none: {} } });
+      expect(prisma.shift.findMany.mock.calls[0][0].where).toEqual(noPunch);
+      expect(prisma.shift.updateMany.mock.calls[0][0].where).toEqual(noPunch);
     });
 
     it('takes the old shifts off before writing the new, so they do not clash', async () => {
@@ -1088,6 +1155,14 @@ describe('ShiftPlanningService', () => {
       // Friday 6 November is standard time: 9am is now 14:00 UTC.
       expect((created[0].startsAt as Date).toISOString()).toBe('2026-11-06T14:00:00.000Z');
       expect((created[0].endsAt as Date).toISOString()).toBe('2026-11-06T22:00:00.000Z');
+    });
+
+    it('reads the source week midnight to midnight in New Jersey, not UTC', async () => {
+      const { service, prisma } = build({ sourceShifts: [sourceShift] });
+      await service.copyWeek({ fromWeekStart: '2026-09-21', toWeekStart: '2026-09-28' }, 'mgr-1');
+      const where = prisma.shift.findMany.mock.calls[0][0].where;
+      expect(where.startsAt.gte.toISOString()).toBe('2026-09-21T04:00:00.000Z');
+      expect(where.startsAt.lt.toISOString()).toBe('2026-09-28T04:00:00.000Z');
     });
 
     it('carries the notes across', async () => {
@@ -1402,7 +1477,9 @@ describe('ShiftPlanningService', () => {
 
         // The grid is the window, at one location.
         expect(grid.locationId).toBe('loc-1');
-        expect(grid.startsAt.gte.toISOString()).toBe('2026-09-24T00:00:00.000Z');
+        // Midnight to midnight in New Jersey, not UTC (the evening before).
+        expect(grid.startsAt.gte.toISOString()).toBe('2026-09-24T04:00:00.000Z');
+        expect(grid.startsAt.lt.toISOString()).toBe('2026-09-26T04:00:00.000Z');
 
         // The totals start from the Monday, and are not narrowed to a location.
         expect(weeks.startsAt.gte.toISOString()).toBe('2026-09-21T00:00:00.000Z');
