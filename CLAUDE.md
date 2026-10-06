@@ -340,7 +340,8 @@ Beyond the phases, the parts worth knowing about before picking up work:
   which **cannot be approved until a manager corrects the time**
   (`TimeEntry.autoClockedOutAt`). Done by the 5-minute timer, the nightly job,
   and for one person whenever they open Home, punch or use the time clock.
-  See *Clocked out at midnight* in `docs/architecture.md`.
+  **Live since 6 October 2026** (version `4b35a9e`). See *Clocked out at
+  midnight* in `docs/architecture.md`.
 - **The rota** (September 2026): the Schedule week is a table — a row per
   person, a column per day — shown for everyone, by location or by job role,
   with filters. **Open shifts** (`Shift.employeeId` null, optional
@@ -469,6 +470,11 @@ Beyond the phases, the parts worth knowing about before picking up work:
   home; an open shift, any office) under the same three choices; a regular
   shift follows to the new place. The pop-up's old **Make it work from
   home** button was taken out (Dominguez) — the Location list does it.
+  **The pop-up's hours are New Jersey's** (fixed 6 October 2026): it used to
+  read them on the browser's clock while the server reads them as New
+  Jersey's, so a browser in another zone moved the shift on every save (CI's
+  UTC browser put it 8 hours later and `wfh.mjs` failed). Now
+  `lib/practice-time.ts`; live as `fead07e`.
 - **Tablet PINs are chosen by staff** on their profile (confirmed with their
   password); the profile shows only that one is set and since when, never the
   PIN. Managers and admins can set a replacement from the Directory, never
