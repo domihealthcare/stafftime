@@ -152,9 +152,16 @@ await step('15 minutes after the shift ends, still clocked in, the person is tol
   if (moved.status >= 400) throw new Error(`could not move the shift: ${JSON.stringify(moved.body)}`);
   await runReminders();
   await runReminders();
-  const told = await reminders(morgan, "You're still clocked in");
-  if (told.length !== 1) throw new Error(`told ${told.length} times`);
-  if (!/Your work-from-home shift ended at/.test(told[0].body))
+  // Run in the first hour after midnight in New Jersey, the punch began
+  // yesterday — so it has been clocked out at midnight instead (see
+  // auto-clock-out.mjs), and that is what Morgan is told.
+  const njDay = (iso) =>
+    new Intl.DateTimeFormat('en-CA', { timeZone: 'America/New_York' }).format(new Date(iso));
+  const beganYesterday = njDay(minutesFromNow(-58)) !== njDay(minutesFromNow(0));
+  const title = beganYesterday ? 'You were clocked out automatically' : "You're still clocked in";
+  const told = await reminders(morgan, title);
+  if (told.length !== 1) throw new Error(`told "${title}" ${told.length} times`);
+  if (!beganYesterday && !/Your work-from-home shift ended at/.test(told[0].body))
     throw new Error(`the reminder says "${told[0].body}"`);
 });
 
