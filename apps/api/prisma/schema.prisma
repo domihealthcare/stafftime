@@ -1604,6 +1604,8 @@ enum PracticeEventKind {
   /// When a test is offered at an office: "US + ECHO 8–2, West New York".
   /// For everyone. When it is on — never who is booked into it.
   DIAGNOSTIC
+  /// A drug rep bringing lunch to an office, with the rep from the list.
+  REP_LUNCH
 }
 
 /// Who an event is for. The same three choices as a survey.
@@ -1655,9 +1657,12 @@ model PracticeEvent {
   jobRoleId    String?       @db.Uuid
   /// For LOCATION — and for a closure, the one office that is shut.
   locationId   String?       @db.Uuid
-  /// The office it happens at, for a diagnostics date. Not who it is for:
-  /// diagnostics are for everyone, wherever they work.
+  /// The office it happens at, for a diagnostics date or a rep lunch. Not who
+  /// it is for: both are for everyone, wherever they work.
   atLocationId String?       @db.Uuid
+  /// A rep lunch: the rep, from the managers' list. The lunch stays if the
+  /// rep is removed; its title still names them.
+  repId        String?       @db.Uuid
 
   /// The series this date belongs to, if it repeats. Each date is its own
   /// row, so one can be moved or removed without the rest.
@@ -1672,6 +1677,7 @@ model PracticeEvent {
   jobRole    JobRole?               @relation(fields: [jobRoleId], references: [id], onDelete: SetNull)
   location   Location?              @relation("EventForLocation", fields: [locationId], references: [id], onDelete: SetNull)
   atLocation Location?              @relation("EventAtLocation", fields: [atLocationId], references: [id], onDelete: SetNull)
+  rep        Rep?                   @relation(fields: [repId], references: [id], onDelete: SetNull)
   createdBy  Employee?              @relation("EventCreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
   series     PracticeEventSeries?   @relation(fields: [seriesId], references: [id], onDelete: SetNull)
   invitees   PracticeEventInvitee[]
@@ -1680,6 +1686,48 @@ model PracticeEvent {
   @@index([kind, startsAt])
   @@index([seriesId, startsAt])
   @@map("practice_events")
+}
+
+/// How a rep feeds the office.
+enum RepFood {
+  /// They bring catering.
+  CATERING
+  /// The office orders and the rep pays.
+  SELF_ORDER
+}
+
+/// Whether the practice wants a rep back.
+enum RepStatus {
+  PREFERRED
+  OK
+  /// Fine, with conditions — what they are is in the notes.
+  RESTRICTED
+  /// Not to be booked. Warned about when a lunch is added, never refused.
+  DO_NOT_BOOK
+}
+
+/// A pharmaceutical or device rep who books lunches (October 2026, Dominguez:
+/// "the rep name is the most important as they are the ones scheduling").
+/// Business contacts, kept by managers and admins. Staff see a lunch's rep,
+/// company, medication and food; the phone, status and notes are managers'
+/// only. `no-sensitive-data.spec.ts` pins the fields.
+model Rep {
+  id         String    @id @default(uuid()) @db.Uuid
+  name       String
+  company    String?
+  /// What they represent: "Ozempic", "Eliquis, Farxiga".
+  medication String?
+  cellPhone  String?
+  food       RepFood?
+  status     RepStatus @default(OK)
+  /// Managers only: "only Tuesdays", "we do not want them back".
+  notes      String?
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
+
+  lunches PracticeEvent[]
+
+  @@map("reps")
 }
 
 /// Who a CHOSEN event is for: each row is one person, one job role or one

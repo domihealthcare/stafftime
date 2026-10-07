@@ -28,6 +28,7 @@ function row(over: Record<string, unknown> = {}) {
     jobRole: null,
     location: null,
     atLocation: null,
+    rep: null,
     invitees: [],
     series: null,
     ...over,
@@ -37,14 +38,28 @@ function row(over: Record<string, unknown> = {}) {
 const OFFICES: Record<string, string> = { 'loc-nb': 'North Bergen', 'loc-wny': 'West New York' };
 const ROLES: Record<string, string> = { 'role-fd': 'Front Desk', 'role-pr': 'Provider' };
 const PEOPLE: Record<string, string> = { 'emp-kayla': 'Kayla', 'emp-angelina': 'Angelina' };
+const REPS: Record<string, Record<string, unknown>> = {
+  'rep-jane': {
+    id: 'rep-jane',
+    name: 'Jane Smith',
+    company: 'Novo Nordisk',
+    medication: 'Ozempic',
+    food: 'CATERING',
+    cellPhone: '(201) 555-0142',
+    status: 'DO_NOT_BOOK',
+    notes: 'Late twice',
+  },
+};
 
 /// What the database would give back for a row written with `data`.
 function stored(data: Record<string, unknown>) {
   const jobRoleId = data.jobRoleId as string | null | undefined;
   const locationId = data.locationId as string | null | undefined;
   const atLocationId = data.atLocationId as string | null | undefined;
+  const repId = data.repId as string | null | undefined;
   return row({
     ...data,
+    rep: repId ? (REPS[repId] ?? null) : null,
     atLocation: atLocationId
       ? {
           id: atLocationId,
@@ -167,6 +182,9 @@ function build(
     },
     location: {
       count: jest.fn(async ({ where }) => (where.id?.in ? where.id.in.length : 1)),
+    },
+    rep: {
+      findUnique: jest.fn(async ({ where }) => REPS[where.id] ?? null),
     },
   };
   const inbox = { notify: jest.fn().mockResolvedValue(undefined) };
@@ -790,6 +808,99 @@ describe('diagnostics', () => {
     await service.update('ev-1', usEcho(), manager);
     const titles = inbox.notify.mock.calls.map(([, notice]) => notice.title);
     expect(titles).toContain('Diagnostics changed: US + ECHO');
+  });
+});
+
+describe('rep lunches', () => {
+  const lunch = (over: Partial<EventInput> = {}): EventInput => ({
+    kind: PracticeEventKind.REP_LUNCH,
+    title: undefined as unknown as string,
+    allDay: false,
+    startsAt: '2099-11-10T16:30:00.000Z',
+    endsAt: '2099-11-10T17:30:00.000Z',
+    audience: EventAudience.EVERYONE,
+    atLocationId: 'loc-nb',
+    repId: 'rep-jane',
+    ...over,
+  });
+
+  it('is named after the rep, at an office, for everyone', async () => {
+    const { service, practiceEvent } = build();
+    await service.create(
+      lunch({ title: 'Something typed', audience: EventAudience.LOCATION, locationId: 'loc-wny' }),
+      manager,
+    );
+    expect(practiceEvent.createMany.mock.calls[0][0].data[0]).toMatchObject({
+      kind: PracticeEventKind.REP_LUNCH,
+      title: 'Rep lunch: Jane Smith',
+      repId: 'rep-jane',
+      atLocationId: 'loc-nb',
+      audience: EventAudience.EVERYONE,
+      locationId: null,
+      place: null,
+      meetingUrl: null,
+    });
+  });
+
+  it('needs the rep, still on the list', async () => {
+    const { service } = build();
+    await expect(service.create(lunch({ repId: undefined }), manager)).rejects.toThrow(
+      'Choose the rep.',
+    );
+    await expect(
+      service.create(lunch({ repId: '00000000-0000-0000-0000-000000000000' }), manager),
+    ).rejects.toThrow('That rep is no longer on the list.');
+  });
+
+  it('needs the office', async () => {
+    const { service } = build();
+    await expect(service.create(lunch({ atLocationId: undefined }), manager)).rejects.toThrow(
+      'Choose which office it is at.',
+    );
+  });
+
+  it('tells people, with the rep’s company', async () => {
+    const { service, inbox } = build();
+    await service.create(lunch(), manager);
+    const [, notice] = inbox.notify.mock.calls[0];
+    expect(notice.title).toBe('Rep lunch: Jane Smith (Novo Nordisk)');
+    expect(notice.body).toMatch(/North Bergen$/);
+  });
+
+  it('shows staff the rep, but not their phone, status or notes', async () => {
+    const { service, practiceEvent } = build();
+    practiceEvent.findMany.mockResolvedValue([
+      row({ kind: PracticeEventKind.REP_LUNCH, rep: REPS['rep-jane'] }),
+    ]);
+    const [seen] = await service.list(
+      '2099-10-01T00:00:00.000Z',
+      '2099-11-01T00:00:00.000Z',
+      staff,
+    );
+    expect(seen.rep).toEqual({
+      id: 'rep-jane',
+      name: 'Jane Smith',
+      company: 'Novo Nordisk',
+      medication: 'Ozempic',
+      food: 'CATERING',
+    });
+  });
+
+  it('shows a manager everything about the rep', async () => {
+    const { service, practiceEvent } = build();
+    practiceEvent.findMany.mockResolvedValue([
+      row({ kind: PracticeEventKind.REP_LUNCH, rep: REPS['rep-jane'] }),
+    ]);
+    const [seen] = await service.list(
+      '2099-10-01T00:00:00.000Z',
+      '2099-11-01T00:00:00.000Z',
+      manager,
+    );
+    expect(seen.rep).toMatchObject({
+      cellPhone: '(201) 555-0142',
+      status: 'DO_NOT_BOOK',
+      notes: 'Late twice',
+    });
   });
 });
 

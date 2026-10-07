@@ -2,7 +2,9 @@ import { useDialog } from './useDialog';
 import { useCallback, useEffect, useId, useState } from 'react';
 import { ApiError, api } from '../lib/api';
 import { formatCalendarDate, formatTimeCompact, localDate } from '../lib/format';
+import { Link } from 'react-router-dom';
 import { CALENDAR_KINDS, KIND_STYLE, officeShort } from '../lib/calendar-kinds';
+import { FOOD_LABEL, STATUS_LABEL } from '../lib/reps';
 import { jobRoleHex } from '../lib/job-role-colours';
 import type {
   Employee,
@@ -11,13 +13,15 @@ import type {
   EventKind,
   JobRole,
   Location,
+  EventRep,
   PracticeEvent,
+  Rep,
   RepeatInput,
 } from '../lib/types';
 import { useConfirm, type ConfirmOptions } from './ConfirmDialog';
 import { InviteePicker, NOBODY, type InviteeSelection } from './InviteePicker';
 import { RepeatPicker } from './RepeatPicker';
-import { Alert, Card, buttonClass } from './ui';
+import { Alert, Badge, Card, buttonClass } from './ui';
 
 /**
  * Practice events on the schedule: office meetings, provider meetings, a
@@ -33,8 +37,18 @@ import { Alert, Card, buttonClass } from './ui';
  */
 
 export const isClosure = (event: PracticeEvent) => event.kind === 'CLOSURE';
-/// Holidays and diagnostics are for everyone; nobody chooses who.
-const forEveryone = (kind: EventKind) => kind === 'HOLIDAY' || kind === 'DIAGNOSTIC';
+/// Holidays, diagnostics and rep lunches are for everyone; nobody chooses who.
+const forEveryone = (kind: EventKind) =>
+  kind === 'HOLIDAY' || kind === 'DIAGNOSTIC' || kind === 'REP_LUNCH';
+/// Diagnostics and rep lunches happen at an office.
+const atAnOffice = (kind: EventKind) => kind === 'DIAGNOSTIC' || kind === 'REP_LUNCH';
+
+/// What a chip calls it: a rep lunch by its rep, the rest by their title.
+export function shortTitle(event: PracticeEvent): string {
+  return event.kind === 'REP_LUNCH'
+    ? (event.rep?.name ?? event.title.replace(/^Rep lunch: /, ''))
+    : event.title;
+}
 
 /// A video call link fit to open: https only. The server refuses anything
 /// else; this is the second lock on the door.
@@ -98,7 +112,7 @@ export function eventTimeLabel(event: PracticeEvent, day?: string): string {
 
 /// "Everyone", "Provider", "North Bergen" — or for a closure, which offices.
 export function audienceLabel(event: PracticeEvent): string {
-  if (event.kind === 'DIAGNOSTIC') return event.atLocation?.name ?? 'An office since removed';
+  if (atAnOffice(event.kind)) return event.atLocation?.name ?? 'An office since removed';
   if (event.audience === 'CHOSEN') {
     const names = event.invitees.map((invitee) => invitee.name);
     if (names.length === 0) return 'Nobody — everyone on the list has since gone';
@@ -140,19 +154,19 @@ export function EventChip({
   onOpen: (event: PracticeEvent) => void;
 }) {
   const style = KIND_STYLE[event.kind];
-  const diagnostic = event.kind === 'DIAGNOSTIC';
+  const atOffice = atAnOffice(event.kind);
   return (
     <button
       type="button"
       onClick={() => onOpen(event)}
       data-testid={`${event.kind === 'EVENT' ? 'event' : event.kind.toLowerCase()}-chip`}
       aria-label={`${event.title}, ${eventTimeLabel(event, day)}, ${
-        event.kind === 'EVENT' ? 'for ' : diagnostic ? 'at ' : ''
+        event.kind === 'EVENT' ? 'for ' : atOffice ? 'at ' : ''
       }${audienceLabel(event)}`}
       className={`block w-full rounded-md px-1.5 py-1 text-left text-xs leading-tight ring-1 ring-inset ${style.chip}`}
     >
       <span className="block truncate font-semibold">
-        <span aria-hidden="true">{style.emoji}</span> {event.title}
+        <span aria-hidden="true">{style.emoji}</span> {shortTitle(event)}
         {event.series && (
           <span aria-hidden="true" title="Repeats" className="ml-1 font-normal">
             🔁
@@ -166,9 +180,10 @@ export function EventChip({
       </span>
       <span className={`block truncate text-[11px] ${style.subtle}`}>
         {eventTimeLabel(event, day)}
-        {diagnostic
+        {atOffice
           ? event.atLocation && ` · ${officeShort(event.atLocation.name)}`
           : event.audience !== 'EVERYONE' && ` · ${audienceLabel(event)}`}
+        {event.kind === 'REP_LUNCH' && event.rep?.company && ` · ${event.rep.company}`}
       </span>
     </button>
   );
@@ -290,12 +305,13 @@ export function EventDialog({
               </dd>
             </div>
           )}
-          {event.kind === 'DIAGNOSTIC' && (
+          {atAnOffice(event.kind) && (
             <div>
               <dt className="text-xs font-medium uppercase tracking-wide text-slate-500">At</dt>
               <dd className="text-slate-800">{audienceLabel(event)}</dd>
             </div>
           )}
+          {event.kind === 'REP_LUNCH' && event.rep && <RepDetails rep={event.rep} />}
           {!forEveryone(event.kind) && (
             <div>
               <dt className="text-xs font-medium uppercase tracking-wide text-slate-500">
@@ -453,7 +469,21 @@ export function EventForm({
   const closed = kind === 'CLOSURE';
   const holiday = kind === 'HOLIDAY';
   const diagnostic = kind === 'DIAGNOSTIC';
+  const repLunch = kind === 'REP_LUNCH';
+  const atOffice = atAnOffice(kind);
+  const confirm = useConfirm();
   const [title, setTitle] = useState(source?.title ?? '');
+  /// A rep lunch: the rep, from the managers' list.
+  const [repId, setRepId] = useState(source?.rep?.id ?? '');
+  const [reps, setReps] = useState<Rep[] | null>(null);
+  useEffect(() => {
+    if (!repLunch || reps) return;
+    api
+      .reps()
+      .then(setReps)
+      .catch(() => setReps([]));
+  }, [repLunch, reps]);
+  const chosenRep = reps?.find((rep) => rep.id === repId) ?? null;
   // A holiday is the whole day; a meeting usually is not.
   const [allDay, setAllDay] = useState(
     source?.allDay ?? (initialKind === 'CLOSURE' || initialKind === 'HOLIDAY'),
@@ -551,8 +581,7 @@ export function EventForm({
     if (audience === 'JOB_ROLE' && !jobRoleId && jobRoles.length > 0) setJobRoleId(jobRoles[0].id);
     if (audience === 'LOCATION' && !locationId && locations.length > 0)
       setLocationId(locations[0].id);
-    if (kind === 'DIAGNOSTIC' && !atLocationId && locations.length > 0)
-      setAtLocationId(locations[0].id);
+    if (atAnOffice(kind) && !atLocationId && locations.length > 0) setAtLocationId(locations[0].id);
   }, [audience, jobRoleId, locationId, kind, atLocationId, jobRoles, locations]);
 
   function chooseKind(next: EventKind) {
@@ -596,7 +625,11 @@ export function EventForm({
       setError('Add who it is for — Everyone, or job roles, offices and people.');
       return;
     }
-    if (diagnostic && !atLocationId) {
+    if (repLunch && !repId) {
+      setError('Choose the rep.');
+      return;
+    }
+    if (atOffice && !atLocationId) {
       setError('Choose which office it is at.');
       return;
     }
@@ -613,10 +646,24 @@ export function EventForm({
       setError('Choose at least one day of the week for it to repeat on.');
       return;
     }
+    // Warn, never refuse: a rep marked "don't book" can still be put in.
+    if (repLunch && chosenRep?.status === 'DO_NOT_BOOK' && chosenRep.id !== event?.rep?.id) {
+      const sure = await confirm({
+        title: `${chosenRep.name} is marked “Don’t book”`,
+        body: chosenRep.notes ? (
+          <p className="whitespace-pre-line">{chosenRep.notes}</p>
+        ) : undefined,
+        confirmLabel: 'Book them anyway',
+        cancelLabel: 'Go back',
+        tone: 'neutral',
+      });
+      if (!sure) return;
+    }
     const meeting = kind === 'EVENT';
     const body: EventInput = {
       kind,
-      title: title.trim(),
+      title: repLunch ? undefined : title.trim(),
+      repId: repLunch ? repId : undefined,
       description: description.trim() || undefined,
       place: meeting ? place.trim() || undefined : undefined,
       meetingUrl: !meeting || createMeet ? undefined : meetingUrl.trim() || undefined,
@@ -625,7 +672,7 @@ export function EventForm({
       ...(forEveryone(kind)
         ? {
             audience: 'EVERYONE' as EventAudience,
-            atLocationId: diagnostic ? atLocationId : undefined,
+            atLocationId: atOffice ? atLocationId : undefined,
           }
         : closed
           ? {
@@ -695,6 +742,7 @@ export function EventForm({
             [
               ['EVENT', '📅 An event or meeting'],
               ['DIAGNOSTIC', '🩺 Diagnostics'],
+              ['REP_LUNCH', '🍽️ Rep lunch'],
               ['HOLIDAY', '⭐ A holiday (open as usual)'],
               ['CLOSURE', '🔒 The office is closed'],
             ] as const
@@ -740,35 +788,85 @@ export function EventForm({
           </fieldset>
         )}
 
-        <div className="sm:col-span-2">
-          <label htmlFor={`${id}-title`} className={label}>
-            {closed
-              ? 'Which holiday or closure?'
-              : holiday
-                ? 'Which holiday?'
-                : diagnostic
-                  ? 'Which tests?'
-                  : 'What is it?'}
-          </label>
-          <input
-            id={`${id}-title`}
-            required
-            minLength={2}
-            maxLength={120}
-            value={title}
-            onChange={(change) => setTitle(change.target.value)}
-            placeholder={
-              closed
-                ? 'Christmas Day, Christmas Eve, New Year’s Day…'
+        {repLunch ? (
+          <div className="sm:col-span-2">
+            <label htmlFor={`${id}-rep`} className={label}>
+              Which rep?
+            </label>
+            <select
+              id={`${id}-rep`}
+              required
+              value={repId}
+              onChange={(change) => setRepId(change.target.value)}
+              className={field}
+            >
+              <option value="">{reps === null ? 'Loading…' : 'Choose a rep…'}</option>
+              {(reps ?? []).map((rep) => (
+                <option key={rep.id} value={rep.id}>
+                  {rep.name}
+                  {rep.company ? ` — ${rep.company}` : ''}
+                  {rep.status === 'DO_NOT_BOOK' ? ' (don’t book)' : ''}
+                </option>
+              ))}
+            </select>
+            <p className="mt-1 text-xs text-slate-500">
+              Not on the list?{' '}
+              <Link to="/reps" className="font-medium text-brand-700 underline">
+                Add them under Manage → Reps
+              </Link>
+              .
+            </p>
+            {chosenRep && (
+              <div
+                data-testid="chosen-rep"
+                className={`mt-2 rounded-lg px-3 py-2 text-sm ring-1 ring-inset ${
+                  chosenRep.status === 'DO_NOT_BOOK'
+                    ? 'bg-rose-50 text-rose-950 ring-rose-200'
+                    : chosenRep.status === 'RESTRICTED'
+                      ? 'bg-amber-50 text-amber-950 ring-amber-200'
+                      : 'bg-slate-50 text-slate-800 ring-slate-200'
+                }`}
+              >
+                <p className="font-medium">
+                  {STATUS_LABEL[chosenRep.status].text}
+                  {chosenRep.food ? ` · ${FOOD_LABEL[chosenRep.food]}` : ''}
+                  {chosenRep.medication ? ` · ${chosenRep.medication}` : ''}
+                </p>
+                {chosenRep.notes && <p className="mt-0.5 whitespace-pre-line">{chosenRep.notes}</p>}
+              </div>
+            )}
+          </div>
+        ) : (
+          <div className="sm:col-span-2">
+            <label htmlFor={`${id}-title`} className={label}>
+              {closed
+                ? 'Which holiday or closure?'
                 : holiday
-                  ? 'Election Day, Veterans Day, Black Friday…'
+                  ? 'Which holiday?'
                   : diagnostic
-                    ? 'US + ECHO, ANS + VNG…'
-                    : 'Office meeting, Provider meeting, Wellness day…'
-            }
-            className={field}
-          />
-        </div>
+                    ? 'Which tests?'
+                    : 'What is it?'}
+            </label>
+            <input
+              id={`${id}-title`}
+              required
+              minLength={2}
+              maxLength={120}
+              value={title}
+              onChange={(change) => setTitle(change.target.value)}
+              placeholder={
+                closed
+                  ? 'Christmas Day, Christmas Eve, New Year’s Day…'
+                  : holiday
+                    ? 'Election Day, Veterans Day, Black Friday…'
+                    : diagnostic
+                      ? 'US + ECHO, ANS + VNG…'
+                      : 'Office meeting, Provider meeting, Wellness day…'
+              }
+              className={field}
+            />
+          </div>
+        )}
 
         {!holiday && (
           <label className="flex items-center gap-2 text-sm text-slate-700 sm:col-span-2">
@@ -914,7 +1012,7 @@ export function EventForm({
           </div>
         )}
 
-        {diagnostic ? (
+        {atOffice ? (
           <div>
             <label htmlFor={`${id}-at`} className={label}>
               Which office?
@@ -1046,9 +1144,11 @@ export function EventForm({
             placeholder={
               diagnostic
                 ? 'Book from 9am, the tech’s name, the vendor…'
-                : closed || holiday
-                  ? 'Anything staff should know…'
-                  : 'What to bring, what it is about…'
+                : repLunch
+                  ? 'How many to feed, where to set up…'
+                  : closed || holiday
+                    ? 'Anything staff should know…'
+                    : 'What to bring, what it is about…'
             }
             className={field}
           />
@@ -1061,7 +1161,9 @@ export function EventForm({
               ? 'Everyone sees it on the calendar and on their phone if they sync it. It shuts nothing — nobody is notified and shifts are not flagged. If an office is shut, add a closure instead.'
               : diagnostic
                 ? 'Everyone sees it on the calendar and gets a notification when a date is added, moved or cancelled. Write when the tests are on — never a patient’s name or who is booked.'
-                : 'Everybody it is for sees it on their schedule and gets a notification; it reaches their phone if they sync their calendar. It does not count as work hours — anybody paid to be there clocks in as usual.'}
+                : repLunch
+                  ? 'Everyone sees it on the calendar — the rep, company, medication and whether they bring catering — and gets a notification when it is added, moved or cancelled. The rep’s phone, status and notes stay with managers.'
+                  : 'Everybody it is for sees it on their schedule and gets a notification; it reaches their phone if they sync their calendar. It does not count as work hours — anybody paid to be there clocks in as usual.'}
         </p>
 
         {error && (
@@ -1084,6 +1186,42 @@ export function EventForm({
         </div>
       </form>
     </Card>
+  );
+}
+
+/// A rep lunch's rep, in its pop-up. Staff get who, the company, the
+/// medication and the food; the phone, status and notes come only to managers
+/// (the server leaves them out for everybody else).
+function RepDetails({ rep }: { rep: EventRep }) {
+  const row = (term: string, value: React.ReactNode) => (
+    <div>
+      <dt className="text-xs font-medium uppercase tracking-wide text-slate-500">{term}</dt>
+      <dd className="text-slate-800">{value}</dd>
+    </div>
+  );
+  return (
+    <>
+      {row('Rep', `${rep.name}${rep.company ? ` — ${rep.company}` : ''}`)}
+      {rep.medication && row('Medication', rep.medication)}
+      {rep.food && row('Lunch', FOOD_LABEL[rep.food])}
+      {rep.cellPhone &&
+        row(
+          'Cell',
+          <a
+            href={`tel:${rep.cellPhone.replace(/[^0-9+]/g, '')}`}
+            className="text-brand-700 underline"
+          >
+            {rep.cellPhone}
+          </a>,
+        )}
+      {rep.status &&
+        row(
+          'Status',
+          <Badge tone={STATUS_LABEL[rep.status].tone}>{STATUS_LABEL[rep.status].text}</Badge>,
+        )}
+      {rep.notes &&
+        row('Notes (managers only)', <span className="whitespace-pre-line">{rep.notes}</span>)}
+    </>
   );
 }
 

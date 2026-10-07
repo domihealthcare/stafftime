@@ -203,7 +203,7 @@ export function SchedulePage() {
 
   /// One place to start anything new: the rest of the forms close so only
   /// the one asked for is open.
-  function openAdd(what: 'shift' | 'repeat' | 'event' | 'diagnostic' | 'closure') {
+  function openAdd(what: 'shift' | 'repeat' | 'event' | 'diagnostic' | 'rep-lunch' | 'closure') {
     setAddMenu(false);
     setAdding(what === 'shift');
     setPlanning(what === 'repeat');
@@ -214,7 +214,9 @@ export function SchedulePage() {
           ? { kind: 'CLOSURE' }
           : what === 'diagnostic'
             ? { kind: 'DIAGNOSTIC' }
-            : null,
+            : what === 'rep-lunch'
+              ? { kind: 'REP_LUNCH' }
+              : null,
     );
     if (what !== 'shift') window.scrollTo({ top: 0, behavior: 'smooth' });
   }
@@ -761,6 +763,7 @@ export function SchedulePage() {
                         ],
                         ['Event', 'A meeting or something on the calendar', 'event'],
                         ['Diagnostics date', 'When a test is offered at an office', 'diagnostic'],
+                        ['Rep lunch', 'A rep bringing lunch to an office', 'rep-lunch'],
                         ['Holiday or closure', 'An office shut, once or every year', 'closure'],
                       ] as const
                     ).map(([label, hint, what]) => (
@@ -828,7 +831,7 @@ export function SchedulePage() {
             window.scrollTo({ top: 0, behavior: 'smooth' });
           }}
           onDuplicate={
-            openEvent.kind === 'EVENT' || openEvent.kind === 'DIAGNOSTIC'
+            openEvent.kind !== 'CLOSURE' && openEvent.kind !== 'HOLIDAY'
               ? () => {
                   setEventForm({ template: openEvent });
                   setOpenEvent(null);

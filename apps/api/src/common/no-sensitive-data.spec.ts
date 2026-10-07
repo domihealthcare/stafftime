@@ -52,6 +52,33 @@ describe('what this app deliberately does not store', () => {
   /// loud — and pinned here, so neither table grows a column without the
   /// same conversation, and none of it moves onto Employee, whose row goes
   /// out with rotas, timesheets and the Directory.
+  /// The reps who book lunches (October 2026, Dominguez): business contacts,
+  /// and only what was asked for. Pinned so the list never quietly becomes a
+  /// CRM with somebody's home address in it.
+  it('keeps the rep list to what was agreed', () => {
+    const fields = model('Rep')
+      .split('\n')
+      .map((line) => line.trim())
+      .filter((line) => line && !line.startsWith('//') && !line.startsWith('@@'))
+      .map((line) => line.split(/\s+/)[0])
+      .sort();
+    expect(fields).toEqual(
+      [
+        'cellPhone',
+        'company',
+        'createdAt',
+        'food',
+        'id',
+        'lunches',
+        'medication',
+        'name',
+        'notes',
+        'status',
+        'updatedAt',
+      ].sort(),
+    );
+  });
+
   it('keeps the admins-only staff record to what was agreed, off the Employee row', () => {
     const fieldsOf = (name: string) =>
       model(name)

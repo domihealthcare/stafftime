@@ -26,6 +26,7 @@ const DashboardPage = lazy(() =>
 const DirectoryPage = lazy(() =>
   import('./pages/DirectoryPage').then((m) => ({ default: m.DirectoryPage })),
 );
+const RepsPage = lazy(() => import('./pages/RepsPage').then((m) => ({ default: m.RepsPage })));
 const JobRolesPage = lazy(() =>
   import('./pages/JobRolesPage').then((m) => ({ default: m.JobRolesPage })),
 );
@@ -178,6 +179,7 @@ function Routed() {
           <Route path="resources/:id" element={<ResourcePage />} />
           <Route path="dashboard" element={<DashboardPage />} />
           <Route path="job-roles" element={<JobRolesPage />} />
+          <Route path="reps" element={<RepsPage />} />
           <Route path="timesheet" element={<TimesheetPage />} />
           <Route path="schedule" element={<SchedulePage />} />
           <Route path="schedule/calendar" element={<CalendarPage />} />

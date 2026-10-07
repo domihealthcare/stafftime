@@ -200,9 +200,14 @@ export class CalendarService {
           summary: summaryOf(event),
           // Google Calendar ignores URL, so the link is also first in the
           // notes — where every calendar app makes it tappable.
+          // A rep lunch says who and what; never the rep's phone or the
+          // managers' notes.
           description:
             [
               event.meetingUrl ? `Join the video call: ${event.meetingUrl}` : null,
+              ...(event.kind === PracticeEventKind.REP_LUNCH && event.rep
+                ? repLines(event.rep)
+                : []),
               event.description,
             ]
               .filter(Boolean)
@@ -261,6 +266,10 @@ export class CalendarService {
 /// "Office meeting", for a closure "Closed: Christmas Day" / "North Bergen
 /// closed: Burst pipe", for diagnostics "US + ECHO — West New York".
 function summaryOf(event: EventRow): string {
+  if (event.kind === PracticeEventKind.REP_LUNCH) {
+    const company = event.rep?.company ? ` (${event.rep.company})` : '';
+    return `${event.title}${company}${event.atLocation ? ` — ${event.atLocation.name}` : ''}`;
+  }
   if (event.kind === PracticeEventKind.DIAGNOSTIC) {
     return event.atLocation ? `${event.title} — ${event.atLocation.name}` : event.title;
   }
@@ -268,6 +277,18 @@ function summaryOf(event: EventRow): string {
   return event.audience === EventAudience.LOCATION && event.location
     ? `${event.location.name} closed: ${event.title}`
     : `Closed: ${event.title}`;
+}
+
+/// "Medication: Ozempic", "Lunch: catering" — what staff need to know.
+function repLines(rep: NonNullable<EventRow['rep']>): string[] {
+  return [
+    rep.medication ? `Medication: ${rep.medication}` : null,
+    rep.food === 'CATERING'
+      ? 'Lunch: the rep brings catering'
+      : rep.food === 'SELF_ORDER'
+        ? 'Lunch: the office orders'
+        : null,
+  ].filter((line): line is string => line !== null);
 }
 
 function addressOf(location: { addressLine1: string; city: string; state: string }): string {

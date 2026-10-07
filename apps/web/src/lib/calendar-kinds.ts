@@ -44,6 +44,14 @@ export const KIND_STYLE: Record<CalendarKind, KindStyle> = {
     subtle: 'text-sky-800',
     dot: 'bg-sky-600',
   },
+  REP_LUNCH: {
+    label: 'Rep lunches',
+    one: 'Rep lunch',
+    emoji: '🍽️',
+    chip: 'bg-rose-50 text-rose-950 ring-rose-300 hover:bg-rose-100',
+    subtle: 'text-rose-800',
+    dot: 'bg-rose-500',
+  },
   HOLIDAY: {
     label: 'Holidays',
     one: 'Holiday',
@@ -76,6 +84,7 @@ export const CALENDAR_KINDS: CalendarKind[] = [
   'HOLIDAY',
   'PAY_DAY',
   'DIAGNOSTIC',
+  'REP_LUNCH',
   'EVENT',
 ];
 

@@ -21,6 +21,7 @@ import { GoogleMeetService } from './google-meet.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { EventInput } from './dto/event.dto';
 import { allDayDates, allDayRange, describeWhen } from './event-time';
+import { repLunchTitle } from '../reps/rep-lunch-title';
 import { describeRule, occurrenceDates, RepeatRule, ruleProblem } from './recurrence';
 
 /// Long enough for a conference; short enough that a typo in the year is caught.
@@ -49,6 +50,20 @@ export const EVENT_SELECT = {
   location: { select: { id: true, name: true } },
   atLocation: {
     select: { id: true, name: true, addressLine1: true, city: true, state: true },
+  },
+  // The phone, status and notes are taken off again for anybody but a
+  // manager (`present`); the calendar feed never sends them.
+  rep: {
+    select: {
+      id: true,
+      name: true,
+      company: true,
+      medication: true,
+      food: true,
+      cellPhone: true,
+      status: true,
+      notes: true,
+    },
   },
   invitees: {
     select: {
@@ -82,6 +97,7 @@ const NOTIFIED: PracticeEventKind[] = [
   PracticeEventKind.EVENT,
   PracticeEventKind.CLOSURE,
   PracticeEventKind.DIAGNOSTIC,
+  PracticeEventKind.REP_LUNCH,
 ];
 /// The kinds reminded about the day before. Not diagnostics: every weekend's
 /// "Tomorrow: US + ECHO" to everybody would bury the bell.
@@ -109,6 +125,7 @@ interface Checked {
     jobRoleId: string | null;
     locationId: string | null;
     atLocationId: string | null;
+    repId: string | null;
   };
   invitees: { employeeIds: string[]; jobRoleIds: string[]; locationIds: string[] };
   /// The rule and the date it counts from, when it repeats.
@@ -167,7 +184,7 @@ export class EventsService {
       select: EVENT_SELECT,
       orderBy: [{ startsAt: 'asc' }, { title: 'asc' }],
     });
-    return rows.map(present);
+    return rows.map((row) => present(row, manages));
   }
 
   /// The events one person is invited to, for their calendar feed.
@@ -535,6 +552,7 @@ export class EventsService {
       before.place !== after.place ||
       before.meetingUrl !== after.meetingUrl ||
       before.atLocation?.id !== after.atLocation?.id ||
+      before.rep?.id !== after.rep?.id ||
       before.allDay !== after.allDay ||
       before.startsAt.getTime() !== after.startsAt.getTime() ||
       before.endsAt.getTime() !== after.endsAt.getTime();
@@ -623,15 +641,28 @@ export class EventsService {
     const closure = kind === PracticeEventKind.CLOSURE;
     const holiday = kind === PracticeEventKind.HOLIDAY;
     const diagnostic = kind === PracticeEventKind.DIAGNOSTIC;
-    /// Holidays and diagnostics are for everyone (Dominguez, October 2026),
-    /// so the audience is not theirs to choose.
-    if (holiday || diagnostic) {
+    const repLunch = kind === PracticeEventKind.REP_LUNCH;
+    /// Holidays, diagnostics and rep lunches are for everyone (Dominguez,
+    /// October 2026), so the audience is not theirs to choose.
+    if (holiday || diagnostic || repLunch) {
       dto = {
         ...dto,
         audience: EventAudience.EVERYONE,
         jobRoleId: undefined,
         locationId: undefined,
       };
+    }
+    /// A rep lunch is named after its rep, whatever was typed.
+    let repId: string | null = null;
+    if (repLunch) {
+      if (!dto.repId) throw new BadRequestException('Choose the rep.');
+      const rep = await this.prisma.rep.findUnique({
+        where: { id: dto.repId },
+        select: { name: true },
+      });
+      if (!rep) throw new BadRequestException('That rep is no longer on the list.');
+      repId = dto.repId;
+      dto = { ...dto, title: repLunchTitle(rep.name) };
     }
     const title = dto.title.trim();
     if (title.length < 2) {
@@ -654,7 +685,7 @@ export class EventsService {
       );
     }
     let atLocationId: string | null = null;
-    if (diagnostic) {
+    if (diagnostic || repLunch) {
       if (!dto.atLocationId) throw new BadRequestException('Choose which office it is at.');
       const exists = await this.prisma.location.count({ where: { id: dto.atLocationId } });
       if (!exists) throw new BadRequestException('That office no longer exists.');
@@ -761,7 +792,7 @@ export class EventsService {
 
     // Asked for last, once everything else is known to be fine, so a refused
     // form never leaves an unused meeting behind at Google.
-    const noCall = closure || holiday || diagnostic;
+    const noCall = closure || holiday || diagnostic || repLunch;
     const meetingUrl = noCall
       ? null
       : dto.createMeetLink
@@ -784,6 +815,7 @@ export class EventsService {
         jobRoleId: dto.audience === EventAudience.JOB_ROLE ? dto.jobRoleId! : null,
         locationId: dto.audience === EventAudience.LOCATION ? dto.locationId! : null,
         atLocationId,
+        repId,
       },
       invitees:
         dto.audience === EventAudience.CHOSEN
@@ -894,8 +926,9 @@ function seriesBody(first: EventRow, repeat: NonNullable<Checked['repeat']>): st
 }
 
 /// What the screens get. An all-day event also carries its days, worked out
-/// here on the practice's clock so no browser has to.
-function present(row: EventRow) {
+/// here on the practice's clock so no browser has to. A rep's phone, status
+/// and notes go to managers and admins only.
+function present(row: EventRow, manager = true) {
   return {
     id: row.id,
     kind: row.kind,
@@ -910,6 +943,18 @@ function present(row: EventRow) {
     jobRole: row.jobRole,
     location: row.location,
     atLocation: row.atLocation ? { id: row.atLocation.id, name: row.atLocation.name } : null,
+    rep: row.rep
+      ? {
+          id: row.rep.id,
+          name: row.rep.name,
+          company: row.rep.company,
+          medication: row.rep.medication,
+          food: row.rep.food,
+          ...(manager
+            ? { cellPhone: row.rep.cellPhone, status: row.rep.status, notes: row.rep.notes }
+            : {}),
+        }
+      : null,
     invitees: row.invitees.map((invitee) =>
       invitee.employee
         ? {
@@ -947,7 +992,7 @@ function present(row: EventRow) {
 }
 
 function whenAndWhere(row: EventRow): string {
-  if (row.kind === PracticeEventKind.DIAGNOSTIC) {
+  if (row.kind === PracticeEventKind.DIAGNOSTIC || row.kind === PracticeEventKind.REP_LUNCH) {
     return [describeWhen(row), row.atLocation?.name].filter(Boolean).join(' · ');
   }
   if (row.kind === PracticeEventKind.CLOSURE) {
@@ -968,31 +1013,42 @@ function notice(
 ): { kind: NotificationKind; title: string; body: string; link: string } {
   const closed =
     row.audience === EventAudience.LOCATION ? `${row.location?.name ?? 'Office'} closed` : 'Closed';
+  const repName = `${row.rep?.name ?? row.title.replace(/^Rep lunch: /, '')}${
+    row.rep?.company ? ` (${row.rep.company})` : ''
+  }`;
   const titles =
-    row.kind === PracticeEventKind.DIAGNOSTIC
+    row.kind === PracticeEventKind.REP_LUNCH
       ? {
-          added: `Diagnostics: ${row.title}`,
-          changed: `Diagnostics changed: ${row.title}`,
+          added: `Rep lunch: ${repName}`,
+          changed: `Rep lunch changed: ${repName}`,
           dropped: `No longer on your schedule: ${row.title}`,
-          cancelled: `Diagnostics cancelled: ${row.title}`,
+          cancelled: `Rep lunch cancelled: ${repName}`,
           reminder: `Tomorrow: ${row.title}`,
         }
-      : row.kind === PracticeEventKind.CLOSURE
+      : row.kind === PracticeEventKind.DIAGNOSTIC
         ? {
-            added: `${closed}: ${row.title}`,
-            changed: `Closure changed: ${row.title}`,
-            // Your office is no longer the one shut, or it is not shut at all.
-            dropped: `Open as usual: ${row.title}`,
-            cancelled: `Open as usual: ${row.title}`,
-            reminder: `Tomorrow — ${closed.toLowerCase()}: ${row.title}`,
-          }
-        : {
-            added: `New event: ${row.title}`,
-            changed: `Event changed: ${row.title}`,
+            added: `Diagnostics: ${row.title}`,
+            changed: `Diagnostics changed: ${row.title}`,
             dropped: `No longer on your schedule: ${row.title}`,
-            cancelled: `Cancelled: ${row.title}`,
+            cancelled: `Diagnostics cancelled: ${row.title}`,
             reminder: `Tomorrow: ${row.title}`,
-          };
+          }
+        : row.kind === PracticeEventKind.CLOSURE
+          ? {
+              added: `${closed}: ${row.title}`,
+              changed: `Closure changed: ${row.title}`,
+              // Your office is no longer the one shut, or it is not shut at all.
+              dropped: `Open as usual: ${row.title}`,
+              cancelled: `Open as usual: ${row.title}`,
+              reminder: `Tomorrow — ${closed.toLowerCase()}: ${row.title}`,
+            }
+          : {
+              added: `New event: ${row.title}`,
+              changed: `Event changed: ${row.title}`,
+              dropped: `No longer on your schedule: ${row.title}`,
+              cancelled: `Cancelled: ${row.title}`,
+              reminder: `Tomorrow: ${row.title}`,
+            };
   return {
     kind: NotificationKind.EVENT,
     title: titles[what],

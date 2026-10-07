@@ -88,11 +88,11 @@ Built as a read-only iCalendar subscription per employee.
 - [ ] **The practice calendar, still to build** (October 2026, Dominguez;
       diagnostics, holidays and pay days are done — see *The practice
       calendar* in `docs/architecture.md`):
-      - **Rep lunches** and a **rep contact list**: name (what matters most —
-        reps do the scheduling), cell phone, company, medication, catering or
-        self-order, preferred status (OK to book / restrictions / don't book)
-        and notes. The rep's name shows on the calendar; contact details and
-        notes for managers only. A "don't book" rep warns, never refuses.
+      - **Rep lunches: who sees what.** Built with staff seeing the rep,
+        company, medication and catering/self-order, and only managers the
+        cell phone, status and notes. Should the front desk see the rep's
+        cell (if they are the ones who call)? Should a rep lunch ring
+        everybody's bell, or only the office it is at?
       - **Separate subscriptions**: one calendar per kind (Diagnostics,
         Holidays & closures, Pay days…) as well as the all-in-one link that
         exists now, so each can be coloured and switched off on the phone.
@@ -101,7 +101,7 @@ Built as a read-only iCalendar subscription per employee.
       the alternate-weekend pattern as repeats (US + ECHO Sundays 8–2, ANS +
       VNG Saturdays 9–2, each office every other week), and Election Day,
       Veterans Day, Black Friday as holidays (Thanksgiving: holiday or
-      closure?).
+      closure?). And the reps, under Manage → Reps.
 
 - [ ] **A per-location feed for managers**, so someone can see the whole
       front-desk roster in their own calendar. Same mechanism, wider scope —

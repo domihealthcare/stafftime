@@ -1016,7 +1016,50 @@ export interface EventSeries extends RepeatInput {
 
 /// What an entry on the practice calendar is: a meeting or day out, an
 /// office shut, a named day that shuts nothing, or when a test is offered.
-export type EventKind = 'EVENT' | 'CLOSURE' | 'HOLIDAY' | 'DIAGNOSTIC';
+export type EventKind = 'EVENT' | 'CLOSURE' | 'HOLIDAY' | 'DIAGNOSTIC' | 'REP_LUNCH';
+
+/// How a rep feeds the office: they bring catering, or the office orders.
+export type RepFood = 'CATERING' | 'SELF_ORDER';
+/// Whether the practice wants a rep back.
+export type RepStatus = 'PREFERRED' | 'OK' | 'RESTRICTED' | 'DO_NOT_BOOK';
+
+/// A rep who books lunches, from Manage → Reps (managers and admins).
+export interface Rep {
+  id: string;
+  name: string;
+  company: string | null;
+  medication: string | null;
+  cellPhone: string | null;
+  food: RepFood | null;
+  status: RepStatus;
+  notes: string | null;
+  /// Their most recent lunch, and the next one booked.
+  lastLunch: string | null;
+  nextLunch: string | null;
+}
+
+export interface RepInput {
+  name: string;
+  company?: string;
+  medication?: string;
+  cellPhone?: string;
+  food?: RepFood | null;
+  status: RepStatus;
+  notes?: string;
+}
+
+/// A rep lunch's rep. Staff get who, the company, the medication and the
+/// food; managers also the phone, status and notes.
+export interface EventRep {
+  id: string;
+  name: string;
+  company: string | null;
+  medication: string | null;
+  food: RepFood | null;
+  cellPhone?: string | null;
+  status?: RepStatus;
+  notes?: string | null;
+}
 
 /// An office meeting, a provider meeting, a wellness day. On the schedule and
 /// in the calendar feed; never counted as hours.
@@ -1040,6 +1083,8 @@ export interface PracticeEvent {
   location: { id: string; name: string } | null;
   /// A diagnostics date: the office it is at (it is for everyone).
   atLocation: { id: string; name: string } | null;
+  /// A rep lunch: the rep (null once taken off the list).
+  rep: EventRep | null;
   /// CHOSEN: who it is for.
   invitees: EventInvitee[];
   /// The series this date belongs to, if it repeats.
@@ -1048,7 +1093,8 @@ export interface PracticeEvent {
 
 export interface EventInput {
   kind?: EventKind;
-  title: string;
+  /// Not sent for a rep lunch: it is named after its rep.
+  title?: string;
   description?: string;
   place?: string;
   meetingUrl?: string;
@@ -1064,6 +1110,8 @@ export interface EventInput {
   locationId?: string;
   /// A diagnostics date: the office it is at.
   atLocationId?: string;
+  /// A rep lunch: the rep. The title is made from their name.
+  repId?: string;
   invitees?: { employeeIds?: string[]; jobRoleIds?: string[]; locationIds?: string[] };
   repeat?: RepeatInput | null;
   /// Closures and holidays, when making one: also on the same date in each

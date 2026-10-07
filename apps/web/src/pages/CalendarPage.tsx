@@ -27,7 +27,7 @@ import { useIsPhone } from '../lib/use-is-phone';
 
 /// Remembered per browser: a convenience, never relied on.
 const VIEW_KEY = 'domi-staff:calendar-view';
-const HIDDEN_KEY = 'domi-staff:calendar-hidden-kinds';
+const CHOSEN_KEY = 'domi-staff:calendar-kinds';
 
 function remembered<T>(key: string, fallback: T): T {
   try {
@@ -75,7 +75,16 @@ export function CalendarPage() {
   const [view, setView] = useState<'month' | 'list'>(() =>
     remembered(VIEW_KEY, isPhone ? 'list' : 'month'),
   );
-  const [hidden, setHidden] = useState<CalendarKind[]>(() => remembered(HIDDEN_KEY, []));
+  /// The kinds picked to show; none picked is All (Dominguez, October 2026:
+  /// "all, diagnostics, rep lunches, etc … choose multiple or choose one, or
+  /// all").
+  const [chosen, setChosen] = useState<CalendarKind[]>(() => {
+    const saved = remembered<unknown>(CHOSEN_KEY, []);
+    return Array.isArray(saved)
+      ? saved.filter((kind): kind is CalendarKind => CALENDAR_KINDS.includes(kind))
+      : [];
+  });
+  const isShown = (kind: CalendarKind) => chosen.length === 0 || chosen.includes(kind);
   const [office, setOffice] = useState('');
 
   const [events, setEvents] = useState<PracticeEvent[]>([]);
@@ -136,10 +145,16 @@ export function CalendarPage() {
     setSearchParams({ month: localDate(month) }, { replace: true });
   }
 
-  function toggleKind(kind: CalendarKind) {
-    setHidden((was) => {
-      const next = was.includes(kind) ? was.filter((k) => k !== kind) : [...was, kind];
-      remember(HIDDEN_KEY, next);
+  /// From All, a kind shows that kind alone; more can be added, and taking
+  /// the last one off — or picking every one — is All again.
+  function pickKind(kind: CalendarKind | 'ALL') {
+    setChosen((was) => {
+      let next: CalendarKind[];
+      if (kind === 'ALL') next = [];
+      else if (was.includes(kind)) next = was.filter((k) => k !== kind);
+      else next = [...was, kind];
+      if (next.length === CALENDAR_KINDS.length) next = [];
+      remember(CHOSEN_KEY, next);
       return next;
     });
   }
@@ -162,17 +177,19 @@ export function CalendarPage() {
   const shown = useMemo(
     () =>
       events.filter((event) => {
-        if (hidden.includes(event.kind)) return false;
+        if (chosen.length > 0 && !chosen.includes(event.kind)) return false;
         if (!office) return true;
-        if (event.kind === 'DIAGNOSTIC') return event.atLocation?.id === office;
+        if (event.kind === 'DIAGNOSTIC' || event.kind === 'REP_LUNCH') {
+          return event.atLocation?.id === office;
+        }
         if (event.kind === 'CLOSURE' && event.audience === 'LOCATION') {
           return event.location?.id === office;
         }
         return true;
       }),
-    [events, hidden, office],
+    [events, chosen, office],
   );
-  const shownPayDays = hidden.includes('PAY_DAY') ? [] : payDays;
+  const shownPayDays = isShown('PAY_DAY') ? payDays : [];
 
   const monthDays = days.filter((day) => day.getMonth() === monthStart.getMonth());
   const today = localDate(new Date());
@@ -182,7 +199,7 @@ export function CalendarPage() {
     <div className="mx-auto max-w-6xl">
       <PageHeading
         title="Calendar"
-        subtitle="Diagnostics, holidays, closures, meetings and pay days — for everyone."
+        subtitle="Diagnostics, rep lunches, holidays, closures, meetings and pay days — for everyone."
       />
       <ScheduleTabs />
 
@@ -279,6 +296,7 @@ export function CalendarPage() {
                   {(
                     [
                       ['DIAGNOSTIC', 'When a test is offered at an office'],
+                      ['REP_LUNCH', 'A rep bringing lunch to an office'],
                       ['EVENT', 'A meeting or something on the calendar'],
                       ['HOLIDAY', 'A named day — the offices stay open'],
                       ['CLOSURE', 'An office shut, once or every year'],
@@ -306,27 +324,39 @@ export function CalendarPage() {
         )}
       </div>
 
-      {/* The key, which is also the filter: tap a kind to hide or show it. */}
-      <div className="mb-4 flex flex-wrap gap-1.5" role="group" aria-label="Show on the calendar">
-        {CALENDAR_KINDS.map((kind) => {
-          const on = !hidden.includes(kind);
+      {/* What to show, which is also the key: All, or any one or more kinds. */}
+      <div
+        className="mb-4 flex flex-wrap items-center gap-1.5"
+        role="group"
+        aria-label="Show on the calendar"
+      >
+        <span className="mr-1 text-xs font-medium text-slate-600">Show:</span>
+        {(['ALL', ...CALENDAR_KINDS] as const).map((kind) => {
+          const on = kind === 'ALL' ? chosen.length === 0 : chosen.includes(kind);
           return (
             <button
               key={kind}
               type="button"
               aria-pressed={on}
-              onClick={() => toggleKind(kind)}
+              onClick={() => pickKind(kind)}
               className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-medium ring-1 ring-inset max-sm:py-2 ${
                 on
-                  ? 'bg-white text-slate-900 ring-slate-300'
-                  : 'bg-slate-100 text-slate-500 line-through ring-slate-200'
+                  ? 'bg-brand-600 text-white ring-brand-600'
+                  : 'bg-white text-slate-800 ring-slate-300 hover:bg-slate-50'
               }`}
             >
-              <span
-                aria-hidden="true"
-                className={`h-2.5 w-2.5 rounded-full ${KIND_STYLE[kind].dot}`}
-              />
-              {KIND_STYLE[kind].label}
+              {kind === 'ALL' ? (
+                'All'
+              ) : (
+                <>
+                  <span
+                    aria-hidden="true"
+                    className={`h-2.5 w-2.5 rounded-full ring-1 ring-white ${KIND_STYLE[kind].dot}`}
+                  />
+                  {KIND_STYLE[kind].label}
+                </>
+              )}
+              {on && <span aria-hidden="true">✓</span>}
             </button>
           );
         })}
@@ -443,7 +473,8 @@ export function CalendarPage() {
                           className={`block w-full truncate rounded px-0.5 text-left text-[10px] font-medium leading-4 ring-1 ring-inset ${KIND_STYLE[event.kind].chip}`}
                         >
                           <span aria-hidden="true">{KIND_STYLE[event.kind].emoji}</span>
-                          {event.kind === 'DIAGNOSTIC' && event.atLocation
+                          {(event.kind === 'DIAGNOSTIC' || event.kind === 'REP_LUNCH') &&
+                          event.atLocation
                             ? ` ${officeShort(event.atLocation.name)}`
                             : ''}
                         </button>
@@ -494,7 +525,7 @@ export function CalendarPage() {
         </Card>
       )}
 
-      {payDays.length === 0 && !hidden.includes('PAY_DAY') && !loading && (
+      {payDays.length === 0 && isShown('PAY_DAY') && !loading && (
         <p className="mt-2 text-xs text-slate-500">
           Pay days appear once a pay period is set in Practice settings.
         </p>
@@ -519,7 +550,7 @@ export function CalendarPage() {
           onClose={() => setOpenEvent(null)}
           onEdit={() => openForm({ event: openEvent })}
           onDuplicate={
-            openEvent.kind === 'EVENT' || openEvent.kind === 'DIAGNOSTIC'
+            openEvent.kind !== 'CLOSURE' && openEvent.kind !== 'HOLIDAY'
               ? () => openForm({ template: openEvent })
               : undefined
           }

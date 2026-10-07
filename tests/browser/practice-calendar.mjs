@@ -24,6 +24,10 @@ const step = async (name, fn) => {
  * it ends) and never entered. Managers add; everybody reads; it all reaches
  * phones through the calendar feed.
  *
+ * Rep lunches (October 2026) pick their rep from Manage → Reps: staff see the
+ * rep, company, medication and food; the phone, status and notes stay with
+ * managers. A rep marked "Don't book" is warned about, never refused.
+ *
  * Built in March 2027 — far enough ahead to be the future, near enough to be
  * inside the feed's year.
  */
@@ -133,6 +137,65 @@ await step('pay days are the Friday after each period, worked out', async () => 
   await manager.screenshot({ path: `${OUT}/practice-calendar-month.png`, fullPage: true });
 });
 
+await step('a manager keeps the rep list', async () => {
+  await manager.goto(`${BASE}/reps`, { waitUntil: 'networkidle' });
+  await manager.getByRole('heading', { name: 'Reps', level: 1 }).waitFor({ timeout: 10000 });
+  for (const rep of [
+    { name: 'Jane Smith', cell: '(201) 555-0142', company: 'Novo Nordisk', medication: 'Ozempic', lunch: 'Office orders (self-order)', status: 'Don’t book', notes: 'Late twice' },
+    { name: 'Pat Lee', cell: '', company: 'Pfizer', medication: 'Eliquis', lunch: 'Brings catering', status: 'Preferred', notes: '' },
+  ]) {
+    await manager.getByRole('button', { name: '+ Add rep' }).click();
+    const form = manager.getByRole('form', { name: 'New rep' });
+    await form.getByLabel('Name').fill(rep.name);
+    await form.getByLabel('Cell phone').fill(rep.cell);
+    await form.getByLabel('Company').fill(rep.company);
+    await form.getByLabel('Medication').fill(rep.medication);
+    await form.getByLabel('Lunch').selectOption({ label: rep.lunch });
+    await form.getByLabel('Status').selectOption({ label: rep.status });
+    await form.getByLabel('Notes').fill(rep.notes);
+    await form.getByRole('button', { name: 'Add rep' }).click();
+    await manager.getByTestId(`rep-${rep.name}`).waitFor({ timeout: 10000 });
+  }
+  const jane = await manager.getByTestId('rep-Jane Smith').innerText();
+  for (const expected of ['Novo Nordisk', 'Ozempic', 'Don’t book', 'Late twice', '(201) 555-0142']) {
+    if (!jane.includes(expected)) throw new Error(`Jane's card has no "${expected}": ${jane}`);
+  }
+});
+
+await step('a rep lunch picks its rep, warns about a "Don’t book", and is named after them', async () => {
+  await calendar(manager);
+  await manager.getByRole('button', { name: '+ Add', exact: true }).click();
+  await manager.getByRole('menuitem', { name: 'Rep lunch' }).click();
+  const form = manager.getByRole('form', { name: 'New rep lunch' });
+  if (await form.getByLabel('What is it?').count()) throw new Error('a rep lunch asks for a title');
+  await form.getByLabel('Which rep?').selectOption({ label: 'Jane Smith — Novo Nordisk (don’t book)' });
+  await form.getByTestId('chosen-rep').getByText('Late twice').waitFor();
+  await form.getByLabel('Which office?').selectOption({ label: 'North Bergen' });
+  await form.getByLabel('Starts').fill('2027-03-09T12:30');
+  await form.getByLabel('Ends').fill('2027-03-09T13:30');
+  await form.getByRole('button', { name: 'Add rep lunch' }).click();
+  const asked = manager.getByRole('alertdialog', { name: /Jane Smith is marked/ });
+  await asked.waitFor({ timeout: 10000 });
+  await asked.getByRole('button', { name: 'Book them anyway' }).click();
+  const chip = day(manager, '2027-03-09').getByTestId('rep_lunch-chip');
+  await chip.waitFor({ timeout: 10000 });
+  const text = await chip.innerText();
+  if (!text.includes('Jane Smith') || !text.includes('NB') || !text.includes('Novo Nordisk')) {
+    throw new Error(`the chip reads "${text}"`);
+  }
+  // A second, with the preferred rep, needs no warning.
+  await manager.getByRole('button', { name: '+ Add', exact: true }).click();
+  await manager.getByRole('menuitem', { name: 'Rep lunch' }).click();
+  const second = manager.getByRole('form', { name: 'New rep lunch' });
+  await second.getByLabel('Which rep?').selectOption({ label: 'Pat Lee — Pfizer' });
+  await second.getByLabel('Which office?').selectOption({ label: 'West New York' });
+  await second.getByLabel('Starts').fill('2027-03-23T12:00');
+  await second.getByLabel('Ends').fill('2027-03-23T13:00');
+  await second.getByRole('button', { name: 'Add rep lunch' }).click();
+  await day(manager, '2027-03-23').getByTestId('rep_lunch-chip').getByText('Pat Lee').waitFor({ timeout: 10000 });
+  await manager.screenshot({ path: `${OUT}/practice-calendar-reps.png`, fullPage: true });
+});
+
 const frankie = await signIn('frontdesk@domihealthcare.com');
 
 await step('staff see all of it, and cannot add', async () => {
@@ -148,16 +211,49 @@ await step('staff see all of it, and cannot add', async () => {
   await dialog.getByRole('button', { name: 'Close' }).click();
 });
 
-await step('the key hides a kind, and an office narrows the diagnostics', async () => {
-  const key = frankie.getByRole('group', { name: 'Show on the calendar' });
-  await key.getByRole('button', { name: 'Pay days' }).click();
-  if (await day(frankie, '2027-03-12').getByTestId('payday-chip').count()) throw new Error('pay days still shown');
-  await key.getByRole('button', { name: 'Pay days' }).click();
+await step('staff see a rep lunch’s rep, company, medication and food — not the managers’ side', async () => {
+  await day(frankie, '2027-03-09').getByTestId('rep_lunch-chip').click();
+  const dialog = frankie.getByRole('dialog', { name: 'Rep lunch: Jane Smith' });
+  await dialog.waitFor({ timeout: 10000 });
+  const text = await dialog.innerText();
+  for (const expected of ['Novo Nordisk', 'Ozempic', 'Office orders', 'North Bergen']) {
+    if (!text.includes(expected)) throw new Error(`no "${expected}" in ${text}`);
+  }
+  for (const secret of ['555-0142', 'Late twice', 'Don’t book']) {
+    if (text.includes(secret)) throw new Error(`staff see "${secret}"`);
+  }
+  await dialog.getByRole('button', { name: 'Close' }).click();
+  const status = await frankie.evaluate(() => fetch('/api/reps').then((r) => r.status));
+  if (status !== 403) throw new Error(`staff reading the rep list got ${status}`);
+});
+
+await step('Show: All, one kind, several, and All again — and an office narrows', async () => {
+  const show = frankie.getByRole('group', { name: 'Show on the calendar' });
+  const pressed = async (name) => (await show.getByRole('button', { name }).getAttribute('aria-pressed')) === 'true';
+  if (!(await pressed(/^All/))) throw new Error('does not start on All');
+  // One kind: only rep lunches.
+  await show.getByRole('button', { name: /Rep lunches/ }).click();
+  await day(frankie, '2027-03-09').getByTestId('rep_lunch-chip').waitFor();
+  if (await pressed(/^All/)) throw new Error('All still pressed with one kind picked');
+  if (await day(frankie, '2027-03-07').getByTestId('diagnostic-chip').count()) throw new Error('diagnostics shown with only rep lunches picked');
+  if (await day(frankie, '2027-03-12').getByTestId('payday-chip').count()) throw new Error('pay days shown with only rep lunches picked');
+  // Several: and diagnostics.
+  await show.getByRole('button', { name: /Diagnostics/ }).click();
+  await day(frankie, '2027-03-07').getByTestId('diagnostic-chip').waitFor();
+  await day(frankie, '2027-03-09').getByTestId('rep_lunch-chip').waitFor();
+  if (await day(frankie, '2027-03-17').getByTestId('holiday-chip').count()) throw new Error('holidays shown when not picked');
+  // Remembered on this browser.
+  await frankie.reload({ waitUntil: 'networkidle' });
+  if (await day(frankie, '2027-03-12').getByTestId('payday-chip').count()) throw new Error('the choice was not remembered');
+  // All again.
+  await show.getByRole('button', { name: /^All/ }).click();
   await day(frankie, '2027-03-12').getByTestId('payday-chip').waitFor();
+  await day(frankie, '2027-03-17').getByTestId('holiday-chip').waitFor();
 
   await frankie.getByLabel('Show office').selectOption({ label: 'North Bergen' });
   if (await day(frankie, '2027-03-07').getByTestId('diagnostic-chip').count()) throw new Error('West New York’s diagnostics shown for North Bergen');
   await day(frankie, '2027-03-14').getByTestId('diagnostic-chip').waitFor();
+  if (await day(frankie, '2027-03-23').getByTestId('rep_lunch-chip').count()) throw new Error('West New York’s rep lunch shown for North Bergen');
   // Practice-wide entries stay.
   await day(frankie, '2027-03-17').getByTestId('holiday-chip').waitFor();
   await frankie.getByLabel('Show office').selectOption({ label: 'Both offices' });
@@ -184,9 +280,12 @@ await step('it all reaches the phone through the calendar feed', async () => {
     'SUMMARY:US + ECHO — North Bergen',
     'SUMMARY:St Patrick’s Day',
     'UID:payday-2027-03-12@staff.domihealthcare.com',
+    'SUMMARY:Rep lunch: Jane Smith (Novo Nordisk) — North Bergen',
+    'Medication: Ozempic',
   ]) {
     if (!feed.includes(expected)) throw new Error(`the feed has no "${expected}"`);
   }
+  if (feed.includes('Late twice') || feed.includes('555-0142')) throw new Error('the feed carries the managers’ side of a rep');
 });
 
 await step('a holiday rings nobody’s bell; diagnostics do', async () => {
@@ -206,6 +305,17 @@ await step('on a phone, staff start on the list', async () => {
   const wide = await phone.evaluate(() => document.documentElement.scrollWidth > window.innerWidth);
   if (wide) throw new Error('the page scrolls sideways on a phone');
   await phone.screenshot({ path: `${OUT}/practice-calendar-phone.png`, fullPage: true });
+});
+
+await step('correcting a rep’s name renames their lunches', async () => {
+  await manager.goto(`${BASE}/reps`, { waitUntil: 'networkidle' });
+  await manager.getByTestId('rep-Pat Lee').getByRole('button', { name: 'Edit' }).click();
+  const form = manager.getByRole('form', { name: 'Change Pat Lee' });
+  await form.getByLabel('Name').fill('Patricia Lee');
+  await form.getByRole('button', { name: 'Save changes' }).click();
+  await manager.getByTestId('rep-Patricia Lee').getByText('Next lunch').waitFor({ timeout: 10000 });
+  await calendar(manager);
+  await day(manager, '2027-03-23').getByTestId('rep_lunch-chip').getByText('Patricia Lee').waitFor({ timeout: 10000 });
 });
 
 await step('nothing on the page takes a file', async () => {

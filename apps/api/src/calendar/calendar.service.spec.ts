@@ -385,6 +385,52 @@ describe('CalendarService', () => {
     });
   });
 
+  describe('rep lunches', () => {
+    it('names the rep, company and office, says what to expect, and keeps the managers’ notes off', async () => {
+      const { service } = build({
+        events: [
+          {
+            id: 'ev-9',
+            kind: 'REP_LUNCH',
+            title: 'Rep lunch: Jane Smith',
+            description: null,
+            place: null,
+            meetingUrl: null,
+            allDay: false,
+            audience: 'EVERYONE',
+            location: null,
+            atLocation: {
+              id: 'loc-nb',
+              name: 'North Bergen',
+              addressLine1: '7650 Bergenline Ave',
+              city: 'North Bergen',
+              state: 'NJ',
+            },
+            rep: {
+              id: 'rep-jane',
+              name: 'Jane Smith',
+              company: 'Novo Nordisk',
+              medication: 'Ozempic',
+              food: 'SELF_ORDER',
+              cellPhone: '(201) 555-0142',
+              status: 'RESTRICTED',
+              notes: 'Only Tuesdays',
+            },
+            startsAt: new Date('2026-11-10T16:30:00.000Z'),
+            endsAt: new Date('2026-11-10T17:30:00.000Z'),
+            updatedAt: NOW,
+          },
+        ],
+      });
+      const feed = (await service.feedForToken('token', NOW)).replace(/\r\n /g, '');
+      expect(feed).toContain('SUMMARY:Rep lunch: Jane Smith (Novo Nordisk) — North Bergen');
+      expect(feed).toContain('Medication: Ozempic');
+      expect(feed).toContain('Lunch: the office orders');
+      expect(feed).not.toContain('555-0142');
+      expect(feed).not.toContain('Only Tuesdays');
+    });
+  });
+
   describe('pay days', () => {
     it('puts the Friday after each pay period on the phone, all day', async () => {
       // Periods start on Sundays from 18 October 2026: paid 6 November, 20 November…

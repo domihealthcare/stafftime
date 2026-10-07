@@ -2957,10 +2957,29 @@ Once calendar invites are switched on, the feed keeps everything that is not a
 meeting — closures, holidays, diagnostics, pay days — since only meetings go
 out as invites.
 
-Still to come, agreed with Dominguez: **rep lunches** with a contact list
-(name, cell, company, medication, catering or self-order, preferred status,
-notes managers only), **separate subscriptions** per kind, and a printed month
-like the paper one. See `docs/open-questions.md`.
+- **Rep lunches** (`kind: REP_LUNCH`, the same day) — a rep from **Manage →
+  Reps** (`Rep`, `src/reps/`, managers and admins only, reading included),
+  the office (`atLocationId`) and the time. Named after the rep, server-side
+  (`repLunchTitle`), and renamed with them. For everyone; bell on add, move
+  and cancel, no reminder. The rep list holds name ("the most important as
+  they are the ones scheduling"), cell phone, company, medication, catering
+  or self-order and a status (Preferred / OK / Has restrictions / Don't
+  book), with notes ("some reps we may not want or some have certain
+  restrictions"). **Staff see a lunch's rep, company, medication and food;
+  the phone, status and notes go to managers only** — `present` in
+  `EventsService` drops them for anybody else, and the phone feed never
+  carries them. A "Don't book" rep is a confirmation before saving, never a
+  refusal (like overtime and closures). The schema guard pins `Rep`'s
+  columns: business contacts, nothing more.
+
+**Show** (Dominguez: "the calendar should just have options (i.e. all,
+diagnostics, rep lunches, etc) and can choose multiple or choose one, or
+all"): All, or any one or more kinds. From All, a kind shows that kind
+alone; more add to it; taking off the last, or picking every one, is All
+again. Remembered per browser.
+
+Still to come: **separate subscriptions** per kind, and a printed month like
+the paper one. See `docs/open-questions.md`.
 
 ### Repeating events and chosen people
 

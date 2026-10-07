@@ -400,13 +400,15 @@ const STAFF: Section[] = [
           <p>
             On <Screen>Schedule</Screen>, press <strong>Calendar</strong> at the top (next to
             Shifts). It shows the month with the <strong>diagnostics</strong> 🩺 (which tests, the
-            hours, and the office — WNY or NB), <strong>holidays</strong> ⭐ (the offices are open
-            unless there is also a closure), <strong>closures</strong> 🔒, meetings and events 📅,
-            and <strong>pay days</strong> 💵 — the Friday after each pay period ends. Tap the
-            coloured names above the month to hide or show a kind, pick an office to see only its
-            diagnostics, and choose <strong>List</strong> for a day-by-day list (a phone starts
-            there). Everything on it reaches your phone&rsquo;s calendar through the calendar link
-            at the bottom of the page.
+            hours, and the office — WNY or NB), <strong>rep lunches</strong> 🍽️ (the rep, their
+            company, the medication, and whether they bring catering or the office orders),{' '}
+            <strong>holidays</strong> ⭐ (the offices are open unless there is also a closure),{' '}
+            <strong>closures</strong> 🔒, meetings and events 📅, and <strong>pay days</strong> 💵 —
+            the Friday after each pay period ends. Under <strong>Show</strong>, keep{' '}
+            <strong>All</strong>, or tap one kind to see only that, and more to add them; All puts
+            everything back. Pick an office to see only its diagnostics and rep lunches, and choose{' '}
+            <strong>List</strong> for a day-by-day list (a phone starts there). Everything on it
+            reaches your phone&rsquo;s calendar through the calendar link at the bottom of the page.
           </p>
         ),
       },
@@ -1100,6 +1102,23 @@ const MANAGERS: Section[] = [
             <strong>holiday</strong> instead (<strong>+ Add holiday</strong>): everyone sees it on
             the calendar, nobody is notified and no shift is flagged. Copy into next year takes
             holidays too.
+          </p>
+        ),
+      },
+      {
+        question: 'Rep lunches and the rep list',
+        answer: (
+          <p>
+            Keep the reps under <Screen>Manage → Reps</Screen>: name, cell phone, company,
+            medication, whether they bring catering or the office orders, a status (Preferred, OK to
+            book, Has restrictions, Don&rsquo;t book) and notes. Then on{' '}
+            <Screen>Schedule → Calendar</Screen> choose <strong>+ Add → Rep lunch</strong>, pick the
+            rep, the office and the time; it is named after the rep. A rep marked{' '}
+            <strong>Don&rsquo;t book</strong> asks you to confirm first, and a rep with restrictions
+            shows their notes as you pick them. Everyone sees the lunch with the rep, company,
+            medication and food, and is told when it is added, moved or cancelled; the cell phone,
+            status and notes are for managers only. Correcting a rep&rsquo;s name renames their
+            lunches too.
           </p>
         ),
       },
