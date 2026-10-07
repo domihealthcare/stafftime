@@ -51,8 +51,20 @@ const shiftId = await mgr.evaluate(async () => {
   const locations = await fetch('/api/locations').then((r) => r.json());
   const northBergen = locations.find((l) => l.name === 'North Bergen');
   const now = Date.now();
-  const dayStart = new Date(); dayStart.setHours(0, 0, 0, 0);
-  const dayEnd = new Date(); dayEnd.setHours(23, 59, 0, 0);
+  // New Jersey's day, not the browser's: CI's browser is on UTC, and after
+  // 8pm there a shift running to the browser's midnight crossed New Jersey's,
+  // which the shift pop-up (in New Jersey's hours) cannot save.
+  const [hour, minute] = new Intl.DateTimeFormat('en-GB', {
+    timeZone: 'America/New_York',
+    hour: '2-digit',
+    minute: '2-digit',
+    hourCycle: 'h23',
+  })
+    .format(now)
+    .split(':')
+    .map(Number);
+  const dayStart = new Date(now - (now % 60_000) - (hour * 60 + minute) * 60_000);
+  const dayEnd = new Date(dayStart.getTime() + (24 * 60 - 1) * 60_000);
   const startsAt = new Date(Math.max(now - 15 * 60_000, dayStart.getTime()));
   const endsAt = new Date(Math.min(now + 3 * 3_600_000, dayEnd.getTime()));
   const response = await fetch('/api/shifts', {
@@ -265,7 +277,18 @@ await step('the new-shift form can make a shift work from home', async () => {
 await step('an earlier office shift the same day does not hide the work-from-home one', async () => {
   const officeId = await mgr.evaluate(async (wfhId) => {
     const wfh = await fetch(`/api/shifts/${wfhId}`).then((r) => r.json());
-    const dayStart = new Date(); dayStart.setHours(0, 0, 0, 0);
+    // New Jersey's midnight, as for the shift above.
+    const now = Date.now();
+    const [hour, minute] = new Intl.DateTimeFormat('en-GB', {
+      timeZone: 'America/New_York',
+      hour: '2-digit',
+      minute: '2-digit',
+      hourCycle: 'h23',
+    })
+      .format(now)
+      .split(':')
+      .map(Number);
+    const dayStart = new Date(now - (now % 60_000) - (hour * 60 + minute) * 60_000);
     const endsAt = new Date(new Date(wfh.startsAt).getTime() - 5 * 60_000);
     const startsAt = new Date(Math.max(endsAt.getTime() - 2 * 3_600_000, dayStart.getTime()));
     // Just after midnight there is no room for one before it; nothing to show then.

@@ -2052,6 +2052,34 @@ anyway.
 Each line names the person and the thing, so the email can be acted on without
 opening the app.
 
+**Who gets which part** (October 2026, Dominguez: "certain managers should be
+notified of certain things but not everyone needs to see all notifications each
+time"). The sixteen sections are grouped into eight parts somebody looks after
+(`email/digest-topics.ts`): the rota, hours and timesheets, time off, licenses,
+the time clock, closing checklists and supplies, onboarding and offboarding,
+and the suggestion box. Each manager unticks the ones that are somebody else's
+on Email settings; `Employee.mutedDigestTopics` stores what is *left out*, so a
+part added later reaches everybody until somebody says otherwise.
+
+- **Nothing falls through the gap.** A part nobody is down for (among those
+  who get the round-up at all) goes to all of them, as before there was a
+  choice, and Email settings says so in a warning. Otherwise the last manager
+  to untick licenses could quietly stop anybody hearing that one has lapsed.
+- **Somebody whose parts are all empty tonight is not emailed**, the same rule
+  as the round-up as a whole.
+- **Who gets what** (`GET /digest-settings`, managers and admins) lists every
+  manager and admin against every part, so a manager can see who else covers
+  something before leaving it out. **Admins change anybody's** there
+  (`PATCH /digest-settings/:id`); everybody else changes only their own
+  (`PATCH /auth/preferences`). This loosens "a manager's to turn off, not an
+  admin's" above — asked for by Dominguez, who decides who looks after what.
+- **Time off** also decides who is emailed and rung as each request comes in
+  (`NotificationsService.ptoRequested`), with the same fall-back: when nobody
+  has chosen it, every manager is told. Turning the round-up off does not stop
+  those, as before.
+- **Only the email changes.** The banners on the screens show every manager
+  everything.
+
 **How it reads** (`email/digest-email.ts`, October 2026 — Dominguez found the
 plain list "very bland"). Only the presentation changed; the lists are still
 `AttentionService`'s.

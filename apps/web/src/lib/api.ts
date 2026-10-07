@@ -21,6 +21,9 @@ import type {
   ConflictingShift,
   Coverage,
   Dashboard,
+  DigestPreferences,
+  DigestReader,
+  DigestTopic,
   PracticeOverview,
   DemoSummary,
   TestDataCounts,
@@ -764,10 +767,18 @@ export const api = {
       method: 'PATCH',
       body: JSON.stringify(body),
     }),
-  setDigestPreference: (wantsDailyDigest: boolean) =>
+  setDigestPreference: (preferences: DigestPreferences) =>
     request<Employee>('/auth/preferences', {
       method: 'PATCH',
-      body: JSON.stringify({ wantsDailyDigest }),
+      body: JSON.stringify(preferences),
+    }),
+  digestSettings: () =>
+    request<{ people: DigestReader[]; uncovered: DigestTopic[] }>('/digest-settings'),
+  /// Admins only: somebody else's round-up.
+  updateDigestSettings: (employeeId: string, preferences: DigestPreferences) =>
+    request<DigestReader>(`/digest-settings/${employeeId}`, {
+      method: 'PATCH',
+      body: JSON.stringify(preferences),
     }),
   revokeOtherSessions: () => request<{ signedOut: number }>('/auth/sessions', { method: 'DELETE' }),
   setTemporaryPassword: (employeeId: string, temporaryPassword: string) =>
