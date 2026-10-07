@@ -1,5 +1,6 @@
 import { NotFoundException } from '@nestjs/common';
 import { PtoStatus, ShiftStatus } from '@prisma/client';
+import { fakeSettings } from '../settings/practice-settings.test-double';
 import { CalendarService } from './calendar.service';
 
 const NOW = new Date('2026-09-22T10:00:00.000Z');
@@ -12,6 +13,7 @@ describe('CalendarService', () => {
       timeOff?: unknown[];
       events?: unknown[];
       invitesOn?: boolean;
+      payPeriodStart?: Date | null;
     } = {},
   ) {
     const prisma = {
@@ -40,8 +42,12 @@ describe('CalendarService', () => {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const invites = { enabled: options.invitesOn ?? false };
     return {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      service: new CalendarService(prisma as any, events as any, invites as any),
+      service: new CalendarService(
+        prisma as never,
+        events as never,
+        invites as never,
+        fakeSettings({ payPeriodStart: options.payPeriodStart ?? null }),
+      ),
       prisma,
       events,
     };
@@ -258,6 +264,7 @@ describe('CalendarService', () => {
   describe('practice events', () => {
     const meeting = {
       id: 'ev-1',
+      kind: 'EVENT',
       title: 'Office meeting',
       description: 'Bring your questions about the new phones.',
       place: 'North Bergen office — break room',
@@ -347,6 +354,59 @@ describe('CalendarService', () => {
       expect(feed).toContain('SUMMARY:North Bergen closed: Christmas Eve');
       expect(feed).toContain('TRANSP:TRANSPARENT');
     });
+
+    it('names a diagnostics date with its office, at the office address, not busy', async () => {
+      const { service } = build({
+        events: [
+          {
+            ...meeting,
+            id: 'ev-4',
+            kind: 'DIAGNOSTIC',
+            title: 'US + ECHO',
+            place: null,
+            description: null,
+            audience: 'EVERYONE',
+            atLocation: {
+              id: 'loc-wny',
+              name: 'West New York',
+              addressLine1: '5901 Bergenline Ave',
+              city: 'West New York',
+              state: 'NJ',
+            },
+            startsAt: new Date('2026-11-08T13:00:00.000Z'),
+            endsAt: new Date('2026-11-08T19:00:00.000Z'),
+          },
+        ],
+      });
+      const feed = await service.feedForToken('token', NOW);
+      expect(feed).toContain('SUMMARY:US + ECHO — West New York');
+      expect(feed).toContain('LOCATION:5901 Bergenline Ave\\, West New York\\, NJ');
+      expect(feed).toContain('TRANSP:TRANSPARENT');
+    });
+  });
+
+  describe('pay days', () => {
+    it('puts the Friday after each pay period on the phone, all day', async () => {
+      // Periods start on Sundays from 18 October 2026: paid 6 November, 20 November…
+      const { service } = build({ payPeriodStart: new Date('2026-10-18T00:00:00.000Z') });
+      const feed = await service.feedForToken('token', NOW);
+      expect(feed).toContain('UID:payday-2026-11-06@staff.domihealthcare.com');
+      expect(feed).toContain('SUMMARY:Pay day');
+      expect(feed).toContain('DTSTART;VALUE=DATE:20261106');
+      expect(feed).toContain('DTEND;VALUE=DATE:20261107');
+      expect(feed).not.toContain('payday-2026-11-13');
+    });
+
+    it('has none until a pay period is set', async () => {
+      const { service } = build();
+      expect(await service.feedForToken('token', NOW)).not.toContain('Pay day');
+    });
+
+    it('refuses a backwards or very long range', async () => {
+      const { service } = build();
+      await expect(service.payDays('2026-12-01', '2026-11-01')).rejects.toThrow();
+      await expect(service.payDays('2026-01-01', '2028-01-01')).rejects.toThrow();
+    });
   });
 
   describe('once shifts and events go out as invites', () => {
@@ -393,12 +453,35 @@ describe('CalendarService', () => {
             endsAt: new Date('2026-12-26T05:00:00.000Z'),
             updatedAt: NOW,
           },
+          {
+            id: 'ev-3',
+            kind: 'DIAGNOSTIC',
+            title: 'US + ECHO',
+            description: null,
+            place: null,
+            meetingUrl: null,
+            allDay: false,
+            audience: 'EVERYONE',
+            location: null,
+            atLocation: {
+              id: 'loc-nb',
+              name: 'North Bergen',
+              addressLine1: '7650 Bergenline Ave',
+              city: 'North Bergen',
+              state: 'NJ',
+            },
+            startsAt: new Date('2026-11-15T13:00:00.000Z'),
+            endsAt: new Date('2026-11-15T19:00:00.000Z'),
+            updatedAt: NOW,
+          },
         ],
       });
       const feed = await service.feedForToken('token', NOW);
       expect(prisma.shift.findMany).not.toHaveBeenCalled();
       expect(feed).not.toContain('Office meeting');
       expect(feed).toContain('SUMMARY:Closed: Christmas Day');
+      // Invites carry meetings only; the diagnostics schedule stays here.
+      expect(feed).toContain('SUMMARY:US + ECHO — North Bergen');
       expect(feed).toContain('SUMMARY:Vacation');
       // Said at the top of the calendar, for anybody who wonders where they went.
       expect(feed).toContain('Office closures and approved time off');

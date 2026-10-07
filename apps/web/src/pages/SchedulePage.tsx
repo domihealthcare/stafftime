@@ -33,6 +33,8 @@ import type {
   Shift,
 } from '../lib/types';
 import { CalendarLinkCard } from '../components/CalendarLinkCard';
+import { KIND_STYLE } from '../lib/calendar-kinds';
+import { ScheduleTabs } from '../components/ScheduleTabs';
 import {
   ClosuresCard,
   ClosureWarning,
@@ -40,7 +42,6 @@ import {
   EventDialog,
   EventForm,
   eventsOnDay,
-  isClosure,
   useClosureCheck,
 } from '../components/PracticeEvents';
 import { JobRoleSelect } from '../components/JobRoleSelect';
@@ -161,6 +162,8 @@ export function SchedulePage() {
   const [openEvent, setOpenEvent] = useState<PracticeEvent | null>(null);
   const [eventForm, setEventForm] = useState<{
     event?: PracticeEvent;
+    /// A new one copied from this: "Add another date like this".
+    template?: PracticeEvent;
     kind?: PracticeEvent['kind'];
   } | null>(null);
   /// "7 dates added", after a repeating event is saved.
@@ -189,8 +192,8 @@ export function SchedulePage() {
       initialYear={(view === 'week' ? weekStart : monthStart).getFullYear()}
       canEdit={isManager}
       version={eventsVersion}
-      onAdd={() => {
-        setEventForm({ kind: 'CLOSURE' });
+      onAdd={(kind) => {
+        setEventForm({ kind });
         window.scrollTo({ top: 0, behavior: 'smooth' });
       }}
       onOpen={setOpenEvent}
@@ -200,11 +203,19 @@ export function SchedulePage() {
 
   /// One place to start anything new: the rest of the forms close so only
   /// the one asked for is open.
-  function openAdd(what: 'shift' | 'repeat' | 'event' | 'closure') {
+  function openAdd(what: 'shift' | 'repeat' | 'event' | 'diagnostic' | 'closure') {
     setAddMenu(false);
     setAdding(what === 'shift');
     setPlanning(what === 'repeat');
-    setEventForm(what === 'event' ? {} : what === 'closure' ? { kind: 'CLOSURE' } : null);
+    setEventForm(
+      what === 'event'
+        ? {}
+        : what === 'closure'
+          ? { kind: 'CLOSURE' }
+          : what === 'diagnostic'
+            ? { kind: 'DIAGNOSTIC' }
+            : null,
+    );
     if (what !== 'shift') window.scrollTo({ top: 0, behavior: 'smooth' });
   }
   const [planResult, setPlanResult] = useState<PlanResult | null>(null);
@@ -456,6 +467,7 @@ export function SchedulePage() {
         title="Schedule"
         subtitle={isManager ? 'Build the week for both locations.' : 'Your upcoming shifts.'}
       />
+      <ScheduleTabs />
 
       <NeedsAttention
         collapsible
@@ -748,6 +760,7 @@ export function SchedulePage() {
                           'repeat',
                         ],
                         ['Event', 'A meeting or something on the calendar', 'event'],
+                        ['Diagnostics date', 'When a test is offered at an office', 'diagnostic'],
                         ['Holiday or closure', 'An office shut, once or every year', 'closure'],
                       ] as const
                     ).map(([label, hint, what]) => (
@@ -774,8 +787,12 @@ export function SchedulePage() {
       {isManager && eventForm && (
         <div className="mb-6">
           <EventForm
-            key={eventForm.event?.id ?? `new-${eventForm.kind ?? 'EVENT'}`}
+            key={
+              eventForm.event?.id ??
+              `new-${eventForm.kind ?? 'EVENT'}-${eventForm.template?.id ?? ''}`
+            }
             event={eventForm.event}
+            template={eventForm.template}
             initialKind={eventForm.kind}
             employees={employees}
             locations={locations}
@@ -810,6 +827,15 @@ export function SchedulePage() {
             setOpenEvent(null);
             window.scrollTo({ top: 0, behavior: 'smooth' });
           }}
+          onDuplicate={
+            openEvent.kind === 'EVENT' || openEvent.kind === 'DIAGNOSTIC'
+              ? () => {
+                  setEventForm({ template: openEvent });
+                  setOpenEvent(null);
+                  window.scrollTo({ top: 0, behavior: 'smooth' });
+                }
+              : undefined
+          }
           onRemoved={() => {
             setOpenEvent(null);
             void load();
@@ -1612,14 +1638,10 @@ function MonthGrid({
               {dayEvents.map((event) => (
                 <span
                   key={event.id}
-                  data-testid={`month-${isClosure(event) ? 'closure' : 'event'}-${localDate(day)}`}
-                  className={`mt-0.5 block truncate rounded px-1 text-[10px] font-medium leading-4 ring-1 ring-inset sm:text-[11px] sm:leading-5 ${
-                    isClosure(event)
-                      ? 'bg-slate-200 text-slate-900 ring-slate-400'
-                      : 'bg-indigo-50 text-indigo-950 ring-indigo-200'
-                  }`}
+                  data-testid={`month-${event.kind === 'EVENT' ? 'event' : event.kind.toLowerCase()}-${localDate(day)}`}
+                  className={`mt-0.5 block truncate rounded px-1 text-[10px] font-medium leading-4 ring-1 ring-inset sm:text-[11px] sm:leading-5 ${KIND_STYLE[event.kind].chip}`}
                 >
-                  <span aria-hidden="true">{isClosure(event) ? '🔒' : '📅'}</span>
+                  <span aria-hidden="true">{KIND_STYLE[event.kind].emoji}</span>
                   <span className="hidden sm:inline"> {event.title}</span>
                 </span>
               ))}

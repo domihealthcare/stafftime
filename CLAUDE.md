@@ -594,6 +594,24 @@ Beyond the phases, the parts worth knowing about before picking up work:
   anybody paid to attend clocks in as usual. **No replies** (going / can't
   go) for now. All four choices confirmed by Dominguez. `PracticeEvent`,
   `src/events/`.
+- **The practice calendar** (7 October 2026, Dominguez: "a calendar that
+  staff can reference for multiple things … events, diagnostic schedule,
+  holidays/office closures"): **Schedule → Calendar** (`/schedule/calendar`,
+  a Shifts | Calendar switch on both). Month or list, a key that filters,
+  an office picker; managers and admins add, everybody reads, and it all
+  goes through the existing calendar link. Two new kinds of
+  `PracticeEvent`: **Diagnostics** (`DIAGNOSTIC` — "US + ECHO 8–2" at an
+  office, `atLocationId`; for everyone; bell on add/move/cancel, no
+  day-before reminder; **Add another date like this** for the dates that
+  differ; when the tests are on, never who is booked) and **Holidays**
+  (`HOLIDAY` — Election Day: all day, for everyone, shuts nothing, no
+  notification; a shut office is still a closure). **Pay days** are worked
+  out, never stored: the Friday after each pay period ends
+  (`settings/pay-days.ts`, `GET /calendar/pay-days`). Next, agreed: rep
+  lunches with a rep contact list, separate subscriptions per kind, a
+  printed month — see `docs/open-questions.md`. Would matter to the EMR
+  module too, if it takes events. See *The practice calendar* in
+  `docs/architecture.md`; `tests/browser/practice-calendar.mjs`.
 - **Repeating events and chosen people** (September 2026, Dominguez): an
   event can repeat — every week, every 2 weeks, monthly (same date or "the
   first Friday"), or custom ("every 2 weeks on Mon and Fri") — until a date

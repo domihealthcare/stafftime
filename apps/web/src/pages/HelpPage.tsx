@@ -395,6 +395,22 @@ const STAFF: Section[] = [
         ),
       },
       {
+        question: 'Where is the practice calendar?',
+        answer: (
+          <p>
+            On <Screen>Schedule</Screen>, press <strong>Calendar</strong> at the top (next to
+            Shifts). It shows the month with the <strong>diagnostics</strong> 🩺 (which tests, the
+            hours, and the office — WNY or NB), <strong>holidays</strong> ⭐ (the offices are open
+            unless there is also a closure), <strong>closures</strong> 🔒, meetings and events 📅,
+            and <strong>pay days</strong> 💵 — the Friday after each pay period ends. Tap the
+            coloured names above the month to hide or show a kind, pick an office to see only its
+            diagnostics, and choose <strong>List</strong> for a day-by-day list (a phone starts
+            there). Everything on it reaches your phone&rsquo;s calendar through the calendar link
+            at the bottom of the page.
+          </p>
+        ),
+      },
+      {
         question: 'Why does it say I am in overtime?',
         answer: (
           <p>
@@ -1079,7 +1095,27 @@ const MANAGERS: Section[] = [
             the Schedule banner and the nightly email until the shift is moved. Once a year is
             filled in, <strong>Copy these into next year</strong> puts every closure on the same
             date the following year — then fix the ones that move, like Thanksgiving. Closures do
-            not change pay: holiday pay is not set up.
+            not change pay: holiday pay is not set up. A day that is marked but{' '}
+            <strong>shuts nothing</strong> — Election Day, Black Friday — is a{' '}
+            <strong>holiday</strong> instead (<strong>+ Add holiday</strong>): everyone sees it on
+            the calendar, nobody is notified and no shift is flagged. Copy into next year takes
+            holidays too.
+          </p>
+        ),
+      },
+      {
+        question: 'The diagnostics schedule',
+        answer: (
+          <p>
+            On <Screen>Schedule → Calendar</Screen>, choose{' '}
+            <strong>+ Add → Diagnostics date</strong>: which tests (&ldquo;US + ECHO&rdquo;,
+            &ldquo;ANS + VNG&rdquo;), the office, and the hours. A pattern like &ldquo;every other
+            Sunday at West New York&rdquo; can be entered once with <strong>Repeat</strong>; when a
+            date is different, click a date and use <strong>Add another date like this</strong> — it
+            copies the tests, hours and office, and you change the day. Everyone sees diagnostics
+            and is told when one is added, moved or cancelled (no day-before reminder). Write when
+            the tests are on and anything the front desk should know — never a patient&rsquo;s name
+            or who is booked.
           </p>
         ),
       },

@@ -157,7 +157,8 @@ model Location {
   supplyRequests SupplyRequest[]
 
   surveys       Survey[]
-  events        PracticeEvent[]
+  events        PracticeEvent[]        @relation("EventForLocation")
+  eventsHere    PracticeEvent[]        @relation("EventAtLocation")
   eventInvitees PracticeEventInvitee[]
 
   @@map("locations")
@@ -700,11 +701,11 @@ model Shift {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  employee    Employee?    @relation(fields: [employeeId], references: [id], onDelete: Cascade)
-  location    Location     @relation(fields: [locationId], references: [id], onDelete: Restrict)
-  jobRole     JobRole?     @relation(fields: [jobRoleId], references: [id], onDelete: SetNull)
-  createdBy   Employee?    @relation("ShiftCreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
-  series      ShiftSeries? @relation(fields: [seriesId], references: [id], onDelete: SetNull)
+  employee    Employee?       @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+  location    Location        @relation(fields: [locationId], references: [id], onDelete: Restrict)
+  jobRole     JobRole?        @relation(fields: [jobRoleId], references: [id], onDelete: SetNull)
+  createdBy   Employee?       @relation("ShiftCreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
+  series      ShiftSeries?    @relation(fields: [seriesId], references: [id], onDelete: SetNull)
   timeEntries TimeEntry[]
   reminders   PunchReminder[]
 
@@ -826,15 +827,15 @@ model TimeEntry {
   clockOutVerification   VerificationMethod?
 
   /// Flags surfaced to managers on the timesheet review screen.
-  isLate           Boolean @default(false)
-  isEarlyDeparture Boolean @default(false)
-  isManuallyEdited Boolean @default(false)
-  isMissingPunch   Boolean @default(false)
+  isLate           Boolean   @default(false)
+  isEarlyDeparture Boolean   @default(false)
+  isManuallyEdited Boolean   @default(false)
+  isMissingPunch   Boolean   @default(false)
   /// Clocked in somewhere other than the shift they were on — another office,
   /// or from home with no work-from-home shift (October 2026, Dominguez). It
   /// is allowed, after a warning, and shown on the timesheet with the reason
   /// they gave, if any.
-  isOtherPlace     Boolean @default(false)
+  isOtherPlace     Boolean   @default(false)
   otherPlaceReason String?
   /// Still clocked in at midnight, so the app clocked them out (October 2026,
   /// Dominguez): `clockOutAt` is that midnight and this is when the app did
@@ -1293,11 +1294,11 @@ model CredentialRequirement {
 /// isPrimary", so the migration adds a partial unique index for it, and the
 /// service keeps "at least one" by moving the flag rather than clearing it.
 model Announcement {
-  id        String  @id @default(uuid()) @db.Uuid
-  title     String
+  id              String  @id @default(uuid()) @db.Uuid
+  title           String
   /// Plain text. Line breaks are kept; nothing is interpreted as markup.
-  body      String
-  isPrimary Boolean @default(false)
+  body            String
+  isPrimary       Boolean @default(false)
   /// Also shown on the front-desk time clock (October 2026, Dominguez). Off
   /// unless an admin ticks it: patients can see the tablet, so only the posts
   /// chosen for it appear there — read-only, no likes, comments or poll.
@@ -1590,10 +1591,19 @@ model Unavailability {
 // (docs/open-questions.md).
 // ---------------------------------------------------------------------------
 
-/// A meeting or day out, or a time an office is shut.
+/// What an entry on the practice calendar is (October 2026, Dominguez: one
+/// calendar for "events, diagnostic schedule, holidays/office closures").
 enum PracticeEventKind {
+  /// A meeting or a day out, for the people it is for.
   EVENT
+  /// An office shut: warned about on the rota, in its forms and the round-up.
   CLOSURE
+  /// A named day — Election Day, Veterans Day — that shuts nothing. For
+  /// everyone, all day; no notification, no rota warning.
+  HOLIDAY
+  /// When a test is offered at an office: "US + ECHO 8–2, West New York".
+  /// For everyone. When it is on — never who is booked into it.
+  DIAGNOSTIC
 }
 
 /// Who an event is for. The same three choices as a survey.
@@ -1640,11 +1650,14 @@ model PracticeEvent {
   startsAt    DateTime
   endsAt      DateTime
 
-  audience   EventAudience @default(EVERYONE)
+  audience     EventAudience @default(EVERYONE)
   /// For JOB_ROLE. Null after the role is deleted, which leaves nobody invited.
-  jobRoleId  String?       @db.Uuid
+  jobRoleId    String?       @db.Uuid
   /// For LOCATION — and for a closure, the one office that is shut.
-  locationId String?       @db.Uuid
+  locationId   String?       @db.Uuid
+  /// The office it happens at, for a diagnostics date. Not who it is for:
+  /// diagnostics are for everyone, wherever they work.
+  atLocationId String?       @db.Uuid
 
   /// The series this date belongs to, if it repeats. Each date is its own
   /// row, so one can be moved or removed without the rest.
@@ -1656,11 +1669,12 @@ model PracticeEvent {
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
-  jobRole   JobRole?               @relation(fields: [jobRoleId], references: [id], onDelete: SetNull)
-  location  Location?              @relation(fields: [locationId], references: [id], onDelete: SetNull)
-  createdBy Employee?              @relation("EventCreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
-  series    PracticeEventSeries?   @relation(fields: [seriesId], references: [id], onDelete: SetNull)
-  invitees  PracticeEventInvitee[]
+  jobRole    JobRole?               @relation(fields: [jobRoleId], references: [id], onDelete: SetNull)
+  location   Location?              @relation("EventForLocation", fields: [locationId], references: [id], onDelete: SetNull)
+  atLocation Location?              @relation("EventAtLocation", fields: [atLocationId], references: [id], onDelete: SetNull)
+  createdBy  Employee?              @relation("EventCreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
+  series     PracticeEventSeries?   @relation(fields: [seriesId], references: [id], onDelete: SetNull)
+  invitees   PracticeEventInvitee[]
 
   @@index([startsAt])
   @@index([kind, startsAt])

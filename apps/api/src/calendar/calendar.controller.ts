@@ -7,6 +7,7 @@ import {
   HttpStatus,
   Param,
   Post,
+  Query,
   Res,
 } from '@nestjs/common';
 import type { Response } from 'express';
@@ -14,6 +15,7 @@ import { AuthUser } from '../common/auth/auth-user';
 import { CurrentUser } from '../common/auth/current-user.decorator';
 import { Public } from '../common/auth/public.decorator';
 import { CalendarService } from './calendar.service';
+import { PayDaysQuery } from './pay-days.dto';
 
 @Controller('calendar')
 export class CalendarController {
@@ -38,6 +40,13 @@ export class CalendarController {
   async revoke(@CurrentUser() user: AuthUser) {
     await this.calendar.revokeToken(user.id);
     return { revoked: true };
+  }
+
+  /// Pay days in a range, for the practice calendar: the Friday after each
+  /// pay period ends. Anybody signed in.
+  @Get('pay-days')
+  async payDays(@Query() query: PayDaysQuery) {
+    return { payDays: await this.calendar.payDays(query.from, query.to) };
   }
 
   /**

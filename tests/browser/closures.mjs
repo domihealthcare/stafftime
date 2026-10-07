@@ -225,7 +225,7 @@ await step('copying the year puts both a year on, and a second copy adds nothing
   await card.getByText(String(year), { exact: true }).waitFor({ timeout: 10000 });
   await card.getByRole('button', { name: `Copy these into ${year + 1}` }).click();
   await manager.getByRole('alertdialog').getByRole('button', { name: `Yes, copy into ${year + 1}` }).click();
-  await card.getByRole('status').getByText(`2 closures copied into ${year + 1}.`).waitFor({ timeout: 10000 });
+  await card.getByRole('status').getByText(`2 copied into ${year + 1}.`).waitFor({ timeout: 10000 });
   const copied = await manager.evaluate(async (y) => {
     const events = await fetch(`/api/events?from=${new Date(y, 0, 1).toISOString()}&to=${new Date(y + 1, 0, 1).toISOString()}`).then((r) => r.json());
     return events.filter((e) => e.kind === 'CLOSURE');
@@ -242,7 +242,7 @@ await step('copying the year puts both a year on, and a second copy adds nothing
   await card.getByRole('button', { name: '←' }).or(card.getByRole('button', { name: 'Previous year' })).first().click();
   await card.getByRole('button', { name: `Copy these into ${year + 1}` }).click();
   await manager.getByRole('alertdialog').getByRole('button', { name: `Yes, copy into ${year + 1}` }).click();
-  await card.getByRole('status').getByText(/0 closures copied .* already on/).waitFor({ timeout: 10000 });
+  await card.getByRole('status').getByText(/0 copied .* already on/).waitFor({ timeout: 10000 });
 });
 
 await step('calling a closure off tells staff the office is open as usual', async () => {

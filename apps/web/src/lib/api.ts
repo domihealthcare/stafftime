@@ -1181,7 +1181,13 @@ export const api = {
       method: 'PATCH',
       body: JSON.stringify(body),
     }),
-  /// Every closure in `fromYear`, put on the same date the year after.
+  /// Pay days from one date to another (YYYY-MM-DD, inclusive): the Friday
+  /// after each pay period ends. None until a pay period is set.
+  payDays: (from: string, to: string) =>
+    request<{ payDays: string[] }>(
+      `/calendar/pay-days?from=${encodeURIComponent(from)}&to=${encodeURIComponent(to)}`,
+    ),
+  /// Every closure and holiday in `fromYear`, put on the same date the year after.
   copyClosures: (fromYear: number) =>
     request<{ copied: number; skipped: string[]; toYear: number }>('/events/closures/copy', {
       method: 'POST',

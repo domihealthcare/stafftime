@@ -67,6 +67,9 @@ const ClosingPage = lazy(() =>
 const SchedulePage = lazy(() =>
   import('./pages/SchedulePage').then((m) => ({ default: m.SchedulePage })),
 );
+const CalendarPage = lazy(() =>
+  import('./pages/CalendarPage').then((m) => ({ default: m.CalendarPage })),
+);
 const RotaPrintPage = lazy(() =>
   import('./pages/RotaPrintPage').then((m) => ({ default: m.RotaPrintPage })),
 );
@@ -177,6 +180,7 @@ function Routed() {
           <Route path="job-roles" element={<JobRolesPage />} />
           <Route path="timesheet" element={<TimesheetPage />} />
           <Route path="schedule" element={<SchedulePage />} />
+          <Route path="schedule/calendar" element={<CalendarPage />} />
           <Route path="availability" element={<AvailabilityPage />} />
           <Route path="password" element={<ChangePasswordPage forced={false} />} />
           <Route path="notifications" element={<NotificationsPage />} />

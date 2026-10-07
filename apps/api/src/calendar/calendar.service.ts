@@ -1,4 +1,4 @@
-import { Injectable, Logger, NotFoundException } from '@nestjs/common';
+import { BadRequestException, Injectable, Logger, NotFoundException } from '@nestjs/common';
 import {
   EmploymentStatus,
   EventAudience,
@@ -11,6 +11,9 @@ import { allDayDates } from '../events/event-time';
 import { EventsService, type EventRow } from '../events/events.service';
 import { CalendarInvitesService } from '../invites/invites.service';
 import { PrismaService } from '../prisma/prisma.service';
+import { localDateIn, PRACTICE_ZONE } from '../common/util/zoned-time.util';
+import { payDaysBetween } from '../settings/pay-days';
+import { PracticeSettingsService } from '../settings/practice-settings.service';
 import { buildCalendar, type CalendarEvent } from './ical';
 
 /// How much history and future to publish. Enough to be useful, bounded so the
@@ -20,6 +23,9 @@ const WINDOW_AHEAD_DAYS = 365;
 
 const TOKEN_BYTES = 24;
 
+/// The feed's own window is 425 days; nothing else needs more.
+const MAX_PAY_DAY_SPAN_DAYS = 430;
+
 @Injectable()
 export class CalendarService {
   private readonly logger = new Logger(CalendarService.name);
@@ -28,7 +34,25 @@ export class CalendarService {
     private readonly prisma: PrismaService,
     private readonly events: EventsService,
     private readonly invites: CalendarInvitesService,
+    private readonly settings: PracticeSettingsService,
   ) {}
+
+  /// Pay days from `from` to `to` (YYYY-MM-DD, inclusive): the Friday after
+  /// each pay period ends. None until a pay period is set.
+  async payDays(from: string, to: string): Promise<string[]> {
+    const span = (Date.parse(`${to}T00:00:00Z`) - Date.parse(`${from}T00:00:00Z`)) / 86_400_000;
+    if (!Number.isFinite(span) || span < 0 || span > MAX_PAY_DAY_SPAN_DAYS) {
+      throw new BadRequestException(
+        `Ask for up to ${MAX_PAY_DAY_SPAN_DAYS} days of pay days, last day after the first.`,
+      );
+    }
+    const { payPeriodStart } = await this.settings.get();
+    return payDaysBetween(
+      from,
+      to,
+      payPeriodStart ? payPeriodStart.toISOString().slice(0, 10) : null,
+    );
+  }
 
   /// The employee's existing token, or null if they have never asked for one.
   async currentToken(employeeId: string): Promise<{ token: string | null; setAt: Date | null }> {
@@ -95,7 +119,7 @@ export class CalendarService {
     // and approved time off — so nobody sees a shift or a meeting twice.
     const invited = this.invites.enabled;
 
-    const [shifts, timeOff, allEvents] = await Promise.all([
+    const [shifts, timeOff, allEvents, payDays] = await Promise.all([
       invited
         ? Promise.resolve([])
         : this.prisma.shift.findMany({
@@ -138,9 +162,11 @@ export class CalendarService {
       // Meetings and practice events for them: everyone's, their job roles',
       // their offices'.
       this.events.forPerson(employee.id, from, to),
+      this.payDays(localDateIn(from, PRACTICE_ZONE), localDateIn(to, PRACTICE_ZONE)),
     ]);
+    // Invites carry meetings only; closures, holidays and diagnostics stay here.
     const practiceEvents = invited
-      ? allEvents.filter((event) => event.kind === PracticeEventKind.CLOSURE)
+      ? allEvents.filter((event) => event.kind !== PracticeEventKind.EVENT)
       : allEvents;
 
     const displayName = employee.preferredName ?? employee.firstName;
@@ -181,17 +207,22 @@ export class CalendarService {
             ]
               .filter(Boolean)
               .join('\n\n') || undefined,
-          location: event.place ?? event.meetingUrl ?? undefined,
+          location:
+            event.place ??
+            (event.atLocation ? addressOf(event.atLocation) : undefined) ??
+            event.meetingUrl ??
+            undefined,
           url: event.meetingUrl ?? undefined,
         };
         if (!event.allDay) {
-          // A closure is time off the rota, not an appointment: it should not
-          // make anybody look busy.
+          // Only a meeting is somewhere to be. A closure is time off the
+          // rota and a diagnostics date is the office's, not the reader's:
+          // neither should make anybody look busy.
           return {
             ...common,
             start: event.startsAt,
             end: event.endsAt,
-            transparent: event.kind === PracticeEventKind.CLOSURE,
+            transparent: event.kind !== PracticeEventKind.EVENT,
           };
         }
         // Whole days on the practice's clock, so a wellness day on the 15th
@@ -205,6 +236,15 @@ export class CalendarService {
           transparent: true,
         };
       }),
+      ...payDays.map((day): CalendarEvent => ({
+        // Worked out, never stored: the date is the identity.
+        uid: `payday-${day}@staff.domihealthcare.com`,
+        sequence: 0,
+        summary: 'Pay day',
+        startDate: new Date(`${day}T00:00:00.000Z`),
+        endDate: new Date(`${day}T00:00:00.000Z`),
+        transparent: true,
+      })),
     ];
 
     return buildCalendar(events, {
@@ -218,13 +258,20 @@ export class CalendarService {
   }
 }
 
-/// "Office meeting", or for a closure "Closed: Christmas Day" /
-/// "North Bergen closed: Burst pipe".
+/// "Office meeting", for a closure "Closed: Christmas Day" / "North Bergen
+/// closed: Burst pipe", for diagnostics "US + ECHO — West New York".
 function summaryOf(event: EventRow): string {
+  if (event.kind === PracticeEventKind.DIAGNOSTIC) {
+    return event.atLocation ? `${event.title} — ${event.atLocation.name}` : event.title;
+  }
   if (event.kind !== PracticeEventKind.CLOSURE) return event.title;
   return event.audience === EventAudience.LOCATION && event.location
     ? `${event.location.name} closed: ${event.title}`
     : `Closed: ${event.title}`;
+}
+
+function addressOf(location: { addressLine1: string; city: string; state: string }): string {
+  return [location.addressLine1, location.city, location.state].filter(Boolean).join(', ');
 }
 
 /// iCalendar SEQUENCE must be a non-negative integer that only increases.

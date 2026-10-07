@@ -1014,8 +1014,9 @@ export interface EventSeries extends RepeatInput {
   summary: string;
 }
 
-/// A meeting or day out, or a time an office is shut (a holiday).
-export type EventKind = 'EVENT' | 'CLOSURE';
+/// What an entry on the practice calendar is: a meeting or day out, an
+/// office shut, a named day that shuts nothing, or when a test is offered.
+export type EventKind = 'EVENT' | 'CLOSURE' | 'HOLIDAY' | 'DIAGNOSTIC';
 
 /// An office meeting, a provider meeting, a wellness day. On the schedule and
 /// in the calendar feed; never counted as hours.
@@ -1037,6 +1038,8 @@ export interface PracticeEvent {
   audience: EventAudience;
   jobRole: { id: string; name: string; colour: string } | null;
   location: { id: string; name: string } | null;
+  /// A diagnostics date: the office it is at (it is for everyone).
+  atLocation: { id: string; name: string } | null;
   /// CHOSEN: who it is for.
   invitees: EventInvitee[];
   /// The series this date belongs to, if it repeats.
@@ -1059,10 +1062,12 @@ export interface EventInput {
   audience: EventAudience;
   jobRoleId?: string;
   locationId?: string;
+  /// A diagnostics date: the office it is at.
+  atLocationId?: string;
   invitees?: { employeeIds?: string[]; jobRoleIds?: string[]; locationIds?: string[] };
   repeat?: RepeatInput | null;
-  /// Closures, when making one: also on the same date in each of the next
-  /// this-many years.
+  /// Closures and holidays, when making one: also on the same date in each
+  /// of the next this-many years.
   yearsAhead?: number;
 }
 export type SurveyStatus = 'DRAFT' | 'OPEN' | 'CLOSED';

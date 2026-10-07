@@ -27,6 +27,7 @@ function row(over: Record<string, unknown> = {}) {
     seriesId: null,
     jobRole: null,
     location: null,
+    atLocation: null,
     invitees: [],
     series: null,
     ...over,
@@ -41,8 +42,18 @@ const PEOPLE: Record<string, string> = { 'emp-kayla': 'Kayla', 'emp-angelina': '
 function stored(data: Record<string, unknown>) {
   const jobRoleId = data.jobRoleId as string | null | undefined;
   const locationId = data.locationId as string | null | undefined;
+  const atLocationId = data.atLocationId as string | null | undefined;
   return row({
     ...data,
+    atLocation: atLocationId
+      ? {
+          id: atLocationId,
+          name: OFFICES[atLocationId] ?? 'Office',
+          addressLine1: '1 Main St',
+          city: 'Town',
+          state: 'NJ',
+        }
+      : null,
     jobRole: jobRoleId ? { id: jobRoleId, name: ROLES[jobRoleId] ?? 'Role', colour: 'blue' } : null,
     location: locationId ? { id: locationId, name: OFFICES[locationId] ?? 'Office' } : null,
   });
@@ -576,7 +587,7 @@ describe('closures', () => {
       practiceEvent.findMany.mockResolvedValue([]);
       await service.copyClosures(2026, manager);
       expect(practiceEvent.findMany.mock.calls[0][0].where).toEqual({
-        kind: PracticeEventKind.CLOSURE,
+        kind: { in: [PracticeEventKind.CLOSURE, PracticeEventKind.HOLIDAY] },
         startsAt: {
           gte: new Date('2026-01-01T05:00:00.000Z'),
           lt: new Date('2027-01-01T05:00:00.000Z'),
@@ -624,6 +635,161 @@ describe('closures', () => {
         body: '2 closures: Christmas Day, Christmas Eve',
       });
     });
+  });
+});
+
+describe('holidays', () => {
+  const electionDay = (over: Partial<EventInput> = {}): EventInput => ({
+    kind: PracticeEventKind.HOLIDAY,
+    title: 'Election Day',
+    allDay: true,
+    startDate: '2099-11-03',
+    endDate: '2099-11-03',
+    audience: EventAudience.EVERYONE,
+    ...over,
+  });
+
+  it('is for everyone, whatever the form sent, with no place or call', async () => {
+    const { service, practiceEvent } = build();
+    await service.create(
+      electionDay({
+        audience: EventAudience.LOCATION,
+        locationId: 'loc-nb',
+        place: 'Somewhere',
+        meetingUrl: 'https://meet.google.com/abc',
+      }),
+      manager,
+    );
+    expect(practiceEvent.createMany.mock.calls[0][0].data[0]).toMatchObject({
+      kind: PracticeEventKind.HOLIDAY,
+      audience: EventAudience.EVERYONE,
+      locationId: null,
+      place: null,
+      meetingUrl: null,
+    });
+  });
+
+  it('is a whole day', async () => {
+    const { service } = build();
+    await expect(
+      service.create(
+        electionDay({ allDay: false, startsAt: FUTURE_START, endsAt: FUTURE_END }),
+        manager,
+      ),
+    ).rejects.toThrow('A holiday is a whole day');
+  });
+
+  it('does not repeat within a year', async () => {
+    const { service } = build();
+    await expect(
+      service.create(
+        electionDay({
+          repeat: { frequency: 'WEEKLY', interval: 1, weekdays: [2], until: '2099-12-31' },
+        }),
+        manager,
+      ),
+    ).rejects.toThrow(BadRequestException);
+  });
+
+  it('rings nobody’s bell — it only names a day', async () => {
+    const { service, inbox } = build();
+    await service.create(electionDay(), manager);
+    expect(inbox.notify).not.toHaveBeenCalled();
+  });
+
+  it('can be entered for the years ahead, like a closure', async () => {
+    const { service, practiceEvent } = build();
+    await service.create(electionDay({ yearsAhead: 2 }), manager);
+    expect(practiceEvent.create).toHaveBeenCalledTimes(2);
+    expect(practiceEvent.create.mock.calls[0][0].data.kind).toBe(PracticeEventKind.HOLIDAY);
+  });
+});
+
+describe('diagnostics', () => {
+  const usEcho = (over: Partial<EventInput> = {}): EventInput => ({
+    kind: PracticeEventKind.DIAGNOSTIC,
+    title: 'US + ECHO',
+    allDay: false,
+    // 8am–2pm in New Jersey.
+    startsAt: '2099-11-08T13:00:00.000Z',
+    endsAt: '2099-11-08T19:00:00.000Z',
+    audience: EventAudience.EVERYONE,
+    atLocationId: 'loc-wny',
+    ...over,
+  });
+
+  it('is at an office, and for everyone', async () => {
+    const { service, practiceEvent } = build();
+    await service.create(
+      usEcho({ audience: EventAudience.JOB_ROLE, jobRoleId: 'role-fd', place: 'Room 2' }),
+      manager,
+    );
+    expect(practiceEvent.createMany.mock.calls[0][0].data[0]).toMatchObject({
+      kind: PracticeEventKind.DIAGNOSTIC,
+      atLocationId: 'loc-wny',
+      audience: EventAudience.EVERYONE,
+      jobRoleId: null,
+      place: null,
+      meetingUrl: null,
+    });
+  });
+
+  it('needs the office', async () => {
+    const { service } = build();
+    await expect(service.create(usEcho({ atLocationId: undefined }), manager)).rejects.toThrow(
+      'Choose which office it is at.',
+    );
+  });
+
+  it('refuses an office that has gone', async () => {
+    const { service, prisma } = build();
+    prisma.location.count.mockResolvedValueOnce(0);
+    await expect(service.create(usEcho(), manager)).rejects.toThrow(
+      'That office no longer exists.',
+    );
+  });
+
+  it('keeps no office for any other kind', async () => {
+    const { service, practiceEvent } = build();
+    await service.create(input({ atLocationId: 'loc-wny' }), manager);
+    expect(practiceEvent.createMany.mock.calls[0][0].data[0].atLocationId).toBeNull();
+  });
+
+  it('tells people when a date is added, naming the office', async () => {
+    const { service, inbox } = build();
+    await service.create(usEcho(), manager);
+    const [, notice] = inbox.notify.mock.calls[0];
+    expect(notice.title).toBe('Diagnostics: US + ECHO');
+    expect(notice.body).toMatch(/West New York$/);
+  });
+
+  it('says so when a date is cancelled', async () => {
+    const { service, inbox } = build({
+      existing: row({
+        kind: PracticeEventKind.DIAGNOSTIC,
+        title: 'ANS + VNG',
+        place: null,
+        atLocation: { id: 'loc-nb', name: 'North Bergen' },
+      }),
+    });
+    await service.remove('ev-1', manager);
+    expect(inbox.notify.mock.calls[0][1].title).toBe('Diagnostics cancelled: ANS + VNG');
+  });
+
+  it('says it changed when it moves to the other office', async () => {
+    const { service, inbox } = build({
+      existing: row({
+        kind: PracticeEventKind.DIAGNOSTIC,
+        title: 'US + ECHO',
+        place: null,
+        startsAt: new Date('2099-11-08T13:00:00.000Z'),
+        endsAt: new Date('2099-11-08T19:00:00.000Z'),
+        atLocation: { id: 'loc-nb', name: 'North Bergen' },
+      }),
+    });
+    await service.update('ev-1', usEcho(), manager);
+    const titles = inbox.notify.mock.calls.map(([, notice]) => notice.title);
+    expect(titles).toContain('Diagnostics changed: US + ECHO');
   });
 });
 
@@ -988,6 +1154,8 @@ describe('reminders the day before', () => {
         lt: new Date('2099-10-03T04:00:00.000Z'),
       },
       reminderSentAt: null,
+      // Not diagnostics or holidays: every weekend's tests would bury the bell.
+      kind: { in: [PracticeEventKind.EVENT, PracticeEventKind.CLOSURE] },
     });
   });
 

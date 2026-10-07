@@ -2906,6 +2906,62 @@ test had the same slip, so it passed. Harmless while the feed only carried
 office names and time-off types; not once managers type event names. Fixed,
 with the test corrected.
 
+### The practice calendar: diagnostics, holidays and pay days
+
+Asked for by Dominguez in October 2026: "a calendar that staff can reference
+for multiple things (events, diagnostic schedule, holidays/office closures,
+etc) … updated in the staff portal and staff should be able to subscribe to
+it". It replaces a printed month the practice kept by hand — "US + ECHO 8-2"
+on alternate Sundays and "ANS + VNG 9-2" on alternate Saturdays, switching
+between West New York and North Bergen, with Election Day, Veterans Day,
+Thanksgiving and Black Friday written in.
+
+**Schedule → Calendar** (`/schedule/calendar`, `pages/CalendarPage.tsx`),
+behind a Shifts | Calendar switch at the top of both, so the phone's bottom
+bar stays at five tabs and Schedule stays lit. A month (Sunday first, like the
+rota) or a day-by-day list (a phone starts on the list); the key above it is
+also the filter, and an office narrows the diagnostics (and one-office
+closures) to that office. Managers and admins add with **+ Add**, or the ＋ on
+a day; everybody reads. The Holidays and closures card and the calendar link
+sit underneath.
+
+What goes on it, as kinds of `PracticeEvent` (`lib/calendar-kinds.ts` holds
+their words and colours):
+
+- **Diagnostics** (`kind: DIAGNOSTIC`) — which tests, the hours and **the
+  office it is at** (`atLocationId`, separate from `locationId`, which is who
+  an event is *for*). For **everyone** (Dominguez): the audience is forced to
+  `EVERYONE` whatever is sent. No place or call. Added, moved and cancelled
+  ring the bell ("Diagnostics: US + ECHO"); **no day-before reminder** —
+  nearly every weekend has one, and it would bury the bell. On phones it reads
+  "US + ECHO — West New York", at the office's address, and never makes
+  anybody look busy. "Usually similar but not always the same" (Dominguez):
+  the regular pattern is a repeat (every 2 weeks on Sunday), and **Add another
+  date like this** in a date's pop-up copies tests, hours and office onto a
+  day still to choose (`EventForm`'s `template`). It says *when the tests
+  are on* — never who is booked; the form says so under the notes.
+- **Holidays** (`kind: HOLIDAY`) — a named day that **shuts nothing**. A
+  closure had been the only way to mark a holiday, and Election Day or Black
+  Friday are not closures. All day, for everyone, never repeating within a
+  year (Repeat every year and Copy into next year take them, like closures).
+  **Nobody is notified** and no shift is flagged. Thanksgiving, if the offices
+  shut, is a closure.
+- **Closures**, **meetings and events** — as before.
+- **Pay days** — **worked out, never stored**: the Friday after each pay
+  period ends (Dominguez; `settings/pay-days.ts`). A period ending on a Friday
+  is paid the Friday after, a week later. None until a pay period start is set
+  in Practice settings. `GET /calendar/pay-days?from&to` (anybody signed in);
+  in the feed as all-day "Pay day" entries whose identity is the date.
+
+Once calendar invites are switched on, the feed keeps everything that is not a
+meeting — closures, holidays, diagnostics, pay days — since only meetings go
+out as invites.
+
+Still to come, agreed with Dominguez: **rep lunches** with a contact list
+(name, cell, company, medication, catering or self-order, preferred status,
+notes managers only), **separate subscriptions** per kind, and a printed month
+like the paper one. See `docs/open-questions.md`.
+
 ### Repeating events and chosen people
 
 Asked for by Dominguez straight after events went live (September 2026): the
