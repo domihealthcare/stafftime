@@ -456,7 +456,14 @@ Beyond the phases, the parts worth knowing about before picking up work:
   (`PUT /directory/extensions`); migration `20261002030000_office_extensions`
   loads the sheet and matches a line to an account only when exactly one
   current member of staff has that first and last name — **check the
-  matches on the live site** and fix any in Edit.
+  matches on the live site** and fix any in Edit. **Replaced on 7 October
+  2026 by the new phone system's list** (Dominguez,
+  `20261007010000_office_extensions_new_phones`): Providers are now the
+  doctors' room phones (Dr N 1 201 …), the providers' own softphones
+  (501–504) are a last section, "Provider softphones (rarely used)", matched
+  to nobody; the admin team keep 521–525 as from-home numbers; Front Desk
+  (FD N 1 101 … FD 10 110), MA & Lab (111–113) and Shared lines (Office 100,
+  Admin 120, CCM 130, IT 777).
 - **Notes on a shift** (2 October 2026, Dominguez: "so I can write 7-12
   upstairs and 12-3 downstairs"): `Shift.notes` had always been in the
   schema (and on the calendar feed and invites) but no screen wrote it. Now
