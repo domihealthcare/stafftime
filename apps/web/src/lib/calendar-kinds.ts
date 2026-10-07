@@ -5,12 +5,15 @@ import type { EventKind } from './types';
  * calendar that staff can reference for multiple things"), each with the
  * words and colours it wears everywhere it is shown — the Calendar, the rota's
  * events row, the month, Home. Pay days are not stored: they are worked out
- * from the pay period, so they are a kind here but never an event.
+ * from the pay period, so they are a kind here but never an event. So is
+ * "My shifts", the signed-in person's own schedule (October 2026, Dominguez:
+ * "the calendar should also have the option to show the users schedule for
+ * the month").
  *
  * Tailwind finds class names by reading the source, so each is written out
  * whole rather than built from a colour name.
  */
-export type CalendarKind = EventKind | 'PAY_DAY';
+export type CalendarKind = EventKind | 'PAY_DAY' | 'MY_SHIFT';
 
 export interface KindStyle {
   /// "Diagnostics" — a filter chip, a heading.
@@ -27,6 +30,14 @@ export interface KindStyle {
 }
 
 export const KIND_STYLE: Record<CalendarKind, KindStyle> = {
+  MY_SHIFT: {
+    label: 'My shifts',
+    one: 'Your shift',
+    emoji: '🕘',
+    chip: 'bg-brand-50 text-brand-900 ring-brand-300 hover:bg-brand-100',
+    subtle: 'text-brand-800',
+    dot: 'bg-brand-600',
+  },
   EVENT: {
     label: 'Meetings & events',
     one: 'Event',
@@ -80,6 +91,7 @@ export const KIND_STYLE: Record<CalendarKind, KindStyle> = {
 
 /// The order they are listed in, filtered by and shown on a day.
 export const CALENDAR_KINDS: CalendarKind[] = [
+  'MY_SHIFT',
   'CLOSURE',
   'HOLIDAY',
   'PAY_DAY',

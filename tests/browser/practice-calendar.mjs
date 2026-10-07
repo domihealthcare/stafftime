@@ -446,6 +446,64 @@ await step('a shift says whether there is a rep lunch: 🍽️ or 🥪', async (
   await frankie.screenshot({ path: `${OUT}/practice-calendar-lunch-icons.png`, fullPage: true });
 });
 
+await step('My shifts: your own schedule for the month on the calendar, alone or with the rest', async () => {
+  // A day off on the 11th, asked for by Frankie and approved.
+  const requestId = await frankie.evaluate(async () => {
+    const r = await fetch('/api/pto', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ type: 'VACATION', startDate: '2027-03-11', endDate: '2027-03-11' }),
+    });
+    if (!r.ok) throw new Error(await r.text());
+    return (await r.json()).id;
+  });
+  await manager.evaluate(async (id) => {
+    const r = await fetch(`/api/pto/${id}/review`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ decision: 'APPROVED' }),
+    });
+    if (!r.ok) throw new Error(await r.text());
+  }, requestId);
+
+  await calendar(frankie);
+  const show = frankie.getByRole('group', { name: 'Show on the calendar' });
+  // From All, My shifts alone.
+  await show.getByRole('button', { name: /^All/ }).click();
+  await show.getByRole('button', { name: /My shifts/ }).click();
+  const ninth = day(frankie, '2027-03-09').getByTestId('my-shift');
+  await ninth.waitFor({ timeout: 10000 });
+  const label = await ninth.getAttribute('aria-label');
+  if (!/Your shift, \d+(:\d+)?(am|pm)–\d+(:\d+)?(am|pm) · NB/.test(label ?? '')) throw new Error(`the shift reads ${label}`);
+  if ((await ninth.getByTestId('lunch-icon').getAttribute('data-lunch')) !== 'rep') throw new Error('no rep lunch icon on the 9th');
+  await day(frankie, '2027-03-10').getByTestId('my-shift').waitFor();
+  const off = await day(frankie, '2027-03-11').getByTestId('my-time-off').innerText();
+  if (!off.includes('Off · PTO')) throw new Error(`the day off reads ${off}`);
+  if (await day(frankie, '2027-03-09').getByTestId('rep_lunch-chip').count()) throw new Error('rep lunches shown with only My shifts picked');
+  if (await day(frankie, '2027-03-12').getByTestId('payday-chip').count()) throw new Error('pay days shown with only My shifts picked');
+  // With pay days too.
+  await show.getByRole('button', { name: /Pay days/ }).click();
+  await day(frankie, '2027-03-12').getByTestId('payday-chip').waitFor();
+  await day(frankie, '2027-03-09').getByTestId('my-shift').waitFor();
+  // The list too.
+  await frankie.getByRole('group', { name: 'Show as' }).getByRole('button', { name: 'List' }).click();
+  await frankie.getByTestId('calendar-list-2027-03-10').getByTestId('my-shift').waitFor({ timeout: 10000 });
+  await frankie.getByRole('group', { name: 'Show as' }).getByRole('button', { name: 'Month' }).click();
+  await frankie.screenshot({ path: `${OUT}/practice-calendar-my-shifts.png`, fullPage: true });
+  // Tapping a shift opens its week on the Schedule.
+  await day(frankie, '2027-03-09').getByTestId('my-shift').click();
+  await frankie.waitForURL(/\/schedule\?week=2027-03-09/, { timeout: 10000 });
+  // Printed only when picked: All is the practice's, for the wall.
+  await frankie.goto(`${BASE}/schedule/calendar/print?month=2027-03-01`, { waitUntil: 'networkidle' });
+  await frankie.getByTestId('print-month').waitFor({ timeout: 10000 });
+  if ((await frankie.getByTestId('print-day-2027-03-09').innerText()).includes('🕘')) throw new Error('your shifts printed under All');
+  await frankie.goto(`${BASE}/schedule/calendar/print?month=2027-03-01&kinds=MY_SHIFT`, { waitUntil: 'networkidle' });
+  await frankie.getByTestId('print-day-2027-03-09').getByText('· NB').waitFor({ timeout: 10000 });
+  // Back to All for whatever comes next.
+  await calendar(frankie);
+  await frankie.getByRole('group', { name: 'Show on the calendar' }).getByRole('button', { name: /^All/ }).click();
+});
+
 await step('Home says whether there is a rep lunch today', async () => {
   await frankie.goto(`${BASE}/`, { waitUntil: 'networkidle' });
   const line = frankie.getByTestId('todays-lunch');

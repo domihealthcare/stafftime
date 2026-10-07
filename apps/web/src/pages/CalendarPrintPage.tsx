@@ -15,10 +15,19 @@ import {
   startOfMonth,
 } from '../lib/format';
 import { useSession } from '../lib/session';
+import {
+  loadMySchedule,
+  myDay,
+  NO_SCHEDULE,
+  offLine,
+  shiftLine,
+  type MySchedule,
+} from '../components/MySchedule';
 import type { Location, PracticeEvent } from '../lib/types';
 
 /// Each kind's ink on paper: strong enough to read in black and white too.
 const PRINT_INK: Record<CalendarKind, string> = {
+  MY_SHIFT: 'text-brand-800 font-semibold',
   CLOSURE: 'text-slate-900 font-bold',
   HOLIDAY: 'text-amber-800 font-semibold',
   PAY_DAY: 'text-emerald-800 font-semibold',
@@ -46,13 +55,17 @@ export function CalendarPrintPage() {
     const asked = (params.get('kinds') ?? '')
       .split(',')
       .filter((kind): kind is CalendarKind => CALENDAR_KINDS.includes(kind as CalendarKind));
-    return asked.length > 0 ? asked : CALENDAR_KINDS;
+    // All is everything practice-wide: your own shifts only when picked, so a
+    // month printed for the wall does not carry the printer's schedule.
+    return asked.length > 0 ? asked : CALENDAR_KINDS.filter((kind) => kind !== 'MY_SHIFT');
   }, [params]);
   const office = params.get('office') ?? '';
   const days = useMemo(() => monthGrid(monthStart), [monthStart]);
 
   const [events, setEvents] = useState<PracticeEvent[]>([]);
   const [payDays, setPayDays] = useState<string[]>([]);
+  const [mine, setMine] = useState<MySchedule>(NO_SCHEDULE);
+  const myId = me?.id;
   const [locations, setLocations] = useState<Location[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -85,6 +98,18 @@ export function CalendarPrintPage() {
     };
   }, [days]);
 
+  // Your own shifts and time off, when "My shifts" is printed.
+  useEffect(() => {
+    if (!myId) return;
+    let cancelled = false;
+    loadMySchedule(myId, days[0], days[days.length - 1])
+      .then((found) => !cancelled && setMine(found))
+      .catch(() => !cancelled && setMine(NO_SCHEDULE));
+    return () => {
+      cancelled = true;
+    };
+  }, [myId, days]);
+
   const monthName = monthStart.toLocaleDateString(undefined, { month: 'long', year: 'numeric' });
   // The tab title becomes the file name when somebody saves it as a PDF.
   useEffect(() => {
@@ -107,6 +132,7 @@ export function CalendarPrintPage() {
     return true;
   });
   const paid = kinds.includes('PAY_DAY') ? payDays : [];
+  const printMine = kinds.includes('MY_SHIFT') ? mine : NO_SCHEDULE;
   const officeName = locations.find((location) => location.id === office)?.name;
 
   const goToMonth = (offset: number) => {
@@ -230,6 +256,19 @@ export function CalendarPrintPage() {
                                 )}
                               </div>
                               <ul className="mt-0.5 space-y-0.5 text-[11px] leading-tight">
+                                {(() => {
+                                  const { shifts, off } = myDay(printMine, myId, key);
+                                  return (
+                                    <>
+                                      {off && <li className="text-slate-700">🌴 {offLine(off)}</li>}
+                                      {shifts.map((shift) => (
+                                        <li key={shift.id} className={PRINT_INK.MY_SHIFT}>
+                                          🕘 {shiftLine(shift)}
+                                        </li>
+                                      ))}
+                                    </>
+                                  );
+                                })()}
                                 {paid.includes(key) && (
                                   <li className={PRINT_INK.PAY_DAY}>💵 Pay day</li>
                                 )}

@@ -3076,6 +3076,20 @@ both icons. Work-from-home and open shifts carry neither. It reads the events
 the screen has already loaded — rep lunches are visible to everyone — so it
 costs no extra request, except on Home (today's events).
 
+**My shifts on the Calendar** (Dominguez: "the calendar should also have the
+option to show the users schedule for the month"): a kind of its own under
+**Show** (`MY_SHIFT`, first in the list and part of All), built in the
+browser from what the person can already read — their own **published**
+shifts (drafts stay a manager's working copy, a manager's own included) and
+their approved time off (a manager's time-off list is everybody's, so it is
+narrowed to them). A shift reads "🕘 9am–5pm · NB" (or "· Home") with the
+lunch icon, and opens its week on the Schedule; a day off reads "🌴 Off ·
+PTO" with the kind, which is the person's own to see. Not narrowed by the
+office picker: it is your schedule wherever it is. The printed month takes
+it only when it is picked (`?kinds=MY_SHIFT`), never under All, so a month
+printed for the break-room wall never carries the printer's own shifts.
+`components/MySchedule.tsx`.
+
 ### Repeating events and chosen people
 
 Asked for by Dominguez straight after events went live (September 2026): the
