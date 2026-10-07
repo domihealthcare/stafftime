@@ -59,7 +59,7 @@ export function OfficeExtensionsCard({
           {lines.length === 0 ? 'No extensions yet.' : 'No extension matches that.'}
         </p>
       ) : (
-        <div className="mt-3 grid gap-x-6 gap-y-4 sm:grid-cols-2 lg:grid-cols-4">
+        <div className="mt-3 grid gap-x-6 gap-y-4 sm:grid-cols-2 lg:grid-cols-5">
           {sections.map(([section, items]) => (
             <section key={section} aria-label={section}>
               <h3 className="mb-1 text-sm font-semibold text-slate-900">{section}</h3>

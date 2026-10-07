@@ -41,9 +41,12 @@ await step('everybody sees the office extensions in the Directory, by section, a
   await goTo(frankie, 'Directory');
   const list = frankie.getByTestId('office-extensions');
   await list.waitFor({ timeout: 15000 });
-  for (const section of ['Providers', 'Admin Team', 'Front Desk', 'MA & Lab', 'Shared lines', 'Provider softphones (rarely used)']) {
+  for (const section of ['Providers', 'Admin Team', 'Front Desk', 'MA & Lab', 'Shared lines']) {
     await list.getByRole('heading', { name: section, exact: true }).waitFor({ timeout: 5000 });
   }
+  // The providers' softphones are under Providers (7 October), not a section of their own.
+  if (await list.getByRole('heading', { name: /softphones/ }).count()) throw new Error('softphones still have their own section');
+  await list.getByRole('region', { name: 'Providers' }).getByTestId('extension-line').filter({ hasText: 'Dr. D (softphone)' }).getByText('501').waitFor({ timeout: 5000 });
   const kayla = list.getByTestId('extension-line').filter({ hasText: 'Kayla Bermeo' });
   await kayla.getByText('121', { exact: true }).waitFor({ timeout: 5000 });
   await kayla.getByText(/From home: 521 · Thursday/).waitFor({ timeout: 5000 });

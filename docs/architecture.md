@@ -2426,9 +2426,12 @@ current member of staff has that first and last name.
 migration (`20261007010000_office_extensions_new_phones`, 31 lines). The
 doctors' desk phones are now by room (Dr N 1 201, Dr W 1 204 …), so the
 Providers section lists rooms, not people. Each provider has a softphone
-(501–504), listed last in **Provider softphones (rarely used)** and matched
-to nobody, so a provider's card does not offer a number they rarely answer
-(Dominguez: "providers RARELY use their soft phones"). The admin team's
+(501–504), matched to nobody, so a provider's card does not offer a number
+they rarely answer (Dominguez: "providers RARELY use their soft phones").
+They were first a last section of their own, **Provider softphones (rarely
+used)**; the same day they moved under **Providers**, after the rooms, each
+named "… (softphone)" (`20261007040000_provider_softphones_under_providers`),
+so the sections fit on one row — five columns on a laptop. The admin team's
 softphones (521–525) stay their from-home numbers on their own lines; the
 shared softphones — Office 100, Admin 120, CCM 130, IT 777 — are under
 **Shared lines**. Admin team lines kept whatever a manager had set in the app
