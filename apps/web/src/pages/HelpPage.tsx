@@ -399,10 +399,12 @@ const STAFF: Section[] = [
         answer: (
           <p>
             On <Screen>Schedule</Screen>, press <strong>Calendar</strong> at the top (next to
-            Shifts). It shows the month with the <strong>diagnostics</strong> 🩺 (which tests, the
-            hours, and the office — WNY or NB), <strong>rep lunches</strong> 🍽️ (the rep, their
-            company, the medication, and whether they bring catering or the office orders — the bell
-            tells you the evening before whether there is one at your office),{' '}
+            Shifts). It shows the month with <strong>your own shifts</strong> 🕘 and approved days
+            off 🌴 (under Show, <strong>My shifts</strong> — pick it alone to see just your schedule
+            for the month; tap a shift to open its week), the <strong>diagnostics</strong> 🩺 (which
+            tests, the hours, and the office — WNY or NB), <strong>rep lunches</strong> 🍽️ (the rep,
+            their company, the medication, and whether they bring catering or the office orders —
+            the bell tells you the evening before whether there is one at your office),{' '}
             <strong>holidays</strong> ⭐ (the offices are open unless there is also a closure),{' '}
             <strong>closures</strong> 🔒, meetings and events 📅, and <strong>pay days</strong> 💵 —
             the Friday after each pay period ends. Under <strong>Show</strong>, keep{' '}

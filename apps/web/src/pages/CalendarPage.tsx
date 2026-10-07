@@ -9,6 +9,13 @@ import {
   eventsOnDay,
 } from '../components/PracticeEvents';
 import { ScheduleTabs } from '../components/ScheduleTabs';
+import {
+  loadMySchedule,
+  myDay,
+  MyDayChips,
+  NO_SCHEDULE,
+  type MySchedule,
+} from '../components/MySchedule';
 import { Alert, Card, PageHeading, Spinner, buttonClass } from '../components/ui';
 import { api } from '../lib/api';
 import { CALENDAR_KINDS, KIND_STYLE, officeShort, type CalendarKind } from '../lib/calendar-kinds';
@@ -21,7 +28,7 @@ import {
   parseDay,
   startOfMonth,
 } from '../lib/format';
-import { useIsManager } from '../lib/session';
+import { useIsManager, useSession } from '../lib/session';
 import type { Employee, EventKind, JobRole, Location, PracticeEvent } from '../lib/types';
 import { useIsPhone } from '../lib/use-is-phone';
 
@@ -66,6 +73,7 @@ interface FormState {
  */
 export function CalendarPage() {
   const isManager = useIsManager();
+  const { employee: me } = useSession();
   const isPhone = useIsPhone();
   const [searchParams, setSearchParams] = useSearchParams();
   const monthStart = useMemo(
@@ -99,6 +107,8 @@ export function CalendarPage() {
   const [addMenu, setAddMenu] = useState(false);
   const [notice, setNotice] = useState<string | null>(null);
   const [version, setVersion] = useState(0);
+  /// Your own shifts and time off, for "My shifts".
+  const [mine, setMine] = useState<MySchedule>(NO_SCHEDULE);
 
   const days = useMemo(() => monthGrid(monthStart), [monthStart]);
   const first = days[0];
@@ -127,6 +137,19 @@ export function CalendarPage() {
   useEffect(() => {
     void load();
   }, [load]);
+
+  // Your own schedule. Not worth failing the calendar over.
+  const myId = me?.id;
+  useEffect(() => {
+    if (!myId) return;
+    let cancelled = false;
+    loadMySchedule(myId, first, last)
+      .then((found) => !cancelled && setMine(found))
+      .catch(() => !cancelled && setMine(NO_SCHEDULE));
+    return () => {
+      cancelled = true;
+    };
+  }, [myId, first, last]);
 
   // Only managers add, and only adding to a meeting needs the staff list.
   useEffect(() => {
@@ -190,6 +213,11 @@ export function CalendarPage() {
     [events, chosen, office],
   );
   const shownPayDays = isShown('PAY_DAY') ? payDays : [];
+  const shownMine = isShown('MY_SHIFT') ? mine : NO_SCHEDULE;
+  const hasMine = (key: string) => {
+    const { shifts, off } = myDay(shownMine, me?.id, key);
+    return shifts.length > 0 || off !== null;
+  };
 
   const monthDays = days.filter((day) => day.getMonth() === monthStart.getMonth());
   const today = localDate(new Date());
@@ -199,7 +227,7 @@ export function CalendarPage() {
     <div className="mx-auto max-w-6xl">
       <PageHeading
         title="Calendar"
-        subtitle="Diagnostics, rep lunches, holidays, closures, meetings and pay days — for everyone."
+        subtitle="Your shifts, diagnostics, rep lunches, holidays, closures, meetings and pay days."
       />
       <ScheduleTabs />
 
@@ -472,6 +500,13 @@ export function CalendarPage() {
                     )}
                   </div>
                   <div className="space-y-0.5">
+                    <MyDayChips
+                      schedule={shownMine}
+                      employeeId={me?.id}
+                      day={key}
+                      events={events}
+                      compact={isPhone}
+                    />
                     {paid && <PayDayChip compact={isPhone} />}
                     {dayEvents.map((event) =>
                       isPhone ? (
@@ -503,7 +538,10 @@ export function CalendarPage() {
           <ul className="divide-y divide-slate-100">
             {monthDays
               .map((day) => localDate(day))
-              .filter((key) => shownPayDays.includes(key) || eventsOnDay(shown, key).length > 0)
+              .filter(
+                (key) =>
+                  hasMine(key) || shownPayDays.includes(key) || eventsOnDay(shown, key).length > 0,
+              )
               .map((key) => (
                 <li
                   key={key}
@@ -519,6 +557,12 @@ export function CalendarPage() {
                     {key === today && <span className="block text-xs text-brand-700">Today</span>}
                   </div>
                   <div className="min-w-0 flex-1 space-y-1">
+                    <MyDayChips
+                      schedule={shownMine}
+                      employeeId={me?.id}
+                      day={key}
+                      events={events}
+                    />
                     {shownPayDays.includes(key) && <PayDayChip />}
                     {eventsOnDay(shown, key).map((event) => (
                       <EventChip key={event.id} event={event} day={key} onOpen={setOpenEvent} />
@@ -529,6 +573,7 @@ export function CalendarPage() {
           </ul>
           {monthDays.every(
             (day) =>
+              !hasMine(localDate(day)) &&
               !shownPayDays.includes(localDate(day)) &&
               eventsOnDay(shown, localDate(day)).length === 0,
           ) && <p className="px-4 py-6 text-sm text-slate-500">Nothing on in {monthName}.</p>}

@@ -652,7 +652,14 @@ Beyond the phases, the parts worth knowing about before picking up work:
   icon"): 🍽️ on a shift at an office with a rep lunch that day, 🥪 when
   there is none — on the week rota, the month and Home ("No rep lunch,
   bring your own lunch"), explained in the Schedule's key
-  (`components/LunchIcon.tsx`); not on work-from-home shifts. Would matter to the EMR
+  (`components/LunchIcon.tsx`); not on work-from-home shifts. **My shifts**
+  (Dominguez: "the calendar should also have the option to show the users
+  schedule for the month"): a **Show** option of its own, in All — the
+  person's own **published** shifts ("🕘 9am–5pm · NB", with the lunch
+  icon, opening that week on the Schedule) and their approved time off
+  ("🌴 Off · PTO"), in the month and the list (`components/MySchedule.tsx`).
+  Printed only when picked, never under All, so a month printed for the
+  wall never carries the printer's own schedule. Would matter to the EMR
   module too, if it takes events. See *The practice calendar* in
   `docs/architecture.md`; `tests/browser/practice-calendar.mjs`.
 - **Repeating events and chosen people** (September 2026, Dominguez): an

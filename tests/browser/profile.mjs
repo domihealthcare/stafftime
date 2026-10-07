@@ -230,7 +230,16 @@ await step('a manager can give somebody a new PIN from the Directory, but not re
   if (!(await saved).ok()) throw new Error('the manager could not set the PIN');
   await card.getByText(/New PIN set\. Tell Frankie J in person/).waitFor({ timeout: 5000 });
   const people = await mgr.evaluate(() => fetch('/api/directory').then((r) => r.text()));
-  if (people.includes('7391') || people.includes('pinHash')) throw new Error('the Directory carries a PIN');
+  // Look for the PIN as a value, not as four characters anywhere: the
+  // response is full of random ids, and "7391" turns up inside one now and
+  // then (it failed CI once that way).
+  const carriesPin = (value) =>
+    Array.isArray(value)
+      ? value.some(carriesPin)
+      : value && typeof value === 'object'
+        ? Object.entries(value).some(([key, inner]) => /pinHash/i.test(key) || carriesPin(inner))
+        : String(value) === '7391';
+  if (people.includes('pinHash') || carriesPin(JSON.parse(people))) throw new Error('the Directory carries a PIN');
 });
 
 await step('a manager cannot take down somebody else’s photo; that is an admin’s call', async () => {
