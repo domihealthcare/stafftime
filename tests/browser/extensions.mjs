@@ -137,7 +137,7 @@ await step('removing a line asks first, and closing with changes asks too', asyn
   await mgr.getByRole('button', { name: 'Keep it' }).click();
   if ((await editor.getByTestId('extension-row').count()) !== 32) throw new Error('kept, but the line went');
   await editor.getByRole('button', { name: 'Remove Morgan Manager' }).click();
-  await mgr.getByRole('button', { name: 'Remove it' }).click();
+  await mgr.getByRole('button', { name: 'Remove it', exact: true }).click();
   await editor.getByRole('button', { name: 'Cancel' }).click();
   await mgr.getByRole('button', { name: 'Keep editing' }).click();
   await editor.getByRole('button', { name: 'Save extensions' }).click();
