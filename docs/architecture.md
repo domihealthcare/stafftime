@@ -3002,8 +3002,38 @@ all"): All, or any one or more kinds. From All, a kind shows that kind
 alone; more add to it; taking off the last, or picking every one, is All
 again. Remembered per browser.
 
-Still to come: **separate subscriptions** per kind, and a printed month like
-the paper one. See `docs/open-questions.md`.
+**Separate subscriptions** (the same day): the all-in-one address
+(`domi.ics`) stays as it was, and the same private token now also serves one
+calendar per kind — `shifts` (shifts and time off), `diagnostics`,
+`rep-lunches`, `holidays` (holidays and closures), `pay-days`, `events`
+(`calendar/feeds.ts`; anything else is a 404, own keys only). Each is named
+"Diagnostics — Domi Staff" and so on, so a phone lists them as separate
+calendars with their own colours and switches. The calendar card offers
+**Everything in one calendar** or **Separate calendars** and warns against
+both at once (everything would show twice). Regenerating the link changes
+every address together. The same rules hold as for the all-in-one feed:
+what the person may see, no rep phone or notes, and with invites on, no
+shifts or meetings.
+
+**The printed month** (`pages/CalendarPrintPage.tsx`,
+`/schedule/calendar/print`): **Print** on the Calendar opens one landscape
+page shaped like the practice's paper month — logo, the month in large
+capitals, a Sunday-first grid, the office a day's diagnostics are at in the
+corner ("WNY"), each entry in its kind's colour (also legible in black and
+white), and the key under it. It takes the Calendar's **Show** and office
+(`?kinds=`, `?office=`). Anybody can print it; it is built from what the
+person may see, and a rep lunch prints as the rep's name, time and office.
+
+**Lunch on shifts** (Dominguez: "if there is lunch scheduled (or not
+scheduled) should show that in the employees shift - via an icon"): a shift
+at an office carries 🍽️ when a rep lunch is at that office that day and 🥪
+when there is none (`components/LunchIcon.tsx`) — on the week rota, in the
+month and on Home under today's shift ("Rep lunch at 12:30pm with Jane Smith (Novo
+Nordisk), bringing catering" / "No rep lunch, bring your own lunch"). The
+words are in the tooltip and for screen readers; the Schedule's key explains
+both icons. Work-from-home and open shifts carry neither. It reads the events
+the screen has already loaded — rep lunches are visible to everyone — so it
+costs no extra request, except on Home (today's events).
 
 ### Repeating events and chosen people
 

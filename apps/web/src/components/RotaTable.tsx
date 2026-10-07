@@ -29,6 +29,7 @@ import { atPlace, forRole, WORK_FROM_HOME_FILTER } from '../lib/shift-filters';
 import { useConfirm } from './ConfirmDialog';
 import { confirmOvertime, OvertimePreview, useOvertimeCheck } from './OvertimeAlerts';
 import { Avatar } from './Avatar';
+import { LunchIcon } from './LunchIcon';
 import {
   PlaceSelect,
   WORK_FROM_HOME,
@@ -664,6 +665,7 @@ export function RotaTable({
                                 }
                                 warning={warnings.get(shift.id)}
                                 showLocation={grouping !== 'location'}
+                                events={events}
                                 onOpen={canEdit ? () => setMenu(shift) : undefined}
                                 onContextMenu={
                                   onPersonMenu && shift.employee
@@ -819,10 +821,13 @@ function ShiftChip({
   roleColour,
   warning,
   showLocation,
+  events,
   onOpen,
   onContextMenu,
 }: {
   shift: Shift;
+  /// The events on screen, for the rep lunch icon.
+  events: PracticeEvent[];
   /// The office's colour: what fills the chip.
   colour: string;
   /// The job role's colour, as the outline — the shift's own role, or the
@@ -854,6 +859,7 @@ function ShiftChip({
     <>
       <span className="flex items-center gap-1.5">
         <span className="font-medium tabular-nums">{label}</span>
+        <LunchIcon shift={shift} events={events} />
         {warning && (
           <span aria-hidden="true" className="text-rose-600">
             ⚠
@@ -989,6 +995,13 @@ export function RotaLegend({
             {role.name}
           </span>
         ))}
+        <span className="basis-full sm:basis-auto">Lunch:</span>
+        <span className="inline-flex items-center gap-1.5">
+          <span aria-hidden="true">🍽️</span>a rep is bringing lunch to that office
+        </span>
+        <span className="inline-flex items-center gap-1.5">
+          <span aria-hidden="true">🥪</span>no rep lunch, bring your own
+        </span>
       </div>
     </details>
   );

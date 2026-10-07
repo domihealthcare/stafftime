@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { useSearchParams } from 'react-router-dom';
+import { Link, useSearchParams } from 'react-router-dom';
 import { CalendarLinkCard } from '../components/CalendarLinkCard';
 import {
   ClosuresCard,
@@ -269,6 +269,16 @@ export function CalendarPage() {
           ))}
         </select>
         <span className="flex-1" />
+        <Link
+          to={`/schedule/calendar/print?${new URLSearchParams({
+            month: localDate(monthStart),
+            ...(chosen.length > 0 ? { kinds: chosen.join(',') } : {}),
+            ...(office ? { office } : {}),
+          }).toString()}`}
+          className={buttonClass('secondary', 'sm')}
+        >
+          Print
+        </Link>
         {isManager && (
           <div className="relative">
             <button

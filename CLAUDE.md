@@ -622,8 +622,20 @@ Beyond the phases, the parts worth knowing about before picking up work:
   tomorrow" or "No rep lunch tomorrow — bring your own lunch" on the bell
   (`events/lunch-notices.service.ts`, run by the five-minute timer, once per
   office and day via `LunchNotice`). **Show** filters the calendar:
-  All, or any one or more kinds (Dominguez). Next: separate subscriptions
-  per kind and a printed month — see `docs/open-questions.md`. Would matter to the EMR
+  All, or any one or more kinds (Dominguez). **Separate subscriptions**:
+  besides the all-in-one `domi.ics`, one address per kind on the same
+  private token (`/api/calendar/<token>/<feed>.ics` — `shifts`,
+  `diagnostics`, `rep-lunches`, `holidays`, `pay-days`, `events`;
+  `calendar/feeds.ts`), chosen under **Separate calendars** on the calendar
+  card, each its own calendar on the phone. **Printed month**
+  (`/schedule/calendar/print`, from **Print** on the Calendar, anybody): one
+  landscape page like the practice's paper month, printing the kinds and
+  office the Calendar shows; a rep lunch is the rep's name only. **Lunch on
+  shifts** (Dominguez: "should show that in the employees shift - via an
+  icon"): 🍽️ on a shift at an office with a rep lunch that day, 🥪 when
+  there is none — on the week rota, the month and Home ("No rep lunch,
+  bring your own lunch"), explained in the Schedule's key
+  (`components/LunchIcon.tsx`); not on work-from-home shifts. Would matter to the EMR
   module too, if it takes events. See *The practice calendar* in
   `docs/architecture.md`; `tests/browser/practice-calendar.mjs`.
 - **Repeating events and chosen people** (September 2026, Dominguez): an

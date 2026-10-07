@@ -408,8 +408,24 @@ const STAFF: Section[] = [
             the Friday after each pay period ends. Under <strong>Show</strong>, keep{' '}
             <strong>All</strong>, or tap one kind to see only that, and more to add them; All puts
             everything back. Pick an office to see only its diagnostics and rep lunches, and choose{' '}
-            <strong>List</strong> for a day-by-day list (a phone starts there). Everything on it
-            reaches your phone&rsquo;s calendar through the calendar link at the bottom of the page.
+            <strong>List</strong> for a day-by-day list (a phone starts there).{' '}
+            <strong>Print</strong> gives the month on one page, like the paper calendar, with what
+            you have chosen to show. Everything on it reaches your phone&rsquo;s calendar through
+            the calendar link at the bottom of the page: <strong>Everything in one calendar</strong>
+            , or <strong>Separate calendars</strong> to add only the ones you want (say, just
+            Diagnostics and Pay days) — each shows on your phone as its own calendar you can colour
+            and switch off. Use one or the other, not both, or things show twice.
+          </p>
+        ),
+      },
+      {
+        question: 'What do 🍽️ and 🥪 on my shift mean?',
+        answer: (
+          <p>
+            🍽️ means a rep is bringing lunch to that office that day — tap or hover for who, when,
+            and whether they bring catering or the office orders. 🥪 means there is no rep lunch, so
+            bring your own. Home says the same under today&rsquo;s shift, and the bell tells
+            everybody at the office the evening before. Work-from-home shifts have neither.
           </p>
         ),
       },

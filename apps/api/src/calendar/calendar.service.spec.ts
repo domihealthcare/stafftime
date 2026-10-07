@@ -385,6 +385,84 @@ describe('CalendarService', () => {
     });
   });
 
+  describe('separate calendars', () => {
+    const everything = () =>
+      build({
+        payPeriodStart: new Date('2026-10-18T00:00:00.000Z'),
+        shifts: [shift],
+        events: [
+          ['ev-1', 'EVENT', 'Office meeting'],
+          ['ev-2', 'CLOSURE', 'Christmas Day'],
+          ['ev-3', 'HOLIDAY', 'Election Day'],
+          ['ev-4', 'DIAGNOSTIC', 'US + ECHO'],
+          ['ev-5', 'REP_LUNCH', 'Rep lunch: Jane Smith'],
+        ].map(([id, kind, title]) => ({
+          id,
+          kind,
+          title,
+          description: null,
+          place: null,
+          meetingUrl: null,
+          allDay: false,
+          audience: 'EVERYONE',
+          location: null,
+          atLocation: null,
+          rep: null,
+          startsAt: new Date('2026-11-03T15:00:00.000Z'),
+          endsAt: new Date('2026-11-03T16:00:00.000Z'),
+          updatedAt: NOW,
+        })),
+      });
+    const summaries = (feed: string) =>
+      [...feed.matchAll(/^SUMMARY:(.*)$/gm)].map((match) => match[1].trim()).sort();
+
+    it('carries one kind each, under its own name', async () => {
+      const { service } = everything();
+      expect(summaries(await service.feedForToken('token', NOW, 'diagnostics'))).toEqual([
+        'US + ECHO',
+      ]);
+      expect(summaries(await service.feedForToken('token', NOW, 'rep-lunches'))).toEqual([
+        'Rep lunch: Jane Smith',
+      ]);
+      expect(summaries(await service.feedForToken('token', NOW, 'holidays'))).toEqual([
+        'Closed: Christmas Day',
+        'Election Day',
+      ]);
+      expect(summaries(await service.feedForToken('token', NOW, 'events'))).toEqual([
+        'Office meeting',
+      ]);
+      expect(await service.feedForToken('token', NOW, 'diagnostics')).toContain(
+        'X-WR-CALNAME:Diagnostics — Domi Staff',
+      );
+    });
+
+    it('keeps your shifts and pay days to their own calendars', async () => {
+      const { service, prisma, events } = everything();
+      const shifts = await service.feedForToken('token', NOW, 'shifts');
+      expect(summaries(shifts)).toEqual(['Work — North Bergen']);
+      expect(events.forPerson).not.toHaveBeenCalled();
+      const pay = await service.feedForToken('token', NOW, 'pay-days');
+      expect(new Set(summaries(pay))).toEqual(new Set(['Pay day']));
+      expect(prisma.shift.findMany).toHaveBeenCalledTimes(1);
+    });
+
+    it('is still everything in one at domi.ics', async () => {
+      const { service } = everything();
+      const all = summaries(await service.feedForToken('token', NOW));
+      expect(all).toEqual(expect.arrayContaining(['US + ECHO', 'Election Day', 'Pay day']));
+    });
+
+    it('is not found for anything else', async () => {
+      const { service } = everything();
+      await expect(service.feedForToken('token', NOW, 'constructor')).rejects.toThrow(
+        NotFoundException,
+      );
+      await expect(service.feedForToken('token', NOW, 'salaries')).rejects.toThrow(
+        NotFoundException,
+      );
+    });
+  });
+
   describe('rep lunches', () => {
     it('names the rep, company and office, says what to expect, and keeps the managers’ notes off', async () => {
       const { service } = build({

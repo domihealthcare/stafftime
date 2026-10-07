@@ -365,6 +365,94 @@ await step('correcting a rep’s name renames their lunches', async () => {
   await day(manager, '2027-03-23').getByTestId('rep_lunch-chip').getByText('Patricia Lee').waitFor({ timeout: 10000 });
 });
 
+await step('separate calendars: one address per kind, each carrying only its own', async () => {
+  await calendar(frankie);
+  // Syncing is already on from the feed step above.
+  await frankie.getByRole('button', { name: 'Show link' }).click();
+  await frankie.getByRole('group', { name: 'How many calendars' }).getByRole('button', { name: 'Separate calendars' }).click();
+  const list = frankie.getByTestId('separate-calendars');
+  const address = await list.getByLabel('Rep lunches', { exact: true }).inputValue();
+  if (!/\/api\/calendar\/[A-Za-z0-9_-]+\/rep-lunches\.ics$/.test(address)) throw new Error(`rep lunches address: ${address}`);
+  for (const label of ['My shifts & time off', 'Diagnostics', 'Holidays & closures', 'Pay days', 'Meetings & events']) {
+    await list.getByLabel(label, { exact: true }).waitFor();
+  }
+  const feeds = await frankie.evaluate(async (url) => {
+    const path = new URL(url).pathname;
+    const get = (slug) => fetch(path.replace('rep-lunches.ics', `${slug}.ics`), { cache: 'no-store' }).then((r) => r.text());
+    return { lunches: await get('rep-lunches'), diagnostics: await get('diagnostics'), pay: await get('pay-days'), nope: (await fetch(path.replace('rep-lunches.ics', 'salaries.ics'))).status };
+  }, address);
+  const unfold = (text) => text.replace(/\r\n /g, '');
+  const summaries = (text) => [...unfold(text).matchAll(/^SUMMARY:(.*)$/gm)].map((m) => m[1].trim());
+  if (!unfold(feeds.lunches).includes('X-WR-CALNAME:Rep lunches — Domi Staff')) throw new Error('the rep lunches calendar is not named');
+  if (!summaries(feeds.lunches).every((s) => s.startsWith('Rep lunch:')) || summaries(feeds.lunches).length !== 2) throw new Error(`rep lunches feed: ${summaries(feeds.lunches).join(' | ')}`);
+  if (!summaries(feeds.diagnostics).every((s) => s.startsWith('US + ECHO'))) throw new Error(`diagnostics feed: ${summaries(feeds.diagnostics).join(' | ')}`);
+  if (!summaries(feeds.pay).length || !summaries(feeds.pay).every((s) => s === 'Pay day')) throw new Error('pay days feed');
+  if (feeds.nope !== 404) throw new Error(`an unknown calendar answered ${feeds.nope}`);
+});
+
+await step('the printed month: the paper calendar, with what the calendar shows', async () => {
+  await calendar(manager);
+  await manager.getByRole('link', { name: 'Print', exact: true }).click();
+  const month = manager.getByTestId('print-month');
+  await month.waitFor({ timeout: 10000 });
+  if (!(await month.getByRole('heading', { level: 1 }).textContent()).includes('March 2027')) throw new Error('not March 2027');
+  const sunday = await manager.getByTestId('print-day-2027-03-07').innerText();
+  if (!sunday.includes('WNY') || !sunday.includes('US + ECHO 8am–2pm')) throw new Error(`7 March reads ${sunday}`);
+  const lunch = await manager.getByTestId('print-day-2027-03-09').innerText();
+  if (!lunch.includes('Jane Smith') || lunch.includes('555-0142') || lunch.includes('Late twice')) throw new Error(`9 March reads ${lunch}`);
+  if (!(await manager.getByTestId('print-day-2027-03-12').innerText()).includes('Pay day')) throw new Error('no pay day on the 12th');
+  if (!(await manager.getByTestId('print-day-2027-03-17').innerText()).includes('St Patrick’s Day')) throw new Error('no holiday');
+  await manager.screenshot({ path: `${OUT}/practice-calendar-print.png`, fullPage: true });
+  // Only rep lunches, as picked on the calendar.
+  await manager.goto(`${BASE}/schedule/calendar/print?month=2027-03-01&kinds=REP_LUNCH`, { waitUntil: 'networkidle' });
+  await manager.getByTestId('print-month').waitFor({ timeout: 10000 });
+  if ((await manager.getByTestId('print-day-2027-03-07').innerText()).includes('US + ECHO')) throw new Error('diagnostics printed with only rep lunches picked');
+  if (!(await manager.getByTestId('print-day-2027-03-09').innerText()).includes('Jane Smith')) throw new Error('the rep lunch was not printed');
+});
+
+await step('a shift says whether there is a rep lunch: 🍽️ or 🥪', async () => {
+  const made = await manager.evaluate(async () => {
+    const people = await fetch('/api/employees').then((r) => r.json());
+    const offices = await fetch('/api/locations').then((r) => r.json());
+    const frankie = people.find((p) => p.email === 'frontdesk@domihealthcare.com');
+    const nb = offices.find((o) => o.name === 'North Bergen');
+    const statuses = [];
+    for (const day of ['2027-03-09', '2027-03-10']) {
+      const response = await fetch('/api/shifts', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          employeeId: frankie.id,
+          locationId: nb.id,
+          startsAt: `${day}T14:00:00.000Z`,
+          endsAt: `${day}T22:00:00.000Z`,
+          status: 'PUBLISHED',
+        }),
+      });
+      statuses.push(response.status);
+    }
+    return statuses;
+  });
+  if (made.some((status) => status !== 201)) throw new Error(`making the shifts answered ${made.join(', ')}`);
+  await frankie.goto(`${BASE}/schedule?week=2027-03-07`, { waitUntil: 'networkidle' });
+  const week = frankie.getByRole('button', { name: 'Week', exact: true });
+  if (await week.count()) await week.click();
+  const icons = frankie.getByTestId('lunch-icon');
+  await icons.first().waitFor({ timeout: 10000 });
+  const kinds = await icons.evaluateAll((all) => all.map((el) => `${el.dataset.lunch}:${el.title}`));
+  if (!kinds.some((k) => k.startsWith('rep:Rep lunch at 12:30pm with Jane Smith (Novo Nordisk)'))) throw new Error(`icons: ${kinds.join(' | ')}`);
+  if (!kinds.some((k) => k.startsWith('none:No rep lunch'))) throw new Error(`icons: ${kinds.join(' | ')}`);
+  await frankie.getByTestId('rota-legend').getByText('a rep is bringing lunch to that office').waitFor();
+  await frankie.screenshot({ path: `${OUT}/practice-calendar-lunch-icons.png`, fullPage: true });
+});
+
+await step('Home says whether there is a rep lunch today', async () => {
+  await frankie.goto(`${BASE}/`, { waitUntil: 'networkidle' });
+  const line = frankie.getByTestId('todays-lunch');
+  await line.waitFor({ timeout: 10000 });
+  if (!(await line.innerText()).includes('bring your own lunch')) throw new Error(`Home reads ${await line.innerText()}`);
+});
+
 await step('nothing on the page takes a file', async () => {
   await calendar(manager);
   if (await manager.locator('input[type=file]').count()) throw new Error('a file input on the calendar');

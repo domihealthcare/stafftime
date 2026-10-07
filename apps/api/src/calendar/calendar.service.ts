@@ -14,6 +14,7 @@ import { PrismaService } from '../prisma/prisma.service';
 import { localDateIn, PRACTICE_ZONE } from '../common/util/zoned-time.util';
 import { payDaysBetween } from '../settings/pay-days';
 import { PracticeSettingsService } from '../settings/practice-settings.service';
+import { FEEDS, type FeedPart } from './feeds';
 import { buildCalendar, type CalendarEvent } from './ical';
 
 /// How much history and future to publish. Enough to be useful, bounded so the
@@ -93,8 +94,14 @@ export class CalendarService {
    * The token *is* the credential — calendar apps cannot send an auth header —
    * so it is long, random, per-employee, and revocable, and the feed exposes
    * only that one person's schedule.
+   *
+   * `feed` is one of `FEEDS`: everything in one (`domi`), or one kind.
    */
-  async feedForToken(token: string, now = new Date()): Promise<string> {
+  async feedForToken(token: string, now = new Date(), feed = 'domi'): Promise<string> {
+    // Own keys only: "constructor.ics" is not a feed.
+    if (!Object.hasOwn(FEEDS, feed)) throw new NotFoundException();
+    const chosen = FEEDS[feed];
+    const wants = (part: FeedPart) => chosen.parts.includes(part);
     const employee = await this.prisma.employee.findUnique({
       where: { calendarToken: token },
       select: {
@@ -119,8 +126,9 @@ export class CalendarService {
     // and approved time off — so nobody sees a shift or a meeting twice.
     const invited = this.invites.enabled;
 
+    const wantsEvents = Object.values(PracticeEventKind).some((kind) => wants(kind));
     const [shifts, timeOff, allEvents, payDays] = await Promise.all([
-      invited
+      invited || !wants('SHIFTS')
         ? Promise.resolve([])
         : this.prisma.shift.findMany({
             where: {
@@ -142,32 +150,36 @@ export class CalendarService {
             },
             orderBy: { startsAt: 'asc' },
           }),
-      this.prisma.ptoRequest.findMany({
-        where: {
-          employeeId: employee.id,
-          status: PtoStatus.APPROVED,
-          startDate: { lte: to },
-          endDate: { gte: from },
-        },
-        select: {
-          id: true,
-          type: true,
-          startDate: true,
-          endDate: true,
-          isHalfDay: true,
-          updatedAt: true,
-        },
-        orderBy: { startDate: 'asc' },
-      }),
+      !wants('TIME_OFF')
+        ? Promise.resolve([])
+        : this.prisma.ptoRequest.findMany({
+            where: {
+              employeeId: employee.id,
+              status: PtoStatus.APPROVED,
+              startDate: { lte: to },
+              endDate: { gte: from },
+            },
+            select: {
+              id: true,
+              type: true,
+              startDate: true,
+              endDate: true,
+              isHalfDay: true,
+              updatedAt: true,
+            },
+            orderBy: { startDate: 'asc' },
+          }),
       // Meetings and practice events for them: everyone's, their job roles',
       // their offices'.
-      this.events.forPerson(employee.id, from, to),
-      this.payDays(localDateIn(from, PRACTICE_ZONE), localDateIn(to, PRACTICE_ZONE)),
+      wantsEvents ? this.events.forPerson(employee.id, from, to) : Promise.resolve([]),
+      wants('PAY_DAYS')
+        ? this.payDays(localDateIn(from, PRACTICE_ZONE), localDateIn(to, PRACTICE_ZONE))
+        : Promise.resolve([]),
     ]);
     // Invites carry meetings only; closures, holidays and diagnostics stay here.
-    const practiceEvents = invited
-      ? allEvents.filter((event) => event.kind !== PracticeEventKind.EVENT)
-      : allEvents;
+    const practiceEvents = allEvents.filter(
+      (event) => wants(event.kind) && !(invited && event.kind === PracticeEventKind.EVENT),
+    );
 
     const displayName = employee.preferredName ?? employee.firstName;
 
@@ -253,10 +265,16 @@ export class CalendarService {
     ];
 
     return buildCalendar(events, {
-      name: `${displayName} ${employee.lastName} — Domi Staff`,
-      description: invited
-        ? 'Office closures and approved time off from Domi Staff. Shifts and events come as invites.'
-        : 'Shifts, approved time off and practice events from Domi Staff.',
+      name:
+        feed === 'domi'
+          ? `${displayName} ${employee.lastName} — Domi Staff`
+          : `${chosen.name} — Domi Staff`,
+      description:
+        feed !== 'domi'
+          ? `${chosen.name} from Domi Staff.`
+          : invited
+            ? 'Office closures and approved time off from Domi Staff. Shifts and events come as invites.'
+            : 'Shifts, approved time off and practice events from Domi Staff.',
       refreshMinutes: 60,
       now,
     });

@@ -71,6 +71,9 @@ const SchedulePage = lazy(() =>
 const CalendarPage = lazy(() =>
   import('./pages/CalendarPage').then((m) => ({ default: m.CalendarPage })),
 );
+const CalendarPrintPage = lazy(() =>
+  import('./pages/CalendarPrintPage').then((m) => ({ default: m.CalendarPrintPage })),
+);
 const RotaPrintPage = lazy(() =>
   import('./pages/RotaPrintPage').then((m) => ({ default: m.RotaPrintPage })),
 );
@@ -168,6 +171,7 @@ function Routed() {
       <Routes>
         {/* Paper has no header or menus, so the printable rota sits outside the layout. */}
         <Route path="schedule/print" element={<RotaPrintPage />} />
+        <Route path="schedule/calendar/print" element={<CalendarPrintPage />} />
         <Route element={<Layout />}>
           <Route index element={<ClockPage />} />
           <Route path="news" element={<NewsPage />} />

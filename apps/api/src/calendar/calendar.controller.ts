@@ -57,16 +57,22 @@ export class CalendarController {
    * the path because some clients decide how to handle a subscription by
    * extension rather than content type.
    */
-  @Get(':token/domi.ics')
+  @Get(':token/:feed.ics')
   @Public()
   @Header('Cache-Control', 'private, max-age=600')
   @Header('Content-Type', 'text/calendar; charset=utf-8')
-  async feed(@Param('token') token: string, @Res() response: Response) {
-    const body = await this.calendar.feedForToken(token);
+  /// `domi.ics` is everything in one; `diagnostics.ics`, `rep-lunches.ics`
+  /// and the rest of `FEEDS` one kind each, as separate calendars.
+  async feed(
+    @Param('token') token: string,
+    @Param('feed') feed: string,
+    @Res() response: Response,
+  ) {
+    const body = await this.calendar.feedForToken(token, new Date(), feed);
     response
       .status(HttpStatus.OK)
       .setHeader('Content-Type', 'text/calendar; charset=utf-8')
-      .setHeader('Content-Disposition', 'inline; filename="domi.ics"')
+      .setHeader('Content-Disposition', `inline; filename="${feed}.ics"`)
       .send(body);
   }
 }

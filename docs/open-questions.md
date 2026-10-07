@@ -92,10 +92,9 @@ Built as a read-only iCalendar subscription per employee.
         everybody assigned to the office (not only those working tomorrow),
         on days somebody is scheduled there. Is 6pm right, and should it
         also be an email?
-      - **Separate subscriptions**: one calendar per kind (Diagnostics,
-        Holidays & closures, Pay days…) as well as the all-in-one link that
-        exists now, so each can be coloured and switched off on the phone.
-      - **A printed month**, like the paper calendar it replaces.
+      - **The 🥪 on every shift with no rep lunch**: asked for ("or not
+        scheduled"), and shown on every office shift that day. If it is too
+        busy on the rota, it could show only on days a lunch was expected.
 - [ ] **Enter the diagnostics and this year's holidays** on the live site:
       the alternate-weekend pattern as repeats (US + ECHO Sundays 8–2, ANS +
       VNG Saturdays 9–2, each office every other week), and Election Day,

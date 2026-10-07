@@ -35,6 +35,7 @@ import type {
 import { CalendarLinkCard } from '../components/CalendarLinkCard';
 import { KIND_STYLE } from '../lib/calendar-kinds';
 import { ScheduleTabs } from '../components/ScheduleTabs';
+import { LunchIcon } from '../components/LunchIcon';
 import {
   ClosuresCard,
   ClosureWarning,
@@ -1686,6 +1687,7 @@ function MonthGrid({
                           index >= MAX_LINES ? 'hidden sm:block' : ''
                         }`}
                       >
+                        <LunchIcon shift={shift} events={events} />
                         {shift.notes && (
                           <span data-testid="month-shift-note">
                             <span aria-hidden="true">📝 </span>
