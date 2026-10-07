@@ -3,9 +3,10 @@ import { mkdirSync } from 'node:fs';
 import { goTo } from './nav.mjs';
 
 // Office extensions in the Directory (October 2026, Dominguez — from the
-// practice's "Office Extensions" sheet): everybody reads the list, laid out by
-// section; a person's 5xx number rings their mobile on their work-from-home
-// days; managers keep the list, and a line matched to somebody shows on their
+// practice's "Office Extensions" sheet, then the new phone system's list on 7
+// October): everybody reads the list, laid out by section; a person's 5xx
+// number rings their mobile on their work-from-home days; managers keep the
+// list, and a line matched to somebody shows on their
 // Directory and Staff cards — the from-home number first on a day at home.
 const OUT = process.argv[2] || new URL('./shots/', import.meta.url).pathname;
 mkdirSync(OUT, { recursive: true });
@@ -36,19 +37,19 @@ async function signIn(email, viewport) {
 const frankie = await signIn('frontdesk@domihealthcare.com', { width: 390, height: 844 });
 const mgr = await signIn('manager@domihealthcare.com');
 
-await step('everybody sees the office extensions in the Directory, by section, as on the sheet', async () => {
+await step('everybody sees the office extensions in the Directory, by section, as on the phone system', async () => {
   await goTo(frankie, 'Directory');
   const list = frankie.getByTestId('office-extensions');
   await list.waitFor({ timeout: 15000 });
-  for (const section of ['Providers', 'Admin Team', 'Front Desk & Outdesk', 'Misc']) {
+  for (const section of ['Providers', 'Admin Team', 'Front Desk', 'MA & Lab', 'Shared lines', 'Provider softphones (rarely used)']) {
     await list.getByRole('heading', { name: section, exact: true }).waitFor({ timeout: 5000 });
   }
   const kayla = list.getByTestId('extension-line').filter({ hasText: 'Kayla Bermeo' });
   await kayla.getByText('121', { exact: true }).waitFor({ timeout: 5000 });
   await kayla.getByText(/From home: 521 · Thursday/).waitFor({ timeout: 5000 });
-  await list.getByTestId('extension-line').filter({ hasText: 'NB Front Desk' }).getByText('101').waitFor();
+  await list.getByTestId('extension-line').filter({ hasText: 'FD N 1' }).getByText('101').waitFor();
   const count = await list.getByTestId('extension-line').count();
-  if (count !== 22) throw new Error(`${count} lines, the sheet has 22`);
+  if (count !== 31) throw new Error(`${count} lines, the phone system has 31`);
   // Staff read it; only managers change it.
   if (await list.getByRole('button', { name: /Edit/ }).count()) throw new Error('staff have an Edit button');
   const status = await frankie.evaluate(() =>
@@ -134,15 +135,15 @@ await step('removing a line asks first, and closing with changes asks too', asyn
   const editor = mgr.getByTestId('extensions-editor');
   await editor.getByRole('button', { name: 'Remove Morgan Manager' }).click();
   await mgr.getByRole('button', { name: 'Keep it' }).click();
-  if ((await editor.getByTestId('extension-row').count()) !== 23) throw new Error('kept, but the line went');
+  if ((await editor.getByTestId('extension-row').count()) !== 32) throw new Error('kept, but the line went');
   await editor.getByRole('button', { name: 'Remove Morgan Manager' }).click();
-  await mgr.getByRole('button', { name: 'Remove it' }).click();
+  await mgr.getByRole('button', { name: 'Remove it', exact: true }).click();
   await editor.getByRole('button', { name: 'Cancel' }).click();
   await mgr.getByRole('button', { name: 'Keep editing' }).click();
   await editor.getByRole('button', { name: 'Save extensions' }).click();
   await editor.waitFor({ state: 'detached', timeout: 10000 });
   const lines = await mgr.evaluate(() => fetch('/api/directory/extensions').then((r) => r.json()));
-  if (lines.length !== 22) throw new Error(`${lines.length} lines after removing it`);
+  if (lines.length !== 31) throw new Error(`${lines.length} lines after removing it`);
   if (lines.some((line) => line.extension === '199')) throw new Error('the line is still there');
   if (await mgr.getByTestId('person-Morgan Manager').getByTestId('person-extension').count())
     throw new Error('the card still shows an extension');

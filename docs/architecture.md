@@ -2422,6 +2422,19 @@ from-home number first, not the note. The starting list came in by
 migration; a line is matched to an account there only when exactly one
 current member of staff has that first and last name.
 
+**The new phone system** (7 October 2026, Dominguez) replaced that list by
+migration (`20261007010000_office_extensions_new_phones`, 31 lines). The
+doctors' desk phones are now by room (Dr N 1 201, Dr W 1 204 …), so the
+Providers section lists rooms, not people. Each provider has a softphone
+(501–504), listed last in **Provider softphones (rarely used)** and matched
+to nobody, so a provider's card does not offer a number they rarely answer
+(Dominguez: "providers RARELY use their soft phones"). The admin team's
+softphones (521–525) stay their from-home numbers on their own lines; the
+shared softphones — Office 100, Admin 120, CCM 130, IT 777 — are under
+**Shared lines**. Admin team lines kept whatever a manager had set in the app
+(who they are matched to, home days), taken from the old line with the same
+extension; otherwise matched by work email, then by name.
+
 **The Staff screen shows the same card, and more** (October 2026, Dominguez):
 it loads the Directory alongside the staff list and shows its photo,
 pronouns, "about you", presence badges, contact links and birthday through
