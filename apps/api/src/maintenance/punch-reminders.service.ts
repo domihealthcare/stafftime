@@ -10,6 +10,7 @@ import {
 } from '@prisma/client';
 import { NotificationsService } from '../email/notifications.service';
 import { AutoClockOutService } from '../time-entries/auto-clock-out.service';
+import { LunchNoticesService } from '../events/lunch-notices.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { localDateIn, PRACTICE_ZONE } from '../common/util/zoned-time.util';
 import { toUtcDate } from '../common/util/calendar-date.util';
@@ -40,6 +41,9 @@ export interface PunchReminderReport {
   /// Punches left open past midnight, closed at that midnight (and the person
   /// told) — see `AutoClockOutService`.
   autoClockedOut: number;
+  /// Offices told this evening about tomorrow's rep lunch, or that there is
+  /// none — see `LunchNoticesService`.
+  lunchNotices: number;
 }
 
 /**
@@ -65,6 +69,7 @@ export class PunchRemindersService {
     private readonly prisma: PrismaService,
     private readonly notifications: NotificationsService,
     private readonly autoClockOut: AutoClockOutService,
+    private readonly lunchNotices: LunchNoticesService,
   ) {}
 
   async run(now: Date = new Date()): Promise<PunchReminderReport> {
@@ -74,6 +79,8 @@ export class PunchRemindersService {
       autoClockedOut: await this.autoClockOut.closeForgotten({ now }),
       clockIn: await this.remindToClockIn(now),
       clockOut: await this.remindToClockOut(now),
+      // In the evening: tomorrow's rep lunch, or none, to each office.
+      lunchNotices: await this.lunchNotices.send(now),
     };
     if (report.clockIn || report.clockOut) {
       this.logger.log(`Reminded ${report.clockIn} to clock in and ${report.clockOut} to clock out`);

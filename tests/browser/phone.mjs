@@ -118,7 +118,7 @@ await page.screenshot({ path: `${OUT}/50-phone-clock.png`, fullPage: true });
 /// The screens that open from More (and, inside it, Manage) on a phone.
 const UNDER_MORE = new Set([
   'Timesheet', 'News', 'Time off', 'Surveys', 'Dashboard', 'Closing checklists',
-  'Onboarding & Offboarding', 'Licenses', 'Job roles', 'Export', 'Staff', 'Kiosks', 'Locations',
+  'Onboarding & Offboarding', 'Licenses', 'Job roles', 'Reps', 'Export', 'Staff', 'Kiosks', 'Locations',
 ]);
 
 await step('the bottom bar reads Home, Schedule, Directory, Resources, More', async () => {

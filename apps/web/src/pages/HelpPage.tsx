@@ -395,6 +395,41 @@ const STAFF: Section[] = [
         ),
       },
       {
+        question: 'Where is the practice calendar?',
+        answer: (
+          <p>
+            On <Screen>Schedule</Screen>, press <strong>Calendar</strong> at the top (next to
+            Shifts). It shows the month with the <strong>diagnostics</strong> 🩺 (which tests, the
+            hours, and the office — WNY or NB), <strong>rep lunches</strong> 🍽️ (the rep, their
+            company, the medication, and whether they bring catering or the office orders — the bell
+            tells you the evening before whether there is one at your office),{' '}
+            <strong>holidays</strong> ⭐ (the offices are open unless there is also a closure),{' '}
+            <strong>closures</strong> 🔒, meetings and events 📅, and <strong>pay days</strong> 💵 —
+            the Friday after each pay period ends. Under <strong>Show</strong>, keep{' '}
+            <strong>All</strong>, or tap one kind to see only that, and more to add them; All puts
+            everything back. Pick an office to see only its diagnostics and rep lunches, and choose{' '}
+            <strong>List</strong> for a day-by-day list (a phone starts there).{' '}
+            <strong>Print</strong> gives the month on one page, like the paper calendar, with what
+            you have chosen to show. Everything on it reaches your phone&rsquo;s calendar through
+            the calendar link at the bottom of the page: <strong>Everything in one calendar</strong>
+            , or <strong>Separate calendars</strong> to add only the ones you want (say, just
+            Diagnostics and Pay days) — each shows on your phone as its own calendar you can colour
+            and switch off. Use one or the other, not both, or things show twice.
+          </p>
+        ),
+      },
+      {
+        question: 'What do 🍽️ and 🥪 on my shift mean?',
+        answer: (
+          <p>
+            🍽️ means a rep is bringing lunch to that office that day — tap or hover for who, when,
+            and whether they bring catering or the office orders. 🥪 means there is no rep lunch, so
+            bring your own. Home says the same under today&rsquo;s shift, and the bell tells
+            everybody at the office the evening before. Work-from-home shifts have neither.
+          </p>
+        ),
+      },
+      {
         question: 'Why does it say I am in overtime?',
         answer: (
           <p>
@@ -1079,7 +1114,48 @@ const MANAGERS: Section[] = [
             the Schedule banner and the nightly email until the shift is moved. Once a year is
             filled in, <strong>Copy these into next year</strong> puts every closure on the same
             date the following year — then fix the ones that move, like Thanksgiving. Closures do
-            not change pay: holiday pay is not set up.
+            not change pay: holiday pay is not set up. A day that is marked but{' '}
+            <strong>shuts nothing</strong> — Election Day, Black Friday — is a{' '}
+            <strong>holiday</strong> instead (<strong>+ Add holiday</strong>): everyone sees it on
+            the calendar, nobody is notified and no shift is flagged. Copy into next year takes
+            holidays too.
+          </p>
+        ),
+      },
+      {
+        question: 'Rep lunches and the rep list',
+        answer: (
+          <p>
+            Keep the reps under <Screen>Manage → Reps</Screen>: name, cell phone, company,
+            medication, whether they bring catering or the office orders, a status (Preferred, OK to
+            book, Has restrictions, Don&rsquo;t book) and notes. Then on{' '}
+            <Screen>Schedule → Calendar</Screen> choose <strong>+ Add → Rep lunch</strong>, pick the
+            rep, the office and the time; it is named after the rep. A rep marked{' '}
+            <strong>Don&rsquo;t book</strong> asks you to confirm first, and a rep with restrictions
+            shows their notes as you pick them. Everyone sees the lunch with the rep, company,
+            medication and food; the front desk also sees the rep&rsquo;s cell phone (a job role
+            setting, under Manage → Job roles); the status and notes are for managers only. Staff at
+            that office are told when a lunch is added, moved or cancelled, and{' '}
+            <strong>every evening at 6pm</strong> hear whether there is a rep lunch there the next
+            day — or that there is none, so they bring their own. That evening notice goes only for
+            days somebody is scheduled at the office and it is not closed. Correcting a rep&rsquo;s
+            name renames their lunches too.
+          </p>
+        ),
+      },
+      {
+        question: 'The diagnostics schedule',
+        answer: (
+          <p>
+            On <Screen>Schedule → Calendar</Screen>, choose{' '}
+            <strong>+ Add → Diagnostics date</strong>: which tests (&ldquo;US + ECHO&rdquo;,
+            &ldquo;ANS + VNG&rdquo;), the office, and the hours. A pattern like &ldquo;every other
+            Sunday at West New York&rdquo; can be entered once with <strong>Repeat</strong>; when a
+            date is different, click a date and use <strong>Add another date like this</strong> — it
+            copies the tests, hours and office, and you change the day. Everyone sees diagnostics
+            and is told when one is added, moved or cancelled (no day-before reminder). Write when
+            the tests are on and anything the front desk should know — never a patient&rsquo;s name
+            or who is booked.
           </p>
         ),
       },

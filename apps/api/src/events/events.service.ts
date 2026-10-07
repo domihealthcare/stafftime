@@ -21,6 +21,7 @@ import { GoogleMeetService } from './google-meet.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { EventInput } from './dto/event.dto';
 import { allDayDates, allDayRange, describeWhen } from './event-time';
+import { repLunchTitle } from '../reps/rep-lunch-title';
 import { describeRule, occurrenceDates, RepeatRule, ruleProblem } from './recurrence';
 
 /// Long enough for a conference; short enough that a typo in the year is caught.
@@ -47,6 +48,23 @@ export const EVENT_SELECT = {
   updatedAt: true,
   jobRole: { select: { id: true, name: true, colour: true } },
   location: { select: { id: true, name: true } },
+  atLocation: {
+    select: { id: true, name: true, addressLine1: true, city: true, state: true },
+  },
+  // The phone, status and notes are taken off again for anybody but a
+  // manager (`present`); the calendar feed never sends them.
+  rep: {
+    select: {
+      id: true,
+      name: true,
+      company: true,
+      medication: true,
+      food: true,
+      cellPhone: true,
+      status: true,
+      notes: true,
+    },
+  },
   invitees: {
     select: {
       employee: PERSON,
@@ -71,7 +89,24 @@ export const EVENT_SELECT = {
 export type EventRow = Prisma.PracticeEventGetPayload<{ select: typeof EVENT_SELECT }>;
 
 /// What decides who an event is for.
-type AudienceOf = Pick<EventRow, 'audience' | 'jobRole' | 'location' | 'invitees'>;
+type AudienceOf = Pick<
+  EventRow,
+  'kind' | 'audience' | 'jobRole' | 'location' | 'invitees' | 'atLocation'
+>;
+
+/// The kinds that go on the bell. A holiday only names a day; nobody needs
+/// telling about Election Day.
+const NOTIFIED: PracticeEventKind[] = [
+  PracticeEventKind.EVENT,
+  PracticeEventKind.CLOSURE,
+  PracticeEventKind.DIAGNOSTIC,
+  PracticeEventKind.REP_LUNCH,
+];
+/// The kinds reminded about the day before. Not diagnostics: every weekend's
+/// "Tomorrow: US + ECHO" to everybody would bury the bell.
+const REMINDED: PracticeEventKind[] = [PracticeEventKind.EVENT, PracticeEventKind.CLOSURE];
+/// The kinds a year is copied forward for, and can be entered years ahead.
+const YEARLY: PracticeEventKind[] = [PracticeEventKind.CLOSURE, PracticeEventKind.HOLIDAY];
 
 /// Who counts as staff for an event: the same people a survey asks.
 const WORKING: { in: EmploymentStatus[] } = {
@@ -92,6 +127,8 @@ interface Checked {
     audience: EventAudience;
     jobRoleId: string | null;
     locationId: string | null;
+    atLocationId: string | null;
+    repId: string | null;
   };
   invitees: { employeeIds: string[]; jobRoleIds: string[]; locationIds: string[] };
   /// The rule and the date it counts from, when it repeats.
@@ -141,6 +178,13 @@ export class EventsService {
     }
 
     const manages = viewer.role === Role.MANAGER || viewer.role === Role.ADMIN;
+    // A rep's cell phone: managers, and job roles that make the calls (Front
+    // Desk — Dominguez, October 2026).
+    const seesCell =
+      manages ||
+      (await this.prisma.jobRole.count({
+        where: { seesRepCell: true, members: { some: { employeeId: viewer.id } } },
+      })) > 0;
     const rows = await this.prisma.practiceEvent.findMany({
       where: {
         startsAt: { lt: end },
@@ -150,7 +194,7 @@ export class EventsService {
       select: EVENT_SELECT,
       orderBy: [{ startsAt: 'asc' }, { title: 'asc' }],
     });
-    return rows.map(present);
+    return rows.map((row) => present(row, { manager: manages, seesCell }));
   }
 
   /// The events one person is invited to, for their calendar feed.
@@ -175,14 +219,14 @@ export class EventsService {
       `Event ${first.id} added by ${actor.id} (${count} date${count === 1 ? '' : 's'})`,
     );
 
-    // A closure can also be entered for the next few years in one go.
+    // A closure or holiday can also be entered for the next few years in one go.
     let yearsCreated = 0;
-    if (dto.yearsAhead && input.data.kind === PracticeEventKind.CLOSURE) {
+    if (dto.yearsAhead && YEARLY.includes(input.data.kind)) {
       yearsCreated = await this.repeatClosureYearly(first, dto.yearsAhead, actor);
     }
 
     // One notification for a whole series, not one per date.
-    if (last.endsAt > new Date()) {
+    if (last.endsAt > new Date() && NOTIFIED.includes(first.kind)) {
       await this.inbox.notify(
         (await this.invited(first)).filter((id) => id !== actor.id),
         notice(first, 'added', input.repeat ? seriesBody(first, input.repeat) : undefined),
@@ -234,7 +278,7 @@ export class EventsService {
   async remove(id: string, actor: AuthUser, scope: Scope = 'one') {
     const row = await this.require(id);
     const upcoming = row.endsAt > new Date();
-    const invited = upcoming ? await this.invited(row) : [];
+    const invited = upcoming && NOTIFIED.includes(row.kind) ? await this.invited(row) : [];
 
     let removed = 1;
     if (scope === 'following' && row.seriesId) {
@@ -271,6 +315,7 @@ export class EventsService {
           lt: zonedTimeToUtc(addDaysTo(tomorrow, 1), '00:00', PRACTICE_ZONE),
         },
         reminderSentAt: null,
+        kind: { in: REMINDED },
       },
       select: EVENT_SELECT,
       orderBy: { startsAt: 'asc' },
@@ -286,9 +331,9 @@ export class EventsService {
     return rows.length;
   }
 
-  /// The same closure on the same date in each of the next `years` years, as
-  /// separate one-off closures (a moving holiday can then be fixed one year at
-  /// a time). Returns how many were made.
+  /// The same closure or holiday on the same date in each of the next `years`
+  /// years, as separate one-off entries (a moving holiday can then be fixed
+  /// one year at a time). Returns how many were made.
   private async repeatClosureYearly(row: EventRow, years: number, actor: AuthUser) {
     const source = await this.prisma.practiceEvent.findUniqueOrThrow({
       where: { id: row.id },
@@ -301,7 +346,7 @@ export class EventsService {
       if (!moved) continue;
       await this.prisma.practiceEvent.create({
         data: {
-          kind: PracticeEventKind.CLOSURE,
+          kind: source.kind,
           title: source.title,
           description: source.description,
           place: null,
@@ -320,9 +365,9 @@ export class EventsService {
   }
 
   /**
-   * "Copy last year's holidays": every closure that started in `fromYear`,
-   * put on the same date the year after — same times, same offices — for a
-   * manager to check. Holidays that move (Thanksgiving) land on the wrong
+   * "Copy last year's holidays": every closure and holiday that started in
+   * `fromYear`, put on the same date the year after — same times, same
+   * offices — for a manager to check. Holidays that move (Thanksgiving) land on the wrong
    * day and are fixed by hand; that is why nothing repeats by itself.
    *
    * A closure already there (same name, same start) is skipped, so pressing
@@ -333,7 +378,7 @@ export class EventsService {
     const toYear = fromYear + 1;
     const rows = await this.prisma.practiceEvent.findMany({
       where: {
-        kind: PracticeEventKind.CLOSURE,
+        kind: { in: YEARLY },
         startsAt: {
           gte: zonedTimeToUtc(`${fromYear}-01-01`, '00:00', PRACTICE_ZONE),
           lt: zonedTimeToUtc(`${toYear}-01-01`, '00:00', PRACTICE_ZONE),
@@ -355,7 +400,7 @@ export class EventsService {
 
       const already = await this.prisma.practiceEvent.count({
         where: {
-          kind: PracticeEventKind.CLOSURE,
+          kind: row.kind,
           startsAt,
           title: { equals: row.title, mode: 'insensitive' },
         },
@@ -368,7 +413,7 @@ export class EventsService {
       created.push(
         await this.prisma.practiceEvent.create({
           data: {
-            kind: PracticeEventKind.CLOSURE,
+            kind: row.kind,
             title: row.title,
             description: row.description,
             place: null,
@@ -389,7 +434,8 @@ export class EventsService {
     // One notification each, not one per holiday: a year's worth of "Office
     // closed" arriving at once would bury everything else under the bell.
     const perPerson = new Map<string, string[]>();
-    for (const row of created) {
+    // Holidays shut nothing, so only the closures are worth a notification.
+    for (const row of created.filter((made) => made.kind === PracticeEventKind.CLOSURE)) {
       for (const person of await this.invited(row)) {
         if (person === actor.id) continue;
         perPerson.set(person, [...(perPerson.get(person) ?? []), row.title]);
@@ -515,11 +561,17 @@ export class EventsService {
       before.title !== after.title ||
       before.place !== after.place ||
       before.meetingUrl !== after.meetingUrl ||
+      before.atLocation?.id !== after.atLocation?.id ||
+      before.rep?.id !== after.rep?.id ||
       before.allDay !== after.allDay ||
       before.startsAt.getTime() !== after.startsAt.getTime() ||
       before.endsAt.getTime() !== after.endsAt.getTime();
     const reaudienced = audienceKey(before) !== audienceKey(after);
-    if (!(moved || reaudienced) || !(before.endsAt > new Date() || after.endsAt > new Date())) {
+    if (
+      !(moved || reaudienced) ||
+      !(before.endsAt > new Date() || after.endsAt > new Date()) ||
+      !NOTIFIED.includes(after.kind)
+    ) {
       return;
     }
 
@@ -597,11 +649,57 @@ export class EventsService {
   private async checkInput(dto: EventInput): Promise<Checked> {
     const kind = dto.kind ?? PracticeEventKind.EVENT;
     const closure = kind === PracticeEventKind.CLOSURE;
+    const holiday = kind === PracticeEventKind.HOLIDAY;
+    const diagnostic = kind === PracticeEventKind.DIAGNOSTIC;
+    const repLunch = kind === PracticeEventKind.REP_LUNCH;
+    /// Holidays, diagnostics and rep lunches are for everyone (Dominguez,
+    /// October 2026), so the audience is not theirs to choose.
+    if (holiday || diagnostic || repLunch) {
+      dto = {
+        ...dto,
+        audience: EventAudience.EVERYONE,
+        jobRoleId: undefined,
+        locationId: undefined,
+      };
+    }
+    /// A rep lunch is named after its rep, whatever was typed.
+    let repId: string | null = null;
+    if (repLunch) {
+      if (!dto.repId) throw new BadRequestException('Choose the rep.');
+      const rep = await this.prisma.rep.findUnique({
+        where: { id: dto.repId },
+        select: { name: true },
+      });
+      if (!rep) throw new BadRequestException('That rep is no longer on the list.');
+      repId = dto.repId;
+      dto = { ...dto, title: repLunchTitle(rep.name) };
+    }
     const title = dto.title.trim();
     if (title.length < 2) {
       throw new BadRequestException(
-        closure ? 'Name the holiday or closure.' : 'Give the event a name.',
+        closure
+          ? 'Name the holiday or closure.'
+          : holiday
+            ? 'Name the holiday.'
+            : diagnostic
+              ? 'Say which tests — "US + ECHO", "ANS + VNG".'
+              : 'Give the event a name.',
       );
+    }
+    if (holiday && !dto.allDay) {
+      throw new BadRequestException('A holiday is a whole day — tick "All day".');
+    }
+    if (holiday && dto.repeat) {
+      throw new BadRequestException(
+        'A holiday does not repeat within the year — use "Repeat every year" instead.',
+      );
+    }
+    let atLocationId: string | null = null;
+    if (diagnostic || repLunch) {
+      if (!dto.atLocationId) throw new BadRequestException('Choose which office it is at.');
+      const exists = await this.prisma.location.count({ where: { id: dto.atLocationId } });
+      if (!exists) throw new BadRequestException('That office no longer exists.');
+      atLocationId = dto.atLocationId;
     }
     if (
       closure &&
@@ -704,22 +802,30 @@ export class EventsService {
 
     // Asked for last, once everything else is known to be fine, so a refused
     // form never leaves an unused meeting behind at Google.
-    const meetingUrl = !closure && dto.createMeetLink ? await this.meet.createLink() : pastedUrl;
+    const noCall = closure || holiday || diagnostic || repLunch;
+    const meetingUrl = noCall
+      ? null
+      : dto.createMeetLink
+        ? await this.meet.createLink()
+        : pastedUrl;
 
     return {
       data: {
         kind,
         title,
         description: dto.description?.trim() || null,
-        // A closure is where the office is: it has no other place, and no call.
-        place: closure ? null : dto.place?.trim() || null,
-        meetingUrl: closure ? null : meetingUrl,
+        // A closure is where the office is: it has no other place, and no
+        // call. A diagnostics date is at its office; a holiday is nowhere.
+        place: noCall ? null : dto.place?.trim() || null,
+        meetingUrl,
         allDay: dto.allDay,
         startsAt,
         endsAt,
         audience: dto.audience,
         jobRoleId: dto.audience === EventAudience.JOB_ROLE ? dto.jobRoleId! : null,
         locationId: dto.audience === EventAudience.LOCATION ? dto.locationId! : null,
+        atLocationId,
+        repId,
       },
       invitees:
         dto.audience === EventAudience.CHOSEN
@@ -755,6 +861,15 @@ function checkMeetingUrl(value: string | undefined): string | null {
 
 /// Who an event is for, as an employee filter.
 export function audienceWhere(row: AudienceOf): Prisma.EmployeeWhereInput {
+  // Everybody sees a rep lunch on the calendar, but it is told to the staff
+  // of the office it is at (Dominguez, October 2026). A removed office leaves
+  // nobody, not everybody.
+  if (row.kind === PracticeEventKind.REP_LUNCH) {
+    return {
+      employmentStatus: WORKING,
+      locations: { some: { locationId: row.atLocation?.id ?? '' } },
+    };
+  }
   if (row.audience === EventAudience.JOB_ROLE) {
     // A deleted role leaves nobody invited, rather than everybody.
     return { employmentStatus: WORKING, jobRoles: { some: { jobRoleId: row.jobRole?.id ?? '' } } };
@@ -816,6 +931,7 @@ function inviteeRows(eventIds: string[], input: Checked) {
 function audienceKey(row: AudienceOf): string {
   return [
     row.audience,
+    row.kind === PracticeEventKind.REP_LUNCH ? (row.atLocation?.id ?? '') : '',
     row.jobRole?.id ?? '',
     row.location?.id ?? '',
     ...row.invitees.map((i) => i.employee?.id ?? i.jobRole?.id ?? i.location?.id ?? '').sort(),
@@ -830,8 +946,16 @@ function seriesBody(first: EventRow, repeat: NonNullable<Checked['repeat']>): st
 }
 
 /// What the screens get. An all-day event also carries its days, worked out
-/// here on the practice's clock so no browser has to.
-function present(row: EventRow) {
+/// here on the practice's clock so no browser has to. A rep's status and
+/// notes go to managers and admins only; their cell phone also to job roles
+/// that see it (Front Desk).
+function present(
+  row: EventRow,
+  { manager, seesCell }: { manager: boolean; seesCell: boolean } = {
+    manager: true,
+    seesCell: true,
+  },
+) {
   return {
     id: row.id,
     kind: row.kind,
@@ -845,6 +969,18 @@ function present(row: EventRow) {
     audience: row.audience,
     jobRole: row.jobRole,
     location: row.location,
+    atLocation: row.atLocation ? { id: row.atLocation.id, name: row.atLocation.name } : null,
+    rep: row.rep
+      ? {
+          id: row.rep.id,
+          name: row.rep.name,
+          company: row.rep.company,
+          medication: row.rep.medication,
+          food: row.rep.food,
+          ...(manager || seesCell ? { cellPhone: row.rep.cellPhone } : {}),
+          ...(manager ? { status: row.rep.status, notes: row.rep.notes } : {}),
+        }
+      : null,
     invitees: row.invitees.map((invitee) =>
       invitee.employee
         ? {
@@ -882,6 +1018,9 @@ function present(row: EventRow) {
 }
 
 function whenAndWhere(row: EventRow): string {
+  if (row.kind === PracticeEventKind.DIAGNOSTIC || row.kind === PracticeEventKind.REP_LUNCH) {
+    return [describeWhen(row), row.atLocation?.name].filter(Boolean).join(' · ');
+  }
   if (row.kind === PracticeEventKind.CLOSURE) {
     const where =
       row.audience === EventAudience.LOCATION
@@ -900,23 +1039,42 @@ function notice(
 ): { kind: NotificationKind; title: string; body: string; link: string } {
   const closed =
     row.audience === EventAudience.LOCATION ? `${row.location?.name ?? 'Office'} closed` : 'Closed';
+  const repName = `${row.rep?.name ?? row.title.replace(/^Rep lunch: /, '')}${
+    row.rep?.company ? ` (${row.rep.company})` : ''
+  }`;
   const titles =
-    row.kind === PracticeEventKind.CLOSURE
+    row.kind === PracticeEventKind.REP_LUNCH
       ? {
-          added: `${closed}: ${row.title}`,
-          changed: `Closure changed: ${row.title}`,
-          // Your office is no longer the one shut, or it is not shut at all.
-          dropped: `Open as usual: ${row.title}`,
-          cancelled: `Open as usual: ${row.title}`,
-          reminder: `Tomorrow — ${closed.toLowerCase()}: ${row.title}`,
-        }
-      : {
-          added: `New event: ${row.title}`,
-          changed: `Event changed: ${row.title}`,
+          added: `Rep lunch: ${repName}`,
+          changed: `Rep lunch changed: ${repName}`,
           dropped: `No longer on your schedule: ${row.title}`,
-          cancelled: `Cancelled: ${row.title}`,
+          cancelled: `Rep lunch cancelled: ${repName}`,
           reminder: `Tomorrow: ${row.title}`,
-        };
+        }
+      : row.kind === PracticeEventKind.DIAGNOSTIC
+        ? {
+            added: `Diagnostics: ${row.title}`,
+            changed: `Diagnostics changed: ${row.title}`,
+            dropped: `No longer on your schedule: ${row.title}`,
+            cancelled: `Diagnostics cancelled: ${row.title}`,
+            reminder: `Tomorrow: ${row.title}`,
+          }
+        : row.kind === PracticeEventKind.CLOSURE
+          ? {
+              added: `${closed}: ${row.title}`,
+              changed: `Closure changed: ${row.title}`,
+              // Your office is no longer the one shut, or it is not shut at all.
+              dropped: `Open as usual: ${row.title}`,
+              cancelled: `Open as usual: ${row.title}`,
+              reminder: `Tomorrow — ${closed.toLowerCase()}: ${row.title}`,
+            }
+          : {
+              added: `New event: ${row.title}`,
+              changed: `Event changed: ${row.title}`,
+              dropped: `No longer on your schedule: ${row.title}`,
+              cancelled: `Cancelled: ${row.title}`,
+              reminder: `Tomorrow: ${row.title}`,
+            };
   return {
     kind: NotificationKind.EVENT,
     title: titles[what],

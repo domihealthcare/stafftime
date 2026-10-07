@@ -2,6 +2,9 @@ import { useDialog } from './useDialog';
 import { useCallback, useEffect, useId, useState } from 'react';
 import { ApiError, api } from '../lib/api';
 import { formatCalendarDate, formatTimeCompact, localDate } from '../lib/format';
+import { Link } from 'react-router-dom';
+import { CALENDAR_KINDS, KIND_STYLE, officeShort } from '../lib/calendar-kinds';
+import { FOOD_LABEL, STATUS_LABEL } from '../lib/reps';
 import { jobRoleHex } from '../lib/job-role-colours';
 import type {
   Employee,
@@ -10,18 +13,22 @@ import type {
   EventKind,
   JobRole,
   Location,
+  EventRep,
   PracticeEvent,
+  Rep,
   RepeatInput,
 } from '../lib/types';
 import { useConfirm, type ConfirmOptions } from './ConfirmDialog';
 import { InviteePicker, NOBODY, type InviteeSelection } from './InviteePicker';
 import { RepeatPicker } from './RepeatPicker';
-import { Alert, Card, buttonClass } from './ui';
+import { Alert, Badge, Card, buttonClass } from './ui';
 
 /**
  * Practice events on the schedule: office meetings, provider meetings, a
  * wellness day — and closures: Christmas, Christmas Eve from 1pm, one office
- * shut for the day (September 2026).
+ * shut for the day (September 2026). Since October 2026 also holidays that
+ * shut nothing (Election Day) and the diagnostics schedule ("US + ECHO 8–2,
+ * West New York"), all on the practice calendar.
  *
  * Not shifts. They sit above the rota and in the month, go to phones through
  * the calendar feed, and add nothing to anybody's hours — somebody paid to be
@@ -30,6 +37,18 @@ import { Alert, Card, buttonClass } from './ui';
  */
 
 export const isClosure = (event: PracticeEvent) => event.kind === 'CLOSURE';
+/// Holidays, diagnostics and rep lunches are for everyone; nobody chooses who.
+const forEveryone = (kind: EventKind) =>
+  kind === 'HOLIDAY' || kind === 'DIAGNOSTIC' || kind === 'REP_LUNCH';
+/// Diagnostics and rep lunches happen at an office.
+const atAnOffice = (kind: EventKind) => kind === 'DIAGNOSTIC' || kind === 'REP_LUNCH';
+
+/// What a chip calls it: a rep lunch by its rep, the rest by their title.
+export function shortTitle(event: PracticeEvent): string {
+  return event.kind === 'REP_LUNCH'
+    ? (event.rep?.name ?? event.title.replace(/^Rep lunch: /, ''))
+    : event.title;
+}
 
 /// A video call link fit to open: https only. The server refuses anything
 /// else; this is the second lock on the door.
@@ -49,8 +68,10 @@ function daysOf(event: PracticeEvent): { first: string; last: string } {
   };
 }
 
-/// The events on one day: closures first, then all-day ones, then by time.
+/// The events on one day: closures first, then holidays, diagnostics and
+/// meetings; within each, all-day ones first, then by time.
 export function eventsOnDay(events: PracticeEvent[], day: string): PracticeEvent[] {
+  const rank = (event: PracticeEvent) => CALENDAR_KINDS.indexOf(event.kind);
   return events
     .filter((event) => {
       const { first, last } = daysOf(event);
@@ -58,7 +79,7 @@ export function eventsOnDay(events: PracticeEvent[], day: string): PracticeEvent
     })
     .sort(
       (a, b) =>
-        Number(isClosure(b)) - Number(isClosure(a)) ||
+        rank(a) - rank(b) ||
         Number(b.allDay) - Number(a.allDay) ||
         a.startsAt.localeCompare(b.startsAt) ||
         a.title.localeCompare(b.title),
@@ -91,6 +112,7 @@ export function eventTimeLabel(event: PracticeEvent, day?: string): string {
 
 /// "Everyone", "Provider", "North Bergen" — or for a closure, which offices.
 export function audienceLabel(event: PracticeEvent): string {
+  if (atAnOffice(event.kind)) return event.atLocation?.name ?? 'An office since removed';
   if (event.audience === 'CHOSEN') {
     const names = event.invitees.map((invitee) => invitee.name);
     if (names.length === 0) return 'Nobody — everyone on the list has since gone';
@@ -131,21 +153,20 @@ export function EventChip({
   day: string;
   onOpen: (event: PracticeEvent) => void;
 }) {
-  const closed = isClosure(event);
+  const style = KIND_STYLE[event.kind];
+  const atOffice = atAnOffice(event.kind);
   return (
     <button
       type="button"
       onClick={() => onOpen(event)}
-      data-testid={closed ? 'closure-chip' : 'event-chip'}
-      aria-label={`${event.title}, ${eventTimeLabel(event, day)}, ${closed ? '' : 'for '}${audienceLabel(event)}`}
-      className={`block w-full rounded-md px-1.5 py-1 text-left text-xs leading-tight ring-1 ring-inset ${
-        closed
-          ? 'bg-slate-200 text-slate-900 ring-slate-400 hover:bg-slate-300'
-          : 'bg-indigo-50 text-indigo-950 ring-indigo-200 hover:bg-indigo-100'
-      }`}
+      data-testid={`${event.kind === 'EVENT' ? 'event' : event.kind.toLowerCase()}-chip`}
+      aria-label={`${event.title}, ${eventTimeLabel(event, day)}, ${
+        event.kind === 'EVENT' ? 'for ' : atOffice ? 'at ' : ''
+      }${audienceLabel(event)}`}
+      className={`block w-full rounded-md px-1.5 py-1 text-left text-xs leading-tight ring-1 ring-inset ${style.chip}`}
     >
       <span className="block truncate font-semibold">
-        <span aria-hidden="true">{closed ? '🔒' : '📅'}</span> {event.title}
+        <span aria-hidden="true">{style.emoji}</span> {shortTitle(event)}
         {event.series && (
           <span aria-hidden="true" title="Repeats" className="ml-1 font-normal">
             🔁
@@ -157,11 +178,12 @@ export function EventChip({
           </span>
         )}
       </span>
-      <span
-        className={`block truncate text-[11px] ${closed ? 'text-slate-700' : 'text-indigo-800'}`}
-      >
+      <span className={`block truncate text-[11px] ${style.subtle}`}>
         {eventTimeLabel(event, day)}
-        {event.audience !== 'EVERYONE' && ` · ${audienceLabel(event)}`}
+        {atOffice
+          ? event.atLocation && ` · ${officeShort(event.atLocation.name)}`
+          : event.audience !== 'EVERYONE' && ` · ${audienceLabel(event)}`}
+        {event.kind === 'REP_LUNCH' && event.rep?.company && ` · ${event.rep.company}`}
       </span>
     </button>
   );
@@ -172,12 +194,16 @@ export function EventDialog({
   event,
   canEdit,
   onEdit,
+  onDuplicate,
   onRemoved,
   onClose,
 }: {
   event: PracticeEvent;
   canEdit: boolean;
   onEdit: () => void;
+  /// "Add another date like this": the same, on a day still to choose. The
+  /// diagnostics schedule is "usually similar but not always the same".
+  onDuplicate?: () => void;
   onRemoved: () => void;
   onClose: () => void;
 }) {
@@ -235,7 +261,10 @@ export function EventDialog({
       >
         <div className="mb-3 flex items-start justify-between gap-3">
           <h2 className="text-base font-semibold text-slate-900">
-            <span aria-hidden="true">{closed ? '🔒' : '📅'}</span> {event.title}
+            <span aria-hidden="true">{KIND_STYLE[event.kind].emoji}</span> {event.title}
+            <span className="ml-2 align-middle text-xs font-medium text-slate-500">
+              {KIND_STYLE[event.kind].one}
+            </span>
           </h2>
           <button
             type="button"
@@ -276,22 +305,31 @@ export function EventDialog({
               </dd>
             </div>
           )}
-          <div>
-            <dt className="text-xs font-medium uppercase tracking-wide text-slate-500">
-              {closed ? 'Closed' : 'For'}
-            </dt>
-            <dd className="flex items-center gap-1.5 text-slate-800">
-              {event.jobRole && (
-                <span
-                  aria-hidden="true"
-                  className="inline-block h-2.5 w-2.5 rounded-full"
-                  style={{ backgroundColor: jobRoleHex(event.jobRole.colour) }}
-                />
-              )}
-              {audienceLabel(event)}
-              {!closed && event.audience === 'LOCATION' && ' staff'}
-            </dd>
-          </div>
+          {atAnOffice(event.kind) && (
+            <div>
+              <dt className="text-xs font-medium uppercase tracking-wide text-slate-500">At</dt>
+              <dd className="text-slate-800">{audienceLabel(event)}</dd>
+            </div>
+          )}
+          {event.kind === 'REP_LUNCH' && event.rep && <RepDetails rep={event.rep} />}
+          {!forEveryone(event.kind) && (
+            <div>
+              <dt className="text-xs font-medium uppercase tracking-wide text-slate-500">
+                {closed ? 'Closed' : 'For'}
+              </dt>
+              <dd className="flex items-center gap-1.5 text-slate-800">
+                {event.jobRole && (
+                  <span
+                    aria-hidden="true"
+                    className="inline-block h-2.5 w-2.5 rounded-full"
+                    style={{ backgroundColor: jobRoleHex(event.jobRole.colour) }}
+                  />
+                )}
+                {audienceLabel(event)}
+                {!closed && event.audience === 'LOCATION' && ' staff'}
+              </dd>
+            </div>
+          )}
           {event.series && (
             <div>
               <dt className="text-xs font-medium uppercase tracking-wide text-slate-500">
@@ -363,6 +401,16 @@ export function EventDialog({
                 Remove
               </button>
             )}
+            {onDuplicate && !choosing && (
+              <button
+                type="button"
+                disabled={busy}
+                onClick={onDuplicate}
+                className={buttonClass('secondary', 'sm')}
+              >
+                Add another date like this
+              </button>
+            )}
             <button
               type="button"
               disabled={busy}
@@ -384,9 +432,10 @@ function inputValue(date: Date): string {
   return `${localDate(date)}T${pad(date.getHours())}:${pad(date.getMinutes())}`;
 }
 
-/// Adding an event or a closure, or changing one.
+/// Adding an event, diagnostics date, holiday or closure, or changing one.
 export function EventForm({
   event,
+  template,
   initialKind = 'EVENT',
   employees,
   locations,
@@ -397,6 +446,9 @@ export function EventForm({
 }: {
   /// The event being changed; absent to add one.
   event?: PracticeEvent;
+  /// A new one that starts as a copy of this (not its repeat): "Add another
+  /// date like this".
+  template?: PracticeEvent;
   /// What a new one starts as.
   initialKind?: EventKind;
   /// Everybody who can be put on an event's list.
@@ -411,19 +463,50 @@ export function EventForm({
   onCancel: () => void;
 }) {
   const id = useId();
-  const [kind, setKind] = useState<EventKind>(event?.kind ?? initialKind);
+  /// Where the fields start from: the event being changed, or the one copied.
+  const source = event ?? template;
+  const [kind, setKind] = useState<EventKind>(source?.kind ?? initialKind);
   const closed = kind === 'CLOSURE';
-  const [title, setTitle] = useState(event?.title ?? '');
-  // A holiday is usually the whole day; a meeting usually is not.
-  const [allDay, setAllDay] = useState(event?.allDay ?? initialKind === 'CLOSURE');
+  const holiday = kind === 'HOLIDAY';
+  const diagnostic = kind === 'DIAGNOSTIC';
+  const repLunch = kind === 'REP_LUNCH';
+  const atOffice = atAnOffice(kind);
+  const confirm = useConfirm();
+  const [title, setTitle] = useState(source?.title ?? '');
+  /// A rep lunch: the rep, from the managers' list.
+  const [repId, setRepId] = useState(source?.rep?.id ?? '');
+  const [reps, setReps] = useState<Rep[] | null>(null);
+  useEffect(() => {
+    if (!repLunch || reps) return;
+    api
+      .reps()
+      .then(setReps)
+      .catch(() => setReps([]));
+  }, [repLunch, reps]);
+  const chosenRep = reps?.find((rep) => rep.id === repId) ?? null;
+  // A holiday is the whole day; a meeting usually is not.
+  const [allDay, setAllDay] = useState(
+    source?.allDay ?? (initialKind === 'CLOSURE' || initialKind === 'HOLIDAY'),
+  );
+  /// A copy keeps the times of day and moves to the day it is added on.
+  const onDay = (iso: string) => {
+    const date = new Date(iso);
+    if (event) return date;
+    const moved = new Date(defaultDate);
+    moved.setHours(date.getHours(), date.getMinutes(), 0, 0);
+    return moved;
+  };
   const [startsAt, setStartsAt] = useState(() => {
-    if (event && !event.allDay) return inputValue(new Date(event.startsAt));
+    if (source && !source.allDay) return inputValue(onDay(source.startsAt));
     const start = new Date(defaultDate);
     start.setHours(12, 0, 0, 0);
     return inputValue(start);
   });
   const [endsAt, setEndsAt] = useState(() => {
-    if (event && !event.allDay) return inputValue(new Date(event.endsAt));
+    if (source && !source.allDay) {
+      const length = new Date(source.endsAt).getTime() - new Date(source.startsAt).getTime();
+      return inputValue(new Date(onDay(source.startsAt).getTime() + length));
+    }
     const end = new Date(defaultDate);
     end.setHours(13, 0, 0, 0);
     return inputValue(end);
@@ -434,8 +517,10 @@ export function EventForm({
   const [endDate, setEndDate] = useState(
     event?.endDate ?? (event ? localDate(new Date(event.startsAt)) : localDate(defaultDate)),
   );
-  const [place, setPlace] = useState(event?.place ?? '');
-  const [meetingUrl, setMeetingUrl] = useState(event?.meetingUrl ?? '');
+  const [place, setPlace] = useState(source?.place ?? '');
+  const [meetingUrl, setMeetingUrl] = useState(source?.meetingUrl ?? '');
+  /// A diagnostics date: the office it is at.
+  const [atLocationId, setAtLocationId] = useState(source?.atLocation?.id ?? '');
   /// Offered only once Google Meet is set up (Practice settings can't: it is
   /// two server settings — see docs/google-meet-setup.md).
   const [meetAvailable, setMeetAvailable] = useState(false);
@@ -450,23 +535,23 @@ export function EventForm({
       cancelled = true;
     };
   }, []);
-  const [audience, setAudience] = useState<EventAudience>(event?.audience ?? 'EVERYONE');
-  const [jobRoleId, setJobRoleId] = useState(event?.jobRole?.id ?? '');
-  const [locationId, setLocationId] = useState(event?.location?.id ?? '');
-  const [description, setDescription] = useState(event?.description ?? '');
+  const [audience, setAudience] = useState<EventAudience>(source?.audience ?? 'EVERYONE');
+  const [jobRoleId, setJobRoleId] = useState(source?.jobRole?.id ?? '');
+  const [locationId, setLocationId] = useState(source?.location?.id ?? '');
+  const [description, setDescription] = useState(source?.description ?? '');
   /// An event's list: Everyone, or any mix of job roles, offices and people.
   /// One made before the list existed opens with its one role or office on it.
   const [invitees, setInvitees] = useState<InviteeSelection>(() => {
-    if (!event || event.audience === 'EVERYONE') return { ...NOBODY, everyone: true };
-    if (event.audience === 'JOB_ROLE')
-      return { ...NOBODY, jobRoleIds: event.jobRole ? [event.jobRole.id] : [] };
-    if (event.audience === 'LOCATION')
-      return { ...NOBODY, locationIds: event.location ? [event.location.id] : [] };
+    if (!source || source.audience === 'EVERYONE') return { ...NOBODY, everyone: true };
+    if (source.audience === 'JOB_ROLE')
+      return { ...NOBODY, jobRoleIds: source.jobRole ? [source.jobRole.id] : [] };
+    if (source.audience === 'LOCATION')
+      return { ...NOBODY, locationIds: source.location ? [source.location.id] : [] };
     return {
       everyone: false,
-      employeeIds: event.invitees.filter((i) => i.type === 'EMPLOYEE').map((i) => i.id),
-      jobRoleIds: event.invitees.filter((i) => i.type === 'JOB_ROLE').map((i) => i.id),
-      locationIds: event.invitees.filter((i) => i.type === 'LOCATION').map((i) => i.id),
+      employeeIds: source.invitees.filter((i) => i.type === 'EMPLOYEE').map((i) => i.id),
+      jobRoleIds: source.invitees.filter((i) => i.type === 'JOB_ROLE').map((i) => i.id),
+      locationIds: source.invitees.filter((i) => i.type === 'LOCATION').map((i) => i.id),
     };
   });
   const [repeat, setRepeat] = useState<RepeatInput | null>(() =>
@@ -486,7 +571,7 @@ export function EventForm({
   const [yearsAhead, setYearsAhead] = useState(5);
   /// A date in a series: change just it, or it and every one after it.
   const [scope, setScope] = useState<'one' | 'following'>('one');
-  const showRepeat = !event || !event.series || scope === 'following';
+  const showRepeat = !holiday && (!event || !event.series || scope === 'following');
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -496,13 +581,15 @@ export function EventForm({
     if (audience === 'JOB_ROLE' && !jobRoleId && jobRoles.length > 0) setJobRoleId(jobRoles[0].id);
     if (audience === 'LOCATION' && !locationId && locations.length > 0)
       setLocationId(locations[0].id);
-  }, [audience, jobRoleId, locationId, jobRoles, locations]);
+    if (atAnOffice(kind) && !atLocationId && locations.length > 0) setAtLocationId(locations[0].id);
+  }, [audience, jobRoleId, locationId, kind, atLocationId, jobRoles, locations]);
 
   function chooseKind(next: EventKind) {
     setKind(next);
     // A closure shuts an office, never a job role or a list of people.
     if (next === 'CLOSURE' && audience !== 'LOCATION') setAudience('EVERYONE');
-    if (!event) setAllDay(next === 'CLOSURE');
+    if (next === 'HOLIDAY') setAllDay(true);
+    else if (!event) setAllDay(next === 'CLOSURE');
   }
 
   /// Moving the start keeps the length, so a one-hour meeting stays one hour.
@@ -534,11 +621,24 @@ export function EventForm({
     setError(null);
     const chosen =
       invitees.employeeIds.length + invitees.jobRoleIds.length + invitees.locationIds.length > 0;
-    if (!closed && !invitees.everyone && !chosen) {
+    if (kind === 'EVENT' && !invitees.everyone && !chosen) {
       setError('Add who it is for — Everyone, or job roles, offices and people.');
       return;
     }
-    if (!closed && !createMeet && meetingUrl.trim() && !/^https:\/\/\S+$/.test(meetingUrl.trim())) {
+    if (repLunch && !repId) {
+      setError('Choose the rep.');
+      return;
+    }
+    if (atOffice && !atLocationId) {
+      setError('Choose which office it is at.');
+      return;
+    }
+    if (
+      kind === 'EVENT' &&
+      !createMeet &&
+      meetingUrl.trim() &&
+      !/^https:\/\/\S+$/.test(meetingUrl.trim())
+    ) {
       setError('Paste the whole video call link — it starts https://');
       return;
     }
@@ -546,32 +646,52 @@ export function EventForm({
       setError('Choose at least one day of the week for it to repeat on.');
       return;
     }
+    // Warn, never refuse: a rep marked "don't book" can still be put in.
+    if (repLunch && chosenRep?.status === 'DO_NOT_BOOK' && chosenRep.id !== event?.rep?.id) {
+      const sure = await confirm({
+        title: `${chosenRep.name} is marked “Don’t book”`,
+        body: chosenRep.notes ? (
+          <p className="whitespace-pre-line">{chosenRep.notes}</p>
+        ) : undefined,
+        confirmLabel: 'Book them anyway',
+        cancelLabel: 'Go back',
+        tone: 'neutral',
+      });
+      if (!sure) return;
+    }
+    const meeting = kind === 'EVENT';
     const body: EventInput = {
       kind,
-      title: title.trim(),
+      title: repLunch ? undefined : title.trim(),
+      repId: repLunch ? repId : undefined,
       description: description.trim() || undefined,
-      place: closed ? undefined : place.trim() || undefined,
-      meetingUrl: closed || createMeet ? undefined : meetingUrl.trim() || undefined,
-      createMeetLink: !closed && createMeet ? true : undefined,
+      place: meeting ? place.trim() || undefined : undefined,
+      meetingUrl: !meeting || createMeet ? undefined : meetingUrl.trim() || undefined,
+      createMeetLink: meeting && createMeet ? true : undefined,
       allDay,
-      ...(closed
+      ...(forEveryone(kind)
         ? {
-            audience: audience === 'LOCATION' ? 'LOCATION' : 'EVERYONE',
-            locationId: audience === 'LOCATION' ? locationId : undefined,
+            audience: 'EVERYONE' as EventAudience,
+            atLocationId: atOffice ? atLocationId : undefined,
           }
-        : invitees.everyone
-          ? { audience: 'EVERYONE' as EventAudience }
-          : {
-              audience: 'CHOSEN' as EventAudience,
-              invitees: {
-                employeeIds: invitees.employeeIds,
-                jobRoleIds: invitees.jobRoleIds,
-                locationIds: invitees.locationIds,
-              },
-            }),
+        : closed
+          ? {
+              audience: audience === 'LOCATION' ? 'LOCATION' : 'EVERYONE',
+              locationId: audience === 'LOCATION' ? locationId : undefined,
+            }
+          : invitees.everyone
+            ? { audience: 'EVERYONE' as EventAudience }
+            : {
+                audience: 'CHOSEN' as EventAudience,
+                invitees: {
+                  employeeIds: invitees.employeeIds,
+                  jobRoleIds: invitees.jobRoleIds,
+                  locationIds: invitees.locationIds,
+                },
+              }),
       // Changing just one date of a series leaves how it repeats alone.
       ...(showRepeat ? { repeat } : {}),
-      ...(closed && !event && yearly ? { yearsAhead } : {}),
+      ...((closed || holiday) && !event && yearly ? { yearsAhead } : {}),
       ...(allDay
         ? { startDate, endDate }
         : // datetime-local is the viewer's wall clock; the API stores instants.
@@ -602,7 +722,7 @@ export function EventForm({
   const field =
     'mt-1 w-full rounded-lg border-slate-300 text-sm shadow-sm focus:border-brand-600 focus:ring-brand-600';
   const label = 'block text-sm font-medium text-slate-700';
-  const heading = `${event ? 'Change' : 'New'} ${closed ? 'closure' : 'event'}`;
+  const heading = `${event ? 'Change' : 'New'} ${KIND_STYLE[kind].one.toLowerCase()}`;
 
   return (
     <Card className="p-4">
@@ -621,7 +741,10 @@ export function EventForm({
           {(
             [
               ['EVENT', '📅 An event or meeting'],
-              ['CLOSURE', '🔒 The office is closed (holiday)'],
+              ['DIAGNOSTIC', '🩺 Diagnostics'],
+              ['REP_LUNCH', '🍽️ Rep lunch'],
+              ['HOLIDAY', '⭐ A holiday (open as usual)'],
+              ['CLOSURE', '🔒 The office is closed'],
             ] as const
           ).map(([option, text]) => (
             <button
@@ -665,35 +788,97 @@ export function EventForm({
           </fieldset>
         )}
 
-        <div className="sm:col-span-2">
-          <label htmlFor={`${id}-title`} className={label}>
-            {closed ? 'Which holiday or closure?' : 'What is it?'}
-          </label>
-          <input
-            id={`${id}-title`}
-            required
-            minLength={2}
-            maxLength={120}
-            value={title}
-            onChange={(change) => setTitle(change.target.value)}
-            placeholder={
-              closed
-                ? 'Christmas Day, Christmas Eve, New Year’s Day…'
-                : 'Office meeting, Provider meeting, Wellness day…'
-            }
-            className={field}
-          />
-        </div>
+        {repLunch ? (
+          <div className="sm:col-span-2">
+            <label htmlFor={`${id}-rep`} className={label}>
+              Which rep?
+            </label>
+            <select
+              id={`${id}-rep`}
+              required
+              value={repId}
+              onChange={(change) => setRepId(change.target.value)}
+              className={field}
+            >
+              <option value="">{reps === null ? 'Loading…' : 'Choose a rep…'}</option>
+              {(reps ?? []).map((rep) => (
+                <option key={rep.id} value={rep.id}>
+                  {rep.name}
+                  {rep.company ? ` — ${rep.company}` : ''}
+                  {rep.status === 'DO_NOT_BOOK' ? ' (don’t book)' : ''}
+                </option>
+              ))}
+            </select>
+            <p className="mt-1 text-xs text-slate-500">
+              Not on the list?{' '}
+              <Link to="/reps" className="font-medium text-brand-700 underline">
+                Add them under Manage → Reps
+              </Link>
+              .
+            </p>
+            {chosenRep && (
+              <div
+                data-testid="chosen-rep"
+                className={`mt-2 rounded-lg px-3 py-2 text-sm ring-1 ring-inset ${
+                  chosenRep.status === 'DO_NOT_BOOK'
+                    ? 'bg-rose-50 text-rose-950 ring-rose-200'
+                    : chosenRep.status === 'RESTRICTED'
+                      ? 'bg-amber-50 text-amber-950 ring-amber-200'
+                      : 'bg-slate-50 text-slate-800 ring-slate-200'
+                }`}
+              >
+                <p className="font-medium">
+                  {STATUS_LABEL[chosenRep.status].text}
+                  {chosenRep.food ? ` · ${FOOD_LABEL[chosenRep.food]}` : ''}
+                  {chosenRep.medication ? ` · ${chosenRep.medication}` : ''}
+                </p>
+                {chosenRep.notes && <p className="mt-0.5 whitespace-pre-line">{chosenRep.notes}</p>}
+              </div>
+            )}
+          </div>
+        ) : (
+          <div className="sm:col-span-2">
+            <label htmlFor={`${id}-title`} className={label}>
+              {closed
+                ? 'Which holiday or closure?'
+                : holiday
+                  ? 'Which holiday?'
+                  : diagnostic
+                    ? 'Which tests?'
+                    : 'What is it?'}
+            </label>
+            <input
+              id={`${id}-title`}
+              required
+              minLength={2}
+              maxLength={120}
+              value={title}
+              onChange={(change) => setTitle(change.target.value)}
+              placeholder={
+                closed
+                  ? 'Christmas Day, Christmas Eve, New Year’s Day…'
+                  : holiday
+                    ? 'Election Day, Veterans Day, Black Friday…'
+                    : diagnostic
+                      ? 'US + ECHO, ANS + VNG…'
+                      : 'Office meeting, Provider meeting, Wellness day…'
+              }
+              className={field}
+            />
+          </div>
+        )}
 
-        <label className="flex items-center gap-2 text-sm text-slate-700 sm:col-span-2">
-          <input
-            type="checkbox"
-            checked={allDay}
-            onChange={(change) => setAllDay(change.target.checked)}
-            className="rounded border-slate-300 text-brand-600 focus:ring-brand-600"
-          />
-          {closed ? 'Closed all day' : 'All day'}
-        </label>
+        {!holiday && (
+          <label className="flex items-center gap-2 text-sm text-slate-700 sm:col-span-2">
+            <input
+              type="checkbox"
+              checked={allDay}
+              onChange={(change) => setAllDay(change.target.checked)}
+              className="rounded border-slate-300 text-brand-600 focus:ring-brand-600"
+            />
+            {closed ? 'Closed all day' : 'All day'}
+          </label>
+        )}
 
         {allDay ? (
           <>
@@ -761,7 +946,7 @@ export function EventForm({
           </>
         )}
 
-        {!closed && (
+        {kind === 'EVENT' && (
           <div className="sm:col-span-2">
             <label htmlFor={`${id}-place`} className={label}>
               Where <span className="font-normal text-slate-500">(optional)</span>
@@ -787,7 +972,7 @@ export function EventForm({
           </div>
         )}
 
-        {!closed && (
+        {kind === 'EVENT' && (
           <div className="sm:col-span-2">
             {meetAvailable && (
               <label className="mb-2 flex items-center gap-2 text-sm text-slate-700">
@@ -827,7 +1012,26 @@ export function EventForm({
           </div>
         )}
 
-        {closed ? (
+        {atOffice ? (
+          <div>
+            <label htmlFor={`${id}-at`} className={label}>
+              Which office?
+            </label>
+            <select
+              id={`${id}-at`}
+              required
+              value={atLocationId}
+              onChange={(change) => setAtLocationId(change.target.value)}
+              className={field}
+            >
+              {locations.map((location) => (
+                <option key={location.id} value={location.id}>
+                  {location.name}
+                </option>
+              ))}
+            </select>
+          </div>
+        ) : holiday ? null : closed ? (
           <>
             <div>
               <label htmlFor={`${id}-audience`} className={label}>
@@ -884,7 +1088,7 @@ export function EventForm({
           </div>
         )}
 
-        {closed && !event && (
+        {(closed || holiday) && !event && (
           <div className="sm:col-span-2">
             <label className="flex items-start gap-2 text-sm text-slate-700">
               <input
@@ -909,7 +1113,7 @@ export function EventForm({
                     }
                     className="mx-1 w-14 rounded border-slate-300 py-0.5 text-xs"
                   />
-                  years. Each year is its own closure, so a holiday that moves (Thanksgiving) can be
+                  years. Each year is its own entry, so a holiday that moves (Thanksgiving) can be
                   fixed one year at a time.
                 </span>
               </span>
@@ -938,7 +1142,13 @@ export function EventForm({
             value={description}
             onChange={(change) => setDescription(change.target.value)}
             placeholder={
-              closed ? 'Anything staff should know…' : 'What to bring, what it is about…'
+              diagnostic
+                ? 'Book from 9am, the tech’s name, the vendor…'
+                : repLunch
+                  ? 'How many to feed, where to set up…'
+                  : closed || holiday
+                    ? 'Anything staff should know…'
+                    : 'What to bring, what it is about…'
             }
             className={field}
           />
@@ -947,7 +1157,13 @@ export function EventForm({
         <p className="text-xs text-slate-500 sm:col-span-2">
           {closed
             ? 'Staff at the office see it on their schedule, get a notification and have it on their phone if they sync their calendar. Shifts during it are flagged to managers, never refused. Pay is not changed.'
-            : 'Everybody it is for sees it on their schedule and gets a notification; it reaches their phone if they sync their calendar. It does not count as work hours — anybody paid to be there clocks in as usual.'}
+            : holiday
+              ? 'Everyone sees it on the calendar and on their phone if they sync it. It shuts nothing — nobody is notified and shifts are not flagged. If an office is shut, add a closure instead.'
+              : diagnostic
+                ? 'Everyone sees it on the calendar and gets a notification when a date is added, moved or cancelled. Write when the tests are on — never a patient’s name or who is booked.'
+                : repLunch
+                  ? 'Everyone sees it on the calendar — the rep, company, medication and whether they bring catering. Staff at that office are told when it is added, moved or cancelled, and every evening hear whether there is a rep lunch the next day. The front desk sees the rep’s cell; the status and notes stay with managers.'
+                  : 'Everybody it is for sees it on their schedule and gets a notification; it reaches their phone if they sync their calendar. It does not count as work hours — anybody paid to be there clocks in as usual.'}
         </p>
 
         {error && (
@@ -961,11 +1177,51 @@ export function EventForm({
             Cancel
           </button>
           <button type="submit" disabled={busy} className={buttonClass('primary', 'sm')}>
-            {busy ? 'Saving…' : event ? 'Save changes' : closed ? 'Add closure' : 'Add event'}
+            {busy
+              ? 'Saving…'
+              : event
+                ? 'Save changes'
+                : `Add ${KIND_STYLE[kind].one.toLowerCase()}`}
           </button>
         </div>
       </form>
     </Card>
+  );
+}
+
+/// A rep lunch's rep, in its pop-up. Staff get who, the company, the
+/// medication and the food; the phone, status and notes come only to managers
+/// (the server leaves them out for everybody else).
+function RepDetails({ rep }: { rep: EventRep }) {
+  const row = (term: string, value: React.ReactNode) => (
+    <div>
+      <dt className="text-xs font-medium uppercase tracking-wide text-slate-500">{term}</dt>
+      <dd className="text-slate-800">{value}</dd>
+    </div>
+  );
+  return (
+    <>
+      {row('Rep', `${rep.name}${rep.company ? ` — ${rep.company}` : ''}`)}
+      {rep.medication && row('Medication', rep.medication)}
+      {rep.food && row('Lunch', FOOD_LABEL[rep.food])}
+      {rep.cellPhone &&
+        row(
+          'Cell',
+          <a
+            href={`tel:${rep.cellPhone.replace(/[^0-9+]/g, '')}`}
+            className="text-brand-700 underline"
+          >
+            {rep.cellPhone}
+          </a>,
+        )}
+      {rep.status &&
+        row(
+          'Status',
+          <Badge tone={STATUS_LABEL[rep.status].tone}>{STATUS_LABEL[rep.status].text}</Badge>,
+        )}
+      {rep.notes &&
+        row('Notes (managers only)', <span className="whitespace-pre-line">{rep.notes}</span>)}
+    </>
   );
 }
 
@@ -1081,8 +1337,8 @@ const newYear = (year: number) => new Date(year, 0, 1).toISOString();
 
 /**
  * The year's holidays and closures, for everybody — staff see the ones at
- * their offices — with, for managers, "+ Add closure" and "Copy into next
- * year". Copying puts each one on the same date a year on, to be checked:
+ * their offices — with, for managers, "+ Add holiday", "+ Add closure" and
+ * "Copy into next year". Copying puts each one on the same date a year on, to be checked:
  * a holiday that moves, like Thanksgiving, lands on the wrong day.
  */
 export function ClosuresCard({
@@ -1100,7 +1356,7 @@ export function ClosuresCard({
   canEdit: boolean;
   /// Bumped when events change elsewhere on the page, to re-fetch.
   version: number;
-  onAdd: () => void;
+  onAdd: (kind: 'HOLIDAY' | 'CLOSURE') => void;
   onOpen: (closure: PracticeEvent) => void;
   onChanged: () => void;
 }) {
@@ -1114,7 +1370,9 @@ export function ClosuresCard({
   const load = useCallback(() => {
     api
       .events(newYear(year), newYear(year + 1))
-      .then((events) => setClosures(events.filter(isClosure)))
+      .then((events) =>
+        setClosures(events.filter((event) => isClosure(event) || event.kind === 'HOLIDAY')),
+      )
       .catch(() => setClosures([]));
   }, [year]);
 
@@ -1124,7 +1382,7 @@ export function ClosuresCard({
 
   async function copy() {
     const sure = await confirm({
-      title: `Copy ${year}’s closures into ${year + 1}?`,
+      title: `Copy ${year}’s holidays and closures into ${year + 1}?`,
       body: (
         <>
           <p>
@@ -1147,7 +1405,7 @@ export function ClosuresCard({
     try {
       const done = await api.copyClosures(year);
       setResult(
-        `${done.copied} ${done.copied === 1 ? 'closure' : 'closures'} copied into ${done.toYear}.${
+        `${done.copied} copied into ${done.toYear}.${
           done.skipped.length > 0 ? ` Skipped: ${done.skipped.join('; ')}.` : ''
         }`,
       );
@@ -1210,9 +1468,12 @@ export function ClosuresCard({
                 onClick={() => onOpen(closure)}
                 className="flex w-full flex-wrap items-baseline justify-between gap-x-3 py-1.5 text-left text-sm hover:bg-slate-50"
               >
-                <span className="font-medium text-slate-900">{closure.title}</span>
+                <span className="font-medium text-slate-900">
+                  <span aria-hidden="true">{KIND_STYLE[closure.kind].emoji}</span> {closure.title}
+                </span>
                 <span className="text-slate-600">
-                  {describeDays(closure)} · {audienceLabel(closure)}
+                  {describeDays(closure)} ·{' '}
+                  {isClosure(closure) ? audienceLabel(closure) : 'Open as usual'}
                 </span>
               </button>
             </li>
@@ -1233,7 +1494,18 @@ export function ClosuresCard({
 
       {canEdit && (
         <div className="mt-3 flex flex-wrap gap-2">
-          <button type="button" onClick={onAdd} className={buttonClass('secondary', 'sm')}>
+          <button
+            type="button"
+            onClick={() => onAdd('HOLIDAY')}
+            className={buttonClass('secondary', 'sm')}
+          >
+            + Add holiday
+          </button>
+          <button
+            type="button"
+            onClick={() => onAdd('CLOSURE')}
+            className={buttonClass('secondary', 'sm')}
+          >
             + Add closure
           </button>
           {closures && closures.length > 0 && (

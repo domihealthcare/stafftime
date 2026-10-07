@@ -27,6 +27,8 @@ function row(over: Record<string, unknown> = {}) {
     seriesId: null,
     jobRole: null,
     location: null,
+    atLocation: null,
+    rep: null,
     invitees: [],
     series: null,
     ...over,
@@ -36,13 +38,37 @@ function row(over: Record<string, unknown> = {}) {
 const OFFICES: Record<string, string> = { 'loc-nb': 'North Bergen', 'loc-wny': 'West New York' };
 const ROLES: Record<string, string> = { 'role-fd': 'Front Desk', 'role-pr': 'Provider' };
 const PEOPLE: Record<string, string> = { 'emp-kayla': 'Kayla', 'emp-angelina': 'Angelina' };
+const REPS: Record<string, Record<string, unknown>> = {
+  'rep-jane': {
+    id: 'rep-jane',
+    name: 'Jane Smith',
+    company: 'Novo Nordisk',
+    medication: 'Ozempic',
+    food: 'CATERING',
+    cellPhone: '(201) 555-0142',
+    status: 'DO_NOT_BOOK',
+    notes: 'Late twice',
+  },
+};
 
 /// What the database would give back for a row written with `data`.
 function stored(data: Record<string, unknown>) {
   const jobRoleId = data.jobRoleId as string | null | undefined;
   const locationId = data.locationId as string | null | undefined;
+  const atLocationId = data.atLocationId as string | null | undefined;
+  const repId = data.repId as string | null | undefined;
   return row({
     ...data,
+    rep: repId ? (REPS[repId] ?? null) : null,
+    atLocation: atLocationId
+      ? {
+          id: atLocationId,
+          name: OFFICES[atLocationId] ?? 'Office',
+          addressLine1: '1 Main St',
+          city: 'Town',
+          state: 'NJ',
+        }
+      : null,
     jobRole: jobRoleId ? { id: jobRoleId, name: ROLES[jobRoleId] ?? 'Role', colour: 'blue' } : null,
     location: locationId ? { id: locationId, name: OFFICES[locationId] ?? 'Office' } : null,
   });
@@ -66,6 +92,8 @@ function build(
     person?: unknown;
     invited?: string[] | string[][];
     roleExists?: boolean;
+    /// Whether the viewer is in a job role that sees a rep's cell (Front Desk).
+    seesCell?: boolean;
     /// How many dates a "this and all after" removal takes, and how many are left.
     cut?: { removed: number; left: number };
   } = {},
@@ -151,11 +179,22 @@ function build(
     },
     jobRole: {
       count: jest.fn(async ({ where }) =>
-        options.roleExists === false ? 0 : where.id?.in ? where.id.in.length : 1,
+        where.seesRepCell
+          ? options.seesCell
+            ? 1
+            : 0
+          : options.roleExists === false
+            ? 0
+            : where.id?.in
+              ? where.id.in.length
+              : 1,
       ),
     },
     location: {
       count: jest.fn(async ({ where }) => (where.id?.in ? where.id.in.length : 1)),
+    },
+    rep: {
+      findUnique: jest.fn(async ({ where }) => REPS[where.id] ?? null),
     },
   };
   const inbox = { notify: jest.fn().mockResolvedValue(undefined) };
@@ -576,7 +615,7 @@ describe('closures', () => {
       practiceEvent.findMany.mockResolvedValue([]);
       await service.copyClosures(2026, manager);
       expect(practiceEvent.findMany.mock.calls[0][0].where).toEqual({
-        kind: PracticeEventKind.CLOSURE,
+        kind: { in: [PracticeEventKind.CLOSURE, PracticeEventKind.HOLIDAY] },
         startsAt: {
           gte: new Date('2026-01-01T05:00:00.000Z'),
           lt: new Date('2027-01-01T05:00:00.000Z'),
@@ -623,6 +662,281 @@ describe('closures', () => {
         title: '2027 holidays are on the schedule',
         body: '2 closures: Christmas Day, Christmas Eve',
       });
+    });
+  });
+});
+
+describe('holidays', () => {
+  const electionDay = (over: Partial<EventInput> = {}): EventInput => ({
+    kind: PracticeEventKind.HOLIDAY,
+    title: 'Election Day',
+    allDay: true,
+    startDate: '2099-11-03',
+    endDate: '2099-11-03',
+    audience: EventAudience.EVERYONE,
+    ...over,
+  });
+
+  it('is for everyone, whatever the form sent, with no place or call', async () => {
+    const { service, practiceEvent } = build();
+    await service.create(
+      electionDay({
+        audience: EventAudience.LOCATION,
+        locationId: 'loc-nb',
+        place: 'Somewhere',
+        meetingUrl: 'https://meet.google.com/abc',
+      }),
+      manager,
+    );
+    expect(practiceEvent.createMany.mock.calls[0][0].data[0]).toMatchObject({
+      kind: PracticeEventKind.HOLIDAY,
+      audience: EventAudience.EVERYONE,
+      locationId: null,
+      place: null,
+      meetingUrl: null,
+    });
+  });
+
+  it('is a whole day', async () => {
+    const { service } = build();
+    await expect(
+      service.create(
+        electionDay({ allDay: false, startsAt: FUTURE_START, endsAt: FUTURE_END }),
+        manager,
+      ),
+    ).rejects.toThrow('A holiday is a whole day');
+  });
+
+  it('does not repeat within a year', async () => {
+    const { service } = build();
+    await expect(
+      service.create(
+        electionDay({
+          repeat: { frequency: 'WEEKLY', interval: 1, weekdays: [2], until: '2099-12-31' },
+        }),
+        manager,
+      ),
+    ).rejects.toThrow(BadRequestException);
+  });
+
+  it('rings nobody’s bell — it only names a day', async () => {
+    const { service, inbox } = build();
+    await service.create(electionDay(), manager);
+    expect(inbox.notify).not.toHaveBeenCalled();
+  });
+
+  it('can be entered for the years ahead, like a closure', async () => {
+    const { service, practiceEvent } = build();
+    await service.create(electionDay({ yearsAhead: 2 }), manager);
+    expect(practiceEvent.create).toHaveBeenCalledTimes(2);
+    expect(practiceEvent.create.mock.calls[0][0].data.kind).toBe(PracticeEventKind.HOLIDAY);
+  });
+});
+
+describe('diagnostics', () => {
+  const usEcho = (over: Partial<EventInput> = {}): EventInput => ({
+    kind: PracticeEventKind.DIAGNOSTIC,
+    title: 'US + ECHO',
+    allDay: false,
+    // 8am–2pm in New Jersey.
+    startsAt: '2099-11-08T13:00:00.000Z',
+    endsAt: '2099-11-08T19:00:00.000Z',
+    audience: EventAudience.EVERYONE,
+    atLocationId: 'loc-wny',
+    ...over,
+  });
+
+  it('is at an office, and for everyone', async () => {
+    const { service, practiceEvent } = build();
+    await service.create(
+      usEcho({ audience: EventAudience.JOB_ROLE, jobRoleId: 'role-fd', place: 'Room 2' }),
+      manager,
+    );
+    expect(practiceEvent.createMany.mock.calls[0][0].data[0]).toMatchObject({
+      kind: PracticeEventKind.DIAGNOSTIC,
+      atLocationId: 'loc-wny',
+      audience: EventAudience.EVERYONE,
+      jobRoleId: null,
+      place: null,
+      meetingUrl: null,
+    });
+  });
+
+  it('needs the office', async () => {
+    const { service } = build();
+    await expect(service.create(usEcho({ atLocationId: undefined }), manager)).rejects.toThrow(
+      'Choose which office it is at.',
+    );
+  });
+
+  it('refuses an office that has gone', async () => {
+    const { service, prisma } = build();
+    prisma.location.count.mockResolvedValueOnce(0);
+    await expect(service.create(usEcho(), manager)).rejects.toThrow(
+      'That office no longer exists.',
+    );
+  });
+
+  it('keeps no office for any other kind', async () => {
+    const { service, practiceEvent } = build();
+    await service.create(input({ atLocationId: 'loc-wny' }), manager);
+    expect(practiceEvent.createMany.mock.calls[0][0].data[0].atLocationId).toBeNull();
+  });
+
+  it('tells people when a date is added, naming the office', async () => {
+    const { service, inbox } = build();
+    await service.create(usEcho(), manager);
+    const [, notice] = inbox.notify.mock.calls[0];
+    expect(notice.title).toBe('Diagnostics: US + ECHO');
+    expect(notice.body).toMatch(/West New York$/);
+  });
+
+  it('says so when a date is cancelled', async () => {
+    const { service, inbox } = build({
+      existing: row({
+        kind: PracticeEventKind.DIAGNOSTIC,
+        title: 'ANS + VNG',
+        place: null,
+        atLocation: { id: 'loc-nb', name: 'North Bergen' },
+      }),
+    });
+    await service.remove('ev-1', manager);
+    expect(inbox.notify.mock.calls[0][1].title).toBe('Diagnostics cancelled: ANS + VNG');
+  });
+
+  it('says it changed when it moves to the other office', async () => {
+    const { service, inbox } = build({
+      existing: row({
+        kind: PracticeEventKind.DIAGNOSTIC,
+        title: 'US + ECHO',
+        place: null,
+        startsAt: new Date('2099-11-08T13:00:00.000Z'),
+        endsAt: new Date('2099-11-08T19:00:00.000Z'),
+        atLocation: { id: 'loc-nb', name: 'North Bergen' },
+      }),
+    });
+    await service.update('ev-1', usEcho(), manager);
+    const titles = inbox.notify.mock.calls.map(([, notice]) => notice.title);
+    expect(titles).toContain('Diagnostics changed: US + ECHO');
+  });
+});
+
+describe('rep lunches', () => {
+  const lunch = (over: Partial<EventInput> = {}): EventInput => ({
+    kind: PracticeEventKind.REP_LUNCH,
+    title: undefined as unknown as string,
+    allDay: false,
+    startsAt: '2099-11-10T16:30:00.000Z',
+    endsAt: '2099-11-10T17:30:00.000Z',
+    audience: EventAudience.EVERYONE,
+    atLocationId: 'loc-nb',
+    repId: 'rep-jane',
+    ...over,
+  });
+
+  it('is named after the rep, at an office, for everyone', async () => {
+    const { service, practiceEvent } = build();
+    await service.create(
+      lunch({ title: 'Something typed', audience: EventAudience.LOCATION, locationId: 'loc-wny' }),
+      manager,
+    );
+    expect(practiceEvent.createMany.mock.calls[0][0].data[0]).toMatchObject({
+      kind: PracticeEventKind.REP_LUNCH,
+      title: 'Rep lunch: Jane Smith',
+      repId: 'rep-jane',
+      atLocationId: 'loc-nb',
+      audience: EventAudience.EVERYONE,
+      locationId: null,
+      place: null,
+      meetingUrl: null,
+    });
+  });
+
+  it('needs the rep, still on the list', async () => {
+    const { service } = build();
+    await expect(service.create(lunch({ repId: undefined }), manager)).rejects.toThrow(
+      'Choose the rep.',
+    );
+    await expect(
+      service.create(lunch({ repId: '00000000-0000-0000-0000-000000000000' }), manager),
+    ).rejects.toThrow('That rep is no longer on the list.');
+  });
+
+  it('needs the office', async () => {
+    const { service } = build();
+    await expect(service.create(lunch({ atLocationId: undefined }), manager)).rejects.toThrow(
+      'Choose which office it is at.',
+    );
+  });
+
+  it('tells people, with the rep’s company', async () => {
+    const { service, inbox } = build();
+    await service.create(lunch(), manager);
+    const [, notice] = inbox.notify.mock.calls[0];
+    expect(notice.title).toBe('Rep lunch: Jane Smith (Novo Nordisk)');
+    expect(notice.body).toMatch(/North Bergen$/);
+  });
+
+  it('shows staff the rep, but not their phone, status or notes', async () => {
+    const { service, practiceEvent } = build();
+    practiceEvent.findMany.mockResolvedValue([
+      row({ kind: PracticeEventKind.REP_LUNCH, rep: REPS['rep-jane'] }),
+    ]);
+    const [seen] = await service.list(
+      '2099-10-01T00:00:00.000Z',
+      '2099-11-01T00:00:00.000Z',
+      staff,
+    );
+    expect(seen.rep).toEqual({
+      id: 'rep-jane',
+      name: 'Jane Smith',
+      company: 'Novo Nordisk',
+      medication: 'Ozempic',
+      food: 'CATERING',
+    });
+  });
+
+  it('shows the front desk the rep’s cell, but still not their status or notes', async () => {
+    const { service, practiceEvent } = build({ seesCell: true });
+    practiceEvent.findMany.mockResolvedValue([
+      row({ kind: PracticeEventKind.REP_LUNCH, rep: REPS['rep-jane'] }),
+    ]);
+    const [seen] = await service.list(
+      '2099-10-01T00:00:00.000Z',
+      '2099-11-01T00:00:00.000Z',
+      staff,
+    );
+    expect(seen.rep).toEqual({
+      id: 'rep-jane',
+      name: 'Jane Smith',
+      company: 'Novo Nordisk',
+      medication: 'Ozempic',
+      food: 'CATERING',
+      cellPhone: '(201) 555-0142',
+    });
+  });
+
+  it('tells the staff of the office it is at, not everybody', async () => {
+    const { service, prisma } = build();
+    await service.create(lunch(), manager);
+    const where = prisma.employee.findMany.mock.calls[0][0].where;
+    expect(where.locations).toEqual({ some: { locationId: 'loc-nb' } });
+  });
+
+  it('shows a manager everything about the rep', async () => {
+    const { service, practiceEvent } = build();
+    practiceEvent.findMany.mockResolvedValue([
+      row({ kind: PracticeEventKind.REP_LUNCH, rep: REPS['rep-jane'] }),
+    ]);
+    const [seen] = await service.list(
+      '2099-10-01T00:00:00.000Z',
+      '2099-11-01T00:00:00.000Z',
+      manager,
+    );
+    expect(seen.rep).toMatchObject({
+      cellPhone: '(201) 555-0142',
+      status: 'DO_NOT_BOOK',
+      notes: 'Late twice',
     });
   });
 });
@@ -988,6 +1302,8 @@ describe('reminders the day before', () => {
         lt: new Date('2099-10-03T04:00:00.000Z'),
       },
       reminderSentAt: null,
+      // Not diagnostics or holidays: every weekend's tests would bury the bell.
+      kind: { in: [PracticeEventKind.EVENT, PracticeEventKind.CLOSURE] },
     });
   });
 

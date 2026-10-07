@@ -86,11 +86,14 @@ export class ScopeQuery {
 /// Making or changing an event. A change sends the whole event again, so what
 /// is saved is exactly what the form showed.
 export class EventInput {
-  /// An event (the default) or a closure — a holiday, or an office shut.
+  /// An event (the default), a closure (an office shut), a holiday (a named
+  /// day that shuts nothing), a diagnostics date or a rep lunch.
   @IsOptional()
   @IsEnum(PracticeEventKind)
   kind?: PracticeEventKind;
 
+  /// Not for a rep lunch: that is named after its rep.
+  @ValidateIf((dto: EventInput) => dto.kind !== PracticeEventKind.REP_LUNCH)
   @IsString()
   @MinLength(2)
   @MaxLength(120)
@@ -150,14 +153,24 @@ export class EventInput {
   @IsUUID()
   locationId?: string;
 
+  /// A diagnostics date or rep lunch: the office it is at.
+  @IsOptional()
+  @IsUUID()
+  atLocationId?: string;
+
+  /// A rep lunch: the rep, from the list. Its title is made from their name.
+  @IsOptional()
+  @IsUUID()
+  repId?: string;
+
   /// For CHOSEN.
   @IsOptional()
   @ValidateNested()
   @Type(() => InviteesInput)
   invitees?: InviteesInput;
 
-  /// Closures only, when making one: also put it on the same date in each of
-  /// the next this-many years ("Christmas Day, every year").
+  /// Closures and holidays only, when making one: also put it on the same
+  /// date in each of the next this-many years ("Christmas Day, every year").
   @IsOptional()
   @IsInt()
   @Min(1)

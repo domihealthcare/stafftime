@@ -73,7 +73,7 @@ await step('the link can be revealed and copied', async () => {
 await page.screenshot({ path: `${OUT}/36-calendar-link.png`, fullPage: true });
 
 await step('it warns that the address is a credential', async () => {
-  await page.getByText(/Anyone who has it can see your schedule/).waitFor({ timeout: 5000 });
+  await page.getByText(/Anyone who has one can see your schedule/).waitFor({ timeout: 5000 });
 });
 
 await step('subscription instructions cover Google, Apple and Outlook', async () => {

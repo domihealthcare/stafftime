@@ -2947,6 +2947,135 @@ test had the same slip, so it passed. Harmless while the feed only carried
 office names and time-off types; not once managers type event names. Fixed,
 with the test corrected.
 
+### The practice calendar: diagnostics, holidays and pay days
+
+Asked for by Dominguez in October 2026: "a calendar that staff can reference
+for multiple things (events, diagnostic schedule, holidays/office closures,
+etc) … updated in the staff portal and staff should be able to subscribe to
+it". It replaces a printed month the practice kept by hand — "US + ECHO 8-2"
+on alternate Sundays and "ANS + VNG 9-2" on alternate Saturdays, switching
+between West New York and North Bergen, with Election Day, Veterans Day,
+Thanksgiving and Black Friday written in.
+
+**Schedule → Calendar** (`/schedule/calendar`, `pages/CalendarPage.tsx`),
+behind a Shifts | Calendar switch at the top of both, so the phone's bottom
+bar stays at five tabs and Schedule stays lit. A month (Sunday first, like the
+rota) or a day-by-day list (a phone starts on the list); the key above it is
+also the filter, and an office narrows the diagnostics (and one-office
+closures) to that office. Managers and admins add with **+ Add**, or the ＋ on
+a day; everybody reads. The Holidays and closures card and the calendar link
+sit underneath.
+
+What goes on it, as kinds of `PracticeEvent` (`lib/calendar-kinds.ts` holds
+their words and colours):
+
+- **Diagnostics** (`kind: DIAGNOSTIC`) — which tests, the hours and **the
+  office it is at** (`atLocationId`, separate from `locationId`, which is who
+  an event is *for*). For **everyone** (Dominguez): the audience is forced to
+  `EVERYONE` whatever is sent. No place or call. Added, moved and cancelled
+  ring the bell ("Diagnostics: US + ECHO"); **no day-before reminder** —
+  nearly every weekend has one, and it would bury the bell. On phones it reads
+  "US + ECHO — West New York", at the office's address, and never makes
+  anybody look busy. "Usually similar but not always the same" (Dominguez):
+  the regular pattern is a repeat (every 2 weeks on Sunday), and **Add another
+  date like this** in a date's pop-up copies tests, hours and office onto a
+  day still to choose (`EventForm`'s `template`). It says *when the tests
+  are on* — never who is booked; the form says so under the notes.
+- **Holidays** (`kind: HOLIDAY`) — a named day that **shuts nothing**. A
+  closure had been the only way to mark a holiday, and Election Day or Black
+  Friday are not closures. All day, for everyone, never repeating within a
+  year (Repeat every year and Copy into next year take them, like closures).
+  **Nobody is notified** and no shift is flagged. Thanksgiving, if the offices
+  shut, is a closure.
+- **Closures**, **meetings and events** — as before.
+- **Pay days** — **worked out, never stored**: the Friday after each pay
+  period ends (Dominguez; `settings/pay-days.ts`). A period ending on a Friday
+  is paid the Friday after, a week later. None until a pay period start is set
+  in Practice settings. `GET /calendar/pay-days?from&to` (anybody signed in);
+  in the feed as all-day "Pay day" entries whose identity is the date.
+
+Once calendar invites are switched on, the feed keeps everything that is not a
+meeting — closures, holidays, diagnostics, pay days — since only meetings go
+out as invites.
+
+- **Rep lunches** (`kind: REP_LUNCH`, the same day) — a rep from **Manage →
+  Reps** (`Rep`, `src/reps/`, managers and admins only, reading included),
+  the office (`atLocationId`) and the time. Named after the rep, server-side
+  (`repLunchTitle`), and renamed with them. For everyone; bell on add, move
+  and cancel, no reminder. The rep list holds name ("the most important as
+  they are the ones scheduling"), cell phone, company, medication, catering
+  or self-order and a status (Preferred / OK / Has restrictions / Don't
+  book), with notes ("some reps we may not want or some have certain
+  restrictions"). **Staff see a lunch's rep, company, medication and food;
+  the phone, status and notes go to managers only** — `present` in
+  `EventsService` drops them for anybody else, and the phone feed never
+  carries them. A "Don't book" rep is a confirmation before saving, never a
+  refusal (like overtime and closures). The schema guard pins `Rep`'s
+  columns: business contacts, nothing more.
+
+  Follow-up the same day (Dominguez: "front desk can see the cell, and it
+  should notify all staff at that office the night before even if there is
+  no rep lunch, so staff knows to bring their own lunch"):
+  - **The cell phone** also goes to people in a job role with **sees a
+    rep's cell** (`JobRole.seesRepCell`, a tick box on Manage → Job roles,
+    started on for Front Desk) — like the other job-role switches, a screen
+    and no power. Status and notes stay managers' only. The phone feed
+    still carries none of it, since a calendar link can be forwarded.
+  - **Who hears about a rep lunch**: the staff of its office
+    (`audienceWhere`), not everybody — although everybody still sees it on
+    the calendar. Moving a lunch to the other office tells the new office
+    it is on and the old one it is off.
+  - **The night-before notice** (`events/lunch-notices.service.ts`): from
+    6pm New Jersey time (`LUNCH_NOTICE_FROM`), each office that is **open
+    tomorrow** — at least one published shift there, not from home, and not
+    closed all day — tells every working member of staff assigned to it
+    either "Rep lunch tomorrow at North Bergen" (time, rep, company, catering
+    or office orders) or "No rep lunch tomorrow at North Bergen — bring your
+    own lunch". The bell only, not email. Run by the five-minute timer
+    (cron-job.org → `GET /maintenance/punch-reminders`), which already runs
+    until midnight; each office and day is claimed in `LunchNotice` first,
+    so it goes once however often the timer runs. A lunch added after the
+    notice went is told the usual way ("Rep lunch: …").
+
+**Show** (Dominguez: "the calendar should just have options (i.e. all,
+diagnostics, rep lunches, etc) and can choose multiple or choose one, or
+all"): All, or any one or more kinds. From All, a kind shows that kind
+alone; more add to it; taking off the last, or picking every one, is All
+again. Remembered per browser.
+
+**Separate subscriptions** (the same day): the all-in-one address
+(`domi.ics`) stays as it was, and the same private token now also serves one
+calendar per kind — `shifts` (shifts and time off), `diagnostics`,
+`rep-lunches`, `holidays` (holidays and closures), `pay-days`, `events`
+(`calendar/feeds.ts`; anything else is a 404, own keys only). Each is named
+"Diagnostics — Domi Staff" and so on, so a phone lists them as separate
+calendars with their own colours and switches. The calendar card offers
+**Everything in one calendar** or **Separate calendars** and warns against
+both at once (everything would show twice). Regenerating the link changes
+every address together. The same rules hold as for the all-in-one feed:
+what the person may see, no rep phone or notes, and with invites on, no
+shifts or meetings.
+
+**The printed month** (`pages/CalendarPrintPage.tsx`,
+`/schedule/calendar/print`): **Print** on the Calendar opens one landscape
+page shaped like the practice's paper month — logo, the month in large
+capitals, a Sunday-first grid, the office a day's diagnostics are at in the
+corner ("WNY"), each entry in its kind's colour (also legible in black and
+white), and the key under it. It takes the Calendar's **Show** and office
+(`?kinds=`, `?office=`). Anybody can print it; it is built from what the
+person may see, and a rep lunch prints as the rep's name, time and office.
+
+**Lunch on shifts** (Dominguez: "if there is lunch scheduled (or not
+scheduled) should show that in the employees shift - via an icon"): a shift
+at an office carries 🍽️ when a rep lunch is at that office that day and 🥪
+when there is none (`components/LunchIcon.tsx`) — on the week rota, in the
+month and on Home under today's shift ("Rep lunch at 12:30pm with Jane Smith (Novo
+Nordisk), bringing catering" / "No rep lunch, bring your own lunch"). The
+words are in the tooltip and for screen readers; the Schedule's key explains
+both icons. Work-from-home and open shifts carry neither. It reads the events
+the screen has already loaded — rep lunches are visible to everyone — so it
+costs no extra request, except on Home (today's events).
+
 ### Repeating events and chosen people
 
 Asked for by Dominguez straight after events went live (September 2026): the

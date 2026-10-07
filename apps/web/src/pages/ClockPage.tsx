@@ -1,9 +1,16 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { ApiError, api } from '../lib/api';
-import { formatDuration, formatTime } from '../lib/format';
+import { formatDuration, formatTime, localDate } from '../lib/format';
 import { GeolocationRefused, detectClockMethod, getCurrentPosition } from '../lib/geolocation';
 import { useSession } from '../lib/session';
-import type { ApplicableSection, ClosingSubmission, Shift, TimeEntry } from '../lib/types';
+import type {
+  ApplicableSection,
+  ClosingSubmission,
+  PracticeEvent,
+  Shift,
+  TimeEntry,
+} from '../lib/types';
+import { lunchesAt, lunchWords } from '../components/LunchIcon';
 import { ClosingChecklistForm } from '../components/ClosingChecklistForm';
 import { BirthdaysThisWeek } from '../components/BirthdaysThisWeek';
 import {
@@ -39,6 +46,8 @@ export function ClockPage() {
   /// Today's shifts, earliest first — somebody can have two (an office shift in
   /// the morning, working from home in the afternoon).
   const [todaysShifts, setTodaysShifts] = useState<Shift[]>([]);
+  /// Today's events, for whether a rep is bringing lunch to today's office.
+  const [todaysEvents, setTodaysEvents] = useState<PracticeEvent[]>([]);
   /// Where they are clocking in: one of their offices, or HOME. Every one is
   /// offered every day (October 2026, Dominguez); the shift's comes first.
   const [place, setPlace] = useState<string>('');
@@ -86,6 +95,11 @@ export function ClockPage() {
           .filter((shift) => shift.status !== 'CANCELLED')
           .sort((a, b) => a.startsAt.localeCompare(b.startsAt)),
       );
+      // Not worth failing Home over.
+      api
+        .events(startOfToday(), endOfToday())
+        .then(setTodaysEvents)
+        .catch(() => setTodaysEvents([]));
       setError(null);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Could not load your status.');
@@ -326,6 +340,23 @@ export function ClockPage() {
                 <p className="mt-1 text-sm text-slate-500">No shift scheduled today.</p>
               )}
             </>
+          )}
+          {status !== 'loading' && todaysShift && !todaysShift.isRemote && (
+            <p className="mt-2 text-sm text-slate-700" data-testid="todays-lunch">
+              {(() => {
+                const lunches = lunchesAt(
+                  todaysEvents,
+                  todaysShift.locationId,
+                  localDate(new Date(todaysShift.startsAt)),
+                );
+                return (
+                  <>
+                    <span aria-hidden="true">{lunches.length > 0 ? '🍽️ ' : '🥪 '}</span>
+                    {lunchWords(lunches)}
+                  </>
+                );
+              })()}
+            </p>
           )}
           {status !== 'loading' && todaysShift?.notes && (
             <p

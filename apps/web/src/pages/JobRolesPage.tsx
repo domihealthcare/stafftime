@@ -308,6 +308,7 @@ function RoleForm({
   const [seesOwn, setSeesOwn] = useState(role?.seesOwnPersonnelTabs ?? false);
   const [clinical, setClinical] = useState(role?.usesClinicalForms ?? false);
   const [wellness, setWellness] = useState(role?.usesWellnessForm ?? false);
+  const [repCell, setRepCell] = useState(role?.seesRepCell ?? false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -322,6 +323,7 @@ function RoleForm({
         seesOwnPersonnelTabs: seesOwn,
         usesClinicalForms: clinical,
         usesWellnessForm: wellness,
+        seesRepCell: repCell,
       };
       onSaved(role ? await api.updateJobRole(role.id, body) : await api.createJobRole(body));
     } catch (cause) {
@@ -433,6 +435,22 @@ function RoleForm({
           <span className="block text-xs text-slate-500">
             On for Provider and Medical Assistant: the MA does the preventive services page, the
             provider the questionnaire. Managers and admins have it anyway. It keeps nothing either.
+          </span>
+        </span>
+      </label>
+
+      <label className="mt-2 flex items-start gap-2 text-sm text-slate-700">
+        <input
+          type="checkbox"
+          checked={repCell}
+          onChange={(event) => setRepCell(event.target.checked)}
+          className="mt-0.5 rounded border-slate-300"
+        />
+        <span>
+          People in this role see a rep&rsquo;s cell phone on a rep lunch
+          <span className="block text-xs text-slate-500">
+            On for Front Desk, who call the reps. A rep&rsquo;s status and notes stay with managers
+            and admins.
           </span>
         </span>
       </label>

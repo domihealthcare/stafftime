@@ -31,6 +31,8 @@ import type {
   DirectoryEntry,
   PlanResult,
   PracticeEvent,
+  Rep,
+  RepInput,
   PracticeSettings,
   Employee,
   EventInput,
@@ -1192,7 +1194,20 @@ export const api = {
       method: 'PATCH',
       body: JSON.stringify(body),
     }),
-  /// Every closure in `fromYear`, put on the same date the year after.
+  /// The reps who book lunches: managers and admins only.
+  reps: () => request<Rep[]>('/reps'),
+  createRep: (body: RepInput) =>
+    request<Rep>('/reps', { method: 'POST', body: JSON.stringify(body) }),
+  updateRep: (id: string, body: RepInput) =>
+    request<Rep>(`/reps/${id}`, { method: 'PUT', body: JSON.stringify(body) }),
+  deleteRep: (id: string) => request<{ removed: boolean }>(`/reps/${id}`, { method: 'DELETE' }),
+  /// Pay days from one date to another (YYYY-MM-DD, inclusive): the Friday
+  /// after each pay period ends. None until a pay period is set.
+  payDays: (from: string, to: string) =>
+    request<{ payDays: string[] }>(
+      `/calendar/pay-days?from=${encodeURIComponent(from)}&to=${encodeURIComponent(to)}`,
+    ),
+  /// Every closure and holiday in `fromYear`, put on the same date the year after.
   copyClosures: (fromYear: number) =>
     request<{ copied: number; skipped: string[]; toYear: number }>('/events/closures/copy', {
       method: 'POST',
@@ -1357,6 +1372,7 @@ export const api = {
     seesOwnPersonnelTabs?: boolean;
     usesClinicalForms?: boolean;
     usesWellnessForm?: boolean;
+    seesRepCell?: boolean;
   }) => request<JobRole>('/job-roles', { method: 'POST', body: JSON.stringify(body) }),
   updateJobRole: (
     id: string,
@@ -1367,6 +1383,7 @@ export const api = {
       seesOwnPersonnelTabs: boolean;
       usesClinicalForms: boolean;
       usesWellnessForm: boolean;
+      seesRepCell: boolean;
     }>,
   ) => request<JobRole>(`/job-roles/${id}`, { method: 'PATCH', body: JSON.stringify(body) }),
   deleteJobRole: (id: string) =>

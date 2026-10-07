@@ -6,7 +6,7 @@ import {
   canUseCognitiveAssessment,
   canUseWellnessForm,
 } from '../lib/clinical-access';
-import { formatDate, localDate } from '../lib/format';
+import { formatCalendarDate, formatDate, localDate } from '../lib/format';
 import { useIsManager, useSession } from '../lib/session';
 import type { Announcement, PracticeEvent, Survey } from '../lib/types';
 import { PollView, PostActions } from './PostSocial';
@@ -196,9 +196,12 @@ export function TabletPinReminder() {
 // -------------------------------------------------------------- coming up
 
 /// Holidays and closures, and meetings and events, in the next 30 days — the
-/// ones this person sees on the Schedule (the server sends only those).
+/// ones this person sees on the Schedule (the server sends only those) — and
+/// the next pay day. Not the diagnostics: there is a date most weekends, and
+/// they would push everything else off; they are on the Calendar.
 export function ComingUp() {
   const [events, setEvents] = useState<PracticeEvent[]>([]);
+  const [payDay, setPayDay] = useState<string | null>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -208,22 +211,37 @@ export function ComingUp() {
       .events(from.toISOString(), to.toISOString())
       .then((found) => !cancelled && setEvents(found))
       .catch(() => undefined);
+    api
+      .payDays(localDate(from), localDate(to))
+      .then((found) => !cancelled && setPayDay(found.payDays[0] ?? null))
+      .catch(() => undefined);
     return () => {
       cancelled = true;
     };
   }, []);
 
-  const shown = [...events].sort((a, b) => a.startsAt.localeCompare(b.startsAt)).slice(0, 5);
-  if (shown.length === 0) return null;
+  const shown = events
+    .filter((event) => event.kind !== 'DIAGNOSTIC')
+    .sort((a, b) => a.startsAt.localeCompare(b.startsAt))
+    .slice(0, 5);
+  if (shown.length === 0 && !payDay) return null;
 
   return (
     <Card className="p-4" testId="coming-up">
       <h2 className="text-sm font-semibold text-slate-900">Holidays &amp; coming up</h2>
+      {payDay && (
+        <p className="mt-2 text-sm" data-testid="next-pay-day">
+          <span aria-hidden="true">💵 </span>
+          <span className="font-medium text-slate-900">Next pay day</span>
+          <span className="block text-xs text-slate-500">{formatCalendarDate(payDay)}</span>
+        </p>
+      )}
       <ul className="mt-2 space-y-2">
         {shown.map((event) => (
           <li key={event.id} className="text-sm">
             <span className="font-medium text-slate-900">
               {event.kind === 'CLOSURE' && <span aria-label="Closed">🔒 </span>}
+              {event.kind === 'HOLIDAY' && <span aria-hidden="true">⭐ </span>}
               {event.title}
             </span>
             <span className="block text-xs text-slate-500">
@@ -234,8 +252,8 @@ export function ComingUp() {
           </li>
         ))}
       </ul>
-      <Link to="/schedule" className={`mt-2 inline-block ${linkClass}`}>
-        Schedule →
+      <Link to="/schedule/calendar" className={`mt-2 inline-block ${linkClass}`}>
+        Calendar →
       </Link>
     </Card>
   );

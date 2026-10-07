@@ -32,6 +32,7 @@ const MANAGE = [
   { to: '/checklists', label: 'Onboarding & Offboarding' },
   { to: '/credentials', label: 'Licenses' },
   { to: '/job-roles', label: 'Job roles' },
+  { to: '/reps', label: 'Reps' },
   { to: '/export', label: 'Export' },
 ];
 const PRODUCTIVITY_MANAGE = { to: '/productivity', label: 'Provider productivity' };

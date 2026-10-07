@@ -26,6 +26,7 @@ const DashboardPage = lazy(() =>
 const DirectoryPage = lazy(() =>
   import('./pages/DirectoryPage').then((m) => ({ default: m.DirectoryPage })),
 );
+const RepsPage = lazy(() => import('./pages/RepsPage').then((m) => ({ default: m.RepsPage })));
 const JobRolesPage = lazy(() =>
   import('./pages/JobRolesPage').then((m) => ({ default: m.JobRolesPage })),
 );
@@ -66,6 +67,12 @@ const ClosingPage = lazy(() =>
 );
 const SchedulePage = lazy(() =>
   import('./pages/SchedulePage').then((m) => ({ default: m.SchedulePage })),
+);
+const CalendarPage = lazy(() =>
+  import('./pages/CalendarPage').then((m) => ({ default: m.CalendarPage })),
+);
+const CalendarPrintPage = lazy(() =>
+  import('./pages/CalendarPrintPage').then((m) => ({ default: m.CalendarPrintPage })),
 );
 const RotaPrintPage = lazy(() =>
   import('./pages/RotaPrintPage').then((m) => ({ default: m.RotaPrintPage })),
@@ -164,6 +171,7 @@ function Routed() {
       <Routes>
         {/* Paper has no header or menus, so the printable rota sits outside the layout. */}
         <Route path="schedule/print" element={<RotaPrintPage />} />
+        <Route path="schedule/calendar/print" element={<CalendarPrintPage />} />
         <Route element={<Layout />}>
           <Route index element={<ClockPage />} />
           <Route path="news" element={<NewsPage />} />
@@ -175,8 +183,10 @@ function Routed() {
           <Route path="resources/:id" element={<ResourcePage />} />
           <Route path="dashboard" element={<DashboardPage />} />
           <Route path="job-roles" element={<JobRolesPage />} />
+          <Route path="reps" element={<RepsPage />} />
           <Route path="timesheet" element={<TimesheetPage />} />
           <Route path="schedule" element={<SchedulePage />} />
+          <Route path="schedule/calendar" element={<CalendarPage />} />
           <Route path="availability" element={<AvailabilityPage />} />
           <Route path="password" element={<ChangePasswordPage forced={false} />} />
           <Route path="notifications" element={<NotificationsPage />} />
