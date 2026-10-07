@@ -2972,6 +2972,30 @@ out as invites.
   refusal (like overtime and closures). The schema guard pins `Rep`'s
   columns: business contacts, nothing more.
 
+  Follow-up the same day (Dominguez: "front desk can see the cell, and it
+  should notify all staff at that office the night before even if there is
+  no rep lunch, so staff knows to bring their own lunch"):
+  - **The cell phone** also goes to people in a job role with **sees a
+    rep's cell** (`JobRole.seesRepCell`, a tick box on Manage → Job roles,
+    started on for Front Desk) — like the other job-role switches, a screen
+    and no power. Status and notes stay managers' only. The phone feed
+    still carries none of it, since a calendar link can be forwarded.
+  - **Who hears about a rep lunch**: the staff of its office
+    (`audienceWhere`), not everybody — although everybody still sees it on
+    the calendar. Moving a lunch to the other office tells the new office
+    it is on and the old one it is off.
+  - **The night-before notice** (`events/lunch-notices.service.ts`): from
+    6pm New Jersey time (`LUNCH_NOTICE_FROM`), each office that is **open
+    tomorrow** — at least one published shift there, not from home, and not
+    closed all day — tells every working member of staff assigned to it
+    either "Rep lunch tomorrow at North Bergen" (time, rep, company, catering
+    or office orders) or "No rep lunch tomorrow at North Bergen — bring your
+    own lunch". The bell only, not email. Run by the five-minute timer
+    (cron-job.org → `GET /maintenance/punch-reminders`), which already runs
+    until midnight; each office and day is claimed in `LunchNotice` first,
+    so it goes once however often the timer runs. A lunch added after the
+    notice went is told the usual way ("Rep lunch: …").
+
 **Show** (Dominguez: "the calendar should just have options (i.e. all,
 diagnostics, rep lunches, etc) and can choose multiple or choose one, or
 all"): All, or any one or more kinds. From All, a kind shows that kind

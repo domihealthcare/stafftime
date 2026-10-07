@@ -76,7 +76,7 @@ export function RepsPage() {
     <div className="mx-auto max-w-6xl">
       <PageHeading
         title="Reps"
-        subtitle="The reps who book lunches. Staff see a lunch's rep, company, medication and food on the calendar; the phone, status and notes stay here."
+        subtitle="The reps who book lunches. Staff see a lunch's rep, company, medication and food on the calendar, and the front desk the cell phone; the status and notes stay here."
       />
 
       <div className="mb-4 flex flex-wrap items-center gap-2">

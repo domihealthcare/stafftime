@@ -1162,7 +1162,7 @@ export function EventForm({
               : diagnostic
                 ? 'Everyone sees it on the calendar and gets a notification when a date is added, moved or cancelled. Write when the tests are on — never a patient’s name or who is booked.'
                 : repLunch
-                  ? 'Everyone sees it on the calendar — the rep, company, medication and whether they bring catering — and gets a notification when it is added, moved or cancelled. The rep’s phone, status and notes stay with managers.'
+                  ? 'Everyone sees it on the calendar — the rep, company, medication and whether they bring catering. Staff at that office are told when it is added, moved or cancelled, and every evening hear whether there is a rep lunch the next day. The front desk sees the rep’s cell; the status and notes stay with managers.'
                   : 'Everybody it is for sees it on their schedule and gets a notification; it reaches their phone if they sync their calendar. It does not count as work hours — anybody paid to be there clocks in as usual.'}
         </p>
 

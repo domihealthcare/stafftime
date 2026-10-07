@@ -64,9 +64,11 @@ async function seedJobRoles() {
     const usesClinicalForms = name === 'Provider';
     // The Annual Wellness Visit form: the MA does its second page, the provider its first.
     const usesWellnessForm = name === 'Provider' || name === 'Medical Assistant';
+    // The front desk sees a rep's cell phone on a rep lunch (October 2026).
+    const seesRepCell = name === 'Front Desk';
     await prisma.jobRole.upsert({
       where: { name },
-      update: { seesOwnPersonnelTabs, usesClinicalForms, usesWellnessForm },
+      update: { seesOwnPersonnelTabs, usesClinicalForms, usesWellnessForm, seesRepCell },
       create: {
         name,
         sortOrder: (index + 1) * 10,
@@ -74,6 +76,7 @@ async function seedJobRoles() {
         seesOwnPersonnelTabs,
         usesClinicalForms,
         usesWellnessForm,
+        seesRepCell,
       },
     });
   }

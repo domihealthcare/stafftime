@@ -612,9 +612,16 @@ Beyond the phases, the parts worth knowing about before picking up work:
   `src/reps/`, managers and admins only — name, cell, company, medication,
   catering or self-order, status Preferred / OK / Has restrictions / Don't
   book, notes), an office and a time; named after the rep. Staff see rep,
-  company, medication and food; **cell, status and notes are managers'
-  only** (server-side, and never in the feed); "Don't book" asks first,
-  never refuses; the schema guard pins `Rep`. **Show** filters the calendar:
+  company, medication and food; **the cell also to job roles with "sees a
+  rep's cell" (`JobRole.seesRepCell`, on for Front Desk — Dominguez: "front
+  desk can see the cell")**; status and notes managers' only (server-side;
+  none of it in the feed); "Don't book" asks first, never refuses; the
+  schema guard pins `Rep`. A rep lunch is **told to the staff of its office**
+  (add, move, cancel), and **every evening from 6pm** each office open the
+  next day (a published shift there, not closed all day) hears "Rep lunch
+  tomorrow" or "No rep lunch tomorrow — bring your own lunch" on the bell
+  (`events/lunch-notices.service.ts`, run by the five-minute timer, once per
+  office and day via `LunchNotice`). **Show** filters the calendar:
   All, or any one or more kinds (Dominguez). Next: separate subscriptions
   per kind and a printed month — see `docs/open-questions.md`. Would matter to the EMR
   module too, if it takes events. See *The practice calendar* in

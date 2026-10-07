@@ -26,7 +26,12 @@ const step = async (name, fn) => {
  *
  * Rep lunches (October 2026) pick their rep from Manage → Reps: staff see the
  * rep, company, medication and food; the phone, status and notes stay with
- * managers. A rep marked "Don't book" is warned about, never refused.
+ * managers — but the front desk sees the cell (a job role setting). A rep
+ * lunch is told to the staff of its office only. A rep marked "Don't book"
+ * is warned about, never refused.
+ *
+ * Seeded people: Frankie is Front Desk and MA at North Bergen, Max an MA at
+ * West New York.
  *
  * Built in March 2027 — far enough ahead to be the future, near enough to be
  * inside the feed's year.
@@ -39,7 +44,17 @@ async function signIn(email, viewport = { width: 1280, height: 1000 }) {
   await page.getByLabel('Email').fill(email);
   await page.getByLabel('Password', { exact: true }).fill('shift-change-2026');
   await page.getByRole('button', { name: 'Sign in' }).click();
-  await page.getByText('Not clocked in').first().waitFor({ timeout: 20000 });
+  // Max is seeded with a temporary password, to be changed on first sign-in.
+  const unlocked = page.getByText('Not clocked in');
+  const mustChange = page.getByText('Choose a new password');
+  await unlocked.or(mustChange).first().waitFor({ timeout: 20000 });
+  if (await mustChange.isVisible()) {
+    await page.getByLabel('Temporary password').fill('shift-change-2026');
+    await page.getByLabel('New password', { exact: true }).fill('harbour lantern 7');
+    await page.getByLabel('Confirm new password').fill('harbour lantern 7');
+    await page.getByRole('button', { name: 'Change password' }).click();
+    await unlocked.first().waitFor({ timeout: 15000 });
+  }
   return page;
 }
 
@@ -211,20 +226,52 @@ await step('staff see all of it, and cannot add', async () => {
   await dialog.getByRole('button', { name: 'Close' }).click();
 });
 
-await step('staff see a rep lunch’s rep, company, medication and food — not the managers’ side', async () => {
+await step('the front desk sees a rep lunch’s rep, food and cell — not the status or notes', async () => {
   await day(frankie, '2027-03-09').getByTestId('rep_lunch-chip').click();
   const dialog = frankie.getByRole('dialog', { name: 'Rep lunch: Jane Smith' });
   await dialog.waitFor({ timeout: 10000 });
   const text = await dialog.innerText();
-  for (const expected of ['Novo Nordisk', 'Ozempic', 'Office orders', 'North Bergen']) {
+  for (const expected of ['Novo Nordisk', 'Ozempic', 'Office orders', 'North Bergen', '(201) 555-0142']) {
     if (!text.includes(expected)) throw new Error(`no "${expected}" in ${text}`);
   }
-  for (const secret of ['555-0142', 'Late twice', 'Don’t book']) {
-    if (text.includes(secret)) throw new Error(`staff see "${secret}"`);
+  for (const secret of ['Late twice', 'Don’t book']) {
+    if (text.includes(secret)) throw new Error(`the front desk sees "${secret}"`);
   }
   await dialog.getByRole('button', { name: 'Close' }).click();
   const status = await frankie.evaluate(() => fetch('/api/reps').then((r) => r.status));
   if (status !== 403) throw new Error(`staff reading the rep list got ${status}`);
+});
+
+const max = await signIn('ma@domihealthcare.com');
+
+await step('a Medical Assistant sees the lunch but not the cell', async () => {
+  await calendar(max);
+  await day(max, '2027-03-09').getByTestId('rep_lunch-chip').click();
+  const dialog = max.getByRole('dialog', { name: 'Rep lunch: Jane Smith' });
+  await dialog.waitFor({ timeout: 10000 });
+  const text = await dialog.innerText();
+  if (!text.includes('Ozempic')) throw new Error(`no medication in ${text}`);
+  for (const secret of ['555-0142', 'Late twice', 'Don’t book']) {
+    if (text.includes(secret)) throw new Error(`an MA sees "${secret}"`);
+  }
+  await dialog.getByRole('button', { name: 'Close' }).click();
+});
+
+await step('a rep lunch rings the bell at its own office only', async () => {
+  const titles = async (page) =>
+    page.evaluate(async () => (await fetch('/api/notifications').then((r) => r.json())).items.map((i) => i.title));
+  const nb = await titles(frankie);
+  const wny = await titles(max);
+  if (!nb.includes('Rep lunch: Jane Smith (Novo Nordisk)')) throw new Error(`North Bergen's bell: ${nb.join(' | ')}`);
+  if (nb.some((t) => t.includes('Pat Lee'))) throw new Error('North Bergen heard about West New York’s lunch');
+  if (!wny.includes('Rep lunch: Pat Lee (Pfizer)')) throw new Error(`West New York's bell: ${wny.join(' | ')}`);
+  if (wny.some((t) => t.includes('Jane Smith'))) throw new Error('West New York heard about North Bergen’s lunch');
+});
+
+await step('the cell is a job role setting, on for Front Desk alone', async () => {
+  const roles = await manager.evaluate(() => fetch('/api/job-roles').then((r) => r.json()));
+  const on = roles.filter((role) => role.seesRepCell).map((role) => role.name);
+  if (on.join() !== 'Front Desk') throw new Error(`sees the cell: ${on.join(', ')}`);
 });
 
 await step('Show: All, one kind, several, and All again — and an office narrows', async () => {

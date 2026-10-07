@@ -1361,6 +1361,7 @@ export const api = {
     seesOwnPersonnelTabs?: boolean;
     usesClinicalForms?: boolean;
     usesWellnessForm?: boolean;
+    seesRepCell?: boolean;
   }) => request<JobRole>('/job-roles', { method: 'POST', body: JSON.stringify(body) }),
   updateJobRole: (
     id: string,
@@ -1371,6 +1372,7 @@ export const api = {
       seesOwnPersonnelTabs: boolean;
       usesClinicalForms: boolean;
       usesWellnessForm: boolean;
+      seesRepCell: boolean;
     }>,
   ) => request<JobRole>(`/job-roles/${id}`, { method: 'PATCH', body: JSON.stringify(body) }),
   deleteJobRole: (id: string) =>

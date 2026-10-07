@@ -92,6 +92,8 @@ function build(
     person?: unknown;
     invited?: string[] | string[][];
     roleExists?: boolean;
+    /// Whether the viewer is in a job role that sees a rep's cell (Front Desk).
+    seesCell?: boolean;
     /// How many dates a "this and all after" removal takes, and how many are left.
     cut?: { removed: number; left: number };
   } = {},
@@ -177,7 +179,15 @@ function build(
     },
     jobRole: {
       count: jest.fn(async ({ where }) =>
-        options.roleExists === false ? 0 : where.id?.in ? where.id.in.length : 1,
+        where.seesRepCell
+          ? options.seesCell
+            ? 1
+            : 0
+          : options.roleExists === false
+            ? 0
+            : where.id?.in
+              ? where.id.in.length
+              : 1,
       ),
     },
     location: {
@@ -884,6 +894,33 @@ describe('rep lunches', () => {
       medication: 'Ozempic',
       food: 'CATERING',
     });
+  });
+
+  it('shows the front desk the rep’s cell, but still not their status or notes', async () => {
+    const { service, practiceEvent } = build({ seesCell: true });
+    practiceEvent.findMany.mockResolvedValue([
+      row({ kind: PracticeEventKind.REP_LUNCH, rep: REPS['rep-jane'] }),
+    ]);
+    const [seen] = await service.list(
+      '2099-10-01T00:00:00.000Z',
+      '2099-11-01T00:00:00.000Z',
+      staff,
+    );
+    expect(seen.rep).toEqual({
+      id: 'rep-jane',
+      name: 'Jane Smith',
+      company: 'Novo Nordisk',
+      medication: 'Ozempic',
+      food: 'CATERING',
+      cellPhone: '(201) 555-0142',
+    });
+  });
+
+  it('tells the staff of the office it is at, not everybody', async () => {
+    const { service, prisma } = build();
+    await service.create(lunch(), manager);
+    const where = prisma.employee.findMany.mock.calls[0][0].where;
+    expect(where.locations).toEqual({ some: { locationId: 'loc-nb' } });
   });
 
   it('shows a manager everything about the rep', async () => {

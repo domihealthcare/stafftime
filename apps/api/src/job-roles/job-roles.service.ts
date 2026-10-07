@@ -21,6 +21,7 @@ const JOB_ROLE_SELECT = {
   seesOwnPersonnelTabs: true,
   usesClinicalForms: true,
   usesWellnessForm: true,
+  seesRepCell: true,
   _count: { select: { resources: true } },
   members: {
     // Somebody who has left is not "in" Front Desk any more, even if nobody
@@ -88,6 +89,7 @@ export class JobRolesService {
         seesOwnPersonnelTabs: dto.seesOwnPersonnelTabs ?? false,
         usesClinicalForms: dto.usesClinicalForms ?? false,
         usesWellnessForm: dto.usesWellnessForm ?? false,
+        seesRepCell: dto.seesRepCell ?? false,
       },
       select: JOB_ROLE_SELECT,
     });
@@ -110,6 +112,7 @@ export class JobRolesService {
         seesOwnPersonnelTabs: dto.seesOwnPersonnelTabs,
         usesClinicalForms: dto.usesClinicalForms,
         usesWellnessForm: dto.usesWellnessForm,
+        seesRepCell: dto.seesRepCell,
       },
       select: JOB_ROLE_SELECT,
     });

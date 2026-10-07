@@ -25,6 +25,11 @@ export class CreateJobRoleDto {
   @IsBoolean()
   usesWellnessForm?: boolean;
 
+  /// People in it see a rep's cell phone on a rep lunch.
+  @IsOptional()
+  @IsBoolean()
+  seesRepCell?: boolean;
+
   @IsString()
   @MinLength(2)
   @MaxLength(60)
@@ -59,6 +64,11 @@ export class UpdateJobRoleDto {
   @IsOptional()
   @IsBoolean()
   usesWellnessForm?: boolean;
+
+  /// People in it see a rep's cell phone on a rep lunch.
+  @IsOptional()
+  @IsBoolean()
+  seesRepCell?: boolean;
 
   @IsOptional()
   @IsString()

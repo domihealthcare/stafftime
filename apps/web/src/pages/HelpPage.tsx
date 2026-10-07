@@ -401,7 +401,8 @@ const STAFF: Section[] = [
             On <Screen>Schedule</Screen>, press <strong>Calendar</strong> at the top (next to
             Shifts). It shows the month with the <strong>diagnostics</strong> 🩺 (which tests, the
             hours, and the office — WNY or NB), <strong>rep lunches</strong> 🍽️ (the rep, their
-            company, the medication, and whether they bring catering or the office orders),{' '}
+            company, the medication, and whether they bring catering or the office orders — the bell
+            tells you the evening before whether there is one at your office),{' '}
             <strong>holidays</strong> ⭐ (the offices are open unless there is also a closure),{' '}
             <strong>closures</strong> 🔒, meetings and events 📅, and <strong>pay days</strong> 💵 —
             the Friday after each pay period ends. Under <strong>Show</strong>, keep{' '}
@@ -1116,9 +1117,13 @@ const MANAGERS: Section[] = [
             rep, the office and the time; it is named after the rep. A rep marked{' '}
             <strong>Don&rsquo;t book</strong> asks you to confirm first, and a rep with restrictions
             shows their notes as you pick them. Everyone sees the lunch with the rep, company,
-            medication and food, and is told when it is added, moved or cancelled; the cell phone,
-            status and notes are for managers only. Correcting a rep&rsquo;s name renames their
-            lunches too.
+            medication and food; the front desk also sees the rep&rsquo;s cell phone (a job role
+            setting, under Manage → Job roles); the status and notes are for managers only. Staff at
+            that office are told when a lunch is added, moved or cancelled, and{' '}
+            <strong>every evening at 6pm</strong> hear whether there is a rep lunch there the next
+            day — or that there is none, so they bring their own. That evening notice goes only for
+            days somebody is scheduled at the office and it is not closed. Correcting a rep&rsquo;s
+            name renames their lunches too.
           </p>
         ),
       },

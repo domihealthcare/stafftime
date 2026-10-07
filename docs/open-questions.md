@@ -88,11 +88,10 @@ Built as a read-only iCalendar subscription per employee.
 - [ ] **The practice calendar, still to build** (October 2026, Dominguez;
       diagnostics, holidays and pay days are done — see *The practice
       calendar* in `docs/architecture.md`):
-      - **Rep lunches: who sees what.** Built with staff seeing the rep,
-        company, medication and catering/self-order, and only managers the
-        cell phone, status and notes. Should the front desk see the rep's
-        cell (if they are the ones who call)? Should a rep lunch ring
-        everybody's bell, or only the office it is at?
+      - **The evening rep lunch notice**: sent at 6pm on the bell only, to
+        everybody assigned to the office (not only those working tomorrow),
+        on days somebody is scheduled there. Is 6pm right, and should it
+        also be an email?
       - **Separate subscriptions**: one calendar per kind (Diagnostics,
         Holidays & closures, Pay days…) as well as the all-in-one link that
         exists now, so each can be coloured and switched off on the phone.

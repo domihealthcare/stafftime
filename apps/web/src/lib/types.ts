@@ -842,6 +842,8 @@ export interface JobRole {
   usesClinicalForms?: boolean;
   /// People in it get the Annual Wellness Visit form under Resources → Forms.
   usesWellnessForm?: boolean;
+  /// People in it see a rep's cell phone on a rep lunch (Front Desk).
+  seesRepCell?: boolean;
 }
 
 export type ResourceKind = 'LINK' | 'PAGE';
@@ -1049,7 +1051,8 @@ export interface RepInput {
 }
 
 /// A rep lunch's rep. Staff get who, the company, the medication and the
-/// food; managers also the phone, status and notes.
+/// food; job roles that see it (Front Desk) the cell phone; managers also the
+/// status and notes.
 export interface EventRep {
   id: string;
   name: string;

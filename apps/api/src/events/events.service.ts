@@ -89,7 +89,10 @@ export const EVENT_SELECT = {
 export type EventRow = Prisma.PracticeEventGetPayload<{ select: typeof EVENT_SELECT }>;
 
 /// What decides who an event is for.
-type AudienceOf = Pick<EventRow, 'audience' | 'jobRole' | 'location' | 'invitees'>;
+type AudienceOf = Pick<
+  EventRow,
+  'kind' | 'audience' | 'jobRole' | 'location' | 'invitees' | 'atLocation'
+>;
 
 /// The kinds that go on the bell. A holiday only names a day; nobody needs
 /// telling about Election Day.
@@ -175,6 +178,13 @@ export class EventsService {
     }
 
     const manages = viewer.role === Role.MANAGER || viewer.role === Role.ADMIN;
+    // A rep's cell phone: managers, and job roles that make the calls (Front
+    // Desk — Dominguez, October 2026).
+    const seesCell =
+      manages ||
+      (await this.prisma.jobRole.count({
+        where: { seesRepCell: true, members: { some: { employeeId: viewer.id } } },
+      })) > 0;
     const rows = await this.prisma.practiceEvent.findMany({
       where: {
         startsAt: { lt: end },
@@ -184,7 +194,7 @@ export class EventsService {
       select: EVENT_SELECT,
       orderBy: [{ startsAt: 'asc' }, { title: 'asc' }],
     });
-    return rows.map((row) => present(row, manages));
+    return rows.map((row) => present(row, { manager: manages, seesCell }));
   }
 
   /// The events one person is invited to, for their calendar feed.
@@ -851,6 +861,15 @@ function checkMeetingUrl(value: string | undefined): string | null {
 
 /// Who an event is for, as an employee filter.
 export function audienceWhere(row: AudienceOf): Prisma.EmployeeWhereInput {
+  // Everybody sees a rep lunch on the calendar, but it is told to the staff
+  // of the office it is at (Dominguez, October 2026). A removed office leaves
+  // nobody, not everybody.
+  if (row.kind === PracticeEventKind.REP_LUNCH) {
+    return {
+      employmentStatus: WORKING,
+      locations: { some: { locationId: row.atLocation?.id ?? '' } },
+    };
+  }
   if (row.audience === EventAudience.JOB_ROLE) {
     // A deleted role leaves nobody invited, rather than everybody.
     return { employmentStatus: WORKING, jobRoles: { some: { jobRoleId: row.jobRole?.id ?? '' } } };
@@ -912,6 +931,7 @@ function inviteeRows(eventIds: string[], input: Checked) {
 function audienceKey(row: AudienceOf): string {
   return [
     row.audience,
+    row.kind === PracticeEventKind.REP_LUNCH ? (row.atLocation?.id ?? '') : '',
     row.jobRole?.id ?? '',
     row.location?.id ?? '',
     ...row.invitees.map((i) => i.employee?.id ?? i.jobRole?.id ?? i.location?.id ?? '').sort(),
@@ -926,9 +946,16 @@ function seriesBody(first: EventRow, repeat: NonNullable<Checked['repeat']>): st
 }
 
 /// What the screens get. An all-day event also carries its days, worked out
-/// here on the practice's clock so no browser has to. A rep's phone, status
-/// and notes go to managers and admins only.
-function present(row: EventRow, manager = true) {
+/// here on the practice's clock so no browser has to. A rep's status and
+/// notes go to managers and admins only; their cell phone also to job roles
+/// that see it (Front Desk).
+function present(
+  row: EventRow,
+  { manager, seesCell }: { manager: boolean; seesCell: boolean } = {
+    manager: true,
+    seesCell: true,
+  },
+) {
   return {
     id: row.id,
     kind: row.kind,
@@ -950,9 +977,8 @@ function present(row: EventRow, manager = true) {
           company: row.rep.company,
           medication: row.rep.medication,
           food: row.rep.food,
-          ...(manager
-            ? { cellPhone: row.rep.cellPhone, status: row.rep.status, notes: row.rep.notes }
-            : {}),
+          ...(manager || seesCell ? { cellPhone: row.rep.cellPhone } : {}),
+          ...(manager ? { status: row.rep.status, notes: row.rep.notes } : {}),
         }
       : null,
     invitees: row.invitees.map((invitee) =>
