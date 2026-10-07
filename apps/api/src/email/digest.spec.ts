@@ -1,6 +1,7 @@
 import { fakeSettings } from '../settings/practice-settings.test-double';
 import { AttentionService } from './attention.service';
 import { DigestService } from './digest.service';
+import { DIGEST_TOPICS, contentsFor } from './digest-topics';
 
 /// Midday UTC — morning in New Jersey — so a date means the same day on the server's
 /// clock and at the practice, as real punches and the 5am round-up do.
@@ -36,8 +37,8 @@ function build(
   } = {},
 ) {
   const managers = data.managers ?? [
-    { email: 'morgan@domihealthcare.com', firstName: 'Morgan' },
-    { email: 'ada@domihealthcare.com', firstName: 'Ada' },
+    { email: 'morgan@domihealthcare.com', firstName: 'Morgan', mutedDigestTopics: [] },
+    { email: 'ada@domihealthcare.com', firstName: 'Ada', mutedDigestTopics: [] },
   ];
 
   const prisma = {
@@ -264,6 +265,81 @@ describe('DigestService — who gets it', () => {
 
     await expect(service.send()).resolves.toMatchObject({ sent: 0 });
     expect(notifications.dailyDigest).not.toHaveBeenCalled();
+  });
+});
+
+describe('DigestService — who gets which part', () => {
+  const morgan = { email: 'morgan@domihealthcare.com', firstName: 'Morgan' };
+  const ada = { email: 'ada@domihealthcare.com', firstName: 'Ada' };
+  const lapsed = { name: 'BLS card', expiresOn: day('2026-01-01'), employee: frankie };
+  const asked = { startDate: day('2026-11-03'), endDate: day('2026-11-03'), employee: frankie };
+
+  /// What each manager was sent: their email against the sections with lines.
+  const received = (notifications: { dailyDigest: jest.Mock }): Record<string, string[]> =>
+    Object.fromEntries(
+      notifications.dailyDigest.mock.calls.map(([to, , contents]) => [
+        to,
+        Object.entries(contents as Record<string, string[]>)
+          .filter(([, lines]) => lines.length > 0)
+          .map(([key]) => key),
+      ]),
+    );
+
+  it('puts every section in exactly one part', () => {
+    const keys = Object.values(DIGEST_TOPICS).flat();
+    expect(new Set(keys).size).toBe(keys.length);
+    // The keys of the round-up itself, from an empty one.
+    const empty = contentsFor(
+      Object.fromEntries(keys.map((key) => [key, ['x']])) as never,
+      new Set(),
+    );
+    expect(Object.values(empty).every((lines) => lines.length === 0)).toBe(true);
+  });
+
+  it('gives each manager only the parts they look after', async () => {
+    const { service, notifications } = build({
+      credentials: [lapsed],
+      timeOff: [asked],
+      managers: [
+        { ...morgan, mutedDigestTopics: ['LICENSES'] },
+        { ...ada, mutedDigestTopics: ['TIME_OFF'] },
+      ],
+    });
+
+    await expect(service.send()).resolves.toMatchObject({ sent: 2 });
+    expect(received(notifications)).toEqual({
+      'morgan@domihealthcare.com': ['undecidedTimeOff'],
+      'ada@domihealthcare.com': ['expiredCredentials'],
+    });
+  });
+
+  it('sends a part nobody looks after to everybody, so nothing is missed', async () => {
+    const { service, notifications } = build({
+      credentials: [lapsed],
+      managers: [
+        { ...morgan, mutedDigestTopics: ['LICENSES'] },
+        { ...ada, mutedDigestTopics: ['LICENSES', 'TIME_OFF'] },
+      ],
+    });
+
+    await service.send();
+    expect(received(notifications)).toEqual({
+      'morgan@domihealthcare.com': ['expiredCredentials'],
+      'ada@domihealthcare.com': ['expiredCredentials'],
+    });
+  });
+
+  it('does not email somebody whose parts have nothing in them tonight', async () => {
+    const { service, notifications } = build({
+      timeOff: [asked],
+      managers: [
+        { ...morgan, mutedDigestTopics: ['TIME_OFF'] },
+        { ...ada, mutedDigestTopics: [] },
+      ],
+    });
+
+    await expect(service.send()).resolves.toMatchObject({ sent: 1 });
+    expect(Object.keys(received(notifications))).toEqual(['ada@domihealthcare.com']);
   });
 });
 

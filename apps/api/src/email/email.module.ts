@@ -3,6 +3,7 @@ import { ConfigService } from '@nestjs/config';
 import { AttentionController } from './attention.controller';
 import { AttentionService } from './attention.service';
 import { DigestService } from './digest.service';
+import { DigestSettingsController } from './digest-settings.controller';
 import { EMAIL_SENDER, EmailSender } from './email-sender';
 import { InboxController } from './inbox.controller';
 import { InboxService } from './inbox.service';
@@ -48,7 +49,7 @@ import { ResendEmailSender } from './resend-email.sender';
     AttentionService,
     DigestService,
   ],
-  controllers: [AttentionController, InboxController],
+  controllers: [AttentionController, DigestSettingsController, InboxController],
   exports: [EMAIL_SENDER, NotificationsService, InboxService, AttentionService, DigestService],
 })
 export class EmailModule {}

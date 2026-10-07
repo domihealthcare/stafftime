@@ -228,8 +228,8 @@ describe('NotificationsService', () => {
       employee: { id: 'emp-1', firstName: 'Frankie', lastName: 'Front-Desk' },
     });
     prisma.employee.findMany.mockResolvedValue([
-      { email: 'morgan@domihealthcare.com', firstName: 'Morgan' },
-      { email: 'ada@domihealthcare.com', firstName: 'Ada' },
+      { email: 'morgan@domihealthcare.com', firstName: 'Morgan', mutedDigestTopics: [] },
+      { email: 'ada@domihealthcare.com', firstName: 'Ada', mutedDigestTopics: [] },
     ]);
 
     await service.ptoRequested('pto-1');
@@ -245,6 +245,44 @@ describe('NotificationsService', () => {
         where: expect.objectContaining({ id: { not: 'emp-1' } }),
       }),
     );
+  });
+
+  it('tells only the managers who look after time off, when somebody does', async () => {
+    // Email settings: a manager who has left time off to somebody else is not
+    // emailed or rung about each request either.
+    const { service, prisma, sent } = build();
+    prisma.ptoRequest.findUnique.mockResolvedValue({
+      ...approved,
+      status: 'PENDING',
+      employeeId: 'emp-1',
+      employee: { id: 'emp-1', firstName: 'Frankie', lastName: 'Front-Desk' },
+    });
+    prisma.employee.findMany.mockResolvedValue([
+      { email: 'morgan@domihealthcare.com', firstName: 'Morgan', mutedDigestTopics: ['TIME_OFF'] },
+      { email: 'ada@domihealthcare.com', firstName: 'Ada', mutedDigestTopics: ['LICENSES'] },
+    ]);
+
+    await service.ptoRequested('pto-1');
+    expect(sent.map((m) => m.to)).toEqual(['ada@domihealthcare.com']);
+  });
+
+  it('still tells every manager when nobody looks after time off', async () => {
+    // A request nobody hears about sits for a week; that is worse than an
+    // email somebody did not want.
+    const { service, prisma, sent } = build();
+    prisma.ptoRequest.findUnique.mockResolvedValue({
+      ...approved,
+      status: 'PENDING',
+      employeeId: 'emp-1',
+      employee: { id: 'emp-1', firstName: 'Frankie', lastName: 'Front-Desk' },
+    });
+    prisma.employee.findMany.mockResolvedValue([
+      { email: 'morgan@domihealthcare.com', firstName: 'Morgan', mutedDigestTopics: ['TIME_OFF'] },
+      { email: 'ada@domihealthcare.com', firstName: 'Ada', mutedDigestTopics: ['TIME_OFF'] },
+    ]);
+
+    await service.ptoRequested('pto-1');
+    expect(sent.map((m) => m.to)).toEqual(['morgan@domihealthcare.com', 'ada@domihealthcare.com']);
   });
 
   it('marks a test deployment’s mail as such, in the subject line', async () => {

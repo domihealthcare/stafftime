@@ -1433,11 +1433,21 @@ const MANAGERS: Section[] = [
       {
         question: 'What needs a look?',
         answer: (
-          <p>
-            Banners on each screen list what needs attention there — unapproved hours, missing
-            punches, lapsing licenses, next week unpublished, and so on. The same list is emailed
-            each night; turn that off under the menu → <strong>Notifications</strong>.
-          </p>
+          <>
+            <p>
+              Banners on each screen list what needs attention there — unapproved hours, missing
+              punches, lapsing licenses, next week unpublished, and so on. The same list is emailed
+              each night.
+            </p>
+            <p>
+              Under the menu → <Screen>Email settings</Screen>, untick the parts somebody else looks
+              after — the rota, hours, time off, licenses and so on — or turn the email off.
+              <strong> Who gets what</strong>, below it, shows every manager&rsquo;s choices; an
+              admin can change anybody&rsquo;s there. A part nobody has chosen still goes to
+              everybody, so nothing is missed. Time off also decides who is told as each request
+              comes in. The banners always show everything.
+            </p>
+          </>
         ),
       },
     ],

@@ -17,7 +17,8 @@ import { PRACTICE_ZONE } from '../common/util/zoned-time.util';
  * - **Each section links to the screen that fixes it**, with the same banner on
  *   it. At most `SHOWN_PER_SECTION` lines each; the rest are counted, and are
  *   on that screen.
- * - **How to turn it off**, at the bottom, which every recurring email owes.
+ * - **How to turn it off**, or choose which parts come, at the bottom, which
+ *   every recurring email owes.
  *
  * Plain text is still the message; the HTML is the same words laid out, as for
  * the welcome email.
@@ -319,8 +320,8 @@ function text(
     'Domi Staff',
     appUrl,
     '',
-    'Every line here is also on the screen it belongs to. To stop this email, open',
-    `Email settings: ${appUrl}/notifications`,
+    'Every line here is also on the screen it belongs to. To choose which parts you',
+    `get, or stop this email, open Email settings: ${appUrl}/notifications`,
   );
   return body.join('\n');
 }
@@ -409,7 +410,7 @@ ${cards}`;
 ${tiers}
 <p style="margin:24px 0 20px;text-align:center"><a href="${url}" style="display:inline-block;background:${BRAND};color:#ffffff;text-decoration:none;font-weight:600;font-size:15px;padding:12px 24px;border-radius:8px">Open Domi Staff</a></p>
 </td></tr></table>
-<p style="margin:16px 0 0;max-width:560px;font-family:${FONT};font-size:12px;line-height:1.5;color:${MUTED}">Sent each morning to managers when something needs a look. Every line is also on the screen it belongs to, so nothing is lost by <a href="${url}/notifications" style="color:${MUTED}">turning this email off</a>.<br>Domi Staff · <a href="${url}" style="color:${MUTED}">${escape(appUrl.replace(/^https?:\/\//, ''))}</a></p>
+<p style="margin:16px 0 0;max-width:560px;font-family:${FONT};font-size:12px;line-height:1.5;color:${MUTED}">Sent each morning to managers when something needs a look. Every line is also on the screen it belongs to, so nothing is lost by <a href="${url}/notifications" style="color:${MUTED}">choosing which parts you get, or turning this email off</a>.<br>Domi Staff · <a href="${url}" style="color:${MUTED}">${escape(appUrl.replace(/^https?:\/\//, ''))}</a></p>
 </td></tr></table>
 </body></html>`;
 }

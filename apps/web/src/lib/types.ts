@@ -90,6 +90,8 @@ export interface Employee extends EmployeeSummary {
   /// Whether this manager gets the nightly round-up. Ignored for employees,
   /// who are never sent it.
   wantsDailyDigest?: boolean;
+  /// The parts of the round-up they leave out (`lib/digest-topics.ts`).
+  mutedDigestTopics?: DigestTopic[];
   lastLoginAt?: string | null;
   locations: { locationId: string; isPrimary: boolean; location: LocationSummary }[];
   /// Signed-in person only: their job role shows them their own licenses and
@@ -1332,4 +1334,30 @@ export interface StaffRecord {
     position: { value: string; since: string } | null;
     pay: { rate: number; unit: PayRateUnit; since: string } | null;
   };
+}
+
+/// The parts of the nightly round-up a manager chooses between.
+export type DigestTopic =
+  | 'SCHEDULE'
+  | 'TIME_OFF'
+  | 'HOURS'
+  | 'LICENSES'
+  | 'CHECKLISTS'
+  | 'CLOSING'
+  | 'TIME_CLOCK'
+  | 'SUGGESTIONS';
+
+export interface DigestPreferences {
+  wantsDailyDigest?: boolean;
+  mutedDigestTopics?: DigestTopic[];
+}
+
+/// A manager or admin on the "Who gets what" table.
+export interface DigestReader {
+  id: string;
+  firstName: string;
+  lastName: string;
+  role: Role;
+  wantsDailyDigest: boolean;
+  mutedDigestTopics: DigestTopic[];
 }

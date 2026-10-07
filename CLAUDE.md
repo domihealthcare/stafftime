@@ -325,6 +325,16 @@ Beyond the phases, the parts worth knowing about before picking up work:
   naming the most urgent things, three tiers — sort out today, coming up, when
   you have a minute — each section linking to its screen, and HTML as well as
   plain text.
+  **Who gets which part** (7 October 2026, Dominguez: "certain managers should
+  be notified of certain things"): on Email settings each manager unticks the
+  parts somebody else looks after — the rota, hours, time off, licenses, the
+  time clock, closing and supplies, onboarding, the suggestion box
+  (`Employee.mutedDigestTopics`, grouped in `email/digest-topics.ts`) — and
+  **Who gets what** below shows everybody's, which an **admin** can change for
+  anybody. A part **nobody** has chosen still goes to everyone who gets the
+  round-up, so nothing falls through. The Time off part also decides who is
+  emailed and rung when a request comes in. The banners still show every
+  manager everything.
   **Email is live** (24 September 2026): Resend, sending as
   `Domi Staff <no-reply@domihealthcare.com>`, with its DKIM and `send`/`rsend`
   records in the domain's DNS at **Wix**; a password reset was received.

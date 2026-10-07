@@ -1,7 +1,8 @@
 import { Injectable, Logger } from '@nestjs/common';
-import { EmploymentStatus, Role } from '@prisma/client';
+import { DigestTopic, EmploymentStatus, Role } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { AttentionService, type DigestContents } from './attention.service';
+import { ALL_DIGEST_TOPICS, DIGEST_TOPICS, contentsFor, readersOf } from './digest-topics';
 import { NotificationsService } from './notifications.service';
 
 export type { DigestContents };
@@ -17,6 +18,10 @@ export type { DigestContents };
  * there is something to say**. A daily email that is usually empty gets
  * filtered into a folder within a fortnight, and then the one that matters goes
  * there too.
+ *
+ * Each of them gets only the parts they are down for (`digest-topics.ts`), and
+ * a part nobody is down for goes to all of them. Somebody whose parts all have
+ * nothing in them tonight is not emailed.
  */
 @Injectable()
 export class DigestService {
@@ -45,7 +50,7 @@ export class DigestService {
         // belongs to, so opting out loses the nudge, not the information.
         wantsDailyDigest: true,
       },
-      select: { email: true, firstName: true },
+      select: { email: true, firstName: true, mutedDigestTopics: true },
     });
 
     if (recipients.length === 0) {
@@ -53,11 +58,26 @@ export class DigestService {
       return { sent: 0, contents };
     }
 
-    for (const recipient of recipients) {
-      await this.notifications.dailyDigest(recipient.email, recipient.firstName, contents);
+    // Who reads which part tonight. Only parts with something in them count:
+    // an empty part with nobody down for it is no reason to email anybody.
+    const topicsFor = new Map(recipients.map((recipient) => [recipient, new Set<DigestTopic>()]));
+    for (const topic of ALL_DIGEST_TOPICS) {
+      if (DIGEST_TOPICS[topic].every((key) => contents[key].length === 0)) continue;
+      for (const reader of readersOf(topic, recipients)) topicsFor.get(reader)!.add(topic);
     }
 
-    this.logger.log(`Digest of ${itemCount} item(s) sent to ${recipients.length} manager(s)`);
-    return { sent: recipients.length, contents };
+    let sent = 0;
+    for (const [recipient, topics] of topicsFor) {
+      if (topics.size === 0) continue;
+      await this.notifications.dailyDigest(
+        recipient.email,
+        recipient.firstName,
+        contentsFor(contents, topics),
+      );
+      sent += 1;
+    }
+
+    this.logger.log(`Digest of ${itemCount} item(s) sent to ${sent} manager(s)`);
+    return { sent, contents };
   }
 }
