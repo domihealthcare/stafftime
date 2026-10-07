@@ -2052,6 +2052,34 @@ anyway.
 Each line names the person and the thing, so the email can be acted on without
 opening the app.
 
+**Who gets which part** (October 2026, Dominguez: "certain managers should be
+notified of certain things but not everyone needs to see all notifications each
+time"). The sixteen sections are grouped into eight parts somebody looks after
+(`email/digest-topics.ts`): the rota, hours and timesheets, time off, licenses,
+the time clock, closing checklists and supplies, onboarding and offboarding,
+and the suggestion box. Each manager unticks the ones that are somebody else's
+on Email settings; `Employee.mutedDigestTopics` stores what is *left out*, so a
+part added later reaches everybody until somebody says otherwise.
+
+- **Nothing falls through the gap.** A part nobody is down for (among those
+  who get the round-up at all) goes to all of them, as before there was a
+  choice, and Email settings says so in a warning. Otherwise the last manager
+  to untick licenses could quietly stop anybody hearing that one has lapsed.
+- **Somebody whose parts are all empty tonight is not emailed**, the same rule
+  as the round-up as a whole.
+- **Who gets what** (`GET /digest-settings`, managers and admins) lists every
+  manager and admin against every part, so a manager can see who else covers
+  something before leaving it out. **Admins change anybody's** there
+  (`PATCH /digest-settings/:id`); everybody else changes only their own
+  (`PATCH /auth/preferences`). This loosens "a manager's to turn off, not an
+  admin's" above — asked for by Dominguez, who decides who looks after what.
+- **Time off** also decides who is emailed and rung as each request comes in
+  (`NotificationsService.ptoRequested`), with the same fall-back: when nobody
+  has chosen it, every manager is told. Turning the round-up off does not stop
+  those, as before.
+- **Only the email changes.** The banners on the screens show every manager
+  everything.
+
 **How it reads** (`email/digest-email.ts`, October 2026 — Dominguez found the
 plain list "very bland"). Only the presentation changed; the lists are still
 `AttentionService`'s.
@@ -2393,6 +2421,19 @@ because the cards use the work-from-home *shift* to decide when to show the
 from-home number first, not the note. The starting list came in by
 migration; a line is matched to an account there only when exactly one
 current member of staff has that first and last name.
+
+**The new phone system** (7 October 2026, Dominguez) replaced that list by
+migration (`20261007010000_office_extensions_new_phones`, 31 lines). The
+doctors' desk phones are now by room (Dr N 1 201, Dr W 1 204 …), so the
+Providers section lists rooms, not people. Each provider has a softphone
+(501–504), listed last in **Provider softphones (rarely used)** and matched
+to nobody, so a provider's card does not offer a number they rarely answer
+(Dominguez: "providers RARELY use their soft phones"). The admin team's
+softphones (521–525) stay their from-home numbers on their own lines; the
+shared softphones — Office 100, Admin 120, CCM 130, IT 777 — are under
+**Shared lines**. Admin team lines kept whatever a manager had set in the app
+(who they are matched to, home days), taken from the old line with the same
+extension; otherwise matched by work email, then by name.
 
 **The Staff screen shows the same card, and more** (October 2026, Dominguez):
 it loads the Directory alongside the staff list and shows its photo,

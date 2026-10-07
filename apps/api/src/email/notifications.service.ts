@@ -1,10 +1,18 @@
 import { Inject, Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { EmploymentStatus, NotificationKind, PtoStatus, PtoType, Role } from '@prisma/client';
+import {
+  DigestTopic,
+  EmploymentStatus,
+  NotificationKind,
+  PtoStatus,
+  PtoType,
+  Role,
+} from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { PRACTICE_ZONE } from '../common/util/zoned-time.util';
 import type { DigestContents } from './digest.service';
 import { digestEmail } from './digest-email';
+import { readersOf } from './digest-topics';
 import { EMAIL_SENDER, EmailResult, EmailSender } from './email-sender';
 import { InboxService } from './inbox.service';
 import { type WelcomeDetails, welcomeEmail } from './welcome-email';
@@ -96,6 +104,9 @@ export class NotificationsService {
 
   /// Managers are not told anything today unless they go and look, which is how
   /// a request sits for a week.
+  ///
+  /// Told to the managers down for time off in the round-up (Email settings),
+  /// or to all of them when nobody is.
   async ptoRequested(requestId: string): Promise<void> {
     const request = await this.prisma.ptoRequest.findUnique({
       where: { id: requestId },
@@ -103,15 +114,16 @@ export class NotificationsService {
     });
     if (!request) return;
 
-    const deciders = await this.prisma.employee.findMany({
+    const managers = await this.prisma.employee.findMany({
       where: {
         role: { in: [Role.MANAGER, Role.ADMIN] },
         employmentStatus: EmploymentStatus.ACTIVE,
         // Nobody needs an email about their own request.
         id: { not: request.employeeId },
       },
-      select: { id: true, email: true, firstName: true },
+      select: { id: true, email: true, firstName: true, mutedDigestTopics: true },
     });
+    const deciders = readersOf(DigestTopic.TIME_OFF, managers);
 
     const who = `${request.employee.firstName} ${request.employee.lastName}`;
     await this.inbox.notify(

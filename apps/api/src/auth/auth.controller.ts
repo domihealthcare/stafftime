@@ -136,15 +136,16 @@ export class AuthController {
   /**
    * Your own notification preferences.
    *
-   * Only one so far: whether you get the nightly round-up. Yours to set rather
-   * than an admin's, because an unwanted daily email is one you filter, and a
-   * filtered folder is where the one that mattered ends up too.
+   * Whether you get the nightly round-up, and which parts of it. Yours to set
+   * (an admin can too, from the same screen), because an unwanted daily email
+   * is one you filter, and a filtered folder is where the one that mattered
+   * ends up too.
    */
   @Patch('preferences')
   async updatePreferences(@Body() dto: UpdatePreferencesDto, @CurrentUser() user: AuthUser) {
     await this.prisma.employee.update({
       where: { id: user.id },
-      data: { wantsDailyDigest: dto.wantsDailyDigest },
+      data: { wantsDailyDigest: dto.wantsDailyDigest, mutedDigestTopics: dto.mutedDigestTopics },
     });
     return this.describeCurrentUser(user.id);
   }
@@ -197,6 +198,7 @@ export class AuthController {
         employmentStatus: true,
         mustChangePassword: true,
         wantsDailyDigest: true,
+        mutedDigestTopics: true,
         canManageProductivity: true,
         lastLoginAt: true,
         locations: {

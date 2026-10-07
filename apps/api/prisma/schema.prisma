@@ -246,6 +246,14 @@ model Employee {
   /// an unwanted daily email is one that gets filtered, taking the one that
   /// mattered with it. Ignored for employees, who never receive it.
   wantsDailyDigest Boolean @default(true)
+  /// The parts of the round-up this manager does not want (October 2026,
+  /// Dominguez: "certain managers should be notified of certain things").
+  /// Stored as what is left out, so a part added later reaches everybody until
+  /// somebody says otherwise. Set by the person or by an admin. A part nobody
+  /// is down for still goes to everyone who gets the round-up — see
+  /// `email/digest-topics.ts`. The Time off part also decides who is told of a
+  /// new request as it comes in.
+  mutedDigestTopics DigestTopic[] @default([])
 
   photo EmployeePhoto?
 
@@ -1960,6 +1968,19 @@ model EmployeePhoto {
 
 /// What happened that a notification is about. The words shown are stored with
 /// it; this says which kind, for the icon and for tests.
+/// The parts of the nightly round-up, as a manager chooses them. Each is
+/// several of its sections (`email/digest-topics.ts`).
+enum DigestTopic {
+  SCHEDULE
+  TIME_OFF
+  HOURS
+  LICENSES
+  CHECKLISTS
+  CLOSING
+  TIME_CLOCK
+  SUGGESTIONS
+}
+
 enum NotificationKind {
   TIME_OFF_DECIDED
   TIME_OFF_REQUESTED
