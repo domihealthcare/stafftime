@@ -236,6 +236,31 @@ await step('recorded time off can be taken back, after asking', async () => {
 
 await admin.screenshot({ path: `${OUT}/staff-profile.png`, fullPage: true });
 
+await step('“For Robin” opens each screen narrowed to them, with a way back to everyone', async () => {
+  for (const [label, path] of [
+    ['Timesheet', '/timesheet'],
+    ['Licenses', '/credentials'],
+    ['Onboarding & offboarding', '/checklists'],
+    ['Availability', '/availability'],
+  ]) {
+    await admin.goto(`${BASE}/staff/${person.id}`, { waitUntil: 'networkidle' });
+    await admin.getByTestId('profile-shortcuts').getByRole('link', { name: label, exact: true }).click();
+    await admin.waitForURL((url) => url.pathname === path && url.searchParams.get('person') === person.id);
+    const note = admin.getByTestId('one-person');
+    await note.waitFor({ timeout: 10000 });
+    await note.getByRole('button', { name: 'Show everyone' }).click();
+    await admin.waitForURL((url) => !url.searchParams.has('person'));
+  }
+});
+
+await step('“Request time off for Robin” opens the form already for them', async () => {
+  await admin.goto(`${BASE}/staff/${person.id}`, { waitUntil: 'networkidle' });
+  await admin.getByTestId('profile-shortcuts').getByRole('link', { name: /^\+ Request time off for / }).click();
+  const forWho = admin.getByLabel('For');
+  await forWho.waitFor({ timeout: 10000 });
+  if ((await forWho.inputValue()) !== person.id) throw new Error('the form is not for them');
+});
+
 await step('a manager sees no profile link, and the API refuses them the record', async () => {
   const manager = await signIn('manager@domihealthcare.com');
   await manager.goto(`${BASE}/staff`, { waitUntil: 'networkidle' });

@@ -1,5 +1,6 @@
 import { Fragment, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { api } from '../lib/api';
+import { OnePersonNote, useOnePerson } from '../components/OnePerson';
 import { durationHours, formatDate, formatTime } from '../lib/format';
 import { useIsManager, useSession } from '../lib/session';
 import { handEntryReasonLabel } from '../lib/hand-entry';
@@ -40,6 +41,8 @@ export function TimesheetPage() {
   /// (managers) a name typed into the search box.
   const [day, setDay] = useState('');
   const [search, setSearch] = useState('');
+  /// One person, from a staff profile's shortcut (`?person=`).
+  const { personId, showEveryone } = useOnePerson();
 
   /// Numbers each load: a slower, older one (last week's, say) that finishes
   /// after a newer one is dropped rather than drawn over it.
@@ -100,12 +103,14 @@ export function TimesheetPage() {
   const query = search.trim().toLowerCase();
   const shown = entries.filter(
     (entry) =>
+      (!personId || entry.employeeId === personId) &&
       (!day || dayKey(entry.clockInAt) === day) &&
       (!query ||
         (entry.employee &&
           `${entry.employee.firstName} ${entry.employee.lastName}`.toLowerCase().includes(query))),
   );
-  const filtered = Boolean(day || query);
+  const filtered = Boolean(day || query || personId);
+  const onePerson = personId ? entries.find((entry) => entry.employeeId === personId) : undefined;
 
   const totalHours = shown.reduce(
     (sum, entry) => sum + durationHours(entry.clockInAt, entry.clockOutAt),
@@ -122,6 +127,16 @@ export function TimesheetPage() {
             : 'Your recorded hours.'
         }
       />
+      {personId && isManager && (
+        <OnePersonNote
+          name={
+            onePerson?.employee
+              ? `${onePerson.employee.firstName} ${onePerson.employee.lastName}`
+              : 'one person'
+          }
+          onClear={showEveryone}
+        />
+      )}
 
       <NeedsAttention
         key={bannerKey}

@@ -2775,6 +2775,32 @@ trend, not something to fix on a screen today — and **the person is not
 told**: it is a heads-up for a quiet word, not an automatic telling-off.
 Managers and admins only, as both routes already were.
 
+## Time off without a screen of its own
+
+October 2026, Dominguez, from a rendering of four screens. Manage → **Time
+off & balances** held four different things for three audiences, so each
+went where its people already are:
+
+- **Requests** — deciding them was already on the Schedule. `/time-off`
+  stays as the full list ("Time off requests" for a manager, reached by
+  **All requests →**; "All your time off" for staff) with the request form,
+  whose **For** picker lets a manager put one in for somebody.
+- **Everybody's balances and Adjust** — `StaffPtoBalances`, now a **Time off
+  balances** card on the Dashboard (`PracticeOverviewSection`), open from
+  the start and cut to six rows until searched or "Show all"; it reads the
+  policy itself when not given one.
+- **The rules** — `PtoPolicyEditor`, retitled "Time off rules", in Practice
+  settings beside the practice's other numbers; managers read, admins change.
+- **One person's** — on their staff profile: the balance, Adjust, Record
+  past time off, and the shortcuts below.
+
+**One person, from their profile.** "For Robin" opens Schedule, Timesheet,
+Licenses, Onboarding & offboarding and Availability with `?person=<id>`.
+Each screen filters what it already loaded (`useOnePerson` and
+`OnePersonNote` in `components/OnePerson.tsx`) and shows "Showing Robin only
+· Show everyone"; nothing new is asked of the server. A new time-off request
+for them is `/time-off?request=1&for=<id>`.
+
 ## Too many off at once
 
 October 2026, Dominguez — the third of the "make it smarter" ideas, with the

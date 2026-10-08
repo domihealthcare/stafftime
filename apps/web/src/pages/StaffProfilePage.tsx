@@ -151,6 +151,8 @@ export function StaffProfilePage() {
         anywhere else in the app — not to managers, not in the Directory, not in the payroll export.
       </p>
 
+      {!terminated && <ShortcutsFor person={person} isMe={isMe} />}
+
       <Card className="p-4" testId="profile-employment">
         <h2 className="text-base font-semibold text-slate-900">Employment</h2>
         <dl className="mt-3 grid gap-x-6 gap-y-3 text-sm sm:grid-cols-2">
@@ -386,6 +388,48 @@ function ContactCard({
           )}
         </>
       )}
+    </Card>
+  );
+}
+
+/**
+ * "For Robin": the screens that are about one person, opened narrowed to them
+ * (October 2026, Dominguez: things should be reachable from the person, not
+ * only from their own screen). Each reads `?person=` (or `?for=` for a new
+ * time-off request) and has a "Show everyone" to undo it.
+ */
+function ShortcutsFor({
+  person,
+  isMe,
+}: {
+  person: { id: string; firstName: string; preferredName: string | null };
+  isMe: boolean;
+}) {
+  const name = person.preferredName ?? person.firstName;
+  const id = encodeURIComponent(person.id);
+  const links = [
+    { to: `/schedule?person=${id}`, label: 'Schedule' },
+    { to: `/timesheet?person=${id}`, label: 'Timesheet' },
+    { to: `/credentials?person=${id}`, label: 'Licenses' },
+    { to: `/checklists?person=${id}`, label: 'Onboarding & offboarding' },
+    { to: `/availability?person=${id}#team`, label: 'Availability' },
+  ];
+  return (
+    <Card className="p-4" testId="profile-shortcuts">
+      <h2 className="text-base font-semibold text-slate-900">For {name}</h2>
+      <p className="mt-0.5 text-sm text-slate-600">Each opens that screen showing {name} only.</p>
+      <div className="mt-3 flex flex-wrap gap-2">
+        {links.map((link) => (
+          <Link key={link.label} to={link.to} className={buttonClass('secondary', 'sm')}>
+            {link.label}
+          </Link>
+        ))}
+        {!isMe && (
+          <Link to={`/time-off?request=1&for=${id}`} className={buttonClass('primary', 'sm')}>
+            + Request time off for {name}
+          </Link>
+        )}
+      </div>
     </Card>
   );
 }

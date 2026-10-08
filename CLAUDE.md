@@ -537,6 +537,27 @@ Beyond the phases, the parts worth knowing about before picking up work:
   the same form as Time off → Staff balances, so it can be done from the
   person (`GET /pto/balances/:employeeId`). `components/Modal.tsx` is a
   shared pop-up for new ones.
+- **"Time off & balances" retired from Manage** (8 October 2026, Dominguez,
+  from a four-screen rendering, "looks good"): **requests** stay on the
+  Schedule (to decide, with **All requests →** opening `/time-off`, now
+  titled "Time off requests" for managers; "All your time off" for staff),
+  and **+ Request time off** has the **For** picker for managers;
+  **everybody's balances with Adjust** are a **Time off balances** card on
+  the **Dashboard** (managers and admins — Dominguez), open from the start,
+  six rows then "Show all"; the **time off rules** (PTO and sick a year,
+  carry-over, year start, prorating) are in **Practice settings**, admins
+  change them. `/time-off` keeps the manager's own balance and says where
+  the rest went.
+- **"For [name]" on a staff profile** (8 October 2026, Dominguez): shortcuts
+  to Schedule, Timesheet, Licenses, Onboarding & offboarding and
+  Availability opened **narrowed to that person** (`?person=<id>`, read by
+  `components/OnePerson.tsx`, with **Show everyone** to undo it; the
+  Schedule already had it), and **+ Request time off for …** (`?for=<id>`
+  on `/time-off?request=1`). From an audit of what could only be done from
+  one screen; still only on their own screens: regular shifts, Email
+  settings' "Who gets what", productivity. Open question: the person menu
+  offers managers **Open in Staff**, but the Staff screen is in the admins'
+  menu and saving there is admin-only — see `docs/open-questions.md`.
 - **Changing a shift's hours** (5 October 2026, Dominguez: "Gaby is 7-2 but
   it is changing to 1-8, so instead of Celeste doing 1 by 1, she can just
   edit all"): the shift's pop-up on the rota has **Hours**; once changed it
@@ -1009,8 +1030,9 @@ Beyond the phases, the parts worth knowing about before picking up work:
   a "+ Request time off" button, "Your time off" (days left, upcoming
   requests), and for managers the requests to decide with Approve / Decline;
   the pending count is a badge on **Schedule**. The full Time off screen is
-  still `/time-off` — **Manage → Time off & balances** for managers, "All your
-  time off" for staff. **Manage** gained Time off & balances and Surveys.
+  still `/time-off` — "All requests" for managers (Manage → Time off &
+  balances until 8 October 2026, see above), "All your time off" for staff.
+  **Manage** gained Surveys.
   Somebody's own licenses, onboarding (Provider) and productivity moved to the
   **account menu**. Browser tests get around with `goTo`, `navLink`,
   `openNews` and `openTimeOff` in `tests/browser/nav.mjs`.

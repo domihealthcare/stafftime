@@ -117,7 +117,9 @@ await page.screenshot({ path: `${OUT}/50-phone-clock.png`, fullPage: true });
 
 /// The screens that open from More (and, inside it, Manage) on a phone.
 const UNDER_MORE = new Set([
-  'Timesheet', 'News', 'Time off', 'Surveys', 'Dashboard', 'Closing checklists',
+  // Time off left Manage in October 2026: requests are on the Schedule,
+  // balances on the Dashboard, the rules in Practice settings.
+  'Timesheet', 'News', 'Surveys', 'Dashboard', 'Closing checklists',
   'Onboarding & Offboarding', 'Licenses', 'Job roles', 'Reps', 'Export', 'Staff', 'Kiosks', 'Locations',
 ]);
 
@@ -149,7 +151,6 @@ await step('every navigation link is reachable without scrolling sideways', asyn
 for (const [label, screen] of [
   ['Timesheet', 'Timesheet'],
   ['Schedule', 'Schedule'],
-  ['Time off', 'Time off'],
   ['Closing checklists', 'Closing checklists'],
   ['Onboarding & Offboarding', 'Onboarding'],
   ['Licenses', 'Licenses'],

@@ -1339,10 +1339,24 @@ const MANAGERS: Section[] = [
         answer: (
           <p>
             The <Screen>Schedule</Screen> tab shows a count of what is waiting, and the requests are
-            at the top of the Schedule to approve or decline there.{' '}
-            <Screen>Manage → Time off &amp; balances</Screen> shows each one with what is already
-            scheduled in those dates before you decide. Approving does not cancel shifts — the
-            coverage strip flags the clash, and you reassign cover.
+            at the top of the Schedule to approve or decline there. <strong>All requests</strong>{' '}
+            beside them lists everybody&rsquo;s, waiting, approved or declined, each with what is
+            already scheduled in those dates. Approving does not cancel shifts — the coverage strip
+            flags the clash, and you reassign cover. To put in a request for somebody (one they made
+            by phone), press <strong>+ Request time off</strong> and choose them under{' '}
+            <strong>For</strong>.
+          </p>
+        ),
+      },
+      {
+        question: 'Balances, and the time off rules',
+        answer: (
+          <p>
+            Everybody&rsquo;s days left are on the <Screen>Dashboard</Screen>, under{' '}
+            <strong>Time off balances</strong>, with a search box and <strong>Adjust</strong>. The
+            practice&rsquo;s rules — PTO and sick days a year, what carries over, when the year
+            starts — are in <Screen>Practice settings</Screen> (account menu), where an admin
+            changes them.
           </p>
         ),
       },
@@ -1350,16 +1364,27 @@ const MANAGERS: Section[] = [
         question: 'Putting in time off people took before Domi Staff',
         answer: (
           <p>
-            On <Screen>Manage → Time off &amp; balances</Screen>, open{' '}
-            <strong>Staff balances</strong> and press <strong>Adjust</strong> beside the person —
-            or, as an admin, press <strong>Adjust balance</strong> under Time off on their profile.
-            Enter the PTO and sick days they had already taken this year, rolled-over days included;
-            anything booked in the app counts by itself. Under <strong>PTO a year</strong> choose
-            the practice&rsquo;s amount, their own (part-time, long service) or{' '}
-            <strong>No PTO</strong> for somebody who does not get it.{' '}
-            <strong>PTO rolled over into this year</strong> is all that rolled over from last year —
-            the app cannot know it, because it was not in use then, so it counts none until you
-            enter it.
+            On the <Screen>Dashboard</Screen>, under <strong>Time off balances</strong>, press{' '}
+            <strong>Adjust</strong> beside the person — or, as an admin, press{' '}
+            <strong>Adjust balance</strong> under Time off on their profile. Enter the PTO and sick
+            days they had already taken this year, rolled-over days included; anything booked in the
+            app counts by itself. Under <strong>PTO a year</strong> choose the practice&rsquo;s
+            amount, their own (part-time, long service) or <strong>No PTO</strong> for somebody who
+            does not get it. <strong>PTO rolled over into this year</strong> is all that rolled over
+            from last year — the app cannot know it, because it was not in use then, so it counts
+            none until you enter it.
+          </p>
+        ),
+      },
+      {
+        question: 'Shortcuts for one person (admins)',
+        answer: (
+          <p>
+            On somebody&rsquo;s profile (<Screen>Manage → Staff</Screen>, press their name),{' '}
+            <strong>For …</strong> opens their Schedule, Timesheet, Licenses, Onboarding &amp;
+            offboarding or Availability showing them only — <strong>Show everyone</strong> goes back
+            to the whole list — and <strong>+ Request time off for …</strong> opens the request form
+            already for them.
           </p>
         ),
       },

@@ -11,6 +11,7 @@ import {
   buttonClass,
 } from '../components/ui';
 import { ApiError, api } from '../lib/api';
+import { OnePersonNote, useOnePerson } from '../components/OnePerson';
 import { displayName, formatCalendarDate, localDate, WEEK_ORDER } from '../lib/format';
 import { useIsManager } from '../lib/session';
 import type {
@@ -426,12 +427,23 @@ function RuleForm({
 /// Everybody's, for the manager building the rota. Read-only: it is each
 /// person's statement about their own time.
 function TeamList({ team }: { team: TeamAvailability[] }) {
-  const withRules = team.filter((person) => person.rules.length > 0);
+  /// One person, from a staff profile's shortcut (`?person=`): theirs, even if empty.
+  const { personId, showEveryone } = useOnePerson();
+  const onePerson = personId ? team.find((person) => person.id === personId) : undefined;
+  const withRules = personId
+    ? team.filter((person) => person.id === personId)
+    : team.filter((person) => person.rules.length > 0);
   return (
-    <section aria-label="The team" className="mt-8">
+    <section aria-label="The team" className="mt-8" id="team">
       <h2 className="mb-1 text-sm font-semibold uppercase tracking-wide text-slate-600">
         The team
       </h2>
+      {personId && (
+        <OnePersonNote
+          name={onePerson ? displayName(onePerson) : 'one person'}
+          onClear={showEveryone}
+        />
+      )}
       <p className="mb-2 text-sm text-slate-600">
         What everyone has said they can’t work. The scheduler warns when a shift lands on one of
         these.
@@ -443,6 +455,11 @@ function TeamList({ team }: { team: TeamAvailability[] }) {
           {withRules.map((person) => (
             <Card key={person.id} className="p-3" testId={`team-${displayName(person)}`}>
               <p className="font-medium text-slate-900">{displayName(person)}</p>
+              {person.rules.length === 0 && (
+                <p className="mt-1 text-sm text-slate-600">
+                  Hasn&rsquo;t said they can&rsquo;t work any particular time.
+                </p>
+              )}
               <ul className="mt-1 space-y-0.5 text-sm text-slate-700">
                 {person.rules.map((rule) => (
                   <li key={rule.id}>

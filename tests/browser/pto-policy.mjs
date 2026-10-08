@@ -33,20 +33,31 @@ const admCtx = await browser.newContext({ viewport: { width: 1280, height: 1100 
 const adm = await admCtx.newPage();
 adm.on('pageerror', (e) => errors.push(`admin pageerror: ${e.message}`));
 await signIn(adm, 'admin@domihealthcare.com');
-await openTimeOff(adm);
+// The rules live in Practice settings since October 2026 (Dominguez), beside
+// the practice's other numbers; Time off keeps the requests.
+const rules = adm.getByTestId('time-off-rules');
+await adm.goto(`${BASE}/settings`, { waitUntil: 'networkidle' });
 
 await step('the policy defaults to 15 PTO, 5 sick, 5 carried over', async () => {
   await adm.getByText(/15 days PTO · 5 sick days · 5 days carried over/).waitFor({ timeout: 15000 });
 });
 
 await step('a balance is shown, built from that policy', async () => {
+  await openTimeOff(adm);
   await adm.getByText('Your balance').waitFor({ timeout: 10000 });
   await adm.getByText(/of \d+ days left/).first().waitFor({ timeout: 5000 });
 });
 await adm.screenshot({ path: `${OUT}/30-pto-policy.png`, fullPage: true });
 
+await step('Time off no longer carries the rules or everybody’s balances', async () => {
+  await adm.getByTestId('time-off-moved').waitFor({ timeout: 10000 });
+  if (await adm.getByTestId('staff-pto-balances').count()) throw new Error('the balances are still on Time off');
+  if (await adm.getByRole('button', { name: 'Change' }).count()) throw new Error('the rules are still on Time off');
+});
+
 await step('an admin can change the rules', async () => {
-  await adm.getByRole('button', { name: 'Change' }).click();
+  await adm.goto(`${BASE}/settings`, { waitUntil: 'networkidle' });
+  await rules.getByRole('button', { name: 'Change' }).click();
   await adm.getByLabel('PTO days a year').fill('18');
   await adm.getByLabel('Sick days a year').fill('6');
   await adm.getByLabel('PTO days carried over').fill('3');
@@ -56,6 +67,7 @@ await step('an admin can change the rules', async () => {
 });
 
 await step('the balance recalculates from the new policy', async () => {
+  await openTimeOff(adm);
   // Admin was hired 2025-01-06 but added to the app this year: nothing is
   // assumed to roll over from a year the app never saw (October 2026).
   const card = balanceCard(adm);
@@ -66,6 +78,8 @@ await step('the balance recalculates from the new policy', async () => {
 
 // Put it back so the rest of the suites see the documented defaults.
 await step('the rules can be set back', async () => {
+  await adm.goto(`${BASE}/settings`, { waitUntil: 'networkidle' });
+  await rules.getByRole('button', { name: 'Change' }).click();
   await adm.getByLabel('PTO days a year').fill('15');
   await adm.getByLabel('Sick days a year').fill('5');
   await adm.getByLabel('PTO days carried over').fill('5');
@@ -142,12 +156,10 @@ const leftIn = async (row, label) => {
 const frankieRow = () => adm.getByTestId('balance-frontdesk@domihealthcare.com');
 let before;
 
-await step('a manager sees everybody’s balance, closed until asked for', async () => {
-  await adm.reload({ waitUntil: 'networkidle' });
+await step('everybody’s balance is on the Dashboard, open from the start', async () => {
+  await adm.goto(`${BASE}/dashboard`, { waitUntil: 'networkidle' });
   const card = adm.getByTestId('staff-pto-balances');
-  if (await card.getByTestId('balance-frontdesk@domihealthcare.com').count() > 0)
-    throw new Error('the list was worked out before anybody opened it');
-  await card.getByRole('button', { name: 'Open' }).click();
+  await card.getByRole('heading', { name: 'Time off balances' }).waitFor({ timeout: 15000 });
   await frankieRow().waitFor({ timeout: 15000 });
   before = { pto: await leftIn(frankieRow(), 'PTO'), sick: await leftIn(frankieRow(), 'Sick') };
 });

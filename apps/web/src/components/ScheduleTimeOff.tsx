@@ -13,9 +13,11 @@ import { Alert, buttonClass } from './ui';
  * Time off on the Schedule, now that it has no tab of its own (October 2026,
  * Dominguez — option B). Staff see their days left and what they have asked
  * for, beside a button to ask; managers also get the requests waiting on them,
- * to approve or decline on the spot. Everything else — the full history,
- * everybody's balances, the policy — stays on the Time off screen (/time-off),
- * reached from here, from Home, and from Manage → Time off & balances.
+ * to approve or decline on the spot. The full list of requests is the Time
+ * off screen (/time-off) — "All requests" for a manager, "All your time off"
+ * for staff — reached from here and from Home. Since October 2026
+ * (Dominguez) it has no Manage entry of its own: everybody's balances are on
+ * the Dashboard and the rules in Practice settings.
  */
 
 const range = (request: PtoRequest) =>
@@ -101,7 +103,7 @@ export function RequestsToDecide({ onDecided }: { onDecided: () => void }) {
           {requests.length} time-off request{requests.length === 1 ? '' : 's'} to decide
         </h2>
         <Link to="/time-off" className="text-sm font-medium text-brand-700 hover:text-brand-900">
-          Time off &amp; balances →
+          All requests →
         </Link>
       </div>
       {error && (
@@ -155,6 +157,7 @@ export function RequestsToDecide({ onDecided }: { onDecided: () => void }) {
 /// One line about somebody's own time off: days left, and what is coming up
 /// or waiting. For everybody, managers included — their own.
 export function YourTimeOff({ refreshKey }: { refreshKey: number }) {
+  const isManager = useIsManager();
   const { employee } = useSession();
   const [balance, setBalance] = useState<PtoBalance | null>(null);
   const [mine, setMine] = useState<PtoRequest[]>([]);
@@ -206,7 +209,7 @@ export function YourTimeOff({ refreshKey }: { refreshKey: number }) {
           to="/time-off"
           className="ml-auto text-sm font-medium text-brand-700 hover:text-brand-900"
         >
-          All your time off →
+          {isManager ? 'All requests →' : 'All your time off →'}
         </Link>
       </div>
       {mine.length > 0 && (

@@ -5,6 +5,7 @@ import { formatCalendarDate } from '../lib/format';
 import type { PracticeOverview, PunchPattern } from '../lib/types';
 import { Alert, Badge, Card, Spinner } from './ui';
 import { clashDays, clashPeople } from './TimeOffClashes';
+import { StaffPtoBalances } from './StaffPtoBalances';
 
 /// How many lines a card lists before saying "and N more".
 const SHOWN = 5;
@@ -57,6 +58,11 @@ export function PracticeOverviewSection() {
           count={waiting.handEntries}
           to="/timesheet"
         />
+      </div>
+
+      {/* Moved from Time off & balances (October 2026, Dominguez): managers and admins. */}
+      <div className="mb-4">
+        <StaffPtoBalances startOpen limit={6} title="Time off balances" />
       </div>
 
       <div className="grid gap-4 lg:grid-cols-2">

@@ -49,7 +49,7 @@ export async function openNews(page) {
 /// off screen from the card on the Schedule.
 export async function openTimeOff(page) {
   await goTo(page, 'Schedule');
-  await page.getByTestId('your-time-off').getByRole('link', { name: /All your time off/ }).click();
+  await page.getByTestId('your-time-off').getByRole('link', { name: /All your time off|All requests/ }).click();
   await page.waitForURL(/\/time-off/, { timeout: 15000 });
 }
 

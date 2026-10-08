@@ -26,7 +26,6 @@ const linkClasses = ({ isActive }: { isActive: boolean }) =>
 /// and surveys from Home and News.
 const MANAGE = [
   { to: '/dashboard', label: 'Dashboard' },
-  { to: '/time-off', label: 'Time off & balances' },
   { to: '/surveys', label: 'Surveys' },
   { to: '/closing', label: 'Closing checklists' },
   { to: '/checklists', label: 'Onboarding & Offboarding' },
