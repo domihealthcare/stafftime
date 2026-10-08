@@ -80,7 +80,7 @@ describe('OvertimeService', () => {
       });
     });
 
-    it('counts the week from the pay period\'s weekday', async () => {
+    it("counts the week from the pay period's weekday", async () => {
       // A pay period that starts on a Sunday: Sunday 4 October is in
       // Tuesday's week, Monday 12 October is not.
       const { service } = build({

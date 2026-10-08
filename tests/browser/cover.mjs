@@ -156,6 +156,34 @@ await step('staff cannot ask who could cover a shift', async () => {
   if (asked.status !== 403) throw new Error(`staff were answered ${asked.status}`);
 });
 
+await step('a first draft: three open shifts on Wednesday, two people free, nobody for the third', async () => {
+  for (let i = 0; i < 3; i++) await shift(null, 'North Bergen', 10, 9, 17);
+  await mgr.goto(`${BASE}/schedule?week=2027-02-09`, { waitUntil: 'networkidle' });
+  await mgr.getByRole('button', { name: 'Week', exact: true }).click();
+  await mgr.getByTestId('open-shift-flag').getByText(/3 open shifts/).waitFor({ timeout: 10000 });
+  await mgr.getByRole('button', { name: /Suggest people for them/ }).click();
+  const draft = mgr.getByRole('dialog', { name: 'Suggested for the open shifts' });
+  await draft.getByTestId('cover-proposal').nth(2).waitFor({ timeout: 10000 });
+  const lines = await draft.getByTestId('cover-proposal').allTextContents();
+  // Frankie and Morgan have 8 hours that week each; Ada would reach 40 — a
+  // catch, so never suggested.
+  const named = lines.filter((line) => /Frankie Front-Desk|Morgan Manager/.test(line));
+  if (named.length !== 2 || !lines.some((line) => /Nobody is free then/.test(line)))
+    throw new Error(`proposed: ${lines.join(' | ')}`);
+  if (lines.some((line) => /Ada Admin/.test(line))) throw new Error('Ada was suggested into overtime');
+  if (lines.filter((line) => /Frankie/.test(line)).length !== 1)
+    throw new Error('Frankie was suggested for two shifts at once');
+  await mgr.screenshot({ path: `${OUT}/cover-draft.png`, fullPage: true });
+});
+
+await step('unticking one and assigning the rest leaves it, and the one nobody could do, open', async () => {
+  const draft = mgr.getByRole('dialog', { name: 'Suggested for the open shifts' });
+  await draft.getByTestId('cover-proposal').filter({ hasText: 'Morgan Manager' }).getByRole('checkbox').uncheck();
+  await draft.getByRole('button', { name: 'Assign 1' }).click();
+  await draft.waitFor({ state: 'detached', timeout: 10000 });
+  await mgr.getByTestId('open-shift-flag').getByText(/2 open shifts/).waitFor({ timeout: 10000 });
+});
+
 await browser.close();
 console.log(`\n${errors.length === 0 ? 'ALL COVER CHECKS PASSED' : `PROBLEMS (${errors.length}):`}`);
 errors.forEach((e) => console.log(' - ' + e));

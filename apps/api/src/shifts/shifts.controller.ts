@@ -28,6 +28,7 @@ import {
   RepeatShiftsDto,
   SetWeeklyScheduleDto,
   StopStandingShiftDto,
+  SuggestCoverDto,
   UpdateStandingShiftDto,
 } from './dto/repeat-shifts.dto';
 import { RetimeShiftDto } from './dto/retime-shift.dto';
@@ -110,6 +111,15 @@ export class ShiftsController {
   @HttpCode(HttpStatus.OK)
   publish(@Body() dto: PublishShiftsDto) {
     return this.planning.publishMany(dto.ids);
+  }
+
+  /// A first draft for the open shifts on screen: somebody free for each,
+  /// or nobody. Only reads — the manager keeps the ones they want.
+  @Post('suggest-cover')
+  @Roles(Role.MANAGER)
+  @HttpCode(HttpStatus.OK)
+  suggestCover(@Body() dto: SuggestCoverDto) {
+    return this.cover.suggestForOpen(dto.ids);
   }
 
   /// Day-by-day staffing, and the gaps.

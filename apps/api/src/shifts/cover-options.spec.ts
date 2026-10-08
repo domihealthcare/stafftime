@@ -1,5 +1,12 @@
 import { PayType, PtoStatus, UnavailabilityKind } from '@prisma/client';
-import { CoverCandidate, CoverTarget, rankCoverOptions } from './cover-options';
+import {
+  CoverCandidate,
+  CoverTarget,
+  planCover,
+  PlanPerson,
+  PlanShift,
+  rankCoverOptions,
+} from './cover-options';
 import { CoverOptionsService } from './cover-options.service';
 import { fakeSettings } from '../settings/practice-settings.test-double';
 
@@ -226,5 +233,88 @@ describe('CoverOptionsService', () => {
       ['Bea M', 0],
       ['Ana L', 6],
     ]);
+  });
+});
+
+describe('planCover', () => {
+  /// An open shift at North Bergen on a local date, 9am–5pm.
+  function open(id: string, date: string, jobRoleId: string | null = null): PlanShift {
+    return {
+      id,
+      employeeId: null,
+      locationId: 'nb',
+      jobRoleId,
+      startsAt: new Date(`${date}T13:00:00Z`),
+      endsAt: new Date(`${date}T21:00:00Z`),
+      date,
+      startTime: '09:00',
+      endTime: '17:00',
+      weekStart: '2026-10-12',
+      place: 'North Bergen',
+    };
+  }
+  function planned(first: string, over: Partial<PlanPerson> = {}): PlanPerson {
+    return {
+      id: first.toLowerCase(),
+      firstName: first,
+      preferredName: null,
+      lastName: 'D',
+      payType: PayType.HOURLY,
+      locationIds: ['nb'],
+      jobRoleIds: ['fd'],
+      shifts: [],
+      timeOff: [],
+      rules: [],
+      ...over,
+    };
+  }
+
+  it('never gives one person two shifts at the same time, and spreads the rest', () => {
+    const proposals = planCover(
+      [open('a', '2026-10-13'), open('b', '2026-10-13'), open('c', '2026-10-14')],
+      [planned('Ana'), planned('Bea')],
+      40,
+    );
+    expect(proposals.map((p) => [p.shiftId, p.name])).toEqual([
+      ['a', 'Ana D'],
+      ['b', 'Bea D'],
+      // Both have 8 hours by then; Ana comes first by name.
+      ['c', 'Ana D'],
+    ]);
+  });
+
+  it('fills the hard shift first, so the easy one does not take its only person', () => {
+    // Only Ana is Medical Assistant; anybody can do the other.
+    const proposals = planCover(
+      [open('anyone', '2026-10-13'), open('ma', '2026-10-13', 'ma')],
+      [planned('Ana', { jobRoleIds: ['fd', 'ma'] }), planned('Bea')],
+      40,
+    );
+    expect(proposals.map((p) => [p.shiftId, p.name])).toEqual([
+      ['anyone', 'Bea D'],
+      ['ma', 'Ana D'],
+    ]);
+  });
+
+  it('suggests nobody rather than somebody with a catch', () => {
+    const [proposal] = planCover(
+      [open('a', '2026-10-13')],
+      [
+        planned('Asked', {
+          timeOff: [
+            {
+              type: 'SICK',
+              status: PtoStatus.PENDING,
+              isHalfDay: false,
+              startDate: '2026-10-13',
+              endDate: '2026-10-13',
+            },
+          ],
+        }),
+        planned('Elsewhere', { locationIds: ['wny'] }),
+      ],
+      40,
+    );
+    expect(proposal).toEqual({ shiftId: 'a', employeeId: null, name: null, hoursAfter: null });
   });
 });

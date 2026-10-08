@@ -1,6 +1,6 @@
 import { useDialog } from './useDialog';
 import { REMOTE_COLOUR, locationColourFn, shiftChipStyle, tint } from '../lib/shift-colours';
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { birthdayName } from '../lib/birthday';
 import { ApiError, api } from '../lib/api';
 import {
@@ -13,6 +13,7 @@ import {
 import type {
   BirthdayEntry,
   CoverageDay,
+  CoverProposal,
   Employee,
   JobRole,
   Location,
@@ -395,12 +396,14 @@ export function RotaTable({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [grouping, shifts, employees, locations, jobRoles, locationFilter, roleFilter, selfId]);
 
-  const openTotal = live.filter(
+  const openInView = live.filter(
     (shift) =>
       shift.employeeId === null &&
       atPlace(shift, locationFilter) &&
       (!roleFilter || shift.jobRoleId === roleFilter),
-  ).length;
+  );
+  const openTotal = openInView.length;
+  const [suggesting, setSuggesting] = useState(false);
 
   const dayOf = (shift: Shift) => localDate(new Date(shift.startsAt));
 
@@ -419,7 +422,24 @@ export function RotaTable({
             </strong>{' '}
             this week nobody is on yet. Click one to put somebody in it.
           </span>
+          <button
+            type="button"
+            onClick={() => setSuggesting(true)}
+            className={`${buttonClass('secondary', 'sm')} ml-auto`}
+          >
+            <span aria-hidden="true">✨ </span>Suggest people for {openTotal === 1 ? 'it' : 'them'}
+          </button>
         </div>
+      )}
+      {suggesting && (
+        <SuggestCoverDialog
+          shifts={openInView}
+          onClose={() => setSuggesting(false)}
+          onDone={() => {
+            setSuggesting(false);
+            onChanged();
+          }}
+        />
       )}
 
       {canEdit &&
@@ -1051,6 +1071,145 @@ function Dialog({
         {children}
       </div>
     </div>
+  );
+}
+
+/**
+ * A first draft for the week's open shifts (Dominguez, October 2026): the
+ * server suggests somebody free for each — by the same ranking as "Who can
+ * cover this?", never two shifts at once, hours spread — and the manager
+ * ticks the ones to keep. Nothing is saved until then, and they are assigned
+ * as if picked one by one: drafts stay drafts until published.
+ */
+function SuggestCoverDialog({
+  shifts,
+  onClose,
+  onDone,
+}: {
+  shifts: Shift[];
+  onClose: () => void;
+  onDone: () => void;
+}) {
+  const [proposals, setProposals] = useState<CoverProposal[] | null>(null);
+  const [keep, setKeep] = useState<Set<string>>(new Set());
+  const [busy, setBusy] = useState(false);
+  const [problem, setProblem] = useState<string | null>(null);
+  const ids = shifts.map((shift) => shift.id).join();
+
+  useEffect(() => {
+    let cancelled = false;
+    api
+      .suggestCover(ids.split(','))
+      .then((found) => {
+        if (cancelled) return;
+        setProposals(found);
+        setKeep(new Set(found.filter((p) => p.employeeId).map((p) => p.shiftId)));
+      })
+      .catch((err) =>
+        setProblem(err instanceof ApiError ? err.message : 'Could not work out suggestions.'),
+      );
+    return () => {
+      cancelled = true;
+    };
+  }, [ids]);
+
+  const byId = new Map(shifts.map((shift) => [shift.id, shift]));
+  const ticked = (proposals ?? []).filter((p) => p.employeeId && keep.has(p.shiftId));
+
+  async function assign() {
+    setBusy(true);
+    setProblem(null);
+    const failed: string[] = [];
+    for (const proposal of ticked) {
+      try {
+        await api.updateShift(proposal.shiftId, { employeeId: proposal.employeeId });
+      } catch (err) {
+        failed.push(
+          `${proposal.name}: ${err instanceof ApiError ? err.message : 'could not be assigned'}`,
+        );
+      }
+    }
+    setBusy(false);
+    if (failed.length > 0) setProblem(failed.join(' · '));
+    else onDone();
+  }
+
+  return (
+    <Dialog title="Suggested for the open shifts" onClose={onClose}>
+      <p className="text-xs text-slate-600">
+        Somebody free for each — not off, not past what they said they can work, not near overtime,
+        and never two at once — with the fewest hours that week first. Untick any you don&rsquo;t
+        want. Nothing changes until you press Assign.
+      </p>
+      {problem && (
+        <div className="mt-2">
+          <Alert>{problem}</Alert>
+        </div>
+      )}
+      {!proposals && !problem && <p className="mt-3 text-sm text-slate-600">Working it out…</p>}
+      {proposals && (
+        <ul className="mt-3 space-y-1.5" data-testid="cover-proposals">
+          {proposals.map((proposal) => {
+            const shift = byId.get(proposal.shiftId);
+            if (!shift) return null;
+            const label = `${new Date(shift.startsAt).toLocaleDateString(undefined, {
+              weekday: 'short',
+              month: 'short',
+              day: 'numeric',
+            })}, ${formatTimeCompact(shift.startsAt)}–${formatTimeCompact(shift.endsAt)} · ${
+              shift.location?.name ?? ''
+            }${shift.jobRole ? ` · ${shift.jobRole.name}` : ''}`;
+            return (
+              <li key={proposal.shiftId} data-testid="cover-proposal" className="text-sm">
+                {proposal.employeeId ? (
+                  <label className="flex items-start gap-2">
+                    <input
+                      type="checkbox"
+                      className="mt-1"
+                      checked={keep.has(proposal.shiftId)}
+                      onChange={(event) => {
+                        const next = new Set(keep);
+                        if (event.target.checked) next.add(proposal.shiftId);
+                        else next.delete(proposal.shiftId);
+                        setKeep(next);
+                      }}
+                    />
+                    <span>
+                      <span className="block text-slate-600">{label}</span>
+                      <span className="font-medium text-slate-900">{proposal.name}</span>
+                      <span className="text-xs text-slate-600">
+                        {' '}
+                        · {proposal.hoursAfter} hrs that week
+                      </span>
+                    </span>
+                  </label>
+                ) : (
+                  <div className="pl-6">
+                    <span className="block text-slate-600">{label}</span>
+                    <span className="text-xs text-amber-800">
+                      Nobody is free then — click the shift to see who could, with a catch.
+                    </span>
+                  </div>
+                )}
+              </li>
+            );
+          })}
+        </ul>
+      )}
+      <div className="mt-4 flex justify-end gap-2">
+        <button type="button" onClick={onClose} className={buttonClass('secondary', 'sm')}>
+          Cancel
+        </button>
+        <button
+          type="button"
+          disabled={busy || ticked.length === 0}
+          onClick={() => void assign()}
+          className={buttonClass('primary', 'sm')}
+        >
+          {busy ? 'Assigning…' : `Assign ${ticked.length}`}
+        </button>
+      </div>
+    </Dialog>
   );
 }
 

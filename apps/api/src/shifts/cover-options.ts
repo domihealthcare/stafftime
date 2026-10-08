@@ -210,3 +210,107 @@ function sentenceCase(value: string): string {
   const words = value.replace(/_/g, ' ').toLowerCase();
   return words.charAt(0).toUpperCase() + words.slice(1);
 }
+
+/// An open shift to find somebody for, in its office's own terms.
+export interface PlanShift extends CoverTarget {
+  id: string;
+  locationId: string;
+  jobRoleId: string | null;
+  /// The overtime week it falls in.
+  weekStart: string;
+  /// "North Bergen", for saying it back when it is booked.
+  place: string;
+}
+
+/// Somebody who might be suggested, with everything about them across the
+/// weeks being planned.
+export interface PlanPerson extends Omit<CoverCandidate, 'shifts' | 'timeOff'> {
+  locationIds: string[];
+  jobRoleIds: string[];
+  shifts: (CoverCandidate['shifts'][number] & { weekStart: string })[];
+  timeOff: (CoverCandidate['timeOff'][number] & { startDate: string; endDate: string })[];
+}
+
+export interface CoverProposal {
+  shiftId: string;
+  /// Null when nobody is free then — the pop-up's own list says who could,
+  /// with a catch.
+  employeeId: string | null;
+  name: string | null;
+  /// Their week's hours with this shift, and the ones suggested before it.
+  hoursAfter: number | null;
+}
+
+/**
+ * A first draft for a week's open shifts (Dominguez, October 2026): somebody
+ * free for each, by the same ranking as "Who can cover this?".
+ *
+ * Only good fits are suggested — never somebody with a catch. Each pick is
+ * booked before the next is chosen, so one person is not suggested for two
+ * shifts at once and the hours spread: the fewest hours that week come
+ * first. The shifts with fewest good fits are filled first, so the easy ones
+ * do not take the only person who could do a hard one.
+ */
+export function planCover(
+  open: PlanShift[],
+  people: PlanPerson[],
+  thresholdHours: number,
+): CoverProposal[] {
+  const booked = new Map(people.map((person) => [person.id, [...person.shifts]]));
+
+  const rank = (shift: PlanShift) =>
+    rankCoverOptions(
+      shift,
+      people
+        .filter(
+          (person) =>
+            person.locationIds.includes(shift.locationId) &&
+            (!shift.jobRoleId || person.jobRoleIds.includes(shift.jobRoleId)),
+        )
+        .map((person) => ({
+          ...person,
+          shifts: (booked.get(person.id) ?? []).filter(
+            (other) => other.weekStart === shift.weekStart,
+          ),
+          timeOff: person.timeOff.filter(
+            (off) => off.startDate <= shift.date && off.endDate >= shift.date,
+          ),
+        })),
+      thresholdHours,
+    );
+
+  const goodCount = new Map(
+    open.map((shift) => [shift.id, rank(shift).filter((option) => option.fit === 'good').length]),
+  );
+  const order = [...open].sort(
+    (a, b) =>
+      (goodCount.get(a.id) ?? 0) - (goodCount.get(b.id) ?? 0) ||
+      a.startsAt.getTime() - b.startsAt.getTime(),
+  );
+
+  const proposals = new Map<string, CoverProposal>();
+  for (const shift of order) {
+    const pick = rank(shift).find((option) => option.fit === 'good');
+    proposals.set(shift.id, {
+      shiftId: shift.id,
+      employeeId: pick?.employeeId ?? null,
+      name: pick?.name ?? null,
+      hoursAfter: pick?.hoursAfter ?? null,
+    });
+    if (pick) {
+      booked.get(pick.employeeId)?.push({
+        startsAt: shift.startsAt,
+        endsAt: shift.endsAt,
+        date: shift.date,
+        startTime: shift.startTime,
+        endTime: shift.endTime === '24:00' ? '00:00' : shift.endTime,
+        place: shift.place,
+        weekStart: shift.weekStart,
+      });
+    }
+  }
+  // Back in the order of the week.
+  return [...open]
+    .sort((a, b) => a.startsAt.getTime() - b.startsAt.getTime())
+    .map((shift) => proposals.get(shift.id) as CoverProposal);
+}

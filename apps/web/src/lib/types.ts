@@ -419,6 +419,14 @@ export interface CoverOption {
   current: boolean;
 }
 
+/// A first draft for one open shift: somebody free, or nobody.
+export interface CoverProposal {
+  shiftId: string;
+  employeeId: string | null;
+  name: string | null;
+  hoursAfter: number | null;
+}
+
 export interface CoverOptions {
   weekStart: string;
   thresholdHours: number;
