@@ -65,6 +65,13 @@ export class PtoController {
     return this.policy.staffBalances();
   }
 
+  /// One person's, for Adjust on their staff profile (October 2026).
+  @Get('balances/:employeeId')
+  @Roles(Role.MANAGER)
+  staffBalance(@Param('employeeId', ParseUUIDPipe) employeeId: string) {
+    return this.policy.staffBalanceFor(employeeId);
+  }
+
   /// Days already taken before Domi Staff, and a person's own allowance.
   @Put('balances/:employeeId')
   @Roles(Role.MANAGER)

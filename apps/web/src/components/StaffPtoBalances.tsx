@@ -149,7 +149,8 @@ function Left({ label, days }: { label: string; days: number }) {
 const toNumber = (text: string) => (text.trim() === '' ? null : Number(text));
 const toText = (value: number | null) => (value === null ? '' : String(value));
 
-function AdjustForm({
+/// Also opened from a staff profile's Time off (October 2026).
+export function AdjustForm({
   row,
   policy,
   onSaved,

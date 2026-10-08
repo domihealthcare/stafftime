@@ -606,6 +606,8 @@ export const api = {
   ptoBalance: (employeeId?: string) =>
     request<PtoBalance>(`/pto/balance${employeeId ? `?employeeId=${employeeId}` : ''}`),
   staffPtoBalances: () => request<StaffBalance[]>('/pto/balances'),
+  /// One person's row of the above, for Adjust on their staff profile.
+  staffPtoBalance: (employeeId: string) => request<StaffBalance>(`/pto/balances/${employeeId}`),
   calendarInviteStatus: () => request<CalendarInviteStatus>('/calendar-invites/status'),
   sendCalendarInvites: () =>
     request<CalendarInviteRound>('/calendar-invites/sync', { method: 'POST' }),
