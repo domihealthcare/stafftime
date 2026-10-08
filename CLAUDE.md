@@ -871,7 +871,9 @@ Beyond the phases, the parts worth knowing about before picking up work:
   Timesheet's **Correct** is now **Edit** (dialog "Edit time entry", **Save
   changes**), rows are tighter with In – Out in one column, and there are
   **Day** and (managers) **Employee** search filters above the table,
-  narrowing what the period loaded. The sign-in page has the public News
+  narrowing what the period loaded. **It never scrolls sideways**: long
+  cells wrap, and below a laptop's width (`lg`) the entries are cards
+  (`correct.mjs` checks 390–1280 px). The sign-in page has the public News
   posts **at the top** and a smaller, more compact sign-in under them.
 - **Hours entered by hand** (29 September 2026, Dominguez): Timesheet →
   **+ Add hours** (managers) for a day with no punch at all — a reason from a
