@@ -46,12 +46,18 @@ await step('an unauthenticated visit shows the sign-in screen, not the app', asy
   if (await page.getByRole('button', { name: /Your account/ }).count() > 0)
     throw new Error('app header was reachable without signing in');
 });
-await step('the sign-in screen names the staff platform, not just a timeclock', async () => {
-  await page.getByRole('heading', { name: 'Domi Staff', exact: true }).waitFor({ timeout: 5000 });
-  await page
-    .getByText('Sign in to clock in, check your schedule and keep up with the team.', { exact: true })
-    .waitFor({ timeout: 5000 });
+// The logo alone at the top of the sign-in card, the form under it, no
+// visible heading or tagline (Dominguez, October 2026).
+await step('the sign-in card starts with the logo, then the form, and no tagline', async () => {
+  await page.getByRole('heading', { name: 'Sign in to Domi Staff' }).waitFor({ timeout: 5000 });
   if ((await page.title()) !== 'Domi Staff') throw new Error(`tab title is "${await page.title()}"`);
+  if (await page.getByText('Sign in to clock in', { exact: false }).count())
+    throw new Error('the old tagline is still on the page');
+  const logo = (await page.locator('main img, body img').first().boundingBox());
+  const email = await page.getByLabel('Email').boundingBox();
+  if (!logo || logo.y > email.y) throw new Error('the logo is not above the form');
+  const gap = email.y - (logo.y + logo.height);
+  if (gap > 60) throw new Error(`a ${gap}px gap between the logo and the form`);
 });
 await page.screenshot({ path: `${OUT}/12-login.png`, fullPage: true });
 

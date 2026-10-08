@@ -67,17 +67,12 @@ export function LoginPage() {
           </section>
         )}
 
-        <div className="mb-4 flex items-center gap-3">
-          <BrandLogo className="h-12 w-auto shrink-0" />
-          <div className="min-w-0">
-            <h1 className="text-xl font-semibold text-slate-900">Domi Staff</h1>
-            <p className="text-xs text-slate-600">
-              Sign in to clock in, check your schedule and keep up with the team.
-            </p>
-          </div>
-        </div>
-
+        {/* The logo alone at the top of the card, the form right under it
+            (Dominguez, October 2026). No visible heading or tagline; the
+            heading stays for screen readers, as the page's name. */}
         <Card className="p-4">
+          <h1 className="sr-only">Sign in to Domi Staff</h1>
+          <BrandLogo className="mx-auto mb-4 h-16 w-auto" />
           <form onSubmit={(event) => void submit(event)} className="space-y-3">
             <div>
               <label htmlFor="email" className="block text-sm font-medium text-slate-700">

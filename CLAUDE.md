@@ -164,9 +164,9 @@ Build this as an **adapter/plugin pattern**, not a hardcoded ADP integration:
    document upload; see *Data this app does not hold*).
 4. **Phase 4 — from timeclock to staff platform** (confirmed by Dominguez,
    September 2026). Timekeeping stays the main job; these sit around it.
-   Staff now see it as **"Domi Staff"** — "Sign in to clock in, check your
-   schedule and keep up with the team." on the sign-in screen and in the tab
-   title, and — since September 2026 — in emails, the calendar feed, the
+   Staff now see it as **"Domi Staff"** — in the tab title (the sign-in
+   screen showed it with "Sign in to clock in, check your schedule and keep
+   up with the team." until October 2026, when that gave way to the logo), and — since September 2026 — in emails, the calendar feed, the
    export spreadsheet and the first-run setup page too. The repo, the
    `@stafftime/*` packages and the Vercel project keep their old names.
    - **Announcements** — admins write, edit and remove posts. Seen only after
@@ -874,7 +874,10 @@ Beyond the phases, the parts worth knowing about before picking up work:
   narrowing what the period loaded. **It never scrolls sideways**: long
   cells wrap, and below a laptop's width (`lg`) the entries are cards
   (`correct.mjs` checks 390–1280 px). The sign-in page has the public News
-  posts **at the top** and a smaller, more compact sign-in under them.
+  posts **at the top** and a smaller, more compact sign-in under them:
+  the **logo alone at the top of the card**, the form right under it, no
+  visible heading or tagline (an `sr-only` "Sign in to Domi Staff" heading
+  stays for screen readers).
 - **Hours entered by hand** (29 September 2026, Dominguez): Timesheet →
   **+ Add hours** (managers) for a day with no punch at all — a reason from a
   short list and a note, never your own hours, never over a punch already
