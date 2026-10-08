@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { ApiError, api } from '../lib/api';
+import { practiceToday } from '../lib/practice-time';
 import { formatDuration, formatTime, localDate } from '../lib/format';
 import { GeolocationRefused, detectClockMethod, getCurrentPosition } from '../lib/geolocation';
 import { useSession } from '../lib/session';
@@ -510,14 +511,11 @@ function greeting(): string {
   return 'Good evening';
 }
 
+/// Today's first and last instants in New Jersey, not the browser's zone.
 function startOfToday(): string {
-  const date = new Date();
-  date.setHours(0, 0, 0, 0);
-  return date.toISOString();
+  return practiceToday().start;
 }
 
 function endOfToday(): string {
-  const date = new Date();
-  date.setHours(23, 59, 59, 999);
-  return date.toISOString();
+  return practiceToday().end;
 }
