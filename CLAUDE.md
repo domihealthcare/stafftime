@@ -519,8 +519,24 @@ Beyond the phases, the parts worth knowing about before picking up work:
   is off (Dominguez to say if that is too noisy — e.g. leave out roles of
   one, or set a minimum per office per role). `pto/time-off-clashes.ts` (one
   query for all three), `GET /pto/:id/clashes`,
-  `components/TimeOffClashes.tsx`; `tests/browser/clashes.mjs`. Still to
-  come: a first draft of next week's rota.
+  `components/TimeOffClashes.tsx`; `tests/browser/clashes.mjs`.
+- **Suggest people for the open shifts** (8 October 2026, Dominguez — the
+  fourth "smarter" idea, a first draft of the rota): **✨ Suggest people for
+  them** on the rota's open-shift line proposes somebody free for each open
+  shift on screen — the "Who can cover this?" ranking, **good fits only**,
+  never two shifts at once, hours spread (each pick is booked before the
+  next), the shifts with fewest free people filled first; "Nobody is free
+  then" otherwise. The manager unticks any and presses **Assign**; nothing
+  is saved before that. `POST /shifts/suggest-cover`, `planCover` in
+  `shifts/cover-options.ts`; steps in `tests/browser/cover.mjs`.
+- **Time off on a staff profile, condensed** (8 October 2026, Dominguez:
+  "shouldn't be this big … maybe just a pop up"): the profile shows what is
+  left, the next day off and what is waiting; **See all N on file** opens
+  the list in a pop-up (recorded days removable there), and **+ Record
+  past time off** and **Adjust balance** open in pop-ups too — Adjust is
+  the same form as Time off → Staff balances, so it can be done from the
+  person (`GET /pto/balances/:employeeId`). `components/Modal.tsx` is a
+  shared pop-up for new ones.
 - **Changing a shift's hours** (5 October 2026, Dominguez: "Gaby is 7-2 but
   it is changing to 1-8, so instead of Celeste doing 1 by 1, she can just
   edit all"): the shift's pop-up on the rota has **Hours**; once changed it

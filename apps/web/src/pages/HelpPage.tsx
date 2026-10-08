@@ -1120,6 +1120,19 @@ const MANAGERS: Section[] = [
         ),
       },
       {
+        question: 'Filling a week’s open shifts in one go',
+        answer: (
+          <p>
+            When a week has open shifts, press <strong>✨ Suggest people for them</strong> on the
+            amber line above the rota. It proposes somebody free for each — the same rules as Who
+            can cover this, never two shifts at once, and the hours spread so nobody gets them all —
+            and says &ldquo;Nobody is free then&rdquo; where nobody is. Untick any you don&rsquo;t
+            want and press <strong>Assign</strong>. Nothing changes before that, and drafts stay
+            drafts until you publish.
+          </p>
+        ),
+      },
+      {
         question: 'Meetings and practice events',
         answer: (
           <p>
@@ -1338,7 +1351,8 @@ const MANAGERS: Section[] = [
         answer: (
           <p>
             On <Screen>Manage → Time off &amp; balances</Screen>, open{' '}
-            <strong>Staff balances</strong> and press <strong>Adjust</strong> beside the person.
+            <strong>Staff balances</strong> and press <strong>Adjust</strong> beside the person —
+            or, as an admin, press <strong>Adjust balance</strong> under Time off on their profile.
             Enter the PTO and sick days they had already taken this year, rolled-over days included;
             anything booked in the app counts by itself. Under <strong>PTO a year</strong> choose
             the practice&rsquo;s amount, their own (part-time, long service) or{' '}
@@ -1354,10 +1368,11 @@ const MANAGERS: Section[] = [
         answer: (
           <p>
             On somebody&rsquo;s profile (<Screen>Manage → Staff</Screen>, press their name), press{' '}
-            <strong>Record time off already taken</strong>: Sick or PTO, the days, and a comment if
-            you like. It counts as approved and comes off their balance; nobody is notified, and it
-            can be removed from the same place. Use it or the total under <strong>Adjust</strong>{' '}
-            for the same days, not both — both would count them twice.
+            <strong>+ Record past time off</strong>: Sick or PTO, the days, and a comment if you
+            like. It counts as approved and comes off their balance; nobody is notified. The profile
+            shows only what is left and what is coming up; <strong>See all</strong> opens everything
+            on file, where a recorded day can be removed. Use it or the total under{' '}
+            <strong>Adjust</strong> for the same days, not both — both would count them twice.
           </p>
         ),
       },

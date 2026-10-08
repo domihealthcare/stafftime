@@ -2297,6 +2297,16 @@ their catch under the list, leaving overtime to the overtime warning. If
 the call fails the pop-up falls back to its old plain list.
 `tests/browser/cover.mjs`. Worth carrying to the EMR's Staff module.
 
+**Suggest people for the open shifts** (October 2026, Dominguez — a first
+draft of the rota): `POST /shifts/suggest-cover` with the open shifts on
+screen. `planCover` ranks each one as "Who can cover this?" does and takes
+the first **good** fit — never one with a catch — booking it before the
+next, so nobody is proposed for two shifts at once and the fewest-hours-first
+ranking spreads the work. The shifts with fewest good fits go first, so an
+easy shift does not take the only person who could do a hard one. It only
+reads; the manager unticks any and the rest are assigned one by one with the
+ordinary `PATCH /shifts/:id`, so every rule and notice is the usual one.
+
 **Colour** carries both things a manager scans for (Dominguez asked for
 "both"): the chip is tinted in its office's colour (`LOCATION_COLOURS`, in
 the order offices are listed) and has a 4px stripe on the left in the job
