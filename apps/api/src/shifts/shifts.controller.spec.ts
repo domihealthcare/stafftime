@@ -17,7 +17,7 @@ describe('ShiftsController — what staff can read', () => {
       },
     };
     const shifts = new ShiftsService(prisma as never, {} as never, {} as never);
-    const controller = new ShiftsController(shifts, {} as never, {} as never, {} as never);
+    const controller = new ShiftsController(shifts, {} as never, {} as never, {} as never, {} as never);
     return { controller, prisma };
   }
 

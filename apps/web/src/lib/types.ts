@@ -397,6 +397,34 @@ export interface OvertimeCheck {
   level: OvertimeLevel;
 }
 
+/// "Who can cover this?" — somebody who could work a shift, ranked by the
+/// server (`GET /shifts/:id/cover-options`).
+export type CoverFit = 'good' | 'catch' | 'cannot';
+
+export interface CoverReason {
+  kind: 'shift' | 'leave' | 'asked-off' | 'availability' | 'overtime';
+  text: string;
+}
+
+export interface CoverOption {
+  employeeId: string;
+  name: string;
+  fit: CoverFit;
+  hoursBefore: number;
+  hoursAfter: number;
+  hourly: boolean;
+  overtime: OvertimeLevel;
+  reasons: CoverReason[];
+  sameDay: string[];
+  current: boolean;
+}
+
+export interface CoverOptions {
+  weekStart: string;
+  thresholdHours: number;
+  options: CoverOption[];
+}
+
 /// One of your own coming weeks that your published rota puts past the
 /// overtime line.
 export interface OwnOvertimeWeek {

@@ -57,6 +57,14 @@ import {
   useClosureCheck,
 } from './PracticeEvents';
 import { Alert, buttonClass } from './ui';
+import {
+  clashes,
+  COVER_GROUPS,
+  CoverNotes,
+  coverLabel,
+  CoverSuggestions,
+  useCoverOptions,
+} from './CoverSuggestions';
 import { noteToSend, ShiftNoteField } from './ShiftNote';
 import { atPracticeTime, practiceClockOf } from '../lib/practice-time';
 
@@ -1117,6 +1125,11 @@ function ShiftDialog({
     )
     .sort((a, b) => a.firstName.localeCompare(b.firstName));
 
+  // Who could work it, ranked by the server; the plain list above until it
+  // arrives (or if it cannot be had).
+  const cover = useCoverOptions(shift.id);
+  const coverFor = (id: string) => cover?.options.find((option) => option.employeeId === id);
+
   async function act(change: () => Promise<unknown>) {
     setBusy(true);
     setProblem(null);
@@ -1330,6 +1343,7 @@ function ShiftDialog({
         <label htmlFor="assign-person" className="block text-sm font-medium text-slate-800">
           {open ? 'Put somebody in it' : 'Who works it'}
         </label>
+        {cover && <CoverSuggestions cover={cover} chosen={person} onPick={setPerson} />}
         <div className="mt-1 flex gap-2">
           <select
             id="assign-person"
@@ -1337,13 +1351,32 @@ function ShiftDialog({
             onChange={(event) => setPerson(event.target.value)}
             className="min-w-0 flex-1 rounded-lg border border-slate-300 px-2 py-1.5 text-sm"
           >
-            <option value="">Choose someone…</option>
-            {candidates.map((p) => (
-              <option key={p.id} value={p.id} disabled={busyIds.has(p.id)}>
-                {p.preferredName ?? p.firstName} {p.lastName}
-                {busyIds.has(p.id) ? ' — already on then' : ''}
-              </option>
-            ))}
+            <option value="">{cover ? 'Or choose anyone…' : 'Choose someone…'}</option>
+            {cover
+              ? COVER_GROUPS.map(({ fit, label }) => {
+                  const inGroup = cover.options.filter((option) => option.fit === fit);
+                  return (
+                    inGroup.length > 0 && (
+                      <optgroup key={fit} label={label}>
+                        {inGroup.map((option) => (
+                          <option
+                            key={option.employeeId}
+                            value={option.employeeId}
+                            disabled={clashes(option) || busyIds.has(option.employeeId)}
+                          >
+                            {option.name} — {coverLabel(option)}
+                          </option>
+                        ))}
+                      </optgroup>
+                    )
+                  );
+                })
+              : candidates.map((p) => (
+                  <option key={p.id} value={p.id} disabled={busyIds.has(p.id)}>
+                    {p.preferredName ?? p.firstName} {p.lastName}
+                    {busyIds.has(p.id) ? ' — already on then' : ''}
+                  </option>
+                ))}
           </select>
           <button
             type="button"
@@ -1354,7 +1387,8 @@ function ShiftDialog({
             {open ? 'Assign' : 'Change'}
           </button>
         </div>
-        {candidates.length === 0 && (
+        {person !== shift.employeeId && <CoverNotes option={coverFor(person)} />}
+        {(cover ? cover.options.length === 0 : candidates.length === 0) && (
           <p className="mt-1 text-xs text-slate-500">
             {shift.jobRoleId
               ? `Nobody in ${shift.jobRole?.name ?? 'that job role'} works at this office yet.`

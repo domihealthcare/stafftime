@@ -1080,6 +1080,21 @@ const MANAGERS: Section[] = [
         ),
       },
       {
+        question: 'Who can cover this?',
+        answer: (
+          <p>
+            Click any shift on the rota — open, or one whose person needs replacing — and{' '}
+            <strong>Who can cover this</strong> suggests who to ask first: people at that office in
+            the shift&rsquo;s job role who are free then, not off, haven&rsquo;t said they
+            can&rsquo;t work then, and are furthest from overtime. Press a name to pick them. The
+            list under it has everybody, in three groups — free, could but check first (with the
+            reason: asked for the day off, not available then, close to or into overtime), and
+            already on or off that day — so you can still choose anyone, and the usual warnings
+            follow.
+          </p>
+        ),
+      },
+      {
         question: 'Meetings and practice events',
         answer: (
           <p>

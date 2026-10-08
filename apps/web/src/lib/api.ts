@@ -66,6 +66,7 @@ import type {
   TimeEntry,
   HandEntryReason,
   UpdateLocationInput,
+  CoverOptions,
   OvertimeCheck,
   OwnOvertimeWeek,
   ApplicableSection,
@@ -997,6 +998,8 @@ export const api = {
     endsAt: string;
     shiftId?: string;
   }) => request<OvertimeCheck>(`/shifts/overtime-check${toQuery(params)}`),
+  /// Who could work a shift, best first, and why.
+  coverOptions: (shiftId: string) => request<CoverOptions>(`/shifts/${shiftId}/cover-options`),
   /// Your own coming weeks that are over, or close to, the overtime line.
   myOvertime: () => request<OwnOvertimeWeek[]>('/shifts/my-overtime'),
 

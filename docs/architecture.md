@@ -2274,6 +2274,29 @@ not hours anybody is down for:
   That is a decision, not a gap (Dominguez, September 2026): open shifts are
   the managers' to fill, and there is no staff pick-up.
 
+**Who can cover this?** (October 2026, Dominguez — the first of the "make
+it smarter" ideas): a shift's pop-up on the rota ranks who could work it,
+for an open shift or one whose person needs replacing.
+`GET /shifts/:id/cover-options` (managers; `CoverOptionsService`, the
+ranking itself the pure `rankCoverOptions` in `shifts/cover-options.ts`)
+takes the people the shift could go to at all — current staff at its
+office, in its job role if it has one, plus whoever is on it — and sorts
+them into **good** (free, not off, nothing they said they cannot do, not
+near overtime), **catch** (a pending request or half day off, an
+availability clash, close to or past overtime — each said in words) and
+**cannot** (already on a shift then, or approved time off). Within each,
+the fewest hours that week first: it spreads the work and is the person
+furthest from the line. It uses the scheduler's own rules — the overtime
+week from the pay period's weekday, every office and drafts counted,
+`clashFor` for availability — so it cannot disagree with the warnings that
+follow. It only reads: nothing is stored, nobody is told, and nothing is
+refused; only somebody already on at the time is greyed out, as before.
+The pop-up shows the top three good fits as buttons (with none, the
+closest with a catch) above the full list, grouped; picking somebody shows
+their catch under the list, leaving overtime to the overtime warning. If
+the call fails the pop-up falls back to its old plain list.
+`tests/browser/cover.mjs`. Worth carrying to the EMR's Staff module.
+
 **Colour** carries both things a manager scans for (Dominguez asked for
 "both"): the chip is tinted in its office's colour (`LOCATION_COLOURS`, in
 the order offices are listed) and has a 4px stripe on the left in the job

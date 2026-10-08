@@ -485,6 +485,18 @@ Beyond the phases, the parts worth knowing about before picking up work:
   (`shift-notices.ts`). 500 characters at most. Staff only ever see their
   own shifts' notes in the app; the printed rota shows everybody's.
   `tests/browser/shift-notes.mjs`.
+- **Who can cover this?** (8 October 2026, Dominguez — the first of the
+  "make the app smarter" ideas, all rules, no AI): clicking a shift on the
+  rota suggests who to ask first — people at its office in its job role who
+  are free then, not off, not past their availability and furthest from
+  overtime — as buttons that pick them, with the full list under it grouped
+  free / could but check first (with the reason) / already on or off.
+  Suggests, never refuses. `GET /shifts/:id/cover-options`,
+  `shifts/cover-options.ts`, `components/CoverSuggestions.tsx`; see *Who can
+  cover this?* in `docs/architecture.md`; `tests/browser/cover.mjs`. Worth
+  carrying to the EMR module. Next on the list: patterns in punches (late
+  most Mondays, repeated missed clock-outs), time-off clashes seen early,
+  and a first draft of next week's rota.
 - **Changing a shift's hours** (5 October 2026, Dominguez: "Gaby is 7-2 but
   it is changing to 1-8, so instead of Celeste doing 1 by 1, she can just
   edit all"): the shift's pop-up on the rota has **Hours**; once changed it
