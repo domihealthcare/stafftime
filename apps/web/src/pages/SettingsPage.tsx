@@ -8,6 +8,8 @@ import { CalendarInvitesCard } from '../components/CalendarInvitesCard';
 import { DemoDataCard } from '../components/DemoDataCard';
 import { GoLiveCard } from '../components/GoLiveCard';
 import { Alert, Card, PageHeading, Spinner, buttonClass } from '../components/ui';
+import { PtoPolicyEditor } from '../components/PtoPolicyEditor';
+import type { PtoPolicy } from '../lib/types';
 
 /// The two rules the practice sets for itself. Both arrived as defaults in the
 /// code and both turned out to be a guess about how Domi actually works.
@@ -191,6 +193,8 @@ export function SettingsPage() {
         </Card>
       )}
 
+      {!loading && <TimeOffRules canEdit={isAdmin} />}
+
       {!loading && <AdpSettingsCard isAdmin={isAdmin} />}
 
       {isAdmin && <CalendarInvitesCard />}
@@ -198,6 +202,26 @@ export function SettingsPage() {
       {isAdmin && <GoLiveCard />}
 
       {isAdmin && <DemoDataCard />}
+    </div>
+  );
+}
+
+/// The practice's time off rules — PTO and sick days a year, carry-over, when
+/// the year starts — moved here from Time off & balances (October 2026,
+/// Dominguez), beside the other numbers the practice sets for itself.
+/// Somebody's own amount is under Adjust, on the Dashboard or their profile.
+function TimeOffRules({ canEdit }: { canEdit: boolean }) {
+  const [policy, setPolicy] = useState<PtoPolicy | null>(null);
+  useEffect(() => {
+    api
+      .ptoPolicy()
+      .then(setPolicy)
+      .catch(() => undefined);
+  }, []);
+  if (!policy) return null;
+  return (
+    <div className="mb-4" data-testid="time-off-rules">
+      <PtoPolicyEditor policy={policy} canEdit={canEdit} onSaved={setPolicy} />
     </div>
   );
 }

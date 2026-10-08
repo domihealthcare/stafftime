@@ -66,6 +66,9 @@ import type {
   TimeEntry,
   HandEntryReason,
   UpdateLocationInput,
+  CoverOptions,
+  CoverProposal,
+  TimeOffClash,
   OvertimeCheck,
   OwnOvertimeWeek,
   ApplicableSection,
@@ -580,6 +583,8 @@ export const api = {
   cancelPto: (id: string) =>
     request<PtoRequest>(`/pto/${id}/cancel`, { method: 'PATCH' }).then(timeOffChanged),
   ptoConflicts: (id: string) => request<ConflictingShift[]>(`/pto/${id}/conflicts`),
+  /// Too many from the same job role and office off on those days, this one counted.
+  ptoClashes: (id: string) => request<TimeOffClash[]>(`/pto/${id}/clashes`),
   /// Time off already taken, written down by an admin on a staff profile.
   recordPto: (body: {
     employeeId: string;
@@ -601,6 +606,8 @@ export const api = {
   ptoBalance: (employeeId?: string) =>
     request<PtoBalance>(`/pto/balance${employeeId ? `?employeeId=${employeeId}` : ''}`),
   staffPtoBalances: () => request<StaffBalance[]>('/pto/balances'),
+  /// One person's row of the above, for Adjust on their staff profile.
+  staffPtoBalance: (employeeId: string) => request<StaffBalance>(`/pto/balances/${employeeId}`),
   calendarInviteStatus: () => request<CalendarInviteStatus>('/calendar-invites/status'),
   sendCalendarInvites: () =>
     request<CalendarInviteRound>('/calendar-invites/sync', { method: 'POST' }),
@@ -997,6 +1004,14 @@ export const api = {
     endsAt: string;
     shiftId?: string;
   }) => request<OvertimeCheck>(`/shifts/overtime-check${toQuery(params)}`),
+  /// Who could work a shift, best first, and why.
+  coverOptions: (shiftId: string) => request<CoverOptions>(`/shifts/${shiftId}/cover-options`),
+  /// A first draft for these open shifts: somebody free for each, or nobody.
+  suggestCover: (ids: string[]) =>
+    request<CoverProposal[]>('/shifts/suggest-cover', {
+      method: 'POST',
+      body: JSON.stringify({ ids }),
+    }),
   /// Your own coming weeks that are over, or close to, the overtime line.
   myOvertime: () => request<OwnOvertimeWeek[]>('/shifts/my-overtime'),
 

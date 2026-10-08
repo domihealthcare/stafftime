@@ -1,15 +1,29 @@
 import { PracticeOverviewService } from './practice-overview.service';
 
 /// The Dashboard's "Across the practice": counts from what each screen holds.
-function build(data: { checklists?: unknown[]; closing?: unknown[]; supplies?: unknown[] } = {}) {
+function build(
+  data: {
+    checklists?: unknown[];
+    closing?: unknown[];
+    supplies?: unknown[];
+    punches?: unknown[];
+  } = {},
+) {
   const prisma = {
     feedback: { count: jest.fn().mockResolvedValue(2) },
     employee: { findMany: jest.fn().mockResolvedValue([]) },
     employeeChecklist: { findMany: jest.fn().mockResolvedValue(data.checklists ?? []) },
     closingRecord: { findMany: jest.fn().mockResolvedValue(data.closing ?? []) },
     supplyRequest: { findMany: jest.fn().mockResolvedValue(data.supplies ?? []) },
-    ptoRequest: { count: jest.fn().mockResolvedValue(3) },
-    timeEntry: { count: jest.fn().mockResolvedValue(1) },
+    ptoRequest: {
+      count: jest.fn().mockResolvedValue(3),
+      findMany: jest.fn().mockResolvedValue([]),
+    },
+    shift: { findMany: jest.fn().mockResolvedValue([]) },
+    timeEntry: {
+      count: jest.fn().mockResolvedValue(1),
+      findMany: jest.fn().mockResolvedValue(data.punches ?? []),
+    },
   };
   const credentials = {
     expiring: jest.fn().mockResolvedValue({ withinDays: 60, expired: [], expiringSoon: [] }),
@@ -76,5 +90,27 @@ describe('the practice overview', () => {
     expect(prisma.timeEntry.count).toHaveBeenCalledWith({
       where: { enteredByHandAt: { not: null }, handEntryCheckedAt: null },
     });
+  });
+
+  it('lists patterns in clocking in and out, for a quiet word', async () => {
+    const forgot = (date: string) => ({
+      employeeId: 'tove',
+      clockInAt: new Date(`${date}T13:00:00Z`),
+      clockOutAt: new Date(`${date}T04:00:00Z`),
+      autoClockedOutAt: new Date(`${date}T04:00:00Z`),
+      isLate: false,
+      isEarlyDeparture: false,
+      location: { timezone: 'America/New_York' },
+      employee: person,
+    });
+    const { service } = build({ punches: [forgot('2026-10-01'), forgot('2026-10-05')] });
+    const { patterns } = await service.overview();
+    expect(patterns).toEqual([
+      expect.objectContaining({
+        employeeName: 'Tove Lindqvist',
+        kind: 'missed-clock-out',
+        summary: 'Forgot to clock out twice in the last 4 weeks',
+      }),
+    ]);
   });
 });

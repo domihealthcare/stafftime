@@ -1,5 +1,10 @@
 import { PayType, PtoType } from '@prisma/client';
-import { datesBetween, isoWeekdayOf, weekStartIn, weekStartOf } from '../common/util/zoned-time.util';
+import {
+  datesBetween,
+  isoWeekdayOf,
+  weekStartIn,
+  weekStartOf,
+} from '../common/util/zoned-time.util';
 
 export interface EntryIn {
   employeeId: string;

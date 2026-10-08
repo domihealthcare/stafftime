@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { useSearchParams } from 'react-router-dom';
+import { Link, useSearchParams } from 'react-router-dom';
 import { ApiError, api } from '../lib/api';
+import { ClashNote } from '../components/TimeOffClashes';
 import { formatCalendarDate } from '../lib/format';
 import { useIsAdmin, useIsManager, useSession } from '../lib/session';
 import type {
@@ -15,7 +16,6 @@ import type {
 import { PTO_TYPE_LABELS, REQUESTABLE_PTO_TYPES, hasNone } from '../lib/time-off';
 import { PtoBalanceCard } from '../components/PtoBalanceCard';
 import { PtoPolicyEditor } from '../components/PtoPolicyEditor';
-import { StaffPtoBalances } from '../components/StaffPtoBalances';
 import { useConfirm } from '../components/ConfirmDialog';
 import {
   Alert,
@@ -108,20 +108,14 @@ export function TimeOffPage() {
           />
         </div>
       )}
-
-      {policy && isManager && (
-        <div className="mb-4">
-          <StaffPtoBalances policy={policy} onChanged={() => void load()} />
-        </div>
-      )}
     </>
   );
 
   return (
     <div className="max-w-3xl">
       <PageHeading
-        title="Time off"
-        subtitle={isManager ? 'Requests from the team, and your own.' : 'Your time off requests.'}
+        title={isManager ? 'Time off requests' : 'Time off'}
+        subtitle={isManager ? 'Everybody’s requests, and your own.' : 'Your time off requests.'}
       />
 
       {!isManager && summary}
@@ -172,6 +166,7 @@ export function TimeOffPage() {
           <RequestForm
             staff={isManager ? staff : []}
             balance={balance}
+            forId={isManager ? (searchParams.get('for') ?? '') : ''}
             onCreated={() => {
               setShowForm(false);
               void load();
@@ -203,12 +198,22 @@ export function TimeOffPage() {
         </div>
       )}
 
+      {/* Everybody's balances moved to the Dashboard and the rules to Practice
+          settings (October 2026, Dominguez); a manager's own balance stays. */}
       {isManager && (
         <div className="mt-8">
-          <h2 className="mb-3 text-sm font-semibold uppercase tracking-wide text-slate-600">
-            Balances and policy
-          </h2>
-          {summary}
+          {balance && <PtoBalanceCard balance={balance} />}
+          <p className="mt-3 text-sm text-slate-600" data-testid="time-off-moved">
+            Everybody&rsquo;s balances, with Adjust, are on the{' '}
+            <Link to="/dashboard" className="font-medium text-brand-700 hover:text-brand-900">
+              Dashboard
+            </Link>
+            ; the time off rules are in{' '}
+            <Link to="/settings" className="font-medium text-brand-700 hover:text-brand-900">
+              Practice settings
+            </Link>
+            .
+          </p>
         </div>
       )}
     </div>
@@ -349,6 +354,8 @@ function RequestCard({
         </div>
       </div>
 
+      {canDecide && <ClashNote requestId={request.id} employeeId={request.employeeId} />}
+
       {conflicts && conflicts.length > 0 && request.status === 'PENDING' && (
         <div className="mt-3 rounded-lg bg-amber-50 p-3 text-sm text-amber-900 ring-1 ring-inset ring-amber-200">
           <p className="font-medium">
@@ -426,10 +433,13 @@ function RequestCard({
 function RequestForm({
   staff,
   balance,
+  forId = '',
   onCreated,
 }: {
   staff: Employee[];
   balance: PtoBalance | null;
+  /// Who it starts for — a staff profile's "Request time off for …" (`?for=`).
+  forId?: string;
   onCreated: () => void;
 }) {
   // Sick first, unless the person's own sick days are known to be used up:
@@ -439,7 +449,7 @@ function RequestForm({
   const [endDate, setEndDate] = useState('');
   const [isHalfDay, setIsHalfDay] = useState(false);
   const [notes, setNotes] = useState('');
-  const [employeeId, setEmployeeId] = useState('');
+  const [employeeId, setEmployeeId] = useState(forId);
   const [busy, setBusy] = useState(false);
   const [problem, setProblem] = useState<string | null>(null);
 

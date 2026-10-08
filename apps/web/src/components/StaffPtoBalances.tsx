@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { ApiError, api } from '../lib/api';
 import { hasNone } from '../lib/time-off';
 import type { PtoAdjustment, PtoPolicy, StaffBalance } from '../lib/types';
@@ -14,61 +14,89 @@ import { Alert, Card, Spinner, buttonClass } from './ui';
  * worth doing every time somebody opens Time off to approve a request.
  */
 export function StaffPtoBalances({
-  policy,
-  onChanged,
+  policy: given,
+  onChanged = () => undefined,
+  startOpen = false,
+  limit,
+  title = 'Staff balances',
 }: {
-  policy: PtoPolicy;
+  /// The practice's policy, if the screen already has it; otherwise read here.
+  policy?: PtoPolicy;
   /// Something was saved — the manager's own balance may be among them.
-  onChanged: () => void;
+  onChanged?: () => void;
+  /// Open from the start (the Dashboard, October 2026) rather than on a tap.
+  startOpen?: boolean;
+  /// Rows shown before "Show all N"; a search shows every match.
+  limit?: number;
+  title?: string;
 }) {
   const [open, setOpen] = useState(false);
   const [rows, setRows] = useState<StaffBalance[] | null>(null);
+  const [fetched, setFetched] = useState<PtoPolicy | null>(null);
   const [problem, setProblem] = useState<string | null>(null);
   const [search, setSearch] = useState('');
   const [editing, setEditing] = useState<string | null>(null);
+  const [showAll, setShowAll] = useState(false);
+  const policy = given ?? fetched;
 
   async function show() {
     setOpen(true);
     setProblem(null);
     try {
-      setRows(await api.staffPtoBalances());
+      const [found, terms] = await Promise.all([
+        api.staffPtoBalances(),
+        given ? Promise.resolve(null) : api.ptoPolicy(),
+      ]);
+      setRows(found);
+      if (terms) setFetched(terms);
     } catch (err) {
       setProblem(err instanceof ApiError ? err.message : 'Could not load the balances.');
     }
   }
 
+  useEffect(() => {
+    if (startOpen) void show();
+    // Once, when the screen opens.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   const needle = search.trim().toLowerCase();
-  const visible = (rows ?? []).filter(
+  const matching = (rows ?? []).filter(
     (row) =>
       !needle ||
       `${row.employee.preferredName ?? ''} ${row.employee.firstName} ${row.employee.lastName}`
         .toLowerCase()
         .includes(needle),
   );
+  const cut = limit !== undefined && !needle && !showAll && matching.length > limit;
+  const visible = cut ? matching.slice(0, limit) : matching;
 
   return (
     <Card className="p-4" testId="staff-pto-balances">
       <div className="flex flex-wrap items-center justify-between gap-2">
         <div>
-          <h2 className="text-sm font-semibold text-slate-900">Staff balances</h2>
+          <h2 className="text-sm font-semibold text-slate-900">{title}</h2>
           <p className="mt-0.5 text-sm text-slate-600">
-            What everybody has left, and time already taken before Domi Staff.
+            What everybody has left this policy year. Adjust puts in days taken before Domi Staff,
+            what rolled over, or their own yearly amount.
           </p>
         </div>
-        <button
-          type="button"
-          onClick={() => (open ? setOpen(false) : void show())}
-          className="text-sm font-medium text-slate-600 hover:text-slate-900"
-        >
-          {open ? 'Close' : 'Open'}
-        </button>
+        {!startOpen && (
+          <button
+            type="button"
+            onClick={() => (open ? setOpen(false) : void show())}
+            className="text-sm font-medium text-slate-600 hover:text-slate-900"
+          >
+            {open ? 'Close' : 'Open'}
+          </button>
+        )}
       </div>
 
       {open && (
         <div className="mt-4 border-t border-slate-100 pt-4">
           {problem && <Alert>{problem}</Alert>}
           {!rows && !problem && <Spinner label="Working out balances" />}
-          {rows && (
+          {rows && policy && (
             <>
               <label htmlFor="balance-search" className="sr-only">
                 Find somebody
@@ -129,6 +157,15 @@ export function StaffPtoBalances({
               {visible.length === 0 && (
                 <p className="text-sm text-slate-500">Nobody by that name.</p>
               )}
+              {cut && (
+                <button
+                  type="button"
+                  onClick={() => setShowAll(true)}
+                  className="tap mt-2 text-sm font-medium text-brand-700 hover:text-brand-900"
+                >
+                  Show all {matching.length} →
+                </button>
+              )}
             </>
           )}
         </div>
@@ -149,7 +186,8 @@ function Left({ label, days }: { label: string; days: number }) {
 const toNumber = (text: string) => (text.trim() === '' ? null : Number(text));
 const toText = (value: number | null) => (value === null ? '' : String(value));
 
-function AdjustForm({
+/// Also opened from a staff profile's Time off (October 2026).
+export function AdjustForm({
   row,
   policy,
   onSaved,

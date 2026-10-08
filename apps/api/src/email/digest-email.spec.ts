@@ -18,6 +18,8 @@ const empty = (): DigestContents => ({
   closingGaps: [],
   suppliesNeeded: [],
   newSuggestions: [],
+  punchPatterns: [],
+  timeOffClashes: [],
 });
 
 const appUrl = 'https://staff.domihealthcare.com';

@@ -397,6 +397,42 @@ export interface OvertimeCheck {
   level: OvertimeLevel;
 }
 
+/// "Who can cover this?" — somebody who could work a shift, ranked by the
+/// server (`GET /shifts/:id/cover-options`).
+export type CoverFit = 'good' | 'catch' | 'cannot';
+
+export interface CoverReason {
+  kind: 'shift' | 'leave' | 'asked-off' | 'availability' | 'overtime';
+  text: string;
+}
+
+export interface CoverOption {
+  employeeId: string;
+  name: string;
+  fit: CoverFit;
+  hoursBefore: number;
+  hoursAfter: number;
+  hourly: boolean;
+  overtime: OvertimeLevel;
+  reasons: CoverReason[];
+  sameDay: string[];
+  current: boolean;
+}
+
+/// A first draft for one open shift: somebody free, or nobody.
+export interface CoverProposal {
+  shiftId: string;
+  employeeId: string | null;
+  name: string | null;
+  hoursAfter: number | null;
+}
+
+export interface CoverOptions {
+  weekStart: string;
+  thresholdHours: number;
+  options: CoverOption[];
+}
+
 /// One of your own coming weeks that your published rota puts past the
 /// overtime line.
 export interface OwnOvertimeWeek {
@@ -494,6 +530,10 @@ export interface Attention {
   closingGaps: string[];
   suppliesNeeded: string[];
   newSuggestions: string[];
+  /// Dashboard and email only — never on a banner.
+  punchPatterns: string[];
+  /// Dashboard and email only — never on a banner.
+  timeOffClashes: string[];
 }
 
 // ---------------------------------------------------------------------------
@@ -1243,6 +1283,39 @@ export interface PracticeOverview {
     unapprovedHours: number;
     missingPunches: number;
   };
+  /// The same thing again and again in the last four weeks, for a quiet word.
+  patterns: PunchPattern[];
+  /// Too many from one job role off at once, the next `weeks` weeks.
+  timeOffClashes: { weeks: number; clashes: TimeOffClash[] };
+}
+
+/// Too many from one job role off on the same days at one office: more than
+/// half of them, approved or asked for. See `pto/time-off-clashes.ts`.
+export interface TimeOffClash {
+  from: string;
+  to: string;
+  locationId: string;
+  locationName: string;
+  jobRoleId: string;
+  jobRoleName: string;
+  total: number;
+  off: {
+    employeeId: string;
+    name: string;
+    requestId: string;
+    approved: boolean;
+    isHalfDay: boolean;
+  }[];
+}
+
+export interface PunchPattern {
+  employeeId: string;
+  employeeName: string;
+  kind: 'late' | 'missed-clock-out' | 'early';
+  count: number;
+  /// The days it happened, oldest first, as "YYYY-MM-DD".
+  dates: string[];
+  summary: string;
 }
 
 export interface Dashboard {

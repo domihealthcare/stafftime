@@ -99,7 +99,12 @@ await step('the round-up flags open shifts in the next fortnight', async () => {
 await step('putting somebody in an open shift moves it to their row', async () => {
   await openChips().first().click();
   const dialog = mgr.getByRole('dialog');
-  await dialog.getByLabel('Put somebody in it').selectOption({ label: 'Frankie Front-Desk' });
+  // Each name is followed by why (or why not) — "— free · 4 hrs that week".
+  const picker = dialog.getByLabel('Put somebody in it');
+  await picker.locator('option', { hasText: 'Frankie Front-Desk' }).first().waitFor({ state: 'attached' });
+  await picker.selectOption(
+    await picker.locator('option', { hasText: 'Frankie Front-Desk' }).first().getAttribute('value'),
+  );
   const saved = mgr.waitForResponse((r) => r.url().includes('/api/shifts/') && r.request().method() === 'PATCH');
   await dialog.getByRole('button', { name: 'Assign' }).click();
   if (!(await saved).ok()) throw new Error('the assignment was refused');

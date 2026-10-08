@@ -11,6 +11,7 @@ import { addUtcDays, countDays, isoDate, toUtcDate } from '../common/util/calend
 import { PRACTICE_ZONE, practiceToday, zonedTimeToUtc } from '../common/util/zoned-time.util';
 import { NotificationsService } from '../email/notifications.service';
 import { PrismaService } from '../prisma/prisma.service';
+import { loadTimeOffClashes } from './time-off-clashes';
 import {
   CreatePtoRequestDto,
   QueryPtoRequestsDto,
@@ -316,6 +317,21 @@ export class PtoService {
       where: { status: PtoStatus.PENDING, employeeId: { not: actor.id } },
     });
     return { pending };
+  }
+
+  /// Who else from the same job role and office is off on the same days —
+  /// the clashes this request is part of.
+  async clashes(id: string) {
+    const request = await this.prisma.ptoRequest.findUnique({
+      where: { id },
+      select: { employeeId: true, startDate: true, endDate: true },
+    });
+    if (!request) {
+      throw new NotFoundException(`Request ${id} not found`);
+    }
+    return loadTimeOffClashes(this.prisma, isoDate(request.startDate), isoDate(request.endDate), {
+      employeeId: request.employeeId,
+    });
   }
 
   /// Shifts already on the schedule inside an approved absence, so a manager

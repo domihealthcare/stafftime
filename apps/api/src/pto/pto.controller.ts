@@ -54,8 +54,7 @@ export class PtoController {
     @Query('employeeId') employeeId?: string,
     @Query('year') year?: string,
   ) {
-    const target =
-      user.role === Role.EMPLOYEE || !employeeId ? user.id : employeeId;
+    const target = user.role === Role.EMPLOYEE || !employeeId ? user.id : employeeId;
     return this.policy.balanceFor(target, year ? Number(year) : undefined);
   }
 
@@ -64,6 +63,13 @@ export class PtoController {
   @Roles(Role.MANAGER)
   staffBalances() {
     return this.policy.staffBalances();
+  }
+
+  /// One person's, for Adjust on their staff profile (October 2026).
+  @Get('balances/:employeeId')
+  @Roles(Role.MANAGER)
+  staffBalance(@Param('employeeId', ParseUUIDPipe) employeeId: string) {
+    return this.policy.staffBalanceFor(employeeId);
   }
 
   /// Days already taken before Domi Staff, and a person's own allowance.
@@ -120,6 +126,14 @@ export class PtoController {
   @Roles(Role.MANAGER)
   conflicts(@Param('id', ParseUUIDPipe) id: string) {
     return this.pto.conflictingShifts(id);
+  }
+
+  /// Too many from one job role off at once, with this request counted —
+  /// shown while a manager decides it. See `time-off-clashes.ts`.
+  @Get(':id/clashes')
+  @Roles(Role.MANAGER)
+  clashes(@Param('id', ParseUUIDPipe) id: string) {
+    return this.pto.clashes(id);
   }
 
   @Patch(':id/review')

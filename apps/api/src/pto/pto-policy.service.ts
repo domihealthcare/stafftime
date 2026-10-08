@@ -279,6 +279,16 @@ export class PtoPolicyService {
     return rows;
   }
 
+  /// One person's row of the above — for Adjust on their staff profile.
+  async staffBalanceFor(employeeId: string): Promise<StaffBalance> {
+    const person = await this.prisma.employee.findUnique({
+      where: { id: employeeId },
+      select: { id: true, firstName: true, lastName: true, preferredName: true, email: true },
+    });
+    if (!person) throw new NotFoundException('Nobody by that id.');
+    return this.staffBalance(employeeId, person, await this.get());
+  }
+
   /// A manager sets a person's own allowance and this year's starting point.
   async adjust(
     employeeId: string,

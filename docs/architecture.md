@@ -2274,6 +2274,39 @@ not hours anybody is down for:
   That is a decision, not a gap (Dominguez, September 2026): open shifts are
   the managers' to fill, and there is no staff pick-up.
 
+**Who can cover this?** (October 2026, Dominguez — the first of the "make
+it smarter" ideas): a shift's pop-up on the rota ranks who could work it,
+for an open shift or one whose person needs replacing.
+`GET /shifts/:id/cover-options` (managers; `CoverOptionsService`, the
+ranking itself the pure `rankCoverOptions` in `shifts/cover-options.ts`)
+takes the people the shift could go to at all — current staff at its
+office, in its job role if it has one, plus whoever is on it — and sorts
+them into **good** (free, not off, nothing they said they cannot do, not
+near overtime), **catch** (a pending request or half day off, an
+availability clash, close to or past overtime — each said in words) and
+**cannot** (already on a shift then, or approved time off). Within each,
+the fewest hours that week first: it spreads the work and is the person
+furthest from the line. It uses the scheduler's own rules — the overtime
+week from the pay period's weekday, every office and drafts counted,
+`clashFor` for availability — so it cannot disagree with the warnings that
+follow. It only reads: nothing is stored, nobody is told, and nothing is
+refused; only somebody already on at the time is greyed out, as before.
+The pop-up shows the top three good fits as buttons (with none, the
+closest with a catch) above the full list, grouped; picking somebody shows
+their catch under the list, leaving overtime to the overtime warning. If
+the call fails the pop-up falls back to its old plain list.
+`tests/browser/cover.mjs`. Worth carrying to the EMR's Staff module.
+
+**Suggest people for the open shifts** (October 2026, Dominguez — a first
+draft of the rota): `POST /shifts/suggest-cover` with the open shifts on
+screen. `planCover` ranks each one as "Who can cover this?" does and takes
+the first **good** fit — never one with a catch — booking it before the
+next, so nobody is proposed for two shifts at once and the fewest-hours-first
+ranking spreads the work. The shifts with fewest good fits go first, so an
+easy shift does not take the only person who could do a hard one. It only
+reads; the manager unticks any and the rest are assigned one by one with the
+ordinary `PATCH /shifts/:id`, so every rule and notice is the usual one.
+
 **Colour** carries both things a manager scans for (Dominguez asked for
 "both"): the chip is tinted in its office's colour (`LOCATION_COLOURS`, in
 the order offices are listed) and has a 4px stripe on the left in the job
@@ -2709,6 +2742,94 @@ somebody trying 4 PINs against each of twenty names. The time clock itself now
 counts wrong PINs, against anybody, in a 15-minute window a correct PIN does
 not reset, and stops taking PINs for 5 minutes after 10. That is generous for
 honest typos and useless for guessing a colleague's PIN.
+
+## Patterns worth a word
+
+October 2026, Dominguez — the second of the "make it smarter" ideas, with the
+defaults proposed and agreed. The timesheet flags each late clock-in, early
+departure and forgotten clock-out as it happens; nothing said when the same
+thing kept happening. `time-entries/punch-patterns.ts` looks at the last
+**4 weeks** (`PATTERN_WINDOW_DAYS`, to the start of today in New Jersey) of
+current staff's punches and finds:
+
+- **late 3 times or more** (`LATE_TIMES`) — and when 3 of those are the same
+  weekday a week apart, "3 Mondays running" (`longestWeekdayRun`), because a
+  repeat on one weekday usually has a reason (a bus, a school run, a shift
+  that starts too early);
+- **forgot to clock out twice** (`MISSED_CLOCK_OUT_TIMES`): clocked out by the
+  app at midnight (`autoClockedOutAt`, which stays after a manager corrects
+  the time) or still open from an earlier day;
+- **left early twice** (`EARLY_TIMES`), not counting a forgotten clock-out.
+
+Days, not punches: two late punches on a split-shift day are one late day.
+It reads the timesheet's own flags (`isLate`, `isEarlyDeparture`, with
+`PUNCH_GRACE_MINUTES`), so the two cannot disagree, and leaves out hours
+entered by hand, which are not punches.
+
+**Who sees it, and where.** One query (`loadPunchPatterns`) serves the
+Dashboard's **Patterns worth a word** card (`GET /dashboard/practice`,
+`patterns`) and the nightly email (`punchPatterns` in `AttentionService`,
+tier *When you have a minute*, linking to the Dashboard, under the **Hours**
+part in `digest-topics.ts`). Deliberately **not on any banner** — it is a
+trend, not something to fix on a screen today — and **the person is not
+told**: it is a heads-up for a quiet word, not an automatic telling-off.
+Managers and admins only, as both routes already were.
+
+## Time off without a screen of its own
+
+October 2026, Dominguez, from a rendering of four screens. Manage → **Time
+off & balances** held four different things for three audiences, so each
+went where its people already are:
+
+- **Requests** — deciding them was already on the Schedule. `/time-off`
+  stays as the full list ("Time off requests" for a manager, reached by
+  **All requests →**; "All your time off" for staff) with the request form,
+  whose **For** picker lets a manager put one in for somebody.
+- **Everybody's balances and Adjust** — `StaffPtoBalances`, now a **Time off
+  balances** card on the Dashboard (`PracticeOverviewSection`), open from
+  the start and cut to six rows until searched or "Show all"; it reads the
+  policy itself when not given one.
+- **The rules** — `PtoPolicyEditor`, retitled "Time off rules", in Practice
+  settings beside the practice's other numbers; managers read, admins change.
+- **One person's** — on their staff profile: the balance, Adjust, Record
+  past time off, and the shortcuts below.
+
+**One person, from their profile.** "For Robin" opens Schedule, Timesheet,
+Licenses, Onboarding & offboarding and Availability with `?person=<id>`.
+Each screen filters what it already loaded (`useOnePerson` and
+`OnePersonNote` in `components/OnePerson.tsx`) and shows "Showing Robin only
+· Show everyone"; nothing new is asked of the server. A new time-off request
+for them is `/time-off?request=1&for=<id>`.
+
+## Too many off at once
+
+October 2026, Dominguez — the third of the "make it smarter" ideas, with the
+defaults proposed and agreed. Approving time off one request at a time hid
+the case that hurts: the second of three MAs at one office asking for the
+same day as the first. `pto/time-off-clashes.ts` finds, for each **team** —
+everybody at one office who holds one job role (somebody in two roles, or at
+two offices, is in each) — the days on which **more than half** of it is off.
+That makes a role of one or two "all of them". **Off** is approved time off
+and requests still waiting, because the point is to see it before approving;
+a half day counts and says so. **A day** is a weekday, or a weekend day with
+a shift at that office (nobody is short on a Sunday it is shut). Days with
+the same people off are told as one run ("Thu, Dec 24 – Tue, Dec 29").
+
+One query (`loadTimeOffClashes`) serves three places:
+
+- **The request, while a manager decides it** — `GET /pto/:id/clashes`, only
+  the clashes that person is part of, with the request counted; shown under
+  it in the Schedule's *requests to decide* and on Time off
+  (`components/TimeOffClashes.tsx`): "Approving this leaves North Bergen with
+  1 of 3 in Medical Assistant on … — also off: …".
+- **The Dashboard**, the next 8 weeks (`timeOffClashes` in
+  `GET /dashboard/practice`).
+- **The nightly email**, the next 2 weeks only (tier *Coming up*, under the
+  **Time off** part) — far-off clashes would repeat every night for weeks.
+
+It **warns, never refuses**, like everything on the Schedule, and is never a
+banner. A role of one warns whenever its one person is off; whether that is
+useful or noise is Dominguez's call once it has run for a while.
 
 ## Hours entered by hand
 

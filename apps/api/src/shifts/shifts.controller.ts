@@ -17,6 +17,7 @@ import { Role, ShiftStatus } from '@prisma/client';
 import { AuthUser } from '../common/auth/auth-user';
 import { CurrentUser } from '../common/auth/current-user.decorator';
 import { Roles } from '../common/auth/roles.decorator';
+import { CoverOptionsService } from './cover-options.service';
 import { CreateShiftDto } from './dto/create-shift.dto';
 import { OvertimeCheckDto } from './dto/overtime-check.dto';
 import { QueryShiftsDto } from './dto/query-shifts.dto';
@@ -27,6 +28,7 @@ import {
   RepeatShiftsDto,
   SetWeeklyScheduleDto,
   StopStandingShiftDto,
+  SuggestCoverDto,
   UpdateStandingShiftDto,
 } from './dto/repeat-shifts.dto';
 import { RetimeShiftDto } from './dto/retime-shift.dto';
@@ -46,6 +48,7 @@ export class ShiftsController {
     private readonly planning: ShiftPlanningService,
     private readonly overtime: OvertimeService,
     private readonly retiming: ShiftRetimeService,
+    private readonly cover: CoverOptionsService,
   ) {}
 
   /// "Every Tuesday and Thursday, 9 to 5, until March" — or, with no last
@@ -110,6 +113,15 @@ export class ShiftsController {
     return this.planning.publishMany(dto.ids);
   }
 
+  /// A first draft for the open shifts on screen: somebody free for each,
+  /// or nobody. Only reads — the manager keeps the ones they want.
+  @Post('suggest-cover')
+  @Roles(Role.MANAGER)
+  @HttpCode(HttpStatus.OK)
+  suggestCover(@Body() dto: SuggestCoverDto) {
+    return this.cover.suggestForOpen(dto.ids);
+  }
+
   /// Day-by-day staffing, and the gaps.
   @Get('coverage')
   @Roles(Role.MANAGER)
@@ -167,6 +179,14 @@ export class ShiftsController {
       throw new NotFoundException(`Shift ${id} not found`);
     }
     return shift;
+  }
+
+  /// Who could work this shift, best first, and why — for putting somebody in
+  /// an open shift or replacing whoever is on it.
+  @Get(':id/cover-options')
+  @Roles(Role.MANAGER)
+  coverOptions(@Param('id', ParseUUIDPipe) id: string) {
+    return this.cover.forShift(id);
   }
 
   @Patch(':id')

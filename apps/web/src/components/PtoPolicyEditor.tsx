@@ -70,7 +70,7 @@ export function PtoPolicyEditor({
     <Card className="p-4">
       <div className="flex flex-wrap items-center justify-between gap-2">
         <div>
-          <h2 className="text-sm font-semibold text-slate-900">Practice policy</h2>
+          <h2 className="text-sm font-semibold text-slate-900">Time off rules</h2>
           <p className="mt-0.5 text-sm text-slate-600">{summary}</p>
         </div>
         {canEdit && (

@@ -115,6 +115,15 @@ const SECTIONS: SectionSpec[] = [
     subject: (n) => `${n} time-off ${plural(n, 'request', 'requests')} to decide`,
   },
   {
+    key: 'timeOffClashes',
+    tier: 'soon',
+    // Warned, never refused: see pto/time-off-clashes.ts.
+    heading: 'Too many off at once',
+    path: '/dashboard',
+    screen: 'Dashboard',
+    subject: () => 'too many off at once',
+  },
+  {
     key: 'openShifts',
     tier: 'soon',
     heading: 'Open shifts nobody is on yet',
@@ -177,6 +186,15 @@ const SECTIONS: SectionSpec[] = [
     path: '/timesheet',
     screen: 'Timesheet',
     subject: (n) => `${n} hand ${plural(n, 'entry', 'entries')} to look into`,
+  },
+  {
+    key: 'punchPatterns',
+    tier: 'later',
+    // A heads-up to have a word, not something to fix: see punch-patterns.ts.
+    heading: 'Patterns in clocking in and out',
+    path: '/dashboard',
+    screen: 'Dashboard',
+    subject: (n) => `${n} clock-in ${plural(n, 'pattern', 'patterns')} worth a word`,
   },
   {
     key: 'missingCredentials',

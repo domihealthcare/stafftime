@@ -12,6 +12,7 @@ import {
   buttonClass,
 } from '../components/ui';
 import { ApiError, api } from '../lib/api';
+import { OnePersonNote, useOnePerson } from '../components/OnePerson';
 import { formatCalendarDate } from '../lib/format';
 import { useIsAdmin, useIsManager, useSession } from '../lib/session';
 import type { Checklist, ChecklistKind, ChecklistTemplate, Employee } from '../lib/types';
@@ -26,7 +27,9 @@ export function ChecklistsPage() {
   const [checklists, setChecklists] = useState<Checklist[]>([]);
   const [templates, setTemplates] = useState<ChecklistTemplate[]>([]);
   const [staff, setStaff] = useState<Employee[]>([]);
-  const [state, setState] = useState<StateFilter>('open');
+  /// One person, from a staff profile's shortcut (`?person=`): every checklist of theirs.
+  const { personId, showEveryone } = useOnePerson();
+  const [state, setState] = useState<StateFilter>(personId ? 'all' : 'open');
   const [openId, setOpenId] = useState<string | null>(null);
   const [newTemplateKind, setNewTemplateKind] = useState<ChecklistKind | null>(null);
   const [loading, setLoading] = useState(true);
@@ -65,9 +68,16 @@ export function ChecklistsPage() {
     [checklists, employee?.id],
   );
   const others = useMemo(
-    () => checklists.filter((item) => item.employee.id !== employee?.id),
-    [checklists, employee?.id],
+    () =>
+      checklists.filter(
+        (item) => item.employee.id !== employee?.id && (!personId || item.employee.id === personId),
+      ),
+    [checklists, employee?.id, personId],
   );
+  const onePerson = personId
+    ? (checklists.find((item) => item.employee.id === personId)?.employee ??
+      staff.find((person) => person.id === personId))
+    : undefined;
 
   if (loading) {
     return <Spinner label="Loading checklists" />;
@@ -126,7 +136,23 @@ export function ChecklistsPage() {
         </div>
       )}
 
-      {mine.length > 0 && (
+      {personId && isManager && (
+        <OnePersonNote
+          name={
+            onePerson
+              ? `${onePerson.preferredName ?? onePerson.firstName} ${onePerson.lastName}`
+              : 'one person'
+          }
+          onClear={showEveryone}
+        />
+      )}
+      {personId && isManager && others.length === 0 && (
+        <p className="mb-4 text-sm text-slate-600" data-testid="no-checklist">
+          No checklist for them yet — start one above.
+        </p>
+      )}
+
+      {mine.length > 0 && (!personId || personId === employee?.id) && (
         <div className="mb-8">
           {isManager && (
             <h2 className="mb-2 text-sm font-semibold uppercase tracking-wide text-slate-500">

@@ -485,6 +485,79 @@ Beyond the phases, the parts worth knowing about before picking up work:
   (`shift-notices.ts`). 500 characters at most. Staff only ever see their
   own shifts' notes in the app; the printed rota shows everybody's.
   `tests/browser/shift-notes.mjs`.
+- **Who can cover this?** (8 October 2026, Dominguez — the first of the
+  "make the app smarter" ideas, all rules, no AI): clicking a shift on the
+  rota suggests who to ask first — people at its office in its job role who
+  are free then, not off, not past their availability and furthest from
+  overtime — as buttons that pick them, with the full list under it grouped
+  free / could but check first (with the reason) / already on or off.
+  Suggests, never refuses. `GET /shifts/:id/cover-options`,
+  `shifts/cover-options.ts`, `components/CoverSuggestions.tsx`; see *Who can
+  cover this?* in `docs/architecture.md`; `tests/browser/cover.mjs`. Worth
+  carrying to the EMR module.
+- **Patterns worth a word** (8 October 2026, Dominguez — the second
+  "smarter" idea, defaults proposed and agreed): over the last 4 weeks,
+  **late 3 times or more** (and "3 Mondays running" when the same weekday
+  repeats), **forgot to clock out twice** (clocked out by the app at
+  midnight), or **left early twice**. A card on the Dashboard ("Which
+  days?" lists them) and a section in the nightly email's *when you have a
+  minute*, under the Hours part — **managers only, never a banner, and the
+  person is not told**: a reason to ask, not a verdict. Read from the
+  timesheet's own flags; hand entries are not punches and are left out.
+  `time-entries/punch-patterns.ts` (one query for both);
+  `tests/browser/patterns.mjs`.
+- **Too many off at once** (8 October 2026, Dominguez — the third "smarter"
+  idea, defaults proposed and agreed): more than half of the people holding
+  one job role at one office off the same day — so all of them in a role of
+  one or two — counting **approved and still-asked-for** time off, on
+  weekdays and weekend days with shifts at that office. Shown **on the
+  request** while a manager decides it ("Approving this leaves North Bergen
+  with 1 of 3 in Medical Assistant on Tue, Dec 22 — also off: …", on the
+  Schedule and on Time off), on the **Dashboard** for the next 8 weeks, and
+  in the **nightly email** for the next 2, under the Time off part. **Warns,
+  never refuses**; never a banner. A role of one warns whenever that person
+  is off (Dominguez to say if that is too noisy — e.g. leave out roles of
+  one, or set a minimum per office per role). `pto/time-off-clashes.ts` (one
+  query for all three), `GET /pto/:id/clashes`,
+  `components/TimeOffClashes.tsx`; `tests/browser/clashes.mjs`.
+- **Suggest people for the open shifts** (8 October 2026, Dominguez — the
+  fourth "smarter" idea, a first draft of the rota): **✨ Suggest people for
+  them** on the rota's open-shift line proposes somebody free for each open
+  shift on screen — the "Who can cover this?" ranking, **good fits only**,
+  never two shifts at once, hours spread (each pick is booked before the
+  next), the shifts with fewest free people filled first; "Nobody is free
+  then" otherwise. The manager unticks any and presses **Assign**; nothing
+  is saved before that. `POST /shifts/suggest-cover`, `planCover` in
+  `shifts/cover-options.ts`; steps in `tests/browser/cover.mjs`.
+- **Time off on a staff profile, condensed** (8 October 2026, Dominguez:
+  "shouldn't be this big … maybe just a pop up"): the profile shows what is
+  left, the next day off and what is waiting; **See all N on file** opens
+  the list in a pop-up (recorded days removable there), and **+ Record
+  past time off** and **Adjust balance** open in pop-ups too — Adjust is
+  the same form as Time off → Staff balances, so it can be done from the
+  person (`GET /pto/balances/:employeeId`). `components/Modal.tsx` is a
+  shared pop-up for new ones.
+- **"Time off & balances" retired from Manage** (8 October 2026, Dominguez,
+  from a four-screen rendering, "looks good"): **requests** stay on the
+  Schedule (to decide, with **All requests →** opening `/time-off`, now
+  titled "Time off requests" for managers; "All your time off" for staff),
+  and **+ Request time off** has the **For** picker for managers;
+  **everybody's balances with Adjust** are a **Time off balances** card on
+  the **Dashboard** (managers and admins — Dominguez), open from the start,
+  six rows then "Show all"; the **time off rules** (PTO and sick a year,
+  carry-over, year start, prorating) are in **Practice settings**, admins
+  change them. `/time-off` keeps the manager's own balance and says where
+  the rest went.
+- **"For [name]" on a staff profile** (8 October 2026, Dominguez): shortcuts
+  to Schedule, Timesheet, Licenses, Onboarding & offboarding and
+  Availability opened **narrowed to that person** (`?person=<id>`, read by
+  `components/OnePerson.tsx`, with **Show everyone** to undo it; the
+  Schedule already had it), and **+ Request time off for …** (`?for=<id>`
+  on `/time-off?request=1`). From an audit of what could only be done from
+  one screen; still only on their own screens: regular shifts, Email
+  settings' "Who gets what", productivity. Open question: the person menu
+  offers managers **Open in Staff**, but the Staff screen is in the admins'
+  menu and saving there is admin-only — see `docs/open-questions.md`.
 - **Changing a shift's hours** (5 October 2026, Dominguez: "Gaby is 7-2 but
   it is changing to 1-8, so instead of Celeste doing 1 by 1, she can just
   edit all"): the shift's pop-up on the rota has **Hours**; once changed it
@@ -957,8 +1030,9 @@ Beyond the phases, the parts worth knowing about before picking up work:
   a "+ Request time off" button, "Your time off" (days left, upcoming
   requests), and for managers the requests to decide with Approve / Decline;
   the pending count is a badge on **Schedule**. The full Time off screen is
-  still `/time-off` — **Manage → Time off & balances** for managers, "All your
-  time off" for staff. **Manage** gained Time off & balances and Surveys.
+  still `/time-off` — "All requests" for managers (Manage → Time off &
+  balances until 8 October 2026, see above), "All your time off" for staff.
+  **Manage** gained Surveys.
   Somebody's own licenses, onboarding (Provider) and productivity moved to the
   **account menu**. Browser tests get around with `goTo`, `navLink`,
   `openNews` and `openTimeOff` in `tests/browser/nav.mjs`.

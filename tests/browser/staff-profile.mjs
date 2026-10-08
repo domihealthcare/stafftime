@@ -143,8 +143,11 @@ await step('time off already taken is recorded with a comment and comes off the 
     (id) => fetch(`/api/pto/balance?employeeId=${id}`).then((r) => r.json()),
     person.id,
   );
-  await card.getByRole('button', { name: '+ Record time off already taken' }).click();
-  const form = card.getByRole('form', { name: 'Record time off already taken' });
+  // In a pop-up since October 2026 — the profile keeps only a summary.
+  await card.getByRole('button', { name: '+ Record past time off' }).click();
+  const form = admin
+    .getByRole('dialog', { name: 'Record time off already taken' })
+    .getByRole('form', { name: 'Record time off already taken' });
   // Two days in the past, whatever today is.
   const day = (offset) => {
     const d = new Date();
@@ -158,9 +161,13 @@ await step('time off already taken is recorded with a comment and comes off the 
   await form.getByRole('button', { name: 'Record it' }).click();
   if (!(await saved).ok()) throw new Error('record refused');
 
-  const entry = card.getByTestId('staff-time-off-entry').first();
+  await form.waitFor({ state: 'detached', timeout: 10000 });
+  await card.getByRole('button', { name: /^See all \d+ on file/ }).click();
+  const all = admin.getByTestId('staff-time-off-all');
+  const entry = all.getByTestId('staff-time-off-entry').first();
   await entry.getByText('recorded after the fact by').waitFor();
   await entry.getByText('Flu — doctor’s note on file').waitFor();
+  await all.getByRole('button', { name: 'Close' }).click();
   const after = await admin.evaluate(
     (id) => fetch(`/api/pto/balance?employeeId=${id}`).then((r) => r.json()),
     person.id,
@@ -186,11 +193,38 @@ await step('the comment is optional, and days still to come are refused', async 
   if (result.future !== 400) throw new Error(`future day: ${result.future}`);
 });
 
-await step('recorded time off can be taken back, after asking', async () => {
+await step('the profile keeps time off short: the balance, then everything in a pop-up', async () => {
   await admin.reload({ waitUntil: 'networkidle' });
   const card = admin.getByTestId('staff-time-off');
-  const count = await card.getByTestId('staff-time-off-entry').count();
-  await card.getByTestId('staff-time-off-entry').first().getByRole('button', { name: /^Remove/ }).click();
+  await card.getByTestId('staff-time-off-balance').getByText(/PTO|No PTO/).first().waitFor({ timeout: 10000 });
+  if (await card.getByTestId('staff-time-off-entry').count()) throw new Error('the full list is on the profile itself');
+});
+
+await step('the balance can be adjusted from the profile, as from Time off', async () => {
+  const card = admin.getByTestId('staff-time-off');
+  const left = async () =>
+    Number((await card.getByTestId('staff-time-off-balance').locator('strong').first().textContent()).trim());
+  const before = await left();
+  await card.getByRole('button', { name: 'Adjust balance' }).click();
+  const form = admin.getByRole('dialog').getByRole('form', { name: /^Adjust / });
+  await form.getByLabel('PTO already taken').fill('2');
+  const saved = admin.waitForResponse((r) => r.url().includes('/pto/balances/') && r.request().method() === 'PUT');
+  await form.getByRole('button', { name: 'Save' }).click();
+  if (!(await saved).ok()) throw new Error('the adjustment was refused');
+  await form.waitFor({ state: 'detached', timeout: 10000 });
+  await admin.waitForFunction(
+    (n) => Number(document.querySelector('[data-testid="staff-time-off-balance"] strong')?.textContent) === n - 2,
+    before,
+    { timeout: 10000 },
+  );
+});
+
+await step('recorded time off can be taken back, after asking', async () => {
+  const card = admin.getByTestId('staff-time-off');
+  await card.getByRole('button', { name: /^See all \d+ on file/ }).click();
+  const all = admin.getByTestId('staff-time-off-all');
+  const count = await all.getByTestId('staff-time-off-entry').count();
+  await all.getByTestId('staff-time-off-entry').first().getByRole('button', { name: /^Remove/ }).click();
   const removed = admin.waitForResponse((r) => r.url().includes('/recorded'));
   await admin.getByRole('button', { name: 'Yes, remove it' }).click();
   await removed;
@@ -201,6 +235,31 @@ await step('recorded time off can be taken back, after asking', async () => {
 });
 
 await admin.screenshot({ path: `${OUT}/staff-profile.png`, fullPage: true });
+
+await step('“For Robin” opens each screen narrowed to them, with a way back to everyone', async () => {
+  for (const [label, path] of [
+    ['Timesheet', '/timesheet'],
+    ['Licenses', '/credentials'],
+    ['Onboarding & offboarding', '/checklists'],
+    ['Availability', '/availability'],
+  ]) {
+    await admin.goto(`${BASE}/staff/${person.id}`, { waitUntil: 'networkidle' });
+    await admin.getByTestId('profile-shortcuts').getByRole('link', { name: label, exact: true }).click();
+    await admin.waitForURL((url) => url.pathname === path && url.searchParams.get('person') === person.id);
+    const note = admin.getByTestId('one-person');
+    await note.waitFor({ timeout: 10000 });
+    await note.getByRole('button', { name: 'Show everyone' }).click();
+    await admin.waitForURL((url) => !url.searchParams.has('person'));
+  }
+});
+
+await step('“Request time off for Robin” opens the form already for them', async () => {
+  await admin.goto(`${BASE}/staff/${person.id}`, { waitUntil: 'networkidle' });
+  await admin.getByTestId('profile-shortcuts').getByRole('link', { name: /^\+ Request time off for / }).click();
+  const forWho = admin.getByLabel('For');
+  await forWho.waitFor({ timeout: 10000 });
+  if ((await forWho.inputValue()) !== person.id) throw new Error('the form is not for them');
+});
 
 await step('a manager sees no profile link, and the API refuses them the record', async () => {
   const manager = await signIn('manager@domihealthcare.com');

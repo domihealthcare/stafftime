@@ -11,6 +11,7 @@ import {
   buttonClass,
 } from '../components/ui';
 import { ApiError, api } from '../lib/api';
+import { OnePersonNote, useOnePerson } from '../components/OnePerson';
 import { formatCalendarDate } from '../lib/format';
 import { useIsAdmin, useIsManager } from '../lib/session';
 import type {
@@ -62,7 +63,9 @@ export function CredentialsPage() {
   const [standing, setStanding] = useState<CredentialStanding[]>([]);
   const [types, setTypes] = useState<CredentialType[]>([]);
   const [jobRoles, setJobRoles] = useState<JobRole[]>([]);
-  const [view, setView] = useState<View>('due');
+  /// One person, from a staff profile's shortcut (`?person=`): By person, theirs only.
+  const { personId, showEveryone } = useOnePerson();
+  const [view, setView] = useState<View>(personId ? 'people' : 'due');
   const [horizon, setHorizon] = useState<Horizon>('60');
   const [adding, setAdding] = useState<Prefill | 'blank' | null>(null);
   const [loading, setLoading] = useState(true);
@@ -159,20 +162,33 @@ export function CredentialsPage() {
 
       {isManager && view === 'people' && (
         <div className="space-y-3">
+          {personId && (
+            <OnePersonNote
+              name={(() => {
+                const found = standing.find((person) => person.employee.id === personId);
+                return found
+                  ? `${found.employee.preferredName ?? found.employee.firstName} ${found.employee.lastName}`
+                  : 'one person';
+              })()}
+              onClear={showEveryone}
+            />
+          )}
           {standing.length === 0 ? (
             <EmptyState>
               No job role asks for a license yet. Say which do under License types.
             </EmptyState>
           ) : (
-            standing.map((person) => (
-              <StandingCard
-                key={person.employee.id}
-                person={person}
-                onRecord={(credentialTypeId) =>
-                  record({ employeeId: person.employee.id, credentialTypeId })
-                }
-              />
-            ))
+            standing
+              .filter((person) => !personId || person.employee.id === personId)
+              .map((person) => (
+                <StandingCard
+                  key={person.employee.id}
+                  person={person}
+                  onRecord={(credentialTypeId) =>
+                    record({ employeeId: person.employee.id, credentialTypeId })
+                  }
+                />
+              ))
           )}
         </div>
       )}

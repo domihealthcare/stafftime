@@ -260,6 +260,9 @@ export class PublishShiftsDto {
   ids!: string[];
 }
 
+/// The open shifts on screen, to suggest somebody for each.
+export class SuggestCoverDto extends PublishShiftsDto {}
+
 export class QueryCoverageDto {
   @IsDateString()
   from!: string;

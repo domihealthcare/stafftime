@@ -1,10 +1,18 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { formatCalendarDate, localDate } from '../lib/format';
 import { ApiError, api } from '../lib/api';
-import { PTO_TYPE_LABELS, REQUESTABLE_PTO_TYPES } from '../lib/time-off';
-import type { PtoBalance, PtoRequest, PtoStatus } from '../lib/types';
+import { PTO_TYPE_LABELS, REQUESTABLE_PTO_TYPES, hasNone } from '../lib/time-off';
+import type {
+  AllowanceBalance,
+  PtoBalance,
+  PtoPolicy,
+  PtoRequest,
+  PtoStatus,
+  StaffBalance,
+} from '../lib/types';
 import { useConfirm } from './ConfirmDialog';
-import { PtoBalanceCard } from './PtoBalanceCard';
+import { Modal } from './Modal';
+import { AdjustForm } from './StaffPtoBalances';
 import { Alert, Badge, Card, Field, buttonClass, inputClass } from './ui';
 
 const STATUS_TONE: Record<PtoStatus, 'success' | 'warning' | 'danger' | 'neutral'> = {
@@ -30,11 +38,19 @@ function range(request: PtoRequest): string {
 }
 
 /**
- * Time off on a staff profile: this year's balance, everything on file, and —
- * for an admin — writing down time off already taken (October 2026,
- * Dominguez): the back-log from before Domi Staff, or a sick day nobody asked
- * for in the app. A recorded day is approved from the start and comes off the
- * balance like any other.
+ * Time off on a staff profile: a compact summary — what is left, what is
+ * coming up, what is waiting — with everything else a tap away (October 2026,
+ * Dominguez: "condense the time off list on their profile … maybe just a pop
+ * up to further dive into it"):
+ *
+ * - **See all** — every request on file, in a pop-up; recorded ones can be
+ *   removed there.
+ * - **Record past time off** — writing down time off already taken (October
+ *   2026): the back-log from before Domi Staff, or a sick day nobody asked
+ *   for in the app. Approved from the start, it comes off the balance.
+ * - **Adjust** — the same form as Time off → Staff balances (the days taken
+ *   before Domi Staff, rollover, their own yearly amount or none), so it can
+ *   be done from where the person is.
  */
 export function StaffTimeOffCard({
   employeeId,
@@ -51,11 +67,176 @@ export function StaffTimeOffCard({
   requests: PtoRequest[];
   onChanged: () => void;
 }) {
+  const [open, setOpen] = useState<'all' | 'record' | 'adjust' | null>(null);
+  const today = localDate(new Date());
+  const live = requests.filter((r) => r.status === 'APPROVED' || r.status === 'PENDING');
+  const waiting = live.filter((r) => r.status === 'PENDING').length;
+  const next = live
+    .filter((r) => r.endDate >= today)
+    .sort((a, b) => a.startDate.localeCompare(b.startDate))[0];
+  const totalsBefore = balance ? balance.vacation.usedBefore + balance.sick.usedBefore : 0;
+
+  return (
+    <Card className="p-4" testId="staff-time-off">
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <h2 className="text-base font-semibold text-slate-900">Time off</h2>
+        {!isMe && (
+          <div className="flex flex-wrap gap-2">
+            <button
+              type="button"
+              onClick={() => setOpen('adjust')}
+              className={buttonClass('secondary', 'sm')}
+            >
+              Adjust balance
+            </button>
+            <button
+              type="button"
+              onClick={() => setOpen('record')}
+              className={buttonClass('secondary', 'sm')}
+            >
+              + Record past time off
+            </button>
+          </div>
+        )}
+      </div>
+
+      {balance && (
+        <p className="mt-2 text-sm text-slate-700" data-testid="staff-time-off-balance">
+          <AllowanceLine label="PTO" allowance={balance.vacation} />
+          <span className="text-slate-400"> · </span>
+          <AllowanceLine label="Sick" allowance={balance.sick} />
+          <span className="text-xs text-slate-500"> — {balance.policyYear} policy year</span>
+        </p>
+      )}
+
+      <ul className="mt-2 space-y-0.5 text-sm text-slate-700">
+        {next && (
+          <li>
+            <span className="text-slate-500">Next:</span> {range(next)} ·{' '}
+            {PTO_TYPE_LABELS[next.type]}
+            {next.status === 'PENDING' && ' (waiting on a decision)'}
+          </li>
+        )}
+        {waiting > 0 && !(waiting === 1 && next?.status === 'PENDING') && (
+          <li>
+            {waiting} request{waiting === 1 ? '' : 's'} waiting on a decision
+          </li>
+        )}
+      </ul>
+
+      {requests.length === 0 ? (
+        <p className="mt-2 text-sm text-slate-600">No time off on file.</p>
+      ) : (
+        <button
+          type="button"
+          onClick={() => setOpen('all')}
+          className="tap mt-2 text-sm font-medium text-brand-700 hover:text-brand-900"
+        >
+          See all {requests.length} on file →
+        </button>
+      )}
+
+      {open === 'all' && (
+        <Modal
+          title={`${firstName}’s time off`}
+          wide
+          testId="staff-time-off-all"
+          onClose={() => setOpen(null)}
+        >
+          <TimeOffList firstName={firstName} requests={requests} onChanged={onChanged} />
+        </Modal>
+      )}
+      {open === 'record' && (
+        <Modal title="Record time off already taken" wide onClose={() => setOpen(null)}>
+          <RecordForm
+            employeeId={employeeId}
+            totalsBefore={totalsBefore}
+            onCancel={() => setOpen(null)}
+            onRecorded={() => {
+              setOpen(null);
+              onChanged();
+            }}
+          />
+        </Modal>
+      )}
+      {open === 'adjust' && (
+        <Modal title={`Adjust ${firstName}’s time off`} wide onClose={() => setOpen(null)}>
+          <AdjustBalance
+            employeeId={employeeId}
+            onDone={() => {
+              setOpen(null);
+              onChanged();
+            }}
+            onCancel={() => setOpen(null)}
+          />
+        </Modal>
+      )}
+    </Card>
+  );
+}
+
+/// "PTO 12 of 15 left", or "No PTO".
+function AllowanceLine({ label, allowance }: { label: string; allowance: AllowanceBalance }) {
+  if (hasNone(allowance)) return <span>No {label}</span>;
+  return (
+    <span>
+      {label}{' '}
+      <strong className={allowance.remaining < 0 ? 'text-rose-700' : 'text-slate-900'}>
+        {allowance.remaining}
+      </strong>{' '}
+      of {allowance.available} left
+      {allowance.pending > 0 && (
+        <span className="text-xs text-slate-500"> ({allowance.pending} asked for)</span>
+      )}
+    </span>
+  );
+}
+
+/// Loads their row of Staff balances and the policy, then the same Adjust form.
+function AdjustBalance({
+  employeeId,
+  onDone,
+  onCancel,
+}: {
+  employeeId: string;
+  onDone: () => void;
+  onCancel: () => void;
+}) {
+  const [row, setRow] = useState<StaffBalance | null>(null);
+  const [policy, setPolicy] = useState<PtoPolicy | null>(null);
+  const [problem, setProblem] = useState<string | null>(null);
+  useEffect(() => {
+    let cancelled = false;
+    Promise.all([api.staffPtoBalance(employeeId), api.ptoPolicy()])
+      .then(([found, terms]) => {
+        if (cancelled) return;
+        setRow(found);
+        setPolicy(terms);
+      })
+      .catch((err) => setProblem(err instanceof ApiError ? err.message : 'Could not load that.'));
+    return () => {
+      cancelled = true;
+    };
+  }, [employeeId]);
+
+  if (problem) return <Alert>{problem}</Alert>;
+  if (!row || !policy) return <p className="text-sm text-slate-600">Loading…</p>;
+  return <AdjustForm row={row} policy={policy} onSaved={onDone} onCancel={onCancel} />;
+}
+
+/// Everything on file, newest first; recorded time off can be removed.
+function TimeOffList({
+  firstName,
+  requests,
+  onChanged,
+}: {
+  firstName: string;
+  requests: PtoRequest[];
+  onChanged: () => void;
+}) {
   const confirm = useConfirm();
-  const [recording, setRecording] = useState(false);
   const [problem, setProblem] = useState<string | null>(null);
   const newestFirst = [...requests].sort((a, b) => b.startDate.localeCompare(a.startDate));
-  const totalsBefore = balance ? balance.vacation.usedBefore + balance.sick.usedBefore : 0;
 
   async function remove(request: PtoRequest) {
     const sure = await confirm({
@@ -75,106 +256,64 @@ export function StaffTimeOffCard({
   }
 
   return (
-    <Card className="p-4" testId="staff-time-off">
-      <div className="flex flex-wrap items-center justify-between gap-2">
-        <h2 className="text-base font-semibold text-slate-900">Time off</h2>
-        {!recording && !isMe && (
-          <button
-            type="button"
-            onClick={() => setRecording(true)}
-            className={buttonClass('secondary', 'sm')}
-          >
-            + Record time off already taken
-          </button>
-        )}
-      </div>
-
-      {balance && (
-        <div className="mt-3">
-          <PtoBalanceCard balance={balance} title="This year’s balance" />
-        </div>
-      )}
-
+    <>
       {problem && (
-        <div className="mt-3">
+        <div className="mb-3">
           <Alert>{problem}</Alert>
         </div>
       )}
-
-      {recording && (
-        <div className="mt-4">
-          <RecordForm
-            employeeId={employeeId}
-            totalsBefore={totalsBefore}
-            onCancel={() => setRecording(false)}
-            onRecorded={() => {
-              setRecording(false);
-              onChanged();
-            }}
-          />
-        </div>
-      )}
-
-      {newestFirst.length === 0 ? (
-        <p className="mt-4 text-sm text-slate-600">No time off on file.</p>
-      ) : (
-        <ul className="mt-4 space-y-2" aria-label="Time off on file">
-          {newestFirst.map((request) => (
-            <li
-              key={request.id}
-              className={`rounded-lg border border-slate-200 p-3 ${
-                request.status === 'DENIED' || request.status === 'CANCELLED' ? 'opacity-70' : ''
-              }`}
-              data-testid="staff-time-off-entry"
-            >
-              <div className="flex flex-wrap items-start justify-between gap-2">
-                <div className="min-w-0">
-                  <p className="flex flex-wrap items-center gap-2 text-sm">
-                    <span className="font-medium text-slate-900">{range(request)}</span>
-                    <Badge tone={STATUS_TONE[request.status]}>{STATUS_LABEL[request.status]}</Badge>
-                  </p>
-                  <p className="mt-0.5 text-sm text-slate-600">
-                    {PTO_TYPE_LABELS[request.type]} · {request.days} day
-                    {request.days === 1 ? '' : 's'}
-                    {request.recordedBy && (
-                      <>
-                        {' '}
-                        · recorded after the fact by {request.recordedBy.firstName}{' '}
-                        {request.recordedBy.lastName}
-                      </>
-                    )}
-                  </p>
-                  {request.notes && (
-                    <p className="mt-1 text-sm text-slate-700">&ldquo;{request.notes}&rdquo;</p>
-                  )}
-                  {request.reviewNote && (
-                    <p className="mt-1 text-sm text-slate-600">
-                      <span className="font-medium">
-                        {request.reviewedBy
-                          ? `${request.reviewedBy.firstName} ${request.reviewedBy.lastName}`
-                          : 'Manager'}
-                        :
-                      </span>{' '}
-                      {request.reviewNote}
-                    </p>
-                  )}
-                </div>
+      <ul className="divide-y divide-slate-100" aria-label="Time off on file">
+        {newestFirst.map((request) => (
+          <li
+            key={request.id}
+            className={`flex flex-wrap items-start justify-between gap-2 py-2 ${
+              request.status === 'DENIED' || request.status === 'CANCELLED' ? 'opacity-70' : ''
+            }`}
+            data-testid="staff-time-off-entry"
+          >
+            <div className="min-w-0 text-sm">
+              <p className="flex flex-wrap items-center gap-2">
+                <span className="font-medium text-slate-900">{range(request)}</span>
+                <Badge tone={STATUS_TONE[request.status]}>{STATUS_LABEL[request.status]}</Badge>
+              </p>
+              <p className="text-slate-600">
+                {PTO_TYPE_LABELS[request.type]} · {request.days} day
+                {request.days === 1 ? '' : 's'}
                 {request.recordedBy && (
-                  <button
-                    type="button"
-                    onClick={() => void remove(request)}
-                    className={buttonClass('secondary', 'sm')}
-                    aria-label={`Remove the time off recorded for ${range(request)}`}
-                  >
-                    Remove
-                  </button>
+                  <>
+                    {' '}
+                    · recorded after the fact by {request.recordedBy.firstName}{' '}
+                    {request.recordedBy.lastName}
+                  </>
                 )}
-              </div>
-            </li>
-          ))}
-        </ul>
-      )}
-    </Card>
+              </p>
+              {request.notes && <p className="text-slate-700">&ldquo;{request.notes}&rdquo;</p>}
+              {request.reviewNote && (
+                <p className="text-slate-600">
+                  <span className="font-medium">
+                    {request.reviewedBy
+                      ? `${request.reviewedBy.firstName} ${request.reviewedBy.lastName}`
+                      : 'Manager'}
+                    :
+                  </span>{' '}
+                  {request.reviewNote}
+                </p>
+              )}
+            </div>
+            {request.recordedBy && (
+              <button
+                type="button"
+                onClick={() => void remove(request)}
+                className={buttonClass('secondary', 'sm')}
+                aria-label={`Remove the time off recorded for ${range(request)}`}
+              >
+                Remove
+              </button>
+            )}
+          </li>
+        ))}
+      </ul>
+    </>
   );
 }
 
@@ -224,7 +363,7 @@ function RecordForm({
   return (
     <form
       onSubmit={(event) => void submit(event)}
-      className="space-y-3 rounded-lg border border-slate-200 bg-slate-50 p-3"
+      className="space-y-3"
       aria-label="Record time off already taken"
     >
       <p className="text-sm text-slate-700">

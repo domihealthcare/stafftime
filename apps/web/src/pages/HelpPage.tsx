@@ -1080,6 +1080,59 @@ const MANAGERS: Section[] = [
         ),
       },
       {
+        question: 'Too many off at once',
+        answer: (
+          <p>
+            When you decide a time-off request, a warning under it says if approving it leaves an
+            office short of one job role — more than half of them off that day, counting requests
+            still waiting as well as approved ones (so for a role of one or two, all of them). It
+            names who else is off. It is only a warning: Approve still works. The Dashboard lists
+            the next 8 weeks&rsquo; clashes, and the nightly email the next 2.
+          </p>
+        ),
+      },
+      {
+        question: 'Patterns worth a word',
+        answer: (
+          <p>
+            On the <strong>Dashboard</strong>, and in the nightly email when there is one: anybody
+            who, over the last four weeks, was late 3 times or more (it says &ldquo;3 Mondays
+            running&rdquo; when it is the same day each week), forgot to clock out twice, or left
+            early twice. <strong>Which days?</strong> lists them. Only managers see it, and the
+            person is not told — it is a reason to ask how things are going, not a verdict. Hours
+            entered by hand are not counted.
+          </p>
+        ),
+      },
+      {
+        question: 'Who can cover this?',
+        answer: (
+          <p>
+            Click any shift on the rota — open, or one whose person needs replacing — and{' '}
+            <strong>Who can cover this</strong> suggests who to ask first: people at that office in
+            the shift&rsquo;s job role who are free then, not off, haven&rsquo;t said they
+            can&rsquo;t work then, and are furthest from overtime. Press a name to pick them. The
+            list under it has everybody, in three groups — free, could but check first (with the
+            reason: asked for the day off, not available then, close to or into overtime), and
+            already on or off that day — so you can still choose anyone, and the usual warnings
+            follow.
+          </p>
+        ),
+      },
+      {
+        question: 'Filling a week’s open shifts in one go',
+        answer: (
+          <p>
+            When a week has open shifts, press <strong>✨ Suggest people for them</strong> on the
+            amber line above the rota. It proposes somebody free for each — the same rules as Who
+            can cover this, never two shifts at once, and the hours spread so nobody gets them all —
+            and says &ldquo;Nobody is free then&rdquo; where nobody is. Untick any you don&rsquo;t
+            want and press <strong>Assign</strong>. Nothing changes before that, and drafts stay
+            drafts until you publish.
+          </p>
+        ),
+      },
+      {
         question: 'Meetings and practice events',
         answer: (
           <p>
@@ -1286,10 +1339,24 @@ const MANAGERS: Section[] = [
         answer: (
           <p>
             The <Screen>Schedule</Screen> tab shows a count of what is waiting, and the requests are
-            at the top of the Schedule to approve or decline there.{' '}
-            <Screen>Manage → Time off &amp; balances</Screen> shows each one with what is already
-            scheduled in those dates before you decide. Approving does not cancel shifts — the
-            coverage strip flags the clash, and you reassign cover.
+            at the top of the Schedule to approve or decline there. <strong>All requests</strong>{' '}
+            beside them lists everybody&rsquo;s, waiting, approved or declined, each with what is
+            already scheduled in those dates. Approving does not cancel shifts — the coverage strip
+            flags the clash, and you reassign cover. To put in a request for somebody (one they made
+            by phone), press <strong>+ Request time off</strong> and choose them under{' '}
+            <strong>For</strong>.
+          </p>
+        ),
+      },
+      {
+        question: 'Balances, and the time off rules',
+        answer: (
+          <p>
+            Everybody&rsquo;s days left are on the <Screen>Dashboard</Screen>, under{' '}
+            <strong>Time off balances</strong>, with a search box and <strong>Adjust</strong>. The
+            practice&rsquo;s rules — PTO and sick days a year, what carries over, when the year
+            starts — are in <Screen>Practice settings</Screen> (account menu), where an admin
+            changes them.
           </p>
         ),
       },
@@ -1297,15 +1364,27 @@ const MANAGERS: Section[] = [
         question: 'Putting in time off people took before Domi Staff',
         answer: (
           <p>
-            On <Screen>Manage → Time off &amp; balances</Screen>, open{' '}
-            <strong>Staff balances</strong> and press <strong>Adjust</strong> beside the person.
-            Enter the PTO and sick days they had already taken this year, rolled-over days included;
-            anything booked in the app counts by itself. Under <strong>PTO a year</strong> choose
-            the practice&rsquo;s amount, their own (part-time, long service) or{' '}
-            <strong>No PTO</strong> for somebody who does not get it.{' '}
-            <strong>PTO rolled over into this year</strong> is all that rolled over from last year —
-            the app cannot know it, because it was not in use then, so it counts none until you
-            enter it.
+            On the <Screen>Dashboard</Screen>, under <strong>Time off balances</strong>, press{' '}
+            <strong>Adjust</strong> beside the person — or, as an admin, press{' '}
+            <strong>Adjust balance</strong> under Time off on their profile. Enter the PTO and sick
+            days they had already taken this year, rolled-over days included; anything booked in the
+            app counts by itself. Under <strong>PTO a year</strong> choose the practice&rsquo;s
+            amount, their own (part-time, long service) or <strong>No PTO</strong> for somebody who
+            does not get it. <strong>PTO rolled over into this year</strong> is all that rolled over
+            from last year — the app cannot know it, because it was not in use then, so it counts
+            none until you enter it.
+          </p>
+        ),
+      },
+      {
+        question: 'Shortcuts for one person (admins)',
+        answer: (
+          <p>
+            On somebody&rsquo;s profile (<Screen>Manage → Staff</Screen>, press their name),{' '}
+            <strong>For …</strong> opens their Schedule, Timesheet, Licenses, Onboarding &amp;
+            offboarding or Availability showing them only — <strong>Show everyone</strong> goes back
+            to the whole list — and <strong>+ Request time off for …</strong> opens the request form
+            already for them.
           </p>
         ),
       },
@@ -1314,10 +1393,11 @@ const MANAGERS: Section[] = [
         answer: (
           <p>
             On somebody&rsquo;s profile (<Screen>Manage → Staff</Screen>, press their name), press{' '}
-            <strong>Record time off already taken</strong>: Sick or PTO, the days, and a comment if
-            you like. It counts as approved and comes off their balance; nobody is notified, and it
-            can be removed from the same place. Use it or the total under <strong>Adjust</strong>{' '}
-            for the same days, not both — both would count them twice.
+            <strong>+ Record past time off</strong>: Sick or PTO, the days, and a comment if you
+            like. It counts as approved and comes off their balance; nobody is notified. The profile
+            shows only what is left and what is coming up; <strong>See all</strong> opens everything
+            on file, where a recorded day can be removed. Use it or the total under{' '}
+            <strong>Adjust</strong> for the same days, not both — both would count them twice.
           </p>
         ),
       },
