@@ -93,6 +93,31 @@ await step('the timesheet narrows to one day and to a name typed in', async () =
   if ((await rows()) !== all) throw new Error('clearing the filters did not bring every row back');
 });
 
+// No sideways scroll anywhere on the Timesheet (Dominguez, October 2026):
+// the table's long cells wrap, and below a laptop's width it is cards.
+await step('the timesheet never scrolls sideways, phone to laptop', async () => {
+  for (const width of [390, 768, 1024, 1280]) {
+    await page.setViewportSize({ width, height: 900 });
+    await page.waitForTimeout(200);
+    const over = await page.evaluate(() => {
+      const pageOver = document.documentElement.scrollWidth - window.innerWidth;
+      const boxes = [...document.querySelectorAll('main *')].filter(
+        (el) => el.offsetParent !== null && el.scrollWidth - el.clientWidth > 1 &&
+          ['auto', 'scroll'].includes(getComputedStyle(el).overflowX),
+      );
+      const table = document.querySelector('main table');
+      const tableOver =
+        table && table.offsetParent !== null
+          ? table.getBoundingClientRect().right - table.parentElement.getBoundingClientRect().right
+          : 0;
+      return { pageOver, boxes: boxes.length, tableOver };
+    });
+    if (over.pageOver > 1 || over.boxes > 0 || over.tableOver > 1)
+      throw new Error(`at ${width}px: ${JSON.stringify(over)}`);
+  }
+  await page.setViewportSize({ width: 1280, height: 900 });
+});
+
 await browser.close();
 console.log(`\n${errors.length === 0 ? 'ALL CORRECTION CHECKS PASSED' : `PROBLEMS (${errors.length}):`}`);
 errors.forEach((e) => console.log(' - ' + e));

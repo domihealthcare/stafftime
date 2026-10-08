@@ -213,8 +213,10 @@ export function TimesheetPage() {
             </EmptyState>
           </div>
         ) : (
-          <div className="hidden overflow-x-auto sm:block">
-            <table className="min-w-full divide-y divide-slate-200 text-sm">
+          // Never scrolls sideways (Dominguez, October 2026): the long cells
+          // wrap, and below a laptop's width the entries are cards instead.
+          <div className="hidden lg:block">
+            <table className="w-full divide-y divide-slate-200 text-sm">
               <thead className="bg-slate-50 text-left text-xs uppercase tracking-wide text-slate-500">
                 <tr>
                   <th scope="col" className="px-3 py-2 font-medium">
@@ -252,15 +254,17 @@ export function TimesheetPage() {
                         {formatDate(entry.clockInAt)}
                       </td>
                       {isManager && (
-                        <td className="whitespace-nowrap px-3 py-1.5 text-slate-700">
+                        <td className="px-3 py-1.5 text-slate-700">
                           {entry.employee
                             ? `${entry.employee.firstName} ${entry.employee.lastName}`
                             : '—'}
                         </td>
                       )}
-                      <td className="whitespace-nowrap px-3 py-1.5 tabular-nums text-slate-700">
-                        {formatTime(entry.clockInAt)} –{' '}
-                        {entry.clockOutAt ? formatTime(entry.clockOutAt) : '—'}
+                      <td className="px-3 py-1.5 tabular-nums text-slate-700">
+                        <span className="whitespace-nowrap">{formatTime(entry.clockInAt)} –</span>{' '}
+                        <span className="whitespace-nowrap">
+                          {entry.clockOutAt ? formatTime(entry.clockOutAt) : '—'}
+                        </span>
                       </td>
                       <td className="whitespace-nowrap px-3 py-1.5 tabular-nums font-medium text-slate-900">
                         {entry.clockOutAt
@@ -270,11 +274,11 @@ export function TimesheetPage() {
                       <td className="whitespace-nowrap px-3 py-1.5">
                         <VerificationBadge entry={entry} />
                       </td>
-                      <td className="whitespace-nowrap px-3 py-1.5">
+                      <td className="px-3 py-1.5">
                         <Flags entry={entry} />
                       </td>
                       {isManager && (
-                        <td className="whitespace-nowrap px-3 py-1.5">
+                        <td className="px-3 py-1.5">
                           <EntryActions
                             entry={entry}
                             busy={busyId === entry.id}
@@ -311,11 +315,11 @@ export function TimesheetPage() {
           </div>
         )}
 
-        {/* A phone cannot show eight columns, and sideways-scrolling a table to
+        {/* A phone or tablet cannot show seven columns, and sideways-scrolling a table to
             reach Approve is miserable when that is the whole job. Same entries,
             stacked, with the action where the thumb already is. */}
         {!loading && shown.length > 0 && (
-          <ul className="divide-y divide-slate-100 sm:hidden">
+          <ul className="divide-y divide-slate-100 lg:hidden">
             {shown.map((entry) => (
               <li key={entry.id} className="px-3 py-2">
                 <div className="flex items-start justify-between gap-3">
@@ -513,7 +517,7 @@ function EntryActions({
   onEdit: () => void;
 }) {
   return (
-    <div className="flex items-center gap-2">
+    <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
       {entry.status === 'APPROVED' ? (
         <span className="text-xs text-slate-500">Approved</span>
       ) : entry.autoClockedOutAt && entry.isMissingPunch ? (
@@ -588,7 +592,7 @@ function Flags({ entry }: { entry: TimeEntry }) {
   }
 
   return (
-    <div className="flex flex-wrap gap-1">
+    <div className="flex flex-wrap gap-1 whitespace-nowrap">
       {flags.map((flag) => (
         <Badge key={flag.label} tone={flag.tone}>
           {flag.label}
