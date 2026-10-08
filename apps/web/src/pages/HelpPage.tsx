@@ -929,8 +929,8 @@ const MANAGERS: Section[] = [
         question: 'How do I fix a punch?',
         answer: (
           <p>
-            Press <strong>Correct</strong>, change the time and give a reason. The reason is shown
-            to the employee and kept, so a disputed payslip can be settled by looking. If the hours
+            Press <strong>Edit</strong>, change the time and give a reason. The reason is shown to
+            the employee and kept, so a disputed payslip can be settled by looking. If the hours
             have already gone to payroll the app stops you and asks you to confirm; the correction
             is then flagged until a later export picks it up.
           </p>
@@ -943,7 +943,7 @@ const MANAGERS: Section[] = [
             <p>
               On <Screen>Timesheet</Screen>, press <strong>+ Add hours</strong>: who, the day, when
               they started and finished, why it is by hand, and what happened. You cannot add your
-              own hours — another manager does. <strong>Correct</strong> is still the way to fix a
+              own hours — another manager does. <strong>Edit</strong> is still the way to fix a
               punch that is there, such as a missing clock-out.
             </p>
             <p>
@@ -1299,9 +1299,13 @@ const MANAGERS: Section[] = [
           <p>
             On <Screen>Manage → Time off &amp; balances</Screen>, open{' '}
             <strong>Staff balances</strong> and press <strong>Adjust</strong> beside the person.
-            Enter the PTO and sick days they had already taken this year; anything booked in the app
-            counts by itself. Somebody on a different yearly amount (part-time, long service) gets
-            their own there too — leave it blank for the practice&rsquo;s.
+            Enter the PTO and sick days they had already taken this year, rolled-over days included;
+            anything booked in the app counts by itself. Under <strong>PTO a year</strong> choose
+            the practice&rsquo;s amount, their own (part-time, long service) or{' '}
+            <strong>No PTO</strong> for somebody who does not get it.{' '}
+            <strong>PTO rolled over into this year</strong> is all that rolled over from last year —
+            the app cannot know it, because it was not in use then, so it counts none until you
+            enter it.
           </p>
         ),
       },

@@ -1,4 +1,4 @@
-import type { PtoRequest, PtoType } from './types';
+import type { AllowanceBalance, PtoRequest, PtoType } from './types';
 
 /// What a rota shows for a day somebody is off: approved time off blocks the
 /// day, a request still waiting on a manager is a warning. Denied and
@@ -34,3 +34,10 @@ export const PTO_TYPE_LABELS: Record<PtoType, string> = {
 
 /// What a new request can be, in the order the form offers them.
 export const REQUESTABLE_PTO_TYPES = ['SICK', 'VACATION'] as const satisfies readonly PtoType[];
+
+/// Nothing to have, nothing taken and nothing asked for: somebody who does
+/// not get this kind of time off (Dominguez, October 2026: "not all employees
+/// have PTO").
+export function hasNone(allowance: AllowanceBalance): boolean {
+  return allowance.available === 0 && allowance.used === 0 && allowance.pending === 0;
+}

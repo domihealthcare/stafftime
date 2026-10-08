@@ -56,12 +56,12 @@ await step('an admin can change the rules', async () => {
 });
 
 await step('the balance recalculates from the new policy', async () => {
-  // Admin was hired 2025-01-06, so last year carries in, now capped at 3.
+  // Admin was hired 2025-01-06 but added to the app this year: nothing is
+  // assumed to roll over from a year the app never saw (October 2026).
   const card = balanceCard(adm);
-  await card.getByText('Carried over').first().waitFor({ timeout: 10000 });
-  const text = await card.innerText();
-  if (!/Carried over\s*3/.test(text.replace(/\n/g, ' ')))
-    throw new Error(`expected 3 carried over after the change: "${text}"`);
+  await card.getByText(/Allowance\s*18/).first().waitFor({ timeout: 10000 });
+  const text = (await card.innerText()).replace(/\n/g, ' ');
+  if (/Carried over/.test(text)) throw new Error(`a rollover was invented for last year: "${text}"`);
 });
 
 // Put it back so the rest of the suites see the documented defaults.
@@ -213,6 +213,35 @@ await step('blank puts it back to the practice’s', async () => {
   await form.waitFor({ state: 'detached', timeout: 15000 });
   if ((await leftIn(frankieRow(), 'PTO')) !== before.pto) throw new Error('PTO did not go back');
   if ((await leftIn(frankieRow(), 'Sick')) !== before.sick) throw new Error('sick did not go back');
+});
+
+await step('somebody can be given no PTO at all', async () => {
+  await frankieRow().getByRole('button', { name: 'Adjust' }).click();
+  const form = adm.getByRole('form', { name: /Adjust Frankie/ });
+  await form.getByLabel('No PTO').check();
+  if (await form.getByLabel('PTO rolled over into this year').count() > 0)
+    throw new Error('a rollover was asked for somebody with no PTO');
+  await form.getByRole('button', { name: 'Save' }).click();
+  await form.waitFor({ state: 'detached', timeout: 15000 });
+  // Frankie asked for five days above, so it reads as five over rather than
+  // "No PTO", which is kept for somebody with nothing asked for either.
+  const left = await leftIn(frankieRow(), 'PTO');
+  if (left > 0 || left >= before.pto) throw new Error(`still ${left} PTO left`);
+});
+
+await step('a rollover can be put in, and the practice’s PTO put back', async () => {
+  await frankieRow().getByRole('button', { name: 'Adjust' }).click();
+  const form = adm.getByRole('form', { name: /Adjust Frankie/ });
+  await form.getByLabel(/The practice’s \d+ days/).check();
+  await form.getByLabel('PTO rolled over into this year').fill('3');
+  await form.getByRole('button', { name: 'Save' }).click();
+  await form.waitFor({ state: 'detached', timeout: 15000 });
+  if ((await leftIn(frankieRow(), 'PTO')) !== before.pto + 3) throw new Error('the rollover was not added');
+  await frankieRow().getByRole('button', { name: 'Adjust' }).click();
+  await form.getByLabel('PTO rolled over into this year').fill('');
+  await form.getByRole('button', { name: 'Save' }).click();
+  await form.waitFor({ state: 'detached', timeout: 15000 });
+  if ((await leftIn(frankieRow(), 'PTO')) !== before.pto) throw new Error('PTO did not go back');
 });
 
 await browser.close();

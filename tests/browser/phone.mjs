@@ -247,7 +247,7 @@ await step('the correction dialog fits a phone', async () => {
   await (await navLink(page, 'Timesheet')).click();
   // The desktop table is still in the DOM, just hidden, so ask for the button
   // that is actually on screen rather than the first one in document order.
-  await page.getByRole('button', { name: 'Correct' }).locator('visible=true').first().click();
+  await page.getByRole('button', { name: 'Edit', exact: true }).locator('visible=true').first().click();
   await page.getByLabel(/Reason/i).waitFor({ timeout: 10000 });
   await assertNoSidewaysScroll(page, 'Correction dialog');
 });

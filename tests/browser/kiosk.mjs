@@ -142,6 +142,10 @@ await step('the same post is under the sign-in form, for anybody, and nothing el
   const text = (await posts.allInnerTexts()).join(' ');
   if (!text.includes('Flu shots are here')) throw new Error(`the public post is missing: ${text}`);
   if (text.includes('rota reminder')) throw new Error('a post not ticked showed on the sign-in page');
+  // News at the top, the sign-in form under it (Dominguez, October 2026).
+  const postTop = (await posts.first().boundingBox()).y;
+  const formTop = (await visitor.getByLabel('Email').boundingBox()).y;
+  if (postTop > formTop) throw new Error('the news is under the sign-in form, not above it');
   // The rest of News still needs a session.
   const list = await visitor.request.get(`${BASE}/api/announcements`);
   if (list.status() !== 401) throw new Error(`News answered ${list.status()} with nobody signed in`);

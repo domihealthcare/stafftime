@@ -11,7 +11,7 @@ const field =
 
 /**
  * A manager entering a day that has no punch at all (Dominguez, September
- * 2026). Correcting a punch that exists is the Correct button; this is for
+ * 2026). Correcting a punch that exists is the Edit button; this is for
  * when there is nothing to correct.
  *
  * Every one of these is listed — Timesheet banner and nightly email — until
@@ -127,7 +127,7 @@ export function AddHoursDialog({
           Add hours
         </h2>
         <p className="mt-1 text-sm text-slate-600">
-          For a day with no punch at all. To fix a punch that is there, use Correct on it instead.
+          For a day with no punch at all. To fix a punch that is there, use Edit on it instead.
         </p>
 
         <form onSubmit={(event) => void submit(event)} className="mt-4 space-y-3">

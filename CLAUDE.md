@@ -867,6 +867,12 @@ Beyond the phases, the parts worth knowing about before picking up work:
   — the one News read that needs no session; one query
   (`announcements/public-posts.ts`) serves both. The column keeps its first
   name, `showOnTimeClock`; it means "public".
+- **Timesheet and sign-in tidied** (8 October 2026, Dominguez): the
+  Timesheet's **Correct** is now **Edit** (dialog "Edit time entry", **Save
+  changes**), rows are tighter with In – Out in one column, and there are
+  **Day** and (managers) **Employee** search filters above the table,
+  narrowing what the period loaded. The sign-in page has the public News
+  posts **at the top** and a smaller, more compact sign-in under them.
 - **Hours entered by hand** (29 September 2026, Dominguez): Timesheet →
   **+ Add hours** (managers) for a day with no punch at all — a reason from a
   short list and a note, never your own hours, never over a punch already
@@ -911,7 +917,13 @@ Beyond the phases, the parts worth knowing about before picking up work:
   had already taken this year before Domi Staff, what really carried over
   (blank: worked out) and their own yearly amount (blank: the practice's) —
   `PtoStartingPoint`, `PtoAllowance`; see *The switch-over* in
-  `docs/architecture.md`.
+  `docs/architecture.md`. **Fixed 8 October 2026** (Dominguez: "it should be
+  15 PTO and 5 sick"): rollover was worked out from every year since the hire
+  date, so years before the app counted as unused and everybody got the full
+  5 extra; now it counts only from when they were added to the app, and the
+  real rollover is entered under Adjust ("PTO rolled over into this year",
+  used days under "PTO already taken"). Adjust also chooses **the practice's
+  PTO, their own amount, or No PTO** ("not all employees have PTO").
 - **Schedule layout** (September 2026, Dominguez): the month (or the week's
   dates) is a large heading right above the calendar, under the buttons.
 - **The Schedule on a phone** (October 2026, Dominguez): a manager's phone

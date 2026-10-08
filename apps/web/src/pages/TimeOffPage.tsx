@@ -12,7 +12,7 @@ import type {
   PtoStatus,
   PtoType,
 } from '../lib/types';
-import { PTO_TYPE_LABELS, REQUESTABLE_PTO_TYPES } from '../lib/time-off';
+import { PTO_TYPE_LABELS, REQUESTABLE_PTO_TYPES, hasNone } from '../lib/time-off';
 import { PtoBalanceCard } from '../components/PtoBalanceCard';
 import { PtoPolicyEditor } from '../components/PtoPolicyEditor';
 import { StaffPtoBalances } from '../components/StaffPtoBalances';
@@ -443,7 +443,12 @@ function RequestForm({
   const [busy, setBusy] = useState(false);
   const [problem, setProblem] = useState<string | null>(null);
 
-  const sickUsedUp = employeeId === '' && balance !== null && balance.sick.remaining <= 0;
+  // …and only if they get PTO at all.
+  const sickUsedUp =
+    employeeId === '' &&
+    balance !== null &&
+    balance.sick.remaining <= 0 &&
+    !hasNone(balance.vacation);
   const type: PtoType = chosenType ?? (sickUsedUp ? 'VACATION' : 'SICK');
 
   // One date is the common case; the end mirrors the start until changed.

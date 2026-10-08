@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom';
 import { ApiError, api } from '../lib/api';
 import { formatCalendarDate, localDate } from '../lib/format';
 import { useIsManager, useSession } from '../lib/session';
-import { PTO_TYPE_LABELS } from '../lib/time-off';
+import { PTO_TYPE_LABELS, hasNone } from '../lib/time-off';
 import type { PtoBalance, PtoRequest } from '../lib/types';
 import { useConfirm } from './ConfirmDialog';
 import { Alert, buttonClass } from './ui';
@@ -192,9 +192,11 @@ export function YourTimeOff({ refreshKey }: { refreshKey: number }) {
     >
       <div className="flex flex-wrap items-center gap-x-4 gap-y-1">
         <span className="font-semibold text-slate-900">Your time off</span>
-        <span className="text-slate-700">
-          PTO <span className="font-semibold">{balance.vacation.remaining}</span> days left
-        </span>
+        {!hasNone(balance.vacation) && (
+          <span className="text-slate-700">
+            PTO <span className="font-semibold">{balance.vacation.remaining}</span> days left
+          </span>
+        )}
         <span className="text-slate-700">
           Sick <span className="font-semibold">{balance.sick.remaining}</span> days left
         </span>

@@ -94,7 +94,7 @@ export function EditEntryDialog({
         className="w-full max-w-md rounded-xl bg-white p-5 shadow-xl outline-none"
       >
         <h2 id="edit-entry-title" className="text-lg font-semibold text-slate-900">
-          Correct time entry
+          Edit time entry
         </h2>
         <p className="mt-1 text-sm text-slate-600">
           {entry.employee
@@ -182,7 +182,7 @@ export function EditEntryDialog({
               disabled={busy || !canSave}
               className={buttonClass('primary', 'md')}
             >
-              {busy ? 'Saving…' : exportedWarning ? 'Correct it anyway' : 'Save correction'}
+              {busy ? 'Saving…' : exportedWarning ? 'Correct it anyway' : 'Save changes'}
             </button>
             <button type="button" onClick={onClose} className={buttonClass('secondary', 'md')}>
               Cancel

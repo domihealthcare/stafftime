@@ -129,7 +129,7 @@ await step('managers are warned until it is corrected, and cannot approve it bef
 
   await goTo(admin, 'Timesheet');
   await admin.getByText('Clocked out at midnight', { exact: true }).first().waitFor({ timeout: 15000 });
-  await admin.getByText('Correct the time first').first().waitFor({ timeout: 5000 });
+  await admin.getByText('Edit the time first').first().waitFor({ timeout: 5000 });
   await admin.getByText('Clock-outs to correct').first().waitFor({ timeout: 5000 });
   await admin.screenshot({ path: `${OUT}/auto-clock-out-timesheet.png`, fullPage: true });
 });

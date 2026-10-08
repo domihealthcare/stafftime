@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { ApiError, api } from '../lib/api';
+import { hasNone } from '../lib/time-off';
 import type { PtoAdjustment, PtoPolicy, StaffBalance } from '../lib/types';
 import { Alert, Card, Spinner, buttonClass } from './ui';
 
@@ -88,7 +89,11 @@ export function StaffPtoBalances({
                         {row.employee.preferredName || row.employee.firstName}{' '}
                         {row.employee.lastName}
                       </span>
-                      <Left label="PTO" days={row.balance.vacation.remaining} />
+                      {hasNone(row.balance.vacation) ? (
+                        <span className="text-sm text-slate-500">No PTO</span>
+                      ) : (
+                        <Left label="PTO" days={row.balance.vacation.remaining} />
+                      )}
                       <Left label="Sick" days={row.balance.sick.remaining} />
                       <button
                         type="button"
@@ -158,11 +163,16 @@ function AdjustForm({
   const [form, setForm] = useState({
     vacationUsed: toText(row.vacationUsed || null),
     sickUsed: toText(row.sickUsed || null),
-    vacationDaysPerYear: toText(row.vacationDaysPerYear),
+    vacationDaysPerYear: toText(row.vacationDaysPerYear || null),
     sickDaysPerYear: toText(row.sickDaysPerYear),
     vacationCarriedOver: toText(row.vacationCarriedOver),
     sickCarriedOver: toText(row.sickCarriedOver),
   });
+  /// Whether they get PTO, and how much: the practice's, their own amount,
+  /// or none at all (stored as their own amount of 0).
+  const [ptoKind, setPtoKind] = useState<'practice' | 'own' | 'none'>(
+    row.vacationDaysPerYear === null ? 'practice' : row.vacationDaysPerYear === 0 ? 'none' : 'own',
+  );
   const [busy, setBusy] = useState(false);
   const [problem, setProblem] = useState<string | null>(null);
   const name = row.employee.preferredName || row.employee.firstName;
@@ -175,9 +185,11 @@ function AdjustForm({
     const body: PtoAdjustment = {
       vacationUsed: toNumber(form.vacationUsed) ?? 0,
       sickUsed: toNumber(form.sickUsed) ?? 0,
-      vacationDaysPerYear: toNumber(form.vacationDaysPerYear),
+      vacationDaysPerYear:
+        ptoKind === 'none' ? 0 : ptoKind === 'own' ? toNumber(form.vacationDaysPerYear) : null,
       sickDaysPerYear: toNumber(form.sickDaysPerYear),
-      vacationCarriedOver: toNumber(form.vacationCarriedOver),
+      // No PTO means none rolled over either, whatever was entered before.
+      vacationCarriedOver: ptoKind === 'none' ? 0 : toNumber(form.vacationCarriedOver),
       sickCarriedOver: toNumber(form.sickCarriedOver),
     };
     try {
@@ -223,34 +235,78 @@ function AdjustForm({
         {field(
           'vacationUsed',
           'PTO already taken',
-          `Before Domi Staff, this year. Anything booked in the app counts by itself.`,
+          `Before Domi Staff, this year, rolled-over days included. Anything booked in the app counts by itself.`,
           '0',
         )}
         {field('sickUsed', 'Sick days already taken', 'Before Domi Staff, this year.', '0')}
-        {field(
-          'vacationDaysPerYear',
-          'Their own PTO a year',
-          `Leave blank for the practice’s ${policy.vacationDaysPerYear}.`,
-          String(policy.vacationDaysPerYear),
-        )}
+        <fieldset className="sm:col-span-2">
+          <legend className="text-sm font-medium text-slate-700">PTO a year</legend>
+          <div className="mt-1 flex flex-wrap items-center gap-x-4 gap-y-2 text-sm text-slate-700">
+            <label className="flex items-center gap-1.5">
+              <input
+                type="radio"
+                name={`pto-kind-${id}`}
+                checked={ptoKind === 'practice'}
+                onChange={() => setPtoKind('practice')}
+              />
+              The practice’s {policy.vacationDaysPerYear} days
+            </label>
+            <label className="flex items-center gap-1.5">
+              <input
+                type="radio"
+                name={`pto-kind-${id}`}
+                checked={ptoKind === 'own'}
+                onChange={() => setPtoKind('own')}
+              />
+              Their own:
+            </label>
+            <input
+              aria-label="Their own PTO a year"
+              type="number"
+              inputMode="decimal"
+              min={0}
+              max={366}
+              step={0.5}
+              placeholder={String(policy.vacationDaysPerYear)}
+              value={form.vacationDaysPerYear}
+              onChange={(event) => {
+                setForm({ ...form, vacationDaysPerYear: event.target.value });
+                setPtoKind(event.target.value.trim() === '' ? 'practice' : 'own');
+              }}
+              className="w-24 rounded-lg border-slate-300 py-1.5 text-base shadow-sm focus:border-brand-600 focus:ring-brand-600"
+            />
+            <label className="flex items-center gap-1.5">
+              <input
+                type="radio"
+                name={`pto-kind-${id}`}
+                checked={ptoKind === 'none'}
+                onChange={() => setPtoKind('none')}
+              />
+              No PTO
+            </label>
+          </div>
+          <p className="mt-1 text-xs text-slate-500">
+            Not everybody gets PTO, or the same amount. Sick days are set separately below.
+          </p>
+        </fieldset>
         {field(
           'sickDaysPerYear',
           'Their own sick days a year',
           `Leave blank for the practice’s ${policy.sickDaysPerYear}.`,
           String(policy.sickDaysPerYear),
         )}
-        {policy.maxCarryoverDays > 0 &&
+        {ptoKind !== 'none' &&
           field(
             'vacationCarriedOver',
-            'PTO carried over into this year',
-            'Leave blank to let the app work it out.',
+            'PTO rolled over into this year',
+            'All that rolled over, even if some is used — used days go in PTO already taken. Blank: worked out by the app (none before Domi Staff).',
             String(row.balance.vacation.carriedOver),
           )}
-        {policy.sickCarryoverDays > 0 &&
+        {(policy.sickCarryoverDays > 0 || row.sickCarriedOver !== null) &&
           field(
             'sickCarriedOver',
-            'Sick days carried over into this year',
-            'Leave blank to let the app work it out.',
+            'Sick days rolled over into this year',
+            'Blank: worked out by the app (none before Domi Staff).',
             String(row.balance.sick.carriedOver),
           )}
       </div>

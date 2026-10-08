@@ -1,3 +1,4 @@
+import { hasNone } from '../lib/time-off';
 import type { AllowanceBalance, PtoBalance } from '../lib/types';
 import { Card } from './ui';
 
@@ -41,6 +42,15 @@ export function PtoBalanceCard({
 
 function Allowance({ label, allowance }: { label: string; allowance: AllowanceBalance }) {
   const over = allowance.remaining < 0;
+
+  if (hasNone(allowance)) {
+    return (
+      <div className="rounded-lg bg-slate-50 p-3">
+        <span className="text-sm font-medium text-slate-700">{label}</span>
+        <p className="mt-1 text-sm text-slate-500">None this year.</p>
+      </div>
+    );
+  }
 
   return (
     <div className="rounded-lg bg-slate-50 p-3">

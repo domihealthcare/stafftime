@@ -38,18 +38,47 @@ export function LoginPage() {
   }
 
   return (
-    <div className="flex min-h-screen flex-col justify-center bg-slate-100 px-4 py-12">
+    <div className="flex min-h-screen flex-col justify-center bg-slate-100 px-4 py-8">
       <div className="mx-auto w-full max-w-sm">
-        <div className="mb-6 flex flex-col items-center text-center">
-          <BrandLogo className="mb-4 h-24 w-auto" />
-          <h1 className="text-2xl font-semibold text-slate-900">Domi Staff</h1>
-          <p className="mt-1 text-sm text-slate-600">
-            Sign in to clock in, check your schedule and keep up with the team.
-          </p>
+        {/* News first (Dominguez, October 2026): it is what changes from one
+            visit to the next, and the form below is the same every time. */}
+        {posts.length > 0 && (
+          <section aria-label="News" className="mb-6 space-y-2">
+            {posts.map((post) => (
+              <article
+                key={post.id}
+                className="rounded-xl border border-slate-200 bg-white px-4 py-3 shadow-sm"
+                data-testid="public-post"
+              >
+                <div className="flex items-baseline justify-between gap-3">
+                  <h2 className="font-semibold text-slate-900">{post.title}</h2>
+                  <p className="shrink-0 text-xs text-slate-500">
+                    {new Date(post.createdAt).toLocaleDateString(undefined, {
+                      month: 'short',
+                      day: 'numeric',
+                    })}
+                  </p>
+                </div>
+                {post.body && (
+                  <p className="mt-1 whitespace-pre-line text-sm text-slate-700">{post.body}</p>
+                )}
+              </article>
+            ))}
+          </section>
+        )}
+
+        <div className="mb-4 flex items-center gap-3">
+          <BrandLogo className="h-12 w-auto shrink-0" />
+          <div className="min-w-0">
+            <h1 className="text-xl font-semibold text-slate-900">Domi Staff</h1>
+            <p className="text-xs text-slate-600">
+              Sign in to clock in, check your schedule and keep up with the team.
+            </p>
+          </div>
         </div>
 
-        <Card className="p-6">
-          <form onSubmit={(event) => void submit(event)} className="space-y-4">
+        <Card className="p-4">
+          <form onSubmit={(event) => void submit(event)} className="space-y-3">
             <div>
               <label htmlFor="email" className="block text-sm font-medium text-slate-700">
                 Email
@@ -66,56 +95,27 @@ export function LoginPage() {
               />
             </div>
 
-            <div>
-              <PasswordField
-                id="password"
-                label="Password"
-                value={password}
-                onChange={setPassword}
-              />
-            </div>
+            <PasswordField id="password" label="Password" value={password} onChange={setPassword} />
 
             {error && <Alert>{error}</Alert>}
 
             <button
               type="submit"
               disabled={busy || !email || !password}
-              className="w-full rounded-lg bg-brand-600 px-4 py-3 text-base font-semibold text-white hover:bg-brand-700 disabled:opacity-60"
+              className="w-full rounded-lg bg-brand-600 px-4 py-2.5 text-base font-semibold text-white hover:bg-brand-700 disabled:opacity-60"
             >
               {busy ? 'Signing in…' : 'Sign in'}
             </button>
           </form>
+          <p className="mt-3 text-center text-sm">
+            <Link
+              to="/forgot-password"
+              className="tap font-medium text-brand-700 hover:text-brand-900"
+            >
+              Forgotten your password?
+            </Link>
+          </p>
         </Card>
-
-        <p className="mt-4 text-center text-sm">
-          <Link to="/forgot-password" className="font-medium text-brand-700 hover:text-brand-900">
-            Forgotten your password?
-          </Link>
-        </p>
-
-        {posts.length > 0 && (
-          <section aria-label="News" className="mt-6 space-y-3">
-            {posts.map((post) => (
-              <article
-                key={post.id}
-                className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm"
-                data-testid="public-post"
-              >
-                <h2 className="font-semibold text-slate-900">{post.title}</h2>
-                <p className="mt-0.5 text-xs text-slate-500">
-                  {new Date(post.createdAt).toLocaleDateString(undefined, {
-                    month: 'long',
-                    day: 'numeric',
-                    year: 'numeric',
-                  })}
-                </p>
-                {post.body && (
-                  <p className="mt-2 whitespace-pre-line text-sm text-slate-700">{post.body}</p>
-                )}
-              </article>
-            ))}
-          </section>
-        )}
 
         <InstallTip />
       </div>
