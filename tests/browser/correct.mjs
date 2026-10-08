@@ -33,9 +33,9 @@ await goTo(page, 'Timesheet');
 await page.getByRole('table').waitFor({ timeout: 10000 });
 
 await step('a correction requires a reason before it can be saved', async () => {
-  await page.getByRole('button', { name: 'Correct' }).first().click();
+  await page.getByRole('button', { name: 'Edit', exact: true }).first().click();
   await page.getByRole('dialog').waitFor({ timeout: 10000 });
-  const save = page.getByRole('button', { name: 'Save correction' });
+  const save = page.getByRole('button', { name: 'Save changes' });
   if (await save.isEnabled()) throw new Error('save was enabled with no reason given');
 });
 
@@ -51,8 +51,8 @@ await step('the dialog takes the focus, keeps Tab inside, closes on Escape and h
   await page.keyboard.press('Escape');
   await page.getByRole('dialog').waitFor({ state: 'detached', timeout: 5000 });
   const back = await page.evaluate(() => document.activeElement?.textContent?.trim());
-  if (back !== 'Correct') throw new Error(`focus went to "${back}", not the button that opened it`);
-  await page.getByRole('button', { name: 'Correct' }).first().click();
+  if (back !== 'Edit') throw new Error(`focus went to "${back}", not the button that opened it`);
+  await page.getByRole('button', { name: 'Edit', exact: true }).first().click();
   await page.getByRole('dialog').waitFor({ timeout: 10000 });
 });
 
@@ -60,7 +60,7 @@ await page.screenshot({ path: `${OUT}/10-correct-dialog.png`, fullPage: true });
 
 await step('a correction saves, flags the entry as edited and shows the reason', async () => {
   await page.getByLabel('Reason').fill('Forgot to clock out at end of shift');
-  await page.getByRole('button', { name: 'Save correction' }).click();
+  await page.getByRole('button', { name: 'Save changes' }).click();
   await page.getByRole('dialog').waitFor({ state: 'detached', timeout: 10000 });
   await page.getByText('Forgot to clock out at end of shift').first().waitFor({ timeout: 10000 });
   await page.getByText('Edited').first().waitFor({ timeout: 5000 });
@@ -69,14 +69,30 @@ await step('a correction saves, flags the entry as edited and shows the reason',
 await page.screenshot({ path: `${OUT}/11-corrected.png`, fullPage: true });
 
 await step('clearing the clock-out turns the entry back into a missing punch', async () => {
-  await page.getByRole('button', { name: 'Correct' }).first().click();
+  await page.getByRole('button', { name: 'Edit', exact: true }).first().click();
   await page.getByRole('dialog').waitFor({ timeout: 10000 });
   await page.getByLabel('Clocked out').fill('');
   await page.getByLabel('Reason').fill('Punch recorded in error, awaiting confirmation');
-  await page.getByRole('button', { name: 'Save correction' }).click();
+  await page.getByRole('button', { name: 'Save changes' }).click();
   await page.getByRole('dialog').waitFor({ state: 'detached', timeout: 10000 });
   await page.getByText('Missing punch').first().waitFor({ timeout: 10000 });
 });
+// Day and employee filters (Dominguez, October 2026).
+await step('the timesheet narrows to one day and to a name typed in', async () => {
+  const rows = () => page.locator('tbody tr').count();
+  const all = await rows();
+  const day = page.getByLabel('Day');
+  const first = await day.locator('option').nth(1).getAttribute('value');
+  await day.selectOption(first);
+  if ((await rows()) > all) throw new Error('picking a day showed more rows');
+  await page.getByRole('button', { name: 'Clear filters' }).click();
+  await page.getByLabel('Search employees').fill('nobody-by-this-name');
+  await page.getByText('No time entries match these filters.').waitFor({ timeout: 5000 });
+  await page.getByRole('button', { name: 'Clear filters' }).click();
+  await page.getByRole('table').waitFor({ timeout: 5000 });
+  if ((await rows()) !== all) throw new Error('clearing the filters did not bring every row back');
+});
+
 await browser.close();
 console.log(`\n${errors.length === 0 ? 'ALL CORRECTION CHECKS PASSED' : `PROBLEMS (${errors.length}):`}`);
 errors.forEach((e) => console.log(' - ' + e));

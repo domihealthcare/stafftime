@@ -230,9 +230,12 @@ await step('nothing private rides along with the ordinary staff record', async (
     (id) => fetch(`/api/employees/${id}`).then((r) => r.text()),
     person.id,
   );
-  for (const leak of ['12 Main Street', 'Jamie', '22.5', 'payRate']) {
+  for (const leak of ['12 Main Street', 'Jamie', 'payRate']) {
     if (body.includes(leak)) throw new Error(`/employees/:id carries "${leak}"`);
   }
+  // The pay rate as a value, not "22.5" inside a timestamp such as
+  // "…:22.512Z", which failed this whenever a row was saved at that second.
+  if (/[":,[]22\.5[",}\]]/.test(body)) throw new Error('/employees/:id carries the pay rate 22.5');
 });
 
 await step('a profile on a phone fits the screen', async () => {

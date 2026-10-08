@@ -86,7 +86,7 @@ await step('timesheet shows the open punch, stacked rather than as a table', asy
 await step('employee does NOT see the manager tools, on a phone either', async () => {
   const text = await page.locator('main').innerText();
   if (/\bApprove\b/.test(text)) throw new Error('employee was offered Approve');
-  if (/\bCorrect\b/.test(text)) throw new Error('employee was offered Correct');
+  if (/\bEdit\b/.test(text)) throw new Error('employee was offered Edit');
 });
 
 await page.setViewportSize({ width: 1280, height: 900 });

@@ -114,13 +114,13 @@ await step('the period shown is the last day in the file, not the day after', as
 
 await step('the timesheet now says those hours have gone to payroll', async () => {
   await goTo(page, 'Timesheet');
-  await page.getByRole('button', { name: 'Correct' }).locator('visible=true').first().click();
+  await page.getByRole('button', { name: 'Edit', exact: true }).locator('visible=true').first().click();
   await page.getByText(/went to payroll on/).waitFor({ timeout: 15000 });
 });
 
 await step('a correction to paid hours is refused until it is deliberate', async () => {
   await page.getByLabel(/Reason/i).fill('Stayed to finish a referral');
-  await page.getByRole('button', { name: 'Save correction' }).click();
+  await page.getByRole('button', { name: 'Save changes' }).click();
 
   await page.getByText(/already sent to payroll/).waitFor({ timeout: 15000 });
   // The same button now says what it will actually do.
@@ -130,7 +130,7 @@ await page.screenshot({ path: `${OUT}/61-payroll-correction.png`, fullPage: true
 
 await step('pressing it again makes the correction', async () => {
   await page.getByRole('button', { name: 'Correct it anyway' }).click();
-  await page.getByText('Corrected:').first().waitFor({ timeout: 15000 });
+  await page.getByText('Edited:').first().waitFor({ timeout: 15000 });
 });
 
 await step('the export screen warns that the correction has not reached payroll', async () => {
@@ -158,13 +158,13 @@ await step('a run can be voided without losing it', async () => {
 
 await step('a voided run no longer locks the hours it contained', async () => {
   await goTo(page, 'Timesheet');
-  await page.getByRole('button', { name: 'Correct' }).locator('visible=true').first().click();
+  await page.getByRole('button', { name: 'Edit', exact: true }).locator('visible=true').first().click();
 
   if ((await page.getByText(/went to payroll on/).count()) > 0)
     throw new Error('a voided run is still being treated as paid');
 
   await page.getByLabel(/Reason/i).fill('Second correction, no warning expected');
-  await page.getByRole('button', { name: 'Save correction' }).click();
+  await page.getByRole('button', { name: 'Save changes' }).click();
   await page.getByText('Second correction, no warning expected').first().waitFor({
     timeout: 15000,
   });

@@ -240,7 +240,10 @@ describe('PtoPolicyService', () => {
     });
 
     it('reads every year it walks back through in one query', async () => {
-      const { service, prisma } = build({ hireDate: day('2020-01-01') });
+      const { service, prisma } = build({
+        hireDate: day('2020-01-01'),
+        createdAt: day('2020-01-01'),
+      });
       await service.balanceFor('emp-1', 2026);
       // Six years of carry-over, both allowances: still one read.
       expect(prisma.ptoRequest.findMany).toHaveBeenCalledTimes(1);
@@ -319,11 +322,34 @@ describe('PtoPolicyService', () => {
   });
 
   describe('carry-over', () => {
+    // In these the app has been in use since they were hired, so it has seen
+    // every earlier year.
+    it('counts nothing from years before they were added to the app', async () => {
+      // Hired 2020, added September 2026: what 2025 left is not known, so
+      // nothing is assumed — a manager enters what really rolled over.
+      const { service } = build({ hireDate: day('2020-01-01'), createdAt: day('2026-09-25') });
+      const balance = await service.balanceFor('emp-1', 2026);
+      expect(balance.vacation).toMatchObject({ entitled: 15, carriedOver: 0, available: 15 });
+      expect(balance.sick).toMatchObject({ entitled: 5, carriedOver: 0, available: 5 });
+    });
+
+    it('works out the next year from the first year in the app', async () => {
+      const { service } = build({
+        hireDate: day('2020-01-01'),
+        createdAt: day('2026-09-25'),
+        requests: [approved(PtoType.VACATION, '2026-11-02', '2026-11-13')],
+      });
+      const balance = await service.balanceFor('emp-1', 2027);
+      // 2026: 12 of 15 taken, 3 left to roll over.
+      expect(balance.vacation.carriedOver).toBe(3);
+    });
+
     it('carries unused days into the next year, up to the cap', async () => {
       // 2025: used 8 of 15, so 7 unused — capped at 5.
       const { service } = build({
         requests: [approved(PtoType.VACATION, '2025-03-03', '2025-03-12')],
         hireDate: day('2024-01-01'),
+        createdAt: day('2024-01-01'),
       });
       const balance = await service.balanceFor('emp-1', 2026);
       expect(balance.vacation.carriedOver).toBe(5);
@@ -335,6 +361,7 @@ describe('PtoPolicyService', () => {
       const { service } = build({
         requests: [approved(PtoType.VACATION, '2025-03-03', '2025-03-15')],
         hireDate: day('2025-01-01'),
+        createdAt: day('2025-01-01'),
       });
       const balance = await service.balanceFor('emp-1', 2026);
       expect(balance.vacation.carriedOver).toBe(2);
@@ -345,13 +372,14 @@ describe('PtoPolicyService', () => {
       const { service } = build({
         requests: [approved(PtoType.VACATION, '2025-03-03', '2025-03-22')],
         hireDate: day('2025-01-01'),
+        createdAt: day('2025-01-01'),
       });
       const balance = await service.balanceFor('emp-1', 2026);
       expect(balance.vacation.carriedOver).toBe(0);
     });
 
     it('does not carry sick days by default', async () => {
-      const { service } = build({ hireDate: day('2024-01-01') });
+      const { service } = build({ hireDate: day('2024-01-01'), createdAt: day('2024-01-01') });
       const balance = await service.balanceFor('emp-1', 2026);
       expect(balance.sick.carriedOver).toBe(0);
       expect(balance.sick.available).toBe(5);
@@ -361,6 +389,7 @@ describe('PtoPolicyService', () => {
       const { service } = build({
         policy: { ...DEFAULT_POLICY, sickCarryoverDays: 3 },
         hireDate: day('2025-01-01'),
+        createdAt: day('2025-01-01'),
       });
       const balance = await service.balanceFor('emp-1', 2026);
       expect(balance.sick.carriedOver).toBe(3);
@@ -368,13 +397,13 @@ describe('PtoPolicyService', () => {
 
     it('does not compound year after year beyond the cap', async () => {
       // Four untouched years would be 60 days if it compounded.
-      const { service } = build({ hireDate: day('2022-01-01') });
+      const { service } = build({ hireDate: day('2022-01-01'), createdAt: day('2022-01-01') });
       const balance = await service.balanceFor('emp-1', 2026);
       expect(balance.vacation.carriedOver).toBe(5);
     });
 
     it('adds carried days on top of the new year entitlement', async () => {
-      const { service } = build({ hireDate: day('2025-01-01') });
+      const { service } = build({ hireDate: day('2025-01-01'), createdAt: day('2025-01-01') });
       const balance = await service.balanceFor('emp-1', 2026);
       // Untouched 2025 leaves 15, capped to 5, on top of 2026's 15.
       expect(balance.vacation).toMatchObject({
@@ -389,6 +418,7 @@ describe('PtoPolicyService', () => {
       const { service } = build({
         policy: { ...DEFAULT_POLICY, maxCarryoverDays: 0 },
         hireDate: day('2024-01-01'),
+        createdAt: day('2024-01-01'),
       });
       const balance = await service.balanceFor('emp-1', 2026);
       expect(balance.vacation.carriedOver).toBe(0);

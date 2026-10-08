@@ -797,15 +797,26 @@ balances** → **Adjust**, which also holds a person's own yearly allowance:
   already taken before the app, counted as taken in that year (and so in what
   carries on from it), and shown on the person's card as "Taken before Domi
   Staff". Optionally what **really** carried into that year: null means
-  worked out, as for any year. That matters because the walk below starts at
-  the hire date and the app has no requests from before it went live, so for
-  anybody hired before 2026 it assumes those years went unused and carries the
-  full cap. A stated carry-over replaces the working-out for that year and
-  feeds the years after.
+  worked out, as for any year. A stated carry-over replaces the working-out
+  for that year and feeds the years after. Shown as "PTO rolled over into
+  this year": all of it, with any of it already used under "PTO already
+  taken".
+- **The walk starts when the person was added to the app** (or their hire
+  date, if later — October 2026). It used to start at the hire date, and the
+  app has no requests from before it went live, so it took every earlier year
+  as untouched and gave everybody hired before 2026 the full five days
+  (Dominguez: "it should be 15 PTO and 5 sick"). A year the app never saw now
+  rolls nothing over unless a manager says what did.
 - `PtoAllowance` — per person, not per year: their own PTO and sick days a
   year (part-time, long service — Dominguez chose "some get a different
   amount"). Null is the practice's. Prorated for a first year like the
-  practice's, and used for earlier years in the carry-over walk too.
+  practice's, and used for earlier years in the carry-over walk too. **Not
+  everybody gets PTO** (October 2026, Dominguez): Adjust's *PTO a year* is
+  the practice's, their own, or **No PTO** (stored as their own 0); with
+  nothing to have, taken or asked for, the balances say "No PTO" / "None this
+  year" instead of "0 left", and the request form does not switch to PTO when
+  sick days run out. Sick days stay for everybody (see NJ earned sick leave
+  in `docs/open-questions.md`).
 
 Whole or half days only (a custom validator: class-validator's
 `IsDivisibleBy(0.5)` rounds the divisor to 0 and refuses everything). The
@@ -1449,7 +1460,7 @@ they left. So the entry is made a warning, both ways:
   nearly always closed by morning) — until a manager **corrects** it; the
   correction (`edit`) sets `isMissingPunch` false, which is what clears it.
   **It cannot be approved before then** (`approve` refuses, and the Timesheet
-  shows "Correct the time first" in place of Approve): paying midnight as it
+  shows "Edit the time first" in place of Approve): paying midnight as it
   stands would pay for hours nobody worked. If midnight was right, correcting
   it to midnight with a reason clears it.
 - **The person**: told on the bell and by email ("You were clocked out

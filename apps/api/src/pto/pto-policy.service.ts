@@ -125,8 +125,12 @@ export class PtoPolicyService {
    *
    * Carry-over is worked out by walking back through previous years: last
    * year's unused days, capped by the policy, become this year's carry-over —
-   * and last year's own carry-over is worked out the same way. The walk stops
-   * at the hire date, so it is bounded.
+   * and last year's own carry-over is worked out the same way. The walk starts
+   * at the later of the hire date and the day they were added to the app: a
+   * year before Domi Staff has no record of what was taken, so it is not
+   * counted as untouched (October 2026 — that gave everybody the full five
+   * days). What really rolled over into that first year is the manager's to
+   * enter.
    *
    * Two things a manager can add (the switch-over, September 2026): the
    * person's own yearly allowance, when it is not the practice's, and a
@@ -174,9 +178,12 @@ export class PtoPolicyService {
     };
     const startingPoint = person.startingPoints.get(policyYear);
 
-    // With no hire date on record, carry-over is counted from when they were
-    // added to the app — nothing before that was booked here anyway.
-    const since = employee.hireDate ?? employee.createdAt;
+    // Carry-over is counted from when they were added to the app, or their
+    // hire date if that is later — nothing before was booked here.
+    const since =
+      employee.hireDate && employee.hireDate > employee.createdAt
+        ? employee.hireDate
+        : employee.createdAt;
     // One read for this year and every year the carry-over walks back
     // through; each year is picked out below by daysWithin, which counts
     // nothing outside it.
@@ -398,11 +405,11 @@ export class PtoPolicyService {
       return 0;
     }
 
-    const hireYear = this.policyYearOf(since, policy);
+    const fromYear = this.policyYearOf(since, policy);
     let carried = 0;
 
     // Oldest year first, so each year's carry-over feeds the next.
-    for (let year = hireYear; year < policyYear; year += 1) {
+    for (let year = fromYear; year < policyYear; year += 1) {
       const point = person.startingPoints.get(year);
       carried = carriedOverStated(point, bucket) ?? carried;
 

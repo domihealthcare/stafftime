@@ -1,4 +1,4 @@
-import { Fragment, useCallback, useEffect, useRef, useState } from 'react';
+import { Fragment, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { api } from '../lib/api';
 import { durationHours, formatDate, formatTime } from '../lib/format';
 import { useIsManager, useSession } from '../lib/session';
@@ -16,6 +16,7 @@ import {
   PageHeading,
   Spinner,
   buttonClass,
+  inputClass,
 } from '../components/ui';
 import { NeedsAttention } from '../components/NeedsAttention';
 
@@ -35,6 +36,10 @@ export function TimesheetPage() {
   const [adding, setAdding] = useState<Employee[] | null>(null);
   /// Bumped after a change that the "Worth a look" banner reports on.
   const [bannerKey, setBannerKey] = useState(0);
+  /// Narrowing what was loaded, in the browser: one day of the period, and
+  /// (managers) a name typed into the search box.
+  const [day, setDay] = useState('');
+  const [search, setSearch] = useState('');
 
   /// Numbers each load: a slower, older one (last week's, say) that finishes
   /// after a newer one is dropped rather than drawn over it.
@@ -59,6 +64,9 @@ export function TimesheetPage() {
     void load();
   }, [load]);
 
+  // A day picked in one period means nothing in the next.
+  useEffect(() => setDay(''), [range]);
+
   async function approve(id: string) {
     setBusyId(id);
     try {
@@ -79,7 +87,27 @@ export function TimesheetPage() {
     }
   }
 
-  const totalHours = entries.reduce(
+  // The days of the period that have a punch, for the Day filter.
+  const days = useMemo(() => {
+    const seen = new Map<string, string>();
+    for (const entry of entries) {
+      const key = dayKey(entry.clockInAt);
+      if (!seen.has(key)) seen.set(key, formatDate(entry.clockInAt));
+    }
+    return [...seen].sort(([a], [b]) => a.localeCompare(b));
+  }, [entries]);
+
+  const query = search.trim().toLowerCase();
+  const shown = entries.filter(
+    (entry) =>
+      (!day || dayKey(entry.clockInAt) === day) &&
+      (!query ||
+        (entry.employee &&
+          `${entry.employee.firstName} ${entry.employee.lastName}`.toLowerCase().includes(query))),
+  );
+  const filtered = Boolean(day || query);
+
+  const totalHours = shown.reduce(
     (sum, entry) => sum + durationHours(entry.clockInAt, entry.clockOutAt),
     0,
   );
@@ -100,12 +128,58 @@ export function TimesheetPage() {
         sections={['handEntries', 'unapprovedHours', 'missingPunches']}
       />
 
-      <div className="mb-4 flex flex-wrap items-end justify-between gap-3">
+      <div className="mb-3">
         <DateRangePicker value={range} onChange={setRange} label="Timesheet period" />
+      </div>
+
+      <div className="mb-3 flex flex-wrap items-end justify-between gap-3">
+        <div className="flex flex-wrap items-end gap-2">
+          <label className="text-sm">
+            <span className="mb-1 block font-medium text-slate-700">Day</span>
+            <select
+              aria-label="Day"
+              value={day}
+              onChange={(event) => setDay(event.target.value)}
+              className={`${inputClass} w-40 py-1.5`}
+            >
+              <option value="">All days</option>
+              {days.map(([key, label]) => (
+                <option key={key} value={key}>
+                  {label}
+                </option>
+              ))}
+            </select>
+          </label>
+          {isManager && (
+            <label className="text-sm">
+              <span className="mb-1 block font-medium text-slate-700">Employee</span>
+              <input
+                type="search"
+                aria-label="Search employees"
+                placeholder="Search by name"
+                value={search}
+                onChange={(event) => setSearch(event.target.value)}
+                className={`${inputClass} w-48 py-1.5`}
+              />
+            </label>
+          )}
+          {filtered && (
+            <button
+              type="button"
+              onClick={() => {
+                setDay('');
+                setSearch('');
+              }}
+              className="tap pb-1.5 text-xs font-medium text-brand-700 hover:text-brand-900"
+            >
+              Clear filters
+            </button>
+          )}
+        </div>
         <div className="flex items-center gap-3">
           <p className="text-sm text-slate-600">
             <span className="font-semibold text-slate-900">{totalHours.toFixed(2)}</span> hours
-            {!loading && ` · ${entries.length} ${entries.length === 1 ? 'entry' : 'entries'}`}
+            {!loading && ` · ${shown.length} ${shown.length === 1 ? 'entry' : 'entries'}`}
           </p>
           {isManager && (
             <button
@@ -130,83 +204,82 @@ export function TimesheetPage() {
           <div className="p-6">
             <Spinner label="Loading timesheet" />
           </div>
-        ) : entries.length === 0 ? (
+        ) : shown.length === 0 ? (
           <div className="p-6">
-            <EmptyState>No time entries in this period.</EmptyState>
+            <EmptyState>
+              {entries.length === 0
+                ? 'No time entries in this period.'
+                : 'No time entries match these filters.'}
+            </EmptyState>
           </div>
         ) : (
           <div className="hidden overflow-x-auto sm:block">
             <table className="min-w-full divide-y divide-slate-200 text-sm">
               <thead className="bg-slate-50 text-left text-xs uppercase tracking-wide text-slate-500">
                 <tr>
-                  <th scope="col" className="px-4 py-3 font-medium">
+                  <th scope="col" className="px-3 py-2 font-medium">
                     Date
                   </th>
                   {isManager && (
-                    <th scope="col" className="px-4 py-3 font-medium">
+                    <th scope="col" className="px-3 py-2 font-medium">
                       Employee
                     </th>
                   )}
-                  <th scope="col" className="px-4 py-3 font-medium">
-                    In
+                  <th scope="col" className="px-3 py-2 font-medium">
+                    In – Out
                   </th>
-                  <th scope="col" className="px-4 py-3 font-medium">
-                    Out
-                  </th>
-                  <th scope="col" className="px-4 py-3 font-medium">
+                  <th scope="col" className="px-3 py-2 font-medium">
                     Hours
                   </th>
-                  <th scope="col" className="px-4 py-3 font-medium">
+                  <th scope="col" className="px-3 py-2 font-medium">
                     Verified
                   </th>
-                  <th scope="col" className="px-4 py-3 font-medium">
+                  <th scope="col" className="px-3 py-2 font-medium">
                     Flags
                   </th>
                   {isManager && (
-                    <th scope="col" className="px-4 py-3 font-medium">
-                      Action
+                    <th scope="col" className="px-3 py-2 font-medium">
+                      <span className="sr-only">Actions</span>
                     </th>
                   )}
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100">
-                {entries.map((entry) => (
+                {shown.map((entry) => (
                   <Fragment key={entry.id}>
                     <tr className="hover:bg-slate-50">
-                      <td className="whitespace-nowrap px-4 py-3 text-slate-700">
+                      <td className="whitespace-nowrap px-3 py-1.5 text-slate-700">
                         {formatDate(entry.clockInAt)}
                       </td>
                       {isManager && (
-                        <td className="whitespace-nowrap px-4 py-3 text-slate-700">
+                        <td className="whitespace-nowrap px-3 py-1.5 text-slate-700">
                           {entry.employee
                             ? `${entry.employee.firstName} ${entry.employee.lastName}`
                             : '—'}
                         </td>
                       )}
-                      <td className="whitespace-nowrap px-4 py-3 tabular-nums text-slate-700">
-                        {formatTime(entry.clockInAt)}
-                      </td>
-                      <td className="whitespace-nowrap px-4 py-3 tabular-nums text-slate-700">
+                      <td className="whitespace-nowrap px-3 py-1.5 tabular-nums text-slate-700">
+                        {formatTime(entry.clockInAt)} –{' '}
                         {entry.clockOutAt ? formatTime(entry.clockOutAt) : '—'}
                       </td>
-                      <td className="whitespace-nowrap px-4 py-3 tabular-nums font-medium text-slate-900">
+                      <td className="whitespace-nowrap px-3 py-1.5 tabular-nums font-medium text-slate-900">
                         {entry.clockOutAt
                           ? durationHours(entry.clockInAt, entry.clockOutAt).toFixed(2)
                           : '—'}
                       </td>
-                      <td className="whitespace-nowrap px-4 py-3">
+                      <td className="whitespace-nowrap px-3 py-1.5">
                         <VerificationBadge entry={entry} />
                       </td>
-                      <td className="whitespace-nowrap px-4 py-3">
+                      <td className="whitespace-nowrap px-3 py-1.5">
                         <Flags entry={entry} />
                       </td>
                       {isManager && (
-                        <td className="whitespace-nowrap px-4 py-3">
+                        <td className="whitespace-nowrap px-3 py-1.5">
                           <EntryActions
                             entry={entry}
                             busy={busyId === entry.id}
                             onApprove={() => void approve(entry.id)}
-                            onCorrect={() => setEditing(entry)}
+                            onEdit={() => setEditing(entry)}
                           />
                         </td>
                       )}
@@ -215,7 +288,7 @@ export function TimesheetPage() {
                       line rather than being squeezed into the flags column. */}
                     {(entry.editReason || entry.enteredByHandAt || entry.otherPlaceReason) && (
                       <tr className="border-none">
-                        <td colSpan={isManager ? 8 : 6} className="px-4 pb-3 pt-0">
+                        <td colSpan={isManager ? 7 : 5} className="px-3 pb-1.5 pt-0">
                           <HandEntryLine
                             entry={entry}
                             isManager={isManager}
@@ -225,7 +298,7 @@ export function TimesheetPage() {
                           <OtherPlaceLine entry={entry} />
                           {entry.editReason && (
                             <p className="text-xs text-slate-500">
-                              <span className="font-medium">Corrected:</span> {entry.editReason}
+                              <span className="font-medium">Edited:</span> {entry.editReason}
                             </p>
                           )}
                         </td>
@@ -241,10 +314,10 @@ export function TimesheetPage() {
         {/* A phone cannot show eight columns, and sideways-scrolling a table to
             reach Approve is miserable when that is the whole job. Same entries,
             stacked, with the action where the thumb already is. */}
-        {!loading && entries.length > 0 && (
+        {!loading && shown.length > 0 && (
           <ul className="divide-y divide-slate-100 sm:hidden">
-            {entries.map((entry) => (
-              <li key={entry.id} className="px-4 py-3">
+            {shown.map((entry) => (
+              <li key={entry.id} className="px-3 py-2">
                 <div className="flex items-start justify-between gap-3">
                   <div className="min-w-0">
                     {isManager && entry.employee && (
@@ -271,7 +344,7 @@ export function TimesheetPage() {
                 </div>
 
                 {hasFlags(entry) && (
-                  <div className="mt-2 flex flex-wrap items-center gap-1">
+                  <div className="mt-1.5 flex flex-wrap items-center gap-1">
                     <Flags entry={entry} />
                   </div>
                 )}
@@ -290,17 +363,17 @@ export function TimesheetPage() {
                 <OtherPlaceLine entry={entry} />
                 {entry.editReason && (
                   <p className="mt-1 text-xs text-slate-500">
-                    <span className="font-medium">Corrected:</span> {entry.editReason}
+                    <span className="font-medium">Edited:</span> {entry.editReason}
                   </p>
                 )}
 
                 {isManager && (
-                  <div className="mt-2">
+                  <div className="mt-1.5">
                     <EntryActions
                       entry={entry}
                       busy={busyId === entry.id}
                       onApprove={() => void approve(entry.id)}
-                      onCorrect={() => setEditing(entry)}
+                      onEdit={() => setEditing(entry)}
                     />
                   </div>
                 )}
@@ -348,12 +421,17 @@ export function TimesheetPage() {
 
       {employee && !isManager && (
         <p className="mt-3 text-xs text-slate-500">
-          Something look wrong? Ask a manager to correct it — every correction is recorded with a
-          reason.
+          Something look wrong? Ask a manager to edit it — every edit is recorded with a reason.
         </p>
       )}
     </div>
   );
+}
+
+/// The day a punch began, on the viewer's calendar — the same day `formatDate`
+/// shows — as "YYYY-MM-DD", for the Day filter.
+function dayKey(iso: string): string {
+  return new Date(iso).toLocaleDateString('en-CA');
 }
 
 /// The table shows an em dash for an unflagged entry to keep the column
@@ -427,12 +505,12 @@ function EntryActions({
   entry,
   busy,
   onApprove,
-  onCorrect,
+  onEdit,
 }: {
   entry: TimeEntry;
   busy: boolean;
   onApprove: () => void;
-  onCorrect: () => void;
+  onEdit: () => void;
 }) {
   return (
     <div className="flex items-center gap-2">
@@ -440,13 +518,13 @@ function EntryActions({
         <span className="text-xs text-slate-500">Approved</span>
       ) : entry.autoClockedOutAt && entry.isMissingPunch ? (
         // Midnight is not when they left: the real time first, then approval.
-        <span className="text-xs font-medium text-red-700">Correct the time first</span>
+        <span className="text-xs font-medium text-red-700">Edit the time first</span>
       ) : entry.clockOutAt ? (
         <button
           type="button"
           onClick={onApprove}
           disabled={busy}
-          className="rounded-lg bg-brand-600 px-3 py-1.5 text-xs font-medium max-sm:py-2.5 text-white hover:bg-brand-700 disabled:opacity-60"
+          className="rounded-lg bg-brand-600 px-2.5 py-1 text-xs font-medium max-sm:py-2.5 text-white hover:bg-brand-700 disabled:opacity-60"
         >
           {busy ? 'Approving…' : 'Approve'}
         </button>
@@ -455,10 +533,10 @@ function EntryActions({
       )}
       <button
         type="button"
-        onClick={onCorrect}
+        onClick={onEdit}
         className="tap text-xs font-medium text-slate-500 hover:text-slate-900"
       >
-        Correct
+        Edit
       </button>
     </div>
   );
@@ -492,7 +570,7 @@ function Flags({ entry }: { entry: TimeEntry }) {
   if (entry.isEarlyDeparture) flags.push({ label: 'Left early', tone: 'warning' });
   if (entry.autoClockedOutAt && entry.isMissingPunch) {
     // The clock-out is the app's, at midnight — not when they left.
-    // Short, to fit the column; the banner and Correct say the rest.
+    // Short, to fit the column; the banner and Edit say the rest.
     flags.push({ label: 'Clocked out at midnight', tone: 'danger' });
   } else if (entry.isMissingPunch) {
     flags.push({ label: 'Missing punch', tone: 'danger' });
