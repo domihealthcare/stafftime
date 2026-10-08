@@ -522,6 +522,8 @@ export interface Attention {
   closingGaps: string[];
   suppliesNeeded: string[];
   newSuggestions: string[];
+  /// Dashboard and email only — never on a banner.
+  punchPatterns: string[];
 }
 
 // ---------------------------------------------------------------------------
@@ -1271,6 +1273,18 @@ export interface PracticeOverview {
     unapprovedHours: number;
     missingPunches: number;
   };
+  /// The same thing again and again in the last four weeks, for a quiet word.
+  patterns: PunchPattern[];
+}
+
+export interface PunchPattern {
+  employeeId: string;
+  employeeName: string;
+  kind: 'late' | 'missed-clock-out' | 'early';
+  count: number;
+  /// The days it happened, oldest first, as "YYYY-MM-DD".
+  dates: string[];
+  summary: string;
 }
 
 export interface Dashboard {

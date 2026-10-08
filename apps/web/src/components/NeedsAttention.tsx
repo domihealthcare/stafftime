@@ -26,6 +26,8 @@ const HEADINGS: Record<keyof Attention, string> = {
   closingGaps: 'Closing checklists with something missed',
   suppliesNeeded: 'Supplies to order',
   newSuggestions: 'In the suggestion box',
+  // Not on any screen's banner: it is on the Dashboard (see punch-patterns.ts).
+  punchPatterns: 'Patterns in clocking in and out',
 };
 
 /// How many lines a section shows before "Show N more". A dozen people with

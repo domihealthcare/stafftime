@@ -14,6 +14,7 @@ import { PRACTICE_ZONE, practiceDayStart, practiceToday } from '../common/util/z
 import { loadStanding } from '../credentials/standing-query';
 import { PrismaService } from '../prisma/prisma.service';
 import { PracticeSettingsService } from '../settings/practice-settings.service';
+import { loadPunchPatterns } from '../time-entries/punch-patterns';
 
 /// How far ahead it looks for credentials about to lapse. Long enough to renew
 /// a state licence without rushing.
@@ -74,6 +75,9 @@ export interface DigestContents {
   closingGaps: string[];
   suppliesNeeded: string[];
   newSuggestions: string[];
+  /// The same thing again and again — late most Mondays, forgetting to clock
+  /// out. Dashboard and email only, never a banner: see `punch-patterns.ts`.
+  punchPatterns: string[];
 }
 
 /**
@@ -131,6 +135,7 @@ export class AttentionService {
       shiftsInClosures,
       closing,
       newSuggestions,
+      patterns,
     ] = await Promise.all([
       this.prisma.employeeCredential.findMany({
         where: {
@@ -205,6 +210,7 @@ export class AttentionService {
       this.shiftsInClosures(today, on),
       this.gatherClosing(today, day),
       this.newSuggestions(day),
+      loadPunchPatterns(this.prisma),
     ]);
 
     /// "8:52 AM", on the practice's clock.
@@ -248,6 +254,7 @@ export class AttentionService {
       shiftsInClosures,
       ...closing,
       newSuggestions,
+      punchPatterns: patterns.map((pattern) => `${pattern.employeeName} — ${pattern.summary}`),
     };
   }
 

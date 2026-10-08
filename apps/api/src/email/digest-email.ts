@@ -179,6 +179,15 @@ const SECTIONS: SectionSpec[] = [
     subject: (n) => `${n} hand ${plural(n, 'entry', 'entries')} to look into`,
   },
   {
+    key: 'punchPatterns',
+    tier: 'later',
+    // A heads-up to have a word, not something to fix: see punch-patterns.ts.
+    heading: 'Patterns in clocking in and out',
+    path: '/dashboard',
+    screen: 'Dashboard',
+    subject: (n) => `${n} clock-in ${plural(n, 'pattern', 'patterns')} worth a word`,
+  },
+  {
     key: 'missingCredentials',
     tier: 'later',
     heading: 'Required licenses not on file',

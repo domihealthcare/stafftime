@@ -1080,6 +1080,19 @@ const MANAGERS: Section[] = [
         ),
       },
       {
+        question: 'Patterns worth a word',
+        answer: (
+          <p>
+            On the <strong>Dashboard</strong>, and in the nightly email when there is one: anybody
+            who, over the last four weeks, was late 3 times or more (it says &ldquo;3 Mondays
+            running&rdquo; when it is the same day each week), forgot to clock out twice, or left
+            early twice. <strong>Which days?</strong> lists them. Only managers see it, and the
+            person is not told — it is a reason to ask how things are going, not a verdict. Hours
+            entered by hand are not counted.
+          </p>
+        ),
+      },
+      {
         question: 'Who can cover this?',
         answer: (
           <p>

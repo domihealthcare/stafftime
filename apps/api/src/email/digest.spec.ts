@@ -15,6 +15,7 @@ function build(
     tasks?: unknown[];
     punches?: unknown[];
     handEntries?: unknown[];
+    patternPunches?: unknown[];
     timeOff?: unknown[];
     managers?: unknown[];
     kiosks?: unknown[];
@@ -45,11 +46,17 @@ function build(
     employeeCredential: { findMany: jest.fn().mockResolvedValue(data.credentials ?? []) },
     employeeChecklistTask: { findMany: jest.fn().mockResolvedValue(data.tasks ?? []) },
     timeEntry: {
-      // Two questions of this table too: punches with no clock-out, and hours
-      // entered by hand — the one that asks about `enteredByHandAt`.
+      // Three questions of this table: punches with no clock-out, hours
+      // entered by hand — the one that asks about `enteredByHandAt` — and the
+      // last four weeks' punches for patterns, the one that asks about lateness.
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       findMany: jest.fn(async (args: any) =>
-        args.where.enteredByHandAt ? (data.handEntries ?? []) : (data.punches ?? []),
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        args.where.OR?.some((clause: any) => 'isLate' in clause)
+          ? (data.patternPunches ?? [])
+          : args.where.enteredByHandAt
+            ? (data.handEntries ?? [])
+            : (data.punches ?? []),
       ),
       groupBy: jest.fn().mockResolvedValue(data.unapproved ?? []),
     },
@@ -801,6 +808,34 @@ describe('DigestService — what is going wrong at the office', () => {
         'North Bergen — 2 to order: Gloves S/M/L (asked 3 times), Lidocaine',
         'West New York — 1 to order: Electrodes',
       ]);
+    });
+  });
+
+  describe('patterns in clocking in and out', () => {
+    // Monday 5, 12 and 19 October 2026, 9:10am in New Jersey: late each time.
+    const lateMonday = (date: string) => ({
+      employeeId: 'frankie',
+      clockInAt: new Date(`${date}T13:10:00Z`),
+      clockOutAt: new Date(`${date}T21:00:00Z`),
+      autoClockedOutAt: null,
+      isLate: true,
+      isEarlyDeparture: false,
+      location: { timezone: 'America/New_York' },
+      employee: { ...frankie, preferredName: null },
+    });
+
+    it('names somebody late three Mondays running, under Hours', async () => {
+      const { attention } = build({
+        patternPunches: ['2026-10-05', '2026-10-12', '2026-10-19'].map(lateMonday),
+      });
+      expect((await attention.gather()).punchPatterns).toEqual([
+        'Frankie Front-Desk — Late 3 times in the last 4 weeks, 3 Mondays running',
+      ]);
+    });
+
+    it('says nothing for one late morning', async () => {
+      const { attention } = build({ patternPunches: [lateMonday('2026-10-05')] });
+      expect((await attention.gather()).punchPatterns).toEqual([]);
     });
   });
 

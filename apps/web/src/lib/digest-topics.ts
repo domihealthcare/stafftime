@@ -32,6 +32,7 @@ export const DIGEST_TOPICS: {
       'Clock-outs to correct — still clocked in at midnight, so the app clocked them out',
       'Hours nobody has approved yet',
       'Hours entered by hand that nobody has looked into yet',
+      'Patterns in clocking in and out — late again and again, forgetting to clock out',
     ],
   },
   {

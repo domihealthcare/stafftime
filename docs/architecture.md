@@ -2733,6 +2733,38 @@ counts wrong PINs, against anybody, in a 15-minute window a correct PIN does
 not reset, and stops taking PINs for 5 minutes after 10. That is generous for
 honest typos and useless for guessing a colleague's PIN.
 
+## Patterns worth a word
+
+October 2026, Dominguez — the second of the "make it smarter" ideas, with the
+defaults proposed and agreed. The timesheet flags each late clock-in, early
+departure and forgotten clock-out as it happens; nothing said when the same
+thing kept happening. `time-entries/punch-patterns.ts` looks at the last
+**4 weeks** (`PATTERN_WINDOW_DAYS`, to the start of today in New Jersey) of
+current staff's punches and finds:
+
+- **late 3 times or more** (`LATE_TIMES`) — and when 3 of those are the same
+  weekday a week apart, "3 Mondays running" (`longestWeekdayRun`), because a
+  repeat on one weekday usually has a reason (a bus, a school run, a shift
+  that starts too early);
+- **forgot to clock out twice** (`MISSED_CLOCK_OUT_TIMES`): clocked out by the
+  app at midnight (`autoClockedOutAt`, which stays after a manager corrects
+  the time) or still open from an earlier day;
+- **left early twice** (`EARLY_TIMES`), not counting a forgotten clock-out.
+
+Days, not punches: two late punches on a split-shift day are one late day.
+It reads the timesheet's own flags (`isLate`, `isEarlyDeparture`, with
+`PUNCH_GRACE_MINUTES`), so the two cannot disagree, and leaves out hours
+entered by hand, which are not punches.
+
+**Who sees it, and where.** One query (`loadPunchPatterns`) serves the
+Dashboard's **Patterns worth a word** card (`GET /dashboard/practice`,
+`patterns`) and the nightly email (`punchPatterns` in `AttentionService`,
+tier *When you have a minute*, linking to the Dashboard, under the **Hours**
+part in `digest-topics.ts`). Deliberately **not on any banner** — it is a
+trend, not something to fix on a screen today — and **the person is not
+told**: it is a heads-up for a quiet word, not an automatic telling-off.
+Managers and admins only, as both routes already were.
+
 ## Hours entered by hand
 
 Asked for by Dominguez (29 September 2026), once there was no time clock:

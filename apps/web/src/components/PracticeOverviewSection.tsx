@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { ApiError, api } from '../lib/api';
 import { formatCalendarDate } from '../lib/format';
-import type { PracticeOverview } from '../lib/types';
+import type { PracticeOverview, PunchPattern } from '../lib/types';
 import { Alert, Badge, Card, Spinner } from './ui';
 
 /// How many lines a card lists before saying "and N more".
@@ -36,7 +36,7 @@ export function PracticeOverviewSection() {
   if (error) return <Alert>{error}</Alert>;
   if (!data) return <Spinner label="Loading the rest of the dashboard" />;
 
-  const { waiting, licenses, surveys, checklists, closing } = data;
+  const { waiting, licenses, surveys, checklists, closing, patterns } = data;
 
   return (
     <section aria-labelledby="practice-heading" data-testid="practice-overview">
@@ -59,6 +59,8 @@ export function PracticeOverviewSection() {
       </div>
 
       <div className="grid gap-4 lg:grid-cols-2">
+        <PatternsCard patterns={patterns} />
+
         <Card className="p-4" testId="overview-licenses">
           <CardHeading title="Licenses and certifications" to="/credentials" />
           <p className="mt-1 text-sm text-slate-700">
@@ -170,6 +172,62 @@ export function PracticeOverviewSection() {
         </Card>
       </div>
     </section>
+  );
+}
+
+/// The same thing again and again (October 2026): late three times in four
+/// weeks, forgetting to clock out or leaving early twice. Managers only, and
+/// the person is not told — a reason to ask, not a verdict.
+function PatternsCard({ patterns }: { patterns: PunchPattern[] }) {
+  const [open, setOpen] = useState<string | null>(null);
+  return (
+    <Card className="p-4" testId="overview-patterns">
+      <CardHeading title="Patterns worth a word" to="/timesheet" />
+      <p className="mt-1 text-xs text-slate-500">
+        The last 4 weeks: late 3 times or more, or forgot to clock out or left early twice. Only
+        managers see this, and nobody is told — it is a reason to ask, not a verdict.
+      </p>
+      {patterns.length === 0 ? (
+        <p className="mt-2 text-sm text-slate-600">Nothing repeating.</p>
+      ) : (
+        <ul className="mt-2 space-y-1.5 text-sm text-slate-700">
+          {patterns.slice(0, SHOWN).map((pattern) => {
+            const key = `${pattern.employeeId}-${pattern.kind}`;
+            return (
+              <li key={key} data-testid="punch-pattern">
+                <span className="font-medium text-slate-900">{pattern.employeeName}</span> —{' '}
+                {pattern.summary}{' '}
+                <button
+                  type="button"
+                  aria-expanded={open === key}
+                  onClick={() => setOpen(open === key ? null : key)}
+                  className="tap text-xs font-medium text-brand-700 hover:text-brand-900"
+                >
+                  {open === key ? 'Hide days' : 'Which days?'}
+                </button>
+                {open === key && (
+                  <p className="mt-0.5 text-xs text-slate-600">
+                    {pattern.dates
+                      .map((date) =>
+                        new Date(`${date}T12:00:00Z`).toLocaleDateString(undefined, {
+                          weekday: 'short',
+                          month: 'short',
+                          day: 'numeric',
+                          timeZone: 'UTC',
+                        }),
+                      )
+                      .join(' · ')}
+                  </p>
+                )}
+              </li>
+            );
+          })}
+          {patterns.length > SHOWN && (
+            <li className="text-xs text-slate-500">and {patterns.length - SHOWN} more</li>
+          )}
+        </ul>
+      )}
+    </Card>
   );
 }
 

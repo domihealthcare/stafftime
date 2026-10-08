@@ -494,9 +494,19 @@ Beyond the phases, the parts worth knowing about before picking up work:
   Suggests, never refuses. `GET /shifts/:id/cover-options`,
   `shifts/cover-options.ts`, `components/CoverSuggestions.tsx`; see *Who can
   cover this?* in `docs/architecture.md`; `tests/browser/cover.mjs`. Worth
-  carrying to the EMR module. Next on the list: patterns in punches (late
-  most Mondays, repeated missed clock-outs), time-off clashes seen early,
-  and a first draft of next week's rota.
+  carrying to the EMR module.
+- **Patterns worth a word** (8 October 2026, Dominguez — the second
+  "smarter" idea, defaults proposed and agreed): over the last 4 weeks,
+  **late 3 times or more** (and "3 Mondays running" when the same weekday
+  repeats), **forgot to clock out twice** (clocked out by the app at
+  midnight), or **left early twice**. A card on the Dashboard ("Which
+  days?" lists them) and a section in the nightly email's *when you have a
+  minute*, under the Hours part — **managers only, never a banner, and the
+  person is not told**: a reason to ask, not a verdict. Read from the
+  timesheet's own flags; hand entries are not punches and are left out.
+  `time-entries/punch-patterns.ts` (one query for both);
+  `tests/browser/patterns.mjs`. Still to come: time-off clashes seen early,
+  then a first draft of next week's rota.
 - **Changing a shift's hours** (5 October 2026, Dominguez: "Gaby is 7-2 but
   it is changing to 1-8, so instead of Celeste doing 1 by 1, she can just
   edit all"): the shift's pop-up on the rota has **Hours**; once changed it

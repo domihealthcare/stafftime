@@ -6,6 +6,7 @@ import { CredentialsService } from '../credentials/credentials.service';
 import { loadStanding } from '../credentials/standing-query';
 import { PrismaService } from '../prisma/prisma.service';
 import { SurveysService } from '../surveys/surveys.service';
+import { loadPunchPatterns } from '../time-entries/punch-patterns';
 
 /// Closing checklists are counted over the last week, today included.
 const CLOSING_DAYS = 7;
@@ -30,20 +31,24 @@ export class PracticeOverviewService {
 
   async overview() {
     const today = practiceToday();
-    const [surveys, suggestions, licenses, checklists, closing, waiting] = await Promise.all([
-      this.surveys.overview(),
-      this.prisma.feedback.count({ where: { receivedOn: { gte: addUtcDays(today, -30) } } }),
-      this.licenses(),
-      this.checklists(today),
-      this.closing(today),
-      this.waiting(),
-    ]);
+    const [surveys, suggestions, licenses, checklists, closing, waiting, patterns] =
+      await Promise.all([
+        this.surveys.overview(),
+        this.prisma.feedback.count({ where: { receivedOn: { gte: addUtcDays(today, -30) } } }),
+        this.licenses(),
+        this.checklists(today),
+        this.closing(today),
+        this.waiting(),
+        loadPunchPatterns(this.prisma),
+      ]);
     return {
       surveys: { surveys, suggestionsLast30Days: suggestions },
       licenses,
       checklists,
       closing,
       waiting,
+      // The same thing again and again, for a quiet word (October 2026).
+      patterns,
     };
   }
 
