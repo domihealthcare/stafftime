@@ -555,9 +555,17 @@ Beyond the phases, the parts worth knowing about before picking up work:
   Schedule already had it), and **+ Request time off for …** (`?for=<id>`
   on `/time-off?request=1`). From an audit of what could only be done from
   one screen; still only on their own screens: regular shifts, Email
-  settings' "Who gets what", productivity. Open question: the person menu
-  offers managers **Open in Staff**, but the Staff screen is in the admins'
-  menu and saving there is admin-only — see `docs/open-questions.md`.
+  settings' "Who gets what", productivity. **The Staff screen stays the
+  admins'** (decided by Dominguez, 8 October 2026, on Claude's
+  recommendation): the right-click person menu's **Open in Staff** is now
+  shown to admins only — managers were offered it, but the Staff screen is
+  in the admins' menu and only an admin can save there. Managers have the
+  Directory (the same person, PIN reset, See schedule).
+- **Home's "today" is New Jersey's** (fixed 8 October 2026): Home asked for
+  today's shifts by the browser's own day, so a browser in another zone —
+  CI's, in UTC — lost a shift running past its own midnight, and `wfh.mjs`
+  failed whenever CI ran between 5 and 8 pm New Jersey time. Now
+  `practiceToday()` in `lib/practice-time.ts`, like the rest of the app.
 - **Changing a shift's hours** (5 October 2026, Dominguez: "Gaby is 7-2 but
   it is changing to 1-8, so instead of Celeste doing 1 by 1, she can just
   edit all"): the shift's pop-up on the rota has **Hours**; once changed it

@@ -153,6 +153,31 @@ await step('clocking out takes them off In now', async () => {
   await inNow(frankie, 'North Bergen').getByText('Nobody is clocked in.').waitFor({ timeout: 10000 });
 });
 
+await step('“Open in Staff” is on an admin’s right-click menu, not a manager’s', async () => {
+  // October 2026, Dominguez: the Staff screen is the admins'; managers have
+  // the Directory itself, which shows the same person and resets a PIN.
+  const items = async (email) => {
+    const ctx = await browser.newContext({ viewport: { width: 1280, height: 1000 } });
+    const page = await ctx.newPage();
+    await signIn(page, email);
+    await openDirectory(page);
+    // On the name: the card's top row is what listens for a right-click.
+    await person(page, 'Frankie Front-Desk')
+      .getByRole('heading', { name: /Frankie Front-Desk/ })
+      .click({ button: 'right' });
+    const menu = page.getByTestId('person-menu');
+    await menu.waitFor({ timeout: 10000 });
+    const labels = await menu.getByRole('menuitem').allInnerTexts();
+    await ctx.close();
+    return labels.map((label) => label.trim());
+  };
+  const manager = await items('manager@domihealthcare.com');
+  if (!manager.includes('See profile')) throw new Error(`the manager's menu reads ${manager.join(', ')}`);
+  if (manager.includes('Open in Staff')) throw new Error('a manager was offered Open in Staff');
+  const admin = await items('admin@domihealthcare.com');
+  if (!admin.includes('Open in Staff')) throw new Error(`the admin's menu reads ${admin.join(', ')}`);
+});
+
 await frankieCtx.close();
 await browser.close();
 console.log(`\n${errors.length === 0 ? 'ALL DIRECTORY CHECKS PASSED' : `PROBLEMS (${errors.length}):`}`);

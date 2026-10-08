@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import type { ReactNode } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useIsManager } from '../lib/session';
+import { useIsAdmin } from '../lib/session';
 
 /// Somebody a right-click can be about: enough to find them again elsewhere.
 export interface MenuPerson {
@@ -36,7 +36,7 @@ export function usePersonMenu(options: { onSeeSchedule?: (person: MenuPerson) =>
 } {
   const [state, setState] = useState<Open | null>(null);
   const navigate = useNavigate();
-  const isManager = useIsManager();
+  const isAdmin = useIsAdmin();
   const ref = useRef<HTMLDivElement>(null);
   const { onSeeSchedule } = options;
 
@@ -82,7 +82,10 @@ export function usePersonMenu(options: { onSeeSchedule?: (person: MenuPerson) =>
       items.push({ label: 'See schedule', run: () => onSeeSchedule(person) });
     }
     items.push(...state.extra);
-    if (isManager) {
+    // Admins only (October 2026, Dominguez): the Staff screen is in the
+    // admins' menu and only an admin can save there; managers have the
+    // Directory, which shows the same person and resets a PIN.
+    if (isAdmin) {
       items.push({
         label: 'Open in Staff',
         run: () => navigate(`/staff?q=${encodeURIComponent(person.name)}`),

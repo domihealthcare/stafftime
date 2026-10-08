@@ -58,3 +58,15 @@ export function atPracticeTime(onDayOf: string, time: string): string {
   instant = new Date(naive - offsetMinutesAt(instant) * 60_000);
   return instant.toISOString();
 }
+
+/// Today on the practice's calendar, as the first and last instants of the
+/// day — what Home asks the server for. Not the browser's day: the app's
+/// "today" is New Jersey's, and a browser in another zone (CI's, in UTC)
+/// otherwise lost a shift that ran past its own midnight (October 2026).
+export function practiceToday(now: Date = new Date()): { start: string; end: string } {
+  const start = atPracticeTime(now.toISOString(), '00:00');
+  // 36 hours on is always the next day, whatever a clock change does.
+  const nextDay = new Date(new Date(start).getTime() + 36 * 3_600_000).toISOString();
+  const end = new Date(new Date(atPracticeTime(nextDay, '00:00')).getTime() - 1).toISOString();
+  return { start, end };
+}

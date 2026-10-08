@@ -351,19 +351,6 @@ What is left:
       hand-maintaining `apps/web/src/lib/types.ts`. Today a server-side rename
       compiles fine and breaks at runtime.
 
-## The Staff screen and managers (October 2026)
-
-- [ ] **Should managers have the Staff screen?** It is in the admins' half of
-      the Manage menu, and only an admin can save a change there (name,
-      access, offices, job roles, leaving). But a manager's right-click
-      person menu offers **Open in Staff**, which opens it with Edit buttons
-      that then fail to save. Either take that menu item away from managers
-      (nothing they can do there today is lost — PINs are reset from the
-      Directory), or give managers the Staff screen to read and decide what,
-      if anything, they may change. Raised from the "which actions live on
-      one screen only" audit, 8 October 2026; Dominguez was unsure what was
-      being asked.
-
 ## Code review, October 2026 — found but not changed
 
 Each needs a decision, or was not worth the risk on a live system without one.
