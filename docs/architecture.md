@@ -2765,6 +2765,36 @@ trend, not something to fix on a screen today — and **the person is not
 told**: it is a heads-up for a quiet word, not an automatic telling-off.
 Managers and admins only, as both routes already were.
 
+## Too many off at once
+
+October 2026, Dominguez — the third of the "make it smarter" ideas, with the
+defaults proposed and agreed. Approving time off one request at a time hid
+the case that hurts: the second of three MAs at one office asking for the
+same day as the first. `pto/time-off-clashes.ts` finds, for each **team** —
+everybody at one office who holds one job role (somebody in two roles, or at
+two offices, is in each) — the days on which **more than half** of it is off.
+That makes a role of one or two "all of them". **Off** is approved time off
+and requests still waiting, because the point is to see it before approving;
+a half day counts and says so. **A day** is a weekday, or a weekend day with
+a shift at that office (nobody is short on a Sunday it is shut). Days with
+the same people off are told as one run ("Thu, Dec 24 – Tue, Dec 29").
+
+One query (`loadTimeOffClashes`) serves three places:
+
+- **The request, while a manager decides it** — `GET /pto/:id/clashes`, only
+  the clashes that person is part of, with the request counted; shown under
+  it in the Schedule's *requests to decide* and on Time off
+  (`components/TimeOffClashes.tsx`): "Approving this leaves North Bergen with
+  1 of 3 in Medical Assistant on … — also off: …".
+- **The Dashboard**, the next 8 weeks (`timeOffClashes` in
+  `GET /dashboard/practice`).
+- **The nightly email**, the next 2 weeks only (tier *Coming up*, under the
+  **Time off** part) — far-off clashes would repeat every night for weeks.
+
+It **warns, never refuses**, like everything on the Schedule, and is never a
+banner. A role of one warns whenever its one person is off; whether that is
+useful or noise is Dominguez's call once it has run for a while.
+
 ## Hours entered by hand
 
 Asked for by Dominguez (29 September 2026), once there was no time clock:

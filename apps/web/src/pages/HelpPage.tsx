@@ -1080,6 +1080,18 @@ const MANAGERS: Section[] = [
         ),
       },
       {
+        question: 'Too many off at once',
+        answer: (
+          <p>
+            When you decide a time-off request, a warning under it says if approving it leaves an
+            office short of one job role — more than half of them off that day, counting requests
+            still waiting as well as approved ones (so for a role of one or two, all of them). It
+            names who else is off. It is only a warning: Approve still works. The Dashboard lists
+            the next 8 weeks&rsquo; clashes, and the nightly email the next 2.
+          </p>
+        ),
+      },
+      {
         question: 'Patterns worth a word',
         answer: (
           <p>

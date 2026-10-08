@@ -19,6 +19,7 @@ const empty = (): DigestContents => ({
   suppliesNeeded: [],
   newSuggestions: [],
   punchPatterns: [],
+  timeOffClashes: [],
 });
 
 const appUrl = 'https://staff.domihealthcare.com';

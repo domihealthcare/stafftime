@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { ApiError, api } from '../lib/api';
+import { ClashNote } from '../components/TimeOffClashes';
 import { formatCalendarDate } from '../lib/format';
 import { useIsAdmin, useIsManager, useSession } from '../lib/session';
 import type {
@@ -348,6 +349,8 @@ function RequestCard({
           )}
         </div>
       </div>
+
+      {canDecide && <ClashNote requestId={request.id} employeeId={request.employeeId} />}
 
       {conflicts && conflicts.length > 0 && request.status === 'PENDING' && (
         <div className="mt-3 rounded-lg bg-amber-50 p-3 text-sm text-amber-900 ring-1 ring-inset ring-amber-200">

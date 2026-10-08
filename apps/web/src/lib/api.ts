@@ -67,6 +67,7 @@ import type {
   HandEntryReason,
   UpdateLocationInput,
   CoverOptions,
+  TimeOffClash,
   OvertimeCheck,
   OwnOvertimeWeek,
   ApplicableSection,
@@ -581,6 +582,8 @@ export const api = {
   cancelPto: (id: string) =>
     request<PtoRequest>(`/pto/${id}/cancel`, { method: 'PATCH' }).then(timeOffChanged),
   ptoConflicts: (id: string) => request<ConflictingShift[]>(`/pto/${id}/conflicts`),
+  /// Too many from the same job role and office off on those days, this one counted.
+  ptoClashes: (id: string) => request<TimeOffClash[]>(`/pto/${id}/clashes`),
   /// Time off already taken, written down by an admin on a staff profile.
   recordPto: (body: {
     employeeId: string;

@@ -15,7 +15,11 @@ function build(
     employeeChecklist: { findMany: jest.fn().mockResolvedValue(data.checklists ?? []) },
     closingRecord: { findMany: jest.fn().mockResolvedValue(data.closing ?? []) },
     supplyRequest: { findMany: jest.fn().mockResolvedValue(data.supplies ?? []) },
-    ptoRequest: { count: jest.fn().mockResolvedValue(3) },
+    ptoRequest: {
+      count: jest.fn().mockResolvedValue(3),
+      findMany: jest.fn().mockResolvedValue([]),
+    },
+    shift: { findMany: jest.fn().mockResolvedValue([]) },
     timeEntry: {
       count: jest.fn().mockResolvedValue(1),
       findMany: jest.fn().mockResolvedValue(data.punches ?? []),

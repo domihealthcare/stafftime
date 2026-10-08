@@ -524,6 +524,8 @@ export interface Attention {
   newSuggestions: string[];
   /// Dashboard and email only — never on a banner.
   punchPatterns: string[];
+  /// Dashboard and email only — never on a banner.
+  timeOffClashes: string[];
 }
 
 // ---------------------------------------------------------------------------
@@ -1275,6 +1277,27 @@ export interface PracticeOverview {
   };
   /// The same thing again and again in the last four weeks, for a quiet word.
   patterns: PunchPattern[];
+  /// Too many from one job role off at once, the next `weeks` weeks.
+  timeOffClashes: { weeks: number; clashes: TimeOffClash[] };
+}
+
+/// Too many from one job role off on the same days at one office: more than
+/// half of them, approved or asked for. See `pto/time-off-clashes.ts`.
+export interface TimeOffClash {
+  from: string;
+  to: string;
+  locationId: string;
+  locationName: string;
+  jobRoleId: string;
+  jobRoleName: string;
+  total: number;
+  off: {
+    employeeId: string;
+    name: string;
+    requestId: string;
+    approved: boolean;
+    isHalfDay: boolean;
+  }[];
 }
 
 export interface PunchPattern {

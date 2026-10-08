@@ -505,8 +505,22 @@ Beyond the phases, the parts worth knowing about before picking up work:
   person is not told**: a reason to ask, not a verdict. Read from the
   timesheet's own flags; hand entries are not punches and are left out.
   `time-entries/punch-patterns.ts` (one query for both);
-  `tests/browser/patterns.mjs`. Still to come: time-off clashes seen early,
-  then a first draft of next week's rota.
+  `tests/browser/patterns.mjs`.
+- **Too many off at once** (8 October 2026, Dominguez — the third "smarter"
+  idea, defaults proposed and agreed): more than half of the people holding
+  one job role at one office off the same day — so all of them in a role of
+  one or two — counting **approved and still-asked-for** time off, on
+  weekdays and weekend days with shifts at that office. Shown **on the
+  request** while a manager decides it ("Approving this leaves North Bergen
+  with 1 of 3 in Medical Assistant on Tue, Dec 22 — also off: …", on the
+  Schedule and on Time off), on the **Dashboard** for the next 8 weeks, and
+  in the **nightly email** for the next 2, under the Time off part. **Warns,
+  never refuses**; never a banner. A role of one warns whenever that person
+  is off (Dominguez to say if that is too noisy — e.g. leave out roles of
+  one, or set a minimum per office per role). `pto/time-off-clashes.ts` (one
+  query for all three), `GET /pto/:id/clashes`,
+  `components/TimeOffClashes.tsx`; `tests/browser/clashes.mjs`. Still to
+  come: a first draft of next week's rota.
 - **Changing a shift's hours** (5 October 2026, Dominguez: "Gaby is 7-2 but
   it is changing to 1-8, so instead of Celeste doing 1 by 1, she can just
   edit all"): the shift's pop-up on the rota has **Hours**; once changed it

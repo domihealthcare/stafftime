@@ -39,7 +39,10 @@ export const DIGEST_TOPICS: {
     topic: 'TIME_OFF',
     label: 'Time off',
     short: 'Time off',
-    covers: ['Time off waiting on a decision'],
+    covers: [
+      'Time off waiting on a decision',
+      'Too many from one job role off at once in the next two weeks',
+    ],
     note: 'Also who is told, by email and the bell, as each request comes in.',
   },
   {

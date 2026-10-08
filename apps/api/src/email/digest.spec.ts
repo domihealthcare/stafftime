@@ -16,6 +16,7 @@ function build(
     punches?: unknown[];
     handEntries?: unknown[];
     patternPunches?: unknown[];
+    teams?: unknown[];
     timeOff?: unknown[];
     managers?: unknown[];
     kiosks?: unknown[];
@@ -62,8 +63,9 @@ function build(
     },
     ptoRequest: { findMany: jest.fn().mockResolvedValue(data.timeOff ?? []) },
     kioskDevice: { findMany: jest.fn().mockResolvedValue(data.kiosks ?? []) },
-    // Two different questions of the same table: the open-shift one is the
-    // one that asks for nobody.
+    // Several questions of the same table: the open-shift one is the one
+    // that asks for nobody; the time-off clashes ask about any shift, for
+    // which weekend days an office is open.
     shift: {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       findMany: jest.fn(async (args: any) =>
@@ -71,7 +73,9 @@ function build(
           ? (data.closureShifts ?? [])
           : args.where.employeeId === null
             ? (data.openShifts ?? [])
-            : (data.leaverShifts ?? []),
+            : args.where.employee
+              ? (data.leaverShifts ?? [])
+              : [],
       ),
       count: jest.fn().mockResolvedValue(data.shiftsMissed ?? 1),
     },
@@ -91,11 +95,13 @@ function build(
       // with the same list is how a test passes for the wrong reason.
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       findMany: jest.fn(async (args: any) =>
-        args?.select?.jobRoles
-          ? (data.standing ?? [])
-          : args?.where?.id?.in
-            ? (data.staff ?? [])
-            : managers,
+        args?.select?.locations
+          ? (data.teams ?? [])
+          : args?.select?.jobRoles
+            ? (data.standing ?? [])
+            : args?.where?.id?.in
+              ? (data.staff ?? [])
+              : managers,
       ),
     },
   };

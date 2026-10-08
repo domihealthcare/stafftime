@@ -4,6 +4,7 @@ import { ApiError, api } from '../lib/api';
 import { formatCalendarDate } from '../lib/format';
 import type { PracticeOverview, PunchPattern } from '../lib/types';
 import { Alert, Badge, Card, Spinner } from './ui';
+import { clashDays, clashPeople } from './TimeOffClashes';
 
 /// How many lines a card lists before saying "and N more".
 const SHOWN = 5;
@@ -36,7 +37,7 @@ export function PracticeOverviewSection() {
   if (error) return <Alert>{error}</Alert>;
   if (!data) return <Spinner label="Loading the rest of the dashboard" />;
 
-  const { waiting, licenses, surveys, checklists, closing, patterns } = data;
+  const { waiting, licenses, surveys, checklists, closing, patterns, timeOffClashes } = data;
 
   return (
     <section aria-labelledby="practice-heading" data-testid="practice-overview">
@@ -60,6 +61,25 @@ export function PracticeOverviewSection() {
 
       <div className="grid gap-4 lg:grid-cols-2">
         <PatternsCard patterns={patterns} />
+
+        <Card className="p-4" testId="overview-clashes">
+          <CardHeading title="Too many off at once" to="/time-off" />
+          <p className="mt-1 text-xs text-slate-500">
+            The next {timeOffClashes.weeks} weeks: more than half of one job role at an office off
+            the same day, approved or asked for.
+          </p>
+          <Lines
+            items={timeOffClashes.clashes.map(
+              (clash) =>
+                `${clash.locationName}, ${clashDays(clash)} — ${
+                  clash.off.length === clash.total
+                    ? `all ${clash.total}`
+                    : `${clash.off.length} of ${clash.total}`
+                } in ${clash.jobRoleName} off: ${clashPeople(clash.off)}`,
+            )}
+            empty="Nobody short-handed."
+          />
+        </Card>
 
         <Card className="p-4" testId="overview-licenses">
           <CardHeading title="Licenses and certifications" to="/credentials" />

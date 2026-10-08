@@ -115,6 +115,15 @@ const SECTIONS: SectionSpec[] = [
     subject: (n) => `${n} time-off ${plural(n, 'request', 'requests')} to decide`,
   },
   {
+    key: 'timeOffClashes',
+    tier: 'soon',
+    // Warned, never refused: see pto/time-off-clashes.ts.
+    heading: 'Too many off at once',
+    path: '/dashboard',
+    screen: 'Dashboard',
+    subject: () => 'too many off at once',
+  },
+  {
     key: 'openShifts',
     tier: 'soon',
     heading: 'Open shifts nobody is on yet',

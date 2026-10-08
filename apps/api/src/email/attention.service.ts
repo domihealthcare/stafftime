@@ -10,11 +10,18 @@ import {
   TimeEntryStatus,
 } from '@prisma/client';
 import { addUtcDays } from '../common/util/calendar-date.util';
-import { PRACTICE_ZONE, practiceDayStart, practiceToday } from '../common/util/zoned-time.util';
+import {
+  addDaysTo,
+  localDateIn,
+  PRACTICE_ZONE,
+  practiceDayStart,
+  practiceToday,
+} from '../common/util/zoned-time.util';
 import { loadStanding } from '../credentials/standing-query';
 import { PrismaService } from '../prisma/prisma.service';
 import { PracticeSettingsService } from '../settings/practice-settings.service';
 import { loadPunchPatterns } from '../time-entries/punch-patterns';
+import { describeClash, EMAIL_DAYS, loadTimeOffClashes } from '../pto/time-off-clashes';
 
 /// How far ahead it looks for credentials about to lapse. Long enough to renew
 /// a state licence without rushing.
@@ -78,6 +85,9 @@ export interface DigestContents {
   /// The same thing again and again — late most Mondays, forgetting to clock
   /// out. Dashboard and email only, never a banner: see `punch-patterns.ts`.
   punchPatterns: string[];
+  /// Too many from one job role off at once at one office, in the next two
+  /// weeks. Dashboard and email, and on the request — never a banner.
+  timeOffClashes: string[];
 }
 
 /**
@@ -136,6 +146,7 @@ export class AttentionService {
       closing,
       newSuggestions,
       patterns,
+      clashes,
     ] = await Promise.all([
       this.prisma.employeeCredential.findMany({
         where: {
@@ -211,6 +222,11 @@ export class AttentionService {
       this.gatherClosing(today, day),
       this.newSuggestions(day),
       loadPunchPatterns(this.prisma),
+      loadTimeOffClashes(
+        this.prisma,
+        localDateIn(new Date(), PRACTICE_ZONE),
+        addDaysTo(localDateIn(new Date(), PRACTICE_ZONE), EMAIL_DAYS - 1),
+      ),
     ]);
 
     /// "8:52 AM", on the practice's clock.
@@ -255,6 +271,7 @@ export class AttentionService {
       ...closing,
       newSuggestions,
       punchPatterns: patterns.map((pattern) => `${pattern.employeeName} — ${pattern.summary}`),
+      timeOffClashes: clashes.map(describeClash),
     };
   }
 

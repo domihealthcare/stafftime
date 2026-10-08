@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { ApiError, api } from '../lib/api';
+import { ClashNote } from './TimeOffClashes';
 import { formatCalendarDate, localDate } from '../lib/format';
 import { useIsManager, useSession } from '../lib/session';
 import { PTO_TYPE_LABELS, hasNone } from '../lib/time-off';
@@ -124,6 +125,7 @@ export function RequestsToDecide({ onDecided }: { onDecided: () => void }) {
               {request.notes && (
                 <span className="block text-xs text-slate-600">“{request.notes}”</span>
               )}
+              <ClashNote requestId={request.id} employeeId={request.employeeId} />
             </span>
             <span className="flex gap-2">
               <button

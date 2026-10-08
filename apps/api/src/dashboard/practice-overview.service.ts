@@ -7,6 +7,8 @@ import { loadStanding } from '../credentials/standing-query';
 import { PrismaService } from '../prisma/prisma.service';
 import { SurveysService } from '../surveys/surveys.service';
 import { loadPunchPatterns } from '../time-entries/punch-patterns';
+import { DASHBOARD_WEEKS, loadTimeOffClashes } from '../pto/time-off-clashes';
+import { addDaysTo, localDateIn, PRACTICE_ZONE } from '../common/util/zoned-time.util';
 
 /// Closing checklists are counted over the last week, today included.
 const CLOSING_DAYS = 7;
@@ -31,7 +33,8 @@ export class PracticeOverviewService {
 
   async overview() {
     const today = practiceToday();
-    const [surveys, suggestions, licenses, checklists, closing, waiting, patterns] =
+    const from = localDateIn(new Date(), PRACTICE_ZONE);
+    const [surveys, suggestions, licenses, checklists, closing, waiting, patterns, clashes] =
       await Promise.all([
         this.surveys.overview(),
         this.prisma.feedback.count({ where: { receivedOn: { gte: addUtcDays(today, -30) } } }),
@@ -40,6 +43,7 @@ export class PracticeOverviewService {
         this.closing(today),
         this.waiting(),
         loadPunchPatterns(this.prisma),
+        loadTimeOffClashes(this.prisma, from, addDaysTo(from, DASHBOARD_WEEKS * 7 - 1)),
       ]);
     return {
       surveys: { surveys, suggestionsLast30Days: suggestions },
@@ -49,6 +53,8 @@ export class PracticeOverviewService {
       waiting,
       // The same thing again and again, for a quiet word (October 2026).
       patterns,
+      // Too many from one job role off at once, the next 8 weeks (October 2026).
+      timeOffClashes: { weeks: DASHBOARD_WEEKS, clashes },
     };
   }
 
