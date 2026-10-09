@@ -116,6 +116,15 @@ const SECTIONS: SectionSpec[] = [
     subject: (n) => `${n} ${plural(n, 'shift', 'shifts')} with no clock-in`,
   },
   {
+    key: 'regularShiftClashes',
+    tier: 'soon',
+    // Availability needs no approval: see availability/regular-shift-clashes.ts.
+    heading: 'Regular shifts that clash with availability',
+    path: '/schedule',
+    screen: 'Schedule',
+    subject: (n) => `${n} regular ${plural(n, 'shift clashes', 'shifts clash')} with availability`,
+  },
+  {
     key: 'undecidedTimeOff',
     tier: 'soon',
     heading: 'Time off waiting on a decision',

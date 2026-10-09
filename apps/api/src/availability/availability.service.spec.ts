@@ -31,7 +31,9 @@ function row(over: Record<string, unknown> = {}) {
 
 /// `publishedThrough`: the start of the last published shift at Frankie's
 /// location, or null for nothing published.
-function build(options: { publishedThrough?: string | null; one?: unknown } = {}) {
+function build(
+  options: { publishedThrough?: string | null; one?: unknown; series?: unknown[] } = {},
+) {
   const published =
     options.publishedThrough === undefined ? '2026-10-01T13:00:00Z' : options.publishedThrough;
   const prisma = {
@@ -47,6 +49,7 @@ function build(options: { publishedThrough?: string | null; one?: unknown } = {}
           published ? { startsAt: new Date(published), location: { timezone: NJ } } : null,
         ),
     },
+    shiftSeries: { findMany: jest.fn().mockResolvedValue(options.series ?? []) },
     unavailability: {
       findMany: jest.fn().mockResolvedValue([row()]),
       findUnique: jest.fn().mockResolvedValue('one' in options ? options.one : row()),
@@ -55,7 +58,12 @@ function build(options: { publishedThrough?: string | null; one?: unknown } = {}
       delete: jest.fn().mockResolvedValue(row()),
     },
   };
-  return { service: new AvailabilityService(prisma as never), prisma };
+  const notifications = { availabilityClash: jest.fn().mockResolvedValue(undefined) };
+  return {
+    service: new AvailabilityService(prisma as never, notifications as never),
+    prisma,
+    notifications,
+  };
 }
 
 describe('AvailabilityService', () => {
@@ -109,6 +117,36 @@ describe('AvailabilityService', () => {
         }),
       });
       expect(rule.description).toBe('Not available Saturdays (all day)');
+    });
+
+    it('tells the managers when it clashes with one of their regular shifts', async () => {
+      const series = (daysOfWeek: number[]) => ({
+        id: 'series-1',
+        employeeId: 'emp-1',
+        isRemote: false,
+        daysOfWeek,
+        everyWeeks: 1,
+        weeksOfMonth: [],
+        cycleFrom: null,
+        startTime: '09:00',
+        endTime: '17:00',
+        startsOn: d('2026-09-01'),
+        endsOn: null,
+        location: { name: 'North Bergen' },
+        employee: { firstName: 'Frankie', preferredName: null, lastName: 'Front-Desk' },
+      });
+
+      // Not available Tuesdays, against a regular Tuesday shift.
+      const tuesdays = build({ series: [series([2])] });
+      await tuesdays.service.create({ kind: UnavailabilityKind.WEEKLY, weekday: 2 }, frankie, NOW);
+      expect(tuesdays.notifications.availabilityClash).toHaveBeenCalledWith('emp-1', [
+        'Frankie Front-Desk — regular Tuesdays 9:00 AM–5:00 PM at North Bergen, but not available Tuesdays (all day) (from Tue, Sep 29)',
+      ]);
+
+      // The same, against a regular Monday shift: nothing to say.
+      const mondays = build({ series: [series([1])] });
+      await mondays.service.create({ kind: UnavailabilityKind.WEEKLY, weekday: 2 }, frankie, NOW);
+      expect(mondays.notifications.availabilityClash).not.toHaveBeenCalled();
     });
 
     it('refuses a one-off date inside a published week', async () => {

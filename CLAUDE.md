@@ -604,6 +604,16 @@ Beyond the phases, the parts worth knowing about before picking up work:
   managers only. Settled by **+ Add hours**, recording the time off or
   removing the shift; nothing new stored. `time-entries/missed-shifts.ts`;
   `tests/browser/missed-shifts.mjs`.
+- **Availability that clashes with a regular shift** (9 October 2026,
+  Dominguez — the twelfth "smarter" idea): when somebody adds availability
+  that rules out one of their **regular shifts** in the next eight weeks, the
+  managers down for the rota hear **at once on the bell**
+  (`AVAILABILITY_CLASH`), and it is on the **Schedule** banner and in the
+  nightly email (*coming up*, Schedule part) until the shift or the
+  availability changes. Saved either way, nothing changed by it.
+  `availability/regular-shift-clashes.ts`, migration
+  `20261009030000_availability_clash_notice`;
+  `tests/browser/availability-clash.mjs`.
 - **Turned down: "PTO about to be lost"** (9 October 2026, Dominguez): a
   reminder to use PTO before it fails to carry over was proposed and refused —
   not in the practice's interest. Do not propose it again.

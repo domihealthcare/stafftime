@@ -502,7 +502,13 @@ export function SchedulePage() {
 
       <NeedsAttention
         collapsible
-        sections={['shiftsInClosures', 'openShifts', 'unpublishedRota', 'shiftsForLeavers']}
+        sections={[
+          'shiftsInClosures',
+          'openShifts',
+          'unpublishedRota',
+          'shiftsForLeavers',
+          'regularShiftClashes',
+        ]}
       />
 
       {/* Time off lives here now it has no tab (October 2026): requests to

@@ -83,6 +83,7 @@ function build(
       count: jest.fn().mockResolvedValue(data.shiftsMissed ?? 1),
     },
     location: { findMany: jest.fn().mockResolvedValue(data.locations ?? []) },
+    shiftSeries: { findMany: jest.fn().mockResolvedValue([]) },
     practiceSettings: { findFirst: jest.fn().mockResolvedValue(null) },
     practiceEvent: { findMany: jest.fn().mockResolvedValue(data.closures ?? []) },
     closingRecord: { findMany: jest.fn().mockResolvedValue(data.closingRecords ?? []) },

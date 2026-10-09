@@ -2057,6 +2057,8 @@ enum NotificationKind {
   LICENSE_REMINDER
   /// A task of yours on your onboarding checklist is due soon, or overdue.
   ONBOARDING_REMINDER
+  /// To managers: somebody's new availability clashes with their regular shift.
+  AVAILABILITY_CLASH
 }
 
 /// Something the app wants one person to know, shown under the bell in the

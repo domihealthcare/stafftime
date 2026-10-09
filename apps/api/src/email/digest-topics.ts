@@ -20,7 +20,13 @@ import type { DigestContents } from './attention.service';
  * show every manager everything.
  */
 export const DIGEST_TOPICS: Record<DigestTopic, (keyof DigestContents)[]> = {
-  SCHEDULE: ['unpublishedRota', 'shiftsForLeavers', 'openShifts', 'shiftsInClosures'],
+  SCHEDULE: [
+    'unpublishedRota',
+    'shiftsForLeavers',
+    'openShifts',
+    'shiftsInClosures',
+    'regularShiftClashes',
+  ],
   TIME_OFF: ['undecidedTimeOff', 'timeOffClashes'],
   HOURS: [
     'missingPunches',

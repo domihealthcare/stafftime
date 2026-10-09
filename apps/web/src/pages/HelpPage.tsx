@@ -449,7 +449,9 @@ const STAFF: Section[] = [
             Open <Screen>Schedule</Screen> → <strong>When you can’t work</strong>. Add a weekday you
             are never free (all day or between two times), or a single date. Nobody has to approve
             it. It only affects weeks whose schedule has not been published yet — a published week
-            is fixed, so for a date inside one, talk to your manager or ask for time off.
+            is fixed, so for a date inside one, talk to your manager or ask for time off. If it
+            clashes with a regular shift of yours, the managers are told, so they can sort the
+            shift out with you.
           </p>
         ),
       },
@@ -1400,7 +1402,9 @@ const MANAGERS: Section[] = [
           <p>
             <Screen>Schedule</Screen> → <strong>Availability — yours and the team’s</strong> lists
             what everybody has said they cannot work. You can read it but not change it — it is
-            theirs.
+            theirs. When somebody adds a time that clashes with one of their regular shifts in the
+            next eight weeks, you hear at once under the bell, and it is listed on the Schedule
+            banner and in the nightly email until the regular shift or the availability changes.
           </p>
         ),
       },

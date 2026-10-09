@@ -304,6 +304,7 @@ describe('NotificationsService', () => {
           'overdueTasks',
           'missingPunches',
           'missedShifts',
+          'regularShiftClashes',
           'undecidedTimeOff',
           'silentKiosks',
           'unpublishedRota',

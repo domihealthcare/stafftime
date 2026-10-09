@@ -433,7 +433,8 @@ export interface AppNotification {
     | 'PUNCH_REMINDER'
     | 'PROFILE_PHOTO'
     | 'LICENSE_REMINDER'
-    | 'ONBOARDING_REMINDER';
+    | 'ONBOARDING_REMINDER'
+    | 'AVAILABILITY_CLASH';
   title: string;
   body: string | null;
   link: string | null;

@@ -520,6 +520,7 @@ export interface Attention {
   overdueTasks: string[];
   missingPunches: string[];
   missedShifts: string[];
+  regularShiftClashes: string[];
   undecidedTimeOff: string[];
   silentKiosks: string[];
   unpublishedRota: string[];

@@ -2797,6 +2797,33 @@ email (tier *Sort out today*, under the **Hours** part) and a count among the
 Dashboard's *waiting on a manager* tiles. Managers only, like the rest of the
 round-up. `tests/browser/missed-shifts.mjs`.
 
+## Availability that clashes with a regular shift
+
+October 2026, Dominguez — the twelfth "make it smarter" idea. Availability
+needs no approval, so somebody with a regular Wednesday shift could say they
+were no longer free on Wednesdays and nobody would know until that week's rota
+was built — or until the shift, written out weeks ahead, simply was not
+worked. `availability/regular-shift-clashes.ts` checks every regular shift
+(`ShiftSeries`) with somebody on it, still running, on each date it falls on
+in the next **eight weeks** (`CLASH_DAYS_AHEAD`, as far as regular shifts are
+written out — "which weeks" included, via `onPattern`), against that person's
+availability by the scheduler's own rules (`availability.rules.ts`: overlap,
+not containment; a shift past midnight counts to the end of its first day).
+One line per regular shift and rule, with the first date they meet.
+
+- **At once**: when a rule is saved (`AvailabilityService.create`) and clashes,
+  the managers down for the **rota** part of the round-up (or all of them,
+  when nobody is) get a bell note (`AVAILABILITY_CLASH`, linking to the
+  Schedule). No email at that moment — the nightly email carries it.
+- **Until settled**: the Schedule banner and the nightly email (tier *Coming
+  up*, **Schedule** part) list it (`regularShiftClashes`) until the regular
+  shift is stopped or changed, or the availability is.
+
+Saved either way and nothing changed by it: the manager decides whether the
+regular shift ends, moves, or the person is asked. Migration
+`20261009030000_availability_clash_notice` adds only the notification kind.
+`tests/browser/availability-clash.mjs`.
+
 ## Heading for overtime on hours worked
 
 October 2026, Dominguez — the ninth of the "make it smarter" ideas. The rota

@@ -14,9 +14,11 @@ import {
 } from '@prisma/client';
 import { AuthUser } from '../common/auth/auth-user';
 import { addDaysTo, localDateIn, PRACTICE_ZONE, weekStartIn } from '../common/util/zoned-time.util';
+import { NotificationsService } from '../email/notifications.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { Rule, describe } from './availability.rules';
 import { CreateUnavailabilityDto } from './dto/availability.dto';
+import { describeRegularShiftClash, loadRegularShiftClashes } from './regular-shift-clashes';
 
 /// Both offices are in New Jersey. Used only to decide what "today" is when
 /// somebody has no location to take a timezone from.
@@ -35,7 +37,10 @@ import { CreateUnavailabilityDto } from './dto/availability.dto';
 export class AvailabilityService {
   private readonly logger = new Logger(AvailabilityService.name);
 
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly notifications: NotificationsService,
+  ) {}
 
   /// Somebody's current and future availability, and how far the rota already
   /// reaches for them.
@@ -109,6 +114,15 @@ export class AvailabilityService {
       },
     });
     this.logger.log(`Unavailability ${row.id} (${row.kind}) added by ${actor.id}`);
+
+    // Saved either way — availability needs no approval — but a clash with
+    // one of their regular shifts is the managers' to sort out, so they hear.
+    const clashes = (await loadRegularShiftClashes(this.prisma, now, actor.id)).filter(
+      (clash) => clash.rule.id === row.id,
+    );
+    if (clashes.length > 0) {
+      await this.notifications.availabilityClash(actor.id, clashes.map(describeRegularShiftClash));
+    }
     return present(row, firstOpenDate);
   }
 
