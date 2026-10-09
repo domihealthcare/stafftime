@@ -118,7 +118,10 @@ await step('approving takes the three, and leaves the late one and the midnight 
   await mgr.getByRole('alertdialog').getByRole('button', { name: 'Yes, approve them' }).click();
   await mgr.getByText('Approved 3 entries.').waitFor({ timeout: 10000 });
   await button.waitFor({ state: 'detached', timeout: 10000 });
+  // The list reloads after approving; count once it is back, not while the
+  // spinner stands in for it (which is how this once read 0 on CI).
   const table = mgr.locator('table');
+  await table.getByText('Approved', { exact: true }).nth(3).waitFor({ timeout: 10000 });
   const approvedRows = await table.getByText('Approved', { exact: true }).count();
   if (approvedRows !== 4) throw new Error(`${approvedRows} rows read Approved`);
   if ((await table.getByRole('button', { name: 'Approve', exact: true }).count()) !== 1)

@@ -2859,6 +2859,44 @@ nothing stops a manager approving their own hours (as with one at a time).
 Flagged entries keep their own Approve, and a midnight clock-out still needs
 the time corrected first. `tests/browser/approve-clean.mjs`.
 
+## Before you publish
+
+October 2026, Dominguez — the sixth "make it smarter" idea. The rota already
+warned about each thing where it happened — overtime in a red banner, time
+off hatched in the row, a closure with ⚠, availability in the shift forms —
+but publishing tells staff, and nothing gathered it in one place at the
+moment that matters. Now **Publish all** (and a person's **Publish N draft
+shifts**) first asks `POST /shifts/publish-check` with the ids, and when
+anything comes back shows **Before you publish** (`PublishCheckDialog`) with
+**Not yet** and **Publish anyway**; with nothing to say, the plain question
+is asked as before. A check that fails never stands in the way: the plain
+question is asked instead.
+
+What it reads (`shifts/publish-check.service.ts`), each by the rule the rest
+of the app already uses, and words (`shifts/publish-check.ts`, pure, tested),
+most serious first:
+
+- **A required license has lapsed by then** — `loadStanding`, the Licenses
+  screen's own query: a required type whose latest credential expired before
+  the shift's day (the expiry day itself still counts as valid). A required
+  one with **nothing on file** is left out on purpose: that is the Licenses
+  screen's to chase, and listing it would put the same line on every publish
+  until it is entered. Grouped per person and license.
+- **For people who have left** — marked no longer employed, or a shift after
+  their last day (`terminationDate`). Grouped per person.
+- **On time off** — approved, or asked for and not decided.
+- **During a closure** — that office's or both.
+- **When they said they can't work** — `clashFor`, as the scheduler.
+- **Going into overtime** — `overtimeForWeeksTouching`, the rota's own weekly
+  totals (both offices, drafts counted), narrowed to the people and weeks
+  being published.
+- **Open shifts with nobody on them** — in the same days at the same offices,
+  draft or not. Left out for one person's drafts (the right-click menu),
+  where they are beside the point.
+
+Only drafts are checked, and only reads: nothing is stored, nobody is told.
+`tests/browser/publish-check.mjs`.
+
 ## Hours entered by hand
 
 Asked for by Dominguez (29 September 2026), once there was no time clock:

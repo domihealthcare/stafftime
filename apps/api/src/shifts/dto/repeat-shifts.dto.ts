@@ -260,6 +260,15 @@ export class PublishShiftsDto {
   ids!: string[];
 }
 
+/// The drafts about to be published, to check first ("Before you publish").
+export class PublishCheckDto extends PublishShiftsDto {
+  /// False for one person's drafts, where the office's open shifts are beside
+  /// the point.
+  @IsOptional()
+  @IsBoolean()
+  withOpenShifts?: boolean;
+}
+
 /// The open shifts on screen, to suggest somebody for each.
 export class SuggestCoverDto extends PublishShiftsDto {}
 

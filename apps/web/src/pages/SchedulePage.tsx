@@ -30,6 +30,7 @@ import type {
   PlanResult,
   PracticeEvent,
   PtoRequest,
+  PublishCheck,
   Shift,
 } from '../lib/types';
 import { CalendarLinkCard } from '../components/CalendarLinkCard';
@@ -66,6 +67,7 @@ import { noteToSend, ShiftNoteField } from '../components/ShiftNote';
 import { NeedsAttention } from '../components/NeedsAttention';
 import { RequestTimeOffButton, RequestsToDecide, YourTimeOff } from '../components/ScheduleTimeOff';
 import { useConfirm } from '../components/ConfirmDialog';
+import { PublishCheckDialog } from '../components/PublishCheckDialog';
 import {
   confirmOvertime,
   MyOvertimeNotice,
@@ -225,6 +227,13 @@ export function SchedulePage() {
   const confirmAsk = useConfirm();
   const [showEmptyOpen, setShowEmptyOpen] = useState(false);
   const [publishedNote, setPublishedNote] = useState<string | null>(null);
+  /// "Before you publish", when the drafts about to go out have something
+  /// worth a look; the publish waits on the manager's answer.
+  const [publishCheck, setPublishCheck] = useState<{
+    list: Shift[];
+    whose: string;
+    check: PublishCheck;
+  } | null>(null);
   /// Bumped when a regular shift (no end date) is made, to refresh their list.
   const [standingVersion, setStandingVersion] = useState(0);
   const [copying, setCopying] = useState(false);
@@ -400,8 +409,23 @@ export function SchedulePage() {
   const period = view === 'week' ? 'this week' : 'this month';
 
   /// Publishes drafts together, after one question — staff are told, so it is
-  /// not something to do by a stray click.
-  async function publishDrafts(list: Shift[], whose: string) {
+  /// not something to do by a stray click. The question is "Before you
+  /// publish" when anything about them is worth a look (time off, overtime,
+  /// a lapsed license…); a check that fails never stands in the way.
+  async function publishDrafts(list: Shift[], whose: string, withOpenShifts = true) {
+    let check: PublishCheck | null = null;
+    try {
+      check = await api.checkPublish(
+        list.map((shift) => shift.id),
+        withOpenShifts,
+      );
+    } catch {
+      check = null;
+    }
+    if (check && check.sections.length > 0) {
+      setPublishCheck({ list, whose, check });
+      return;
+    }
     const count = list.length;
     const ok = await confirmAsk({
       title: `Publish ${count} draft shift${count === 1 ? '' : 's'}?`,
@@ -411,6 +435,10 @@ export function SchedulePage() {
       tone: 'neutral',
     });
     if (!ok) return;
+    await publish(list);
+  }
+
+  async function publish(list: Shift[]) {
     try {
       const result = await api.publishShifts(list.map((shift) => shift.id));
       setPublishedNote(
@@ -435,7 +463,7 @@ export function SchedulePage() {
         ? [
             {
               label: `Publish ${mine.length} draft shift${mine.length === 1 ? '' : 's'} ${period}`,
-              run: () => void publishDrafts(mine, person.name),
+              run: () => void publishDrafts(mine, person.name, false),
             },
           ]
         : [],
@@ -586,6 +614,19 @@ export function SchedulePage() {
             thresholdHours={coverage.overtimeThresholdHours}
           />
         </div>
+      )}
+
+      {publishCheck && (
+        <PublishCheckDialog
+          check={publishCheck.check}
+          whose={publishCheck.whose}
+          onClose={() => setPublishCheck(null)}
+          onPublish={() => {
+            const { list } = publishCheck;
+            setPublishCheck(null);
+            void publish(list);
+          }}
+        />
       )}
 
       {isManager && publishedNote && (

@@ -80,6 +80,12 @@ reset_state() {
     -c "delete from time_entries where \"editReason\" = 'ADP suite: a full day';" \
     -c "delete from time_entries where \"editReason\" = 'patterns-suite';" \
     -c "delete from time_entries where \"handEntryNote\" = 'approve-clean-suite';" \
+    -c "delete from shifts where \"startsAt\" >= '2027-06-05' and \"startsAt\" < '2027-06-15';" \
+    -c "delete from pto_requests where notes = 'publish-check-suite';" \
+    -c "delete from unavailability where note = 'publish-check-suite';" \
+    -c "delete from practice_events where title = 'Publish-check closure';" \
+    -c "delete from employee_credentials where name = 'Publish-check license';" \
+    -c "delete from credential_types where name = 'Publish-check license';" \
     -c "delete from time_entries where \"employeeId\" = (select id from employees where email = 'manager@domihealthcare.com') and \"clockInAt\" > now() - interval '6 hours';" \
     -c "update employees set \"adpFileNumber\" = null;" \
     -c "update employees set \"postNominals\" = null;" \
@@ -88,7 +94,7 @@ reset_state() {
 
 # The scheduler suite builds its rotas in February 2027 so that clearing them
 # cannot touch the shift the seed puts on today's date.
-SUITES="${SUITES:-drive refusals correct auth kiosk export locations pto pto-policy presets calendar scheduler checklists phone reset payroll credentials privacy race attention announcements resources directory availability surveys dashboard date-ranges help adp profile rota wfh overtime bell rota-print closing install golive staff staff-profile birthdays events closures recurring standing usual-week own-roles hand-entry removed-shift quick-add credential-types clinical care-plan wellness productivity schedule-phone clock-place extensions shift-notes shift-hours repeat-weeks news-social punch-reminders main-job-role auto-clock-out digest-topics practice-calendar cover patterns clashes approve-clean}"
+SUITES="${SUITES:-drive refusals correct auth kiosk export locations pto pto-policy presets calendar scheduler checklists phone reset payroll credentials privacy race attention announcements resources directory availability surveys dashboard date-ranges help adp profile rota wfh overtime bell rota-print closing install golive staff staff-profile birthdays events closures recurring standing usual-week own-roles hand-entry removed-shift quick-add credential-types clinical care-plan wellness productivity schedule-phone clock-place extensions shift-notes shift-hours repeat-weeks news-social punch-reminders main-job-role auto-clock-out digest-topics practice-calendar cover patterns clashes approve-clean publish-check}"
 
 # Full output per suite goes to a file, and only the step lines are printed, so
 # a failure's detail is still there to read rather than truncated away.

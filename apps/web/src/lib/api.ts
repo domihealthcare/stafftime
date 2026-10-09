@@ -57,6 +57,7 @@ import type {
   Resource,
   ResourceKind,
   ResourceSection,
+  PublishCheck,
   Shift,
   StandingShift,
   WeeklyScheduleResult,
@@ -1067,6 +1068,12 @@ export const api = {
     request<{ published: number; skipped: number }>('/shifts/publish', {
       method: 'POST',
       body: JSON.stringify({ ids }),
+    }),
+  /// "Before you publish": what is worth a look about these drafts first.
+  checkPublish: (ids: string[], withOpenShifts = true) =>
+    request<PublishCheck>('/shifts/publish-check', {
+      method: 'POST',
+      body: JSON.stringify({ ids, withOpenShifts }),
     }),
   deleteShift: (id: string) => request<unknown>(`/shifts/${id}`, { method: 'DELETE' }),
 

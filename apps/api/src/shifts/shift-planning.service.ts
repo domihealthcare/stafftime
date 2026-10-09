@@ -1189,7 +1189,7 @@ export class ShiftPlanningService {
    * The threshold is the practice's, not a constant: forty is the federal line
    * and a sensible default, but it is theirs to move.
    */
-  private async overtimeForWeeksTouching(
+  async overtimeForWeeksTouching(
     dates: string[],
     viewingLocationId?: string,
   ): Promise<OvertimeWarning[]> {

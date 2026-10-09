@@ -119,14 +119,16 @@ export function TimesheetPage() {
     setNotice(null);
     try {
       const { approved, left } = await api.approveCleanTimeEntries(clean.map((entry) => entry.id));
+      setBannerKey((key) => key + 1);
+      // The list first, then the note: "Approved 3" over a list still saying
+      // otherwise (or still loading) would read as if it had not worked.
+      await load();
       setNotice(
         `Approved ${approved} ${approved === 1 ? 'entry' : 'entries'}.` +
           (left > 0
             ? ` ${left} changed since the page was loaded and ${left === 1 ? 'was' : 'were'} left for a look.`
             : ''),
       );
-      setBannerKey((key) => key + 1);
-      await load();
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Could not approve those entries.');
     } finally {
