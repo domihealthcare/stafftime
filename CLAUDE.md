@@ -92,6 +92,14 @@ person, not the Directory, not the payroll export. They live in their own tables
 and never added to `Employee`, and the schema guard pins their fields. Still no
 identity numbers, documents, licence numbers or date of birth.
 
+**An outside AI service** (October 2026, Dominguez: staff names and schedules
+may go to one; patient details never): **Ask Domi Staff** sends a question,
+and what the app looks up to answer it *as that person sees it*, to Anthropic
+(Claude). Never the clinical forms, the suggestion box, survey answers, staff
+profiles, licenses, punch locations, PINs or passwords; nothing about the
+questions is kept beyond a daily count. Off until `ANTHROPIC_API_KEY` is set
+— see `docs/ask-domi-staff-setup.md`.
+
 Nothing is uploaded to the app, with **one deliberate exception**: a
 **profile photo** of yourself (confirmed by Dominguez, September 2026). The
 browser crops it square, shrinks it to 256 px and re-encodes it as a small
@@ -636,6 +644,26 @@ Beyond the phases, the parts worth knowing about before picking up work:
   Warns, never refuses. `staffing/minimums.ts`, `PUT /staffing/minimums`,
   `components/StaffingMinimumsCard.tsx`, migration
   `20261009040000_staffing_minimums`; `tests/browser/minimums.mjs`.
+- **Ask Domi Staff** (9 October 2026, Dominguez — the first AI feature,
+  after he agreed staff names and schedules, never patient details, may go
+  to an outside AI service): `/ask`, linked from Home's Quick card, a
+  question in plain words answered by **Claude Opus 5.5** (Anthropic) from
+  **tools that answer as the asker** — their own shifts and time off, the
+  practice calendar, pay days, the Directory; managers also the rota, time
+  off waiting and the round-up (`assistant/assistant-tools.ts`, gated and
+  unit-tested). Looks up only, never changes. **Nothing kept**: no question
+  or answer stored or logged, only a daily count (`AssistantUsage`, **40 a
+  day each**); the conversation lives on the screen. Effort `low`, refusals
+  fall back server-side (`fallbacks: "default"`), at most 4 rounds inside
+  Vercel's 30 seconds. **Off until `ANTHROPIC_API_KEY`** is set in Vercel
+  (Production only) — **not on the live site yet**; steps, cost (~3–5¢ a
+  question) and the disclosure line in `docs/ask-domi-staff-setup.md`.
+  `@anthropic-ai/sdk` pinned at 0.128.0. Migration
+  `20261009050000_assistant_usage`; `tests/browser/ask.mjs` (off, and the
+  screen with answers stood in for). Other AI ideas proposed and not built
+  yet: help writing News posts; summaries of closed surveys' written answers
+  (would need a new line in *Truly anonymous — how?*). Never the clinical
+  forms (would need a BAA).
 - **Turned down: "PTO about to be lost"** (9 October 2026, Dominguez): a
   reminder to use PTO before it fails to carry over was proposed and refused —
   not in the practice's interest. Do not propose it again.
@@ -1303,7 +1331,7 @@ Beyond the phases, the parts worth knowing about before picking up work:
   Counts only — never a patient (the schema guard pins the fields; the note is
   the one free-text box and says so). **Not in the payroll export** (decided). See *Provider
   productivity* in `docs/architecture.md`.
-- **Tests**: ~1,430 unit tests, and ~515 end-to-end checks in `tests/browser`
+- **Tests**: ~1,470 unit tests, and ~515 end-to-end checks in `tests/browser`
   driven against a real API, a real Postgres and a real Chromium. Both run in CI
   on every push. The convention is to run the browser suites twice — once
   against the dev server, once against `vite preview`, which applies the

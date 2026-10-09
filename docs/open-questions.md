@@ -329,6 +329,19 @@ What is left:
       close, sign out after every patient — no patient mode. Revisit once the
       answers are in.
 
+## Ask Domi Staff (built October 2026 — off until set up)
+
+- **Switch it on**: an Anthropic API key in Vercel (Production), with a spend
+  limit — steps in `docs/ask-domi-staff-setup.md`.
+- **The staff disclosure** needs a line saying questions go to an AI provider
+  (wording drafted in the same file), read by whoever advises on employment
+  matters with the location disclosure.
+- Worth checking Anthropic's commercial terms on how API data is handled and
+  kept, before staff are told about it.
+- Next AI ideas, if wanted: help writing News posts (admins); summaries of a
+  closed survey's written answers (would change what *Truly anonymous —
+  how?* says, so only with a new line there).
+
 ## Technical to-dos
 
 - [ ] **Two-factor authentication** — less pressing now the personnel documents

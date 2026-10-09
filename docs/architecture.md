@@ -2880,6 +2880,47 @@ Where a minimum is set, two things use it (`staffing/minimums.ts`):
 
 Warns, never refuses. `tests/browser/minimums.mjs`.
 
+## Ask Domi Staff
+
+October 2026, Dominguez — the first AI feature, built once he agreed that
+staff names and schedules (never patient details) may go to an outside AI
+service. `/ask` (linked from Home's Quick card while it is on) takes a
+question in plain words; `POST /assistant/ask` answers it with **Claude Opus
+5.5** through a hand-written tool loop (`assistant/assistant.service.ts`).
+
+**The tools answer as the asker** (`assistant/assistant-tools.ts`), through
+the services the screens use, so they cannot show more than the screens do:
+`my_schedule` (their own **published** shifts — the person is fixed to the
+asker, whatever the model asks for), `my_time_off` (balance and requests),
+`practice_calendar` (`EventsService.list` as them; a rep lunch by name and
+company only, never the cell, status or notes), `pay_days`, `directory`
+(`DirectoryService.list` as them). Managers and admins also get `rota`
+(a day's shifts, drafts and open shifts marked), `time_off_requests`
+(waiting) and `needs_attention` (the round-up's lists). A tool not offered to
+the asker is refused if called anyway. Tool results are compact JSON with no
+ids. Nothing reaches the clinical forms, the suggestion box, survey answers,
+staff profiles, licenses, punch locations, PINs or passwords.
+
+**Request shape.** Effort `low` (chat; thinking cannot be turned off on this
+model), `max_tokens` 4000, no streaming. Refusals fall back server-side
+(`betas: ["server-side-fallback-2026-07-01"]`, `fallbacks: "default"`); a
+refusal that stands is answered "Sorry — I can't help with that one". Each
+tool round appends the assistant's whole turn, thinking included, then the
+results (append-only). At most 4 rounds and 26 seconds, with a 20-second
+client timeout and one retry, inside Vercel's 30-second function limit. The
+system prompt is the rules, then who is asking and today's date in New Jersey.
+The conversation's earlier turns come from the browser (last six, text only)
+and are never stored.
+
+**Nothing kept.** No question or answer is stored or logged;
+`AssistantUsage` keeps a count per person per day, capped at
+`DAILY_QUESTIONS` (40). **Off until `ANTHROPIC_API_KEY` is set**:
+`/api/config` says `assistant: false`, the route answers 503, Home offers
+nothing and the page says so. Set-up, cost and the disclosure line:
+`docs/ask-domi-staff-setup.md`. Tests: `assistant/*.spec.ts` (gating, the
+loop with a fake client), `tests/browser/ask.mjs` (off; the screen with
+answers stood in for in the browser — CI has no key and sends nothing).
+
 ## Heading for overtime on hours worked
 
 October 2026, Dominguez — the ninth of the "make it smarter" ideas. The rota

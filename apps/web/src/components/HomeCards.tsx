@@ -138,6 +138,18 @@ export function QuickActions() {
       canUseWellnessForm(employee));
   const button =
     'inline-flex min-h-10 items-center rounded-lg border border-slate-300 bg-white px-3 text-sm font-medium text-slate-700 hover:bg-slate-50';
+  // "Ask Domi Staff", once it is switched on.
+  const [ask, setAsk] = useState(false);
+  useEffect(() => {
+    let cancelled = false;
+    api
+      .appConfig()
+      .then((config) => !cancelled && setAsk(Boolean(config.assistant)))
+      .catch(() => undefined);
+    return () => {
+      cancelled = true;
+    };
+  }, []);
   return (
     <Card className="p-4" testId="quick-actions">
       <h2 className="text-sm font-semibold text-slate-900">Quick</h2>
@@ -151,6 +163,11 @@ export function QuickActions() {
         {forms && (
           <Link to="/resources" className={button}>
             Forms
+          </Link>
+        )}
+        {ask && (
+          <Link to="/ask" className={button}>
+            Ask Domi Staff
           </Link>
         )}
         <Link to="/help" className={button}>

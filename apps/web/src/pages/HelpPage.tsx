@@ -610,6 +610,21 @@ const STAFF: Section[] = [
         ),
       },
       {
+        question: 'Ask Domi Staff',
+        answer: (
+          <p>
+            When it is switched on, <strong>Ask Domi Staff</strong> is on Home&rsquo;s Quick card:
+            ask in your own words — &ldquo;When am I next on?&rdquo;, &ldquo;How much PTO do I
+            have left?&rdquo;, &ldquo;Who is in at North Bergen?&rdquo; — and it answers from what
+            you can already see in the app. Answers come from Claude, an AI service run by
+            Anthropic, so your question and what it looks up for you are sent to it; nothing is
+            kept in Domi Staff, and leaving the page ends the conversation. It only looks things
+            up — it cannot change anything — and you can ask 40 questions a day. Never type
+            patient details into it.
+          </p>
+        ),
+      },
+      {
         question: 'How do I change my password?',
         answer: (
           <p>
