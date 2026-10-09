@@ -2921,6 +2921,76 @@ nothing and the page says so. Set-up, cost and the disclosure line:
 loop with a fake client), `tests/browser/ask.mjs` (off; the screen with
 answers stood in for in the browser — CI has no key and sends nothing).
 
+**"How do I…?" from the Help guide** (October 2026). The Help guide is JSX
+on the Help page, so it ships with the features it describes; rather than a
+second copy for the server that could drift, `lib/help-text.ts` walks those
+elements for their words (`textOf`), `helpTopicsFor` gives the topics the
+asker can read (managers both guides), and `pickHelpTopics` sends the four
+whose words best match the question (a word in a topic's title counts three,
+in its text one; each cut to 2,500 characters). The server puts them ahead of
+the question, marked as the guide's (`withHelp`, at most five, 3,000
+characters each), and the rules say to answer "how do I…?" from them and name
+the topic. They are the guide's own words, so sending them is no wider than
+the Help page.
+
+## The AI helpers
+
+October 2026, Dominguez chose four from a list of AI ideas, beside Ask Domi
+Staff's "how do I…?". They share one door, `ai/ai.service.ts` (`AiService`):
+one client, the model (**Claude Opus 5.5**), effort `low`, the server-side
+refusal fallback, and **one daily allowance** — `AssistantUsage` now counts
+questions and helpers together, 40 a day each (`spend`). The helpers use
+**structured outputs** (`json`, `output_config.format` with a JSON schema, all
+fields required strings) so the answer drops straight into a form; a refusal
+or an unreadable answer is `null`, and the screen says to do it by hand. They
+only ever **fill in a form**: a person reads it and saves it. Off with no key,
+like Ask Domi Staff: the buttons are hidden (`useAiOn`, from `/api/config`)
+and the routes answer 503.
+
+- **News — Help me write it** (admins): `POST /announcements/draft` turns notes
+  into `{title, body}` (`announcements/news-writing.ts`: say only what the
+  notes say, plain text, leave out anything about a patient).
+- **News in Spanish**: `Announcement.titleEs`, `bodyEs`, `spanishByAi`
+  (migration `20261009060000_news_in_spanish`). The editor's **In Spanish**
+  holds them — typed, or **Translate from the English**
+  (`POST /announcements/translate`, kept as the AI's until somebody edits
+  it). Readers get an **English | Español** switch
+  (`components/NewsLanguage.tsx`; the choice is per device, in
+  `localStorage`, shared by Home and News through a tiny store). A post with
+  no Spanish is translated the first time a reader asks
+  (`GET /announcements/:id/spanish`), kept — written only if nobody saved
+  Spanish meanwhile and the English is still what was translated — and shown
+  as *Traducido automáticamente*. Changing the English clears Spanish that was
+  not redone in the same save, rather than leave it saying the old thing. The
+  poll, likes and comments stay as written, and the public posts (time clock,
+  sign-in page) stay English. Screen names stay in English in the
+  translation, so staff can find them.
+- **Calendar — Fill this in from a message** (managers): `POST
+  /events/read-booking` (its own controller, so reading a message does not set
+  off a round of calendar invites). Only the pasted words go, with today's
+  date and the offices' names; `matchBooking` (`events/read-booking.ts`, pure,
+  unit-tested) then checks the dates and times are in the form's shapes, finds
+  the office by name (NB and WNY too) and the rep on the app's own list (exact
+  name, then first name, a tie settled by company) — so the reps list, its
+  statuses and notes never leave. A rep not on the list is named, to be added
+  under Reps. The form says what to check and what the message left out.
+- **Time off — Help me word it** (managers): `POST /pto/:id/decline-wording`
+  (`pto/decline-wording.ts`). Sends the person's first name, the kind of time
+  off and dates, what the manager typed, and only when they typed nothing,
+  how many in the role at the office would be off — **counts, never names**
+  (`clashFacts`): staff do not see each other's time off, and the reason is
+  shown to the person. Lives in the new decline pop-up
+  (`components/DeclineTimeOff.tsx`), which also mended the Schedule's
+  **Decline**: it sent no reason, which the server refuses, so since
+  1 October it had failed; now both the Schedule and Time off ask for the
+  reason in the pop-up.
+
+Tests: `ai/` is exercised through `assistant.service.spec.ts`,
+`announcements.service.spec.ts` (Spanish kept, cleared, translated once),
+`read-booking.spec.ts`, `decline-wording.spec.ts`; `tests/browser/ai-helpers.mjs`
+(off; the Schedule's decline with a reason; Spanish typed by an admin and the
+switch; and each helper with its answer stood in for in the browser).
+
 ## Time off that lands on shifts
 
 October 2026, Dominguez — a "make it smarter" idea. Approving time off used to

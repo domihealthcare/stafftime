@@ -12,6 +12,6 @@ export class AssistantController {
   @Post('ask')
   @HttpCode(HttpStatus.OK)
   ask(@Body() dto: AskDto, @CurrentUser() user: AuthUser) {
-    return this.assistant.ask(dto.question, dto.history ?? [], user);
+    return this.assistant.ask(dto.question, dto.history ?? [], user, new Date(), dto.help ?? []);
   }
 }

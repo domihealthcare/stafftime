@@ -130,10 +130,13 @@ await mgr.screenshot({ path: `${OUT}/27-pto-manager.png`, fullPage: true });
 
 await step('denying demands a reason before it can be sent', async () => {
   await mgr.getByRole('button', { name: 'Deny', exact: true }).first().click();
-  await mgr.getByText('Reason for denying').waitFor({ timeout: 5000 });
-  if (await mgr.getByRole('button', { name: 'Deny request' }).isEnabled())
+  // A pop-up asking for the reason the person will read (October 2026).
+  const dialog = mgr.getByTestId('decline-time-off');
+  await dialog.getByLabel(/The reason .* will read/).waitFor({ timeout: 5000 });
+  if (await dialog.getByRole('button', { name: 'Decline it' }).isEnabled())
     throw new Error('deny was enabled with no reason given');
-  await mgr.getByRole('button', { name: 'Cancel' }).last().click();
+  await dialog.getByRole('button', { name: 'Keep it waiting' }).click();
+  await dialog.waitFor({ state: 'detached', timeout: 5000 });
 });
 
 const badgeCount = async () =>

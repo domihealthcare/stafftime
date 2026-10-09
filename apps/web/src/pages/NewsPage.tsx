@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { useLocation } from 'react-router-dom';
 import { useConfirm } from '../components/ConfirmDialog';
+import { NewsLanguageToggle, usePostWords } from '../components/NewsLanguage';
 import { PollView, PostActions, PostComments } from '../components/PostSocial';
 import {
   Alert,
@@ -12,6 +13,7 @@ import {
   buttonClass,
   inputClass,
 } from '../components/ui';
+import { AI_NOTE, useAiOn } from '../lib/ai';
 import { ApiError, api } from '../lib/api';
 import { useIsAdmin } from '../lib/session';
 import type { Announcement, PollInput } from '../lib/types';
@@ -28,6 +30,7 @@ import type { Announcement, PollInput } from '../lib/types';
  */
 export function NewsPage() {
   const isAdmin = useIsAdmin();
+  const aiOn = useAiOn();
   const { hash } = useLocation();
   const [posts, setPosts] = useState<Announcement[]>([]);
   const [writing, setWriting] = useState(false);
@@ -73,6 +76,13 @@ export function NewsPage() {
         }
       />
 
+      {(aiOn || posts.some((post) => post.titleEs)) && (
+        <div className="mb-4 flex items-center gap-2 text-sm text-slate-600">
+          <span id="news-language-label">Read the news in</span>
+          <NewsLanguageToggle />
+        </div>
+      )}
+
       {error && (
         <div className="mb-4">
           <Alert>{error}</Alert>
@@ -83,6 +93,7 @@ export function NewsPage() {
         <div className="mb-4">
           {writing ? (
             <PostForm
+              aiOn={aiOn}
               firstPost={posts.length === 0}
               onSaved={() => {
                 setWriting(false);
@@ -110,6 +121,7 @@ export function NewsPage() {
             <PostCard
               key={post.id}
               post={post}
+              aiOn={aiOn}
               canManage={isAdmin}
               onChanged={() => void load()}
               onReplace={replace}
@@ -124,17 +136,20 @@ export function NewsPage() {
 
 function PostCard({
   post,
+  aiOn,
   canManage,
   onChanged,
   onReplace,
   onError,
 }: {
   post: Announcement;
+  aiOn: boolean;
   canManage: boolean;
   onChanged: () => void;
   onReplace: (post: Announcement) => void;
   onError: (message: string) => void;
 }) {
+  const words = usePostWords(post);
   const [editing, setEditing] = useState(false);
   const [commenting, setCommenting] = useState(false);
   const [busy, setBusy] = useState(false);
@@ -156,6 +171,7 @@ function PostCard({
     return (
       <PostForm
         post={post}
+        aiOn={aiOn}
         onSaved={() => {
           setEditing(false);
           onChanged();
@@ -174,7 +190,9 @@ function PostCard({
       <Card className="p-4" testId={`post-${post.id}`}>
         <article>
           <div className="flex flex-wrap items-center gap-2">
-            <h2 className="font-semibold text-slate-900">{post.title}</h2>
+            <h2 lang={words.lang} className="font-semibold text-slate-900">
+              {words.title}
+            </h2>
             {post.isPrimary && <Badge tone="info">Primary</Badge>}
             {canManage && post.showOnTimeClock && <Badge tone="neutral">Public</Badge>}
           </div>
@@ -183,8 +201,15 @@ function PostCard({
             {author && ` · ${author}`}
             {post.editedAt && ` · edited ${formatPostDate(post.editedAt)}`}
           </p>
-          {post.body && (
-            <p className="mt-2 whitespace-pre-line text-sm text-slate-700">{post.body}</p>
+          {words.body && (
+            <p lang={words.lang} className="mt-2 whitespace-pre-line text-sm text-slate-700">
+              {words.body}
+            </p>
+          )}
+          {(words.note || words.loading) && (
+            <p className="mt-1 text-xs italic text-slate-500" data-testid="post-language-note">
+              {words.loading ? 'Traduciendo…' : words.note}
+            </p>
           )}
           <PollView post={post} onChange={onReplace} />
         </article>
@@ -252,17 +277,30 @@ function PostCard({
 /// the current primary cannot be unticked — only replaced by ticking another.
 function PostForm({
   post,
+  aiOn = false,
   firstPost = false,
   onSaved,
   onCancel,
 }: {
   post?: Announcement;
+  aiOn?: boolean;
   firstPost?: boolean;
   onSaved: () => void;
   onCancel: () => void;
 }) {
   const [title, setTitle] = useState(post?.title ?? '');
   const [body, setBody] = useState(post?.body ?? '');
+  // The Spanish (October 2026): typed, or translated by the AI service and
+  // then read through. `touched` is whether it was redone in this edit — if
+  // the English changes and it was not, it is cleared rather than left
+  // saying the old thing.
+  const [titleEs, setTitleEs] = useState(post?.titleEs ?? '');
+  const [bodyEs, setBodyEs] = useState(post?.bodyEs ?? '');
+  const [spanishByAi, setSpanishByAi] = useState(post?.spanishByAi ?? false);
+  const [spanishTouched, setSpanishTouched] = useState(false);
+  const [notes, setNotes] = useState('');
+  const [helping, setHelping] = useState(false);
+  const [aiBusy, setAiBusy] = useState<'draft' | 'translate' | null>(null);
   const [isPrimary, setIsPrimary] = useState(post?.isPrimary ?? firstPost);
   const [onTimeClock, setOnTimeClock] = useState(post?.showOnTimeClock ?? false);
   const [poll, setPoll] = useState<PollDraft | null>(
@@ -286,11 +324,48 @@ function PostForm({
     pollInput !== null && pollInput.question.length >= 2 && pollInput.options.length >= 2;
   const canSave = title.trim().length >= 2 && (poll ? pollReady : body.trim() !== '');
 
+  async function draft() {
+    setAiBusy('draft');
+    setError(null);
+    try {
+      const words = await api.draftAnnouncement(notes.trim(), title.trim() || undefined);
+      setTitle(words.title);
+      setBody(words.body);
+      setHelping(false);
+    } catch (cause) {
+      setError(cause instanceof ApiError ? cause.message : 'Could not write that just now.');
+    } finally {
+      setAiBusy(null);
+    }
+  }
+
+  async function translate() {
+    setAiBusy('translate');
+    setError(null);
+    try {
+      const words = await api.translateAnnouncement(title.trim(), body.trim());
+      setTitleEs(words.title);
+      setBodyEs(words.body);
+      setSpanishByAi(true);
+      setSpanishTouched(true);
+    } catch (cause) {
+      setError(cause instanceof ApiError ? cause.message : 'Could not translate that just now.');
+    } finally {
+      setAiBusy(null);
+    }
+  }
+
   async function save() {
     setBusy(true);
     setError(null);
     try {
-      const payload = { title: title.trim(), body: body.trim() };
+      const englishChanged =
+        post !== undefined && (title.trim() !== post.title || body.trim() !== post.body);
+      const spanish =
+        englishChanged && !spanishTouched
+          ? { titleEs: '' }
+          : { titleEs: titleEs.trim(), bodyEs: bodyEs.trim(), spanishByAi };
+      const payload = { title: title.trim(), body: body.trim(), ...spanish };
       if (post) {
         await api.updateAnnouncement(post.id, {
           ...payload,
@@ -319,6 +394,55 @@ function PostForm({
   return (
     <Card className="p-4">
       <div className="space-y-3">
+        {aiOn && (
+          <div className="rounded-lg bg-slate-50 p-3 ring-1 ring-inset ring-slate-200">
+            {helping ? (
+              <div className="space-y-2">
+                <label className="block text-sm">
+                  <span className="mb-1 block font-medium text-slate-700">
+                    What should it say? Rough notes are fine.
+                  </span>
+                  <textarea
+                    aria-label="Notes for the post"
+                    value={notes}
+                    onChange={(event) => setNotes(event.target.value)}
+                    rows={3}
+                    maxLength={4000}
+                    placeholder="WNY closing early fri 2pm, power company work, NB open as usual"
+                    className="w-full rounded-lg border border-slate-300 px-2 py-1.5"
+                  />
+                </label>
+                <div className="flex flex-wrap items-center gap-2">
+                  <button
+                    type="button"
+                    disabled={aiBusy !== null || notes.trim().length < 3}
+                    onClick={() => void draft()}
+                    className={buttonClass('secondary', 'sm')}
+                  >
+                    {aiBusy === 'draft' ? 'Writing…' : 'Write it'}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setHelping(false)}
+                    className="text-sm font-medium text-slate-600 hover:text-slate-900"
+                  >
+                    Close
+                  </button>
+                </div>
+                <p className="text-xs text-slate-500">{AI_NOTE}</p>
+              </div>
+            ) : (
+              <button
+                type="button"
+                onClick={() => setHelping(true)}
+                className="text-sm font-medium text-brand-700 hover:text-brand-900"
+              >
+                ✨ Help me write it
+              </button>
+            )}
+          </div>
+        )}
+
         <label className="block text-sm">
           <span className="mb-1 block font-medium text-slate-700">Title</span>
           <input
@@ -347,6 +471,72 @@ function PostForm({
         </label>
 
         <PollEditor poll={poll} votesIn={votesIn} onChange={setPoll} />
+
+        <details
+          className="rounded-lg ring-1 ring-inset ring-slate-200"
+          open={Boolean(post?.titleEs) || undefined}
+        >
+          <summary className="cursor-pointer px-3 py-2 text-sm font-medium text-slate-700">
+            In Spanish{' '}
+            <span className="font-normal text-slate-500">
+              (optional — for staff who read the news in Español)
+            </span>
+          </summary>
+          <div className="space-y-2 px-3 pb-3">
+            {aiOn && (
+              <div className="flex flex-wrap items-center gap-2">
+                <button
+                  type="button"
+                  disabled={aiBusy !== null || title.trim().length < 2}
+                  onClick={() => void translate()}
+                  className={buttonClass('secondary', 'sm')}
+                >
+                  {aiBusy === 'translate' ? 'Translating…' : '✨ Translate from the English'}
+                </button>
+                <span className="text-xs text-slate-500">
+                  Left empty, it is translated automatically the first time somebody asks.
+                </span>
+              </div>
+            )}
+            <label className="block text-sm">
+              <span className="mb-1 block font-medium text-slate-700">Título</span>
+              <input
+                aria-label="Título en español"
+                lang="es"
+                value={titleEs}
+                onChange={(event) => {
+                  setTitleEs(event.target.value);
+                  setSpanishByAi(false);
+                  setSpanishTouched(true);
+                }}
+                maxLength={160}
+                className="w-full rounded-lg border border-slate-300 px-2 py-1.5"
+              />
+            </label>
+            <label className="block text-sm">
+              <span className="mb-1 block font-medium text-slate-700">Mensaje</span>
+              <textarea
+                aria-label="Mensaje en español"
+                lang="es"
+                value={bodyEs}
+                onChange={(event) => {
+                  setBodyEs(event.target.value);
+                  setSpanishByAi(false);
+                  setSpanishTouched(true);
+                }}
+                rows={5}
+                maxLength={12_000}
+                className="w-full rounded-lg border border-slate-300 px-2 py-1.5"
+              />
+            </label>
+            {spanishByAi && titleEs && (
+              <p className="text-xs text-slate-500">
+                Translated by the AI service — shown to staff as &ldquo;Traducido
+                automáticamente&rdquo; until somebody edits it.
+              </p>
+            )}
+          </div>
+        </details>
 
         <label className="flex items-start gap-2 text-sm">
           <input

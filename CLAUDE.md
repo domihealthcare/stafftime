@@ -94,11 +94,16 @@ identity numbers, documents, licence numbers or date of birth.
 
 **An outside AI service** (October 2026, Dominguez: staff names and schedules
 may go to one; patient details never): **Ask Domi Staff** sends a question,
-and what the app looks up to answer it *as that person sees it*, to Anthropic
-(Claude). Never the clinical forms, the suggestion box, survey answers, staff
-profiles, licenses, punch locations, PINs or passwords; nothing about the
-questions is kept beyond a daily count. Off until `ANTHROPIC_API_KEY` is set
-— see `docs/ask-domi-staff-setup.md`.
+and what the app looks up to answer it *as that person sees it* (and the Help
+topics likely to answer it), to Anthropic (Claude). The **AI helpers** send
+what they are given to work on: a News post's words or an admin's notes, a
+pasted booking message, and for a time-off decline the person's first name,
+dates and the manager's words (counts of who else is off, never names).
+Never the clinical forms, the suggestion box, survey answers, staff
+profiles, licenses, punch locations, the reps list, PINs or passwords;
+nothing is kept beyond a daily count, unless somebody saves what a helper
+wrote (and a post's Spanish, once translated, stays on the post). Off until
+`ANTHROPIC_API_KEY` is set — see `docs/ask-domi-staff-setup.md`.
 
 Nothing is uploaded to the app, with **one deliberate exception**: a
 **profile photo** of yourself (confirmed by Dominguez, September 2026). The
@@ -660,10 +665,35 @@ Beyond the phases, the parts worth knowing about before picking up work:
   question) and the disclosure line in `docs/ask-domi-staff-setup.md`.
   `@anthropic-ai/sdk` pinned at 0.128.0. Migration
   `20261009050000_assistant_usage`; `tests/browser/ask.mjs` (off, and the
-  screen with answers stood in for). Other AI ideas proposed and not built
-  yet: help writing News posts; summaries of closed surveys' written answers
-  (would need a new line in *Truly anonymous — how?*). Never the clinical
-  forms (would need a BAA).
+  screen with answers stood in for). **Answers "how do I…?" from the Help
+  guide** (9 October 2026): the screen sends the few Help topics that best
+  match the question, as text walked out of the Help page's own JSX
+  (`lib/help-text.ts`), so there is no second copy to drift. Never the
+  clinical forms (would need a BAA).
+- **The AI helpers** (9 October 2026, Dominguez — chosen from a list of AI
+  ideas): all through `ai/ai.service.ts` (one client, Claude Opus 5.5, effort
+  low, refusal fallback, and **one allowance: 40 a day each, questions and
+  helpers together**); structured outputs, so the answer fills a form that a
+  person reads and saves. Off until the key, buttons hidden. **News — ✨ Help
+  me write it** (admins: notes → title and message). **News in Spanish**
+  (Dominguez: "staff should be able to toggle from English, which is default,
+  to Spanish"): an **English | Español** switch on Home and News, per device;
+  a post's Spanish (`Announcement.titleEs` / `bodyEs` / `spanishByAi`,
+  migration `20261009060000_news_in_spanish`) is the admin's — typed, or
+  **✨ Translate from the English** in the editor — or translated the first
+  time a reader asks, kept, and marked *Traducido automáticamente*; changing
+  the English clears Spanish not redone with it; polls, comments and public
+  posts stay English. **Calendar — ✨ Fill this in from a message**
+  (managers): a rep's email or text read into the form; the office and rep
+  are matched to the app's own lists here (`events/read-booking.ts`), a rep
+  not on the list is named to add. **Time off — ✨ Help me word it**
+  (managers): a kind reason for declining (`pto/decline-wording.ts`), in a
+  new decline pop-up (`components/DeclineTimeOff.tsx`) that also **mended
+  the Schedule's Decline** — it sent no reason, which the server refuses, so
+  it had failed since 1 October. See *The AI helpers* in
+  `docs/architecture.md`; `tests/browser/ai-helpers.mjs`. Still only ideas:
+  summaries of closed surveys' written answers (would need a new line in
+  *Truly anonymous — how?*), a Monday briefing for managers.
 - **Time off that lands on shifts** (9 October 2026, Dominguez — a "smarter"
   idea): the **request form** lists the person's shifts in those days before
   it is sent (staff see their own published ones; a manager filing *For*

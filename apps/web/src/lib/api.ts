@@ -1,6 +1,7 @@
 import type { ImportedPerson } from './staff-import';
 import type {
   UsualShift,
+  ReadBooking,
   StaffingMinimum,
   BirthdayEntry,
   Profile,
@@ -500,12 +501,20 @@ function timeOffChanged<T>(result: T): T {
   return result;
 }
 
+/// A post's Spanish as the editor sends it: an empty title clears it.
+type SpanishWords = { titleEs?: string; bodyEs?: string; spanishByAi?: boolean };
+
 export const api = {
-  /// "Ask Domi Staff": a question, with the conversation on screen so far.
-  ask: (question: string, history: { role: 'user' | 'assistant'; text: string }[]) =>
+  /// "Ask Domi Staff": a question, with the conversation on screen so far and
+  /// the Help topics picked as likely to answer it.
+  ask: (
+    question: string,
+    history: { role: 'user' | 'assistant'; text: string }[],
+    help: { question: string; answer: string }[] = [],
+  ) =>
     request<{ answer: string; left: number }>('/assistant/ask', {
       method: 'POST',
-      body: JSON.stringify({ question, history }),
+      body: JSON.stringify({ question, history, help }),
     }),
   appConfig: () => {
     if (!configCache || Date.now() - configCache.at > 60_000) {
@@ -590,6 +599,12 @@ export const api = {
     request<PtoRequest>('/pto', { method: 'POST', body: JSON.stringify(body) }).then(
       timeOffChanged,
     ),
+  /// "Help me word it" on declining time off (AI): a reason to edit.
+  declineWording: (id: string, notes: string) =>
+    request<{ reason: string | null }>(`/pto/${id}/decline-wording`, {
+      method: 'POST',
+      body: JSON.stringify({ notes }),
+    }),
   reviewPto: (
     id: string,
     decision: 'APPROVED' | 'DENIED',
@@ -1293,13 +1308,15 @@ export const api = {
   publicPosts: () => request<PublicPost[]>('/announcements/public'),
   primaryAnnouncement: () =>
     request<{ announcement: Announcement | null }>('/announcements/primary'),
-  createAnnouncement: (body: {
-    title: string;
-    body: string;
-    isPrimary?: boolean;
-    showOnTimeClock?: boolean;
-    poll?: PollInput;
-  }) => request<Announcement>('/announcements', { method: 'POST', body: JSON.stringify(body) }),
+  createAnnouncement: (
+    body: {
+      title: string;
+      body: string;
+      isPrimary?: boolean;
+      showOnTimeClock?: boolean;
+      poll?: PollInput;
+    } & SpanishWords,
+  ) => request<Announcement>('/announcements', { method: 'POST', body: JSON.stringify(body) }),
   /// `poll: null` takes the poll off; leaving it out leaves it as it is.
   updateAnnouncement: (
     id: string,
@@ -1309,12 +1326,37 @@ export const api = {
       isPrimary: boolean;
       showOnTimeClock: boolean;
       poll: PollInput | null;
-    }>,
+    }> &
+      SpanishWords,
   ) =>
     request<Announcement>(`/announcements/${id}`, {
       method: 'PATCH',
       body: JSON.stringify(body),
     }),
+  /// A pasted booking read into the calendar's form (AI). Not saved.
+  readBooking: (text: string) =>
+    request<{ booking: ReadBooking | null }>('/events/read-booking', {
+      method: 'POST',
+      body: JSON.stringify({ text }),
+    }),
+  /// "Help me write it": an admin's notes as a post to edit (AI). Not saved.
+  draftAnnouncement: (notes: string, title?: string) =>
+    request<{ title: string; body: string }>('/announcements/draft', {
+      method: 'POST',
+      body: JSON.stringify({ notes, title }),
+    }),
+  /// The editor's words in Spanish (AI), to check before saving. Not saved.
+  translateAnnouncement: (title: string, body: string) =>
+    request<{ title: string; body: string }>('/announcements/translate', {
+      method: 'POST',
+      body: JSON.stringify({ title, body }),
+    }),
+  /// A post in Spanish for a reader who chose Español: kept, or translated
+  /// now. `null` when there is none to give.
+  announcementSpanish: (id: string) =>
+    request<{
+      spanish: { titleEs: string; bodyEs: string; spanishByAi: boolean } | null;
+    }>(`/announcements/${id}/spanish`),
   deleteAnnouncement: (id: string) =>
     request<{ deleted: boolean }>(`/announcements/${id}`, { method: 'DELETE' }),
   likeAnnouncement: (id: string, liked: boolean) =>

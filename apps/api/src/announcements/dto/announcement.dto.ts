@@ -62,6 +62,23 @@ export class CreateAnnouncementDto {
   @ValidateNested()
   @Type(() => PollDto)
   poll?: PollDto;
+
+  /// The post in Spanish (October 2026). Empty clears it; left out on an edit,
+  /// it stays — unless the English changed, when it is cleared to be redone.
+  @IsOptional()
+  @IsString()
+  @MaxLength(160)
+  titleEs?: string;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(12_000)
+  bodyEs?: string;
+
+  /// The Spanish is the AI service's, as it came — shown to staff as such.
+  @IsOptional()
+  @IsBoolean()
+  spanishByAi?: boolean;
 }
 
 export class UpdateAnnouncementDto {
@@ -94,6 +111,23 @@ export class UpdateAnnouncementDto {
   @ValidateNested()
   @Type(() => PollDto)
   poll?: PollDto | null;
+
+  /// The post in Spanish (October 2026). Empty clears it; left out on an edit,
+  /// it stays — unless the English changed, when it is cleared to be redone.
+  @IsOptional()
+  @IsString()
+  @MaxLength(160)
+  titleEs?: string;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(12_000)
+  bodyEs?: string;
+
+  /// The Spanish is the AI service's, as it came — shown to staff as such.
+  @IsOptional()
+  @IsBoolean()
+  spanishByAi?: boolean;
 }
 
 export class CommentDto {
@@ -115,4 +149,29 @@ export class VoteDto {
 export class PollStateDto {
   @IsBoolean()
   closed!: boolean;
+}
+
+/// "Help me write it": an admin's rough notes, and the title if there is one.
+export class DraftPostDto {
+  @IsString()
+  @MinLength(3)
+  @MaxLength(4000)
+  notes!: string;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(160)
+  title?: string;
+}
+
+/// Words to put into Spanish, from the editor before they are saved.
+export class TranslatePostDto {
+  @IsString()
+  @MinLength(2)
+  @MaxLength(160)
+  title!: string;
+
+  @IsString()
+  @MaxLength(10_000)
+  body!: string;
 }

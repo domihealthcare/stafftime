@@ -1,7 +1,9 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { Alert, Card, PageHeading, Spinner, buttonClass } from '../components/ui';
 import { ApiError, api } from '../lib/api';
-import { useIsManager } from '../lib/session';
+import { pickHelpTopics } from '../lib/help-text';
+import { useIsManager, useSession } from '../lib/session';
+import { helpTopicsFor } from './HelpPage';
 
 /**
  * "Ask Domi Staff" (October 2026, Dominguez — the AI half of making the app
@@ -18,6 +20,7 @@ interface Turn {
 
 const EVERYONE = [
   'When am I next on?',
+  'How do I put Domi Staff on my phone?',
   'How much PTO do I have left?',
   'Who is in at North Bergen right now?',
   'When is the next pay day?',
@@ -26,6 +29,10 @@ const MANAGERS = ['What needs my attention today?', 'Who is on at West New York 
 
 export function AskPage() {
   const isManager = useIsManager();
+  const { employee } = useSession();
+  // The Help guide this person can read, as text: a "how do I…?" question
+  // goes with the few topics most likely to answer it.
+  const helpTopics = useMemo(() => helpTopicsFor(employee, isManager), [employee, isManager]);
   const [enabled, setEnabled] = useState<boolean | null>(null);
   const [turns, setTurns] = useState<Turn[]>([]);
   const [question, setQuestion] = useState('');
@@ -54,7 +61,7 @@ export function AskPage() {
     const history = turns;
     setTurns([...history, { role: 'user', text: trimmed }]);
     try {
-      const result = await api.ask(trimmed, history);
+      const result = await api.ask(trimmed, history, pickHelpTopics(trimmed, helpTopics));
       setTurns((current) => [...current, { role: 'assistant', text: result.answer }]);
       setLeft(result.left);
     } catch (cause) {
@@ -73,7 +80,7 @@ export function AskPage() {
     <div className="max-w-3xl">
       <PageHeading
         title="Ask Domi Staff"
-        subtitle="Ask about your shifts, time off, the practice calendar or who is in — in your own words."
+        subtitle="Ask about your shifts, time off, the practice calendar, who is in, or how to do something in the app — in your own words."
       />
 
       {!enabled ? (
@@ -165,12 +172,12 @@ export function AskPage() {
 
           <p className="mt-3 text-xs text-slate-600" data-testid="ask-privacy">
             Answers come from Claude, an AI service run by Anthropic. Your question, this
-            conversation and what it looks up to answer you — your own shifts and time off, the
-            calendar, colleagues&rsquo; names and work contact details
+            conversation and what it looks up to answer you — the Help guide, your own shifts and
+            time off, the calendar, colleagues&rsquo; names and work contact details
             {isManager ? ', and for managers the rota and time off requests' : ''} — are sent to it.
             Nothing is kept here: leaving this page ends the conversation. It only looks things up;
             it cannot change anything. Never type patient details.
-            {left !== null && <> {left} questions left today.</>}
+            {left !== null && <> {left} uses of the AI helpers left today.</>}
           </p>
         </>
       )}

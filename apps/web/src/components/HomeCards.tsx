@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
+import { useAiOn } from '../lib/ai';
 import { api } from '../lib/api';
 import {
   canUseCarePlan,
@@ -9,6 +10,7 @@ import {
 import { formatCalendarDate, formatDate, localDate } from '../lib/format';
 import { useIsManager, useSession } from '../lib/session';
 import type { Announcement, PracticeEvent, Survey } from '../lib/types';
+import { NewsLanguageToggle, usePostWords } from './NewsLanguage';
 import { PollView, PostActions } from './PostSocial';
 import { Card } from './ui';
 
@@ -29,6 +31,7 @@ const linkClass = 'text-sm font-medium text-brand-700 hover:text-brand-900';
 /// can be liked and voted on here; comments are read and written on News.
 export function HomeNews() {
   const navigate = useNavigate();
+  const aiOn = useAiOn();
   const [posts, setPosts] = useState<Announcement[] | null>(null);
   const replace = (updated: Announcement) =>
     setPosts(
@@ -57,9 +60,12 @@ export function HomeNews() {
         <h2 id="home-news" className="text-base font-semibold text-slate-900">
           News
         </h2>
-        <Link to="/news" className={linkClass}>
-          All news →
-        </Link>
+        <div className="flex items-center gap-3">
+          {(aiOn || posts.some((post) => post.titleEs)) && <NewsLanguageToggle />}
+          <Link to="/news" className={linkClass}>
+            All news →
+          </Link>
+        </div>
       </div>
       {posts.length === 0 ? (
         <Card className="p-4 text-sm text-slate-600">Nothing posted yet.</Card>
@@ -74,10 +80,7 @@ export function HomeNews() {
               <p className="text-xs font-medium uppercase tracking-wide text-brand-700">
                 Announcement · {formatDate(primary.createdAt)}
               </p>
-              <h3 className="mt-1 font-semibold text-slate-900">{primary.title}</h3>
-              {primary.body && (
-                <p className="mt-1 whitespace-pre-line text-sm text-slate-700">{primary.body}</p>
-              )}
+              <PrimaryWords post={primary} />
               <PollView post={primary} onChange={replace} />
               <PostActions
                 post={primary}
@@ -111,10 +114,7 @@ export function HomeNews() {
                     {post.comments.length > 0 &&
                       ` · ${post.comments.length} ${post.comments.length === 1 ? 'comment' : 'comments'}`}
                   </p>
-                  <p className="font-medium text-slate-900">{post.title}</p>
-                  <p className="line-clamp-2 text-sm text-slate-600">
-                    {post.body || post.poll?.question}
-                  </p>
+                  <HeadlineWords post={post} />
                 </Link>
               ))}
             </Card>
@@ -122,6 +122,38 @@ export function HomeNews() {
         </>
       )}
     </section>
+  );
+}
+
+/// The primary's title and words, in the reader's language.
+function PrimaryWords({ post }: { post: Announcement }) {
+  const words = usePostWords(post);
+  return (
+    <>
+      <h3 lang={words.lang} className="mt-1 font-semibold text-slate-900">
+        {words.title}
+      </h3>
+      {words.body && (
+        <p lang={words.lang} className="mt-1 whitespace-pre-line text-sm text-slate-700">
+          {words.body}
+        </p>
+      )}
+      {words.note && <p className="mt-1 text-xs italic text-slate-500">{words.note}</p>}
+    </>
+  );
+}
+
+function HeadlineWords({ post }: { post: Announcement }) {
+  const words = usePostWords(post);
+  return (
+    <>
+      <p lang={words.lang} className="font-medium text-slate-900">
+        {words.title}
+      </p>
+      <p lang={words.lang} className="line-clamp-2 text-sm text-slate-600">
+        {words.body || post.poll?.question}
+      </p>
+    </>
   );
 }
 
