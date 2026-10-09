@@ -26,6 +26,7 @@ export const DIGEST_TOPICS: Record<DigestTopic, (keyof DigestContents)[]> = {
     'openShifts',
     'shiftsInClosures',
     'regularShiftClashes',
+    'belowMinimum',
   ],
   TIME_OFF: ['undecidedTimeOff', 'timeOffClashes'],
   HOURS: [

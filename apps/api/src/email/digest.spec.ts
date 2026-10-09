@@ -84,6 +84,7 @@ function build(
     },
     location: { findMany: jest.fn().mockResolvedValue(data.locations ?? []) },
     shiftSeries: { findMany: jest.fn().mockResolvedValue([]) },
+    staffingMinimum: { findMany: jest.fn().mockResolvedValue([]) },
     practiceSettings: { findFirst: jest.fn().mockResolvedValue(null) },
     practiceEvent: { findMany: jest.fn().mockResolvedValue(data.closures ?? []) },
     closingRecord: { findMany: jest.fn().mockResolvedValue(data.closingRecords ?? []) },

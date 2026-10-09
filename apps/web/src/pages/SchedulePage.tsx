@@ -510,6 +510,7 @@ export function SchedulePage() {
           'unpublishedRota',
           'shiftsForLeavers',
           'regularShiftClashes',
+          'belowMinimum',
         ]}
       />
 

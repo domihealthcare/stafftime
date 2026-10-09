@@ -10,6 +10,7 @@ import {
   jobRoleHex as jobRoleHexFor,
 } from '../lib/job-role-colours';
 import { JobRoleDot } from '../components/JobRoleTag';
+import { StaffingMinimumsCard } from '../components/StaffingMinimumsCard';
 import type { Employee, JobRole } from '../lib/types';
 
 /**
@@ -113,6 +114,8 @@ export function JobRolesPage() {
           ))}
         </div>
       )}
+
+      <StaffingMinimumsCard roles={roles} />
     </div>
   );
 }

@@ -2852,6 +2852,34 @@ shifts, a regular shift's Edit and a usual week still start on 9 to 5: they
 are where a pattern is set, not filled from one. Nothing is stored.
 `tests/browser/usual-hours.mjs`.
 
+## A minimum per office and job role
+
+October 2026, Dominguez — the fourteenth "make it smarter" idea, parked until
+*Too many off at once* had run for a while, then asked for. **Manage → Job
+roles → Minimum on each day** keeps the fewest people the practice wants on in
+a job role at an office on a day it is open (`StaffingMinimum`, one row per
+office and role, 1–50, checked by the database too; blank is no row). Saved
+whole (`PUT /staffing/minimums`, managers), like the office extensions.
+
+Where a minimum is set, two things use it (`staffing/minimums.ts`):
+
+- **Too many off at once** (`pto/time-off-clashes.ts`) goes by it: a clash is
+  time off that leaves fewer than the minimum on (somebody has to be off for
+  it to be a time-off clash), instead of more than half off. The wording adds
+  "(minimum N)". Without one, nothing changed.
+- **Days the rota leaves short**: a day an office is open — it has anything on
+  the rota that day, and is not closed at noon — with fewer people on in that
+  role than the minimum. A person counts once a day, under their shift's job
+  role (or their main one, for an older shift saved without), at the shift's
+  office; working from home does not count for being in the office, nor do
+  open shifts with nobody on. Drafts count, as on the rota. "Anything on the
+  rota" keeps an unbuilt week quiet: that is the *not published yet*
+  reminder's job. Listed on the **Schedule** banner and in the nightly email
+  for the next 14 days (`belowMinimum`, *Coming up*, **Schedule** part), and
+  in **Before you publish** for the days and offices of the drafts.
+
+Warns, never refuses. `tests/browser/minimums.mjs`.
+
 ## Heading for overtime on hours worked
 
 October 2026, Dominguez — the ninth of the "make it smarter" ideas. The rota

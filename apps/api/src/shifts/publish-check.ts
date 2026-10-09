@@ -14,7 +14,7 @@ import { shortDate } from '../pto/time-off-clashes';
  */
 
 export type PublishCheckKey =
-  'licenses' | 'leavers' | 'leave' | 'closures' | 'availability' | 'overtime' | 'open';
+  'licenses' | 'leavers' | 'leave' | 'closures' | 'availability' | 'overtime' | 'minimum' | 'open';
 
 export interface PublishCheckSection {
   key: PublishCheckKey;
@@ -96,6 +96,9 @@ export interface PublishCheckInput {
   /// Weeks the drafts fall in that the rota puts over the line.
   overtime: CheckOvertime[];
   thresholdHours: number;
+  /// Days the rota, drafts and all, leaves below the practice's minimum
+  /// (`staffing/minimums.ts`), already worded.
+  shortDays?: string[];
 }
 
 const TITLES: Record<PublishCheckKey, string> = {
@@ -105,6 +108,7 @@ const TITLES: Record<PublishCheckKey, string> = {
   closures: 'During a closure',
   availability: 'When they said they can’t work',
   overtime: 'Going into overtime',
+  minimum: 'Fewer on than the minimum',
   open: 'Open shifts with nobody on them',
 };
 
@@ -158,6 +162,7 @@ export function publishWarnings(input: PublishCheckInput): PublishCheck {
           week.overtimeHours
         } over ${input.thresholdHours})`,
     ),
+    minimum: input.shortDays ?? [],
     open: [...input.openShifts]
       .sort(byDate)
       .map(
@@ -175,6 +180,7 @@ export function publishWarnings(input: PublishCheckInput): PublishCheck {
     'closures',
     'availability',
     'overtime',
+    'minimum',
     'open',
   ];
   return {

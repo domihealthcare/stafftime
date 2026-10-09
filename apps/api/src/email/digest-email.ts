@@ -116,6 +116,15 @@ const SECTIONS: SectionSpec[] = [
     subject: (n) => `${n} ${plural(n, 'shift', 'shifts')} with no clock-in`,
   },
   {
+    key: 'belowMinimum',
+    tier: 'soon',
+    // The practice's own minimum per office and role: see staffing/minimums.ts.
+    heading: 'Days below the minimum',
+    path: '/schedule',
+    screen: 'Schedule',
+    subject: (n) => `${n} ${plural(n, 'day', 'days')} below the minimum`,
+  },
+  {
     key: 'regularShiftClashes',
     tier: 'soon',
     // Availability needs no approval: see availability/regular-shift-clashes.ts.

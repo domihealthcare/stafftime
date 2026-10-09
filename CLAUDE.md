@@ -516,8 +516,9 @@ Beyond the phases, the parts worth knowing about before picking up work:
   Schedule and on Time off), on the **Dashboard** for the next 8 weeks, and
   in the **nightly email** for the next 2, under the Time off part. **Warns,
   never refuses**; never a banner. A role of one warns whenever that person
-  is off (Dominguez to say if that is too noisy — e.g. leave out roles of
-  one, or set a minimum per office per role). `pto/time-off-clashes.ts` (one
+  is off — or, where a **minimum** is set for that office and role (see
+  *A minimum per office and job role*), when time off leaves fewer than it.
+  `pto/time-off-clashes.ts` (one
   query for all three), `GET /pto/:id/clashes`,
   `components/TimeOffClashes.tsx`; `tests/browser/clashes.mjs`.
 - **Suggest people for the open shifts** (8 October 2026, Dominguez — the
@@ -623,6 +624,18 @@ Beyond the phases, the parts worth knowing about before picking up work:
   `GET /shifts/usual`, `shifts/usual-hours.ts`, `components/UsualShift.tsx`;
   `tests/browser/usual-hours.mjs`. (Browser suites that relied on the 9 to 5
   start now set it.)
+- **A minimum per office and job role** (9 October 2026, Dominguez — the
+  fourteenth "smarter" idea): **Manage → Job roles → Minimum on each day**
+  (`StaffingMinimum`, managers; blank is none). Where set, **Too many off at
+  once** goes by it instead of "more than half", and **days the rota leaves
+  short** — an office with anything on the rota that day, not closed at noon,
+  fewer people on in that role than the minimum (drafts count; working from
+  home and open shifts do not; a shift with no role counts under the
+  person's main one) — are on the **Schedule** banner and in the nightly email
+  (next 14 days, *coming up*, Schedule part) and in **Before you publish**.
+  Warns, never refuses. `staffing/minimums.ts`, `PUT /staffing/minimums`,
+  `components/StaffingMinimumsCard.tsx`, migration
+  `20261009040000_staffing_minimums`; `tests/browser/minimums.mjs`.
 - **Turned down: "PTO about to be lost"** (9 October 2026, Dominguez): a
   reminder to use PTO before it fails to carry over was proposed and refused —
   not in the practice's interest. Do not propose it again.

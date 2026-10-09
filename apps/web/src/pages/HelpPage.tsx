@@ -1156,7 +1156,24 @@ const MANAGERS: Section[] = [
             office short of one job role — more than half of them off that day, counting requests
             still waiting as well as approved ones (so for a role of one or two, all of them). It
             names who else is off. It is only a warning: Approve still works. The Dashboard lists
-            the next 8 weeks&rsquo; clashes, and the nightly email the next 2.
+            the next 8 weeks&rsquo; clashes, and the nightly email the next 2. Where you have set a
+            minimum for that office and role (below), it goes by that instead of &ldquo;more than
+            half&rdquo;.
+          </p>
+        ),
+      },
+      {
+        question: 'A minimum per office and job role',
+        answer: (
+          <p>
+            <Screen>Manage → Job roles</Screen> → <strong>Minimum on each day</strong>: the fewest
+            people you want on in a job role at an office on a day it is open — say 2 Front Desk at
+            North Bergen. Blank means none. Where there is one, Too many off at once warns when
+            time off would leave fewer than that, and days the rota leaves short (drafts counted;
+            working from home and open shifts not) are listed on the Schedule banner and in the
+            nightly email for the next two weeks, and in <strong>Before you publish</strong>. A day
+            counts once anything is on the rota at that office, so an unbuilt week is left to the
+            &ldquo;not published yet&rdquo; reminder. It never stops anything.
           </p>
         ),
       },

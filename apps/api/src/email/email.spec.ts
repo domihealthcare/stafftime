@@ -305,6 +305,7 @@ describe('NotificationsService', () => {
           'missingPunches',
           'missedShifts',
           'regularShiftClashes',
+          'belowMinimum',
           'undecidedTimeOff',
           'silentKiosks',
           'unpublishedRota',

@@ -521,6 +521,7 @@ export interface Attention {
   missingPunches: string[];
   missedShifts: string[];
   regularShiftClashes: string[];
+  belowMinimum: string[];
   undecidedTimeOff: string[];
   silentKiosks: string[];
   unpublishedRota: string[];
@@ -1328,6 +1329,8 @@ export interface TimeOffClash {
     approved: boolean;
     isHalfDay: boolean;
   }[];
+  /// The practice's minimum it falls below; null: more than half off.
+  minimum: number | null;
 }
 
 export interface PunchPattern {
@@ -1515,7 +1518,15 @@ export interface DigestReader {
 
 /// "Before you publish" — see `shifts/publish-check.ts` in the API.
 export interface PublishCheckSection {
-  key: 'licenses' | 'leavers' | 'leave' | 'closures' | 'availability' | 'overtime' | 'open';
+  key:
+    | 'licenses'
+    | 'leavers'
+    | 'leave'
+    | 'closures'
+    | 'availability'
+    | 'overtime'
+    | 'minimum'
+    | 'open';
   title: string;
   lines: string[];
 }
@@ -1544,4 +1555,12 @@ export interface UsualShift {
   isRemote: boolean;
   jobRoleId: string | null;
   from: 'regular' | 'weekday' | 'recent';
+}
+
+/// The fewest the practice wants on in one job role at one office on an open
+/// day (Job roles → Minimum on each day). None set: no row.
+export interface StaffingMinimum {
+  locationId: string;
+  jobRoleId: string;
+  minimum: number;
 }

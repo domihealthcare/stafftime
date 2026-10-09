@@ -22,6 +22,7 @@ import { PrismaService } from '../prisma/prisma.service';
 import { PracticeSettingsService } from '../settings/practice-settings.service';
 import { loadPunchPatterns } from '../time-entries/punch-patterns';
 import { describeMissedShift, loadMissedShifts } from '../time-entries/missed-shifts';
+import { describeShortDay, loadShortDays, SHORT_DAYS_AHEAD } from '../staffing/minimums';
 import {
   describeRegularShiftClash,
   loadRegularShiftClashes,
@@ -83,6 +84,9 @@ export interface DigestContents {
   /// Regular shifts somebody's availability now rules out, in the next eight
   /// weeks: see `availability/regular-shift-clashes.ts`.
   regularShiftClashes: string[];
+  /// Days in the next two weeks the rota has fewer on in a job role at an
+  /// office than the practice's minimum: see `staffing/minimums.ts`.
+  belowMinimum: string[];
   undecidedTimeOff: string[];
   silentKiosks: string[];
   unpublishedRota: string[];
@@ -166,6 +170,7 @@ export class AttentionService {
       forecast,
       missed,
       regularClashes,
+      shortDays,
     ] = await Promise.all([
       this.prisma.employeeCredential.findMany({
         where: {
@@ -249,6 +254,11 @@ export class AttentionService {
       loadOvertimeForecast(this.prisma),
       loadMissedShifts(this.prisma),
       loadRegularShiftClashes(this.prisma),
+      loadShortDays(
+        this.prisma,
+        localDateIn(new Date(), PRACTICE_ZONE),
+        addDaysTo(localDateIn(new Date(), PRACTICE_ZONE), SHORT_DAYS_AHEAD - 1),
+      ),
     ]);
 
     /// "8:52 AM", on the practice's clock.
@@ -282,6 +292,7 @@ export class AttentionService {
       ),
       missedShifts: missed.map(describeMissedShift),
       regularShiftClashes: regularClashes.map(describeRegularShiftClash),
+      belowMinimum: shortDays.map(describeShortDay),
       undecidedTimeOff: timeOff.map(
         (row) =>
           `${who(row.employee)} — ${day(row.startDate)}${

@@ -162,6 +162,8 @@ model Location {
   lunchNotices  LunchNotice[]
   eventInvitees PracticeEventInvitee[]
 
+  staffingMinimums StaffingMinimum[]
+
   @@map("locations")
 }
 
@@ -1509,6 +1511,8 @@ model JobRole {
   closingSections        ClosingSection[]
   /// The licenses and certificates people in it need.
   credentialRequirements CredentialRequirement[]
+  /// How many the practice wants on in it at each office (optional).
+  staffingMinimums       StaffingMinimum[]
   /// People in this role see their own licenses and onboarding under Team.
   /// Starts true for Provider only (September 2026).
   seesOwnPersonnelTabs   Boolean                 @default(false)
@@ -2503,4 +2507,23 @@ model OfficeExtension {
 
   @@index([sortOrder])
   @@map("office_extensions")
+}
+
+/// The fewest people the practice wants on in one job role at one office on a
+/// day the office is open — "North Bergen needs at least 2 Front Desk"
+/// (October 2026, Dominguez). Optional: with none, "Too many off at once" goes
+/// by more than half. Managers set it on Job roles. See
+/// `staffing/minimums.ts`.
+model StaffingMinimum {
+  id         String   @id @default(uuid()) @db.Uuid
+  locationId String   @db.Uuid
+  jobRoleId  String   @db.Uuid
+  minimum    Int
+  updatedAt  DateTime @updatedAt
+
+  location Location @relation(fields: [locationId], references: [id], onDelete: Cascade)
+  jobRole  JobRole  @relation(fields: [jobRoleId], references: [id], onDelete: Cascade)
+
+  @@unique([locationId, jobRoleId])
+  @@map("staffing_minimums")
 }

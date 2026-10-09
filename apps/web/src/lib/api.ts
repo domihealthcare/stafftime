@@ -1,6 +1,7 @@
 import type { ImportedPerson } from './staff-import';
 import type {
   UsualShift,
+  StaffingMinimum,
   BirthdayEntry,
   Profile,
   Announcement,
@@ -1015,6 +1016,12 @@ export const api = {
   coverage: (params: { from: string; to: string; locationId?: string }) =>
     request<Coverage>(`/shifts/coverage${toQuery(params)}`),
   /// Where somebody's week would land with this shift in it — asked before saving.
+  staffingMinimums: () => request<StaffingMinimum[]>('/staffing/minimums'),
+  setStaffingMinimums: (minimums: StaffingMinimum[]) =>
+    request<StaffingMinimum[]>('/staffing/minimums', {
+      method: 'PUT',
+      body: JSON.stringify({ minimums }),
+    }),
   usualShift: (employeeId: string, date: string) =>
     request<{ usual: UsualShift | null }>(`/shifts/usual${toQuery({ employeeId, date })}`),
   overtimeCheck: (params: {
