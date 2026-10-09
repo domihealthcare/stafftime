@@ -55,7 +55,8 @@ export function PatientSection({
   form,
   update,
   preparedBy,
-}: SectionProps & { preparedBy: string }) {
+  reviewedBy,
+}: SectionProps & { preparedBy: string; reviewedBy: string | null }) {
   const { patient } = form;
   const set = (patch: Partial<CarePlanForm['patient']>) => update('patient', patch);
   return (
@@ -63,6 +64,12 @@ export function PatientSection({
       <p className="text-sm text-slate-600" data-testid="preparer-line">
         Prepared by <span className="font-medium text-slate-900">{preparedBy}</span> — the person
         signed in.
+        {reviewedBy && (
+          <>
+            {' '}
+            Reviewed and signed by <span className="font-medium text-slate-900">{reviewedBy}</span>.
+          </>
+        )}
       </p>
       <Grid>
         <TextField

@@ -1,6 +1,6 @@
 import { pdfFilename, practiceTimestamp, usDate } from '../common/dates';
 import { PdfWriter } from '../common/pdf-writer';
-import { LETTERHEAD, type Language, type PdfLanguage } from './config';
+import { LETTERHEAD, REVIEWING_PROVIDER, type Language, type PdfLanguage } from './config';
 import type { CarePlanForm } from './form';
 import { WORDS, carePlanText } from './text';
 
@@ -16,10 +16,25 @@ import { WORDS, carePlanText } from './text';
 export interface Preparer {
   name: string;
   credentials: string;
+  /// The reviewing provider is preparing it himself: the care plan is then
+  /// signed by him, with no separate reviewer line.
+  isReviewingProvider?: boolean;
 }
 
 export const preparerName = (preparer: Preparer) =>
   preparer.credentials ? `${preparer.name}, ${preparer.credentials}` : preparer.name;
+
+/// "Jonathan Dominguez, MD" — who reviews and signs every care plan.
+export const reviewingProviderName = () =>
+  preparerName({
+    name: `${REVIEWING_PROVIDER.firstName} ${REVIEWING_PROVIDER.lastName}`,
+    credentials: REVIEWING_PROVIDER.credentials,
+  });
+
+/// Whether the person preparing it is the reviewing provider himself.
+export const isReviewingProvider = (person: { firstName: string; lastName: string }) =>
+  person.firstName.trim().toLowerCase() === REVIEWING_PROVIDER.firstName.toLowerCase() &&
+  person.lastName.trim().toLowerCase() === REVIEWING_PROVIDER.lastName.toLowerCase();
 
 /// "10-01-2026 Care Plan.pdf", by the date it was done — just "Care Plan",
 /// since the practice uses it for APCM as well as CCM (Dominguez).
@@ -38,7 +53,7 @@ export async function carePlanPdf(
   const stamp = practiceTimestamp(generatedAt);
   languages.forEach((language, index) => {
     if (index > 0) pdf.pageBreak();
-    write(pdf, form, language, preparerName(preparer), stamp);
+    write(pdf, form, language, preparer, stamp);
   });
 
   const { patient } = form;
@@ -65,10 +80,12 @@ function write(
   pdf: PdfWriter,
   form: CarePlanForm,
   language: Language,
-  preparedBy: string,
+  preparer: Preparer,
   signedAt: string,
 ) {
-  const text = carePlanText(form, language, preparedBy);
+  const preparedBy = preparerName(preparer);
+  const words = WORDS[language];
+  const text = carePlanText(form, language, preparedBy, reviewingProviderName());
 
   pdf.title(text.title);
   for (const [label, value] of text.patientRows) pdf.field(label, value);
@@ -99,8 +116,13 @@ function write(
   }
 
   // Signed electronically by whoever made it — the person signed in
-  // (Dominguez, October 2026) — in each language's half.
-  pdf.keep(60);
+  // (Dominguez, October 2026) — in each language's half, and reviewed and
+  // signed by Dr. Dominguez (October 2026). His electronic signature goes on
+  // only when he made it himself: the app never signs in somebody else's name.
+  pdf.keep(80);
   pdf.gap(12);
-  pdf.field(WORDS[language].signature, WORDS[language].signedBy(preparedBy, signedAt));
+  pdf.field(words.signature, words.signedBy(preparedBy, signedAt));
+  if (!preparer.isReviewingProvider) {
+    pdf.field(words.reviewingProvider, words.toReviewAndSign(reviewingProviderName()));
+  }
 }

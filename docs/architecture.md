@@ -3584,6 +3584,17 @@ managers and admins** (Dominguez) — unlike the 99483 form, where access
 level brings nothing. Both checks are in `lib/clinical-access.ts`. Whoever
 is signed in is printed as **Prepared by**, with their letters.
 
+**Reviewed and signed by Dr. Jonathan Dominguez** (Dominguez, October
+2026): whoever prepares it, the care plan names him as the **Reviewing
+provider** — under Prepared by at the top, and beside the preparer's
+electronic signature at the end ("Jonathan Dominguez, MD, who reviews and
+signs this care plan."); the form says so under the patient's heading. His
+own electronic signature goes on only when he is the one signed in (matched
+by first and last name), and then the reviewer line is left off: the app
+never signs in somebody else's name, so a care plan somebody else prepared
+is signed off by him where he reviews it (eCW). The name is
+`REVIEWING_PROVIDER` in `ccm-care-plan/config.ts`.
+
 **The shape** follows the Google Forms question for question:
 
 - **Patient**: first and last name, patient ID, date of birth, the date it

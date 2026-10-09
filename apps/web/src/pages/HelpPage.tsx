@@ -683,6 +683,11 @@ const CARE_PLAN: Section[] = [
                 English first, then the same in Spanish), download it, then tell it the PDF arrived
                 — that clears the form.
               </li>
+              <li>
+                You prepare it and it is signed electronically in your name;{' '}
+                <strong>Dr. Jonathan Dominguez</strong> is named on it as the provider who reviews
+                and signs it.
+              </li>
             </ul>
           </>
         ),
