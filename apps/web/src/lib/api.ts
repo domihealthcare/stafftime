@@ -590,10 +590,16 @@ export const api = {
     request<PtoRequest>('/pto', { method: 'POST', body: JSON.stringify(body) }).then(
       timeOffChanged,
     ),
-  reviewPto: (id: string, decision: 'APPROVED' | 'DENIED', reviewNote?: string) =>
+  reviewPto: (
+    id: string,
+    decision: 'APPROVED' | 'DENIED',
+    reviewNote?: string,
+    /// On approving: what happens to their shifts in those days.
+    shifts?: 'KEEP' | 'REMOVE' | 'OPEN',
+  ) =>
     request<PtoRequest>(`/pto/${id}/review`, {
       method: 'PATCH',
-      body: JSON.stringify({ decision, reviewNote }),
+      body: JSON.stringify({ decision, reviewNote, shifts }),
     }).then(timeOffChanged),
   cancelPto: (id: string) =>
     request<PtoRequest>(`/pto/${id}/cancel`, { method: 'PATCH' }).then(timeOffChanged),

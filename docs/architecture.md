@@ -2921,6 +2921,33 @@ nothing and the page says so. Set-up, cost and the disclosure line:
 loop with a fake client), `tests/browser/ask.mjs` (off; the screen with
 answers stood in for in the browser — CI has no key and sends nothing).
 
+## Time off that lands on shifts
+
+October 2026, Dominguez — a "make it smarter" idea. Approving time off used to
+leave the person's shifts on the rota for somebody to notice (the coverage
+strip flagged them). Now:
+
+- **The request form** lists the person's shifts in the dates as they are
+  picked — `GET /shifts` for the person, so staff see only their own
+  published shifts, and a manager filing *For* somebody sees that person's —
+  with "your manager will sort those out when they decide".
+- **Approve** (the Schedule's requests and the Time off screen, one hook:
+  `components/ApproveTimeOff.tsx`) first reads the request's shifts still to
+  come (`GET /pto/:id/conflicts`). With none, or a half day (half the shift is
+  still worked), it approves at once as before. Otherwise a pop-up lists them
+  and offers: leave them as **open shifts** (`employeeId` and `seriesId`
+  cleared — same office, hours, job role and note, for somebody else to
+  cover), **take them off the rota** (a draft deleted, a published shift
+  cancelled, as Remove does), or **leave them**.
+- The server does it in the review (`PATCH /pto/:id/review` with
+  `shifts: KEEP | REMOVE | OPEN`, `PtoService.handleShifts`), after the
+  approval is saved, for shifts not yet started. The person is told **once**,
+  in the "time off approved" notice and email ("Your 2 shifts on those days
+  are off your schedule"), not a schedule notice per shift. The review route
+  now carries the calendar-invites interceptor, since it can change shifts.
+
+`tests/browser/time-off-shifts.mjs`.
+
 ## Moving holidays, copied right
 
 October 2026, Dominguez — a "make it smarter" idea. **Copy these into next

@@ -241,9 +241,62 @@ export class PtoService {
     }
 
     this.logger.log(`PTO request ${id} ${dto.decision.toLowerCase()} by ${actor.id}`);
-    await this.notifyQuietly(() => this.notifications.ptoDecided(updated.id));
+
+    // Their shifts inside the dates, when the manager chose to deal with them
+    // in the same step (October 2026, Dominguez — making the app smarter).
+    const shiftsHandled =
+      dto.decision === PtoStatus.APPROVED && dto.shifts && dto.shifts !== 'KEEP'
+        ? await this.handleShifts(updated, dto.shifts)
+        : 0;
+
+    await this.notifyQuietly(() => this.notifications.ptoDecided(updated.id, shiftsHandled));
 
     return this.decorate(updated);
+  }
+
+  /**
+   * The shifts an approved request lands on, still to come: taken off the
+   * rota (a draft deleted, a published shift cancelled) or left as open
+   * shifts for somebody else to cover — same office, hours, job role and
+   * note, no longer theirs, and no longer part of their regular shift. A
+   * half-day request keeps its shifts: half of one is still worked. The
+   * person is told once, in the "time off approved" notice. Returns how many.
+   */
+  private async handleShifts(
+    request: { employeeId: string; startDate: Date; endDate: Date; isHalfDay: boolean },
+    choice: 'REMOVE' | 'OPEN',
+  ): Promise<number> {
+    if (request.isHalfDay) return 0;
+    const shifts = await this.prisma.shift.findMany({
+      where: {
+        employeeId: request.employeeId,
+        status: { not: ShiftStatus.CANCELLED },
+        startsAt: { gte: new Date(), lt: endOfDay(request.endDate) },
+        endsAt: { gt: startOfDay(request.startDate) },
+      },
+      select: { id: true, status: true },
+    });
+    if (shifts.length === 0) return 0;
+    const ids = shifts.map((shift) => shift.id);
+    if (choice === 'OPEN') {
+      await this.prisma.shift.updateMany({
+        where: { id: { in: ids } },
+        data: { employeeId: null, seriesId: null },
+      });
+    } else {
+      const drafts = shifts.filter((shift) => shift.status === ShiftStatus.DRAFT);
+      await this.prisma.$transaction([
+        this.prisma.shift.deleteMany({ where: { id: { in: drafts.map((shift) => shift.id) } } }),
+        this.prisma.shift.updateMany({
+          where: { id: { in: ids }, status: { not: ShiftStatus.DRAFT } },
+          data: { status: ShiftStatus.CANCELLED },
+        }),
+      ]);
+    }
+    this.logger.log(
+      `${shifts.length} shift(s) ${choice === 'OPEN' ? 'left open' : 'taken off'} for approved time off`,
+    );
+    return shifts.length;
   }
 
   /**

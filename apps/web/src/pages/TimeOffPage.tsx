@@ -2,7 +2,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { ApiError, api } from '../lib/api';
 import { ClashNote } from '../components/TimeOffClashes';
-import { formatCalendarDate } from '../lib/format';
+import { formatCalendarDate, formatClock } from '../lib/format';
 import { useIsAdmin, useIsManager, useSession } from '../lib/session';
 import type {
   ConflictingShift,
@@ -12,11 +12,14 @@ import type {
   PtoRequest,
   PtoStatus,
   PtoType,
+  Shift,
 } from '../lib/types';
 import { PTO_TYPE_LABELS, REQUESTABLE_PTO_TYPES, hasNone } from '../lib/time-off';
 import { PtoBalanceCard } from '../components/PtoBalanceCard';
 import { PtoPolicyEditor } from '../components/PtoPolicyEditor';
 import { useConfirm } from '../components/ConfirmDialog';
+import { atPracticeTime, practiceClockOf } from '../lib/practice-time';
+import { useApproveTimeOff } from '../components/ApproveTimeOff';
 import {
   Alert,
   Badge,
@@ -239,6 +242,7 @@ function RequestCard({
   const [reason, setReason] = useState('');
   const [conflicts, setConflicts] = useState<ConflictingShift[] | null>(null);
   const confirm = useConfirm();
+  const approveTimeOff = useApproveTimeOff();
 
   // A manager deciding on a request needs to know what is already scheduled.
   useEffect(() => {
@@ -316,7 +320,8 @@ function RequestCard({
               <button
                 type="button"
                 disabled={busy}
-                onClick={() => void act(() => api.reviewPto(request.id, 'APPROVED'))}
+                // Asks about the shifts it lands on first, if there are any.
+                onClick={() => void act(() => approveTimeOff.approve(request))}
                 className={buttonClass('primary', 'sm')}
               >
                 {busy ? '…' : 'Approve'}
@@ -427,6 +432,7 @@ function RequestCard({
           </div>
         </div>
       )}
+      {approveTimeOff.dialog}
     </Card>
   );
 }
@@ -458,6 +464,45 @@ function RequestForm({
   const [employeeId, setEmployeeId] = useState(forId);
   const [busy, setBusy] = useState(false);
   const [problem, setProblem] = useState<string | null>(null);
+
+  // Their shifts in those days, said before they ask (October 2026,
+  // Dominguez — making the app smarter): staff see their own published ones,
+  // a manager filing for somebody that person's.
+  const { employee: me } = useSession();
+  const whoseId = employeeId || me?.id || '';
+  const [onRota, setOnRota] = useState<Shift[]>([]);
+  useEffect(() => {
+    setOnRota([]);
+    const last = endDate || startDate;
+    if (!whoseId || !/^\d{4}-\d{2}-\d{2}$/.test(startDate) || last < startDate) return;
+    let cancelled = false;
+    const dayAfter = new Date(`${last}T12:00:00Z`);
+    dayAfter.setUTCDate(dayAfter.getUTCDate() + 1);
+    api
+      .listShifts({
+        employeeId: whoseId,
+        from: atPracticeTime(`${startDate}T12:00:00Z`, '00:00'),
+        to: atPracticeTime(dayAfter.toISOString(), '00:00'),
+      })
+      .then(
+        (rows) =>
+          !cancelled &&
+          setOnRota(
+            rows.filter(
+              (shift) =>
+                shift.status !== 'CANCELLED' && new Date(shift.startsAt).getTime() > Date.now(),
+            ),
+          ),
+      )
+      .catch(() => undefined);
+    return () => {
+      cancelled = true;
+    };
+  }, [whoseId, startDate, endDate]);
+  const forName =
+    employeeId && employeeId !== me?.id
+      ? (staff.find((person) => person.id === employeeId)?.firstName ?? 'They')
+      : null;
 
   // …and only if they get PTO at all.
   const sickUsedUp =
@@ -634,6 +679,36 @@ function RequestForm({
             className={field}
           />
         </div>
+
+        {onRota.length > 0 && (
+          <div
+            role="note"
+            data-testid="time-off-on-rota"
+            className="rounded-lg bg-amber-50 px-3 py-2 text-sm text-amber-950 ring-1 ring-inset ring-amber-200"
+          >
+            <p>{forName ? `${forName} is on the rota then:` : 'You’re on the rota then:'}</p>
+            <ul className="mt-1 list-disc pl-5">
+              {onRota.map((shift) => (
+                <li key={shift.id}>
+                  {new Date(shift.startsAt).toLocaleDateString(undefined, {
+                    timeZone: 'America/New_York',
+                    weekday: 'short',
+                    month: 'short',
+                    day: 'numeric',
+                  })}
+                  , {formatClock(practiceClockOf(shift.startsAt))}–
+                  {formatClock(practiceClockOf(shift.endsAt))}
+                  {shift.isRemote ? ' · working from home' : ` · ${shift.location?.name ?? ''}`}
+                </li>
+              ))}
+            </ul>
+            <p className="mt-1 text-xs">
+              {forName
+                ? 'When it is approved you can take them off the rota or leave them as open shifts.'
+                : 'Your manager will sort those out when they decide — you’ll be told.'}
+            </p>
+          </div>
+        )}
 
         {showOtherYearNote && (
           <p className="text-sm text-slate-600">

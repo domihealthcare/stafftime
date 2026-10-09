@@ -62,7 +62,7 @@ export class NotificationsService {
   }
 
   /// "Your time off was approved" / "…was not approved".
-  async ptoDecided(requestId: string): Promise<void> {
+  async ptoDecided(requestId: string, shiftsTakenOff = 0): Promise<void> {
     const request = await this.prisma.ptoRequest.findUnique({
       where: { id: requestId },
       include: {
@@ -80,7 +80,11 @@ export class NotificationsService {
     await this.inbox.notify([request.employee.id], {
       kind: NotificationKind.TIME_OFF_DECIDED,
       title: approved ? 'Your time off is approved' : 'Your time off request was not approved',
-      body: `${capitalise(describeType(request.type))}, ${describeRange(request.startDate, request.endDate, request.isHalfDay)} — ${decider}${request.reviewNote ? `: “${request.reviewNote}”` : ''}`,
+      body: `${capitalise(describeType(request.type))}, ${describeRange(request.startDate, request.endDate, request.isHalfDay)} — ${decider}${request.reviewNote ? `: “${request.reviewNote}”` : ''}${
+        shiftsTakenOff > 0
+          ? `. ${shiftsTakenOff === 1 ? 'Your shift on those days is' : `Your ${shiftsTakenOff} shifts on those days are`} off your schedule.`
+          : ''
+      }`,
       link: '/time-off',
     });
 
@@ -95,7 +99,9 @@ export class NotificationsService {
         ...(approved
           ? [
               '',
-              'Any shifts already on the schedule for those days are still there — a manager will sort the cover out.',
+              shiftsTakenOff > 0
+                ? `${shiftsTakenOff === 1 ? 'Your shift on those days has' : `Your ${shiftsTakenOff} shifts on those days have`} been taken off your schedule.`
+                : 'Any shifts already on the schedule for those days are still there — a manager will sort the cover out.',
             ]
           : ['', 'Talk to your manager if you need to sort something out.']),
       ],

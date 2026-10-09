@@ -664,6 +664,17 @@ Beyond the phases, the parts worth knowing about before picking up work:
   yet: help writing News posts; summaries of closed surveys' written answers
   (would need a new line in *Truly anonymous — how?*). Never the clinical
   forms (would need a BAA).
+- **Time off that lands on shifts** (9 October 2026, Dominguez — a "smarter"
+  idea): the **request form** lists the person's shifts in those days before
+  it is sent (staff see their own published ones; a manager filing *For*
+  somebody sees theirs), and **Approve** — on the Schedule and on Time off —
+  asks, when the request covers shifts still to come, whether to leave them as
+  **open shifts**, **take them off the rota** (a draft deleted, a published
+  one cancelled) or **leave them**, in one step (`PATCH /pto/:id/review`
+  `shifts: KEEP | REMOVE | OPEN`, `PtoService.handleShifts`). The person is
+  told once, in the approval notice. A half day keeps its shift; with no
+  shifts it approves at once as before. `components/ApproveTimeOff.tsx`;
+  `tests/browser/time-off-shifts.mjs`.
 - **Turned down: "PTO about to be lost"** (9 October 2026, Dominguez): a
   reminder to use PTO before it fails to carry over was proposed and refused —
   not in the practice's interest. Do not propose it again.

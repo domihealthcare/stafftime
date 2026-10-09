@@ -86,6 +86,12 @@ export class ReviewPtoRequestDto {
   @IsString()
   @Length(1, 500)
   reviewNote?: string;
+
+  /// On approving: what happens to their shifts inside the dates (see
+  /// `PtoService.review`). Left out, or KEEP: they stay for a manager to sort.
+  @IsOptional()
+  @IsIn(['KEEP', 'REMOVE', 'OPEN'])
+  shifts?: 'KEEP' | 'REMOVE' | 'OPEN';
 }
 
 export class QueryPtoRequestsDto {

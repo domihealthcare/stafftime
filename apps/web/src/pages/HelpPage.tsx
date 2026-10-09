@@ -467,8 +467,10 @@ const STAFF: Section[] = [
             Press <strong>Request time off</strong> on <Screen>Home</Screen> or on{' '}
             <Screen>Schedule</Screen>, choose <strong>Sick</strong> or <strong>PTO</strong> and the
             dates, and send it. Your days left and what you have asked for are on the Schedule;{' '}
-            <strong>All your time off</strong> there shows the rest. You get an email when a manager
-            decides, with their reason if they give one.
+            <strong>All your time off</strong> there shows the rest. If you are on the rota on any
+            of those days, the form lists the shifts before you send it. You get an email when a
+            manager decides, with their reason if they give one — and, if they took your shifts off
+            the schedule, it says so.
           </p>
         ),
       },
@@ -1473,8 +1475,11 @@ const MANAGERS: Section[] = [
             The <Screen>Schedule</Screen> tab shows a count of what is waiting, and the requests are
             at the top of the Schedule to approve or decline there. <strong>All requests</strong>{' '}
             beside them lists everybody&rsquo;s, waiting, approved or declined, each with what is
-            already scheduled in those dates. Approving does not cancel shifts — the coverage strip
-            flags the clash, and you reassign cover. To put in a request for somebody (one they made
+            already scheduled in those dates. When the request covers shifts still to come,{' '}
+            <strong>Approve</strong> asks what to do with them in the same step: leave them as{' '}
+            <strong>open shifts</strong> for somebody else to cover, <strong>take them off the
+            rota</strong>, or leave them as they are. The person is told once, with the approval. A
+            half day keeps its shift. To put in a request for somebody (one they made
             by phone), press <strong>+ Request time off</strong> and choose them under{' '}
             <strong>For</strong>.
           </p>

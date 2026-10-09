@@ -11,6 +11,7 @@ import {
   Post,
   Put,
   Query,
+  UseInterceptors,
 } from '@nestjs/common';
 import { Role } from '@prisma/client';
 import { AuthUser } from '../common/auth/auth-user';
@@ -26,6 +27,7 @@ import {
 } from './dto/pto.dto';
 import { PtoPolicyService } from './pto-policy.service';
 import { PtoService } from './pto.service';
+import { InvitesSyncInterceptor } from '../invites/invites-sync.interceptor';
 
 @Controller('pto')
 export class PtoController {
@@ -136,6 +138,8 @@ export class PtoController {
     return this.pto.clashes(id);
   }
 
+  // Approving can take shifts off the rota, which can change calendar invites.
+  @UseInterceptors(InvitesSyncInterceptor)
   @Patch(':id/review')
   @Roles(Role.MANAGER)
   review(
