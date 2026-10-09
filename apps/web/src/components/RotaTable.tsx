@@ -67,6 +67,7 @@ import {
   useCoverOptions,
 } from './CoverSuggestions';
 import { noteToSend, ShiftNoteField } from './ShiftNote';
+import { useContextMenu, type ContextMenuItem } from './ContextMenu';
 import { atPracticeTime, practiceClockOf } from '../lib/practice-time';
 
 export type RotaGrouping = 'person' | 'location' | 'role';
@@ -129,6 +130,8 @@ export function RotaTable({
   roleFilter,
   canEdit,
   onPersonMenu,
+  onAddTimeOff,
+  onAddEvent,
   showEmptyOpen,
   onShowEmptyOpen,
   selfId,
@@ -164,6 +167,10 @@ export function RotaTable({
   canEdit: boolean;
   /// Right-click on a person or their shift: profile, schedule. Managers only.
   onPersonMenu?: (event: React.MouseEvent, person: { id: string; name: string }) => void;
+  /// Right-click on a day (managers): time off for that person from that day…
+  onAddTimeOff?: (personId: string, day: Date) => void;
+  /// …or an event, rep lunch, diagnostics date or closure on it.
+  onAddEvent?: (kind: PracticeEvent['kind'], day: Date) => void;
   /// Open-shift rows with nothing in them stay out of the way until asked for
   /// (a row for every office and job role is a lot of empty table). Held by
   /// the page, because the table is rebuilt after every save.
@@ -178,6 +185,33 @@ export function RotaTable({
 }) {
   const [menu, setMenu] = useState<Shift | null>(null);
   const [adding, setAdding] = useState<{ row: Row; day: Date } | null>(null);
+  const dayMenu = useContextMenu();
+
+  /// What a right-click on a day offers (October 2026, Dominguez — in place of
+  /// the ＋ in every cell, which made the page longer).
+  const dayMenuItems = (row: Row, day: Date): ContextMenuItem[] => {
+    const items: ContextMenuItem[] = [
+      {
+        label: row.kind === 'open' ? 'Add an open shift' : 'Add a shift',
+        run: () => setAdding({ row, day }),
+      },
+    ];
+    if (row.kind === 'person' && row.person && onAddTimeOff) {
+      const id = row.person.id;
+      items.push({ label: 'Add time off', run: () => onAddTimeOff(id, day) });
+    }
+    if (onAddEvent) {
+      items.push(
+        { label: 'Add an event', run: () => onAddEvent('EVENT', day) },
+        { label: 'Add a rep lunch', run: () => onAddEvent('REP_LUNCH', day) },
+        { label: 'Add a diagnostics date', run: () => onAddEvent('DIAGNOSTIC', day) },
+        { label: 'Add a holiday or closure', run: () => onAddEvent('CLOSURE', day) },
+      );
+    }
+    return items;
+  };
+  const dayTitle = (row: Row, day: Date) =>
+    `${row.kind === 'open' ? `Open · ${row.sublabel ?? ''}` : row.label} · ${day.toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' })}`;
 
   const dayKeys = days.map((day) => localDate(day));
   const colourOf = useMemo(() => {
@@ -664,10 +698,37 @@ export function RotaTable({
                       return (
                         <td
                           key={dayKeys[index]}
+                          data-testid={canEdit ? `rota-cell-${dayKeys[index]}` : undefined}
+                          onContextMenu={
+                            canEdit
+                              ? (event) =>
+                                  dayMenu.open(event, dayTitle(row, day), dayMenuItems(row, day))
+                              : undefined
+                          }
                           className="group relative px-1.5 py-1.5 align-top"
                           style={off?.status === 'APPROVED' ? OFF_HATCH : undefined}
                         >
-                          <div className="flex flex-col gap-1">
+                          {/* The whole cell is the way in, taking no room of its
+                              own (October 2026, Dominguez: the ＋ in every cell
+                              made the page longer): a click on its empty space
+                              adds a shift, a right-click offers shift, time off
+                              and events. A faint ＋ shows only on hover. */}
+                          {canEdit && (
+                            <button
+                              type="button"
+                              onClick={() => setAdding({ row, day })}
+                              aria-label={`Add ${row.kind === 'open' ? `an open shift at ${row.sublabel}` : `a shift for ${row.label}`} on ${day.toLocaleDateString(undefined, { weekday: 'long', month: 'short', day: 'numeric' })}`}
+                              title="Click to add a shift · right-click for more"
+                              className="absolute inset-0 flex items-end justify-center pb-0.5 text-sm leading-none text-transparent hover:bg-brand-50/60 hover:text-brand-600 focus:bg-brand-50/60 focus:text-brand-600 focus:outline-none"
+                            >
+                              <span aria-hidden="true">＋</span>
+                            </button>
+                          )}
+                          <div
+                            // For a manager, a click anywhere but on a shift falls
+                            // through to the cell — time off and birthdays too.
+                            className={`relative flex flex-col gap-1 ${canEdit ? 'pointer-events-none' : ''}`}
+                          >
                             {row.kind === 'person' &&
                               birthdays.some(
                                 (entry) =>
@@ -706,22 +767,6 @@ export function RotaTable({
                                 }
                               />
                             ))}
-                            {canEdit && (
-                              <button
-                                type="button"
-                                data-empty={inCell.length === 0 ? 'true' : undefined}
-                                onClick={() => setAdding({ row, day })}
-                                aria-label={`Add ${row.kind === 'open' ? `an open shift at ${row.sublabel}` : `a shift for ${row.label}`} on ${day.toLocaleDateString(undefined, { weekday: 'long', month: 'short', day: 'numeric' })}`}
-                                // Quiet, so it does not compete with the shifts (Dominguez,
-                                // 30 September 2026: it was too big) — still a full-width
-                                // strip to hit, under the shifts rather than over them.
-                                className={`flex w-full items-center justify-center rounded-md text-sm font-medium leading-none text-slate-400 hover:bg-brand-50 hover:text-brand-700 focus:text-brand-700 ${
-                                  inCell.length === 0 ? 'min-h-8' : 'min-h-6'
-                                }`}
-                              >
-                                ＋
-                              </button>
-                            )}
                           </div>
                         </td>
                       );
@@ -767,6 +812,7 @@ export function RotaTable({
         </table>
       </div>
 
+      {dayMenu.menu}
       {menu && (
         <ShiftDialog
           shift={menu}
@@ -917,7 +963,7 @@ function ShiftChip({
 
   const base = remote ? REMOTE_COLOUR : colour;
   const style: React.CSSProperties = shiftChipStyle({ base, roleColour, open, draft });
-  const className = `block w-full rounded-md border-2 px-1.5 py-1 text-left text-xs text-slate-900 ${
+  const className = `pointer-events-auto block w-full rounded-md border-2 px-1.5 py-1 text-left text-xs text-slate-900 ${
     open ? 'bg-amber-100 text-amber-950' : ''
   } ${draft ? 'border-dashed' : ''} ${warning ? 'ring-1 ring-inset ring-rose-400' : ''}`;
 

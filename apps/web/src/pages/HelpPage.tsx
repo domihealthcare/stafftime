@@ -1022,7 +1022,7 @@ const MANAGERS: Section[] = [
             </li>
             <li>
               <strong>+ Add → Repeating shifts</strong> makes, say, every Tuesday and Thursday for a
-              month in one go. The ＋ in a day on the rota can do the same: tick{' '}
+              month in one go. Clicking a day on the rota can do the same: tick{' '}
               <strong>Repeat this shift</strong>, pick the days and how long for.
             </li>
             <li>
@@ -1052,10 +1052,14 @@ const MANAGERS: Section[] = [
               Admins find the same thing on the Staff screen, in the person&rsquo;s editor.
             </li>
             <li>
-              The week is a <strong>rota</strong>: a row per person, a column per day. Click ＋ in a
-              cell to add a shift there, or click a shift to change who works it, publish it or
-              remove it. Removing a shift, or taking somebody off one, asks you to confirm first.
-              Each day&rsquo;s heading shows its hours and how many are on.
+              The week is a <strong>rota</strong>: a row per person, a column per day. Click the
+              empty space in a day to add a shift there, or click a shift to change who works it,
+              publish it or remove it. <strong>Right-click</strong> a day — on the week or in the
+              month — for <strong>Add a shift</strong>, <strong>Add time off</strong> (for that
+              person, from that day), or an <strong>event</strong>, <strong>rep lunch</strong>,{' '}
+              <strong>diagnostics date</strong> or <strong>holiday or closure</strong> on it.
+              Removing a shift, or taking somebody off one, asks you to confirm first. Each
+              day&rsquo;s heading shows its hours and how many are on.
             </li>
             <li>
               Show it for <strong>everyone</strong>, <strong>by location</strong> or{' '}
@@ -1092,6 +1096,11 @@ const MANAGERS: Section[] = [
               off warns you first, and each day&rsquo;s heading says how many are off.
             </li>
             <li>
+              Time-off requests waiting on you, and anybody the rota puts into overtime, are one
+              line each above the rota — click the line to open it, then Approve or Decline from
+              there.
+            </li>
+            <li>
               <strong>Print</strong> gives the week on paper, one page per office, for the
               break-room wall. Only published shifts are printed, open shifts never, and time off
               just says &ldquo;Off&rdquo; — never sick or vacation.
@@ -1106,9 +1115,9 @@ const MANAGERS: Section[] = [
             A shift the office needs covered that nobody is on yet — say two Front Desk on Saturday
             morning. Make them with <strong>+ Add → Shift</strong> or{' '}
             <strong>+ Add → Repeating shifts</strong> by choosing &ldquo;Nobody yet&rdquo;, or with
-            ＋ in an office&rsquo;s Open shifts row. They are flagged on the rota, in the banner and
-            in the nightly email until you click one and put somebody in it. Anybody already on at
-            that time is greyed out.
+            a click in an office&rsquo;s Open shifts row. They are flagged on the rota, in the
+            banner and in the nightly email until you click one and put somebody in it. Anybody
+            already on at that time is greyed out.
           </p>
         ),
       },

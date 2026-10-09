@@ -100,6 +100,80 @@ await step('the + can repeat: starts on the day clicked, pick more days and an e
   await frankie().getByText('10am–2pm').nth(1).waitFor({ timeout: 15000 });
 });
 
+// The ＋ strip in every cell is gone (October 2026, Dominguez: it made the
+// page longer): the cell itself takes the click, and a right-click on it
+// offers a shift, time off or an event on that day.
+const cellOf = async (weekday) => {
+  const button = frankie().getByRole('button', { name: new RegExp(`^Add a shift for Frankie Front-Desk on ${weekday}`) });
+  return button.locator('xpath=ancestor::td[1]');
+};
+const MENU = ['Add a shift', 'Add time off', 'Add an event', 'Add a rep lunch', 'Add a diagnostics date', 'Add a holiday or closure'];
+
+await step('the cell takes no room of its own for adding: no ＋ strip under the shifts', async () => {
+  const button = frankie().getByRole('button', { name: /^Add a shift for Frankie Front-Desk on Thursday/ });
+  const position = await button.evaluate((el) => getComputedStyle(el).position);
+  if (position !== 'absolute') throw new Error(`the add button is ${position}, so it takes room in the cell`);
+});
+
+await step('right-clicking a day offers a shift, time off and events', async () => {
+  const cell = await cellOf('Thursday');
+  await cell.click({ button: 'right' });
+  const menu = mgr.getByTestId('context-menu');
+  await menu.waitFor({ timeout: 5000 });
+  const items = await menu.getByRole('menuitem').allTextContents();
+  if (JSON.stringify(items) !== JSON.stringify(MENU)) throw new Error(`the menu offered ${items.join(', ')}`);
+  if (!/Frankie Front-Desk · Thu/.test(await menu.innerText())) throw new Error('the menu does not say whose day it is');
+  await mgr.screenshot({ path: `${OUT}/quick-add-right-click.png` });
+  await menu.getByRole('menuitem', { name: 'Add a shift' }).click();
+  const dialog = mgr.getByRole('dialog', { name: 'Shift for Frankie Front-Desk' });
+  await dialog.waitFor({ timeout: 5000 });
+  await dialog.getByRole('button', { name: 'Cancel' }).click();
+});
+
+await step('right-clicking a shift still opens the person menu, not the day menu', async () => {
+  await frankie().locator('[data-remote="true"]').first().click({ button: 'right' });
+  await mgr.getByTestId('person-menu').waitFor({ timeout: 5000 });
+  if (await mgr.getByTestId('context-menu').count()) throw new Error('both menus opened');
+  await mgr.keyboard.press('Escape');
+});
+
+let thursday = '';
+await step('"Add an event" opens the event form on that day', async () => {
+  const cell = await cellOf('Thursday');
+  thursday = (await cell.getAttribute('data-testid')).replace('rota-cell-', '');
+  await cell.click({ button: 'right' });
+  await mgr.getByTestId('context-menu').getByRole('menuitem', { name: 'Add an event' }).click();
+  const dates = mgr.locator('input[id$="-starts"], input[id$="-first"]');
+  await dates.first().waitFor({ timeout: 5000 });
+  const values = await dates.evaluateAll((inputs) => inputs.map((input) => input.value));
+  if (!values.some((value) => value.startsWith(thursday))) throw new Error(`the form starts on ${values.join(', ')}, not ${thursday}`);
+  await mgr.getByRole('button', { name: 'Cancel' }).first().click();
+});
+
+await step('"Add time off" opens the request for Frankie, from that day', async () => {
+  const cell = await cellOf('Thursday');
+  await cell.click({ button: 'right' });
+  await mgr.getByTestId('context-menu').getByRole('menuitem', { name: 'Add time off' }).click();
+  await mgr.waitForURL(/\/time-off\?/, { timeout: 10000 });
+  await mgr.locator('#pto-start').waitFor({ timeout: 10000 });
+  if ((await mgr.locator('#pto-start').inputValue()) !== thursday) throw new Error('the request does not start on that day');
+  const who = await mgr.locator('#pto-employee option:checked').textContent();
+  if (!/Frankie/.test(who)) throw new Error(`the request is for ${who}`);
+  await mgr.goBack({ waitUntil: 'networkidle' });
+});
+
+await step('the month: right-clicking a day offers the same', async () => {
+  await mgr.getByRole('button', { name: 'Month', exact: true }).click();
+  const day = mgr.getByTestId('month-grid').getByRole('button').nth(10);
+  await day.click({ button: 'right' });
+  const menu = mgr.getByTestId('context-menu');
+  await menu.waitFor({ timeout: 5000 });
+  const items = await menu.getByRole('menuitem').allTextContents();
+  if (JSON.stringify(items) !== JSON.stringify(MENU)) throw new Error(`the month offered ${items.join(', ')}`);
+  await mgr.keyboard.press('Escape');
+  await mgr.getByRole('button', { name: 'Week', exact: true }).click();
+});
+
 // Take away what the suite made: drafts are deleted outright.
 await mgr.evaluate(async () => {
   const me = (await (await fetch('/api/employees')).json()).find((p) => p.email === 'frontdesk@domihealthcare.com');

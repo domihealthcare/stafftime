@@ -143,6 +143,9 @@ await step('confirming saves it, and the week says so at the top and beside thei
 
   const notice = mgr.getByTestId('overtime-notice');
   await notice.getByText('1 person is scheduled past 40 hours').waitFor({ timeout: 15000 });
+  // One folded line with the name in it; opened for the week and hours.
+  await notice.getByText('Frankie +4 h').waitFor({ timeout: 5000 });
+  await notice.locator('summary').click();
   await notice.getByText(/44 hours in the week of/).waitFor({ timeout: 5000 });
   await frankieRow().getByTestId('week-standing-over').getByText('4 h overtime').waitFor({ timeout: 5000 });
 
