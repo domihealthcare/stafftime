@@ -34,6 +34,7 @@ describe('PtoService', () => {
       employee?: unknown;
       overlap?: unknown;
       request?: unknown;
+      shifts?: unknown[];
     } = {},
   ) {
     const prisma = {
@@ -57,6 +58,7 @@ describe('PtoService', () => {
         findMany: jest.fn().mockResolvedValue([]),
         update: jest.fn().mockImplementation(({ data }) => ({
           id: 'pto-1',
+          employeeId: 'emp-1',
           startDate: new Date('2026-11-03T00:00:00.000Z'),
           endDate: new Date('2026-11-05T00:00:00.000Z'),
           isHalfDay: false,
@@ -65,7 +67,12 @@ describe('PtoService', () => {
         count: jest.fn().mockResolvedValue(3),
         delete: jest.fn().mockResolvedValue({}),
       },
-      shift: { findMany: jest.fn().mockResolvedValue([]) },
+      shift: {
+        findMany: jest.fn().mockResolvedValue(options.shifts ?? []),
+        updateMany: jest.fn().mockResolvedValue({ count: 0 }),
+        deleteMany: jest.fn().mockResolvedValue({ count: 0 }),
+      },
+      $transaction: jest.fn((operations: Promise<unknown>[]) => Promise.all(operations)),
     };
     // Notifications are fire and forget, so the double only has to not throw.
     const notifications = {
@@ -103,7 +110,7 @@ describe('PtoService', () => {
       });
       await service.review('pto-1', { decision: PtoStatus.APPROVED }, manager);
 
-      expect(notifications.ptoDecided).toHaveBeenCalledWith('pto-1');
+      expect(notifications.ptoDecided).toHaveBeenCalledWith('pto-1', 0);
     });
 
     it('does not let a failed notification fail the request itself', async () => {
@@ -236,6 +243,70 @@ describe('PtoService', () => {
       expect(data.status).toBe(PtoStatus.APPROVED);
       expect(data.reviewedById).toBe('mgr-1');
       expect(data.reviewedAt).toBeInstanceOf(Date);
+    });
+
+    describe('their shifts in those days', () => {
+      const shifts = [
+        { id: 'shift-draft', status: 'DRAFT' },
+        { id: 'shift-live', status: 'PUBLISHED' },
+      ];
+
+      it('are left alone unless the manager chooses', async () => {
+        const { service, prisma, notifications } = build({ request: pending, shifts });
+        await service.review('pto-1', { decision: PtoStatus.APPROVED }, manager);
+        expect(prisma.shift.findMany).not.toHaveBeenCalled();
+        expect(notifications.ptoDecided).toHaveBeenCalledWith('pto-1', 0);
+      });
+
+      it('come off the rota: a draft deleted, a published one cancelled, and the person told', async () => {
+        const { service, prisma, notifications } = build({ request: pending, shifts });
+        await service.review('pto-1', { decision: PtoStatus.APPROVED, shifts: 'REMOVE' }, manager);
+        expect(prisma.shift.findMany.mock.calls[0][0].where).toMatchObject({
+          employeeId: 'emp-1',
+          status: { not: 'CANCELLED' },
+        });
+        expect(prisma.shift.deleteMany).toHaveBeenCalledWith({
+          where: { id: { in: ['shift-draft'] } },
+        });
+        expect(prisma.shift.updateMany).toHaveBeenCalledWith({
+          where: { id: { in: ['shift-draft', 'shift-live'] }, status: { not: 'DRAFT' } },
+          data: { status: 'CANCELLED' },
+        });
+        expect(notifications.ptoDecided).toHaveBeenCalledWith('pto-1', 2);
+      });
+
+      it('or stay as open shifts for somebody else, no longer part of their regular shift', async () => {
+        const { service, prisma } = build({ request: pending, shifts });
+        await service.review('pto-1', { decision: PtoStatus.APPROVED, shifts: 'OPEN' }, manager);
+        expect(prisma.shift.updateMany).toHaveBeenCalledWith({
+          where: { id: { in: ['shift-draft', 'shift-live'] } },
+          data: { employeeId: null, seriesId: null },
+        });
+        expect(prisma.shift.deleteMany).not.toHaveBeenCalled();
+      });
+
+      it('stay for a half day, and are never touched by a refusal', async () => {
+        const half = build({ request: pending, shifts });
+        half.prisma.ptoRequest.update.mockImplementation(({ data }) => ({
+          ...pending,
+          isHalfDay: true,
+          ...data,
+        }));
+        await half.service.review(
+          'pto-1',
+          { decision: PtoStatus.APPROVED, shifts: 'REMOVE' },
+          manager,
+        );
+        expect(half.prisma.shift.updateMany).not.toHaveBeenCalled();
+
+        const denied = build({ request: pending, shifts });
+        await denied.service.review(
+          'pto-1',
+          { decision: PtoStatus.DENIED, reviewNote: 'Short that week', shifts: 'REMOVE' },
+          manager,
+        );
+        expect(denied.prisma.shift.findMany).not.toHaveBeenCalled();
+      });
     });
 
     it('requires a reason to deny', async () => {

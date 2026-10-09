@@ -590,10 +590,16 @@ export const api = {
     request<PtoRequest>('/pto', { method: 'POST', body: JSON.stringify(body) }).then(
       timeOffChanged,
     ),
-  reviewPto: (id: string, decision: 'APPROVED' | 'DENIED', reviewNote?: string) =>
+  reviewPto: (
+    id: string,
+    decision: 'APPROVED' | 'DENIED',
+    reviewNote?: string,
+    /// On approving: what happens to their shifts in those days.
+    shifts?: 'KEEP' | 'REMOVE' | 'OPEN',
+  ) =>
     request<PtoRequest>(`/pto/${id}/review`, {
       method: 'PATCH',
-      body: JSON.stringify({ decision, reviewNote }),
+      body: JSON.stringify({ decision, reviewNote, shifts }),
     }).then(timeOffChanged),
   cancelPto: (id: string) =>
     request<PtoRequest>(`/pto/${id}/cancel`, { method: 'PATCH' }).then(timeOffChanged),
@@ -1265,7 +1271,15 @@ export const api = {
     ),
   /// Every closure and holiday in `fromYear`, put on the same date the year after.
   copyClosures: (fromYear: number) =>
-    request<{ copied: number; skipped: string[]; toYear: number }>('/events/closures/copy', {
+    request<{
+      copied: number;
+      skipped: string[];
+      /// Moving holidays put on their day next year: "Thanksgiving — Thu, Nov 26, 2026 → …".
+      moved: string[];
+      /// Fixed holidays landing on a weekend next year, to check.
+      onWeekend: string[];
+      toYear: number;
+    }>('/events/closures/copy', {
       method: 'POST',
       body: JSON.stringify({ fromYear }),
     }),

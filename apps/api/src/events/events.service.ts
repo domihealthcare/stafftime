@@ -19,6 +19,7 @@ import {
 import { InboxService } from '../email/inbox.service';
 import { GoogleMeetService } from './google-meet.service';
 import { PrismaService } from '../prisma/prisma.service';
+import { movedFirstDay, weekendDay } from './moving-holidays';
 import { EventInput } from './dto/event.dto';
 import { allDayDates, allDayRange, describeWhen } from './event-time';
 import { repLunchTitle } from '../reps/rep-lunch-title';
@@ -332,8 +333,9 @@ export class EventsService {
   }
 
   /// The same closure or holiday on the same date in each of the next `years`
-  /// years, as separate one-off entries (a moving holiday can then be fixed
-  /// one year at a time). Returns how many were made.
+  /// years, as separate one-off entries — a moving holiday on its own day
+  /// each year (`moving-holidays.ts`), and anything still wrong can be fixed
+  /// one year at a time. Returns how many were made.
   private async repeatClosureYearly(row: EventRow, years: number, actor: AuthUser) {
     const source = await this.prisma.practiceEvent.findUniqueOrThrow({
       where: { id: row.id },
@@ -390,6 +392,10 @@ export class EventsService {
 
     const created: EventRow[] = [];
     const skipped: string[] = [];
+    /// Moving holidays put on their new day, and fixed ones landing on a
+    /// weekend — said, so the manager can check.
+    const movedDays: string[] = [];
+    const onWeekend: string[] = [];
     for (const row of rows) {
       const moved = closureInYear(row, toYear);
       if (!moved) {
@@ -408,6 +414,14 @@ export class EventsService {
       if (already) {
         skipped.push(`${row.title} — already on ${toYear}'s calendar`);
         continue;
+      }
+
+      const before = localDateIn(row.startsAt, PRACTICE_ZONE);
+      const after = localDateIn(startsAt, PRACTICE_ZONE);
+      if (movedFirstDay(row.title, before, toYear)) {
+        movedDays.push(`${row.title} — ${shortDay(before)} → ${shortDay(after)}`);
+      } else if (weekendDay(after)) {
+        onWeekend.push(`${row.title} — ${shortDay(after)} is a ${weekendDay(after)}`);
       }
 
       created.push(
@@ -456,7 +470,7 @@ export class EventsService {
       });
     }
 
-    return { copied: created.length, skipped, toYear };
+    return { copied: created.length, skipped, moved: movedDays, onWeekend, toYear };
   }
 
   /**
@@ -1099,8 +1113,11 @@ function scheduleLink(row: EventRow): string {
 /// times, whatever the clocks are doing), or null for a 29 February.
 function closureInYear(row: EventRow, year: number): { startsAt: Date; endsAt: Date } | null {
   const firstDay = localDateIn(row.startsAt, PRACTICE_ZONE);
-  if (firstDay.slice(5) === '02-29') return null;
-  const nextFirst = `${year}${firstDay.slice(4)}`;
+  // A moving holiday — Thanksgiving, Memorial Day — goes to its day that
+  // year (see moving-holidays.ts); anything else keeps its date.
+  const movedTo = movedFirstDay(row.title, firstDay, year);
+  if (!movedTo && firstDay.slice(5) === '02-29') return null;
+  const nextFirst = movedTo ?? `${year}${firstDay.slice(4)}`;
   if (row.allDay) {
     const { startDate, endDate } = allDayDates(row);
     return allDayRange(nextFirst, addDaysTo(nextFirst, daysBetween(startDate, endDate)));
@@ -1114,4 +1131,15 @@ function closureInYear(row: EventRow, year: number): { startsAt: Date; endsAt: D
       PRACTICE_ZONE,
     ),
   };
+}
+
+/// "Thu, Nov 25, 2027".
+function shortDay(date: string): string {
+  return new Date(`${date}T12:00:00Z`).toLocaleDateString('en-US', {
+    timeZone: 'UTC',
+    weekday: 'short',
+    month: 'short',
+    day: 'numeric',
+    year: 'numeric',
+  });
 }

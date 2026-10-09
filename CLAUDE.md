@@ -664,6 +664,17 @@ Beyond the phases, the parts worth knowing about before picking up work:
   yet: help writing News posts; summaries of closed surveys' written answers
   (would need a new line in *Truly anonymous — how?*). Never the clinical
   forms (would need a BAA).
+- **Time off that lands on shifts** (9 October 2026, Dominguez — a "smarter"
+  idea): the **request form** lists the person's shifts in those days before
+  it is sent (staff see their own published ones; a manager filing *For*
+  somebody sees theirs), and **Approve** — on the Schedule and on Time off —
+  asks, when the request covers shifts still to come, whether to leave them as
+  **open shifts**, **take them off the rota** (a draft deleted, a published
+  one cancelled) or **leave them**, in one step (`PATCH /pto/:id/review`
+  `shifts: KEEP | REMOVE | OPEN`, `PtoService.handleShifts`). The person is
+  told once, in the approval notice. A half day keeps its shift; with no
+  shifts it approves at once as before. `components/ApproveTimeOff.tsx`;
+  `tests/browser/time-off-shifts.mjs`.
 - **Turned down: "PTO about to be lost"** (9 October 2026, Dominguez): a
   reminder to use PTO before it fails to carry over was proposed and refused —
   not in the practice's interest. Do not propose it again.
@@ -953,9 +964,16 @@ Beyond the phases, the parts worth knowing about before picking up work:
   one is flagged in the shift forms (with a pop-up before saving), with ⚠ on
   the rota, and in the banner and nightly email. **Pay is untouched** — holiday
   pay is an open question. **Entered each year** with **Copy these into next
-  year** on the Schedule's *Holidays and closures* card; moving holidays
-  (Thanksgiving) are fixed by hand. The printed rota says when an office is
-  closed.
+  year** on the Schedule's *Holidays and closures* card. **Moving holidays
+  go to their own day** (9 October 2026, Dominguez — a "smarter" idea):
+  Thanksgiving and the day after, Memorial Day, Labor Day, MLK, Presidents',
+  Columbus, Election Day, Good Friday and Easter are recognised by name and
+  moved by their rule — only when this year's entry was on the rule's day —
+  in the copy and in a closure's *Repeat every year*; the copy then lists
+  what moved and any fixed one landing on a weekend (which day off instead
+  stays the practice's call). `events/moving-holidays.ts`;
+  `tests/browser/moving-holidays.mjs`. The printed rota says when an office
+  is closed.
 - **Accessibility pass** (30 September 2026, from a UI/UX audit): each screen names the
   tab ("Timesheet · Domi Staff", taken from its `<h1>`) and moves focus to the content on
   a page change (`useRouteAnnouncer` in `Layout.tsx`); a "Skip to content" link; header

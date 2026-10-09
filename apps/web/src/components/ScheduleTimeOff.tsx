@@ -7,6 +7,7 @@ import { useIsManager, useSession } from '../lib/session';
 import { PTO_TYPE_LABELS, hasNone } from '../lib/time-off';
 import type { PtoBalance, PtoRequest } from '../lib/types';
 import { useConfirm } from './ConfirmDialog';
+import { useApproveTimeOff } from './ApproveTimeOff';
 import { Alert, buttonClass } from './ui';
 
 /**
@@ -45,6 +46,7 @@ export function RequestsToDecide({ onDecided }: { onDecided: () => void }) {
   const isManager = useIsManager();
   const { employee } = useSession();
   const confirm = useConfirm();
+  const approveTimeOff = useApproveTimeOff();
   const [requests, setRequests] = useState<PtoRequest[]>([]);
   const [busy, setBusy] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -80,7 +82,12 @@ export function RequestsToDecide({ onDecided }: { onDecided: () => void }) {
     setBusy(request.id);
     setError(null);
     try {
-      await api.reviewPto(request.id, decision);
+      if (decision === 'APPROVED') {
+        // Asks about the shifts it lands on first, if there are any.
+        if (!(await approveTimeOff.approve(request))) return;
+      } else {
+        await api.reviewPto(request.id, decision);
+      }
       await load();
       onDecided();
     } catch (cause) {
@@ -164,6 +171,7 @@ export function RequestsToDecide({ onDecided }: { onDecided: () => void }) {
           </li>
         ))}
       </ul>
+      {approveTimeOff.dialog}
     </details>
   );
 }

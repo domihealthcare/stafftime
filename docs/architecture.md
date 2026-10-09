@@ -2921,6 +2921,51 @@ nothing and the page says so. Set-up, cost and the disclosure line:
 loop with a fake client), `tests/browser/ask.mjs` (off; the screen with
 answers stood in for in the browser — CI has no key and sends nothing).
 
+## Time off that lands on shifts
+
+October 2026, Dominguez — a "make it smarter" idea. Approving time off used to
+leave the person's shifts on the rota for somebody to notice (the coverage
+strip flagged them). Now:
+
+- **The request form** lists the person's shifts in the dates as they are
+  picked — `GET /shifts` for the person, so staff see only their own
+  published shifts, and a manager filing *For* somebody sees that person's —
+  with "your manager will sort those out when they decide".
+- **Approve** (the Schedule's requests and the Time off screen, one hook:
+  `components/ApproveTimeOff.tsx`) first reads the request's shifts still to
+  come (`GET /pto/:id/conflicts`). With none, or a half day (half the shift is
+  still worked), it approves at once as before. Otherwise a pop-up lists them
+  and offers: leave them as **open shifts** (`employeeId` and `seriesId`
+  cleared — same office, hours, job role and note, for somebody else to
+  cover), **take them off the rota** (a draft deleted, a published shift
+  cancelled, as Remove does), or **leave them**.
+- The server does it in the review (`PATCH /pto/:id/review` with
+  `shifts: KEEP | REMOVE | OPEN`, `PtoService.handleShifts`), after the
+  approval is saved, for shifts not yet started. The person is told **once**,
+  in the "time off approved" notice and email ("Your 2 shifts on those days
+  are off your schedule"), not a schedule notice per shift. The review route
+  now carries the calendar-invites interceptor, since it can change shifts.
+
+`tests/browser/time-off-shifts.mjs`.
+
+## Moving holidays, copied right
+
+October 2026, Dominguez — a "make it smarter" idea. **Copy these into next
+year** (and a closure's *Repeat every year*) kept every date, so Thanksgiving,
+Memorial Day and the rest had to be corrected by hand each year.
+`events/moving-holidays.ts` recognises the US holidays that move by their
+title (`MOVING_HOLIDAYS`: Thanksgiving and the day after / Black Friday,
+Memorial Day, Labor Day, MLK Day, Presidents' Day / Washington's Birthday,
+Columbus / Indigenous Peoples' Day, Election Day, Good Friday, Easter and
+Easter Monday — Easter by the Gregorian computus) and moves the entry to the
+rule's day in the new year, keeping its length and times (`closureInYear`).
+Only when this year's entry **was on the rule's day**: "Thanksgiving lunch" on
+20 November is somebody's event and keeps its date, as does anything not
+recognised. The copy returns `moved` and `onWeekend` — fixed holidays that
+land on a Saturday or Sunday — and the card lists both; which weekday the
+office takes off instead is left to the practice, never guessed.
+`tests/browser/moving-holidays.mjs` (in 2031, which nothing else uses).
+
 ## Heading for overtime on hours worked
 
 October 2026, Dominguez — the ninth of the "make it smarter" ideas. The rota
