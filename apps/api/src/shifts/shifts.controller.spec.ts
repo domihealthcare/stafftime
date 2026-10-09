@@ -23,6 +23,7 @@ describe('ShiftsController — what staff can read', () => {
       {} as never,
       {} as never,
       {} as never,
+      {} as never,
     );
     return { controller, prisma };
   }

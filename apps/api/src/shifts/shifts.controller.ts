@@ -18,6 +18,7 @@ import { AuthUser } from '../common/auth/auth-user';
 import { CurrentUser } from '../common/auth/current-user.decorator';
 import { Roles } from '../common/auth/roles.decorator';
 import { CoverOptionsService } from './cover-options.service';
+import { PublishCheckService } from './publish-check.service';
 import { CreateShiftDto } from './dto/create-shift.dto';
 import { OvertimeCheckDto } from './dto/overtime-check.dto';
 import { QueryShiftsDto } from './dto/query-shifts.dto';
@@ -28,6 +29,7 @@ import {
   RepeatShiftsDto,
   SetWeeklyScheduleDto,
   StopStandingShiftDto,
+  PublishCheckDto,
   SuggestCoverDto,
   UpdateStandingShiftDto,
 } from './dto/repeat-shifts.dto';
@@ -49,6 +51,7 @@ export class ShiftsController {
     private readonly overtime: OvertimeService,
     private readonly retiming: ShiftRetimeService,
     private readonly cover: CoverOptionsService,
+    private readonly publishChecks: PublishCheckService,
   ) {}
 
   /// "Every Tuesday and Thursday, 9 to 5, until March" — or, with no last
@@ -111,6 +114,16 @@ export class ShiftsController {
   @HttpCode(HttpStatus.OK)
   publish(@Body() dto: PublishShiftsDto) {
     return this.planning.publishMany(dto.ids);
+  }
+
+  /// "Before you publish": what is worth a look about these drafts — time
+  /// off, availability, overtime, closures, leavers, lapsed licenses, open
+  /// shifts. Only reads; publishing is still the route above.
+  @Post('publish-check')
+  @Roles(Role.MANAGER)
+  @HttpCode(HttpStatus.OK)
+  publishCheck(@Body() dto: PublishCheckDto) {
+    return this.publishChecks.check(dto.ids, dto.withOpenShifts ?? true);
   }
 
   /// A first draft for the open shifts on screen: somebody free for each,

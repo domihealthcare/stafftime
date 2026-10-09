@@ -1,5 +1,6 @@
 import { Module } from '@nestjs/common';
 import { CoverOptionsService } from './cover-options.service';
+import { PublishCheckService } from './publish-check.service';
 import { OvertimeService } from './overtime.service';
 import { ShiftPlanningService } from './shift-planning.service';
 import { ShiftRetimeService } from './shift-retime.service';
@@ -14,6 +15,7 @@ import { ShiftsService } from './shifts.service';
     ShiftRetimeService,
     OvertimeService,
     CoverOptionsService,
+    PublishCheckService,
   ],
   exports: [ShiftsService, ShiftPlanningService, OvertimeService],
 })

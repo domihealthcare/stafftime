@@ -1055,7 +1055,12 @@ const MANAGERS: Section[] = [
               <strong>See schedule</strong> (their month, on its own),{' '}
               <strong>Open in Staff</strong> for admins, and <strong>Publish N draft shifts</strong>{' '}
               when that person has drafts. The bar above the rota that counts drafts has{' '}
-              <strong>Publish all</strong> for everything on screen at once.
+              <strong>Publish all</strong> for everything on screen at once. Before anything goes
+              out, <strong>Before you publish</strong> lists what is worth a look about those
+              drafts: somebody whose required license has lapsed by the shift, on time off or asking
+              for it, in a closure, on a time they said they can&rsquo;t work, going into overtime,
+              after their last day, and open shifts still with nobody on them. It only warns:{' '}
+              <strong>Publish anyway</strong> always works.
             </li>
             <li>
               Time off is in each person&rsquo;s row: hatched grey once approved, &ldquo;Asked

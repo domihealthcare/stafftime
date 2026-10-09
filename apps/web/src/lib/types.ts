@@ -1490,3 +1490,15 @@ export interface DigestReader {
   wantsDailyDigest: boolean;
   mutedDigestTopics: DigestTopic[];
 }
+
+/// "Before you publish" — see `shifts/publish-check.ts` in the API.
+export interface PublishCheckSection {
+  key: 'licenses' | 'leavers' | 'leave' | 'closures' | 'availability' | 'overtime' | 'open';
+  title: string;
+  lines: string[];
+}
+
+export interface PublishCheck {
+  drafts: number;
+  sections: PublishCheckSection[];
+}

@@ -539,6 +539,17 @@ Beyond the phases, the parts worth knowing about before picking up work:
   an entry edited meanwhile is left out; a spec fails if a new flag is not
   added there. `POST /time-entries/approve-clean`;
   `tests/browser/approve-clean.mjs`.
+- **Before you publish** (9 October 2026, Dominguez — the sixth "smarter"
+  idea): **Publish all** and a person's **Publish N draft shifts** first show,
+  in one pop-up, what is worth a look about those drafts — a **required
+  license lapsed by the shift** (new: nothing checked that before; one with
+  nothing on file is left to the Licenses screen), people who have left, time
+  off (approved or asked), closures, availability, overtime, and open shifts
+  still with nobody (not for one person's drafts). **Warns, never refuses**:
+  **Publish anyway**; with nothing to say, the plain question as before.
+  `POST /shifts/publish-check`, `shifts/publish-check.ts` (words, pure) and
+  `publish-check.service.ts` (reads, by each rule's existing code),
+  `components/PublishCheckDialog.tsx`; `tests/browser/publish-check.mjs`.
 - **Time off on a staff profile, condensed** (8 October 2026, Dominguez:
   "shouldn't be this big … maybe just a pop up"): the profile shows what is
   left, the next day off and what is waiting; **See all N on file** opens
