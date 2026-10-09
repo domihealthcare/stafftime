@@ -1,5 +1,6 @@
 import { Module } from '@nestjs/common';
 import { StorageModule } from '../storage/storage.module';
+import { ExportCheckService } from './export-check.service';
 import { ExportsController } from './exports.controller';
 import { AdpSettingsService } from './payroll/adp-settings.service';
 import { AdpTotalSourceExporter } from './payroll/adp-totalsource.exporter';
@@ -16,6 +17,7 @@ import { TimesheetExportService } from './timesheet-export.service';
   controllers: [ExportsController],
   providers: [
     TimesheetExportService,
+    ExportCheckService,
     ReportPresetsService,
     PayrollExportsService,
     AdpSettingsService,

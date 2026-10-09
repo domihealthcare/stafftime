@@ -10,7 +10,7 @@ import { DEFAULT_COLUMN_KEYS, type TimesheetColumnKey } from './columns';
 import { ExportTimesheetDto } from './dto/export-timesheet.dto';
 
 /// Finished work that has been signed off, which is what payroll runs on.
-const DEFAULT_STATUSES: TimeEntryStatus[] = [TimeEntryStatus.COMPLETED, TimeEntryStatus.APPROVED];
+export const DEFAULT_STATUSES: TimeEntryStatus[] = [TimeEntryStatus.COMPLETED, TimeEntryStatus.APPROVED];
 
 /// Longest period we will build in one go, to keep a mis-typed date range from
 /// pulling years of entries into memory.

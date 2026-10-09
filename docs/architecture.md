@@ -2897,6 +2897,43 @@ most serious first:
 Only drafts are checked, and only reads: nothing is stored, nobody is told.
 `tests/browser/publish-check.mjs`.
 
+## Before you export
+
+October 2026, Dominguez — the seventh "make it smarter" idea, the same
+pattern as *Before you publish* at the moment a mistake costs most. The
+Export screen's preview already counted flagged and corrected entries in a
+line of small print; nothing named them, and nothing said what the file
+would quietly **leave out**. Now **Download** first asks
+`POST /exports/timesheet/check` with the same options as the file, and when
+anything comes back shows **Before you export** (the shared
+`WarningsDialog`, which *Before you publish* also uses) with **Not yet** and
+**Export anyway**; with nothing to say it downloads at once, as before. A
+check that fails never stands in the way of the file.
+
+What it reads (`exports/export-check.service.ts`): every entry in the period,
+office and people asked for, **at every status**, so the ones the file leaves
+out can be named; and the export's own `build` for each person's overtime
+(by the payroll week rule) and File #s, so the warning and the file cannot
+disagree. Words in `exports/export-check.ts` (pure, tested), most serious
+first:
+
+- **No ADP File #** (ADP only) — the people going in without one; ADP's
+  exporter refuses the file for them anyway, and says so.
+- **Waiting on a correction** — `NEEDS_REVIEW`, chiefly clocked out by the
+  app at midnight: left out of the file (unless the statuses ticked include
+  them) until the real time is entered.
+- **Still clocked in** — no clock-out, left out (or counted as no hours with
+  *include open*).
+- **Not approved yet** — grouped per person; "going out anyway" or "left out
+  of this file" by the statuses ticked.
+- **Entered by hand, and nobody has looked into why** — in the file only.
+- **Corrected after they went to payroll** — in the file only; this file
+  carries the corrected hours.
+- **Overtime in this file** — per hourly person, informative.
+
+Only reads. `tests/browser/export-check.mjs`; the other export suites press
+Download through `pressDownload` in `nav.mjs`, which answers the pop-up.
+
 ## Hours entered by hand
 
 Asked for by Dominguez (29 September 2026), once there was no time clock:

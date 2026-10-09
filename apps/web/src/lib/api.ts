@@ -5,6 +5,7 @@ import type {
   Announcement,
   PollInput,
   Attention,
+  ExportCheck,
   Checklist,
   Credential,
   CredentialKind,
@@ -701,6 +702,12 @@ export const api = {
     request<PayrollExportRecord>(`/exports/history/${id}/void`, { method: 'POST' }),
   previewExport: (options: TimesheetExportOptions) =>
     request<ExportPreview>('/exports/timesheet/preview', {
+      method: 'POST',
+      body: JSON.stringify(options),
+    }),
+  /// "Before you export": what is worth a look about this period first.
+  checkExport: (options: TimesheetExportOptions & { target?: string; includeSalaried?: boolean }) =>
+    request<ExportCheck>('/exports/timesheet/check', {
       method: 'POST',
       body: JSON.stringify(options),
     }),

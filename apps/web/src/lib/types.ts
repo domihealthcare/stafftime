@@ -1502,3 +1502,12 @@ export interface PublishCheck {
   drafts: number;
   sections: PublishCheckSection[];
 }
+
+/// "Before you export" — see `exports/export-check.ts` in the API.
+export interface ExportCheck {
+  sections: {
+    key: 'adp' | 'review' | 'open' | 'unapproved' | 'handEntries' | 'corrected' | 'overtime';
+    title: string;
+    lines: string[];
+  }[];
+}

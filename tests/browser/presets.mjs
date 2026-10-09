@@ -1,7 +1,7 @@
 import { chromium } from 'playwright';
 import { readFileSync } from 'node:fs';
 import { mkdirSync } from 'node:fs';
-import { openMenu } from './nav.mjs';
+import { openMenu, pressDownload } from './nav.mjs';
 // Screenshots go wherever the caller says, or into ./shots (gitignored).
 const OUT = process.argv[2] || new URL('./shots/', import.meta.url).pathname;
 mkdirSync(OUT, { recursive: true });
@@ -95,7 +95,7 @@ await step('the saved report still produces a working file', async () => {
 
   const [download] = await Promise.all([
     mgr.waitForEvent('download', { timeout: 30000 }),
-    mgr.getByRole('button', { name: /Download Excel file/ }).click(),
+    pressDownload(mgr, /Download Excel file/),
   ]);
   const path = `/tmp/pw-downloads/${download.suggestedFilename()}`;
   await download.saveAs(path);

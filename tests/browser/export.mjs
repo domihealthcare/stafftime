@@ -1,7 +1,7 @@
 import { chromium } from 'playwright';
 import { existsSync, statSync, readFileSync } from 'node:fs';
 import { mkdirSync } from 'node:fs';
-import { openMenu } from './nav.mjs';
+import { openMenu, pressDownload } from './nav.mjs';
 // Screenshots go wherever the caller says, or into ./shots (gitignored).
 const OUT = process.argv[2] || new URL('./shots/', import.meta.url).pathname;
 mkdirSync(OUT, { recursive: true });
@@ -85,7 +85,7 @@ await mgr.screenshot({ path: `${OUT}/23-export.png`, fullPage: true });
 await step('downloading produces a real .xlsx', async () => {
   const [download] = await Promise.all([
     mgr.waitForEvent('download', { timeout: 30000 }),
-    mgr.getByRole('button', { name: /Download Excel file/ }).click(),
+    pressDownload(mgr, /Download Excel file/),
   ]);
   const path = `${DOWNLOADS}/${download.suggestedFilename()}`;
   await download.saveAs(path);
@@ -104,7 +104,7 @@ await step('switching to CSV downloads a CSV instead', async () => {
   await mgr.getByRole('button', { name: 'CSV' }).click();
   const [download] = await Promise.all([
     mgr.waitForEvent('download', { timeout: 30000 }),
-    mgr.getByRole('button', { name: /Download CSV/ }).click(),
+    pressDownload(mgr, /Download CSV/),
   ]);
   const path = `${DOWNLOADS}/${download.suggestedFilename()}`;
   await download.saveAs(path);

@@ -8,9 +8,16 @@ import {
 } from '../lib/api';
 import type { ReportPreset } from '../lib/types';
 import { formatCalendarDate, formatDateTime } from '../lib/format';
-import type { DayRange, Location, PayrollExportRecord, PayrollTarget } from '../lib/types';
+import type {
+  DayRange,
+  ExportCheck,
+  Location,
+  PayrollExportRecord,
+  PayrollTarget,
+} from '../lib/types';
 import { DateRangePicker, presetRanges, usePresetRange } from '../components/DateRangePicker';
 import { useConfirm } from '../components/ConfirmDialog';
+import { WarningsDialog } from '../components/WarningsDialog';
 import {
   Alert,
   Badge,
@@ -82,6 +89,9 @@ export function ExportPage() {
 
   const [preview, setPreview] = useState<ExportPreview | null>(null);
   const [previewing, setPreviewing] = useState(false);
+  /// "Before you export": being asked for, and its answer while it is open.
+  const [checking, setChecking] = useState(false);
+  const [exportCheck, setExportCheck] = useState<ExportCheck | null>(null);
   const [downloading, setDownloading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -234,6 +244,32 @@ export function ExportPage() {
     } catch (err) {
       setPresetError(err instanceof ApiError ? err.message : 'Could not delete that report.');
     }
+  }
+
+  /// "Before you export": anything worth a look about this period goes up
+  /// in one pop-up first — unapproved hours, a midnight clock-out, a missing
+  /// ADP File #… A check that fails never stands in the way of the file.
+  async function startDownload() {
+    setError(null);
+    setChecking(true);
+    let check: ExportCheck | null = null;
+    try {
+      check = await api.checkExport({
+        ...options,
+        to: endExclusive(to),
+        target,
+        ...(isAdp ? { includeSalaried } : {}),
+      });
+    } catch {
+      check = null;
+    } finally {
+      setChecking(false);
+    }
+    if (check && check.sections.length > 0) {
+      setExportCheck(check);
+      return;
+    }
+    await download();
   }
 
   async function download() {
@@ -696,19 +732,43 @@ export function ExportPage() {
 
         <button
           type="button"
-          onClick={() => void download()}
+          onClick={() => void startDownload()}
           disabled={
-            downloading || !preview || preview.entryCount === 0 || (!isAdp && selected.length === 0)
+            downloading ||
+            checking ||
+            !preview ||
+            preview.entryCount === 0 ||
+            (!isAdp && selected.length === 0)
           }
           className="mt-4 w-full rounded-lg bg-brand-600 px-4 py-3 text-base font-semibold text-white hover:bg-brand-700 disabled:opacity-60"
         >
-          {downloading
-            ? 'Preparing…'
-            : isAdp
-              ? 'Download ADP import file'
-              : `Download ${format === 'xlsx' ? 'Excel file' : 'CSV'}`}
+          {checking
+            ? 'Checking…'
+            : downloading
+              ? 'Preparing…'
+              : isAdp
+                ? 'Download ADP import file'
+                : `Download ${format === 'xlsx' ? 'Excel file' : 'CSV'}`}
         </button>
       </Card>
+
+      {exportCheck && (
+        <WarningsDialog
+          title="Before you export"
+          testId="export-check"
+          intro={`${preview?.totalHours ?? 0} hours for ${preview?.employeeCount ?? 0} ${
+            preview?.employeeCount === 1 ? 'person' : 'people'
+          }, about to go to payroll. Worth a look first:`}
+          sections={exportCheck.sections}
+          footnote="Nothing here stops the export. Fix any on the Timesheet first, or export anyway — every run is recorded below and can be voided."
+          confirmLabel="Export anyway"
+          onConfirm={() => {
+            setExportCheck(null);
+            void download();
+          }}
+          onClose={() => setExportCheck(null)}
+        />
+      )}
 
       <div className="mt-6">
         <h2 className="mb-2 text-sm font-semibold uppercase tracking-wide text-slate-500">

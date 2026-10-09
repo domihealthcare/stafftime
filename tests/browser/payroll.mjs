@@ -1,7 +1,7 @@
 import { chromium } from 'playwright';
 import { clockOut } from './clock-out.mjs';
 import { mkdirSync } from 'node:fs';
-import { goTo, openMenu } from './nav.mjs';
+import { goTo, openMenu, pressDownload } from './nav.mjs';
 // Screenshots go wherever the caller says, or into ./shots (gitignored).
 const OUT = process.argv[2] || new URL('./shots/', import.meta.url).pathname;
 mkdirSync(OUT, { recursive: true });
@@ -79,7 +79,7 @@ await page.screenshot({ path: `${OUT}/59-payroll-targets.png`, fullPage: true })
 await step('an export produces a file and is recorded', async () => {
   const [download] = await Promise.all([
     page.waitForEvent('download', { timeout: 30000 }),
-    page.getByRole('button', { name: /Download Excel file/ }).click(),
+    pressDownload(page, /Download Excel file/),
   ]);
   if (!download.suggestedFilename().endsWith('.xlsx'))
     throw new Error(`downloaded ${download.suggestedFilename()}`);
