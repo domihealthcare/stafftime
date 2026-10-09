@@ -70,6 +70,7 @@ describe('PunchRemindersService', () => {
         notifications as never,
         autoClockOut as never,
         lunchNotices as never,
+        { send: jest.fn().mockResolvedValue(0) } as never,
       ),
       autoClockOut,
       prisma,
@@ -85,6 +86,7 @@ describe('PunchRemindersService', () => {
       clockIn: 0,
       clockOut: 0,
       lunchNotices: 0,
+      licenseReminders: 0,
     });
     expect(autoClockOut.closeForgotten).toHaveBeenCalledWith({ now });
     // Before looking for shifts nobody has clocked in for.
@@ -102,6 +104,7 @@ describe('PunchRemindersService', () => {
         clockIn: 1,
         clockOut: 0,
         lunchNotices: 0,
+        licenseReminders: 0,
       });
       expect(prisma.punchReminder.create).toHaveBeenCalledWith({
         data: { shiftId: 'shift-nine', kind: 'CLOCK_IN' },
@@ -138,6 +141,7 @@ describe('PunchRemindersService', () => {
         clockIn: 0,
         clockOut: 0,
         lunchNotices: 0,
+        licenseReminders: 0,
       });
       expect(notifications.missedClockIn).not.toHaveBeenCalled();
       expect(prisma.punchReminder.create).not.toHaveBeenCalled();
@@ -204,6 +208,7 @@ describe('PunchRemindersService', () => {
         clockIn: 0,
         clockOut: 0,
         lunchNotices: 0,
+        licenseReminders: 0,
       });
       expect(notifications.missedClockIn).not.toHaveBeenCalled();
     });
@@ -231,6 +236,7 @@ describe('PunchRemindersService', () => {
         clockIn: 0,
         clockOut: 1,
         lunchNotices: 0,
+        licenseReminders: 0,
       });
       expect(prisma.punchReminder.create).toHaveBeenCalledWith({
         data: { shiftId: 'shift-early', kind: 'CLOCK_OUT' },

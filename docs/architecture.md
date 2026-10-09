@@ -2967,6 +2967,35 @@ on the Timesheet banner and in the nightly email, with no time limit. The
 manager who entered it cannot mark it looked into: the list is there so a
 second person sees each one. Staff see their own hand-entered days, and why.
 
+## Reminders to the license holder
+
+October 2026, Dominguez — the eighth "make it smarter" idea. Managers were
+told about lapsing licenses (the nightly round-up, the Licenses banner); the
+person whose license it was heard nothing, so every renewal was a manager
+chasing. Now the holder is reminded too, on the bell and by email
+(`NotificationKind.LICENSE_REMINDER`, linking to `/credentials`, which shows
+staff their own), at three moments for a given expiry date: **60 days** to go,
+**30 days** to go, and **lapsed** — for up to 30 days after, so a card that ran
+out long ago and was never archived is left to the managers' list rather than
+turning up as a surprise. Only the most pressing stage that applies is sent: a
+license first seen 10 days out gets the 30-day reminder, not both.
+
+Each is said **once**: a `CredentialReminder` row (credential, stage, expiry
+date) is written before the message goes, unique on all three, so a second run
+sends nothing — and a renewal entered as a new expiry date starts the
+reminders again for that date. An old card with a **newer one of the same kind
+recorded beside it** (same type, or the same name, so a renewal typed in by
+hand counts) is skipped, as the Licenses screen's standing does. Current staff
+only; archived credentials never.
+
+Run by the five-minute timer (`PunchRemindersService.run`, so the messages
+arrive in the day, 6am–midnight) and by the nightly job as the fallback if the
+outside timer stops; the claim makes running both harmless. Rules in
+`credentials/license-reminders.ts` (pure, tested), sending in
+`maintenance/license-reminders.service.ts`; migration
+`20261009010000_license_reminders` is additive (a table, an enum and a
+notification kind). `tests/browser/license-reminders.mjs`.
+
 ## License types and who needs them
 
 Asked for by Dominguez (29 September 2026): providers all need a medical

@@ -259,6 +259,32 @@ export class NotificationsService {
     ]);
   }
 
+  /// "Your DEA expires in 30 days" — to the person whose license it is (see
+  /// `credentials/license-reminders.ts`). Managers already hear it in the
+  /// nightly round-up; this is so the holder can renew before being chased.
+  async licenseReminder(employeeId: string, words: { title: string; body: string }): Promise<void> {
+    const employee = await this.prisma.employee.findUnique({
+      where: { id: employeeId },
+      select: { email: true, firstName: true, preferredName: true },
+    });
+    if (!employee) return;
+
+    await this.inbox.notify([employeeId], {
+      kind: NotificationKind.LICENSE_REMINDER,
+      title: words.title,
+      body: words.body,
+      link: '/credentials',
+    });
+
+    await this.dispatch(employee.email, words.title, [
+      `Hello ${employee.preferredName ?? employee.firstName},`,
+      '',
+      words.body,
+      '',
+      `Your licenses and their dates: ${this.appUrl}/credentials`,
+    ]);
+  }
+
   /// "You were clocked out automatically" — still clocked in at midnight (see
   /// `time-entries/auto-clock-out.service.ts`). A warning: the clock-out time
   /// is almost certainly wrong, and only they know the right one.

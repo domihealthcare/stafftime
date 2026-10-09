@@ -5,6 +5,7 @@ import { DigestService } from '../email/digest.service';
 import { EventsService } from '../events/events.service';
 import { CalendarInvitesService } from '../invites/invites.service';
 import { InboxService } from '../email/inbox.service';
+import { LicenseRemindersService } from './license-reminders.service';
 import { SessionService } from '../auth/session.service';
 import { ShiftPlanningService } from '../shifts/shift-planning.service';
 import { PrismaService } from '../prisma/prisma.service';
@@ -42,6 +43,8 @@ export interface PurgeReport {
   calendarInvites: number;
   /// Punches still open from yesterday, clocked out at midnight.
   autoClockedOut: number;
+  /// People reminded that a license of theirs runs out soon, or has.
+  licenseReminders: number;
 }
 
 /**
@@ -70,6 +73,7 @@ export class MaintenanceService {
     private readonly invites: CalendarInvitesService,
     private readonly planning: ShiftPlanningService,
     private readonly autoClockOut: AutoClockOutService,
+    private readonly licenseReminders: LicenseRemindersService,
   ) {}
 
   async purge(): Promise<PurgeReport> {
@@ -87,6 +91,7 @@ export class MaintenanceService {
       standingShifts: await this.extendStandingShifts(),
       digestSentTo: await this.sendDigest(),
       eventReminders: await this.remindAboutTomorrow(),
+      licenseReminders: await this.remindAboutLicenses(),
       calendarInvites: await this.sendCalendarInvites(),
     };
 
@@ -142,6 +147,19 @@ export class MaintenanceService {
     } catch (error) {
       this.logger.error(
         `Could not extend standing shifts: ${error instanceof Error ? error.message : error}`,
+      );
+      return 0;
+    }
+  }
+
+  /// People whose own license runs out soon, or has (October 2026). Like the
+  /// digest, never allowed to fail the tidying up.
+  private async remindAboutLicenses(): Promise<number> {
+    try {
+      return await this.licenseReminders.send();
+    } catch (error) {
+      this.logger.error(
+        `Could not send license reminders: ${error instanceof Error ? error.message : error}`,
       );
       return 0;
     }

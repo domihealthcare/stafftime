@@ -245,7 +245,7 @@ model Employee {
   /// and one admin does not need all three chasing the same lapsed licence, and
   /// an unwanted daily email is one that gets filtered, taking the one that
   /// mattered with it. Ignored for employees, who never receive it.
-  wantsDailyDigest Boolean @default(true)
+  wantsDailyDigest  Boolean       @default(true)
   /// The parts of the round-up this manager does not want (October 2026,
   /// Dominguez: "certain managers should be notified of certain things").
   /// Stored as what is left out, so a part added later reaches everybody until
@@ -1234,18 +1234,48 @@ model EmployeeCredential {
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
 
-  employee         Employee        @relation("CredentialSubject", fields: [employeeId], references: [id], onDelete: Cascade)
-  recordedBy       Employee?       @relation("CredentialRecordedBy", fields: [recordedById], references: [id], onDelete: SetNull)
+  employee         Employee             @relation("CredentialSubject", fields: [employeeId], references: [id], onDelete: Cascade)
+  recordedBy       Employee?            @relation("CredentialRecordedBy", fields: [recordedById], references: [id], onDelete: SetNull)
   /// Which of the practice's license types this is, when it is one of them.
   /// Null for something recorded free-hand, and for everything recorded
   /// before license types existed.
-  credentialTypeId String?         @db.Uuid
-  credentialType   CredentialType? @relation(fields: [credentialTypeId], references: [id], onDelete: SetNull)
+  credentialTypeId String?              @db.Uuid
+  credentialType   CredentialType?      @relation(fields: [credentialTypeId], references: [id], onDelete: SetNull)
+  reminders        CredentialReminder[]
 
   @@index([employeeId, archivedAt])
   /// The query the whole feature exists for: what expires next.
   @@index([expiresOn, archivedAt])
   @@map("employee_credentials")
+}
+
+/// How near a credential is to running out when its holder is reminded
+/// (October 2026, Dominguez — making the app smarter).
+enum CredentialReminderStage {
+  /// 60 days or fewer to go.
+  DAYS_60
+  /// 30 days or fewer to go.
+  DAYS_30
+  /// Past its expiry date (reminded up to 30 days after).
+  LAPSED
+}
+
+/// A reminder sent to the person whose license it is, so each stage is said
+/// once. Keyed by the expiry date as it was: a renewal entered as a new date
+/// starts the reminders again for that date. Written before the message goes,
+/// so two runs at once cannot both send it. See
+/// `credentials/license-reminders.ts`.
+model CredentialReminder {
+  id           String                  @id @default(uuid()) @db.Uuid
+  credentialId String                  @db.Uuid
+  stage        CredentialReminderStage
+  expiresOn    DateTime                @db.Date
+  sentAt       DateTime                @default(now())
+
+  credential EmployeeCredential @relation(fields: [credentialId], references: [id], onDelete: Cascade)
+
+  @@unique([credentialId, stage, expiresOn])
+  @@map("credential_reminders")
 }
 
 /// A license or certificate the practice asks for — "DEA registration",
@@ -1997,6 +2027,8 @@ enum NotificationKind {
   PUNCH_REMINDER
   /// An admin put up your profile photo for you.
   PROFILE_PHOTO
+  /// Your license or certificate runs out soon, or has.
+  LICENSE_REMINDER
 }
 
 /// Something the app wants one person to know, shown under the bell in the

@@ -11,6 +11,7 @@ import {
 import { NotificationsService } from '../email/notifications.service';
 import { AutoClockOutService } from '../time-entries/auto-clock-out.service';
 import { LunchNoticesService } from '../events/lunch-notices.service';
+import { LicenseRemindersService } from './license-reminders.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { localDateIn, PRACTICE_ZONE } from '../common/util/zoned-time.util';
 import { toUtcDate } from '../common/util/calendar-date.util';
@@ -44,6 +45,9 @@ export interface PunchReminderReport {
   /// Offices told this evening about tomorrow's rep lunch, or that there is
   /// none — see `LunchNoticesService`.
   lunchNotices: number;
+  /// People told a license of theirs runs out soon, or has — see
+  /// `LicenseRemindersService`. Also run nightly; each is sent once.
+  licenseReminders: number;
 }
 
 /**
@@ -70,6 +74,7 @@ export class PunchRemindersService {
     private readonly notifications: NotificationsService,
     private readonly autoClockOut: AutoClockOutService,
     private readonly lunchNotices: LunchNoticesService,
+    private readonly licenseReminders: LicenseRemindersService,
   ) {}
 
   async run(now: Date = new Date()): Promise<PunchReminderReport> {
@@ -81,6 +86,9 @@ export class PunchRemindersService {
       clockOut: await this.remindToClockOut(now),
       // In the evening: tomorrow's rep lunch, or none, to each office.
       lunchNotices: await this.lunchNotices.send(now),
+      // During the day rather than with the 5am round-up; the nightly job
+      // sends any this timer missed.
+      licenseReminders: await this.licenseReminders.send(now),
     };
     if (report.clockIn || report.clockOut) {
       this.logger.log(`Reminded ${report.clockIn} to clock in and ${report.clockOut} to clock out`);
