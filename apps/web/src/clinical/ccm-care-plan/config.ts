@@ -327,3 +327,14 @@ export const LETTERHEAD = {
   phone: '201-528-3664',
   fax: '201-528-3662',
 };
+
+/// The provider who reviews and signs every care plan, whoever prepares it
+/// (Dominguez, October 2026). The person signed in is printed as Prepared by;
+/// the care plan carries this provider's electronic signature — his choice,
+/// made knowing the PDF is made before he has seen it (Dominguez, 9 October
+/// 2026).
+export const REVIEWING_PROVIDER = {
+  firstName: 'Jonathan',
+  lastName: 'Dominguez',
+  credentials: 'MD',
+};

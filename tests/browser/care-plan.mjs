@@ -97,6 +97,8 @@ page.on('request', (request) => requests.push({ url: request.url(), body: reques
 await step('it is prepared by the person signed in, and starts on today', async () => {
   const line = await page.getByTestId('preparer-line').innerText();
   if (!/Prepared by .+/.test(line)) throw new Error(`preparer line: "${line}"`);
+  if (!line.includes('Reviewed and signed by Jonathan Dominguez, MD'))
+    throw new Error(`no reviewing provider: "${line}"`);
   const date = await section('patient').getByLabel(/Conducted on/).inputValue();
   if (date !== today) throw new Error(`starts on ${date}`);
 });
@@ -277,6 +279,11 @@ await step('the whole form, filled in with a fake patient, makes one PDF in both
     'Diabetes Mellitus Care Plan',
     'Electronically signed by',
     'Firmado electrónicamente por',
+    // Prepared by the person signed in; signed by Dr. Dominguez.
+    'Reviewing provider',
+    'Proveedor que revisa',
+    'Electronically signed by Jonathan Dominguez, MD on',
+    'Firmado electrónicamente por Jonathan Dominguez, MD el',
     'Tingling in feet',
     // And again in Spanish.
     'Plan de Atención General',

@@ -1,6 +1,6 @@
 import { pdfFilename, practiceTimestamp, usDate } from '../common/dates';
 import { PdfWriter } from '../common/pdf-writer';
-import { LETTERHEAD, type Language, type PdfLanguage } from './config';
+import { LETTERHEAD, REVIEWING_PROVIDER, type Language, type PdfLanguage } from './config';
 import type { CarePlanForm } from './form';
 import { WORDS, carePlanText } from './text';
 
@@ -20,6 +20,19 @@ export interface Preparer {
 
 export const preparerName = (preparer: Preparer) =>
   preparer.credentials ? `${preparer.name}, ${preparer.credentials}` : preparer.name;
+
+/// "Jonathan Dominguez, MD" — who reviews and signs every care plan, and
+/// whose electronic signature it carries, whoever prepared it.
+export const reviewingProviderName = () =>
+  preparerName({
+    name: `${REVIEWING_PROVIDER.firstName} ${REVIEWING_PROVIDER.lastName}`,
+    credentials: REVIEWING_PROVIDER.credentials,
+  });
+
+/// Whether the person signed in is the reviewing provider himself.
+export const isReviewingProvider = (person: { firstName: string; lastName: string }) =>
+  person.firstName.trim().toLowerCase() === REVIEWING_PROVIDER.firstName.toLowerCase() &&
+  person.lastName.trim().toLowerCase() === REVIEWING_PROVIDER.lastName.toLowerCase();
 
 /// "10-01-2026 Care Plan.pdf", by the date it was done — just "Care Plan",
 /// since the practice uses it for APCM as well as CCM (Dominguez).
@@ -68,7 +81,8 @@ function write(
   preparedBy: string,
   signedAt: string,
 ) {
-  const text = carePlanText(form, language, preparedBy);
+  const words = WORDS[language];
+  const text = carePlanText(form, language, preparedBy, reviewingProviderName());
 
   pdf.title(text.title);
   for (const [label, value] of text.patientRows) pdf.field(label, value);
@@ -98,9 +112,11 @@ function write(
     }
   }
 
-  // Signed electronically by whoever made it — the person signed in
-  // (Dominguez, October 2026) — in each language's half.
-  pdf.keep(60);
+  // Prepared by the person signed in, and electronically signed by Dr.
+  // Dominguez, whoever prepared it (Dominguez, October 2026) — in each
+  // language's half.
+  pdf.keep(80);
   pdf.gap(12);
-  pdf.field(WORDS[language].signature, WORDS[language].signedBy(preparedBy, signedAt));
+  pdf.field(words.preparedBy, preparedBy);
+  pdf.field(words.signature, words.signedBy(reviewingProviderName(), signedAt));
 }

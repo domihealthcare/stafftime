@@ -1158,7 +1158,12 @@ Beyond the phases, the parts worth knowing about before picking up work:
   practice uses it for **APCM** as well as CCM; first renamed "Care plan",
   then "APCM Care Plan" the same week): on Resources → Forms, the page
   heading and Help. The downloaded file is still *Care Plan* (not asked to
-  change), and the code keeps `ccm-care-plan/`. **"BrainCheck Care Plan"** is
+  change), and the code keeps `ccm-care-plan/`. **Signed by Dr. Jonathan
+  Dominguez** (9 October 2026, Dominguez): the person signed in is printed
+  as **Prepared by**; the PDF names him as **Reviewing provider** and
+  carries **his** electronic signature, whoever prepared it — his choice,
+  knowing the PDF is made before he has reviewed it. `REVIEWING_PROVIDER`
+  in `ccm-care-plan/config.ts`. **"BrainCheck Care Plan"** is
   written with capitals wherever it is a name (Resources, the page, Help, Job
   roles).
 - **Annual Wellness Visit** (1 October 2026, Dominguez — the practice's

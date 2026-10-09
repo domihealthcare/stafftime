@@ -19,7 +19,14 @@ import { savePdf, useLeaveGuard } from '../common/leave-guard';
 import { NEEDS_NATIVE_SPEAKER_REVIEW, type VitalKey } from './config';
 import { conditionOf, conditionTitle } from './conditions';
 import { emptyForm, planFor, type CarePlanForm, type ConditionPlan } from './form';
-import { carePlanFilename, carePlanPdf, preparerName, type Preparer } from './pdf';
+import {
+  carePlanFilename,
+  carePlanPdf,
+  isReviewingProvider,
+  preparerName,
+  reviewingProviderName,
+  type Preparer,
+} from './pdf';
 import {
   ConditionPlanSection,
   ConditionsSection,
@@ -65,7 +72,7 @@ function CarePlanScreen({ employee }: { employee: Employee }) {
   const [prefix] = useState(() => `cp${Math.random().toString(36).slice(2, 8)}`);
   const idFor = useCallback((path: string) => `${prefix}-${path.replace(/[.:]/g, '-')}`, [prefix]);
 
-  // Always the person signed in.
+  // Always the person signed in; Dr. Dominguez reviews and signs it.
   const preparer: Preparer = useMemo(
     () => ({
       name: `${employee.firstName} ${employee.lastName}`,
@@ -73,6 +80,10 @@ function CarePlanScreen({ employee }: { employee: Employee }) {
     }),
     [employee.firstName, employee.lastName, employee.postNominals],
   );
+  const isTheProvider = isReviewingProvider({
+    firstName: employee.firstName,
+    lastName: employee.lastName,
+  });
 
   const [form, setForm] = useState<CarePlanForm>(() => emptyForm(localDate(new Date())));
   const [untouched, setUntouched] = useState(() => JSON.stringify(form));
@@ -238,7 +249,12 @@ function CarePlanScreen({ employee }: { employee: Employee }) {
 
         <div className="space-y-4">
           <FormSection {...sectionProps('patient')} label="1" title="Patient">
-            <PatientSection form={form} update={update} preparedBy={preparerName(preparer)} />
+            <PatientSection
+              form={form}
+              update={update}
+              preparedBy={preparerName(preparer)}
+              reviewedBy={isTheProvider ? null : reviewingProviderName()}
+            />
           </FormSection>
           <FormSection {...sectionProps('general')} label="2" title="General care plan">
             <GeneralSection form={form} update={update} />
@@ -309,7 +325,7 @@ function CarePlanScreen({ employee }: { employee: Employee }) {
                 label="Download the care plan"
                 detail={`For eCW Documents and the patient — ${
                   form.pdfLanguage === 'both' ? 'English and Spanish' : 'English'
-                }, signed electronically in your name. Print it from the PDF.`}
+                }, prepared by you and signed electronically by ${reviewingProviderName()}. Print it from the PDF.`}
                 making={making}
                 disabled={making}
                 done={downloaded}

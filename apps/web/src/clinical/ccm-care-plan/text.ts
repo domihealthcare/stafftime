@@ -54,6 +54,7 @@ export const WORDS = {
     dob: 'Date of Birth',
     language: 'Primary Language',
     preparedBy: 'Prepared by',
+    reviewingProvider: 'Reviewing provider',
     general: 'General Care Plan',
     providers: 'Providers include:',
     vitals: 'Vitals/Labs',
@@ -76,6 +77,7 @@ export const WORDS = {
     dob: 'Fecha de nacimiento',
     language: 'Idioma principal',
     preparedBy: 'Preparado por',
+    reviewingProvider: 'Proveedor que revisa',
     general: 'Plan de Atención General',
     providers: 'Proveedores incluyen:',
     vitals: 'Signos Vitales/Laboratorios',
@@ -382,6 +384,7 @@ export function carePlanText(
   form: CarePlanForm,
   language: Language,
   preparedBy: string,
+  reviewingProvider: string,
 ): CarePlanText {
   const words = WORDS[language];
   const { patient, vitals } = form;
@@ -410,6 +413,7 @@ export function carePlanText(
       [words.dob, language === 'es' ? longDate(patient.dob, 'es') : usDate(patient.dob)],
       [words.language, primary],
       [words.preparedBy, preparedBy],
+      [words.reviewingProvider, reviewingProvider],
     ],
     generalHeading: words.general,
     general: generalSentences(form, language),
