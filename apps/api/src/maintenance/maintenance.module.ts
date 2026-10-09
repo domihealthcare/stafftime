@@ -5,12 +5,13 @@ import { EventsModule } from '../events/events.module';
 import { ShiftsModule } from '../shifts/shifts.module';
 import { TimeEntriesModule } from '../time-entries/time-entries.module';
 import { MaintenanceController } from './maintenance.controller';
+import { LicenseRemindersService } from './license-reminders.service';
 import { MaintenanceService } from './maintenance.service';
 import { PunchRemindersService } from './punch-reminders.service';
 
 @Module({
   imports: [AuthModule, EmailModule, EventsModule, ShiftsModule, TimeEntriesModule],
   controllers: [MaintenanceController],
-  providers: [MaintenanceService, PunchRemindersService],
+  providers: [MaintenanceService, PunchRemindersService, LicenseRemindersService],
 })
 export class MaintenanceModule {}

@@ -562,6 +562,17 @@ Beyond the phases, the parts worth knowing about before picking up work:
   (every status in the period, plus the export's own build); the pop-up is
   `components/WarningsDialog.tsx`, shared with Before you publish.
   `tests/browser/export-check.mjs`.
+- **License reminders to the holder** (9 October 2026, Dominguez — the
+  eighth "smarter" idea): the person whose license or certificate runs out is
+  told on the bell and by email at **60 days**, **30 days** and **once
+  lapsed** (up to 30 days after), each **once** for a given expiry date
+  (`CredentialReminder`, claimed before sending; a new expiry date starts
+  again). Only the most pressing stage that applies; an old card with a newer
+  one of the same kind beside it is skipped. Managers' round-up unchanged.
+  Run by the five-minute timer and, as a fallback, the nightly job.
+  `credentials/license-reminders.ts`, `maintenance/license-reminders.service.ts`,
+  migration `20261009010000_license_reminders`;
+  `tests/browser/license-reminders.mjs`.
 - **Time off on a staff profile, condensed** (8 October 2026, Dominguez:
   "shouldn't be this big … maybe just a pop up"): the profile shows what is
   left, the next day off and what is waiting; **See all N on file** opens

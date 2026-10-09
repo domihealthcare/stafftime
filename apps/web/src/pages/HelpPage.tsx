@@ -585,6 +585,17 @@ const STAFF: Section[] = [
         ),
       },
       {
+        question: 'I was told my license is running out.',
+        answer: (
+          <p>
+            When a license or certificate of yours runs out in 60 days, again at 30 days, and if it
+            lapses, you get a note under the bell and an email — once each. The bell note opens your
+            licenses with their dates. Once it is renewed, give a manager the new expiry date; they
+            enter it, and the reminders start again from the new date.
+          </p>
+        ),
+      },
+      {
         question: 'How do I change my password?',
         answer: (
           <p>
@@ -1462,7 +1473,10 @@ const MANAGERS: Section[] = [
         answer: (
           <p>
             <Screen>Manage → Licenses</Screen> opens on what lapses in the next 60 days. Record the
-            expiry date only; press <strong>Renew</strong> to put in the new date.
+            expiry date only; press <strong>Renew</strong> to put in the new date. The person whose
+            license it is hears about it too — under the bell and by email, at 60 days, at 30 days
+            and once it lapses — so they can renew before you have to chase them. An old card with a
+            newer one recorded beside it is not mentioned.
           </p>
         ),
       },

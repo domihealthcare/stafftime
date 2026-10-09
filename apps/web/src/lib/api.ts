@@ -431,7 +431,8 @@ export interface AppNotification {
     | 'EVENT'
     | 'PRODUCTIVITY'
     | 'PUNCH_REMINDER'
-    | 'PROFILE_PHOTO';
+    | 'PROFILE_PHOTO'
+    | 'LICENSE_REMINDER';
   title: string;
   body: string | null;
   link: string | null;
