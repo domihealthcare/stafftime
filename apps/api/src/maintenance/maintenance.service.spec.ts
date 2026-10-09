@@ -24,6 +24,7 @@ describe('MaintenanceService', () => {
     const planning = { extendStandingShifts: jest.fn().mockResolvedValue(8) };
     const autoClockOut = { closeForgotten: jest.fn().mockResolvedValue(2) };
     const licenseReminders = { send: jest.fn().mockResolvedValue(5) };
+    const onboardingReminders = { send: jest.fn().mockResolvedValue(3) };
 
     return {
       service: new MaintenanceService(
@@ -38,6 +39,7 @@ describe('MaintenanceService', () => {
         planning as never,
         autoClockOut as never,
         licenseReminders as never,
+        onboardingReminders as never,
       ),
       prisma,
       sessions,
@@ -49,6 +51,7 @@ describe('MaintenanceService', () => {
       planning,
       autoClockOut,
       licenseReminders,
+      onboardingReminders,
     };
   }
 
@@ -68,6 +71,7 @@ describe('MaintenanceService', () => {
       calendarInvites: 4,
       autoClockedOut: 2,
       licenseReminders: 5,
+      onboardingReminders: 3,
     });
   });
 

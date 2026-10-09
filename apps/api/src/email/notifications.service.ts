@@ -285,6 +285,34 @@ export class NotificationsService {
     ]);
   }
 
+  /// A task of theirs on their onboarding checklist is due soon or overdue
+  /// (see `checklists/onboarding-reminders.ts`). One message for all of them.
+  async onboardingReminder(
+    employeeId: string,
+    words: { title: string; body: string },
+  ): Promise<void> {
+    const employee = await this.prisma.employee.findUnique({
+      where: { id: employeeId },
+      select: { email: true, firstName: true, preferredName: true },
+    });
+    if (!employee) return;
+
+    await this.inbox.notify([employeeId], {
+      kind: NotificationKind.ONBOARDING_REMINDER,
+      title: words.title,
+      body: words.body,
+      link: '/checklists',
+    });
+
+    await this.dispatch(employee.email, words.title, [
+      `Hello ${employee.preferredName ?? employee.firstName},`,
+      '',
+      words.body,
+      '',
+      `Your onboarding checklist: ${this.appUrl}/checklists`,
+    ]);
+  }
+
   /// "You were clocked out automatically" — still clocked in at midnight (see
   /// `time-entries/auto-clock-out.service.ts`). A warning: the clock-out time
   /// is almost certainly wrong, and only they know the right one.

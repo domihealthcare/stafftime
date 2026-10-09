@@ -583,6 +583,19 @@ Beyond the phases, the parts worth knowing about before picking up work:
   the Hours part — **managers only, never a banner**.
   `time-entries/overtime-forecast.ts` (one loader for both);
   `tests/browser/overtime-forecast.mjs`.
+- **Onboarding reminders to the new hire** (9 October 2026, Dominguez — the
+  tenth "smarter" idea): tasks on somebody's own **onboarding** checklist
+  that are **theirs to do** are reminded about on the bell and by email
+  **two days before** they are due and **once overdue** (up to two weeks
+  after, then it is the managers' list), each once for a given due date, all
+  of a person's in **one message**; nothing on the day the checklist starts.
+  The link opens their checklist, where they tick their own off — Front Desk
+  and MA included, though it is in no menu for them. Offboarding is left
+  out. Run by the five-minute timer and, as a fallback, the nightly job.
+  `checklists/onboarding-reminders.ts`,
+  `maintenance/onboarding-reminders.service.ts`, migration
+  `20261009020000_onboarding_reminders`;
+  `tests/browser/onboarding-reminders.mjs`.
 - **Time off on a staff profile, condensed** (8 October 2026, Dominguez:
   "shouldn't be this big … maybe just a pop up"): the profile shows what is
   left, the next day off and what is waiting; **See all N on file** opens
@@ -1247,7 +1260,7 @@ Beyond the phases, the parts worth knowing about before picking up work:
   Counts only — never a patient (the schema guard pins the fields; the note is
   the one free-text box and says so). **Not in the payroll export** (decided). See *Provider
   productivity* in `docs/architecture.md`.
-- **Tests**: ~1,425 unit tests, and ~515 end-to-end checks in `tests/browser`
+- **Tests**: ~1,430 unit tests, and ~515 end-to-end checks in `tests/browser`
   driven against a real API, a real Postgres and a real Chromium. Both run in CI
   on every push. The convention is to run the browser suites twice — once
   against the dev server, once against `vite preview`, which applies the

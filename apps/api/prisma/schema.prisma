@@ -1019,12 +1019,38 @@ model EmployeeChecklistTask {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  checklist   EmployeeChecklist @relation(fields: [checklistId], references: [id], onDelete: Cascade)
-  completedBy Employee?         @relation("ChecklistTaskCompletedBy", fields: [completedById], references: [id], onDelete: SetNull)
+  checklist   EmployeeChecklist       @relation(fields: [checklistId], references: [id], onDelete: Cascade)
+  completedBy Employee?               @relation("ChecklistTaskCompletedBy", fields: [completedById], references: [id], onDelete: SetNull)
+  reminders   ChecklistTaskReminder[]
 
   @@index([checklistId, position])
   @@index([status, dueAt])
   @@map("employee_checklist_tasks")
+}
+
+enum ChecklistReminderStage {
+  /// Due today, tomorrow or the day after.
+  DUE_SOON
+  /// Past its due date (for two weeks; after that it is the managers' list).
+  OVERDUE
+}
+
+/// A reminder sent to the person about a task of theirs on their onboarding
+/// checklist, so each stage is said once. Keyed by the due date as it was: a
+/// task given a new date is reminded about again. Written before the message
+/// goes, so two runs at once cannot both send it. See
+/// `checklists/onboarding-reminders.ts`.
+model ChecklistTaskReminder {
+  id     String                 @id @default(uuid()) @db.Uuid
+  taskId String                 @db.Uuid
+  stage  ChecklistReminderStage
+  dueAt  DateTime               @db.Date
+  sentAt DateTime               @default(now())
+
+  task EmployeeChecklistTask @relation(fields: [taskId], references: [id], onDelete: Cascade)
+
+  @@unique([taskId, stage, dueAt])
+  @@map("checklist_task_reminders")
 }
 
 // ---------------------------------------------------------------------------
@@ -2029,6 +2055,8 @@ enum NotificationKind {
   PROFILE_PHOTO
   /// Your license or certificate runs out soon, or has.
   LICENSE_REMINDER
+  /// A task of yours on your onboarding checklist is due soon, or overdue.
+  ONBOARDING_REMINDER
 }
 
 /// Something the app wants one person to know, shown under the bell in the

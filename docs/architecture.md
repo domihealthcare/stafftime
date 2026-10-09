@@ -3029,6 +3029,44 @@ outside timer stops; the claim makes running both harmless. Rules in
 `20261009010000_license_reminders` is additive (a table, an enum and a
 notification kind). `tests/browser/license-reminders.mjs`.
 
+## Onboarding reminders to the new hire
+
+October 2026, Dominguez — the tenth "make it smarter" idea. When an
+onboarding checklist started, the person was told how many tasks were
+theirs (`CHECKLIST_STARTED`); after that only managers heard anything, in
+the nightly email once a task was already overdue. Now the new hire is
+reminded about **their own tasks** (`TaskOwner.EMPLOYEE`, still `PENDING`,
+with a due date, on an **onboarding** checklist still open, current staff
+only), on the bell and by email (`NotificationKind.ONBOARDING_REMINDER`,
+linking to `/checklists`), at two moments for a given due date: **due soon**
+(today, tomorrow or the day after) and **overdue** (for up to two weeks —
+after that it is the managers' overdue list, which already has it). Only the
+most pressing that applies, and **nothing on the day the checklist starts**,
+because the "has started" notice has just gone.
+
+**One message per person** per run: everything that came due for them goes
+in one ("2 of your onboarding tasks need doing", overdue first), worded by
+the task's own title. Each reminder is said **once**: a
+`ChecklistTaskReminder` row (task, stage, due date) is written before the
+message goes, unique on all three, so a second run sends nothing, and a task
+given a new due date is reminded about again.
+
+**Offboarding is left out** on purpose: the anchor is the last day, and
+reminding somebody who is leaving (or has left) about returning a laptop is
+the manager's conversation, not an automatic email.
+
+Front Desk and MA staff have no menu item for their own checklist
+(`seesOwnPersonnelTabs` is off for them), but `/checklists` shows anybody
+their own and lets them tick their own tasks, so the reminder's link works for
+everyone — the same link `CHECKLIST_STARTED` already used.
+
+Run by the five-minute timer (`PunchRemindersService.run`, so messages arrive
+in the day) and the nightly job as the fallback; the claim makes running both
+harmless. Rules in `checklists/onboarding-reminders.ts` (pure, tested),
+sending in `maintenance/onboarding-reminders.service.ts`; migration
+`20261009020000_onboarding_reminders` is additive (a table, an enum and a
+notification kind). `tests/browser/onboarding-reminders.mjs`.
+
 ## License types and who needs them
 
 Asked for by Dominguez (29 September 2026): providers all need a medical
