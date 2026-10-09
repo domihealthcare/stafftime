@@ -1,6 +1,6 @@
 import { useDialog } from './useDialog';
 import { REMOTE_COLOUR, locationColourFn, shiftChipStyle, tint } from '../lib/shift-colours';
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { birthdayName } from '../lib/birthday';
 import { ApiError, api } from '../lib/api';
 import {
@@ -1825,9 +1825,16 @@ function QuickAddDialog({
   /// Their usual for the day, filled in until the times are changed by hand.
   const usual = useUsualShift(row.person?.id ?? null, localDate(day));
   const [timesTouched, setTimesTouched] = useState(false);
+  // Also held in a ref, read synchronously: a usual that arrives a moment
+  // after somebody starts typing must never overwrite what they typed.
+  const touchedRef = useRef(false);
+  const touch = () => {
+    touchedRef.current = true;
+    setTimesTouched(true);
+  };
   const [usedUsual, setUsedUsual] = useState<UsualShift | null>(null);
   useEffect(() => {
-    if (!usual || timesTouched || !row.person) return;
+    if (!usual || touchedRef.current || !row.person) return;
     setStart(usual.startTime);
     setEnd(usual.endTime);
     // The place only when the row does not fix it, and only one of theirs.
@@ -1965,7 +1972,7 @@ function QuickAddDialog({
             required
             value={start}
             onChange={(event) => {
-              setTimesTouched(true);
+              touch();
               setStart(event.target.value);
             }}
             className={field}
@@ -1979,7 +1986,7 @@ function QuickAddDialog({
             required
             value={end}
             onChange={(event) => {
-              setTimesTouched(true);
+              touch();
               setEnd(event.target.value);
             }}
             className={field}
@@ -1999,7 +2006,7 @@ function QuickAddDialog({
             value={place}
             onChange={(next) => {
               // Chosen by hand: their usual no longer overrides it.
-              setTimesTouched(true);
+              touch();
               setPlace(next);
             }}
             offices={offices}

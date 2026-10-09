@@ -134,7 +134,8 @@ await step('manager sees everyone on the timesheet', async () => {
 await page.screenshot({ path: `${OUT}/05-timesheet-manager.png`, fullPage: true });
 
 await step('manager approves a completed entry', async () => {
-  const approve = page.getByRole('button', { name: 'Approve' }).first();
+  // Exactly "Approve": "Approve all N with nothing flagged" is above it.
+  const approve = page.getByRole('button', { name: 'Approve', exact: true }).first();
   await approve.click({ timeout: 10000 });
   await page.getByText('Approved').first().waitFor({ timeout: 10000 });
 });

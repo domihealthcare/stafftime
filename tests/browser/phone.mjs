@@ -173,7 +173,8 @@ for (const [label, screen] of [
 
 await step('a manager can approve hours without scrolling sideways to find the button', async () => {
   await (await navLink(page, 'Timesheet')).click();
-  const approve = page.getByRole('button', { name: 'Approve' }).first();
+  // Exactly "Approve": "Approve all N with nothing flagged" is above it.
+  const approve = page.getByRole('button', { name: 'Approve', exact: true }).first();
   await approve.waitFor({ timeout: 15000 });
 
   const box = await approve.boundingBox();

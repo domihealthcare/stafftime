@@ -1207,6 +1207,13 @@ function NewShiftForm({
   const [endsAt, setEndsAt] = useState(() => defaultInput(defaultDate, 17));
   /// Their usual for the day, filled in until the times are changed by hand.
   const [timesTouched, setTimesTouched] = useState(false);
+  // Also held in a ref, read synchronously: a usual that arrives a moment
+  // after somebody starts typing must never overwrite what they typed.
+  const touchedRef = useRef(false);
+  const touch = () => {
+    touchedRef.current = true;
+    setTimesTouched(true);
+  };
   const [usedUsual, setUsedUsual] = useState<UsualShift | null>(null);
   const usual = useUsualShift(
     employeeId && employeeId !== OPEN_SHIFT ? employeeId : null,
@@ -1214,7 +1221,7 @@ function NewShiftForm({
   );
   useEffect(() => {
     setUsedUsual(null);
-    if (!usual || timesTouched) return;
+    if (!usual || touchedRef.current) return;
     const date = startsAt.slice(0, 10);
     setStartsAt(`${date}T${usual.startTime}`);
     setEndsAt(`${usual.endTime > usual.startTime ? date : nextDay(date)}T${usual.endTime}`);
@@ -1357,7 +1364,7 @@ function NewShiftForm({
             value={place}
             onChange={(next) => {
               // Chosen by hand: their usual no longer overrides it.
-              setTimesTouched(true);
+              touch();
               setPlace(next);
             }}
             offices={availableLocations}
@@ -1384,7 +1391,7 @@ function NewShiftForm({
             onChange={(event) => {
               // A new date asks for that day's usual; new hours are the
               // manager's own from then on.
-              if (event.target.value.slice(11) !== startsAt.slice(11)) setTimesTouched(true);
+              if (event.target.value.slice(11) !== startsAt.slice(11)) touch();
               setStartsAt(event.target.value);
             }}
             className="mt-1 w-full rounded-lg border-slate-300 text-sm shadow-sm focus:border-brand-600 focus:ring-brand-600"
@@ -1401,7 +1408,7 @@ function NewShiftForm({
             required
             value={endsAt}
             onChange={(event) => {
-              setTimesTouched(true);
+              touch();
               setEndsAt(event.target.value);
             }}
             className="mt-1 w-full rounded-lg border-slate-300 text-sm shadow-sm focus:border-brand-600 focus:ring-brand-600"
