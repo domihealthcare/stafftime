@@ -6,6 +6,7 @@ import { EventsService } from '../events/events.service';
 import { CalendarInvitesService } from '../invites/invites.service';
 import { InboxService } from '../email/inbox.service';
 import { LicenseRemindersService } from './license-reminders.service';
+import { OnboardingRemindersService } from './onboarding-reminders.service';
 import { SessionService } from '../auth/session.service';
 import { ShiftPlanningService } from '../shifts/shift-planning.service';
 import { PrismaService } from '../prisma/prisma.service';
@@ -45,6 +46,8 @@ export interface PurgeReport {
   autoClockedOut: number;
   /// People reminded that a license of theirs runs out soon, or has.
   licenseReminders: number;
+  /// New hires reminded about onboarding tasks of theirs due soon or overdue.
+  onboardingReminders: number;
 }
 
 /**
@@ -74,6 +77,7 @@ export class MaintenanceService {
     private readonly planning: ShiftPlanningService,
     private readonly autoClockOut: AutoClockOutService,
     private readonly licenseReminders: LicenseRemindersService,
+    private readonly onboardingReminders: OnboardingRemindersService,
   ) {}
 
   async purge(): Promise<PurgeReport> {
@@ -92,6 +96,7 @@ export class MaintenanceService {
       digestSentTo: await this.sendDigest(),
       eventReminders: await this.remindAboutTomorrow(),
       licenseReminders: await this.remindAboutLicenses(),
+      onboardingReminders: await this.remindAboutOnboarding(),
       calendarInvites: await this.sendCalendarInvites(),
     };
 
@@ -160,6 +165,19 @@ export class MaintenanceService {
     } catch (error) {
       this.logger.error(
         `Could not send license reminders: ${error instanceof Error ? error.message : error}`,
+      );
+      return 0;
+    }
+  }
+
+  /// New hires whose own onboarding tasks are due soon or overdue (October
+  /// 2026). Like the digest, never allowed to fail the tidying up.
+  private async remindAboutOnboarding(): Promise<number> {
+    try {
+      return await this.onboardingReminders.send();
+    } catch (error) {
+      this.logger.error(
+        `Could not send onboarding reminders: ${error instanceof Error ? error.message : error}`,
       );
       return 0;
     }

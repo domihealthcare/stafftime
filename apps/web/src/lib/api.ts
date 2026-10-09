@@ -432,7 +432,8 @@ export interface AppNotification {
     | 'PRODUCTIVITY'
     | 'PUNCH_REMINDER'
     | 'PROFILE_PHOTO'
-    | 'LICENSE_REMINDER';
+    | 'LICENSE_REMINDER'
+    | 'ONBOARDING_REMINDER';
   title: string;
   body: string | null;
   link: string | null;

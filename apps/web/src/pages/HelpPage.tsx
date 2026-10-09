@@ -596,6 +596,18 @@ const STAFF: Section[] = [
         ),
       },
       {
+        question: 'I was reminded about an onboarding task.',
+        answer: (
+          <p>
+            When you start, some steps on your onboarding checklist are yours to do — reading the
+            handbook, giving an emergency contact. Two days before one is due, and once if it goes
+            past its date, you get a note under the bell and an email, with everything due in one
+            message. The note opens your checklist: tick the task off there once it is done. If
+            something is in the way, tell a manager.
+          </p>
+        ),
+      },
+      {
         question: 'How do I change my password?',
         answer: (
           <p>
@@ -1456,8 +1468,11 @@ const MANAGERS: Section[] = [
           <p>
             <Screen>Manage → Onboarding &amp; Offboarding</Screen> tracks each step for a new hire
             or a leaver — who did it and when. The paperwork itself stays in the personnel file;
-            nothing is uploaded here. Front Desk and MA staff do not see it, so tick their own tasks
-            for them; Providers see theirs in the account menu (Your onboarding).
+            nothing is uploaded here. Providers see theirs in the account menu (Your onboarding).
+            Front Desk and MA staff have it in no menu, so you can tick their tasks for them — but
+            anybody new is reminded about the tasks that are theirs two days before each is due and
+            once if it goes overdue, and the reminder opens their checklist so they can tick those
+            off themselves. The nightly email still lists overdue tasks for managers.
           </p>
         ),
       },
