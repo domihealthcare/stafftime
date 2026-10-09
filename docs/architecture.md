@@ -2831,6 +2831,34 @@ It **warns, never refuses**, like everything on the Schedule, and is never a
 banner. A role of one warns whenever its one person is off; whether that is
 useful or noise is Dominguez's call once it has run for a while.
 
+## Approving the clean hours in one go
+
+October 2026, Dominguez — the fifth "make it smarter" idea. Hours were
+approved one entry at a time, so a pay period for twenty people was a couple
+of hundred presses, nearly all on entries with nothing wrong with them. The
+Timesheet now has **Approve all N with nothing flagged** (managers): it counts
+the entries on screen — after the period, Day, Employee and `?person=`
+filters — that are closed, waiting on approval and carry no flag, asks once
+in the shared confirmation pop-up (how many, how many hours, how many flagged
+ones stay), and approves them.
+
+"Nothing flagged" is exactly "no badge on the timesheet":
+`CLEAN_ENTRY_WHERE` in `time-entries/clean-entry.ts` — status `COMPLETED`
+(not open, not `NEEDS_REVIEW`, not already approved), a clock-out, and every
+`is…` flag false, with no `autoClockedOutAt` and no `enteredByHandAt`. The
+browser sends the ids it counted (`POST /time-entries/approve-clean`, at most
+2,000), and the server approves those ids **that still match**, in one
+`updateMany`. So an entry edited by somebody else after the page was loaded
+(it is then "Edited") is left out rather than approved unseen, and the answer
+says how many were (`{ approved, left }`). A spec reads the `TimeEntry`
+model and fails if a new `is…` flag is not in the where clause — the easy way
+to break this is a new flag nobody adds here.
+
+Same rules as the single **Approve** otherwise: managers and admins, and
+nothing stops a manager approving their own hours (as with one at a time).
+Flagged entries keep their own Approve, and a midnight clock-out still needs
+the time corrected first. `tests/browser/approve-clean.mjs`.
+
 ## Hours entered by hand
 
 Asked for by Dominguez (29 September 2026), once there was no time clock:
