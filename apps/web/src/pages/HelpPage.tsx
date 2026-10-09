@@ -1,6 +1,7 @@
 import type { ReactNode } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { canUseCarePlan, canUseWellnessForm } from '../lib/clinical-access';
+import { textOf, type HelpTopicText } from '../lib/help-text';
 import { useIsManager, useSession } from '../lib/session';
 import { PASSWORD_RULE } from '../lib/password';
 import { PageHeading } from '../components/ui';
@@ -450,8 +451,8 @@ const STAFF: Section[] = [
             are never free (all day or between two times), or a single date. Nobody has to approve
             it. It only affects weeks whose schedule has not been published yet — a published week
             is fixed, so for a date inside one, talk to your manager or ask for time off. If it
-            clashes with a regular shift of yours, the managers are told, so they can sort the
-            shift out with you.
+            clashes with a regular shift of yours, the managers are told, so they can sort the shift
+            out with you.
           </p>
         ),
       },
@@ -482,11 +483,19 @@ const STAFF: Section[] = [
       {
         question: 'Where is the practice news?',
         answer: (
-          <p>
-            On <Screen>Home</Screen>, under the clock: the most important post in full, then the
-            latest few. <strong>All news</strong> lists every post, newest first (on a phone, News
-            is also under <Screen>More</Screen>).
-          </p>
+          <>
+            <p>
+              On <Screen>Home</Screen>, under the clock: the most important post in full, then the
+              latest few. <strong>All news</strong> lists every post, newest first (on a phone, News
+              is also under <Screen>More</Screen>).
+            </p>
+            <p>
+              To read it in Spanish, press <strong>Español</strong> beside it (
+              <strong>English</strong> to go back); your phone remembers the choice. A post the
+              office has not put into Spanish itself is translated automatically the first time
+              somebody asks, and says so. Polls and comments stay as they were written.
+            </p>
+          </>
         ),
       },
       {
@@ -616,13 +625,13 @@ const STAFF: Section[] = [
         answer: (
           <p>
             When it is switched on, <strong>Ask Domi Staff</strong> is on Home&rsquo;s Quick card:
-            ask in your own words — &ldquo;When am I next on?&rdquo;, &ldquo;How much PTO do I
-            have left?&rdquo;, &ldquo;Who is in at North Bergen?&rdquo; — and it answers from what
-            you can already see in the app. Answers come from Claude, an AI service run by
-            Anthropic, so your question and what it looks up for you are sent to it; nothing is
-            kept in Domi Staff, and leaving the page ends the conversation. It only looks things
-            up — it cannot change anything — and you can ask 40 questions a day. Never type
-            patient details into it.
+            ask in your own words — &ldquo;When am I next on?&rdquo;, &ldquo;How much PTO do I have
+            left?&rdquo;, &ldquo;Who is in at North Bergen?&rdquo;, &ldquo;How do I put the app on
+            my phone?&rdquo; — and it answers from what you can already see in the app and from this
+            Help guide. Answers come from Claude, an AI service run by Anthropic, so your question
+            and what it looks up for you are sent to it; nothing is kept in Domi Staff, and leaving
+            the page ends the conversation. It only looks things up — it cannot change anything —
+            and you can ask 40 questions a day. Never type patient details into it.
           </p>
         ),
       },
@@ -993,10 +1002,10 @@ const MANAGERS: Section[] = [
             When a published shift is over and the person never clocked in that day — not on
             approved time off, and the office was not closed — it is listed on the{' '}
             <Screen>Timesheet</Screen> banner, counted on the Dashboard and in the nightly email,
-            for two weeks. It goes once you have done whichever is true: <strong>+ Add hours</strong>{' '}
-            if they worked and forgot, record the time off if they were off, or remove the shift if
-            it should never have been on the rota. They were already reminded 15 minutes into the
-            shift.
+            for two weeks. It goes once you have done whichever is true:{' '}
+            <strong>+ Add hours</strong> if they worked and forgot, record the time off if they were
+            off, or remove the shift if it should never have been on the rota. They were already
+            reminded 15 minutes into the shift.
           </p>
         ),
       },
@@ -1069,8 +1078,8 @@ const MANAGERS: Section[] = [
               A new shift for somebody — the ＋ on the rota, or <strong>+ Add</strong> — starts on
               <strong> their usual</strong> for that day: their regular shift if they have one,
               otherwise the hours and office they have worked most often on that weekday lately (or
-              on any day, if that weekday has nothing settled). A line under the times says where
-              it came from. Change anything; once you change the hours or place yourself, they are
+              on any day, if that weekday has nothing settled). A line under the times says where it
+              came from. Change anything; once you change the hours or place yourself, they are
               yours. With nothing usual it starts on 9 to 5 as before.
             </li>
             <li>
@@ -1194,11 +1203,11 @@ const MANAGERS: Section[] = [
           <p>
             <Screen>Manage → Job roles</Screen> → <strong>Minimum on each day</strong>: the fewest
             people you want on in a job role at an office on a day it is open — say 2 Front Desk at
-            North Bergen. Blank means none. Where there is one, Too many off at once warns when
-            time off would leave fewer than that, and days the rota leaves short (drafts counted;
-            working from home and open shifts not) are listed on the Schedule banner and in the
-            nightly email for the next two weeks, and in <strong>Before you publish</strong>. A day
-            counts once anything is on the rota at that office, so an unbuilt week is left to the
+            North Bergen. Blank means none. Where there is one, Too many off at once warns when time
+            off would leave fewer than that, and days the rota leaves short (drafts counted; working
+            from home and open shifts not) are listed on the Schedule banner and in the nightly
+            email for the next two weeks, and in <strong>Before you publish</strong>. A day counts
+            once anything is on the rota at that office, so an unbuilt week is left to the
             &ldquo;not published yet&rdquo; reminder. It never stops anything.
           </p>
         ),
@@ -1221,14 +1230,14 @@ const MANAGERS: Section[] = [
         answer: (
           <p>
             The rota warns when the <em>schedule</em> takes somebody past the overtime line, but
-            clocking in early and staying late add up too. On the <strong>Dashboard</strong>, and
-            in the nightly email under Hours, is everybody paid by the hour whose hours{' '}
+            clocking in early and staying late add up too. On the <strong>Dashboard</strong>, and in
+            the nightly email under Hours, is everybody paid by the hour whose hours{' '}
             <strong>worked so far this week</strong> plus what the rota{' '}
-            <strong>still has them down for</strong> come to more than the line — in time to
-            shorten a later shift. It shows what the rota alone would have been, so you can tell
-            whether the overtime is the rota&rsquo;s or the extra minutes&rsquo;. Somebody still
-            clocked in counts up to now; a clock-out the app made at midnight is left out until it
-            is corrected. Only managers see it, and it is never a banner.
+            <strong>still has them down for</strong> come to more than the line — in time to shorten
+            a later shift. It shows what the rota alone would have been, so you can tell whether the
+            overtime is the rota&rsquo;s or the extra minutes&rsquo;. Somebody still clocked in
+            counts up to now; a clock-out the app made at midnight is left out until it is
+            corrected. Only managers see it, and it is never a banner.
           </p>
         ),
       },
@@ -1300,9 +1309,8 @@ const MANAGERS: Section[] = [
             Memorial Day, Labor Day, MLK Day, Presidents&rsquo; Day, Columbus Day, Election Day,
             Good Friday, Easter), which go to their own day, recognised by name. Afterwards it lists
             what moved and any fixed holiday that lands on a weekend, so you can decide which day
-            the office takes instead. Closures do
-            not change pay: holiday pay is not set up. A day that is marked but{' '}
-            <strong>shuts nothing</strong> — Election Day, Black Friday — is a{' '}
+            the office takes instead. Closures do not change pay: holiday pay is not set up. A day
+            that is marked but <strong>shuts nothing</strong> — Election Day, Black Friday — is a{' '}
             <strong>holiday</strong> instead (<strong>+ Add holiday</strong>): everyone sees it on
             the calendar, nobody is notified and no shift is flagged. Copy into next year takes
             holidays too.
@@ -1312,22 +1320,32 @@ const MANAGERS: Section[] = [
       {
         question: 'Rep lunches and the rep list',
         answer: (
-          <p>
-            Keep the reps under <Screen>Manage → Reps</Screen>: name, cell phone, company,
-            medication, whether they bring catering or the office orders, a status (Preferred, OK to
-            book, Has restrictions, Don&rsquo;t book) and notes. Then on{' '}
-            <Screen>Schedule → Calendar</Screen> choose <strong>+ Add → Rep lunch</strong>, pick the
-            rep, the office and the time; it is named after the rep. A rep marked{' '}
-            <strong>Don&rsquo;t book</strong> asks you to confirm first, and a rep with restrictions
-            shows their notes as you pick them. Everyone sees the lunch with the rep, company,
-            medication and food; the front desk also sees the rep&rsquo;s cell phone (a job role
-            setting, under Manage → Job roles); the status and notes are for managers only. Staff at
-            that office are told when a lunch is added, moved or cancelled, and{' '}
-            <strong>every evening at 6pm</strong> hear whether there is a rep lunch there the next
-            day — or that there is none, so they bring their own. That evening notice goes only for
-            days somebody is scheduled at the office and it is not closed. Correcting a rep&rsquo;s
-            name renames their lunches too.
-          </p>
+          <>
+            <p>
+              Keep the reps under <Screen>Manage → Reps</Screen>: name, cell phone, company,
+              medication, whether they bring catering or the office orders, a status (Preferred, OK
+              to book, Has restrictions, Don&rsquo;t book) and notes. Then on{' '}
+              <Screen>Schedule → Calendar</Screen> choose <strong>+ Add → Rep lunch</strong>, pick
+              the rep, the office and the time; it is named after the rep. A rep marked{' '}
+              <strong>Don&rsquo;t book</strong> asks you to confirm first, and a rep with
+              restrictions shows their notes as you pick them. Everyone sees the lunch with the rep,
+              company, medication and food; the front desk also sees the rep&rsquo;s cell phone (a
+              job role setting, under Manage → Job roles); the status and notes are for managers
+              only. Staff at that office are told when a lunch is added, moved or cancelled, and{' '}
+              <strong>every evening at 6pm</strong> hear whether there is a rep lunch there the next
+              day — or that there is none, so they bring their own. That evening notice goes only
+              for days somebody is scheduled at the office and it is not closed. Correcting a
+              rep&rsquo;s name renames their lunches too.
+            </p>
+            <p>
+              When the AI helpers are on, a new entry has{' '}
+              <strong>✨ Fill this in from a message</strong>: paste the rep&rsquo;s email or text
+              (or a note about a diagnostics day) and the form is filled in — kind, date, time,
+              office and rep — for you to check before saving. It says what the message left out,
+              and names a rep who is not on the list yet so you can add them. Only the pasted words
+              are sent; the reps list stays here.
+            </p>
+          </>
         ),
       },
       {
@@ -1477,11 +1495,14 @@ const MANAGERS: Section[] = [
             beside them lists everybody&rsquo;s, waiting, approved or declined, each with what is
             already scheduled in those dates. When the request covers shifts still to come,{' '}
             <strong>Approve</strong> asks what to do with them in the same step: leave them as{' '}
-            <strong>open shifts</strong> for somebody else to cover, <strong>take them off the
-            rota</strong>, or leave them as they are. The person is told once, with the approval. A
-            half day keeps its shift. To put in a request for somebody (one they made
-            by phone), press <strong>+ Request time off</strong> and choose them under{' '}
-            <strong>For</strong>.
+            <strong>open shifts</strong> for somebody else to cover,{' '}
+            <strong>take them off the rota</strong>, or leave them as they are. The person is told
+            once, with the approval. A half day keeps its shift. <strong>Decline</strong> asks for
+            the reason the person will read; when the AI helpers are on,{' '}
+            <strong>✨ Help me word it</strong> turns a few words (or, with none, how many would be
+            off — never who) into a kind reason for you to edit. To put in a request for somebody
+            (one they made by phone), press <strong>+ Request time off</strong> and choose them
+            under <strong>For</strong>.
           </p>
         ),
       },
@@ -1893,18 +1914,28 @@ const MANAGERS: Section[] = [
       {
         question: 'Announcements',
         answer: (
-          <p>
-            On <Screen>News</Screen>, write, edit or remove posts. One post is always the primary
-            one shown at the top of everybody's home screen; tick another to move it.{' '}
-            <strong>+ Add a poll</strong> on a post asks a question with two to ten choices (tick{' '}
-            <strong>People can pick more than one</strong> for tick boxes). Votes are named; for
-            anonymous answers, use a survey. Once anybody has voted the choices are fixed —{' '}
-            <strong>Close voting</strong> on the post stops it, and it can be opened again. Managers
-            and admins can delete anybody's comment. Tick <strong>Show publicly</strong> to put a
-            post on the front-desk time clock and under the sign-in form too (the newest three
-            ticked) — title and message only. Patients at the desk, and anyone on the internet, can
-            read those, so keep it to things anybody may read.
-          </p>
+          <>
+            <p>
+              On <Screen>News</Screen>, write, edit or remove posts. One post is always the primary
+              one shown at the top of everybody's home screen; tick another to move it.{' '}
+              <strong>+ Add a poll</strong> on a post asks a question with two to ten choices (tick{' '}
+              <strong>People can pick more than one</strong> for tick boxes). Votes are named; for
+              anonymous answers, use a survey. Once anybody has voted the choices are fixed —{' '}
+              <strong>Close voting</strong> on the post stops it, and it can be opened again.
+              Managers and admins can delete anybody's comment. Tick <strong>Show publicly</strong>{' '}
+              to put a post on the front-desk time clock and under the sign-in form too (the newest
+              three ticked) — title and message only. Patients at the desk, and anyone on the
+              internet, can read those, so keep it to things anybody may read.
+            </p>
+            <p>
+              When the AI helpers are on, <strong>✨ Help me write it</strong> turns rough notes
+              into a title and message to edit, and <strong>In Spanish</strong> under the message
+              holds the post in Spanish for staff who read News in Español — type it, or press{' '}
+              <strong>✨ Translate from the English</strong> and read it through. Left empty, it is
+              translated automatically the first time somebody asks; change the English and the
+              Spanish is cleared unless you redo it too. Never put patient details in a post.
+            </p>
+          </>
         ),
       },
     ],
@@ -1923,16 +1954,7 @@ export function HelpPage() {
   const { employee } = useSession();
   const [params, setParams] = useSearchParams();
   const guide = isManager && params.get('guide') === 'managers' ? 'managers' : 'staff';
-  const sections =
-    guide === 'managers'
-      ? [...MANAGERS, ...CARE_PLAN, ...WELLNESS]
-      : [
-          ...STAFF,
-          ...(employee?.usesClinicalForms ? PROVIDERS : []),
-          ...(employee && canUseCarePlan(employee) ? CARE_PLAN : []),
-          ...(employee && canUseWellnessForm(employee) ? WELLNESS : []),
-          ...(employee?.hasProductivity ? PRODUCTIVITY : []),
-        ];
+  const sections = guide === 'managers' ? managersGuide() : staffGuide(employee);
 
   const tab = (key: 'staff' | 'managers', label: string) => (
     <button
@@ -2007,6 +2029,36 @@ export function HelpPage() {
         </p>
       )}
     </div>
+  );
+}
+
+type Reader = ReturnType<typeof useSession>['employee'];
+
+function staffGuide(employee: Reader): Section[] {
+  return [
+    ...STAFF,
+    ...(employee?.usesClinicalForms ? PROVIDERS : []),
+    ...(employee && canUseCarePlan(employee) ? CARE_PLAN : []),
+    ...(employee && canUseWellnessForm(employee) ? WELLNESS : []),
+    ...(employee?.hasProductivity ? PRODUCTIVITY : []),
+  ];
+}
+
+function managersGuide(): Section[] {
+  return [...MANAGERS, ...CARE_PLAN, ...WELLNESS];
+}
+
+/// Every Help topic this person can read, as plain text — what Ask Domi Staff
+/// picks from for "how do I…?" questions. Managers read both guides.
+export function helpTopicsFor(employee: Reader, isManager: boolean): HelpTopicText[] {
+  const sections = isManager ? [...staffGuide(employee), ...managersGuide()] : staffGuide(employee);
+  const seen = new Set<string>();
+  return sections.flatMap((section) =>
+    section.topics.flatMap((topic) => {
+      if (seen.has(topic.question)) return [];
+      seen.add(topic.question);
+      return [{ question: topic.question, answer: textOf(topic.answer) }];
+    }),
   );
 }
 

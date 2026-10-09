@@ -1372,6 +1372,15 @@ model Announcement {
   /// chosen for it appear there — read-only, no likes, comments or poll.
   showOnTimeClock Boolean @default(false)
 
+  /// The post in Spanish, for staff who switch News to Español (October
+  /// 2026, Dominguez: English by default, Spanish at a tap). Written or
+  /// checked by the admin in the editor, or translated by the AI service the
+  /// first time somebody asks for it (`spanishByAi`). Cleared when the English
+  /// changes and the Spanish was not redone with it. The poll stays English.
+  titleEs     String?
+  bodyEs      String?
+  spanishByAi Boolean @default(false)
+
   authorId String?   @db.Uuid
   /// Set when the words change after posting, so readers can tell.
   editedAt DateTime?

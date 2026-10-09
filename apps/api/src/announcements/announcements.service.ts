@@ -6,6 +6,7 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { EmploymentStatus, NotificationKind, Prisma, Role } from '@prisma/client';
+import { AiService } from '../ai/ai.service';
 import { AuthUser } from '../common/auth/auth-user';
 import { InboxService } from '../email/inbox.service';
 import { PrismaService } from '../prisma/prisma.service';
@@ -15,6 +16,7 @@ import {
   PollDto,
   UpdateAnnouncementDto,
 } from './dto/announcement.dto';
+import { draftPost, PostWords, translatePost } from './news-writing';
 
 const PERSON_SELECT = {
   id: true,
@@ -31,6 +33,9 @@ const ANNOUNCEMENT_SELECT = {
   body: true,
   isPrimary: true,
   showOnTimeClock: true,
+  titleEs: true,
+  bodyEs: true,
+  spanishByAi: true,
   editedAt: true,
   createdAt: true,
   authorId: true,
@@ -84,6 +89,9 @@ function present(row: AnnouncementRow, viewerId: string) {
     body: row.body,
     isPrimary: row.isPrimary,
     showOnTimeClock: row.showOnTimeClock ?? false,
+    titleEs: row.titleEs ?? null,
+    bodyEs: row.bodyEs ?? null,
+    spanishByAi: row.spanishByAi ?? false,
     editedAt: row.editedAt,
     createdAt: row.createdAt,
     author: row.author,
@@ -147,6 +155,7 @@ export class AnnouncementsService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly inbox: InboxService,
+    private readonly ai: AiService,
   ) {}
 
   /// Newest first, the primary among them where it falls — the News page reads
@@ -231,6 +240,7 @@ export class AnnouncementsService {
           body,
           isPrimary,
           showOnTimeClock: dto.showOnTimeClock === true,
+          ...spanishFrom(dto),
           authorId: actor.id,
           ...(poll
             ? {
@@ -347,6 +357,14 @@ export class AnnouncementsService {
           ...(dto.isPrimary === true ? { isPrimary: true } : {}),
           ...(dto.showOnTimeClock !== undefined ? { showOnTimeClock: dto.showOnTimeClock } : {}),
           ...(wordsChanged ? { editedAt: new Date() } : {}),
+          // The Spanish as the editor sent it; or, when the English changed
+          // and the Spanish was not redone with it, none — it would say the
+          // old thing. It is translated again the next time it is asked for.
+          ...(dto.titleEs !== undefined
+            ? spanishFrom(dto)
+            : wordsChanged
+              ? { titleEs: null, bodyEs: null, spanishByAi: false }
+              : {}),
         },
         select: ANNOUNCEMENT_SELECT,
       });
@@ -383,6 +401,50 @@ export class AnnouncementsService {
   // ---------------------------------------------------------------- likes
 
   /// Liking twice is the same as liking once.
+  /**
+   * A post in Spanish, for somebody who switched News to Español. The
+   * admin's, or the AI service's from before; failing both, translated now
+   * and kept, so the next reader gets it without asking again. `null` when
+   * there is none and the AI service is off (or declined).
+   */
+  async spanish(id: string, viewer: AuthUser) {
+    const row = await this.prisma.announcement.findUnique({
+      where: { id },
+      select: { title: true, body: true, titleEs: true, bodyEs: true, spanishByAi: true },
+    });
+    if (!row) throw new NotFoundException('That announcement does not exist.');
+    if (row.titleEs) {
+      return { titleEs: row.titleEs, bodyEs: row.bodyEs ?? '', spanishByAi: row.spanishByAi };
+    }
+    if (!this.ai.enabled) return null;
+
+    const words = await translatePost(this.ai, viewer.id, { title: row.title, body: row.body });
+    if (!words) return null;
+    // Only if nobody saved Spanish meanwhile, and the English is still what
+    // was translated.
+    await this.prisma.announcement.updateMany({
+      where: { id, titleEs: null, title: row.title, body: row.body },
+      data: { titleEs: words.title, bodyEs: words.body, spanishByAi: true },
+    });
+    this.logger.log(`Announcement ${id} put into Spanish by the AI service`);
+    return { titleEs: words.title, bodyEs: words.body, spanishByAi: true };
+  }
+
+  /// "Help me write it": an admin's notes made into a title and message to
+  /// edit. Nothing is saved.
+  async draft(notes: string, title: string | undefined, actor: AuthUser): Promise<PostWords> {
+    const words = await draftPost(this.ai, actor.id, notes, title);
+    if (!words) throw new BadRequestException('The AI service would not write that one.');
+    return { title: words.title.trim().slice(0, 160), body: words.body.trim() };
+  }
+
+  /// The editor's words in Spanish, to check before saving. Nothing is saved.
+  async translate(words: PostWords, actor: AuthUser): Promise<PostWords> {
+    const spanish = await translatePost(this.ai, actor.id, words);
+    if (!spanish) throw new BadRequestException('The AI service would not translate that one.');
+    return { title: spanish.title.slice(0, 160), body: spanish.body };
+  }
+
   async like(id: string, actor: AuthUser) {
     await this.assertExists(id);
     await this.prisma.announcementLike.createMany({
@@ -555,3 +617,14 @@ async function lockPrimary(tx: Prisma.TransactionClient): Promise<void> {
 
 /// Any fixed number; only this file takes it.
 const PRIMARY_LOCK = 724_001;
+
+/// The Spanish as the editor sent it: none unless there is a title.
+function spanishFrom(dto: Pick<CreateAnnouncementDto, 'titleEs' | 'bodyEs' | 'spanishByAi'>) {
+  const titleEs = dto.titleEs?.trim() ?? '';
+  if (titleEs === '') return { titleEs: null, bodyEs: null, spanishByAi: false };
+  return {
+    titleEs,
+    bodyEs: dto.bodyEs?.trim() ?? '',
+    spanishByAi: dto.spanishByAi === true,
+  };
+}

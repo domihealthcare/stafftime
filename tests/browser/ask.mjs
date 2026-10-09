@@ -83,12 +83,22 @@ await step('switched on (answers stood in for in the browser), it asks and shows
   await frankie.goto(`${BASE}/ask`, { waitUntil: 'networkidle' });
   await frankie.getByRole('button', { name: 'When am I next on?' }).click();
   await frankie.getByTestId('ask-answer').getByText('You are on Tuesday, 9:00 AM–5:00 PM at North Bergen.').waitFor({ timeout: 10000 });
-  await frankie.getByText('39 questions left today.').waitFor({ timeout: 5000 });
+  await frankie.getByText('39 uses of the AI helpers left today.').waitFor({ timeout: 5000 });
   await frankie.getByLabel('Your question').fill('And the week after?');
   await frankie.getByRole('button', { name: 'Ask', exact: true }).click();
   await frankie.getByTestId('ask-answer').nth(1).waitFor({ timeout: 10000 });
   if (sent.length !== 2 || sent[1].history.length !== 2 || sent[1].question !== 'And the week after?')
     throw new Error(`sent: ${JSON.stringify(sent)}`);
+  // A "how do I…?" question goes with the Help topics likely to answer it.
+  await frankie.getByLabel('Your question').fill('How do I put Domi Staff on my phone?');
+  await frankie.getByRole('button', { name: 'Ask', exact: true }).click();
+  await frankie.getByTestId('ask-answer').nth(2).waitFor({ timeout: 10000 });
+  const help = sent[2].help ?? [];
+  if (!help.some((topic) => topic.question === 'Put Domi Staff on your phone'))
+    throw new Error(`Help topics sent: ${help.map((topic) => topic.question).join(' | ')}`);
+  if (!help.find((topic) => topic.question === 'Put Domi Staff on your phone').answer.includes('Add to Home Screen'))
+    throw new Error('the topic was sent without its words');
+  if (help.length > 4) throw new Error(`${help.length} topics sent`);
   const privacy = await frankie.getByTestId('ask-privacy').innerText();
   if (!/Anthropic/.test(privacy) || !/Never type patient details/.test(privacy))
     throw new Error(`privacy note: ${privacy}`);

@@ -41,6 +41,7 @@ function build(
     comment?: unknown;
     poll?: unknown;
     departed?: string[];
+    ai?: { enabled: boolean; json: jest.Mock };
   } = {},
 ) {
   const announcement = {
@@ -107,8 +108,10 @@ function build(
     $transaction: jest.fn(async (fn: (tx: unknown) => unknown) => fn(tx)),
   };
   const inbox = { notify: jest.fn(), notifyEveryone: jest.fn().mockResolvedValue(undefined) };
+  const ai = options.ai ?? { enabled: false, json: jest.fn() };
   return {
-    service: new AnnouncementsService(prisma as never, inbox as never),
+    service: new AnnouncementsService(prisma as never, inbox as never, ai as never),
+    ai,
     announcement,
     announcementLike,
     announcementComment,
@@ -653,6 +656,78 @@ describe('AnnouncementsService', () => {
       await expect(service.vote('post-1', ['opt-fri'], staff)).rejects.toBeInstanceOf(
         NotFoundException,
       );
+    });
+  });
+
+  describe('in Spanish', () => {
+    const spanish = { title: 'Cierre por nieve', body: 'Ambas oficinas cierran a las 2pm hoy.' };
+
+    it('keeps the Spanish the editor sent, and marks it the AI service’s only when it says so', async () => {
+      const { service, announcement } = build();
+      await service.create(
+        { title: 'Snow closure', body: 'x', titleEs: ' Cierre ', bodyEs: 'y', spanishByAi: true },
+        admin,
+      );
+      expect(announcement.create.mock.calls[0][0].data).toMatchObject({
+        titleEs: 'Cierre',
+        bodyEs: 'y',
+        spanishByAi: true,
+      });
+    });
+
+    it('clears the Spanish when the English changes and the Spanish was not redone', async () => {
+      const { service, announcement } = build();
+      await service.update('post-1', { body: 'Both offices close at 1pm today.' }, admin);
+      expect(announcement.update.mock.calls[0][0].data).toMatchObject({
+        titleEs: null,
+        bodyEs: null,
+        spanishByAi: false,
+      });
+    });
+
+    it('leaves the Spanish alone when nothing English changed', async () => {
+      const { service, announcement } = build();
+      await service.update('post-1', { isPrimary: true }, admin);
+      expect(announcement.update.mock.calls[0][0].data.titleEs).toBeUndefined();
+    });
+
+    it('hands back Spanish already kept without asking the AI service', async () => {
+      const ai = { enabled: true, json: jest.fn() };
+      const { service } = build({
+        ai,
+        one: post({ titleEs: 'Cierre', bodyEs: 'Hoy', spanishByAi: false }),
+      });
+      await expect(service.spanish('post-1', staff)).resolves.toEqual({
+        titleEs: 'Cierre',
+        bodyEs: 'Hoy',
+        spanishByAi: false,
+      });
+      expect(ai.json).not.toHaveBeenCalled();
+    });
+
+    it('translates once, keeps it for the next reader, and only over the English it read', async () => {
+      const ai = { enabled: true, json: jest.fn().mockResolvedValue(spanish) };
+      const { service, announcement } = build({ ai, one: post({ titleEs: null }) });
+      await expect(service.spanish('post-1', staff)).resolves.toEqual({
+        titleEs: spanish.title,
+        bodyEs: spanish.body,
+        spanishByAi: true,
+      });
+      expect(ai.json.mock.calls[0][0]).toBe('emp-1');
+      expect(announcement.updateMany).toHaveBeenCalledWith({
+        where: {
+          id: 'post-1',
+          titleEs: null,
+          title: 'Snow closure',
+          body: 'Both offices close at 2pm today.',
+        },
+        data: { titleEs: spanish.title, bodyEs: spanish.body, spanishByAi: true },
+      });
+    });
+
+    it('has none to give with the AI service off', async () => {
+      const { service } = build({ one: post({ titleEs: null }) });
+      await expect(service.spanish('post-1', staff)).resolves.toBeNull();
     });
   });
 });

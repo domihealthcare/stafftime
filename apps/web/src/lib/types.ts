@@ -824,6 +824,12 @@ export interface Announcement {
   isPrimary: boolean;
   /// Shown publicly: on the front-desk time clock and the sign-in page.
   showOnTimeClock: boolean;
+  /// The post in Spanish, when there is one (October 2026). The poll stays
+  /// in English.
+  titleEs: string | null;
+  bodyEs: string | null;
+  /// The Spanish is the AI service's, as it came.
+  spanishByAi: boolean;
   editedAt: string | null;
   createdAt: string;
   author: PersonName | null;
@@ -1563,4 +1569,22 @@ export interface StaffingMinimum {
   locationId: string;
   jobRoleId: string;
   minimum: number;
+}
+
+/// A pasted booking read for the calendar's form (AI, October 2026). Empty or
+/// null where the message did not say.
+export interface ReadBooking {
+  kind: EventKind;
+  title: string;
+  date: string | null;
+  endDate: string | null;
+  startTime: string | null;
+  endTime: string | null;
+  allDay: boolean;
+  locationId: string | null;
+  repId: string | null;
+  /// A rep the message names who is not on the list yet.
+  newRep: { name: string; company: string; medication: string } | null;
+  place: string;
+  description: string;
 }

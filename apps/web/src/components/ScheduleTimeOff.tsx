@@ -6,8 +6,8 @@ import { formatCalendarDate, localDate } from '../lib/format';
 import { useIsManager, useSession } from '../lib/session';
 import { PTO_TYPE_LABELS, hasNone } from '../lib/time-off';
 import type { PtoBalance, PtoRequest } from '../lib/types';
-import { useConfirm } from './ConfirmDialog';
 import { useApproveTimeOff } from './ApproveTimeOff';
+import { useDeclineTimeOff } from './DeclineTimeOff';
 import { Alert, buttonClass } from './ui';
 
 /**
@@ -45,8 +45,8 @@ export function RequestTimeOffButton() {
 export function RequestsToDecide({ onDecided }: { onDecided: () => void }) {
   const isManager = useIsManager();
   const { employee } = useSession();
-  const confirm = useConfirm();
   const approveTimeOff = useApproveTimeOff();
+  const declineTimeOff = useDeclineTimeOff();
   const [requests, setRequests] = useState<PtoRequest[]>([]);
   const [busy, setBusy] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -67,27 +67,16 @@ export function RequestsToDecide({ onDecided }: { onDecided: () => void }) {
   }, [load]);
 
   async function decide(request: PtoRequest, decision: 'APPROVED' | 'DENIED') {
-    if (
-      decision === 'DENIED' &&
-      !(await confirm({
-        title: `Decline ${name(request)}'s request?`,
-        body: `${PTO_TYPE_LABELS[request.type]}, ${range(request)}. They are told straight away.`,
-        confirmLabel: 'Decline it',
-        cancelLabel: 'Keep it waiting',
-        tone: 'danger',
-      }))
-    ) {
-      return;
-    }
     setBusy(request.id);
     setError(null);
     try {
-      if (decision === 'APPROVED') {
-        // Asks about the shifts it lands on first, if there are any.
-        if (!(await approveTimeOff.approve(request))) return;
-      } else {
-        await api.reviewPto(request.id, decision);
-      }
+      // Approving asks about the shifts it lands on first, if there are any;
+      // declining asks for the reason the person will read.
+      const done =
+        decision === 'APPROVED'
+          ? await approveTimeOff.approve(request)
+          : await declineTimeOff.decline(request);
+      if (!done) return;
       await load();
       onDecided();
     } catch (cause) {
@@ -172,6 +161,7 @@ export function RequestsToDecide({ onDecided }: { onDecided: () => void }) {
         ))}
       </ul>
       {approveTimeOff.dialog}
+      {declineTimeOff.dialog}
     </details>
   );
 }

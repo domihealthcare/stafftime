@@ -1,5 +1,6 @@
 import { useDialog } from './useDialog';
 import { useCallback, useEffect, useId, useState } from 'react';
+import { useAiOn } from '../lib/ai';
 import { ApiError, api } from '../lib/api';
 import { formatCalendarDate, formatTimeCompact, localDate } from '../lib/format';
 import { Link } from 'react-router-dom';
@@ -15,11 +16,13 @@ import type {
   Location,
   EventRep,
   PracticeEvent,
+  ReadBooking,
   Rep,
   RepeatInput,
 } from '../lib/types';
 import { useConfirm, type ConfirmOptions } from './ConfirmDialog';
 import { InviteePicker, NOBODY, type InviteeSelection } from './InviteePicker';
+import { BookingPaste } from './BookingPaste';
 import { RepeatPicker } from './RepeatPicker';
 import { Alert, Badge, Card, buttonClass } from './ui';
 
@@ -574,6 +577,11 @@ export function EventForm({
   const showRepeat = !holiday && (!event || !event.series || scope === 'following');
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const aiOn = useAiOn();
+  /// After "Fill this in from a message": what to check, and what it missed.
+  const [readNote, setReadNote] = useState<{ missing: string[]; newRep: string | null } | null>(
+    null,
+  );
 
   // Pick the first of the list once it has arrived, so the select never shows
   // one thing while holding another.
@@ -590,6 +598,50 @@ export function EventForm({
     if (next === 'CLOSURE' && audience !== 'LOCATION') setAudience('EVERYONE');
     if (next === 'HOLIDAY') setAllDay(true);
     else if (!event) setAllDay(next === 'CLOSURE');
+  }
+
+  /// The form filled from a pasted message — everything still to be checked.
+  function applyBooking(booking: ReadBooking) {
+    chooseKind(booking.kind);
+    if (booking.kind !== 'REP_LUNCH' && booking.title) setTitle(booking.title);
+    if (booking.repId) setRepId(booking.repId);
+    if (booking.date) {
+      if (booking.allDay) {
+        setAllDay(true);
+        setStartDate(booking.date);
+        setEndDate(booking.endDate ?? booking.date);
+      } else {
+        setAllDay(false);
+        const start = `${booking.date}T${booking.startTime ?? '12:00'}`;
+        const end = booking.endTime
+          ? `${booking.date}T${booking.endTime}`
+          : inputValue(new Date(new Date(start).getTime() + 60 * 60_000));
+        setStartsAt(start);
+        setEndsAt(end);
+      }
+    }
+    if (booking.locationId) {
+      if (atAnOffice(booking.kind)) setAtLocationId(booking.locationId);
+      if (booking.kind === 'CLOSURE') {
+        setAudience('LOCATION');
+        setLocationId(booking.locationId);
+      }
+    }
+    if (booking.kind === 'EVENT' && booking.place) setPlace(booking.place);
+    if (booking.description) setDescription(booking.description);
+
+    const missing = [
+      ...(booking.date ? [] : ['the date']),
+      ...(booking.date && !booking.allDay && !booking.startTime ? ['the time'] : []),
+      ...(atAnOffice(booking.kind) && !booking.locationId ? ['which office'] : []),
+      ...(booking.kind === 'REP_LUNCH' && !booking.repId && !booking.newRep ? ['which rep'] : []),
+    ];
+    setReadNote({
+      missing,
+      newRep: booking.newRep
+        ? [booking.newRep.name, booking.newRep.company].filter(Boolean).join(', ')
+        : null,
+    });
   }
 
   /// Moving the start keeps the length, so a one-hour meeting stays one hour.
@@ -762,6 +814,29 @@ export function EventForm({
             </button>
           ))}
         </div>
+
+        {aiOn && !event && !template && <BookingPaste onRead={applyBooking} />}
+        {readNote && (
+          <div
+            role="status"
+            data-testid="booking-read"
+            className="rounded-lg bg-brand-50 px-3 py-2 text-sm text-slate-800 ring-1 ring-inset ring-brand-200 sm:col-span-2"
+          >
+            <p>Filled in from the message — check it before saving.</p>
+            {readNote.missing.length > 0 && (
+              <p className="mt-0.5">The message did not say {readNote.missing.join(', ')}.</p>
+            )}
+            {readNote.newRep && (
+              <p className="mt-0.5">
+                {readNote.newRep} is not on the reps list yet —{' '}
+                <Link to="/reps" className="font-medium text-brand-700 underline">
+                  add them under Manage → Reps
+                </Link>
+                , then choose them here.
+              </p>
+            )}
+          </div>
+        )}
 
         {event?.series && (
           <fieldset className="space-y-1 rounded-lg bg-amber-50 p-3 text-sm text-amber-950 ring-1 ring-inset ring-amber-200 sm:col-span-2">

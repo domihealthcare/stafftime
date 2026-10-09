@@ -20,6 +20,7 @@ import { PtoPolicyEditor } from '../components/PtoPolicyEditor';
 import { useConfirm } from '../components/ConfirmDialog';
 import { atPracticeTime, practiceClockOf } from '../lib/practice-time';
 import { useApproveTimeOff } from '../components/ApproveTimeOff';
+import { useDeclineTimeOff } from '../components/DeclineTimeOff';
 import {
   Alert,
   Badge,
@@ -238,11 +239,10 @@ function RequestCard({
   onError: (message: string) => void;
 }) {
   const [busy, setBusy] = useState(false);
-  const [denying, setDenying] = useState(false);
-  const [reason, setReason] = useState('');
   const [conflicts, setConflicts] = useState<ConflictingShift[] | null>(null);
   const confirm = useConfirm();
   const approveTimeOff = useApproveTimeOff();
+  const declineTimeOff = useDeclineTimeOff();
 
   // A manager deciding on a request needs to know what is already scheduled.
   useEffect(() => {
@@ -315,7 +315,7 @@ function RequestCard({
         </div>
 
         <div className="flex flex-wrap items-center gap-2">
-          {canDecide && !denying && (
+          {canDecide && (
             <>
               <button
                 type="button"
@@ -329,14 +329,17 @@ function RequestCard({
               <button
                 type="button"
                 disabled={busy}
-                onClick={() => setDenying(true)}
+                onClick={async () => {
+                  // Asks for the reason they will read.
+                  if (await declineTimeOff.decline(request)) onChanged();
+                }}
                 className={buttonClass('secondary', 'sm')}
               >
                 Deny
               </button>
             </>
           )}
-          {canCancel && !denying && (
+          {canCancel && (
             <button
               type="button"
               disabled={busy}
@@ -389,50 +392,8 @@ function RequestCard({
         </div>
       )}
 
-      {denying && (
-        <div className="mt-3 border-t border-slate-100 pt-3">
-          <label
-            htmlFor={`reason-${request.id}`}
-            className="block text-sm font-medium text-slate-700"
-          >
-            Reason for denying
-          </label>
-          <input
-            id={`reason-${request.id}`}
-            type="text"
-            autoFocus
-            maxLength={500}
-            placeholder="Both MAs are already off that week"
-            value={reason}
-            onChange={(event) => setReason(event.target.value)}
-            className="mt-1 w-full rounded-lg border-slate-300 text-sm shadow-sm focus:border-brand-600 focus:ring-brand-600"
-          />
-          <p className="mt-1 text-xs text-slate-500">
-            Shown to {request.employee?.firstName ?? 'the employee'}.
-          </p>
-          <div className="mt-2 flex gap-2">
-            <button
-              type="button"
-              disabled={busy || reason.trim().length < 1}
-              onClick={() => void act(() => api.reviewPto(request.id, 'DENIED', reason.trim()))}
-              className="rounded-lg bg-rose-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-rose-700 disabled:opacity-60"
-            >
-              {busy ? 'Saving…' : 'Deny request'}
-            </button>
-            <button
-              type="button"
-              onClick={() => {
-                setDenying(false);
-                setReason('');
-              }}
-              className={buttonClass('secondary', 'sm')}
-            >
-              Cancel
-            </button>
-          </div>
-        </div>
-      )}
       {approveTimeOff.dialog}
+      {declineTimeOff.dialog}
     </Card>
   );
 }

@@ -3,6 +3,8 @@ import {
   Controller,
   Delete,
   Get,
+  HttpCode,
+  HttpStatus,
   Param,
   ParseUUIDPipe,
   Patch,
@@ -21,7 +23,9 @@ import { AnnouncementsService } from './announcements.service';
 import {
   CommentDto,
   CreateAnnouncementDto,
+  DraftPostDto,
   PollStateDto,
+  TranslatePostDto,
   UpdateAnnouncementDto,
   VoteDto,
 } from './dto/announcement.dto';
@@ -71,6 +75,29 @@ export class AnnouncementsController {
   @Roles(Role.ADMIN)
   create(@Body() dto: CreateAnnouncementDto, @CurrentUser() user: AuthUser) {
     return this.announcements.create(dto, user);
+  }
+
+  /// "Help me write it": the admin's notes as a post to edit. Nothing saved.
+  @Post('draft')
+  @Roles(Role.ADMIN)
+  @HttpCode(HttpStatus.OK)
+  draft(@Body() dto: DraftPostDto, @CurrentUser() user: AuthUser) {
+    return this.announcements.draft(dto.notes, dto.title, user);
+  }
+
+  /// The editor's words in Spanish, to check before saving. Nothing saved.
+  @Post('translate')
+  @Roles(Role.ADMIN)
+  @HttpCode(HttpStatus.OK)
+  translate(@Body() dto: TranslatePostDto, @CurrentUser() user: AuthUser) {
+    return this.announcements.translate({ title: dto.title, body: dto.body }, user);
+  }
+
+  /// A post in Spanish, for anybody who switched News to Español —
+  /// translated the first time it is asked for, then kept.
+  @Get(':id/spanish')
+  async spanish(@Param('id', ParseUUIDPipe) id: string, @CurrentUser() user: AuthUser) {
+    return { spanish: await this.announcements.spanish(id, user) };
   }
 
   @Patch(':id')

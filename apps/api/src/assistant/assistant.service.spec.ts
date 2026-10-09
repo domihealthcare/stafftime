@@ -1,6 +1,7 @@
 import { HttpException, ServiceUnavailableException } from '@nestjs/common';
 import { Role } from '@prisma/client';
-import { AssistantService, DAILY_QUESTIONS, MODEL } from './assistant.service';
+import { AiService } from '../ai/ai.service';
+import { AssistantService, DAILY_QUESTIONS, MODEL, withHelp } from './assistant.service';
 
 const NOW = new Date('2026-10-09T18:00:00Z');
 const frankie = { id: 'emp-1', email: 'frontdesk@domihealthcare.com', role: Role.EMPLOYEE };
@@ -20,8 +21,9 @@ function build({ key = 'sk-test', asked = 1 }: { key?: string | null; asked?: nu
   };
   const shifts = { findAll: jest.fn().mockResolvedValue([]) };
   const config = { get: jest.fn(() => key ?? undefined) };
+  const ai = new AiService(config as never, prisma as never);
   const service = new AssistantService(
-    config as never,
+    ai,
     prisma as never,
     shifts as never,
     {} as never,
@@ -33,7 +35,7 @@ function build({ key = 'sk-test', asked = 1 }: { key?: string | null; asked?: nu
   );
   const create = jest.fn();
   if (key) {
-    (service as unknown as { client: unknown }).client = { beta: { messages: { create } } };
+    (ai as unknown as { client: unknown }).client = { beta: { messages: { create } } };
   }
   return { service, prisma, shifts, create };
 }
@@ -130,5 +132,34 @@ describe('Ask Domi Staff', () => {
       'user',
     ]);
     await expect(service.ask('   ', [], frankie, NOW)).rejects.toThrow('Type a question first.');
+  });
+
+  it('puts the Help topics the screen picked ahead of the question', async () => {
+    const { service, create } = build();
+    create.mockResolvedValue({
+      stop_reason: 'end_turn',
+      content: [{ type: 'text', text: 'Open Home and press the big button.' }],
+    });
+    await service.ask('how do i clock in', [], frankie, NOW, [
+      { question: 'How do I clock in on my phone?', answer: 'Open Home and press the big button.' },
+    ]);
+    const sent = create.mock.calls[0][0].messages.at(-1).content as string;
+    expect(sent).toContain('<topic title="How do I clock in on my phone?">');
+    expect(sent.endsWith('Question: how do i clock in')).toBe(true);
+    expect(create.mock.calls[0][0].system[0].text).toContain('Help guide');
+  });
+});
+
+describe('withHelp', () => {
+  it('leaves a question alone with no topics, and keeps at most five, trimmed', () => {
+    expect(withHelp('When am I on?', [])).toBe('When am I on?');
+    const many = Array.from({ length: 8 }, (_, index) => ({
+      question: `Topic ${index} "quoted"`,
+      answer: 'x'.repeat(5000),
+    }));
+    const text = withHelp('How?', many);
+    expect(text.match(/<topic /g)).toHaveLength(5);
+    expect(text).toContain(`title="Topic 0 'quoted'"`);
+    expect(text).not.toContain('x'.repeat(3001));
   });
 });
