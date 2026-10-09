@@ -255,8 +255,15 @@ await step('“Translate from the English” fills the Spanish, marked as the AI
 await step('a post with no Spanish is translated when a reader asks, then shown as such', async () => {
   // Stood in for before the page starts afresh: a reader already on
   // Español asks as soon as it loads.
+  // Only the flu post is "translated"; any other post still without Spanish
+  // has none.
+  const flu = (await call(frankie, '/announcements')).body.find((p) => p.title === 'Flu shots on Friday');
   let asked = 0;
   await frankie.context().route('**/api/announcements/*/spanish', async (route) => {
+    if (!route.request().url().includes(flu.id)) {
+      await route.fulfill({ json: { spanish: null } });
+      return;
+    }
     asked += 1;
     await route.fulfill({
       json: { spanish: { titleEs: 'Vacunas contra la gripe el viernes', bodyEs: 'Traiga su tarjeta.', spanishByAi: true } },
