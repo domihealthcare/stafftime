@@ -39,6 +39,9 @@ export class AppConfigController {
       // Whether shifts and events arrive as calendar invites, so the
       // calendar card can say the feed now carries only closures and time off.
       calendarInvites: this.invites.enabled,
+      // Whether "Ask Domi Staff" is switched on (an Anthropic key is set).
+      // Never the key.
+      assistant: Boolean(this.config.get<string>('ANTHROPIC_API_KEY')?.trim()),
     };
   }
 }

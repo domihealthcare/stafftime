@@ -71,6 +71,7 @@ export function ClashNote({
               ? `nobody in ${clash.jobRoleName}`
               : `${left} of ${clash.total} in ${clash.jobRoleName}`}{' '}
             on {clashDays(clash)}
+            {clash.minimum !== null && <> (minimum {clash.minimum})</>}
             {others.length > 0 && <> — also off: {clashPeople(others)}</>}.
           </li>
         );

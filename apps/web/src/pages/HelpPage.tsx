@@ -449,7 +449,9 @@ const STAFF: Section[] = [
             Open <Screen>Schedule</Screen> → <strong>When you can’t work</strong>. Add a weekday you
             are never free (all day or between two times), or a single date. Nobody has to approve
             it. It only affects weeks whose schedule has not been published yet — a published week
-            is fixed, so for a date inside one, talk to your manager or ask for time off.
+            is fixed, so for a date inside one, talk to your manager or ask for time off. If it
+            clashes with a regular shift of yours, the managers are told, so they can sort the
+            shift out with you.
           </p>
         ),
       },
@@ -604,6 +606,21 @@ const STAFF: Section[] = [
             past its date, you get a note under the bell and an email, with everything due in one
             message. The note opens your checklist: tick the task off there once it is done. If
             something is in the way, tell a manager.
+          </p>
+        ),
+      },
+      {
+        question: 'Ask Domi Staff',
+        answer: (
+          <p>
+            When it is switched on, <strong>Ask Domi Staff</strong> is on Home&rsquo;s Quick card:
+            ask in your own words — &ldquo;When am I next on?&rdquo;, &ldquo;How much PTO do I
+            have left?&rdquo;, &ldquo;Who is in at North Bergen?&rdquo; — and it answers from what
+            you can already see in the app. Answers come from Claude, an AI service run by
+            Anthropic, so your question and what it looks up for you are sent to it; nothing is
+            kept in Domi Staff, and leaving the page ends the conversation. It only looks things
+            up — it cannot change anything — and you can ask 40 questions a day. Never type
+            patient details into it.
           </p>
         ),
       },
@@ -968,6 +985,20 @@ const MANAGERS: Section[] = [
         ),
       },
       {
+        question: 'Shifts with no clock-in',
+        answer: (
+          <p>
+            When a published shift is over and the person never clocked in that day — not on
+            approved time off, and the office was not closed — it is listed on the{' '}
+            <Screen>Timesheet</Screen> banner, counted on the Dashboard and in the nightly email,
+            for two weeks. It goes once you have done whichever is true: <strong>+ Add hours</strong>{' '}
+            if they worked and forgot, record the time off if they were off, or remove the shift if
+            it should never have been on the rota. They were already reminded 15 minutes into the
+            shift.
+          </p>
+        ),
+      },
+      {
         question: 'Somebody has no punch at all for a day',
         answer: (
           <>
@@ -1031,6 +1062,14 @@ const MANAGERS: Section[] = [
           <ul>
             <li>
               <strong>Copy last week</strong> when most weeks look the same, then adjust.
+            </li>
+            <li>
+              A new shift for somebody — the ＋ on the rota, or <strong>+ Add</strong> — starts on
+              <strong> their usual</strong> for that day: their regular shift if they have one,
+              otherwise the hours and office they have worked most often on that weekday lately (or
+              on any day, if that weekday has nothing settled). A line under the times says where
+              it came from. Change anything; once you change the hours or place yourself, they are
+              yours. With nothing usual it starts on 9 to 5 as before.
             </li>
             <li>
               <strong>+ Add → Repeating shifts</strong> makes, say, every Tuesday and Thursday for a
@@ -1141,7 +1180,24 @@ const MANAGERS: Section[] = [
             office short of one job role — more than half of them off that day, counting requests
             still waiting as well as approved ones (so for a role of one or two, all of them). It
             names who else is off. It is only a warning: Approve still works. The Dashboard lists
-            the next 8 weeks&rsquo; clashes, and the nightly email the next 2.
+            the next 8 weeks&rsquo; clashes, and the nightly email the next 2. Where you have set a
+            minimum for that office and role (below), it goes by that instead of &ldquo;more than
+            half&rdquo;.
+          </p>
+        ),
+      },
+      {
+        question: 'A minimum per office and job role',
+        answer: (
+          <p>
+            <Screen>Manage → Job roles</Screen> → <strong>Minimum on each day</strong>: the fewest
+            people you want on in a job role at an office on a day it is open — say 2 Front Desk at
+            North Bergen. Blank means none. Where there is one, Too many off at once warns when
+            time off would leave fewer than that, and days the rota leaves short (drafts counted;
+            working from home and open shifts not) are listed on the Schedule banner and in the
+            nightly email for the next two weeks, and in <strong>Before you publish</strong>. A day
+            counts once anything is on the rota at that office, so an unbuilt week is left to the
+            &ldquo;not published yet&rdquo; reminder. It never stops anything.
           </p>
         ),
       },
@@ -1395,7 +1451,9 @@ const MANAGERS: Section[] = [
           <p>
             <Screen>Schedule</Screen> → <strong>Availability — yours and the team’s</strong> lists
             what everybody has said they cannot work. You can read it but not change it — it is
-            theirs.
+            theirs. When somebody adds a time that clashes with one of their regular shifts in the
+            next eight weeks, you hear at once under the bell, and it is listed on the Schedule
+            banner and in the nightly email until the regular shift or the availability changes.
           </p>
         ),
       },

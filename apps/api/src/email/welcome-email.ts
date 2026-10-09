@@ -97,11 +97,7 @@ export function welcomeEmail(details: WelcomeDetails): WelcomeEmail {
 
   const text = [
     ...intro.flatMap((line) => [line, '']),
-    ...sections(details).flatMap((section) => [
-      section.title.toUpperCase(),
-      ...section.lines,
-      '',
-    ]),
+    ...sections(details).flatMap((section) => [section.title.toUpperCase(), ...section.lines, '']),
     'COMMON QUESTIONS',
     ...FAQS.flatMap(([question, answer]) => [question, answer, '']),
     'Welcome aboard,',

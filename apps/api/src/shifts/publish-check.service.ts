@@ -18,6 +18,7 @@ import {
   zonedTimeToUtc,
 } from '../common/util/zoned-time.util';
 import { loadStanding } from '../credentials/standing-query';
+import { describeShortDay, loadShortDays } from '../staffing/minimums';
 import { PrismaService } from '../prisma/prisma.service';
 import { workweekStartsOn } from '../settings/pay-period';
 import { PracticeSettingsService } from '../settings/practice-settings.service';
@@ -177,6 +178,10 @@ export class PublishCheckService {
       weeks.has(`${week.employeeId}:${week.weekStart}`),
     );
 
+    // The whole rota at those offices those days, drafts included, against the
+    // practice's minimum per office and role.
+    const shortDays = (await loadShortDays(this.prisma, from, to, offices)).map(describeShortDay);
+
     return publishWarnings({
       drafts,
       openShifts: openRows.map(toCheckShift),
@@ -198,6 +203,7 @@ export class PublishCheckService {
       lapses,
       overtime,
       thresholdHours: settings.overtimeThresholdHours,
+      shortDays,
     });
   }
 }

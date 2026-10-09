@@ -44,7 +44,10 @@ jobs:
     # slower and kept in their own job rather than blocking the fast feedback.
     services:
       postgres:
-        image: postgres:16
+        # The official image from Amazon's public mirror rather than Docker
+        # Hub, whose limit on anonymous downloads kept stopping this job
+        # before any test ran (October 2026).
+        image: public.ecr.aws/docker/library/postgres:16
         env:
           POSTGRES_USER: postgres
           POSTGRES_PASSWORD: postgres

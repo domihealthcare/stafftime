@@ -162,6 +162,8 @@ model Location {
   lunchNotices  LunchNotice[]
   eventInvitees PracticeEventInvitee[]
 
+  staffingMinimums StaffingMinimum[]
+
   @@map("locations")
 }
 
@@ -316,6 +318,7 @@ model Employee {
   createdSurveys            Survey[]                 @relation("SurveyCreatedBy")
   surveysTaken              SurveyParticipant[]
   notifications             Notification[]
+  assistantUsage            AssistantUsage[]
   createdEvents             PracticeEvent[]          @relation("EventCreatedBy")
   eventInvites              PracticeEventInvitee[]   @relation("EventInvitee")
   /// May work out and publish provider productivity. Chosen by an admin,
@@ -1509,6 +1512,8 @@ model JobRole {
   closingSections        ClosingSection[]
   /// The licenses and certificates people in it need.
   credentialRequirements CredentialRequirement[]
+  /// How many the practice wants on in it at each office (optional).
+  staffingMinimums       StaffingMinimum[]
   /// People in this role see their own licenses and onboarding under Team.
   /// Starts true for Provider only (September 2026).
   seesOwnPersonnelTabs   Boolean                 @default(false)
@@ -2057,6 +2062,8 @@ enum NotificationKind {
   LICENSE_REMINDER
   /// A task of yours on your onboarding checklist is due soon, or overdue.
   ONBOARDING_REMINDER
+  /// To managers: somebody's new availability clashes with their regular shift.
+  AVAILABILITY_CLASH
 }
 
 /// Something the app wants one person to know, shown under the bell in the
@@ -2501,4 +2508,37 @@ model OfficeExtension {
 
   @@index([sortOrder])
   @@map("office_extensions")
+}
+
+/// The fewest people the practice wants on in one job role at one office on a
+/// day the office is open — "North Bergen needs at least 2 Front Desk"
+/// (October 2026, Dominguez). Optional: with none, "Too many off at once" goes
+/// by more than half. Managers set it on Job roles. See
+/// `staffing/minimums.ts`.
+model StaffingMinimum {
+  id         String   @id @default(uuid()) @db.Uuid
+  locationId String   @db.Uuid
+  jobRoleId  String   @db.Uuid
+  minimum    Int
+  updatedAt  DateTime @updatedAt
+
+  location Location @relation(fields: [locationId], references: [id], onDelete: Cascade)
+  jobRole  JobRole  @relation(fields: [jobRoleId], references: [id], onDelete: Cascade)
+
+  @@unique([locationId, jobRoleId])
+  @@map("staffing_minimums")
+}
+
+/// How many questions somebody has asked "Ask Domi Staff" on a day, to keep
+/// the cost in hand (October 2026). Counts only: the questions and answers
+/// themselves are never kept. See `assistant/assistant.service.ts`.
+model AssistantUsage {
+  employeeId String   @db.Uuid
+  day        DateTime @db.Date
+  questions  Int      @default(0)
+
+  employee Employee @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+
+  @@id([employeeId, day])
+  @@map("assistant_usage")
 }

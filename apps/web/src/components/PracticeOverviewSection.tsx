@@ -58,10 +58,11 @@ export function PracticeOverviewSection() {
         Across the practice
       </h2>
 
-      <div className="mb-4 grid grid-cols-2 gap-3 lg:grid-cols-4">
+      <div className="mb-4 grid grid-cols-2 gap-3 lg:grid-cols-5">
         <WaitingTile label="Time off to decide" count={waiting.timeOff} to="/time-off" />
         <WaitingTile label="Hours to approve" count={waiting.unapprovedHours} to="/timesheet" />
         <WaitingTile label="Clock-outs to correct" count={waiting.missingPunches} to="/timesheet" />
+        <WaitingTile label="Shifts with no clock-in" count={waiting.missedShifts} to="/timesheet" />
         <WaitingTile
           label="Hours entered by hand to look into"
           count={waiting.handEntries}

@@ -1,6 +1,6 @@
 import { useDialog } from './useDialog';
 import { REMOTE_COLOUR, locationColourFn, shiftChipStyle, tint } from '../lib/shift-colours';
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { birthdayName } from '../lib/birthday';
 import { ApiError, api } from '../lib/api';
 import {
@@ -23,6 +23,7 @@ import type {
   PlanResult,
   PtoRequest,
   Shift,
+  UsualShift,
 } from '../lib/types';
 import { PTO_TYPE_LABELS, timeOffOn } from '../lib/time-off';
 import { jobRoleHex } from '../lib/job-role-colours';
@@ -67,6 +68,7 @@ import {
   useCoverOptions,
 } from './CoverSuggestions';
 import { noteToSend, ShiftNoteField } from './ShiftNote';
+import { UsualShiftHint, useUsualShift } from './UsualShift';
 import { useContextMenu, type ContextMenuItem } from './ContextMenu';
 import { atPracticeTime, practiceClockOf } from '../lib/practice-time';
 
@@ -1820,6 +1822,36 @@ function QuickAddDialog({
   const [jobRoleId, setJobRoleId] = useState(row.jobRoleId ?? '');
   const [start, setStart] = useState('09:00');
   const [end, setEnd] = useState('17:00');
+  /// Their usual for the day, filled in until the times are changed by hand.
+  const usual = useUsualShift(row.person?.id ?? null, localDate(day));
+  const [timesTouched, setTimesTouched] = useState(false);
+  // Also held in a ref, read synchronously: a usual that arrives a moment
+  // after somebody starts typing must never overwrite what they typed.
+  const touchedRef = useRef(false);
+  const touch = () => {
+    touchedRef.current = true;
+    setTimesTouched(true);
+  };
+  const [usedUsual, setUsedUsual] = useState<UsualShift | null>(null);
+  useEffect(() => {
+    if (!usual || touchedRef.current || !row.person) return;
+    setStart(usual.startTime);
+    setEnd(usual.endTime);
+    // The place only when the row does not fix it, and only one of theirs.
+    if (!row.locationId) {
+      if (usual.isRemote) setPlace(WORK_FROM_HOME);
+      else if (offices.some((office) => office.id === usual.locationId)) setPlace(usual.locationId);
+    }
+    if (
+      !row.jobRoleId &&
+      usual.jobRoleId &&
+      rolesHeldBy(row.person.id, jobRoles).some((role) => role.id === usual.jobRoleId)
+    ) {
+      setJobRoleId(usual.jobRoleId);
+    }
+    setUsedUsual(usual);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [usual]);
   const [publish, setPublish] = useState(true);
   const [note, setNote] = useState('');
   const [repeat, setRepeat] = useState(false);
@@ -1939,7 +1971,10 @@ function QuickAddDialog({
             type="time"
             required
             value={start}
-            onChange={(event) => setStart(event.target.value)}
+            onChange={(event) => {
+              touch();
+              setStart(event.target.value);
+            }}
             className={field}
           />
         </label>
@@ -1950,10 +1985,18 @@ function QuickAddDialog({
             type="time"
             required
             value={end}
-            onChange={(event) => setEnd(event.target.value)}
+            onChange={(event) => {
+              touch();
+              setEnd(event.target.value);
+            }}
             className={field}
           />
         </label>
+        {usedUsual && !timesTouched && (
+          <div className="col-span-2 -mt-1">
+            <UsualShiftHint usual={usedUsual} locations={locations} />
+          </div>
+        )}
         <div className="col-span-2 text-sm">
           <label htmlFor="quick-location" className="font-medium text-slate-800">
             Location
@@ -1961,7 +2004,11 @@ function QuickAddDialog({
           <PlaceSelect
             id="quick-location"
             value={place}
-            onChange={setPlace}
+            onChange={(next) => {
+              // Chosen by hand: their usual no longer overrides it.
+              touch();
+              setPlace(next);
+            }}
             offices={offices}
             allowHome={Boolean(row.person)}
             className={field}

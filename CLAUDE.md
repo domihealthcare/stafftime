@@ -92,6 +92,14 @@ person, not the Directory, not the payroll export. They live in their own tables
 and never added to `Employee`, and the schema guard pins their fields. Still no
 identity numbers, documents, licence numbers or date of birth.
 
+**An outside AI service** (October 2026, Dominguez: staff names and schedules
+may go to one; patient details never): **Ask Domi Staff** sends a question,
+and what the app looks up to answer it *as that person sees it*, to Anthropic
+(Claude). Never the clinical forms, the suggestion box, survey answers, staff
+profiles, licenses, punch locations, PINs or passwords; nothing about the
+questions is kept beyond a daily count. Off until `ANTHROPIC_API_KEY` is set
+— see `docs/ask-domi-staff-setup.md`.
+
 Nothing is uploaded to the app, with **one deliberate exception**: a
 **profile photo** of yourself (confirmed by Dominguez, September 2026). The
 browser crops it square, shrinks it to 256 px and re-encodes it as a small
@@ -516,8 +524,9 @@ Beyond the phases, the parts worth knowing about before picking up work:
   Schedule and on Time off), on the **Dashboard** for the next 8 weeks, and
   in the **nightly email** for the next 2, under the Time off part. **Warns,
   never refuses**; never a banner. A role of one warns whenever that person
-  is off (Dominguez to say if that is too noisy — e.g. leave out roles of
-  one, or set a minimum per office per role). `pto/time-off-clashes.ts` (one
+  is off — or, where a **minimum** is set for that office and role (see
+  *A minimum per office and job role*), when time off leaves fewer than it.
+  `pto/time-off-clashes.ts` (one
   query for all three), `GET /pto/:id/clashes`,
   `components/TimeOffClashes.tsx`; `tests/browser/clashes.mjs`.
 - **Suggest people for the open shifts** (8 October 2026, Dominguez — the
@@ -596,6 +605,68 @@ Beyond the phases, the parts worth knowing about before picking up work:
   `maintenance/onboarding-reminders.service.ts`, migration
   `20261009020000_onboarding_reminders`;
   `tests/browser/onboarding-reminders.mjs`.
+- **Shifts with no clock-in** (9 October 2026, Dominguez — the eleventh
+  "smarter" idea): a **published** shift that is **over** (last 14 days) with
+  **no punch by that person that day** — not on approved time off, not in a
+  closure of its office — is listed on the **Timesheet** banner, counted on
+  the Dashboard and in the nightly email (*sort out today*, Hours part),
+  managers only. Settled by **+ Add hours**, recording the time off or
+  removing the shift; nothing new stored. `time-entries/missed-shifts.ts`;
+  `tests/browser/missed-shifts.mjs`.
+- **Availability that clashes with a regular shift** (9 October 2026,
+  Dominguez — the twelfth "smarter" idea): when somebody adds availability
+  that rules out one of their **regular shifts** in the next eight weeks, the
+  managers down for the rota hear **at once on the bell**
+  (`AVAILABILITY_CLASH`), and it is on the **Schedule** banner and in the
+  nightly email (*coming up*, Schedule part) until the shift or the
+  availability changes. Saved either way, nothing changed by it.
+  `availability/regular-shift-clashes.ts`, migration
+  `20261009030000_availability_clash_notice`;
+  `tests/browser/availability-clash.mjs`.
+- **A new shift starts on their usual hours** (9 October 2026, Dominguez —
+  the thirteenth "smarter" idea): the ＋ on the rota and **+ Add** start on
+  the person's **regular shift** for that day, else what they worked most on
+  that **weekday** in the last 8 weeks (at least twice), else on **any day**
+  (at least three times), else 9 to 5 — hours, office and job role, with a
+  line saying where it came from, until the manager changes them by hand.
+  `GET /shifts/usual`, `shifts/usual-hours.ts`, `components/UsualShift.tsx`;
+  `tests/browser/usual-hours.mjs`. (Browser suites that relied on the 9 to 5
+  start now set it.)
+- **A minimum per office and job role** (9 October 2026, Dominguez — the
+  fourteenth "smarter" idea): **Manage → Job roles → Minimum on each day**
+  (`StaffingMinimum`, managers; blank is none). Where set, **Too many off at
+  once** goes by it instead of "more than half", and **days the rota leaves
+  short** — an office with anything on the rota that day, not closed at noon,
+  fewer people on in that role than the minimum (drafts count; working from
+  home and open shifts do not; a shift with no role counts under the
+  person's main one) — are on the **Schedule** banner and in the nightly email
+  (next 14 days, *coming up*, Schedule part) and in **Before you publish**.
+  Warns, never refuses. `staffing/minimums.ts`, `PUT /staffing/minimums`,
+  `components/StaffingMinimumsCard.tsx`, migration
+  `20261009040000_staffing_minimums`; `tests/browser/minimums.mjs`.
+- **Ask Domi Staff** (9 October 2026, Dominguez — the first AI feature,
+  after he agreed staff names and schedules, never patient details, may go
+  to an outside AI service): `/ask`, linked from Home's Quick card, a
+  question in plain words answered by **Claude Opus 5.5** (Anthropic) from
+  **tools that answer as the asker** — their own shifts and time off, the
+  practice calendar, pay days, the Directory; managers also the rota, time
+  off waiting and the round-up (`assistant/assistant-tools.ts`, gated and
+  unit-tested). Looks up only, never changes. **Nothing kept**: no question
+  or answer stored or logged, only a daily count (`AssistantUsage`, **40 a
+  day each**); the conversation lives on the screen. Effort `low`, refusals
+  fall back server-side (`fallbacks: "default"`), at most 4 rounds inside
+  Vercel's 30 seconds. **Off until `ANTHROPIC_API_KEY`** is set in Vercel
+  (Production only) — **not on the live site yet**; steps, cost (~3–5¢ a
+  question) and the disclosure line in `docs/ask-domi-staff-setup.md`.
+  `@anthropic-ai/sdk` pinned at 0.128.0. Migration
+  `20261009050000_assistant_usage`; `tests/browser/ask.mjs` (off, and the
+  screen with answers stood in for). Other AI ideas proposed and not built
+  yet: help writing News posts; summaries of closed surveys' written answers
+  (would need a new line in *Truly anonymous — how?*). Never the clinical
+  forms (would need a BAA).
+- **Turned down: "PTO about to be lost"** (9 October 2026, Dominguez): a
+  reminder to use PTO before it fails to carry over was proposed and refused —
+  not in the practice's interest. Do not propose it again.
 - **Time off on a staff profile, condensed** (8 October 2026, Dominguez:
   "shouldn't be this big … maybe just a pop up"): the profile shows what is
   left, the next day off and what is waiting; **See all N on file** opens
@@ -1270,7 +1341,7 @@ Beyond the phases, the parts worth knowing about before picking up work:
   Counts only — never a patient (the schema guard pins the fields; the note is
   the one free-text box and says so). **Not in the payroll export** (decided). See *Provider
   productivity* in `docs/architecture.md`.
-- **Tests**: ~1,430 unit tests, and ~515 end-to-end checks in `tests/browser`
+- **Tests**: ~1,470 unit tests, and ~515 end-to-end checks in `tests/browser`
   driven against a real API, a real Postgres and a real Chromium. Both run in CI
   on every push. The convention is to run the browser suites twice — once
   against the dev server, once against `vite preview`, which applies the

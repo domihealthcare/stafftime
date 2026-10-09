@@ -519,6 +519,9 @@ export interface Attention {
   missingCredentials: string[];
   overdueTasks: string[];
   missingPunches: string[];
+  missedShifts: string[];
+  regularShiftClashes: string[];
+  belowMinimum: string[];
   undecidedTimeOff: string[];
   silentKiosks: string[];
   unpublishedRota: string[];
@@ -1284,6 +1287,7 @@ export interface PracticeOverview {
     handEntries: number;
     unapprovedHours: number;
     missingPunches: number;
+    missedShifts: number;
   };
   /// The same thing again and again in the last four weeks, for a quiet word.
   patterns: PunchPattern[];
@@ -1325,6 +1329,8 @@ export interface TimeOffClash {
     approved: boolean;
     isHalfDay: boolean;
   }[];
+  /// The practice's minimum it falls below; null: more than half off.
+  minimum: number | null;
 }
 
 export interface PunchPattern {
@@ -1512,7 +1518,15 @@ export interface DigestReader {
 
 /// "Before you publish" — see `shifts/publish-check.ts` in the API.
 export interface PublishCheckSection {
-  key: 'licenses' | 'leavers' | 'leave' | 'closures' | 'availability' | 'overtime' | 'open';
+  key:
+    | 'licenses'
+    | 'leavers'
+    | 'leave'
+    | 'closures'
+    | 'availability'
+    | 'overtime'
+    | 'minimum'
+    | 'open';
   title: string;
   lines: string[];
 }
@@ -1529,4 +1543,24 @@ export interface ExportCheck {
     title: string;
     lines: string[];
   }[];
+}
+
+/// Somebody's usual hours and place for a day, for a new shift to start on
+/// (`GET /shifts/usual`): their regular shift, or what they have worked most
+/// often lately.
+export interface UsualShift {
+  startTime: string;
+  endTime: string;
+  locationId: string;
+  isRemote: boolean;
+  jobRoleId: string | null;
+  from: 'regular' | 'weekday' | 'recent';
+}
+
+/// The fewest the practice wants on in one job role at one office on an open
+/// day (Job roles → Minimum on each day). None set: no row.
+export interface StaffingMinimum {
+  locationId: string;
+  jobRoleId: string;
+  minimum: number;
 }

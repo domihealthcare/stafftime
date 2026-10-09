@@ -22,6 +22,7 @@ function build(
     kiosks?: unknown[];
     unapproved?: unknown[];
     leaverShifts?: unknown[];
+    missedShifts?: unknown[];
     openShifts?: unknown[];
     closures?: unknown[];
     closureShifts?: unknown[];
@@ -64,7 +65,7 @@ function build(
     ptoRequest: { findMany: jest.fn().mockResolvedValue(data.timeOff ?? []) },
     kioskDevice: { findMany: jest.fn().mockResolvedValue(data.kiosks ?? []) },
     // Several questions of the same table: the open-shift one is the one
-    // that asks for nobody; the time-off clashes ask about any shift, for
+    // that asks for nobody; shifts with no clock-in ask for ones already over; the time-off clashes ask about any shift, for
     // which weekend days an office is open.
     shift: {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -73,13 +74,17 @@ function build(
           ? (data.closureShifts ?? [])
           : args.where.employeeId === null
             ? (data.openShifts ?? [])
-            : args.where.employee
-              ? (data.leaverShifts ?? [])
-              : [],
+            : args.where.endsAt?.lte
+              ? (data.missedShifts ?? [])
+              : args.where.employee
+                ? (data.leaverShifts ?? [])
+                : [],
       ),
       count: jest.fn().mockResolvedValue(data.shiftsMissed ?? 1),
     },
     location: { findMany: jest.fn().mockResolvedValue(data.locations ?? []) },
+    shiftSeries: { findMany: jest.fn().mockResolvedValue([]) },
+    staffingMinimum: { findMany: jest.fn().mockResolvedValue([]) },
     practiceSettings: { findFirst: jest.fn().mockResolvedValue(null) },
     practiceEvent: { findMany: jest.fn().mockResolvedValue(data.closures ?? []) },
     closingRecord: { findMany: jest.fn().mockResolvedValue(data.closingRecords ?? []) },
@@ -666,6 +671,32 @@ describe('DigestService — what is going wrong at the office', () => {
       expect(where.status).toBe('COMPLETED');
       expect(where.clockOutAt).toEqual({ not: null });
       expect((date('2026-09-24').getTime() - where.clockInAt.lt.getTime()) / 86_400_000).toBe(7);
+    });
+  });
+
+  describe('shifts nobody turned up for', () => {
+    it('names the person, the day and the office, under Hours', async () => {
+      onThursday();
+      const { attention } = build({
+        missedShifts: [
+          {
+            id: 'shift-1',
+            employeeId: 'emp-1',
+            locationId: 'nb',
+            isRemote: false,
+            // Tuesday 22 September, 9am–5pm in New Jersey.
+            startsAt: new Date('2026-09-22T13:00:00Z'),
+            endsAt: new Date('2026-09-22T21:00:00Z'),
+            location: { name: 'North Bergen' },
+            employee: { firstName: 'Max', preferredName: null, lastName: 'Medical' },
+          },
+        ],
+      });
+
+      expect((await attention.gather()).missedShifts).toEqual([
+        'Max Medical — Tue, Sep 22, 9:00 AM–5:00 PM at North Bergen',
+      ]);
+      expect(DIGEST_TOPICS.HOURS).toContain('missedShifts');
     });
   });
 

@@ -1,5 +1,7 @@
 import type { ImportedPerson } from './staff-import';
 import type {
+  UsualShift,
+  StaffingMinimum,
   BirthdayEntry,
   Profile,
   Announcement,
@@ -433,7 +435,8 @@ export interface AppNotification {
     | 'PUNCH_REMINDER'
     | 'PROFILE_PHOTO'
     | 'LICENSE_REMINDER'
-    | 'ONBOARDING_REMINDER';
+    | 'ONBOARDING_REMINDER'
+    | 'AVAILABILITY_CLASH';
   title: string;
   body: string | null;
   link: string | null;
@@ -456,6 +459,8 @@ export interface AppConfig {
   /// Whether shifts and events go out as calendar invites (and so have left
   /// the subscribed feed, which keeps closures and time off).
   calendarInvites?: boolean;
+  /// Whether "Ask Domi Staff" is switched on.
+  assistant?: boolean;
 }
 
 export interface CalendarInviteStatus {
@@ -496,6 +501,12 @@ function timeOffChanged<T>(result: T): T {
 }
 
 export const api = {
+  /// "Ask Domi Staff": a question, with the conversation on screen so far.
+  ask: (question: string, history: { role: 'user' | 'assistant'; text: string }[]) =>
+    request<{ answer: string; left: number }>('/assistant/ask', {
+      method: 'POST',
+      body: JSON.stringify({ question, history }),
+    }),
   appConfig: () => {
     if (!configCache || Date.now() - configCache.at > 60_000) {
       const answer = request<AppConfig>('/config');
@@ -1013,6 +1024,14 @@ export const api = {
   coverage: (params: { from: string; to: string; locationId?: string }) =>
     request<Coverage>(`/shifts/coverage${toQuery(params)}`),
   /// Where somebody's week would land with this shift in it — asked before saving.
+  staffingMinimums: () => request<StaffingMinimum[]>('/staffing/minimums'),
+  setStaffingMinimums: (minimums: StaffingMinimum[]) =>
+    request<StaffingMinimum[]>('/staffing/minimums', {
+      method: 'PUT',
+      body: JSON.stringify({ minimums }),
+    }),
+  usualShift: (employeeId: string, date: string) =>
+    request<{ usual: UsualShift | null }>(`/shifts/usual${toQuery({ employeeId, date })}`),
   overtimeCheck: (params: {
     employeeId: string;
     locationId: string;

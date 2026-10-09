@@ -35,6 +35,7 @@ import {
 } from './dto/repeat-shifts.dto';
 import { RetimeShiftDto } from './dto/retime-shift.dto';
 import { UpdateShiftDto } from './dto/update-shift.dto';
+import { UsualShiftDto } from './dto/usual-shift.dto';
 import { OvertimeService } from './overtime.service';
 import { ShiftPlanningService } from './shift-planning.service';
 import { ShiftRetimeService } from './shift-retime.service';
@@ -154,6 +155,14 @@ export class ShiftsController {
       endsAt: new Date(query.endsAt),
       shiftId: query.shiftId,
     });
+  }
+
+  /// Somebody's usual hours and place for a day — their regular shift, or what
+  /// they have worked most often lately — for a new shift to start on.
+  @Get('usual')
+  @Roles(Role.MANAGER)
+  async usual(@Query() query: UsualShiftDto) {
+    return { usual: await this.shifts.usual(query.employeeId, query.date) };
   }
 
   /// Your own coming weeks that your published rota puts over, or close to,

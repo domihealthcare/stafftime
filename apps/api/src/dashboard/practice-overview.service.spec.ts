@@ -12,6 +12,7 @@ function build(
   const prisma = {
     feedback: { count: jest.fn().mockResolvedValue(2) },
     practiceSettings: { findFirst: jest.fn().mockResolvedValue(null) },
+    staffingMinimum: { findMany: jest.fn().mockResolvedValue([]) },
     employee: { findMany: jest.fn().mockResolvedValue([]) },
     employeeChecklist: { findMany: jest.fn().mockResolvedValue(data.checklists ?? []) },
     closingRecord: { findMany: jest.fn().mockResolvedValue(data.closing ?? []) },

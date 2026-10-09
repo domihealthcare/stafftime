@@ -32,6 +32,7 @@ import type {
   PtoRequest,
   PublishCheck,
   Shift,
+  UsualShift,
 } from '../lib/types';
 import { CalendarLinkCard } from '../components/CalendarLinkCard';
 import { KIND_STYLE } from '../lib/calendar-kinds';
@@ -46,7 +47,8 @@ import {
   eventsOnDay,
   useClosureCheck,
 } from '../components/PracticeEvents';
-import { JobRoleSelect } from '../components/JobRoleSelect';
+import { JobRoleSelect, rolesHeldBy } from '../components/JobRoleSelect';
+import { UsualShiftHint, useUsualShift } from '../components/UsualShift';
 import { PersonPicker } from '../components/PersonPicker';
 import { PlanResultNotice } from '../components/PlanResultNotice';
 import {
@@ -547,7 +549,14 @@ export function SchedulePage() {
 
       <NeedsAttention
         collapsible
-        sections={['shiftsInClosures', 'openShifts', 'unpublishedRota', 'shiftsForLeavers']}
+        sections={[
+          'shiftsInClosures',
+          'openShifts',
+          'unpublishedRota',
+          'shiftsForLeavers',
+          'regularShiftClashes',
+          'belowMinimum',
+        ]}
       />
 
       {/* Time off lives here now it has no tab (October 2026): requests to
@@ -1196,6 +1205,36 @@ function NewShiftForm({
   const [place, setPlace] = useState('');
   const [startsAt, setStartsAt] = useState(() => defaultInput(defaultDate, 9));
   const [endsAt, setEndsAt] = useState(() => defaultInput(defaultDate, 17));
+  /// Their usual for the day, filled in until the times are changed by hand.
+  const [timesTouched, setTimesTouched] = useState(false);
+  // Also held in a ref, read synchronously: a usual that arrives a moment
+  // after somebody starts typing must never overwrite what they typed.
+  const touchedRef = useRef(false);
+  const touch = () => {
+    touchedRef.current = true;
+    setTimesTouched(true);
+  };
+  const [usedUsual, setUsedUsual] = useState<UsualShift | null>(null);
+  const usual = useUsualShift(
+    employeeId && employeeId !== OPEN_SHIFT ? employeeId : null,
+    startsAt.slice(0, 10),
+  );
+  useEffect(() => {
+    setUsedUsual(null);
+    if (!usual || touchedRef.current) return;
+    const date = startsAt.slice(0, 10);
+    setStartsAt(`${date}T${usual.startTime}`);
+    setEndsAt(`${usual.endTime > usual.startTime ? date : nextDay(date)}T${usual.endTime}`);
+    setPlace(usual.isRemote ? WORK_FROM_HOME : usual.locationId);
+    if (
+      usual.jobRoleId &&
+      rolesHeldBy(employeeId, jobRoles).some((role) => role.id === usual.jobRoleId)
+    ) {
+      setJobRoleId(usual.jobRoleId);
+    }
+    setUsedUsual(usual);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [usual]);
   const [note, setNote] = useState('');
   const [busy, setBusy] = useState(false);
   const confirm = useConfirm();
@@ -1323,7 +1362,11 @@ function NewShiftForm({
           <PlaceSelect
             id="shift-location"
             value={place}
-            onChange={setPlace}
+            onChange={(next) => {
+              // Chosen by hand: their usual no longer overrides it.
+              touch();
+              setPlace(next);
+            }}
             offices={availableLocations}
             allowHome={canWorkFromHome}
             className="mt-1 w-full rounded-lg border-slate-300 text-sm shadow-sm focus:border-brand-600 focus:ring-brand-600"
@@ -1345,7 +1388,12 @@ function NewShiftForm({
             type="datetime-local"
             required
             value={startsAt}
-            onChange={(event) => setStartsAt(event.target.value)}
+            onChange={(event) => {
+              // A new date asks for that day's usual; new hours are the
+              // manager's own from then on.
+              if (event.target.value.slice(11) !== startsAt.slice(11)) touch();
+              setStartsAt(event.target.value);
+            }}
             className="mt-1 w-full rounded-lg border-slate-300 text-sm shadow-sm focus:border-brand-600 focus:ring-brand-600"
           />
         </div>
@@ -1359,10 +1407,18 @@ function NewShiftForm({
             type="datetime-local"
             required
             value={endsAt}
-            onChange={(event) => setEndsAt(event.target.value)}
+            onChange={(event) => {
+              touch();
+              setEndsAt(event.target.value);
+            }}
             className="mt-1 w-full rounded-lg border-slate-300 text-sm shadow-sm focus:border-brand-600 focus:ring-brand-600"
           />
         </div>
+        {usedUsual && !timesTouched && (
+          <div className="sm:col-span-2">
+            <UsualShiftHint usual={usedUsual} locations={locations} />
+          </div>
+        )}
 
         <div className="sm:col-span-2">
           <ShiftNoteField value={note} onChange={setNote} />
@@ -1400,6 +1456,13 @@ function NewShiftForm({
 function isoOrEmpty(value: string): string {
   const date = new Date(value);
   return value && !Number.isNaN(date.getTime()) ? date.toISOString() : '';
+}
+
+/// The calendar day after a "YYYY-MM-DD", for a usual shift past midnight.
+function nextDay(date: string): string {
+  const day = new Date(`${date}T12:00:00Z`);
+  day.setUTCDate(day.getUTCDate() + 1);
+  return day.toISOString().slice(0, 10);
 }
 
 function defaultInput(day: Date, hour: number): string {

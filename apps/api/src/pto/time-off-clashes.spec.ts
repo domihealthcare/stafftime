@@ -59,6 +59,23 @@ describe('findClashes', () => {
     );
   });
 
+  it('goes by the practice’s minimum where one is set, instead of more than half', () => {
+    // Three MAs, minimum 3: one off is already short.
+    const withMinimum = { ...mas, minimum: 3 };
+    const [clash] = findClashes([withMinimum], [off('ana', '2026-12-22')], weekdays);
+    expect(clash).toMatchObject({ total: 3, minimum: 3 });
+    expect(describeClash(clash)).toBe(
+      'North Bergen, Tue, Dec 22: 1 of 3 in Medical Assistant off (minimum 3) — Ana',
+    );
+    // Minimum 1: two of three off still leaves one.
+    const lenient = { ...mas, minimum: 1 };
+    expect(
+      findClashes([lenient], [off('ana', '2026-12-22'), off('bea', '2026-12-22')], weekdays),
+    ).toEqual([]);
+    // Nobody off is never a time-off clash, however short the role is.
+    expect(findClashes([{ ...mas, minimum: 5 }], [], weekdays)).toEqual([]);
+  });
+
   it('tells a run of days with the same people off as one, across a weekend it skips', () => {
     const clashes = findClashes(
       [mas],
@@ -112,7 +129,7 @@ describe('loadTimeOffClashes', () => {
     employee: { firstName: employeeId, preferredName: null, lastName: 'X' },
   });
 
-  function build() {
+  function build(minimums: unknown[] = []) {
     const prisma = {
       employee: {
         findMany: jest
@@ -127,6 +144,7 @@ describe('loadTimeOffClashes', () => {
         findMany: jest.fn().mockResolvedValue([request('r1', 'ana'), request('r2', 'bea')]),
       },
       shift: { findMany: jest.fn().mockResolvedValue([]) },
+      staffingMinimum: { findMany: jest.fn().mockResolvedValue(minimums) },
     };
     return prisma;
   }
@@ -135,6 +153,19 @@ describe('loadTimeOffClashes', () => {
     const clashes = await loadTimeOffClashes(build() as never, '2026-12-21', '2026-12-25');
     // MA: Ana and Bea, both off. FD: Ana and Cy, one off — half is not more than half.
     expect(clashes.map((c) => `${c.jobRoleName} ${c.off.length}/${c.total}`)).toEqual(['MA 2/2']);
+  });
+
+  it('takes the minimum for each office and role', async () => {
+    const clashes = await loadTimeOffClashes(
+      build([{ locationId: 'nb', jobRoleId: 'FD', minimum: 2 }]) as never,
+      '2026-12-21',
+      '2026-12-25',
+    );
+    // FD: Ana and Cy, minimum 2 — Ana off leaves one.
+    expect(clashes.map((c) => `${c.jobRoleName} ${c.off.length}/${c.total}`)).toEqual([
+      'MA 2/2',
+      'FD 1/2',
+    ]);
   });
 
   it('for one person, only the clashes they are part of', async () => {

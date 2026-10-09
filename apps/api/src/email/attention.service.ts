@@ -21,6 +21,12 @@ import { loadStanding } from '../credentials/standing-query';
 import { PrismaService } from '../prisma/prisma.service';
 import { PracticeSettingsService } from '../settings/practice-settings.service';
 import { loadPunchPatterns } from '../time-entries/punch-patterns';
+import { describeMissedShift, loadMissedShifts } from '../time-entries/missed-shifts';
+import { describeShortDay, loadShortDays, SHORT_DAYS_AHEAD } from '../staffing/minimums';
+import {
+  describeRegularShiftClash,
+  loadRegularShiftClashes,
+} from '../availability/regular-shift-clashes';
 import { describeOvertimeHeading, loadOvertimeForecast } from '../time-entries/overtime-forecast';
 import { describeClash, EMAIL_DAYS, loadTimeOffClashes } from '../pto/time-off-clashes';
 
@@ -72,6 +78,15 @@ export interface DigestContents {
   missingCredentials: string[];
   overdueTasks: string[];
   missingPunches: string[];
+  /// Published shifts that ended with no clock-in at all, in the last two
+  /// weeks: see `time-entries/missed-shifts.ts`.
+  missedShifts: string[];
+  /// Regular shifts somebody's availability now rules out, in the next eight
+  /// weeks: see `availability/regular-shift-clashes.ts`.
+  regularShiftClashes: string[];
+  /// Days in the next two weeks the rota has fewer on in a job role at an
+  /// office than the practice's minimum: see `staffing/minimums.ts`.
+  belowMinimum: string[];
   undecidedTimeOff: string[];
   silentKiosks: string[];
   unpublishedRota: string[];
@@ -153,6 +168,9 @@ export class AttentionService {
       patterns,
       clashes,
       forecast,
+      missed,
+      regularClashes,
+      shortDays,
     ] = await Promise.all([
       this.prisma.employeeCredential.findMany({
         where: {
@@ -234,6 +252,13 @@ export class AttentionService {
         addDaysTo(localDateIn(new Date(), PRACTICE_ZONE), EMAIL_DAYS - 1),
       ),
       loadOvertimeForecast(this.prisma),
+      loadMissedShifts(this.prisma),
+      loadRegularShiftClashes(this.prisma),
+      loadShortDays(
+        this.prisma,
+        localDateIn(new Date(), PRACTICE_ZONE),
+        addDaysTo(localDateIn(new Date(), PRACTICE_ZONE), SHORT_DAYS_AHEAD - 1),
+      ),
     ]);
 
     /// "8:52 AM", on the practice's clock.
@@ -265,6 +290,9 @@ export class AttentionService {
           ? `${who(row.employee)} — clocked in ${clock(row.clockInAt)} on ${on(row.clockInAt)}, clocked out automatically at midnight; correct the time`
           : `${who(row.employee)} — clocked in ${on(row.clockInAt)} and never out`,
       ),
+      missedShifts: missed.map(describeMissedShift),
+      regularShiftClashes: regularClashes.map(describeRegularShiftClash),
+      belowMinimum: shortDays.map(describeShortDay),
       undecidedTimeOff: timeOff.map(
         (row) =>
           `${who(row.employee)} — ${day(row.startDate)}${

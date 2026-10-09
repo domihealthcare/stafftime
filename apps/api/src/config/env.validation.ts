@@ -132,6 +132,12 @@ class EnvironmentVariables {
   @IsString()
   GOOGLE_CALENDAR_INVITES?: string;
 
+  /// Turns on "Ask Domi Staff": an Anthropic API key. Unset, the feature is
+  /// off and nothing is ever sent. See docs/ask-domi-staff-setup.md.
+  @IsOptional()
+  @IsString()
+  ANTHROPIC_API_KEY?: string;
+
   /// Shared secret for the scheduled maintenance route. Unset means the route
   /// refuses everything, so it is never left open by omission.
   @IsOptional()

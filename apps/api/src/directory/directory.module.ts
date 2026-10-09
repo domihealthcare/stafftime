@@ -6,5 +6,6 @@ import { ExtensionsService } from './extensions.service';
 @Module({
   controllers: [DirectoryController],
   providers: [DirectoryService, ExtensionsService],
+  exports: [DirectoryService],
 })
 export class DirectoryModule {}

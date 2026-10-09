@@ -2775,6 +2775,152 @@ trend, not something to fix on a screen today — and **the person is not
 told**: it is a heads-up for a quiet word, not an automatic telling-off.
 Managers and admins only, as both routes already were.
 
+## Shifts with no clock-in
+
+October 2026, Dominguez — the eleventh "make it smarter" idea. The person is
+reminded 15 minutes into a shift they have not clocked in for, but once the
+shift was over nothing told a manager; a missed day turned up at payroll, or
+never. `time-entries/missed-shifts.ts` lists every **published** shift with
+somebody on it that is **over**, ended in the last **14 days**
+(`MISSED_SHIFT_DAYS`), where the person has **no punch that day** in New
+Jersey — or one overlapping the shift, for a shift past midnight — and is not
+on **approved time off** that day, nor at an office **closed** when the shift
+started. Any punch counts, late, short or entered by hand: this is about not
+turning up at all, which lateness already has its own flags for. Current
+staff only; a leaver's shifts are on *Shifts for people who have left*.
+
+Nothing new is stored. It is settled by what a manager would do anyway:
+**+ Add hours** (they worked and forgot — a hand entry is a punch that day),
+record the time off, or remove the shift. One loader (`loadMissedShifts`)
+serves the **Timesheet** banner (`missedShifts`, first section), the nightly
+email (tier *Sort out today*, under the **Hours** part) and a count among the
+Dashboard's *waiting on a manager* tiles. Managers only, like the rest of the
+round-up. `tests/browser/missed-shifts.mjs`.
+
+## Availability that clashes with a regular shift
+
+October 2026, Dominguez — the twelfth "make it smarter" idea. Availability
+needs no approval, so somebody with a regular Wednesday shift could say they
+were no longer free on Wednesdays and nobody would know until that week's rota
+was built — or until the shift, written out weeks ahead, simply was not
+worked. `availability/regular-shift-clashes.ts` checks every regular shift
+(`ShiftSeries`) with somebody on it, still running, on each date it falls on
+in the next **eight weeks** (`CLASH_DAYS_AHEAD`, as far as regular shifts are
+written out — "which weeks" included, via `onPattern`), against that person's
+availability by the scheduler's own rules (`availability.rules.ts`: overlap,
+not containment; a shift past midnight counts to the end of its first day).
+One line per regular shift and rule, with the first date they meet.
+
+- **At once**: when a rule is saved (`AvailabilityService.create`) and clashes,
+  the managers down for the **rota** part of the round-up (or all of them,
+  when nobody is) get a bell note (`AVAILABILITY_CLASH`, linking to the
+  Schedule). No email at that moment — the nightly email carries it.
+- **Until settled**: the Schedule banner and the nightly email (tier *Coming
+  up*, **Schedule** part) list it (`regularShiftClashes`) until the regular
+  shift is stopped or changed, or the availability is.
+
+Saved either way and nothing changed by it: the manager decides whether the
+regular shift ends, moves, or the person is asked. Migration
+`20261009030000_availability_clash_notice` adds only the notification kind.
+`tests/browser/availability-clash.mjs`.
+
+## A new shift starts on their usual hours
+
+October 2026, Dominguez — the thirteenth "make it smarter" idea. Every shift
+form started on 9 to 5, so somebody who always works 7 to 3 at West New York
+meant retyping the hours and office for every shift. `shifts/usual-hours.ts`
+(`GET /shifts/usual?employeeId&date`, managers) gives their usual for a date,
+in this order:
+
+1. their **regular shift** (`ShiftSeries`) that falls on that date — "which
+   weeks" included;
+2. else the hours and place they have worked **most often on that weekday**
+   in the last eight weeks (`USUAL_WEEKS`), at least twice, the latest
+   winning a tie;
+3. else the same over **any day** of those eight weeks, at least three times;
+4. else nothing, and the form keeps 9 to 5.
+
+The job role comes with it when they still hold it (the latest shift's role,
+from the history). Cancelled shifts are not counted; drafts are.
+
+The ＋ on the rota and **+ Add** (`useUsualShift`, `UsualShiftHint` in
+`components/UsualShift.tsx`) fill it in **until the manager changes the hours
+or place by hand**, with a line under the times saying where it came from. The
+＋ keeps the office of the row it was pressed in (a row inside an office's
+group) and only takes the place when the row does not fix one. Repeating
+shifts, a regular shift's Edit and a usual week still start on 9 to 5: they
+are where a pattern is set, not filled from one. Nothing is stored.
+`tests/browser/usual-hours.mjs`.
+
+## A minimum per office and job role
+
+October 2026, Dominguez — the fourteenth "make it smarter" idea, parked until
+*Too many off at once* had run for a while, then asked for. **Manage → Job
+roles → Minimum on each day** keeps the fewest people the practice wants on in
+a job role at an office on a day it is open (`StaffingMinimum`, one row per
+office and role, 1–50, checked by the database too; blank is no row). Saved
+whole (`PUT /staffing/minimums`, managers), like the office extensions.
+
+Where a minimum is set, two things use it (`staffing/minimums.ts`):
+
+- **Too many off at once** (`pto/time-off-clashes.ts`) goes by it: a clash is
+  time off that leaves fewer than the minimum on (somebody has to be off for
+  it to be a time-off clash), instead of more than half off. The wording adds
+  "(minimum N)". Without one, nothing changed.
+- **Days the rota leaves short**: a day an office is open — it has anything on
+  the rota that day, and is not closed at noon — with fewer people on in that
+  role than the minimum. A person counts once a day, under their shift's job
+  role (or their main one, for an older shift saved without), at the shift's
+  office; working from home does not count for being in the office, nor do
+  open shifts with nobody on. Drafts count, as on the rota. "Anything on the
+  rota" keeps an unbuilt week quiet: that is the *not published yet*
+  reminder's job. Listed on the **Schedule** banner and in the nightly email
+  for the next 14 days (`belowMinimum`, *Coming up*, **Schedule** part), and
+  in **Before you publish** for the days and offices of the drafts.
+
+Warns, never refuses. `tests/browser/minimums.mjs`.
+
+## Ask Domi Staff
+
+October 2026, Dominguez — the first AI feature, built once he agreed that
+staff names and schedules (never patient details) may go to an outside AI
+service. `/ask` (linked from Home's Quick card while it is on) takes a
+question in plain words; `POST /assistant/ask` answers it with **Claude Opus
+5.5** through a hand-written tool loop (`assistant/assistant.service.ts`).
+
+**The tools answer as the asker** (`assistant/assistant-tools.ts`), through
+the services the screens use, so they cannot show more than the screens do:
+`my_schedule` (their own **published** shifts — the person is fixed to the
+asker, whatever the model asks for), `my_time_off` (balance and requests),
+`practice_calendar` (`EventsService.list` as them; a rep lunch by name and
+company only, never the cell, status or notes), `pay_days`, `directory`
+(`DirectoryService.list` as them). Managers and admins also get `rota`
+(a day's shifts, drafts and open shifts marked), `time_off_requests`
+(waiting) and `needs_attention` (the round-up's lists). A tool not offered to
+the asker is refused if called anyway. Tool results are compact JSON with no
+ids. Nothing reaches the clinical forms, the suggestion box, survey answers,
+staff profiles, licenses, punch locations, PINs or passwords.
+
+**Request shape.** Effort `low` (chat; thinking cannot be turned off on this
+model), `max_tokens` 4000, no streaming. Refusals fall back server-side
+(`betas: ["server-side-fallback-2026-07-01"]`, `fallbacks: "default"`); a
+refusal that stands is answered "Sorry — I can't help with that one". Each
+tool round appends the assistant's whole turn, thinking included, then the
+results (append-only). At most 4 rounds and 26 seconds, with a 20-second
+client timeout and one retry, inside Vercel's 30-second function limit. The
+system prompt is the rules, then who is asking and today's date in New Jersey.
+The conversation's earlier turns come from the browser (last six, text only)
+and are never stored.
+
+**Nothing kept.** No question or answer is stored or logged;
+`AssistantUsage` keeps a count per person per day, capped at
+`DAILY_QUESTIONS` (40). **Off until `ANTHROPIC_API_KEY` is set**:
+`/api/config` says `assistant: false`, the route answers 503, Home offers
+nothing and the page says so. Set-up, cost and the disclosure line:
+`docs/ask-domi-staff-setup.md`. Tests: `assistant/*.spec.ts` (gating, the
+loop with a fake client), `tests/browser/ask.mjs` (off; the screen with
+answers stood in for in the browser — CI has no key and sends nothing).
+
 ## Heading for overtime on hours worked
 
 October 2026, Dominguez — the ninth of the "make it smarter" ideas. The rota

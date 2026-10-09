@@ -37,6 +37,9 @@ export interface Team {
   jobRoleName: string;
   jobRoleOrder: number;
   memberIds: string[];
+  /// The practice's minimum for this office and role, when it has set one
+  /// (`StaffingMinimum`): then a clash is leaving fewer than that on.
+  minimum?: number | null;
 }
 
 /// One request, approved or waiting, as plain dates.
@@ -70,6 +73,8 @@ export interface TimeOffClash {
   /// How many at that office hold the role, and who of them is off.
   total: number;
   off: ClashPerson[];
+  /// The minimum it falls below, when one is set; null: more than half off.
+  minimum: number | null;
 }
 
 /**
@@ -102,7 +107,12 @@ export function findClashes(
         }))
         .sort((a, b) => a.name.localeCompare(b.name));
       const people = new Set(off.map((person) => person.employeeId));
-      const clashing = people.size * 2 > members.size;
+      // By the practice's minimum where it has set one, else more than half.
+      const minimum = team.minimum ?? null;
+      const clashing =
+        minimum !== null
+          ? people.size > 0 && members.size - people.size < minimum
+          : people.size * 2 > members.size;
 
       const same =
         run &&
@@ -124,6 +134,7 @@ export function findClashes(
             jobRoleName: team.jobRoleName,
             total: members.size,
             off,
+            minimum,
           }
         : null;
     }
@@ -159,7 +170,8 @@ export function describeClash(clash: TimeOffClash): string {
     clash.off.length === clash.total
       ? `all ${clash.total} in ${clash.jobRoleName} off`
       : `${clash.off.length} of ${clash.total} in ${clash.jobRoleName} off`;
-  return `${clash.locationName}, ${when}: ${count} — ${who}`;
+  const minimum = clash.minimum !== null ? ` (minimum ${clash.minimum})` : '';
+  return `${clash.locationName}, ${when}: ${count}${minimum} — ${who}`;
 }
 
 export function shortDate(date: string): string {
@@ -184,7 +196,7 @@ export async function loadTimeOffClashes(
   const fromDay = new Date(`${from}T00:00:00Z`);
   const toDay = new Date(`${to}T00:00:00Z`);
 
-  const [people, requests, weekendShifts] = await Promise.all([
+  const [people, requests, weekendShifts, minimums] = await Promise.all([
     prisma.employee.findMany({
       where: { employmentStatus: EmploymentStatus.ACTIVE },
       select: {
@@ -221,7 +233,13 @@ export async function loadTimeOffClashes(
       },
       select: { locationId: true, startsAt: true, location: { select: { timezone: true } } },
     }),
+    prisma.staffingMinimum.findMany({
+      select: { locationId: true, jobRoleId: true, minimum: true },
+    }),
   ]);
+  const minimumOf = new Map(
+    minimums.map((row) => [`${row.locationId}:${row.jobRoleId}`, row.minimum]),
+  );
 
   const teamsByKey = new Map<string, Team>();
   for (const person of people) {
@@ -235,6 +253,7 @@ export async function loadTimeOffClashes(
           jobRoleName: jobRole.name,
           jobRoleOrder: jobRole.sortOrder,
           memberIds: [],
+          minimum: minimumOf.get(key) ?? null,
         };
         team.memberIds.push(person.id);
         teamsByKey.set(key, team);

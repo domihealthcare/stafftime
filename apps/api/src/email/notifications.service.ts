@@ -102,6 +102,37 @@ export class NotificationsService {
     );
   }
 
+  /// Somebody's new availability clashes with one of their regular shifts
+  /// (see `availability/regular-shift-clashes.ts`). On the bell of the
+  /// managers down for the rota in the round-up (Email settings), or all of
+  /// them when nobody is; the nightly email lists it too, so no email here.
+  async availabilityClash(employeeId: string, lines: string[]): Promise<void> {
+    const person = await this.prisma.employee.findUnique({
+      where: { id: employeeId },
+      select: { firstName: true, preferredName: true, lastName: true },
+    });
+    if (!person || lines.length === 0) return;
+
+    const managers = await this.prisma.employee.findMany({
+      where: {
+        role: { in: [Role.MANAGER, Role.ADMIN] },
+        employmentStatus: EmploymentStatus.ACTIVE,
+        id: { not: employeeId },
+      },
+      select: { id: true, mutedDigestTopics: true },
+    });
+    const who = `${person.preferredName ?? person.firstName} ${person.lastName}`;
+    await this.inbox.notify(
+      readersOf(DigestTopic.SCHEDULE, managers).map((manager) => manager.id),
+      {
+        kind: NotificationKind.AVAILABILITY_CLASH,
+        title: `${who}'s new availability clashes with a regular shift`,
+        body: lines.join('; '),
+        link: '/schedule',
+      },
+    );
+  }
+
   /// Managers are not told anything today unless they go and look, which is how
   /// a request sits for a week.
   ///

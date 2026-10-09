@@ -7,6 +7,7 @@ import { loadStanding } from '../credentials/standing-query';
 import { PrismaService } from '../prisma/prisma.service';
 import { SurveysService } from '../surveys/surveys.service';
 import { loadPunchPatterns } from '../time-entries/punch-patterns';
+import { loadMissedShifts } from '../time-entries/missed-shifts';
 import { loadOvertimeForecast } from '../time-entries/overtime-forecast';
 import { DASHBOARD_WEEKS, loadTimeOffClashes } from '../pto/time-off-clashes';
 import { addDaysTo, localDateIn, PRACTICE_ZONE } from '../common/util/zoned-time.util';
@@ -153,7 +154,7 @@ export class PracticeOverviewService {
 
   /// What is sitting with a manager to do.
   private async waiting() {
-    const [timeOff, handEntries, unapproved, missingPunches] = await Promise.all([
+    const [timeOff, handEntries, unapproved, missingPunches, missed] = await Promise.all([
       this.prisma.ptoRequest.count({ where: { status: PtoStatus.PENDING } }),
       this.prisma.timeEntry.count({
         where: { enteredByHandAt: { not: null }, handEntryCheckedAt: null },
@@ -176,7 +177,14 @@ export class PracticeOverviewService {
           ],
         },
       }),
+      loadMissedShifts(this.prisma),
     ]);
-    return { timeOff, handEntries, unapprovedHours: unapproved, missingPunches };
+    return {
+      timeOff,
+      handEntries,
+      unapprovedHours: unapproved,
+      missingPunches,
+      missedShifts: missed.length,
+    };
   }
 }
