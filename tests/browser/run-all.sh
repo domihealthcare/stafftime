@@ -79,6 +79,7 @@ reset_state() {
     -c "update employees set pronouns = null, about = null, \"photoUpdatedAt\" = null, \"preferredName\" = null;" \
     -c "delete from time_entries where \"editReason\" = 'ADP suite: a full day';" \
     -c "delete from time_entries where \"editReason\" = 'patterns-suite';" \
+    -c "delete from time_entries where \"handEntryNote\" = 'approve-clean-suite';" \
     -c "delete from time_entries where \"employeeId\" = (select id from employees where email = 'manager@domihealthcare.com') and \"clockInAt\" > now() - interval '6 hours';" \
     -c "update employees set \"adpFileNumber\" = null;" \
     -c "update employees set \"postNominals\" = null;" \
@@ -87,7 +88,7 @@ reset_state() {
 
 # The scheduler suite builds its rotas in February 2027 so that clearing them
 # cannot touch the shift the seed puts on today's date.
-SUITES="${SUITES:-drive refusals correct auth kiosk export locations pto pto-policy presets calendar scheduler checklists phone reset payroll credentials privacy race attention announcements resources directory availability surveys dashboard date-ranges help adp profile rota wfh overtime bell rota-print closing install golive staff staff-profile birthdays events closures recurring standing usual-week own-roles hand-entry removed-shift quick-add credential-types clinical care-plan wellness productivity schedule-phone clock-place extensions shift-notes shift-hours repeat-weeks news-social punch-reminders main-job-role auto-clock-out digest-topics practice-calendar cover patterns clashes}"
+SUITES="${SUITES:-drive refusals correct auth kiosk export locations pto pto-policy presets calendar scheduler checklists phone reset payroll credentials privacy race attention announcements resources directory availability surveys dashboard date-ranges help adp profile rota wfh overtime bell rota-print closing install golive staff staff-profile birthdays events closures recurring standing usual-week own-roles hand-entry removed-shift quick-add credential-types clinical care-plan wellness productivity schedule-phone clock-place extensions shift-notes shift-hours repeat-weeks news-social punch-reminders main-job-role auto-clock-out digest-topics practice-calendar cover patterns clashes approve-clean}"
 
 # Full output per suite goes to a file, and only the step lines are printed, so
 # a failure's detail is still there to read rather than truncated away.

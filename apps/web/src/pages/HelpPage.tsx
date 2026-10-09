@@ -919,9 +919,13 @@ const MANAGERS: Section[] = [
         question: 'How do I approve hours?',
         answer: (
           <p>
-            <Screen>Timesheet</Screen> shows everybody's punches. Press <strong>Approve</strong> on
-            each one that is right. Flagged entries — late, left early, missing punch — are worth a
-            look first. The banner at the top lists what is still unapproved.
+            <Screen>Timesheet</Screen> shows everybody's punches. Pick the period (a pay period,
+            say) and press <strong>Approve all N with nothing flagged</strong>: after asking, it
+            approves every entry on screen that is not late, left early, edited, entered by hand,
+            clocked out at midnight or somewhere other than scheduled. Those flagged ones stay, each
+            with its own <strong>Approve</strong>, for you to look at first. The Day and Employee
+            filters narrow what the button takes. The banner at the top lists what is still
+            unapproved.
           </p>
         ),
       },

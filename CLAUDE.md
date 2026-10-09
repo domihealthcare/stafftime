@@ -529,6 +529,16 @@ Beyond the phases, the parts worth knowing about before picking up work:
   then" otherwise. The manager unticks any and presses **Assign**; nothing
   is saved before that. `POST /shifts/suggest-cover`, `planCover` in
   `shifts/cover-options.ts`; steps in `tests/browser/cover.mjs`.
+- **Approve the clean hours** (9 October 2026, Dominguez — the fifth
+  "smarter" idea): the Timesheet's **Approve all N with nothing flagged**
+  approves, after asking, every entry on screen that is closed and carries no
+  flag (late, left early, edited, entered by hand, clocked out at midnight,
+  not where scheduled, needs review); the flagged ones stay for a look one by
+  one. The filters narrow what it takes. The server approves only the ids
+  sent that still match (`time-entries/clean-entry.ts`, one `updateMany`), so
+  an entry edited meanwhile is left out; a spec fails if a new flag is not
+  added there. `POST /time-entries/approve-clean`;
+  `tests/browser/approve-clean.mjs`.
 - **Time off on a staff profile, condensed** (8 October 2026, Dominguez:
   "shouldn't be this big … maybe just a pop up"): the profile shows what is
   left, the next day off and what is waiting; **See all N on file** opens

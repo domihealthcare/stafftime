@@ -1,5 +1,14 @@
 import { TimeEntryStatus } from '@prisma/client';
-import { IsDateString, IsEnum, IsOptional, IsUUID } from 'class-validator';
+import {
+  ArrayMaxSize,
+  ArrayNotEmpty,
+  ArrayUnique,
+  IsArray,
+  IsDateString,
+  IsEnum,
+  IsOptional,
+  IsUUID,
+} from 'class-validator';
 
 export class QueryTimeEntriesDto {
   @IsOptional()
@@ -21,4 +30,15 @@ export class QueryTimeEntriesDto {
   @IsOptional()
   @IsEnum(TimeEntryStatus)
   status?: TimeEntryStatus;
+}
+
+/// The entries on screen, for "Approve all with nothing flagged". The server
+/// approves only those that really have nothing flagged (`clean-entry.ts`).
+export class ApproveCleanDto {
+  @IsArray()
+  @ArrayNotEmpty()
+  @ArrayMaxSize(2000)
+  @ArrayUnique()
+  @IsUUID('4', { each: true })
+  ids!: string[];
 }

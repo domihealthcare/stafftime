@@ -19,7 +19,7 @@ import { ClockInDto } from './dto/clock-in.dto';
 import { AddHoursDto, CheckHandEntryDto } from './dto/add-hours.dto';
 import { ClockOutDto } from './dto/clock-out.dto';
 import { EditTimeEntryDto } from './dto/edit-time-entry.dto';
-import { QueryTimeEntriesDto } from './dto/query-time-entries.dto';
+import { ApproveCleanDto, QueryTimeEntriesDto } from './dto/query-time-entries.dto';
 import { TimeEntriesService } from './time-entries.service';
 
 @Controller('time-entries')
@@ -55,6 +55,14 @@ export class TimeEntriesController {
   @Roles(Role.MANAGER)
   addByHand(@Body() dto: AddHoursDto, @CurrentUser() user: AuthUser) {
     return this.timeEntries.addByHand(dto, user);
+  }
+
+  /// "Approve all with nothing flagged" on the Timesheet: of the entries on
+  /// screen, those with no flag at all. See `clean-entry.ts`.
+  @Post('approve-clean')
+  @Roles(Role.MANAGER)
+  approveClean(@Body() dto: ApproveCleanDto, @CurrentUser() user: AuthUser) {
+    return this.timeEntries.approveClean(dto.ids, user);
   }
 
   /// The caller's open punch, if any.

@@ -24,6 +24,7 @@ import { toUtcDate } from '../common/util/calendar-date.util';
 import { normalizeIp } from '../common/util/ip.util';
 import { PRACTICE_ZONE, localDateIn } from '../common/util/zoned-time.util';
 import { PrismaService } from '../prisma/prisma.service';
+import { CLEAN_ENTRY_WHERE } from './clean-entry';
 import { isPastLocationRetention } from './location-retention';
 import { payrollStateOf, withPayroll } from './payroll-state';
 import { AddHoursDto, CheckHandEntryDto } from './dto/add-hours.dto';
@@ -800,6 +801,21 @@ export class TimeEntriesService {
     });
 
     return withPayroll(approved);
+  }
+
+  /// Approves, of the entries given, those with nothing flagged
+  /// (`clean-entry.ts`), in one statement. The rest are left as they were, for
+  /// a manager to look at one by one; the answer says how many of each.
+  async approveClean(ids: string[], actor: AuthUser): Promise<{ approved: number; left: number }> {
+    const { count } = await this.prisma.timeEntry.updateMany({
+      where: { id: { in: ids }, ...CLEAN_ENTRY_WHERE },
+      data: {
+        status: TimeEntryStatus.APPROVED,
+        approvedById: actor.id,
+        approvedAt: new Date(),
+      },
+    });
+    return { approved: count, left: ids.length - count };
   }
 
   /// Closes this person's punch left open from an earlier day, at its midnight

@@ -909,6 +909,12 @@ export const api = {
     }),
   approveTimeEntry: (id: string) =>
     request<TimeEntry>(`/time-entries/${id}/approve`, { method: 'PATCH' }),
+  /// Of these, approves the ones with nothing flagged; says how many of each.
+  approveCleanTimeEntries: (ids: string[]) =>
+    request<{ approved: number; left: number }>('/time-entries/approve-clean', {
+      method: 'POST',
+      body: JSON.stringify({ ids }),
+    }),
   editTimeEntry: (
     id: string,
     body: {

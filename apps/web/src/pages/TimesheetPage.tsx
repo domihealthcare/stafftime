@@ -6,6 +6,7 @@ import { useIsManager, useSession } from '../lib/session';
 import { handEntryReasonLabel } from '../lib/hand-entry';
 import type { DayRange, Employee, TimeEntry } from '../lib/types';
 import { AddHoursDialog } from '../components/AddHoursDialog';
+import { useConfirm } from '../components/ConfirmDialog';
 import { CheckHandEntryDialog } from '../components/CheckHandEntryDialog';
 import { DateRangePicker, presetRanges, toInstants } from '../components/DateRangePicker';
 import { EditEntryDialog } from '../components/EditEntryDialog';
@@ -31,6 +32,10 @@ export function TimesheetPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [busyId, setBusyId] = useState<string | null>(null);
+  /// "Approve all with nothing flagged" running, and what it did.
+  const [approvingClean, setApprovingClean] = useState(false);
+  const [notice, setNotice] = useState<string | null>(null);
+  const confirm = useConfirm();
   const [editing, setEditing] = useState<TimeEntry | null>(null);
   const [checking, setChecking] = useState<TimeEntry | null>(null);
   /// The staff list for Add hours, fetched when the button is first pressed.
@@ -82,6 +87,53 @@ export function TimesheetPage() {
     }
   }
 
+  /// Approves the entries on screen with nothing flagged, after asking. The
+  /// server decides which really are (`clean-entry.ts`); this only counts.
+  async function approveClean(clean: TimeEntry[], flagged: number) {
+    const hours = clean.reduce(
+      (sum, entry) => sum + durationHours(entry.clockInAt, entry.clockOutAt),
+      0,
+    );
+    const ok = await confirm({
+      title: `Approve ${clean.length} ${clean.length === 1 ? 'entry' : 'entries'} with nothing flagged?`,
+      body: (
+        <>
+          <p>
+            {hours.toFixed(2)} hours, none of them late, left early, edited, entered by hand,
+            clocked out at midnight or somewhere other than scheduled.
+          </p>
+          {flagged > 0 && (
+            <p className="mt-2">
+              The {flagged} flagged {flagged === 1 ? 'one stays' : 'ones stay'} for you to look at
+              one by one.
+            </p>
+          )}
+        </>
+      ),
+      confirmLabel: 'Yes, approve them',
+      cancelLabel: 'Not yet',
+      tone: 'neutral',
+    });
+    if (!ok) return;
+    setApprovingClean(true);
+    setNotice(null);
+    try {
+      const { approved, left } = await api.approveCleanTimeEntries(clean.map((entry) => entry.id));
+      setNotice(
+        `Approved ${approved} ${approved === 1 ? 'entry' : 'entries'}.` +
+          (left > 0
+            ? ` ${left} changed since the page was loaded and ${left === 1 ? 'was' : 'were'} left for a look.`
+            : ''),
+      );
+      setBannerKey((key) => key + 1);
+      await load();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Could not approve those entries.');
+    } finally {
+      setApprovingClean(false);
+    }
+  }
+
   async function openAddHours() {
     try {
       setAdding(await api.listEmployees());
@@ -111,6 +163,11 @@ export function TimesheetPage() {
   );
   const filtered = Boolean(day || query || personId);
   const onePerson = personId ? entries.find((entry) => entry.employeeId === personId) : undefined;
+
+  // Waiting on approval, split by whether anything about them needs a look.
+  const waiting = shown.filter((entry) => entry.status !== 'APPROVED' && entry.clockOutAt);
+  const clean = waiting.filter(isCleanEntry);
+  const flaggedWaiting = waiting.length - clean.length;
 
   const totalHours = shown.reduce(
     (sum, entry) => sum + durationHours(entry.clockInAt, entry.clockOutAt),
@@ -191,11 +248,24 @@ export function TimesheetPage() {
             </button>
           )}
         </div>
-        <div className="flex items-center gap-3">
+        <div className="flex flex-wrap items-center gap-3">
           <p className="text-sm text-slate-600">
             <span className="font-semibold text-slate-900">{totalHours.toFixed(2)}</span> hours
             {!loading && ` · ${shown.length} ${shown.length === 1 ? 'entry' : 'entries'}`}
           </p>
+          {isManager && !loading && clean.length > 0 && (
+            <button
+              type="button"
+              onClick={() => void approveClean(clean, flaggedWaiting)}
+              disabled={approvingClean}
+              className={buttonClass('primary', 'sm')}
+              data-testid="approve-clean"
+            >
+              {approvingClean
+                ? 'Approving…'
+                : `Approve ${clean.length === 1 ? 'the 1' : `all ${clean.length}`} with nothing flagged`}
+            </button>
+          )}
           {isManager && (
             <button
               type="button"
@@ -211,6 +281,11 @@ export function TimesheetPage() {
       {error && (
         <div className="mb-4">
           <Alert>{error}</Alert>
+        </div>
+      )}
+      {notice && (
+        <div className="mb-4">
+          <Alert tone="success">{notice}</Alert>
         </div>
       )}
 
@@ -451,6 +526,13 @@ export function TimesheetPage() {
 /// shows — as "YYYY-MM-DD", for the Day filter.
 function dayKey(iso: string): string {
   return new Date(iso).toLocaleDateString('en-CA');
+}
+
+/// Closed, waiting on approval, and without a single flag — what "Approve all
+/// with nothing flagged" takes. Mirrors `CLEAN_ENTRY_WHERE` in the API's
+/// `time-entries/clean-entry.ts`, which is what actually decides.
+function isCleanEntry(entry: TimeEntry): boolean {
+  return entry.status === 'COMPLETED' && Boolean(entry.clockOutAt) && !hasFlags(entry);
 }
 
 /// The table shows an em dash for an unflagged entry to keep the column
