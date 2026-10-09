@@ -77,13 +77,13 @@ function CarePlanScreen({ employee }: { employee: Employee }) {
     () => ({
       name: `${employee.firstName} ${employee.lastName}`,
       credentials: employee.postNominals?.trim() ?? '',
-      isReviewingProvider: isReviewingProvider({
-        firstName: employee.firstName,
-        lastName: employee.lastName,
-      }),
     }),
     [employee.firstName, employee.lastName, employee.postNominals],
   );
+  const isTheProvider = isReviewingProvider({
+    firstName: employee.firstName,
+    lastName: employee.lastName,
+  });
 
   const [form, setForm] = useState<CarePlanForm>(() => emptyForm(localDate(new Date())));
   const [untouched, setUntouched] = useState(() => JSON.stringify(form));
@@ -253,7 +253,7 @@ function CarePlanScreen({ employee }: { employee: Employee }) {
               form={form}
               update={update}
               preparedBy={preparerName(preparer)}
-              reviewedBy={preparer.isReviewingProvider ? null : reviewingProviderName()}
+              reviewedBy={isTheProvider ? null : reviewingProviderName()}
             />
           </FormSection>
           <FormSection {...sectionProps('general')} label="2" title="General care plan">
@@ -325,11 +325,7 @@ function CarePlanScreen({ employee }: { employee: Employee }) {
                 label="Download the care plan"
                 detail={`For eCW Documents and the patient — ${
                   form.pdfLanguage === 'both' ? 'English and Spanish' : 'English'
-                }, signed electronically in your name${
-                  preparer.isReviewingProvider
-                    ? ''
-                    : `, with ${reviewingProviderName()} as the reviewing provider`
-                }. Print it from the PDF.`}
+                }, prepared by you and signed electronically by ${reviewingProviderName()}. Print it from the PDF.`}
                 making={making}
                 disabled={making}
                 done={downloaded}

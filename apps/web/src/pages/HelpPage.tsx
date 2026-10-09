@@ -684,9 +684,8 @@ const CARE_PLAN: Section[] = [
                 — that clears the form.
               </li>
               <li>
-                You prepare it and it is signed electronically in your name;{' '}
-                <strong>Dr. Jonathan Dominguez</strong> is named on it as the provider who reviews
-                and signs it.
+                You are named on it as the person who prepared it; it is signed electronically by{' '}
+                <strong>Dr. Jonathan Dominguez</strong>, who reviews it.
               </li>
             </ul>
           </>

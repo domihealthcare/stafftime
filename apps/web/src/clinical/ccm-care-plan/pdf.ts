@@ -16,22 +16,20 @@ import { WORDS, carePlanText } from './text';
 export interface Preparer {
   name: string;
   credentials: string;
-  /// The reviewing provider is preparing it himself: the care plan is then
-  /// signed by him, with no separate reviewer line.
-  isReviewingProvider?: boolean;
 }
 
 export const preparerName = (preparer: Preparer) =>
   preparer.credentials ? `${preparer.name}, ${preparer.credentials}` : preparer.name;
 
-/// "Jonathan Dominguez, MD" — who reviews and signs every care plan.
+/// "Jonathan Dominguez, MD" — who reviews and signs every care plan, and
+/// whose electronic signature it carries, whoever prepared it.
 export const reviewingProviderName = () =>
   preparerName({
     name: `${REVIEWING_PROVIDER.firstName} ${REVIEWING_PROVIDER.lastName}`,
     credentials: REVIEWING_PROVIDER.credentials,
   });
 
-/// Whether the person preparing it is the reviewing provider himself.
+/// Whether the person signed in is the reviewing provider himself.
 export const isReviewingProvider = (person: { firstName: string; lastName: string }) =>
   person.firstName.trim().toLowerCase() === REVIEWING_PROVIDER.firstName.toLowerCase() &&
   person.lastName.trim().toLowerCase() === REVIEWING_PROVIDER.lastName.toLowerCase();
@@ -53,7 +51,7 @@ export async function carePlanPdf(
   const stamp = practiceTimestamp(generatedAt);
   languages.forEach((language, index) => {
     if (index > 0) pdf.pageBreak();
-    write(pdf, form, language, preparer, stamp);
+    write(pdf, form, language, preparerName(preparer), stamp);
   });
 
   const { patient } = form;
@@ -80,10 +78,9 @@ function write(
   pdf: PdfWriter,
   form: CarePlanForm,
   language: Language,
-  preparer: Preparer,
+  preparedBy: string,
   signedAt: string,
 ) {
-  const preparedBy = preparerName(preparer);
   const words = WORDS[language];
   const text = carePlanText(form, language, preparedBy, reviewingProviderName());
 
@@ -115,14 +112,11 @@ function write(
     }
   }
 
-  // Signed electronically by whoever made it — the person signed in
-  // (Dominguez, October 2026) — in each language's half, and reviewed and
-  // signed by Dr. Dominguez (October 2026). His electronic signature goes on
-  // only when he made it himself: the app never signs in somebody else's name.
+  // Prepared by the person signed in, and electronically signed by Dr.
+  // Dominguez, whoever prepared it (Dominguez, October 2026) — in each
+  // language's half.
   pdf.keep(80);
   pdf.gap(12);
-  pdf.field(words.signature, words.signedBy(preparedBy, signedAt));
-  if (!preparer.isReviewingProvider) {
-    pdf.field(words.reviewingProvider, words.toReviewAndSign(reviewingProviderName()));
-  }
+  pdf.field(words.preparedBy, preparedBy);
+  pdf.field(words.signature, words.signedBy(reviewingProviderName(), signedAt));
 }

@@ -329,9 +329,10 @@ export const LETTERHEAD = {
 };
 
 /// The provider who reviews and signs every care plan, whoever prepares it
-/// (Dominguez, October 2026). Named on the care plan; the person signed in
-/// still prepares it and signs it electronically as the preparer. Only when
-/// the provider prepares it himself is his own electronic signature on it.
+/// (Dominguez, October 2026). The person signed in is printed as Prepared by;
+/// the care plan carries this provider's electronic signature — his choice,
+/// made knowing the PDF is made before he has seen it (Dominguez, 9 October
+/// 2026).
 export const REVIEWING_PROVIDER = {
   firstName: 'Jonathan',
   lastName: 'Dominguez',

@@ -3586,14 +3586,13 @@ is signed in is printed as **Prepared by**, with their letters.
 
 **Reviewed and signed by Dr. Jonathan Dominguez** (Dominguez, October
 2026): whoever prepares it, the care plan names him as the **Reviewing
-provider** — under Prepared by at the top, and beside the preparer's
-electronic signature at the end ("Jonathan Dominguez, MD, who reviews and
-signs this care plan."); the form says so under the patient's heading. His
-own electronic signature goes on only when he is the one signed in (matched
-by first and last name), and then the reviewer line is left off: the app
-never signs in somebody else's name, so a care plan somebody else prepared
-is signed off by him where he reviews it (eCW). The name is
-`REVIEWING_PROVIDER` in `ccm-care-plan/config.ts`.
+provider** under Prepared by at the top, and ends with Prepared by and
+**his** electronic signature ("Electronically signed by Jonathan Dominguez,
+MD on …"), in each language's half. First built so that only he could put
+his signature on (the PDF is made before he has seen it); he chose to have
+it on every care plan regardless (9 October 2026). The form says so under
+the patient's heading, unless he is the one signed in (matched by first and
+last name). The name is `REVIEWING_PROVIDER` in `ccm-care-plan/config.ts`.
 
 **The shape** follows the Google Forms question for question:
 
@@ -3641,7 +3640,8 @@ condition at it.
 **The PDF** (`pdf.ts`, `text.ts`): one file,
 `MM-DD-YYYY Care Plan.pdf` — shown to staff as just **Care plan**, since the
 practice uses it for APCM as well as CCM (Dominguez, October 2026) — ending
-with the electronic signature of whoever made it, in each language's half,
+with Prepared by and Dr. Dominguez's electronic signature (above), in each
+language's half,
 in **English, or
 English and Spanish** — the only two choices (Dominguez, October 2026); both
 is English first, then the Spanish on a fresh page, the way the practice's

@@ -279,10 +279,11 @@ await step('the whole form, filled in with a fake patient, makes one PDF in both
     'Diabetes Mellitus Care Plan',
     'Electronically signed by',
     'Firmado electrónicamente por',
-    // Prepared by the person signed in; reviewed and signed by Dr. Dominguez.
+    // Prepared by the person signed in; signed by Dr. Dominguez.
     'Reviewing provider',
-    'Jonathan Dominguez, MD, who reviews and signs this care plan.',
     'Proveedor que revisa',
+    'Electronically signed by Jonathan Dominguez, MD on',
+    'Firmado electrónicamente por Jonathan Dominguez, MD el',
     'Tingling in feet',
     // And again in Spanish.
     'Plan de Atención General',
