@@ -3186,9 +3186,42 @@ A read-through of the live app for bugs and speed. What changed, and why:
   second (it shows minutes); `/config` is fetched once a minute at most
   however many parts of a screen ask. GPS is only ever read at the moment of
   a punch (or setting a pin), never watched.
-- **The rota's ＋** is a full-width row at the foot of every day cell — bigger,
+- **The rota's ＋** was a full-width row at the foot of every day cell — bigger,
   always visible (it used to appear only on mouse hover over a busy day, so
-  never on a phone), and under the shifts rather than over them.
+  never on a phone), and under the shifts rather than over them. **Taken out
+  in October 2026** (Dominguez: it made the page longer) — see *The rota's
+  day menu*.
+
+## The rota's day menu
+
+October 2026, Dominguez: the time-off requests and the overtime alert took
+nearly half the Schedule, and the ＋ strip in every cell made it longer; "is
+there a way a right click mechanism can be used for adding shifts / time off
+/ events". So:
+
+- **The cell is the way in.** Each day cell holds one invisible button the
+  size of the cell (`absolute inset-0`, keeping the old "Add a shift for …
+  on …" name for screen readers and the tests), so it adds no height. A
+  click on its empty space adds a shift, as the ＋ did — on a phone too,
+  where there is no right-click; a faint ＋ shows on hover. The chips sit
+  above it: for a manager the chip column is `pointer-events-none` and only
+  shift chips take the pointer back, so a click on time off or a birthday
+  falls through to the cell.
+- **Right-click** a cell (`components/ContextMenu.tsx`, `useContextMenu`):
+  *Add a shift*, *Add time off* (opens `/time-off?request=1&for=<id>&date=`,
+  the request form now reading `date`), *Add an event*, *a rep lunch*, *a
+  diagnostics date*, *a holiday or closure* (the event form, starting on
+  that day). The month's day squares have the same menu (time off is for
+  the person picked, if any). Right-clicking a name or a shift still opens
+  the person menu, which stops the event before the cell sees it. The
+  keyboard's menu key opens it at the cell. A scroll in the first 300 ms
+  does not close it — the page settling after a save used to.
+- **Folded banners.** *N time-off requests to decide* and *N people are
+  scheduled past 40 hours* are each one `<details>` line naming who; opened,
+  each request is one line with small Approve / Decline and its clash
+  warning, and the overtime list gives the weeks and hours. The OT pill on
+  the person's row still says it without opening anything.
+
 
 ## Practice events
 
