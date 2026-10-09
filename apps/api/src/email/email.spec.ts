@@ -316,6 +316,7 @@ describe('NotificationsService', () => {
           'newSuggestions',
           'punchPatterns',
           'timeOffClashes',
+          'overtimeHeading',
         ].map((key) => [key, []]),
       ),
       undecidedTimeOff: ['Frankie Front — Nov 3, 2026'],

@@ -534,6 +534,8 @@ export interface Attention {
   punchPatterns: string[];
   /// Dashboard and email only — never on a banner.
   timeOffClashes: string[];
+  /// Dashboard and email only — never on a banner.
+  overtimeHeading: string[];
 }
 
 // ---------------------------------------------------------------------------
@@ -1287,6 +1289,23 @@ export interface PracticeOverview {
   patterns: PunchPattern[];
   /// Too many from one job role off at once, the next `weeks` weeks.
   timeOffClashes: { weeks: number; clashes: TimeOffClash[] };
+  /// Heading past the overtime line this week on hours actually worked plus
+  /// what the rota still has them down for. See `time-entries/overtime-forecast.ts`.
+  overtimeForecast: {
+    weekStart: string;
+    thresholdHours: number;
+    people: OvertimeHeading[];
+  };
+}
+
+export interface OvertimeHeading {
+  employeeId: string;
+  employeeName: string;
+  worked: number;
+  stillScheduled: number;
+  projected: number;
+  /// The whole week as the rota has it.
+  rota: number;
 }
 
 /// Too many from one job role off on the same days at one office: more than

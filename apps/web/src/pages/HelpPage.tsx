@@ -1138,6 +1138,22 @@ const MANAGERS: Section[] = [
         ),
       },
       {
+        question: 'Heading for overtime this week',
+        answer: (
+          <p>
+            The rota warns when the <em>schedule</em> takes somebody past the overtime line, but
+            clocking in early and staying late add up too. On the <strong>Dashboard</strong>, and
+            in the nightly email under Hours, is everybody paid by the hour whose hours{' '}
+            <strong>worked so far this week</strong> plus what the rota{' '}
+            <strong>still has them down for</strong> come to more than the line — in time to
+            shorten a later shift. It shows what the rota alone would have been, so you can tell
+            whether the overtime is the rota&rsquo;s or the extra minutes&rsquo;. Somebody still
+            clocked in counts up to now; a clock-out the app made at midnight is left out until it
+            is corrected. Only managers see it, and it is never a banner.
+          </p>
+        ),
+      },
+      {
         question: 'Who can cover this?',
         answer: (
           <p>
