@@ -2775,6 +2775,39 @@ trend, not something to fix on a screen today — and **the person is not
 told**: it is a heads-up for a quiet word, not an automatic telling-off.
 Managers and admins only, as both routes already were.
 
+## Heading for overtime on hours worked
+
+October 2026, Dominguez — the ninth of the "make it smarter" ideas. The rota
+already warns when the **schedule** puts somebody past the overtime line;
+nothing caught overtime that creeps in from clocking in early and staying
+late until the payroll export, when it is already owed.
+`time-entries/overtime-forecast.ts` adds, for each **hourly** member of staff
+not terminated, the hours **worked so far** this overtime week (both offices;
+an open punch counted to now) and the hours the rota **still has them down
+for** (the part of each shift not yet started; drafts count, as on the rota),
+and names everybody whose total is past `overtimeThresholdHours`, furthest
+over first. Each line also gives the rota's own total for the week, so a
+manager can tell "the rota did this" (*the rota already had them over*) from
+"the extra minutes did".
+
+- **The week** is the overtime week — the pay period's weekday
+  (`workweekStartsOn`), as for the rota warnings and the export — in New
+  Jersey's time.
+- **Left out**: a punch the app closed at midnight and nobody has corrected
+  (`autoClockedOutAt` with `isMissingPunch`) — its hours are the app's guess,
+  and it is on the clock-outs-to-correct list already. Salaried staff, as in
+  the export. Cancelled shifts.
+- **Where**: one loader (`loadOvertimeForecast`) serves the Dashboard's
+  **Heading for overtime this week** card (`GET /dashboard/practice`,
+  `overtimeForecast`) and the nightly email (`overtimeHeading` in
+  `AttentionService`, tier *Coming up*, linking to the Dashboard, under the
+  **Hours** part in `digest-topics.ts`). **Managers only, never a banner** —
+  it is a reason to look at the rest of the week, not a mistake to fix on a
+  screen.
+
+Unit tests in `overtime-forecast.spec.ts`; `tests/browser/overtime-forecast.mjs`
+puts an open punch and a 40-hour draft shift on Max's week.
+
 ## Time off without a screen of its own
 
 October 2026, Dominguez, from a rendering of four screens. Manage → **Time

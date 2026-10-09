@@ -21,6 +21,7 @@ import { loadStanding } from '../credentials/standing-query';
 import { PrismaService } from '../prisma/prisma.service';
 import { PracticeSettingsService } from '../settings/practice-settings.service';
 import { loadPunchPatterns } from '../time-entries/punch-patterns';
+import { describeOvertimeHeading, loadOvertimeForecast } from '../time-entries/overtime-forecast';
 import { describeClash, EMAIL_DAYS, loadTimeOffClashes } from '../pto/time-off-clashes';
 
 /// How far ahead it looks for credentials about to lapse. Long enough to renew
@@ -85,6 +86,10 @@ export interface DigestContents {
   /// The same thing again and again — late most Mondays, forgetting to clock
   /// out. Dashboard and email only, never a banner: see `punch-patterns.ts`.
   punchPatterns: string[];
+  /// Heading past the overtime line this week on hours actually worked plus
+  /// what the rota still has them down for. Dashboard and email only, never
+  /// a banner: see `time-entries/overtime-forecast.ts`.
+  overtimeHeading: string[];
   /// Too many from one job role off at once at one office, in the next two
   /// weeks. Dashboard and email, and on the request — never a banner.
   timeOffClashes: string[];
@@ -147,6 +152,7 @@ export class AttentionService {
       newSuggestions,
       patterns,
       clashes,
+      forecast,
     ] = await Promise.all([
       this.prisma.employeeCredential.findMany({
         where: {
@@ -227,6 +233,7 @@ export class AttentionService {
         localDateIn(new Date(), PRACTICE_ZONE),
         addDaysTo(localDateIn(new Date(), PRACTICE_ZONE), EMAIL_DAYS - 1),
       ),
+      loadOvertimeForecast(this.prisma),
     ]);
 
     /// "8:52 AM", on the practice's clock.
@@ -272,6 +279,9 @@ export class AttentionService {
       newSuggestions,
       punchPatterns: patterns.map((pattern) => `${pattern.employeeName} — ${pattern.summary}`),
       timeOffClashes: clashes.map(describeClash),
+      overtimeHeading: forecast.people.map((person) =>
+        describeOvertimeHeading(person, forecast.thresholdHours),
+      ),
     };
   }
 

@@ -573,6 +573,16 @@ Beyond the phases, the parts worth knowing about before picking up work:
   `credentials/license-reminders.ts`, `maintenance/license-reminders.service.ts`,
   migration `20261009010000_license_reminders`;
   `tests/browser/license-reminders.mjs`.
+- **Heading for overtime on hours worked** (9 October 2026, Dominguez — the
+  ninth "smarter" idea): part-way through the week, hours **worked so far**
+  plus what the rota **still has them down for**, for hourly staff, both
+  offices; anybody past the overtime line is named, with the rota's own total
+  beside it ("the rota already had them over" when the rota did it). An open
+  punch counts to now; an uncorrected midnight clock-out is left out. A card
+  on the **Dashboard** and a *coming up* section in the nightly email under
+  the Hours part — **managers only, never a banner**.
+  `time-entries/overtime-forecast.ts` (one loader for both);
+  `tests/browser/overtime-forecast.mjs`.
 - **Time off on a staff profile, condensed** (8 October 2026, Dominguez:
   "shouldn't be this big … maybe just a pop up"): the profile shows what is
   left, the next day off and what is waiting; **See all N on file** opens
@@ -1247,7 +1257,7 @@ Beyond the phases, the parts worth knowing about before picking up work:
   Counts only — never a patient (the schema guard pins the fields; the note is
   the one free-text box and says so). **Not in the payroll export** (decided). See *Provider
   productivity* in `docs/architecture.md`.
-- **Tests**: ~1,175 unit tests, and ~515 end-to-end checks in `tests/browser`
+- **Tests**: ~1,425 unit tests, and ~515 end-to-end checks in `tests/browser`
   driven against a real API, a real Postgres and a real Chromium. Both run in CI
   on every push. The convention is to run the browser suites twice — once
   against the dev server, once against `vite preview`, which applies the
