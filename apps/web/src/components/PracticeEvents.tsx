@@ -1390,8 +1390,10 @@ export function ClosuresCard({
             there are left alone.
           </p>
           <p className="mt-1">
-            Check the ones that move from year to year — Thanksgiving, Memorial Day, Labor Day — and
-            correct their dates.
+            The holidays that move from year to year — Thanksgiving and the day after, Memorial Day,
+            Labor Day, MLK Day, Presidents&rsquo; Day, Columbus Day, Election Day, Good Friday,
+            Easter — go to their day in {year + 1}. You&rsquo;ll see a list of what moved, and of
+            any that land on a weekend.
           </p>
         </>
       ),
@@ -1406,8 +1408,14 @@ export function ClosuresCard({
       const done = await api.copyClosures(year);
       setResult(
         `${done.copied} copied into ${done.toYear}.${
-          done.skipped.length > 0 ? ` Skipped: ${done.skipped.join('; ')}.` : ''
-        }`,
+          done.moved.length > 0
+            ? ` Moved to their day in ${done.toYear}: ${done.moved.join('; ')}.`
+            : ''
+        }${
+          done.onWeekend.length > 0
+            ? ` On a weekend — check which day the office takes instead: ${done.onWeekend.join('; ')}.`
+            : ''
+        }${done.skipped.length > 0 ? ` Skipped: ${done.skipped.join('; ')}.` : ''}`,
       );
       setYear(done.toYear);
       onChanged();

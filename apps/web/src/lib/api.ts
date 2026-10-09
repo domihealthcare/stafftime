@@ -1265,7 +1265,15 @@ export const api = {
     ),
   /// Every closure and holiday in `fromYear`, put on the same date the year after.
   copyClosures: (fromYear: number) =>
-    request<{ copied: number; skipped: string[]; toYear: number }>('/events/closures/copy', {
+    request<{
+      copied: number;
+      skipped: string[];
+      /// Moving holidays put on their day next year: "Thanksgiving — Thu, Nov 26, 2026 → …".
+      moved: string[];
+      /// Fixed holidays landing on a weekend next year, to check.
+      onWeekend: string[];
+      toYear: number;
+    }>('/events/closures/copy', {
       method: 'POST',
       body: JSON.stringify({ fromYear }),
     }),

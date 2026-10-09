@@ -1294,7 +1294,11 @@ const MANAGERS: Section[] = [
             closure, but it is flagged: a warning in the shift form, ⚠ on the shift, and a line in
             the Schedule banner and the nightly email until the shift is moved. Once a year is
             filled in, <strong>Copy these into next year</strong> puts every closure on the same
-            date the following year — then fix the ones that move, like Thanksgiving. Closures do
+            date the following year — except the holidays that move (Thanksgiving and the day after,
+            Memorial Day, Labor Day, MLK Day, Presidents&rsquo; Day, Columbus Day, Election Day,
+            Good Friday, Easter), which go to their own day, recognised by name. Afterwards it lists
+            what moved and any fixed holiday that lands on a weekend, so you can decide which day
+            the office takes instead. Closures do
             not change pay: holiday pay is not set up. A day that is marked but{' '}
             <strong>shuts nothing</strong> — Election Day, Black Friday — is a{' '}
             <strong>holiday</strong> instead (<strong>+ Add holiday</strong>): everyone sees it on

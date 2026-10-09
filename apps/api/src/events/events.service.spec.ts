@@ -636,6 +636,30 @@ describe('closures', () => {
       expect(practiceEvent.create).not.toHaveBeenCalled();
     });
 
+    it('moves Thanksgiving to its day next year, and says so; points out a weekend', async () => {
+      const { service, practiceEvent } = build();
+      practiceEvent.findMany.mockResolvedValue([
+        row({
+          kind: PracticeEventKind.CLOSURE,
+          title: 'Thanksgiving',
+          allDay: true,
+          // Thursday 26 and Friday 27 November 2026.
+          startsAt: new Date('2026-11-26T05:00:00.000Z'),
+          endsAt: new Date('2026-11-28T05:00:00.000Z'),
+        }),
+        lastYear[0],
+      ]);
+      const result = await service.copyClosures(2026, manager);
+      expect(practiceEvent.create.mock.calls[0][0].data).toMatchObject({
+        title: 'Thanksgiving',
+        // Thursday 25 and Friday 26 November 2027: the same two days.
+        startsAt: new Date('2027-11-25T05:00:00.000Z'),
+        endsAt: new Date('2027-11-27T05:00:00.000Z'),
+      });
+      expect(result.moved).toEqual(['Thanksgiving — Thu, Nov 26, 2026 → Thu, Nov 25, 2027']);
+      expect(result.onWeekend).toEqual(['Christmas Day — Sat, Dec 25, 2027 is a Saturday']);
+    });
+
     it('does not guess where 29 February goes', async () => {
       const { service, practiceEvent } = build();
       practiceEvent.findMany.mockResolvedValue([

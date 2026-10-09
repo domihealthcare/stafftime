@@ -2921,6 +2921,24 @@ nothing and the page says so. Set-up, cost and the disclosure line:
 loop with a fake client), `tests/browser/ask.mjs` (off; the screen with
 answers stood in for in the browser — CI has no key and sends nothing).
 
+## Moving holidays, copied right
+
+October 2026, Dominguez — a "make it smarter" idea. **Copy these into next
+year** (and a closure's *Repeat every year*) kept every date, so Thanksgiving,
+Memorial Day and the rest had to be corrected by hand each year.
+`events/moving-holidays.ts` recognises the US holidays that move by their
+title (`MOVING_HOLIDAYS`: Thanksgiving and the day after / Black Friday,
+Memorial Day, Labor Day, MLK Day, Presidents' Day / Washington's Birthday,
+Columbus / Indigenous Peoples' Day, Election Day, Good Friday, Easter and
+Easter Monday — Easter by the Gregorian computus) and moves the entry to the
+rule's day in the new year, keeping its length and times (`closureInYear`).
+Only when this year's entry **was on the rule's day**: "Thanksgiving lunch" on
+20 November is somebody's event and keeps its date, as does anything not
+recognised. The copy returns `moved` and `onWeekend` — fixed holidays that
+land on a Saturday or Sunday — and the card lists both; which weekday the
+office takes off instead is left to the practice, never guessed.
+`tests/browser/moving-holidays.mjs` (in 2031, which nothing else uses).
+
 ## Heading for overtime on hours worked
 
 October 2026, Dominguez — the ninth of the "make it smarter" ideas. The rota

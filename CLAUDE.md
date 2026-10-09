@@ -953,9 +953,16 @@ Beyond the phases, the parts worth knowing about before picking up work:
   one is flagged in the shift forms (with a pop-up before saving), with ⚠ on
   the rota, and in the banner and nightly email. **Pay is untouched** — holiday
   pay is an open question. **Entered each year** with **Copy these into next
-  year** on the Schedule's *Holidays and closures* card; moving holidays
-  (Thanksgiving) are fixed by hand. The printed rota says when an office is
-  closed.
+  year** on the Schedule's *Holidays and closures* card. **Moving holidays
+  go to their own day** (9 October 2026, Dominguez — a "smarter" idea):
+  Thanksgiving and the day after, Memorial Day, Labor Day, MLK, Presidents',
+  Columbus, Election Day, Good Friday and Easter are recognised by name and
+  moved by their rule — only when this year's entry was on the rule's day —
+  in the copy and in a closure's *Repeat every year*; the copy then lists
+  what moved and any fixed one landing on a weekend (which day off instead
+  stays the practice's call). `events/moving-holidays.ts`;
+  `tests/browser/moving-holidays.mjs`. The printed rota says when an office
+  is closed.
 - **Accessibility pass** (30 September 2026, from a UI/UX audit): each screen names the
   tab ("Timesheet · Domi Staff", taken from its `<h1>`) and moves focus to the content on
   a page change (`useRouteAnnouncer` in `Layout.tsx`); a "Skip to content" link; header
