@@ -24,6 +24,7 @@ import { UpdateAdpSettingsDto } from './dto/adp-settings.dto';
 import { ExportTimesheetDto } from './dto/export-timesheet.dto';
 import { AdpSettingsService } from './payroll/adp-settings.service';
 import { PayrollExportsService } from './payroll/payroll-exports.service';
+import { ExportCheckService } from './export-check.service';
 import { TimesheetExportService } from './timesheet-export.service';
 
 @Controller('exports')
@@ -34,6 +35,7 @@ export class ExportsController {
     private readonly presets: ReportPresetsService,
     private readonly payroll: PayrollExportsService,
     private readonly adp: AdpSettingsService,
+    private readonly checks: ExportCheckService,
   ) {}
 
   /// What the ADP import needs and what it has. Managers read it, so the
@@ -72,6 +74,15 @@ export class ExportsController {
   @HttpCode(HttpStatus.OK)
   preview(@Body() dto: ExportTimesheetDto) {
     return this.timesheets.preview(dto);
+  }
+
+  /// "Before you export": what is worth a look about this period before it
+  /// goes to payroll — unapproved hours, midnight clock-outs, hand entries,
+  /// corrections, missing ADP File #s, overtime. Only reads.
+  @Post('timesheet/check')
+  @HttpCode(HttpStatus.OK)
+  check(@Body() dto: ExportTimesheetDto) {
+    return this.checks.check(dto);
   }
 
   /**

@@ -59,3 +59,20 @@ export async function showRegularShifts(page) {
   if (await list.isVisible().catch(() => false)) return;
   await page.getByRole('button', { name: /^Show the \d+ regular shifts?$/ }).click();
 }
+
+/// Presses one of the Export screen's Download buttons and, when "Before you
+/// export" comes up first (October 2026), answers Export anyway — so suites
+/// about the file itself get the file.
+export async function pressDownload(page, name) {
+  await page.getByRole('button', { name }).click();
+  // Either the pop-up opens, or the check found nothing and the file is on its way.
+  await page.waitForFunction(
+    () =>
+      document.querySelector('[data-testid="export-check"]') ||
+      ![...document.querySelectorAll('button')].some((b) => b.textContent?.trim() === 'Checking…'),
+    null,
+    { timeout: 15000 },
+  );
+  const check = page.getByTestId('export-check');
+  if (await check.count()) await check.getByRole('button', { name: 'Export anyway' }).click();
+}

@@ -2,6 +2,7 @@ import { chromium } from 'playwright';
 import { clockOut as clockOutOnScreen } from './clock-out.mjs';
 import { mkdirSync, readFileSync } from 'node:fs';
 import { pickFromAccountMenu } from './account-menu.mjs';
+import { pressDownload } from './nav.mjs';
 
 // The ADP TotalSource payroll import file, set up and produced the way an
 // admin and a manager actually would: paste the worksheet exported from ADP,
@@ -166,6 +167,11 @@ async function openExportForTheDay() {
 await step('without a File # the export names who is missing one', async () => {
   await openExportForTheDay();
   await mgr.getByRole('button', { name: 'Download ADP import file' }).click();
+  // "Before you export" says so first (October 2026)…
+  const check = mgr.getByTestId('export-check-adp');
+  await check.getByText(/Frankie Front-Desk — an admin adds it/).waitFor({ timeout: 15000 });
+  // …and ADP itself still refuses the file.
+  await mgr.getByTestId('export-check').getByRole('button', { name: 'Export anyway' }).click();
   await mgr.getByText(/No ADP File # for Frankie Front-Desk/).waitFor({ timeout: 15000 });
 });
 
@@ -187,7 +193,7 @@ await step('the download is ADP’s import file, laid out as ADP asks', async ()
   await mgr.getByLabel('Batch ID').fill('wk38');
   const [download] = await Promise.all([
     mgr.waitForEvent('download', { timeout: 30000 }),
-    mgr.getByRole('button', { name: 'Download ADP import file' }).click(),
+    pressDownload(mgr, 'Download ADP import file'),
   ]);
   if (download.suggestedFilename() !== 'PRDMHEPI.csv')
     throw new Error(`named ${download.suggestedFilename()}, not PRDMHEPI.csv`);

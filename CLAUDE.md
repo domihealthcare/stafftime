@@ -550,6 +550,18 @@ Beyond the phases, the parts worth knowing about before picking up work:
   `POST /shifts/publish-check`, `shifts/publish-check.ts` (words, pure) and
   `publish-check.service.ts` (reads, by each rule's existing code),
   `components/PublishCheckDialog.tsx`; `tests/browser/publish-check.mjs`.
+- **Before you export** (9 October 2026, Dominguez — the seventh "smarter"
+  idea): the Export screen's **Download** first shows, in one pop-up, what is
+  worth a look about the period before it goes to payroll — no ADP File #
+  (ADP only), **clocked out at midnight or still clocked in (left out of the
+  file)**, hours not approved yet (going out or left out, by the statuses
+  ticked), hand entries nobody has looked into, corrections since payroll,
+  and each person's overtime. **Warns, never refuses**: **Export anyway**; a
+  clean period downloads at once. `POST /exports/timesheet/check`,
+  `exports/export-check.ts` (words, pure) and `export-check.service.ts`
+  (every status in the period, plus the export's own build); the pop-up is
+  `components/WarningsDialog.tsx`, shared with Before you publish.
+  `tests/browser/export-check.mjs`.
 - **Time off on a staff profile, condensed** (8 October 2026, Dominguez:
   "shouldn't be this big … maybe just a pop up"): the profile shows what is
   left, the next day off and what is waiting; **See all N on file** opens

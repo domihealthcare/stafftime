@@ -975,6 +975,15 @@ const MANAGERS: Section[] = [
               payroll. Save the columns you use as a report so next time is one tap.
             </p>
             <p>
+              Before the file is made, <strong>Before you export</strong> lists anything worth a
+              look in that period: hours nobody has approved, somebody clocked out at midnight or
+              still clocked in (their hours are left out until the time is fixed), hours entered by
+              hand that nobody has looked into, corrections made after hours went to payroll,
+              overtime, and — for ADP — anybody without an ADP File #. It only warns:{' '}
+              <strong>Export anyway</strong> always makes the file, and a period with nothing to say
+              downloads straight away.
+            </p>
+            <p>
               For ADP, choose <strong>ADP TotalSource</strong> under <em>Send to</em>, check the
               Batch ID, and download the import file. In TotalSource, go to Process → Payroll
               Dashboard → Manage Payroll → Worksheets → Import File, upload it, and check the
