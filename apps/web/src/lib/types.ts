@@ -519,6 +519,7 @@ export interface Attention {
   missingCredentials: string[];
   overdueTasks: string[];
   missingPunches: string[];
+  missedShifts: string[];
   undecidedTimeOff: string[];
   silentKiosks: string[];
   unpublishedRota: string[];
@@ -1284,6 +1285,7 @@ export interface PracticeOverview {
     handEntries: number;
     unapprovedHours: number;
     missingPunches: number;
+    missedShifts: number;
   };
   /// The same thing again and again in the last four weeks, for a quiet word.
   patterns: PunchPattern[];

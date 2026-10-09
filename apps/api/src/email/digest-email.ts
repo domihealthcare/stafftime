@@ -107,6 +107,15 @@ const SECTIONS: SectionSpec[] = [
     subject: (n) => `${n} ${plural(n, 'clock-out', 'clock-outs')} to correct`,
   },
   {
+    key: 'missedShifts',
+    tier: 'today',
+    // Over, published, and no punch that day: see time-entries/missed-shifts.ts.
+    heading: 'Shifts with no clock-in',
+    path: '/timesheet',
+    screen: 'Timesheet',
+    subject: (n) => `${n} ${plural(n, 'shift', 'shifts')} with no clock-in`,
+  },
+  {
     key: 'undecidedTimeOff',
     tier: 'soon',
     heading: 'Time off waiting on a decision',

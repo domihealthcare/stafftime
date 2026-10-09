@@ -968,6 +968,20 @@ const MANAGERS: Section[] = [
         ),
       },
       {
+        question: 'Shifts with no clock-in',
+        answer: (
+          <p>
+            When a published shift is over and the person never clocked in that day — not on
+            approved time off, and the office was not closed — it is listed on the{' '}
+            <Screen>Timesheet</Screen> banner, counted on the Dashboard and in the nightly email,
+            for two weeks. It goes once you have done whichever is true: <strong>+ Add hours</strong>{' '}
+            if they worked and forgot, record the time off if they were off, or remove the shift if
+            it should never have been on the rota. They were already reminded 15 minutes into the
+            shift.
+          </p>
+        ),
+      },
+      {
         question: 'Somebody has no punch at all for a day',
         answer: (
           <>

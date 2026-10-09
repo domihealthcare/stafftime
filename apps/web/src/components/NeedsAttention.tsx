@@ -18,6 +18,7 @@ const HEADINGS: Record<keyof Attention, string> = {
   unapprovedHours: 'Hours nobody has approved yet',
   handEntries: 'Hours entered by hand — find out why',
   missingPunches: 'Clock-outs to correct',
+  missedShifts: 'Shifts with no clock-in',
   expiredCredentials: 'Already lapsed',
   expiringCredentials: 'Lapsing soon',
   missingCredentials: 'Required licenses not on file',

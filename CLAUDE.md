@@ -596,6 +596,17 @@ Beyond the phases, the parts worth knowing about before picking up work:
   `maintenance/onboarding-reminders.service.ts`, migration
   `20261009020000_onboarding_reminders`;
   `tests/browser/onboarding-reminders.mjs`.
+- **Shifts with no clock-in** (9 October 2026, Dominguez — the eleventh
+  "smarter" idea): a **published** shift that is **over** (last 14 days) with
+  **no punch by that person that day** — not on approved time off, not in a
+  closure of its office — is listed on the **Timesheet** banner, counted on
+  the Dashboard and in the nightly email (*sort out today*, Hours part),
+  managers only. Settled by **+ Add hours**, recording the time off or
+  removing the shift; nothing new stored. `time-entries/missed-shifts.ts`;
+  `tests/browser/missed-shifts.mjs`.
+- **Turned down: "PTO about to be lost"** (9 October 2026, Dominguez): a
+  reminder to use PTO before it fails to carry over was proposed and refused —
+  not in the practice's interest. Do not propose it again.
 - **Time off on a staff profile, condensed** (8 October 2026, Dominguez:
   "shouldn't be this big … maybe just a pop up"): the profile shows what is
   left, the next day off and what is waiting; **See all N on file** opens

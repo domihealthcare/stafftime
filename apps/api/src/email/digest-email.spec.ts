@@ -7,6 +7,7 @@ const empty = (): DigestContents => ({
   missingCredentials: [],
   overdueTasks: [],
   missingPunches: [],
+  missedShifts: [],
   undecidedTimeOff: [],
   silentKiosks: [],
   unpublishedRota: [],

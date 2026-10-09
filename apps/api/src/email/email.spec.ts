@@ -303,6 +303,7 @@ describe('NotificationsService', () => {
           'missingCredentials',
           'overdueTasks',
           'missingPunches',
+          'missedShifts',
           'undecidedTimeOff',
           'silentKiosks',
           'unpublishedRota',

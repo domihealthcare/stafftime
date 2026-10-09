@@ -22,7 +22,14 @@ import type { DigestContents } from './attention.service';
 export const DIGEST_TOPICS: Record<DigestTopic, (keyof DigestContents)[]> = {
   SCHEDULE: ['unpublishedRota', 'shiftsForLeavers', 'openShifts', 'shiftsInClosures'],
   TIME_OFF: ['undecidedTimeOff', 'timeOffClashes'],
-  HOURS: ['missingPunches', 'unapprovedHours', 'handEntries', 'punchPatterns', 'overtimeHeading'],
+  HOURS: [
+    'missingPunches',
+    'missedShifts',
+    'unapprovedHours',
+    'handEntries',
+    'punchPatterns',
+    'overtimeHeading',
+  ],
   LICENSES: ['expiredCredentials', 'expiringCredentials', 'missingCredentials'],
   CHECKLISTS: ['overdueTasks'],
   CLOSING: ['closingGaps', 'suppliesNeeded'],

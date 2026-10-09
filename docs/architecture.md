@@ -2775,6 +2775,28 @@ trend, not something to fix on a screen today — and **the person is not
 told**: it is a heads-up for a quiet word, not an automatic telling-off.
 Managers and admins only, as both routes already were.
 
+## Shifts with no clock-in
+
+October 2026, Dominguez — the eleventh "make it smarter" idea. The person is
+reminded 15 minutes into a shift they have not clocked in for, but once the
+shift was over nothing told a manager; a missed day turned up at payroll, or
+never. `time-entries/missed-shifts.ts` lists every **published** shift with
+somebody on it that is **over**, ended in the last **14 days**
+(`MISSED_SHIFT_DAYS`), where the person has **no punch that day** in New
+Jersey — or one overlapping the shift, for a shift past midnight — and is not
+on **approved time off** that day, nor at an office **closed** when the shift
+started. Any punch counts, late, short or entered by hand: this is about not
+turning up at all, which lateness already has its own flags for. Current
+staff only; a leaver's shifts are on *Shifts for people who have left*.
+
+Nothing new is stored. It is settled by what a manager would do anyway:
+**+ Add hours** (they worked and forgot — a hand entry is a punch that day),
+record the time off, or remove the shift. One loader (`loadMissedShifts`)
+serves the **Timesheet** banner (`missedShifts`, first section), the nightly
+email (tier *Sort out today*, under the **Hours** part) and a count among the
+Dashboard's *waiting on a manager* tiles. Managers only, like the rest of the
+round-up. `tests/browser/missed-shifts.mjs`.
+
 ## Heading for overtime on hours worked
 
 October 2026, Dominguez — the ninth of the "make it smarter" ideas. The rota
