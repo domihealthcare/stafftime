@@ -277,6 +277,8 @@ await step('changing the threshold changes what the rota warns about', async () 
   }
   await admin.getByText('March 2027').waitFor({ timeout: 10000 });
   await admin.getByText(/scheduled past 20 hours/).waitFor({ timeout: 20000 });
+  // Folded to one line; opened for the hours (October 2026).
+  await admin.getByTestId('overtime-notice').locator('summary').click();
 
   const text = await admin.locator('main').innerText();
   if (!/30 hours in the week of/.test(text))

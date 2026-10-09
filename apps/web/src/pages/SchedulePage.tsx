@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { Link, useSearchParams } from 'react-router-dom';
+import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { api } from '../lib/api';
 import {
   addDays,
@@ -60,6 +60,7 @@ import {
 } from '../components/PlaceSelect';
 import { RepeatShiftsForm } from '../components/RepeatShiftsForm';
 import { usePersonMenu } from '../components/PersonMenu';
+import { useContextMenu } from '../components/ContextMenu';
 import { RotaLegend, RotaTable, type RotaGrouping } from '../components/RotaTable';
 import { REMOTE_COLOUR, locationColourFn, shiftChipStyle } from '../lib/shift-colours';
 import { jobRoleHex } from '../lib/job-role-colours';
@@ -106,6 +107,8 @@ export function SchedulePage() {
   const [personFilter, setPersonFilter] = useState(() => (isManager && isPhone && me ? me.id : ''));
   const [jobRoles, setJobRoles] = useState<JobRole[]>([]);
   const [adding, setAdding] = useState(false);
+  /// The day right-clicked in the month, for "Add a shift".
+  const [addingDay, setAddingDay] = useState<Date | null>(null);
   /// A week at a time to build a rota, a month at a time to see the shape of
   /// one. The week view is where shifts are added and removed; the month view
   /// is an overview, and a day in it is a way back to that week.
@@ -170,6 +173,8 @@ export function SchedulePage() {
     /// A new one copied from this: "Add another date like this".
     template?: PracticeEvent;
     kind?: PracticeEvent['kind'];
+    /// The day right-clicked on the rota or in the month.
+    day?: Date;
   } | null>(null);
   /// "7 dates added", after a repeating event is saved.
   const [eventNotice, setEventNotice] = useState<string | null>(null);
@@ -211,6 +216,7 @@ export function SchedulePage() {
   function openAdd(what: 'shift' | 'repeat' | 'event' | 'diagnostic' | 'rep-lunch' | 'closure') {
     setAddMenu(false);
     setAdding(what === 'shift');
+    setAddingDay(null);
     setPlanning(what === 'repeat');
     setEventForm(
       what === 'event'
@@ -225,6 +231,45 @@ export function SchedulePage() {
     );
     if (what !== 'shift') window.scrollTo({ top: 0, behavior: 'smooth' });
   }
+  /// From a right-click on a day: an event (or rep lunch, diagnostics date,
+  /// closure) starting on it, or time off from it.
+  function addEventOn(kind: PracticeEvent['kind'], day: Date) {
+    setAddMenu(false);
+    setAdding(false);
+    setPlanning(false);
+    setEventForm({ kind, day });
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+  const navigate = useNavigate();
+  function addTimeOffFor(personId: string | null, day: Date) {
+    const query = new URLSearchParams({ request: '1', date: localDate(day) });
+    if (personId) query.set('for', personId);
+    navigate(`/time-off?${query.toString()}`);
+  }
+  const monthMenu = useContextMenu();
+  const openMonthMenu = (event: React.MouseEvent, day: Date) => {
+    const label = day.toLocaleDateString(undefined, {
+      weekday: 'short',
+      month: 'short',
+      day: 'numeric',
+    });
+    monthMenu.open(event, pickedPerson ? `${displayName(pickedPerson)} · ${label}` : label, [
+      {
+        label: 'Add a shift',
+        run: () => {
+          openAdd('shift');
+          setAddingDay(day);
+          // The form is above the month, which may be well down the page.
+          window.scrollTo({ top: 0, behavior: 'smooth' });
+        },
+      },
+      { label: 'Add time off', run: () => addTimeOffFor(pickedPerson?.id ?? null, day) },
+      { label: 'Add an event', run: () => addEventOn('EVENT', day) },
+      { label: 'Add a rep lunch', run: () => addEventOn('REP_LUNCH', day) },
+      { label: 'Add a diagnostics date', run: () => addEventOn('DIAGNOSTIC', day) },
+      { label: 'Add a holiday or closure', run: () => addEventOn('CLOSURE', day) },
+    ]);
+  };
   const [planResult, setPlanResult] = useState<PlanResult | null>(null);
   const confirmAsk = useConfirm();
   const [showEmptyOpen, setShowEmptyOpen] = useState(false);
@@ -617,7 +662,7 @@ export function SchedulePage() {
           foot of the page: overtime is the warning a manager has to act on
           before the week is published, so it is the first thing on screen. */}
       {isManager && coverage && coverage.overtime.length > 0 && (
-        <div className="mb-4">
+        <div className="mb-3">
           <OvertimeNotice
             overtime={coverage.overtime}
             thresholdHours={coverage.overtimeThresholdHours}
@@ -843,7 +888,7 @@ export function SchedulePage() {
           <EventForm
             key={
               eventForm.event?.id ??
-              `new-${eventForm.kind ?? 'EVENT'}-${eventForm.template?.id ?? ''}`
+              `new-${eventForm.kind ?? 'EVENT'}-${eventForm.template?.id ?? ''}-${eventForm.day?.toDateString() ?? ''}`
             }
             event={eventForm.event}
             template={eventForm.template}
@@ -851,7 +896,7 @@ export function SchedulePage() {
             employees={employees}
             locations={locations}
             jobRoles={jobRoles}
-            defaultDate={newEventDay(view === 'week' ? weekStart : monthStart)}
+            defaultDate={eventForm.day ?? newEventDay(view === 'week' ? weekStart : monthStart)}
             onSaved={(created) => {
               setEventForm(null);
               setEventNotice(created > 1 ? `Saved — ${created} dates are on the schedule.` : null);
@@ -917,10 +962,11 @@ export function SchedulePage() {
       {isManager && adding && (
         <div className="mb-6">
           <NewShiftForm
+            key={addingDay?.toDateString() ?? 'week'}
             employees={employees}
             locations={locations}
             jobRoles={jobRoles}
-            defaultDate={weekStart}
+            defaultDate={addingDay ?? weekStart}
             onCreated={() => {
               setAdding(false);
               void load();
@@ -979,6 +1025,7 @@ export function SchedulePage() {
             // One person picked: their times, as staff see their own month.
             showNames={isManager && !personFilter}
             onPersonMenu={isManager ? openPersonMenu : undefined}
+            onDayMenu={isManager ? openMonthMenu : undefined}
             onPickDay={(day) => {
               setWeekStart(startOfWeek(day));
               setView('week');
@@ -1031,6 +1078,8 @@ export function SchedulePage() {
             showEmptyOpen={showEmptyOpen}
             onShowEmptyOpen={setShowEmptyOpen}
             onPersonMenu={isManager ? openPersonMenu : undefined}
+            onAddTimeOff={isManager ? (id, day) => addTimeOffFor(id, day) : undefined}
+            onAddEvent={isManager ? addEventOn : undefined}
             selfId={isManager ? undefined : me?.id}
             onChanged={() => void load()}
             onPlanned={(result) => {
@@ -1125,6 +1174,7 @@ export function SchedulePage() {
         </Link>
       </div>
       {personMenu.menu}
+      {monthMenu.menu}
     </div>
   );
 }
@@ -1573,36 +1623,52 @@ function OvertimeNotice({
       day: 'numeric',
     });
 
+  // One red line, folded, with the names in it; opened for the weeks and hours
+  // (Dominguez, October 2026: it took too much of the page). Still above the
+  // rota, and every person over the line still wears OT on their row.
+  const names = overtime.map(
+    (warning) => `${warning.employeeName.split(' ')[0]} +${warning.overtimeHours} h`,
+  );
   return (
-    <div data-testid="overtime-notice" className="space-y-2">
-      {overtime.length > 0 && (
-        <div className="rounded-xl border-l-4 border-rose-600 bg-rose-50 p-4 text-sm text-rose-900 shadow-sm ring-1 ring-inset ring-rose-200">
-          <p className="text-base font-semibold">
-            ⚠{' '}
-            {overtime.length === 1
-              ? `1 person is scheduled past ${thresholdHours} hours`
-              : `${overtime.length} people are scheduled past ${thresholdHours} hours`}
-          </p>
-          <ul className="mt-1 space-y-0.5">
-            {overtime.map((warning) => (
-              <li key={`${warning.employeeId}-${warning.weekStart}`}>
-                <span className="font-semibold">{warning.employeeName}</span> —{' '}
-                {warning.scheduledHours} hours in the week of {week(warning.weekStart)}, so{' '}
-                <span className="font-semibold">{warning.overtimeHours} at overtime</span>
-                {/* The hours are totalled across the practice, so say when some of
-                    them are somewhere this screen is not showing — otherwise the
-                    number looks wrong to whoever is reading it. */}
-                {warning.spansLocations && ' (including hours at another location)'}
-              </li>
-            ))}
-          </ul>
-          <p className="mt-1.5 text-xs text-rose-800">
-            Hours as scheduled, not as worked. Hourly staff only. Staff are told when a published
-            rota puts them over.
-          </p>
-        </div>
-      )}
-    </div>
+    <details
+      data-testid="overtime-notice"
+      className="group rounded-lg border-l-4 border-rose-600 bg-rose-50 text-sm text-rose-900 ring-1 ring-inset ring-rose-200"
+    >
+      <summary className="flex cursor-pointer list-none flex-wrap items-center gap-x-2 gap-y-0.5 px-3 py-1.5 [&::-webkit-details-marker]:hidden">
+        <span aria-hidden="true" className="text-rose-700 transition group-open:rotate-90">
+          ▸
+        </span>
+        <span className="font-semibold">
+          ⚠{' '}
+          {overtime.length === 1
+            ? `1 person is scheduled past ${thresholdHours} hours`
+            : `${overtime.length} people are scheduled past ${thresholdHours} hours`}
+        </span>
+        <span className="min-w-0 flex-1 truncate">
+          {names.slice(0, 4).join(', ')}
+          {names.length > 4 ? ` +${names.length - 4} more` : ''}
+        </span>
+      </summary>
+      <div className="border-t border-rose-200 px-3 py-1.5">
+        <ul className="space-y-0.5">
+          {overtime.map((warning) => (
+            <li key={`${warning.employeeId}-${warning.weekStart}`}>
+              <span className="font-semibold">{warning.employeeName}</span> —{' '}
+              {warning.scheduledHours} hours in the week of {week(warning.weekStart)}, so{' '}
+              <span className="font-semibold">{warning.overtimeHours} at overtime</span>
+              {/* The hours are totalled across the practice, so say when some of
+                  them are somewhere this screen is not showing — otherwise the
+                  number looks wrong to whoever is reading it. */}
+              {warning.spansLocations && ' (including hours at another location)'}
+            </li>
+          ))}
+        </ul>
+        <p className="mt-1 text-xs text-rose-800">
+          Hours as scheduled, not as worked. Hourly staff only. Staff are told when a published rota
+          puts them over.
+        </p>
+      </div>
+    </details>
   );
 }
 
@@ -1628,6 +1694,7 @@ function MonthGrid({
   birthdays,
   showNames,
   onPersonMenu,
+  onDayMenu,
   onPickDay,
 }: {
   /// Right-click on somebody's shift: their profile, their schedule. Managers only.
@@ -1645,6 +1712,8 @@ function MonthGrid({
   /// own, so the name would be their own name forty times.
   showNames: boolean;
   onPickDay: (day: Date) => void;
+  /// Right-click on a day: add a shift, time off or an event on it. Managers only.
+  onDayMenu?: (event: React.MouseEvent, day: Date) => void;
 }) {
   const today = new Date().toDateString();
   // On a phone a square is forty pixels wide, so it shows three and counts the
@@ -1702,6 +1771,7 @@ function MonthGrid({
               key={day.toISOString()}
               type="button"
               onClick={() => onPickDay(day)}
+              onContextMenu={onDayMenu ? (event) => onDayMenu(event, day) : undefined}
               aria-label={`${day.toLocaleDateString(undefined, {
                 weekday: 'long',
                 month: 'long',

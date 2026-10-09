@@ -94,6 +94,8 @@ const lineFor = (name) =>
 
 await step('deciding Frankie’s: the office is left with 1 of 3 MAs and no Front Desk', async () => {
   await mgr.goto(`${BASE}/schedule`, { waitUntil: 'networkidle' });
+  // Folded to one line until opened (October 2026).
+  await toDecide.locator('summary').click();
   const note = lineFor('Frankie').getByTestId('time-off-clash');
   await note.waitFor({ timeout: 15000 });
   const text = await note.textContent();
@@ -131,6 +133,7 @@ await step('the nightly round-up carries it, being in the next two weeks', async
 
 await step('it warns, never refuses: Frankie’s is approved all the same', async () => {
   await mgr.goto(`${BASE}/schedule`, { waitUntil: 'networkidle' });
+  await toDecide.locator('summary').click();
   const saved = mgr.waitForResponse((r) => r.url().includes(`/api/pto/${frankiesRequest.id}/review`));
   await lineFor('Frankie').getByRole('button', { name: 'Approve' }).click();
   if (!(await saved).ok()) throw new Error('the approval was refused');

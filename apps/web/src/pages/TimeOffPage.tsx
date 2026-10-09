@@ -167,6 +167,7 @@ export function TimeOffPage() {
             staff={isManager ? staff : []}
             balance={balance}
             forId={isManager ? (searchParams.get('for') ?? '') : ''}
+            startOn={searchParams.get('date') ?? ''}
             onCreated={() => {
               setShowForm(false);
               void load();
@@ -434,18 +435,23 @@ function RequestForm({
   staff,
   balance,
   forId = '',
+  startOn = '',
   onCreated,
 }: {
   staff: Employee[];
   balance: PtoBalance | null;
   /// Who it starts for — a staff profile's "Request time off for …" (`?for=`).
   forId?: string;
+  /// The day it starts on — a right-click on the Schedule (`?date=`).
+  startOn?: string;
   onCreated: () => void;
 }) {
   // Sick first, unless the person's own sick days are known to be used up:
   // then PTO (Dominguez, September 2026). Once they pick, it is theirs.
   const [chosenType, setType] = useState<PtoType | null>(null);
-  const [startDate, setStartDate] = useState('');
+  const [startDate, setStartDate] = useState(() =>
+    /^\d{4}-\d{2}-\d{2}$/.test(startOn) ? startOn : '',
+  );
   const [endDate, setEndDate] = useState('');
   const [isHalfDay, setIsHalfDay] = useState(false);
   const [notes, setNotes] = useState('');

@@ -768,6 +768,16 @@ Beyond the phases, the parts worth knowing about before picking up work:
   given (only possible outside the screens) uses their first.
   Open shifts keep any role or none. Shifts saved before are left as they
   were until edited.
+- **The Schedule, shorter** (9 October 2026, Dominguez: the requests and
+  the overtime alert "nearly take up half the page", and the ＋ in every
+  cell made it longer): time-off requests to decide and the overtime alert
+  are **one folded line each** naming who, opened for Approve / Decline and
+  the hours. The ＋ strip is gone: **click a day's empty space** to add a
+  shift (phones too), **right-click a day** on the week or month for *Add a
+  shift*, *Add time off* (that person, that day), *Add an event / rep lunch
+  / diagnostics date / holiday or closure* (`components/ContextMenu.tsx`).
+  Name and shift right-clicks keep the person menu. See *The rota's day
+  menu* in `docs/architecture.md`; `tests/browser/quick-add.mjs`.
 - **Weeks start on Sunday on screen** (September 2026, Dominguez): week
   view, month, printed rota, "This week" shortcuts, weekday pickers.
   Display only.

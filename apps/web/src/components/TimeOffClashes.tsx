@@ -29,7 +29,16 @@ export function clashPeople(people: TimeOffClash['off']): string {
  * one job role (October 2026 — too many off at once, seen before the second
  * request is approved rather than after). A warning; Approve still works.
  */
-export function ClashNote({ requestId, employeeId }: { requestId: string; employeeId: string }) {
+export function ClashNote({
+  requestId,
+  employeeId,
+  compact = false,
+}: {
+  requestId: string;
+  employeeId: string;
+  /// Plain amber lines, no box: inside the Schedule's folded request list.
+  compact?: boolean;
+}) {
   const [clashes, setClashes] = useState<TimeOffClash[]>([]);
   useEffect(() => {
     let cancelled = false;
@@ -45,7 +54,11 @@ export function ClashNote({ requestId, employeeId }: { requestId: string; employ
   if (clashes.length === 0) return null;
   return (
     <ul
-      className="mt-1 space-y-0.5 rounded-md bg-amber-100/70 px-2 py-1 text-xs text-amber-950"
+      className={
+        compact
+          ? 'text-xs text-amber-900'
+          : 'mt-1 space-y-0.5 rounded-md bg-amber-100/70 px-2 py-1 text-xs text-amber-950'
+      }
       data-testid="time-off-clash"
     >
       {clashes.map((clash) => {

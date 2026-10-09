@@ -179,6 +179,8 @@ await step('a rota that crosses 40 hours is called out, in hours', async () => {
   // No reload: the week being viewed is component state, and reloading would
   // drop the manager back on today's week, where none of this applies.
   await page.getByText(/scheduled past 40 hours/).waitFor({ timeout: 20000 });
+  // Folded to one line; opened for the hours (October 2026).
+  await page.getByTestId('overtime-notice').locator('summary').click();
 
   const panel = await page.locator('main').innerText();
   if (!/Frankie Front-Desk/.test(panel))
@@ -273,6 +275,7 @@ await step('overtime is still called out a month at a time', async () => {
   // The warning sits at the top of the page in both views.
   await page.getByTestId('overtime-notice').waitFor({ timeout: 10000 });
   await page.getByText(/scheduled past \d+ hours/).waitFor({ timeout: 10000 });
+  await page.getByTestId('overtime-notice').locator('summary').click();
   const text = await page.locator('main').innerText();
   if (!/61 hours in the week of/.test(text))
     throw new Error('the month view lost the overtime warning');
