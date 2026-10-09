@@ -1,5 +1,6 @@
 import type { ImportedPerson } from './staff-import';
 import type {
+  UsualShift,
   BirthdayEntry,
   Profile,
   Announcement,
@@ -1014,6 +1015,8 @@ export const api = {
   coverage: (params: { from: string; to: string; locationId?: string }) =>
     request<Coverage>(`/shifts/coverage${toQuery(params)}`),
   /// Where somebody's week would land with this shift in it — asked before saving.
+  usualShift: (employeeId: string, date: string) =>
+    request<{ usual: UsualShift | null }>(`/shifts/usual${toQuery({ employeeId, date })}`),
   overtimeCheck: (params: {
     employeeId: string;
     locationId: string;

@@ -97,7 +97,9 @@ await step('while adding a shift, landing close to the line says so in the form'
   await frankieRow().getByRole('button', { name: /^Add a shift for Frankie Front-Desk on Friday/ }).click();
   const dialog = mgr.getByRole('dialog', { name: 'Shift for Frankie Front-Desk' });
   await dialog.waitFor({ timeout: 10000 });
-  // Three hours on top of thirty-six: 39, one short of the line.
+  // Three hours on top of thirty-six: 39, one short of the line. The start is
+  // set too: the form now starts on Frankie's usual, not 9 to 5.
+  await dialog.getByLabel('Starts').fill('09:00');
   await dialog.getByLabel('Ends').fill('12:00');
   const preview = dialog.getByTestId('overtime-preview');
   await preview.getByText('Close to overtime').waitFor({ timeout: 10000 });

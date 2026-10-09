@@ -1049,6 +1049,14 @@ const MANAGERS: Section[] = [
               <strong>Copy last week</strong> when most weeks look the same, then adjust.
             </li>
             <li>
+              A new shift for somebody — the ＋ on the rota, or <strong>+ Add</strong> — starts on
+              <strong> their usual</strong> for that day: their regular shift if they have one,
+              otherwise the hours and office they have worked most often on that weekday lately (or
+              on any day, if that weekday has nothing settled). A line under the times says where
+              it came from. Change anything; once you change the hours or place yourself, they are
+              yours. With nothing usual it starts on 9 to 5 as before.
+            </li>
+            <li>
               <strong>+ Add → Repeating shifts</strong> makes, say, every Tuesday and Thursday for a
               month in one go. The ＋ in a day on the rota can do the same: tick{' '}
               <strong>Repeat this shift</strong>, pick the days and how long for.

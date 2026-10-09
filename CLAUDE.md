@@ -614,6 +614,15 @@ Beyond the phases, the parts worth knowing about before picking up work:
   `availability/regular-shift-clashes.ts`, migration
   `20261009030000_availability_clash_notice`;
   `tests/browser/availability-clash.mjs`.
+- **A new shift starts on their usual hours** (9 October 2026, Dominguez —
+  the thirteenth "smarter" idea): the ＋ on the rota and **+ Add** start on
+  the person's **regular shift** for that day, else what they worked most on
+  that **weekday** in the last 8 weeks (at least twice), else on **any day**
+  (at least three times), else 9 to 5 — hours, office and job role, with a
+  line saying where it came from, until the manager changes them by hand.
+  `GET /shifts/usual`, `shifts/usual-hours.ts`, `components/UsualShift.tsx`;
+  `tests/browser/usual-hours.mjs`. (Browser suites that relied on the 9 to 5
+  start now set it.)
 - **Turned down: "PTO about to be lost"** (9 October 2026, Dominguez): a
   reminder to use PTO before it fails to carry over was proposed and refused —
   not in the practice's interest. Do not propose it again.

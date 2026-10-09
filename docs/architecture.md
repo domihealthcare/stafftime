@@ -2824,6 +2824,34 @@ regular shift ends, moves, or the person is asked. Migration
 `20261009030000_availability_clash_notice` adds only the notification kind.
 `tests/browser/availability-clash.mjs`.
 
+## A new shift starts on their usual hours
+
+October 2026, Dominguez — the thirteenth "make it smarter" idea. Every shift
+form started on 9 to 5, so somebody who always works 7 to 3 at West New York
+meant retyping the hours and office for every shift. `shifts/usual-hours.ts`
+(`GET /shifts/usual?employeeId&date`, managers) gives their usual for a date,
+in this order:
+
+1. their **regular shift** (`ShiftSeries`) that falls on that date — "which
+   weeks" included;
+2. else the hours and place they have worked **most often on that weekday**
+   in the last eight weeks (`USUAL_WEEKS`), at least twice, the latest
+   winning a tie;
+3. else the same over **any day** of those eight weeks, at least three times;
+4. else nothing, and the form keeps 9 to 5.
+
+The job role comes with it when they still hold it (the latest shift's role,
+from the history). Cancelled shifts are not counted; drafts are.
+
+The ＋ on the rota and **+ Add** (`useUsualShift`, `UsualShiftHint` in
+`components/UsualShift.tsx`) fill it in **until the manager changes the hours
+or place by hand**, with a line under the times saying where it came from. The
+＋ keeps the office of the row it was pressed in (a row inside an office's
+group) and only takes the place when the row does not fix one. Repeating
+shifts, a regular shift's Edit and a usual week still start on 9 to 5: they
+are where a pattern is set, not filled from one. Nothing is stored.
+`tests/browser/usual-hours.mjs`.
+
 ## Heading for overtime on hours worked
 
 October 2026, Dominguez — the ninth of the "make it smarter" ideas. The rota

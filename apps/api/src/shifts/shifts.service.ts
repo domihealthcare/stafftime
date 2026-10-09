@@ -9,6 +9,7 @@ import { QueryShiftsDto } from './dto/query-shifts.dto';
 import { UpdateShiftDto } from './dto/update-shift.dto';
 import { OvertimeService } from './overtime.service';
 import { NoticeShift, shiftNotices } from './shift-notices';
+import { loadUsualShift } from './usual-hours';
 
 const SHIFT_INCLUDE = {
   employee: {
@@ -36,6 +37,11 @@ export class ShiftsService {
     private readonly overtime: OvertimeService,
     private readonly inbox: InboxService,
   ) {}
+
+  /// Their usual for a day, for a new shift to start on: see `usual-hours.ts`.
+  usual(employeeId: string, date: string) {
+    return loadUsualShift(this.prisma, employeeId, date);
+  }
 
   /// A shift for somebody, or — with no employee — an open shift that still
   /// needs filling.

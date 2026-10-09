@@ -1533,3 +1533,15 @@ export interface ExportCheck {
     lines: string[];
   }[];
 }
+
+/// Somebody's usual hours and place for a day, for a new shift to start on
+/// (`GET /shifts/usual`): their regular shift, or what they have worked most
+/// often lately.
+export interface UsualShift {
+  startTime: string;
+  endTime: string;
+  locationId: string;
+  isRemote: boolean;
+  jobRoleId: string | null;
+  from: 'regular' | 'weekday' | 'recent';
+}
