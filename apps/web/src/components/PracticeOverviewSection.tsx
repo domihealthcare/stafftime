@@ -38,7 +38,16 @@ export function PracticeOverviewSection() {
   if (error) return <Alert>{error}</Alert>;
   if (!data) return <Spinner label="Loading the rest of the dashboard" />;
 
-  const { waiting, licenses, surveys, checklists, closing, patterns, timeOffClashes } = data;
+  const {
+    waiting,
+    licenses,
+    surveys,
+    checklists,
+    closing,
+    patterns,
+    timeOffClashes,
+    overtimeForecast,
+  } = data;
 
   return (
     <section aria-labelledby="practice-heading" data-testid="practice-overview">
@@ -66,6 +75,7 @@ export function PracticeOverviewSection() {
       </div>
 
       <div className="grid gap-4 lg:grid-cols-2">
+        <OvertimeForecastCard forecast={overtimeForecast} />
         <PatternsCard patterns={patterns} />
 
         <Card className="p-4" testId="overview-clashes">
@@ -198,6 +208,52 @@ export function PracticeOverviewSection() {
         </Card>
       </div>
     </section>
+  );
+}
+
+/// Heading for overtime this week (October 2026): hours worked so far plus
+/// what the rota still has them down for, past the line — in time to trim a
+/// shift. The rota's own warning covers the schedule; this catches the early
+/// starts and late finishes. Managers only.
+function OvertimeForecastCard({ forecast }: { forecast: PracticeOverview['overtimeForecast'] }) {
+  const { people, thresholdHours, weekStart } = forecast;
+  const week = new Date(`${weekStart}T12:00:00Z`).toLocaleDateString(undefined, {
+    weekday: 'short',
+    month: 'short',
+    day: 'numeric',
+    timeZone: 'UTC',
+  });
+  return (
+    <Card className="p-4" testId="overview-overtime-forecast">
+      <CardHeading title="Heading for overtime this week" to="/timesheet" />
+      <p className="mt-1 text-xs text-slate-500">
+        The week from {week}: hours worked so far plus what is still on the rota, past{' '}
+        {thresholdHours}. Hourly staff, both offices.
+      </p>
+      {people.length === 0 ? (
+        <p className="mt-2 text-sm text-slate-600">Nobody on course for overtime.</p>
+      ) : (
+        <ul className="mt-2 space-y-1.5 text-sm text-slate-700">
+          {people.slice(0, SHOWN).map((person) => (
+            <li key={person.employeeId} data-testid="overtime-heading">
+              <span className="font-medium text-slate-900">{person.employeeName}</span> —{' '}
+              <span className="font-semibold text-amber-800">{person.projected} hrs</span>
+              <span className="text-slate-600">
+                {' '}
+                ({person.worked} worked
+                {person.stillScheduled > 0 ? ` + ${person.stillScheduled} still on the rota` : ''})
+                {person.rota > thresholdHours
+                  ? ' · the rota already had them over'
+                  : ` · rota alone: ${person.rota}`}
+              </span>
+            </li>
+          ))}
+          {people.length > SHOWN && (
+            <li className="text-xs text-slate-500">and {people.length - SHOWN} more</li>
+          )}
+        </ul>
+      )}
+    </Card>
   );
 }
 

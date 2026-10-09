@@ -7,6 +7,7 @@ import { loadStanding } from '../credentials/standing-query';
 import { PrismaService } from '../prisma/prisma.service';
 import { SurveysService } from '../surveys/surveys.service';
 import { loadPunchPatterns } from '../time-entries/punch-patterns';
+import { loadOvertimeForecast } from '../time-entries/overtime-forecast';
 import { DASHBOARD_WEEKS, loadTimeOffClashes } from '../pto/time-off-clashes';
 import { addDaysTo, localDateIn, PRACTICE_ZONE } from '../common/util/zoned-time.util';
 
@@ -34,17 +35,27 @@ export class PracticeOverviewService {
   async overview() {
     const today = practiceToday();
     const from = localDateIn(new Date(), PRACTICE_ZONE);
-    const [surveys, suggestions, licenses, checklists, closing, waiting, patterns, clashes] =
-      await Promise.all([
-        this.surveys.overview(),
-        this.prisma.feedback.count({ where: { receivedOn: { gte: addUtcDays(today, -30) } } }),
-        this.licenses(),
-        this.checklists(today),
-        this.closing(today),
-        this.waiting(),
-        loadPunchPatterns(this.prisma),
-        loadTimeOffClashes(this.prisma, from, addDaysTo(from, DASHBOARD_WEEKS * 7 - 1)),
-      ]);
+    const [
+      surveys,
+      suggestions,
+      licenses,
+      checklists,
+      closing,
+      waiting,
+      patterns,
+      clashes,
+      forecast,
+    ] = await Promise.all([
+      this.surveys.overview(),
+      this.prisma.feedback.count({ where: { receivedOn: { gte: addUtcDays(today, -30) } } }),
+      this.licenses(),
+      this.checklists(today),
+      this.closing(today),
+      this.waiting(),
+      loadPunchPatterns(this.prisma),
+      loadTimeOffClashes(this.prisma, from, addDaysTo(from, DASHBOARD_WEEKS * 7 - 1)),
+      loadOvertimeForecast(this.prisma),
+    ]);
     return {
       surveys: { surveys, suggestionsLast30Days: suggestions },
       licenses,
@@ -55,6 +66,8 @@ export class PracticeOverviewService {
       patterns,
       // Too many from one job role off at once, the next 8 weeks (October 2026).
       timeOffClashes: { weeks: DASHBOARD_WEEKS, clashes },
+      // Worked so far plus what is still on the rota, this week (October 2026).
+      overtimeForecast: forecast,
     };
   }
 

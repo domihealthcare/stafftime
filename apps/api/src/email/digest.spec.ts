@@ -80,6 +80,7 @@ function build(
       count: jest.fn().mockResolvedValue(data.shiftsMissed ?? 1),
     },
     location: { findMany: jest.fn().mockResolvedValue(data.locations ?? []) },
+    practiceSettings: { findFirst: jest.fn().mockResolvedValue(null) },
     practiceEvent: { findMany: jest.fn().mockResolvedValue(data.closures ?? []) },
     closingRecord: { findMany: jest.fn().mockResolvedValue(data.closingRecords ?? []) },
     supplyRequest: { findMany: jest.fn().mockResolvedValue(data.supplies ?? []) },
@@ -95,13 +96,16 @@ function build(
       // with the same list is how a test passes for the wrong reason.
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       findMany: jest.fn(async (args: any) =>
-        args?.select?.locations
-          ? (data.teams ?? [])
-          : args?.select?.jobRoles
-            ? (data.standing ?? [])
-            : args?.where?.id?.in
-              ? (data.staff ?? [])
-              : managers,
+        // Hourly staff, for the overtime forecast: none unless a test says.
+        args?.where?.payType
+          ? []
+          : args?.select?.locations
+            ? (data.teams ?? [])
+            : args?.select?.jobRoles
+              ? (data.standing ?? [])
+              : args?.where?.id?.in
+                ? (data.staff ?? [])
+                : managers,
       ),
     },
   };

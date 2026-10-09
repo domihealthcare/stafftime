@@ -115,6 +115,16 @@ const SECTIONS: SectionSpec[] = [
     subject: (n) => `${n} time-off ${plural(n, 'request', 'requests')} to decide`,
   },
   {
+    key: 'overtimeHeading',
+    tier: 'soon',
+    // Worked so far plus what the rota still has them down for: see
+    // time-entries/overtime-forecast.ts. In time to trim a shift.
+    heading: 'Heading for overtime this week',
+    path: '/dashboard',
+    screen: 'Dashboard',
+    subject: (n) => `${n} heading for overtime`,
+  },
+  {
     key: 'timeOffClashes',
     tier: 'soon',
     // Warned, never refused: see pto/time-off-clashes.ts.
