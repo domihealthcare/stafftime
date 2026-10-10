@@ -16,6 +16,7 @@ import {
 } from '../components/ui';
 import { ApiError, api } from '../lib/api';
 import { displayName, formatDate } from '../lib/format';
+import { t as translate, useT } from '../lib/i18n';
 import { useIsManager } from '../lib/session';
 import type {
   Announcement,
@@ -37,15 +38,16 @@ import type {
  * set them and see who has confirmed. A nag, never a gate.
  */
 export function RequiredPage() {
+  const t = useT();
   const isManager = useIsManager();
   return (
     <div className="max-w-4xl space-y-8">
       <PageHeading
-        title="Required reading and tasks"
+        title={t('Required reading and tasks')}
         subtitle={
           isManager
-            ? 'What staff have been asked to read or do, and who has confirmed. Yours are first.'
-            : 'What a manager has asked you to read or do. Confirm each once you have.'
+            ? t('What staff have been asked to read or do, and who has confirmed. Yours are first.')
+            : t('What a manager has asked you to read or do. Confirm each once you have.')
         }
       />
       <Mine />
@@ -57,6 +59,7 @@ export function RequiredPage() {
 // ------------------------------------------------------------------ yours
 
 function Mine() {
+  const t = useT();
   const [items, setItems] = useState<MyRequirement[] | null>(null);
   const [error, setError] = useState<string | null>(null);
 
@@ -65,7 +68,9 @@ function Mine() {
       .myRequirements()
       .then(setItems)
       .catch((err) => {
-        setError(err instanceof ApiError ? err.message : 'Could not load what is asked of you.');
+        setError(
+          err instanceof ApiError ? err.message : translate('Could not load what is asked of you.'),
+        );
         setItems([]);
       });
   }, []);
@@ -84,11 +89,11 @@ function Mine() {
   return (
     <section aria-labelledby="required-mine" className="space-y-3">
       <h2 id="required-mine" className="text-lg font-semibold text-slate-900">
-        Waiting for you
+        {t('Waiting for you')}
       </h2>
       {error && <Alert>{error}</Alert>}
       {waiting.length === 0 ? (
-        <EmptyState>Nothing is waiting for you. ✓</EmptyState>
+        <EmptyState>{t('Nothing is waiting for you. ✓')}</EmptyState>
       ) : (
         <ul className="space-y-3">
           {waiting.map((item) => (
@@ -103,7 +108,7 @@ function Mine() {
       {done.length > 0 && (
         <details className="rounded-xl border border-slate-200 bg-white p-4">
           <summary className="cursor-pointer text-sm font-medium text-slate-700">
-            Done ({done.length})
+            {t('Done ({n})', { n: done.length })}
           </summary>
           <ul className="mt-3 divide-y divide-slate-100">
             {done.map((item) => (

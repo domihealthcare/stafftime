@@ -8,6 +8,7 @@ import { usePersonMenu } from '../components/PersonMenu';
 import { Alert, Card, EmptyState, PageHeading, Spinner, buttonClass } from '../components/ui';
 import { ApiError, api } from '../lib/api';
 import { displayName } from '../lib/format';
+import { t as translate, useT } from '../lib/i18n';
 import { useIsManager, useSession } from '../lib/session';
 import type { DirectoryEntry, OfficeExtension } from '../lib/types';
 import { OfficeExtensionsCard, extensionOf } from '../components/OfficeExtensions';
@@ -24,6 +25,7 @@ const REFRESH_MS = 60_000;
  * lists who has a work-from-home shift today and has not clocked in yet.
  */
 export function DirectoryPage() {
+  const t = useT();
   const { employee } = useSession();
   const isManager = useIsManager();
   const [people, setPeople] = useState<DirectoryEntry[]>([]);
@@ -54,7 +56,9 @@ export function DirectoryPage() {
       if (lines) setExtensions(lines);
       setError(null);
     } catch (cause) {
-      setError(cause instanceof ApiError ? cause.message : 'Could not load the directory.');
+      setError(
+        cause instanceof ApiError ? cause.message : translate('Could not load the directory.'),
+      );
     } finally {
       setLoading(false);
     }
@@ -106,13 +110,13 @@ export function DirectoryPage() {
     });
   }, [people, search, jobRole, location, onlyPerson]);
 
-  if (loading) return <Spinner label="Loading the directory" />;
+  if (loading) return <Spinner label={t('Loading the directory')} />;
 
   return (
     <div className="max-w-6xl">
       <PageHeading
-        title="Directory"
-        subtitle="Everyone at the practice, how to reach them, and who is in right now."
+        title={t('Directory')}
+        subtitle={t('Everyone at the practice, how to reach them, and who is in right now.')}
       />
 
       {error && (
@@ -121,7 +125,7 @@ export function DirectoryPage() {
         </div>
       )}
 
-      <section aria-label="In now" className="mb-6 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+      <section aria-label={t('In now')} className="mb-6 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
         {locations.map((place) => {
           // At the office — somebody on a work-from-home shift is listed apart.
           const here = people.filter(
@@ -130,17 +134,17 @@ export function DirectoryPage() {
           return (
             <Card key={place.id} className="p-4" testId={`in-now-${place.name}`}>
               <p className="text-xs font-medium uppercase tracking-wide text-slate-500">
-                In now · {place.name}
+                {t('In now · {place}', { place: place.name })}
               </p>
               {here.length === 0 ? (
-                <p className="mt-1 text-sm text-slate-500">Nobody is clocked in.</p>
+                <p className="mt-1 text-sm text-slate-500">{t('Nobody is clocked in.')}</p>
               ) : (
                 <div className="mt-2 space-y-2">
                   {byJobRole(here).map((group) => (
                     <div key={group.key} data-testid={`in-now-group-${group.label}`}>
                       <p className="flex items-center gap-1.5 text-xs font-medium text-slate-600">
                         <JobRoleDot colour={group.colour} />
-                        {group.label}
+                        {group.key === 'none' ? t('Other') : group.label}
                       </p>
                       <ul className="mt-0.5 flex flex-wrap gap-x-3 gap-y-1 pl-4 text-sm text-slate-800">
                         {group.people.map((person) => (
@@ -162,20 +166,20 @@ export function DirectoryPage() {
 
       <div className="mb-4 grid gap-2 sm:grid-cols-3">
         <input
-          aria-label="Search"
+          aria-label={t('Search')}
           type="search"
           value={search}
           onChange={(event) => setSearch(event.target.value)}
-          placeholder="Search by name or role"
+          placeholder={t('Search by name or role')}
           className="rounded-lg border border-slate-300 px-3 py-2 text-sm"
         />
         <select
-          aria-label="Job role"
+          aria-label={t('Job role')}
           value={jobRole}
           onChange={(event) => setJobRole(event.target.value)}
           className="rounded-lg border border-slate-300 px-2 py-2 text-sm"
         >
-          <option value="">Every job role</option>
+          <option value="">{t('Every job role')}</option>
           {jobRoles.map((role) => (
             <option key={role.id} value={role.id}>
               {role.name}
@@ -183,12 +187,12 @@ export function DirectoryPage() {
           ))}
         </select>
         <select
-          aria-label="Location"
+          aria-label={t('Location')}
           value={location}
           onChange={(event) => setLocation(event.target.value)}
           className="rounded-lg border border-slate-300 px-2 py-2 text-sm"
         >
-          <option value="">Both locations</option>
+          <option value="">{t('Both locations')}</option>
           {locations.map((place) => (
             <option key={place.id} value={place.id}>
               {place.name}
@@ -208,19 +212,19 @@ export function DirectoryPage() {
 
       {onlyPerson && (
         <p className="mb-3 text-sm text-slate-700">
-          Showing one person.{' '}
+          {t('Showing one person.')}{' '}
           <button
             type="button"
             onClick={() => setSearchParams({})}
             className="font-medium text-brand-700 underline"
           >
-            Show everyone
+            {t('Show everyone')}
           </button>
         </p>
       )}
 
       {shown.length === 0 ? (
-        <EmptyState>Nobody matches that.</EmptyState>
+        <EmptyState>{t('Nobody matches that.')}</EmptyState>
       ) : (
         <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
           {shown.map((person) => (
@@ -255,6 +259,7 @@ function PersonCard({
   canResetPin: boolean;
   extension: OfficeExtension | null;
 }) {
+  const t = useT();
   const name = displayName(person);
   return (
     <Card className="p-4" testId={`person-${name}`}>
@@ -267,7 +272,7 @@ function PersonCard({
               {person.pronouns && (
                 <span className="ml-1 text-sm font-normal text-slate-500">({person.pronouns})</span>
               )}
-              {isYou && <span className="ml-1 font-normal text-slate-500">(you)</span>}
+              {isYou && <span className="ml-1 font-normal text-slate-500">{t('(you)')}</span>}
             </h2>
             <PresenceBadges entry={person} />
           </div>
@@ -309,10 +314,11 @@ function HomeToday({
   people: DirectoryEntry[];
   extensions: OfficeExtension[];
 }) {
+  const t = useT();
   /// The number that rings them at home, where the list has one.
   const dial = (person: DirectoryEntry) => {
     const number = extensionOf(extensions, person.id)?.homeExtension;
-    return number ? ` · ext. ${number}` : '';
+    return number ? t(' · ext. {number}', { number }) : '';
   };
   const now = people.filter((person) => person.onNow?.remote);
   const later = people
@@ -321,10 +327,10 @@ function HomeToday({
   return (
     <Card className="p-4 sm:col-span-2 lg:col-span-1" testId="in-now-home">
       <p className="text-xs font-medium uppercase tracking-wide text-slate-500">
-        Working from home today
+        {t('Working from home today')}
       </p>
       {now.length === 0 && later.length === 0 ? (
-        <p className="mt-1 text-sm text-slate-500">Nobody is working from home today.</p>
+        <p className="mt-1 text-sm text-slate-500">{t('Nobody is working from home today.')}</p>
       ) : (
         <ul className="mt-1 space-y-1 text-sm text-slate-800">
           {now.map((person) => (
@@ -338,7 +344,10 @@ function HomeToday({
                 ) : (
                   displayName(person)
                 )}{' '}
-                <span className="text-slate-500">· in now{dial(person)}</span>
+                <span className="text-slate-500">
+                  {t('· in now')}
+                  {dial(person)}
+                </span>
               </span>
             </li>
           ))}
@@ -352,7 +361,10 @@ function HomeToday({
                 <HoverNote note={homeHours(person.homeToday!)} testId="home-name">
                   {displayName(person)}
                 </HoverNote>{' '}
-                <span className="text-slate-500">· not in yet{dial(person)}</span>
+                <span className="text-slate-500">
+                  {t('· not in yet')}
+                  {dial(person)}
+                </span>
               </span>
             </li>
           ))}

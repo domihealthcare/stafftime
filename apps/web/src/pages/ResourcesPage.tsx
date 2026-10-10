@@ -18,6 +18,7 @@ import {
   canUseCognitiveAssessment,
   canUseWellnessForm,
 } from '../lib/clinical-access';
+import { t as translate, useT } from '../lib/i18n';
 import { useIsManager, useSession } from '../lib/session';
 import type { Resource, ResourceKind, ResourceSection } from '../lib/types';
 
@@ -34,6 +35,7 @@ import type { Resource, ResourceKind, ResourceSection } from '../lib/types';
 const DriveShareWith = createContext<string | null>(null);
 
 export function ResourcesPage() {
+  const t = useT();
   const isManager = useIsManager();
   const [sections, setSections] = useState<ResourceSection[]>([]);
   const [driveShareWith, setDriveShareWith] = useState<string | null>(null);
@@ -47,7 +49,7 @@ export function ResourcesPage() {
       setDriveShareWith(found.driveShareWith);
       setError(null);
     } catch (cause) {
-      setError(cause instanceof ApiError ? cause.message : 'Could not load resources.');
+      setError(cause instanceof ApiError ? cause.message : translate('Could not load resources.'));
     } finally {
       setLoading(false);
     }
@@ -57,7 +59,7 @@ export function ResourcesPage() {
     void load();
   }, [load]);
 
-  if (loading) return <Spinner label="Loading resources" />;
+  if (loading) return <Spinner label={t('Loading resources')} />;
 
   const roleSections = sections.filter((section) => section.jobRole !== null);
 
@@ -65,11 +67,13 @@ export function ResourcesPage() {
     <DriveShareWith.Provider value={driveShareWith}>
       <div className="max-w-4xl">
         <PageHeading
-          title="Resources"
+          title={t('Resources')}
           subtitle={
             isManager
-              ? 'Links and how-to pages for each job role. Staff see Everyone plus the roles they are in.'
-              : 'Links and how-to pages for you, and for the roles you work in.'
+              ? t(
+                  'Links and how-to pages for each job role. Staff see Everyone plus the roles they are in.',
+                )
+              : t('Links and how-to pages for you, and for the roles you work in.')
           }
         />
 
@@ -82,8 +86,9 @@ export function ResourcesPage() {
         {!isManager && roleSections.length === 0 && (
           <div className="mb-4">
             <Alert tone="info">
-              You are not in a job role yet, so you only see what is for everyone. A manager can add
-              you to one.
+              {t(
+                'You are not in a job role yet, so you only see what is for everyone. A manager can add you to one.',
+              )}
             </Alert>
           </div>
         )}
@@ -133,15 +138,17 @@ function SectionBlock({
   onChanged: () => void;
   onError: (message: string) => void;
 }) {
+  const t = useT();
   const [adding, setAdding] = useState(false);
   const name = sectionName(section);
+  const shownName = section.jobRole ? name : t(name);
 
   return (
-    <section aria-label={name} data-testid={`section-${name}`}>
+    <section aria-label={shownName} data-testid={`section-${name}`}>
       <div className="mb-2 flex flex-wrap items-center gap-2">
         <h2 className="flex items-center gap-2 text-sm font-semibold uppercase tracking-wide text-slate-600">
           {section.jobRole && <JobRoleDot colour={section.jobRole.colour} />}
-          {name}
+          {shownName}
         </h2>
         {canManage && section.jobRole && section.yours && <Badge tone="info">Yours</Badge>}
         {canManage && !adding && (
@@ -173,7 +180,7 @@ function SectionBlock({
       )}
 
       {section.resources.length === 0 ? (
-        <EmptyState>Nothing here yet.</EmptyState>
+        <EmptyState>{t('Nothing here yet.')}</EmptyState>
       ) : (
         <div className="space-y-2">
           {section.resources.map((resource) => (
@@ -205,6 +212,7 @@ function ResourceRow({
   onChanged: () => void;
   onError: (message: string) => void;
 }) {
+  const t = useT();
   const [editing, setEditing] = useState(false);
   const [busy, setBusy] = useState(false);
   const [showFiles, setShowFiles] = useState(false);
@@ -265,7 +273,7 @@ function ResourceRow({
           <p className="mt-0.5 text-xs text-slate-500">
             {driveFolder && resource.url ? (
               <>
-                Google Drive folder
+                {t('Google Drive folder')}
                 {canManage && (
                   <>
                     {' · '}
@@ -283,7 +291,7 @@ function ResourceRow({
             ) : resource.kind === 'LINK' && resource.url ? (
               hostOf(resource.url)
             ) : (
-              'Page'
+              t('Page')
             )}
           </p>
           {resource.kind === 'LINK' && resource.body && (
@@ -548,14 +556,17 @@ function hostOf(url: string): string {
  * Anybody with neither sees no section at all.
  */
 function FormsSection() {
+  const t = useT();
   const { employee } = useSession();
   const cognitive = employee ? canUseCognitiveAssessment(employee) : false;
   const carePlan = employee ? canUseCarePlan(employee) : false;
   const wellness = employee ? canUseWellnessForm(employee) : false;
   if (!cognitive && !carePlan && !wellness) return null;
   return (
-    <section aria-label="Forms" data-testid="forms-section">
-      <h2 className="mb-2 text-sm font-semibold uppercase tracking-wide text-slate-600">Forms</h2>
+    <section aria-label={t('Forms')} data-testid="forms-section">
+      <h2 className="mb-2 text-sm font-semibold uppercase tracking-wide text-slate-600">
+        {t('Forms')}
+      </h2>
       <Card className="space-y-3 border-brand-200 bg-brand-50 p-3" testId="clinical-tools">
         {cognitive && (
           <div>
@@ -566,8 +577,9 @@ function FormsSection() {
               BrainCheck Care Plan →
             </Link>
             <p className="mt-0.5 text-xs text-slate-600">
-              Cognitive assessment and care plan (CPT 99483). Fill it in during the visit; download
-              the note for eCW and the care plan for the patient. Nothing is saved.
+              {t(
+                'Cognitive assessment and care plan (CPT 99483). Fill it in during the visit; download the note for eCW and the care plan for the patient. Nothing is saved.',
+              )}
             </p>
           </div>
         )}
@@ -580,8 +592,9 @@ function FormsSection() {
               APCM Care Plan →
             </Link>
             <p className="mt-0.5 text-xs text-slate-600">
-              For CCM and APCM: the general care plan and two or more chronic conditions, as one PDF
-              in English, or English and Spanish. Nothing is saved.
+              {t(
+                'For CCM and APCM: the general care plan and two or more chronic conditions, as one PDF in English, or English and Spanish. Nothing is saved.',
+              )}
             </p>
           </div>
         )}
@@ -594,15 +607,15 @@ function FormsSection() {
               Annual Wellness Visit →
             </Link>
             <p className="mt-0.5 text-xs text-slate-600">
-              The Annual Wellness Supplement Form: the medical assistant does page 2 (preventive
-              services), the provider page 1 in the patient&rsquo;s language. Each page downloads
-              for eCW. Nothing is saved.
+              {t(
+                'The Annual Wellness Supplement Form: the medical assistant does page 2 (preventive services), the provider page 1 in the patient’s language. Each page downloads for eCW. Nothing is saved.',
+              )}
             </p>
           </div>
         )}
         {!cognitive && (
           <p className="text-xs text-slate-500">
-            Providers also have the BrainCheck Care Plan here.
+            {t('Providers also have the BrainCheck Care Plan here.')}
           </p>
         )}
       </Card>

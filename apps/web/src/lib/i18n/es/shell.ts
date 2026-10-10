@@ -61,7 +61,7 @@ export const SHELL: Record<string, string> = {
   'Colleagues will see your initials in the Directory instead.':
     'Tus compañeros verán tus iniciales en el Directorio.',
   'Yes, remove it': 'Sí, quitarla',
-  'Keep it': 'Dejarla',
+  'Keep it': 'Conservar',
   'Photo removed.': 'Foto quitada.',
   'Could not remove your photo.': 'No se pudo quitar tu foto.',
   'How colleagues see you in the Directory.': 'Cómo te ven tus compañeros en el Directorio.',

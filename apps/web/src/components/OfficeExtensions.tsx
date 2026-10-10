@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { ApiError, api } from '../lib/api';
+import { useT } from '../lib/i18n';
 import type { Employee, OfficeExtension, OfficeExtensionInput } from '../lib/types';
 import { useConfirm } from './ConfirmDialog';
 import { Alert, Card, buttonClass, inputClass } from './ui';
@@ -23,6 +24,7 @@ export function OfficeExtensionsCard({
   canEdit: boolean;
   onSaved: (lines: OfficeExtension[]) => void;
 }) {
+  const t = useT();
   const [editing, setEditing] = useState(false);
   const needle = search.trim().toLowerCase();
   const shown = needle
@@ -41,7 +43,7 @@ export function OfficeExtensionsCard({
     <Card className="mb-6 p-4" testId="office-extensions">
       <div className="flex items-center justify-between gap-2">
         <h2 className="text-xs font-medium uppercase tracking-wide text-slate-500">
-          <span aria-hidden="true">☎</span> Office extensions
+          <span aria-hidden="true">☎</span> {t('Office extensions')}
         </h2>
         {canEdit && (
           <button
@@ -56,7 +58,7 @@ export function OfficeExtensionsCard({
       </div>
       {sections.length === 0 ? (
         <p className="mt-2 text-sm text-slate-500">
-          {lines.length === 0 ? 'No extensions yet.' : 'No extension matches that.'}
+          {lines.length === 0 ? t('No extensions yet.') : t('No extension matches that.')}
         </p>
       ) : (
         <div className="mt-3 grid gap-x-6 gap-y-4 sm:grid-cols-2 lg:grid-cols-5">
@@ -74,7 +76,7 @@ export function OfficeExtensionsCard({
                     </div>
                     {line.homeExtension && (
                       <p className="text-xs text-slate-500">
-                        From home: <span className="tabular-nums">{line.homeExtension}</span>
+                        {t('From home:')} <span className="tabular-nums">{line.homeExtension}</span>
                         {line.homeDays && ` · ${line.homeDays}`}
                       </p>
                     )}
@@ -86,7 +88,7 @@ export function OfficeExtensionsCard({
         </div>
       )}
       <p className="mt-3 text-xs text-slate-500">
-        A “from home” number rings that person’s mobile on the days they work from home.
+        {t('A “from home” number rings that person’s mobile on the days they work from home.')}
       </p>
       {editing && (
         <ExtensionsEditor

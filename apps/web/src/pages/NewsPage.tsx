@@ -16,6 +16,7 @@ import {
 } from '../components/ui';
 import { AI_NOTE, useAiOn } from '../lib/ai';
 import { ApiError, api } from '../lib/api';
+import { locale, t as translate, useT } from '../lib/i18n';
 import { useIsAdmin, useIsManager } from '../lib/session';
 import type { Announcement, MyRequirement, PollInput } from '../lib/types';
 
@@ -30,6 +31,7 @@ import type { Announcement, MyRequirement, PollInput } from '../lib/types';
  * the page scrolls to that post once it has loaded.
  */
 export function NewsPage() {
+  const t = useT();
   const isAdmin = useIsAdmin();
   const isManager = useIsManager();
   const aiOn = useAiOn();
@@ -46,7 +48,7 @@ export function NewsPage() {
       setPosts(await api.announcements());
       setError(null);
     } catch (cause) {
-      setError(cause instanceof ApiError ? cause.message : 'Could not load the news.');
+      setError(cause instanceof ApiError ? cause.message : translate('Could not load the news.'));
     } finally {
       setLoading(false);
     }
@@ -71,22 +73,24 @@ export function NewsPage() {
     setPosts((current) => current.map((post) => (post.id === updated.id ? updated : post)));
   }, []);
 
-  if (loading) return <Spinner label="Loading the news" />;
+  if (loading) return <Spinner label={t('Loading the news')} />;
 
   return (
     <div className="max-w-3xl">
       <PageHeading
-        title="News"
+        title={t('News')}
         subtitle={
           isAdmin
-            ? 'Everything posted for staff, newest first. The primary post is the one everybody sees when they sign in.'
-            : 'Everything posted for staff, newest first.'
+            ? t(
+                'Everything posted for staff, newest first. The primary post is the one everybody sees when they sign in.',
+              )
+            : t('Everything posted for staff, newest first.')
         }
       />
 
       {(aiOn || posts.some((post) => post.titleEs)) && (
         <div className="mb-4 flex items-center gap-2 text-sm text-slate-600">
-          <span id="news-language-label">Read the news in</span>
+          <span id="news-language-label">{t('Read the news in')}</span>
           <NewsLanguageToggle />
         </div>
       )}
@@ -122,7 +126,7 @@ export function NewsPage() {
       )}
 
       {posts.length === 0 ? (
-        <EmptyState>Nothing has been posted yet.</EmptyState>
+        <EmptyState>{t('Nothing has been posted yet.')}</EmptyState>
       ) : (
         <div className="space-y-3">
           {posts.map((post) => (
@@ -174,6 +178,7 @@ function PostCard({
   onReplace: (post: Announcement) => void;
   onError: (message: string) => void;
 }) {
+  const t = useT();
   const words = usePostWords(post);
   const [editing, setEditing] = useState(false);
   const [commenting, setCommenting] = useState(false);
@@ -218,13 +223,13 @@ function PostCard({
             <h2 lang={words.lang} className="font-semibold text-slate-900">
               {words.title}
             </h2>
-            {post.isPrimary && <Badge tone="info">Primary</Badge>}
+            {post.isPrimary && <Badge tone="info">{t('Primary')}</Badge>}
             {canManage && post.showOnTimeClock && <Badge tone="neutral">Public</Badge>}
           </div>
           <p className="mt-0.5 text-xs text-slate-500">
             {formatPostDate(post.createdAt)}
             {author && ` · ${author}`}
-            {post.editedAt && ` · edited ${formatPostDate(post.editedAt)}`}
+            {post.editedAt && t(' · edited {date}', { date: formatPostDate(post.editedAt) })}
           </p>
           {words.body && (
             <p lang={words.lang} className="mt-2 whitespace-pre-line text-sm text-slate-700">
@@ -650,7 +655,7 @@ function PostForm({
 
 /// With the year: the news goes back further than the current one.
 function formatPostDate(iso: string): string {
-  return new Date(iso).toLocaleDateString(undefined, {
+  return new Date(iso).toLocaleDateString(locale(), {
     month: 'short',
     day: 'numeric',
     year: 'numeric',

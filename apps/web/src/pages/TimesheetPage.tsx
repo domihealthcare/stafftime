@@ -4,6 +4,7 @@ import { OnePersonNote, useOnePerson } from '../components/OnePerson';
 import { durationHours, formatDate, formatTime } from '../lib/format';
 import { useIsManager, useSession } from '../lib/session';
 import { handEntryReasonLabel } from '../lib/hand-entry';
+import { plural, t as translate, useT } from '../lib/i18n';
 import type { DayRange, Employee, TimeEntry } from '../lib/types';
 import { AddHoursDialog } from '../components/AddHoursDialog';
 import { useConfirm } from '../components/ConfirmDialog';
@@ -23,6 +24,7 @@ import {
 import { NeedsAttention } from '../components/NeedsAttention';
 
 export function TimesheetPage() {
+  const t = useT();
   const { employee } = useSession();
   const isManager = useIsManager();
   // Opens on this week, as it always has; the shortcuts reach pay periods and
@@ -62,7 +64,7 @@ export function TimesheetPage() {
       setError(null);
     } catch (err) {
       if (seq !== loadSeq.current) return;
-      setError(err instanceof Error ? err.message : 'Could not load timesheet.');
+      setError(err instanceof Error ? err.message : translate('Could not load timesheet.'));
     } finally {
       if (seq === loadSeq.current) setLoading(false);
     }
@@ -179,11 +181,11 @@ export function TimesheetPage() {
   return (
     <div className="max-w-4xl">
       <PageHeading
-        title="Timesheet"
+        title={t('Timesheet')}
         subtitle={
           isManager
-            ? 'Every punch across both locations. Flagged entries need a look before payroll.'
-            : 'Your recorded hours.'
+            ? t('Every punch across both locations. Flagged entries need a look before payroll.')
+            : t('Your recorded hours.')
         }
       />
       {personId && isManager && (
@@ -199,7 +201,13 @@ export function TimesheetPage() {
 
       <NeedsAttention
         key={bannerKey}
-        sections={['payrollDue', 'missedShifts', 'handEntries', 'unapprovedHours', 'missingPunches']}
+        sections={[
+          'payrollDue',
+          'missedShifts',
+          'handEntries',
+          'unapprovedHours',
+          'missingPunches',
+        ]}
       />
 
       <div className="mb-3">
@@ -209,14 +217,14 @@ export function TimesheetPage() {
       <div className="mb-3 flex flex-wrap items-end justify-between gap-3">
         <div className="flex flex-wrap items-end gap-2">
           <label className="text-sm">
-            <span className="mb-1 block font-medium text-slate-700">Day</span>
+            <span className="mb-1 block font-medium text-slate-700">{t('Day')}</span>
             <select
-              aria-label="Day"
+              aria-label={t('Day')}
               value={day}
               onChange={(event) => setDay(event.target.value)}
               className={`${inputClass} w-40 py-1.5`}
             >
-              <option value="">All days</option>
+              <option value="">{t('All days')}</option>
               {days.map(([key, label]) => (
                 <option key={key} value={key}>
                   {label}
@@ -246,14 +254,15 @@ export function TimesheetPage() {
               }}
               className="tap pb-1.5 text-xs font-medium text-brand-700 hover:text-brand-900"
             >
-              Clear filters
+              {t('Clear filters')}
             </button>
           )}
         </div>
         <div className="flex flex-wrap items-center gap-3">
           <p className="text-sm text-slate-600">
-            <span className="font-semibold text-slate-900">{totalHours.toFixed(2)}</span> hours
-            {!loading && ` · ${shown.length} ${shown.length === 1 ? 'entry' : 'entries'}`}
+            <span className="font-semibold text-slate-900">{totalHours.toFixed(2)}</span>{' '}
+            {t('hours')}
+            {!loading && ` · ${plural(shown.length, '{n} entry', '{n} entries')}`}
           </p>
           {isManager && !loading && clean.length > 0 && (
             <button
@@ -294,14 +303,14 @@ export function TimesheetPage() {
       <Card className="overflow-hidden">
         {loading ? (
           <div className="p-6">
-            <Spinner label="Loading timesheet" />
+            <Spinner label={t('Loading timesheet')} />
           </div>
         ) : shown.length === 0 ? (
           <div className="p-6">
             <EmptyState>
               {entries.length === 0
-                ? 'No time entries in this period.'
-                : 'No time entries match these filters.'}
+                ? t('No time entries in this period.')
+                : t('No time entries match these filters.')}
             </EmptyState>
           </div>
         ) : (
@@ -312,7 +321,7 @@ export function TimesheetPage() {
               <thead className="bg-slate-50 text-left text-xs uppercase tracking-wide text-slate-500">
                 <tr>
                   <th scope="col" className="px-3 py-2 font-medium">
-                    Date
+                    {t('Date')}
                   </th>
                   {isManager && (
                     <th scope="col" className="px-3 py-2 font-medium">
@@ -320,16 +329,16 @@ export function TimesheetPage() {
                     </th>
                   )}
                   <th scope="col" className="px-3 py-2 font-medium">
-                    In – Out
+                    {t('In – Out')}
                   </th>
                   <th scope="col" className="px-3 py-2 font-medium">
-                    Hours
+                    {t('Hours')}
                   </th>
                   <th scope="col" className="px-3 py-2 font-medium">
-                    Verified
+                    {t('Verified')}
                   </th>
                   <th scope="col" className="px-3 py-2 font-medium">
-                    Flags
+                    {t('Flags')}
                   </th>
                   {isManager && (
                     <th scope="col" className="px-3 py-2 font-medium">
@@ -394,7 +403,7 @@ export function TimesheetPage() {
                           <OtherPlaceLine entry={entry} />
                           {entry.editReason && (
                             <p className="text-xs text-slate-500">
-                              <span className="font-medium">Edited:</span> {entry.editReason}
+                              <span className="font-medium">{t('Edited:')}</span> {entry.editReason}
                             </p>
                           )}
                         </td>
@@ -459,7 +468,7 @@ export function TimesheetPage() {
                 <OtherPlaceLine entry={entry} />
                 {entry.editReason && (
                   <p className="mt-1 text-xs text-slate-500">
-                    <span className="font-medium">Edited:</span> {entry.editReason}
+                    <span className="font-medium">{t('Edited:')}</span> {entry.editReason}
                   </p>
                 )}
 
@@ -517,7 +526,9 @@ export function TimesheetPage() {
 
       {employee && !isManager && (
         <p className="mt-3 text-xs text-slate-500">
-          Something look wrong? Ask a manager to edit it — every edit is recorded with a reason.
+          {t(
+            'Something look wrong? Ask a manager to edit it — every edit is recorded with a reason.',
+          )}
         </p>
       )}
     </div>
@@ -568,13 +579,19 @@ function HandEntryLine({
   selfId: string | undefined;
   onCheck: () => void;
 }) {
+  const t = useT();
   if (!entry.enteredByHandAt) return null;
-  const by = entry.enteredBy ? ` by ${entry.enteredBy.firstName} ${entry.enteredBy.lastName}` : '';
   return (
     <div className="text-xs text-slate-500">
       <p>
-        <span className="font-medium">Entered by hand{by}:</span>{' '}
-        {handEntryReasonLabel(entry.handEntryReason)}
+        <span className="font-medium">
+          {entry.enteredBy
+            ? t('Entered by hand by {name}:', {
+                name: `${entry.enteredBy.firstName} ${entry.enteredBy.lastName}`,
+              })
+            : t('Entered by hand:')}
+        </span>{' '}
+        {t(handEntryReasonLabel(entry.handEntryReason))}
         {entry.handEntryNote ? ` — “${entry.handEntryNote}”` : ''}
       </p>
       {isManager &&
@@ -647,15 +664,17 @@ function EntryActions({
 
 /// Why they clocked in somewhere other than their shift, in their words.
 function OtherPlaceLine({ entry }: { entry: TimeEntry }) {
+  const t = useT();
   if (!entry.isOtherPlace || !entry.otherPlaceReason) return null;
   return (
     <p className="text-xs text-slate-500" data-testid="other-place-reason">
-      <span className="font-medium">Not where scheduled:</span> {entry.otherPlaceReason}
+      <span className="font-medium">{t('Not where scheduled:')}</span> {entry.otherPlaceReason}
     </p>
   );
 }
 
 function VerificationBadge({ entry }: { entry: TimeEntry }) {
+  const t = useT();
   const label: Record<string, string> = {
     GEOFENCE: 'On-site GPS',
     IP_ALLOWLIST: 'Office network',
@@ -664,10 +683,13 @@ function VerificationBadge({ entry }: { entry: TimeEntry }) {
     MANUAL: 'Manual',
   };
   const tone = entry.clockInVerification === 'MANUAL' ? 'warning' : 'neutral';
-  return <Badge tone={tone}>{label[entry.clockInVerification] ?? entry.clockInVerification}</Badge>;
+  return (
+    <Badge tone={tone}>{t(label[entry.clockInVerification] ?? entry.clockInVerification)}</Badge>
+  );
 }
 
 function Flags({ entry }: { entry: TimeEntry }) {
+  const t = useT();
   const flags: { label: string; tone: 'warning' | 'danger' | 'info' }[] = [];
   if (entry.isLate) flags.push({ label: 'Late', tone: 'warning' });
   if (entry.isEarlyDeparture) flags.push({ label: 'Left early', tone: 'warning' });
@@ -694,7 +716,7 @@ function Flags({ entry }: { entry: TimeEntry }) {
     <div className="flex flex-wrap gap-1 whitespace-nowrap">
       {flags.map((flag) => (
         <Badge key={flag.label} tone={flag.tone}>
-          {flag.label}
+          {t(flag.label)}
         </Badge>
       ))}
     </div>

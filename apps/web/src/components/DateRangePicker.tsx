@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { api } from '../lib/api';
 import { addDays, addMonths, localDate, startOfMonth, startOfWeek } from '../lib/format';
 import type { DayRange, PayPeriodInfo } from '../lib/types';
+import { locale, useT } from '../lib/i18n';
 import { buttonClass } from './ui';
 
 type PresetKey =
@@ -112,6 +113,7 @@ export function DateRangePicker({
   onChange: (range: DayRange) => void;
   label?: string;
 }) {
+  const t = useT();
   const [payPeriod, setPayPeriod] = useState<PayPeriodInfo | null>(null);
   const [custom, setCustom] = useState(false);
 
@@ -141,7 +143,7 @@ export function DateRangePicker({
       <div className="flex flex-wrap items-center gap-2">
         <button
           type="button"
-          aria-label="Previous period"
+          aria-label={t('Previous period')}
           onClick={() => onChange(step(value, -1))}
           className={buttonClass('secondary', 'sm')}
         >
@@ -152,7 +154,7 @@ export function DateRangePicker({
         </span>
         <button
           type="button"
-          aria-label="Next period"
+          aria-label={t('Next period')}
           onClick={() => onChange(step(value, 1))}
           className={buttonClass('secondary', 'sm')}
         >
@@ -160,14 +162,18 @@ export function DateRangePicker({
         </button>
       </div>
 
-      <div className="mt-2 flex flex-wrap gap-1.5" role="group" aria-label={`${label} shortcuts`}>
+      <div
+        className="mt-2 flex flex-wrap gap-1.5"
+        role="group"
+        aria-label={t('{label} shortcuts', { label: t(label) })}
+      >
         {presets.map((preset) => (
           <button
             key={preset.key}
             type="button"
             aria-pressed={!custom && active?.key === preset.key}
             disabled={!preset.range}
-            title={preset.unavailable}
+            title={preset.unavailable && t(preset.unavailable)}
             onClick={() => {
               if (!preset.range) return;
               setCustom(false);
@@ -175,7 +181,7 @@ export function DateRangePicker({
             }}
             className={chip(!custom && active?.key === preset.key)}
           >
-            {preset.label}
+            {t(preset.label)}
           </button>
         ))}
         <button
@@ -184,21 +190,23 @@ export function DateRangePicker({
           onClick={() => setCustom(true)}
           className={chip(showDates)}
         >
-          Custom
+          {t('Custom')}
         </button>
       </div>
       {payPeriod && !payPeriod.anchor && (
         <p className="mt-1 text-xs text-slate-500">
-          Pay-period shortcuts appear once an admin sets the pay period start in Practice settings.
+          {t(
+            'Pay-period shortcuts appear once an admin sets the pay period start in Practice settings.',
+          )}
         </p>
       )}
 
       {showDates && (
         <div className="mt-2 flex flex-wrap items-end gap-3">
           <label className="text-sm">
-            <span className="mb-1 block font-medium text-slate-700">From</span>
+            <span className="mb-1 block font-medium text-slate-700">{t('From')}</span>
             <input
-              aria-label="From"
+              aria-label={t('From')}
               type="date"
               value={value.from}
               max={value.to}
@@ -209,9 +217,9 @@ export function DateRangePicker({
             />
           </label>
           <label className="text-sm">
-            <span className="mb-1 block font-medium text-slate-700">To (included)</span>
+            <span className="mb-1 block font-medium text-slate-700">{t('To (included)')}</span>
             <input
-              aria-label="To (included)"
+              aria-label={t('To (included)')}
               type="date"
               value={value.to}
               min={value.from}
@@ -253,12 +261,12 @@ function describe(range: DayRange): string {
   const from = day(range.from);
   const to = day(range.to);
   const sameYear = from.getFullYear() === to.getFullYear();
-  const start = from.toLocaleDateString(undefined, {
+  const start = from.toLocaleDateString(locale(), {
     month: 'short',
     day: 'numeric',
     ...(sameYear ? {} : { year: 'numeric' }),
   });
-  const end = to.toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' });
+  const end = to.toLocaleDateString(locale(), { month: 'short', day: 'numeric', year: 'numeric' });
   return range.from === range.to ? end : `${start} – ${end}`;
 }
 

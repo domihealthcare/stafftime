@@ -1,2 +1,221 @@
 /// Spanish for the team screens — see ../index.ts and the glossary in ./common.ts.
-export const TEAM: Record<string, string> = {};
+export const TEAM: Record<string, string> = {
+  // Timesheet
+  'Could not load timesheet.': 'No se pudo cargar la hoja de horas.',
+  'Every punch across both locations. Flagged entries need a look before payroll.':
+    'Cada marcación en las dos oficinas. Las entradas marcadas necesitan revisión antes de la nómina.',
+  'Your recorded hours.': 'Tus horas registradas.',
+  Day: 'Día',
+  'All days': 'Todos los días',
+  'Clear filters': 'Quitar filtros',
+  hours: 'horas',
+  'Loading timesheet': 'Cargando la hoja de horas',
+  'No time entries in this period.': 'No hay registros de horas en este período.',
+  'No time entries match these filters.': 'Ningún registro de horas coincide con estos filtros.',
+  Date: 'Fecha',
+  'In – Out': 'Entrada – Salida',
+  Hours: 'Horas',
+  Verified: 'Verificado',
+  Flags: 'Avisos',
+  'Edited:': 'Editado:',
+  'Something look wrong? Ask a manager to edit it — every edit is recorded with a reason.':
+    '¿Algo no se ve bien? Pídele a un gerente que lo edite — cada cambio queda registrado con un motivo.',
+  'Entered by hand by {name}:': 'Ingresado a mano por {name}:',
+  'Entered by hand:': 'Ingresado a mano:',
+  'Not where scheduled:': 'No donde estaba programado:',
+  '{n} entry': '{n} registro',
+  '{n} entries': '{n} registros',
+  'Timesheet period': 'Período de la hoja de horas',
+  // Hand-entry reasons (lib/hand-entry.ts)
+  'Forgot to clock in or out': 'Olvidó marcar entrada o salida',
+  'The app would not let them clock in': 'La aplicación no le dejó marcar entrada',
+  'Would rather not share their location': 'Prefiere no compartir su ubicación',
+  'No phone, battery or signal': 'Sin teléfono, batería o señal',
+  'Something else': 'Otra cosa',
+  'No reason given': 'Sin motivo',
+  // How a punch was checked
+  'On-site GPS': 'GPS en la oficina',
+  'Office network': 'Red de la oficina',
+  Kiosk: 'Tableta',
+  Manual: 'Manual',
+  // Flags on an entry
+  Late: 'Tarde',
+  'Left early': 'Salió temprano',
+  'Clocked out at midnight': 'Salida marcada a medianoche',
+  'Missing punch': 'Falta una marcación',
+  'Was clocked out automatically': 'Salida marcada automáticamente',
+  'Not where scheduled': 'No donde estaba programado',
+  'Entered by hand': 'Ingresado a mano',
+  Edited: 'Editado',
+  'Needs review': 'Necesita revisión',
+
+  // The period picker
+  Period: 'Período',
+  'Previous period': 'Período anterior',
+  'Next period': 'Período siguiente',
+  '{label} shortcuts': 'Atajos de {label}',
+  'Last week': 'La semana pasada',
+  'This pay period': 'Este período de pago',
+  'Last pay period': 'El período de pago anterior',
+  'Last month': 'El mes pasado',
+  Custom: 'Otras fechas',
+  'Set the pay period start in Practice settings.':
+    'Pon el inicio del período de pago en Ajustes de la práctica.',
+  'Pay-period shortcuts appear once an admin sets the pay period start in Practice settings.':
+    'Los atajos del período de pago aparecen cuando un administrador pone el inicio del período de pago en Ajustes de la práctica.',
+  From: 'Desde',
+  'To (included)': 'Hasta (incluido)',
+
+  // Directory
+  'Could not load the directory.': 'No se pudo cargar el directorio.',
+  'Loading the directory': 'Cargando el directorio',
+  'Everyone at the practice, how to reach them, and who is in right now.':
+    'Todos en la práctica, cómo comunicarte con ellos y quién está ahora.',
+  'In now': 'Ahora aquí',
+  'In now · {place}': 'Ahora aquí · {place}',
+  'Nobody is clocked in.': 'Nadie ha marcado entrada.',
+  Other: 'Otro',
+  Search: 'Buscar',
+  'Search by name or role': 'Buscar por nombre o puesto',
+  'Job role': 'Puesto',
+  'Every job role': 'Todos los puestos',
+  'Both locations': 'Las dos oficinas',
+  'Showing one person.': 'Mostrando a una persona.',
+  'Show everyone': 'Mostrar a todos',
+  'Nobody matches that.': 'Nadie coincide con eso.',
+  '(you)': '(tú)',
+  ' · ext. {number}': ' · ext. {number}',
+  'Working from home today': 'Trabajando desde casa hoy',
+  'Nobody is working from home today.': 'Nadie trabaja desde casa hoy.',
+  '· in now': '· ya está',
+  '· not in yet': '· aún no llega',
+  ' since {time}': ' desde las {time}',
+  'On leave': 'De licencia',
+  'Working from home {from}–{to}': 'Trabajando desde casa {from}–{to}',
+  'Ext. {number}': 'Ext. {number}',
+  ' today — they are working from home': ' hoy — está trabajando desde casa',
+  ' (office {number})': ' (oficina {number})',
+  '· {number} from home': '· {number} desde casa',
+  'Birthday {date}': 'Cumpleaños {date}',
+  'Office extensions': 'Extensiones de la oficina',
+  'No extensions yet.': 'Todavía no hay extensiones.',
+  'No extension matches that.': 'Ninguna extensión coincide con eso.',
+  'From home:': 'Desde casa:',
+  'A “from home” number rings that person’s mobile on the days they work from home.':
+    'Un número “desde casa” suena en el celular de esa persona los días que trabaja desde casa.',
+
+  // Resources
+  'Could not load resources.': 'No se pudieron cargar los recursos.',
+  'Loading resources': 'Cargando los recursos',
+  'Links and how-to pages for each job role. Staff see Everyone plus the roles they are in.':
+    'Enlaces y guías para cada puesto. El personal ve Todos más los puestos que tiene.',
+  'Links and how-to pages for you, and for the roles you work in.':
+    'Enlaces y guías para ti y para los puestos en los que trabajas.',
+  'You are not in a job role yet, so you only see what is for everyone. A manager can add you to one.':
+    'Todavía no tienes un puesto, así que solo ves lo que es para todos. Un gerente te puede agregar a uno.',
+  'Nothing here yet.': 'Todavía no hay nada aquí.',
+  'Google Drive folder': 'Carpeta de Google Drive',
+  Page: 'Página',
+  Forms: 'Formularios',
+  'Cognitive assessment and care plan (CPT 99483). Fill it in during the visit; download the note for eCW and the care plan for the patient. Nothing is saved.':
+    'Evaluación cognitiva y plan de cuidado (CPT 99483). Llénalo durante la visita; descarga la nota para eCW y el plan de cuidado para el paciente. No se guarda nada.',
+  'For CCM and APCM: the general care plan and two or more chronic conditions, as one PDF in English, or English and Spanish. Nothing is saved.':
+    'Para CCM y APCM: el plan de cuidado general y dos o más condiciones crónicas, en un solo PDF en inglés, o en inglés y español. No se guarda nada.',
+  'The Annual Wellness Supplement Form: the medical assistant does page 2 (preventive services), the provider page 1 in the patient’s language. Each page downloads for eCW. Nothing is saved.':
+    'El Annual Wellness Supplement Form: el asistente médico hace la página 2 (servicios preventivos) y el proveedor la página 1 en el idioma del paciente. Cada página se descarga para eCW. No se guarda nada.',
+  'Providers also have the BrainCheck Care Plan here.':
+    'Los proveedores también tienen aquí el BrainCheck Care Plan.',
+  'Could not open that page.': 'No se pudo abrir esa página.',
+  '← Resources': '← Recursos',
+  Opening: 'Abriendo',
+  Everyone: 'Todos',
+  'Updated {date}': 'Actualizado el {date}',
+  'Open {title} ↗': 'Abrir {title} ↗',
+
+  // Surveys
+  'Could not load surveys.': 'No se pudieron cargar las encuestas.',
+  'Loading surveys': 'Cargando las encuestas',
+  'Surveys and feedback': 'Encuestas y comentarios',
+  'Short anonymous check-ins, and a suggestion box that is always open.':
+    'Encuestas cortas y anónimas, y un buzón de sugerencias que siempre está abierto.',
+  'For you': 'Para ti',
+  'Thank you — sent anonymously.': 'Gracias — enviado de forma anónima.',
+  'You have answered everything open. Thank you.': 'Ya respondiste todo lo abierto. Gracias.',
+  'No surveys open right now.': 'No hay encuestas abiertas ahora.',
+  'Already answered: {titles}': 'Ya respondidas: {titles}',
+  'Could not open that survey.': 'No se pudo abrir esa encuesta.',
+  'Could not send that.': 'No se pudo enviar.',
+  'Anonymous — your name is never stored with what you say, and nobody, including admins, can find out.':
+    'Anónimo — tu nombre nunca se guarda con lo que dices, y nadie, ni siquiera los administradores, puede saberlo.',
+  '1 poor · 5 great': '1 mal · 5 excelente',
+  'Sending…': 'Enviando…',
+  'Send anonymously': 'Enviar de forma anónima',
+  'Suggestion box': 'Buzón de sugerencias',
+
+  // News
+  'Could not load the news.': 'No se pudieron cargar las noticias.',
+  'Loading the news': 'Cargando las noticias',
+  'Everything posted for staff, newest first. The primary post is the one everybody sees when they sign in.':
+    'Todo lo publicado para el personal, lo más reciente primero. La publicación principal es la que todos ven al iniciar sesión.',
+  'Everything posted for staff, newest first.':
+    'Todo lo publicado para el personal, lo más reciente primero.',
+  'Read the news in': 'Leer las noticias en',
+  'Nothing has been posted yet.': 'Todavía no se ha publicado nada.',
+  Primary: 'Principal',
+  ' · edited {date}': ' · editado el {date}',
+
+  // Likes, comments and polls
+  '{names} and': '{names} y',
+  '{n} others': '{n} más',
+  '{names} and {last}': '{names} y {last}',
+  Liked: 'Te gusta',
+  Like: 'Me gusta',
+  'Liked by': 'Le gusta a',
+  'Could not save your vote.': 'No se pudo guardar tu voto.',
+  'Poll: {question}': 'Encuesta: {question}',
+  ' · voting closed': ' · votación cerrada',
+  'Closed.': 'Cerrada.',
+  'Pick any that suit you.': 'Elige las que quieras.',
+  'Pick one.': 'Elige una.',
+  'Nobody has voted yet.': 'Nadie ha votado todavía.',
+  '{n} person has voted.': '{n} persona ha votado.',
+  '{n} people have voted.': '{n} personas han votado.',
+  'Votes are not anonymous': 'Los votos no son anónimos',
+  ' — everybody can see who picked what.': ' — todos pueden ver quién eligió qué.',
+  '{n} vote': '{n} voto',
+  '{n} votes': '{n} votos',
+  'Take my vote back': 'Quitar mi voto',
+  'Open voting again': 'Abrir la votación otra vez',
+  'Close voting': 'Cerrar la votación',
+  Comments: 'Comentarios',
+  Comment: 'Comentar',
+  '{n} comment': '{n} comentario',
+  '{n} comments': '{n} comentarios',
+  'Show all {n} comments': 'Ver los {n} comentarios',
+  'Write a comment': 'Escribe un comentario',
+  'Write a comment…': 'Escribe un comentario…',
+  'Post comment': 'Publicar comentario',
+  'Change your comment': 'Cambiar tu comentario',
+  ' · edited': ' · editado',
+  'Delete your comment?': '¿Eliminar tu comentario?',
+  'Delete {name}’s comment?': '¿Eliminar el comentario de {name}?',
+  'It goes from the post for everybody.': 'Se quita de la publicación para todos.',
+  'It goes from the post for everybody. They are not told.':
+    'Se quita de la publicación para todos. No se le avisa.',
+  'Delete it': 'Eliminar',
+  'Could not delete that.': 'No se pudo eliminar.',
+  'Could not save your comment.': 'No se pudo guardar tu comentario.',
+  'Everybody signed in can read it, under your name. Never anything about a patient.':
+    'Todos los que inician sesión lo pueden leer, con tu nombre. Nunca nada sobre un paciente.',
+
+  // Required reading and tasks
+  'Required reading and tasks': 'Lecturas y tareas obligatorias',
+  'What staff have been asked to read or do, and who has confirmed. Yours are first.':
+    'Lo que se le ha pedido al personal leer o hacer, y quién lo ha confirmado. Las tuyas van primero.',
+  'What a manager has asked you to read or do. Confirm each once you have.':
+    'Lo que un gerente te ha pedido leer o hacer. Confirma cada una cuando lo hayas hecho.',
+  'Could not load what is asked of you.': 'No se pudo cargar lo que se te pide.',
+  'Waiting for you': 'Pendiente para ti',
+  'Nothing is waiting for you. ✓': 'No tienes nada pendiente. ✓',
+  'Done ({n})': 'Hechas ({n})',
+};
