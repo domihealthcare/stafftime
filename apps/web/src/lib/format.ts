@@ -1,9 +1,10 @@
+import { locale } from './i18n';
 /// All API timestamps are UTC ISO strings. Rendering uses the viewer's own
 /// timezone, which is correct today (both offices are Eastern) and stays correct
 /// if a location is ever opened elsewhere.
 
 export function formatTime(iso: string): string {
-  return new Date(iso).toLocaleTimeString(undefined, {
+  return new Date(iso).toLocaleTimeString(locale(), {
     hour: 'numeric',
     minute: '2-digit',
   });
@@ -14,13 +15,13 @@ export function formatTime(iso: string): string {
 /// a phone — and where the minutes are usually zero anyway.
 export function formatTimeCompact(iso: string): string {
   const date = new Date(iso);
-  const full = date.toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' });
+  const full = date.toLocaleTimeString(locale(), { hour: 'numeric', minute: '2-digit' });
   // Drop ":00" and the space before am/pm, in whatever form the locale used.
   return full.replace(/:00/, '').replace(/\s+/g, '').toLowerCase();
 }
 
 export function formatDate(iso: string): string {
-  return new Date(iso).toLocaleDateString(undefined, {
+  return new Date(iso).toLocaleDateString(locale(), {
     weekday: 'short',
     month: 'short',
     day: 'numeric',
@@ -38,7 +39,7 @@ export function formatDate(iso: string): string {
  * different year from the one you are looking at it in.
  */
 export function formatCalendarDate(iso: string, { year = true }: { year?: boolean } = {}): string {
-  return new Date(`${iso.slice(0, 10)}T00:00:00Z`).toLocaleDateString(undefined, {
+  return new Date(`${iso.slice(0, 10)}T00:00:00Z`).toLocaleDateString(locale(), {
     timeZone: 'UTC',
     weekday: 'short',
     month: 'short',

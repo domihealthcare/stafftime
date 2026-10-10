@@ -1,3 +1,4 @@
+import { locale } from './i18n';
 /**
  * Hours on the practice's clock, in New Jersey, whatever the browser's own
  * time zone. For the few places that send the server a bare "HH:MM" for it to
@@ -79,7 +80,7 @@ export function practiceDate(now: Date = new Date()): string {
 
 /// "Sun, Oct 11, 12:00 PM" on the practice's clock, wherever the browser is.
 export function formatPracticeDateTime(iso: string): string {
-  return new Date(iso).toLocaleString(undefined, {
+  return new Date(iso).toLocaleString(locale(), {
     timeZone: PRACTICE_ZONE,
     weekday: 'short',
     month: 'short',

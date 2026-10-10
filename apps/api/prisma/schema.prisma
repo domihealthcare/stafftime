@@ -207,6 +207,9 @@ model Employee {
   pronouns       String?
   /// One line about themselves for the Directory, e.g. "Spanish speaker".
   about          String?
+  /// The language the app speaks to them in: "en" or "es" (October 2026,
+  /// Dominguez — Spanish for the staff screens). Their own to choose.
+  language       String    @default("en")
   /// When their profile photo last changed, or null for none. Doubles as the
   /// photo URL's version, so a new photo is never served from a stale cache.
   photoUpdatedAt DateTime?

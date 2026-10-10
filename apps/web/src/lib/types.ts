@@ -75,6 +75,8 @@ export interface Employee extends EmployeeSummary {
   /// Letters after their name ("MD", "APN-C"), for the clinical forms.
   postNominals?: string | null;
   pronouns?: string | null;
+  /// Signed-in person only: the app's language for them.
+  language?: 'en' | 'es';
   phone?: string | null;
   payType?: 'HOURLY' | 'SALARY';
   /// Their last day, once they have left (or been given one).
@@ -953,6 +955,7 @@ export interface DirectoryEntry {
   preferredName: string | null;
   pronouns: string | null;
   about: string | null;
+  language: 'en' | 'es';
   photoUpdatedAt: string | null;
   email: string;
   phone: string | null;

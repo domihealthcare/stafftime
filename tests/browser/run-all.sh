@@ -87,7 +87,7 @@ reset_state() {
     -c "delete from shifts where \"employeeId\" is null;" \
     -c "delete from adp_settings;" \
     -c "delete from employee_photos;" \
-    -c "update employees set pronouns = null, about = null, \"photoUpdatedAt\" = null, \"preferredName\" = null;" \
+    -c "update employees set pronouns = null, about = null, \"photoUpdatedAt\" = null, \"preferredName\" = null, language = 'en';" \
     -c "delete from time_entries where \"editReason\" = 'ADP suite: a full day';" \
     -c "delete from time_entries where \"editReason\" = 'patterns-suite';" \
     -c "delete from time_entries where \"handEntryNote\" = 'approve-clean-suite';" \

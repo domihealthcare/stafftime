@@ -1,3 +1,4 @@
+import { t } from './i18n';
 import type { ImportedPerson } from './staff-import';
 import type {
   OnCallRota,
@@ -143,8 +144,10 @@ async function request<T>(path: string, init: RequestInit = {}): Promise<T> {
     throw new ApiError(
       0,
       abort.signal.aborted
-        ? 'The server took too long to answer. Check whether it went through before trying again.'
-        : 'Could not reach the server. Check your connection and try again.',
+        ? t(
+            'The server took too long to answer. Check whether it went through before trying again.',
+          )
+        : t('Could not reach the server. Check your connection and try again.'),
     );
   } finally {
     window.clearTimeout(timer);
@@ -1507,6 +1510,7 @@ export const api = {
     pronouns?: string;
     phone?: string;
     about?: string;
+    language?: 'en' | 'es';
   }) => request<Profile>('/profile', { method: 'PATCH', body: JSON.stringify(body) }),
   setPhoto: (image: string) =>
     request<Profile>('/profile/photo', { method: 'PUT', body: JSON.stringify({ image }) }),
