@@ -4,6 +4,7 @@ import { useSession } from '../lib/session';
 import { PasswordField } from '../components/PasswordField';
 import { Alert, Card } from '../components/ui';
 import { PASSWORD_RULE, meetsPasswordRule } from '../lib/password';
+import { plural, useT } from '../lib/i18n';
 
 /**
  * Shown on its own when a temporary password is still in force — the server
@@ -11,6 +12,7 @@ import { PASSWORD_RULE, meetsPasswordRule } from '../lib/password';
  * Also reachable from the header as an ordinary password change.
  */
 export function ChangePasswordPage({ forced }: { forced: boolean }) {
+  const t = useT();
   const { refresh, signOut } = useSession();
   const [currentPassword, setCurrentPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');
@@ -36,14 +38,16 @@ export function ChangePasswordPage({ forced }: { forced: boolean }) {
       setConfirmation('');
       setDone(
         result.otherSessionsSignedOut > 0
-          ? `Password changed. ${result.otherSessionsSignedOut} other signed-in ${
-              result.otherSessionsSignedOut === 1 ? 'browser was' : 'browsers were'
-            } signed out.`
-          : 'Password changed.',
+          ? plural(
+              result.otherSessionsSignedOut,
+              'Password changed. {n} other signed-in browser was signed out.',
+              'Password changed. {n} other signed-in browsers were signed out.',
+            )
+          : t('Password changed.'),
       );
       await refresh();
     } catch (err) {
-      setError(err instanceof ApiError ? err.message : 'Could not change your password.');
+      setError(err instanceof ApiError ? err.message : t('Could not change your password.'));
     } finally {
       setBusy(false);
     }
@@ -56,11 +60,11 @@ export function ChangePasswordPage({ forced }: { forced: boolean }) {
       <div className="mx-auto w-full max-w-sm">
         <div className="mb-6">
           <h1 className="text-xl font-semibold text-slate-900">
-            {forced ? 'Choose a new password' : 'Change your password'}
+            {forced ? t('Choose a new password') : t('Change your password')}
           </h1>
           {forced && (
             <p className="mt-1 text-sm text-slate-600">
-              You are signed in with a temporary password. Replace it to continue.
+              {t('You are signed in with a temporary password. Replace it to continue.')}
             </p>
           )}
         </div>
@@ -70,7 +74,7 @@ export function ChangePasswordPage({ forced }: { forced: boolean }) {
             <div>
               <PasswordField
                 id="current"
-                label={forced ? 'Temporary password' : 'Current password'}
+                label={forced ? t('Temporary password') : t('Current password')}
                 value={currentPassword}
                 onChange={setCurrentPassword}
               />
@@ -78,23 +82,23 @@ export function ChangePasswordPage({ forced }: { forced: boolean }) {
 
             <PasswordField
               id="new"
-              label="New password"
+              label={t('New password')}
               value={newPassword}
               onChange={setNewPassword}
               autoComplete="new-password"
               requirement={{
-                label: PASSWORD_RULE,
+                label: t(PASSWORD_RULE),
                 met: meetsPasswordRule(newPassword),
               }}
             />
 
             <PasswordField
               id="confirm"
-              label="Confirm new password"
+              label={t('Confirm new password')}
               value={confirmation}
               onChange={setConfirmation}
               autoComplete="new-password"
-              error={mismatch ? 'Those passwords do not match.' : undefined}
+              error={mismatch ? t('Those passwords do not match.') : undefined}
             />
 
             {error && <Alert>{error}</Alert>}
@@ -105,7 +109,7 @@ export function ChangePasswordPage({ forced }: { forced: boolean }) {
               disabled={busy || !canSubmit}
               className="w-full rounded-lg bg-brand-600 px-4 py-3 text-base font-semibold text-white hover:bg-brand-700 disabled:opacity-60"
             >
-              {busy ? 'Saving…' : 'Change password'}
+              {busy ? t('Saving…') : t('Change password')}
             </button>
           </form>
         </Card>
@@ -116,7 +120,7 @@ export function ChangePasswordPage({ forced }: { forced: boolean }) {
             onClick={() => void signOut()}
             className="mt-4 w-full text-center text-sm text-slate-500 hover:text-slate-900"
           >
-            Sign out
+            {t('Sign out')}
           </button>
         )}
       </div>

@@ -4,6 +4,7 @@ import { NavLink } from 'react-router-dom';
 import { useIsManager, useSession } from '../lib/session';
 import { unsavedWork } from '../lib/unsaved-work';
 import { useConfirm } from './ConfirmDialog';
+import { useT } from '../lib/i18n';
 
 /**
  * Who you are, and the things that are yours rather than the practice's.
@@ -14,6 +15,7 @@ import { useConfirm } from './ConfirmDialog';
  * people actually came for.
  */
 export function AccountMenu() {
+  const t = useT();
   const { employee, signOut } = useSession();
   const isManager = useIsManager();
   const confirm = useConfirm();
@@ -58,7 +60,9 @@ export function AccountMenu() {
         // decorative, which left this button with no accessible name at all —
         // a screen reader announced "button" and nothing else. The label does
         // not depend on the viewport.
-        aria-label={`Your account — ${employee?.firstName ?? ''} ${employee?.lastName ?? ''}`.trim()}
+        aria-label={t('Your account — {name}', {
+          name: `${employee?.firstName ?? ''} ${employee?.lastName ?? ''}`,
+        }).trim()}
         className="flex items-center gap-2 rounded-lg px-2 py-1.5 text-sm text-slate-700 hover:bg-slate-100"
       >
         {employee && <Avatar person={employee} size="md" />}
@@ -92,7 +96,7 @@ export function AccountMenu() {
 
           <div className="py-1">
             <NavLink to="/profile" role="menuitem" className={item} onClick={() => setOpen(false)}>
-              Your profile
+              {t('Your profile')}
             </NavLink>
             {/* What is somebody's own lives here with the rest of what is
                 theirs (October 2026, when the Team menu went). Licenses and
@@ -106,7 +110,7 @@ export function AccountMenu() {
                   className={item}
                   onClick={() => setOpen(false)}
                 >
-                  Your licenses
+                  {t('Your licenses')}
                 </NavLink>
                 <NavLink
                   to="/checklists"
@@ -114,7 +118,7 @@ export function AccountMenu() {
                   className={item}
                   onClick={() => setOpen(false)}
                 >
-                  Your onboarding
+                  {t('Your onboarding')}
                 </NavLink>
               </>
             )}
@@ -125,7 +129,7 @@ export function AccountMenu() {
                 className={item}
                 onClick={() => setOpen(false)}
               >
-                Your productivity
+                {t('Your productivity')}
               </NavLink>
             )}
             {isManager && (
@@ -136,7 +140,7 @@ export function AccountMenu() {
                   className={item}
                   onClick={() => setOpen(false)}
                 >
-                  Practice settings
+                  {t('Practice settings')}
                 </NavLink>
                 <NavLink
                   to="/notifications"
@@ -144,15 +148,15 @@ export function AccountMenu() {
                   className={item}
                   onClick={() => setOpen(false)}
                 >
-                  Email settings
+                  {t('Email settings')}
                 </NavLink>
               </>
             )}
             <NavLink to="/password" role="menuitem" className={item} onClick={() => setOpen(false)}>
-              Change password
+              {t('Change password')}
             </NavLink>
             <NavLink to="/help" role="menuitem" className={item} onClick={() => setOpen(false)}>
-              Help
+              {t('Help')}
             </NavLink>
           </div>
 
@@ -166,10 +170,13 @@ export function AccountMenu() {
                 if (
                   unsaved &&
                   !(await confirm({
-                    title: 'Sign out and lose what you have entered?',
-                    body: `Signing out clears ${unsaved}. It is not saved anywhere, so it cannot be got back.`,
-                    confirmLabel: 'Sign out and clear it',
-                    cancelLabel: 'Stay signed in',
+                    title: t('Sign out and lose what you have entered?'),
+                    body: t(
+                      'Signing out clears {what}. It is not saved anywhere, so it cannot be got back.',
+                      { what: unsaved },
+                    ),
+                    confirmLabel: t('Sign out and clear it'),
+                    cancelLabel: t('Stay signed in'),
                     tone: 'danger',
                   }))
                 ) {
@@ -184,7 +191,7 @@ export function AccountMenu() {
               }}
               className={`${item} text-rose-700 hover:bg-rose-50 disabled:opacity-60`}
             >
-              {signingOut ? 'Signing out…' : 'Sign out'}
+              {signingOut ? t('Signing out…') : t('Sign out')}
             </button>
           </div>
         </div>

@@ -1,6 +1,7 @@
 import { useRef, useState } from 'react';
 import { buttonClass } from './ui';
 import { useDialog } from './useDialog';
+import { useT } from '../lib/i18n';
 
 /// Side of the square every photo is stored at. Sharp at twice the largest
 /// avatar the app draws (96 px), and small enough to stay well under the
@@ -101,6 +102,7 @@ export function PhotoCropDialog({
   onCancel: () => void;
   onSave: (jpeg: string) => void;
 }) {
+  const t = useT();
   const dialog = useDialog(onCancel);
   const base = VIEW / Math.min(image.naturalWidth, image.naturalHeight);
   const [framing, setFraming] = useState<Framing>(() => ({
@@ -165,17 +167,18 @@ export function PhotoCropDialog({
         className="w-full max-w-sm rounded-xl bg-white p-5 shadow-2xl ring-1 ring-slate-200"
       >
         <h2 id="crop-title" className="text-lg font-semibold text-slate-900">
-          Fit your photo
+          {t('Fit your photo')}
         </h2>
         <p className="mt-1 text-sm text-slate-600">
-          Drag the picture to move it, and slide to zoom. What is inside the circle is what
-          colleagues will see.
+          {t(
+            'Drag the picture to move it, and slide to zoom. What is inside the circle is what colleagues will see.',
+          )}
         </p>
 
         <div
           role="group"
           tabIndex={0}
-          aria-label="Photo position. Use the arrow keys to move the picture."
+          aria-label={t('Photo position. Use the arrow keys to move the picture.')}
           onKeyDown={onKeyDown}
           onPointerDown={(event) => {
             event.currentTarget.setPointerCapture(event.pointerId);
@@ -212,7 +215,7 @@ export function PhotoCropDialog({
         </div>
 
         <label className="mt-4 block text-sm font-medium text-slate-700" htmlFor="crop-zoom">
-          Zoom
+          {t('Zoom')}
         </label>
         <input
           id="crop-zoom"
@@ -232,7 +235,7 @@ export function PhotoCropDialog({
             onClick={onCancel}
             className={buttonClass('secondary', 'md')}
           >
-            Cancel
+            {t('Cancel')}
           </button>
           <button
             type="button"
@@ -240,7 +243,7 @@ export function PhotoCropDialog({
             onClick={() => onSave(frameToJpeg(image, framing))}
             className={buttonClass('primary', 'md')}
           >
-            {busy ? 'Saving…' : 'Use this photo'}
+            {busy ? t('Saving…') : t('Use this photo')}
           </button>
         </div>
       </div>

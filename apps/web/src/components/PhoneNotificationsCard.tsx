@@ -3,6 +3,7 @@ import { api, ApiError } from '../lib/api';
 import { formatDate } from '../lib/format';
 import { pushState, turnOff, turnOn, type PushState } from '../lib/push';
 import { Alert, Card, buttonClass } from './ui';
+import { useT } from '../lib/i18n';
 
 type Status = Awaited<ReturnType<typeof api.pushStatus>>;
 
@@ -14,6 +15,7 @@ type Status = Awaited<ReturnType<typeof api.pushStatus>>;
  * off on itself.
  */
 export function PhoneNotificationsCard() {
+  const t = useT();
   const [status, setStatus] = useState<Status | null>(null);
   const [state, setState] = useState<PushState | null>(null);
   const [busy, setBusy] = useState(false);
@@ -44,7 +46,7 @@ export function PhoneNotificationsCard() {
       setNotice(done);
     } catch (err) {
       setError(
-        err instanceof ApiError || err instanceof Error ? err.message : 'That did not work.',
+        err instanceof ApiError || err instanceof Error ? err.message : t('That did not work.'),
       );
     } finally {
       setBusy(false);
@@ -55,48 +57,52 @@ export function PhoneNotificationsCard() {
   return (
     <Card className="mb-4 p-5" testId="phone-notifications">
       <h2 id="phone-notifications" className="text-base font-semibold text-slate-900">
-        Phone notifications
+        {t('Phone notifications')}
       </h2>
       <p className="mt-1 text-sm text-slate-600">
-        Get what rings the bell — shift changes, time off, reminders to clock in — on this phone’s
-        lock screen. No app to download.
+        {t(
+          'Get what rings the bell — shift changes, time off, reminders to clock in — on this phone’s lock screen. No app to download.',
+        )}
       </p>
       <div className="mt-3 space-y-3 text-sm">
         {!status.available ? (
           <p className="text-slate-600">
-            Not switched on for the practice yet — an admin does that in Practice settings.
+            {t('Not switched on for the practice yet — an admin does that in Practice settings.')}
           </p>
         ) : state === 'unsupported' ? (
-          <p className="text-slate-600">This browser cannot show notifications.</p>
+          <p className="text-slate-600">{t('This browser cannot show notifications.')}</p>
         ) : state === 'needs-home-screen' ? (
           <p className="text-slate-700">
-            On an iPhone, put Domi Staff on your Home Screen first (in Safari: Share → Add to Home
-            Screen), open it from there, and come back here. See Help → Put Domi Staff on your
-            phone.
+            {t(
+              'On an iPhone, put Domi Staff on your Home Screen first (in Safari: Share → Add to Home Screen), open it from there, and come back here. See Help → Put Domi Staff on your phone.',
+            )}
           </p>
         ) : state === 'blocked' ? (
           <p className="text-slate-700">
-            Notifications are blocked for Domi Staff on this device. Allow them in the phone’s
-            settings (or the browser’s site settings), then come back here.
+            {t(
+              'Notifications are blocked for Domi Staff on this device. Allow them in the phone’s settings (or the browser’s site settings), then come back here.',
+            )}
           </p>
         ) : state === 'on' ? (
           <div className="flex flex-wrap items-center gap-2">
-            <span className="font-medium text-emerald-700">✓ On for this device</span>
+            <span className="font-medium text-emerald-700">{t('✓ On for this device')}</span>
             <button
               type="button"
               disabled={busy}
-              onClick={() => void act(() => api.pushTest(), 'Sent — it should arrive in a moment.')}
+              onClick={() =>
+                void act(() => api.pushTest(), t('Sent — it should arrive in a moment.'))
+              }
               className={buttonClass('secondary', 'sm')}
             >
-              Send me a test
+              {t('Send me a test')}
             </button>
             <button
               type="button"
               disabled={busy}
-              onClick={() => void act(turnOff, 'Turned off for this device.')}
+              onClick={() => void act(turnOff, t('Turned off for this device.'))}
               className={buttonClass('secondary', 'sm')}
             >
-              Turn off
+              {t('Turn off')}
             </button>
           </div>
         ) : (
@@ -104,11 +110,11 @@ export function PhoneNotificationsCard() {
             type="button"
             disabled={busy || !status.publicKey}
             onClick={() =>
-              void act(() => turnOn(status.publicKey as string), 'Turned on for this device.')
+              void act(() => turnOn(status.publicKey as string), t('Turned on for this device.'))
             }
             className={buttonClass('primary', 'sm')}
           >
-            {busy ? 'Turning on…' : 'Turn on for this device'}
+            {busy ? t('Turning on…') : t('Turn on for this device')}
           </button>
         )}
         {notice && (
@@ -119,11 +125,16 @@ export function PhoneNotificationsCard() {
         {error && <Alert>{error}</Alert>}
         {status.devices.length > 0 && (
           <p className="text-xs text-slate-500">
-            On for:{' '}
-            {status.devices
-              .map((d) => `${d.device ?? 'a device'} (since ${formatDate(d.createdAt)})`)
-              .join(', ')}
-            . Turn one off on the device itself.
+            {t('On for: {devices}. Turn one off on the device itself.', {
+              devices: status.devices
+                .map((d) =>
+                  t('{device} (since {date})', {
+                    device: d.device ?? t('a device'),
+                    date: formatDate(d.createdAt),
+                  }),
+                )
+                .join(', '),
+            })}
           </p>
         )}
       </div>

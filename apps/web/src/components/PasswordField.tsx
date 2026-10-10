@@ -1,4 +1,5 @@
 import { useId, useState } from 'react';
+import { useT } from '../lib/i18n';
 
 /**
  * A password input you can read back.
@@ -40,6 +41,7 @@ export function PasswordField({
   /// Something wrong with what is typed so far, e.g. a mismatched confirmation.
   error?: string;
 }) {
+  const t = useT();
   const [revealed, setRevealed] = useState(false);
   const describedBy = useId();
 
@@ -69,7 +71,7 @@ export function PasswordField({
           aria-pressed={revealed}
           className="absolute inset-y-0 right-0 px-3 text-sm font-medium text-slate-500 hover:text-slate-900"
         >
-          {revealed ? 'Hide' : 'Show'}
+          {revealed ? t('Hide') : t('Show')}
         </button>
       </div>
 
