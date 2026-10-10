@@ -112,6 +112,8 @@ export interface Employee extends EmployeeSummary {
   /// Signed-in person only: an admin has given them provider productivity to
   /// work out and publish, whatever their access level.
   canManageProductivity?: boolean;
+  /// Signed-in person only: an admin has chosen them to see the rota's cost.
+  canSeeRotaCost?: boolean;
 }
 
 export interface Shift {
@@ -1690,4 +1692,19 @@ export interface RequirementInput {
   dueOn?: string | null;
   everyone: boolean;
   targets?: { employeeIds: string[]; jobRoleIds: string[]; locationIds: string[] };
+}
+
+/// What the rota on screen costs — only for the people an admin has chosen.
+export interface RotaCost {
+  from: string;
+  to: string;
+  total: number;
+  hourly: number;
+  overtimeExtra: number;
+  overtimeHours: number;
+  salaried: number;
+  scheduledHours: number;
+  byLocation: { locationId: string | null; name: string; total: number; hours: number }[];
+  byDay: { date: string; total: number }[];
+  missingPay: { id: string; name: string }[];
 }

@@ -3443,6 +3443,49 @@ pointing at it); otherwise resources stay per role.
 Migration `20261010020000_required_reading` is additive (four tables, an
 enum and a notification kind). `tests/browser/required.mjs`.
 
+## The rota's cost
+
+October 2026, Dominguez — from the survey of similar apps (Sling, When I Work
+and Deputy show labour cost on the schedule): "rota cost should be for only
+certain individuals (i.e. kayla, angelica, and myself)", counting hourly and
+salaried staff. A folded line above the rota (`components/RotaCost.tsx`)
+gives the week or month on screen in dollars and by office; opened, hourly
+pay with the overtime extra, salaries, and a bar per day.
+
+**Who sees it**: `Employee.canSeeRotaCost`, chosen by an admin on Practice
+settings (**Who sees the rota's cost**), like provider productivity's list —
+separate from the access level, so an admin who is not on it does not see it
+either. Checked on the server (`GET /rota-cost?from&to`, at most 62 days);
+the list is `GET/PUT/DELETE /rota-cost/access`, admins only.
+
+**Only totals**: by office and by day, never by person — so it does not turn
+into a way of reading somebody's pay. (With one person in an office on a
+given day a total can still say a lot; that is why the list is short.)
+
+**How it is worked out** (`staff-records/rota-cost.ts`, pure and tested;
+here because pay over time is only ever read from `src/staff-records/`):
+
+- The rota as built: shifts with somebody on them, **drafts and published**,
+  scheduled hours. Not what was worked, and no taxes or benefits.
+- **Hourly rate** (`PayRateUnit.HOURLY` on the latest `EmploymentChange` with
+  pay, on or before the shift's day): rate × hours. Hours past the overtime
+  line in an **overtime week** — the pay period's weeks, as the rota
+  warnings, dashboard and export count them — are at **1.5×** for hourly
+  staff (`PayType.HOURLY`); salaried people on an hourly rate are exempt.
+  Shifts earlier in an overtime week that starts before the screen's first
+  day are read too, so the line falls where it really does.
+- **Yearly rate**: a year ÷ 364 a day (÷ 52 a week) for every day on screen
+  they were employed (hire date to last day), whether on the rota or not —
+  a salary is paid either way — split across the offices of their shifts on
+  screen by hours, or their main office with none.
+- Somebody on the rota with **no pay on file** that day is named
+  ("not counted"), so a total is never quietly short.
+
+Migration `20261010030000_rota_cost` adds the column and puts Dominguez on
+the list, and Kayla and Angelica Dominguez only when exactly one current
+member of staff has that name — the list should be checked on the live site.
+`tests/browser/rota-cost.mjs`.
+
 ## License types and who needs them
 
 Asked for by Dominguez (29 September 2026): providers all need a medical

@@ -325,6 +325,10 @@ model Employee {
   /// May work out and publish provider productivity. Chosen by an admin,
   /// separate from the access level: a manager has no say in it by default.
   canManageProductivity     Boolean                  @default(false)
+  /// Sees what the rota costs on the Schedule (October 2026, Dominguez: "only
+  /// for certain individuals"). Chosen by an admin in Practice settings,
+  /// separate from the access level: an admin does not see it unless chosen.
+  canSeeRotaCost            Boolean                  @default(false)
   productivityPlan          ProductivityPlan?        @relation("ProductivityPlanSubject")
   productivityStatements    ProductivityStatement[]  @relation("ProductivityStatementSubject")
   createdProductivity       ProductivityStatement[]  @relation("ProductivityStatementCreatedBy")

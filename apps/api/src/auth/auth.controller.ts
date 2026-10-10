@@ -200,6 +200,7 @@ export class AuthController {
         wantsDailyDigest: true,
         mutedDigestTopics: true,
         canManageProductivity: true,
+        canSeeRotaCost: true,
         lastLoginAt: true,
         locations: {
           select: {

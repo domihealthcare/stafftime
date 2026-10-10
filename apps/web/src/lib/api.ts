@@ -1,5 +1,6 @@
 import type { ImportedPerson } from './staff-import';
 import type {
+  RotaCost,
   MyRequirement,
   RequirementInput,
   RequirementProgress,
@@ -1207,6 +1208,13 @@ export const api = {
   /// statements; the rest is for managers and admins.
   myProductivity: () => request<Omit<ProductivityStatement, 'employee'>[]>('/productivity/mine'),
   /// Who may work out provider productivity — chosen by an admin.
+  /// What the rota costs, from one day to another (inclusive) — chosen people only.
+  rotaCost: (from: string, to: string) => request<RotaCost>(`/rota-cost${toQuery({ from, to })}`),
+  rotaCostAccess: () => request<PersonName[]>('/rota-cost/access'),
+  grantRotaCostAccess: (employeeId: string) =>
+    request<PersonName[]>(`/rota-cost/access/${employeeId}`, { method: 'PUT' }),
+  revokeRotaCostAccess: (employeeId: string) =>
+    request<PersonName[]>(`/rota-cost/access/${employeeId}`, { method: 'DELETE' }),
   productivityAccess: () => request<PersonName[]>('/productivity/access'),
   grantProductivityAccess: (employeeId: string) =>
     request<PersonName[]>(`/productivity/access/${employeeId}`, { method: 'PUT' }),

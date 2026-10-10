@@ -1736,6 +1736,22 @@ const MANAGERS: Section[] = [
         ),
       },
       {
+        question: 'What does the rota cost?',
+        answer: (
+          <p>
+            Only for the people an admin has chosen (<Screen>Practice settings</Screen> →{' '}
+            <strong>Who sees the rota’s cost</strong>): a line above the rota on the{' '}
+            <Screen>Schedule</Screen> gives the week or month on screen in dollars, by office, and
+            opens to show hourly pay, the overtime extra, salaries and each day. It is worked out
+            from the pay on each person’s staff profile — scheduled hours (drafts too) at their
+            hourly rate, hours past the overtime line at time and a half, and a salary as a year ÷
+            52 a week — so it is what the rota would cost, not what was worked, and leaves out taxes
+            and benefits. Anybody on the rota with no pay on file is named, so a total is never
+            quietly short. Never by person.
+          </p>
+        ),
+      },
+      {
         question: 'How do I make sure everybody has read something?',
         answer: (
           <>

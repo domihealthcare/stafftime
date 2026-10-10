@@ -90,7 +90,9 @@ promotion with the day it took effect). Admins only — not managers, not the
 person, not the Directory, not the payroll export. They live in their own tables
 (`EmployeePersonalRecord`, `EmploymentChange`), read only by `src/staff-records/`
 and never added to `Employee`, and the schema guard pins their fields. Still no
-identity numbers, documents, licence numbers or date of birth.
+identity numbers, documents, licence numbers or date of birth. The one other
+reader (October 2026, Dominguez) is the **rota's cost** for the people an
+admin chooses — totals by office and day only, never by person.
 
 **An outside AI service** (October 2026, Dominguez: staff names and schedules
 may go to one; patient details never): **Ask Domi Staff** sends a question,
@@ -756,9 +758,23 @@ Beyond the phases, the parts worth knowing about before picking up work:
   `requirements/`, migration `20261010020000_required_reading`; see
   *Required reading and tasks* in `docs/architecture.md`;
   `tests/browser/required.mjs`.
+- **Rota cost** (10 October 2026, Dominguez: "only for certain individuals
+  (i.e. kayla, angelica, and myself)", hourly and salaried): a folded line
+  above the rota on the Schedule — the week or month on screen in dollars,
+  by office, opening to hourly pay, the overtime extra, salaries and each
+  day — for the people on **Practice settings → Who sees the rota's cost**
+  (`Employee.canSeeRotaCost`, admins keep it; an admin not on it does not
+  see it). From staff profiles' pay: scheduled hours, drafts included, at
+  the rate in force that day, hours past the line at 1.5× for hourly staff
+  (the pay period's weeks), salaries a year ÷ 52 a week for every day
+  employed, split by where they work. People on the rota with no pay on file
+  are named. Never by person. Migration `20261010030000_rota_cost` puts
+  Dominguez on the list, and Kayla and Angelica Dominguez **only if exactly
+  one current person has that name — check the list on the live site**.
+  `staff-records/rota-cost.ts` (pure) and `rota-cost.service.ts`,
+  `components/RotaCost.tsx`; `tests/browser/rota-cost.mjs`.
 - **From the survey of similar apps** (10 October 2026, Dominguez): also
-  agreed — phone notifications by web push, rota cost for chosen people
-  (Dominguez, Kayla and Angelica; hourly and salaried), Spanish for the staff
+  agreed — phone notifications by web push, Spanish for the staff
   screens, and a provider on-call schedule. **Turned down**: tracking HIPAA /
   OSHA training as license types, staff confirming their own hours each pay
   period, and NJ earned-sick-leave accrual changes. **On hold**: monthly OIG
