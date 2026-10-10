@@ -1,7 +1,10 @@
 import type { ImportedPerson } from './staff-import';
 import type {
   UsualShift,
+  NotSignedIn,
   ReadBooking,
+  CoverRequestStatus,
+  CoverView,
   StaffingMinimum,
   BirthdayEntry,
   Profile,
@@ -667,6 +670,8 @@ export const api = {
     request<BirthdayEntry[]>(`/directory/birthdays?from=${from}&to=${to}`),
   sendWelcome: (id: string) =>
     request<{ welcomeSentAt: string }>(`/employees/${id}/welcome`, { method: 'POST' }),
+  /// Everybody still here who has never signed in, and why (admins).
+  notSignedIn: () => request<NotSignedIn[]>('/employees/welcome/pending'),
   sendWelcomeToEveryone: () =>
     request<{
       sent: number;
@@ -1333,6 +1338,21 @@ export const api = {
       method: 'PATCH',
       body: JSON.stringify(body),
     }),
+  /// "Ask who can cover" (October 2026).
+  askCover: (shiftId: string, employeeIds: string[]) =>
+    request<{ request: CoverRequestStatus | null }>(`/shifts/${shiftId}/ask-cover`, {
+      method: 'POST',
+      body: JSON.stringify({ employeeIds }),
+    }),
+  coverRequest: (shiftId: string) =>
+    request<{ request: CoverRequestStatus | null }>(`/shifts/${shiftId}/cover-request`),
+  stopCover: (shiftId: string) =>
+    request<{ request: CoverRequestStatus | null }>(`/shifts/${shiftId}/cover-request/stop`, {
+      method: 'POST',
+    }),
+  coverView: (id: string) => request<CoverView>(`/cover/${id}`),
+  answerCover: (id: string, yes: boolean) =>
+    request<CoverView>(`/cover/${id}/answer`, { method: 'POST', body: JSON.stringify({ yes }) }),
   /// A pasted booking read into the calendar's form (AI). Not saved.
   readBooking: (text: string) =>
     request<{ booking: ReadBooking | null }>('/events/read-booking', {

@@ -369,6 +369,19 @@ const STAFF: Section[] = [
         ),
       },
       {
+        question: 'I was asked to cover a shift',
+        answer: (
+          <p>
+            When somebody calls out, a manager may ask a few people whether they can cover. You get
+            a note under the bell and an email — &ldquo;Can you cover Tue, Feb 16, 9:00 AM–5:00
+            PM?&rdquo; — with a link. Open it and press <strong>Yes, I&rsquo;ll take it</strong> or{' '}
+            <strong>No, I can&rsquo;t</strong>. The first person to say yes gets the shift, and it
+            goes straight onto their schedule; if somebody beat you to it, the link says so. Saying
+            no is fine, and you can still say yes later while it is open.
+          </p>
+        ),
+      },
+      {
         question: 'Where are the meetings and practice events?',
         answer: (
           <p>
@@ -1049,6 +1062,12 @@ const MANAGERS: Section[] = [
               downloads straight away.
             </p>
             <p>
+              From two working days before a pay period ends until it is paid,{' '}
+              <strong>Payroll is due</strong> leads the Timesheet banner and the nightly email: how
+              many entries in that period are not approved yet, clock-outs the app made at midnight
+              that still need the right time, and punches nobody clocked out of.
+            </p>
+            <p>
               For ADP, choose <strong>ADP TotalSource</strong> under <em>Send to</em>, check the
               Batch ID, and download the import file. In TotalSource, go to Process → Payroll
               Dashboard → Manage Payroll → Worksheets → Import File, upload it, and check the
@@ -1253,6 +1272,21 @@ const MANAGERS: Section[] = [
             reason: asked for the day off, not available then, close to or into overtime), and
             already on or off that day — so you can still choose anyone, and the usual warnings
             follow.
+          </p>
+        ),
+      },
+      {
+        question: 'Somebody called out — asking who can cover',
+        answer: (
+          <p>
+            Make their shift an open shift (take them off it, or approve their time off and leave it
+            open), then click it on the rota. Under <strong>Ask people to cover</strong>, press{' '}
+            <strong>Choose who to ask</strong>: the people free then are listed, the best fits
+            already ticked and the rest with their catch. <strong>Ask</strong> sends each a note on
+            the bell and an email. The first to say yes gets the shift — published to them — and you
+            are told; the others still to answer hear it is covered. If everybody says no, you are
+            told that too. The same pop-up shows who said what, lets you ask more people, or{' '}
+            <strong>Stop asking</strong>. Only the people you ask see the shift; nobody else does.
           </p>
         ),
       },
@@ -1790,6 +1824,13 @@ const MANAGERS: Section[] = [
               <strong>Edit</strong> on somebody&rsquo;s card to change their email, phone, access
               (Employee, Manager or Admin), job roles and their main one, offices and ADP File #,
               send their welcome email, or give them a temporary password or tablet PIN.
+            </li>
+            <li>
+              <strong>People who have never signed in</strong>, at the top of the Staff screen,
+              lists everybody still here who has not once signed in, with what is most likely
+              holding each up — never sent a welcome email, the link ran out, a temporary password
+              not used yet — and a button to send the welcome email, or send it again. It says who
+              clocks in at the time clock, so is working, just not using the app.
             </li>
             <li>
               Under <strong>Photo</strong> in the same editor you can put up somebody&rsquo;s

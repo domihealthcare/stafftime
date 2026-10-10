@@ -199,7 +199,7 @@ export function TimesheetPage() {
 
       <NeedsAttention
         key={bannerKey}
-        sections={['missedShifts', 'handEntries', 'unapprovedHours', 'missingPunches']}
+        sections={['payrollDue', 'missedShifts', 'handEntries', 'unapprovedHours', 'missingPunches']}
       />
 
       <div className="mb-3">

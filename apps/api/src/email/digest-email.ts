@@ -65,6 +65,16 @@ const plural = (count: number, one: string, many: string) => (count === 1 ? one 
 /// more said where the screen supplies the rest ("Already lapsed" on Licenses).
 const SECTIONS: SectionSpec[] = [
   {
+    key: 'payrollDue',
+    tier: 'today',
+    // Payroll is close: what still stands between its hours and the export.
+    // First, so it leads the subject. See time-entries/payroll-due.ts.
+    heading: 'Payroll is due',
+    path: '/timesheet',
+    screen: 'Timesheet',
+    subject: () => 'Payroll is due — hours to sort out',
+  },
+  {
     key: 'silentKiosks',
     tier: 'today',
     heading: 'A tablet has stopped being used',

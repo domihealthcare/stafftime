@@ -17,6 +17,7 @@ import { SetupPage } from './pages/SetupPage';
   needs. The time clock is its own piece too: a signed-in phone never loads it.
 */
 const AskPage = lazy(() => import('./pages/AskPage').then((m) => ({ default: m.AskPage })));
+const CoverPage = lazy(() => import('./pages/CoverPage').then((m) => ({ default: m.CoverPage })));
 const KioskApp = lazy(() => import('./kiosk/KioskApp').then((m) => ({ default: m.KioskApp })));
 const AvailabilityPage = lazy(() =>
   import('./pages/AvailabilityPage').then((m) => ({ default: m.AvailabilityPage })),
@@ -178,6 +179,7 @@ function Routed() {
           <Route path="news" element={<NewsPage />} />
           <Route path="help" element={<HelpPage />} />
           <Route path="ask" element={<AskPage />} />
+          <Route path="cover/:id" element={<CoverPage />} />
           <Route path="profile" element={<ProfilePage />} />
           <Route path="directory" element={<DirectoryPage />} />
           <Route path="surveys" element={<SurveysPage />} />

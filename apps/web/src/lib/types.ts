@@ -520,6 +520,7 @@ export interface Attention {
   overdueTasks: string[];
   missingPunches: string[];
   missedShifts: string[];
+  payrollDue: string[];
   regularShiftClashes: string[];
   belowMinimum: string[];
   undecidedTimeOff: string[];
@@ -1587,4 +1588,43 @@ export interface ReadBooking {
   newRep: { name: string; company: string; medication: string } | null;
   place: string;
   description: string;
+}
+
+/// "Ask who can cover" (October 2026): where an open shift's asking stands.
+export type CoverState = 'open' | 'yours' | 'covered' | 'stopped' | 'started';
+
+export interface CoverRequestStatus {
+  id: string;
+  createdAt: string;
+  state: CoverState;
+  takenBy: PersonName | null;
+  asks: {
+    employee: PersonName & { id: string };
+    answer: boolean | null;
+    answeredAt: string | null;
+  }[];
+}
+
+/// The shift as somebody asked to cover it sees it.
+export interface CoverView {
+  id: string;
+  when: string;
+  where: string;
+  startsAt: string;
+  endsAt: string;
+  state: CoverState;
+  myAnswer: boolean | null;
+  asked: boolean;
+}
+
+/// Somebody still here who has never signed in (October 2026).
+export interface NotSignedIn {
+  id: string;
+  name: string;
+  email: string;
+  standing:
+    'not-invited' | 'link-waiting' | 'link-expired' | 'temporary-password' | 'password-not-used';
+  welcomeSentAt: string | null;
+  usesTimeClock: boolean;
+  canSendWelcome: boolean;
 }

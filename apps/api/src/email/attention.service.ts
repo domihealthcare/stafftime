@@ -22,6 +22,7 @@ import { PrismaService } from '../prisma/prisma.service';
 import { PracticeSettingsService } from '../settings/practice-settings.service';
 import { loadPunchPatterns } from '../time-entries/punch-patterns';
 import { describeMissedShift, loadMissedShifts } from '../time-entries/missed-shifts';
+import { loadPayrollDue } from '../time-entries/payroll-due';
 import { describeShortDay, loadShortDays, SHORT_DAYS_AHEAD } from '../staffing/minimums';
 import {
   describeRegularShiftClash,
@@ -81,6 +82,10 @@ export interface DigestContents {
   /// Published shifts that ended with no clock-in at all, in the last two
   /// weeks: see `time-entries/missed-shifts.ts`.
   missedShifts: string[];
+  /// From two working days before a pay period ends until it is paid: what
+  /// still stands between its hours and payroll. See
+  /// `time-entries/payroll-due.ts`.
+  payrollDue: string[];
   /// Regular shifts somebody's availability now rules out, in the next eight
   /// weeks: see `availability/regular-shift-clashes.ts`.
   regularShiftClashes: string[];
@@ -171,6 +176,7 @@ export class AttentionService {
       missed,
       regularClashes,
       shortDays,
+      payrollDue,
     ] = await Promise.all([
       this.prisma.employeeCredential.findMany({
         where: {
@@ -259,6 +265,7 @@ export class AttentionService {
         localDateIn(new Date(), PRACTICE_ZONE),
         addDaysTo(localDateIn(new Date(), PRACTICE_ZONE), SHORT_DAYS_AHEAD - 1),
       ),
+      this.settings.get().then((settings) => loadPayrollDue(this.prisma, settings.payPeriodStart)),
     ]);
 
     /// "8:52 AM", on the practice's clock.
@@ -291,6 +298,7 @@ export class AttentionService {
           : `${who(row.employee)} — clocked in ${on(row.clockInAt)} and never out`,
       ),
       missedShifts: missed.map(describeMissedShift),
+      payrollDue,
       regularShiftClashes: regularClashes.map(describeRegularShiftClash),
       belowMinimum: shortDays.map(describeShortDay),
       undecidedTimeOff: timeOff.map(
