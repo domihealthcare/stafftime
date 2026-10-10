@@ -251,6 +251,10 @@ await step('“Translate from the English” fills the Spanish, marked as the AI
   await frankie.getByTestId('news-language').getByRole('button', { name: 'Español' }).click();
   await frankie.getByRole('heading', { name: 'West New York cierra temprano el viernes' }).waitFor({ timeout: 10000 });
   await frankie.getByText('Traducido automáticamente.').first().waitFor();
+  // Since October 2026 Español is the whole app's language: back to English
+  // for the steps that follow.
+  await frankie.getByTestId('news-language').getByRole('button', { name: 'English' }).click();
+  await frankie.getByRole('heading', { name: 'West New York closes early Friday' }).waitFor({ timeout: 10000 });
 });
 
 await step('a post with no Spanish is translated when a reader asks, then shown as such', async () => {
