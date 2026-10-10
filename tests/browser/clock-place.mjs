@@ -48,8 +48,17 @@ const shiftId = await page.evaluate(async () => {
   const locations = await fetch('/api/locations').then((r) => r.json());
   const northBergen = locations.find((l) => l.name === 'North Bergen');
   const now = Date.now();
-  const dayStart = new Date(); dayStart.setHours(0, 0, 0, 0);
-  const dayEnd = new Date(); dayEnd.setHours(23, 59, 0, 0);
+  // Within New Jersey's day, whatever the browser's zone: Home lists only
+  // shifts that start and end inside it (CI's browser is in UTC, and a shift
+  // running past New Jersey's midnight was not "today's" after 9pm there).
+  const parts = Object.fromEntries(
+    new Intl.DateTimeFormat('en-US', { timeZone: 'America/New_York', hour: 'numeric', minute: 'numeric', hourCycle: 'h23' })
+      .formatToParts(new Date(now))
+      .map((part) => [part.type, Number(part.value)]),
+  );
+  const minutesIn = parts.hour * 60 + parts.minute;
+  const dayStart = new Date(now - minutesIn * 60_000);
+  const dayEnd = new Date(now + (24 * 60 - minutesIn - 1) * 60_000);
   const response = await fetch('/api/shifts', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
