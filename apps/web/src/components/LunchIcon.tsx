@@ -1,4 +1,5 @@
 import { formatTimeCompact, localDate } from '../lib/format';
+import { t } from '../lib/i18n';
 import type { PracticeEvent, Shift } from '../lib/types';
 import { eventsOnDay, shortTitle } from './PracticeEvents';
 
@@ -14,17 +15,18 @@ export function lunchesAt(events: PracticeEvent[], locationId: string, day: stri
 /// or "No rep lunch, bring your own lunch". No dashes: the month grid uses
 /// "—" for a day with nothing on it.
 export function lunchWords(lunches: PracticeEvent[]): string {
-  if (lunches.length === 0) return 'No rep lunch, bring your own lunch';
+  if (lunches.length === 0) return t('No rep lunch, bring your own lunch');
   return lunches
     .map(
       (lunch) =>
-        `Rep lunch at ${formatTimeCompact(lunch.startsAt)} with ${shortTitle(lunch)}${
-          lunch.rep?.company ? ` (${lunch.rep.company})` : ''
-        }${
+        `${t('Rep lunch at {time} with {rep}', {
+          time: formatTimeCompact(lunch.startsAt),
+          rep: shortTitle(lunch),
+        })}${lunch.rep?.company ? ` (${lunch.rep.company})` : ''}${
           lunch.rep?.food === 'CATERING'
-            ? ', bringing catering'
+            ? `, ${t('bringing catering')}`
             : lunch.rep?.food === 'SELF_ORDER'
-              ? ', the office orders'
+              ? `, ${t('the office orders')}`
               : ''
         }`,
     )

@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { api } from '../lib/api';
 import { birthdayName } from '../lib/birthday';
 import { localDate } from '../lib/format';
+import { locale, t as translate, useT } from '../lib/i18n';
 import type { BirthdayEntry } from '../lib/types';
 import { Avatar } from './Avatar';
 import { Card } from './ui';
@@ -9,9 +10,9 @@ import { Card } from './ui';
 function when(date: string): string {
   const today = localDate(new Date());
   const tomorrow = localDate(new Date(Date.now() + 86_400_000));
-  if (date === today) return 'Today';
-  if (date === tomorrow) return 'Tomorrow';
-  return new Date(`${date}T12:00:00`).toLocaleDateString(undefined, {
+  if (date === today) return translate('Today');
+  if (date === tomorrow) return translate('Tomorrow');
+  return new Date(`${date}T12:00:00`).toLocaleDateString(locale(), {
     weekday: 'long',
     month: 'short',
     day: 'numeric',
@@ -24,6 +25,7 @@ function when(date: string): string {
  * happy birthday. Nothing is shown in a week without one.
  */
 export function BirthdaysThisWeek() {
+  const t = useT();
   const [entries, setEntries] = useState<BirthdayEntry[]>([]);
 
   useEffect(() => {
@@ -44,7 +46,7 @@ export function BirthdaysThisWeek() {
   return (
     <Card className="p-4" testId="birthdays-this-week">
       <h2 className="flex items-center gap-2 text-sm font-semibold text-slate-900">
-        <span aria-hidden="true">🎂</span> Birthdays this week
+        <span aria-hidden="true">🎂</span> {t('Birthdays this week')}
       </h2>
       <ul className="mt-2 space-y-2">
         {entries.map((entry) => (
@@ -56,7 +58,7 @@ export function BirthdaysThisWeek() {
             </span>
             {entry.date === localDate(new Date()) && (
               <span className="rounded-full bg-amber-100 px-2 py-0.5 text-xs font-semibold text-amber-900">
-                Happy birthday!
+                {t('Happy birthday!')}
               </span>
             )}
           </li>

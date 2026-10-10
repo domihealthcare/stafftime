@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { api, ApiError } from '../lib/api';
 import { formatCalendarDate, formatDate } from '../lib/format';
+import { t as translate, useT } from '../lib/i18n';
 import { practiceDate } from '../lib/practice-time';
 import type { MyRequirement, Requirement } from '../lib/types';
 import { Alert, Badge, buttonClass } from './ui';
@@ -19,31 +20,34 @@ export function dueLabel(dueOn: string | null): { text: string; late: boolean } 
   if (!dueOn) return null;
   const late = dueOn < practiceDate();
   return {
-    text: `${late ? 'Was due' : 'Due'} ${formatCalendarDate(dueOn, { year: false })}`,
+    text: translate(late ? 'Was due {date}' : 'Due {date}', {
+      date: formatCalendarDate(dueOn, { year: false }),
+    }),
     late,
   };
 }
 
 /// Where to read or do it: the post, the page, or a link elsewhere.
 export function RequirementLinks({ item }: { item: Requirement }) {
+  const t = useT();
   if (!item.announcement && !item.resource && !item.url) return null;
   return (
     <div className="mt-2 flex flex-wrap gap-x-4 gap-y-1">
       {item.announcement && (
         <Link to={`/news#post-${item.announcement.id}`} className={linkClass}>
           {item.announcement.title === item.title
-            ? 'Read the post →'
-            : `Read the post: ${item.announcement.title} →`}
+            ? t('Read the post →')
+            : t('Read the post: {title} →', { title: item.announcement.title })}
         </Link>
       )}
       {item.resource && (
         <Link to={`/resources/${item.resource.id}`} className={linkClass}>
-          Open “{item.resource.title}” →
+          {t('Open “{title}” →', { title: item.resource.title })}
         </Link>
       )}
       {item.url && (
         <a href={item.url} target="_blank" rel="noopener noreferrer" className={linkClass}>
-          Open the link ↗
+          {t('Open the link ↗')}
         </a>
       )}
     </div>
@@ -60,6 +64,7 @@ export function MyRequirementItem({
   onDone: (id: string) => void;
   compact?: boolean;
 }) {
+  const t = useT();
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const due = dueLabel(item.dueOn);
@@ -72,7 +77,7 @@ export function MyRequirementItem({
       await api.confirmRequirement(item.id);
       onDone(item.id);
     } catch (err) {
-      setError(err instanceof ApiError ? err.message : 'Could not save that. Try again.');
+      setError(err instanceof ApiError ? err.message : t('Could not save that. Try again.'));
       setBusy(false);
     }
   }
@@ -80,7 +85,7 @@ export function MyRequirementItem({
   return (
     <div data-testid={`required-${item.title}`} className="space-y-1">
       <div className="flex flex-wrap items-center gap-2">
-        <Badge tone={read ? 'info' : 'neutral'}>{read ? 'Read and confirm' : 'To do'}</Badge>
+        <Badge tone={read ? 'info' : 'neutral'}>{read ? t('Read and confirm') : t('To do')}</Badge>
         {due && !item.doneAt && <Badge tone={due.late ? 'danger' : 'warning'}>{due.text}</Badge>}
       </div>
       <p className="font-medium text-slate-900">{item.title}</p>
@@ -95,7 +100,9 @@ export function MyRequirementItem({
       {error && <Alert>{error}</Alert>}
       {item.doneAt ? (
         <p className="text-sm text-emerald-700">
-          ✓ {read ? 'You confirmed you read it' : 'You marked it done'} {formatDate(item.doneAt)}
+          {read
+            ? t('✓ You confirmed you read it {date}', { date: formatDate(item.doneAt) })
+            : t('✓ You marked it done {date}', { date: formatDate(item.doneAt) })}
         </p>
       ) : (
         <div className="pt-1">
@@ -105,7 +112,7 @@ export function MyRequirementItem({
             onClick={() => void confirm()}
             className={buttonClass('primary', 'sm')}
           >
-            {busy ? 'Saving…' : read ? 'I’ve read it' : 'Done'}
+            {busy ? t('Saving…') : read ? t('I’ve read it') : t('Done')}
           </button>
         </div>
       )}
@@ -115,6 +122,7 @@ export function MyRequirementItem({
 
 /// The Home card: only what is still waiting, and only when something is.
 export function HomeRequired() {
+  const t = useT();
   const [items, setItems] = useState<MyRequirement[] | null>(null);
 
   useEffect(() => {
@@ -135,14 +143,15 @@ export function HomeRequired() {
       <div className="rounded-xl border border-amber-300 bg-amber-50 p-4 shadow-sm">
         <div className="flex items-baseline justify-between gap-2">
           <h2 id="home-required" className="text-base font-semibold text-slate-900">
-            Waiting for you{items.length > 1 ? ` (${items.length})` : ''}
+            {t('Waiting for you')}
+            {items.length > 1 ? ` (${items.length})` : ''}
           </h2>
           <Link to="/required" className={linkClass}>
-            See all →
+            {t('See all →')}
           </Link>
         </div>
         <p className="mb-3 text-xs text-slate-600">
-          A manager has asked you to read or do these. Confirm each once you have.
+          {t('A manager has asked you to read or do these. Confirm each once you have.')}
         </p>
         <ul className="divide-y divide-amber-200">
           {shown.map((item) => (
@@ -159,7 +168,7 @@ export function HomeRequired() {
         </ul>
         {items.length > shown.length && (
           <Link to="/required" className={`mt-3 inline-block ${linkClass}`}>
-            {items.length - shown.length} more →
+            {t('{n} more →', { n: items.length - shown.length })}
           </Link>
         )}
       </div>
@@ -175,13 +184,14 @@ export function PostConfirm({
   item: MyRequirement;
   onDone: (id: string) => void;
 }) {
+  const t = useT();
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const due = dueLabel(item.dueOn);
   if (item.doneAt) {
     return (
       <p className="mt-3 text-sm text-emerald-700">
-        ✓ You confirmed you read this {formatDate(item.doneAt)}
+        {t('✓ You confirmed you read this {date}', { date: formatDate(item.doneAt) })}
       </p>
     );
   }
@@ -191,7 +201,9 @@ export function PostConfirm({
       data-testid="post-confirm"
     >
       <p className="flex-1 text-sm text-amber-900">
-        Please confirm you have read this{due ? ` — ${due.text.toLowerCase()}` : ''}.
+        {due
+          ? t('Please confirm you have read this — {due}.', { due: due.text.toLowerCase() })
+          : t('Please confirm you have read this.')}
       </p>
       {error && <Alert>{error}</Alert>}
       <button
@@ -204,13 +216,13 @@ export function PostConfirm({
             await api.confirmRequirement(item.id);
             onDone(item.id);
           } catch (err) {
-            setError(err instanceof ApiError ? err.message : 'Could not save that. Try again.');
+            setError(err instanceof ApiError ? err.message : t('Could not save that. Try again.'));
             setBusy(false);
           }
         }}
         className={buttonClass('primary', 'sm')}
       >
-        {busy ? 'Saving…' : 'I’ve read it'}
+        {busy ? t('Saving…') : t('I’ve read it')}
       </button>
     </div>
   );
