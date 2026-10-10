@@ -1628,3 +1628,66 @@ export interface NotSignedIn {
   usesTimeClock: boolean;
   canSendWelcome: boolean;
 }
+
+// ------------------------------------------------- required reading and tasks
+
+export type RequirementKind = 'READ' | 'TASK';
+
+interface NamedPerson {
+  id: string;
+  firstName: string;
+  lastName: string;
+  preferredName: string | null;
+}
+
+/// Something a manager asked people to read and confirm, or to do.
+export interface Requirement {
+  id: string;
+  kind: RequirementKind;
+  title: string;
+  body: string | null;
+  url: string | null;
+  /// "YYYY-MM-DD", or null for no due date.
+  dueOn: string | null;
+  everyone: boolean;
+  closedAt: string | null;
+  createdAt: string;
+  createdBy: NamedPerson | null;
+  announcement: { id: string; title: string } | null;
+  resource: { id: string; title: string; kind: 'LINK' | 'PAGE' } | null;
+  targets?: {
+    employees: NamedPerson[];
+    jobRoles: { id: string; name: string }[];
+    locations: { id: string; name: string }[];
+  };
+}
+
+/// One of yours: when you confirmed it, or null while it is waiting.
+export interface MyRequirement extends Requirement {
+  doneAt: string | null;
+}
+
+/// A manager's row: how many it is for, how many have confirmed.
+export interface RequirementSummary extends Requirement {
+  asked: number;
+  done: number;
+  overdue: boolean;
+}
+
+export interface RequirementProgress {
+  requirement: Requirement;
+  done: (NamedPerson & { doneAt: string })[];
+  waiting: NamedPerson[];
+}
+
+export interface RequirementInput {
+  kind: RequirementKind;
+  title: string;
+  body?: string;
+  url?: string;
+  announcementId?: string | null;
+  resourceId?: string | null;
+  dueOn?: string | null;
+  everyone: boolean;
+  targets?: { employeeIds: string[]; jobRoleIds: string[]; locationIds: string[] };
+}

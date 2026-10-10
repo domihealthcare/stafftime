@@ -27,6 +27,7 @@ const linkClasses = ({ isActive }: { isActive: boolean }) =>
 const MANAGE = [
   { to: '/dashboard', label: 'Dashboard' },
   { to: '/surveys', label: 'Surveys' },
+  { to: '/required', label: 'Required reading' },
   { to: '/closing', label: 'Closing checklists' },
   { to: '/checklists', label: 'Onboarding & Offboarding' },
   { to: '/credentials', label: 'Licenses' },

@@ -378,6 +378,44 @@ export class NotificationsService {
     ]);
   }
 
+  /// Something to read and confirm, or to do — when it is set, a reminder, or
+  /// a manager's "Remind them now" (see `requirements/nudges.ts`). The bell
+  /// and an email to each; the emails a few at a time, so thirty people do
+  /// not take thirty round trips one after another.
+  async required(employeeIds: string[], words: { title: string; body: string }): Promise<void> {
+    if (employeeIds.length === 0) return;
+    await this.inbox.notify(employeeIds, {
+      kind: NotificationKind.REQUIRED,
+      title: words.title,
+      body: words.body,
+      link: '/required',
+    });
+    const people = await this.prisma.employee.findMany({
+      where: { id: { in: employeeIds } },
+      select: { email: true, firstName: true, preferredName: true },
+    });
+    for (let start = 0; start < people.length; start += 5) {
+      await Promise.all(
+        people
+          .slice(start, start + 5)
+          .map((person) =>
+            this.dispatch(person.email, words.title, [
+              `Hello ${person.preferredName ?? person.firstName},`,
+              '',
+              words.body,
+              '',
+              `See it, and confirm it: ${this.appUrl}/required`,
+            ]),
+          ),
+      );
+    }
+  }
+
+  /// One person's reminder about everything still waiting on them.
+  async requiredReminder(employeeId: string, words: { title: string; body: string }) {
+    await this.required([employeeId], words);
+  }
+
   /// "You were clocked out automatically" — still clocked in at midnight (see
   /// `time-entries/auto-clock-out.service.ts`). A warning: the clock-out time
   /// is almost certainly wrong, and only they know the right one.

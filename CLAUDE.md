@@ -740,6 +740,29 @@ Beyond the phases, the parts worth knowing about before picking up work:
   staff are left out. `GET /employees/welcome/pending`,
   `auth/not-signed-in.ts`, `components/NotSignedInCard.tsx`;
   `tests/browser/not-signed-in.mjs`.
+- **Required reading and tasks** (10 October 2026, Dominguez — from a survey
+  of similar apps: "something the admin/managers can require for need to
+  know information or required tasks", a **nag, never a gate**): **Manage →
+  Required reading** (`/required`) asks Everyone, or any mix of job roles,
+  offices and people, to **read and confirm** something (a News post —
+  **Require reading** on the post — a Resources page, a link, a few lines)
+  or to **do** something, optionally by a date. Told on the bell and by
+  email; an amber **Waiting for you** card on Home (and the button on the
+  post) until they press **I've read it** / **Done**; reminded two days
+  before, the day after and weekly (eight at most), one message each; read
+  as the audience is today, so new hires in a role are asked too. Managers
+  see "N of M confirmed", who has and who has not, **Remind them now**,
+  **Stop asking**. Keeps only *that* somebody confirmed and when.
+  `requirements/`, migration `20261010020000_required_reading`; see
+  *Required reading and tasks* in `docs/architecture.md`;
+  `tests/browser/required.mjs`.
+- **From the survey of similar apps** (10 October 2026, Dominguez): also
+  agreed — phone notifications by web push, rota cost for chosen people
+  (Dominguez, Kayla and Angelica; hourly and salaried), Spanish for the staff
+  screens, and a provider on-call schedule. **Turned down**: tracking HIPAA /
+  OSHA training as license types, staff confirming their own hours each pay
+  period, and NJ earned-sick-leave accrual changes. **On hold**: monthly OIG
+  exclusion screening.
 - **Turned down: "PTO about to be lost"** (9 October 2026, Dominguez): a
   reminder to use PTO before it fails to carry over was proposed and refused —
   not in the practice's interest. Do not propose it again.

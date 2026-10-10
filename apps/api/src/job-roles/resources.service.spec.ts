@@ -28,8 +28,12 @@ function resource(over: Record<string, unknown> = {}) {
   };
 }
 
-function build(options: { mine?: string[]; one?: unknown; driveOn?: boolean } = {}) {
+function build(
+  options: { mine?: string[]; one?: unknown; driveOn?: boolean; asked?: number } = {},
+) {
   const prisma = {
+    employeeLocation: { findMany: jest.fn().mockResolvedValue([{ locationId: 'loc-nb' }]) },
+    requirement: { count: jest.fn().mockResolvedValue(options.asked ?? 0) },
     jobRole: {
       findMany: jest.fn(async ({ where }) =>
         [
@@ -202,6 +206,11 @@ describe('ResourcesService', () => {
   it('will not open another role’s resource for an employee', async () => {
     const { service } = build({ mine: ['role-ma'] });
     await expect(service.findOne('res-1', employee)).rejects.toBeInstanceOf(ForbiddenException);
+  });
+
+  it('opens another role’s resource for somebody asked to read it', async () => {
+    const { service } = build({ mine: ['role-ma'], asked: 1 });
+    await expect(service.findOne('res-1', employee)).resolves.toMatchObject({ id: 'res-1' });
   });
 
   it('opens an everybody resource for anyone', async () => {

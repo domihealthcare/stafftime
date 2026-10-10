@@ -40,6 +40,7 @@ describe('MaintenanceService', () => {
         autoClockOut as never,
         licenseReminders as never,
         onboardingReminders as never,
+        { nudge: jest.fn().mockResolvedValue(0) } as never,
       ),
       prisma,
       sessions,
@@ -72,6 +73,7 @@ describe('MaintenanceService', () => {
       autoClockedOut: 2,
       licenseReminders: 5,
       onboardingReminders: 3,
+      requiredReminders: 0,
     });
   });
 

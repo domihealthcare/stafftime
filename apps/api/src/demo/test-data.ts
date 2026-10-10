@@ -43,6 +43,8 @@ export async function clearTestData(prisma: PrismaClient) {
     const productivity = await tx.productivityStatement.deleteMany({});
     const feedback = await tx.feedback.deleteMany({});
     const notifications = await tx.notification.deleteMany({});
+    // What staff were asked to read or do while testing, and who confirmed.
+    await tx.requirement.deleteMany({});
     const reports = await tx.reportPreset.deleteMany({});
     const staff = await tx.employee.deleteMany({
       where: { externalId: { startsWith: DEMO_TAG } },

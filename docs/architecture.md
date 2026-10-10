@@ -3389,6 +3389,60 @@ sending in `maintenance/onboarding-reminders.service.ts`; migration
 `20261009020000_onboarding_reminders` is additive (a table, an enum and a
 notification kind). `tests/browser/onboarding-reminders.mjs`.
 
+## Required reading and tasks
+
+October 2026, Dominguez — from a survey of similar apps (Connecteam's "read
+and sign" was the nearest), chosen as "something the admin/managers can
+require for need to know information or required tasks", and a **nag, not a
+gate**. A manager or admin, on **Manage → Required reading** (`/required`),
+asks a set of people either to **read and confirm** something
+(`RequirementKind.READ`, "I've read it") or to **do** something (`TASK`,
+"Done"). It can point at a **News post** (`announcementId` — **Require
+reading** on a post opens the form with it), a **Resources** page or link
+(`resourceId`), and/or an https **web link**, with plain-text details and an
+optional due date.
+
+**Who it is for** is the events' picker: Everyone, or any mix of people, job
+roles and offices (`RequirementTarget`). It is read **as it is today**, not
+frozen when set: somebody who joins one of the job roles or offices is asked
+too, and somebody who leaves drops off — so a handbook acknowledgement reaches
+next month's new hire. `requirements/audience.ts` holds both directions (the
+people a requirement reaches; the requirements a person is asked for).
+
+**What is kept**: *that* somebody confirmed, and when (`RequirementDone`,
+once each, never undone). No signature, no document — the same line as the
+checklists (*Data this app does not hold*). Staff see what is asked of them,
+not who else was asked.
+
+**How it nags.** When set, everybody it reaches is told on the bell and by
+email (`NotificationKind.REQUIRED`, linking to `/required`; a change tells only
+people it newly reaches). Until they confirm it sits on **Home** in an amber
+**Waiting for you** card (first under the clock, before the news), and a post
+they were asked to read carries the button itself in News. Reminders
+(`requirements/nudges.ts`, pure and tested): with a due date, **two days
+before**, the **day after** it passes, then **weekly**; without one, weekly
+from the day it was set; at most eight weekly ones — after that it is a
+manager's conversation. Only the latest reminder day that has come counts
+(somebody away a fortnight gets one message, not three), one message per
+person for everything due, nothing on the day it was set.
+`RequirementNudge` (requirement, person → last day reminded) is claimed
+before sending — a create for the first, a conditional update after — so the
+five-minute timer and the nightly job never both send. **Remind them now**
+nudges everybody still to confirm at once and counts as their reminder for
+that day. Nothing ever stops a clock-in.
+
+**For managers**: each item shows "N of M confirmed", overdue in red, **Who
+has confirmed** (names and days, and who is still to), **Edit**, **Stop
+asking** (off everybody's Home; the record stays; **Ask again** undoes it)
+and **Remove** (with its record, after asking).
+
+**A Resources page for another job role** opens for somebody while they are
+asked to read it (`ResourcesService.findOne` checks for an open requirement
+pointing at it); otherwise resources stay per role.
+
+Migration `20261010020000_required_reading` is additive (four tables, an
+enum and a notification kind). `tests/browser/required.mjs`.
+
 ## License types and who needs them
 
 Asked for by Dominguez (29 September 2026): providers all need a medical

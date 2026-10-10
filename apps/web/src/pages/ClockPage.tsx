@@ -21,6 +21,7 @@ import {
   SurveysCard,
   TabletPinReminder,
 } from '../components/HomeCards';
+import { HomeRequired } from '../components/RequiredItems';
 import { SuggestionBoxCard } from '../components/SuggestionBox';
 import { MyOvertimeNotice } from '../components/OvertimeAlerts';
 import { Alert, Badge, Card, Spinner } from '../components/ui';
@@ -485,7 +486,8 @@ export function ClockPage() {
 
       {/* Before the aside so a phone, where the columns stack, shows the news
           straight under the clock; on a laptop the grid keeps it in the left column. */}
-      <div className="lg:col-span-2 lg:col-start-1 lg:row-start-2">
+      <div className="space-y-4 lg:col-span-2 lg:col-start-1 lg:row-start-2">
+        <HomeRequired />
         <HomeNews />
       </div>
 

@@ -532,6 +532,25 @@ const STAFF: Section[] = [
         ),
       },
       {
+        question: 'What is “Waiting for you” on Home?',
+        answer: (
+          <>
+            <p>
+              Something a manager has asked you to read — a new policy, a News post, a page on{' '}
+              <Screen>Resources</Screen> — or to do, like a training video. Open it from the card,
+              then press <strong>I’ve read it</strong> or <strong>Done</strong> so the practice
+              knows. A post you have been asked to read has the same button on it in News.
+            </p>
+            <p>
+              You are told on the bell and by email when it is set, and reminded — two days before
+              it is due, after it passes, and once a week — until you confirm. It never stops you
+              clocking in. Everything asked of you, and what you have done, is under{' '}
+              <strong>See all</strong>.
+            </p>
+          </>
+        ),
+      },
+      {
         question: 'How do I find a colleague?',
         answer: (
           <p>
@@ -1714,6 +1733,32 @@ const MANAGERS: Section[] = [
             surveys and how many have answered, onboarding and offboarding progress, and the last
             week&rsquo;s closing checklists and supplies to order.
           </p>
+        ),
+      },
+      {
+        question: 'How do I make sure everybody has read something?',
+        answer: (
+          <>
+            <p>
+              <Screen>Manage → Required reading</Screen> →{' '}
+              <strong>+ Ask people to read or do something</strong>. Pick{' '}
+              <strong>something to read</strong> (they press “I’ve read it”) or{' '}
+              <strong>something to do</strong> (“Done”), give it a title, and point it at a News
+              post, a Resources page or a web link if there is one. Choose who it is for — Everyone,
+              or any mix of job roles, offices and people — and a due date if it has one. On a News
+              post, <strong>Require reading</strong> starts it for you.
+            </p>
+            <p>
+              They are told on the bell and by email at once, it sits on their Home until they
+              confirm, and they are reminded two days before it is due, the day after, and weekly
+              (for up to eight weeks). <strong>Who has confirmed</strong> lists who has, with the
+              day, and who has not; <strong>Remind them now</strong> nudges the rest straight away.
+              Somebody who joins a chosen job role or office later is asked too.{' '}
+              <strong>Stop asking</strong> takes it off everybody’s Home and keeps the record of who
+              confirmed. It is a reminder, never a gate: nobody is stopped clocking in. The app
+              records only that somebody confirmed, and when — no signature or document.
+            </p>
+          </>
         ),
       },
       {

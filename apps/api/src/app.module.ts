@@ -19,6 +19,7 @@ import { EmailModule } from './email/email.module';
 import { EmployeesModule } from './employees/employees.module';
 import { EventsModule } from './events/events.module';
 import { RepsModule } from './reps/reps.module';
+import { RequirementsModule } from './requirements/requirements.module';
 import { InvitesModule } from './invites/invites.module';
 import { ExportsModule } from './exports/exports.module';
 import { JobRolesModule } from './job-roles/job-roles.module';
@@ -54,6 +55,7 @@ import { TimeEntriesModule } from './time-entries/time-entries.module';
     ShiftsModule,
     EventsModule,
     RepsModule,
+    RequirementsModule,
     InvitesModule,
     TimeEntriesModule,
     ClosingModule,

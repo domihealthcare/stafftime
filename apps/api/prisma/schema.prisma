@@ -162,7 +162,8 @@ model Location {
   lunchNotices  LunchNotice[]
   eventInvitees PracticeEventInvitee[]
 
-  staffingMinimums StaffingMinimum[]
+  staffingMinimums   StaffingMinimum[]
+  requirementTargets RequirementTarget[]
 
   @@map("locations")
 }
@@ -341,6 +342,13 @@ model Employee {
 
   /// Asked to cover an open shift ("Ask who can cover", October 2026).
   coverAsks CoverAsk[]
+
+  /// Required reading and tasks (October 2026): set by a manager, confirmed
+  /// by the people they are for.
+  createdRequirements Requirement[]       @relation("RequirementCreatedBy")
+  requirementTargets  RequirementTarget[] @relation("RequirementTargetEmployee")
+  requirementsDone    RequirementDone[]
+  requirementNudges   RequirementNudge[]
 
   @@index([employmentStatus])
   @@map("employees")
@@ -1396,9 +1404,11 @@ model Announcement {
 
   author Employee? @relation("AnnouncementAuthor", fields: [authorId], references: [id], onDelete: SetNull)
 
-  comments AnnouncementComment[]
-  likes    AnnouncementLike[]
-  poll     AnnouncementPoll?
+  comments     AnnouncementComment[]
+  likes        AnnouncementLike[]
+  poll         AnnouncementPoll?
+  /// Required reading that points at this post.
+  requirements Requirement[]
 
   @@index([createdAt])
   @@map("announcements")
@@ -1529,6 +1539,7 @@ model JobRole {
   credentialRequirements CredentialRequirement[]
   /// How many the practice wants on in it at each office (optional).
   staffingMinimums       StaffingMinimum[]
+  requirementTargets     RequirementTarget[]
   /// People in this role see their own licenses and onboarding under Team.
   /// Starts true for Provider only (September 2026).
   seesOwnPersonnelTabs   Boolean                 @default(false)
@@ -1600,8 +1611,10 @@ model Resource {
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
-  jobRole   JobRole?  @relation(fields: [jobRoleId], references: [id], onDelete: Restrict)
-  createdBy Employee? @relation("ResourceCreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
+  jobRole      JobRole?      @relation(fields: [jobRoleId], references: [id], onDelete: Restrict)
+  createdBy    Employee?     @relation("ResourceCreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
+  /// Required reading that points at this resource.
+  requirements Requirement[]
 
   @@index([jobRoleId, sortOrder])
   @@map("resources")
@@ -2081,6 +2094,8 @@ enum NotificationKind {
   AVAILABILITY_CLASH
   /// "Can you cover…?" to somebody asked, and the answer back to the manager.
   COVER_REQUEST
+  /// Something to read and confirm, or a task to do, set by a manager.
+  REQUIRED
 }
 
 /// Something the app wants one person to know, shown under the bell in the
@@ -2599,4 +2614,111 @@ model CoverAsk {
   @@id([requestId, employeeId])
   @@index([employeeId])
   @@map("cover_asks")
+}
+
+// ---------------------------------------------------------------------------
+// Required reading and tasks (October 2026, Dominguez: "something the
+// admin/managers can require for need to know information or required
+// tasks"). A manager asks a set of people to confirm they have read
+// something — a News post, a Resources page, a few lines — or to do
+// something and say so. The app nags; it never stops anybody clocking in.
+//
+// Records *that* somebody confirmed, and when — never a document or a
+// signature (see "Data this app does not hold").
+// ---------------------------------------------------------------------------
+
+enum RequirementKind {
+  /// "Please read this and confirm": I've read it.
+  READ
+  /// "Please do this": Done.
+  TASK
+}
+
+model Requirement {
+  id    String          @id @default(uuid()) @db.Uuid
+  kind  RequirementKind
+  title String
+  /// What to read or do, in plain text. Line breaks are kept.
+  body  String?
+  /// Somewhere else to read or do it: a training video, a Drive document.
+  /// https only — checked in the service.
+  url   String?
+
+  /// What to read, when it is in the app. Either, both or neither.
+  announcementId String? @db.Uuid
+  resourceId     String? @db.Uuid
+
+  /// Optional. Reminders come two days before and after it passes.
+  dueOn DateTime? @db.Date
+
+  /// For everybody working here. Otherwise the people, job roles and offices
+  /// in RequirementTarget — read as they are today, so a new hire in a job
+  /// role is asked too.
+  everyone Boolean @default(false)
+
+  /// Stopped asking. The confirmations stay, as a record.
+  closedAt DateTime?
+
+  createdById String?  @db.Uuid
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  announcement Announcement? @relation(fields: [announcementId], references: [id], onDelete: SetNull)
+  resource     Resource?     @relation(fields: [resourceId], references: [id], onDelete: SetNull)
+  createdBy    Employee?     @relation("RequirementCreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
+
+  targets RequirementTarget[]
+  done    RequirementDone[]
+  nudges  RequirementNudge[]
+
+  @@index([closedAt, createdAt])
+  @@map("requirements")
+}
+
+/// One person, job role or office a requirement is for.
+model RequirementTarget {
+  id            String  @id @default(uuid()) @db.Uuid
+  requirementId String  @db.Uuid
+  employeeId    String? @db.Uuid
+  jobRoleId     String? @db.Uuid
+  locationId    String? @db.Uuid
+
+  requirement Requirement @relation(fields: [requirementId], references: [id], onDelete: Cascade)
+  employee    Employee?   @relation("RequirementTargetEmployee", fields: [employeeId], references: [id], onDelete: Cascade)
+  jobRole     JobRole?    @relation(fields: [jobRoleId], references: [id], onDelete: Cascade)
+  location    Location?   @relation(fields: [locationId], references: [id], onDelete: Cascade)
+
+  @@index([requirementId])
+  @@index([employeeId])
+  @@map("requirement_targets")
+}
+
+/// Somebody confirmed: read it, or did it. Once each.
+model RequirementDone {
+  requirementId String   @db.Uuid
+  employeeId    String   @db.Uuid
+  doneAt        DateTime @default(now())
+
+  requirement Requirement @relation(fields: [requirementId], references: [id], onDelete: Cascade)
+  employee    Employee    @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+
+  @@id([requirementId, employeeId])
+  @@index([employeeId])
+  @@map("requirement_done")
+}
+
+/// When somebody was last reminded about one, so the five-minute timer says
+/// it once per reminder day (see `requirements/nudges.ts`). Claimed before
+/// the message goes, so two runs at once cannot both send it.
+model RequirementNudge {
+  requirementId String   @db.Uuid
+  employeeId    String   @db.Uuid
+  lastOn        DateTime @db.Date
+  count         Int      @default(1)
+
+  requirement Requirement @relation(fields: [requirementId], references: [id], onDelete: Cascade)
+  employee    Employee    @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+
+  @@id([requirementId, employeeId])
+  @@map("requirement_nudges")
 }

@@ -70,3 +70,9 @@ export function practiceToday(now: Date = new Date()): { start: string; end: str
   const end = new Date(new Date(atPracticeTime(nextDay, '00:00')).getTime() - 1).toISOString();
   return { start, end };
 }
+
+/// Today's date on the practice's calendar, "YYYY-MM-DD".
+export function practiceDate(now: Date = new Date()): string {
+  const parts = partsIn(now);
+  return `${parts.year}-${String(parts.month).padStart(2, '0')}-${String(parts.day).padStart(2, '0')}`;
+}

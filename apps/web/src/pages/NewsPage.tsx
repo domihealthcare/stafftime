@@ -1,8 +1,9 @@
 import { useCallback, useEffect, useState } from 'react';
-import { useLocation } from 'react-router-dom';
+import { Link, useLocation } from 'react-router-dom';
 import { useConfirm } from '../components/ConfirmDialog';
 import { NewsLanguageToggle, usePostWords } from '../components/NewsLanguage';
 import { PollView, PostActions, PostComments } from '../components/PostSocial';
+import { PostConfirm } from '../components/RequiredItems';
 import {
   Alert,
   Badge,
@@ -15,8 +16,8 @@ import {
 } from '../components/ui';
 import { AI_NOTE, useAiOn } from '../lib/ai';
 import { ApiError, api } from '../lib/api';
-import { useIsAdmin } from '../lib/session';
-import type { Announcement, PollInput } from '../lib/types';
+import { useIsAdmin, useIsManager } from '../lib/session';
+import type { Announcement, MyRequirement, PollInput } from '../lib/types';
 
 /**
  * Every announcement, newest first — the practice's noticeboard.
@@ -30,7 +31,10 @@ import type { Announcement, PollInput } from '../lib/types';
  */
 export function NewsPage() {
   const isAdmin = useIsAdmin();
+  const isManager = useIsManager();
   const aiOn = useAiOn();
+  /// Posts somebody has been asked to read and confirm (required reading).
+  const [asked, setAsked] = useState<MyRequirement[]>([]);
   const { hash } = useLocation();
   const [posts, setPosts] = useState<Announcement[]>([]);
   const [writing, setWriting] = useState(false);
@@ -50,6 +54,10 @@ export function NewsPage() {
 
   useEffect(() => {
     void load();
+    api
+      .myRequirements()
+      .then((found) => setAsked(found.filter((item) => item.announcement)))
+      .catch(() => setAsked([]));
   }, [load]);
 
   // To the post a notification is about, once it is on the page.
@@ -123,6 +131,15 @@ export function NewsPage() {
               post={post}
               aiOn={aiOn}
               canManage={isAdmin}
+              canRequire={isManager}
+              required={asked.find((item) => item.announcement?.id === post.id)}
+              onConfirmed={(id) =>
+                setAsked((current) =>
+                  current.map((item) =>
+                    item.id === id ? { ...item, doneAt: new Date().toISOString() } : item,
+                  ),
+                )
+              }
               onChanged={() => void load()}
               onReplace={replace}
               onError={setError}
@@ -138,6 +155,9 @@ function PostCard({
   post,
   aiOn,
   canManage,
+  canRequire,
+  required,
+  onConfirmed,
   onChanged,
   onReplace,
   onError,
@@ -145,6 +165,11 @@ function PostCard({
   post: Announcement;
   aiOn: boolean;
   canManage: boolean;
+  /// Managers and admins may ask people to confirm they have read it.
+  canRequire: boolean;
+  /// This post, if the reader has been asked to read and confirm it.
+  required?: MyRequirement;
+  onConfirmed: (requirementId: string) => void;
   onChanged: () => void;
   onReplace: (post: Announcement) => void;
   onError: (message: string) => void;
@@ -212,6 +237,7 @@ function PostCard({
             </p>
           )}
           <PollView post={post} onChange={onReplace} />
+          {required && <PostConfirm item={required} onDone={onConfirmed} />}
         </article>
 
         <PostActions post={post} onChange={onReplace} onComment={() => setCommenting(true)} />
@@ -222,6 +248,16 @@ function PostCard({
           onComposingChange={setCommenting}
         />
 
+        {canRequire && !canManage && (
+          <div className="mt-3 border-t border-slate-100 pt-3">
+            <Link
+              to={`/required?post=${post.id}`}
+              className="text-sm font-medium text-brand-700 hover:text-brand-900"
+            >
+              Ask people to confirm they’ve read it →
+            </Link>
+          </div>
+        )}
         {canManage && (
           <div className="mt-3 flex flex-wrap items-center gap-3 border-t border-slate-100 pt-3 text-xs">
             {!post.isPrimary && (
@@ -246,6 +282,9 @@ function PostCard({
             >
               Edit
             </button>
+            <Link to={`/required?post=${post.id}`} className={buttonClass('secondary', 'sm')}>
+              Require reading
+            </Link>
             <button
               type="button"
               disabled={busy}

@@ -1,5 +1,9 @@
 import type { ImportedPerson } from './staff-import';
 import type {
+  MyRequirement,
+  RequirementInput,
+  RequirementProgress,
+  RequirementSummary,
   UsualShift,
   NotSignedIn,
   ReadBooking,
@@ -440,7 +444,9 @@ export interface AppNotification {
     | 'PROFILE_PHOTO'
     | 'LICENSE_REMINDER'
     | 'ONBOARDING_REMINDER'
-    | 'AVAILABILITY_CLASH';
+    | 'AVAILABILITY_CLASH'
+    | 'COVER_REQUEST'
+    | 'REQUIRED';
   title: string;
   body: string | null;
   link: string | null;
@@ -1276,6 +1282,28 @@ export const api = {
       method: 'PATCH',
       body: JSON.stringify(body),
     }),
+  /// Required reading and tasks: what is asked of you, and confirming it.
+  myRequirements: () => request<MyRequirement[]>('/requirements/mine'),
+  confirmRequirement: (id: string) =>
+    request<{ done: boolean }>(`/requirements/${id}/done`, { method: 'POST' }),
+  /// Managers and admins: everything set, one's progress, and changes.
+  requirements: () => request<RequirementSummary[]>('/requirements'),
+  requirementProgress: (id: string) => request<RequirementProgress>(`/requirements/${id}`),
+  createRequirement: (body: RequirementInput) =>
+    request<RequirementSummary>('/requirements', { method: 'POST', body: JSON.stringify(body) }),
+  updateRequirement: (id: string, body: RequirementInput) =>
+    request<RequirementSummary>(`/requirements/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify(body),
+    }),
+  closeRequirement: (id: string, closed: boolean) =>
+    request<{ closed: boolean }>(`/requirements/${id}/${closed ? 'close' : 'reopen'}`, {
+      method: 'POST',
+    }),
+  remindRequirement: (id: string) =>
+    request<{ reminded: number }>(`/requirements/${id}/remind`, { method: 'POST' }),
+  deleteRequirement: (id: string) =>
+    request<{ removed: boolean }>(`/requirements/${id}`, { method: 'DELETE' }),
   /// The reps who book lunches: managers and admins only.
   reps: () => request<Rep[]>('/reps'),
   createRep: (body: RepInput) =>
