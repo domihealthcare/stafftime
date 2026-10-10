@@ -1,3 +1,4 @@
+import { t } from './i18n';
 import type { AllowanceBalance, PtoRequest, PtoType } from './types';
 
 /// What a rota shows for a day somebody is off: approved time off blocks the
@@ -31,6 +32,11 @@ export const PTO_TYPE_LABELS: Record<PtoType, string> = {
   UNPAID: 'Unpaid',
   OTHER: 'Other',
 };
+
+/// The label in the reader's language ("Enfermedad" for Sick in Spanish).
+export function ptoTypeLabel(type: PtoType): string {
+  return t(PTO_TYPE_LABELS[type]);
+}
 
 /// What a new request can be, in the order the form offers them.
 export const REQUESTABLE_PTO_TYPES = ['SICK', 'VACATION'] as const satisfies readonly PtoType[];

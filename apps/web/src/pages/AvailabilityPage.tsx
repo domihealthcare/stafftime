@@ -14,6 +14,7 @@ import { ApiError, api } from '../lib/api';
 import { OnePersonNote, useOnePerson } from '../components/OnePerson';
 import { displayName, formatCalendarDate, localDate, WEEK_ORDER } from '../lib/format';
 import { useIsManager } from '../lib/session';
+import { t as tNow, useT } from '../lib/i18n';
 import type {
   MyAvailability,
   TeamAvailability,
@@ -31,6 +32,7 @@ const WEEKDAYS = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Satur
  * which week that is before anybody tries.
  */
 export function AvailabilityPage() {
+  const t = useT();
   const isManager = useIsManager();
   const [mine, setMine] = useState<MyAvailability | null>(null);
   const [team, setTeam] = useState<TeamAvailability[]>([]);
@@ -48,7 +50,7 @@ export function AvailabilityPage() {
       setTeam(everyone);
       setError(null);
     } catch (cause) {
-      setError(cause instanceof ApiError ? cause.message : 'Could not load availability.');
+      setError(cause instanceof ApiError ? cause.message : tNow('Could not load availability.'));
     }
   }, [isManager]);
 
@@ -56,7 +58,7 @@ export function AvailabilityPage() {
     void load();
   }, [load]);
 
-  if (!mine && !error) return <Spinner label="Loading availability" />;
+  if (!mine && !error) return <Spinner label={t('Loading availability')} />;
 
   const weekly = mine?.rules.filter((rule) => rule.kind === 'WEEKLY') ?? [];
   const oneOff = mine?.rules.filter((rule) => rule.kind === 'ONE_OFF') ?? [];
@@ -64,12 +66,14 @@ export function AvailabilityPage() {
   return (
     <div className="max-w-3xl">
       <Link to="/schedule" className="text-sm font-medium text-brand-700 hover:text-brand-900">
-        ← Schedule
+        {t('← Schedule')}
       </Link>
       <div className="mt-3">
         <PageHeading
-          title="When you can’t work"
-          subtitle="Tell your managers the times you can’t work — every week, or on a particular date. For whole days away, ask for time off instead."
+          title={t('When you can’t work')}
+          subtitle={t(
+            'Tell your managers the times you can’t work — every week, or on a particular date. For whole days away, ask for time off instead.',
+          )}
         />
       </div>
 
@@ -78,15 +82,17 @@ export function AvailabilityPage() {
           <Alert tone="info">
             {mine.firstOpenDate > localDate(new Date()) ? (
               <>
-                The schedule is published up to{' '}
-                <strong>{formatCalendarDate(dayBefore(mine.firstOpenDate))}</strong>, so changes
-                here count from <strong>{formatCalendarDate(mine.firstOpenDate)}</strong>. For
-                anything sooner, talk to a manager.
+                {t('The schedule is published up to')}{' '}
+                <strong>{formatCalendarDate(dayBefore(mine.firstOpenDate))}</strong>
+                {t(', so changes here count from')}{' '}
+                <strong>{formatCalendarDate(mine.firstOpenDate)}</strong>
+                {t('. For anything sooner, talk to a manager.')}
               </>
             ) : (
               <>
-                Nothing ahead is published yet, so changes count straight away. Once a week’s
-                schedule is published, that week is fixed.
+                {t(
+                  'Nothing ahead is published yet, so changes count straight away. Once a week’s schedule is published, that week is fixed.',
+                )}
               </>
             )}
           </Alert>
@@ -121,33 +127,35 @@ export function AvailabilityPage() {
             onClick={() => setAdding(true)}
             className={buttonClass('primary', 'md')}
           >
-            + Add a time you can’t work
+            {t('+ Add a time you can’t work')}
           </button>
         )}
       </div>
 
       <RuleList
-        title="Every week"
+        title={t('Every week')}
         rules={weekly}
-        empty="Nothing every week."
+        empty={t('Nothing every week.')}
         onRemoved={async (endsAfter) => {
           // Reload first, so "Removed." never sits above a list still showing it.
           await load();
           setNotice(
             endsAfter
-              ? `Removed. The weeks already published up to ${formatCalendarDate(endsAfter)} stay as they are.`
-              : 'Removed.',
+              ? t('Removed. The weeks already published up to {date} stay as they are.', {
+                  date: formatCalendarDate(endsAfter),
+                })
+              : t('Removed.'),
           );
         }}
         onError={setError}
       />
       <RuleList
-        title="Particular dates"
+        title={t('Particular dates')}
         rules={oneOff}
-        empty="No particular dates."
+        empty={t('No particular dates.')}
         onRemoved={async () => {
           await load();
-          setNotice('Removed.');
+          setNotice(t('Removed.'));
         }}
         onError={setError}
       />
@@ -195,6 +203,7 @@ function RuleRow({
   onRemoved: (endsAfter: string | null) => void | Promise<void>;
   onError: (message: string) => void;
 }) {
+  const t = useT();
   const [busy, setBusy] = useState(false);
   const confirm = useConfirm();
 
@@ -206,27 +215,31 @@ function RuleRow({
             {rule.description.replace(/^Not available (on )?/, '')}
           </p>
           <p className="text-xs text-slate-500">
-            {rule.kind === 'WEEKLY' && `From ${formatCalendarDate(rule.effectiveFrom)}`}
+            {rule.kind === 'WEEKLY' &&
+              t('From {date}', { date: formatCalendarDate(rule.effectiveFrom) })}
             {rule.kind === 'WEEKLY' &&
               rule.effectiveUntil &&
-              ` until ${formatCalendarDate(rule.effectiveUntil)}`}
+              t(' until {date}', { date: formatCalendarDate(rule.effectiveUntil) })}
             {rule.note && `${rule.kind === 'WEEKLY' ? ' · ' : ''}${rule.note}`}
           </p>
         </div>
         {rule.locked ? (
-          <Badge>Published — ask a manager</Badge>
+          <Badge>{t('Published — ask a manager')}</Badge>
         ) : rule.effectiveUntil ? (
-          <Badge>Ending</Badge>
+          <Badge>{t('Ending')}</Badge>
         ) : (
           <button
             type="button"
             disabled={busy}
             onClick={async () => {
               const sure = await confirm({
-                title: 'Remove this?',
-                body: `${rule.description}. Managers will no longer be warned about it when they build the rota; weeks already published stay as they are.`,
-                confirmLabel: 'Yes, remove',
-                cancelLabel: 'Keep it',
+                title: t('Remove this?'),
+                body: t(
+                  '{rule}. Managers will no longer be warned about it when they build the rota; weeks already published stay as they are.',
+                  { rule: rule.description },
+                ),
+                confirmLabel: t('Yes, remove'),
+                cancelLabel: t('Keep it'),
               });
               if (!sure) return;
               setBusy(true);
@@ -234,14 +247,14 @@ function RuleRow({
                 const result = await api.removeUnavailability(rule.id);
                 onRemoved(result.endsAfter);
               } catch (cause) {
-                onError(cause instanceof ApiError ? cause.message : 'Could not remove that.');
+                onError(cause instanceof ApiError ? cause.message : t('Could not remove that.'));
               } finally {
                 setBusy(false);
               }
             }}
             className="text-xs font-medium text-slate-500 hover:text-rose-700"
           >
-            Remove
+            {t('Remove')}
           </button>
         )}
       </div>
@@ -258,6 +271,7 @@ function RuleForm({
   onSaved: () => void;
   onCancel: () => void;
 }) {
+  const t = useT();
   const [kind, setKind] = useState<UnavailabilityKind>('WEEKLY');
   const [weekday, setWeekday] = useState(1);
   const [date, setDate] = useState(firstOpenDate);
@@ -280,7 +294,7 @@ function RuleForm({
       });
       onSaved();
     } catch (cause) {
-      setError(cause instanceof ApiError ? cause.message : 'Could not save that.');
+      setError(cause instanceof ApiError ? cause.message : t('Could not save that.'));
     } finally {
       setBusy(false);
     }
@@ -288,7 +302,7 @@ function RuleForm({
 
   return (
     <Card className="p-4">
-      <div className="mb-3 flex gap-1" role="group" aria-label="How often">
+      <div className="mb-3 flex gap-1" role="group" aria-label={t('How often')}>
         {(
           [
             ['WEEKLY', 'Every week'],
@@ -304,7 +318,7 @@ function RuleForm({
               kind === value ? 'bg-brand-50 text-brand-800' : 'text-slate-600 hover:bg-slate-100'
             }`}
           >
-            {label}
+            {t(label)}
           </button>
         ))}
       </div>
@@ -312,25 +326,25 @@ function RuleForm({
       <div className="grid gap-3 sm:grid-cols-2">
         {kind === 'WEEKLY' ? (
           <label className="text-sm">
-            <span className="mb-1 block font-medium text-slate-700">Day</span>
+            <span className="mb-1 block font-medium text-slate-700">{t('Day')}</span>
             <select
-              aria-label="Day"
+              aria-label={t('Day')}
               value={weekday}
               onChange={(event) => setWeekday(Number(event.target.value))}
               className="w-full rounded-lg border border-slate-300 px-2 py-1.5"
             >
               {WEEK_ORDER.map((day) => (
                 <option key={day} value={day}>
-                  {WEEKDAYS[day - 1]}
+                  {t(WEEKDAYS[day - 1])}
                 </option>
               ))}
             </select>
           </label>
         ) : (
           <label className="text-sm">
-            <span className="mb-1 block font-medium text-slate-700">Date</span>
+            <span className="mb-1 block font-medium text-slate-700">{t('Date')}</span>
             <input
-              aria-label="Date"
+              aria-label={t('Date')}
               type="date"
               min={firstOpenDate}
               value={date}
@@ -347,15 +361,15 @@ function RuleForm({
             onChange={(event) => setAllDay(event.target.checked)}
             className="rounded border-slate-300 text-brand-600 focus:ring-brand-600"
           />
-          <span className="font-medium text-slate-700">All day</span>
+          <span className="font-medium text-slate-700">{t('All day')}</span>
         </label>
 
         {!allDay && (
           <>
             <label className="text-sm">
-              <span className="mb-1 block font-medium text-slate-700">From</span>
+              <span className="mb-1 block font-medium text-slate-700">{t('From')}</span>
               <input
-                aria-label="From"
+                aria-label={t('From')}
                 type="time"
                 value={startTime}
                 onChange={(event) => setStartTime(event.target.value)}
@@ -363,9 +377,9 @@ function RuleForm({
               />
             </label>
             <label className="text-sm">
-              <span className="mb-1 block font-medium text-slate-700">Until</span>
+              <span className="mb-1 block font-medium text-slate-700">{t('Until')}</span>
               <input
-                aria-label="Until"
+                aria-label={t('Until')}
                 type="time"
                 value={endTime}
                 onChange={(event) => setEndTime(event.target.value)}
@@ -377,14 +391,17 @@ function RuleForm({
 
         <label className="text-sm sm:col-span-2">
           <span className="mb-1 block font-medium text-slate-700">
-            Why <span className="font-normal text-slate-500">(optional — managers see this)</span>
+            {t('Why')}{' '}
+            <span className="font-normal text-slate-500">
+              {t('(optional — managers see this)')}
+            </span>
           </span>
           <input
-            aria-label="Why"
+            aria-label={t('Why')}
             value={note}
             onChange={(event) => setNote(event.target.value)}
             maxLength={200}
-            placeholder="School pick-up"
+            placeholder={t('School pick-up')}
             className="w-full rounded-lg border border-slate-300 px-2 py-1.5"
           />
         </label>
@@ -392,8 +409,9 @@ function RuleForm({
 
       {kind === 'WEEKLY' && (
         <p className="mt-3 text-xs text-slate-500">
-          Counts from {formatCalendarDate(firstOpenDate)} — the weeks before that are already
-          published.
+          {t('Counts from {date} — the weeks before that are already published.', {
+            date: formatCalendarDate(firstOpenDate),
+          })}
         </p>
       )}
 
@@ -410,14 +428,14 @@ function RuleForm({
           onClick={() => void save()}
           className={buttonClass('primary', 'md')}
         >
-          {busy ? 'Saving…' : 'Save'}
+          {busy ? t('Saving…') : t('Save')}
         </button>
         <button
           type="button"
           onClick={onCancel}
           className="text-sm font-medium text-slate-600 hover:text-slate-900"
         >
-          Cancel
+          {t('Cancel')}
         </button>
       </div>
     </Card>

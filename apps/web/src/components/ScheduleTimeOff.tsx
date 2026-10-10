@@ -4,7 +4,8 @@ import { ApiError, api } from '../lib/api';
 import { ClashNote } from './TimeOffClashes';
 import { formatCalendarDate, localDate } from '../lib/format';
 import { useIsManager, useSession } from '../lib/session';
-import { PTO_TYPE_LABELS, hasNone } from '../lib/time-off';
+import { useT } from '../lib/i18n';
+import { PTO_TYPE_LABELS, hasNone, ptoTypeLabel } from '../lib/time-off';
 import type { PtoBalance, PtoRequest } from '../lib/types';
 import { useApproveTimeOff } from './ApproveTimeOff';
 import { useDeclineTimeOff } from './DeclineTimeOff';
@@ -33,9 +34,10 @@ const name = (request: PtoRequest) =>
 
 /// "+ Request time off": the Time off screen with its form open.
 export function RequestTimeOffButton() {
+  const t = useT();
   return (
     <Link to="/time-off?request=1" className={buttonClass('primary', 'sm')}>
-      + Request time off
+      {t('+ Request time off')}
     </Link>
   );
 }
@@ -169,6 +171,7 @@ export function RequestsToDecide({ onDecided }: { onDecided: () => void }) {
 /// One line about somebody's own time off: days left, and what is coming up
 /// or waiting. For everybody, managers included — their own.
 export function YourTimeOff({ refreshKey }: { refreshKey: number }) {
+  const t = useT();
   const isManager = useIsManager();
   const { employee } = useSession();
   const [balance, setBalance] = useState<PtoBalance | null>(null);
@@ -203,36 +206,38 @@ export function YourTimeOff({ refreshKey }: { refreshKey: number }) {
 
   return (
     <section
-      aria-label="Your time off"
+      aria-label={t('Your time off')}
       data-testid="your-time-off"
       className="mb-4 rounded-xl bg-white p-3 text-sm ring-1 ring-inset ring-slate-200"
     >
       <div className="flex flex-wrap items-center gap-x-4 gap-y-1">
-        <span className="font-semibold text-slate-900">Your time off</span>
+        <span className="font-semibold text-slate-900">{t('Your time off')}</span>
         {!hasNone(balance.vacation) && (
           <span className="text-slate-700">
-            PTO <span className="font-semibold">{balance.vacation.remaining}</span> days left
+            {t('PTO')} <span className="font-semibold">{balance.vacation.remaining}</span>{' '}
+            {t('days left')}
           </span>
         )}
         <span className="text-slate-700">
-          Sick <span className="font-semibold">{balance.sick.remaining}</span> days left
+          {t('Sick')} <span className="font-semibold">{balance.sick.remaining}</span>{' '}
+          {t('days left')}
         </span>
         <Link
           to="/time-off"
           className="ml-auto text-sm font-medium text-brand-700 hover:text-brand-900"
         >
-          {isManager ? 'All requests →' : 'All your time off →'}
+          {isManager ? t('All requests →') : t('All your time off →')}
         </Link>
       </div>
       {mine.length > 0 && (
         <ul className="mt-1 space-y-0.5 text-slate-600">
           {mine.map((request) => (
             <li key={request.id}>
-              {range(request)} — {PTO_TYPE_LABELS[request.type]}
+              {range(request)} — {ptoTypeLabel(request.type)}
               {request.status === 'PENDING' ? (
-                <span className="text-amber-800"> · waiting for a manager</span>
+                <span className="text-amber-800"> · {t('waiting for a manager')}</span>
               ) : (
-                <span className="text-emerald-700"> · approved</span>
+                <span className="text-emerald-700"> · {t('approved')}</span>
               )}
             </li>
           ))}

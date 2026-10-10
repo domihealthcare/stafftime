@@ -1,6 +1,7 @@
 import { NavLink } from 'react-router-dom';
 import { canSeeOnCall } from '../lib/on-call';
 import { useSession } from '../lib/session';
+import { useT } from '../lib/i18n';
 
 /**
  * Shifts | Calendar, at the top of both (October 2026). The practice calendar
@@ -9,6 +10,7 @@ import { useSession } from '../lib/session';
  * five.
  */
 export function ScheduleTabs() {
+  const t = useT();
   const { employee } = useSession();
   const tab = ({ isActive }: { isActive: boolean }) =>
     `rounded-md px-4 py-1 text-sm font-medium max-sm:flex-1 max-sm:py-2.5 max-sm:text-center ${
@@ -16,19 +18,19 @@ export function ScheduleTabs() {
     }`;
   return (
     <nav
-      aria-label="Schedule or calendar"
+      aria-label={t('Schedule or calendar')}
       className="mb-4 flex w-fit rounded-lg border border-slate-300 bg-white p-0.5 max-sm:w-full"
     >
       <NavLink to="/schedule" end className={tab}>
-        Shifts
+        {t('Shifts')}
       </NavLink>
       <NavLink to="/schedule/calendar" className={tab}>
-        Calendar
+        {t('Calendar')}
       </NavLink>
       {/* Providers, managers and admins (October 2026). */}
       {canSeeOnCall(employee) && (
         <NavLink to="/on-call" className={tab}>
-          On call
+          {t('On call')}
         </NavLink>
       )}
     </nav>
