@@ -816,9 +816,25 @@ Beyond the phases, the parts worth knowing about before picking up work:
   `lib/push.ts`, `components/PhoneNotificationsCard.tsx`, migration
   `20261010050000_push_notifications`; `tests/browser/push.mjs` (a headless
   browser cannot subscribe, so the device is registered through the API).
-- **From the survey of similar apps** (10 October 2026, Dominguez): also
-  agreed — Spanish for the staff
-  screens, and a provider on-call schedule. **Turned down**: tracking HIPAA /
+- **Spanish for the staff screens** (10 October 2026, Dominguez: "can do
+  the spanish for whole app" — staff screens first): each person chooses
+  **English | Español** on **Your profile** (`Employee.language`, migration
+  `20261010060000_staff_language`; the News switch is now the same choice),
+  applied the moment it is pressed and whenever they sign in, anywhere.
+  `lib/i18n/` — `t('English')` keyed by the English itself, so anything not
+  yet translated stays English and English output never changes; Spanish in
+  `lib/i18n/es/*.ts` by area (about 600 phrases, "tú"), dates via
+  `locale()`. Translated: the frame (menus, phone bar, bell's own words),
+  Home with the closing checklist, Schedule (staff's view), time off,
+  availability, Timesheet (own hours), Directory, Resources, News, Surveys
+  (answering), required reading, Your profile, the calendar card and
+  practice calendar. **Still English**: managers' tools, the Help guide,
+  what the bell and emails say, the kiosk and sign-in. **The Spanish needs
+  a native speaker's read** (`NEEDS_NATIVE_SPEAKER_REVIEW`).
+  `tests/browser/spanish.mjs`.
+- **From the survey of similar apps** (10 October 2026, Dominguez): what was
+  agreed is above (required reading, rota cost, on call, phone
+  notifications, Spanish). **Turned down**: tracking HIPAA /
   OSHA training as license types, staff confirming their own hours each pay
   period, and NJ earned-sick-leave accrual changes. **On hold**: monthly OIG
   exclusion screening.

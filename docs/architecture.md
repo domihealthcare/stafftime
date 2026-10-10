@@ -3593,6 +3593,35 @@ registers a device through the API with a made-up Google address and checks
 what the app does around it; the encryption and sending are `web-push`'s.
 Migration `20261010050000_push_notifications`.
 
+## Spanish for the staff screens
+
+October 2026, Dominguez: "can do the spanish for whole app", the staff screens
+first. **The choice is the person's**: `Employee.language` ("en" or "es"),
+set on Your profile (**Language**) or with the English | Español switch that
+News already had — now one and the same choice for the whole app. It applies
+the moment it is pressed (`lib/i18n` keeps it in memory and on the device,
+and sets `<html lang>`), is saved to the profile, and is applied again on
+every sign-in, so it follows the person to any phone or computer.
+
+**How a screen is translated**: `const t = useT()`, then `t('Clock in')`. The
+**English is the key**: a Spanish reader gets the phrase from
+`lib/i18n/es/*.ts` (split by area — common, shell, home, schedule, team,
+calendar), everybody else gets the English untouched. So the English never
+changes (every browser suite still matches it), and anything not yet in the
+dictionary simply stays English rather than breaking. Phrases with a value
+in them carry a placeholder (`'Today’s shift: {time} · {office}'`) so Spanish
+can order the words its own way; `plural()` picks one of two phrases. Dates
+use `locale()` ("es-US" for Spanish), so month and weekday names come from
+the browser. A check that every `t()` key has a Spanish phrase, and that no
+two dictionaries disagree, was run when it was built.
+
+**Not translated**: anything typed by people (names, posts, notes, checklist
+lines, event titles), values sent to the API, the managers' tools, the Help
+guide, the kiosk and sign-in, and — because they are written on the server
+— the bell's messages and emails. The Spanish was written for the practice in
+the "tú" register and **still needs a native speaker's read**
+(`NEEDS_NATIVE_SPEAKER_REVIEW` in `lib/i18n/index.ts`). `tests/browser/spanish.mjs`.
+
 ## License types and who needs them
 
 Asked for by Dominguez (29 September 2026): providers all need a medical

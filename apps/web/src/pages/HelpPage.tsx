@@ -77,6 +77,19 @@ const STAFF: Section[] = [
         ),
       },
       {
+        question: 'Can I use the app in Spanish?',
+        answer: (
+          <p>
+            Yes. <Screen>Your profile</Screen> → <strong>Language</strong> →{' '}
+            <strong>Español</strong> (or <strong>Español</strong> beside the news on Home). The
+            screens you use every day switch at once — Home, the Schedule, your time off, the
+            Timesheet, the Directory and more — and stay in Spanish on any phone or computer you
+            sign in on. People’s names, News posts and what managers type stay as written; this Help
+            guide, the bell’s messages and emails are still in English for now.
+          </p>
+        ),
+      },
+      {
         question: 'Can I get notifications on my phone?',
         answer: (
           <>
