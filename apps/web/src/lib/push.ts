@@ -94,10 +94,12 @@ export async function turnOff(): Promise<void> {
   await registration?.unregister();
 }
 
-function base64UrlToBytes(value: string): Uint8Array {
+function base64UrlToBytes(value: string): Uint8Array<ArrayBuffer> {
   const padded = `${value}${'='.repeat((4 - (value.length % 4)) % 4)}`
     .replace(/-/g, '+')
     .replace(/_/g, '/');
   const raw = atob(padded);
-  return Uint8Array.from(raw, (char) => char.charCodeAt(0));
+  const bytes = new Uint8Array(new ArrayBuffer(raw.length));
+  for (let i = 0; i < raw.length; i++) bytes[i] = raw.charCodeAt(i);
+  return bytes;
 }

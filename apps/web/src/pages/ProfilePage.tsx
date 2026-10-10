@@ -10,7 +10,7 @@ import { Alert, Card, PageHeading, Spinner, buttonClass } from '../components/ui
 import { ApiError, api } from '../lib/api';
 import { useSession } from '../lib/session';
 import type { Profile } from '../lib/types';
-import { locale, useT } from '../lib/i18n';
+import { locale, useT, t as translate } from '../lib/i18n';
 import { useLanguage } from '../lib/language';
 
 const ROLE_LABELS: Record<string, string> = {
@@ -50,7 +50,7 @@ export function ProfilePage() {
       .profile()
       .then(show)
       .catch((err: unknown) =>
-        setError(err instanceof ApiError ? err.message : t('Could not load your profile.')),
+        setError(err instanceof ApiError ? err.message : translate('Could not load your profile.')),
       );
   }, []);
 
