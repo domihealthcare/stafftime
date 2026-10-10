@@ -28,7 +28,6 @@ export const SCHEDULE: Record<string, string> = {
   '{rule}. Managers will no longer be warned about it when they build the rota; weeks already published stay as they are.':
     '{rule}. Ya no se avisará a los gerentes cuando armen el horario; las semanas ya publicadas quedan como están.',
   'Yes, remove': 'Sí, quitar',
-  'Keep it': 'Dejarlo',
   'Could not remove that.': 'No se pudo quitar.',
   'Could not save that.': 'No se pudo guardar.',
   'How often': 'Con qué frecuencia',
