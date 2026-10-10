@@ -362,6 +362,10 @@ model Employee {
   onCallSwapsAsked   OnCallSwap[]      @relation("OnCallSwapRequester")
   onCallSwapsToMe    OnCallSwap[]      @relation("OnCallSwapPartner")
 
+  /// Phones and computers that get the bell's notifications as push
+  /// notifications (October 2026).
+  pushSubscriptions PushSubscription[]
+
   @@index([employmentStatus])
   @@map("employees")
 }
@@ -2833,4 +2837,45 @@ model OnCallSwap {
   @@index([partnerId, status])
   @@index([requesterId, status])
   @@map("on_call_swaps")
+}
+
+// ---------------------------------------------------------------------------
+// Phone notifications (October 2026, Dominguez — from the survey of similar
+// apps). A device where somebody turned on notifications: whatever rings their
+// bell is also pushed there, through the browser maker's push service (Apple's,
+// Google's, Mozilla's), encrypted so that service cannot read it. No app
+// store app; the service worker only shows notifications and stores nothing.
+// ---------------------------------------------------------------------------
+
+model PushSubscription {
+  id         String    @id @default(uuid()) @db.Uuid
+  employeeId String    @db.Uuid
+  /// The push service's address for this device. Anybody with it and the
+  /// keys could send this device a notification, so it never leaves here.
+  endpoint   String    @unique
+  p256dh     String
+  auth       String
+  /// "iPhone", "Android", "Mac" — so somebody can tell their devices apart.
+  device     String?
+  createdAt  DateTime  @default(now())
+  lastSentAt DateTime?
+
+  employee Employee @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+
+  @@index([employeeId])
+  @@map("push_subscriptions")
+}
+
+/// The app's own key pair for phone notifications, made when an admin switches
+/// them on in Practice settings — so nobody has to make one in a terminal and
+/// paste it into Vercel. `VAPID_PUBLIC_KEY` / `VAPID_PRIVATE_KEY`, if set,
+/// win. The private key only lets this app send notifications to the devices
+/// that turned them on; changing it means every device turns them on again.
+model PushKeys {
+  singleton  Int      @id @default(1)
+  publicKey  String
+  privateKey String
+  createdAt  DateTime @default(now())
+
+  @@map("push_keys")
 }

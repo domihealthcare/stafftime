@@ -1212,6 +1212,28 @@ export const api = {
   /// statements; the rest is for managers and admins.
   myProductivity: () => request<Omit<ProductivityStatement, 'employee'>[]>('/productivity/mine'),
   /// Who may work out provider productivity — chosen by an admin.
+  /// Phone notifications: this person's devices.
+  pushStatus: () =>
+    request<{
+      available: boolean;
+      publicKey: string | null;
+      devices: {
+        id: string;
+        device: string | null;
+        createdAt: string;
+        lastSentAt: string | null;
+      }[];
+    }>('/push'),
+  pushSubscribe: (body: {
+    endpoint: string;
+    keys: { p256dh: string; auth: string };
+    device?: string;
+  }) => request<unknown>('/push/subscribe', { method: 'POST', body: JSON.stringify(body) }),
+  pushUnsubscribe: (endpoint: string) =>
+    request<unknown>('/push/unsubscribe', { method: 'POST', body: JSON.stringify({ endpoint }) }),
+  pushTest: () => request<unknown>('/push/test', { method: 'POST' }),
+  /// Admins: switch phone notifications on for the practice.
+  pushSwitchOn: () => request<unknown>('/push/switch-on', { method: 'POST' }),
   /// The provider on-call schedule: providers, managers and admins.
   onCall: (from: string, to: string) => request<OnCallSchedule>(`/on-call${toQuery({ from, to })}`),
   onCallRotas: () => request<OnCallRota[]>('/on-call/rotas'),

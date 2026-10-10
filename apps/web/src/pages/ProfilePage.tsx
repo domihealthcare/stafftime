@@ -1,3 +1,4 @@
+import { PhoneNotificationsCard } from '../components/PhoneNotificationsCard';
 import { useEffect, useRef, useState } from 'react';
 import { formatBirthday } from '../lib/birthday';
 import { Link } from 'react-router-dom';
@@ -284,6 +285,8 @@ export function ProfilePage() {
           void refresh();
         }}
       />
+
+      <PhoneNotificationsCard />
 
       <Card className="p-5">
         <h2 className="mb-3 text-sm font-semibold uppercase tracking-wide text-slate-500">

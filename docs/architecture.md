@@ -3546,6 +3546,53 @@ described, from 1 October 2026 — only when both providers are found
 (Dominguez by email, Dr. Badia by name, exactly one match); otherwise a
 manager sets it. `tests/browser/on-call.mjs`.
 
+## Phone notifications
+
+October 2026, Dominguez — from the survey of similar apps, every one of
+which sends to the lock screen: "are we able to do this since we dont have
+an iphone/android app?" Yes: **web push**, the browser's own notifications,
+which work for a web app on the Home Screen of an iPhone (iOS 16.4 or later)
+and in the browser on Android and computers. No app store, no Twilio, no
+carrier registration, no cost.
+
+**What is sent**: exactly what rings the bell. `InboxService.notify` — the
+one place every bell notification is written — also hands the title, words
+and link to `PushService.send`, so nothing new decides what goes to phones
+and nothing can say more there than under the bell (which never carries
+patient details). Tapping one opens its link in the app.
+
+**How**: each device where somebody presses **Turn on for this device** (Your
+profile; **Get these on your phone** under the bell) registers `/push-sw.js`,
+asks the browser's permission, subscribes with the app's public key, and
+sends the subscription (`PushSubscription`: endpoint and keys, a device name
+like "iPhone"). A shared device moves to whoever turned it on last. The
+server sends with `web-push` (3.6.7, pinned): encrypted with that device's
+keys, so the push service in between (Apple's, Google's, Mozilla's,
+Microsoft's) carries it without being able to read it; a day's time to
+live; five seconds at most each, ten at a time; awaited and never thrown, like
+the bell and the email. A device the service says is gone (404/410) is
+forgotten. Only real push services are accepted as an endpoint, so a
+signed-in person cannot point the server at an address of their choosing.
+
+**The key pair**: an admin presses **Switch on for the practice** in Practice
+settings once, and the app makes its own (`PushKeys`, one row) — nobody has
+to make one in a terminal and paste it into Vercel. `VAPID_PUBLIC_KEY` /
+`VAPID_PRIVATE_KEY` win if set. A new pair would mean everybody turning
+notifications on again, so there is no button to change it.
+
+**The worker shows notifications and nothing else.** It has no fetch
+handler and opens no cache, so the decision that the app never works offline
+— a punch with no signal must plainly fail — stands; it is registered only
+when somebody turns notifications on, and **Turn off** unregisters it.
+`tests/browser/push.mjs` reads the worker and fails if a fetch handler or a
+cache appears; `install.mjs` still checks nothing is registered on load.
+`vercel.json` serves it `no-cache`, so a change reaches phones.
+
+A headless browser cannot subscribe to a real push service, so `push.mjs`
+registers a device through the API with a made-up Google address and checks
+what the app does around it; the encryption and sending are `web-push`'s.
+Migration `20261010050000_push_notifications`.
+
 ## License types and who needs them
 
 Asked for by Dominguez (29 September 2026): providers all need a medical

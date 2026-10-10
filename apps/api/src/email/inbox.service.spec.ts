@@ -14,7 +14,8 @@ describe('InboxService', () => {
         findMany: jest.fn().mockResolvedValue([{ id: 'a' }, { id: 'b' }]),
       },
     };
-    return { service: new InboxService(prisma as never), prisma };
+    const push = { send: jest.fn().mockResolvedValue(undefined) };
+    return { service: new InboxService(prisma as never, push as never), prisma, push };
   }
   const flush = () => new Promise((resolve) => setImmediate(resolve));
 
@@ -29,6 +30,21 @@ describe('InboxService', () => {
         { employeeId: 'a', kind: 'OVERTIME', title: 'Over', body: null, link: '/schedule' },
         { employeeId: 'b', kind: 'OVERTIME', title: 'Over', body: null, link: '/schedule' },
       ],
+    });
+  });
+
+  it('sends the same words to their phones', async () => {
+    const { service, push } = build();
+    await service.notify(['a', 'a'], {
+      kind: 'OVERTIME',
+      title: 'Over',
+      body: 'By 2h',
+      link: '/schedule',
+    });
+    expect(push.send).toHaveBeenCalledWith(['a'], {
+      title: 'Over',
+      body: 'By 2h',
+      link: '/schedule',
     });
   });
 

@@ -107,6 +107,11 @@ nothing is kept beyond a daily count, unless somebody saves what a helper
 wrote (and a post's Spanish, once translated, stays on the post). Off until
 `ANTHROPIC_API_KEY` is set — see `docs/ask-domi-staff-setup.md`.
 
+**Phone notifications** (October 2026) travel through the browser maker's
+push service (Apple's, Google's), encrypted with the device's own keys so
+that service cannot read them — the same words as the bell, which never
+carry patient details.
+
 Nothing is uploaded to the app, with **one deliberate exception**: a
 **profile photo** of yourself (confirmed by Dominguez, September 2026). The
 browser crops it square, shrinks it to 256 px and re-encodes it as a small
@@ -795,8 +800,24 @@ Beyond the phases, the parts worth knowing about before picking up work:
   `pages/OnCallPage.tsx`; `tests/browser/on-call.mjs`. Worth carrying to the
   EMR module. Dominguez would like to look into something better than the
   answering service's fixed noon hand-over — not started.
+- **Phone notifications** (10 October 2026, Dominguez: "are we able to do
+  this since we dont have an iphone/android app?" — yes, web push):
+  whatever rings somebody's bell (`InboxService.notify`) also goes to each
+  device where they pressed **Turn on for this device** (Your profile; **Get
+  these on your phone** under the bell). iPhone needs Domi Staff on the Home
+  Screen (iOS 16.4+); Android and computers work in the browser. No Twilio,
+  no carrier registration, no cost. **An admin switches it on once**,
+  Practice settings → **Phone notifications** → **Switch on for the
+  practice**, which makes the app's own key pair (`PushKeys`; Vercel's
+  `VAPID_PUBLIC_KEY` / `VAPID_PRIVATE_KEY` win if ever set). **Not switched
+  on on the live site yet.** Devices in `PushSubscription` (only real push
+  services accepted; a device the service says is gone is forgotten);
+  `email/push.service.ts` (`web-push` 3.6.7, pinned), `public/push-sw.js`,
+  `lib/push.ts`, `components/PhoneNotificationsCard.tsx`, migration
+  `20261010050000_push_notifications`; `tests/browser/push.mjs` (a headless
+  browser cannot subscribe, so the device is registered through the API).
 - **From the survey of similar apps** (10 October 2026, Dominguez): also
-  agreed — phone notifications by web push, Spanish for the staff
+  agreed — Spanish for the staff
   screens, and a provider on-call schedule. **Turned down**: tracking HIPAA /
   OSHA training as license types, staff confirming their own hours each pay
   period, and NJ earned-sick-leave accrual changes. **On hold**: monthly OIG
@@ -1152,8 +1173,11 @@ Beyond the phases, the parts worth knowing about before picking up work:
   slogan** is on every signed-out screen, in black on the printed rota; the
   roof alone stays in the header and favicon. Signed in, the header's
   "**Domi** Staff" is bolder and the slogan runs on a thin blue strip under
-  it on every screen (chosen by Dominguez from three renderings). **No service worker, no offline mode**, on
-  purpose: a punch with no signal must plainly fail, not seem to work.
+  it on every screen (chosen by Dominguez from three renderings). **No offline mode**, on
+  purpose: a punch with no signal must plainly fail, not seem to work. The
+  only service worker (`/push-sw.js`, since October 2026) shows phone
+  notifications and nothing else — no fetch handler, no cache — and is
+  registered only when somebody turns notifications on (`push.mjs` checks).
 - **Going live** (September 2026): Practice settings → **Start using it for
   real** (admins, test deployments only) shows what goes and which accounts
   stay, then clears the demo staff and everything made while testing —

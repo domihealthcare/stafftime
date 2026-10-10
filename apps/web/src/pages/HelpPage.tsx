@@ -77,6 +77,26 @@ const STAFF: Section[] = [
         ),
       },
       {
+        question: 'Can I get notifications on my phone?',
+        answer: (
+          <>
+            <p>
+              Yes — whatever rings the bell (your shifts changing, time off decided, the reminder to
+              clock in, a colleague asking you to cover) can also appear on your lock screen. Open{' '}
+              <Screen>Your profile</Screen> (or <strong>Get these on your phone</strong> under the
+              bell) and press <strong>Turn on for this device</strong>, then <strong>Allow</strong>.{' '}
+              <strong>Send me a test</strong> checks it works.
+            </p>
+            <p>
+              <strong>On an iPhone</strong> put Domi Staff on your Home Screen first (above) and
+              open it from there — Safari alone cannot. Android phones and computers work in the
+              browser. Each phone is turned on, and off, on itself. They come through Apple’s or
+              Google’s notification service, locked so neither can read them.
+            </p>
+          </>
+        ),
+      },
+      {
         question: 'How do I use the front-desk time clock?',
         answer: (
           <>

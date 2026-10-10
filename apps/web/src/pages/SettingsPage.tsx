@@ -8,6 +8,7 @@ import { CalendarInvitesCard } from '../components/CalendarInvitesCard';
 import { DemoDataCard } from '../components/DemoDataCard';
 import { GoLiveCard } from '../components/GoLiveCard';
 import { RotaCostAccessCard } from '../components/RotaCost';
+import { PhoneNotificationsSwitch } from '../components/PhoneNotificationsCard';
 import { Alert, Card, PageHeading, Spinner, buttonClass } from '../components/ui';
 import { PtoPolicyEditor } from '../components/PtoPolicyEditor';
 import type { PtoPolicy } from '../lib/types';
@@ -199,6 +200,8 @@ export function SettingsPage() {
       {!loading && <AdpSettingsCard isAdmin={isAdmin} />}
 
       {isAdmin && <RotaCostAccessCard />}
+
+      {isAdmin && <PhoneNotificationsSwitch />}
 
       {isAdmin && <CalendarInvitesCard />}
 

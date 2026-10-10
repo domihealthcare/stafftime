@@ -138,6 +138,23 @@ class EnvironmentVariables {
   @IsString()
   ANTHROPIC_API_KEY?: string;
 
+  /// Phone notifications (web push): a key pair, if one should be set here
+  /// rather than made by the app when an admin switches them on (Practice
+  /// settings). Both or neither; these win over the app's own.
+  @IsOptional()
+  @IsString()
+  VAPID_PUBLIC_KEY?: string;
+
+  @IsOptional()
+  @IsString()
+  VAPID_PRIVATE_KEY?: string;
+
+  /// Who the push services may contact about this app's notifications:
+  /// "mailto:office@domihealthcare.com" unless set.
+  @IsOptional()
+  @IsString()
+  VAPID_SUBJECT?: string;
+
   /// Shared secret for the scheduled maintenance route. Unset means the route
   /// refuses everything, so it is never left open by omission.
   @IsOptional()

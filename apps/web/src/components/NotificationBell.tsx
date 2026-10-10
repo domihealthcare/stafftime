@@ -239,8 +239,15 @@ export function NotificationBell() {
             )}
           </div>
 
-          {isManager && (
-            <div className="border-t border-slate-100 px-4 py-2 text-right">
+          <div className="flex justify-between gap-3 border-t border-slate-100 px-4 py-2">
+            <Link
+              to="/profile#phone-notifications"
+              onClick={() => setOpen(false)}
+              className="tap text-xs font-medium text-slate-500 hover:text-slate-900"
+            >
+              Get these on your phone
+            </Link>
+            {isManager && (
               <Link
                 to="/notifications"
                 onClick={() => setOpen(false)}
@@ -248,8 +255,8 @@ export function NotificationBell() {
               >
                 Email settings
               </Link>
-            </div>
-          )}
+            )}
+          </div>
         </div>
       )}
     </div>

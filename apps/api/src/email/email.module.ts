@@ -9,6 +9,8 @@ import { InboxController } from './inbox.controller';
 import { InboxService } from './inbox.service';
 import { LogEmailSender } from './log-email.sender';
 import { NotificationsService } from './notifications.service';
+import { PushController } from './push.controller';
+import { PushService } from './push.service';
 import { ResendEmailSender } from './resend-email.sender';
 
 /// Which provider sends the mail. Chosen once, here.
@@ -46,10 +48,18 @@ import { ResendEmailSender } from './resend-email.sender';
     },
     NotificationsService,
     InboxService,
+    PushService,
     AttentionService,
     DigestService,
   ],
-  controllers: [AttentionController, DigestSettingsController, InboxController],
-  exports: [EMAIL_SENDER, NotificationsService, InboxService, AttentionService, DigestService],
+  controllers: [AttentionController, DigestSettingsController, InboxController, PushController],
+  exports: [
+    EMAIL_SENDER,
+    NotificationsService,
+    InboxService,
+    PushService,
+    AttentionService,
+    DigestService,
+  ],
 })
 export class EmailModule {}
