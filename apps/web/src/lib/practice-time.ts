@@ -76,3 +76,15 @@ export function practiceDate(now: Date = new Date()): string {
   const parts = partsIn(now);
   return `${parts.year}-${String(parts.month).padStart(2, '0')}-${String(parts.day).padStart(2, '0')}`;
 }
+
+/// "Sun, Oct 11, 12:00 PM" on the practice's clock, wherever the browser is.
+export function formatPracticeDateTime(iso: string): string {
+  return new Date(iso).toLocaleString(undefined, {
+    timeZone: PRACTICE_ZONE,
+    weekday: 'short',
+    month: 'short',
+    day: 'numeric',
+    hour: 'numeric',
+    minute: '2-digit',
+  });
+}

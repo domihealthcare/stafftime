@@ -206,7 +206,9 @@ export function CalendarLinkCard() {
                 well, or everything shows twice.
               </p>
               <ul className="mt-2 space-y-2">
-                {SEPARATE_FEEDS.map((feed) => (
+                {SEPARATE_FEEDS.filter(
+                  (feed) => !feed.providersOnly || employee?.usesClinicalForms,
+                ).map((feed) => (
                   <li key={feed.slug}>
                     <label
                       htmlFor={`calendar-url-${feed.slug}`}

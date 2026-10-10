@@ -1,5 +1,8 @@
 import type { ImportedPerson } from './staff-import';
 import type {
+  OnCallRota,
+  OnCallSchedule,
+  OnCallSwap,
   RotaCost,
   MyRequirement,
   RequirementInput,
@@ -447,7 +450,8 @@ export interface AppNotification {
     | 'ONBOARDING_REMINDER'
     | 'AVAILABILITY_CLASH'
     | 'COVER_REQUEST'
-    | 'REQUIRED';
+    | 'REQUIRED'
+    | 'ON_CALL';
   title: string;
   body: string | null;
   link: string | null;
@@ -1208,6 +1212,30 @@ export const api = {
   /// statements; the rest is for managers and admins.
   myProductivity: () => request<Omit<ProductivityStatement, 'employee'>[]>('/productivity/mine'),
   /// Who may work out provider productivity — chosen by an admin.
+  /// The provider on-call schedule: providers, managers and admins.
+  onCall: (from: string, to: string) => request<OnCallSchedule>(`/on-call${toQuery({ from, to })}`),
+  onCallRotas: () => request<OnCallRota[]>('/on-call/rotas'),
+  saveOnCallRota: (body: {
+    startsOn: string;
+    changesAt: string;
+    entries: { weekday: number; weekOfMonth: number; employeeId: string }[];
+  }) => request<OnCallRota[]>('/on-call/rotas', { method: 'PUT', body: JSON.stringify(body) }),
+  removeOnCallRota: (startsOn: string) =>
+    request<OnCallRota[]>(`/on-call/rotas/${startsOn}`, { method: 'DELETE' }),
+  setOnCallDay: (date: string, body: { employeeId: string | null; note?: string }) =>
+    request<{ date: string; employeeId: string | null }>(`/on-call/days/${date}`, {
+      method: 'PUT',
+      body: JSON.stringify(body),
+    }),
+  onCallSwaps: () => request<OnCallSwap[]>('/on-call/swaps'),
+  askOnCallSwap: (body: {
+    giveDate: string;
+    partnerId: string;
+    takeDate?: string | null;
+    note?: string;
+  }) => request<{ id: string }>('/on-call/swaps', { method: 'POST', body: JSON.stringify(body) }),
+  answerOnCallSwap: (id: string, answer: 'accept' | 'decline' | 'cancel') =>
+    request<{ status: string }>(`/on-call/swaps/${id}/${answer}`, { method: 'POST' }),
   /// What the rota costs, from one day to another (inclusive) — chosen people only.
   rotaCost: (from: string, to: string) => request<RotaCost>(`/rota-cost${toQuery({ from, to })}`),
   rotaCostAccess: () => request<PersonName[]>('/rota-cost/access'),

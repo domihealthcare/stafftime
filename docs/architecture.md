@@ -3486,6 +3486,66 @@ the list, and Kayla and Angelica Dominguez only when exactly one current
 member of staff has that name — the list should be checked on the live site.
 `tests/browser/rota-cost.mjs`.
 
+## Provider on call
+
+October 2026, Dominguez: "provider on call schedule will def be needed …
+currently its days (i.e. dr. jonathan dominguez is on call m,t,w,f and every
+weekend except the 4th weekend and thursdays which Jose Badia covers) though
+this is something that can change in the future", "usually a day 12-12
+(… limited to our answering/forwarding service)", not paid, for providers,
+managers and admins, an assigned schedule that providers can swap.
+
+**Who is on call** (`on-call/on-call.ts`, pure and tested — the only place
+these rules live):
+
+- A day's **turn** runs from the hand-over time (`OnCallRota.changesAt`,
+  "12:00") on its date to the same time the next day. Before noon, "on call
+  now" is still yesterday's turn.
+- The **pattern in force** is the latest `OnCallRota` starting on or before
+  the day. A new pattern is saved **from a chosen day** (today or later), so
+  who was on call before stays as it was; one not yet started can be taken
+  back.
+- Its **entries** (`OnCallRotaEntry`: weekday, `weekOfMonth` 0 every / 1–4 /
+  −1 last, provider): the most particular one for the day wins — a week of
+  the month, then the last, then every week. So "every weekend except the
+  4th" is Saturday and Sunday every week to Dr. Dominguez plus the 4th
+  Saturday and Sunday to Dr. Badia.
+- **Weekends are counted by their Saturday**: a Sunday takes the week of the
+  Saturday before it, so the 4th weekend is always a Saturday and its Sunday
+  together — even when that Sunday is the month's 5th or the next month's
+  1st. A test checks every month of a year has exactly one.
+- A **changed day** (`OnCallDay`, by a manager or a swap) beats the pattern.
+
+**Changing it**: managers and admins edit the pattern (weekday selects,
+exceptions, hand-over time, first day) and single days (a provider and a
+note; **Back to the usual** deletes the `OnCallDay`). The people a day moves
+from and to are told on the bell and by email (`NotificationKind.ON_CALL`);
+a new pattern rings every provider's bell.
+
+**Swaps** (`OnCallSwap`): a provider presses one of their own future days,
+chooses another provider and, optionally, one of that provider's days to
+take back (their next two months are offered). The other is told by bell and
+email and answers on the screen. **Yes** re-checks that both days are still
+as they were (else "the schedule has changed"), claims the request with a
+conditional update so two answers cannot both land, and writes both days
+(`OnCallDay.swapId`). The asker is told either way; managers on the bell
+when it goes ahead. The asker can take back a request still waiting.
+
+**Where it shows**: Schedule → **On call** (a third tab beside Shifts and
+Calendar, only for those who may see it) — on call now, swaps waiting, a
+month (a list on a phone), the pattern in words; **On call now** on Home;
+and a provider's own turns as timed, non-busy "On call" entries in their
+calendar feed (`ON_CALL` in the all-in-one feed and its own **My on call**,
+offered to providers only).
+
+**Never hours or pay**: no punches, no timesheet, no overtime, nothing in
+the export, and it does not appear on the rota.
+
+Migration `20261010040000_on_call` adds the tables and loads the pattern as
+described, from 1 October 2026 — only when both providers are found
+(Dominguez by email, Dr. Badia by name, exactly one match); otherwise a
+manager sets it. `tests/browser/on-call.mjs`.
+
 ## License types and who needs them
 
 Asked for by Dominguez (29 September 2026): providers all need a medical

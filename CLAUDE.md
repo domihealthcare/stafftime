@@ -773,6 +773,28 @@ Beyond the phases, the parts worth knowing about before picking up work:
   one current person has that name — check the list on the live site**.
   `staff-records/rota-cost.ts` (pure) and `rota-cost.service.ts`,
   `components/RotaCost.tsx`; `tests/browser/rota-cost.mjs`.
+- **Provider on call** (10 October 2026, Dominguez: "provider on call
+  schedule will def be needed"): **Schedule → On call** (`/on-call`, a third
+  tab; providers — a job role with *uses clinical forms* — managers and
+  admins only). Each day's turn runs **noon to noon** ("because we are
+  limited to our answering/forwarding service"), the hand-over time saved
+  with the pattern. A **usual pattern** by weekday with **exceptions** for a
+  week of the month (1st–4th, last; the most particular wins), saved from a
+  chosen day so the past stays as it was; **weekends counted by their
+  Saturday** (the 4th weekend is the 4th Saturday and the Sunday after).
+  Migration `20261010040000_on_call` loads the current one — Dr. Dominguez
+  Mon, Tue, Wed, Fri and weekends except the 4th; Dr. Jose Badia Thursdays
+  and the 4th weekend — **only if both are found** (Dr. Badia by name):
+  check it on the live site. Managers change **one day** (with a note; both
+  told by bell and email; **Back to the usual**). A provider **asks another
+  to swap** a day, optionally taking one of theirs back; it happens when
+  they press **Yes, swap**, re-checked then; managers told on the bell.
+  **On call now** on Home, and a provider's own turns in the calendar feed
+  (all-in-one and **My on call**). **Not paid, never hours** (Dominguez).
+  `on-call/on-call.ts` (rules, pure) and `on-call.service.ts`,
+  `pages/OnCallPage.tsx`; `tests/browser/on-call.mjs`. Worth carrying to the
+  EMR module. Dominguez would like to look into something better than the
+  answering service's fixed noon hand-over — not started.
 - **From the survey of similar apps** (10 October 2026, Dominguez): also
   agreed — phone notifications by web push, Spanish for the staff
   screens, and a provider on-call schedule. **Turned down**: tracking HIPAA /

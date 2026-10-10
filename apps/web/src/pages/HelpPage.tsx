@@ -878,6 +878,32 @@ const WELLNESS: Section[] = [
 /// For people whose job role uses the clinical forms (Providers).
 const PROVIDERS: Section[] = [
   {
+    title: 'For providers: on call',
+    topics: [
+      {
+        question: 'Who is on call, and how do I swap a day?',
+        answer: (
+          <>
+            <p>
+              <Screen>Schedule</Screen> → <strong>On call</strong>: who takes the after-hours calls
+              each day, a turn running from noon to noon the next day. <strong>On call now</strong>{' '}
+              is on <Screen>Home</Screen> too. Your days are shaded.
+            </p>
+            <p>
+              To swap, press one of your days, choose who should take it and — if you like — one of
+              their days you will take back, then <strong>Ask them</strong>. They are told on the
+              bell and by email and answer <strong>Yes, swap</strong> or{' '}
+              <strong>No, I can’t</strong> on the same screen; the days change hands only when they
+              say yes, and you and the managers are told. You can take a request back while it is
+              waiting. To put your on-call days on your phone: Schedule → Calendar →{' '}
+              <strong>Separate calendars</strong> → <strong>My on call</strong>.
+            </p>
+          </>
+        ),
+      },
+    ],
+  },
+  {
     title: 'For providers: BrainCheck Care Plan',
     topics: [
       {
@@ -1732,6 +1758,23 @@ const MANAGERS: Section[] = [
             to approve, missing clock-outs, hours entered by hand), licenses lapsed, due or missing,
             surveys and how many have answered, onboarding and offboarding progress, and the last
             week&rsquo;s closing checklists and supplies to order.
+          </p>
+        ),
+      },
+      {
+        question: 'How do I set the on-call schedule?',
+        answer: (
+          <p>
+            <Screen>Schedule</Screen> → <strong>On call</strong> →{' '}
+            <strong>The usual pattern</strong> → <strong>Change it</strong>: a provider for each
+            weekday, then any exceptions — “the 4th Saturday → Dr. Badia” — and the hand-over time
+            (noon, for the answering service). It is saved from a day you choose, so who was on call
+            before stays as it was. Weekends are counted by their Saturday, so the 4th weekend is
+            the 4th Saturday and the Sunday after it. For one day only, press the day and choose who
+            is on call (with a note if you like);
+            <strong> Back to the usual</strong> undoes it. Both providers are told. Swaps the
+            providers agree between themselves happen on their own, and you are told. On call is
+            never hours or pay.
           </p>
         ),
       },

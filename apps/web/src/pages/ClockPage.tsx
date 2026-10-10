@@ -22,6 +22,7 @@ import {
   TabletPinReminder,
 } from '../components/HomeCards';
 import { HomeRequired } from '../components/RequiredItems';
+import { OnCallNow } from '../components/OnCallNow';
 import { SuggestionBoxCard } from '../components/SuggestionBox';
 import { MyOvertimeNotice } from '../components/OvertimeAlerts';
 import { Alert, Badge, Card, Spinner } from '../components/ui';
@@ -497,6 +498,7 @@ export function ClockPage() {
       >
         <TabletPinReminder />
         <QuickActions />
+        <OnCallNow />
         <BirthdaysThisWeek />
         <ComingUp />
         <SurveysCard />

@@ -1708,3 +1708,51 @@ export interface RotaCost {
   byDay: { date: string; total: number }[];
   missingPay: { id: string; name: string }[];
 }
+
+// ------------------------------------------------------------- on call
+
+export interface OnCallPerson {
+  id: string;
+  firstName: string;
+  lastName: string;
+  preferredName: string | null;
+  photoUpdatedAt: string | null;
+  /// "Dr. Jonathan Dominguez".
+  name: string;
+}
+
+export interface OnCallDay {
+  date: string;
+  employeeId: string | null;
+  employee: OnCallPerson | null;
+  /// The usual pattern, a manager's change, a swap — or nobody set.
+  source: 'USUAL' | 'CHANGED' | 'SWAPPED' | 'NONE';
+  /// "HH:MM": the turn runs from this on its date to this the next day.
+  changesAt: string;
+  note: string | null;
+}
+
+export interface OnCallSchedule {
+  days: OnCallDay[];
+  now: { date: string; employee: OnCallPerson | null; until: string };
+  providers: OnCallPerson[];
+}
+
+export interface OnCallRota {
+  startsOn: string;
+  changesAt: string;
+  inForce: boolean;
+  entries: { weekday: number; weekOfMonth: number; employee: OnCallPerson }[];
+}
+
+export interface OnCallSwap {
+  id: string;
+  giveDate: string;
+  takeDate: string | null;
+  note: string | null;
+  status: 'PENDING' | 'ACCEPTED' | 'DECLINED' | 'CANCELLED';
+  createdAt: string;
+  answeredAt: string | null;
+  requester: OnCallPerson;
+  partner: OnCallPerson;
+}

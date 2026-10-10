@@ -13,6 +13,7 @@ describe('CalendarService', () => {
       timeOff?: unknown[];
       events?: unknown[];
       invitesOn?: boolean;
+      onCall?: { date: string; startsAt: Date; endsAt: Date }[];
       payPeriodStart?: Date | null;
     } = {},
   ) {
@@ -41,12 +42,14 @@ describe('CalendarService', () => {
     const events = { forPerson: jest.fn().mockResolvedValue(options.events ?? []) };
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const invites = { enabled: options.invitesOn ?? false };
+    const onCall = { turnsFor: jest.fn().mockResolvedValue(options.onCall ?? []) };
     return {
       service: new CalendarService(
         prisma as never,
         events as never,
         invites as never,
         fakeSettings({ payPeriodStart: options.payPeriodStart ?? null }),
+        onCall as never,
       ),
       prisma,
       events,
@@ -609,6 +612,24 @@ describe('CalendarService', () => {
       expect(feed).toContain('SUMMARY:Vacation');
       // Said at the top of the calendar, for anybody who wonders where they went.
       expect(feed).toContain('Office closures and approved time off');
+    });
+  });
+
+  describe('on call', () => {
+    it('puts a provider’s own turns in, noon to noon, without making them busy', async () => {
+      const { service } = build({
+        onCall: [
+          {
+            date: '2026-11-14',
+            startsAt: new Date('2026-11-14T17:00:00.000Z'),
+            endsAt: new Date('2026-11-15T17:00:00.000Z'),
+          },
+        ],
+      });
+      const feed = await service.feedForToken('token', NOW, 'on-call');
+      expect(feed).toContain('SUMMARY:On call');
+      expect(feed).toContain('DTSTART:20261114T170000Z');
+      expect(feed).toContain('TRANSP:TRANSPARENT');
     });
   });
 });

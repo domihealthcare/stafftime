@@ -20,6 +20,7 @@ import { EmployeesModule } from './employees/employees.module';
 import { EventsModule } from './events/events.module';
 import { RepsModule } from './reps/reps.module';
 import { RequirementsModule } from './requirements/requirements.module';
+import { OnCallModule } from './on-call/on-call.module';
 import { InvitesModule } from './invites/invites.module';
 import { ExportsModule } from './exports/exports.module';
 import { JobRolesModule } from './job-roles/job-roles.module';
@@ -56,6 +57,7 @@ import { TimeEntriesModule } from './time-entries/time-entries.module';
     EventsModule,
     RepsModule,
     RequirementsModule,
+    OnCallModule,
     InvitesModule,
     TimeEntriesModule,
     ClosingModule,
