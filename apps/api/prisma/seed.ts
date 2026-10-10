@@ -258,10 +258,13 @@ async function main() {
     where: { email: 'frontdesk@domihealthcare.com' },
   });
 
-  const shiftStart = new Date();
-  shiftStart.setUTCHours(13, 0, 0, 0); // 9am Eastern
-  const shiftEnd = new Date(shiftStart);
-  shiftEnd.setUTCHours(21, 0, 0, 0); // 5pm Eastern
+  // New Jersey's today, not UTC's: between 8pm and midnight there UTC is
+  // already on tomorrow, and Home would find no shift today.
+  const today = new Intl.DateTimeFormat('en-CA', { timeZone: 'America/New_York' }).format(
+    new Date(),
+  );
+  const shiftStart = new Date(`${today}T13:00:00Z`); // 9am Eastern
+  const shiftEnd = new Date(`${today}T21:00:00Z`); // 5pm Eastern
 
   const existingShift = await prisma.shift.findFirst({
     where: { employeeId: frontDesk.id, startsAt: shiftStart },
