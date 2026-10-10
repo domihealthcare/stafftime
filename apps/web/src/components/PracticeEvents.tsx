@@ -3,6 +3,7 @@ import { useCallback, useEffect, useId, useState } from 'react';
 import { useAiOn } from '../lib/ai';
 import { ApiError, api } from '../lib/api';
 import { formatCalendarDate, formatTimeCompact, localDate } from '../lib/format';
+import { t, useT } from '../lib/i18n';
 import { Link } from 'react-router-dom';
 import { CALENDAR_KINDS, KIND_STYLE, officeShort } from '../lib/calendar-kinds';
 import { FOOD_LABEL, STATUS_LABEL } from '../lib/reps';
@@ -99,33 +100,38 @@ const atMidnight = (iso: string) => {
 /// "from 6pm" / "until 1am" on its first and last day. A closure says
 /// "Closed all day", "Closed from 1pm", "Closed 12pm–2pm".
 export function eventTimeLabel(event: PracticeEvent, day?: string): string {
-  const closed = isClosure(event);
-  const words = (text: string) => (closed ? `Closed ${text}` : text);
-  if (event.allDay) return closed ? 'Closed all day' : 'All day';
+  if (event.allDay) return isClosure(event) ? t('Closed all day') : t('All day');
+  const time = bareTime(event, day);
+  return isClosure(event) ? t('Closed {time}', { time }) : time;
+}
+
+/// The time without "Closed": "from 1pm", "12pm–2pm", "until 1am", "all day".
+function bareTime(event: PracticeEvent, day?: string): string {
+  if (event.allDay) return t('all day');
   const { first, last } = daysOf(event);
   const start = formatTimeCompact(event.startsAt);
   const end = formatTimeCompact(event.endsAt);
   if (first === last || !day) {
-    return atMidnight(event.endsAt) ? words(`from ${start}`) : words(`${start}–${end}`);
+    return atMidnight(event.endsAt) ? t('from {time}', { time: start }) : `${start}–${end}`;
   }
-  if (day === first) return words(`from ${start}`);
-  if (day === last) return words(`until ${end}`);
-  return words('all day');
+  if (day === first) return t('from {time}', { time: start });
+  if (day === last) return t('until {time}', { time: end });
+  return t('all day');
 }
 
 /// "Everyone", "Provider", "North Bergen" — or for a closure, which offices.
 export function audienceLabel(event: PracticeEvent): string {
-  if (atAnOffice(event.kind)) return event.atLocation?.name ?? 'An office since removed';
+  if (atAnOffice(event.kind)) return event.atLocation?.name ?? t('An office since removed');
   if (event.audience === 'CHOSEN') {
     const names = event.invitees.map((invitee) => invitee.name);
-    if (names.length === 0) return 'Nobody — everyone on the list has since gone';
+    if (names.length === 0) return t('Nobody — everyone on the list has since gone');
     return names.length <= 3
       ? names.join(', ')
-      : `${names.slice(0, 2).join(', ')} and ${names.length - 2} more`;
+      : t('{names} and {n} more', { names: names.slice(0, 2).join(', '), n: names.length - 2 });
   }
-  if (event.audience === 'JOB_ROLE') return event.jobRole?.name ?? 'A job role since removed';
-  if (event.audience === 'LOCATION') return event.location?.name ?? 'An office since removed';
-  return isClosure(event) ? 'Both offices' : 'Everyone';
+  if (event.audience === 'JOB_ROLE') return event.jobRole?.name ?? t('A job role since removed');
+  if (event.audience === 'LOCATION') return event.location?.name ?? t('An office since removed');
+  return isClosure(event) ? t('Both offices') : t('Everyone');
 }
 
 /// The full "when", for the details pop-up.
@@ -133,7 +139,7 @@ function describeWhen(event: PracticeEvent): string {
   const closed = isClosure(event);
   if (event.allDay && event.startDate && event.endDate) {
     const first = formatCalendarDate(event.startDate);
-    const whole = closed ? 'closed all day' : 'all day';
+    const whole = closed ? t('closed all day') : t('all day');
     return event.startDate === event.endDate
       ? `${first}, ${whole}`
       : `${first} – ${formatCalendarDate(event.endDate)}, ${whole}`;
@@ -141,7 +147,9 @@ function describeWhen(event: PracticeEvent): string {
   const { first, last } = daysOf(event);
   const day = (iso: string) => formatCalendarDate(localDate(new Date(iso)));
   if (first === last) {
-    return `${day(event.startsAt)}, ${eventTimeLabel(event).replace(/^Closed/, 'closed')}`;
+    const time = bareTime(event);
+    const label = closed ? t('closed {time}', { time }) : event.allDay ? t('All day') : time;
+    return `${day(event.startsAt)}, ${label}`;
   }
   return `${day(event.startsAt)}, ${formatTimeCompact(event.startsAt)} – ${day(event.endsAt)}, ${formatTimeCompact(event.endsAt)}`;
 }
@@ -156,27 +164,29 @@ export function EventChip({
   day: string;
   onOpen: (event: PracticeEvent) => void;
 }) {
+  const t = useT();
   const style = KIND_STYLE[event.kind];
   const atOffice = atAnOffice(event.kind);
+  const who = audienceLabel(event);
+  const audience =
+    event.kind === 'EVENT' ? t('for {who}', { who }) : atOffice ? t('at {who}', { who }) : who;
   return (
     <button
       type="button"
       onClick={() => onOpen(event)}
       data-testid={`${event.kind === 'EVENT' ? 'event' : event.kind.toLowerCase()}-chip`}
-      aria-label={`${event.title}, ${eventTimeLabel(event, day)}, ${
-        event.kind === 'EVENT' ? 'for ' : atOffice ? 'at ' : ''
-      }${audienceLabel(event)}`}
+      aria-label={`${event.title}, ${eventTimeLabel(event, day)}, ${audience}`}
       className={`block w-full rounded-md px-1.5 py-1 text-left text-xs leading-tight ring-1 ring-inset ${style.chip}`}
     >
       <span className="block truncate font-semibold">
         <span aria-hidden="true">{style.emoji}</span> {shortTitle(event)}
         {event.series && (
-          <span aria-hidden="true" title="Repeats" className="ml-1 font-normal">
+          <span aria-hidden="true" title={t('Repeats')} className="ml-1 font-normal">
             🔁
           </span>
         )}
         {joinLink(event) && (
-          <span aria-hidden="true" title="Video call" className="ml-1 font-normal">
+          <span aria-hidden="true" title={t('Video call')} className="ml-1 font-normal">
             🎥
           </span>
         )}
@@ -210,6 +220,7 @@ export function EventDialog({
   onRemoved: () => void;
   onClose: () => void;
 }) {
+  const t = useT();
   const confirm = useConfirm();
   const dialog = useDialog(onClose);
   const [busy, setBusy] = useState(false);
@@ -266,13 +277,13 @@ export function EventDialog({
           <h2 className="text-base font-semibold text-slate-900">
             <span aria-hidden="true">{KIND_STYLE[event.kind].emoji}</span> {event.title}
             <span className="ml-2 align-middle text-xs font-medium text-slate-500">
-              {KIND_STYLE[event.kind].one}
+              {t(KIND_STYLE[event.kind].one)}
             </span>
           </h2>
           <button
             type="button"
             onClick={onClose}
-            aria-label="Close"
+            aria-label={t('Close')}
             className="rounded px-2 text-slate-500 hover:bg-slate-100"
           >
             ✕
@@ -281,18 +292,20 @@ export function EventDialog({
 
         <dl className="space-y-2 text-sm">
           <div>
-            <dt className="sr-only">When</dt>
+            <dt className="sr-only">{t('When')}</dt>
             <dd className="font-medium text-slate-900">{describeWhen(event)}</dd>
           </div>
           {event.place && (
             <div>
-              <dt className="text-xs font-medium uppercase tracking-wide text-slate-500">Where</dt>
+              <dt className="text-xs font-medium uppercase tracking-wide text-slate-500">
+                {t('Where')}
+              </dt>
               <dd className="text-slate-800">{event.place}</dd>
             </div>
           )}
           {joinLink(event) && (
             <div>
-              <dt className="sr-only">Video call</dt>
+              <dt className="sr-only">{t('Video call')}</dt>
               <dd className="flex flex-wrap items-center gap-2">
                 <a
                   href={joinLink(event)!}
@@ -300,7 +313,7 @@ export function EventDialog({
                   rel="noopener noreferrer"
                   className="inline-flex items-center gap-1.5 rounded-lg bg-brand-600 px-3 py-1.5 text-sm font-semibold text-white hover:bg-brand-700"
                 >
-                  <span aria-hidden="true">🎥</span> Join video call
+                  <span aria-hidden="true">🎥</span> {t('Join video call')}
                 </a>
                 <span className="truncate text-xs text-slate-500">
                   {new URL(joinLink(event)!).host}
@@ -310,7 +323,9 @@ export function EventDialog({
           )}
           {atAnOffice(event.kind) && (
             <div>
-              <dt className="text-xs font-medium uppercase tracking-wide text-slate-500">At</dt>
+              <dt className="text-xs font-medium uppercase tracking-wide text-slate-500">
+                {t('At')}
+              </dt>
               <dd className="text-slate-800">{audienceLabel(event)}</dd>
             </div>
           )}
@@ -318,7 +333,7 @@ export function EventDialog({
           {!forEveryone(event.kind) && (
             <div>
               <dt className="text-xs font-medium uppercase tracking-wide text-slate-500">
-                {closed ? 'Closed' : 'For'}
+                {closed ? t('Closed') : t('For')}
               </dt>
               <dd className="flex items-center gap-1.5 text-slate-800">
                 {event.jobRole && (
@@ -328,15 +343,16 @@ export function EventDialog({
                     style={{ backgroundColor: jobRoleHex(event.jobRole.colour) }}
                   />
                 )}
-                {audienceLabel(event)}
-                {!closed && event.audience === 'LOCATION' && ' staff'}
+                {!closed && event.audience === 'LOCATION'
+                  ? t('{office} staff', { office: audienceLabel(event) })
+                  : audienceLabel(event)}
               </dd>
             </div>
           )}
           {event.series && (
             <div>
               <dt className="text-xs font-medium uppercase tracking-wide text-slate-500">
-                Repeats
+                {t('Repeats')}
               </dt>
               <dd className="text-slate-800" data-testid="event-series">
                 <span aria-hidden="true">🔁</span> {event.series.summary}
@@ -346,7 +362,7 @@ export function EventDialog({
           {event.description && (
             <div>
               <dt className="text-xs font-medium uppercase tracking-wide text-slate-500">
-                Details
+                {t('Details')}
               </dt>
               <dd className="whitespace-pre-line text-slate-800">{event.description}</dd>
             </div>
@@ -355,8 +371,9 @@ export function EventDialog({
 
         {closed && (
           <p className="mt-3 text-xs text-slate-500">
-            Anybody scheduled then is flagged to managers. Pay is not changed by a closure — anybody
-            who works clocks in as usual.
+            {t(
+              'Anybody scheduled then is flagged to managers. Pay is not changed by a closure — anybody who works clocks in as usual.',
+            )}
           </p>
         )}
 
@@ -1268,6 +1285,7 @@ export function EventForm({
 /// medication and the food; the phone, status and notes come only to managers
 /// (the server leaves them out for everybody else).
 function RepDetails({ rep }: { rep: EventRep }) {
+  const t = useT();
   const row = (term: string, value: React.ReactNode) => (
     <div>
       <dt className="text-xs font-medium uppercase tracking-wide text-slate-500">{term}</dt>
@@ -1276,12 +1294,12 @@ function RepDetails({ rep }: { rep: EventRep }) {
   );
   return (
     <>
-      {row('Rep', `${rep.name}${rep.company ? ` — ${rep.company}` : ''}`)}
-      {rep.medication && row('Medication', rep.medication)}
-      {rep.food && row('Lunch', FOOD_LABEL[rep.food])}
+      {row(t('Rep'), `${rep.name}${rep.company ? ` — ${rep.company}` : ''}`)}
+      {rep.medication && row(t('Medication'), rep.medication)}
+      {rep.food && row(t('Lunch'), t(FOOD_LABEL[rep.food]))}
       {rep.cellPhone &&
         row(
-          'Cell',
+          t('Cell'),
           <a
             href={`tel:${rep.cellPhone.replace(/[^0-9+]/g, '')}`}
             className="text-brand-700 underline"
@@ -1359,7 +1377,7 @@ export function useClosureCheck(proposed: ProposedPlace | null): PracticeEvent[]
 function closureLine(closure: PracticeEvent): string {
   const where =
     closure.audience === 'LOCATION' ? `${audienceLabel(closure)} is` : 'Both offices are';
-  return `${where} closed — ${closure.title} (${eventTimeLabel(closure).replace(/^Closed /, '')})`;
+  return `${where} closed — ${closure.title} (${bareTime(closure)})`;
 }
 
 /// The warning inside a shift form.
@@ -1435,6 +1453,7 @@ export function ClosuresCard({
   onOpen: (closure: PracticeEvent) => void;
   onChanged: () => void;
 }) {
+  const t = useT();
   const confirm = useConfirm();
   const [year, setYear] = useState(initialYear);
   const [closures, setClosures] = useState<PracticeEvent[] | null>(null);
@@ -1508,7 +1527,7 @@ export function ClosuresCard({
         ? first
         : `${first} – ${formatCalendarDate(closure.endDate, { year: false })}`;
     }
-    return `${formatCalendarDate(localDate(new Date(closure.startsAt)), { year: false })}, ${eventTimeLabel(closure).replace(/^Closed /, '')}`;
+    return `${formatCalendarDate(localDate(new Date(closure.startsAt)), { year: false })}, ${bareTime(closure)}`;
   };
 
   return (
@@ -1516,14 +1535,14 @@ export function ClosuresCard({
       <div className="flex flex-wrap items-center justify-between gap-2">
         {!bare && (
           <h2 className="text-sm font-semibold text-slate-900">
-            <span aria-hidden="true">🔒</span> Holidays and closures
+            <span aria-hidden="true">🔒</span> {t('Holidays and closures')}
           </h2>
         )}
         <div className="flex items-center gap-1 text-sm">
           <button
             type="button"
             onClick={() => setYear((y) => y - 1)}
-            aria-label="Previous year"
+            aria-label={t('Previous year')}
             className="rounded px-2 py-0.5 text-slate-600 hover:bg-slate-100"
           >
             ←
@@ -1532,7 +1551,7 @@ export function ClosuresCard({
           <button
             type="button"
             onClick={() => setYear((y) => y + 1)}
-            aria-label="Next year"
+            aria-label={t('Next year')}
             className="rounded px-2 py-0.5 text-slate-600 hover:bg-slate-100"
           >
             →
@@ -1541,7 +1560,7 @@ export function ClosuresCard({
       </div>
 
       {closures === null ? null : closures.length === 0 ? (
-        <p className="mt-2 text-sm text-slate-500">None in {year} yet.</p>
+        <p className="mt-2 text-sm text-slate-500">{t('None in {year} yet.', { year })}</p>
       ) : (
         <ul className="mt-2 divide-y divide-slate-100">
           {closures.map((closure) => (
@@ -1556,7 +1575,7 @@ export function ClosuresCard({
                 </span>
                 <span className="text-slate-600">
                   {describeDays(closure)} ·{' '}
-                  {isClosure(closure) ? audienceLabel(closure) : 'Open as usual'}
+                  {isClosure(closure) ? audienceLabel(closure) : t('Open as usual')}
                 </span>
               </button>
             </li>

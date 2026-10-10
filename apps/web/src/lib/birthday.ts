@@ -1,3 +1,4 @@
+import { getLanguage, locale } from './i18n';
 import type { BirthdayEntry } from './types';
 
 export const MONTHS = [
@@ -15,9 +16,16 @@ export const MONTHS = [
   'December',
 ];
 
-/// "Nov 9". Birthdays are a month and a day; there is no year to show.
+/// "Nov 9". Birthdays are a month and a day; there is no year to show. For
+/// somebody reading in Spanish, the month in Spanish ("9 nov").
 export function formatBirthday(month: number | null | undefined, day: number | null | undefined) {
   if (!month || !day) return null;
+  if (getLanguage() === 'es') {
+    return new Date(2000, month - 1, day).toLocaleDateString(locale(), {
+      month: 'short',
+      day: 'numeric',
+    });
+  }
   return `${MONTHS[month - 1].slice(0, 3)} ${day}`;
 }
 

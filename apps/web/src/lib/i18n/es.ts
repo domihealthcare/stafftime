@@ -1,3 +1,4 @@
+import { CALENDAR } from './es/calendar';
 import { COMMON } from './es/common';
 import { HOME } from './es/home';
 import { SCHEDULE } from './es/schedule';
@@ -17,4 +18,5 @@ export const SPANISH: Record<string, string> = {
   ...SCHEDULE,
   ...SHELL,
   ...TEAM,
+  ...CALENDAR,
 };

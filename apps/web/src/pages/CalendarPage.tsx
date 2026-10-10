@@ -28,6 +28,7 @@ import {
   parseDay,
   startOfMonth,
 } from '../lib/format';
+import { locale, t as translate, useT } from '../lib/i18n';
 import { useIsManager, useSession } from '../lib/session';
 import type { Employee, EventKind, JobRole, Location, PracticeEvent } from '../lib/types';
 import { useIsPhone } from '../lib/use-is-phone';
@@ -72,6 +73,7 @@ interface FormState {
  * holiday and pay day. Managers and admins add and change entries here.
  */
 export function CalendarPage() {
+  const t = useT();
   const isManager = useIsManager();
   const { employee: me } = useSession();
   const isPhone = useIsPhone();
@@ -128,7 +130,7 @@ export function CalendarPage() {
       setVersion((v) => v + 1);
       setError(null);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Could not load the calendar.');
+      setError(err instanceof Error ? err.message : translate('Could not load the calendar.'));
     } finally {
       setLoading(false);
     }
@@ -221,13 +223,15 @@ export function CalendarPage() {
 
   const monthDays = days.filter((day) => day.getMonth() === monthStart.getMonth());
   const today = localDate(new Date());
-  const monthName = monthStart.toLocaleDateString(undefined, { month: 'long', year: 'numeric' });
+  const monthName = monthStart.toLocaleDateString(locale(), { month: 'long', year: 'numeric' });
 
   return (
     <div className="mx-auto max-w-6xl">
       <PageHeading
-        title="Calendar"
-        subtitle="Your shifts, diagnostics, rep lunches, holidays, closures, meetings and pay days."
+        title={t('Calendar')}
+        subtitle={t(
+          'Your shifts, diagnostics, rep lunches, holidays, closures, meetings and pay days.',
+        )}
       />
       <ScheduleTabs />
 
@@ -236,7 +240,7 @@ export function CalendarPage() {
           <button
             type="button"
             onClick={() => goToMonth(addMonths(monthStart, -1))}
-            aria-label="Previous month"
+            aria-label={t('Previous month')}
             className={buttonClass('secondary', 'sm')}
           >
             ←
@@ -246,12 +250,12 @@ export function CalendarPage() {
             onClick={() => goToMonth(new Date())}
             className={buttonClass('secondary', 'sm')}
           >
-            This month
+            {t('This month')}
           </button>
           <button
             type="button"
             onClick={() => goToMonth(addMonths(monthStart, 1))}
-            aria-label="Next month"
+            aria-label={t('Next month')}
             className={buttonClass('secondary', 'sm')}
           >
             →
@@ -260,7 +264,7 @@ export function CalendarPage() {
         <div
           className="flex rounded-lg border border-slate-300 bg-white p-0.5"
           role="group"
-          aria-label="Show as"
+          aria-label={t('Show as')}
         >
           {(
             [
@@ -279,17 +283,17 @@ export function CalendarPage() {
                   : 'text-slate-600 hover:text-slate-900'
               }`}
             >
-              {label}
+              {t(label)}
             </button>
           ))}
         </div>
         <select
-          aria-label="Show office"
+          aria-label={t('Show office')}
           value={office}
           onChange={(change) => setOffice(change.target.value)}
           className="rounded-lg border border-slate-300 bg-white py-1.5 pl-2 pr-8 text-sm"
         >
-          <option value="">Both offices</option>
+          <option value="">{t('Both offices')}</option>
           {locations.map((location) => (
             <option key={location.id} value={location.id}>
               {location.name}
@@ -305,7 +309,7 @@ export function CalendarPage() {
           }).toString()}`}
           className={buttonClass('secondary', 'sm')}
         >
-          Print
+          {t('Print')}
         </Link>
         {isManager && (
           <div className="relative">
@@ -366,9 +370,9 @@ export function CalendarPage() {
       <div
         className="mb-4 flex flex-wrap items-center gap-1.5"
         role="group"
-        aria-label="Show on the calendar"
+        aria-label={t('Show on the calendar')}
       >
-        <span className="mr-1 text-xs font-medium text-slate-600">Show:</span>
+        <span className="mr-1 text-xs font-medium text-slate-600">{t('Show:')}</span>
         {(['ALL', ...CALENDAR_KINDS] as const).map((kind) => {
           const on = kind === 'ALL' ? chosen.length === 0 : chosen.includes(kind);
           return (
@@ -384,14 +388,14 @@ export function CalendarPage() {
               }`}
             >
               {kind === 'ALL' ? (
-                'All'
+                t('All')
               ) : (
                 <>
                   <span
                     aria-hidden="true"
                     className={`h-2.5 w-2.5 rounded-full ring-1 ring-white ${KIND_STYLE[kind].dot}`}
                   />
-                  {KIND_STYLE[kind].label}
+                  {t(KIND_STYLE[kind].label)}
                 </>
               )}
               {on && <span aria-hidden="true">✓</span>}
@@ -454,10 +458,10 @@ export function CalendarPage() {
             {days.slice(0, 7).map((day) => (
               <div key={day.getDay()} className="py-2">
                 <span className="sm:hidden">
-                  {day.toLocaleDateString(undefined, { weekday: 'narrow' })}
+                  {day.toLocaleDateString(locale(), { weekday: 'narrow' })}
                 </span>
                 <span className="max-sm:hidden">
-                  {day.toLocaleDateString(undefined, { weekday: 'short' })}
+                  {day.toLocaleDateString(locale(), { weekday: 'short' })}
                 </span>
               </div>
             ))}
@@ -554,7 +558,9 @@ export function CalendarPage() {
                     >
                       {formatCalendarDate(key, { year: false })}
                     </span>
-                    {key === today && <span className="block text-xs text-brand-700">Today</span>}
+                    {key === today && (
+                      <span className="block text-xs text-brand-700">{t('Today')}</span>
+                    )}
                   </div>
                   <div className="min-w-0 flex-1 space-y-1">
                     <MyDayChips
@@ -576,13 +582,17 @@ export function CalendarPage() {
               !hasMine(localDate(day)) &&
               !shownPayDays.includes(localDate(day)) &&
               eventsOnDay(shown, localDate(day)).length === 0,
-          ) && <p className="px-4 py-6 text-sm text-slate-500">Nothing on in {monthName}.</p>}
+          ) && (
+            <p className="px-4 py-6 text-sm text-slate-500">
+              {t('Nothing on in {month}.', { month: monthName })}
+            </p>
+          )}
         </Card>
       )}
 
       {payDays.length === 0 && isShown('PAY_DAY') && !loading && (
         <p className="mt-2 text-xs text-slate-500">
-          Pay days appear once a pay period is set in Practice settings.
+          {t('Pay days appear once a pay period is set in Practice settings.')}
         </p>
       )}
 
@@ -622,6 +632,7 @@ export function CalendarPage() {
 /// Pay day: worked out, not entered, so there is nothing to open. In a
 /// phone's month the words are for screen readers only; there is no room.
 function PayDayChip({ compact = false }: { compact?: boolean }) {
+  const t = useT();
   const style = KIND_STYLE.PAY_DAY;
   return (
     <span
@@ -629,7 +640,7 @@ function PayDayChip({ compact = false }: { compact?: boolean }) {
       className={`block truncate rounded-md px-1.5 py-1 text-xs font-semibold leading-tight ring-1 ring-inset ${style.chip}`}
     >
       <span aria-hidden="true">{style.emoji}</span>
-      <span className={compact ? 'sr-only' : undefined}> Pay day</span>
+      <span className={compact ? 'sr-only' : undefined}> {t('Pay day')}</span>
     </span>
   );
 }
