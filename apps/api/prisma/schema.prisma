@@ -339,6 +339,9 @@ model Employee {
   /// Their line on the office extensions list, if they have one.
   officeExtensions          OfficeExtension[]
 
+  /// Asked to cover an open shift ("Ask who can cover", October 2026).
+  coverAsks CoverAsk[]
+
   @@index([employmentStatus])
   @@map("employees")
 }
@@ -720,6 +723,9 @@ model Shift {
   series      ShiftSeries?    @relation(fields: [seriesId], references: [id], onDelete: SetNull)
   timeEntries TimeEntry[]
   reminders   PunchReminder[]
+
+  /// "Ask who can cover" (October 2026): people asked to take it while open.
+  coverRequests CoverRequest[]
 
   @@index([employeeId, startsAt])
   @@index([locationId, startsAt])
@@ -2073,6 +2079,8 @@ enum NotificationKind {
   ONBOARDING_REMINDER
   /// To managers: somebody's new availability clashes with their regular shift.
   AVAILABILITY_CLASH
+  /// "Can you cover…?" to somebody asked, and the answer back to the manager.
+  COVER_REQUEST
 }
 
 /// Something the app wants one person to know, shown under the bell in the
@@ -2550,4 +2558,45 @@ model AssistantUsage {
 
   @@id([employeeId, day])
   @@map("assistant_usage")
+}
+
+/// "Someone called out: ask who can cover" (October 2026, Dominguez — a
+/// "smarter" idea). A manager asks chosen people, by bell and email, whether
+/// they can take an open shift; the first to say yes gets it. Staff still never
+/// see open shifts: only the people asked hear about this one. One request per
+/// round of asking; asking more people adds them to the open one.
+model CoverRequest {
+  id        String    @id @default(uuid()) @db.Uuid
+  shiftId   String    @db.Uuid
+  /// The manager who asked — told the answers. Kept if they leave.
+  askedById String?   @db.Uuid
+  createdAt DateTime  @default(now())
+  /// Set when it is over: somebody said yes, the manager stopped asking, or
+  /// the shift was filled another way.
+  closedAt  DateTime?
+  /// Who said yes and got it.
+  takenById String?   @db.Uuid
+
+  shift Shift      @relation(fields: [shiftId], references: [id], onDelete: Cascade)
+  asks  CoverAsk[]
+
+  @@index([shiftId])
+  @@map("cover_requests")
+}
+
+/// One person asked, and what they said: null until they answer.
+model CoverAsk {
+  requestId  String    @db.Uuid
+  employeeId String    @db.Uuid
+  /// true: yes, I will take it; false: no.
+  answer     Boolean?
+  answeredAt DateTime?
+  askedAt    DateTime  @default(now())
+
+  request  CoverRequest @relation(fields: [requestId], references: [id], onDelete: Cascade)
+  employee Employee     @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+
+  @@id([requestId, employeeId])
+  @@index([employeeId])
+  @@map("cover_asks")
 }

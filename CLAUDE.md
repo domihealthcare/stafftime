@@ -705,6 +705,41 @@ Beyond the phases, the parts worth knowing about before picking up work:
   told once, in the approval notice. A half day keeps its shift; with no
   shifts it approves at once as before. `components/ApproveTimeOff.tsx`;
   `tests/browser/time-off-shifts.mjs`.
+- **Someone called out: ask who can cover** (10 October 2026, Dominguez —
+  a "smarter" idea): in an **open shift's** pop-up on the rota, **Ask people
+  to cover** lists the people free then (the "Who can cover this?" good fits
+  ticked, the ones with a catch unticked with the catch); **Ask** sends each a
+  bell note and an email linking to `/cover/:id`, where they press **Yes,
+  I'll take it** or **No, I can't**. The **first yes gets the shift** — put on
+  it and published, claimed only while still open and not started, refused if
+  they are working then — the manager is told, and the others still to answer
+  hear it is covered; everybody saying no tells the manager too; **Stop
+  asking** tells those still to answer. Only the people asked can open it (a
+  manager may look), and it shows the shift only, never who else was asked —
+  staff still never see open shifts. `CoverRequest` / `CoverAsk`, migration
+  `20261010010000_cover_requests` (notification kind `COVER_REQUEST`),
+  `shifts/cover-requests.ts` (words and state, pure) and
+  `cover-requests.service.ts`, `components/AskToCover.tsx`,
+  `pages/CoverPage.tsx`; `tests/browser/ask-cover.mjs`. Worth carrying to the
+  EMR module with *Who can cover this?*.
+- **Payroll is due, hours aren't approved** (10 October 2026, Dominguez — a
+  "smarter" idea): from **two working days before a pay period ends until the
+  day before it is paid**, **Payroll is due** leads the Timesheet banner and
+  the nightly email (first in *sort out today*, and its subject): entries in
+  that period not approved yet (and for how many people), clock-outs the app
+  made at midnight still to correct, punches still open from an earlier day.
+  Silent outside the window, and until a pay period is set. Nothing new
+  stored. `time-entries/payroll-due.ts`; `tests/browser/payroll-due.mjs`.
+- **Staff who never signed in** (10 October 2026, Dominguez — a "smarter"
+  idea): at the top of **Manage → Staff** (admins), a folded card lists
+  everybody still here who has never once signed in, with what most likely
+  holds each up — never sent a welcome email, the link ran out (7 days), a
+  temporary password not used, or a password chosen but no sign-in since —
+  and **Send welcome email** / **Send it again** where one can go (only to
+  somebody with no password). It says who clocks in at the time clock. Demo
+  staff are left out. `GET /employees/welcome/pending`,
+  `auth/not-signed-in.ts`, `components/NotSignedInCard.tsx`;
+  `tests/browser/not-signed-in.mjs`.
 - **Turned down: "PTO about to be lost"** (9 October 2026, Dominguez): a
   reminder to use PTO before it fails to carry over was proposed and refused —
   not in the practice's interest. Do not propose it again.

@@ -68,6 +68,7 @@ import {
   useCoverOptions,
 } from './CoverSuggestions';
 import { noteToSend, ShiftNoteField } from './ShiftNote';
+import { AskToCover } from './AskToCover';
 import { UsualShiftHint, useUsualShift } from './UsualShift';
 import { useContextMenu, type ContextMenuItem } from './ContextMenu';
 import { atPracticeTime, practiceClockOf } from '../lib/practice-time';
@@ -1623,6 +1624,10 @@ function ShiftDialog({
           </div>
         )}
       </div>
+
+      {open && start > Date.now() && (
+        <AskToCover shiftId={shift.id} cover={cover} onTaken={onChanged} />
+      )}
 
       <fieldset className="mt-4" data-testid="shift-hours">
         <legend className="block text-sm font-medium text-slate-800">Hours and place</legend>

@@ -2991,6 +2991,67 @@ Tests: `ai/` is exercised through `assistant.service.spec.ts`,
 (off; the Schedule's decline with a reason; Spanish typed by an admin and the
 switch; and each helper with its answer stood in for in the browser).
 
+## Asking who can cover
+
+October 2026, Dominguez — a "smarter" idea, built on *Who can cover this?*.
+When somebody calls out, their shift becomes an open shift; its pop-up on the
+rota has **Ask people to cover** (`components/AskToCover.tsx`). It lists the
+people the cover ranking says can do it (`fit` good or catch — never somebody
+already working then or on leave), the good fits ticked. `POST
+/shifts/:id/ask-cover` checks that again on the server, opens (or adds to) a
+`CoverRequest` with a `CoverAsk` per person, and sends each a bell note and an
+email (`NotificationsService.cover`, kind `COVER_REQUEST`) linking to
+`/cover/:id` (`pages/CoverPage.tsx`).
+
+**Saying yes** (`POST /cover/:id/answer`) re-checks the person is not working
+then, and claims the shift in one transaction with `updateMany` on *still open,
+not cancelled, not started* — so two people saying yes at once cannot both get
+it; the loser is told somebody has taken it. The winner is put on the shift
+and it is **published** (they agreed to it), the request is closed with
+`takenById`, the manager who asked is told, and the others still to answer
+hear it is covered. The route runs the calendar-invite sync. **Saying no**
+records it; when the last person says no, the manager is told. **Stop
+asking** closes the request and tells those still to answer. A shift filled
+another way reads as covered (`coverState` in `shifts/cover-requests.ts`,
+which also holds every message's words, pure and unit-tested).
+
+**Privacy.** Staff still never see open shifts: `GET /cover/:id` answers only
+the people asked (and managers), as 404 to anybody else, and shows the day,
+hours, place and job role — never who else was asked.
+`tests/browser/ask-cover.mjs`.
+
+## Payroll is due
+
+October 2026, Dominguez — a "smarter" idea. The nightly list of hours nobody
+has approved is calm on purpose (a week's grace); close to payroll that is not
+enough. `time-entries/payroll-due.ts`: `dueNow` finds the pay period whose
+window is open — from `DUE_WORKING_DAYS` (two) Monday-to-Friday days before its
+last day until the day before its pay day (`settings/pay-days.ts`), so after a
+period ends it stays due until it is paid — and `loadPayrollDue` counts, in
+that period, entries completed or needing review and not approved (by person),
+clock-outs the app made at midnight not yet corrected, and punches still open
+from an earlier day. `describePayrollDue` puts the period first, then what is
+left; nothing at all when everything is done. It is the round-up's
+`payrollDue`, first in `SECTIONS` (so it leads the email's subject) and first
+on the Timesheet banner, in the Hours part of *Who gets what*. No pay period
+set, no section — a guessed deadline is worse than none.
+`tests/browser/payroll-due.mjs`.
+
+## Staff who never signed in
+
+October 2026, Dominguez — a "smarter" idea. `auth/not-signed-in.ts` lists
+everybody not terminated, not demo staff, with no `lastLoginAt` (choosing a
+password from a welcome link does not sign anybody in, so only a real sign-in
+counts), and sorts them by what most likely holds them up (`standingOf`):
+never invited, welcome link expired (the 7 days a welcome link lasts), a
+temporary password unused (`mustChangePassword`), a chosen password unused,
+then links still good. A kiosk punch marks somebody who works but does not use
+the app. The Staff screen shows it as a folded card (`NotSignedInCard`) with
+**Send welcome email** / **Send it again** through the existing welcome route,
+which refuses anybody with a password — so the card offers it only to those
+without one. `GET /employees/welcome/pending` (admins);
+`tests/browser/not-signed-in.mjs`.
+
 ## Time off that lands on shifts
 
 October 2026, Dominguez — a "make it smarter" idea. Approving time off used to

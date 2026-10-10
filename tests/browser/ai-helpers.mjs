@@ -179,12 +179,13 @@ await step('an admin writes the Spanish by hand; staff switch to Español and ba
   await toggle.getByRole('button', { name: 'Español' }).click();
   await frankie.getByRole('heading', { name: 'Reunión de personal el jueves' }).waitFor({ timeout: 10000 });
   await frankie.getByText('En la sala de descanso de North Bergen a la 1pm.').waitFor();
+  // The other post has no Spanish and the AI service is off: it says so,
+  // once its "Traduciendo…" has been answered.
+  const languageNotes = frankie.getByTestId('post-language-note');
+  await languageNotes.filter({ hasText: 'aún no está en español' }).first().waitFor({ timeout: 10000 });
   // Typed by an admin, so not marked as translated automatically.
-  const notes = await frankie.getByTestId('post-language-note').allInnerTexts();
+  const notes = await languageNotes.allInnerTexts();
   if (notes.some((note) => note.includes('Traducido'))) throw new Error(`marked: ${notes}`);
-  // The other post has no Spanish and the AI service is off: it says so.
-  if (!notes.some((note) => note.includes('aún no está en español')))
-    throw new Error(`notes read: ${notes.join(' | ')}`);
   // Remembered, and the same on Home.
   await frankie.goto(`${BASE}/`, { waitUntil: 'networkidle' });
   await frankie.getByTestId('home-news').getByText('Reunión de personal el jueves').waitFor({ timeout: 10000 });

@@ -1,3 +1,4 @@
+import { NotSignedInCard } from '../components/NotSignedInCard';
 import { useCallback, useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { localDate } from '../lib/format';
@@ -212,6 +213,8 @@ export function StaffPage() {
           </Alert>
         </div>
       )}
+
+      {!loading && <NotSignedInCard refreshKey={staff.length + (welcomeReport?.sent ?? 0)} />}
 
       {waiting.length > 0 && !loading && (
         <Card

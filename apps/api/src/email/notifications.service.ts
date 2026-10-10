@@ -139,6 +139,34 @@ export class NotificationsService {
     );
   }
 
+  /// "Ask who can cover" (October 2026): the ask, and what happened to it,
+  /// on the bell and by email, linking to where it is answered or seen.
+  async cover(
+    employeeIds: string[],
+    words: { title: string; body: string; link: string },
+  ): Promise<void> {
+    if (employeeIds.length === 0) return;
+    await this.inbox.notify(employeeIds, {
+      kind: NotificationKind.COVER_REQUEST,
+      title: words.title,
+      body: words.body,
+      link: words.link,
+    });
+    const people = await this.prisma.employee.findMany({
+      where: { id: { in: employeeIds }, employmentStatus: EmploymentStatus.ACTIVE },
+      select: { email: true, firstName: true, preferredName: true },
+    });
+    for (const person of people) {
+      await this.dispatch(person.email, words.title, [
+        `Hello ${person.preferredName ?? person.firstName},`,
+        '',
+        words.body,
+        '',
+        `${this.appUrl}${words.link}`,
+      ]);
+    }
+  }
+
   /// Managers are not told anything today unless they go and look, which is how
   /// a request sits for a week.
   ///

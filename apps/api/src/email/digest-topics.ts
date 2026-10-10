@@ -30,6 +30,7 @@ export const DIGEST_TOPICS: Record<DigestTopic, (keyof DigestContents)[]> = {
   ],
   TIME_OFF: ['undecidedTimeOff', 'timeOffClashes'],
   HOURS: [
+    'payrollDue',
     'missingPunches',
     'missedShifts',
     'unapprovedHours',
