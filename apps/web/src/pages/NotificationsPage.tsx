@@ -89,7 +89,7 @@ export function NotificationsPage() {
         </div>
       )}
 
-      <Card className="mb-4 p-4" data-testid="shift-reminders">
+      <Card className="mb-4 p-4" testId="shift-reminders">
         <div className="flex flex-wrap items-start justify-between gap-3">
           <div className="min-w-0">
             <h2 className="text-sm font-semibold text-slate-900">You&rsquo;re on tomorrow</h2>

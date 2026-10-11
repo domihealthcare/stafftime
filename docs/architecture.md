@@ -3052,6 +3052,91 @@ which refuses anybody with a password — so the card offers it only to those
 without one. `GET /employees/welcome/pending` (admins);
 `tests/browser/not-signed-in.mjs`.
 
+## You're on tomorrow
+
+October 2026, Dominguez — a "smarter" idea, with "should be able to turn off
+as a user". The five-minute timer, from 6pm on the practice's clock
+(`TOMORROW_REMINDER_FROM`, the rep lunch notice's hour), reads tomorrow's
+published shifts for active staff who have not turned it off
+(`Employee.wantsShiftReminders`) and have not been told about that shift
+(`PunchReminder` kind `TOMORROW`, claimed before anything is sent, so two runs
+cannot both send). Grouped by person: one message for the day, listing each
+shift's hours, place (or "working from home"), job role and note. Skipped on
+approved time off that day, and for an office shift inside a closure. A shift
+added later in the evening is told about on the next run; one changed after
+the reminder is already told by its own notice. Bell and email
+(`NotificationsService.shiftTomorrow`, notification kind `SHIFT_TOMORROW`);
+the email says where to turn it off. The switch is the person's own, on Email
+settings (`PATCH /auth/preferences`); an admin cannot change it for them.
+
+## Onboarding started by itself
+
+October 2026, Dominguez — a "smarter" idea. `ChecklistsService.
+startOnboardingIfNew` runs after an admin adds somebody, imports a list, or
+saves a hire date (`EmployeesController`): it copies the default onboarding
+template through the ordinary `start`, counting from the hire date. It does
+nothing — and refuses nothing — unless the person has a hire date no more
+than `AUTO_ONBOARDING_DAYS` (30) ago or in the future, has never had an
+onboarding checklist (finished or not), has not left and is not demo staff,
+and a default template with tasks exists. The 30 days matter: the staff list
+pasted on the first day had real hire dates going back years, and starting a
+new-hire checklist for each would have been noise. Templates have no job role,
+so the default is the one used. The responses carry `onboardingStarted`, and
+the Staff screen says "Their onboarding checklist has started".
+
+## 360 feedback
+
+October 2026, Dominguez: "a survey on all employees by all employees,
+completely anonymous though produces a report for the employee that we — as
+admin/managers — are able to set up a time to meet with the employee and
+discuss". Asked and chosen: **managers only** see the reports (the person
+does not, in the app — it is gone through with them); a **self-rating**
+beside colleagues'; the **starter set, editable**; the manager **offers
+times**, the person picks.
+
+**Starting one** (`POST /reviews360`, managers): a title, an optional
+closing day, and up to fifteen questions — RATING (1–5) or TEXT — each with a
+prompt about a colleague, optional first-person words for yourself, and a
+short name. Everybody active then becomes a subject (`Review360Subject`) and
+is told on the bell. One open at a time; it closes on its closing day the
+first time anybody looks after it (`closeOverdue`), or by **Close**.
+
+**Anonymity**, the pulse surveys' scheme and for the same reasons:
+
+- `Review360Response` names the subject and whether it is their own, and
+  nothing else; `Review360Answer` is a number or words. No rater, no time —
+  the schema guard pins the exact fields.
+- `Review360Rated` (rater, subject, skipped) records that somebody did
+  somebody, only to stop a second go and to show the rater their progress. It
+  is written first and taken back if the answers fail to save. Nothing reads
+  it for anybody but the rater, except a count of how many people have taken
+  part at all.
+- Answers cannot be edited — there is nothing to find them by.
+- The log line says a 360 was answered, never by whom.
+
+**Reports** (`GET /reviews360/:id/reports[/:subjectId]`, managers): only once
+closed (no watching it change), never the viewer's own, and only with at
+least `MIN_RATERS` (3) colleagues — below that the reason is given instead.
+For each rating: colleagues' average, how many and the spread, beside the
+self-rating; for each written question: colleagues' words in a crypto-random
+order, and the person's own.
+
+**Talking it through**: `POST /reviews360/:id/reports/:subjectId/meeting`
+offers 2–4 times (future, under three hours, not repeated; `slotProblem`),
+replacing an offer not yet answered. The person is told by bell and email
+(`NotificationsService.personal`) and picks at `/meetings/:id`
+(`POST /review-meetings/:id/choose`, only them): the meeting is claimed with
+one `updateMany`, then `EventsService.create` makes a CHOSEN-audience
+practice event for the two of them ("Feedback conversation: Frankie and
+Morgan", the place, an optional Meet link), so it goes to calendars,
+invites and the feed like any event. **Cancel** removes the event (which
+tells them), or says the offer was withdrawn. Managers see meetings on the
+report and the list.
+
+Not carried: an employee-facing report, a reminder for people who have not
+finished, or AI summaries of the written answers (that would need a new line
+in "Is it really anonymous?"). `src/reviews360/`, `tests/browser/review360.mjs`.
+
 ## Time off that lands on shifts
 
 October 2026, Dominguez — a "make it smarter" idea. Approving time off used to

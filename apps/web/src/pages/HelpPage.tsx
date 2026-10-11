@@ -415,6 +415,43 @@ const STAFF: Section[] = [
         ),
       },
       {
+        question: 'The reminder the evening before I work',
+        answer: (
+          <p>
+            From 6pm the evening before a day you work, you get a note under the bell and an email —
+            &ldquo;You&rsquo;re on tomorrow, 9:00 AM–5:00 PM at North Bergen&rdquo; — with any note
+            on the shift. Nothing on a day off, or when the office is closed. If you would rather
+            not have it, turn off <strong>You&rsquo;re on tomorrow</strong> under the menu →{' '}
+            <Screen>Email settings</Screen>; your shifts are still on your Schedule, and you are
+            still told whenever one changes.
+          </p>
+        ),
+      },
+      {
+        question: '360 feedback',
+        answer: (
+          <>
+            <p>
+              Now and then the practice runs a 360: you say how each colleague is doing — a few 1–5
+              ratings and two short written answers — and how you think you are doing. It is under{' '}
+              <Screen>Surveys</Screen> and on <Screen>Home</Screen> while it is open. Tap a name to
+              answer, or <strong>Skip</strong> anybody you do not work with enough. Each person
+              once: it cannot be changed after, because nothing links it back to you.
+            </p>
+            <p>
+              It is anonymous: what you say about somebody is saved with their name, never yours,
+              and with no time. Only managers and admins see a person&rsquo;s report, once it has
+              closed and at least three colleagues rated them. Write so the words could have come
+              from anybody.
+            </p>
+            <p>
+              Afterwards a manager may offer you a few times to talk your feedback through: you get
+              a note and an email, pick the time that suits you, and it goes on both your calendars.
+            </p>
+          </>
+        ),
+      },
+      {
         question: 'Where are the meetings and practice events?',
         answer: (
           <p>
@@ -1904,6 +1941,35 @@ const MANAGERS: Section[] = [
         ),
       },
       {
+        question: 'Running a 360',
+        answer: (
+          <>
+            <p>
+              On <Screen>Manage → Surveys</Screen>, under <strong>360 feedback</strong>, press{' '}
+              <strong>Start a 360</strong>. It starts with five 1–5 ratings (teamwork,
+              communication, reliability, helpfulness, professionalism) and two written answers,
+              each asked about a colleague and, in the first person, about yourself — change, add or
+              remove any before starting. Everybody here then is asked about everybody else, and
+              told under the bell. One can be open at a time; give it a closing day, or press{' '}
+              <strong>Close</strong>.
+            </p>
+            <p>
+              Once closed, <strong>Reports</strong> lists everybody but you, with how many
+              colleagues rated each. A report shows once at least three did: colleagues&rsquo;
+              average and spread beside the person&rsquo;s own rating, and the written answers in a
+              random order. Reports are for managers and admins only — never the person — and yours
+              is for somebody else to go through with you.
+            </p>
+            <p>
+              From a report, <strong>Offer times to meet</strong>: two to four times, how long,
+              where, and a Google Meet link if you like. They pick one on their phone, and it goes
+              on both your calendars. You can offer different times while they have not picked, or
+              cancel.
+            </p>
+          </>
+        ),
+      },
+      {
         question: 'Changing the office extensions',
         answer: (
           <p>
@@ -1961,6 +2027,12 @@ const MANAGERS: Section[] = [
               <strong>Edit</strong> on somebody&rsquo;s card to change their email, phone, access
               (Employee, Manager or Admin), job roles and their main one, offices and ADP File #,
               send their welcome email, or give them a temporary password or tablet PIN.
+            </li>
+            <li>
+              Adding somebody new with a hire date — one at a time or several — starts their{' '}
+              <strong>onboarding checklist</strong> (the default template) by itself, counting from
+              that date; so does giving a hire date later. Not for somebody hired more than 30 days
+              ago, and never a second one.
             </li>
             <li>
               <strong>People who have never signed in</strong>, at the top of the Staff screen,

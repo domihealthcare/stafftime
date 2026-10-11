@@ -2,7 +2,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { Alert, Card, PageHeading, Spinner, buttonClass } from '../components/ui';
 import { ApiError, api } from '../lib/api';
-import { useT } from '../lib/i18n';
+import { t as translate, useT } from '../lib/i18n';
 import { formatPracticeDateTime } from '../lib/practice-time';
 import type { ReviewMeeting } from '../lib/types';
 
@@ -23,9 +23,9 @@ export function ReviewMeetingPage() {
       setMeeting(await api.reviewMeeting(id));
       setError(null);
     } catch (cause) {
-      setError(cause instanceof ApiError ? cause.message : t('Could not load it.'));
+      setError(cause instanceof ApiError ? cause.message : translate('Could not load it.'));
     }
-  }, [id, t]);
+  }, [id]);
 
   useEffect(() => {
     void load();

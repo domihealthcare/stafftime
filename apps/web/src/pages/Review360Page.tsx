@@ -13,7 +13,7 @@ import {
 } from '../components/ui';
 import { ApiError, api } from '../lib/api';
 import { formatCalendarDate } from '../lib/format';
-import { useT } from '../lib/i18n';
+import { t as translate, useT } from '../lib/i18n';
 import { useIsManager } from '../lib/session';
 import type { Review360Detail, Review360Person } from '../lib/types';
 
@@ -36,9 +36,9 @@ export function Review360Page() {
       setReview(await api.review360(id));
       setError(null);
     } catch (cause) {
-      setError(cause instanceof ApiError ? cause.message : t('Could not load it.'));
+      setError(cause instanceof ApiError ? cause.message : translate('Could not load it.'));
     }
-  }, [id, t]);
+  }, [id]);
 
   useEffect(() => {
     void load();
