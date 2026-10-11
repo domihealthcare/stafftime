@@ -45,7 +45,8 @@ export function StaffPage() {
   const [error, setError] = useState<string | null>(null);
   const [adding, setAdding] = useState(false);
   const [importing, setImporting] = useState(false);
-  const [imported, setImported] = useState<number | null>(null);
+  /// How many were just added, and for how many onboarding started by itself.
+  const [imported, setImported] = useState<{ added: number; onboarding: number } | null>(null);
   const [welcoming, setWelcoming] = useState(false);
   const [welcomeReport, setWelcomeReport] = useState<{ sent: number; failed: string[] } | null>(
     null,
@@ -208,8 +209,14 @@ export function StaffPage() {
       {imported !== null && (
         <div className="mb-4">
           <Alert tone="success">
-            {imported} {imported === 1 ? 'person' : 'people'} added. Nobody has been emailed yet —
-            send the welcome emails when you are ready.
+            <span data-testid="staff-added">
+              {imported.added} {imported.added === 1 ? 'person' : 'people'} added.{' '}
+              {imported.onboarding > 0 &&
+                (imported.added === 1
+                  ? 'Their onboarding checklist has started. '
+                  : `Onboarding checklists started for ${imported.onboarding} new ${imported.onboarding === 1 ? 'hire' : 'hires'}. `)}
+              Nobody has been emailed yet — send the welcome emails when you are ready.
+            </span>
           </Alert>
         </div>
       )}
@@ -264,9 +271,9 @@ export function StaffPage() {
           <ImportStaff
             locations={locations}
             existingEmails={staff.map((person) => person.email)}
-            onImported={(count) => {
+            onImported={(result) => {
               setImporting(false);
-              setImported(count);
+              setImported(result);
               void load();
             }}
           />
@@ -277,8 +284,9 @@ export function StaffPage() {
         <div className="mb-4">
           <AddStaffForm
             locations={locations}
-            onCreated={() => {
+            onCreated={(onboardingStarted) => {
               setAdding(false);
+              setImported({ added: 1, onboarding: onboardingStarted ? 1 : 0 });
               void load();
             }}
           />
@@ -461,7 +469,13 @@ function StaffCard({
   );
 }
 
-function AddStaffForm({ locations, onCreated }: { locations: Location[]; onCreated: () => void }) {
+function AddStaffForm({
+  locations,
+  onCreated,
+}: {
+  locations: Location[];
+  onCreated: (onboardingStarted: boolean) => void;
+}) {
   const [firstName, setFirstName] = useState('');
   const [lastName, setLastName] = useState('');
   const [email, setEmail] = useState('');
@@ -477,7 +491,7 @@ function AddStaffForm({ locations, onCreated }: { locations: Location[]; onCreat
     setBusy(true);
     setProblem(null);
     try {
-      await api.createEmployee({
+      const created = await api.createEmployee({
         firstName: firstName.trim(),
         lastName: lastName.trim(),
         email: email.trim().toLowerCase(),
@@ -487,7 +501,7 @@ function AddStaffForm({ locations, onCreated }: { locations: Location[]; onCreat
         locationIds: assigned,
         primaryLocationId: assigned[0],
       });
-      onCreated();
+      onCreated(Boolean(created.onboardingStarted));
     } catch (err) {
       setProblem(err instanceof ApiError ? err.message : 'Could not add that person.');
     } finally {

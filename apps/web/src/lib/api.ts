@@ -454,7 +454,8 @@ export interface AppNotification {
     | 'AVAILABILITY_CLASH'
     | 'COVER_REQUEST'
     | 'REQUIRED'
-    | 'ON_CALL';
+    | 'ON_CALL'
+    | 'SHIFT_TOMORROW';
   title: string;
   body: string | null;
   link: string | null;
@@ -679,7 +680,11 @@ export const api = {
     hireDate?: string;
     locationIds?: string[];
     primaryLocationId?: string;
-  }) => request<Employee>('/employees', { method: 'POST', body: JSON.stringify(body) }),
+  }) =>
+    request<Employee & { onboardingStarted?: boolean }>('/employees', {
+      method: 'POST',
+      body: JSON.stringify(body),
+    }),
   birthdays: (from: string, to: string) =>
     request<BirthdayEntry[]>(`/directory/birthdays?from=${from}&to=${to}`),
   sendWelcome: (id: string) =>
@@ -693,7 +698,7 @@ export const api = {
       remaining: number;
     }>('/employees/welcome', { method: 'POST' }),
   importEmployees: (people: ImportedPerson[]) =>
-    request<{ created: number; ids: string[] }>('/employees/import', {
+    request<{ created: number; ids: string[]; onboardingStarted?: number }>('/employees/import', {
       method: 'POST',
       body: JSON.stringify({ people }),
     }),

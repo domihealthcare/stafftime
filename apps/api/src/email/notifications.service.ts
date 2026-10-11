@@ -350,6 +350,36 @@ export class NotificationsService {
     ]);
   }
 
+  /// "You're on tomorrow" — the evening before a day they work (see
+  /// `shifts/tomorrow-reminder.ts`). Theirs to turn off on Email settings.
+  async shiftTomorrow(
+    employeeId: string,
+    words: { title: string; body: string; link: string },
+  ): Promise<void> {
+    const employee = await this.prisma.employee.findUnique({
+      where: { id: employeeId },
+      select: { email: true, firstName: true, preferredName: true },
+    });
+    if (!employee) return;
+
+    await this.inbox.notify([employeeId], {
+      kind: NotificationKind.SHIFT_TOMORROW,
+      title: words.title,
+      body: words.body,
+      link: words.link,
+    });
+
+    await this.dispatch(employee.email, words.title, [
+      `Hello ${employee.preferredName ?? employee.firstName},`,
+      '',
+      words.body,
+      '',
+      `Your schedule: ${this.appUrl}${words.link}`,
+      '',
+      `To stop these reminders, turn off "You're on tomorrow" on Email settings: ${this.appUrl}/notifications`,
+    ]);
+  }
+
   /// A task of theirs on their onboarding checklist is due soon or overdue
   /// (see `checklists/onboarding-reminders.ts`). One message for all of them.
   async onboardingReminder(

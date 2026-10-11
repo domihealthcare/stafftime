@@ -9,6 +9,12 @@ export class UpdatePreferencesDto {
   @IsBoolean()
   wantsDailyDigest?: boolean;
 
+  /// Whether to be told the evening before a day you work: "You're on
+  /// tomorrow", on the bell and by email. Everybody's own to turn off.
+  @IsOptional()
+  @IsBoolean()
+  wantsShiftReminders?: boolean;
+
   /// The parts of the round-up to leave out (`email/digest-topics.ts`). The
   /// whole list, not a change to it.
   @IsOptional()

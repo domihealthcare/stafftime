@@ -42,7 +42,7 @@ export function ImportStaff({
 }: {
   locations: LocationSummary[];
   existingEmails: string[];
-  onImported: (count: number) => void;
+  onImported: (result: { added: number; onboarding: number }) => void;
 }) {
   const [text, setText] = useState('');
   const [jobRoles, setJobRoles] = useState<JobRole[]>([]);
@@ -69,7 +69,7 @@ export function ImportStaff({
     try {
       const result = await api.importEmployees(ready.map((row) => row.person!));
       setText('');
-      onImported(result.created);
+      onImported({ added: result.created, onboarding: result.onboardingStarted ?? 0 });
     } catch (cause) {
       setError(cause instanceof ApiError ? cause.message : 'Could not add them.');
     } finally {

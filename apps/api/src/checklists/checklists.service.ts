@@ -20,6 +20,10 @@ import { InboxService } from '../email/inbox.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { QueryChecklistsDto, StartChecklistDto, UpdateTaskDto } from './dto/checklist.dto';
 
+/// How long after somebody's hire date adding them still starts their
+/// onboarding by itself. Further back, they are not new.
+export const AUTO_ONBOARDING_DAYS = 30;
+
 const CHECKLIST_INCLUDE = {
   employee: {
     select: {
@@ -52,6 +56,54 @@ export class ChecklistsService {
     private readonly prisma: PrismaService,
     private readonly inbox: InboxService,
   ) {}
+
+  /**
+   * Starts somebody's onboarding without being asked (October 2026,
+   * Dominguez — a "smarter" idea): when a new member of staff is added with a
+   * hire date, or given one, the practice's default onboarding template is
+   * copied for them, counting from that date, as **Start checklist** would.
+   *
+   * Only for somebody actually new — hired no more than `AUTO_ONBOARDING_DAYS`
+   * ago, or not yet started — so adding the existing staff, or correcting a
+   * long-serving person's hire date, starts nothing. Never a second time: not
+   * if they have ever had an onboarding checklist, finished or not. Nothing
+   * happens (and nothing is refused) when there is no default template yet,
+   * or they have left. Returns whether one was started.
+   */
+  async startOnboardingIfNew(employeeId: string, actor: AuthUser): Promise<boolean> {
+    const employee = await this.prisma.employee.findUnique({
+      where: { id: employeeId },
+      select: {
+        hireDate: true,
+        terminationDate: true,
+        externalId: true,
+        _count: { select: { checklists: { where: { kind: ChecklistKind.ONBOARDING } } } },
+      },
+    });
+    if (!employee?.hireDate || employee.terminationDate) return false;
+    // Demo staff come with their own made-up history.
+    if (employee.externalId?.startsWith('demo:')) return false;
+    if (employee._count.checklists > 0) return false;
+    if (employee.hireDate < addUtcDays(practiceToday(), -AUTO_ONBOARDING_DAYS)) return false;
+
+    const template = await this.prisma.checklistTemplate.findFirst({
+      where: { kind: ChecklistKind.ONBOARDING, isDefault: true, archivedAt: null },
+      select: { id: true, _count: { select: { tasks: true } } },
+    });
+    if (!template || template._count.tasks === 0) return false;
+
+    try {
+      await this.start(
+        { employeeId, kind: ChecklistKind.ONBOARDING, templateId: template.id },
+        actor,
+      );
+      return true;
+    } catch (error) {
+      // Started by somebody else in the meantime: nothing lost.
+      if (error instanceof BadRequestException) return false;
+      throw error;
+    }
+  }
 
   /// Copies a template into a checklist for one person.
   ///

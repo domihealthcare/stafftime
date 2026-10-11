@@ -251,7 +251,11 @@ model Employee {
   /// and one admin does not need all three chasing the same lapsed licence, and
   /// an unwanted daily email is one that gets filtered, taking the one that
   /// mattered with it. Ignored for employees, who never receive it.
-  wantsDailyDigest  Boolean       @default(true)
+  wantsDailyDigest    Boolean       @default(true)
+  /// "You're on tomorrow" — the evening before each day they work, on the
+  /// bell and by email (October 2026, Dominguez: "should be able to turn off
+  /// as a user"). On by default; theirs to turn off on Email settings.
+  wantsShiftReminders Boolean       @default(true)
   /// The parts of the round-up this manager does not want (October 2026,
   /// Dominguez: "certain managers should be notified of certain things").
   /// Stored as what is left out, so a part added later reaches everybody until
@@ -259,7 +263,7 @@ model Employee {
   /// is down for still goes to everyone who gets the round-up — see
   /// `email/digest-topics.ts`. The Time off part also decides who is told of a
   /// new request as it comes in.
-  mutedDigestTopics DigestTopic[] @default([])
+  mutedDigestTopics   DigestTopic[] @default([])
 
   photo EmployeePhoto?
 
@@ -824,6 +828,8 @@ enum PunchReminderKind {
   CLOCK_IN
   /// The shift ended and they are still clocked in.
   CLOCK_OUT
+  /// The evening before: "You're on tomorrow".
+  TOMORROW
 }
 
 /// That somebody was reminded about a punch for a shift (October 2026,
@@ -2117,6 +2123,8 @@ enum NotificationKind {
   REQUIRED
   /// The provider on-call schedule: a swap asked or answered, a day changed.
   ON_CALL
+  /// The evening before a day they work: "You're on tomorrow".
+  SHIFT_TOMORROW
 }
 
 /// Something the app wants one person to know, shown under the bell in the

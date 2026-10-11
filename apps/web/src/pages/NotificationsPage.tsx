@@ -20,6 +20,7 @@ export function NotificationsPage() {
   const [pending, setPending] = useState<DigestPreferences>({});
   const subscribed = pending.wantsDailyDigest ?? employee?.wantsDailyDigest ?? true;
   const muted = pending.mutedDigestTopics ?? employee?.mutedDigestTopics ?? [];
+  const shiftReminders = pending.wantsShiftReminders ?? employee?.wantsShiftReminders ?? true;
 
   const loadTeam = useCallback(async () => {
     if (!isManager) return;
@@ -87,6 +88,29 @@ export function NotificationsPage() {
           <Alert>{error}</Alert>
         </div>
       )}
+
+      <Card className="mb-4 p-4" data-testid="shift-reminders">
+        <div className="flex flex-wrap items-start justify-between gap-3">
+          <div className="min-w-0">
+            <h2 className="text-sm font-semibold text-slate-900">You&rsquo;re on tomorrow</h2>
+            <p className="mt-1 text-sm text-slate-600">
+              The evening before a day you work, a note under the bell and an email with
+              tomorrow&rsquo;s hours, place and any note on the shift. Not on a day off.
+            </p>
+          </div>
+          <Switch
+            label="You're on tomorrow"
+            on={shiftReminders}
+            disabled={busy}
+            onChange={(next) => void saveOwn({ wantsShiftReminders: next })}
+          />
+        </div>
+        {!shiftReminders && (
+          <p className="mt-3 text-xs text-slate-500">
+            Off. Your shifts are still on your Schedule, and you are still told when one changes.
+          </p>
+        )}
+      </Card>
 
       <Card className="p-4">
         <div className="flex flex-wrap items-start justify-between gap-3">

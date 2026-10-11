@@ -92,6 +92,8 @@ export interface Employee extends EmployeeSummary {
   /// Whether this manager gets the nightly round-up. Ignored for employees,
   /// who are never sent it.
   wantsDailyDigest?: boolean;
+  /// "You're on tomorrow" the evening before a day they work. Their own.
+  wantsShiftReminders?: boolean;
   /// The parts of the round-up they leave out (`lib/digest-topics.ts`).
   mutedDigestTopics?: DigestTopic[];
   lastLoginAt?: string | null;
@@ -1515,6 +1517,7 @@ export type DigestTopic =
 
 export interface DigestPreferences {
   wantsDailyDigest?: boolean;
+  wantsShiftReminders?: boolean;
   mutedDigestTopics?: DigestTopic[];
 }
 
