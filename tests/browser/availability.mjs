@@ -144,9 +144,11 @@ await step('the scheduler warns about a shift on a time somebody can’t work, b
   });
   if (created.status !== 201) throw new Error(`the shift was refused: ${created.status} ${JSON.stringify(created.body)}`);
 
-  await goTo(mgr, 'Schedule');
+  // Straight to the week with that Saturday in it: the first open week is
+  // Monday-based, the Schedule's weeks start on Sunday, so on a Sunday "Next →"
+  // went a week too far.
+  await mgr.goto(`${BASE}/schedule?week=${saturday}`, { waitUntil: 'networkidle' });
   await mgr.getByRole('button', { name: 'Week', exact: true }).click();
-  await mgr.getByRole('button', { name: 'Next →' }).click();
   const notice = mgr.getByTestId('availability-notice');
   await notice.waitFor({ timeout: 15000 });
   await notice.getByText('1 shift is at a time someone said they can’t work').waitFor({ timeout: 5000 });

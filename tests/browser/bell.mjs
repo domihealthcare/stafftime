@@ -84,9 +84,11 @@ await step('things that happen to you arrive under the bell', async () => {
   const staff = (await call(admin, '/employees')).body;
   const me = staff.find((p) => p.email === 'frontdesk@domihealthcare.com');
   const northBergen = (await call(admin, '/locations')).body.find((l) => l.name === 'North Bergen');
-  const monday = new Date();
-  monday.setHours(0, 0, 0, 0);
-  monday.setDate(monday.getDate() - ((monday.getDay() + 6) % 7) + 7);
+  // Next week's Monday on the Schedule (Sunday-start weeks, New Jersey's day).
+  const monday = new Date(
+    `${new Intl.DateTimeFormat('en-CA', { timeZone: 'America/New_York' }).format(new Date())}T00:00:00`,
+  );
+  monday.setDate(monday.getDate() - monday.getDay() + 8);
   const startsAt = new Date(monday);
   startsAt.setHours(9);
   const endsAt = new Date(monday);
