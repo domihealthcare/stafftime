@@ -1762,3 +1762,122 @@ export interface OnCallSwap {
   requester: OnCallPerson;
   partner: OnCallPerson;
 }
+
+// ---------------------------------------------------------------- 360 feedback
+
+export type Review360QuestionKind = 'RATING' | 'TEXT';
+
+export interface Review360QuestionInput {
+  kind: Review360QuestionKind;
+  prompt: string;
+  selfPrompt?: string | null;
+  hint?: string | null;
+}
+
+export interface Review360Question extends Review360QuestionInput {
+  id: string;
+}
+
+/// A 360 in the list on Surveys: the person's own progress, and for managers
+/// how many have taken part (never who).
+export interface Review360Summary {
+  id: string;
+  title: string;
+  status: 'OPEN' | 'CLOSED';
+  closesOn: string | null;
+  closedAt: string | null;
+  createdAt: string;
+  people: number;
+  mine: { done: number; total: number; selfDone: boolean } | null;
+  tookPart?: number;
+}
+
+export interface Review360Person {
+  id: string;
+  name: string;
+  firstName: string;
+  photoUpdatedAt: string | null;
+  jobRole: string | null;
+  isYou: boolean;
+  state: 'todo' | 'done' | 'skipped';
+}
+
+export interface Review360Detail {
+  id: string;
+  title: string;
+  intro: string | null;
+  status: 'OPEN' | 'CLOSED';
+  closesOn: string | null;
+  closedAt: string | null;
+  questions: Review360Question[];
+  takingPart: boolean;
+  people: Review360Person[];
+  minRaters: number;
+}
+
+export interface ReviewMeeting {
+  id: string;
+  reviewId: string;
+  reviewTitle: string;
+  subject: { id: string; name: string };
+  offeredBy: { id: string; name: string } | null;
+  place: string | null;
+  note: string | null;
+  createMeetLink: boolean;
+  eventId: string | null;
+  chosenAt: string | null;
+  createdAt: string;
+  slots: { id: string; startsAt: string; endsAt: string; chosen: boolean }[];
+}
+
+export interface Review360ReportRow {
+  id: string;
+  name: string;
+  photoUpdatedAt: string | null;
+  raters: number;
+  ready: boolean;
+  selfDone: boolean;
+  overall: number | null;
+  meeting: ReviewMeeting | null;
+}
+
+export interface Review360Reports {
+  id: string;
+  title: string;
+  closedAt: string | null;
+  minRaters: number;
+  people: Review360ReportRow[];
+}
+
+export type Review360ReportQuestion =
+  | {
+      id: string;
+      kind: 'RATING';
+      prompt: string;
+      hint: string | null;
+      answered: number;
+      average: number | null;
+      counts: number[];
+      self: number | null;
+    }
+  | {
+      id: string;
+      kind: 'TEXT';
+      prompt: string;
+      hint: string | null;
+      answered: number;
+      texts: string[];
+      selfText: string | null;
+    };
+
+export interface Review360Report {
+  review: { id: string; title: string; closedAt: string | null };
+  person: { id: string; name: string; photoUpdatedAt: string | null };
+  raters: number;
+  minRaters: number;
+  selfDone: boolean;
+  meeting: ReviewMeeting | null;
+  available: boolean;
+  reason?: string;
+  questions?: Review360ReportQuestion[];
+}

@@ -10,7 +10,13 @@ import {
 import { formatCalendarDate, formatDate, localDate } from '../lib/format';
 import { locale, plural, t as translate, useT } from '../lib/i18n';
 import { useIsManager, useSession } from '../lib/session';
-import type { Announcement, PracticeEvent, Survey } from '../lib/types';
+import type {
+  Announcement,
+  PracticeEvent,
+  Review360Summary,
+  ReviewMeeting,
+  Survey,
+} from '../lib/types';
 import { NewsLanguageToggle, usePostWords } from './NewsLanguage';
 import { PollView, PostActions } from './PostSocial';
 import { Card } from './ui';
@@ -346,6 +352,9 @@ export function SurveysCard() {
   const t = useT();
   const isManager = useIsManager();
   const [waiting, setWaiting] = useState<Survey[]>([]);
+  // An open 360 still to finish, and offers to talk one through.
+  const [reviews, setReviews] = useState<Review360Summary[]>([]);
+  const [meetings, setMeetings] = useState<ReviewMeeting[]>([]);
 
   useEffect(() => {
     let cancelled = false;
@@ -361,17 +370,53 @@ export function SurveysCard() {
           ),
       )
       .catch(() => undefined);
+    api
+      .reviews360()
+      .then(
+        (found) =>
+          !cancelled &&
+          setReviews(
+            found.filter(
+              (review) =>
+                review.status === 'OPEN' && review.mine && review.mine.done < review.mine.total,
+            ),
+          ),
+      )
+      .catch(() => undefined);
+    api
+      .myReviewMeetings()
+      .then((found) => !cancelled && setMeetings(found.filter((meeting) => !meeting.chosenAt)))
+      .catch(() => undefined);
     return () => {
       cancelled = true;
     };
   }, [isManager]);
 
-  if (waiting.length === 0) return null;
+  if (waiting.length === 0 && reviews.length === 0 && meetings.length === 0) return null;
 
   return (
     <Card className="p-4" testId="surveys-card">
       <h2 className="text-sm font-semibold text-slate-900">{t('Surveys waiting for you')}</h2>
       <ul className="mt-2 space-y-1 text-sm">
+        {meetings.map((meeting) => (
+          <li key={meeting.id}>
+            <Link to={`/meetings/${meeting.id}`} className={linkClass}>
+              {t('Pick a time to talk about your 360 feedback')} →
+            </Link>
+          </li>
+        ))}
+        {reviews.map((review) => (
+          <li key={review.id}>
+            <Link to={`/surveys/360/${review.id}`} className={linkClass}>
+              {review.title} ·{' '}
+              {t('{done} of {total} done', {
+                done: String(review.mine!.done),
+                total: String(review.mine!.total),
+              })}{' '}
+              →
+            </Link>
+          </li>
+        ))}
         {waiting.slice(0, 3).map((survey) => (
           <li key={survey.id}>
             <Link to="/surveys" className={linkClass}>

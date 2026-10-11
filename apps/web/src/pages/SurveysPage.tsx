@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { useConfirm } from '../components/ConfirmDialog';
 import { NeedsAttention } from '../components/NeedsAttention';
 import { SuggestionBoxCard, feedbackKindLabel } from '../components/SuggestionBox';
+import { Reviews360Section } from '../components/Reviews360Section';
 import {
   Alert,
   Badge,
@@ -120,6 +121,8 @@ export function SurveysPage() {
           </p>
         )}
       </section>
+
+      <Reviews360Section />
 
       <SuggestionBox />
 
