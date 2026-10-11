@@ -3137,6 +3137,67 @@ Not carried: an employee-facing report, a reminder for people who have not
 finished, or AI summaries of the written answers (that would need a new line
 in "Is it really anonymous?"). `src/reviews360/`, `tests/browser/review360.mjs`.
 
+## Running late and the no-show alert
+
+October 2026, Dominguez — two "smarter" ideas. **Running late**: Home shows
+**Running late?** under today's shift while it is within three hours of
+starting (until it ends) and they are not clocked in. A choice of 10–60
+minutes is saved on the shift (`RunningLate`, upserted, so **Change** moves
+it) and the office's managers are told on the bell — `common/office-managers.ts`
+picks managers and admins assigned to the shift's office, or every manager
+when none is. Only for one's own published shift; refused once clocked in.
+The timesheet's entry, through its shift, shows it. **No-show**: the
+five-minute timer looks at published shifts 30 minutes to two hours in with
+no punch by that person; skipping approved time off, closures, and a
+"running late" whose time plus 15 minutes has not passed; claims the shift
+(`PunchReminder` kind `NO_SHOW`) and tells the office's managers on the bell.
+Bell only — an email about somebody 30 minutes late is read too late to help.
+
+## Asking for a correction
+
+October 2026, Dominguez — a "smarter" idea. Until now a forgotten clock-out
+was sorted out by word of mouth. `CorrectionRequest` holds the times asked for
+and the reason, one waiting per entry, for closed entries of one's own
+(`correctionProblem`: real times, the finish after the start and not in the
+future, at most 16 hours, near the punch's own day, and a change). Managers
+down for hours (`readersOf(HOURS)`) hear on the bell; the round-up's
+`correctionsAsked` (Hours part, *sort out today*) and the Timesheet's
+**Corrections asked for** card list them. Approving claims the request
+(`updateMany` while PENDING, so two managers cannot both act), then calls the
+same `TimeEntriesService.edit` as Edit with "Asked for by …: reason" — paid
+hours throw the usual 409, the claim is put back, and the card asks for the
+deliberate yes. Declining needs words for the person. Never decided by the
+person who asked. The person hears either way by bell and email.
+
+## Offboarding started by itself
+
+October 2026, Dominguez. `startOffboardingIfLeaving` runs after the terminate
+route: the default offboarding template from the last day, unless the last day
+is more than 30 days ago, an offboarding checklist of theirs is unfinished or
+was started in the last 182 days (left, brought back, left again), they are
+demo staff, or there is no default template.
+
+## Approving the clean time off
+
+October 2026, Dominguez — a "smarter" idea, the time-off twin of "Approve the
+clean hours". `CleanTimeOffService.check` reads every waiting request but the
+manager's own: the balance for its first day's policy year (`balanceOn`;
+`remaining` already counts every waiting request), the clashes ("Too many off
+at once") and its shifts still to come. Clean (`notCleanBecause` null) means
+PTO or sick, nothing negative, no clash, no shift. The button sends the clean
+ids; the server checks each again and approves through `PtoService.review`,
+so the person is told and two managers cannot both decide.
+
+## Your week
+
+October 2026, Dominguez. On Sunday from 6pm (New Jersey), the five-minute
+timer sends each active person who has not turned it off
+(`wantsWeeklySummary`) last week's hours — closed entries from last Sunday to
+Saturday, leaving out (and naming) uncorrected midnight clock-outs — and this
+week's published shifts still to come. Nothing for somebody with neither.
+Claimed per person and week (`WeeklySummary`) before sending; bell and email,
+the email saying where to turn it off.
+
 ## Time off that lands on shifts
 
 October 2026, Dominguez — a "make it smarter" idea. Approving time off used to

@@ -95,10 +95,14 @@ export class EmployeesController {
   @Delete(':id')
   @Roles(Role.ADMIN)
   @HttpCode(HttpStatus.OK)
-  terminate(
+  async terminate(
     @Param('id', ParseUUIDPipe) id: string,
+    @CurrentUser() actor: AuthUser,
     @Query('terminationDate') terminationDate?: string,
   ) {
-    return this.employees.terminate(id, terminationDate);
+    const left = await this.employees.terminate(id, terminationDate);
+    // Their offboarding starts too (`ChecklistsService.startOffboardingIfLeaving`).
+    const offboardingStarted = await this.checklists.startOffboardingIfLeaving(id, actor);
+    return { ...left, offboardingStarted };
   }
 }

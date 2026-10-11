@@ -9,6 +9,7 @@ const empty = (): DigestContents => ({
   missingPunches: [],
   missedShifts: [],
   payrollDue: [],
+  correctionsAsked: [],
   regularShiftClashes: [],
   belowMinimum: [],
   undecidedTimeOff: [],

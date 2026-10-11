@@ -21,6 +21,7 @@ import { PtoPolicyEditor } from '../components/PtoPolicyEditor';
 import { useConfirm } from '../components/ConfirmDialog';
 import { atPracticeTime, practiceClockOf } from '../lib/practice-time';
 import { useApproveTimeOff } from '../components/ApproveTimeOff';
+import { ApproveCleanTimeOff } from '../components/ApproveCleanTimeOff';
 import { useDeclineTimeOff } from '../components/DeclineTimeOff';
 import {
   Alert,
@@ -178,6 +179,18 @@ export function TimeOffPage() {
               setShowForm(false);
               void load();
             }}
+          />
+        </div>
+      )}
+
+      {isManager && pendingForMe > 0 && (
+        <div className="mb-3">
+          <ApproveCleanTimeOff
+            refreshKey={requests
+              .filter((request) => request.status === 'PENDING')
+              .map((request) => request.id)
+              .join()}
+            onDone={() => void load()}
           />
         </div>
       )}

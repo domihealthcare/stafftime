@@ -797,6 +797,64 @@ Beyond the phases, the parts worth knowing about before picking up work:
   `components/Reviews360Section.tsx`, `pages/Review360Page.tsx`,
   `Review360ReportsPage.tsx`, `ReviewMeetingPage.tsx`, migration
   `20261011020000_reviews_360`; `tests/browser/review360.mjs`.
+- **Running late** (11 October 2026, Dominguez — a "smarter" idea): on Home,
+  before clocking in for today's shift (from three hours before it until it
+  ends), **Running late?** → about 10 / 20 / 30 / 45 / 60 minutes; the
+  managers of that office are told on the bell (`officeManagers`: managers and
+  admins at the office, else all of them), not by email; **Change** gives a new
+  time. The timesheet shows "Running late: said about 20 minutes" beside the
+  entry. Excuses nothing by itself. `RunningLate` (one per shift),
+  `shifts/running-late.service.ts`, `POST /shifts/:id/running-late`,
+  `components/RunningLate.tsx`; `tests/browser/running-late.mjs`.
+- **Managers told about a no-show** (11 October 2026, Dominguez): 30 minutes
+  into a published shift with no clock-in (and no more than two hours), the
+  office's managers hear "… isn't clocked in for 9:00 AM at North Bergen" on
+  the bell, once (`PunchReminder` kind `NO_SHOW`) — not on approved time off,
+  in a closure, or before a "running late" time plus 15 minutes has passed.
+  The person's own 15-minute reminder is unchanged. Run by the five-minute
+  timer (`PunchRemindersService.tellManagersOfNoShows`).
+- **Ask for a correction** (11 October 2026, Dominguez): on their own
+  Timesheet, staff press **Ask to fix** on a closed entry, give the times
+  (a finish before the start is the next morning) and what happened. One
+  waiting per entry; times checked (in the past, under 16 hours, the same
+  day). Managers down for hours are told on the bell; **Corrections asked
+  for** at the top of the Timesheet, on its banner and in the nightly email
+  (*sort out today*, Hours part). **Approve** is the ordinary `edit` with
+  "Asked for by … : reason" (paid hours still need a deliberate yes — the
+  request is put back to waiting if refused); **Decline** needs a reason.
+  The person is told by bell and email. Never your own. `CorrectionRequest`,
+  `time-entries/correction-requests.service.ts` (`POST
+  /time-entries/:id/correction`, `GET /corrections`, approve / decline),
+  `components/Corrections.tsx`; `tests/browser/corrections.mjs`.
+- **Offboarding starts by itself** (11 October 2026, Dominguez): marking
+  somebody as having left starts the default offboarding template from their
+  last day — not for a last day more than 30 days ago, nor while one is
+  unfinished or one was started in the last half year.
+  `ChecklistsService.startOffboardingIfLeaving`, from the terminate route.
+- **Approve the clean time off** (11 October 2026, Dominguez — like "Approve
+  the clean hours"): **Approve all N with nothing to check**, on the
+  Schedule's requests and the Time off screen, approves every waiting request
+  (not your own) that is PTO or sick with enough left once counted
+  (`balanceOn` its first day's policy year), not "Too many off at once", and
+  on no shifts still to come; each re-checked on the server and approved
+  through the ordinary review. `pto/clean-time-off.ts`,
+  `clean-time-off.service.ts`, `GET /pto/clean`, `POST /pto/approve-clean`,
+  `components/ApproveCleanTimeOff.tsx`; `tests/browser/clean-time-off.mjs`.
+- **Your week** (11 October 2026, Dominguez — with an off switch like
+  "You're on tomorrow"): Sunday from 6pm, bell and email — last week's hours
+  (an uncorrected midnight clock-out left out and named) and this week's
+  published shifts; nothing when there is neither. Turned off on Email
+  settings (`Employee.wantsWeeklySummary`); claimed per person and week
+  (`WeeklySummary`). `time-entries/weekly-summary.ts`,
+  `maintenance/weekly-summary.service.ts`; `tests/browser/weekly.mjs`.
+  Migration `20261011030000_running_late_corrections_weekly` holds this
+  round's tables.
+- **Browser suites on a Sunday** (fixed 11 October 2026): rota-print,
+  overtime, bell and availability worked out "next week" Monday to Sunday on
+  the test machine's clock, while the Schedule's weeks run Sunday to Saturday
+  in New Jersey — so every Sunday (UTC) they looked a week too far. They now
+  take next Monday as this Sunday + 8 on New Jersey's calendar, or open the
+  week directly; auto-clock-out looks in last week for yesterday's punch.
 - **Required reading and tasks** (10 October 2026, Dominguez — from a survey
   of similar apps: "something the admin/managers can require for need to
   know information or required tasks", a **nag, never a gate**): **Manage →

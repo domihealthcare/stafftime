@@ -137,6 +137,14 @@ export class PtoPolicyService {
    * starting point for a year — days already taken before Domi Staff, and
    * optionally what really carried into it. Both feed the walk as well.
    */
+  /// The balance for the policy year a day falls in — for a request's
+  /// first day, which may be next year's.
+  async balanceOn(employeeId: string, day: Date): Promise<PtoBalance> {
+    const policy = await this.get();
+    return (await this.balanceWithTerms(employeeId, policy, this.policyYearOf(day, policy)))
+      .balance;
+  }
+
   async balanceFor(employeeId: string, year?: number): Promise<PtoBalance> {
     return (await this.balanceWithTerms(employeeId, await this.get(), year)).balance;
   }

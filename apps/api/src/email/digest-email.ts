@@ -75,6 +75,16 @@ const SECTIONS: SectionSpec[] = [
     subject: () => 'Payroll is due — hours to sort out',
   },
   {
+    key: 'correctionsAsked',
+    tier: 'today',
+    // Staff asked for their hours to be fixed: see
+    // time-entries/correction-requests.service.ts.
+    heading: 'Corrections asked for',
+    path: '/timesheet',
+    screen: 'Timesheet',
+    subject: (n) => `${n} ${plural(n, 'correction', 'corrections')} asked for`,
+  },
+  {
     key: 'silentKiosks',
     tier: 'today',
     heading: 'A tablet has stopped being used',

@@ -23,6 +23,8 @@ const SHIFT_INCLUDE = {
   },
   location: { select: { id: true, name: true, slug: true, timezone: true } },
   jobRole: { select: { id: true, name: true, colour: true } },
+  /// "Running late" said for it, so Home can say so (only ever their own).
+  runningLate: { select: { minutes: true, createdAt: true } },
 } satisfies Prisma.ShiftInclude;
 
 /// A shift's note as typed, or null when there is nothing in it.

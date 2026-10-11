@@ -192,14 +192,27 @@ const STAFF: Section[] = [
         question: 'I forgot to clock out.',
         answer: (
           <p>
-            Clock out as soon as you notice, then tell a manager what time you really left. They
-            correct the time, and the correction is recorded with a reason so nobody has to remember
-            later why it changed. You cannot change your own punches. If you have a shift, the app
-            reminds you by email and under the bell 15 minutes after it ends while you are still
-            clocked in — and 15 minutes after it starts if you have not clocked in. If you are still
-            clocked in at midnight, the app clocks you out at 12:00 AM and tells you, so you can
-            clock in as usual the next day; tell your manager when you really finished, because
-            those hours cannot be approved until they correct the time.
+            Clock out as soon as you notice. Then, on your <Screen>Timesheet</Screen>, press{' '}
+            <strong>Ask to fix</strong> on that entry, put in the times you really worked and say
+            what happened. A manager approves it — it is then recorded with your reason, so nobody
+            has to remember later why it changed — or tells you why not; you are told either way.
+            You cannot change your own punches yourself. If you have a shift, the app reminds you by
+            email and under the bell 15 minutes after it ends while you are still clocked in — and
+            15 minutes after it starts if you have not clocked in. If you are still clocked in at
+            midnight, the app clocks you out at 12:00 AM and tells you, so you can clock in as usual
+            the next day; tell your manager when you really finished, because those hours cannot be
+            approved until they correct the time.
+          </p>
+        ),
+      },
+      {
+        question: 'I am running late',
+        answer: (
+          <p>
+            On <Screen>Home</Screen>, before you clock in, press <strong>Running late?</strong> and
+            pick about how late — 10, 20, 30, 45 minutes or an hour. The managers of your office are
+            told straight away, and your timesheet shows that you let them know. Press{' '}
+            <strong>Change</strong> to give a new time. Clock in as usual when you get there.
           </p>
         ),
       },
@@ -424,6 +437,16 @@ const STAFF: Section[] = [
             not have it, turn off <strong>You&rsquo;re on tomorrow</strong> under the menu →{' '}
             <Screen>Email settings</Screen>; your shifts are still on your Schedule, and you are
             still told whenever one changes.
+          </p>
+        ),
+      },
+      {
+        question: '“Your week” on Sunday',
+        answer: (
+          <p>
+            On Sunday evening you get a short note under the bell and an email: the hours you worked
+            last week and your shifts this week. Turn off <strong>Your week</strong> under the menu
+            → <Screen>Email settings</Screen> if you would rather not.
           </p>
         ),
       },
@@ -1124,6 +1147,33 @@ const MANAGERS: Section[] = [
         ),
       },
       {
+        question: 'Corrections staff ask for',
+        answer: (
+          <p>
+            Staff can press <strong>Ask to fix</strong> on their own entries — a forgotten
+            clock-out, a phone that died — with the times and what happened. You are told under the
+            bell (if hours are your part of the round-up), and they wait in{' '}
+            <strong>Corrections asked for</strong> at the top of the <Screen>Timesheet</Screen> and
+            in the nightly email. <strong>Approve</strong> makes it an ordinary edit, with
+            &ldquo;Asked for by…&rdquo; and their reason; <strong>Decline</strong> asks you why, for
+            them. Your own are for another manager.
+          </p>
+        ),
+      },
+      {
+        question: 'Somebody is late, or not in yet',
+        answer: (
+          <p>
+            When somebody presses <strong>Running late?</strong> on Home, the managers of their
+            office are told under the bell (and on phones with notifications on), and the timesheet
+            shows it beside the late flag. Thirty minutes into a shift with nobody clocked in, the
+            same managers hear &ldquo;… isn&rsquo;t clocked in&rdquo; — once, not on approved time
+            off or a closure, and not until a quarter of an hour after the time somebody said they
+            would be late. The Directory has their phone number.
+          </p>
+        ),
+      },
+      {
         question: 'Shifts with no clock-in',
         answer: (
           <p>
@@ -1656,6 +1706,18 @@ const MANAGERS: Section[] = [
         ),
       },
       {
+        question: 'Approving the clean time off',
+        answer: (
+          <p>
+            With requests waiting, the Schedule&rsquo;s requests and the <Screen>Time off</Screen>{' '}
+            screen offer <strong>Approve all N with nothing to check</strong>: after asking, it
+            approves every request that is PTO or sick with enough days left, leaves nobody too thin
+            and lands on no shifts. Each person is told as usual. Anything with a catch stays for
+            you to look at one by one.
+          </p>
+        ),
+      },
+      {
         question: 'Balances, and the time off rules',
         answer: (
           <p>
@@ -2032,7 +2094,8 @@ const MANAGERS: Section[] = [
               Adding somebody new with a hire date — one at a time or several — starts their{' '}
               <strong>onboarding checklist</strong> (the default template) by itself, counting from
               that date; so does giving a hire date later. Not for somebody hired more than 30 days
-              ago, and never a second one.
+              ago, and never a second one. Marking somebody as having left starts their{' '}
+              <strong>offboarding checklist</strong> the same way, counting from their last day.
             </li>
             <li>
               <strong>People who have never signed in</strong>, at the top of the Staff screen,

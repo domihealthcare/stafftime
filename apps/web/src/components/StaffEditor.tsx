@@ -1042,6 +1042,9 @@ function Leaving({ person, onLeft }: { person: Employee; onLeft: () => void }) {
             the Directory. Their timesheets are kept, and they can be brought back from{' '}
             <strong>Show former staff</strong> if this was a mistake.
           </p>
+          <p className="mt-2">
+            Their offboarding checklist starts by itself, under Onboarding &amp; offboarding.
+          </p>
         </>
       ),
       confirmLabel: 'Yes, no longer employed',
@@ -1088,7 +1091,7 @@ function Leaving({ person, onLeft }: { person: Employee; onLeft: () => void }) {
             className="mt-1 rounded-lg border-slate-300 text-sm shadow-sm focus:border-brand-600 focus:ring-brand-600"
           />
           <p className="mt-1 text-xs text-slate-600">
-            Their offboarding checklist counts from this day.
+            Their offboarding checklist starts by itself, counting from this day.
           </p>
           {problem && (
             <div className="mt-3">

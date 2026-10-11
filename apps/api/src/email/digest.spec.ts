@@ -89,6 +89,7 @@ function build(
     practiceEvent: { findMany: jest.fn().mockResolvedValue(data.closures ?? []) },
     closingRecord: { findMany: jest.fn().mockResolvedValue(data.closingRecords ?? []) },
     supplyRequest: { findMany: jest.fn().mockResolvedValue(data.supplies ?? []) },
+    correctionRequest: { findMany: jest.fn().mockResolvedValue([]) },
     feedback: {
       aggregate: jest.fn().mockResolvedValue({
         _count: { _all: data.suggestions?.length ?? 0 },

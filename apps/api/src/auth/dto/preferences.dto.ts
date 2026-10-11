@@ -15,6 +15,11 @@ export class UpdatePreferencesDto {
   @IsBoolean()
   wantsShiftReminders?: boolean;
 
+  /// Whether to get "Your week" on Sunday evening. Everybody's own.
+  @IsOptional()
+  @IsBoolean()
+  wantsWeeklySummary?: boolean;
+
   /// The parts of the round-up to leave out (`email/digest-topics.ts`). The
   /// whole list, not a change to it.
   @IsOptional()

@@ -8,6 +8,7 @@ import { useT } from '../lib/i18n';
 import { PTO_TYPE_LABELS, hasNone, ptoTypeLabel } from '../lib/time-off';
 import type { PtoBalance, PtoRequest } from '../lib/types';
 import { useApproveTimeOff } from './ApproveTimeOff';
+import { ApproveCleanTimeOff } from './ApproveCleanTimeOff';
 import { useDeclineTimeOff } from './DeclineTimeOff';
 import { Alert, buttonClass } from './ui';
 
@@ -123,6 +124,15 @@ export function RequestsToDecide({ onDecided }: { onDecided: () => void }) {
           <Alert>{error}</Alert>
         </div>
       )}
+      <div className="border-t border-amber-200 px-3 py-1.5">
+        <ApproveCleanTimeOff
+          refreshKey={requests.map((request) => request.id).join()}
+          onDone={() => {
+            void load();
+            onDecided();
+          }}
+        />
+      </div>
       <ul className="divide-y divide-amber-200 border-t border-amber-200 px-3">
         {requests.map((request) => (
           <li key={request.id} className="flex items-start justify-between gap-2 py-1">

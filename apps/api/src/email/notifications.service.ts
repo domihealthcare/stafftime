@@ -148,6 +148,18 @@ export class NotificationsService {
     await this.personal(employeeIds, NotificationKind.COVER_REQUEST, words);
   }
 
+  /// Something to know now, on the bell (and so on phones with notifications
+  /// on) but not by email — by the time an email is read it is old news:
+  /// somebody running late, somebody not in yet.
+  async bell(
+    employeeIds: string[],
+    kind: NotificationKind,
+    words: { title: string; body: string; link: string },
+  ): Promise<void> {
+    if (employeeIds.length === 0) return;
+    await this.inbox.notify(employeeIds, { kind, ...words });
+  }
+
   /// Something for these people to act on, on the bell and by email, linking
   /// to where it is done — asked to cover, offered times to meet.
   async personal(
@@ -175,6 +187,24 @@ export class NotificationsService {
         `${this.appUrl}${words.link}`,
       ]);
     }
+  }
+
+  /// Somebody asked for a correction to their hours: on the bell of the
+  /// managers down for hours in the round-up (Email settings), or all of them
+  /// when nobody is. The Timesheet banner and nightly email list it too.
+  async correctionAsked(employeeId: string, words: { title: string; body: string }): Promise<void> {
+    const managers = await this.prisma.employee.findMany({
+      where: {
+        role: { in: [Role.MANAGER, Role.ADMIN] },
+        employmentStatus: EmploymentStatus.ACTIVE,
+        id: { not: employeeId },
+      },
+      select: { id: true, mutedDigestTopics: true },
+    });
+    await this.inbox.notify(
+      readersOf(DigestTopic.HOURS, managers).map((manager) => manager.id),
+      { kind: NotificationKind.CORRECTION, ...words, link: '/timesheet' },
+    );
   }
 
   /// Managers are not told anything today unless they go and look, which is how
@@ -387,6 +417,29 @@ export class NotificationsService {
       `Your schedule: ${this.appUrl}${words.link}`,
       '',
       `To stop these reminders, turn off "You're on tomorrow" on Email settings: ${this.appUrl}/notifications`,
+    ]);
+  }
+
+  /// "Your week" on Sunday evening (see `time-entries/weekly-summary.ts`).
+  /// Theirs to turn off on Email settings.
+  async weeklySummary(
+    employeeId: string,
+    words: { title: string; body: string; link: string },
+  ): Promise<void> {
+    const employee = await this.prisma.employee.findUnique({
+      where: { id: employeeId },
+      select: { email: true, firstName: true, preferredName: true },
+    });
+    if (!employee) return;
+    await this.inbox.notify([employeeId], { kind: NotificationKind.WEEKLY_SUMMARY, ...words });
+    await this.dispatch(employee.email, words.title, [
+      `Hello ${employee.preferredName ?? employee.firstName},`,
+      '',
+      words.body,
+      '',
+      `Your schedule: ${this.appUrl}${words.link}`,
+      '',
+      `To stop these, turn off "Your week" on Email settings: ${this.appUrl}/notifications`,
     ]);
   }
 

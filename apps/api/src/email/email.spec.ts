@@ -305,6 +305,7 @@ describe('NotificationsService', () => {
           'missingPunches',
           'missedShifts',
           'payrollDue',
+          'correctionsAsked',
           'regularShiftClashes',
           'belowMinimum',
           'undecidedTimeOff',

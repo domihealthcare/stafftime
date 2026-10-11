@@ -1,5 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import {
+  CorrectionStatus,
   ChecklistTaskStatus,
   EmploymentStatus,
   EventAudience,
@@ -23,6 +24,7 @@ import { PracticeSettingsService } from '../settings/practice-settings.service';
 import { loadPunchPatterns } from '../time-entries/punch-patterns';
 import { describeMissedShift, loadMissedShifts } from '../time-entries/missed-shifts';
 import { loadPayrollDue } from '../time-entries/payroll-due';
+import { askedWords } from '../time-entries/correction-requests';
 import { describeShortDay, loadShortDays, SHORT_DAYS_AHEAD } from '../staffing/minimums';
 import {
   describeRegularShiftClash,
@@ -86,6 +88,9 @@ export interface DigestContents {
   /// still stands between its hours and payroll. See
   /// `time-entries/payroll-due.ts`.
   payrollDue: string[];
+  /// Corrections staff asked for, waiting for a manager: see
+  /// `time-entries/correction-requests.service.ts`.
+  correctionsAsked: string[];
   /// Regular shifts somebody's availability now rules out, in the next eight
   /// weeks: see `availability/regular-shift-clashes.ts`.
   regularShiftClashes: string[];
@@ -177,6 +182,7 @@ export class AttentionService {
       regularClashes,
       shortDays,
       payrollDue,
+      corrections,
     ] = await Promise.all([
       this.prisma.employeeCredential.findMany({
         where: {
@@ -266,6 +272,16 @@ export class AttentionService {
         addDaysTo(localDateIn(new Date(), PRACTICE_ZONE), SHORT_DAYS_AHEAD - 1),
       ),
       this.settings.get().then((settings) => loadPayrollDue(this.prisma, settings.payPeriodStart)),
+      this.prisma.correctionRequest.findMany({
+        where: { status: CorrectionStatus.PENDING },
+        select: {
+          clockInAt: true,
+          clockOutAt: true,
+          reason: true,
+          employee: { select: { firstName: true, lastName: true } },
+        },
+        orderBy: { createdAt: 'asc' },
+      }),
     ]);
 
     /// "8:52 AM", on the practice's clock.
@@ -299,6 +315,9 @@ export class AttentionService {
       ),
       missedShifts: missed.map(describeMissedShift),
       payrollDue,
+      correctionsAsked: corrections.map(
+        (row) => `${who(row.employee)} — ${askedWords(row)} — “${row.reason}”`,
+      ),
       regularShiftClashes: regularClashes.map(describeRegularShiftClash),
       belowMinimum: shortDays.map(describeShortDay),
       undecidedTimeOff: timeOff.map(

@@ -2,6 +2,7 @@ import { Injectable, Logger } from '@nestjs/common';
 import {
   EmploymentStatus,
   EventAudience,
+  NotificationKind,
   PracticeEventKind,
   Prisma,
   PtoStatus,
@@ -14,6 +15,7 @@ import { LunchNoticesService } from '../events/lunch-notices.service';
 import { LicenseRemindersService } from './license-reminders.service';
 import { OnboardingRemindersService } from './onboarding-reminders.service';
 import { RequirementsService } from '../requirements/requirements.service';
+import { WeeklySummaryService } from './weekly-summary.service';
 import { PrismaService } from '../prisma/prisma.service';
 import {
   addDaysTo,
@@ -23,6 +25,8 @@ import {
   zonedTimeToUtc,
 } from '../common/util/zoned-time.util';
 import { TOMORROW_REMINDER_FROM, tomorrowWords } from '../shifts/tomorrow-reminder';
+import { NO_SHOW_AFTER_MINUTES, NO_SHOW_GRACE_MINUTES, noShowWords } from '../shifts/running-late';
+import { officeManagers } from '../common/office-managers';
 import { toUtcDate } from '../common/util/calendar-date.util';
 
 /// How long after a shift starts (or ends) somebody is reminded to clock in
@@ -66,6 +70,11 @@ export interface PunchReminderReport {
   /// People told in the evening "You're on tomorrow" — see
   /// `shifts/tomorrow-reminder.ts`.
   tomorrowReminders: number;
+  /// Shifts the office's managers were told nobody had clocked in for, 30
+  /// minutes in.
+  noShows: number;
+  /// People sent "Your week" on Sunday evening — see `WeeklySummaryService`.
+  weeklySummaries: number;
 }
 
 /**
@@ -95,6 +104,7 @@ export class PunchRemindersService {
     private readonly licenseReminders: LicenseRemindersService,
     private readonly onboardingReminders: OnboardingRemindersService,
     private readonly requirements: RequirementsService,
+    private readonly weeklySummaries: WeeklySummaryService,
   ) {}
 
   async run(now: Date = new Date()): Promise<PunchReminderReport> {
@@ -104,6 +114,8 @@ export class PunchRemindersService {
       autoClockedOut: await this.autoClockOut.closeForgotten({ now }),
       clockIn: await this.remindToClockIn(now),
       clockOut: await this.remindToClockOut(now),
+      // After the person's own reminder, the managers: still nobody, 30 in.
+      noShows: await this.tellManagersOfNoShows(now),
       // In the evening: tomorrow's rep lunch, or none, to each office.
       lunchNotices: await this.lunchNotices.send(now),
       // During the day rather than with the 5am round-up; the nightly job
@@ -113,6 +125,8 @@ export class PunchRemindersService {
       requiredReminders: await this.requirements.nudge(now),
       // In the evening: each person's shifts tomorrow, unless they turned it off.
       tomorrowReminders: await this.remindAboutTomorrow(now),
+      // On Sunday evening: last week's hours and this week's shifts.
+      weeklySummaries: await this.weeklySummaries.send(now),
     };
     if (report.clockIn || report.clockOut) {
       this.logger.log(`Reminded ${report.clockIn} to clock in and ${report.clockOut} to clock out`);
@@ -211,6 +225,68 @@ export class PunchRemindersService {
       sent += 1;
     }
     return sent;
+  }
+
+  /// Published shifts 30 minutes in (and no more than two hours) with no
+  /// clock-in from the person on them: the managers of that office are told,
+  /// once, on the bell. Not on approved time off, nor in a closure, and not
+  /// before the time somebody said they would be late by has passed, plus a
+  /// quarter of an hour.
+  async tellManagersOfNoShows(now: Date): Promise<number> {
+    const shifts = await this.prisma.shift.findMany({
+      where: {
+        status: ShiftStatus.PUBLISHED,
+        employeeId: { not: null },
+        employee: { employmentStatus: EmploymentStatus.ACTIVE },
+        startsAt: {
+          gte: minutesBefore(now, PUNCH_REMINDER_LOOKBACK_MINUTES),
+          lte: minutesBefore(now, NO_SHOW_AFTER_MINUTES),
+        },
+        endsAt: { gt: now },
+        reminders: { none: { kind: PunchReminderKind.NO_SHOW } },
+      },
+      select: {
+        id: true,
+        employeeId: true,
+        locationId: true,
+        startsAt: true,
+        isRemote: true,
+        location: { select: { name: true } },
+        employee: { select: { firstName: true, preferredName: true, lastName: true } },
+        runningLate: { select: { minutes: true } },
+      },
+      orderBy: { startsAt: 'asc' },
+    });
+
+    let told = 0;
+    for (const shift of shifts) {
+      const employeeId = shift.employeeId as string;
+      const late = shift.runningLate?.minutes ?? null;
+      if (
+        late !== null &&
+        shift.startsAt.getTime() + (late + NO_SHOW_GRACE_MINUTES) * 60_000 > now.getTime()
+      ) {
+        continue;
+      }
+      if (await this.hasPunchFor(employeeId, shift.startsAt, now)) continue;
+      if (await this.onLeave(employeeId, shift.startsAt)) continue;
+      if (await this.closed(shift.locationId, shift.startsAt)) continue;
+      if (!(await this.claim(shift.id, PunchReminderKind.NO_SHOW))) continue;
+
+      const person = shift.employee!;
+      await this.notifications.bell(
+        await officeManagers(this.prisma, shift.locationId, employeeId),
+        NotificationKind.NO_SHOW,
+        noShowWords(
+          `${person.preferredName ?? person.firstName} ${person.lastName}`,
+          { startsAt: shift.startsAt, isRemote: shift.isRemote, locationName: shift.location.name },
+          late,
+        ),
+      );
+      told += 1;
+    }
+    if (told > 0) this.logger.log(`Told managers of ${told} shift(s) nobody clocked in for`);
+    return told;
   }
 
   /// "You're on tomorrow", from 6pm: one message per person for all of

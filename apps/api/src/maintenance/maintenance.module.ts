@@ -10,6 +10,7 @@ import { LicenseRemindersService } from './license-reminders.service';
 import { OnboardingRemindersService } from './onboarding-reminders.service';
 import { MaintenanceService } from './maintenance.service';
 import { PunchRemindersService } from './punch-reminders.service';
+import { WeeklySummaryService } from './weekly-summary.service';
 
 @Module({
   imports: [
@@ -26,6 +27,7 @@ import { PunchRemindersService } from './punch-reminders.service';
     PunchRemindersService,
     LicenseRemindersService,
     OnboardingRemindersService,
+    WeeklySummaryService,
   ],
 })
 export class MaintenanceModule {}

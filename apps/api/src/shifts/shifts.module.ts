@@ -2,6 +2,8 @@ import { Module } from '@nestjs/common';
 import { CoverOptionsService } from './cover-options.service';
 import { CoverRequestsController } from './cover-requests.controller';
 import { CoverRequestsService } from './cover-requests.service';
+import { RunningLateController } from './running-late.controller';
+import { RunningLateService } from './running-late.service';
 import { PublishCheckService } from './publish-check.service';
 import { OvertimeService } from './overtime.service';
 import { ShiftPlanningService } from './shift-planning.service';
@@ -10,7 +12,7 @@ import { ShiftsController } from './shifts.controller';
 import { ShiftsService } from './shifts.service';
 
 @Module({
-  controllers: [ShiftsController, CoverRequestsController],
+  controllers: [ShiftsController, CoverRequestsController, RunningLateController],
   providers: [
     ShiftsService,
     ShiftPlanningService,
@@ -18,6 +20,7 @@ import { ShiftsService } from './shifts.service';
     OvertimeService,
     CoverOptionsService,
     CoverRequestsService,
+    RunningLateService,
     PublishCheckService,
   ],
   exports: [ShiftsService, ShiftPlanningService, OvertimeService],

@@ -22,6 +22,12 @@ import {
   inputClass,
 } from '../components/ui';
 import { NeedsAttention } from '../components/NeedsAttention';
+import {
+  AskCorrectionButton,
+  AskCorrectionDialog,
+  CorrectionsToDecide,
+  EntryNotes,
+} from '../components/Corrections';
 
 export function TimesheetPage() {
   const t = useT();
@@ -39,6 +45,8 @@ export function TimesheetPage() {
   const [notice, setNotice] = useState<string | null>(null);
   const confirm = useConfirm();
   const [editing, setEditing] = useState<TimeEntry | null>(null);
+  /// The entry somebody is asking to have corrected.
+  const [asking, setAsking] = useState<TimeEntry | null>(null);
   const [checking, setChecking] = useState<TimeEntry | null>(null);
   /// The staff list for Add hours, fetched when the button is first pressed.
   const [adding, setAdding] = useState<Employee[] | null>(null);
@@ -203,12 +211,24 @@ export function TimesheetPage() {
         key={bannerKey}
         sections={[
           'payrollDue',
+          'correctionsAsked',
           'missedShifts',
           'handEntries',
           'unapprovedHours',
           'missingPunches',
         ]}
       />
+
+      {isManager && (
+        <CorrectionsToDecide
+          selfId={employee?.id}
+          refreshKey={bannerKey}
+          onChanged={() => {
+            setBannerKey((key) => key + 1);
+            void load();
+          }}
+        />
+      )}
 
       <div className="mb-3">
         <DateRangePicker value={range} onChange={setRange} label="Timesheet period" />
@@ -340,9 +360,13 @@ export function TimesheetPage() {
                   <th scope="col" className="px-3 py-2 font-medium">
                     {t('Flags')}
                   </th>
-                  {isManager && (
+                  {isManager ? (
                     <th scope="col" className="px-3 py-2 font-medium">
                       <span className="sr-only">Actions</span>
+                    </th>
+                  ) : (
+                    <th scope="col" className="px-3 py-2 font-medium">
+                      <span className="sr-only">{t('Ask for a correction')}</span>
                     </th>
                   )}
                 </tr>
@@ -378,7 +402,7 @@ export function TimesheetPage() {
                       <td className="px-3 py-1.5">
                         <Flags entry={entry} />
                       </td>
-                      {isManager && (
+                      {isManager ? (
                         <td className="px-3 py-1.5">
                           <EntryActions
                             entry={entry}
@@ -387,13 +411,21 @@ export function TimesheetPage() {
                             onEdit={() => setEditing(entry)}
                           />
                         </td>
+                      ) : (
+                        <td className="px-3 py-1.5">
+                          <AskCorrectionButton entry={entry} onAsk={() => setAsking(entry)} />
+                        </td>
                       )}
                     </tr>
                     {/* The reason for a correction is a sentence, so it gets a
                       line rather than being squeezed into the flags column. */}
-                    {(entry.editReason || entry.enteredByHandAt || entry.otherPlaceReason) && (
+                    {(entry.editReason ||
+                      entry.enteredByHandAt ||
+                      entry.otherPlaceReason ||
+                      entry.shift?.runningLate ||
+                      (entry.correctionRequests?.length ?? 0) > 0) && (
                       <tr className="border-none">
-                        <td colSpan={isManager ? 7 : 5} className="px-3 pb-1.5 pt-0">
+                        <td colSpan={isManager ? 7 : 6} className="px-3 pb-1.5 pt-0">
                           <HandEntryLine
                             entry={entry}
                             isManager={isManager}
@@ -401,6 +433,7 @@ export function TimesheetPage() {
                             onCheck={() => setChecking(entry)}
                           />
                           <OtherPlaceLine entry={entry} />
+                          <EntryNotes entry={entry} mine={entry.employeeId === employee?.id} />
                           {entry.editReason && (
                             <p className="text-xs text-slate-500">
                               <span className="font-medium">{t('Edited:')}</span> {entry.editReason}
@@ -466,6 +499,12 @@ export function TimesheetPage() {
                 )}
 
                 <OtherPlaceLine entry={entry} />
+                <EntryNotes entry={entry} mine={entry.employeeId === employee?.id} />
+                {!isManager && (
+                  <div className="mt-1">
+                    <AskCorrectionButton entry={entry} onAsk={() => setAsking(entry)} />
+                  </div>
+                )}
                 {entry.editReason && (
                   <p className="mt-1 text-xs text-slate-500">
                     <span className="font-medium">{t('Edited:')}</span> {entry.editReason}
@@ -487,6 +526,17 @@ export function TimesheetPage() {
           </ul>
         )}
       </Card>
+
+      {asking && (
+        <AskCorrectionDialog
+          entry={asking}
+          onClose={() => setAsking(null)}
+          onSent={() => {
+            setAsking(null);
+            void load();
+          }}
+        />
+      )}
 
       {editing && (
         <EditEntryDialog

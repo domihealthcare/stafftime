@@ -105,6 +105,57 @@ export class ChecklistsService {
     }
   }
 
+  /**
+   * The same for somebody leaving (October 2026, Dominguez): when their last
+   * day is set, the default offboarding template is copied for them, counting
+   * from that day. Not for a last day more than `AUTO_ONBOARDING_DAYS` ago
+   * (recording an old leaver), not while an offboarding checklist of theirs is
+   * unfinished, nor if one was started in the last half year (left, brought
+   * back, left again the same season), and nothing without a default
+   * template. Returns whether one was started.
+   */
+  async startOffboardingIfLeaving(employeeId: string, actor: AuthUser): Promise<boolean> {
+    const today = practiceToday();
+    const employee = await this.prisma.employee.findUnique({
+      where: { id: employeeId },
+      select: {
+        terminationDate: true,
+        externalId: true,
+        _count: {
+          select: {
+            checklists: {
+              where: {
+                kind: ChecklistKind.OFFBOARDING,
+                OR: [{ completedAt: null }, { createdAt: { gte: addUtcDays(today, -182) } }],
+              },
+            },
+          },
+        },
+      },
+    });
+    if (!employee?.terminationDate) return false;
+    if (employee.externalId?.startsWith('demo:')) return false;
+    if (employee._count.checklists > 0) return false;
+    if (employee.terminationDate < addUtcDays(today, -AUTO_ONBOARDING_DAYS)) return false;
+
+    const template = await this.prisma.checklistTemplate.findFirst({
+      where: { kind: ChecklistKind.OFFBOARDING, isDefault: true, archivedAt: null },
+      select: { id: true, _count: { select: { tasks: true } } },
+    });
+    if (!template || template._count.tasks === 0) return false;
+
+    try {
+      await this.start(
+        { employeeId, kind: ChecklistKind.OFFBOARDING, templateId: template.id },
+        actor,
+      );
+      return true;
+    } catch (error) {
+      if (error instanceof BadRequestException) return false;
+      throw error;
+    }
+  }
+
   /// Copies a template into a checklist for one person.
   ///
   /// The copy is the point. Referencing the template would mean that editing

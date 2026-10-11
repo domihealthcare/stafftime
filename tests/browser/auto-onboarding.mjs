@@ -22,7 +22,7 @@ const step = async (name, fn) => {
  * Onboarding starts by itself (October 2026, Dominguez — a "smarter" idea):
  * somebody new added with a hire date has the default onboarding checklist
  * started for them, counting from that date. Not somebody hired long ago,
- * and never a second one. The people here are `*.onboard@example.com`, which
+ * and never a second one. The same for offboarding, when a last day is set. The people here are `*.onboard@example.com`, which
  * run-all.sh removes between suites.
  */
 const ctx = await browser.newContext({ viewport: { width: 1280, height: 1000 } });
@@ -95,6 +95,18 @@ await step('a hire date given later starts it then, and saving again never start
   const second = await call(`/employees/${added.body.id}`, { method: 'PATCH', body: JSON.stringify({ hireDate: today }) });
   if (second.body.onboardingStarted !== false) throw new Error('started a second one');
   if ((await onboardingOf('pia.onboard@example.com')).lists.length !== 1) throw new Error('not exactly one');
+});
+
+await step('setting a last day starts their offboarding; an old leaver starts nothing', async () => {
+  const today = new Date().toISOString().slice(0, 10);
+  const nina = (await onboardingOf('nina.onboard@example.com')).person;
+  const left = await call(`/employees/${nina.id}?terminationDate=${today}`, { method: 'DELETE' });
+  if (left.body.offboardingStarted !== true) throw new Error(`Nina: ${JSON.stringify(left.body.offboardingStarted)}`);
+  const lists = (await call(`/checklists?employeeId=${nina.id}&kind=OFFBOARDING&state=all`)).body;
+  if (lists.length !== 1) throw new Error(`${lists.length} offboarding checklists`);
+  const olga = (await onboardingOf('olga.onboard@example.com')).person;
+  const old = await call(`/employees/${olga.id}?terminationDate=2019-06-30`, { method: 'DELETE' });
+  if (old.body.offboardingStarted !== false) throw new Error('an old leaver got one');
 });
 
 await browser.close();

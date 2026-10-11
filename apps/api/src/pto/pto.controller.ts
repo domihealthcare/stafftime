@@ -27,6 +27,15 @@ import {
 } from './dto/pto.dto';
 import { PtoPolicyService } from './pto-policy.service';
 import { PtoService } from './pto.service';
+import { CleanTimeOffService } from './clean-time-off.service';
+import { ArrayMaxSize, IsArray, IsUUID } from 'class-validator';
+
+class ApproveCleanTimeOffDto {
+  @IsArray()
+  @ArrayMaxSize(200)
+  @IsUUID('all', { each: true })
+  ids!: string[];
+}
 import { InvitesSyncInterceptor } from '../invites/invites-sync.interceptor';
 
 @Controller('pto')
@@ -34,6 +43,7 @@ export class PtoController {
   constructor(
     private readonly pto: PtoService,
     private readonly policy: PtoPolicyService,
+    private readonly cleanTimeOff: CleanTimeOffService,
   ) {}
 
   /// The rules. Readable by everyone — staff should be able to see what they
@@ -116,6 +126,22 @@ export class PtoController {
   @Get('pending-count')
   pendingCount(@CurrentUser() user: AuthUser) {
     return this.pto.pendingCount(user);
+  }
+
+  /// Which waiting requests are clean — enough left, nobody too thin, no
+  /// shifts — for "Approve the clean ones" (`clean-time-off.ts`).
+  @Get('clean')
+  @Roles(Role.MANAGER)
+  clean(@CurrentUser() user: AuthUser) {
+    return this.cleanTimeOff.check(user);
+  }
+
+  /// Approves those still clean, each through the ordinary review.
+  @Post('approve-clean')
+  @Roles(Role.MANAGER)
+  @HttpCode(HttpStatus.OK)
+  approveClean(@Body() dto: ApproveCleanTimeOffDto, @CurrentUser() user: AuthUser) {
+    return this.cleanTimeOff.approve(dto.ids, user);
   }
 
   @Get(':id')

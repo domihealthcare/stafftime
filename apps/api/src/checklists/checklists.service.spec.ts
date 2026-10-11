@@ -581,3 +581,61 @@ describe('starting onboarding by itself', () => {
     ).toBe(false);
   });
 });
+
+describe('starting offboarding by itself', () => {
+  const daysFromToday = (days: number) => {
+    const today = new Date(
+      `${new Intl.DateTimeFormat('en-CA', { timeZone: 'America/New_York' }).format(new Date())}T00:00:00.000Z`,
+    );
+    return new Date(today.getTime() + days * 86_400_000);
+  };
+
+  function setup(
+    person: Partial<{
+      terminationDate: Date | null;
+      externalId: string | null;
+      recent: number;
+    }> = {},
+    template: unknown = { id: 'tpl-off', _count: { tasks: 4 } },
+  ) {
+    const prisma = {
+      employee: {
+        findUnique: jest.fn().mockResolvedValue({
+          terminationDate: 'terminationDate' in person ? person.terminationDate : daysFromToday(7),
+          externalId: person.externalId ?? null,
+          _count: { checklists: person.recent ?? 0 },
+        }),
+      },
+      checklistTemplate: { findFirst: jest.fn().mockResolvedValue(template) },
+    };
+    const service = new ChecklistsService(prisma as never, { notify: jest.fn() } as never);
+    const start = jest.spyOn(service, 'start').mockResolvedValue({} as never);
+    return { service, start };
+  }
+
+  it('starts the default offboarding template when a last day is set', async () => {
+    const { service, start } = setup();
+    await expect(service.startOffboardingIfLeaving('emp-1', admin)).resolves.toBe(true);
+    expect(start).toHaveBeenCalledWith(
+      { employeeId: 'emp-1', kind: ChecklistKind.OFFBOARDING, templateId: 'tpl-off' },
+      admin,
+    );
+  });
+
+  it('not for an old leaver, demo staff, one already under way, or without a template', async () => {
+    for (const [person, template] of [
+      [{ terminationDate: daysFromToday(-31) }, undefined],
+      [{ terminationDate: null }, undefined],
+      [{ externalId: 'demo:x' }, undefined],
+      [{ recent: 1 }, undefined],
+      [{}, null],
+    ] as const) {
+      const { service, start } = setup(
+        person,
+        template === undefined ? { id: 'tpl-off', _count: { tasks: 4 } } : template,
+      );
+      await expect(service.startOffboardingIfLeaving('emp-1', admin)).resolves.toBe(false);
+      expect(start).not.toHaveBeenCalled();
+    }
+  });
+});
