@@ -29,8 +29,14 @@ async function signIn(page, email) {
 }
 
 // Morgan (a manager, who also works shifts) on a laptop with location access
-// never granted: if the page asked for a position, it would be refused.
-const ctx = await browser.newContext({ viewport: { width: 1400, height: 1000 } });
+// never granted: if the page asked for a position, it would be refused. On
+// New Jersey time, as at the practice: the rota's week runs from the
+// browser's own midnights, so CI's UTC browser on a Saturday evening opened
+// next week, or cut off a shift running past its midnight.
+const ctx = await browser.newContext({
+  viewport: { width: 1400, height: 1000 },
+  timezoneId: 'America/New_York',
+});
 const mgr = await ctx.newPage();
 mgr.on('pageerror', (e) => errors.push(`pageerror: ${e.message}`));
 await signIn(mgr, 'manager@domihealthcare.com');
