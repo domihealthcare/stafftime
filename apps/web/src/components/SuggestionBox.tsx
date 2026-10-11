@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { ApiError, api } from '../lib/api';
+import { t as translate, useT } from '../lib/i18n';
 import { useIsManager } from '../lib/session';
 import type { FeedbackKind } from '../lib/types';
 import { Alert, Card, buttonClass } from './ui';
@@ -54,7 +55,7 @@ export const FEEDBACK_KINDS: {
 
 export function feedbackKindLabel(kind: FeedbackKind | null): string | null {
   const found = FEEDBACK_KINDS.find((entry) => entry.kind === kind);
-  return found ? `${found.emoji} ${found.label}` : null;
+  return found ? `${found.emoji} ${translate(found.label)}` : null;
 }
 
 const ANONYMOUS_LINE = 'Anonymous — no name and no time are kept, only the day it arrives.';
@@ -64,33 +65,40 @@ const ANONYMOUS_LINE = 'Anonymous — no name and no time are kept, only the day
 /// line has to stay true: see `FeedbackService`, the `Feedback` model and the
 /// guard in no-sensitive-data.spec.ts.
 export function HowItIsAnonymous() {
+  const t = useT();
   return (
     <div className="text-sm text-slate-700" data-testid="how-anonymous">
       <ul className="list-disc space-y-1 pl-5">
         <li>
-          <strong>Your name is not saved with it.</strong> The note is not linked to you or your
-          account in any way.
+          <strong>{t('Your name is not saved with it.')}</strong>{' '}
+          {t('The note is not linked to you or your account in any way.')}
         </li>
         <li>
-          <strong>No time is kept</strong> — only the day it arrived, so nobody can match it to who
-          was on a break or at the desk.
+          <strong>{t('No time is kept')}</strong>{' '}
+          {t(
+            '— only the day it arrived, so nobody can match it to who was on a break or at the desk.',
+          )}
         </li>
         <li>
-          <strong>Nobody can find out who wrote it</strong> — not managers, not admins. There is no
-          screen, report or export that could show it, because the app never kept it.
+          <strong>{t('Nobody can find out who wrote it')}</strong>{' '}
+          {t(
+            '— not managers, not admins. There is no screen, report or export that could show it, because the app never kept it.',
+          )}
         </li>
         <li>
-          The managers’ morning email only says <em>that</em> something is waiting, never what it
-          says.
+          {t('The managers’ morning email only says')} <em>{t('that')}</em>{' '}
+          {t('something is waiting, never what it says.')}
         </li>
         <li>
-          You have to be signed in to send one, so the box is not open to the whole internet — but
-          who you are is dropped as soon as the note is in.
+          {t(
+            'You have to be signed in to send one, so the box is not open to the whole internet — but who you are is dropped as soon as the note is in.',
+          )}
         </li>
       </ul>
       <p className="mt-2 text-xs text-slate-500">
-        The one thing the app cannot hide is what you write: a very specific detail can still give
-        you away.
+        {t(
+          'The one thing the app cannot hide is what you write: a very specific detail can still give you away.',
+        )}
       </p>
     </div>
   );
@@ -98,6 +106,7 @@ export function HowItIsAnonymous() {
 
 /// The card on Home and on the Surveys page.
 export function SuggestionBoxCard() {
+  const t = useT();
   const isManager = useIsManager();
   /// Open with this sort picked; `null` is open with none picked.
   const [open, setOpen] = useState<FeedbackKind | null | false>(false);
@@ -122,9 +131,9 @@ export function SuggestionBoxCard() {
         <div className="flex items-center gap-4">
           <BoxPicture className="h-16 w-16 shrink-0" />
           <div className="min-w-0">
-            <h2 className="text-sm font-semibold text-slate-900">Suggestion box</h2>
+            <h2 className="text-sm font-semibold text-slate-900">{t('Suggestion box')}</h2>
             <p className="mt-0.5 text-sm text-slate-700">
-              Anything you’d like the managers to know.
+              {t('Anything you’d like the managers to know.')}
             </p>
             <button
               type="button"
@@ -132,11 +141,11 @@ export function SuggestionBoxCard() {
               aria-haspopup="dialog"
               className="mt-2 inline-flex items-center gap-1 rounded-full bg-brand-600 px-3 py-1 text-xs font-semibold text-white hover:bg-brand-700"
             >
-              Drop a note in <span aria-hidden="true">✉</span>
+              {t('Drop a note in')} <span aria-hidden="true">✉</span>
             </button>
           </div>
         </div>
-        <ul aria-label="What it is for" className="mt-3 flex flex-wrap gap-1.5">
+        <ul aria-label={t('What it is for')} className="mt-3 flex flex-wrap gap-1.5">
           {FEEDBACK_KINDS.map((entry) => (
             <li key={entry.kind}>
               <button
@@ -146,7 +155,7 @@ export function SuggestionBoxCard() {
                 className="inline-flex min-h-11 items-center gap-1 rounded-full bg-white/80 px-2.5 py-1 text-xs text-slate-700 ring-1 ring-inset ring-slate-200 hover:bg-white hover:ring-brand-300 sm:min-h-0"
               >
                 <span aria-hidden="true">{entry.emoji}</span>
-                {entry.label}
+                {t(entry.label)}
               </button>
             </li>
           ))}
@@ -160,7 +169,7 @@ export function SuggestionBoxCard() {
           onClick={() => setExplaining((shown) => !shown)}
           className="tap font-medium text-slate-600 hover:text-slate-900"
         >
-          <span aria-hidden="true">🔒</span> Truly anonymous — how?
+          <span aria-hidden="true">🔒</span> {t('Truly anonymous — how?')}
         </button>
         {isManager && waiting > 0 && (
           <Link
@@ -168,7 +177,7 @@ export function SuggestionBoxCard() {
             className="tap font-medium text-brand-700 hover:text-brand-900"
             data-testid="suggestions-waiting"
           >
-            {waiting} waiting to be read →
+            {t('{n} waiting to be read →', { n: waiting })}
           </Link>
         )}
       </div>
@@ -189,6 +198,7 @@ function SuggestionDialog({
   initialKind: FeedbackKind | null;
   onClose: () => void;
 }) {
+  const t = useT();
   const [kind, setKind] = useState<FeedbackKind | null>(initialKind);
   const [message, setMessage] = useState('');
   const [busy, setBusy] = useState(false);
@@ -205,7 +215,7 @@ function SuggestionDialog({
       await api.sendFeedback(message.trim(), kind ?? undefined);
       setSent(true);
     } catch (cause) {
-      setError(cause instanceof ApiError ? cause.message : 'Could not send that.');
+      setError(cause instanceof ApiError ? cause.message : t('Could not send that.'));
     } finally {
       setBusy(false);
     }
@@ -233,27 +243,28 @@ function SuggestionDialog({
           />
           <div>
             <h2 id="suggestion-title" className="text-lg font-semibold text-slate-900">
-              {sent ? 'In the box!' : 'Drop a note in the box'}
+              {sent ? t('In the box!') : t('Drop a note in the box')}
             </h2>
-            <p className="mt-0.5 text-xs text-slate-600">{ANONYMOUS_LINE}</p>
+            <p className="mt-0.5 text-xs text-slate-600">{t(ANONYMOUS_LINE)}</p>
           </div>
         </div>
 
         {sent ? (
           <div className="px-5 pb-5 pt-3 motion-safe:animate-fade-up">
             <p role="status" className="text-sm text-slate-800">
-              Sent anonymously. Thank you.
+              {t('Sent anonymously. Thank you.')}
             </p>
             <p className="mt-1 text-sm text-slate-600">
-              The managers are told the next morning that something is waiting, and read it in the
-              app.
+              {t(
+                'The managers are told the next morning that something is waiting, and read it in the app.',
+              )}
             </p>
             <div className="mt-4 flex justify-end gap-2">
               <button type="button" onClick={another} className={buttonClass('secondary', 'md')}>
-                Write another
+                {t('Write another')}
               </button>
               <button type="button" onClick={onClose} className={buttonClass('primary', 'md')}>
-                Done
+                {t('Done')}
               </button>
             </div>
           </div>
@@ -261,7 +272,8 @@ function SuggestionDialog({
           <form onSubmit={(event) => void send(event)} className="px-5 pb-5 pt-3">
             <fieldset>
               <legend className="text-sm font-medium text-slate-700">
-                What sort of note? <span className="font-normal text-slate-500">(optional)</span>
+                {t('What sort of note?')}{' '}
+                <span className="font-normal text-slate-500">{t('(optional)')}</span>
               </legend>
               <div className="mt-2 flex flex-wrap gap-2">
                 {FEEDBACK_KINDS.map((entry) => {
@@ -279,7 +291,7 @@ function SuggestionDialog({
                       }`}
                     >
                       <span aria-hidden="true">{entry.emoji}</span>
-                      {entry.label}
+                      {t(entry.label)}
                     </button>
                   );
                 })}
@@ -287,7 +299,7 @@ function SuggestionDialog({
             </fieldset>
 
             <label htmlFor="suggestion-message" className="sr-only">
-              Your suggestion
+              {t('Your suggestion')}
             </label>
             <textarea
               id="suggestion-message"
@@ -295,14 +307,16 @@ function SuggestionDialog({
               maxLength={2000}
               value={message}
               placeholder={
-                chosen?.prompt ?? 'An idea, something not working, a shout-out or a question…'
+                chosen
+                  ? t(chosen.prompt)
+                  : t('An idea, something not working, a shout-out or a question…')
               }
               onChange={(event) => setMessage(event.target.value)}
               className="mt-3 w-full rounded-lg border-slate-300 text-sm shadow-sm focus:border-brand-600 focus:ring-brand-600"
             />
             <details className="mt-2 rounded-lg bg-slate-50 px-3 py-2">
               <summary className="cursor-pointer select-none text-sm font-medium text-slate-700">
-                <span aria-hidden="true">🔒</span> Is it really anonymous?
+                <span aria-hidden="true">🔒</span> {t('Is it really anonymous?')}
               </summary>
               <div className="mt-2">
                 <HowItIsAnonymous />
@@ -315,14 +329,14 @@ function SuggestionDialog({
             )}
             <div className="mt-4 flex justify-end gap-2">
               <button type="button" onClick={onClose} className={buttonClass('secondary', 'md')}>
-                Cancel
+                {t('Cancel')}
               </button>
               <button
                 type="submit"
                 disabled={busy || message.trim().length < 3}
                 className={buttonClass('primary', 'md')}
               >
-                {busy ? 'Sending…' : 'Send anonymously'}
+                {busy ? t('Sending…') : t('Send anonymously')}
               </button>
             </div>
           </form>

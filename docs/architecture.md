@@ -3389,6 +3389,239 @@ sending in `maintenance/onboarding-reminders.service.ts`; migration
 `20261009020000_onboarding_reminders` is additive (a table, an enum and a
 notification kind). `tests/browser/onboarding-reminders.mjs`.
 
+## Required reading and tasks
+
+October 2026, Dominguez — from a survey of similar apps (Connecteam's "read
+and sign" was the nearest), chosen as "something the admin/managers can
+require for need to know information or required tasks", and a **nag, not a
+gate**. A manager or admin, on **Manage → Required reading** (`/required`),
+asks a set of people either to **read and confirm** something
+(`RequirementKind.READ`, "I've read it") or to **do** something (`TASK`,
+"Done"). It can point at a **News post** (`announcementId` — **Require
+reading** on a post opens the form with it), a **Resources** page or link
+(`resourceId`), and/or an https **web link**, with plain-text details and an
+optional due date.
+
+**Who it is for** is the events' picker: Everyone, or any mix of people, job
+roles and offices (`RequirementTarget`). It is read **as it is today**, not
+frozen when set: somebody who joins one of the job roles or offices is asked
+too, and somebody who leaves drops off — so a handbook acknowledgement reaches
+next month's new hire. `requirements/audience.ts` holds both directions (the
+people a requirement reaches; the requirements a person is asked for).
+
+**What is kept**: *that* somebody confirmed, and when (`RequirementDone`,
+once each, never undone). No signature, no document — the same line as the
+checklists (*Data this app does not hold*). Staff see what is asked of them,
+not who else was asked.
+
+**How it nags.** When set, everybody it reaches is told on the bell and by
+email (`NotificationKind.REQUIRED`, linking to `/required`; a change tells only
+people it newly reaches). Until they confirm it sits on **Home** in an amber
+**Waiting for you** card (first under the clock, before the news), and a post
+they were asked to read carries the button itself in News. Reminders
+(`requirements/nudges.ts`, pure and tested): with a due date, **two days
+before**, the **day after** it passes, then **weekly**; without one, weekly
+from the day it was set; at most eight weekly ones — after that it is a
+manager's conversation. Only the latest reminder day that has come counts
+(somebody away a fortnight gets one message, not three), one message per
+person for everything due, nothing on the day it was set.
+`RequirementNudge` (requirement, person → last day reminded) is claimed
+before sending — a create for the first, a conditional update after — so the
+five-minute timer and the nightly job never both send. **Remind them now**
+nudges everybody still to confirm at once and counts as their reminder for
+that day. Nothing ever stops a clock-in.
+
+**For managers**: each item shows "N of M confirmed", overdue in red, **Who
+has confirmed** (names and days, and who is still to), **Edit**, **Stop
+asking** (off everybody's Home; the record stays; **Ask again** undoes it)
+and **Remove** (with its record, after asking).
+
+**A Resources page for another job role** opens for somebody while they are
+asked to read it (`ResourcesService.findOne` checks for an open requirement
+pointing at it); otherwise resources stay per role.
+
+Migration `20261010020000_required_reading` is additive (four tables, an
+enum and a notification kind). `tests/browser/required.mjs`.
+
+## The rota's cost
+
+October 2026, Dominguez — from the survey of similar apps (Sling, When I Work
+and Deputy show labour cost on the schedule): "rota cost should be for only
+certain individuals (i.e. kayla, angelica, and myself)", counting hourly and
+salaried staff. A folded line above the rota (`components/RotaCost.tsx`)
+gives the week or month on screen in dollars and by office; opened, hourly
+pay with the overtime extra, salaries, and a bar per day.
+
+**Who sees it**: `Employee.canSeeRotaCost`, chosen by an admin on Practice
+settings (**Who sees the rota's cost**), like provider productivity's list —
+separate from the access level, so an admin who is not on it does not see it
+either. Checked on the server (`GET /rota-cost?from&to`, at most 62 days);
+the list is `GET/PUT/DELETE /rota-cost/access`, admins only.
+
+**Only totals**: by office and by day, never by person — so it does not turn
+into a way of reading somebody's pay. (With one person in an office on a
+given day a total can still say a lot; that is why the list is short.)
+
+**How it is worked out** (`staff-records/rota-cost.ts`, pure and tested;
+here because pay over time is only ever read from `src/staff-records/`):
+
+- The rota as built: shifts with somebody on them, **drafts and published**,
+  scheduled hours. Not what was worked, and no taxes or benefits.
+- **Hourly rate** (`PayRateUnit.HOURLY` on the latest `EmploymentChange` with
+  pay, on or before the shift's day): rate × hours. Hours past the overtime
+  line in an **overtime week** — the pay period's weeks, as the rota
+  warnings, dashboard and export count them — are at **1.5×** for hourly
+  staff (`PayType.HOURLY`); salaried people on an hourly rate are exempt.
+  Shifts earlier in an overtime week that starts before the screen's first
+  day are read too, so the line falls where it really does.
+- **Yearly rate**: a year ÷ 364 a day (÷ 52 a week) for every day on screen
+  they were employed (hire date to last day), whether on the rota or not —
+  a salary is paid either way — split across the offices of their shifts on
+  screen by hours, or their main office with none.
+- Somebody on the rota with **no pay on file** that day is named
+  ("not counted"), so a total is never quietly short.
+
+Migration `20261010030000_rota_cost` adds the column and puts Dominguez on
+the list, and Kayla and Angelica Dominguez only when exactly one current
+member of staff has that name — the list should be checked on the live site.
+`tests/browser/rota-cost.mjs`.
+
+## Provider on call
+
+October 2026, Dominguez: "provider on call schedule will def be needed …
+currently its days (i.e. dr. jonathan dominguez is on call m,t,w,f and every
+weekend except the 4th weekend and thursdays which Jose Badia covers) though
+this is something that can change in the future", "usually a day 12-12
+(… limited to our answering/forwarding service)", not paid, for providers,
+managers and admins, an assigned schedule that providers can swap.
+
+**Who is on call** (`on-call/on-call.ts`, pure and tested — the only place
+these rules live):
+
+- A day's **turn** runs from the hand-over time (`OnCallRota.changesAt`,
+  "12:00") on its date to the same time the next day. Before noon, "on call
+  now" is still yesterday's turn.
+- The **pattern in force** is the latest `OnCallRota` starting on or before
+  the day. A new pattern is saved **from a chosen day** (today or later), so
+  who was on call before stays as it was; one not yet started can be taken
+  back.
+- Its **entries** (`OnCallRotaEntry`: weekday, `weekOfMonth` 0 every / 1–4 /
+  −1 last, provider): the most particular one for the day wins — a week of
+  the month, then the last, then every week. So "every weekend except the
+  4th" is Saturday and Sunday every week to Dr. Dominguez plus the 4th
+  Saturday and Sunday to Dr. Badia.
+- **Weekends are counted by their Saturday**: a Sunday takes the week of the
+  Saturday before it, so the 4th weekend is always a Saturday and its Sunday
+  together — even when that Sunday is the month's 5th or the next month's
+  1st. A test checks every month of a year has exactly one.
+- A **changed day** (`OnCallDay`, by a manager or a swap) beats the pattern.
+
+**Changing it**: managers and admins edit the pattern (weekday selects,
+exceptions, hand-over time, first day) and single days (a provider and a
+note; **Back to the usual** deletes the `OnCallDay`). The people a day moves
+from and to are told on the bell and by email (`NotificationKind.ON_CALL`);
+a new pattern rings every provider's bell.
+
+**Swaps** (`OnCallSwap`): a provider presses one of their own future days,
+chooses another provider and, optionally, one of that provider's days to
+take back (their next two months are offered). The other is told by bell and
+email and answers on the screen. **Yes** re-checks that both days are still
+as they were (else "the schedule has changed"), claims the request with a
+conditional update so two answers cannot both land, and writes both days
+(`OnCallDay.swapId`). The asker is told either way; managers on the bell
+when it goes ahead. The asker can take back a request still waiting.
+
+**Where it shows**: Schedule → **On call** (a third tab beside Shifts and
+Calendar, only for those who may see it) — on call now, swaps waiting, a
+month (a list on a phone), the pattern in words; **On call now** on Home;
+and a provider's own turns as timed, non-busy "On call" entries in their
+calendar feed (`ON_CALL` in the all-in-one feed and its own **My on call**,
+offered to providers only).
+
+**Never hours or pay**: no punches, no timesheet, no overtime, nothing in
+the export, and it does not appear on the rota.
+
+Migration `20261010040000_on_call` adds the tables and loads the pattern as
+described, from 1 October 2026 — only when both providers are found
+(Dominguez by email, Dr. Badia by name, exactly one match); otherwise a
+manager sets it. `tests/browser/on-call.mjs`.
+
+## Phone notifications
+
+October 2026, Dominguez — from the survey of similar apps, every one of
+which sends to the lock screen: "are we able to do this since we dont have
+an iphone/android app?" Yes: **web push**, the browser's own notifications,
+which work for a web app on the Home Screen of an iPhone (iOS 16.4 or later)
+and in the browser on Android and computers. No app store, no Twilio, no
+carrier registration, no cost.
+
+**What is sent**: exactly what rings the bell. `InboxService.notify` — the
+one place every bell notification is written — also hands the title, words
+and link to `PushService.send`, so nothing new decides what goes to phones
+and nothing can say more there than under the bell (which never carries
+patient details). Tapping one opens its link in the app.
+
+**How**: each device where somebody presses **Turn on for this device** (Your
+profile; **Get these on your phone** under the bell) registers `/push-sw.js`,
+asks the browser's permission, subscribes with the app's public key, and
+sends the subscription (`PushSubscription`: endpoint and keys, a device name
+like "iPhone"). A shared device moves to whoever turned it on last. The
+server sends with `web-push` (3.6.7, pinned): encrypted with that device's
+keys, so the push service in between (Apple's, Google's, Mozilla's,
+Microsoft's) carries it without being able to read it; a day's time to
+live; five seconds at most each, ten at a time; awaited and never thrown, like
+the bell and the email. A device the service says is gone (404/410) is
+forgotten. Only real push services are accepted as an endpoint, so a
+signed-in person cannot point the server at an address of their choosing.
+
+**The key pair**: an admin presses **Switch on for the practice** in Practice
+settings once, and the app makes its own (`PushKeys`, one row) — nobody has
+to make one in a terminal and paste it into Vercel. `VAPID_PUBLIC_KEY` /
+`VAPID_PRIVATE_KEY` win if set. A new pair would mean everybody turning
+notifications on again, so there is no button to change it.
+
+**The worker shows notifications and nothing else.** It has no fetch
+handler and opens no cache, so the decision that the app never works offline
+— a punch with no signal must plainly fail — stands; it is registered only
+when somebody turns notifications on, and **Turn off** unregisters it.
+`tests/browser/push.mjs` reads the worker and fails if a fetch handler or a
+cache appears; `install.mjs` still checks nothing is registered on load.
+`vercel.json` serves it `no-cache`, so a change reaches phones.
+
+A headless browser cannot subscribe to a real push service, so `push.mjs`
+registers a device through the API with a made-up Google address and checks
+what the app does around it; the encryption and sending are `web-push`'s.
+Migration `20261010050000_push_notifications`.
+
+## Spanish for the staff screens
+
+October 2026, Dominguez: "can do the spanish for whole app", the staff screens
+first. **The choice is the person's**: `Employee.language` ("en" or "es"),
+set on Your profile (**Language**) or with the English | Español switch that
+News already had — now one and the same choice for the whole app. It applies
+the moment it is pressed (`lib/i18n` keeps it in memory and on the device,
+and sets `<html lang>`), is saved to the profile, and is applied again on
+every sign-in, so it follows the person to any phone or computer.
+
+**How a screen is translated**: `const t = useT()`, then `t('Clock in')`. The
+**English is the key**: a Spanish reader gets the phrase from
+`lib/i18n/es/*.ts` (split by area — common, shell, home, schedule, team,
+calendar), everybody else gets the English untouched. So the English never
+changes (every browser suite still matches it), and anything not yet in the
+dictionary simply stays English rather than breaking. Phrases with a value
+in them carry a placeholder (`'Today’s shift: {time} · {office}'`) so Spanish
+can order the words its own way; `plural()` picks one of two phrases. Dates
+use `locale()` ("es-US" for Spanish), so month and weekday names come from
+the browser. A check that every `t()` key has a Spanish phrase, and that no
+two dictionaries disagree, was run when it was built.
+
+**Not translated**: anything typed by people (names, posts, notes, checklist
+lines, event titles), values sent to the API, the managers' tools, the Help
+guide, the kiosk and sign-in, and — because they are written on the server
+— the bell's messages and emails. The Spanish was written for the practice in
+the "tú" register and **still needs a native speaker's read**
+(`NEEDS_NATIVE_SPEAKER_REVIEW` in `lib/i18n/index.ts`). `tests/browser/spanish.mjs`.
+
 ## License types and who needs them
 
 Asked for by Dominguez (29 September 2026): providers all need a medical

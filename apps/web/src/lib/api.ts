@@ -1,5 +1,14 @@
+import { t } from './i18n';
 import type { ImportedPerson } from './staff-import';
 import type {
+  OnCallRota,
+  OnCallSchedule,
+  OnCallSwap,
+  RotaCost,
+  MyRequirement,
+  RequirementInput,
+  RequirementProgress,
+  RequirementSummary,
   UsualShift,
   NotSignedIn,
   ReadBooking,
@@ -135,8 +144,10 @@ async function request<T>(path: string, init: RequestInit = {}): Promise<T> {
     throw new ApiError(
       0,
       abort.signal.aborted
-        ? 'The server took too long to answer. Check whether it went through before trying again.'
-        : 'Could not reach the server. Check your connection and try again.',
+        ? t(
+            'The server took too long to answer. Check whether it went through before trying again.',
+          )
+        : t('Could not reach the server. Check your connection and try again.'),
     );
   } finally {
     window.clearTimeout(timer);
@@ -440,7 +451,10 @@ export interface AppNotification {
     | 'PROFILE_PHOTO'
     | 'LICENSE_REMINDER'
     | 'ONBOARDING_REMINDER'
-    | 'AVAILABILITY_CLASH';
+    | 'AVAILABILITY_CLASH'
+    | 'COVER_REQUEST'
+    | 'REQUIRED'
+    | 'ON_CALL';
   title: string;
   body: string | null;
   link: string | null;
@@ -1201,6 +1215,59 @@ export const api = {
   /// statements; the rest is for managers and admins.
   myProductivity: () => request<Omit<ProductivityStatement, 'employee'>[]>('/productivity/mine'),
   /// Who may work out provider productivity — chosen by an admin.
+  /// Phone notifications: this person's devices.
+  pushStatus: () =>
+    request<{
+      available: boolean;
+      publicKey: string | null;
+      devices: {
+        id: string;
+        device: string | null;
+        createdAt: string;
+        lastSentAt: string | null;
+      }[];
+    }>('/push'),
+  pushSubscribe: (body: {
+    endpoint: string;
+    keys: { p256dh: string; auth: string };
+    device?: string;
+  }) => request<unknown>('/push/subscribe', { method: 'POST', body: JSON.stringify(body) }),
+  pushUnsubscribe: (endpoint: string) =>
+    request<unknown>('/push/unsubscribe', { method: 'POST', body: JSON.stringify({ endpoint }) }),
+  pushTest: () => request<unknown>('/push/test', { method: 'POST' }),
+  /// Admins: switch phone notifications on for the practice.
+  pushSwitchOn: () => request<unknown>('/push/switch-on', { method: 'POST' }),
+  /// The provider on-call schedule: providers, managers and admins.
+  onCall: (from: string, to: string) => request<OnCallSchedule>(`/on-call${toQuery({ from, to })}`),
+  onCallRotas: () => request<OnCallRota[]>('/on-call/rotas'),
+  saveOnCallRota: (body: {
+    startsOn: string;
+    changesAt: string;
+    entries: { weekday: number; weekOfMonth: number; employeeId: string }[];
+  }) => request<OnCallRota[]>('/on-call/rotas', { method: 'PUT', body: JSON.stringify(body) }),
+  removeOnCallRota: (startsOn: string) =>
+    request<OnCallRota[]>(`/on-call/rotas/${startsOn}`, { method: 'DELETE' }),
+  setOnCallDay: (date: string, body: { employeeId: string | null; note?: string }) =>
+    request<{ date: string; employeeId: string | null }>(`/on-call/days/${date}`, {
+      method: 'PUT',
+      body: JSON.stringify(body),
+    }),
+  onCallSwaps: () => request<OnCallSwap[]>('/on-call/swaps'),
+  askOnCallSwap: (body: {
+    giveDate: string;
+    partnerId: string;
+    takeDate?: string | null;
+    note?: string;
+  }) => request<{ id: string }>('/on-call/swaps', { method: 'POST', body: JSON.stringify(body) }),
+  answerOnCallSwap: (id: string, answer: 'accept' | 'decline' | 'cancel') =>
+    request<{ status: string }>(`/on-call/swaps/${id}/${answer}`, { method: 'POST' }),
+  /// What the rota costs, from one day to another (inclusive) — chosen people only.
+  rotaCost: (from: string, to: string) => request<RotaCost>(`/rota-cost${toQuery({ from, to })}`),
+  rotaCostAccess: () => request<PersonName[]>('/rota-cost/access'),
+  grantRotaCostAccess: (employeeId: string) =>
+    request<PersonName[]>(`/rota-cost/access/${employeeId}`, { method: 'PUT' }),
+  revokeRotaCostAccess: (employeeId: string) =>
+    request<PersonName[]>(`/rota-cost/access/${employeeId}`, { method: 'DELETE' }),
   productivityAccess: () => request<PersonName[]>('/productivity/access'),
   grantProductivityAccess: (employeeId: string) =>
     request<PersonName[]>(`/productivity/access/${employeeId}`, { method: 'PUT' }),
@@ -1276,6 +1343,28 @@ export const api = {
       method: 'PATCH',
       body: JSON.stringify(body),
     }),
+  /// Required reading and tasks: what is asked of you, and confirming it.
+  myRequirements: () => request<MyRequirement[]>('/requirements/mine'),
+  confirmRequirement: (id: string) =>
+    request<{ done: boolean }>(`/requirements/${id}/done`, { method: 'POST' }),
+  /// Managers and admins: everything set, one's progress, and changes.
+  requirements: () => request<RequirementSummary[]>('/requirements'),
+  requirementProgress: (id: string) => request<RequirementProgress>(`/requirements/${id}`),
+  createRequirement: (body: RequirementInput) =>
+    request<RequirementSummary>('/requirements', { method: 'POST', body: JSON.stringify(body) }),
+  updateRequirement: (id: string, body: RequirementInput) =>
+    request<RequirementSummary>(`/requirements/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify(body),
+    }),
+  closeRequirement: (id: string, closed: boolean) =>
+    request<{ closed: boolean }>(`/requirements/${id}/${closed ? 'close' : 'reopen'}`, {
+      method: 'POST',
+    }),
+  remindRequirement: (id: string) =>
+    request<{ reminded: number }>(`/requirements/${id}/remind`, { method: 'POST' }),
+  deleteRequirement: (id: string) =>
+    request<{ removed: boolean }>(`/requirements/${id}`, { method: 'DELETE' }),
   /// The reps who book lunches: managers and admins only.
   reps: () => request<Rep[]>('/reps'),
   createRep: (body: RepInput) =>
@@ -1421,6 +1510,7 @@ export const api = {
     pronouns?: string;
     phone?: string;
     about?: string;
+    language?: 'en' | 'es';
   }) => request<Profile>('/profile', { method: 'PATCH', body: JSON.stringify(body) }),
   setPhoto: (image: string) =>
     request<Profile>('/profile/photo', { method: 'PUT', body: JSON.stringify({ image }) }),

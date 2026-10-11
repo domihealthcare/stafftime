@@ -1,3 +1,4 @@
+import { locale } from './i18n';
 /**
  * Hours on the practice's clock, in New Jersey, whatever the browser's own
  * time zone. For the few places that send the server a bare "HH:MM" for it to
@@ -69,4 +70,22 @@ export function practiceToday(now: Date = new Date()): { start: string; end: str
   const nextDay = new Date(new Date(start).getTime() + 36 * 3_600_000).toISOString();
   const end = new Date(new Date(atPracticeTime(nextDay, '00:00')).getTime() - 1).toISOString();
   return { start, end };
+}
+
+/// Today's date on the practice's calendar, "YYYY-MM-DD".
+export function practiceDate(now: Date = new Date()): string {
+  const parts = partsIn(now);
+  return `${parts.year}-${String(parts.month).padStart(2, '0')}-${String(parts.day).padStart(2, '0')}`;
+}
+
+/// "Sun, Oct 11, 12:00 PM" on the practice's clock, wherever the browser is.
+export function formatPracticeDateTime(iso: string): string {
+  return new Date(iso).toLocaleString(locale(), {
+    timeZone: PRACTICE_ZONE,
+    weekday: 'short',
+    month: 'short',
+    day: 'numeric',
+    hour: 'numeric',
+    minute: '2-digit',
+  });
 }

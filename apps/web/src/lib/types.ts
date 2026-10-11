@@ -75,6 +75,8 @@ export interface Employee extends EmployeeSummary {
   /// Letters after their name ("MD", "APN-C"), for the clinical forms.
   postNominals?: string | null;
   pronouns?: string | null;
+  /// Signed-in person only: the app's language for them.
+  language?: 'en' | 'es';
   phone?: string | null;
   payType?: 'HOURLY' | 'SALARY';
   /// Their last day, once they have left (or been given one).
@@ -112,6 +114,8 @@ export interface Employee extends EmployeeSummary {
   /// Signed-in person only: an admin has given them provider productivity to
   /// work out and publish, whatever their access level.
   canManageProductivity?: boolean;
+  /// Signed-in person only: an admin has chosen them to see the rota's cost.
+  canSeeRotaCost?: boolean;
 }
 
 export interface Shift {
@@ -951,6 +955,7 @@ export interface DirectoryEntry {
   preferredName: string | null;
   pronouns: string | null;
   about: string | null;
+  language: 'en' | 'es';
   photoUpdatedAt: string | null;
   email: string;
   phone: string | null;
@@ -1627,4 +1632,130 @@ export interface NotSignedIn {
   welcomeSentAt: string | null;
   usesTimeClock: boolean;
   canSendWelcome: boolean;
+}
+
+// ------------------------------------------------- required reading and tasks
+
+export type RequirementKind = 'READ' | 'TASK';
+
+interface NamedPerson {
+  id: string;
+  firstName: string;
+  lastName: string;
+  preferredName: string | null;
+}
+
+/// Something a manager asked people to read and confirm, or to do.
+export interface Requirement {
+  id: string;
+  kind: RequirementKind;
+  title: string;
+  body: string | null;
+  url: string | null;
+  /// "YYYY-MM-DD", or null for no due date.
+  dueOn: string | null;
+  everyone: boolean;
+  closedAt: string | null;
+  createdAt: string;
+  createdBy: NamedPerson | null;
+  announcement: { id: string; title: string } | null;
+  resource: { id: string; title: string; kind: 'LINK' | 'PAGE' } | null;
+  targets?: {
+    employees: NamedPerson[];
+    jobRoles: { id: string; name: string }[];
+    locations: { id: string; name: string }[];
+  };
+}
+
+/// One of yours: when you confirmed it, or null while it is waiting.
+export interface MyRequirement extends Requirement {
+  doneAt: string | null;
+}
+
+/// A manager's row: how many it is for, how many have confirmed.
+export interface RequirementSummary extends Requirement {
+  asked: number;
+  done: number;
+  overdue: boolean;
+}
+
+export interface RequirementProgress {
+  requirement: Requirement;
+  done: (NamedPerson & { doneAt: string })[];
+  waiting: NamedPerson[];
+}
+
+export interface RequirementInput {
+  kind: RequirementKind;
+  title: string;
+  body?: string;
+  url?: string;
+  announcementId?: string | null;
+  resourceId?: string | null;
+  dueOn?: string | null;
+  everyone: boolean;
+  targets?: { employeeIds: string[]; jobRoleIds: string[]; locationIds: string[] };
+}
+
+/// What the rota on screen costs — only for the people an admin has chosen.
+export interface RotaCost {
+  from: string;
+  to: string;
+  total: number;
+  hourly: number;
+  overtimeExtra: number;
+  overtimeHours: number;
+  salaried: number;
+  scheduledHours: number;
+  byLocation: { locationId: string | null; name: string; total: number; hours: number }[];
+  byDay: { date: string; total: number }[];
+  missingPay: { id: string; name: string }[];
+}
+
+// ------------------------------------------------------------- on call
+
+export interface OnCallPerson {
+  id: string;
+  firstName: string;
+  lastName: string;
+  preferredName: string | null;
+  photoUpdatedAt: string | null;
+  /// "Dr. Jonathan Dominguez".
+  name: string;
+}
+
+export interface OnCallDay {
+  date: string;
+  employeeId: string | null;
+  employee: OnCallPerson | null;
+  /// The usual pattern, a manager's change, a swap — or nobody set.
+  source: 'USUAL' | 'CHANGED' | 'SWAPPED' | 'NONE';
+  /// "HH:MM": the turn runs from this on its date to this the next day.
+  changesAt: string;
+  note: string | null;
+}
+
+export interface OnCallSchedule {
+  days: OnCallDay[];
+  now: { date: string; employee: OnCallPerson | null; until: string };
+  providers: OnCallPerson[];
+}
+
+export interface OnCallRota {
+  startsOn: string;
+  changesAt: string;
+  inForce: boolean;
+  entries: { weekday: number; weekOfMonth: number; employee: OnCallPerson }[];
+}
+
+export interface OnCallSwap {
+  id: string;
+  giveDate: string;
+  takeDate: string | null;
+  note: string | null;
+  status: 'PENDING' | 'ACCEPTED' | 'DECLINED' | 'CANCELLED';
+  createdAt: string;
+  answeredAt: string | null;
+  requester: OnCallPerson;
+  partner: OnCallPerson;
 }

@@ -1,8 +1,9 @@
 import { useCallback, useEffect, useState } from 'react';
-import { useLocation } from 'react-router-dom';
+import { Link, useLocation } from 'react-router-dom';
 import { useConfirm } from '../components/ConfirmDialog';
 import { NewsLanguageToggle, usePostWords } from '../components/NewsLanguage';
 import { PollView, PostActions, PostComments } from '../components/PostSocial';
+import { PostConfirm } from '../components/RequiredItems';
 import {
   Alert,
   Badge,
@@ -15,8 +16,9 @@ import {
 } from '../components/ui';
 import { AI_NOTE, useAiOn } from '../lib/ai';
 import { ApiError, api } from '../lib/api';
-import { useIsAdmin } from '../lib/session';
-import type { Announcement, PollInput } from '../lib/types';
+import { locale, t as translate, useT } from '../lib/i18n';
+import { useIsAdmin, useIsManager } from '../lib/session';
+import type { Announcement, MyRequirement, PollInput } from '../lib/types';
 
 /**
  * Every announcement, newest first — the practice's noticeboard.
@@ -29,8 +31,12 @@ import type { Announcement, PollInput } from '../lib/types';
  * the page scrolls to that post once it has loaded.
  */
 export function NewsPage() {
+  const t = useT();
   const isAdmin = useIsAdmin();
+  const isManager = useIsManager();
   const aiOn = useAiOn();
+  /// Posts somebody has been asked to read and confirm (required reading).
+  const [asked, setAsked] = useState<MyRequirement[]>([]);
   const { hash } = useLocation();
   const [posts, setPosts] = useState<Announcement[]>([]);
   const [writing, setWriting] = useState(false);
@@ -42,7 +48,7 @@ export function NewsPage() {
       setPosts(await api.announcements());
       setError(null);
     } catch (cause) {
-      setError(cause instanceof ApiError ? cause.message : 'Could not load the news.');
+      setError(cause instanceof ApiError ? cause.message : translate('Could not load the news.'));
     } finally {
       setLoading(false);
     }
@@ -50,6 +56,10 @@ export function NewsPage() {
 
   useEffect(() => {
     void load();
+    api
+      .myRequirements()
+      .then((found) => setAsked(found.filter((item) => item.announcement)))
+      .catch(() => setAsked([]));
   }, [load]);
 
   // To the post a notification is about, once it is on the page.
@@ -63,22 +73,24 @@ export function NewsPage() {
     setPosts((current) => current.map((post) => (post.id === updated.id ? updated : post)));
   }, []);
 
-  if (loading) return <Spinner label="Loading the news" />;
+  if (loading) return <Spinner label={t('Loading the news')} />;
 
   return (
     <div className="max-w-3xl">
       <PageHeading
-        title="News"
+        title={t('News')}
         subtitle={
           isAdmin
-            ? 'Everything posted for staff, newest first. The primary post is the one everybody sees when they sign in.'
-            : 'Everything posted for staff, newest first.'
+            ? t(
+                'Everything posted for staff, newest first. The primary post is the one everybody sees when they sign in.',
+              )
+            : t('Everything posted for staff, newest first.')
         }
       />
 
       {(aiOn || posts.some((post) => post.titleEs)) && (
         <div className="mb-4 flex items-center gap-2 text-sm text-slate-600">
-          <span id="news-language-label">Read the news in</span>
+          <span id="news-language-label">{t('Read the news in')}</span>
           <NewsLanguageToggle />
         </div>
       )}
@@ -114,7 +126,7 @@ export function NewsPage() {
       )}
 
       {posts.length === 0 ? (
-        <EmptyState>Nothing has been posted yet.</EmptyState>
+        <EmptyState>{t('Nothing has been posted yet.')}</EmptyState>
       ) : (
         <div className="space-y-3">
           {posts.map((post) => (
@@ -123,6 +135,15 @@ export function NewsPage() {
               post={post}
               aiOn={aiOn}
               canManage={isAdmin}
+              canRequire={isManager}
+              required={asked.find((item) => item.announcement?.id === post.id)}
+              onConfirmed={(id) =>
+                setAsked((current) =>
+                  current.map((item) =>
+                    item.id === id ? { ...item, doneAt: new Date().toISOString() } : item,
+                  ),
+                )
+              }
               onChanged={() => void load()}
               onReplace={replace}
               onError={setError}
@@ -138,6 +159,9 @@ function PostCard({
   post,
   aiOn,
   canManage,
+  canRequire,
+  required,
+  onConfirmed,
   onChanged,
   onReplace,
   onError,
@@ -145,10 +169,16 @@ function PostCard({
   post: Announcement;
   aiOn: boolean;
   canManage: boolean;
+  /// Managers and admins may ask people to confirm they have read it.
+  canRequire: boolean;
+  /// This post, if the reader has been asked to read and confirm it.
+  required?: MyRequirement;
+  onConfirmed: (requirementId: string) => void;
   onChanged: () => void;
   onReplace: (post: Announcement) => void;
   onError: (message: string) => void;
 }) {
+  const t = useT();
   const words = usePostWords(post);
   const [editing, setEditing] = useState(false);
   const [commenting, setCommenting] = useState(false);
@@ -193,13 +223,13 @@ function PostCard({
             <h2 lang={words.lang} className="font-semibold text-slate-900">
               {words.title}
             </h2>
-            {post.isPrimary && <Badge tone="info">Primary</Badge>}
+            {post.isPrimary && <Badge tone="info">{t('Primary')}</Badge>}
             {canManage && post.showOnTimeClock && <Badge tone="neutral">Public</Badge>}
           </div>
           <p className="mt-0.5 text-xs text-slate-500">
             {formatPostDate(post.createdAt)}
             {author && ` · ${author}`}
-            {post.editedAt && ` · edited ${formatPostDate(post.editedAt)}`}
+            {post.editedAt && t(' · edited {date}', { date: formatPostDate(post.editedAt) })}
           </p>
           {words.body && (
             <p lang={words.lang} className="mt-2 whitespace-pre-line text-sm text-slate-700">
@@ -212,6 +242,7 @@ function PostCard({
             </p>
           )}
           <PollView post={post} onChange={onReplace} />
+          {required && <PostConfirm item={required} onDone={onConfirmed} />}
         </article>
 
         <PostActions post={post} onChange={onReplace} onComment={() => setCommenting(true)} />
@@ -222,6 +253,16 @@ function PostCard({
           onComposingChange={setCommenting}
         />
 
+        {canRequire && !canManage && (
+          <div className="mt-3 border-t border-slate-100 pt-3">
+            <Link
+              to={`/required?post=${post.id}`}
+              className="text-sm font-medium text-brand-700 hover:text-brand-900"
+            >
+              Ask people to confirm they’ve read it →
+            </Link>
+          </div>
+        )}
         {canManage && (
           <div className="mt-3 flex flex-wrap items-center gap-3 border-t border-slate-100 pt-3 text-xs">
             {!post.isPrimary && (
@@ -246,6 +287,9 @@ function PostCard({
             >
               Edit
             </button>
+            <Link to={`/required?post=${post.id}`} className={buttonClass('secondary', 'sm')}>
+              Require reading
+            </Link>
             <button
               type="button"
               disabled={busy}
@@ -611,7 +655,7 @@ function PostForm({
 
 /// With the year: the news goes back further than the current one.
 function formatPostDate(iso: string): string {
-  return new Date(iso).toLocaleDateString(undefined, {
+  return new Date(iso).toLocaleDateString(locale(), {
     month: 'short',
     day: 'numeric',
     year: 'numeric',

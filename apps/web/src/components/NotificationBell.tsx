@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { api, type AppNotification } from '../lib/api';
 import { useIsManager } from '../lib/session';
+import { locale, t as translate, useT } from '../lib/i18n';
 
 /// How often the badge asks for a fresh count while the app is open.
 const POLL_MS = 60_000;
@@ -14,6 +15,7 @@ const POLL_MS = 60_000;
  * choosing one marks it read and goes to the screen it is about.
  */
 export function NotificationBell() {
+  const t = useT();
   const isManager = useIsManager();
   const navigate = useNavigate();
   const { pathname } = useLocation();
@@ -139,7 +141,7 @@ export function NotificationBell() {
         onClick={() => setOpen((shown) => !shown)}
         aria-expanded={open}
         aria-haspopup="dialog"
-        aria-label={unread > 0 ? `Notifications, ${unread} unread` : 'Notifications'}
+        aria-label={unread > 0 ? t('Notifications, {n} unread', { n: unread }) : t('Notifications')}
         className="relative flex h-10 w-10 items-center justify-center rounded-lg text-slate-600 hover:bg-slate-100 hover:text-slate-900"
       >
         <svg viewBox="0 0 24 24" className="h-6 w-6" fill="none" aria-hidden="true">
@@ -169,18 +171,18 @@ export function NotificationBell() {
       {open && (
         <div
           role="dialog"
-          aria-label="Notifications"
+          aria-label={t('Notifications')}
           className="absolute right-0 z-30 mt-1 w-80 max-w-[calc(100vw-2rem)] rounded-xl border border-slate-200 bg-white shadow-lg"
         >
           <div className="flex items-center justify-between border-b border-slate-100 px-4 py-2.5">
-            <h2 className="text-sm font-semibold text-slate-900">Notifications</h2>
+            <h2 className="text-sm font-semibold text-slate-900">{t('Notifications')}</h2>
             {unread > 0 && (
               <button
                 type="button"
                 onClick={markAll}
                 className="text-xs font-medium text-brand-700 hover:text-brand-900"
               >
-                Mark all as read
+                {t('Mark all as read')}
               </button>
             )}
           </div>
@@ -188,14 +190,15 @@ export function NotificationBell() {
           <div className="max-h-[60vh] overflow-y-auto">
             {error ? (
               <p className="px-4 py-6 text-center text-sm text-slate-500">
-                Could not load your notifications. Try again in a moment.
+                {t('Could not load your notifications. Try again in a moment.')}
               </p>
             ) : items === null ? (
-              <p className="px-4 py-6 text-center text-sm text-slate-500">Loading…</p>
+              <p className="px-4 py-6 text-center text-sm text-slate-500">{t('Loading…')}</p>
             ) : items.length === 0 ? (
               <p className="px-4 py-6 text-center text-sm text-slate-500">
-                Nothing yet. Changes to your schedule, your time off and anything else that is just
-                for you will show up here.
+                {t(
+                  'Nothing yet. Changes to your schedule, your time off and anything else that is just for you will show up here.',
+                )}
               </p>
             ) : (
               <ul className="divide-y divide-slate-100">
@@ -223,7 +226,7 @@ export function NotificationBell() {
                           }`}
                         >
                           {item.title}
-                          {!item.readAt && <span className="sr-only"> (unread)</span>}
+                          {!item.readAt && <span className="sr-only"> {t('(unread)')}</span>}
                         </span>
                         {item.body && (
                           <span className="mt-0.5 block text-xs text-slate-600">{item.body}</span>
@@ -239,17 +242,24 @@ export function NotificationBell() {
             )}
           </div>
 
-          {isManager && (
-            <div className="border-t border-slate-100 px-4 py-2 text-right">
+          <div className="flex justify-between gap-3 border-t border-slate-100 px-4 py-2">
+            <Link
+              to="/profile#phone-notifications"
+              onClick={() => setOpen(false)}
+              className="tap text-xs font-medium text-slate-500 hover:text-slate-900"
+            >
+              {t('Get these on your phone')}
+            </Link>
+            {isManager && (
               <Link
                 to="/notifications"
                 onClick={() => setOpen(false)}
                 className="tap text-xs font-medium text-slate-500 hover:text-slate-900"
               >
-                Email settings
+                {t('Email settings')}
               </Link>
-            </div>
-          )}
+            )}
+          </div>
         </div>
       )}
     </div>
@@ -259,12 +269,12 @@ export function NotificationBell() {
 /// "just now", "5 min ago", "3 h ago", "yesterday", then the date.
 function timeAgo(iso: string): string {
   const minutes = Math.round((Date.now() - new Date(iso).getTime()) / 60_000);
-  if (minutes < 1) return 'just now';
-  if (minutes < 60) return `${minutes} min ago`;
+  if (minutes < 1) return translate('just now');
+  if (minutes < 60) return translate('{n} min ago', { n: minutes });
   const hours = Math.round(minutes / 60);
-  if (hours < 24) return `${hours} h ago`;
-  if (hours < 48) return 'yesterday';
-  return new Date(iso).toLocaleDateString(undefined, {
+  if (hours < 24) return translate('{n} h ago', { n: hours });
+  if (hours < 48) return translate('yesterday');
+  return new Date(iso).toLocaleDateString(locale(), {
     weekday: 'short',
     month: 'short',
     day: 'numeric',

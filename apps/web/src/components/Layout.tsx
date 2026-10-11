@@ -1,3 +1,4 @@
+import { plural, useT } from '../lib/i18n';
 import { Suspense, useEffect, useRef, useState } from 'react';
 import { Link, NavLink, Outlet, useLocation } from 'react-router-dom';
 import { TIME_OFF_CHANGED, api } from '../lib/api';
@@ -27,6 +28,7 @@ const linkClasses = ({ isActive }: { isActive: boolean }) =>
 const MANAGE = [
   { to: '/dashboard', label: 'Dashboard' },
   { to: '/surveys', label: 'Surveys' },
+  { to: '/required', label: 'Required reading' },
   { to: '/closing', label: 'Closing checklists' },
   { to: '/checklists', label: 'Onboarding & Offboarding' },
   { to: '/credentials', label: 'Licenses' },
@@ -77,6 +79,7 @@ function useRouteAnnouncer(main: React.RefObject<HTMLElement>) {
 }
 
 export function Layout() {
+  const t = useT();
   const isPhone = useIsPhone();
   const isManager = useIsManager();
   const isAdmin = useIsAdmin();
@@ -130,7 +133,7 @@ export function Layout() {
         href="#main"
         className="sr-only focus:not-sr-only focus:absolute focus:left-2 focus:top-2 focus:z-50 focus:rounded-lg focus:bg-white focus:px-4 focus:py-2 focus:text-sm focus:font-semibold focus:text-brand-800 focus:shadow-lg focus:ring-2 focus:ring-brand-600"
       >
-        Skip to content
+        {t('Skip to content')}
       </a>
       <header className="border-b border-slate-200 border-t-4 border-t-brand-600 bg-white">
         {/* One layout, two shapes, and every element appears exactly once so
@@ -177,15 +180,19 @@ export function Layout() {
             >
               <NavLink to="/" end className={linkClasses}>
                 <NavIcon name="home" />
-                Home
+                {t('Home')}
               </NavLink>
               <NavLink to="/schedule" className={linkClasses}>
                 <NavIcon name="schedule" />
-                Schedule
+                {t('Schedule')}
                 {pendingPto > 0 && (
                   <span
                     className="ml-0.5 rounded-full bg-amber-100 px-1.5 py-0.5 text-xs font-semibold text-amber-800"
-                    title={`${pendingPto} time-off request${pendingPto === 1 ? '' : 's'} to decide`}
+                    title={plural(
+                      pendingPto,
+                      '{n} time-off request to decide',
+                      '{n} time-off requests to decide',
+                    )}
                   >
                     {pendingPto}
                   </span>
@@ -193,15 +200,15 @@ export function Layout() {
               </NavLink>
               <NavLink to="/timesheet" className={linkClasses}>
                 <NavIcon name="timesheet" />
-                Timesheet
+                {t('Timesheet')}
               </NavLink>
               <NavLink to="/directory" className={linkClasses}>
                 <NavIcon name="directory" />
-                Directory
+                {t('Directory')}
               </NavLink>
               <NavLink to="/resources" className={linkClasses}>
                 <NavIcon name="resources" />
-                Resources
+                {t('Resources')}
               </NavLink>
               <NavMenu
                 label="Manage"

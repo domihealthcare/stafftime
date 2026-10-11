@@ -1,6 +1,7 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { EmploymentStatus, NotificationKind } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
+import { PushService } from './push.service';
 
 /// How long a notification is kept, read or not. Long enough to look back on
 /// "when was my time off approved?"; short enough that the table does not
@@ -35,7 +36,10 @@ export interface NewNotification {
 export class InboxService {
   private readonly logger = new Logger(InboxService.name);
 
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly push: PushService,
+  ) {}
 
   /// One row per person. Awaited, and never throws.
   async notify(employeeIds: string[], notification: NewNotification): Promise<void> {
@@ -59,6 +63,13 @@ export class InboxService {
         `Could not record a ${notification.kind} notification: ${error instanceof Error ? error.message : error}`,
       );
     }
+    // And to their phones, where they turned that on (October 2026). The
+    // same words; never throws either.
+    await this.push.send(ids, {
+      title: notification.title,
+      body: notification.body,
+      link: notification.link,
+    });
   }
 
   /// Everybody still working here, for practice-wide news.

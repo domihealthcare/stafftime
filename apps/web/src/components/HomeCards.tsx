@@ -8,6 +8,7 @@ import {
   canUseWellnessForm,
 } from '../lib/clinical-access';
 import { formatCalendarDate, formatDate, localDate } from '../lib/format';
+import { locale, plural, t as translate, useT } from '../lib/i18n';
 import { useIsManager, useSession } from '../lib/session';
 import type { Announcement, PracticeEvent, Survey } from '../lib/types';
 import { NewsLanguageToggle, usePostWords } from './NewsLanguage';
@@ -30,6 +31,7 @@ const linkClass = 'text-sm font-medium text-brand-700 hover:text-brand-900';
 /// longer has a tab of its own, so this is where people read it. The primary
 /// can be liked and voted on here; comments are read and written on News.
 export function HomeNews() {
+  const t = useT();
   const navigate = useNavigate();
   const aiOn = useAiOn();
   const [posts, setPosts] = useState<Announcement[] | null>(null);
@@ -58,27 +60,27 @@ export function HomeNews() {
     <section aria-labelledby="home-news" className="space-y-3" data-testid="home-news">
       <div className="flex items-baseline justify-between">
         <h2 id="home-news" className="text-base font-semibold text-slate-900">
-          News
+          {t('News')}
         </h2>
         <div className="flex items-center gap-3">
           {(aiOn || posts.some((post) => post.titleEs)) && <NewsLanguageToggle />}
           <Link to="/news" className={linkClass}>
-            All news →
+            {t('All news →')}
           </Link>
         </div>
       </div>
       {posts.length === 0 ? (
-        <Card className="p-4 text-sm text-slate-600">Nothing posted yet.</Card>
+        <Card className="p-4 text-sm text-slate-600">{t('Nothing posted yet.')}</Card>
       ) : (
         <>
           {primary && (
             <article
               data-testid="primary-announcement"
-              aria-label="Announcement"
+              aria-label={t('Announcement')}
               className="rounded-xl bg-brand-50 p-4 ring-1 ring-inset ring-brand-200"
             >
               <p className="text-xs font-medium uppercase tracking-wide text-brand-700">
-                Announcement · {formatDate(primary.createdAt)}
+                {t('Announcement · {date}', { date: formatDate(primary.createdAt) })}
               </p>
               <PrimaryWords post={primary} />
               <PollView post={primary} onChange={replace} />
@@ -89,11 +91,7 @@ export function HomeNews() {
               />
               {primary.comments.length > 0 && (
                 <Link to={`/news#post-${primary.id}`} className={`mt-1 inline-block ${linkClass}`}>
-                  Read the{' '}
-                  {primary.comments.length === 1
-                    ? 'comment'
-                    : `${primary.comments.length} comments`}{' '}
-                  →
+                  {plural(primary.comments.length, 'Read the comment →', 'Read the {n} comments →')}
                 </Link>
               )}
             </article>
@@ -109,10 +107,10 @@ export function HomeNews() {
                 >
                   <p className="text-xs text-slate-500">
                     {formatDate(post.createdAt)}
-                    {post.poll && ' · Poll'}
+                    {post.poll && ` · ${t('Poll')}`}
                     {post.likes.length > 0 && ` · ♥ ${post.likes.length}`}
                     {post.comments.length > 0 &&
-                      ` · ${post.comments.length} ${post.comments.length === 1 ? 'comment' : 'comments'}`}
+                      ` · ${plural(post.comments.length, '{n} comment', '{n} comments')}`}
                   </p>
                   <HeadlineWords post={post} />
                 </Link>
@@ -162,6 +160,7 @@ function HeadlineWords({ post }: { post: Announcement }) {
 /// The things people come to do besides clocking: ask for time off, set
 /// availability, and — for whoever has them — the clinical forms.
 export function QuickActions() {
+  const t = useT();
   const { employee } = useSession();
   const forms =
     employee !== null &&
@@ -184,26 +183,26 @@ export function QuickActions() {
   }, []);
   return (
     <Card className="p-4" testId="quick-actions">
-      <h2 className="text-sm font-semibold text-slate-900">Quick</h2>
+      <h2 className="text-sm font-semibold text-slate-900">{t('Quick')}</h2>
       <div className="mt-2 flex flex-wrap gap-2">
         <Link to="/time-off?request=1" className={button}>
-          Request time off
+          {t('Request time off')}
         </Link>
         <Link to="/availability" className={button}>
-          Your availability
+          {t('Your availability')}
         </Link>
         {forms && (
           <Link to="/resources" className={button}>
-            Forms
+            {t('Forms')}
           </Link>
         )}
         {ask && (
           <Link to="/ask" className={button}>
-            Ask Domi Staff
+            {t('Ask Domi Staff')}
           </Link>
         )}
         <Link to="/help" className={button}>
-          Help
+          {t('Help')}
         </Link>
       </div>
     </Card>
@@ -216,10 +215,10 @@ export function QuickActions() {
 /// yet (Dominguez, October 2026). Shown on Home only — not the bell, not an
 /// email — and gone once they have one.
 export function TabletPinReminder() {
+  const t = useT();
   const { employee } = useSession();
   const offices = employee?.tabletPinOffices ?? [];
   if (offices.length === 0) return null;
-  const where = offices.length === 1 ? `the ${offices[0]} time clock` : 'the time clocks';
   return (
     // Not a Card: its white background would win over the amber that makes this
     // stand out from the cards around it.
@@ -227,16 +226,22 @@ export function TabletPinReminder() {
       className="rounded-xl border border-amber-200 bg-amber-50 p-4 shadow-sm"
       data-testid="tablet-pin-reminder"
     >
-      <h2 className="text-sm font-semibold text-slate-900">Choose your tablet PIN</h2>
+      <h2 className="text-sm font-semibold text-slate-900">{t('Choose your tablet PIN')}</h2>
       <p className="mt-1 text-sm text-slate-700">
-        You need one to clock in on {where} at the front desk. It takes a minute, with your
-        password.
+        {offices.length === 1
+          ? t(
+              'You need one to clock in on the {office} time clock at the front desk. It takes a minute, with your password.',
+              { office: offices[0] },
+            )
+          : t(
+              'You need one to clock in on the time clocks at the front desk. It takes a minute, with your password.',
+            )}
       </p>
       <Link
         to="/profile#tablet-pin"
         className="mt-3 inline-flex min-h-10 items-center rounded-lg bg-brand-600 px-3 text-sm font-medium text-white hover:bg-brand-700"
       >
-        Choose a PIN
+        {t('Choose a PIN')}
       </Link>
     </section>
   );
@@ -249,6 +254,7 @@ export function TabletPinReminder() {
 /// the next pay day. Not the diagnostics: there is a date most weekends, and
 /// they would push everything else off; they are on the Calendar.
 export function ComingUp() {
+  const t = useT();
   const [events, setEvents] = useState<PracticeEvent[]>([]);
   const [payDay, setPayDay] = useState<string | null>(null);
 
@@ -277,11 +283,11 @@ export function ComingUp() {
 
   return (
     <Card className="p-4" testId="coming-up">
-      <h2 className="text-sm font-semibold text-slate-900">Holidays &amp; coming up</h2>
+      <h2 className="text-sm font-semibold text-slate-900">{t('Holidays & coming up')}</h2>
       {payDay && (
         <p className="mt-2 text-sm" data-testid="next-pay-day">
           <span aria-hidden="true">💵 </span>
-          <span className="font-medium text-slate-900">Next pay day</span>
+          <span className="font-medium text-slate-900">{t('Next pay day')}</span>
           <span className="block text-xs text-slate-500">{formatCalendarDate(payDay)}</span>
         </p>
       )}
@@ -289,20 +295,20 @@ export function ComingUp() {
         {shown.map((event) => (
           <li key={event.id} className="text-sm">
             <span className="font-medium text-slate-900">
-              {event.kind === 'CLOSURE' && <span aria-label="Closed">🔒 </span>}
+              {event.kind === 'CLOSURE' && <span aria-label={t('Closed')}>🔒 </span>}
               {event.kind === 'HOLIDAY' && <span aria-hidden="true">⭐ </span>}
               {event.title}
             </span>
             <span className="block text-xs text-slate-500">
               {when(event)}
               {event.kind === 'CLOSURE' && event.location ? ` · ${event.location.name}` : ''}
-              {event.kind === 'CLOSURE' && !event.location ? ' · Both offices' : ''}
+              {event.kind === 'CLOSURE' && !event.location ? ` · ${t('Both offices')}` : ''}
             </span>
           </li>
         ))}
       </ul>
       <Link to="/schedule/calendar" className={`mt-2 inline-block ${linkClass}`}>
-        Calendar →
+        {t('Calendar →')}
       </Link>
     </Card>
   );
@@ -310,19 +316,20 @@ export function ComingUp() {
 
 function when(event: PracticeEvent): string {
   const day = (iso: string) =>
-    new Date(`${iso}T12:00:00`).toLocaleDateString(undefined, {
+    new Date(`${iso}T12:00:00`).toLocaleDateString(locale(), {
       weekday: 'short',
       month: 'short',
       day: 'numeric',
     });
   if (event.allDay && event.startDate) {
-    const first = event.startDate === localDate(new Date()) ? 'Today' : day(event.startDate);
+    const first =
+      event.startDate === localDate(new Date()) ? translate('Today') : day(event.startDate);
     return event.endDate && event.endDate !== event.startDate
-      ? `${first} – ${day(event.endDate)} · All day`
-      : `${first} · All day`;
+      ? translate('{first} – {last} · All day', { first, last: day(event.endDate) })
+      : translate('{day} · All day', { day: first });
   }
   const start = new Date(event.startsAt);
-  return start.toLocaleString(undefined, {
+  return start.toLocaleString(locale(), {
     weekday: 'short',
     month: 'short',
     day: 'numeric',
@@ -336,6 +343,7 @@ function when(event: PracticeEvent): string {
 /// Surveys waiting for this person, when there are any. The suggestion box has
 /// its own card (`SuggestionBoxCard`), just under this one, which is always there.
 export function SurveysCard() {
+  const t = useT();
   const isManager = useIsManager();
   const [waiting, setWaiting] = useState<Survey[]>([]);
 
@@ -362,7 +370,7 @@ export function SurveysCard() {
 
   return (
     <Card className="p-4" testId="surveys-card">
-      <h2 className="text-sm font-semibold text-slate-900">Surveys waiting for you</h2>
+      <h2 className="text-sm font-semibold text-slate-900">{t('Surveys waiting for you')}</h2>
       <ul className="mt-2 space-y-1 text-sm">
         {waiting.slice(0, 3).map((survey) => (
           <li key={survey.id}>

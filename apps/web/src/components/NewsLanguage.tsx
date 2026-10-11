@@ -1,5 +1,7 @@
-import { useEffect, useState, useSyncExternalStore } from 'react';
+import { useEffect, useState } from 'react';
 import { api } from '../lib/api';
+import type { Language } from '../lib/i18n';
+import { useLanguage } from '../lib/language';
 import type { Announcement } from '../lib/types';
 
 /**
@@ -13,41 +15,12 @@ import type { Announcement } from '../lib/types';
  * stay as written.
  */
 
-export type NewsLanguage = 'en' | 'es';
+export type NewsLanguage = Language;
 
-const KEY = 'domi.newsLanguage';
-const listeners = new Set<() => void>();
-
-function read(): NewsLanguage {
-  try {
-    return localStorage.getItem(KEY) === 'es' ? 'es' : 'en';
-  } catch {
-    return 'en';
-  }
-}
-
-let current: NewsLanguage = read();
-
-function setLanguage(language: NewsLanguage) {
-  current = language;
-  try {
-    localStorage.setItem(KEY, language);
-  } catch {
-    // Private windows: the choice lasts as long as the page.
-  }
-  listeners.forEach((listener) => listener());
-}
-
-/// The reader's choice, the same on Home and on News.
+/// The reader's choice — since October 2026 the whole app's language, the
+/// same on Home, News and Your profile.
 export function useNewsLanguage(): [NewsLanguage, (language: NewsLanguage) => void] {
-  const language = useSyncExternalStore(
-    (listener) => {
-      listeners.add(listener);
-      return () => listeners.delete(listener);
-    },
-    () => current,
-  );
-  return [language, setLanguage];
+  return useLanguage();
 }
 
 export function NewsLanguageToggle({ className = '' }: { className?: string }) {

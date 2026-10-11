@@ -7,6 +7,7 @@ import { CalendarInvitesService } from '../invites/invites.service';
 import { InboxService } from '../email/inbox.service';
 import { LicenseRemindersService } from './license-reminders.service';
 import { OnboardingRemindersService } from './onboarding-reminders.service';
+import { RequirementsService } from '../requirements/requirements.service';
 import { SessionService } from '../auth/session.service';
 import { ShiftPlanningService } from '../shifts/shift-planning.service';
 import { PrismaService } from '../prisma/prisma.service';
@@ -48,6 +49,8 @@ export interface PurgeReport {
   licenseReminders: number;
   /// New hires reminded about onboarding tasks of theirs due soon or overdue.
   onboardingReminders: number;
+  /// People reminded about something they were asked to read or do.
+  requiredReminders: number;
 }
 
 /**
@@ -78,6 +81,7 @@ export class MaintenanceService {
     private readonly autoClockOut: AutoClockOutService,
     private readonly licenseReminders: LicenseRemindersService,
     private readonly onboardingReminders: OnboardingRemindersService,
+    private readonly requirements: RequirementsService,
   ) {}
 
   async purge(): Promise<PurgeReport> {
@@ -97,6 +101,7 @@ export class MaintenanceService {
       eventReminders: await this.remindAboutTomorrow(),
       licenseReminders: await this.remindAboutLicenses(),
       onboardingReminders: await this.remindAboutOnboarding(),
+      requiredReminders: await this.remindAboutRequirements(),
       calendarInvites: await this.sendCalendarInvites(),
     };
 
@@ -178,6 +183,19 @@ export class MaintenanceService {
     } catch (error) {
       this.logger.error(
         `Could not send onboarding reminders: ${error instanceof Error ? error.message : error}`,
+      );
+      return 0;
+    }
+  }
+
+  /// People still to read or do something they were asked to (October 2026).
+  /// Like the digest, never allowed to fail the tidying up.
+  private async remindAboutRequirements(): Promise<number> {
+    try {
+      return await this.requirements.nudge();
+    } catch (error) {
+      this.logger.error(
+        `Could not send required-reading reminders: ${error instanceof Error ? error.message : error}`,
       );
       return 0;
     }

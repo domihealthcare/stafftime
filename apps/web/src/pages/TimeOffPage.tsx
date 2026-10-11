@@ -14,7 +14,8 @@ import type {
   PtoType,
   Shift,
 } from '../lib/types';
-import { PTO_TYPE_LABELS, REQUESTABLE_PTO_TYPES, hasNone } from '../lib/time-off';
+import { PTO_TYPE_LABELS, REQUESTABLE_PTO_TYPES, hasNone, ptoTypeLabel } from '../lib/time-off';
+import { locale, plural, t as tNow, useT } from '../lib/i18n';
 import { PtoBalanceCard } from '../components/PtoBalanceCard';
 import { PtoPolicyEditor } from '../components/PtoPolicyEditor';
 import { useConfirm } from '../components/ConfirmDialog';
@@ -41,6 +42,7 @@ const STATUS_TONE: Record<PtoStatus, 'warning' | 'success' | 'danger' | 'neutral
 };
 
 export function TimeOffPage() {
+  const t = useT();
   const { employee } = useSession();
   const isManager = useIsManager();
   const isAdmin = useIsAdmin();
@@ -70,7 +72,7 @@ export function TimeOffPage() {
       setPolicy(policyData);
       setError(null);
     } catch (err) {
-      setError(err instanceof ApiError ? err.message : 'Could not load time off.');
+      setError(err instanceof ApiError ? err.message : tNow('Could not load time off.'));
     } finally {
       setLoading(false);
     }
@@ -118,8 +120,8 @@ export function TimeOffPage() {
   return (
     <div className="max-w-3xl">
       <PageHeading
-        title={isManager ? 'Time off requests' : 'Time off'}
-        subtitle={isManager ? 'Everybody’s requests, and your own.' : 'Your time off requests.'}
+        title={isManager ? 'Time off requests' : t('Time off')}
+        subtitle={isManager ? 'Everybody’s requests, and your own.' : t('Your time off requests.')}
       />
 
       {!isManager && summary}
@@ -151,7 +153,7 @@ export function TimeOffPage() {
                   : 'text-slate-600 hover:bg-slate-100'
               }`}
             >
-              {choice === 'ALL' ? 'All' : choice.charAt(0) + choice.slice(1).toLowerCase()}
+              {t(choice === 'ALL' ? 'All' : choice.charAt(0) + choice.slice(1).toLowerCase())}
             </button>
           ))}
         </div>
@@ -161,7 +163,7 @@ export function TimeOffPage() {
           onClick={() => setShowForm((open) => !open)}
           className={buttonClass('primary', 'md')}
         >
-          {showForm ? 'Cancel' : '+ Request time off'}
+          {showForm ? t('Cancel') : t('+ Request time off')}
         </button>
       </div>
 
@@ -182,11 +184,11 @@ export function TimeOffPage() {
 
       {loading ? (
         <Card className="p-6">
-          <Spinner label="Loading requests" />
+          <Spinner label={t('Loading requests')} />
         </Card>
       ) : visible.length === 0 ? (
         <EmptyState>
-          {filter === 'PENDING' ? 'Nothing waiting on a decision.' : 'No requests to show.'}
+          {filter === 'PENDING' ? t('Nothing waiting on a decision.') : t('No requests to show.')}
         </EmptyState>
       ) : (
         <div className="space-y-3">
@@ -238,6 +240,7 @@ function RequestCard({
   onChanged: () => void;
   onError: (message: string) => void;
 }) {
+  const t = useT();
   const [busy, setBusy] = useState(false);
   const [conflicts, setConflicts] = useState<ConflictingShift[] | null>(null);
   const confirm = useConfirm();
@@ -265,7 +268,7 @@ function RequestCard({
       await action();
       onChanged();
     } catch (err) {
-      onError(err instanceof ApiError ? err.message : 'That did not work.');
+      onError(err instanceof ApiError ? err.message : tNow('That did not work.'));
     } finally {
       setBusy(false);
     }
@@ -284,11 +287,11 @@ function RequestCard({
               {formatRange(request.startDate, request.endDate, request.isHalfDay)}
             </span>
             <Badge tone={STATUS_TONE[request.status]}>
-              {request.status.charAt(0) + request.status.slice(1).toLowerCase()}
+              {t(request.status.charAt(0) + request.status.slice(1).toLowerCase())}
             </Badge>
           </div>
           <p className="mt-1 text-sm text-slate-600">
-            {TYPE_LABELS[request.type]} · {request.days} day{request.days === 1 ? '' : 's'}
+            {ptoTypeLabel(request.type)} · {plural(request.days, '{n} day', '{n} days')}
             {request.employee && !isMine && (
               <>
                 {' '}
@@ -296,7 +299,7 @@ function RequestCard({
                 {request.employee.lastName}
               </>
             )}
-            {request.recordedBy && <> · recorded after the fact</>}
+            {request.recordedBy && <> · {t('recorded after the fact')}</>}
           </p>
           {request.notes && (
             <p className="mt-2 text-sm text-slate-700">&ldquo;{request.notes}&rdquo;</p>
@@ -306,7 +309,7 @@ function RequestCard({
               <span className="font-medium">
                 {request.reviewedBy
                   ? `${request.reviewedBy.firstName} ${request.reviewedBy.lastName}`
-                  : 'Manager'}
+                  : t('Manager')}
                 :
               </span>{' '}
               {request.reviewNote}
@@ -346,18 +349,21 @@ function RequestCard({
               onClick={async () => {
                 const range = formatRange(request.startDate, request.endDate, request.isHalfDay);
                 const sure = await confirm({
-                  title: isMine ? 'Withdraw this request?' : 'Cancel this time off?',
+                  title: isMine ? t('Withdraw this request?') : 'Cancel this time off?',
                   body: isMine
-                    ? `${TYPE_LABELS[request.type]}, ${range}. You would need to ask again.`
+                    ? t('{type}, {range}. You would need to ask again.', {
+                        type: ptoTypeLabel(request.type),
+                        range,
+                      })
                     : `${request.employee ? `${request.employee.preferredName ?? request.employee.firstName}’s ` : ''}${TYPE_LABELS[request.type].toLowerCase()}, ${range}.${request.status === 'APPROVED' ? ' It is already approved, so they may be counting on it.' : ''}`,
-                  confirmLabel: isMine ? 'Yes, withdraw it' : 'Yes, cancel it',
-                  cancelLabel: 'Keep it',
+                  confirmLabel: isMine ? t('Yes, withdraw it') : 'Yes, cancel it',
+                  cancelLabel: t('Keep it'),
                 });
                 if (sure) await act(() => api.cancelPto(request.id));
               }}
               className="text-sm font-medium text-slate-500 hover:text-slate-900 disabled:opacity-50"
             >
-              {isMine ? 'Withdraw' : 'Cancel'}
+              {isMine ? t('Withdraw') : t('Cancel')}
             </button>
           )}
         </div>
@@ -413,6 +419,7 @@ function RequestForm({
   startOn?: string;
   onCreated: () => void;
 }) {
+  const t = useT();
   // Sick first, unless the person's own sick days are known to be used up:
   // then PTO (Dominguez, September 2026). Once they pick, it is theirs.
   const [chosenType, setType] = useState<PtoType | null>(null);
@@ -524,7 +531,7 @@ function RequestForm({
       });
       onCreated();
     } catch (err) {
-      setProblem(err instanceof ApiError ? err.message : 'Could not send that request.');
+      setProblem(err instanceof ApiError ? err.message : t('Could not send that request.'));
     } finally {
       setBusy(false);
     }
@@ -564,7 +571,7 @@ function RequestForm({
 
         <div>
           <label htmlFor="pto-type" className="block text-sm font-medium text-slate-700">
-            Type
+            {t('Type')}
           </label>
           <select
             id="pto-type"
@@ -574,7 +581,7 @@ function RequestForm({
           >
             {REQUESTABLE_PTO_TYPES.map((value) => (
               <option key={value} value={value}>
-                {TYPE_LABELS[value]}
+                {ptoTypeLabel(value)}
               </option>
             ))}
           </select>
@@ -583,7 +590,7 @@ function RequestForm({
         <div className="grid gap-3 sm:grid-cols-2">
           <div>
             <label htmlFor="pto-start" className="block text-sm font-medium text-slate-700">
-              First day
+              {t('First day')}
             </label>
             <input
               id="pto-start"
@@ -601,7 +608,7 @@ function RequestForm({
           </div>
           <div>
             <label htmlFor="pto-end" className="block text-sm font-medium text-slate-700">
-              Last day
+              {t('Last day')}
             </label>
             <input
               id="pto-end"
@@ -611,7 +618,7 @@ function RequestForm({
               onChange={(event) => setEndDate(event.target.value)}
               className={field}
             />
-            <p className="mt-1 text-xs text-slate-500">Leave empty for a single day.</p>
+            <p className="mt-1 text-xs text-slate-500">{t('Leave empty for a single day.')}</p>
           </div>
         </div>
 
@@ -623,13 +630,13 @@ function RequestForm({
               onChange={(event) => setIsHalfDay(event.target.checked)}
               className="rounded border-slate-300 text-brand-600 focus:ring-brand-600"
             />
-            Half day
+            {t('Half day')}
           </label>
         )}
 
         <div>
           <label htmlFor="pto-notes" className="block text-sm font-medium text-slate-700">
-            Notes <span className="font-normal text-slate-500">(optional)</span>
+            {t('Notes')} <span className="font-normal text-slate-500">{t('(optional)')}</span>
           </label>
           <input
             id="pto-notes"
@@ -647,11 +654,11 @@ function RequestForm({
             data-testid="time-off-on-rota"
             className="rounded-lg bg-amber-50 px-3 py-2 text-sm text-amber-950 ring-1 ring-inset ring-amber-200"
           >
-            <p>{forName ? `${forName} is on the rota then:` : 'You’re on the rota then:'}</p>
+            <p>{forName ? `${forName} is on the rota then:` : t('You’re on the rota then:')}</p>
             <ul className="mt-1 list-disc pl-5">
               {onRota.map((shift) => (
                 <li key={shift.id}>
-                  {new Date(shift.startsAt).toLocaleDateString(undefined, {
+                  {new Date(shift.startsAt).toLocaleDateString(locale(), {
                     timeZone: 'America/New_York',
                     weekday: 'short',
                     month: 'short',
@@ -659,36 +666,46 @@ function RequestForm({
                   })}
                   , {formatClock(practiceClockOf(shift.startsAt))}–
                   {formatClock(practiceClockOf(shift.endsAt))}
-                  {shift.isRemote ? ' · working from home' : ` · ${shift.location?.name ?? ''}`}
+                  {shift.isRemote
+                    ? ` · ${t('working from home')}`
+                    : ` · ${shift.location?.name ?? ''}`}
                 </li>
               ))}
             </ul>
             <p className="mt-1 text-xs">
               {forName
                 ? 'When it is approved you can take them off the rota or leave them as open shifts.'
-                : 'Your manager will sort those out when they decide — you’ll be told.'}
+                : t('Your manager will sort those out when they decide — you’ll be told.')}
             </p>
           </div>
         )}
 
         {showOtherYearNote && (
           <p className="text-sm text-slate-600">
-            {requestedDays} day{requestedDays === 1 ? '' : 's'} · falls outside the{' '}
-            {balance.policyYear} policy year, so it does not come off the balance above.
+            {plural(requestedDays, '{n} day', '{n} days')} ·{' '}
+            {t('falls outside the {year} policy year, so it does not come off the balance above.', {
+              year: balance.policyYear,
+            })}
           </p>
         )}
 
         {showBalance &&
           (remainingAfter < 0 ? (
             <Alert tone="warning">
-              That is {requestedDays} day{requestedDays === 1 ? '' : 's'}, which puts you{' '}
-              {Math.abs(remainingAfter)} over your {bucket === 'sick' ? 'sick' : 'PTO'} allowance.
-              You can still ask — a manager decides.
+              {t(
+                bucket === 'sick'
+                  ? 'That is {days}, which puts you {over} over your sick allowance. You can still ask — a manager decides.'
+                  : 'That is {days}, which puts you {over} over your PTO allowance. You can still ask — a manager decides.',
+                {
+                  days: plural(requestedDays, '{n} day', '{n} days'),
+                  over: Math.abs(remainingAfter),
+                },
+              )}
             </Alert>
           ) : (
             <p className="text-sm text-slate-600">
-              {requestedDays} day{requestedDays === 1 ? '' : 's'} · {remainingAfter} left
-              afterwards.
+              {plural(requestedDays, '{n} day', '{n} days')} ·{' '}
+              {t('{n} left afterwards.', { n: remainingAfter })}
             </p>
           ))}
 
@@ -699,7 +716,7 @@ function RequestForm({
           disabled={busy || !startDate}
           className="w-full rounded-lg bg-brand-600 px-4 py-3 text-base font-semibold text-white hover:bg-brand-700 disabled:opacity-60 sm:w-auto sm:px-6"
         >
-          {busy ? 'Sending…' : 'Send request'}
+          {busy ? t('Sending…') : t('Send request')}
         </button>
       </form>
     </Card>
@@ -713,7 +730,7 @@ function formatRange(start: string, end: string, isHalfDay: boolean): string {
   const format = (value: string) => formatCalendarDate(value, { year: false });
 
   if (start === end) {
-    return isHalfDay ? `${format(start)} (half day)` : format(start);
+    return isHalfDay ? tNow('{date} (half day)', { date: format(start) }) : format(start);
   }
   return `${format(start)} – ${format(end)}`;
 }

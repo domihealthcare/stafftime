@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { ApiError, api } from '../lib/api';
 import { displayName } from '../lib/format';
+import { locale, plural, t as translate, useT } from '../lib/i18n';
 import { useIsManager, useSession } from '../lib/session';
 import type { Announcement, AnnouncementComment, PersonName } from '../lib/types';
 import { Avatar } from './Avatar';
@@ -25,6 +26,7 @@ const MAX_COMMENT = 2_000;
 /// "Angelica Diaz, Maria Ruiz and 3 others" — the others in a note on the
 /// words, so a long list does not crowd the line.
 function Names({ people, testId }: { people: PersonName[]; testId?: string }) {
+  const t = useT();
   const names = people.map(displayName);
   if (names.length <= 3) {
     return <span data-testid={testId}>{joinNames(names)}</span>;
@@ -32,15 +34,18 @@ function Names({ people, testId }: { people: PersonName[]; testId?: string }) {
   const rest = names.slice(2);
   return (
     <span data-testid={testId}>
-      {names.slice(0, 2).join(', ')} and{' '}
-      <HoverNote note={rest.join(', ')}>{rest.length} others</HoverNote>
+      {t('{names} and', { names: names.slice(0, 2).join(', ') })}{' '}
+      <HoverNote note={rest.join(', ')}>{t('{n} others', { n: rest.length })}</HoverNote>
     </span>
   );
 }
 
 function joinNames(names: string[]): string {
   if (names.length <= 1) return names.join('');
-  return `${names.slice(0, -1).join(', ')} and ${names[names.length - 1]}`;
+  return translate('{names} and {last}', {
+    names: names.slice(0, -1).join(', '),
+    last: names[names.length - 1],
+  });
 }
 
 // ------------------------------------------------------------------- likes
@@ -52,6 +57,7 @@ export function LikeButton({
   post: Announcement;
   onChange: (post: Announcement) => void;
 }) {
+  const t = useT();
   const [busy, setBusy] = useState(false);
   return (
     <button
@@ -74,20 +80,21 @@ export function LikeButton({
       }`}
     >
       <span aria-hidden="true">{post.likedByMe ? '♥' : '♡'}</span>
-      {post.likedByMe ? 'Liked' : 'Like'}
+      {post.likedByMe ? t('Liked') : t('Like')}
     </button>
   );
 }
 
 /// Who liked it, by name. Nothing until somebody has.
 export function LikedBy({ post }: { post: Announcement }) {
+  const t = useT();
   if (post.likes.length === 0) return null;
   return (
     <p className="text-xs text-slate-600">
       <span aria-hidden="true" className="text-rose-600">
         ♥{' '}
       </span>
-      Liked by <Names people={post.likes} testId="liked-by" />
+      {t('Liked by')} <Names people={post.likes} testId="liked-by" />
     </p>
   );
 }
@@ -104,6 +111,7 @@ export function PollView({
   post: Announcement;
   onChange: (post: Announcement) => void;
 }) {
+  const t = useT();
   const { employee } = useSession();
   const isAdmin = employee?.role === 'ADMIN';
   const [busy, setBusy] = useState(false);
@@ -127,7 +135,7 @@ export function PollView({
     try {
       onChange(await change());
     } catch (cause) {
-      setError(cause instanceof ApiError ? cause.message : 'Could not save your vote.');
+      setError(cause instanceof ApiError ? cause.message : t('Could not save your vote.'));
     } finally {
       setPending(null);
       setBusy(false);
@@ -149,13 +157,18 @@ export function PollView({
       data-testid="poll"
       disabled={busy}
     >
-      <legend className="sr-only">Poll: {poll.question}</legend>
+      <legend className="sr-only">{t('Poll: {question}', { question: poll.question })}</legend>
       <p className="text-xs font-medium uppercase tracking-wide text-brand-700">
-        Poll{closed ? ' · voting closed' : ''}
+        {t('Poll')}
+        {closed ? t(' · voting closed') : ''}
       </p>
       <p className="mt-0.5 font-medium text-slate-900">{poll.question}</p>
       <p className="text-xs text-slate-500">
-        {closed ? 'Closed.' : poll.allowsMultiple ? 'Pick any that suit you.' : 'Pick one.'}
+        {closed
+          ? t('Closed.')
+          : poll.allowsMultiple
+            ? t('Pick any that suit you.')
+            : t('Pick one.')}
       </p>
 
       <ul className="mt-2 space-y-2">
@@ -185,7 +198,7 @@ export function PollView({
                 />
                 <span className="relative flex-1 font-medium text-slate-800">{option.label}</span>
                 <span className="relative text-xs font-semibold text-slate-700">
-                  {count} {count === 1 ? 'vote' : 'votes'}
+                  {plural(count, '{n} vote', '{n} votes')}
                 </span>
               </label>
               {count > 0 && (
@@ -200,10 +213,10 @@ export function PollView({
 
       <p className="mt-2 text-xs text-slate-600">
         {poll.voterCount === 0
-          ? 'Nobody has voted yet.'
-          : `${poll.voterCount} ${poll.voterCount === 1 ? 'person has' : 'people have'} voted.`}{' '}
-        <strong className="font-medium">Votes are not anonymous</strong> — everybody can see who
-        picked what.
+          ? t('Nobody has voted yet.')
+          : plural(poll.voterCount, '{n} person has voted.', '{n} people have voted.')}{' '}
+        <strong className="font-medium">{t('Votes are not anonymous')}</strong>
+        {t(' — everybody can see who picked what.')}
       </p>
 
       {error && (
@@ -219,7 +232,7 @@ export function PollView({
             onClick={() => void send(() => api.voteInPoll(post.id, []), [])}
             className="tap text-xs font-medium text-slate-600 hover:text-slate-900"
           >
-            Take my vote back
+            {t('Take my vote back')}
           </button>
         )}
         {isAdmin && (
@@ -228,7 +241,7 @@ export function PollView({
             onClick={() => void send(() => api.setPollClosed(post.id, !closed))}
             className={buttonClass('secondary', 'sm')}
           >
-            {closed ? 'Open voting again' : 'Close voting'}
+            {closed ? t('Open voting again') : t('Close voting')}
           </button>
         )}
       </div>
@@ -254,6 +267,7 @@ export function PostComments({
   composing: boolean;
   onComposingChange: (open: boolean) => void;
 }) {
+  const t = useT();
   const [showAll, setShowAll] = useState(false);
   const hidden = showAll ? 0 : Math.max(0, post.comments.length - SHOWN_COMMENTS);
   const shown = post.comments.slice(hidden);
@@ -261,14 +275,14 @@ export function PostComments({
   if (post.comments.length === 0 && !composing) return null;
 
   return (
-    <section aria-label="Comments" className="mt-3 space-y-3" data-testid="comments">
+    <section aria-label={t('Comments')} className="mt-3 space-y-3" data-testid="comments">
       {hidden > 0 && (
         <button
           type="button"
           onClick={() => setShowAll(true)}
           className="tap text-xs font-medium text-brand-700 hover:text-brand-900"
         >
-          Show all {post.comments.length} comments
+          {t('Show all {n} comments', { n: post.comments.length })}
         </button>
       )}
       {shown.length > 0 && (
@@ -280,8 +294,8 @@ export function PostComments({
       )}
       {composing && (
         <CommentBox
-          label="Write a comment"
-          submitLabel="Post comment"
+          label={t('Write a comment')}
+          submitLabel={t('Post comment')}
           autoFocus
           onSubmit={(text) => api.commentOnAnnouncement(post.id, text)}
           onDone={(updated) => {
@@ -303,6 +317,7 @@ function CommentItem({
   comment: AnnouncementComment;
   onChange: (post: Announcement) => void;
 }) {
+  const t = useT();
   const { employee } = useSession();
   const isManager = useIsManager();
   const confirm = useConfirm();
@@ -314,8 +329,8 @@ function CommentItem({
     return (
       <li>
         <CommentBox
-          label="Change your comment"
-          submitLabel="Save"
+          label={t('Change your comment')}
+          submitLabel={t('Save')}
           initial={comment.body}
           autoFocus
           onSubmit={(text) => api.editAnnouncementComment(post.id, comment.id, text)}
@@ -339,7 +354,7 @@ function CommentItem({
         <p className="mt-0.5 flex flex-wrap items-center gap-x-3 px-1 text-xs text-slate-500">
           <span>
             {formatWhen(comment.createdAt)}
-            {comment.editedAt && ' · edited'}
+            {comment.editedAt && t(' · edited')}
           </span>
           {own && (
             <button
@@ -347,7 +362,7 @@ function CommentItem({
               onClick={() => setEditing(true)}
               className="tap font-medium text-slate-600 hover:text-slate-900"
             >
-              Edit
+              {t('Edit')}
             </button>
           )}
           {(own || isManager) && (
@@ -356,25 +371,25 @@ function CommentItem({
               onClick={async () => {
                 const sure = await confirm({
                   title: own
-                    ? 'Delete your comment?'
-                    : `Delete ${displayName(comment.author)}’s comment?`,
+                    ? t('Delete your comment?')
+                    : t('Delete {name}’s comment?', { name: displayName(comment.author) }),
                   body: own
-                    ? 'It goes from the post for everybody.'
-                    : 'It goes from the post for everybody. They are not told.',
-                  confirmLabel: 'Delete it',
-                  cancelLabel: 'Keep it',
+                    ? t('It goes from the post for everybody.')
+                    : t('It goes from the post for everybody. They are not told.'),
+                  confirmLabel: t('Delete it'),
+                  cancelLabel: t('Keep it'),
                 });
                 if (!sure) return;
                 try {
                   setError(null);
                   onChange(await api.deleteAnnouncementComment(post.id, comment.id));
                 } catch (cause) {
-                  setError(cause instanceof ApiError ? cause.message : 'Could not delete that.');
+                  setError(cause instanceof ApiError ? cause.message : t('Could not delete that.'));
                 }
               }}
               className="tap font-medium text-slate-600 hover:text-rose-700"
             >
-              Delete
+              {t('Delete')}
             </button>
           )}
         </p>
@@ -405,6 +420,7 @@ function CommentBox({
   onSubmit: (text: string) => Promise<Announcement>;
   onDone: (updated: Announcement | null) => void;
 }) {
+  const t = useT();
   const [text, setText] = useState(initial);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -420,7 +436,7 @@ function CommentBox({
     try {
       onDone(await onSubmit(text.trim()));
     } catch (cause) {
-      setError(cause instanceof ApiError ? cause.message : 'Could not save your comment.');
+      setError(cause instanceof ApiError ? cause.message : t('Could not save your comment.'));
       setBusy(false);
     }
   }
@@ -436,12 +452,12 @@ function CommentBox({
           onChange={(event) => setText(event.target.value)}
           rows={2}
           maxLength={MAX_COMMENT}
-          placeholder="Write a comment…"
+          placeholder={t('Write a comment…')}
           className={inputClass}
         />
       </label>
       <p className="text-xs text-slate-500">
-        Everybody signed in can read it, under your name. Never anything about a patient.
+        {t('Everybody signed in can read it, under your name. Never anything about a patient.')}
       </p>
       {error && <Alert>{error}</Alert>}
       <div className="flex items-center gap-2">
@@ -451,14 +467,14 @@ function CommentBox({
           onClick={() => void submit()}
           className={buttonClass('primary', 'sm')}
         >
-          {busy ? 'Saving…' : submitLabel}
+          {busy ? t('Saving…') : submitLabel}
         </button>
         <button
           type="button"
           onClick={() => onDone(null)}
           className="tap text-sm font-medium text-slate-600 hover:text-slate-900"
         >
-          Cancel
+          {t('Cancel')}
         </button>
       </div>
     </div>
@@ -469,7 +485,7 @@ function CommentBox({
 function formatWhen(iso: string): string {
   const date = new Date(iso);
   const thisYear = date.getFullYear() === new Date().getFullYear();
-  return date.toLocaleString(undefined, {
+  return date.toLocaleString(locale(), {
     month: 'short',
     day: 'numeric',
     ...(thisYear ? {} : { year: 'numeric' }),
@@ -491,6 +507,7 @@ export function PostActions({
   /// What "Comment" does: open the box here, or go to the post on News.
   onComment: () => void;
 }) {
+  const t = useT();
   const count = post.comments.length;
   return (
     <div className="mt-3 space-y-1 border-t border-slate-100 pt-2">
@@ -503,11 +520,11 @@ export function PostActions({
           className="tap inline-flex items-center gap-1 rounded-lg px-2 py-1 text-sm font-medium text-slate-600 hover:bg-slate-100"
         >
           <span aria-hidden="true">💬</span>
-          Comment
+          {t('Comment')}
         </button>
         {count > 0 && (
           <span className="ml-auto text-xs text-slate-500">
-            {count} {count === 1 ? 'comment' : 'comments'}
+            {plural(count, '{n} comment', '{n} comments')}
           </span>
         )}
       </div>

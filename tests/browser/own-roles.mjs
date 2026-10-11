@@ -131,20 +131,25 @@ await step('the server refuses a shift as a role she does not hold', async () =>
 });
 
 await step('an open Front Desk shift can only be given to somebody in Front Desk', async () => {
-  // Tuesday next week, the week the rota is opened on.
-  const day = new Date();
-  day.setDate(day.getDate() - day.getDay() + 9);
-  day.setHours(9, 0, 0, 0);
-  const end = new Date(day);
-  end.setHours(17);
+  // Tuesday next week, the week the rota is opened on — worked out in the
+  // page, on New Jersey time like the rota; the runner's own clock is UTC,
+  // a week ahead on a Saturday evening.
+  const { startsAt, endsAt } = await mgr.evaluate(() => {
+    const day = new Date();
+    day.setDate(day.getDate() - day.getDay() + 9);
+    day.setHours(9, 0, 0, 0);
+    const end = new Date(day);
+    end.setHours(17);
+    return { startsAt: day.toISOString(), endsAt: end.toISOString() };
+  });
   const open = await api('/shifts', {
     method: 'POST',
     body: JSON.stringify({
       employeeId: null,
       locationId: northBergen,
       jobRoleId: role('Provider').id,
-      startsAt: day.toISOString(),
-      endsAt: end.toISOString(),
+      startsAt,
+      endsAt,
     }),
   });
   if (open.status !== 201) throw new Error(`making the open shift answered ${open.status}`);

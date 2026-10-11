@@ -23,7 +23,9 @@ taken off this list, and the answer is written into `CLAUDE.md` or
       2026). Not built: needs an SMS provider such as Twilio (about a cent a
       text plus a number) and US carrier registration (A2P 10DLC, one to three
       weeks). Email and the bell go meanwhile. Decide whether it is worth it
-      once the email reminders have run for a while.
+      once the email reminders have run for a while. **Phone notifications
+      (web push, October 2026) may make it unnecessary** — the reminders
+      reach the lock screen of anybody who turns them on, at no cost.
 - [ ] **Give Vercel previews their own database.** Confirmed by Dominguez
       (29 September 2026): `DATABASE_URL` is one variable set for both Preview
       and Production, so previews use the live database, and a pushed branch's

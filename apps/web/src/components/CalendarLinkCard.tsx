@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { ApiError, api } from '../lib/api';
 import { KIND_STYLE } from '../lib/calendar-kinds';
 import { SEPARATE_FEEDS } from '../lib/calendar-feeds';
+import { t as translate, useT } from '../lib/i18n';
 import { useSession } from '../lib/session';
 import { useConfirm } from './ConfirmDialog';
 import { Alert, Card, buttonClass } from './ui';
@@ -15,6 +16,7 @@ import { Alert, Card, buttonClass } from './ui';
  * feature and not three integrations.
  */
 export function CalendarLinkCard() {
+  const t = useT();
   const { employee } = useSession();
   // Once shifts and events go out as invites (September 2026), the link
   // carries only closures and approved time off.
@@ -37,7 +39,9 @@ export function CalendarLinkCard() {
       setHasLink(link.hasLink);
       setToken(link.token);
     } catch (err) {
-      setError(err instanceof ApiError ? err.message : 'Could not check your calendar link.');
+      setError(
+        err instanceof ApiError ? err.message : translate('Could not check your calendar link.'),
+      );
     } finally {
       setLoading(false);
     }
@@ -71,7 +75,7 @@ export function CalendarLinkCard() {
       setHasLink(true);
       setOpen(true);
     } catch (err) {
-      setError(err instanceof ApiError ? err.message : 'Could not create a link.');
+      setError(err instanceof ApiError ? err.message : t('Could not create a link.'));
     } finally {
       setBusy(false);
     }
@@ -79,10 +83,10 @@ export function CalendarLinkCard() {
 
   async function revoke() {
     const sure = await confirm({
-      title: 'Turn off calendar syncing?',
-      body: 'Your shifts will disappear from any calendar subscribed to the old link.',
-      confirmLabel: 'Yes, turn it off',
-      cancelLabel: 'Keep syncing',
+      title: t('Turn off calendar syncing?'),
+      body: t('Your shifts will disappear from any calendar subscribed to the old link.'),
+      confirmLabel: t('Yes, turn it off'),
+      cancelLabel: t('Keep syncing'),
     });
     if (!sure) return;
     setBusy(true);
@@ -92,7 +96,7 @@ export function CalendarLinkCard() {
       setHasLink(false);
       setOpen(false);
     } catch (err) {
-      setError(err instanceof ApiError ? err.message : 'Could not turn that off.');
+      setError(err instanceof ApiError ? err.message : t('Could not turn that off.'));
     } finally {
       setBusy(false);
     }
@@ -109,7 +113,7 @@ export function CalendarLinkCard() {
       window.setTimeout(() => setCopied(null), 2500);
     } catch {
       // Clipboard access can be refused; the URL is on screen to copy by hand.
-      setError('Could not copy automatically — select the address and copy it.');
+      setError(t('Could not copy automatically — select the address and copy it.'));
     }
   }
 
@@ -121,24 +125,30 @@ export function CalendarLinkCard() {
     <Card className="p-4">
       <div className="flex flex-wrap items-center justify-between gap-2">
         <div>
-          <h2 className="text-sm font-semibold text-slate-900">Your calendar</h2>
+          <h2 className="text-sm font-semibold text-slate-900">{t('Your calendar')}</h2>
           {invites ? (
             <>
               <p className="mt-0.5 text-sm text-slate-600" data-testid="calendar-invites-note">
-                Your shifts (two weeks ahead) and practice events arrive as calendar invites to{' '}
-                <strong>{employee?.email}</strong> — accept them if your calendar asks.
+                {t(
+                  'Your shifts (two weeks ahead) and practice events arrive as calendar invites to',
+                )}{' '}
+                <strong>{employee?.email}</strong> {t('— accept them if your calendar asks.')}
               </p>
               <p className="mt-1 text-sm text-slate-600">
                 {hasLink
-                  ? 'Syncing is on for office closures and your approved time off.'
-                  : 'Office closures and your approved time off can go in your calendar too.'}
+                  ? t('Syncing is on for office closures and your approved time off.')
+                  : t('Office closures and your approved time off can go in your calendar too.')}
               </p>
             </>
           ) : (
             <p className="mt-0.5 text-sm text-slate-600">
               {hasLink
-                ? 'Syncing is on. Your shifts, approved time off and practice events appear in your own calendar.'
-                : 'Add your shifts and practice events to Google Calendar, Apple Calendar or Outlook.'}
+                ? t(
+                    'Syncing is on. Your shifts, approved time off and practice events appear in your own calendar.',
+                  )
+                : t(
+                    'Add your shifts and practice events to Google Calendar, Apple Calendar or Outlook.',
+                  )}
             </p>
           )}
         </div>
@@ -149,7 +159,7 @@ export function CalendarLinkCard() {
             onClick={() => setOpen((current) => !current)}
             className="text-sm font-medium text-slate-600 hover:text-slate-900"
           >
-            {open ? 'Close' : 'Show link'}
+            {open ? t('Close') : t('Show link')}
           </button>
         ) : (
           <button
@@ -158,7 +168,7 @@ export function CalendarLinkCard() {
             disabled={busy}
             className={buttonClass('primary', 'md')}
           >
-            {busy ? 'Setting up…' : 'Turn on syncing'}
+            {busy ? t('Setting up…') : t('Turn on syncing')}
           </button>
         )}
       </div>
@@ -174,7 +184,7 @@ export function CalendarLinkCard() {
           <div
             className="mb-3 flex w-fit rounded-lg border border-slate-300 bg-white p-0.5"
             role="group"
-            aria-label="How many calendars"
+            aria-label={t('How many calendars')}
           >
             {(
               [
@@ -193,7 +203,7 @@ export function CalendarLinkCard() {
                     : 'text-slate-600 hover:text-slate-900'
                 }`}
               >
-                {text}
+                {t(text)}
               </button>
             ))}
           </div>
@@ -201,12 +211,14 @@ export function CalendarLinkCard() {
           {separate ? (
             <div data-testid="separate-calendars">
               <p className="text-sm text-slate-600">
-                Add only the ones you want. Each shows on your phone as its own calendar, with its
-                own colour and its own on/off. Use these instead of the all-in-one address, not as
-                well, or everything shows twice.
+                {t(
+                  'Add only the ones you want. Each shows on your phone as its own calendar, with its own colour and its own on/off. Use these instead of the all-in-one address, not as well, or everything shows twice.',
+                )}
               </p>
               <ul className="mt-2 space-y-2">
-                {SEPARATE_FEEDS.map((feed) => (
+                {SEPARATE_FEEDS.filter(
+                  (feed) => !feed.providersOnly || employee?.usesClinicalForms,
+                ).map((feed) => (
                   <li key={feed.slug}>
                     <label
                       htmlFor={`calendar-url-${feed.slug}`}
@@ -218,7 +230,7 @@ export function CalendarLinkCard() {
                           feed.kind ? KIND_STYLE[feed.kind].dot : 'bg-brand-600'
                         }`}
                       />
-                      {feed.label}
+                      {t(feed.label)}
                     </label>
                     <div className="mt-1 flex gap-2">
                       <input
@@ -232,10 +244,10 @@ export function CalendarLinkCard() {
                       <button
                         type="button"
                         onClick={() => void copy(feed.slug)}
-                        aria-label={`Copy the ${feed.label} address`}
+                        aria-label={t('Copy the {calendar} address', { calendar: t(feed.label) })}
                         className="rounded-lg bg-slate-800 px-3 py-2 text-sm font-medium text-white hover:bg-slate-900"
                       >
-                        {copied === feed.slug ? 'Copied' : 'Copy'}
+                        {copied === feed.slug ? t('Copied') : t('Copy')}
                       </button>
                     </div>
                   </li>
@@ -245,7 +257,7 @@ export function CalendarLinkCard() {
           ) : (
             <>
               <label htmlFor="calendar-url" className="block text-sm font-medium text-slate-700">
-                Your private calendar address
+                {t('Your private calendar address')}
               </label>
               <div className="mt-1 flex flex-wrap gap-2">
                 <input
@@ -261,7 +273,7 @@ export function CalendarLinkCard() {
                   onClick={() => void copy('domi')}
                   className="rounded-lg bg-slate-800 px-4 py-2 text-sm font-medium text-white hover:bg-slate-900"
                 >
-                  {copied === 'domi' ? 'Copied' : 'Copy'}
+                  {copied === 'domi' ? t('Copied') : t('Copy')}
                 </button>
               </div>
             </>
@@ -271,31 +283,34 @@ export function CalendarLinkCard() {
             <div>
               <p className="font-medium">Google Calendar</p>
               <p className="text-slate-600">
-                Other calendars → <strong>+</strong> → From URL → paste → Add calendar.
+                {t('Other calendars →')} <strong>+</strong>{' '}
+                {t('→ From URL → paste → Add calendar.')}
               </p>
             </div>
             <div>
-              <p className="font-medium">iPhone or iPad</p>
+              <p className="font-medium">{t('iPhone or iPad')}</p>
               <p className="text-slate-600">
-                Settings → Apps → Calendar → Accounts → Add Account → Other → Add Subscribed
-                Calendar → paste.
+                {t(
+                  'Settings → Apps → Calendar → Accounts → Add Account → Other → Add Subscribed Calendar → paste.',
+                )}
               </p>
             </div>
             <div>
               <p className="font-medium">Outlook</p>
-              <p className="text-slate-600">Add calendar → Subscribe from web → paste.</p>
+              <p className="text-slate-600">{t('Add calendar → Subscribe from web → paste.')}</p>
             </div>
           </div>
 
           <p className="mt-4 rounded-lg bg-amber-50 px-3 py-2 text-xs text-amber-900 ring-1 ring-inset ring-amber-200">
-            Keep these addresses to yourself. Anyone who has one can see your schedule without
-            signing in — that is how calendar subscriptions work. If one gets out, regenerate below:
-            every address changes at once.
+            {t(
+              'Keep these addresses to yourself. Anyone who has one can see your schedule without signing in — that is how calendar subscriptions work. If one gets out, regenerate below: every address changes at once.',
+            )}
           </p>
 
           <p className="mt-3 text-xs text-slate-500">
-            Calendars usually check for changes every few hours, so a new shift may take a while to
-            appear.
+            {t(
+              'Calendars usually check for changes every few hours, so a new shift may take a while to appear.',
+            )}
           </p>
 
           <div className="mt-3 flex flex-wrap gap-3">
@@ -305,7 +320,7 @@ export function CalendarLinkCard() {
               disabled={busy}
               className="text-sm font-medium text-slate-600 hover:text-slate-900 disabled:opacity-50"
             >
-              Regenerate the link
+              {t('Regenerate the link')}
             </button>
             <button
               type="button"
@@ -313,7 +328,7 @@ export function CalendarLinkCard() {
               disabled={busy}
               className="text-sm font-medium text-rose-600 hover:text-rose-800 disabled:opacity-50"
             >
-              Turn off syncing
+              {t('Turn off syncing')}
             </button>
           </div>
         </div>

@@ -20,6 +20,7 @@ const PROFILE_SELECT = {
   lastName: true,
   preferredName: true,
   pronouns: true,
+  language: true,
   email: true,
   phone: true,
   about: true,
@@ -118,6 +119,7 @@ export class ProfileService {
         pronouns: clean(dto.pronouns),
         phone: clean(dto.phone),
         about: clean(dto.about),
+        language: dto.language,
       },
     });
     return this.get(employeeId);

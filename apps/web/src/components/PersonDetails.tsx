@@ -1,5 +1,6 @@
 import { formatBirthday } from '../lib/birthday';
 import { formatTime } from '../lib/format';
+import { getLanguage, locale, t as translate, useT } from '../lib/i18n';
 import type { DirectoryEntry, OfficeExtension } from '../lib/types';
 import { HoverNote } from './HoverNote';
 import { Badge } from './ui';
@@ -13,29 +14,35 @@ export function PresenceBadges({
 }: {
   entry: Pick<DirectoryEntry, 'onNow' | 'homeToday' | 'onLeave'>;
 }) {
+  const t = useT();
   return (
     <>
       {entry.onNow && (
         <Badge tone="success">
-          In now · {entry.onNow.remote ? 'Working from home' : entry.onNow.location.name}
-          {entry.onNow.since && ` since ${formatTime(entry.onNow.since)}`}
+          {t('In now · {place}', {
+            place: entry.onNow.remote ? t('Working from home') : entry.onNow.location.name,
+          })}
+          {entry.onNow.since && t(' since {time}', { time: formatTime(entry.onNow.since) })}
         </Badge>
       )}
       {entry.homeToday && !entry.onNow?.remote && (
         <Badge tone="info">
           <HoverNote note={homeHours(entry.homeToday)} testId="home-today-badge">
-            Working from home today
+            {t('Working from home today')}
           </HoverNote>
         </Badge>
       )}
-      {entry.onLeave && <Badge tone="warning">On leave</Badge>}
+      {entry.onLeave && <Badge tone="warning">{t('On leave')}</Badge>}
     </>
   );
 }
 
 /// A work-from-home shift's hours, for a hover note.
 export function homeHours(shift: { startsAt: string; endsAt: string }): string {
-  return `Working from home ${formatTime(shift.startsAt)}–${formatTime(shift.endsAt)}`;
+  return translate('Working from home {from}–{to}', {
+    from: formatTime(shift.startsAt),
+    to: formatTime(shift.endsAt),
+  });
 }
 
 /// Email and phone that open the mail app and the dialler, and the birthday —
@@ -56,7 +63,8 @@ export function ContactLines({
   /// Working from home today: their from-home number is the one to dial.
   fromHomeToday?: boolean;
 }) {
-  const birthday = formatBirthday(person.birthdayMonth ?? null, person.birthdayDay ?? null);
+  const t = useT();
+  const birthday = birthdayLabel(person.birthdayMonth ?? null, person.birthdayDay ?? null);
   return (
     <div className="mt-2 flex flex-col gap-0.5 text-sm">
       {extension && (
@@ -64,17 +72,23 @@ export function ContactLines({
           <span aria-hidden="true">☎</span>{' '}
           {fromHomeToday && extension.homeExtension ? (
             <>
-              <strong className="tabular-nums">Ext. {extension.homeExtension}</strong> today — they
-              are working from home
-              <span className="text-slate-500"> (office {extension.extension})</span>
+              <strong className="tabular-nums">
+                {t('Ext. {number}', { number: extension.homeExtension })}
+              </strong>
+              {t(' today — they are working from home')}
+              <span className="text-slate-500">
+                {t(' (office {number})', { number: extension.extension })}
+              </span>
             </>
           ) : (
             <>
-              <span className="tabular-nums">Ext. {extension.extension}</span>
+              <span className="tabular-nums">
+                {t('Ext. {number}', { number: extension.extension })}
+              </span>
               {extension.homeExtension && (
                 <span className="text-slate-500">
                   {' '}
-                  · {extension.homeExtension} from home
+                  {t('· {number} from home', { number: extension.homeExtension })}
                   {extension.homeDays && ` (${extension.homeDays})`}
                 </span>
               )}
@@ -98,9 +112,19 @@ export function ContactLines({
       )}
       {birthday && (
         <span className="text-slate-600" data-testid="directory-birthday">
-          <span aria-hidden="true">🎂</span> Birthday {birthday}
+          <span aria-hidden="true">🎂</span> {t('Birthday {date}', { date: birthday })}
         </span>
       )}
     </div>
   );
+}
+
+/// "Nov 9" in English, as everywhere else; the month in Spanish ("9 nov") for
+/// somebody reading in Spanish.
+function birthdayLabel(month: number | null, day: number | null): string | null {
+  if (getLanguage() !== 'es' || !month || !day) return formatBirthday(month, day);
+  return new Date(2000, month - 1, day).toLocaleDateString(locale(), {
+    month: 'short',
+    day: 'numeric',
+  });
 }

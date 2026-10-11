@@ -13,6 +13,7 @@ import { AutoClockOutService } from '../time-entries/auto-clock-out.service';
 import { LunchNoticesService } from '../events/lunch-notices.service';
 import { LicenseRemindersService } from './license-reminders.service';
 import { OnboardingRemindersService } from './onboarding-reminders.service';
+import { RequirementsService } from '../requirements/requirements.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { localDateIn, PRACTICE_ZONE } from '../common/util/zoned-time.util';
 import { toUtcDate } from '../common/util/calendar-date.util';
@@ -52,6 +53,9 @@ export interface PunchReminderReport {
   /// New hires told a task of theirs on their onboarding checklist is due
   /// soon, or overdue — see `OnboardingRemindersService`. Also run nightly.
   onboardingReminders: number;
+  /// People reminded about something they were asked to read or do — see
+  /// `requirements/nudges.ts`. Also run nightly.
+  requiredReminders: number;
 }
 
 /**
@@ -80,6 +84,7 @@ export class PunchRemindersService {
     private readonly lunchNotices: LunchNoticesService,
     private readonly licenseReminders: LicenseRemindersService,
     private readonly onboardingReminders: OnboardingRemindersService,
+    private readonly requirements: RequirementsService,
   ) {}
 
   async run(now: Date = new Date()): Promise<PunchReminderReport> {
@@ -95,6 +100,7 @@ export class PunchRemindersService {
       // sends any this timer missed.
       licenseReminders: await this.licenseReminders.send(now),
       onboardingReminders: await this.onboardingReminders.send(now),
+      requiredReminders: await this.requirements.nudge(now),
     };
     if (report.clockIn || report.clockOut) {
       this.logger.log(`Reminded ${report.clockIn} to clock in and ${report.clockOut} to clock out`);

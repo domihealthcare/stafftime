@@ -13,6 +13,7 @@ import {
 } from '../components/ui';
 import { ApiError, api } from '../lib/api';
 import { formatCalendarDate } from '../lib/format';
+import { t as translate, useT } from '../lib/i18n';
 import { useIsManager } from '../lib/session';
 import type {
   FeedbackMessage,
@@ -38,6 +39,7 @@ const ANONYMOUS =
  * least three people answered, so no result can point at a person.
  */
 export function SurveysPage() {
+  const t = useT();
   const isManager = useIsManager();
   const [surveys, setSurveys] = useState<Survey[]>([]);
   const [loading, setLoading] = useState(true);
@@ -49,7 +51,7 @@ export function SurveysPage() {
       setSurveys(await api.surveys());
       setError(null);
     } catch (cause) {
-      setError(cause instanceof ApiError ? cause.message : 'Could not load surveys.');
+      setError(cause instanceof ApiError ? cause.message : translate('Could not load surveys.'));
     } finally {
       setLoading(false);
     }
@@ -59,7 +61,7 @@ export function SurveysPage() {
     void load();
   }, [load]);
 
-  if (loading) return <Spinner label="Loading surveys" />;
+  if (loading) return <Spinner label={t('Loading surveys')} />;
 
   const toAnswer = surveys.filter((survey) =>
     isManager ? survey.canAnswer : survey.status === 'OPEN' && !survey.answered,
@@ -69,8 +71,8 @@ export function SurveysPage() {
   return (
     <div className="max-w-3xl">
       <PageHeading
-        title="Surveys and feedback"
-        subtitle="Short anonymous check-ins, and a suggestion box that is always open."
+        title={t('Surveys and feedback')}
+        subtitle={t('Short anonymous check-ins, and a suggestion box that is always open.')}
       />
 
       <NeedsAttention sections={['newSuggestions']} />
@@ -81,20 +83,20 @@ export function SurveysPage() {
         </div>
       )}
 
-      <section aria-label="For you" className="mb-8">
+      <section aria-label={t('For you')} className="mb-8">
         <h2 className="mb-2 text-sm font-semibold uppercase tracking-wide text-slate-600">
-          For you
+          {t('For you')}
         </h2>
         {thanked && (
           <div className="mb-3">
-            <Alert tone="success">Thank you — sent anonymously.</Alert>
+            <Alert tone="success">{t('Thank you — sent anonymously.')}</Alert>
           </div>
         )}
         {toAnswer.length === 0 ? (
           <EmptyState>
             {answered.length > 0
-              ? 'You have answered everything open. Thank you.'
-              : 'No surveys open right now.'}
+              ? t('You have answered everything open. Thank you.')
+              : t('No surveys open right now.')}
           </EmptyState>
         ) : (
           <div className="space-y-3">
@@ -112,7 +114,9 @@ export function SurveysPage() {
         )}
         {answered.length > 0 && toAnswer.length > 0 && (
           <p className="mt-2 text-xs text-slate-500">
-            Already answered: {answered.map((survey) => survey.title).join(', ')}
+            {t('Already answered: {titles}', {
+              titles: answered.map((survey) => survey.title).join(', '),
+            })}
           </p>
         )}
       </section>
@@ -133,6 +137,7 @@ export function SurveysPage() {
 // Answering
 
 function AnswerForm({ surveyId, onDone }: { surveyId: string; onDone: () => void }) {
+  const t = useT();
   const [survey, setSurvey] = useState<Survey | null>(null);
   const [values, setValues] = useState<Record<string, number | string>>({});
   const [busy, setBusy] = useState(false);
@@ -142,10 +147,10 @@ function AnswerForm({ surveyId, onDone }: { surveyId: string; onDone: () => void
     api
       .survey(surveyId)
       .then(setSurvey)
-      .catch(() => setError('Could not open that survey.'));
+      .catch(() => setError(translate('Could not open that survey.')));
   }, [surveyId]);
 
-  if (!survey) return error ? <Alert>{error}</Alert> : <Spinner label="Opening" />;
+  if (!survey) return error ? <Alert>{error}</Alert> : <Spinner label={t('Opening')} />;
 
   async function send() {
     setBusy(true);
@@ -164,7 +169,7 @@ function AnswerForm({ surveyId, onDone }: { surveyId: string; onDone: () => void
       // above the list so it outlives the form.
       onDone();
     } catch (cause) {
-      setError(cause instanceof ApiError ? cause.message : 'Could not send that.');
+      setError(cause instanceof ApiError ? cause.message : t('Could not send that.'));
     } finally {
       setBusy(false);
     }
@@ -176,7 +181,7 @@ function AnswerForm({ surveyId, onDone }: { surveyId: string; onDone: () => void
       {survey.intro && (
         <p className="mt-0.5 whitespace-pre-line text-sm text-slate-600">{survey.intro}</p>
       )}
-      <p className="mt-1 text-xs text-slate-500">{ANONYMOUS}</p>
+      <p className="mt-1 text-xs text-slate-500">{t(ANONYMOUS)}</p>
 
       <div className="mt-3 space-y-4">
         {survey.questions.map((question, index) => (
@@ -201,7 +206,9 @@ function AnswerForm({ surveyId, onDone }: { surveyId: string; onDone: () => void
                     {n}
                   </button>
                 ))}
-                <span className="ml-2 self-center text-xs text-slate-500">1 poor · 5 great</span>
+                <span className="ml-2 self-center text-xs text-slate-500">
+                  {t('1 poor · 5 great')}
+                </span>
               </div>
             )}
             {question.kind === 'CHOICE' && (
@@ -247,7 +254,7 @@ function AnswerForm({ surveyId, onDone }: { surveyId: string; onDone: () => void
         onClick={() => void send()}
         className={`mt-4 ${buttonClass('primary', 'md')}`}
       >
-        {busy ? 'Sending…' : 'Send anonymously'}
+        {busy ? t('Sending…') : t('Send anonymously')}
       </button>
     </Card>
   );
@@ -255,10 +262,11 @@ function AnswerForm({ surveyId, onDone }: { surveyId: string; onDone: () => void
 
 /// The suggestion box: the same card and pop-up as on Home.
 function SuggestionBox() {
+  const t = useT();
   return (
-    <section aria-label="Suggestion box" className="mb-8">
+    <section aria-label={t('Suggestion box')} className="mb-8">
       <h2 className="mb-2 text-sm font-semibold uppercase tracking-wide text-slate-600">
-        Suggestion box
+        {t('Suggestion box')}
       </h2>
       <SuggestionBoxCard />
     </section>

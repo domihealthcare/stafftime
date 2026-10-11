@@ -1,4 +1,5 @@
 import { useMemo, useState } from 'react';
+import { useT } from '../lib/i18n';
 import type { ApplicableSection, ClosingSubmission } from '../lib/types';
 
 /**
@@ -28,6 +29,7 @@ export function ClosingChecklistForm({
   onSkip: () => void;
   onCancel?: () => void;
 }) {
+  const t = useT();
   const positions = sections.filter((section) => section.isPosition);
   const [worked, setWorked] = useState<Set<string>>(new Set());
   const [done, setDone] = useState<Set<string>>(new Set());
@@ -69,18 +71,20 @@ export function ClosingChecklistForm({
     <form onSubmit={submit} className="space-y-4" data-testid="closing-form">
       <div>
         <h2 className={`${large ? 'text-2xl' : 'text-lg'} font-semibold text-slate-900`}>
-          Before you clock out
+          {t('Before you clock out')}
         </h2>
         <p className="mt-1 text-sm text-slate-600">
-          {roles.join(' and ')} closing checklist. Anything you leave unticked goes to a manager —
-          you can always clock out.
+          {t(
+            '{roles} closing checklist. Anything you leave unticked goes to a manager — you can always clock out.',
+            { roles: roles.join(` ${t('and')} `) },
+          )}
         </p>
       </div>
 
       {positions.length > 0 && (
         <fieldset className="rounded-xl bg-slate-50 p-3 ring-1 ring-inset ring-slate-200">
           <legend className="px-1 text-sm font-semibold text-slate-800">
-            Which desk did you work today?
+            {t('Which desk did you work today?')}
           </legend>
           <div className="mt-1 flex flex-wrap gap-2">
             {positions.map((section) => (
@@ -107,7 +111,7 @@ export function ClosingChecklistForm({
           className="rounded-xl bg-brand-50 p-3 text-sm text-brand-900 ring-1 ring-inset ring-brand-100"
           data-testid="closing-reminders"
         >
-          <p className="font-semibold">Remember</p>
+          <p className="font-semibold">{t('Remember')}</p>
           <ul className="mt-1 list-disc space-y-1 pl-5">
             {reminders.map((item) => (
               <li key={item.id}>{item.text}</li>
@@ -139,7 +143,7 @@ export function ClosingChecklistForm({
                       {item.text}
                       {item.target !== null && (
                         <span className="ml-1 text-xs text-slate-500">
-                          (ideally {item.target}+)
+                          {t('(ideally {n}+)', { n: item.target })}
                         </span>
                       )}
                     </span>
@@ -183,7 +187,7 @@ export function ClosingChecklistForm({
       <div className="sticky bottom-0 -mx-1 space-y-2 bg-white/95 px-1 pb-1 pt-2 backdrop-blur">
         {tasks.length > 0 && (
           <p className="text-center text-sm text-slate-600" data-testid="closing-progress">
-            {ticked} of {tasks.length} ticked
+            {t('{ticked} of {total} ticked', { ticked, total: tasks.length })}
           </p>
         )}
         <button
@@ -191,7 +195,7 @@ export function ClosingChecklistForm({
           disabled={busy}
           className={`w-full rounded-xl bg-slate-700 px-6 ${large ? 'py-5 text-xl' : 'py-4 text-lg'} font-semibold text-white hover:bg-slate-800 disabled:opacity-60`}
         >
-          {busy ? 'Clocking out…' : 'Clock out'}
+          {busy ? t('Clocking out…') : t('Clock out')}
         </button>
         <div className="flex items-center justify-center gap-4 text-sm">
           <button
@@ -200,7 +204,7 @@ export function ClosingChecklistForm({
             onClick={onSkip}
             className="font-medium text-slate-500 underline-offset-2 hover:text-slate-800 hover:underline"
           >
-            Clock out without the checklist
+            {t('Clock out without the checklist')}
           </button>
           {onCancel && (
             <button
@@ -209,7 +213,7 @@ export function ClosingChecklistForm({
               onClick={onCancel}
               className="font-medium text-slate-500 underline-offset-2 hover:text-slate-800 hover:underline"
             >
-              Not yet
+              {t('Not yet')}
             </button>
           )}
         </div>

@@ -1,6 +1,7 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
 import type { ReactNode } from 'react';
 import { ApiError, SESSION_ENDED, api } from './api';
+import { setLanguage } from './i18n';
 import type { Employee } from './types';
 
 interface SessionValue {
@@ -22,7 +23,10 @@ export function SessionProvider({ children }: { children: ReactNode }) {
 
   const refresh = useCallback(async () => {
     try {
-      setEmployee(await api.me());
+      const me = await api.me();
+      // Their own language, chosen on any device, wins once they are known.
+      if (me.language) setLanguage(me.language);
+      setEmployee(me);
     } catch (error) {
       // 401 is the ordinary "not signed in" answer, not a failure worth showing.
       if (error instanceof ApiError && (error.status === 401 || error.status === 403)) {
@@ -51,7 +55,9 @@ export function SessionProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const signIn = useCallback(async (email: string, password: string) => {
-    setEmployee(await api.login(email, password));
+    const me = await api.login(email, password);
+    if (me.language) setLanguage(me.language);
+    setEmployee(me);
   }, []);
 
   const signOut = useCallback(async () => {

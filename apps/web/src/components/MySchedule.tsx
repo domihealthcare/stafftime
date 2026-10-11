@@ -2,7 +2,8 @@ import { Link } from 'react-router-dom';
 import { api } from '../lib/api';
 import { KIND_STYLE } from '../lib/calendar-kinds';
 import { formatTimeCompact, localDate } from '../lib/format';
-import { PTO_TYPE_LABELS, timeOffOn } from '../lib/time-off';
+import { t, useT } from '../lib/i18n';
+import { ptoTypeLabel, timeOffOn } from '../lib/time-off';
 import type { PracticeEvent, PtoRequest, Shift } from '../lib/types';
 import { officeShort } from '../lib/calendar-kinds';
 import { LunchIcon } from './LunchIcon';
@@ -52,7 +53,9 @@ export function myDay(schedule: MySchedule, employeeId: string | undefined, day:
 
 /// "9am–5pm · NB", "9am–1pm · Home".
 export function shiftLine(shift: Shift): string {
-  const place = shift.isRemote ? 'Home' : shift.location ? officeShort(shift.location.name) : '';
+  // "Home" alone is the Home screen's name ("Inicio"); here it is the place.
+  const home = t('Home (work from home)').replace(' (work from home)', '');
+  const place = shift.isRemote ? home : shift.location ? officeShort(shift.location.name) : '';
   return `${formatTimeCompact(shift.startsAt)}–${formatTimeCompact(shift.endsAt)}${
     place ? ` · ${place}` : ''
   }`;
@@ -60,7 +63,7 @@ export function shiftLine(shift: Shift): string {
 
 /// "Off · PTO", "Half day off · Sick".
 export function offLine(request: PtoRequest): string {
-  return `${request.isHalfDay ? 'Half day off' : 'Off'} · ${PTO_TYPE_LABELS[request.type]}`;
+  return `${request.isHalfDay ? t('Half day off') : t('Off')} · ${ptoTypeLabel(request.type)}`;
 }
 
 /**
@@ -82,6 +85,7 @@ export function MyDayChips({
   events: PracticeEvent[];
   compact?: boolean;
 }) {
+  const t = useT();
   const { shifts, off } = myDay(schedule, employeeId, day);
   const style = KIND_STYLE.MY_SHIFT;
   return (
@@ -100,7 +104,7 @@ export function MyDayChips({
           key={shift.id}
           to={`/schedule?week=${day}`}
           data-testid="my-shift"
-          aria-label={`Your shift, ${shiftLine(shift)}`}
+          aria-label={t('Your shift, {shift}', { shift: shiftLine(shift) })}
           className={`flex items-center gap-1 truncate rounded-md px-1.5 py-1 text-xs font-semibold leading-tight ring-1 ring-inset ${style.chip}`}
         >
           <span aria-hidden="true">{style.emoji}</span>

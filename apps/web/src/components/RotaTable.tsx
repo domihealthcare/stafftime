@@ -25,7 +25,8 @@ import type {
   Shift,
   UsualShift,
 } from '../lib/types';
-import { PTO_TYPE_LABELS, timeOffOn } from '../lib/time-off';
+import { ptoTypeLabel, timeOffOn } from '../lib/time-off';
+import { locale, useLanguageValue, useT } from '../lib/i18n';
 import { jobRoleHex } from '../lib/job-role-colours';
 import { atPlace, forRole, WORK_FROM_HOME_FILTER } from '../lib/shift-filters';
 import { useConfirm } from './ConfirmDialog';
@@ -186,6 +187,9 @@ export function RotaTable({
   onPlanned?: (result: PlanResult) => void;
   onError: (message: string) => void;
 }) {
+  const t = useT();
+  // Memos below hold words, so they follow the language.
+  const language = useLanguageValue();
   const [menu, setMenu] = useState<Shift | null>(null);
   const [adding, setAdding] = useState<{ row: Row; day: Date } | null>(null);
   const dayMenu = useContextMenu();
@@ -269,7 +273,7 @@ export function RotaTable({
     const map = new Map<string, string>();
     for (const day of coverage ?? []) {
       for (const shift of day.shifts) {
-        if (shift.conflictsWithLeave) map.set(shift.id, 'Scheduled during approved leave');
+        if (shift.conflictsWithLeave) map.set(shift.id, t('Scheduled during approved leave'));
         else if (shift.unavailable) map.set(shift.id, shift.unavailable);
       }
     }
@@ -277,10 +281,11 @@ export function RotaTable({
     // mistake — a repeating rota running straight through Christmas.
     for (const shift of shifts) {
       const [closure] = closuresCovering(events, shift);
-      if (closure) map.set(shift.id, `Office closed: ${closure.title}`);
+      if (closure) map.set(shift.id, t('Office closed: {title}', { title: closure.title }));
     }
     return map;
-  }, [coverage, shifts, events]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [coverage, shifts, events, language]);
 
   const membersOf = useMemo(() => {
     const map = new Map<string, Set<string>>();
@@ -363,7 +368,7 @@ export function RotaTable({
             {
               key: 'me',
               kind: 'person',
-              label: 'Your shifts',
+              label: t('Your shifts'),
               person: me,
               shifts: mine,
             },
@@ -431,7 +436,17 @@ export function RotaTable({
       },
     ];
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [grouping, shifts, employees, locations, jobRoles, locationFilter, roleFilter, selfId]);
+  }, [
+    grouping,
+    shifts,
+    employees,
+    locations,
+    jobRoles,
+    locationFilter,
+    roleFilter,
+    selfId,
+    language,
+  ]);
 
   const openInView = live.filter(
     (shift) =>
@@ -509,7 +524,7 @@ export function RotaTable({
                 scope="col"
                 className="sticky left-0 z-10 w-48 bg-slate-50 px-3 py-2 font-medium text-slate-600 max-sm:w-16 max-sm:px-1.5"
               >
-                <span className="max-sm:sr-only">{selfId ? 'Week' : 'Person'}</span>
+                <span className="max-sm:sr-only">{selfId ? t('Week') : 'Person'}</span>
               </th>
               {days.map((day, index) => {
                 const cov = coverage?.find((entry) => entry.date === dayKeys[index]);
@@ -526,8 +541,8 @@ export function RotaTable({
                     className={`px-2 py-2 align-top font-medium ${empty && !selfId ? 'bg-amber-50' : ''}`}
                   >
                     <span className={`block ${isToday ? 'text-brand-700' : 'text-slate-900'}`}>
-                      {day.toLocaleDateString(undefined, { weekday: 'short' })}{' '}
-                      {day.toLocaleDateString(undefined, { day: 'numeric' })}
+                      {day.toLocaleDateString(locale(), { weekday: 'short' })}{' '}
+                      {day.toLocaleDateString(locale(), { day: 'numeric' })}
                     </span>
                     {birthdays
                       .filter((entry) => entry.date === dayKeys[index])
@@ -566,7 +581,7 @@ export function RotaTable({
                 );
               })}
               <th scope="col" className="px-3 py-2 text-right font-medium text-slate-600">
-                Week
+                {t('Week')}
               </th>
             </tr>
             {/* Their own row, above the people, because an event is for a group
@@ -577,7 +592,8 @@ export function RotaTable({
                   scope="row"
                   className="sticky left-0 z-10 bg-white px-3 py-2 text-left align-top text-sm font-medium text-slate-700 max-sm:px-1.5 max-sm:text-center"
                 >
-                  <span aria-hidden="true">📅</span> <span className="max-sm:sr-only">Events</span>
+                  <span aria-hidden="true">📅</span>{' '}
+                  <span className="max-sm:sr-only">{t('Events')}</span>
                 </th>
                 {dayKeys.map((key) => (
                   <td key={key} className="space-y-1 px-1.5 py-1.5 align-top">
@@ -591,7 +607,9 @@ export function RotaTable({
                     ))}
                   </td>
                 ))}
-                <td className="px-3 py-2 text-right align-top text-xs text-slate-500">Not hours</td>
+                <td className="px-3 py-2 text-right align-top text-xs text-slate-500">
+                  {t('Not hours')}
+                </td>
               </tr>
             )}
           </thead>
@@ -680,7 +698,9 @@ export function RotaTable({
                             aria-hidden="true"
                             className="block max-w-[3.25rem] truncate text-center text-[11px] leading-tight text-slate-700 sm:hidden"
                           >
-                            {row.person ? row.person.preferredName || row.person.firstName : 'Open'}
+                            {row.person
+                              ? row.person.preferredName || row.person.firstName
+                              : t('Open')}
                           </span>
                           {row.sublabel && (
                             <span className="block truncate text-xs text-slate-500 max-sm:sr-only">
@@ -741,7 +761,7 @@ export function RotaTable({
                                   data-testid="birthday-chip"
                                   className="rounded-md bg-amber-50 px-1.5 py-0.5 text-xs font-medium text-amber-900 ring-1 ring-inset ring-amber-200"
                                 >
-                                  <span aria-hidden="true">🎂</span> Birthday
+                                  <span aria-hidden="true">🎂</span> {t('Birthday')}
                                 </span>
                               )}
                             {off && <TimeOffChip request={off} />}
@@ -788,7 +808,7 @@ export function RotaTable({
                           {over && (
                             <span
                               data-testid="week-ot-flag"
-                              title="Over the overtime line this week"
+                              title={t('Over the overtime line this week')}
                               className="rounded bg-rose-600 px-1.5 py-0.5 text-xs font-bold uppercase tracking-wide text-white"
                             >
                               OT
@@ -800,10 +820,17 @@ export function RotaTable({
                       {standing && (
                         <span
                           data-testid={`week-standing-${standing.level}`}
-                          title={`${standing.hours} hours in the overtime week from ${formatCalendarDate(standing.weekStart, { year: false })} (it follows the pay period), every location — the overtime line is ${overtimeThresholdHours}`}
+                          title={t(
+                            '{hours} hours in the overtime week from {date} (it follows the pay period), every location — the overtime line is {line}',
+                            {
+                              hours: standing.hours,
+                              date: formatCalendarDate(standing.weekStart, { year: false }),
+                              line: overtimeThresholdHours,
+                            },
+                          )}
                           className="mt-1 block whitespace-nowrap rounded-full bg-rose-600 px-2 py-0.5 text-center text-xs font-semibold text-white"
                         >
-                          ⚠ {standing.overBy} h overtime
+                          {t('⚠ {n} h overtime', { n: standing.overBy })}
                         </span>
                       )}
                     </td>
@@ -865,17 +892,18 @@ const OFF_HATCH: React.CSSProperties = {
 /// Time off in somebody's day. Approved is plain fact; a request nobody has
 /// answered yet is a question, so it looks like one.
 function TimeOffChip({ request }: { request: PtoRequest }) {
+  const t = useT();
   const approved = request.status === 'APPROVED';
-  const kind = PTO_TYPE_LABELS[request.type];
-  const half = request.isHalfDay ? ' · half day' : '';
+  const kind = ptoTypeLabel(request.type);
+  const half = request.isHalfDay ? ` · ${t('half day')}` : '';
   return (
     <span
       data-testid="time-off"
       data-status={request.status}
       title={
         approved
-          ? `Time off (${kind})${half}`
-          : `Asked for time off (${kind})${half}, not decided yet`
+          ? t('Time off ({kind}){half}', { kind, half })
+          : t('Asked for time off ({kind}){half}, not decided yet', { kind, half })
       }
       className={`block rounded-md px-1.5 py-1 text-xs ${
         approved
@@ -883,7 +911,7 @@ function TimeOffChip({ request }: { request: PtoRequest }) {
           : 'border border-dashed border-amber-400 bg-amber-50 text-amber-900'
       }`}
     >
-      <span className="block">{approved ? 'Time off' : 'Asked off'}</span>
+      <span className="block">{approved ? t('Time off') : t('Asked off')}</span>
       <span className="block text-[11px] font-normal text-slate-600">
         {kind}
         {half}
@@ -915,23 +943,30 @@ function ShiftChip({
   onOpen?: () => void;
   onContextMenu?: (event: React.MouseEvent) => void;
 }) {
+  const t = useT();
   const open = shift.employeeId === null;
   const draft = shift.status === 'DRAFT';
   const remote = Boolean(shift.isRemote);
   const label = `${formatTimeCompact(shift.startsAt)}–${formatTimeCompact(shift.endsAt)}`;
   const describe = [
-    open ? 'Open shift' : shift.employee ? `${shift.employee.firstName}’s shift` : 'Shift',
+    open
+      ? t('Open shift')
+      : shift.employee
+        ? t('{name}’s shift', { name: shift.employee.firstName })
+        : t('Shift'),
     `${formatTime(shift.startsAt)}–${formatTime(shift.endsAt)}`,
-    remote ? 'work from home' : shift.location?.name,
+    remote ? t('work from home') : shift.location?.name,
     shift.jobRole?.name,
-    draft ? 'draft' : null,
-    warning ? `warning: ${warning}` : null,
-    shift.notes ? `note: ${shift.notes}` : null,
+    draft ? t('draft') : null,
+    warning ? t('warning: {warning}', { warning }) : null,
+    shift.notes ? t('note: {note}', { note: shift.notes }) : null,
   ]
     .filter(Boolean)
     .join(', ');
 
-  const place = remote ? 'Home' : shift.location?.name;
+  // "Home" alone is the Home screen's name ("Inicio"); here it is the place.
+  const home = t('Home (work from home)').replace(' (work from home)', '');
+  const place = remote ? home : shift.location?.name;
   const body = (
     <>
       <span className="flex items-center gap-1.5">
@@ -946,7 +981,7 @@ function ShiftChip({
       {(open || showLocation || remote) && (
         <span className="mt-0.5 block truncate text-[11px] text-slate-600">
           {open
-            ? [shift.jobRole?.name ?? 'Any role', remote ? 'Home' : null]
+            ? [shift.jobRole?.name ?? t('Any role'), remote ? home : null]
                 .filter(Boolean)
                 .join(' · ')
             : place}
@@ -1007,6 +1042,7 @@ export function RotaLegend({
   colourOf: (id: string) => string;
   jobRoles: JobRole[];
 }) {
+  const t = useT();
   const swatch = (hex: string) => (
     <span
       aria-hidden="true"
@@ -1023,10 +1059,10 @@ export function RotaLegend({
       data-testid="rota-legend"
     >
       <summary className="mb-1 cursor-pointer select-none py-1 font-medium text-slate-700 max-sm:py-2">
-        Key
+        {t('Key')}
       </summary>
       <div className="flex flex-wrap items-center gap-x-4 gap-y-1">
-        <span className="basis-full sm:basis-auto">Fill, the office:</span>
+        <span className="basis-full sm:basis-auto">{t('Fill, the office:')}</span>
         {locations
           .filter((location) => location.isActive !== false)
           .map((location) => (
@@ -1037,21 +1073,21 @@ export function RotaLegend({
           ))}
         <span className="inline-flex items-center gap-1.5">
           {swatch(REMOTE_COLOUR)}
-          Work from home
+          {t('Work from home')}
         </span>
         <span className="inline-flex items-center gap-1.5">
           <span
             aria-hidden="true"
             className="inline-block h-3 w-5 rounded-sm bg-amber-100 ring-1 ring-inset ring-amber-300"
           />
-          Open shift
+          {t('Open shift')}
         </span>
         <span className="inline-flex items-center gap-1.5">
           <span
             aria-hidden="true"
             className="inline-block h-3 w-5 rounded-sm border border-dashed border-slate-400 bg-white"
           />
-          Draft
+          {t('Draft')}
         </span>
         <span className="inline-flex items-center gap-1.5">
           <span
@@ -1059,9 +1095,9 @@ export function RotaLegend({
             className="inline-block h-3 w-5 rounded-sm ring-1 ring-inset ring-slate-300"
             style={OFF_HATCH}
           />
-          Time off
+          {t('Time off')}
         </span>
-        <span className="basis-full sm:basis-auto">Outline, the job role:</span>
+        <span className="basis-full sm:basis-auto">{t('Outline, the job role:')}</span>
         {jobRoles.map((role) => (
           <span key={role.id} className="inline-flex items-center gap-1.5">
             <span
@@ -1072,12 +1108,14 @@ export function RotaLegend({
             {role.name}
           </span>
         ))}
-        <span className="basis-full sm:basis-auto">Lunch:</span>
+        <span className="basis-full sm:basis-auto">{t('Lunch:')}</span>
         <span className="inline-flex items-center gap-1.5">
-          <span aria-hidden="true">🍽️</span>a rep is bringing lunch to that office
+          <span aria-hidden="true">🍽️</span>
+          {t('a rep is bringing lunch to that office')}
         </span>
         <span className="inline-flex items-center gap-1.5">
-          <span aria-hidden="true">🥪</span>no rep lunch, bring your own
+          <span aria-hidden="true">🥪</span>
+          {t('no rep lunch, bring your own')}
         </span>
       </div>
     </details>

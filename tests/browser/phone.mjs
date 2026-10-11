@@ -119,7 +119,7 @@ await page.screenshot({ path: `${OUT}/50-phone-clock.png`, fullPage: true });
 const UNDER_MORE = new Set([
   // Time off left Manage in October 2026: requests are on the Schedule,
   // balances on the Dashboard, the rules in Practice settings.
-  'Timesheet', 'News', 'Surveys', 'Dashboard', 'Closing checklists',
+  'Timesheet', 'News', 'Surveys', 'Required reading', 'Dashboard', 'Closing checklists',
   'Onboarding & Offboarding', 'Licenses', 'Job roles', 'Reps', 'Export', 'Staff', 'Kiosks', 'Locations',
 ]);
 
@@ -158,6 +158,7 @@ for (const [label, screen] of [
   ['Directory', 'Directory'],
   ['Resources', 'Resources'],
   ['Surveys', 'Surveys'],
+  ['Required reading', 'Required reading'],
   ['Dashboard', 'Dashboard'],
   ['Job roles', 'Job roles'],
   ['Export', 'Export'],

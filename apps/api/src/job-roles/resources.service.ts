@@ -18,6 +18,7 @@ import {
   type DriveFile,
 } from '../google/google-drive.client';
 import { PrismaService } from '../prisma/prisma.service';
+import { forPersonWhere } from '../requirements/audience';
 import { CreateResourceDto, UpdateResourceDto } from './dto/resource.dto';
 import { JobRolesService } from './job-roles.service';
 
@@ -100,11 +101,33 @@ export class ResourcesService {
 
     if (actor.role === Role.EMPLOYEE && row.jobRoleId !== null) {
       const mine = await this.jobRoles.idsFor(actor.id);
-      if (!mine.includes(row.jobRoleId)) {
+      if (!mine.includes(row.jobRoleId) && !(await this.askedToRead(actor.id, id, mine))) {
         throw new ForbiddenException('That is for a job role you are not in.');
       }
     }
     return row;
+  }
+
+  /// Somebody asked to read a resource for another job role (required
+  /// reading, October 2026) may open that one, while it is still asked for.
+  private async askedToRead(employeeId: string, resourceId: string, jobRoleIds: string[]) {
+    const offices = await this.prisma.employeeLocation.findMany({
+      where: { employeeId },
+      select: { locationId: true },
+    });
+    const count = await this.prisma.requirement.count({
+      where: {
+        AND: [
+          forPersonWhere(
+            employeeId,
+            jobRoleIds,
+            offices.map((row) => row.locationId),
+          ),
+          { resourceId, closedAt: null },
+        ],
+      },
+    });
+    return count > 0;
   }
 
   /**

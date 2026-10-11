@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { NavLink, useLocation } from 'react-router-dom';
+import { useT } from '../lib/i18n';
 import { NavIcon } from './NavIcons';
 import type { NavMenuItem } from './NavMenu';
 
@@ -22,6 +23,7 @@ export function PhoneTabBar({
   pendingPto: number;
   manageItems: NavMenuItem[];
 }) {
+  const t = useT();
   const [open, setOpen] = useState(false);
   const [group, setGroup] = useState<'Manage' | null>(null);
   const container = useRef<HTMLDivElement>(null);
@@ -91,7 +93,7 @@ export function PhoneTabBar({
                   }`
                 }
               >
-                {item.label}
+                {t(item.label)}
               </NavLink>
             ))}
             {groups.map((entry) => (
@@ -135,11 +137,11 @@ export function PhoneTabBar({
 
         <NavLink to="/" end className={tabClass}>
           <NavIcon name="home" size="md" />
-          Home
+          {t('Home')}
         </NavLink>
         <NavLink to="/schedule" className={tabClass}>
           <NavIcon name="schedule" size="md" />
-          Schedule
+          {t('Schedule')}
           {pendingPto > 0 && (
             <span className="absolute right-3 top-1.5 rounded-full bg-amber-100 px-1.5 text-[10px] font-semibold text-amber-800">
               {pendingPto}
@@ -148,11 +150,11 @@ export function PhoneTabBar({
         </NavLink>
         <NavLink to="/directory" className={tabClass}>
           <NavIcon name="directory" size="md" />
-          Directory
+          {t('Directory')}
         </NavLink>
         <NavLink to="/resources" className={tabClass}>
           <NavIcon name="resources" size="md" />
-          Resources
+          {t('Resources')}
         </NavLink>
         <button
           type="button"
@@ -162,7 +164,7 @@ export function PhoneTabBar({
           className={`${tabClass({ isActive: onMoreScreen })} bg-transparent`}
         >
           <NavIcon name="more" size="md" />
-          More
+          {t('More')}
         </button>
       </nav>
     </div>

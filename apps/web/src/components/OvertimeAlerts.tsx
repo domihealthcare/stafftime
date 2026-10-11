@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { api } from '../lib/api';
 import { formatCalendarDate } from '../lib/format';
+import { plural, useT } from '../lib/i18n';
 import type { OvertimeCheck, OwnOvertimeWeek } from '../lib/types';
 import type { ConfirmOptions } from './ConfirmDialog';
 
@@ -16,6 +17,8 @@ export interface ProposedShift {
 
 const round1 = (hours: number) => Math.round(hours * 10) / 10;
 const hoursWord = (hours: number) => `${round1(hours)} ${round1(hours) === 1 ? 'hour' : 'hours'}`;
+/// The same in the reader's language, for the notice staff see.
+const hoursPhrase = (hours: number) => plural(round1(hours), '{n} hour', '{n} hours');
 
 /**
  * Where somebody's week would land with this shift in it, asked while the
@@ -128,6 +131,7 @@ export async function confirmOvertime(
  * not something to carry once the rota is agreed.
  */
 export function MyOvertimeNotice({ weeks: given }: { weeks?: OwnOvertimeWeek[] } = {}) {
+  const t = useT();
   const [fetched, setFetched] = useState<OwnOvertimeWeek[]>([]);
   const weeks = given ?? fetched;
 
@@ -148,22 +152,25 @@ export function MyOvertimeNotice({ weeks: given }: { weeks?: OwnOvertimeWeek[] }
 
   return (
     <section
-      aria-label="Your overtime"
+      aria-label={t('Your overtime')}
       data-testid="my-overtime"
       className="rounded-xl border-l-4 border-rose-600 bg-rose-50 p-4 text-sm text-rose-900 shadow-sm ring-1 ring-inset ring-rose-200"
     >
-      <p className="font-semibold">⚠ Your schedule puts you into overtime</p>
+      <p className="font-semibold">{t('⚠ Your schedule puts you into overtime')}</p>
       <ul className="mt-1 space-y-0.5">
         {weeks.map((week) => (
           <li key={week.weekStart}>
-            Week of {formatCalendarDate(week.weekStart, { year: false })}:{' '}
-            <span className="font-semibold">{hoursWord(week.scheduledHours)}</span> —{' '}
-            {hoursWord(week.overtimeHours)} past the {week.thresholdHours}-hour line.
+            {t('Week of {date}:', { date: formatCalendarDate(week.weekStart, { year: false }) })}{' '}
+            <span className="font-semibold">{hoursPhrase(week.scheduledHours)}</span> —{' '}
+            {t('{hours} past the {threshold}-hour line.', {
+              hours: hoursPhrase(week.overtimeHours),
+              threshold: week.thresholdHours,
+            })}
           </li>
         ))}
       </ul>
       <p className="mt-1.5 text-xs text-rose-800">
-        If that is not what you agreed, talk to your manager before the week starts.
+        {t('If that is not what you agreed, talk to your manager before the week starts.')}
       </p>
     </section>
   );

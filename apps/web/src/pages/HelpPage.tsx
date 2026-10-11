@@ -77,6 +77,39 @@ const STAFF: Section[] = [
         ),
       },
       {
+        question: 'Can I use the app in Spanish?',
+        answer: (
+          <p>
+            Yes. <Screen>Your profile</Screen> → <strong>Language</strong> →{' '}
+            <strong>Español</strong> (or <strong>Español</strong> beside the news on Home). The
+            screens you use every day switch at once — Home, the Schedule, your time off, the
+            Timesheet, the Directory and more — and stay in Spanish on any phone or computer you
+            sign in on. People’s names, News posts and what managers type stay as written; this Help
+            guide, the bell’s messages and emails are still in English for now.
+          </p>
+        ),
+      },
+      {
+        question: 'Can I get notifications on my phone?',
+        answer: (
+          <>
+            <p>
+              Yes — whatever rings the bell (your shifts changing, time off decided, the reminder to
+              clock in, a colleague asking you to cover) can also appear on your lock screen. Open{' '}
+              <Screen>Your profile</Screen> (or <strong>Get these on your phone</strong> under the
+              bell) and press <strong>Turn on for this device</strong>, then <strong>Allow</strong>.{' '}
+              <strong>Send me a test</strong> checks it works.
+            </p>
+            <p>
+              <strong>On an iPhone</strong> put Domi Staff on your Home Screen first (above) and
+              open it from there — Safari alone cannot. Android phones and computers work in the
+              browser. Each phone is turned on, and off, on itself. They come through Apple’s or
+              Google’s notification service, locked so neither can read them.
+            </p>
+          </>
+        ),
+      },
+      {
         question: 'How do I use the front-desk time clock?',
         answer: (
           <>
@@ -532,6 +565,25 @@ const STAFF: Section[] = [
         ),
       },
       {
+        question: 'What is “Waiting for you” on Home?',
+        answer: (
+          <>
+            <p>
+              Something a manager has asked you to read — a new policy, a News post, a page on{' '}
+              <Screen>Resources</Screen> — or to do, like a training video. Open it from the card,
+              then press <strong>I’ve read it</strong> or <strong>Done</strong> so the practice
+              knows. A post you have been asked to read has the same button on it in News.
+            </p>
+            <p>
+              You are told on the bell and by email when it is set, and reminded — two days before
+              it is due, after it passes, and once a week — until you confirm. It never stops you
+              clocking in. Everything asked of you, and what you have done, is under{' '}
+              <strong>See all</strong>.
+            </p>
+          </>
+        ),
+      },
+      {
         question: 'How do I find a colleague?',
         answer: (
           <p>
@@ -858,6 +910,32 @@ const WELLNESS: Section[] = [
 
 /// For people whose job role uses the clinical forms (Providers).
 const PROVIDERS: Section[] = [
+  {
+    title: 'For providers: on call',
+    topics: [
+      {
+        question: 'Who is on call, and how do I swap a day?',
+        answer: (
+          <>
+            <p>
+              <Screen>Schedule</Screen> → <strong>On call</strong>: who takes the after-hours calls
+              each day, a turn running from noon to noon the next day. <strong>On call now</strong>{' '}
+              is on <Screen>Home</Screen> too. Your days are shaded.
+            </p>
+            <p>
+              To swap, press one of your days, choose who should take it and — if you like — one of
+              their days you will take back, then <strong>Ask them</strong>. They are told on the
+              bell and by email and answer <strong>Yes, swap</strong> or{' '}
+              <strong>No, I can’t</strong> on the same screen; the days change hands only when they
+              say yes, and you and the managers are told. You can take a request back while it is
+              waiting. To put your on-call days on your phone: Schedule → Calendar →{' '}
+              <strong>Separate calendars</strong> → <strong>My on call</strong>.
+            </p>
+          </>
+        ),
+      },
+    ],
+  },
   {
     title: 'For providers: BrainCheck Care Plan',
     topics: [
@@ -1714,6 +1792,65 @@ const MANAGERS: Section[] = [
             surveys and how many have answered, onboarding and offboarding progress, and the last
             week&rsquo;s closing checklists and supplies to order.
           </p>
+        ),
+      },
+      {
+        question: 'How do I set the on-call schedule?',
+        answer: (
+          <p>
+            <Screen>Schedule</Screen> → <strong>On call</strong> →{' '}
+            <strong>The usual pattern</strong> → <strong>Change it</strong>: a provider for each
+            weekday, then any exceptions — “the 4th Saturday → Dr. Badia” — and the hand-over time
+            (noon, for the answering service). It is saved from a day you choose, so who was on call
+            before stays as it was. Weekends are counted by their Saturday, so the 4th weekend is
+            the 4th Saturday and the Sunday after it. For one day only, press the day and choose who
+            is on call (with a note if you like);
+            <strong> Back to the usual</strong> undoes it. Both providers are told. Swaps the
+            providers agree between themselves happen on their own, and you are told. On call is
+            never hours or pay.
+          </p>
+        ),
+      },
+      {
+        question: 'What does the rota cost?',
+        answer: (
+          <p>
+            Only for the people an admin has chosen (<Screen>Practice settings</Screen> →{' '}
+            <strong>Who sees the rota’s cost</strong>): a line above the rota on the{' '}
+            <Screen>Schedule</Screen> gives the week or month on screen in dollars, by office, and
+            opens to show hourly pay, the overtime extra, salaries and each day. It is worked out
+            from the pay on each person’s staff profile — scheduled hours (drafts too) at their
+            hourly rate, hours past the overtime line at time and a half, and a salary as a year ÷
+            52 a week — so it is what the rota would cost, not what was worked, and leaves out taxes
+            and benefits. Anybody on the rota with no pay on file is named, so a total is never
+            quietly short. Never by person.
+          </p>
+        ),
+      },
+      {
+        question: 'How do I make sure everybody has read something?',
+        answer: (
+          <>
+            <p>
+              <Screen>Manage → Required reading</Screen> →{' '}
+              <strong>+ Ask people to read or do something</strong>. Pick{' '}
+              <strong>something to read</strong> (they press “I’ve read it”) or{' '}
+              <strong>something to do</strong> (“Done”), give it a title, and point it at a News
+              post, a Resources page or a web link if there is one. Choose who it is for — Everyone,
+              or any mix of job roles, offices and people — and a due date if it has one. On a News
+              post, <strong>Require reading</strong> starts it for you.
+            </p>
+            <p>
+              They are told on the bell and by email at once, it sits on their Home until they
+              confirm, and they are reminded two days before it is due, the day after, and weekly
+              (for up to eight weeks). <strong>Who has confirmed</strong> lists who has, with the
+              day, and who has not; <strong>Remind them now</strong> nudges the rest straight away.
+              Somebody who joins a chosen job role or office later is asked too.{' '}
+              <strong>Stop asking</strong> takes it off everybody’s Home and keeps the record of who
+              confirmed. It is a reminder, never a gate: nobody is stopped clocking in. The app
+              records only that somebody confirmed, and when — no signature or document.
+            </p>
+          </>
         ),
       },
       {

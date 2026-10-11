@@ -3,6 +3,7 @@ import { ApiError, api } from '../lib/api';
 import { practiceToday } from '../lib/practice-time';
 import { formatDuration, formatTime, localDate } from '../lib/format';
 import { GeolocationRefused, detectClockMethod, getCurrentPosition } from '../lib/geolocation';
+import { t as translate, useT } from '../lib/i18n';
 import { useSession } from '../lib/session';
 import type {
   ApplicableSection,
@@ -21,6 +22,8 @@ import {
   SurveysCard,
   TabletPinReminder,
 } from '../components/HomeCards';
+import { HomeRequired } from '../components/RequiredItems';
+import { OnCallNow } from '../components/OnCallNow';
 import { SuggestionBoxCard } from '../components/SuggestionBox';
 import { MyOvertimeNotice } from '../components/OvertimeAlerts';
 import { Alert, Badge, Card, Spinner } from '../components/ui';
@@ -42,6 +45,7 @@ const REMOTE_EARLY_MINUTES = 30;
  * phone they stack — the clock first, the news last.
  */
 export function ClockPage() {
+  const t = useT();
   const { employee } = useSession();
   const [entry, setEntry] = useState<TimeEntry | null>(null);
   /// Today's shifts, earliest first — somebody can have two (an office shift in
@@ -103,7 +107,7 @@ export function ClockPage() {
         .catch(() => setTodaysEvents([]));
       setError(null);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Could not load your status.');
+      setError(err instanceof Error ? err.message : translate('Could not load your status.'));
     } finally {
       setStatus('ready');
     }
@@ -159,6 +163,7 @@ export function ClockPage() {
   const places = useMemo(() => {
     const all = [
       ...assignedLocations.map((l) => ({ value: l.locationId, label: l.location.name })),
+      // English here, in the reader's language where it is shown.
       { value: HOME, label: 'Work from home' },
     ];
     const first = all.find((option) => option.value === shiftPlace);
@@ -196,24 +201,44 @@ export function ClockPage() {
   /// without a work-from-home shift. Allowed, with a warning first.
   const elsewhere =
     !isClockedIn && place !== '' && (shiftPlace ? place !== shiftPlace : place === HOME);
-  const placeName = (value: string | null) =>
-    places.find((option) => option.value === value)?.label ?? '';
+  const placeLabel = (option: { value: string; label: string }) =>
+    option.value === HOME ? t(option.label) : option.label;
+  const placeName = (value: string | null) => {
+    const option = places.find((candidate) => candidate.value === value);
+    return option ? placeLabel(option) : '';
+  };
   const elsewhereNote = !elsewhere
     ? null
     : todaysShift
-      ? `Your shift today is ${todaysShift.isRemote ? 'from home' : `at ${placeName(shiftPlace) || todaysShift.location?.name || 'another office'}`}.`
-      : 'You have no work-from-home shift today.';
+      ? todaysShift.isRemote
+        ? t('Your shift today is from home.')
+        : t('Your shift today is at {place}.', {
+            place: placeName(shiftPlace) || todaysShift.location?.name || t('another office'),
+          })
+      : t('You have no work-from-home shift today.');
 
   /// The warning before clocking in somewhere other than the shift.
   async function clockInChecked() {
     if (elsewhere) {
       const go = await confirm({
-        title: place === HOME ? 'Clock in from home?' : `Clock in at ${placeName(place)}?`,
-        body: `${elsewhereNote} You can still clock in here — it will show on your timesheet${
-          otherReason.trim() ? ', with your reason' : ''
-        }, so your manager can see why.`,
-        confirmLabel: place === HOME ? 'Clock in from home' : `Clock in at ${placeName(place)}`,
-        cancelLabel: 'Go back',
+        title:
+          place === HOME
+            ? t('Clock in from home?')
+            : t('Clock in at {place}?', { place: placeName(place) }),
+        body: `${elsewhereNote} ${
+          otherReason.trim()
+            ? t(
+                'You can still clock in here — it will show on your timesheet, with your reason, so your manager can see why.',
+              )
+            : t(
+                'You can still clock in here — it will show on your timesheet, so your manager can see why.',
+              )
+        }`,
+        confirmLabel:
+          place === HOME
+            ? t('Clock in from home')
+            : t('Clock in at {place}', { place: placeName(place) }),
+        cancelLabel: t('Go back'),
         tone: 'neutral',
       });
       if (!go) return;
@@ -277,7 +302,7 @@ export function ClockPage() {
         // 403 here means verification failed, and the kiosk is the way around it.
         setOfferKiosk(err.status === 403);
       } else {
-        setError(err instanceof Error ? err.message : 'Something went wrong.');
+        setError(err instanceof Error ? err.message : t('Something went wrong.'));
       }
     } finally {
       punching.current = false;
@@ -293,18 +318,18 @@ export function ClockPage() {
 
   return (
     <div className="grid items-start gap-4 lg:grid-cols-3 lg:grid-rows-[auto_1fr] lg:gap-6">
-      <h1 className="sr-only">Home</h1>
+      <h1 className="sr-only">{t('Home')}</h1>
       <div className="space-y-4 lg:col-span-2 lg:row-start-1" data-testid="home-clock">
         <MyOvertimeNotice />
 
         <Card className="p-6 text-center">
           <p className="text-sm text-slate-500">
-            {greeting()}, {employee.preferredName ?? employee.firstName}
+            {t(greeting(), { name: employee.preferredName ?? employee.firstName })}
           </p>
 
           {status === 'loading' ? (
             <div className="mt-6 flex justify-center">
-              <Spinner label="Checking your status" />
+              <Spinner label={t('Checking your status')} />
             </div>
           ) : isClockedIn && entry ? (
             <>
@@ -312,33 +337,35 @@ export function ClockPage() {
                 {formatDuration(entry.clockInAt, null)}
               </p>
               <p className="mt-1 text-sm text-slate-600">
-                Clocked in at {formatTime(entry.clockInAt)}
+                {t('Clocked in at {time}', { time: formatTime(entry.clockInAt) })}
                 {remote
-                  ? ' · Working from home'
+                  ? ` · ${t('Working from home')}`
                   : entry.location
                     ? ` · ${entry.location.name}`
                     : ''}
               </p>
               <div className="mt-3 flex justify-center gap-2">
-                <Badge tone="success">On the clock</Badge>
-                {entry.isLate && <Badge tone="warning">Late</Badge>}
+                <Badge tone="success">{t('On the clock')}</Badge>
+                {entry.isLate && <Badge tone="warning">{t('Late')}</Badge>}
               </div>
             </>
           ) : (
             <>
-              <p className="mt-4 text-2xl font-semibold text-slate-900">Not clocked in</p>
+              <p className="mt-4 text-2xl font-semibold text-slate-900">{t('Not clocked in')}</p>
               {todaysShift ? (
                 <p className="mt-1 text-sm text-slate-600">
-                  Today&rsquo;s shift: {formatTime(todaysShift.startsAt)} –{' '}
-                  {formatTime(todaysShift.endsAt)}
+                  {t('Today’s shift: {start} – {end}', {
+                    start: formatTime(todaysShift.startsAt),
+                    end: formatTime(todaysShift.endsAt),
+                  })}
                   {todaysShift.isRemote
-                    ? ' · Work from home'
+                    ? ` · ${t('Work from home')}`
                     : todaysShift.location
                       ? ` · ${todaysShift.location.name}`
                       : ''}
                 </p>
               ) : (
-                <p className="mt-1 text-sm text-slate-500">No shift scheduled today.</p>
+                <p className="mt-1 text-sm text-slate-500">{t('No shift scheduled today.')}</p>
               )}
             </>
           )}
@@ -365,7 +392,7 @@ export function ClockPage() {
               data-testid="todays-shift-note"
             >
               <span aria-hidden="true">📝 </span>
-              <span className="sr-only">Note on today&rsquo;s shift: </span>
+              <span className="sr-only">{t('Note on today’s shift:')} </span>
               {todaysShift.notes}
             </p>
           )}
@@ -374,7 +401,7 @@ export function ClockPage() {
         {!isClockedIn && status !== 'loading' && assignedLocations.length > 0 && (
           <Card className="p-4">
             <label htmlFor="location" className="block text-sm font-medium text-slate-700">
-              Location
+              {t('Location')}
             </label>
             <select
               id="location"
@@ -387,8 +414,8 @@ export function ClockPage() {
             >
               {places.map((option) => (
                 <option key={option.value} value={option.value}>
-                  {option.label}
-                  {option.value === shiftPlace ? ' — your shift' : ''}
+                  {placeLabel(option)}
+                  {option.value === shiftPlace ? ` — ${t('your shift')}` : ''}
                 </option>
               ))}
             </select>
@@ -398,11 +425,11 @@ export function ClockPage() {
                 data-testid="other-place"
               >
                 <p>
-                  <span className="font-semibold">{elsewhereNote}</span> You can still clock in
-                  here; it will show on your timesheet.
+                  <span className="font-semibold">{elsewhereNote}</span>{' '}
+                  {t('You can still clock in here; it will show on your timesheet.')}
                 </p>
                 <label htmlFor="other-reason" className="mt-2 block text-sm font-medium">
-                  Why? <span className="font-normal text-amber-900">(optional)</span>
+                  {t('Why?')} <span className="font-normal text-amber-900">{t('(optional)')}</span>
                 </label>
                 <input
                   id="other-reason"
@@ -411,8 +438,8 @@ export function ClockPage() {
                   maxLength={200}
                   placeholder={
                     place === HOME
-                      ? 'e.g. Approved to work from home today'
-                      : 'e.g. Covering at this office'
+                      ? t('e.g. Approved to work from home today')
+                      : t('e.g. Covering at this office')
                   }
                   className="mt-1 w-full rounded-lg border-amber-300 py-2 text-base shadow-sm placeholder:text-amber-800/60 focus:border-brand-600 focus:ring-brand-600 sm:text-sm"
                 />
@@ -426,7 +453,7 @@ export function ClockPage() {
             <p>{error}</p>
             {offerKiosk && (
               <p className="mt-2 text-xs">
-                The front-desk kiosk does not need location access and always works on site.
+                {t('The front-desk kiosk does not need location access and always works on site.')}
               </p>
             )}
           </Alert>
@@ -444,8 +471,9 @@ export function ClockPage() {
           </Card>
         ) : assignedLocations.length === 0 ? (
           <Alert tone="warning">
-            You are not assigned to a location yet, so you cannot clock in. Ask a manager to assign
-            you to North Bergen or West New York.
+            {t(
+              'You are not assigned to a location yet, so you cannot clock in. Ask a manager to assign you to North Bergen or West New York.',
+            )}
           </Alert>
         ) : (
           <button
@@ -466,35 +494,39 @@ export function ClockPage() {
           >
             {busy
               ? remote
-                ? 'Working…'
-                : 'Checking your location…'
+                ? t('Working…')
+                : t('Checking your location…')
               : isClockedIn
-                ? 'Clock out'
+                ? t('Clock out')
                 : remote
-                  ? 'Clock in — working from home'
-                  : 'Clock in'}
+                  ? t('Clock in — working from home')
+                  : t('Clock in')}
           </button>
         )}
 
         <p className="px-2 text-center text-xs text-slate-500">
           {remote
-            ? 'Working from home: no location is asked for or recorded.'
-            : 'Clocking in from a browser shares your location with Domi Healthcare to confirm you are on site. It is recorded with your time entry.'}
+            ? t('Working from home: no location is asked for or recorded.')
+            : t(
+                'Clocking in from a browser shares your location with Domi Healthcare to confirm you are on site. It is recorded with your time entry.',
+              )}
         </p>
       </div>
 
       {/* Before the aside so a phone, where the columns stack, shows the news
           straight under the clock; on a laptop the grid keeps it in the left column. */}
-      <div className="lg:col-span-2 lg:col-start-1 lg:row-start-2">
+      <div className="space-y-4 lg:col-span-2 lg:col-start-1 lg:row-start-2">
+        <HomeRequired />
         <HomeNews />
       </div>
 
       <aside
-        aria-label="Quick and coming up"
+        aria-label={t('Quick and coming up')}
         className="space-y-4 lg:col-start-3 lg:row-span-2 lg:row-start-1"
       >
         <TabletPinReminder />
         <QuickActions />
+        <OnCallNow />
         <BirthdaysThisWeek />
         <ComingUp />
         <SurveysCard />
@@ -504,11 +536,12 @@ export function ClockPage() {
   );
 }
 
+/// The greeting, as a phrase with `{name}` in it.
 function greeting(): string {
   const hour = new Date().getHours();
-  if (hour < 12) return 'Good morning';
-  if (hour < 18) return 'Good afternoon';
-  return 'Good evening';
+  if (hour < 12) return 'Good morning, {name}';
+  if (hour < 18) return 'Good afternoon, {name}';
+  return 'Good evening, {name}';
 }
 
 /// Today's first and last instants in New Jersey, not the browser's zone.

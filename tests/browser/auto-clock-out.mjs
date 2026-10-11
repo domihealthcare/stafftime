@@ -53,12 +53,20 @@ const njClock = (iso) =>
 const ago = (hours) => new Date(Date.now() - hours * 3_600_000).toISOString();
 
 // Frankie (Front Desk) on a phone; the admin on a laptop.
-const staffCtx = await browser.newContext({ viewport: { width: 390, height: 844 }, isMobile: true });
+const staffCtx = await browser.newContext({
+  viewport: { width: 390, height: 844 },
+  isMobile: true,
+  timezoneId: 'America/New_York',
+});
 const frankie = await staffCtx.newPage();
 frankie.on('pageerror', (e) => errors.push(`staff pageerror: ${e.message}`));
 await signIn(frankie, 'frontdesk@domihealthcare.com');
 
-const adminCtx = await browser.newContext({ viewport: { width: 1400, height: 1000 } });
+// New Jersey time, as at the practice (see wfh.mjs).
+const adminCtx = await browser.newContext({
+  viewport: { width: 1400, height: 1000 },
+  timezoneId: 'America/New_York',
+});
 const admin = await adminCtx.newPage();
 admin.on('pageerror', (e) => errors.push(`admin pageerror: ${e.message}`));
 await signIn(admin, 'admin@domihealthcare.com');

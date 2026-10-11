@@ -13,6 +13,7 @@ import { CalendarInvitesService } from '../invites/invites.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { localDateIn, PRACTICE_ZONE } from '../common/util/zoned-time.util';
 import { payDaysBetween } from '../settings/pay-days';
+import { OnCallService } from '../on-call/on-call.service';
 import { PracticeSettingsService } from '../settings/practice-settings.service';
 import { FEEDS, type FeedPart } from './feeds';
 import { buildCalendar, type CalendarEvent } from './ical';
@@ -36,6 +37,7 @@ export class CalendarService {
     private readonly events: EventsService,
     private readonly invites: CalendarInvitesService,
     private readonly settings: PracticeSettingsService,
+    private readonly onCall: OnCallService,
   ) {}
 
   /// Pay days from `from` to `to` (YYYY-MM-DD, inclusive): the Friday after
@@ -127,7 +129,7 @@ export class CalendarService {
     const invited = this.invites.enabled;
 
     const wantsEvents = Object.values(PracticeEventKind).some((kind) => wants(kind));
-    const [shifts, timeOff, allEvents, payDays] = await Promise.all([
+    const [shifts, timeOff, allEvents, payDays, onCallTurns] = await Promise.all([
       invited || !wants('SHIFTS')
         ? Promise.resolve([])
         : this.prisma.shift.findMany({
@@ -175,6 +177,8 @@ export class CalendarService {
       wants('PAY_DAYS')
         ? this.payDays(localDateIn(from, PRACTICE_ZONE), localDateIn(to, PRACTICE_ZONE))
         : Promise.resolve([]),
+      // Their own on-call turns, noon to noon — a provider's only (October 2026).
+      wants('ON_CALL') ? this.onCall.turnsFor(employee.id, from, to) : Promise.resolve([]),
     ]);
     // Invites carry meetings only; closures, holidays and diagnostics stay here.
     const practiceEvents = allEvents.filter(
@@ -253,6 +257,16 @@ export class CalendarService {
           transparent: true,
         };
       }),
+      ...onCallTurns.map((turn): CalendarEvent => ({
+        // The date is the identity: a swap changes whose feed it is in.
+        uid: `oncall-${turn.date}-${employee.id}@staff.domihealthcare.com`,
+        sequence: 0,
+        summary: 'On call',
+        start: turn.startsAt,
+        end: turn.endsAt,
+        // Reachable, not busy: nothing should be refused because of it.
+        transparent: true,
+      })),
       ...payDays.map((day): CalendarEvent => ({
         // Worked out, never stored: the date is the identity.
         uid: `payday-${day}@staff.domihealthcare.com`,

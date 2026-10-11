@@ -192,6 +192,7 @@ export class AuthController {
         preferredName: true,
         postNominals: true,
         pronouns: true,
+        language: true,
         photoUpdatedAt: true,
         email: true,
         role: true,
@@ -200,6 +201,7 @@ export class AuthController {
         wantsDailyDigest: true,
         mutedDigestTopics: true,
         canManageProductivity: true,
+        canSeeRotaCost: true,
         lastLoginAt: true,
         locations: {
           select: {

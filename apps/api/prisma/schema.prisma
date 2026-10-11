@@ -162,7 +162,8 @@ model Location {
   lunchNotices  LunchNotice[]
   eventInvitees PracticeEventInvitee[]
 
-  staffingMinimums StaffingMinimum[]
+  staffingMinimums   StaffingMinimum[]
+  requirementTargets RequirementTarget[]
 
   @@map("locations")
 }
@@ -206,6 +207,9 @@ model Employee {
   pronouns       String?
   /// One line about themselves for the Directory, e.g. "Spanish speaker".
   about          String?
+  /// The language the app speaks to them in: "en" or "es" (October 2026,
+  /// Dominguez — Spanish for the staff screens). Their own to choose.
+  language       String    @default("en")
   /// When their profile photo last changed, or null for none. Doubles as the
   /// photo URL's version, so a new photo is never served from a stale cache.
   photoUpdatedAt DateTime?
@@ -324,6 +328,10 @@ model Employee {
   /// May work out and publish provider productivity. Chosen by an admin,
   /// separate from the access level: a manager has no say in it by default.
   canManageProductivity     Boolean                  @default(false)
+  /// Sees what the rota costs on the Schedule (October 2026, Dominguez: "only
+  /// for certain individuals"). Chosen by an admin in Practice settings,
+  /// separate from the access level: an admin does not see it unless chosen.
+  canSeeRotaCost            Boolean                  @default(false)
   productivityPlan          ProductivityPlan?        @relation("ProductivityPlanSubject")
   productivityStatements    ProductivityStatement[]  @relation("ProductivityStatementSubject")
   createdProductivity       ProductivityStatement[]  @relation("ProductivityStatementCreatedBy")
@@ -341,6 +349,25 @@ model Employee {
 
   /// Asked to cover an open shift ("Ask who can cover", October 2026).
   coverAsks CoverAsk[]
+
+  /// Required reading and tasks (October 2026): set by a manager, confirmed
+  /// by the people they are for.
+  createdRequirements Requirement[]       @relation("RequirementCreatedBy")
+  requirementTargets  RequirementTarget[] @relation("RequirementTargetEmployee")
+  requirementsDone    RequirementDone[]
+  requirementNudges   RequirementNudge[]
+
+  /// The provider on-call schedule (October 2026).
+  onCallRotaEntries  OnCallRotaEntry[]
+  createdOnCallRotas OnCallRota[]      @relation("OnCallRotaCreatedBy")
+  onCallDays         OnCallDay[]       @relation("OnCallDayProvider")
+  setOnCallDays      OnCallDay[]       @relation("OnCallDaySetBy")
+  onCallSwapsAsked   OnCallSwap[]      @relation("OnCallSwapRequester")
+  onCallSwapsToMe    OnCallSwap[]      @relation("OnCallSwapPartner")
+
+  /// Phones and computers that get the bell's notifications as push
+  /// notifications (October 2026).
+  pushSubscriptions PushSubscription[]
 
   @@index([employmentStatus])
   @@map("employees")
@@ -1396,9 +1423,11 @@ model Announcement {
 
   author Employee? @relation("AnnouncementAuthor", fields: [authorId], references: [id], onDelete: SetNull)
 
-  comments AnnouncementComment[]
-  likes    AnnouncementLike[]
-  poll     AnnouncementPoll?
+  comments     AnnouncementComment[]
+  likes        AnnouncementLike[]
+  poll         AnnouncementPoll?
+  /// Required reading that points at this post.
+  requirements Requirement[]
 
   @@index([createdAt])
   @@map("announcements")
@@ -1529,6 +1558,7 @@ model JobRole {
   credentialRequirements CredentialRequirement[]
   /// How many the practice wants on in it at each office (optional).
   staffingMinimums       StaffingMinimum[]
+  requirementTargets     RequirementTarget[]
   /// People in this role see their own licenses and onboarding under Team.
   /// Starts true for Provider only (September 2026).
   seesOwnPersonnelTabs   Boolean                 @default(false)
@@ -1600,8 +1630,10 @@ model Resource {
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
-  jobRole   JobRole?  @relation(fields: [jobRoleId], references: [id], onDelete: Restrict)
-  createdBy Employee? @relation("ResourceCreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
+  jobRole      JobRole?      @relation(fields: [jobRoleId], references: [id], onDelete: Restrict)
+  createdBy    Employee?     @relation("ResourceCreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
+  /// Required reading that points at this resource.
+  requirements Requirement[]
 
   @@index([jobRoleId, sortOrder])
   @@map("resources")
@@ -2081,6 +2113,10 @@ enum NotificationKind {
   AVAILABILITY_CLASH
   /// "Can you cover…?" to somebody asked, and the answer back to the manager.
   COVER_REQUEST
+  /// Something to read and confirm, or a task to do, set by a manager.
+  REQUIRED
+  /// The provider on-call schedule: a swap asked or answered, a day changed.
+  ON_CALL
 }
 
 /// Something the app wants one person to know, shown under the bell in the
@@ -2599,4 +2635,250 @@ model CoverAsk {
   @@id([requestId, employeeId])
   @@index([employeeId])
   @@map("cover_asks")
+}
+
+// ---------------------------------------------------------------------------
+// Required reading and tasks (October 2026, Dominguez: "something the
+// admin/managers can require for need to know information or required
+// tasks"). A manager asks a set of people to confirm they have read
+// something — a News post, a Resources page, a few lines — or to do
+// something and say so. The app nags; it never stops anybody clocking in.
+//
+// Records *that* somebody confirmed, and when — never a document or a
+// signature (see "Data this app does not hold").
+// ---------------------------------------------------------------------------
+
+enum RequirementKind {
+  /// "Please read this and confirm": I've read it.
+  READ
+  /// "Please do this": Done.
+  TASK
+}
+
+model Requirement {
+  id    String          @id @default(uuid()) @db.Uuid
+  kind  RequirementKind
+  title String
+  /// What to read or do, in plain text. Line breaks are kept.
+  body  String?
+  /// Somewhere else to read or do it: a training video, a Drive document.
+  /// https only — checked in the service.
+  url   String?
+
+  /// What to read, when it is in the app. Either, both or neither.
+  announcementId String? @db.Uuid
+  resourceId     String? @db.Uuid
+
+  /// Optional. Reminders come two days before and after it passes.
+  dueOn DateTime? @db.Date
+
+  /// For everybody working here. Otherwise the people, job roles and offices
+  /// in RequirementTarget — read as they are today, so a new hire in a job
+  /// role is asked too.
+  everyone Boolean @default(false)
+
+  /// Stopped asking. The confirmations stay, as a record.
+  closedAt DateTime?
+
+  createdById String?  @db.Uuid
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  announcement Announcement? @relation(fields: [announcementId], references: [id], onDelete: SetNull)
+  resource     Resource?     @relation(fields: [resourceId], references: [id], onDelete: SetNull)
+  createdBy    Employee?     @relation("RequirementCreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
+
+  targets RequirementTarget[]
+  done    RequirementDone[]
+  nudges  RequirementNudge[]
+
+  @@index([closedAt, createdAt])
+  @@map("requirements")
+}
+
+/// One person, job role or office a requirement is for.
+model RequirementTarget {
+  id            String  @id @default(uuid()) @db.Uuid
+  requirementId String  @db.Uuid
+  employeeId    String? @db.Uuid
+  jobRoleId     String? @db.Uuid
+  locationId    String? @db.Uuid
+
+  requirement Requirement @relation(fields: [requirementId], references: [id], onDelete: Cascade)
+  employee    Employee?   @relation("RequirementTargetEmployee", fields: [employeeId], references: [id], onDelete: Cascade)
+  jobRole     JobRole?    @relation(fields: [jobRoleId], references: [id], onDelete: Cascade)
+  location    Location?   @relation(fields: [locationId], references: [id], onDelete: Cascade)
+
+  @@index([requirementId])
+  @@index([employeeId])
+  @@map("requirement_targets")
+}
+
+/// Somebody confirmed: read it, or did it. Once each.
+model RequirementDone {
+  requirementId String   @db.Uuid
+  employeeId    String   @db.Uuid
+  doneAt        DateTime @default(now())
+
+  requirement Requirement @relation(fields: [requirementId], references: [id], onDelete: Cascade)
+  employee    Employee    @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+
+  @@id([requirementId, employeeId])
+  @@index([employeeId])
+  @@map("requirement_done")
+}
+
+/// When somebody was last reminded about one, so the five-minute timer says
+/// it once per reminder day (see `requirements/nudges.ts`). Claimed before
+/// the message goes, so two runs at once cannot both send it.
+model RequirementNudge {
+  requirementId String   @db.Uuid
+  employeeId    String   @db.Uuid
+  lastOn        DateTime @db.Date
+  count         Int      @default(1)
+
+  requirement Requirement @relation(fields: [requirementId], references: [id], onDelete: Cascade)
+  employee    Employee    @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+
+  @@id([requirementId, employeeId])
+  @@map("requirement_nudges")
+}
+
+// ---------------------------------------------------------------------------
+// Provider on-call (October 2026, Dominguez: "provider on call schedule will
+// def be needed"). Which provider takes the after-hours calls, a day at a
+// time — "usually a day 12-12", the answering service's day. A usual pattern
+// by weekday, with exceptions for a week of the month ("every weekend except
+// the 4th"), changed for a single day by a manager or swapped between two
+// providers. Not paid and not hours: never on the timesheet, the rota's
+// overtime or payroll. Seen by providers, managers and admins.
+// ---------------------------------------------------------------------------
+
+/// The usual pattern from a day on. A new one is saved from a chosen day, so
+/// who was on call before it stays as it was.
+model OnCallRota {
+  id        String   @id @default(uuid()) @db.Uuid
+  startsOn  DateTime @unique @db.Date
+  /// When a turn hands over, "HH:MM" in New Jersey: the day's turn runs from
+  /// this time on its date to the same time the next day. Noon, for the
+  /// answering service.
+  changesAt String   @default("12:00")
+
+  createdById String?  @db.Uuid
+  createdAt   DateTime @default(now())
+
+  createdBy Employee?         @relation("OnCallRotaCreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
+  entries   OnCallRotaEntry[]
+
+  @@map("on_call_rotas")
+}
+
+/// "Mondays: Dr. Dominguez", "the 4th Saturday: Dr. Badia". The most
+/// particular entry for a day wins: a week of the month over the last over
+/// every week. Weekends are counted by their Saturday, so the 4th weekend is
+/// the 4th Saturday and the Sunday after it (see `on-call/on-call.ts`).
+model OnCallRotaEntry {
+  id          String @id @default(uuid()) @db.Uuid
+  rotaId      String @db.Uuid
+  /// 1 = Monday … 7 = Sunday.
+  weekday     Int
+  /// 0 every week; 1–4 the first to fourth; -1 the last.
+  weekOfMonth Int    @default(0)
+  employeeId  String @db.Uuid
+
+  rota     OnCallRota @relation(fields: [rotaId], references: [id], onDelete: Cascade)
+  employee Employee   @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+
+  @@unique([rotaId, weekday, weekOfMonth])
+  @@map("on_call_rota_entries")
+}
+
+/// One day not as the pattern has it: changed by a manager, or swapped.
+model OnCallDay {
+  date       DateTime @id @db.Date
+  employeeId String   @db.Uuid
+  /// Short, optional: "covering for Dr. D's vacation".
+  note       String?
+  /// The swap that put it here, if one did.
+  swapId     String?  @db.Uuid
+  setById    String?  @db.Uuid
+  updatedAt  DateTime @updatedAt
+
+  employee Employee    @relation("OnCallDayProvider", fields: [employeeId], references: [id], onDelete: Cascade)
+  setBy    Employee?   @relation("OnCallDaySetBy", fields: [setById], references: [id], onDelete: SetNull)
+  swap     OnCallSwap? @relation(fields: [swapId], references: [id], onDelete: SetNull)
+
+  @@map("on_call_days")
+}
+
+enum OnCallSwapStatus {
+  PENDING
+  ACCEPTED
+  DECLINED
+  CANCELLED
+}
+
+/// A provider asking another to take an on-call day — and, if they like, to
+/// give one back. Takes effect when the other says yes.
+model OnCallSwap {
+  id          String           @id @default(uuid()) @db.Uuid
+  requesterId String           @db.Uuid
+  partnerId   String           @db.Uuid
+  /// The requester's day, for the partner to take.
+  giveDate    DateTime         @db.Date
+  /// The partner's day, for the requester to take back. Null: just cover.
+  takeDate    DateTime?        @db.Date
+  note        String?
+  status      OnCallSwapStatus @default(PENDING)
+  createdAt   DateTime         @default(now())
+  answeredAt  DateTime?
+
+  requester Employee    @relation("OnCallSwapRequester", fields: [requesterId], references: [id], onDelete: Cascade)
+  partner   Employee    @relation("OnCallSwapPartner", fields: [partnerId], references: [id], onDelete: Cascade)
+  days      OnCallDay[]
+
+  @@index([partnerId, status])
+  @@index([requesterId, status])
+  @@map("on_call_swaps")
+}
+
+// ---------------------------------------------------------------------------
+// Phone notifications (October 2026, Dominguez — from the survey of similar
+// apps). A device where somebody turned on notifications: whatever rings their
+// bell is also pushed there, through the browser maker's push service (Apple's,
+// Google's, Mozilla's), encrypted so that service cannot read it. No app
+// store app; the service worker only shows notifications and stores nothing.
+// ---------------------------------------------------------------------------
+
+model PushSubscription {
+  id         String    @id @default(uuid()) @db.Uuid
+  employeeId String    @db.Uuid
+  /// The push service's address for this device. Anybody with it and the
+  /// keys could send this device a notification, so it never leaves here.
+  endpoint   String    @unique
+  p256dh     String
+  auth       String
+  /// "iPhone", "Android", "Mac" — so somebody can tell their devices apart.
+  device     String?
+  createdAt  DateTime  @default(now())
+  lastSentAt DateTime?
+
+  employee Employee @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+
+  @@index([employeeId])
+  @@map("push_subscriptions")
+}
+
+/// The app's own key pair for phone notifications, made when an admin switches
+/// them on in Practice settings — so nobody has to make one in a terminal and
+/// paste it into Vercel. `VAPID_PUBLIC_KEY` / `VAPID_PRIVATE_KEY`, if set,
+/// win. The private key only lets this app send notifications to the devices
+/// that turned them on; changing it means every device turns them on again.
+model PushKeys {
+  singleton  Int      @id @default(1)
+  publicKey  String
+  privateKey String
+  createdAt  DateTime @default(now())
+
+  @@map("push_keys")
 }

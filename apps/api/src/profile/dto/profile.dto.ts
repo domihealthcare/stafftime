@@ -1,4 +1,4 @@
-import { IsOptional, IsString, Matches, MaxLength } from 'class-validator';
+import { IsIn, IsOptional, IsString, Matches, MaxLength } from 'class-validator';
 
 /// What somebody may change about themselves. Empty clears a field.
 export class UpdateProfileDto {
@@ -24,6 +24,11 @@ export class UpdateProfileDto {
   @IsString()
   @MaxLength(140)
   about?: string;
+
+  /// The app's language for them: English or Spanish.
+  @IsOptional()
+  @IsIn(['en', 'es'])
+  language?: 'en' | 'es';
 }
 
 export class UploadPhotoDto {

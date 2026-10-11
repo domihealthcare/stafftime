@@ -90,7 +90,9 @@ promotion with the day it took effect). Admins only — not managers, not the
 person, not the Directory, not the payroll export. They live in their own tables
 (`EmployeePersonalRecord`, `EmploymentChange`), read only by `src/staff-records/`
 and never added to `Employee`, and the schema guard pins their fields. Still no
-identity numbers, documents, licence numbers or date of birth.
+identity numbers, documents, licence numbers or date of birth. The one other
+reader (October 2026, Dominguez) is the **rota's cost** for the people an
+admin chooses — totals by office and day only, never by person.
 
 **An outside AI service** (October 2026, Dominguez: staff names and schedules
 may go to one; patient details never): **Ask Domi Staff** sends a question,
@@ -104,6 +106,11 @@ profiles, licenses, punch locations, the reps list, PINs or passwords;
 nothing is kept beyond a daily count, unless somebody saves what a helper
 wrote (and a post's Spanish, once translated, stays on the post). Off until
 `ANTHROPIC_API_KEY` is set — see `docs/ask-domi-staff-setup.md`.
+
+**Phone notifications** (October 2026) travel through the browser maker's
+push service (Apple's, Google's), encrypted with the device's own keys so
+that service cannot read them — the same words as the bell, which never
+carry patient details.
 
 Nothing is uploaded to the app, with **one deliberate exception**: a
 **profile photo** of yourself (confirmed by Dominguez, September 2026). The
@@ -740,6 +747,97 @@ Beyond the phases, the parts worth knowing about before picking up work:
   staff are left out. `GET /employees/welcome/pending`,
   `auth/not-signed-in.ts`, `components/NotSignedInCard.tsx`;
   `tests/browser/not-signed-in.mjs`.
+- **Required reading and tasks** (10 October 2026, Dominguez — from a survey
+  of similar apps: "something the admin/managers can require for need to
+  know information or required tasks", a **nag, never a gate**): **Manage →
+  Required reading** (`/required`) asks Everyone, or any mix of job roles,
+  offices and people, to **read and confirm** something (a News post —
+  **Require reading** on the post — a Resources page, a link, a few lines)
+  or to **do** something, optionally by a date. Told on the bell and by
+  email; an amber **Waiting for you** card on Home (and the button on the
+  post) until they press **I've read it** / **Done**; reminded two days
+  before, the day after and weekly (eight at most), one message each; read
+  as the audience is today, so new hires in a role are asked too. Managers
+  see "N of M confirmed", who has and who has not, **Remind them now**,
+  **Stop asking**. Keeps only *that* somebody confirmed and when.
+  `requirements/`, migration `20261010020000_required_reading`; see
+  *Required reading and tasks* in `docs/architecture.md`;
+  `tests/browser/required.mjs`.
+- **Rota cost** (10 October 2026, Dominguez: "only for certain individuals
+  (i.e. kayla, angelica, and myself)", hourly and salaried): a folded line
+  above the rota on the Schedule — the week or month on screen in dollars,
+  by office, opening to hourly pay, the overtime extra, salaries and each
+  day — for the people on **Practice settings → Who sees the rota's cost**
+  (`Employee.canSeeRotaCost`, admins keep it; an admin not on it does not
+  see it). From staff profiles' pay: scheduled hours, drafts included, at
+  the rate in force that day, hours past the line at 1.5× for hourly staff
+  (the pay period's weeks), salaries a year ÷ 52 a week for every day
+  employed, split by where they work. People on the rota with no pay on file
+  are named. Never by person. Migration `20261010030000_rota_cost` puts
+  Dominguez on the list, and Kayla and Angelica Dominguez **only if exactly
+  one current person has that name — check the list on the live site**.
+  `staff-records/rota-cost.ts` (pure) and `rota-cost.service.ts`,
+  `components/RotaCost.tsx`; `tests/browser/rota-cost.mjs`.
+- **Provider on call** (10 October 2026, Dominguez: "provider on call
+  schedule will def be needed"): **Schedule → On call** (`/on-call`, a third
+  tab; providers — a job role with *uses clinical forms* — managers and
+  admins only). Each day's turn runs **noon to noon** ("because we are
+  limited to our answering/forwarding service"), the hand-over time saved
+  with the pattern. A **usual pattern** by weekday with **exceptions** for a
+  week of the month (1st–4th, last; the most particular wins), saved from a
+  chosen day so the past stays as it was; **weekends counted by their
+  Saturday** (the 4th weekend is the 4th Saturday and the Sunday after).
+  Migration `20261010040000_on_call` loads the current one — Dr. Dominguez
+  Mon, Tue, Wed, Fri and weekends except the 4th; Dr. Jose Badia Thursdays
+  and the 4th weekend — **only if both are found** (Dr. Badia by name):
+  check it on the live site. Managers change **one day** (with a note; both
+  told by bell and email; **Back to the usual**). A provider **asks another
+  to swap** a day, optionally taking one of theirs back; it happens when
+  they press **Yes, swap**, re-checked then; managers told on the bell.
+  **On call now** on Home, and a provider's own turns in the calendar feed
+  (all-in-one and **My on call**). **Not paid, never hours** (Dominguez).
+  `on-call/on-call.ts` (rules, pure) and `on-call.service.ts`,
+  `pages/OnCallPage.tsx`; `tests/browser/on-call.mjs`. Worth carrying to the
+  EMR module. Dominguez would like to look into something better than the
+  answering service's fixed noon hand-over — not started.
+- **Phone notifications** (10 October 2026, Dominguez: "are we able to do
+  this since we dont have an iphone/android app?" — yes, web push):
+  whatever rings somebody's bell (`InboxService.notify`) also goes to each
+  device where they pressed **Turn on for this device** (Your profile; **Get
+  these on your phone** under the bell). iPhone needs Domi Staff on the Home
+  Screen (iOS 16.4+); Android and computers work in the browser. No Twilio,
+  no carrier registration, no cost. **An admin switches it on once**,
+  Practice settings → **Phone notifications** → **Switch on for the
+  practice**, which makes the app's own key pair (`PushKeys`; Vercel's
+  `VAPID_PUBLIC_KEY` / `VAPID_PRIVATE_KEY` win if ever set). **Not switched
+  on on the live site yet.** Devices in `PushSubscription` (only real push
+  services accepted; a device the service says is gone is forgotten);
+  `email/push.service.ts` (`web-push` 3.6.7, pinned), `public/push-sw.js`,
+  `lib/push.ts`, `components/PhoneNotificationsCard.tsx`, migration
+  `20261010050000_push_notifications`; `tests/browser/push.mjs` (a headless
+  browser cannot subscribe, so the device is registered through the API).
+- **Spanish for the staff screens** (10 October 2026, Dominguez: "can do
+  the spanish for whole app" — staff screens first): each person chooses
+  **English | Español** on **Your profile** (`Employee.language`, migration
+  `20261010060000_staff_language`; the News switch is now the same choice),
+  applied the moment it is pressed and whenever they sign in, anywhere.
+  `lib/i18n/` — `t('English')` keyed by the English itself, so anything not
+  yet translated stays English and English output never changes; Spanish in
+  `lib/i18n/es/*.ts` by area (about 600 phrases, "tú"), dates via
+  `locale()`. Translated: the frame (menus, phone bar, bell's own words),
+  Home with the closing checklist, Schedule (staff's view), time off,
+  availability, Timesheet (own hours), Directory, Resources, News, Surveys
+  (answering), required reading, Your profile, the calendar card and
+  practice calendar. **Still English**: managers' tools, the Help guide,
+  what the bell and emails say, the kiosk and sign-in. **The Spanish needs
+  a native speaker's read** (`NEEDS_NATIVE_SPEAKER_REVIEW`).
+  `tests/browser/spanish.mjs`.
+- **From the survey of similar apps** (10 October 2026, Dominguez): what was
+  agreed is above (required reading, rota cost, on call, phone
+  notifications, Spanish). **Turned down**: tracking HIPAA /
+  OSHA training as license types, staff confirming their own hours each pay
+  period, and NJ earned-sick-leave accrual changes. **On hold**: monthly OIG
+  exclusion screening.
 - **Turned down: "PTO about to be lost"** (9 October 2026, Dominguez): a
   reminder to use PTO before it fails to carry over was proposed and refused —
   not in the practice's interest. Do not propose it again.
@@ -1091,8 +1189,11 @@ Beyond the phases, the parts worth knowing about before picking up work:
   slogan** is on every signed-out screen, in black on the printed rota; the
   roof alone stays in the header and favicon. Signed in, the header's
   "**Domi** Staff" is bolder and the slogan runs on a thin blue strip under
-  it on every screen (chosen by Dominguez from three renderings). **No service worker, no offline mode**, on
-  purpose: a punch with no signal must plainly fail, not seem to work.
+  it on every screen (chosen by Dominguez from three renderings). **No offline mode**, on
+  purpose: a punch with no signal must plainly fail, not seem to work. The
+  only service worker (`/push-sw.js`, since October 2026) shows phone
+  notifications and nothing else — no fetch handler, no cache — and is
+  registered only when somebody turns notifications on (`push.mjs` checks).
 - **Going live** (September 2026): Practice settings → **Start using it for
   real** (admins, test deployments only) shows what goes and which accounts
   stay, then clears the demo staff and everything made while testing —

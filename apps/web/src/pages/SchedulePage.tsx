@@ -18,6 +18,7 @@ import { birthdayName, birthdaysByDay } from '../lib/birthday';
 import { atPlace, forRole, WORK_FROM_HOME_FILTER } from '../lib/shift-filters';
 import { useIsManager, useSession } from '../lib/session';
 import { useIsPhone } from '../lib/use-is-phone';
+import { locale, plural, t as tNow, useT } from '../lib/i18n';
 import type {
   BirthdayEntry,
   Coverage,
@@ -77,6 +78,7 @@ import {
   OvertimePreview,
   useOvertimeCheck,
 } from '../components/OvertimeAlerts';
+import { RotaCostCard } from '../components/RotaCost';
 
 /// Where the week/month choice is remembered. Per browser, per person on that
 /// browser — it never leaves the device and nothing depends on it.
@@ -84,6 +86,7 @@ const VIEW_KEY = 'domi.schedule.view';
 const GROUPING_KEY = 'domi.schedule.grouping';
 
 export function SchedulePage() {
+  const t = useT();
   const isManager = useIsManager();
   const { employee: me } = useSession();
   const isPhone = useIsPhone();
@@ -358,7 +361,7 @@ export function SchedulePage() {
       setError(null);
     } catch (err) {
       if (stale()) return;
-      setError(err instanceof Error ? err.message : 'Could not load the schedule.');
+      setError(err instanceof Error ? err.message : tNow('Could not load the schedule.'));
     } finally {
       if (!stale()) {
         setLoading(false);
@@ -542,8 +545,8 @@ export function SchedulePage() {
   return (
     <div className="mx-auto max-w-6xl">
       <PageHeading
-        title="Schedule"
-        subtitle={isManager ? 'Build the week for both locations.' : 'Your upcoming shifts.'}
+        title={t('Schedule')}
+        subtitle={isManager ? 'Build the week for both locations.' : t('Your upcoming shifts.')}
       />
       <ScheduleTabs />
 
@@ -589,7 +592,7 @@ export function SchedulePage() {
             }
             className={buttonClass('secondary', 'sm')}
           >
-            ← Previous
+            {t('← Previous')}
           </button>
           <button
             type="button"
@@ -599,7 +602,7 @@ export function SchedulePage() {
             }}
             className={buttonClass('secondary', 'sm')}
           >
-            {view === 'week' ? 'This week' : 'This month'}
+            {view === 'week' ? t('This week') : t('This month')}
           </button>
           <button
             type="button"
@@ -610,7 +613,7 @@ export function SchedulePage() {
             }
             className={buttonClass('secondary', 'sm')}
           >
-            Next →
+            {t('Next →')}
           </button>
         </div>
 
@@ -645,7 +648,7 @@ export function SchedulePage() {
                     : 'text-slate-600 hover:text-slate-900'
                 }`}
               >
-                {option === 'week' ? 'Week' : 'Month'}
+                {option === 'week' ? t('Week') : t('Month')}
               </button>
             ))}
           </div>
@@ -661,6 +664,22 @@ export function SchedulePage() {
       {/* Up here, above the rota, rather than under the coverage squares at the
           foot of the page: overtime is the warning a manager has to act on
           before the week is published, so it is the first thing on screen. */}
+      {me?.canSeeRotaCost && (
+        <div className="mb-3">
+          <RotaCostCard
+            from={localDate(rangeStart)}
+            to={localDate(days[days.length - 1])}
+            period={period}
+            refreshKey={shifts
+              .map(
+                (shift) =>
+                  `${shift.id}${shift.startsAt}${shift.endsAt}${shift.status}${shift.employeeId}`,
+              )
+              .join('|')}
+          />
+        </div>
+      )}
+
       {isManager && coverage && coverage.overtime.length > 0 && (
         <div className="mb-3">
           <OvertimeNotice
@@ -985,11 +1004,11 @@ export function SchedulePage() {
         data-testid="schedule-period"
       >
         {view === 'week'
-          ? `${weekStart.toLocaleDateString(undefined, { month: 'short', day: 'numeric' })} – ${addDays(
+          ? `${weekStart.toLocaleDateString(locale(), { month: 'short', day: 'numeric' })} – ${addDays(
               weekStart,
               6,
-            ).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}`
-          : monthStart.toLocaleDateString(undefined, { month: 'long', year: 'numeric' })}
+            ).toLocaleDateString(locale(), { month: 'short', day: 'numeric', year: 'numeric' })}`
+          : monthStart.toLocaleDateString(locale(), { month: 'long', year: 'numeric' })}
       </h2>
 
       {/* The week grid is one column on a phone, so it reads as a list of days
@@ -998,7 +1017,7 @@ export function SchedulePage() {
           weekday names. */}
       {waiting ? (
         <Card className="p-6">
-          <Spinner label="Loading schedule" />
+          <Spinner label={t('Loading schedule')} />
         </Card>
       ) : view === 'month' ? (
         <>
@@ -1115,7 +1134,7 @@ export function SchedulePage() {
         events.length === 0 &&
         !isManager && (
           <div className="mt-4">
-            <EmptyState>Nothing scheduled for you this week.</EmptyState>
+            <EmptyState>{t('Nothing scheduled for you this week.')}</EmptyState>
           </div>
         )}
 
@@ -1170,7 +1189,7 @@ export function SchedulePage() {
       <div className="mt-3 grid gap-3 sm:grid-cols-[1fr_auto] sm:items-start">
         <CalendarLinkCard />
         <Link to="/availability" className={`inline-block ${buttonClass('secondary', 'md')}`}>
-          {isManager ? 'Availability — yours and the team’s' : 'When you can’t work'}
+          {isManager ? 'Availability — yours and the team’s' : t('When you can’t work')}
         </Link>
       </div>
       {personMenu.menu}
@@ -1722,6 +1741,7 @@ function MonthGrid({
   /// Right-click on a day: add a shift, time off or an event on it. Managers only.
   onDayMenu?: (event: React.MouseEvent, day: Date) => void;
 }) {
+  const t = useT();
   const today = new Date().toDateString();
   // On a phone a square is forty pixels wide, so it shows three and counts the
   // rest. From `sm` up the square grows to list every shift — a manager reads
@@ -1738,9 +1758,9 @@ function MonthGrid({
             key={day.toISOString()}
             className="text-center text-xs font-medium uppercase tracking-wide text-slate-500"
           >
-            {day.toLocaleDateString(undefined, { weekday: 'narrow' })}
+            {day.toLocaleDateString(locale(), { weekday: 'narrow' })}
             <span className="hidden sm:inline">
-              {day.toLocaleDateString(undefined, { weekday: 'short' }).slice(1)}
+              {day.toLocaleDateString(locale(), { weekday: 'short' }).slice(1)}
             </span>
           </p>
         ))}
@@ -1779,17 +1799,19 @@ function MonthGrid({
               type="button"
               onClick={() => onPickDay(day)}
               onContextMenu={onDayMenu ? (event) => onDayMenu(event, day) : undefined}
-              aria-label={`${day.toLocaleDateString(undefined, {
+              aria-label={`${day.toLocaleDateString(locale(), {
                 weekday: 'long',
                 month: 'long',
                 day: 'numeric',
               })} — ${
                 dayShifts.length === 0
-                  ? 'no shifts'
-                  : `${dayShifts.length} shift${dayShifts.length === 1 ? '' : 's'}: ${described.join(', ')}`
-              }${cakes.length > 0 ? ` — birthday: ${cakes.join(', ')}` : ''}${
+                  ? t('no shifts')
+                  : `${plural(dayShifts.length, '{n} shift', '{n} shifts')}: ${described.join(', ')}`
+              }${cakes.length > 0 ? ` — ${t('birthday: {names}', { names: cakes.join(', ') })}` : ''}${
                 dayEvents.length > 0
-                  ? ` — event${dayEvents.length === 1 ? '' : 's'}: ${dayEvents.map((event) => event.title).join(', ')}`
+                  ? ` — ${t(dayEvents.length === 1 ? 'event: {titles}' : 'events: {titles}', {
+                      titles: dayEvents.map((event) => event.title).join(', '),
+                    })}`
                   : ''
               }`}
               className={`flex min-h-[72px] flex-col justify-start rounded-lg border p-1.5 text-left align-top transition hover:border-brand-400 hover:bg-brand-50 sm:min-h-[104px] sm:p-2 ${
@@ -1839,7 +1861,7 @@ function MonthGrid({
                         key={shift.id}
                         title={[
                           described[index],
-                          remote ? 'work from home' : shift.location?.name,
+                          remote ? t('work from home') : shift.location?.name,
                           shift.jobRole?.name,
                           shift.notes ? `📝 ${shift.notes}` : null,
                         ]
@@ -1865,7 +1887,9 @@ function MonthGrid({
                         {shift.notes && (
                           <span data-testid="month-shift-note">
                             <span aria-hidden="true">📝 </span>
-                            <span className="sr-only">Note: {shift.notes}. </span>
+                            <span className="sr-only">
+                              {t('Note: {note}. ', { note: shift.notes })}
+                            </span>
                           </span>
                         )}
                         <span className="sm:hidden">{shortened[index]}</span>
@@ -1875,7 +1899,7 @@ function MonthGrid({
                   })}
                   {described.length > MAX_LINES && (
                     <span className="block px-1 text-[10px] text-slate-600 sm:hidden">
-                      +{described.length - MAX_LINES} more
+                      {t('+{n} more', { n: described.length - MAX_LINES })}
                     </span>
                   )}
                 </span>
@@ -1886,7 +1910,7 @@ function MonthGrid({
       </div>
 
       <p className="mt-2 text-xs text-slate-500">
-        Pick a day to open its week, where shifts are added and removed.
+        {t('Pick a day to open its week, where shifts are added and removed.')}
       </p>
     </div>
   );

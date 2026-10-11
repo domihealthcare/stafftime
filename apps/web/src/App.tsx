@@ -29,6 +29,12 @@ const DirectoryPage = lazy(() =>
   import('./pages/DirectoryPage').then((m) => ({ default: m.DirectoryPage })),
 );
 const RepsPage = lazy(() => import('./pages/RepsPage').then((m) => ({ default: m.RepsPage })));
+const OnCallPage = lazy(() =>
+  import('./pages/OnCallPage').then((m) => ({ default: m.OnCallPage })),
+);
+const RequiredPage = lazy(() =>
+  import('./pages/RequiredPage').then((m) => ({ default: m.RequiredPage })),
+);
 const JobRolesPage = lazy(() =>
   import('./pages/JobRolesPage').then((m) => ({ default: m.JobRolesPage })),
 );
@@ -188,6 +194,8 @@ function Routed() {
           <Route path="dashboard" element={<DashboardPage />} />
           <Route path="job-roles" element={<JobRolesPage />} />
           <Route path="reps" element={<RepsPage />} />
+          <Route path="required" element={<RequiredPage />} />
+          <Route path="on-call" element={<OnCallPage />} />
           <Route path="timesheet" element={<TimesheetPage />} />
           <Route path="schedule" element={<SchedulePage />} />
           <Route path="schedule/calendar" element={<CalendarPage />} />

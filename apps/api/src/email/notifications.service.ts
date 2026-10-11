@@ -378,6 +378,75 @@ export class NotificationsService {
     ]);
   }
 
+  /// Something to read and confirm, or to do — when it is set, a reminder, or
+  /// a manager's "Remind them now" (see `requirements/nudges.ts`). The bell
+  /// and an email to each; the emails a few at a time, so thirty people do
+  /// not take thirty round trips one after another.
+  async required(employeeIds: string[], words: { title: string; body: string }): Promise<void> {
+    if (employeeIds.length === 0) return;
+    await this.inbox.notify(employeeIds, {
+      kind: NotificationKind.REQUIRED,
+      title: words.title,
+      body: words.body,
+      link: '/required',
+    });
+    const people = await this.prisma.employee.findMany({
+      where: { id: { in: employeeIds } },
+      select: { email: true, firstName: true, preferredName: true },
+    });
+    for (let start = 0; start < people.length; start += 5) {
+      await Promise.all(
+        people
+          .slice(start, start + 5)
+          .map((person) =>
+            this.dispatch(person.email, words.title, [
+              `Hello ${person.preferredName ?? person.firstName},`,
+              '',
+              words.body,
+              '',
+              `See it, and confirm it: ${this.appUrl}/required`,
+            ]),
+          ),
+      );
+    }
+  }
+
+  /// The on-call schedule: a swap asked or answered, a day or the pattern
+  /// changed. The bell always; an email when it asks something of them or
+  /// changes a day of theirs.
+  async onCall(
+    employeeIds: string[],
+    words: { title: string; body: string },
+    { email }: { email: boolean },
+  ): Promise<void> {
+    if (employeeIds.length === 0) return;
+    await this.inbox.notify(employeeIds, {
+      kind: NotificationKind.ON_CALL,
+      title: words.title,
+      body: words.body,
+      link: '/on-call',
+    });
+    if (!email) return;
+    const people = await this.prisma.employee.findMany({
+      where: { id: { in: employeeIds } },
+      select: { email: true, firstName: true, preferredName: true },
+    });
+    for (const person of people) {
+      await this.dispatch(person.email, words.title, [
+        `Hello ${person.preferredName ?? person.firstName},`,
+        '',
+        words.body,
+        '',
+        `The on-call schedule: ${this.appUrl}/on-call`,
+      ]);
+    }
+  }
+
+  /// One person's reminder about everything still waiting on them.
+  async requiredReminder(employeeId: string, words: { title: string; body: string }) {
+    await this.required([employeeId], words);
+  }
+
   /// "You were clocked out automatically" — still clocked in at midnight (see
   /// `time-entries/auto-clock-out.service.ts`). A warning: the clock-out time
   /// is almost certainly wrong, and only they know the right one.

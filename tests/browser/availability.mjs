@@ -114,7 +114,13 @@ await step('staff cannot read or change anybody else’s', async () => {
 });
 
 // The manager puts Frankie on next Saturday anyway.
-const mgr = await browser.newPage({ viewport: { width: 1280, height: 1100 } });
+// On New Jersey time, as at the practice: the rota's weeks run from the
+// browser's own midnights, and CI's UTC browser is a week ahead on a
+// Saturday evening, so "Next →" passed the week with the shift in it.
+const mgr = await browser.newPage({
+  viewport: { width: 1280, height: 1100 },
+  timezoneId: 'America/New_York',
+});
 mgr.on('pageerror', (e) => errors.push(`manager pageerror: ${e.message}`));
 await signIn(mgr, 'manager@domihealthcare.com');
 

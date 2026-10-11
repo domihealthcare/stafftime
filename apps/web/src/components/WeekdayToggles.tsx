@@ -1,4 +1,5 @@
 import { WEEK_ORDER, WEEKDAY_NAMES } from '../lib/format';
+import { useT } from '../lib/i18n';
 
 /// Sunday first, as the calendar reads; the values are the API's, 1 = Monday.
 const WEEKDAYS = WEEK_ORDER.map((value) => ({
@@ -16,6 +17,7 @@ export function WeekdayToggles({
   onChange: (days: number[]) => void;
   size?: 'normal' | 'small';
 }) {
+  const t = useT();
   const padding = size === 'small' ? 'px-2 py-1 text-xs' : 'px-3 py-2 text-sm';
   return (
     <div className="mt-1 flex flex-wrap gap-1">
@@ -35,7 +37,7 @@ export function WeekdayToggles({
                 : 'border border-slate-300 bg-white text-slate-700 hover:bg-slate-50'
             }`}
           >
-            {day.short}
+            {t(day.short)}
           </button>
         );
       })}
