@@ -38,6 +38,13 @@ async function signIn(email) {
     viewport: { width: 1280, height: 1000 },
     permissions: ['notifications'],
   });
+  // Chromium's headless shell (what CI installs) still reports "denied"
+  // after the grant above; the full browser reports "granted".
+  await ctx.addInitScript(() => {
+    if (window.Notification?.permission === 'denied') {
+      Object.defineProperty(Notification, 'permission', { get: () => 'granted' });
+    }
+  });
   const page = await ctx.newPage();
   page.on('pageerror', (e) => errors.push(`${email} pageerror: ${e.message}`));
   await page.goto(`${BASE}/`, { waitUntil: 'networkidle' });

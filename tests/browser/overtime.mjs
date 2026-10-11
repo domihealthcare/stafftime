@@ -31,7 +31,13 @@ async function signIn(page, email) {
   await page.getByText('Not clocked in').waitFor({ timeout: 20000 });
 }
 
-const mgrCtx = await browser.newContext({ viewport: { width: 1400, height: 1000 } });
+// New Jersey time, as at the practice: the rota's weeks run from the
+// browser's own midnights, and CI's UTC browser is a week ahead on a
+// Saturday evening.
+const mgrCtx = await browser.newContext({
+  viewport: { width: 1400, height: 1000 },
+  timezoneId: 'America/New_York',
+});
 const mgr = await mgrCtx.newPage();
 mgr.on('pageerror', (e) => errors.push(`pageerror: ${e.message}`));
 await signIn(mgr, 'manager@domihealthcare.com');
@@ -173,7 +179,11 @@ await step('Frankie is emailed once, when the week first goes over', async () =>
   if (mentions !== 1) throw new Error(`${mentions} overtime emails to Frankie since the save, in ${API_LOG}`);
 });
 
-const staffCtx = await browser.newContext({ viewport: { width: 390, height: 844 }, isMobile: true });
+const staffCtx = await browser.newContext({
+  viewport: { width: 390, height: 844 },
+  isMobile: true,
+  timezoneId: 'America/New_York',
+});
 const frankie = await staffCtx.newPage();
 frankie.on('pageerror', (e) => errors.push(`pageerror: ${e.message}`));
 

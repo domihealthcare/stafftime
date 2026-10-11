@@ -41,7 +41,10 @@ const WED = ymd(day(2));
 const THU = ymd(day(3));
 
 // Frankie asks for Wednesday (approved) and Thursday (still waiting).
-const fdCtx = await browser.newContext({ viewport: { width: 1280, height: 900 } });
+const fdCtx = await browser.newContext({
+  viewport: { width: 1280, height: 900 },
+  timezoneId: 'America/New_York',
+});
 const frankie = await fdCtx.newPage();
 frankie.on('pageerror', (e) => errors.push(`staff pageerror: ${e.message}`));
 await signIn(frankie, 'frontdesk@domihealthcare.com');
@@ -58,7 +61,13 @@ const [wedId] = await frankie.evaluate(async ([wed, thu]) => {
   return [await ask(wed), await ask(thu)];
 }, [WED, THU]);
 
-const mgrCtx = await browser.newContext({ viewport: { width: 1400, height: 1000 } });
+// New Jersey time, as at the practice: the rota's weeks run from the
+// browser's own midnights, and CI's UTC browser is a week ahead on a
+// Saturday evening.
+const mgrCtx = await browser.newContext({
+  viewport: { width: 1400, height: 1000 },
+  timezoneId: 'America/New_York',
+});
 const mgr = await mgrCtx.newPage();
 mgr.on('pageerror', (e) => errors.push(`manager pageerror: ${e.message}`));
 await signIn(mgr, 'manager@domihealthcare.com');
