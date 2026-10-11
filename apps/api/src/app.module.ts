@@ -39,6 +39,7 @@ import { StaffRecordsModule } from './staff-records/staff-records.module';
 import { StaffingModule } from './staffing/staffing.module';
 import { AssistantModule } from './assistant/assistant.module';
 import { SurveysModule } from './surveys/surveys.module';
+import { Reviews360Module } from './reviews360/reviews360.module';
 import { TimeEntriesModule } from './time-entries/time-entries.module';
 
 @Module({
@@ -76,6 +77,7 @@ import { TimeEntriesModule } from './time-entries/time-entries.module';
     StaffRecordsModule,
     AvailabilityModule,
     SurveysModule,
+    Reviews360Module,
     DashboardModule,
     MaintenanceModule,
     SetupModule,

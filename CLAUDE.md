@@ -101,7 +101,7 @@ topics likely to answer it), to Anthropic (Claude). The **AI helpers** send
 what they are given to work on: a News post's words or an admin's notes, a
 pasted booking message, and for a time-off decline the person's first name,
 dates and the manager's words (counts of who else is off, never names).
-Never the clinical forms, the suggestion box, survey answers, staff
+Never the clinical forms, the suggestion box, survey answers (360s included), staff
 profiles, licenses, punch locations, the reps list, PINs or passwords;
 nothing is kept beyond a daily count, unless somebody saves what a helper
 wrote (and a post's Spanish, once translated, stays on the post). Off until
@@ -747,6 +747,56 @@ Beyond the phases, the parts worth knowing about before picking up work:
   staff are left out. `GET /employees/welcome/pending`,
   `auth/not-signed-in.ts`, `components/NotSignedInCard.tsx`;
   `tests/browser/not-signed-in.mjs`.
+- **"You're on tomorrow"** (11 October 2026, Dominguez — a "smarter" idea,
+  "should be able to turn off as a user"): from **6pm** the evening before,
+  everybody with a published shift tomorrow is told **once** on the bell and
+  by email — hours, place, job role and any note, one message for two shifts
+  — not on approved time off, nor for a shift in a closure. Each person turns
+  it off on **Email settings** (`Employee.wantsShiftReminders`, theirs only).
+  Run by the five-minute timer, claimed per shift (`PunchReminder` kind
+  `TOMORROW`). `shifts/tomorrow-reminder.ts` (words),
+  `PunchRemindersService.remindAboutTomorrow`, migration
+  `20261011010000_shift_tomorrow_reminders`; `tests/browser/tomorrow.mjs`
+  (checks it arrives when run 6pm–midnight, that nothing goes early
+  otherwise).
+- **Onboarding starts by itself** (11 October 2026, Dominguez — a "smarter"
+  idea): adding somebody with a hire date (one at a time or the pasted list)
+  — or giving them one later — starts the **default onboarding template**
+  for them, counting from that date, as **Start checklist** would; the Staff
+  screen says so. Only for somebody hired **within the last 30 days** or not
+  yet started (so adding the existing staff starts nothing), never a second
+  time, not demo staff; nothing happens without a default template.
+  Templates are not per job role — the default is used.
+  `ChecklistsService.startOnboardingIfNew`, called from
+  `EmployeesController`; `tests/browser/auto-onboarding.mjs`.
+- **360 feedback** (11 October 2026, Dominguez: "a survey on all employees by
+  all employees, completely anonymous though produces a report for the
+  employee that we … are able to set up a time to meet with the employee and
+  discuss"; his choices: **managers only** see reports, a **self-rating**, a
+  **starter set, editable**, the manager **offers 2–4 times** and the person
+  picks): **Surveys → 360 feedback → Start a 360** (managers) — five 1–5
+  ratings (teamwork, communication, reliability, helpfulness,
+  professionalism) and two written answers, each with first-person words for
+  yourself; everybody here then is asked about everybody, and told on the
+  bell; one open at a time, an optional closing day. Staff answer at
+  `/surveys/360/:id` (Home links it): each colleague once, **Skip** for
+  somebody they don't work with enough, never editable. **Anonymous the
+  pulse surveys' way**: `Review360Response` / `Review360Answer` name who it
+  is about, never who said it, and no time; `Review360Rated` (who rated
+  whom, or skipped) is kept apart only to stop a second go — the schema
+  guard pins all three tables' fields. **Reports** (`/surveys/360/:id/
+  reports`, managers and admins, once closed, **never your own**): only with
+  **3 or more colleagues** (`MIN_RATERS`), colleagues' average and spread
+  beside the self-rating, written answers shuffled. From a report, **Offer
+  times to meet** (2–4, up to 3 hours, place, optional Google Meet); the
+  person is told (bell, email) and picks at `/meetings/:id`, which makes a
+  practice event for the two of them — "Feedback conversation: Frankie and
+  Morgan" — so it reaches calendars like any event. Withdrawn or cancelled
+  from the report. Never sent to the AI service. Staff's parts are in
+  Spanish. `src/reviews360/` (`review360.ts` pure, `reviews360.service.ts`),
+  `components/Reviews360Section.tsx`, `pages/Review360Page.tsx`,
+  `Review360ReportsPage.tsx`, `ReviewMeetingPage.tsx`, migration
+  `20261011020000_reviews_360`; `tests/browser/review360.mjs`.
 - **Required reading and tasks** (10 October 2026, Dominguez — from a survey
   of similar apps: "something the admin/managers can require for need to
   know information or required tasks", a **nag, never a gate**): **Manage →

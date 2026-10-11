@@ -136,7 +136,15 @@ await step('managers are warned until it is corrected, and cannot approve it bef
     throw new Error(`approve said ${JSON.stringify(refused.body)}`);
 
   await goTo(admin, 'Timesheet');
-  await admin.getByText('Clocked out at midnight', { exact: true }).first().waitFor({ timeout: 15000 });
+  // Yesterday's punch: on a Sunday that is last week, which the Timesheet does
+  // not open on.
+  const flagged = admin.getByText('Clocked out at midnight', { exact: true }).first();
+  try {
+    await flagged.waitFor({ timeout: 8000 });
+  } catch {
+    await admin.getByRole('button', { name: 'Last week' }).click();
+    await flagged.waitFor({ timeout: 15000 });
+  }
   await admin.getByText('Edit the time first').first().waitFor({ timeout: 5000 });
   await admin.getByText('Clock-outs to correct').first().waitFor({ timeout: 5000 });
   await admin.screenshot({ path: `${OUT}/auto-clock-out-timesheet.png`, fullPage: true });

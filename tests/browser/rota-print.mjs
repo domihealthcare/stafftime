@@ -26,12 +26,15 @@ async function signIn(page, email) {
   await page.getByText('Not clocked in').waitFor({ timeout: 20000 });
 }
 
-// Next week, Monday to Sunday, in the browser's own calendar.
+// Next week's Monday on the Schedule, whose weeks run Sunday to Saturday on
+// New Jersey's calendar — not Monday-based on the test machine's clock, which
+// on a Sunday (or a Saturday evening in UTC) picked a day still in this week.
 const pad = (n) => String(n).padStart(2, '0');
 const ymd = (d) => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
-const monday = new Date();
-monday.setHours(0, 0, 0, 0);
-monday.setDate(monday.getDate() - ((monday.getDay() + 6) % 7) + 7);
+const monday = new Date(
+  `${new Intl.DateTimeFormat('en-CA', { timeZone: 'America/New_York' }).format(new Date())}T00:00:00`,
+);
+monday.setDate(monday.getDate() - monday.getDay() + 8);
 const day = (offset) => { const d = new Date(monday); d.setDate(d.getDate() + offset); return d; };
 const MON = ymd(day(0));
 // The week on screen, and so on paper, starts the Sunday before (Dominguez,

@@ -98,6 +98,15 @@ const CredentialsPage = lazy(() =>
 const SurveysPage = lazy(() =>
   import('./pages/SurveysPage').then((m) => ({ default: m.SurveysPage })),
 );
+const Review360Page = lazy(() =>
+  import('./pages/Review360Page').then((m) => ({ default: m.Review360Page })),
+);
+const Review360ReportsPage = lazy(() =>
+  import('./pages/Review360ReportsPage').then((m) => ({ default: m.Review360ReportsPage })),
+);
+const ReviewMeetingPage = lazy(() =>
+  import('./pages/ReviewMeetingPage').then((m) => ({ default: m.ReviewMeetingPage })),
+);
 const TimeOffPage = lazy(() =>
   import('./pages/TimeOffPage').then((m) => ({ default: m.TimeOffPage })),
 );
@@ -189,6 +198,10 @@ function Routed() {
           <Route path="profile" element={<ProfilePage />} />
           <Route path="directory" element={<DirectoryPage />} />
           <Route path="surveys" element={<SurveysPage />} />
+          <Route path="surveys/360/:id" element={<Review360Page />} />
+          <Route path="surveys/360/:id/reports" element={<Review360ReportsPage />} />
+          <Route path="surveys/360/:id/reports/:subjectId" element={<Review360ReportsPage />} />
+          <Route path="meetings/:id" element={<ReviewMeetingPage />} />
           <Route path="resources" element={<ResourcesPage />} />
           <Route path="resources/:id" element={<ResourcePage />} />
           <Route path="dashboard" element={<DashboardPage />} />

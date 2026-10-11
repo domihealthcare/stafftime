@@ -145,9 +145,19 @@ export class NotificationsService {
     employeeIds: string[],
     words: { title: string; body: string; link: string },
   ): Promise<void> {
+    await this.personal(employeeIds, NotificationKind.COVER_REQUEST, words);
+  }
+
+  /// Something for these people to act on, on the bell and by email, linking
+  /// to where it is done — asked to cover, offered times to meet.
+  async personal(
+    employeeIds: string[],
+    kind: NotificationKind,
+    words: { title: string; body: string; link: string },
+  ): Promise<void> {
     if (employeeIds.length === 0) return;
     await this.inbox.notify(employeeIds, {
-      kind: NotificationKind.COVER_REQUEST,
+      kind,
       title: words.title,
       body: words.body,
       link: words.link,
@@ -347,6 +357,36 @@ export class NotificationsService {
       words.body,
       '',
       `Your licenses and their dates: ${this.appUrl}/credentials`,
+    ]);
+  }
+
+  /// "You're on tomorrow" — the evening before a day they work (see
+  /// `shifts/tomorrow-reminder.ts`). Theirs to turn off on Email settings.
+  async shiftTomorrow(
+    employeeId: string,
+    words: { title: string; body: string; link: string },
+  ): Promise<void> {
+    const employee = await this.prisma.employee.findUnique({
+      where: { id: employeeId },
+      select: { email: true, firstName: true, preferredName: true },
+    });
+    if (!employee) return;
+
+    await this.inbox.notify([employeeId], {
+      kind: NotificationKind.SHIFT_TOMORROW,
+      title: words.title,
+      body: words.body,
+      link: words.link,
+    });
+
+    await this.dispatch(employee.email, words.title, [
+      `Hello ${employee.preferredName ?? employee.firstName},`,
+      '',
+      words.body,
+      '',
+      `Your schedule: ${this.appUrl}${words.link}`,
+      '',
+      `To stop these reminders, turn off "You're on tomorrow" on Email settings: ${this.appUrl}/notifications`,
     ]);
   }
 

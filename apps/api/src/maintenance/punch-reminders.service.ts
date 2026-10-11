@@ -15,7 +15,14 @@ import { LicenseRemindersService } from './license-reminders.service';
 import { OnboardingRemindersService } from './onboarding-reminders.service';
 import { RequirementsService } from '../requirements/requirements.service';
 import { PrismaService } from '../prisma/prisma.service';
-import { localDateIn, PRACTICE_ZONE } from '../common/util/zoned-time.util';
+import {
+  addDaysTo,
+  localDateIn,
+  localTimeIn,
+  PRACTICE_ZONE,
+  zonedTimeToUtc,
+} from '../common/util/zoned-time.util';
+import { TOMORROW_REMINDER_FROM, tomorrowWords } from '../shifts/tomorrow-reminder';
 import { toUtcDate } from '../common/util/calendar-date.util';
 
 /// How long after a shift starts (or ends) somebody is reminded to clock in
@@ -56,6 +63,9 @@ export interface PunchReminderReport {
   /// People reminded about something they were asked to read or do — see
   /// `requirements/nudges.ts`. Also run nightly.
   requiredReminders: number;
+  /// People told in the evening "You're on tomorrow" — see
+  /// `shifts/tomorrow-reminder.ts`.
+  tomorrowReminders: number;
 }
 
 /**
@@ -101,6 +111,8 @@ export class PunchRemindersService {
       licenseReminders: await this.licenseReminders.send(now),
       onboardingReminders: await this.onboardingReminders.send(now),
       requiredReminders: await this.requirements.nudge(now),
+      // In the evening: each person's shifts tomorrow, unless they turned it off.
+      tomorrowReminders: await this.remindAboutTomorrow(now),
     };
     if (report.clockIn || report.clockOut) {
       this.logger.log(`Reminded ${report.clockIn} to clock in and ${report.clockOut} to clock out`);
@@ -198,6 +210,73 @@ export class PunchRemindersService {
       });
       sent += 1;
     }
+    return sent;
+  }
+
+  /// "You're on tomorrow", from 6pm: one message per person for all of
+  /// tomorrow's published shifts not yet told about. A shift added or published
+  /// later in the evening is told about on the next run; one changed after the
+  /// reminder went is already told by its own notice. Not on approved time off,
+  /// nor for a shift in a closure, nor to somebody who turned these off.
+  async remindAboutTomorrow(now: Date): Promise<number> {
+    if (localTimeIn(now, PRACTICE_ZONE) < TOMORROW_REMINDER_FROM) return 0;
+    const tomorrow = addDaysTo(localDateIn(now, PRACTICE_ZONE), 1);
+    const shifts = await this.prisma.shift.findMany({
+      where: {
+        status: ShiftStatus.PUBLISHED,
+        employeeId: { not: null },
+        employee: { employmentStatus: EmploymentStatus.ACTIVE, wantsShiftReminders: true },
+        startsAt: {
+          gte: zonedTimeToUtc(tomorrow, '00:00', PRACTICE_ZONE),
+          lt: zonedTimeToUtc(addDaysTo(tomorrow, 1), '00:00', PRACTICE_ZONE),
+        },
+        reminders: { none: { kind: PunchReminderKind.TOMORROW } },
+      },
+      select: {
+        id: true,
+        employeeId: true,
+        locationId: true,
+        startsAt: true,
+        endsAt: true,
+        isRemote: true,
+        notes: true,
+        location: { select: { name: true } },
+        jobRole: { select: { name: true } },
+      },
+      orderBy: { startsAt: 'asc' },
+    });
+
+    const byPerson = new Map<string, typeof shifts>();
+    for (const shift of shifts) {
+      const employeeId = shift.employeeId as string;
+      byPerson.set(employeeId, [...(byPerson.get(employeeId) ?? []), shift]);
+    }
+
+    let sent = 0;
+    for (const [employeeId, theirs] of byPerson) {
+      if (await this.onLeave(employeeId, theirs[0].startsAt)) continue;
+      const claimed: typeof shifts = [];
+      for (const shift of theirs) {
+        if (!shift.isRemote && (await this.closed(shift.locationId, shift.startsAt))) continue;
+        if (await this.claim(shift.id, PunchReminderKind.TOMORROW)) claimed.push(shift);
+      }
+      if (claimed.length === 0) continue;
+      await this.notifications.shiftTomorrow(employeeId, {
+        ...tomorrowWords(
+          claimed.map((shift) => ({
+            startsAt: shift.startsAt,
+            endsAt: shift.endsAt,
+            isRemote: shift.isRemote,
+            locationName: shift.location.name,
+            jobRoleName: shift.jobRole?.name ?? null,
+            notes: shift.notes,
+          })),
+        ),
+        link: `/schedule?week=${tomorrow}`,
+      });
+      sent += 1;
+    }
+    if (sent > 0) this.logger.log(`Told ${sent} people about their shifts tomorrow`);
     return sent;
   }
 

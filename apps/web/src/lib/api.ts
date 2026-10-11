@@ -1,6 +1,12 @@
 import { t } from './i18n';
 import type { ImportedPerson } from './staff-import';
 import type {
+  Review360Detail,
+  Review360QuestionInput,
+  Review360Report,
+  Review360Reports,
+  Review360Summary,
+  ReviewMeeting,
   OnCallRota,
   OnCallSchedule,
   OnCallSwap,
@@ -454,7 +460,8 @@ export interface AppNotification {
     | 'AVAILABILITY_CLASH'
     | 'COVER_REQUEST'
     | 'REQUIRED'
-    | 'ON_CALL';
+    | 'ON_CALL'
+    | 'SHIFT_TOMORROW';
   title: string;
   body: string | null;
   link: string | null;
@@ -679,13 +686,70 @@ export const api = {
     hireDate?: string;
     locationIds?: string[];
     primaryLocationId?: string;
-  }) => request<Employee>('/employees', { method: 'POST', body: JSON.stringify(body) }),
+  }) =>
+    request<Employee & { onboardingStarted?: boolean }>('/employees', {
+      method: 'POST',
+      body: JSON.stringify(body),
+    }),
   birthdays: (from: string, to: string) =>
     request<BirthdayEntry[]>(`/directory/birthdays?from=${from}&to=${to}`),
   sendWelcome: (id: string) =>
     request<{ welcomeSentAt: string }>(`/employees/${id}/welcome`, { method: 'POST' }),
   /// Everybody still here who has never signed in, and why (admins).
   notSignedIn: () => request<NotSignedIn[]>('/employees/welcome/pending'),
+
+  // 360 feedback
+  reviews360: () => request<Review360Summary[]>('/reviews360'),
+  review360Starter: () => request<{ questions: Review360QuestionInput[] }>('/reviews360/starter'),
+  createReview360: (body: {
+    title: string;
+    intro?: string | null;
+    closesOn?: string | null;
+    questions: Review360QuestionInput[];
+  }) => request<Review360Detail>('/reviews360', { method: 'POST', body: JSON.stringify(body) }),
+  review360: (id: string) => request<Review360Detail>(`/reviews360/${id}`),
+  answerReview360: (
+    id: string,
+    body: {
+      subjectId: string;
+      skip?: boolean;
+      answers?: { questionId: string; rating?: number | null; text?: string | null }[];
+    },
+  ) =>
+    request<{ done: number; total: number; selfDone: boolean }>(`/reviews360/${id}/answers`, {
+      method: 'POST',
+      body: JSON.stringify(body),
+    }),
+  closeReview360: (id: string) =>
+    request<{ closed: boolean }>(`/reviews360/${id}/close`, { method: 'POST' }),
+  deleteReview360: (id: string) =>
+    request<{ deleted: boolean }>(`/reviews360/${id}`, { method: 'DELETE' }),
+  review360Reports: (id: string) => request<Review360Reports>(`/reviews360/${id}/reports`),
+  review360Report: (id: string, subjectId: string) =>
+    request<Review360Report>(`/reviews360/${id}/reports/${subjectId}`),
+  offerReviewMeeting: (
+    id: string,
+    subjectId: string,
+    body: {
+      slots: { startsAt: string; endsAt: string }[];
+      place?: string | null;
+      note?: string | null;
+      createMeetLink?: boolean;
+    },
+  ) =>
+    request<ReviewMeeting>(`/reviews360/${id}/reports/${subjectId}/meeting`, {
+      method: 'POST',
+      body: JSON.stringify(body),
+    }),
+  myReviewMeetings: () => request<ReviewMeeting[]>('/review-meetings/mine'),
+  reviewMeeting: (id: string) => request<ReviewMeeting>(`/review-meetings/${id}`),
+  chooseReviewMeeting: (id: string, slotId: string) =>
+    request<ReviewMeeting>(`/review-meetings/${id}/choose`, {
+      method: 'POST',
+      body: JSON.stringify({ slotId }),
+    }),
+  cancelReviewMeeting: (id: string) =>
+    request<{ cancelled: boolean }>(`/review-meetings/${id}`, { method: 'DELETE' }),
   sendWelcomeToEveryone: () =>
     request<{
       sent: number;
@@ -693,7 +757,7 @@ export const api = {
       remaining: number;
     }>('/employees/welcome', { method: 'POST' }),
   importEmployees: (people: ImportedPerson[]) =>
-    request<{ created: number; ids: string[] }>('/employees/import', {
+    request<{ created: number; ids: string[]; onboardingStarted?: number }>('/employees/import', {
       method: 'POST',
       body: JSON.stringify({ people }),
     }),

@@ -35,6 +35,9 @@ export async function clearTestData(prisma: PrismaClient) {
     const availability = await tx.unavailability.deleteMany({});
     const posts = await tx.announcement.deleteMany({});
     const surveys = await tx.survey.deleteMany({});
+    // 360 feedback goes with the surveys: what was said, the reports and any
+    // times offered to talk it through (the meeting's event goes with events).
+    await tx.review360.deleteMany({});
     const events = await tx.practiceEvent.deleteMany({});
     // Their invitees go with them; the rules they repeated by, here.
     await tx.practiceEventSeries.deleteMany({});

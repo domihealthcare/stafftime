@@ -251,7 +251,11 @@ model Employee {
   /// and one admin does not need all three chasing the same lapsed licence, and
   /// an unwanted daily email is one that gets filtered, taking the one that
   /// mattered with it. Ignored for employees, who never receive it.
-  wantsDailyDigest  Boolean       @default(true)
+  wantsDailyDigest    Boolean       @default(true)
+  /// "You're on tomorrow" — the evening before each day they work, on the
+  /// bell and by email (October 2026, Dominguez: "should be able to turn off
+  /// as a user"). On by default; theirs to turn off on Email settings.
+  wantsShiftReminders Boolean       @default(true)
   /// The parts of the round-up this manager does not want (October 2026,
   /// Dominguez: "certain managers should be notified of certain things").
   /// Stored as what is left out, so a part added later reaches everybody until
@@ -259,7 +263,7 @@ model Employee {
   /// is down for still goes to everyone who gets the round-up — see
   /// `email/digest-topics.ts`. The Time off part also decides who is told of a
   /// new request as it comes in.
-  mutedDigestTopics DigestTopic[] @default([])
+  mutedDigestTopics   DigestTopic[] @default([])
 
   photo EmployeePhoto?
 
@@ -320,6 +324,13 @@ model Employee {
   createdResources          Resource[]               @relation("ResourceCreatedBy")
   unavailability            Unavailability[]
   createdSurveys            Survey[]                 @relation("SurveyCreatedBy")
+  createdReviews360         Review360[]              @relation("Review360CreatedBy")
+  reviews360About           Review360Subject[]
+  reviews360Responses       Review360Response[]
+  reviews360Rated           Review360Rated[]         @relation("Review360Rater")
+  reviews360RatedAbout      Review360Rated[]         @relation("Review360RatedSubject")
+  reviews360Meetings        Review360Meeting[]       @relation("Review360MeetingSubject")
+  reviews360MeetingsOffered Review360Meeting[]       @relation("Review360MeetingOfferedBy")
   surveysTaken              SurveyParticipant[]
   notifications             Notification[]
   assistantUsage            AssistantUsage[]
@@ -824,6 +835,8 @@ enum PunchReminderKind {
   CLOCK_IN
   /// The shift ended and they are still clocked in.
   CLOCK_OUT
+  /// The evening before: "You're on tomorrow".
+  TOMORROW
 }
 
 /// That somebody was reminded about a punch for a shift (October 2026,
@@ -2037,6 +2050,166 @@ model SurveyParticipant {
   @@map("survey_participants")
 }
 
+// ---------------------------------------------------------------------------
+// 360 feedback (October 2026, Dominguez: "a survey on all employees by all
+// employees, completely anonymous though produces a report for the employee
+// that we — as admin/managers — are able to set up a time to meet with the
+// employee and discuss").
+//
+// Everybody here when it opens is asked about everybody else, and about
+// themselves. The anonymity is the pulse surveys' own: what was said about
+// somebody (`Review360Response`, `Review360Answer`) carries no rater and no
+// time; that somebody has rated somebody (`Review360Rated`) is kept apart,
+// only so nobody rates the same person twice, with no link to the answers.
+// A person's report is for managers and admins only — never the person — and
+// only once it is closed and at least three colleagues rated them.
+//
+// `no-sensitive-data.spec.ts` fails if a rater or a timestamp is ever added
+// to the anonymous tables.
+
+model Review360 {
+  id       String       @id @default(uuid()) @db.Uuid
+  title    String
+  intro    String?
+  status   SurveyStatus @default(OPEN)
+  /// The day it closes by itself, if one was set. Closing earlier is a button.
+  closesOn DateTime?    @db.Date
+  closedAt DateTime?
+
+  createdById String?  @db.Uuid
+  createdAt   DateTime @default(now())
+
+  createdBy Employee?           @relation("Review360CreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
+  questions Review360Question[]
+  subjects  Review360Subject[]
+  responses Review360Response[]
+  rated     Review360Rated[]
+  meetings  Review360Meeting[]
+
+  @@index([status])
+  @@map("reviews_360")
+}
+
+/// One question, asked about every colleague and about yourself. RATING (1
+/// to 5) or TEXT.
+model Review360Question {
+  id         String             @id @default(uuid()) @db.Uuid
+  reviewId   String             @db.Uuid
+  position   Int
+  kind       SurveyQuestionKind
+  /// As asked about a colleague: "What do they do well?"
+  prompt     String
+  /// As asked about yourself: "What do you do well?" Null: the same words.
+  selfPrompt String?
+  /// A line under it: "Works well with others and pitches in."
+  hint       String?
+
+  review  Review360         @relation(fields: [reviewId], references: [id], onDelete: Cascade)
+  answers Review360Answer[]
+
+  @@index([reviewId, position])
+  @@map("review_360_questions")
+}
+
+/// Who it is about: everybody here when it opened.
+model Review360Subject {
+  reviewId  String @db.Uuid
+  subjectId String @db.Uuid
+
+  review  Review360 @relation(fields: [reviewId], references: [id], onDelete: Cascade)
+  subject Employee  @relation(fields: [subjectId], references: [id], onDelete: Cascade)
+
+  @@id([reviewId, subjectId])
+  @@map("review_360_subjects")
+}
+
+/// What one person said about one person — with no rater, and no time.
+/// `isSelf` is a person's answers about themselves.
+model Review360Response {
+  id        String  @id @default(uuid()) @db.Uuid
+  reviewId  String  @db.Uuid
+  subjectId String  @db.Uuid
+  isSelf    Boolean @default(false)
+
+  review  Review360         @relation(fields: [reviewId], references: [id], onDelete: Cascade)
+  subject Employee          @relation(fields: [subjectId], references: [id], onDelete: Cascade)
+  answers Review360Answer[]
+
+  @@index([reviewId, subjectId])
+  @@map("review_360_responses")
+}
+
+model Review360Answer {
+  id         String  @id @default(uuid()) @db.Uuid
+  responseId String  @db.Uuid
+  questionId String  @db.Uuid
+  rating     Int?
+  text       String?
+
+  response Review360Response @relation(fields: [responseId], references: [id], onDelete: Cascade)
+  question Review360Question @relation(fields: [questionId], references: [id], onDelete: Cascade)
+
+  @@index([questionId])
+  @@map("review_360_answers")
+}
+
+/// That somebody has rated somebody, or passed them over ("I don't work with
+/// them enough") — not what, and not when. Keeps anybody from rating the same
+/// person twice, and shows them their own progress.
+model Review360Rated {
+  reviewId  String  @db.Uuid
+  raterId   String  @db.Uuid
+  subjectId String  @db.Uuid
+  skipped   Boolean @default(false)
+
+  review  Review360 @relation(fields: [reviewId], references: [id], onDelete: Cascade)
+  rater   Employee  @relation("Review360Rater", fields: [raterId], references: [id], onDelete: Cascade)
+  subject Employee  @relation("Review360RatedSubject", fields: [subjectId], references: [id], onDelete: Cascade)
+
+  @@id([reviewId, raterId, subjectId])
+  @@map("review_360_rated")
+}
+
+/// A manager's offer to talk a person's 360 through: two to four times, of
+/// which the person picks one. The pick becomes a practice event for the two
+/// of them (`eventId`), so it reaches the bell, email and calendars.
+model Review360Meeting {
+  id             String    @id @default(uuid()) @db.Uuid
+  reviewId       String    @db.Uuid
+  subjectId      String    @db.Uuid
+  offeredById    String?   @db.Uuid
+  place          String?
+  /// Make a Google Meet link for it when a time is picked.
+  createMeetLink Boolean   @default(false)
+  note           String?
+  /// The practice event made when a time was picked.
+  eventId        String?   @db.Uuid
+  chosenAt       DateTime?
+  cancelledAt    DateTime?
+  createdAt      DateTime  @default(now())
+
+  review    Review360              @relation(fields: [reviewId], references: [id], onDelete: Cascade)
+  subject   Employee               @relation("Review360MeetingSubject", fields: [subjectId], references: [id], onDelete: Cascade)
+  offeredBy Employee?              @relation("Review360MeetingOfferedBy", fields: [offeredById], references: [id], onDelete: SetNull)
+  slots     Review360MeetingSlot[]
+
+  @@index([subjectId])
+  @@map("review_360_meetings")
+}
+
+model Review360MeetingSlot {
+  id        String   @id @default(uuid()) @db.Uuid
+  meetingId String   @db.Uuid
+  startsAt  DateTime
+  endsAt    DateTime
+  chosen    Boolean  @default(false)
+
+  meeting Review360Meeting @relation(fields: [meetingId], references: [id], onDelete: Cascade)
+
+  @@index([meetingId])
+  @@map("review_360_meeting_slots")
+}
+
 /// The suggestion box. The message and the day it arrived; nothing else.
 model Feedback {
   id         String        @id @default(uuid()) @db.Uuid
@@ -2117,6 +2290,8 @@ enum NotificationKind {
   REQUIRED
   /// The provider on-call schedule: a swap asked or answered, a day changed.
   ON_CALL
+  /// The evening before a day they work: "You're on tomorrow".
+  SHIFT_TOMORROW
 }
 
 /// Something the app wants one person to know, shown under the bell in the

@@ -1,14 +1,5 @@
-import {
-  BadRequestException,
-  ForbiddenException,
-  NotFoundException,
-} from '@nestjs/common';
-import {
-  ChecklistKind,
-  ChecklistTaskStatus,
-  Role,
-  TaskOwner,
-} from '@prisma/client';
+import { BadRequestException, ForbiddenException, NotFoundException } from '@nestjs/common';
+import { ChecklistKind, ChecklistTaskStatus, Role, TaskOwner } from '@prisma/client';
 import { ChecklistsService } from './checklists.service';
 
 const admin = { id: 'adm-1', email: 'admin@domihealthcare.com', role: Role.ADMIN };
@@ -513,5 +504,80 @@ describe('ChecklistsService — what the screens get told', () => {
 
     expect(result.progress).toEqual({ total: 0, settled: 0, pending: 0, percent: 0 });
     expect(result.nextTask).toBeNull();
+  });
+});
+
+describe('starting onboarding by itself', () => {
+  const daysFromToday = (days: number) => {
+    const today = new Date(
+      `${new Intl.DateTimeFormat('en-CA', { timeZone: 'America/New_York' }).format(new Date())}T00:00:00.000Z`,
+    );
+    return new Date(today.getTime() + days * 86_400_000);
+  };
+
+  function setup(
+    person: Partial<{
+      hireDate: Date | null;
+      terminationDate: Date | null;
+      externalId: string | null;
+      onboardings: number;
+    }> = {},
+    template: unknown = { id: 'tpl-1', _count: { tasks: 3 } },
+  ) {
+    const prisma = {
+      employee: {
+        findUnique: jest.fn().mockResolvedValue({
+          hireDate: 'hireDate' in person ? person.hireDate : daysFromToday(3),
+          terminationDate: person.terminationDate ?? null,
+          externalId: person.externalId ?? null,
+          _count: { checklists: person.onboardings ?? 0 },
+        }),
+      },
+      checklistTemplate: { findFirst: jest.fn().mockResolvedValue(template) },
+    };
+    const service = new ChecklistsService(prisma as never, { notify: jest.fn() } as never);
+    const start = jest.spyOn(service, 'start').mockResolvedValue({} as never);
+    return { service, start };
+  }
+
+  it('starts the default onboarding template for somebody new with a hire date', async () => {
+    const { service, start } = setup();
+    await expect(service.startOnboardingIfNew('emp-1', admin)).resolves.toBe(true);
+    expect(start).toHaveBeenCalledWith(
+      { employeeId: 'emp-1', kind: ChecklistKind.ONBOARDING, templateId: 'tpl-1' },
+      admin,
+    );
+  });
+
+  it('counts somebody hired up to 30 days ago as new, not longer', async () => {
+    expect(
+      await setup({ hireDate: daysFromToday(-30) }).service.startOnboardingIfNew('e', admin),
+    ).toBe(true);
+    expect(
+      await setup({ hireDate: daysFromToday(-31) }).service.startOnboardingIfNew('e', admin),
+    ).toBe(false);
+  });
+
+  it('does nothing with no hire date, after leaving, for demo staff, or a second time', async () => {
+    for (const person of [
+      { hireDate: null },
+      { terminationDate: daysFromToday(10) },
+      { externalId: 'demo:frankie' },
+      { onboardings: 1 },
+    ]) {
+      const { service, start } = setup(person);
+      await expect(service.startOnboardingIfNew('emp-1', admin)).resolves.toBe(false);
+      expect(start).not.toHaveBeenCalled();
+    }
+  });
+
+  it('does nothing, and refuses nothing, with no default template or an empty one', async () => {
+    expect(await setup({}, null).service.startOnboardingIfNew('emp-1', admin)).toBe(false);
+    expect(
+      await setup({}, { id: 'tpl-1', _count: { tasks: 0 } }).service.startOnboardingIfNew(
+        'emp-1',
+        admin,
+      ),
+    ).toBe(false);
   });
 });

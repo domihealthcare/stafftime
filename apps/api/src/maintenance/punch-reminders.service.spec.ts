@@ -17,7 +17,7 @@ describe('PunchRemindersService', () => {
 
   function build(
     options: {
-      starting?: (typeof nineOClock)[];
+      starting?: object[];
       openPunches?: { employeeId: string; clockInAt: Date }[];
       theirShifts?: {
         id: string;
@@ -63,6 +63,7 @@ describe('PunchRemindersService', () => {
     const notifications = {
       missedClockIn: jest.fn().mockResolvedValue(undefined),
       missedClockOut: jest.fn().mockResolvedValue(undefined),
+      shiftTomorrow: jest.fn().mockResolvedValue(undefined),
     };
     return {
       service: new PunchRemindersService(
@@ -91,6 +92,7 @@ describe('PunchRemindersService', () => {
       licenseReminders: 0,
       onboardingReminders: 0,
       requiredReminders: 0,
+      tomorrowReminders: 0,
     });
     expect(autoClockOut.closeForgotten).toHaveBeenCalledWith({ now });
     // Before looking for shifts nobody has clocked in for.
@@ -111,6 +113,7 @@ describe('PunchRemindersService', () => {
         licenseReminders: 0,
         onboardingReminders: 0,
         requiredReminders: 0,
+        tomorrowReminders: 0,
       });
       expect(prisma.punchReminder.create).toHaveBeenCalledWith({
         data: { shiftId: 'shift-nine', kind: 'CLOCK_IN' },
@@ -150,6 +153,7 @@ describe('PunchRemindersService', () => {
         licenseReminders: 0,
         onboardingReminders: 0,
         requiredReminders: 0,
+        tomorrowReminders: 0,
       });
       expect(notifications.missedClockIn).not.toHaveBeenCalled();
       expect(prisma.punchReminder.create).not.toHaveBeenCalled();
@@ -219,6 +223,7 @@ describe('PunchRemindersService', () => {
         licenseReminders: 0,
         onboardingReminders: 0,
         requiredReminders: 0,
+        tomorrowReminders: 0,
       });
       expect(notifications.missedClockIn).not.toHaveBeenCalled();
     });
@@ -249,6 +254,7 @@ describe('PunchRemindersService', () => {
         licenseReminders: 0,
         onboardingReminders: 0,
         requiredReminders: 0,
+        tomorrowReminders: 0,
       });
       expect(prisma.punchReminder.create).toHaveBeenCalledWith({
         data: { shiftId: 'shift-early', kind: 'CLOCK_OUT' },
@@ -319,6 +325,88 @@ describe('PunchRemindersService', () => {
       await service.run(now);
       expect(notifications.missedClockOut).not.toHaveBeenCalled();
       expect(prisma.punchReminder.create).not.toHaveBeenCalled();
+    });
+  });
+
+  describe("you're on tomorrow", () => {
+    // 6:30pm in New Jersey on Mon, Oct 5.
+    const evening = at('2026-10-05T22:30:00.000Z');
+    const tomorrowSeven = {
+      id: 'shift-tue',
+      employeeId: 'emp-frankie',
+      locationId: 'loc-wny',
+      startsAt: at('2026-10-06T11:00:00.000Z'),
+      endsAt: at('2026-10-06T18:00:00.000Z'),
+      isRemote: false,
+      notes: '7-12 upstairs',
+      location: { name: 'West New York' },
+      jobRole: { name: 'Front Desk' },
+    };
+
+    it('tells each person once, in the evening, with hours, place, role and note', async () => {
+      const { service, prisma, notifications } = build({ starting: [tomorrowSeven] });
+      await expect(service.remindAboutTomorrow(evening)).resolves.toBe(1);
+      expect(prisma.shift.findMany.mock.calls[0][0].where).toMatchObject({
+        status: 'PUBLISHED',
+        employee: { employmentStatus: 'ACTIVE', wantsShiftReminders: true },
+        startsAt: {
+          gte: at('2026-10-06T04:00:00.000Z'),
+          lt: at('2026-10-07T04:00:00.000Z'),
+        },
+        reminders: { none: { kind: 'TOMORROW' } },
+      });
+      expect(prisma.punchReminder.create).toHaveBeenCalledWith({
+        data: { shiftId: 'shift-tue', kind: 'TOMORROW' },
+      });
+      expect(notifications.shiftTomorrow).toHaveBeenCalledWith('emp-frankie', {
+        title: "You're on tomorrow, 7:00 AM–2:00 PM at West New York",
+        body: 'Tuesday, Oct 6\n7:00 AM–2:00 PM at West New York (Front Desk)\nNote: 7-12 upstairs',
+        link: '/schedule?week=2026-10-06',
+      });
+    });
+
+    it('puts two shifts in one message', async () => {
+      const { service, notifications } = build({
+        starting: [
+          tomorrowSeven,
+          {
+            ...tomorrowSeven,
+            id: 'shift-tue-2',
+            startsAt: at('2026-10-06T19:00:00.000Z'),
+            endsAt: at('2026-10-06T22:00:00.000Z'),
+            isRemote: true,
+            notes: null,
+          },
+        ],
+      });
+      await service.remindAboutTomorrow(evening);
+      expect(notifications.shiftTomorrow).toHaveBeenCalledTimes(1);
+      expect(notifications.shiftTomorrow.mock.calls[0][1].title).toBe(
+        "You're on tomorrow: 2 shifts, from 7:00 AM",
+      );
+      expect(notifications.shiftTomorrow.mock.calls[0][1].body).toContain(
+        '3:00 PM–6:00 PM working from home (Front Desk)',
+      );
+    });
+
+    it('waits until 6pm', async () => {
+      const { service, prisma } = build({ starting: [tomorrowSeven] });
+      await expect(service.remindAboutTomorrow(now)).resolves.toBe(0);
+      expect(prisma.shift.findMany).not.toHaveBeenCalled();
+    });
+
+    it('says nothing on time off, in a closure, or twice', async () => {
+      const onLeave = build({ starting: [tomorrowSeven], onLeave: 1 });
+      await onLeave.service.remindAboutTomorrow(evening);
+      expect(onLeave.notifications.shiftTomorrow).not.toHaveBeenCalled();
+
+      const closed = build({ starting: [tomorrowSeven], closures: 1 });
+      await closed.service.remindAboutTomorrow(evening);
+      expect(closed.notifications.shiftTomorrow).not.toHaveBeenCalled();
+
+      const twice = build({ starting: [tomorrowSeven], alreadyClaimed: true });
+      await twice.service.remindAboutTomorrow(evening);
+      expect(twice.notifications.shiftTomorrow).not.toHaveBeenCalled();
     });
   });
 });
