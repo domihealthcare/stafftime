@@ -103,6 +103,10 @@ const shiftFor = async (employeeId, fromMinutes, toMinutes, { clamp = true } = {
 
 // Frankie's only shift today is the suite's: started 10 minutes ago.
 sql(`delete from shifts where "employeeId" = '${frankieId}' and "startsAt" < now() + interval '1 day' and "endsAt" > now() - interval '1 day'`);
+// Earlier suites' punches count as "already clocked in" for these shifts:
+// run-all.sh closes an open one at an hour after it began, which can still be
+// running now. In CI, where all suites run within the hour, it was.
+sql(`delete from time_entries where "employeeId" in ('${frankieId}', '${maxId}') and ("clockOutAt" is null or "clockOutAt" > now() - interval '3 hours')`);
 const frankieShift = await shiftFor(frankieId, -10, 40);
 const frankie = await signIn('frontdesk@domihealthcare.com');
 
