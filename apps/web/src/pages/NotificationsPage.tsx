@@ -21,6 +21,7 @@ export function NotificationsPage() {
   const subscribed = pending.wantsDailyDigest ?? employee?.wantsDailyDigest ?? true;
   const muted = pending.mutedDigestTopics ?? employee?.mutedDigestTopics ?? [];
   const shiftReminders = pending.wantsShiftReminders ?? employee?.wantsShiftReminders ?? true;
+  const weeklySummary = pending.wantsWeeklySummary ?? employee?.wantsWeeklySummary ?? true;
 
   const loadTeam = useCallback(async () => {
     if (!isManager) return;
@@ -108,6 +109,29 @@ export function NotificationsPage() {
         {!shiftReminders && (
           <p className="mt-3 text-xs text-slate-500">
             Off. Your shifts are still on your Schedule, and you are still told when one changes.
+          </p>
+        )}
+      </Card>
+
+      <Card className="mb-4 p-4" testId="weekly-summary">
+        <div className="flex flex-wrap items-start justify-between gap-3">
+          <div className="min-w-0">
+            <h2 className="text-sm font-semibold text-slate-900">Your week</h2>
+            <p className="mt-1 text-sm text-slate-600">
+              On Sunday evening, a note under the bell and an email with the hours you worked last
+              week and your shifts this week.
+            </p>
+          </div>
+          <Switch
+            label="Your week"
+            on={weeklySummary}
+            disabled={busy}
+            onChange={(next) => void saveOwn({ wantsWeeklySummary: next })}
+          />
+        </div>
+        {!weeklySummary && (
+          <p className="mt-3 text-xs text-slate-500">
+            Off. Your hours are on your Timesheet and your shifts on your Schedule.
           </p>
         )}
       </Card>

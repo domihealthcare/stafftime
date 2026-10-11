@@ -256,6 +256,9 @@ model Employee {
   /// bell and by email (October 2026, Dominguez: "should be able to turn off
   /// as a user"). On by default; theirs to turn off on Email settings.
   wantsShiftReminders Boolean       @default(true)
+  /// "Your week" on Sunday evening — hours worked, next week's shifts — on
+  /// the bell and by email (October 2026, Dominguez). Theirs to turn off.
+  wantsWeeklySummary  Boolean       @default(true)
   /// The parts of the round-up this manager does not want (October 2026,
   /// Dominguez: "certain managers should be notified of certain things").
   /// Stored as what is left out, so a part added later reaches everybody until
@@ -331,6 +334,10 @@ model Employee {
   reviews360RatedAbout      Review360Rated[]         @relation("Review360RatedSubject")
   reviews360Meetings        Review360Meeting[]       @relation("Review360MeetingSubject")
   reviews360MeetingsOffered Review360Meeting[]       @relation("Review360MeetingOfferedBy")
+  runningLate               RunningLate[]
+  correctionRequests        CorrectionRequest[]      @relation("CorrectionRequestedBy")
+  correctionsDecided        CorrectionRequest[]      @relation("CorrectionDecidedBy")
+  weeklySummaries           WeeklySummary[]
   surveysTaken              SurveyParticipant[]
   notifications             Notification[]
   assistantUsage            AssistantUsage[]
@@ -761,6 +768,7 @@ model Shift {
   series      ShiftSeries?    @relation(fields: [seriesId], references: [id], onDelete: SetNull)
   timeEntries TimeEntry[]
   reminders   PunchReminder[]
+  runningLate RunningLate?
 
   /// "Ask who can cover" (October 2026): people asked to take it while open.
   coverRequests CoverRequest[]
@@ -837,6 +845,8 @@ enum PunchReminderKind {
   CLOCK_OUT
   /// The evening before: "You're on tomorrow".
   TOMORROW
+  /// To the office's managers: 30 minutes in, still no clock-in.
+  NO_SHOW
 }
 
 /// That somebody was reminded about a punch for a shift (October 2026,
@@ -938,10 +948,75 @@ model TimeEntry {
 
   closingRecord ClosingRecord?
 
+  correctionRequests CorrectionRequest[]
+
   @@index([employeeId, clockInAt])
   @@index([locationId, clockInAt])
   @@index([shiftId])
   @@map("time_entries")
+}
+
+/// "Running late" (October 2026, Dominguez): somebody tells the managers,
+/// from Home, that they will be about this many minutes late for a shift.
+/// Once per shift. Shown beside the late flag on the timesheet, and it holds
+/// back the managers' no-show alert until that time has passed.
+model RunningLate {
+  id         String   @id @default(uuid()) @db.Uuid
+  shiftId    String   @unique @db.Uuid
+  employeeId String   @db.Uuid
+  minutes    Int
+  createdAt  DateTime @default(now())
+
+  shift    Shift    @relation(fields: [shiftId], references: [id], onDelete: Cascade)
+  employee Employee @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+
+  @@map("running_late")
+}
+
+enum CorrectionStatus {
+  PENDING
+  APPROVED
+  DECLINED
+}
+
+/// "Ask for a correction" (October 2026, Dominguez): somebody asks for the
+/// times on one of their own entries to be fixed — forgot to clock out, the
+/// phone died — with a reason. A manager approves it, which makes it an
+/// ordinary edit with that reason, or declines it with one.
+model CorrectionRequest {
+  id            String           @id @default(uuid()) @db.Uuid
+  timeEntryId   String           @db.Uuid
+  employeeId    String           @db.Uuid
+  /// The times asked for.
+  clockInAt     DateTime
+  clockOutAt    DateTime
+  reason        String
+  status        CorrectionStatus @default(PENDING)
+  decidedById   String?          @db.Uuid
+  decidedAt     DateTime?
+  declineReason String?
+  createdAt     DateTime         @default(now())
+
+  timeEntry TimeEntry @relation(fields: [timeEntryId], references: [id], onDelete: Cascade)
+  employee  Employee  @relation("CorrectionRequestedBy", fields: [employeeId], references: [id], onDelete: Cascade)
+  decidedBy Employee? @relation("CorrectionDecidedBy", fields: [decidedById], references: [id], onDelete: SetNull)
+
+  @@index([status, createdAt])
+  @@index([timeEntryId])
+  @@map("correction_requests")
+}
+
+/// "Your week" sent to somebody for the week starting `weekStart` (a Sunday)
+/// — claimed before it is sent, so the five-minute timer sends it once.
+model WeeklySummary {
+  employeeId String   @db.Uuid
+  weekStart  DateTime @db.Date
+  sentAt     DateTime @default(now())
+
+  employee Employee @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+
+  @@id([employeeId, weekStart])
+  @@map("weekly_summaries")
 }
 
 // ---------------------------------------------------------------------------
@@ -2292,6 +2367,14 @@ enum NotificationKind {
   ON_CALL
   /// The evening before a day they work: "You're on tomorrow".
   SHIFT_TOMORROW
+  /// To managers: somebody said they are running late.
+  RUNNING_LATE
+  /// To managers: 30 minutes into a shift, nobody has clocked in for it.
+  NO_SHOW
+  /// A correction asked for (to managers), or decided (to the person).
+  CORRECTION
+  /// "Your week", on Sunday evening.
+  WEEKLY_SUMMARY
 }
 
 /// Something the app wants one person to know, shown under the bell in the

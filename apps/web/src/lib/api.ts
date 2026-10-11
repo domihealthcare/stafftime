@@ -1,6 +1,8 @@
 import { t } from './i18n';
 import type { ImportedPerson } from './staff-import';
 import type {
+  CleanTimeOffCheck,
+  CorrectionRequest,
   Review360Detail,
   Review360QuestionInput,
   Review360Report,
@@ -740,6 +742,36 @@ export const api = {
     request<ReviewMeeting>(`/reviews360/${id}/reports/${subjectId}/meeting`, {
       method: 'POST',
       body: JSON.stringify(body),
+    }),
+  askCorrection: (
+    entryId: string,
+    body: { clockInAt: string; clockOutAt: string; reason: string },
+  ) =>
+    request<CorrectionRequest>(`/time-entries/${entryId}/correction`, {
+      method: 'POST',
+      body: JSON.stringify(body),
+    }),
+  corrections: () => request<CorrectionRequest[]>('/corrections'),
+  approveCorrection: (id: string, acknowledgeExported = false) =>
+    request<{ approved: boolean }>(`/corrections/${id}/approve`, {
+      method: 'POST',
+      body: JSON.stringify({ acknowledgeExported }),
+    }),
+  declineCorrection: (id: string, reason: string) =>
+    request<{ declined: boolean }>(`/corrections/${id}/decline`, {
+      method: 'POST',
+      body: JSON.stringify({ reason }),
+    }),
+  cleanTimeOff: () => request<CleanTimeOffCheck[]>('/pto/clean'),
+  approveCleanTimeOff: (ids: string[]) =>
+    request<{ approved: number; left: string[] }>('/pto/approve-clean', {
+      method: 'POST',
+      body: JSON.stringify({ ids }),
+    }),
+  runningLate: (shiftId: string, minutes: number) =>
+    request<{ minutes: number; createdAt: string }>(`/shifts/${shiftId}/running-late`, {
+      method: 'POST',
+      body: JSON.stringify({ minutes }),
     }),
   myReviewMeetings: () => request<ReviewMeeting[]>('/review-meetings/mine'),
   reviewMeeting: (id: string) => request<ReviewMeeting>(`/review-meetings/${id}`),

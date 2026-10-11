@@ -149,6 +149,7 @@ export class AuthController {
       data: {
         wantsDailyDigest: dto.wantsDailyDigest,
         wantsShiftReminders: dto.wantsShiftReminders,
+        wantsWeeklySummary: dto.wantsWeeklySummary,
         mutedDigestTopics: dto.mutedDigestTopics,
       },
     });
@@ -205,6 +206,7 @@ export class AuthController {
         mustChangePassword: true,
         wantsDailyDigest: true,
         wantsShiftReminders: true,
+        wantsWeeklySummary: true,
         mutedDigestTopics: true,
         canManageProductivity: true,
         canSeeRotaCost: true,

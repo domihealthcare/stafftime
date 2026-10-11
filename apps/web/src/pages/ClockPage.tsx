@@ -14,6 +14,7 @@ import type {
 } from '../lib/types';
 import { lunchesAt, lunchWords } from '../components/LunchIcon';
 import { ClosingChecklistForm } from '../components/ClosingChecklistForm';
+import { RunningLate } from '../components/RunningLate';
 import { BirthdaysThisWeek } from '../components/BirthdaysThisWeek';
 import {
   ComingUp,
@@ -367,6 +368,7 @@ export function ClockPage() {
               ) : (
                 <p className="mt-1 text-sm text-slate-500">{t('No shift scheduled today.')}</p>
               )}
+              {todaysShift && <RunningLate key={todaysShift.id} shift={todaysShift} />}
             </>
           )}
           {status !== 'loading' && todaysShift && !todaysShift.isRemote && (

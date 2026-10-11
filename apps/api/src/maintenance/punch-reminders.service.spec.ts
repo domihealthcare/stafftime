@@ -18,6 +18,7 @@ describe('PunchRemindersService', () => {
   function build(
     options: {
       starting?: object[];
+      noShow?: object[];
       openPunches?: { employeeId: string; clockInAt: Date }[];
       theirShifts?: {
         id: string;
@@ -34,17 +35,26 @@ describe('PunchRemindersService', () => {
   ) {
     const prisma = {
       shift: {
-        findMany: jest
-          .fn()
-          // The first call finds shifts that have started; the rest, a
-          // person's shifts since an open punch.
-          .mockResolvedValueOnce(options.starting ?? [])
-          .mockResolvedValue(options.theirShifts ?? []),
+        // The managers' no-show look has its own answer; otherwise the first
+        // call finds shifts that have started, the rest a person's shifts
+        // since an open punch.
+        findMany: (() => {
+          let first = true;
+          return jest.fn(async (args: { where?: { reminders?: { none?: { kind?: string } } } }) => {
+            if (args?.where?.reminders?.none?.kind === 'NO_SHOW') return options.noShow ?? [];
+            if (first) {
+              first = false;
+              return options.starting ?? [];
+            }
+            return options.theirShifts ?? [];
+          });
+        })(),
       },
       timeEntry: {
         findMany: jest.fn().mockResolvedValue(options.openPunches ?? []),
         count: jest.fn().mockResolvedValue(options.punches ?? 0),
       },
+      employee: { findMany: jest.fn().mockResolvedValue([{ id: 'mgr-nb' }]) },
       ptoRequest: { count: jest.fn().mockResolvedValue(options.onLeave ?? 0) },
       practiceEvent: { count: jest.fn().mockResolvedValue(options.closures ?? 0) },
       punchReminder: {
@@ -64,6 +74,7 @@ describe('PunchRemindersService', () => {
       missedClockIn: jest.fn().mockResolvedValue(undefined),
       missedClockOut: jest.fn().mockResolvedValue(undefined),
       shiftTomorrow: jest.fn().mockResolvedValue(undefined),
+      bell: jest.fn().mockResolvedValue(undefined),
     };
     return {
       service: new PunchRemindersService(
@@ -74,6 +85,7 @@ describe('PunchRemindersService', () => {
         { send: jest.fn().mockResolvedValue(0) } as never,
         { send: jest.fn().mockResolvedValue(0) } as never,
         { nudge: jest.fn().mockResolvedValue(0) } as never,
+        { send: jest.fn().mockResolvedValue(0) } as never,
       ),
       autoClockOut,
       prisma,
@@ -93,6 +105,8 @@ describe('PunchRemindersService', () => {
       onboardingReminders: 0,
       requiredReminders: 0,
       tomorrowReminders: 0,
+      noShows: 0,
+      weeklySummaries: 0,
     });
     expect(autoClockOut.closeForgotten).toHaveBeenCalledWith({ now });
     // Before looking for shifts nobody has clocked in for.
@@ -114,6 +128,8 @@ describe('PunchRemindersService', () => {
         onboardingReminders: 0,
         requiredReminders: 0,
         tomorrowReminders: 0,
+        noShows: 0,
+        weeklySummaries: 0,
       });
       expect(prisma.punchReminder.create).toHaveBeenCalledWith({
         data: { shiftId: 'shift-nine', kind: 'CLOCK_IN' },
@@ -154,6 +170,8 @@ describe('PunchRemindersService', () => {
         onboardingReminders: 0,
         requiredReminders: 0,
         tomorrowReminders: 0,
+        noShows: 0,
+        weeklySummaries: 0,
       });
       expect(notifications.missedClockIn).not.toHaveBeenCalled();
       expect(prisma.punchReminder.create).not.toHaveBeenCalled();
@@ -224,6 +242,8 @@ describe('PunchRemindersService', () => {
         onboardingReminders: 0,
         requiredReminders: 0,
         tomorrowReminders: 0,
+        noShows: 0,
+        weeklySummaries: 0,
       });
       expect(notifications.missedClockIn).not.toHaveBeenCalled();
     });
@@ -255,6 +275,8 @@ describe('PunchRemindersService', () => {
         onboardingReminders: 0,
         requiredReminders: 0,
         tomorrowReminders: 0,
+        noShows: 0,
+        weeklySummaries: 0,
       });
       expect(prisma.punchReminder.create).toHaveBeenCalledWith({
         data: { shiftId: 'shift-early', kind: 'CLOCK_OUT' },
@@ -407,6 +429,54 @@ describe('PunchRemindersService', () => {
       const twice = build({ starting: [tomorrowSeven], alreadyClaimed: true });
       await twice.service.remindAboutTomorrow(evening);
       expect(twice.notifications.shiftTomorrow).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('no-shows, to the managers', () => {
+    // 9:40 in New Jersey: the 9 o'clock shift is 40 minutes in.
+    const nineForty = at('2026-10-05T13:40:00.000Z');
+    const nineShift = {
+      ...nineOClock,
+      employee: { firstName: 'Frankie', preferredName: null, lastName: 'Front-Desk' },
+      runningLate: null as { minutes: number } | null,
+    };
+
+    it("tells the office's managers once, 30 minutes in, on the bell", async () => {
+      const { service, prisma, notifications } = build({ noShow: [nineShift] });
+      await expect(service.tellManagersOfNoShows(nineForty)).resolves.toBe(1);
+      const where = prisma.shift.findMany.mock.calls[0][0].where;
+      expect(where).toMatchObject({
+        status: 'PUBLISHED',
+        startsAt: { gte: at('2026-10-05T11:40:00.000Z'), lte: at('2026-10-05T13:10:00.000Z') },
+        reminders: { none: { kind: 'NO_SHOW' } },
+      });
+      expect(prisma.punchReminder.create).toHaveBeenCalledWith({
+        data: { shiftId: 'shift-nine', kind: 'NO_SHOW' },
+      });
+      expect(notifications.bell).toHaveBeenCalledWith(['mgr-nb'], 'NO_SHOW', {
+        title: "Frankie Front-Desk isn't clocked in for 9:00 AM at North Bergen",
+        body: expect.stringContaining('nothing has been heard'),
+        link: '/directory',
+      });
+    });
+
+    it('waits out a "running late" plus a quarter of an hour', async () => {
+      const said = { ...nineShift, runningLate: { minutes: 20 } };
+      // 20 minutes late plus 15: nothing before 9:35.
+      const early = build({ noShow: [said] });
+      await early.service.tellManagersOfNoShows(at('2026-10-05T13:34:00.000Z'));
+      expect(early.notifications.bell).not.toHaveBeenCalled();
+      const past = build({ noShow: [said] });
+      await past.service.tellManagersOfNoShows(nineForty);
+      expect(past.notifications.bell.mock.calls[0][2].body).toContain('about 20 minutes late');
+    });
+
+    it('says nothing once they have clocked in, on time off, or in a closure', async () => {
+      for (const extra of [{ punches: 1 }, { onLeave: 1 }, { closures: 1 }]) {
+        const { service, notifications } = build({ noShow: [nineShift], ...extra });
+        await service.tellManagersOfNoShows(nineForty);
+        expect(notifications.bell).not.toHaveBeenCalled();
+      }
     });
   });
 });

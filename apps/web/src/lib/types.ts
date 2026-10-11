@@ -94,6 +94,8 @@ export interface Employee extends EmployeeSummary {
   wantsDailyDigest?: boolean;
   /// "You're on tomorrow" the evening before a day they work. Their own.
   wantsShiftReminders?: boolean;
+  /// "Your week" on Sunday evening. Their own.
+  wantsWeeklySummary?: boolean;
   /// The parts of the round-up they leave out (`lib/digest-topics.ts`).
   mutedDigestTopics?: DigestTopic[];
   lastLoginAt?: string | null;
@@ -144,6 +146,8 @@ export interface Shift {
   } | null;
   location?: LocationSummary;
   jobRole?: { id: string; name: string; colour: string } | null;
+  /// "Running late" said for it, from Home.
+  runningLate?: { minutes: number; createdAt: string } | null;
 }
 
 export interface TimeEntry {
@@ -181,7 +185,20 @@ export interface TimeEntry {
   handEntryFinding?: string | null;
   employee?: { id: string; firstName: string; lastName: string };
   location?: LocationSummary;
-  shift?: { id: string; startsAt: string; endsAt: string } | null;
+  shift?: {
+    id: string;
+    startsAt: string;
+    endsAt: string;
+    runningLate?: { minutes: number; createdAt: string } | null;
+  } | null;
+  /// A correction they asked for, still waiting for a manager.
+  correctionRequests?: {
+    id: string;
+    clockInAt: string;
+    clockOutAt: string;
+    reason: string;
+    createdAt: string;
+  }[];
   /// Present on every entry the timesheet screens read.
   payroll?: PayrollState;
 }
@@ -527,6 +544,7 @@ export interface Attention {
   missingPunches: string[];
   missedShifts: string[];
   payrollDue: string[];
+  correctionsAsked: string[];
   regularShiftClashes: string[];
   belowMinimum: string[];
   undecidedTimeOff: string[];
@@ -1518,6 +1536,7 @@ export type DigestTopic =
 export interface DigestPreferences {
   wantsDailyDigest?: boolean;
   wantsShiftReminders?: boolean;
+  wantsWeeklySummary?: boolean;
   mutedDigestTopics?: DigestTopic[];
 }
 
@@ -1880,4 +1899,29 @@ export interface Review360Report {
   available: boolean;
   reason?: string;
   questions?: Review360ReportQuestion[];
+}
+
+/// A correction somebody asked for, waiting for a manager.
+export interface CorrectionRequest {
+  id: string;
+  timeEntryId: string;
+  clockInAt: string;
+  clockOutAt: string;
+  reason: string;
+  status: 'PENDING' | 'APPROVED' | 'DECLINED';
+  createdAt: string;
+  employee: { id: string; firstName: string; preferredName: string | null; lastName: string };
+  timeEntry: {
+    clockInAt: string;
+    clockOutAt: string | null;
+    autoClockedOutAt: string | null;
+    location: { name: string };
+  };
+}
+
+/// A waiting time-off request, clean or with why not.
+export interface CleanTimeOffCheck {
+  id: string;
+  clean: boolean;
+  why: string | null;
 }

@@ -9,6 +9,7 @@ import {
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import {
+  CorrectionStatus,
   ClockMethod,
   EmploymentStatus,
   PayrollExportStatus,
@@ -85,7 +86,22 @@ const TIME_ENTRY_SELECT = {
   updatedAt: true,
   employee: { select: { id: true, firstName: true, lastName: true } },
   location: { select: { id: true, name: true, slug: true, timezone: true } },
-  shift: { select: { id: true, startsAt: true, endsAt: true } },
+  shift: {
+    select: {
+      id: true,
+      startsAt: true,
+      endsAt: true,
+      /// They said they would be late, from Home (shown beside the flag).
+      runningLate: { select: { minutes: true, createdAt: true } },
+    },
+  },
+  /// A correction they asked for, still waiting for a manager.
+  correctionRequests: {
+    where: { status: CorrectionStatus.PENDING },
+    select: { id: true, clockInAt: true, clockOutAt: true, reason: true, createdAt: true },
+    orderBy: { createdAt: 'desc' },
+    take: 1,
+  },
   /// Which payroll runs these hours went out in. Voided runs are excluded:
   /// they are on the record but they are no longer what payroll was paid.
   payrollExports: {
