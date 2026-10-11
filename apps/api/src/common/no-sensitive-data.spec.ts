@@ -226,7 +226,7 @@ describe('what this app deliberately does not store', () => {
   /// Surveys and the suggestion box were promised to be truly anonymous: the
   /// easiest way to break that is a harmless-looking `employeeId` or
   /// `createdAt` on the wrong table.
-  it.each(['SurveyResponse', 'SurveyAnswer', 'Feedback'])(
+  it.each(['SurveyResponse', 'SurveyAnswer', 'Feedback', 'Review360Response', 'Review360Answer'])(
     'keeps %s free of anything that says who, or exactly when',
     (name) => {
       const body = model(name);
@@ -250,6 +250,29 @@ describe('what this app deliberately does not store', () => {
     const body = model('SurveyParticipant');
     expect(body).not.toMatch(/response/i);
     expect(body).not.toMatch(/createdAt|answeredAt/);
+  });
+
+  /// 360 feedback (October 2026): what was said about somebody names who it
+  /// is about, never who said it. Exactly these fields, so a rater or a time
+  /// cannot slip in under another name.
+  it('keeps 360 answers to who they are about, never who said them or when', () => {
+    const fieldsOf = (name: string) =>
+      model(name)
+        .split('\n')
+        .map((line) => line.trim())
+        .filter((line) => line && !line.startsWith('//') && !line.startsWith('@@'))
+        .map((line) => line.split(/\s+/)[0])
+        .sort();
+    expect(fieldsOf('Review360Response')).toEqual(
+      ['answers', 'id', 'isSelf', 'review', 'reviewId', 'subject', 'subjectId'].sort(),
+    );
+    expect(fieldsOf('Review360Answer')).toEqual(
+      ['id', 'question', 'questionId', 'rating', 'response', 'responseId', 'text'].sort(),
+    );
+    // That somebody rated somebody: no answers, no time.
+    expect(fieldsOf('Review360Rated')).toEqual(
+      ['rater', 'raterId', 'review', 'reviewId', 'skipped', 'subject', 'subjectId'].sort(),
+    );
   });
 
   /// The clinical forms (the 99483 cognitive assessment, September 2026) are

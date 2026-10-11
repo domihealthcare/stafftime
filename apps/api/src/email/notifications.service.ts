@@ -145,9 +145,19 @@ export class NotificationsService {
     employeeIds: string[],
     words: { title: string; body: string; link: string },
   ): Promise<void> {
+    await this.personal(employeeIds, NotificationKind.COVER_REQUEST, words);
+  }
+
+  /// Something for these people to act on, on the bell and by email, linking
+  /// to where it is done — asked to cover, offered times to meet.
+  async personal(
+    employeeIds: string[],
+    kind: NotificationKind,
+    words: { title: string; body: string; link: string },
+  ): Promise<void> {
     if (employeeIds.length === 0) return;
     await this.inbox.notify(employeeIds, {
-      kind: NotificationKind.COVER_REQUEST,
+      kind,
       title: words.title,
       body: words.body,
       link: words.link,
