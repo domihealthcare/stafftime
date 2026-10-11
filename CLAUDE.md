@@ -809,8 +809,9 @@ Beyond the phases, the parts worth knowing about before picking up work:
   no carrier registration, no cost. **An admin switches it on once**,
   Practice settings → **Phone notifications** → **Switch on for the
   practice**, which makes the app's own key pair (`PushKeys`; Vercel's
-  `VAPID_PUBLIC_KEY` / `VAPID_PRIVATE_KEY` win if ever set). **Not switched
-  on on the live site yet.** Devices in `PushSubscription` (only real push
+  `VAPID_PUBLIC_KEY` / `VAPID_PRIVATE_KEY` win if ever set). **Switched on
+  on the live site** by Dominguez the night it went live (10 October 2026,
+  version `bc9ca5a`). Devices in `PushSubscription` (only real push
   services accepted; a device the service says is gone is forgotten);
   `email/push.service.ts` (`web-push` 3.6.7, pinned), `public/push-sw.js`,
   `lib/push.ts`, `components/PhoneNotificationsCard.tsx`, migration
