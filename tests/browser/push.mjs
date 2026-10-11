@@ -32,7 +32,12 @@ const step = async (name, fn) => {
  * them on first, in Practice settings; run-all.sh forgets the key pair.
  */
 async function signIn(email) {
-  const ctx = await browser.newContext({ viewport: { width: 1280, height: 1000 } });
+  // As if each person had pressed Allow: a headless browser otherwise refuses
+  // notifications on its own, and the card rightly says they are blocked.
+  const ctx = await browser.newContext({
+    viewport: { width: 1280, height: 1000 },
+    permissions: ['notifications'],
+  });
   const page = await ctx.newPage();
   page.on('pageerror', (e) => errors.push(`${email} pageerror: ${e.message}`));
   await page.goto(`${BASE}/`, { waitUntil: 'networkidle' });
@@ -97,7 +102,12 @@ await step('an admin switches them on for the practice in Practice settings', as
 await step('Your profile offers to turn them on; the bell points there', async () => {
   await desk.goto(`${BASE}/profile`, { waitUntil: 'networkidle' });
   const card = desk.getByTestId('phone-notifications');
-  await card.getByRole('button', { name: 'Turn on for this device' }).waitFor();
+  await card
+    .getByRole('button', { name: 'Turn on for this device' })
+    .waitFor({ timeout: 15000 })
+    .catch(async () => {
+      throw new Error(`the card reads: ${await card.innerText()}`);
+    });
   await desk.getByRole('button', { name: /Notifications/ }).first().click();
   await desk.getByRole('link', { name: 'Get these on your phone' }).waitFor();
   await desk.keyboard.press('Escape');
