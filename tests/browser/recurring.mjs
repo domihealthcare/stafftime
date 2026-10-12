@@ -60,10 +60,6 @@ const friday1 = plusDays(week1, 4);
 const friday2 = plusDays(friday1, 7);
 const friday3 = plusDays(friday1, 14);
 const until = plusDays(friday1, 7 * 8);
-// 13:00–14:00 UTC is 9–10am in New Jersey. The browser here runs on UTC, so
-// it shows the times as UTC ("1pm–2pm"); the API is checked in UTC hours too.
-const NINE = '13:00';
-const TEN = '14:00';
 
 const weekView = async (page, day) => {
   await page.goto(`${BASE}/schedule?week=${key(day)}`, { waitUntil: 'networkidle' });
@@ -79,6 +75,19 @@ const feedOf = (page) =>
 /// changing on 1 November, when 9am goes from 13:00 to 14:00 UTC.
 const njHour = (iso) =>
   Number(new Intl.DateTimeFormat('en-US', { timeZone: 'America/New_York', hour: 'numeric', hourCycle: 'h23' }).format(new Date(iso)));
+/// "HH:MM" on this browser's clock for an hour on New Jersey's clock that
+/// day — the form takes the browser's time. Whether 10am is 14:00 or 15:00
+/// UTC depends on the date: the suite's dates move with today, and fell after
+/// the clocks went back on 1 November from 12 October 2026 on.
+const atNj = (day, hour) => {
+  for (const offset of [4, 5]) {
+    const at = new Date(Date.UTC(day.getFullYear(), day.getMonth(), day.getDate(), hour + offset));
+    if (njHour(at.toISOString()) === hour) return `${pad(at.getHours())}:${pad(at.getMinutes())}`;
+  }
+  throw new Error(`no ${hour}:00 in New Jersey on ${key(day)}`);
+};
+const savedEvent = (page) =>
+  page.waitForResponse((r) => /\/api\/events\/[^/?]+\?scope=/.test(r.url()) && r.request().method() !== 'GET');
 /// Everything up to and including the last day a series can land on.
 const through = plusDays(until, 1);
 const eventsBetween = (page, from, to) =>
@@ -95,8 +104,9 @@ await step('the office meeting: every 2 weeks on Friday, 9 to 10, for everyone',
   await manager.getByRole('menuitem', { name: 'Event', exact: true }).click();
   const form = manager.getByRole('form', { name: 'New event' });
   await form.getByLabel('What is it?').fill('Office meeting');
-  await form.getByLabel('Starts').fill(`${key(friday1)}T${NINE}`);
-  await form.getByLabel('Ends').fill(`${key(friday1)}T${TEN}`);
+  // 9 to 10am in New Jersey, on the browser's clock.
+  await form.getByLabel('Starts').fill(`${key(friday1)}T${atNj(friday1, 9)}`);
+  await form.getByLabel('Ends').fill(`${key(friday1)}T${atNj(friday1, 10)}`);
   await form.getByLabel('Repeats').selectOption({ label: 'Every 2 weeks on Friday' });
   await form.getByLabel('Until').fill(key(until));
   // Everyone is the starting point.
@@ -122,8 +132,8 @@ await step('the admin meeting alternates with it, for chosen people typed into o
   await manager.getByRole('menuitem', { name: 'Event', exact: true }).click();
   const form = manager.getByRole('form', { name: 'New event' });
   await form.getByLabel('What is it?').fill('Admin meeting');
-  await form.getByLabel('Starts').fill(`${key(friday2)}T${NINE}`);
-  await form.getByLabel('Ends').fill(`${key(friday2)}T${TEN}`);
+  await form.getByLabel('Starts').fill(`${key(friday2)}T${atNj(friday2, 9)}`);
+  await form.getByLabel('Ends').fill(`${key(friday2)}T${atNj(friday2, 10)}`);
   await form.getByLabel('Repeats').selectOption({ label: 'Every 2 weeks on Friday' });
   await form.getByLabel('Until').fill(key(until));
 
@@ -212,10 +222,12 @@ await step('moving just one date leaves the others where they were', async () =>
   await form.getByLabel('Change only this date', { exact: false }).check();
   // A single date is not re-planned: no repeat choices.
   if (await form.getByLabel('Repeats').count()) throw new Error('offered to change how it repeats');
-  await form.getByLabel('Starts').fill(`${key(friday3)}T14:00`);
-  await form.getByLabel('Ends').fill(`${key(friday3)}T15:00`);
+  // 10 to 11am in New Jersey, whichever side of the clocks changing it is.
+  await form.getByLabel('Starts').fill(`${key(friday3)}T${atNj(friday3, 10)}`);
+  await form.getByLabel('Ends').fill(`${key(friday3)}T${atNj(friday3, 11)}`);
+  const saved = savedEvent(manager);
   await form.getByRole('button', { name: 'Save changes' }).click();
-  await eventsRow(manager).getByText('2pm–3pm').waitFor({ timeout: 10000 });
+  if (!(await saved).ok()) throw new Error('the change was refused');
   const all = (await eventsBetween(manager, week1, through)).filter((e) => e.title === 'Office meeting');
   const hours = all.map((e) => njHour(e.startsAt)).join(',');
   if (hours !== '9,10,9,9,9') throw new Error(`start hours in New Jersey ${hours}`);
@@ -228,13 +240,15 @@ await step('this date and all after: a new time from here on, the earlier ones u
   const form = manager.getByRole('form', { name: 'Change event' });
   await form.getByLabel('Change this date and all after it').check();
   await form.getByLabel('Repeats').waitFor({ timeout: 5000 });
-  await form.getByLabel('Starts').fill(`${key(plusDays(friday1, 28))}T15:00`);
-  await form.getByLabel('Ends').fill(`${key(plusDays(friday1, 28))}T16:00`);
+  const fifth = plusDays(friday1, 28);
+  await form.getByLabel('Starts').fill(`${key(fifth)}T${atNj(fifth, 10)}`);
+  await form.getByLabel('Ends').fill(`${key(fifth)}T${atNj(fifth, 11)}`);
+  const saved = savedEvent(manager);
   await form.getByRole('button', { name: 'Save changes' }).click();
-  await eventsRow(manager).getByText('3pm–4pm').waitFor({ timeout: 10000 });
+  if (!(await saved).ok()) throw new Error('the change was refused');
   const all = (await eventsBetween(manager, week1, through)).filter((e) => e.title === 'Office meeting');
-  // 15:00 UTC on a November date is 10am in New Jersey, and every date after
-  // it keeps that wall-clock time.
+  // 10am in New Jersey from here on: every date after it keeps that
+  // wall-clock time.
   const hours = all.map((e) => njHour(e.startsAt)).join(',');
   if (hours !== '9,10,10,10,10') throw new Error(`start hours in New Jersey ${hours}`);
 });
