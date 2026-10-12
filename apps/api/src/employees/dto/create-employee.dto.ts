@@ -1,6 +1,7 @@
 import { EmploymentStatus, PayType, Role } from '@prisma/client';
 import {
   ArrayUnique,
+  IsBoolean,
   IsInt,
   Max,
   Min,
@@ -61,6 +62,13 @@ export class CreateEmployeeDto {
   @IsOptional()
   @IsEnum(PayType)
   payType?: PayType;
+
+  /// False for somebody who does not clock in — the providers, to start with
+  /// (October 2026, Dominguez). Nobody chases their punches; the Directory
+  /// shows them where their shift is. On unless an admin turns it off.
+  @IsOptional()
+  @IsBoolean()
+  clocksIn?: boolean;
 
   /// Optional: without it, time off is not prorated for a first part-year.
   @IsOptional()

@@ -42,7 +42,8 @@ app does not hold*, its own database) are unchanged by this.
   **feet**, default 500) and/or allow-listed IP(s) for clock-in verification
 - **Employee** — name, role, assigned location(s), employment status, pay type,
   hire date (optional since September 2026 — without it time off is not
-  prorated and onboarding counts from the day it starts), `external_id`
+  prorated and onboarding counts from the day it starts), whether they clock
+  in (`clocksIn`, October 2026 — providers do not), `external_id`
   (nullable, for future EMR linkage)
 - **Shift** — employee, date, start/end time, location — built by managers in the
   scheduler
@@ -813,6 +814,24 @@ Beyond the phases, the parts worth knowing about before picking up work:
   in a closure, or before a "running late" time plus 15 minutes has passed.
   The person's own 15-minute reminder is unchanged. Run by the five-minute
   timer (`PunchRemindersService.tellManagersOfNoShows`).
+- **Staff who do not clock in** (12 October 2026, Dominguez: "an option for
+  some employees that do not have to clock in (i.e. the providers at the
+  moment) though it still should show where they are for that shift in the
+  directory"): **Clocks in** on the Staff editor (`Employee.clocksIn`,
+  admins; "Doesn't clock in" on the Staff card). Unticked, nobody reminds
+  them to clock in, managers hear of no no-show, a shift with no punch is not
+  on *Shifts with no clock-in*, the time clock leaves them off its list,
+  Home asks for no tablet PIN and shows **No need to clock in** with today's
+  shift instead of the button (clocked in anyway, Clock out still shows),
+  and *Your week* gives only the shifts. The **Directory** shows them **"On
+  shift · North Bergen"** (or working from home) in that office's In now box
+  while a published shift of theirs runs, not on approved time off — the
+  office, never the hours; managers see since when it started. Migration
+  `20261012010000_clocks_in` unticks everybody holding a job role with *uses
+  clinical forms* (the providers) — **check the Staff screen on the live
+  site**. Their hours are no longer on the timesheet, so the dashboard's
+  hours worked against scheduled and the payroll export have none for them.
+  `tests/browser/clocks-in.mjs`.
 - **Ask for a correction** (11 October 2026, Dominguez): on their own
   Timesheet, staff press **Ask to fix** on a closed entry, give the times
   (a finish before the start is the next morning) and what happened. One
@@ -1145,12 +1164,16 @@ Beyond the phases, the parts worth knowing about before picking up work:
   rep's cell" (`JobRole.seesRepCell`, on for Front Desk — Dominguez: "front
   desk can see the cell")**; status and notes managers' only (server-side;
   none of it in the feed); "Don't book" asks first, never refuses; the
-  schema guard pins `Rep`. A rep lunch is **told to the staff of its office**
-  (add, move, cancel), and **every evening from 6pm** each office open the
-  next day (a published shift there, not closed all day) hears "Rep lunch
-  tomorrow" or "No rep lunch tomorrow — bring your own lunch" on the bell
+  schema guard pins `Rep`. A rep lunch is **told to the people on the rota
+  at its office that day** — a published shift there, not from home — when
+  it is added, moved or cancelled, and **every evening from 6pm** each
+  office open the next day (a published shift there, not closed all day)
+  tells the people on its rota "Rep lunch tomorrow" or "No rep lunch
+  tomorrow — bring your own lunch" on the bell
   (`events/lunch-notices.service.ts`, run by the five-minute timer, once per
-  office and day via `LunchNotice`). **Show** filters the calendar:
+  office and day via `LunchNotice`). Until 12 October 2026 both went to
+  everybody whose offices included it (Dominguez: "why am I being notified
+  of lunches of locations i am not scheduled for?"). **Show** filters the calendar:
   All, or any one or more kinds (Dominguez). **Separate subscriptions**:
   besides the all-in-one `domi.ics`, one address per kind on the same
   private token (`/api/calendar/<token>/<feed>.ics` — `shifts`,

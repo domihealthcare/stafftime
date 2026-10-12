@@ -25,6 +25,9 @@ export interface WeeklySummaryInput {
   /// Clock-outs the app made at midnight, not corrected yet — left out.
   toCorrect: number;
   shifts: SummaryShift[];
+  /// False for somebody who does not clock in (`Employee.clocksIn`): with no
+  /// punches, "0 hours worked" would only be wrong, so only the shifts are told.
+  clocksIn?: boolean;
 }
 
 const calendarDay = (date: string) =>
@@ -53,9 +56,19 @@ export function weeklySummaryWords(
 ): { title: string; body: string } | null {
   if (input.hours === 0 && input.shifts.length === 0 && input.toCorrect === 0) return null;
   const shifts = input.shifts.length;
-  const title = `Your week: ${hoursWords(input.hours)} worked · ${shifts} ${shifts === 1 ? 'shift' : 'shifts'} coming up`;
+  const coming = `${shifts} ${shifts === 1 ? 'shift' : 'shifts'} coming up`;
+  // Somebody who does not clock in hears hours only if they punched anyway.
+  const noHours = input.clocksIn === false && input.hours === 0 && input.toCorrect === 0;
+  if (noHours && shifts === 0) return null;
+  const title = noHours
+    ? `Your week: ${coming}`
+    : `Your week: ${hoursWords(input.hours)} worked · ${coming}`;
   const body = [
-    `Last week (${calendarDay(input.lastFrom)}–${calendarDay(input.lastTo)}): ${hoursWords(input.hours)} worked.`,
+    ...(noHours
+      ? []
+      : [
+          `Last week (${calendarDay(input.lastFrom)}–${calendarDay(input.lastTo)}): ${hoursWords(input.hours)} worked.`,
+        ]),
     ...(input.toCorrect > 0
       ? [
           `${input.toCorrect} ${input.toCorrect === 1 ? 'day is' : 'days are'} not counted yet — clocked out by the app at midnight, for a manager to correct.`,

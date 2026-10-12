@@ -940,11 +940,23 @@ describe('rep lunches', () => {
     });
   });
 
-  it('tells the staff of the office it is at, not everybody', async () => {
+  it('tells the people on the rota at its office that day, not everybody there', async () => {
     const { service, prisma } = build();
     await service.create(lunch(), manager);
     const where = prisma.employee.findMany.mock.calls[0][0].where;
-    expect(where.locations).toEqual({ some: { locationId: 'loc-nb' } });
+    expect(where.locations).toBeUndefined();
+    expect(where.shifts).toEqual({
+      some: {
+        locationId: 'loc-nb',
+        isRemote: false,
+        status: 'PUBLISHED',
+        // Tuesday 10 November 2099 in New Jersey.
+        startsAt: {
+          gte: new Date('2099-11-10T05:00:00.000Z'),
+          lt: new Date('2099-11-11T05:00:00.000Z'),
+        },
+      },
+    });
   });
 
   it('shows a manager everything about the rep', async () => {

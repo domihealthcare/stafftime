@@ -26,9 +26,12 @@ export const LUNCH_NOTICE_FROM = '18:00';
  * notify all staff at that office the night before even if there is no rep
  * lunch, so staff knows to bring their own lunch").
  *
- * Every evening, for each office open tomorrow, everybody who works at that
- * office hears either "Rep lunch tomorrow" — who, when, catering or not — or
- * "No rep lunch tomorrow — bring your own lunch". On the bell.
+ * Every evening, for each office open tomorrow, everybody on the rota there
+ * tomorrow hears either "Rep lunch tomorrow" — who, when, catering or not — or
+ * "No rep lunch tomorrow — bring your own lunch". On the bell. Only people
+ * with a published shift at that office that day, not from home (October
+ * 2026, Dominguez: "why am I being notified of lunches of locations i am not
+ * scheduled for?") — it used to go to everybody whose offices included it.
  *
  * "Open tomorrow" is the rota's word: at least one published shift there that
  * is not from home, and the office not closed all day. So nobody is told to
@@ -83,7 +86,7 @@ export class LunchNoticesService {
         this.prisma.employee.findMany({
           where: {
             employmentStatus: { in: [EmploymentStatus.ACTIVE, EmploymentStatus.ON_LEAVE] },
-            locations: { some: { locationId: office.id } },
+            shifts: { some: workingThere(office.id, from, to) },
           },
           select: { id: true },
         }),
@@ -115,13 +118,7 @@ export class LunchNoticesService {
   private async openOn(locationId: string, from: Date, to: Date): Promise<boolean> {
     const [working, closed] = await Promise.all([
       this.prisma.shift.count({
-        where: {
-          locationId,
-          isRemote: false,
-          employeeId: { not: null },
-          status: ShiftStatus.PUBLISHED,
-          startsAt: { gte: from, lt: to },
-        },
+        where: { ...workingThere(locationId, from, to), employeeId: { not: null } },
       }),
       this.prisma.practiceEvent.count({
         where: {
@@ -147,6 +144,16 @@ export class LunchNoticesService {
       throw error;
     }
   }
+}
+
+/// A published shift at the office, not from home, starting in the day.
+export function workingThere(locationId: string, from: Date, to: Date): Prisma.ShiftWhereInput {
+  return {
+    locationId,
+    isRemote: false,
+    status: ShiftStatus.PUBLISHED,
+    startsAt: { gte: from, lt: to },
+  };
 }
 
 /// "12:30 PM — Jane Smith (Novo Nordisk), bringing catering".

@@ -79,6 +79,10 @@ export interface Employee extends EmployeeSummary {
   language?: 'en' | 'es';
   phone?: string | null;
   payType?: 'HOURLY' | 'SALARY';
+  /// False for somebody who does not clock in (providers, to start with):
+  /// Home shows their shift instead of a Clock in button, and the Directory
+  /// shows them where their shift is while it runs. Set by an admin.
+  clocksIn?: boolean;
   /// Their last day, once they have left (or been given one).
   terminationDate?: string | null;
   /// When their profile photo last changed; null for none.
@@ -993,10 +997,13 @@ export interface DirectoryEntry {
   }[];
   locations: { id: string; name: string; isPrimary: boolean }[];
   /// Clocked in now. `since` is only sent to managers. `jobRole` is the job
-  /// role of the shift they clocked in to, if it has one.
+  /// role of the shift they clocked in to, if it has one. `scheduled`: they
+  /// do not clock in, and this is the published shift they are on right now
+  /// (`since` is then when it started).
   onNow: {
     location: { id: string; name: string };
     remote?: boolean;
+    scheduled?: boolean;
     since?: string;
     jobRole?: { id: string; name: string; colour: string; sortOrder: number } | null;
   } | null;

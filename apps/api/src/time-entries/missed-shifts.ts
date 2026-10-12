@@ -123,7 +123,8 @@ export async function loadMissedShifts(
     where: {
       status: ShiftStatus.PUBLISHED,
       employeeId: { not: null },
-      employee: { employmentStatus: { not: EmploymentStatus.TERMINATED } },
+      // Somebody who does not clock in (`Employee.clocksIn`) missed nothing.
+      employee: { employmentStatus: { not: EmploymentStatus.TERMINATED }, clocksIn: true },
       endsAt: { gte: since, lte: now },
     },
     select: {

@@ -177,6 +177,37 @@ await step('a manager keeps the rep list', async () => {
   }
 });
 
+// A rep lunch is told only to the people on the rota at its office that day
+// (Dominguez, October 2026), so Frankie works North Bergen on the 9th (and
+// the 10th, for the lunch icons below) and Max West New York on the 23rd. The
+// runner clears 2027's shifts between suites.
+await step('the people at each lunch are on the rota there that day', async () => {
+  await manager.evaluate(async () => {
+    const staff = await fetch('/api/employees').then((r) => r.json());
+    const locations = await fetch('/api/locations').then((r) => r.json());
+    const id = (email) => staff.find((person) => person.email === email).id;
+    const office = (name) => locations.find((location) => location.name === name).id;
+    for (const shift of [
+      { email: 'frontdesk@domihealthcare.com', office: 'North Bergen', from: '2027-03-09T14:00:00.000Z', to: '2027-03-09T22:00:00.000Z' },
+      { email: 'frontdesk@domihealthcare.com', office: 'North Bergen', from: '2027-03-10T14:00:00.000Z', to: '2027-03-10T22:00:00.000Z' },
+      { email: 'ma@domihealthcare.com', office: 'West New York', from: '2027-03-23T09:00:00-04:00', to: '2027-03-23T17:00:00-04:00' },
+    ]) {
+      const response = await fetch('/api/shifts', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          employeeId: id(shift.email),
+          locationId: office(shift.office),
+          startsAt: shift.from,
+          endsAt: shift.to,
+          status: 'PUBLISHED',
+        }),
+      });
+      if (!response.ok) throw new Error(`could not make the shift: ${await response.text()}`);
+    }
+  });
+});
+
 await step('a rep lunch picks its rep, warns about a "Don’t book", and is named after them', async () => {
   await calendar(manager);
   await manager.getByRole('button', { name: '+ Add', exact: true }).click();
@@ -257,7 +288,7 @@ await step('a Medical Assistant sees the lunch but not the cell', async () => {
   await dialog.getByRole('button', { name: 'Close' }).click();
 });
 
-await step('a rep lunch rings the bell at its own office only', async () => {
+await step('a rep lunch rings the bell of the people on the rota there only', async () => {
   const titles = async (page) =>
     page.evaluate(async () => (await fetch('/api/notifications').then((r) => r.json())).items.map((i) => i.title));
   const nb = await titles(frankie);
@@ -266,6 +297,9 @@ await step('a rep lunch rings the bell at its own office only', async () => {
   if (nb.some((t) => t.includes('Pat Lee'))) throw new Error('North Bergen heard about West New York’s lunch');
   if (!wny.includes('Rep lunch: Pat Lee (Pfizer)')) throw new Error(`West New York's bell: ${wny.join(' | ')}`);
   if (wny.some((t) => t.includes('Jane Smith'))) throw new Error('West New York heard about North Bergen’s lunch');
+  // Nobody hears of a lunch at an office they are not on the rota at that day.
+  const off = await titles(admin);
+  if (off.some((t) => t.startsWith('Rep lunch'))) throw new Error(`not on the rota, but heard: ${off.join(' | ')}`);
 });
 
 await step('the cell is a job role setting, on for Front Desk alone', async () => {
@@ -411,29 +445,7 @@ await step('the printed month: the paper calendar, with what the calendar shows'
 });
 
 await step('a shift says whether there is a rep lunch: 🍽️ or 🥪', async () => {
-  const made = await manager.evaluate(async () => {
-    const people = await fetch('/api/employees').then((r) => r.json());
-    const offices = await fetch('/api/locations').then((r) => r.json());
-    const frankie = people.find((p) => p.email === 'frontdesk@domihealthcare.com');
-    const nb = offices.find((o) => o.name === 'North Bergen');
-    const statuses = [];
-    for (const day of ['2027-03-09', '2027-03-10']) {
-      const response = await fetch('/api/shifts', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          employeeId: frankie.id,
-          locationId: nb.id,
-          startsAt: `${day}T14:00:00.000Z`,
-          endsAt: `${day}T22:00:00.000Z`,
-          status: 'PUBLISHED',
-        }),
-      });
-      statuses.push(response.status);
-    }
-    return statuses;
-  });
-  if (made.some((status) => status !== 201)) throw new Error(`making the shifts answered ${made.join(', ')}`);
+  // Frankie's North Bergen shifts on the 9th and 10th were made before the lunches.
   await frankie.goto(`${BASE}/schedule?week=2027-03-07`, { waitUntil: 'networkidle' });
   const week = frankie.getByRole('button', { name: 'Week', exact: true });
   if (await week.count()) await week.click();

@@ -73,6 +73,7 @@ export const TEAM: Record<string, string> = {
     'Todos en la práctica, cómo comunicarte con ellos y quién está ahora.',
   'In now': 'Ahora aquí',
   'In now · {place}': 'Ahora aquí · {place}',
+  'On shift · {place}': 'De turno · {place}',
   'Nobody is clocked in.': 'Nadie ha marcado entrada.',
   Other: 'Otro',
   Search: 'Buscar',

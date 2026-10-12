@@ -251,10 +251,13 @@ export class KioskService {
   /// wondering why their name is missing (Dominguez, October 2026). Only
   /// whether a PIN is set leaves the server, never the hash; and the punch
   /// still refuses a person with no PIN exactly as it refuses a wrong PIN.
+  /// Not somebody who does not clock in (`Employee.clocksIn`): their name
+  /// would only sit there tagged "No PIN yet".
   async listEligibleEmployees(locationId: string) {
     const employees = await this.prisma.employee.findMany({
       where: {
         employmentStatus: 'ACTIVE',
+        clocksIn: true,
         locations: { some: { locationId } },
       },
       select: { id: true, firstName: true, lastName: true, preferredName: true, pinHash: true },

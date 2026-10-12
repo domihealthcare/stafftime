@@ -47,7 +47,7 @@ export class WeeklySummaryService {
         wantsWeeklySummary: true,
         weeklySummaries: { none: { weekStart: claimDay } },
       },
-      select: { id: true },
+      select: { id: true, clocksIn: true },
     });
 
     let sent = 0;
@@ -96,6 +96,7 @@ export class WeeklySummaryService {
         lastTo,
         hours,
         toCorrect: entries.length - counted.length,
+        clocksIn: person.clocksIn,
         shifts: shifts.map((shift) => ({
           startsAt: shift.startsAt,
           endsAt: shift.endsAt,

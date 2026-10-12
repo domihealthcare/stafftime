@@ -16,6 +16,7 @@ function person(over: Record<string, unknown> = {}) {
     email: 'frankie@domihealthcare.com',
     phone: '201-555-0100',
     employmentStatus: 'ACTIVE',
+    clocksIn: true,
     jobRoles: [
       {
         isPrimary: false,
@@ -36,8 +37,15 @@ function person(over: Record<string, unknown> = {}) {
   };
 }
 
-function build(rows: unknown[] = [person()]) {
-  const prisma = { employee: { findMany: jest.fn().mockResolvedValue(rows) } };
+function build(
+  rows: unknown[] = [person()],
+  extra: { shifts?: unknown[]; timeOff?: unknown[] } = {},
+) {
+  const prisma = {
+    employee: { findMany: jest.fn().mockResolvedValue(rows) },
+    shift: { findMany: jest.fn().mockResolvedValue(extra.shifts ?? []) },
+    ptoRequest: { findMany: jest.fn().mockResolvedValue(extra.timeOff ?? []) },
+  };
   return { service: new DirectoryService(prisma as never), prisma };
 }
 
@@ -200,6 +208,63 @@ describe('DirectoryService', () => {
     const { select } = prisma.employee.findMany.mock.calls[0][0];
     expect(select.timeEntries.select.shift).toEqual({
       select: { jobRole: { select: { id: true, name: true, sortOrder: true, colour: true } } },
+    });
+  });
+
+  describe('somebody who does not clock in', () => {
+    const provider = person({ id: 'prov-1', clocksIn: false, timeEntries: [] });
+    const shiftNow = {
+      employeeId: 'prov-1',
+      startsAt: new Date('2026-09-22T13:00:00Z'),
+      isRemote: false,
+      location: { id: 'wny', name: 'West New York' },
+      jobRole: { id: 'prov', name: 'Provider', sortOrder: 30, colour: 'green' },
+    };
+
+    it('is in now at the office of the shift they are on', async () => {
+      const { service, prisma } = build([provider], { shifts: [shiftNow] });
+      const [row] = await service.list(employee, NOW);
+      expect(row.onNow).toEqual({
+        location: { id: 'wny', name: 'West New York' },
+        remote: false,
+        jobRole: shiftNow.jobRole,
+        scheduled: true,
+      });
+      expect(row).not.toHaveProperty('clocksIn');
+      const { where } = prisma.shift.findMany.mock.calls[0][0];
+      expect(where).toEqual({
+        employeeId: { in: ['prov-1'] },
+        status: 'PUBLISHED',
+        startsAt: { lte: NOW },
+        endsAt: { gt: NOW },
+      });
+    });
+
+    it('tells a manager since the shift started', async () => {
+      const { service } = build([provider], { shifts: [shiftNow] });
+      const [row] = await service.list(manager, NOW);
+      expect(row.onNow?.since).toEqual(shiftNow.startsAt);
+    });
+
+    it('is working from home on a work-from-home shift', async () => {
+      const { service } = build([provider], { shifts: [{ ...shiftNow, isRemote: true }] });
+      const [row] = await service.list(employee, NOW);
+      expect(row.onNow?.remote).toBe(true);
+    });
+
+    it('is not in with no shift running, or on approved time off', async () => {
+      expect((await build([provider]).service.list(employee, NOW))[0].onNow).toBeNull();
+      const { service } = build([provider], {
+        shifts: [shiftNow],
+        timeOff: [{ employeeId: 'prov-1' }],
+      });
+      expect((await service.list(employee, NOW))[0].onNow).toBeNull();
+    });
+
+    it('looks up nobody’s shifts when everybody clocks in', async () => {
+      const { service, prisma } = build();
+      await service.list(employee, NOW);
+      expect(prisma.shift.findMany).not.toHaveBeenCalled();
     });
   });
 });

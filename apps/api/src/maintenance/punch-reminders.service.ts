@@ -141,7 +141,8 @@ export class PunchRemindersService {
       where: {
         status: ShiftStatus.PUBLISHED,
         employeeId: { not: null },
-        employee: { employmentStatus: EmploymentStatus.ACTIVE },
+        // Not for somebody who does not clock in (`Employee.clocksIn`).
+        employee: { employmentStatus: EmploymentStatus.ACTIVE, clocksIn: true },
         startsAt: { gte: minutesBefore(now, PUNCH_REMINDER_LOOKBACK_MINUTES), lte: due(now) },
         endsAt: { gt: now },
         reminders: { none: { kind: PunchReminderKind.CLOCK_IN } },
@@ -237,7 +238,8 @@ export class PunchRemindersService {
       where: {
         status: ShiftStatus.PUBLISHED,
         employeeId: { not: null },
-        employee: { employmentStatus: EmploymentStatus.ACTIVE },
+        // Nobody is missing who does not clock in (`Employee.clocksIn`).
+        employee: { employmentStatus: EmploymentStatus.ACTIVE, clocksIn: true },
         startsAt: {
           gte: minutesBefore(now, PUNCH_REMINDER_LOOKBACK_MINUTES),
           lte: minutesBefore(now, NO_SHOW_AFTER_MINUTES),

@@ -316,6 +316,10 @@ export function ClockPage() {
   }
 
   const busy = status === 'working';
+  /// Somebody who does not clock in (`clocksIn`, providers to start with):
+  /// their shift instead of a Clock in button. Clocked in anyway, they still
+  /// get Clock out.
+  const noClock = employee.clocksIn === false && !isClockedIn;
 
   return (
     <div className="grid items-start gap-4 lg:grid-cols-3 lg:grid-rows-[auto_1fr] lg:gap-6">
@@ -352,7 +356,9 @@ export function ClockPage() {
             </>
           ) : (
             <>
-              <p className="mt-4 text-2xl font-semibold text-slate-900">{t('Not clocked in')}</p>
+              <p className="mt-4 text-2xl font-semibold text-slate-900" data-testid="clock-status">
+                {noClock ? t('No need to clock in') : t('Not clocked in')}
+              </p>
               {todaysShift ? (
                 <p className="mt-1 text-sm text-slate-600">
                   {t('Today’s shift: {start} – {end}', {
@@ -367,6 +373,11 @@ export function ClockPage() {
                 </p>
               ) : (
                 <p className="mt-1 text-sm text-slate-500">{t('No shift scheduled today.')}</p>
+              )}
+              {noClock && todaysShift && (
+                <p className="mt-1 text-xs text-slate-500">
+                  {t('The Directory shows you there while your shift is on.')}
+                </p>
               )}
               {todaysShift && <RunningLate key={todaysShift.id} shift={todaysShift} />}
             </>
@@ -400,7 +411,7 @@ export function ClockPage() {
           )}
         </Card>
 
-        {!isClockedIn && status !== 'loading' && assignedLocations.length > 0 && (
+        {!isClockedIn && !noClock && status !== 'loading' && assignedLocations.length > 0 && (
           <Card className="p-4">
             <label htmlFor="location" className="block text-sm font-medium text-slate-700">
               {t('Location')}
@@ -461,7 +472,7 @@ export function ClockPage() {
           </Alert>
         )}
 
-        {closing && isClockedIn ? (
+        {noClock ? null : closing && isClockedIn ? (
           <Card className="p-4">
             <ClosingChecklistForm
               sections={checklist}
@@ -506,7 +517,7 @@ export function ClockPage() {
           </button>
         )}
 
-        <p className="px-2 text-center text-xs text-slate-500">
+        <p className="px-2 text-center text-xs text-slate-500" hidden={noClock}>
           {remote
             ? t('Working from home: no location is asked for or recorded.')
             : t(

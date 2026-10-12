@@ -32,6 +32,38 @@ describe('your week, the words', () => {
     });
   });
 
+  it('only the shifts for somebody who does not clock in', () => {
+    const words = weeklySummaryWords({
+      lastFrom: '2026-10-04',
+      lastTo: '2026-10-10',
+      hours: 0,
+      toCorrect: 0,
+      clocksIn: false,
+      shifts: [
+        {
+          startsAt: new Date('2026-10-12T13:00:00Z'),
+          endsAt: new Date('2026-10-12T21:00:00Z'),
+          isRemote: false,
+          locationName: 'North Bergen',
+        },
+      ],
+    });
+    expect(words).toEqual({
+      title: 'Your week: 1 shift coming up',
+      body: ['This week:', 'Mon, Oct 12: 9:00 AM–5:00 PM at North Bergen'].join('\n'),
+    });
+    expect(
+      weeklySummaryWords({
+        lastFrom: 'x',
+        lastTo: 'y',
+        hours: 0,
+        toCorrect: 0,
+        clocksIn: false,
+        shifts: [],
+      }),
+    ).toBeNull();
+  });
+
   it('nothing to say, nothing sent', () => {
     expect(
       weeklySummaryWords({ lastFrom: 'x', lastTo: 'y', hours: 0, toCorrect: 0, shifts: [] }),

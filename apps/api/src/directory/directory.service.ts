@@ -1,5 +1,5 @@
 import { BadRequestException, Injectable } from '@nestjs/common';
-import { EmploymentStatus, Role, ShiftStatus } from '@prisma/client';
+import { EmploymentStatus, PtoStatus, Role, ShiftStatus } from '@prisma/client';
 import { AuthUser } from '../common/auth/auth-user';
 import { birthdaysBetween } from '../common/birthday';
 import {
@@ -29,6 +29,12 @@ export const ON_NOW_WINDOW_HOURS = 16;
  * work-from-home shift today that has not yet ended, so colleagues know not
  * to look for them at the desk even before they clock in. Only that one fact
  * and its hours — nobody's office shifts, which staff still do not see.
+ *
+ * And somebody who does not clock in (`Employee.clocksIn`, October 2026,
+ * Dominguez: "it still should show where they are for that shift in the
+ * directory") is "in now" at their shift's office — or working from home —
+ * while a published shift of theirs is running, unless they are on approved
+ * time off that day. Where, not the shift's hours.
  */
 @Injectable()
 export class DirectoryService {
@@ -103,6 +109,7 @@ export class DirectoryService {
         birthdayMonth: true,
         birthdayDay: true,
         employmentStatus: true,
+        clocksIn: true,
         jobRoles: {
           select: {
             isPrimary: true,
@@ -144,13 +151,19 @@ export class DirectoryService {
       orderBy: [{ firstName: 'asc' }, { lastName: 'asc' }],
     });
 
+    const onShift = await this.onShiftNow(
+      people.filter((person) => !person.clocksIn).map((person) => person.id),
+      now,
+    );
+
     // When somebody clocked in is a manager's business; colleagues only need
     // to know they are in, and where.
     const showSince = actor.role !== Role.EMPLOYEE;
 
     return people.map(
-      ({ jobRoles, locations, timeEntries, shifts, employmentStatus, ...person }) => {
+      ({ jobRoles, locations, timeEntries, shifts, employmentStatus, clocksIn, ...person }) => {
         const open = timeEntries[0];
+        const shift = open || clocksIn ? undefined : onShift.get(person.id);
         return {
           ...person,
           onLeave: employmentStatus === EmploymentStatus.ON_LEAVE,
@@ -180,10 +193,68 @@ export class DirectoryService {
                 jobRole: open.shift?.jobRole ?? null,
                 ...(showSince ? { since: open.clockInAt } : {}),
               }
-            : null,
+            : shift
+              ? {
+                  location: shift.location,
+                  remote: shift.isRemote,
+                  jobRole: shift.jobRole,
+                  // Here by the rota, not a punch: they do not clock in.
+                  scheduled: true,
+                  ...(showSince ? { since: shift.startsAt } : {}),
+                }
+              : null,
           homeToday: shifts[0] ? { startsAt: shifts[0].startsAt, endsAt: shifts[0].endsAt } : null,
         };
       },
     );
+  }
+
+  /// For people who do not clock in: the published shift each is on right
+  /// now, unless they are on approved time off today.
+  private async onShiftNow(employeeIds: string[], now: Date) {
+    const found = new Map<
+      string,
+      {
+        startsAt: Date;
+        isRemote: boolean;
+        location: { id: string; name: string };
+        jobRole: { id: string; name: string; sortOrder: number; colour: string } | null;
+      }
+    >();
+    if (employeeIds.length === 0) return found;
+    const today = new Date(`${localDateIn(now, PRACTICE_ZONE)}T00:00:00.000Z`);
+    const [shifts, away] = await Promise.all([
+      this.prisma.shift.findMany({
+        where: {
+          employeeId: { in: employeeIds },
+          status: ShiftStatus.PUBLISHED,
+          startsAt: { lte: now },
+          endsAt: { gt: now },
+        },
+        select: {
+          employeeId: true,
+          startsAt: true,
+          isRemote: true,
+          location: { select: { id: true, name: true } },
+          jobRole: { select: { id: true, name: true, sortOrder: true, colour: true } },
+        },
+        orderBy: { startsAt: 'desc' },
+      }),
+      this.prisma.ptoRequest.findMany({
+        where: {
+          employeeId: { in: employeeIds },
+          status: PtoStatus.APPROVED,
+          startDate: { lte: today },
+          endDate: { gte: today },
+        },
+        select: { employeeId: true },
+      }),
+    ]);
+    const off = new Set(away.map((row) => row.employeeId));
+    for (const { employeeId, ...shift } of shifts) {
+      if (!employeeId || off.has(employeeId) || found.has(employeeId)) continue;
+      found.set(employeeId, shift);
+    }
+    return found;
   }
 }
