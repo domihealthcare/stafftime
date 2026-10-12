@@ -23,6 +23,7 @@ import { movedFirstDay, weekendDay } from './moving-holidays';
 import { EventInput } from './dto/event.dto';
 import { allDayDates, allDayRange, describeWhen } from './event-time';
 import { repLunchTitle } from '../reps/rep-lunch-title';
+import { workingThere } from './lunch-notices.service';
 import { describeRule, occurrenceDates, RepeatRule, ruleProblem } from './recurrence';
 
 /// Long enough for a conference; short enough that a typo in the year is caught.
@@ -92,7 +93,7 @@ export type EventRow = Prisma.PracticeEventGetPayload<{ select: typeof EVENT_SEL
 /// What decides who an event is for.
 type AudienceOf = Pick<
   EventRow,
-  'kind' | 'audience' | 'jobRole' | 'location' | 'invitees' | 'atLocation'
+  'kind' | 'audience' | 'jobRole' | 'location' | 'invitees' | 'atLocation' | 'startsAt'
 >;
 
 /// The kinds that go on the bell. A holiday only names a day; nobody needs
@@ -875,13 +876,23 @@ function checkMeetingUrl(value: string | undefined): string | null {
 
 /// Who an event is for, as an employee filter.
 export function audienceWhere(row: AudienceOf): Prisma.EmployeeWhereInput {
-  // Everybody sees a rep lunch on the calendar, but it is told to the staff
-  // of the office it is at (Dominguez, October 2026). A removed office leaves
-  // nobody, not everybody.
+  // Everybody sees a rep lunch on the calendar, but it is told only to the
+  // people on the rota at its office that day — a published shift there, not
+  // from home (Dominguez, October 2026: "why am I being notified of lunches of
+  // locations i am not scheduled for?"). Booked before the rota is out, it
+  // reaches them the evening before instead (`lunch-notices.service.ts`). A
+  // removed office leaves nobody, not everybody.
   if (row.kind === PracticeEventKind.REP_LUNCH) {
+    const day = localDateIn(row.startsAt, PRACTICE_ZONE);
     return {
       employmentStatus: WORKING,
-      locations: { some: { locationId: row.atLocation?.id ?? '' } },
+      shifts: {
+        some: workingThere(
+          row.atLocation?.id ?? '',
+          zonedTimeToUtc(day, '00:00', PRACTICE_ZONE),
+          zonedTimeToUtc(addDaysTo(day, 1), '00:00', PRACTICE_ZONE),
+        ),
+      },
     };
   }
   if (row.audience === EventAudience.JOB_ROLE) {

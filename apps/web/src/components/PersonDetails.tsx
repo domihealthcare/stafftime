@@ -19,7 +19,8 @@ export function PresenceBadges({
     <>
       {entry.onNow && (
         <Badge tone="success">
-          {t('In now · {place}', {
+          {/* Somebody who does not clock in is shown by the shift they are on. */}
+          {t(entry.onNow.scheduled ? 'On shift · {place}' : 'In now · {place}', {
             place: entry.onNow.remote ? t('Working from home') : entry.onNow.location.name,
           })}
           {entry.onNow.since && t(' since {time}', { time: formatTime(entry.onNow.since) })}

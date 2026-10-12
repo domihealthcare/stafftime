@@ -220,6 +220,13 @@ model Employee {
   /// so the first imported staff could not clock in at all.
   employmentStatus EmploymentStatus @default(ACTIVE)
   payType          PayType          @default(HOURLY)
+  /// False for somebody who does not clock in (October 2026, Dominguez: "an
+  /// option for some employees that do not have to clock in (i.e. the
+  /// providers at the moment) though it still should show where they are for
+  /// that shift in the directory"). Set by an admin. Nobody reminds them to
+  /// clock in or out, a shift with no punch is not chased, and the Directory
+  /// shows them at their shift's office while it runs.
+  clocksIn         Boolean          @default(true)
 
   /// Optional since September 2026 (Dominguez): not every start date was to
   /// hand on the first day. Without one, time off is not prorated and an

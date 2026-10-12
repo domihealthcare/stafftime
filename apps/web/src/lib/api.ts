@@ -804,6 +804,7 @@ export const api = {
       phone: string | null;
       role: string;
       payType: string;
+      clocksIn: boolean;
       /// ACTIVE brings back somebody marked as having left.
       employmentStatus: 'ACTIVE';
       locationIds: string[];

@@ -534,7 +534,8 @@ const STAFF: Section[] = [
             🍽️ means a rep is bringing lunch to that office that day — tap or hover for who, when,
             and whether they bring catering or the office orders. 🥪 means there is no rep lunch, so
             bring your own. Home says the same under today&rsquo;s shift, and the bell tells
-            everybody at the office the evening before. Work-from-home shifts have neither.
+            everybody on the rota at that office the evening before. Work-from-home shifts have
+            neither.
           </p>
         ),
       },
@@ -2089,6 +2090,12 @@ const MANAGERS: Section[] = [
               <strong>Edit</strong> on somebody&rsquo;s card to change their email, phone, access
               (Employee, Manager or Admin), job roles and their main one, offices and ADP File #,
               send their welcome email, or give them a temporary password or tablet PIN.
+            </li>
+            <li>
+              Untick <strong>Clocks in</strong> for somebody who does not clock in — the providers.
+              Nobody reminds them or chases a shift with no punch, Home shows their shift instead of
+              the Clock in button, and the Directory shows them <em>On shift</em> at their
+              shift&rsquo;s office while it runs.
             </li>
             <li>
               Adding somebody new with a hire date — one at a time or several — starts their{' '}

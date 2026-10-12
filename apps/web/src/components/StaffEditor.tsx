@@ -66,6 +66,7 @@ export function StaffEditor({
     phone: person.phone ?? '',
     role: person.role,
     payType: person.payType ?? 'HOURLY',
+    clocksIn: person.clocksIn ?? true,
     jobRoleIds: heldRoles.map((jobRole) => jobRole.id),
     mainJobRoleId: heldRoles[0]?.id ?? '',
     locationIds: person.locations.map((l) => l.locationId),
@@ -155,6 +156,7 @@ export function StaffEditor({
         phone: form.phone.trim() || null,
         role: form.role,
         payType: form.payType,
+        clocksIn: form.clocksIn,
         locationIds: form.locationIds,
         primaryLocationId: form.locationIds[0],
         adpFileNumber: form.adpFileNumber.trim() || null,
@@ -369,6 +371,23 @@ export function StaffEditor({
                   </select>
                 </Field>
               </div>
+
+              <label className="mt-4 flex items-start gap-2 text-sm">
+                <input
+                  type="checkbox"
+                  checked={form.clocksIn}
+                  onChange={(event) => set('clocksIn', event.target.checked)}
+                  className="mt-0.5 rounded border-slate-300 text-brand-600 focus:ring-brand-600"
+                />
+                <span>
+                  <span className="font-medium text-slate-700">Clocks in</span>
+                  <span className="block text-xs text-slate-500">
+                    Untick for somebody who does not clock in, like the providers. Nobody reminds
+                    them to clock in or chases a shift with no punch, and the Directory shows them
+                    at their shift&rsquo;s office while it runs.
+                  </span>
+                </span>
+              </label>
 
               <fieldset className="mt-4">
                 <legend className="text-sm font-medium text-slate-700">Job roles</legend>

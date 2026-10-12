@@ -203,6 +203,7 @@ export class AuthController {
         email: true,
         role: true,
         employmentStatus: true,
+        clocksIn: true,
         mustChangePassword: true,
         wantsDailyDigest: true,
         wantsShiftReminders: true,
@@ -240,7 +241,9 @@ export class AuthController {
     // Somebody with no tablet PIN yet, at an office with a working time clock, is
     // reminded on Home until they choose one (Dominguez, October 2026). Only
     // whether a PIN is set is asked; the hash never leaves the database.
+    // Not somebody who does not clock in (`clocksIn`): they need no PIN.
     const hasNoPin =
+      employee.clocksIn &&
       (await this.prisma.employee.count({ where: { id: employeeId, pinHash: null } })) > 0;
     const tabletPinOffices = hasNoPin
       ? (

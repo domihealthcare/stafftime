@@ -46,7 +46,7 @@ function build(
     },
     employee: {
       findMany: jest.fn(async ({ where }) =>
-        where.locations.some.locationId === 'loc-nb'
+        where.shifts.some.locationId === 'loc-nb'
           ? [{ id: 'emp-frankie' }, { id: 'emp-max' }]
           : [{ id: 'emp-wny' }],
       ),
@@ -89,6 +89,22 @@ describe('LunchNoticesService', () => {
     expect(notice).toMatchObject({
       title: 'No rep lunch tomorrow at West New York',
       body: 'Bring your own lunch.',
+    });
+  });
+
+  it('tells only the people on the rota at that office tomorrow, not from home', async () => {
+    const { service, prisma } = build();
+    await service.send(EVENING);
+    const { where } = prisma.employee.findMany.mock.calls[0][0];
+    expect(where.locations).toBeUndefined();
+    expect(where.shifts.some).toEqual({
+      locationId: 'loc-nb',
+      isRemote: false,
+      status: 'PUBLISHED',
+      startsAt: {
+        gte: new Date('2099-11-11T05:00:00.000Z'),
+        lt: new Date('2099-11-12T05:00:00.000Z'),
+      },
     });
   });
 

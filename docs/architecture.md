@@ -2433,6 +2433,20 @@ who have left, or have not started, are not listed; somebody on leave is, marked
 forgotten clock-out, and should not tell the front desk somebody is in who went
 home yesterday — the missing punch is already chased by *What needs a look*.
 Colleagues see where somebody is; only managers see when they clocked in.
+
+**Somebody who does not clock in** (`Employee.clocksIn` false — the
+providers, Dominguez, 12 October 2026) has no punch to go by, so they are in
+by the rota instead: while a **published** shift of theirs is running (start
+passed, end not) and they are not on approved time off that day, `onNow` is
+that shift's office — or working from home — with `scheduled: true`, shown
+as "On shift · North Bergen" (`onShiftNow` in `DirectoryService`). Only the
+place and the shift's job role go to colleagues, never its hours; managers
+get `since`, the shift's start. An open punch, if they clocked in anyway,
+wins. Everywhere that chases a punch leaves them out — the clock-in reminder,
+the managers' no-show note, *Shifts with no clock-in*, the time clock's list
+and Home's tablet PIN reminder — and *Your week* leaves out "0 hours
+worked". Not the clock-out reminder or the midnight clock-out: those only
+follow a punch they did make.
 Each office's box **groups the people in by job role** (Dominguez, 5 October
 2026: "it should show what roles they are"), in the practice's order of job
 roles (`sortOrder`, which the directory now sends with each role); somebody
@@ -4093,15 +4107,22 @@ out as invites.
     started on for Front Desk) — like the other job-role switches, a screen
     and no power. Status and notes stay managers' only. The phone feed
     still carries none of it, since a calendar link can be forwarded.
-  - **Who hears about a rep lunch**: the staff of its office
-    (`audienceWhere`), not everybody — although everybody still sees it on
-    the calendar. Moving a lunch to the other office tells the new office
-    it is on and the old one it is off.
+  - **Who hears about a rep lunch**: the people **on the rota at its office
+    that day** — a published shift there, starting that New Jersey day, not
+    from home (`audienceWhere`, `workingThere`) — not everybody, and not
+    everybody whose offices include it (Dominguez, 12 October 2026: "why am
+    I being notified of lunches of locations i am not scheduled for?";
+    managers with both offices heard every lunch). Everybody still sees it on
+    the calendar. Moving a lunch to the other office or day tells the people
+    on that rota it is on and the old ones it is off. Booked before the rota
+    is published, nobody is told then; the night-before notice reaches them.
+    Calendar invites for a rep lunch follow the same list.
   - **The night-before notice** (`events/lunch-notices.service.ts`): from
     6pm New Jersey time (`LUNCH_NOTICE_FROM`), each office that is **open
     tomorrow** — at least one published shift there, not from home, and not
-    closed all day — tells every working member of staff assigned to it
-    either "Rep lunch tomorrow at North Bergen" (time, rep, company, catering
+    closed all day — tells the people **on its rota tomorrow** (a published
+    shift there, not from home; until 12 October 2026 everybody assigned to
+    the office) either "Rep lunch tomorrow at North Bergen" (time, rep, company, catering
     or office orders) or "No rep lunch tomorrow at North Bergen — bring your
     own lunch". The bell only, not email. Run by the five-minute timer
     (cron-job.org → `GET /maintenance/punch-reminders`), which already runs
