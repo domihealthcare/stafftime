@@ -25,7 +25,8 @@ function deployedHeaders(): Record<string, string> {
 }
 
 /**
- * Which build this is, baked into the bundle so the Help page can say.
+ * Which release this is, baked into the bundle so the Help page can say: its
+ * number, when it was built (the release's date and time), and the commit.
  *
  * On Vercel the commit comes from VERCEL_GIT_COMMIT_SHA; locally, from git;
  * with neither (a tarball, say), it is left out rather than guessed. The API
@@ -43,7 +44,24 @@ function buildInfo() {
       commit = '';
     }
   }
-  return { commit: commit.slice(0, 7) || null, builtAt: new Date().toISOString() };
+  return {
+    version: releaseNumber(),
+    commit: commit.slice(0, 7) || null,
+    builtAt: new Date().toISOString(),
+  };
+}
+
+/**
+ * The release number, "1.2.0", from the root package.json. It goes up with
+ * every release that reaches the practice (October 2026, Dominguez: a
+ * version number rather than the build): the last part for fixes, the middle
+ * for new features, the first for a big change.
+ */
+function releaseNumber(): string {
+  const root = JSON.parse(
+    readFileSync(fileURLToPath(new URL('../../package.json', import.meta.url)), 'utf8'),
+  ) as { version?: string };
+  return root.version ?? '0.0.0';
 }
 
 /**

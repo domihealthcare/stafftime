@@ -587,6 +587,29 @@ const STAFF: Section[] = [
           </p>
         ),
       },
+      {
+        question: 'Which days does time off use up?',
+        answer: (
+          <>
+            <p>
+              Only weekdays, and not a weekday the office is closed all day (a holiday): Wednesday
+              to the next Wednesday is 6 days. The form says how many days it takes and what you
+              will have left before you send it.
+            </p>
+            <p>
+              If it is more than you have left, you can still ask: tick that you understand the
+              extra days may be unpaid, and the manager deciding sees that you knew. At the start of
+              each month a pop-up on <Screen>Home</Screen> shows the PTO and sick days you have
+              left.
+            </p>
+            <p>
+              Sick days are given for the whole year, however late in it you started. Hourly staff
+              who started from 16 October 2026 earn them as they work instead — an hour for every 30
+              hours worked, up to the year&rsquo;s days — and their balance shows how much so far.
+            </p>
+          </>
+        ),
+      },
     ],
   },
   {
@@ -811,9 +834,10 @@ const STAFF: Section[] = [
         question: 'Which version am I using?',
         answer: (
           <p>
-            It is at the bottom of this page, under <strong>About this version</strong>, and changes
-            by itself every time a new version goes out. If it says a newer version is live, reload
-            the page to get it.
+            It is at the bottom of this page, under <strong>About this version</strong>: a number
+            like 1.2.0, and when that version went out. The number goes up with every new version —
+            the last part for fixes, the middle for new features. If it says a newer version is
+            live, reload the page to get it.
           </p>
         ),
       },
@@ -1751,7 +1775,11 @@ const MANAGERS: Section[] = [
             <strong>Time off balances</strong>, with a search box and <strong>Adjust</strong>. The
             practice&rsquo;s rules — PTO and sick days a year, what carries over, when the year
             starts — are in <Screen>Practice settings</Screen> (account menu), where an admin
-            changes them.
+            changes them. Requests count weekdays only, and not a day the office is closed all day.
+            Sick days are never prorated for starting part-way through the year; hourly staff
+            starting on or after the date in the rules earn them as they work (an hour for every 30
+            hours). A request marked <strong>Past the balance</strong> was sent by somebody who
+            ticked that they understand the extra days may be unpaid.
           </p>
         ),
       },
@@ -2018,6 +2046,30 @@ const MANAGERS: Section[] = [
         ),
       },
       {
+        question: 'Reference tables: the diagnostics guide and the fee schedule',
+        answer: (
+          <>
+            <p>
+              On <Screen>Resources</Screen>, under <strong>Reference</strong>, press{' '}
+              <strong>+ Add a table</strong>. In Excel or Google Sheets, select the table from its
+              headings down, copy it, and paste it into the box — there is nothing to upload. Say
+              how many <strong>heading rows</strong> stay at the top (the diagnostics guide has two:
+              the procedures, then their time and prep) and how many <strong>name columns</strong>{' '}
+              say what each row is (the insurance and plan), and who reads it: everyone (the
+              diagnostics guide) or managers and admins only (the fee schedule).
+            </p>
+            <p>
+              Anyone it is for can search it by row and narrow it to some columns —
+              &ldquo;Aetna&rdquo;, &ldquo;Echo&rdquo;; Yes, No and PA are coloured. To change a
+              cell, press <strong>Edit cells</strong>, click it, and save; <strong>+ Row</strong>{' '}
+              and <strong>+ Column</strong> add more. To start again from the spreadsheet, use{' '}
+              <strong>Name, notes, paste again…</strong>. Reference only — never a patient&rsquo;s
+              details.
+            </p>
+          </>
+        ),
+      },
+      {
         question: 'Running a survey',
         answer: (
           <p>
@@ -2106,6 +2158,21 @@ const MANAGERS: Section[] = [
   {
     title: 'Admins only',
     topics: [
+      {
+        question: 'Vendor payments (admins)',
+        answer: (
+          <p>
+            <Screen>Manage → Vendor payments</Screen> takes the place of the payments spreadsheet.
+            Add each vendor or contractor once — what they are paid for and where checks go — then
+            each payment under them: what it is for, the amount, the invoice and check numbers, and
+            where it is: <strong>To pay</strong>, <strong>Sent</strong> (with the day) or{' '}
+            <strong>Completed</strong> (received and deposited, with the day). The top of the page
+            says how many are not completed yet. Untick <strong>Still paying them</strong> to put a
+            vendor away with their payments kept. Notes are for the paperwork — never a
+            patient&rsquo;s name; say how many readings, not whose.
+          </p>
+        ),
+      },
       {
         question: 'Staff, kiosks and offices',
         answer: (

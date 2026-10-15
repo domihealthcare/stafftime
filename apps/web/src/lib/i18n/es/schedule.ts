@@ -193,12 +193,37 @@ export const SCHEDULE: Record<string, string> = {
     'Tu gerente los arreglará cuando decida — se te avisará.',
   'falls outside the {year} policy year, so it does not come off the balance above.':
     'cae fuera del año de la política {year}, así que no se descuenta del saldo de arriba.',
-  'That is {days}, which puts you {over} over your sick allowance. You can still ask — a manager decides.':
-    'Son {days}, lo que te pasa por {over} de tu asignación de enfermedad. Igual puedes pedirlo — un gerente decide.',
-  'That is {days}, which puts you {over} over your PTO allowance. You can still ask — a manager decides.':
-    'Son {days}, lo que te pasa por {over} de tu asignación de PTO. Igual puedes pedirlo — un gerente decide.',
+  'weekends don’t count': 'los fines de semana no cuentan',
+  'counts against the {year} policy year: {n} left afterwards.':
+    'cuenta para el año de la política {year}: te quedarán {n}.',
+  '{day}: office closed': '{day}: oficina cerrada',
+  'Nothing to take off — those days are a weekend or the office is closed.':
+    'No hay nada que descontar — esos días son fin de semana o la oficina está cerrada.',
+  'You have {left} sick days left — this asks for {days}.':
+    'Te quedan {left} días de enfermedad — esto pide {days}.',
+  'You have {left} PTO days left — this asks for {days}.':
+    'Te quedan {left} días de PTO — esto pide {days}.',
+  'The {over} past it may be unpaid. You can still ask — a manager decides, and sees that you knew.':
+    'Los {over} de más pueden no ser pagados. Igual puedes pedirlo — un gerente decide, y verá que lo sabías.',
+  'I understand I’m asking for more than I have left, and it may be unpaid.':
+    'Entiendo que estoy pidiendo más de lo que me queda, y que puede no ser pagado.',
+  'Past the balance — asked knowing the extra days may be unpaid.':
+    'Pasa del saldo — pedido sabiendo que los días de más pueden no ser pagados.',
   '{n} left afterwards.': 'Te quedarán {n}.',
   'Sending…': 'Enviando…',
   'Send request': 'Enviar solicitud',
   '{date} (half day)': '{date} (medio día)',
+
+  // Balances (components/PtoBalanceCard.tsx) and the start-of-month pop-up
+  // (components/MonthBalancePopup.tsx), October 2026.
+  'Earned so far': 'Acumulado hasta ahora',
+  'Earned as you work: an hour for every 30 hours worked, up to {days} days a year. {worked} hours worked so far this year.':
+    'Se acumula mientras trabajas: una hora por cada 30 horas trabajadas, hasta {days} días al año. {worked} horas trabajadas en lo que va del año.',
+  'Your time off this month': 'Tu tiempo libre este mes',
+  'A reminder of what you have left this year, so nothing comes as a surprise.':
+    'Un recordatorio de lo que te queda este año, para que nada te tome por sorpresa.',
+  'Sick time is earned as you work: an hour for every 30 hours, up to {days} days.':
+    'El tiempo por enfermedad se acumula mientras trabajas: una hora por cada 30 horas, hasta {days} días.',
+  'Got it': 'Entendido',
+  '{n} waiting for approval': '{n} esperando aprobación',
 };

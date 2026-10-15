@@ -258,14 +258,17 @@ model Employee {
   /// and one admin does not need all three chasing the same lapsed licence, and
   /// an unwanted daily email is one that gets filtered, taking the one that
   /// mattered with it. Ignored for employees, who never receive it.
-  wantsDailyDigest    Boolean       @default(true)
+  wantsDailyDigest     Boolean       @default(true)
   /// "You're on tomorrow" — the evening before each day they work, on the
   /// bell and by email (October 2026, Dominguez: "should be able to turn off
   /// as a user"). On by default; theirs to turn off on Email settings.
-  wantsShiftReminders Boolean       @default(true)
+  wantsShiftReminders  Boolean       @default(true)
   /// "Your week" on Sunday evening — hours worked, next week's shifts — on
   /// the bell and by email (October 2026, Dominguez). Theirs to turn off.
-  wantsWeeklySummary  Boolean       @default(true)
+  wantsWeeklySummary   Boolean       @default(true)
+  /// The month ("2026-11") they last saw the start-of-month pop-up with their
+  /// time off left (October 2026, Dominguez), so it shows once a month.
+  balanceReminderMonth String?
   /// The parts of the round-up this manager does not want (October 2026,
   /// Dominguez: "certain managers should be notified of certain things").
   /// Stored as what is left out, so a part added later reaches everybody until
@@ -273,7 +276,7 @@ model Employee {
   /// is down for still goes to everyone who gets the round-up — see
   /// `email/digest-topics.ts`. The Time off part also decides who is told of a
   /// new request as it comes in.
-  mutedDigestTopics   DigestTopic[] @default([])
+  mutedDigestTopics    DigestTopic[] @default([])
 
   photo EmployeePhoto?
 
@@ -454,6 +457,13 @@ model PtoPolicy {
   /// entitlement.
   prorateFirstYear Boolean @default(true)
 
+  /// Sick days (October 2026, Dominguez): everybody is given the year's days,
+  /// never cut down for starting part-way — except hourly staff who started
+  /// on or after this date, who earn them as they work (NJ earned sick leave:
+  /// an hour for every 30 hours worked, up to the year's days). Null: nobody
+  /// earns them; everybody is given them. Set to the day it was decided.
+  sickAccrualFrom DateTime? @default(dbgenerated("'2026-10-16'::date")) @db.Date
+
   updatedById String?  @db.Uuid
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
@@ -601,6 +611,11 @@ model PtoRequest {
 
   /// The employee's reason, optional — sick leave should not require one.
   notes String?
+
+  /// Asked for more than was left of the allowance, and said they understood
+  /// the rest may be unpaid (October 2026, Dominguez) — shown to whoever
+  /// decides it.
+  pastBalance Boolean @default(false)
 
   reviewedById String?   @db.Uuid
   reviewedAt   DateTime?
@@ -3176,4 +3191,112 @@ model PushKeys {
   createdAt  DateTime @default(now())
 
   @@map("push_keys")
+}
+
+// ---------------------------------------------------------------------------
+// Reference tables (October 2026)
+// ---------------------------------------------------------------------------
+//
+// The practice's spreadsheets of facts to look up, pasted in once and kept in
+// the app (Dominguez: "lets make it so this can be done on the portal going
+// forward"): the diagnostics guide — which insurance covers which ultrasound
+// or test, with its time and prep — and the fee schedule, what each insurance
+// pays per CPT code. Reference, never anybody's record: no patient details.
+
+/// Who reads a reference table. Managers and admins keep them all.
+enum ReferenceAudience {
+  /// Everybody signed in (the diagnostics guide).
+  EVERYONE
+  /// Managers and admins only (the fee schedule — the practice's money).
+  MANAGERS
+}
+
+/// One table, as pasted from a spreadsheet: rows of cells, the first
+/// `headerRows` of them its headings (a procedure's name, its time and prep)
+/// and the first `keyColumns` of each row what the row is (the insurance).
+/// Kept whole, as text, and saved whole.
+model ReferenceTable {
+  id          String            @id @default(uuid()) @db.Uuid
+  title       String
+  /// Shown above the table: "2 lower extremities cannot be done the same day".
+  notes       String?
+  audience    ReferenceAudience @default(EVERYONE)
+  headerRows  Int               @default(1)
+  keyColumns  Int               @default(1)
+  /// string[][]: every row, headings first, each cell as text.
+  rows        Json
+  sortOrder   Int               @default(0)
+  updatedById String?           @db.Uuid
+  createdAt   DateTime          @default(now())
+  updatedAt   DateTime          @updatedAt
+
+  @@map("reference_tables")
+}
+
+// ---------------------------------------------------------------------------
+// Vendor payments (October 2026)
+// ---------------------------------------------------------------------------
+//
+// What the practice pays its vendors and contractors — invoices, checks, cash
+// — and whether each has gone out and cleared, in place of the "Payments to
+// vendors" spreadsheet. Admins only. Money and paperwork only: never a
+// patient's name (the sheet's "readings" notes had them; here a note says how
+// many, not whose). `no-sensitive-data.spec.ts` pins the fields.
+
+enum VendorPaymentMethod {
+  CHECK
+  CASH
+  OTHER
+}
+
+enum VendorPaymentStatus {
+  /// Owed, not yet sent.
+  TO_PAY
+  /// Sent or given; not yet cleared.
+  SENT
+  /// Received and deposited, or otherwise done.
+  COMPLETED
+}
+
+model Vendor {
+  id        String   @id @default(uuid()) @db.Uuid
+  name      String
+  /// Where checks go.
+  address   String?
+  /// What they are paid for, and how: "$200 a month", "readings, $50 each".
+  details   String?
+  /// Off the list once the practice stops paying them; payments stay.
+  active    Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  payments VendorPayment[]
+
+  @@map("vendors")
+}
+
+model VendorPayment {
+  id            String              @id @default(uuid()) @db.Uuid
+  vendorId      String              @db.Uuid
+  /// What it is for: "September 2025", "14 readings, Sept–Oct 2025".
+  forWhat       String
+  invoiceNumber String?
+  method        VendorPaymentMethod @default(CHECK)
+  checkNumber   String?
+  amount        Decimal?            @db.Decimal(10, 2)
+  status        VendorPaymentStatus @default(TO_PAY)
+  /// When it was sent or given.
+  sentOn        DateTime?           @db.Date
+  /// When it was received and deposited — done.
+  completedOn   DateTime?           @db.Date
+  /// Short, and never a patient's name.
+  note          String?
+  createdById   String?             @db.Uuid
+  createdAt     DateTime            @default(now())
+  updatedAt     DateTime            @updatedAt
+
+  vendor Vendor @relation(fields: [vendorId], references: [id], onDelete: Cascade)
+
+  @@index([vendorId, createdAt])
+  @@map("vendor_payments")
 }

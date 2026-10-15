@@ -786,6 +786,59 @@ becoming sixty days. The walk starts at the hire date, so it is bounded.
 Sick days do not carry by default (`sickCarryoverDays` is 0), but the practice
 can turn it on.
 
+### Which days a request takes (October 2026)
+
+From staff feedback (Dominguez: "please do not include weekends … Ivanna …
+Wednesday 10/21 to 10/28 … should only be 6 PTO working days"): a request
+takes **weekdays only**, and not a weekday the office is **closed all day**
+(`pto/counted-days.ts`). A closure for one office skips the day only for
+somebody all of whose offices it shuts; a timed closure skips a day only if it
+runs midnight to midnight (an early close takes nothing off anybody — they
+worked the morning). A half day on a counted day is 0.5. One rule everywhere:
+balances (`PtoPolicyService`), every request the API returns (`days`, via
+`TimeOffDaysService.counterFor`), the form before it is sent (`GET
+/pto/preview`), and so "Approve the clean time off". Requests already on file
+were recounted by it — it is not stored, so nothing needed migrating.
+
+### More than is left (October 2026)
+
+Asking past the balance is still allowed (a manager decides), but the form
+shows what is left and what is asked, and **Send** waits for a tick: "I
+understand I'm asking for more than I have left, and it may be unpaid". The
+server refuses it without `acknowledgedUnpaid` and records
+`PtoRequest.pastBalance`, shown to whoever decides as **Past the balance**.
+Checked against the balance of the request's first day's policy year, only
+when the whole request is in that year.
+
+### Sick days: never prorated; earned by new hourly staff (October 2026)
+
+"2.2 of 2.2 left" for somebody hourly given 5 sick days: the first-year
+proration had cut the sick days too. Dominguez: "all staff should have been
+given the 5 days of sick day and … going forward, any new staff that is hourly
+would get the accumulation". So **sick days are never prorated** — everybody is
+given the year's days — **except hourly staff who started on or after
+`PtoPolicy.sickAccrualFrom`** (16 October 2026; hire date, else when they were
+added to the app), who **earn** them: an hour for every 30 hours worked (NJ
+earned sick leave), shown in days at 8 hours a day, up to the year's sick
+days. Hours worked are closed punches in the policy year, not an uncorrected
+midnight clock-out (`hoursWorkedByYear`). The balance carries `sick.accrual`
+(hours worked, hours earned, the most it can be), shown under the sick
+balance. PTO is prorated as before. An admin changes the date (or clears it:
+nobody earns them) in Practice settings → Time off rules. This is not the
+"NJ earned-sick-leave accrual changes" turned down earlier — that was a
+general change; this is only new hourly staff, asked for.
+
+### The start-of-month pop-up (October 2026)
+
+"Can a reminder at the beginning or end of every month be a pop up for
+employees showing how much pto/sick they have left?" — on Home, the first time
+somebody opens it in a month (New Jersey's), a pop-up with PTO and sick days
+left and anything waiting (`components/MonthBalancePopup.tsx`, `GET
+/pto/month-reminder`). Closing it either way is "seen" for the month
+(`Employee.balanceReminderMonth`). Not for somebody added this month (they
+have just started; it also keeps it off the browser suites), anybody with no
+time off at all, or anybody who has left.
+
 ### The switch-over: time taken before Domi Staff
 
 Domi Staff went live in September 2026, three-quarters of the way through a
@@ -2650,14 +2703,20 @@ opens.
 
 ## Version on the Help page
 
-`vite.config.ts` bakes `{ commit, builtAt }` into the bundle as `__BUILD__`:
-the commit from `VERCEL_GIT_COMMIT_SHA` on Vercel or `git rev-parse` locally,
-left out rather than guessed when neither is there. The Help page shows it as
-"2026.09.24 (feda444)" — the build date for people, the commit for matching to
-a merge. `/api/config` reports the commit the server runs (again from
-`VERCEL_GIT_COMMIT_SHA`), so the page can tell a tab opened before the latest
-deploy and offer a reload; with no commit on either side it simply does not
-compare.
+Since October 2026 (Dominguez: "instead of using 'build version' lets start
+having this as a version number … three part but should have a date/time of
+last release") the Help page shows a **release number** — `version` in the
+root `package.json`, **1.0.0** from 15 October 2026 — and **when it went
+out**: the build time, on New Jersey's clock ("Thu, Oct 15, 2026, 4:12 PM
+ET"). The number goes up with every release that reaches the practice: the
+last part for fixes, the middle for new features, the first for a big change.
+**Bump it in the PR that makes the release**; nothing does it by itself.
+
+`vite.config.ts` bakes `{ version, commit, builtAt }` into the bundle as
+`__BUILD__`. The commit (from `VERCEL_GIT_COMMIT_SHA` on Vercel, `git
+rev-parse` locally) is no longer shown — it is the cell's tooltip — but still
+does the work it did: `/api/config` reports the commit the server runs, so a
+tab opened before the latest deploy is offered a reload.
 
 ## Domi Staff on a phone
 
@@ -4365,6 +4424,44 @@ the thing ended.
 keeps closures and approved time off, so nothing shows twice (Dominguez).
 Off until `GOOGLE_CALENDAR_INVITES=on` — deliberately a setting, not
 detected, since what the feed carries hangs on it.
+
+## Reference tables (October 2026)
+
+The practice's spreadsheets of facts to look up, on the portal (Dominguez:
+"lets make it so this can be done on the portal going forward"): the
+**diagnostics guide** (which insurance covers which ultrasound or test — Yes,
+No or PA — with its time and prep; for everyone) and the **fee schedule** (what
+each insurance pays per CPT code; managers and admins only). A third sheet
+offered, the I-693 applicants list, was left out: it is patients, with dates
+of birth and ID numbers (see *Data this app does not hold*).
+
+`ReferenceTable`: a title, notes, who reads it (`EVERYONE` or `MANAGERS`), how
+many **heading rows** stay at the top and how many **name columns** say what a
+row is, and the cells as `string[][]` in JSON, saved whole. **Pasted, never
+uploaded**: in the spreadsheet the cells are copied, and pasted as text into
+the form; `reference/paste.ts` reads the tabs, line breaks and Excel's "quoted
+cells" with line breaks in them (unit-tested). The fee schedule's contracted
+rates are therefore never in the code repository, only in the database.
+Reading: a row search and an "only columns with" filter (the fee schedule is
+38 insurers wide), headings sticky, the first column sticky, Yes / No / PA
+coloured (`cellTone`, mirrored in the web's `lib/reference.ts`). Managers and
+admins **Edit cells** in place, add rows and columns, or paste again. Somebody
+a table is not for gets 404. On Resources under **Reference**; `/reference/:id`.
+`tests/browser/reference-tables.mjs`. Worth carrying to the EMR module.
+
+## Vendor payments (October 2026)
+
+In place of the "Payments to vendors" spreadsheet, **admins only** (Manage →
+Vendor payments, `/vendors`): `Vendor` (name, what for, address for checks,
+still paying them) and `VendorPayment` (what for, amount, invoice #, check /
+cash / other with the check #, **To pay → Sent → Completed** with the days, a
+short note). A completed payment needs the day it cleared, a sent one the day
+it went; the dates that do not go with the status are dropped. The page counts
+what is not completed yet and what each vendor was paid this year. The sheet's
+"readings" notes held patients' names; here the note says *how many*, never
+whose, and the schema guard pins both tables' fields. History was not
+imported — the sheet stays the archive; the portal is "going forward".
+`tests/browser/vendors.mjs`.
 
 ## Drive folders on Resources
 

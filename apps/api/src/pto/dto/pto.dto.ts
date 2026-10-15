@@ -13,7 +13,9 @@ import {
   Max,
   IsNumber,
   Min,
+  Matches,
   ValidateBy,
+  ValidateIf,
 } from 'class-validator';
 
 /// A new request is sick or PTO (VACATION), nothing else (Dominguez,
@@ -44,6 +46,32 @@ export class CreatePtoRequestDto {
 
   /// Managers may file a request on someone else's behalf — for the person who
   /// phones in sick rather than opening the app.
+  @IsOptional()
+  @IsUUID('4')
+  employeeId?: string;
+
+  /// Asking for more than is left: ticked to say the days past it may be
+  /// unpaid. Refused without it.
+  @IsOptional()
+  @IsBoolean()
+  acknowledgedUnpaid?: boolean;
+}
+
+/// "What would this take?" — the request form, before it is sent.
+export class PreviewPtoRequestDto {
+  @IsIn(REQUESTABLE_PTO_TYPES, { message: 'Time off is either Sick or PTO.' })
+  type!: PtoType;
+
+  @IsDateString()
+  startDate!: string;
+
+  @IsDateString()
+  endDate!: string;
+
+  @IsOptional()
+  @IsIn(['true', 'false'])
+  isHalfDay?: 'true' | 'false';
+
   @IsOptional()
   @IsUUID('4')
   employeeId?: string;
@@ -159,6 +187,13 @@ export class UpdatePtoPolicyDto {
   @IsOptional()
   @IsBoolean()
   prorateFirstYear?: boolean;
+
+  /// Hourly staff starting on or after this day earn sick time as they work:
+  /// "2026-10-16", or null for nobody.
+  @IsOptional()
+  @ValidateIf((_, value) => value !== null)
+  @Matches(/^\d{4}-\d{2}-\d{2}$/, { message: 'sickAccrualFrom must be a date like 2026-10-16' })
+  sickAccrualFrom?: string | null;
 }
 
 /// Days: whole or half, from none to a year.

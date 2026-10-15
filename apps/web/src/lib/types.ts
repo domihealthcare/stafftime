@@ -232,6 +232,21 @@ export interface PtoRequest {
   /// Set when an admin wrote down time off already taken, rather than it
   /// being asked for (the back-log). Its comment is the reviewNote.
   recordedBy?: { id: string; firstName: string; lastName: string } | null;
+  /// Asked for more than was left, knowing the rest may be unpaid.
+  pastBalance?: boolean;
+}
+
+/// What a request would take and leave, before it is sent.
+export interface TimeOffPreview {
+  /// Weekdays, not days the office is shut.
+  days: number;
+  weekendDays: number;
+  closedDays: string[];
+  bucket: 'vacation' | 'sick' | null;
+  policyYear: number;
+  inOneYear: boolean;
+  remaining: number | null;
+  after: number | null;
 }
 
 export interface ConflictingShift {
@@ -259,6 +274,9 @@ export interface PtoPolicy {
   yearStartMonth: number;
   yearStartDay: number;
   prorateFirstYear: boolean;
+  /// Hourly staff starting on or after this day earn sick time as they work
+  /// ("2026-10-16T00:00:00.000Z"); null, nobody does.
+  sickAccrualFrom: string | null;
 }
 
 export interface AllowanceBalance {
@@ -270,6 +288,9 @@ export interface AllowanceBalance {
   usedBefore: number;
   pending: number;
   remaining: number;
+  /// Sick time earned as they work (hourly staff starting from the
+  /// practice's date): what `entitled` came from.
+  accrual?: { hoursWorked: number; hoursEarned: number; upToDays: number };
 }
 
 export interface PtoBalance {
@@ -1973,4 +1994,83 @@ export interface CleanTimeOffCheck {
   id: string;
   clean: boolean;
   why: string | null;
+}
+
+/// A reference table (October 2026): the diagnostics guide, the fee schedule.
+export type ReferenceAudience = 'EVERYONE' | 'MANAGERS';
+
+export interface ReferenceTableSummary {
+  id: string;
+  title: string;
+  notes: string | null;
+  audience: ReferenceAudience;
+  headerRows: number;
+  keyColumns: number;
+  sortOrder: number;
+  updatedAt: string;
+  rowCount: number;
+  columnCount: number;
+}
+
+export interface ReferenceTable extends Omit<ReferenceTableSummary, 'rowCount' | 'columnCount'> {
+  rows: string[][];
+}
+
+export interface ReferenceTableInput {
+  title: string;
+  notes?: string;
+  audience: ReferenceAudience;
+  headerRows: number;
+  keyColumns: number;
+  /// Pasted from the spreadsheet, or the rows as edited.
+  pasted?: string;
+  rows?: string[][];
+}
+
+/// Vendor payments (October 2026), admins only.
+export type VendorPaymentMethod = 'CHECK' | 'CASH' | 'OTHER';
+export type VendorPaymentStatus = 'TO_PAY' | 'SENT' | 'COMPLETED';
+
+export interface VendorPayment {
+  id: string;
+  vendorId: string;
+  forWhat: string;
+  invoiceNumber: string | null;
+  method: VendorPaymentMethod;
+  checkNumber: string | null;
+  amount: number | null;
+  status: VendorPaymentStatus;
+  sentOn: string | null;
+  completedOn: string | null;
+  note: string | null;
+  createdAt: string;
+}
+
+export interface Vendor {
+  id: string;
+  name: string;
+  address: string | null;
+  details: string | null;
+  active: boolean;
+  payments: VendorPayment[];
+  outstanding: number;
+}
+
+export interface VendorInput {
+  name: string;
+  address?: string;
+  details?: string;
+  active?: boolean;
+}
+
+export interface VendorPaymentInput {
+  forWhat: string;
+  invoiceNumber?: string;
+  method: VendorPaymentMethod;
+  checkNumber?: string;
+  amount?: number | null;
+  status: VendorPaymentStatus;
+  sentOn?: string | null;
+  completedOn?: string | null;
+  note?: string;
 }

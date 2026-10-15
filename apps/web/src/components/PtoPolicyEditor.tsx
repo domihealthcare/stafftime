@@ -4,8 +4,18 @@ import type { PtoPolicy } from '../lib/types';
 import { Alert, Card } from './ui';
 
 const MONTHS = [
-  'January', 'February', 'March', 'April', 'May', 'June',
-  'July', 'August', 'September', 'October', 'November', 'December',
+  'January',
+  'February',
+  'March',
+  'April',
+  'May',
+  'June',
+  'July',
+  'August',
+  'September',
+  'October',
+  'November',
+  'December',
 ];
 
 /// Admin-only editor for the practice's time-off rules. Everyone else sees the
@@ -29,6 +39,7 @@ export function PtoPolicyEditor({
     yearStartMonth: String(policy.yearStartMonth),
     yearStartDay: String(policy.yearStartDay),
     prorateFirstYear: policy.prorateFirstYear,
+    sickAccrualFrom: policy.sickAccrualFrom ? policy.sickAccrualFrom.slice(0, 10) : '',
   });
   const [busy, setBusy] = useState(false);
   const [problem, setProblem] = useState<string | null>(null);
@@ -47,6 +58,7 @@ export function PtoPolicyEditor({
         yearStartMonth: Number(form.yearStartMonth),
         yearStartDay: Number(form.yearStartDay),
         prorateFirstYear: form.prorateFirstYear,
+        sickAccrualFrom: form.sickAccrualFrom || null,
       });
       setSaved(true);
       onSaved(updated);
@@ -61,7 +73,7 @@ export function PtoPolicyEditor({
     policy.maxCarryoverDays > 0
       ? `${policy.maxCarryoverDays} days carried over`
       : 'nothing carried over'
-  }`;
+  }${policy.sickAccrualFrom ? ' · new hourly staff earn sick time as they work' : ''}`;
 
   const number =
     'mt-1 w-full rounded-lg border-slate-300 py-2.5 text-base shadow-sm focus:border-brand-600 focus:ring-brand-600';
@@ -118,7 +130,10 @@ export function PtoPolicyEditor({
                 onChange={(e) => setForm({ ...form, sickDaysPerYear: e.target.value })}
                 className={number}
               />
-              <p className="mt-1 text-xs text-slate-500">Tracked separately from PTO.</p>
+              <p className="mt-1 text-xs text-slate-500">
+                Tracked separately from PTO, and given in full — never cut down for starting
+                part-way through the year (except hourly staff earning them, below).
+              </p>
             </div>
 
             <div>
@@ -195,13 +210,31 @@ export function PtoPolicyEditor({
               className="mt-0.5 rounded border-slate-300 text-brand-600 focus:ring-brand-600"
             />
             <span>
-              Prorate a new hire&rsquo;s first year
+              Prorate a new hire&rsquo;s first year of PTO
               <span className="block text-xs text-slate-500">
-                Someone starting in July gets about half the year&rsquo;s days, not all of
-                them.
+                Someone starting in July gets about half the year&rsquo;s PTO days, not all of them.
+                Sick days are not prorated.
               </span>
             </span>
           </label>
+
+          <div className="mt-4">
+            <label htmlFor="sick-accrual" className="block text-sm font-medium text-slate-700">
+              Hourly staff starting on or after this day earn sick time as they work
+            </label>
+            <input
+              id="sick-accrual"
+              type="date"
+              value={form.sickAccrualFrom}
+              onChange={(e) => setForm({ ...form, sickAccrualFrom: e.target.value })}
+              className="mt-1 rounded-lg border-slate-300 py-2.5 text-base shadow-sm focus:border-brand-600 focus:ring-brand-600"
+            />
+            <p className="mt-1 text-xs text-slate-500">
+              An hour of sick time for every 30 hours worked (NJ earned sick leave), up to the sick
+              days a year. Everybody else — salaried staff, and hourly staff who started before this
+              day — is given the year&rsquo;s sick days in full. Empty: nobody earns them.
+            </p>
+          </div>
 
           {problem && (
             <div className="mt-3">

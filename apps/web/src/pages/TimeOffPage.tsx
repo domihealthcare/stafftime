@@ -12,6 +12,7 @@ import type {
   PtoRequest,
   PtoStatus,
   PtoType,
+  TimeOffPreview,
   Shift,
 } from '../lib/types';
 import { PTO_TYPE_LABELS, REQUESTABLE_PTO_TYPES, hasNone, ptoTypeLabel } from '../lib/time-off';
@@ -314,6 +315,14 @@ function RequestCard({
             )}
             {request.recordedBy && <> · {t('recorded after the fact')}</>}
           </p>
+          {request.pastBalance && request.status === 'PENDING' && (
+            <p
+              data-testid="past-balance-flag"
+              className="mt-2 rounded bg-amber-50 px-2 py-1 text-xs font-medium text-amber-900 ring-1 ring-inset ring-amber-200"
+            >
+              {t('Past the balance — asked knowing the extra days may be unpaid.')}
+            </p>
+          )}
           {request.notes && (
             <p className="mt-2 text-sm text-slate-700">&ldquo;{request.notes}&rdquo;</p>
           )}
@@ -497,37 +506,52 @@ function RequestForm({
   const effectiveEnd = endDate || startDate;
   const singleDay = Boolean(startDate) && effectiveEnd === startDate;
 
-  // A rough count so the form can warn before submitting. The server is the
-  // authority; this is only to stop a surprise.
-  const requestedDays = startDate
-    ? singleDay && isHalfDay
-      ? 0.5
-      : Math.round(
-          (new Date(`${effectiveEnd}T00:00:00Z`).getTime() -
-            new Date(`${startDate}T00:00:00Z`).getTime()) /
-            86_400_000,
-        ) + 1
-    : 0;
+  // What it takes and leaves, from the server — weekdays only, not the days
+  // the office is shut (October 2026, Dominguez: "please do not include
+  // weekends"). For a manager filing for somebody, theirs.
+  const [preview, setPreview] = useState<TimeOffPreview | null>(null);
+  const [acknowledged, setAcknowledged] = useState(false);
+  const halfDay = singleDay ? isHalfDay : false;
+  useEffect(() => {
+    setPreview(null);
+    setAcknowledged(false);
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(startDate) || effectiveEnd < startDate) return;
+    let cancelled = false;
+    api
+      .ptoPreview({
+        type,
+        startDate,
+        endDate: effectiveEnd,
+        isHalfDay: halfDay,
+        employeeId: employeeId || undefined,
+      })
+      .then((found) => !cancelled && setPreview(found))
+      .catch(() => undefined);
+    return () => {
+      cancelled = true;
+    };
+  }, [type, startDate, effectiveEnd, halfDay, employeeId]);
 
-  const bucket =
-    type === 'SICK' ? 'sick' : type === 'VACATION' || type === 'PERSONAL' ? 'vacation' : null;
-
-  // The balance on screen is for one policy year, so it can only speak to a
-  // request inside that year. Booking next June against this year's remaining
-  // days would be plainly wrong.
-  const inBalanceYear =
-    balance !== null && startDate >= balance.yearStart && effectiveEnd <= balance.yearEnd;
-
-  // Only for the person's own request: a manager filing for someone else is
-  // looking at their own balance, which would mislead.
-  const isOwnRequest = employeeId === '';
-  const showBalance =
-    bucket !== null && balance !== null && isOwnRequest && requestedDays > 0 && inBalanceYear;
-  const showOtherYearNote =
-    bucket !== null && balance !== null && isOwnRequest && requestedDays > 0 && !inBalanceYear;
-  const remainingAfter = showBalance
-    ? Math.round((balance[bucket].remaining - requestedDays) * 10) / 10
-    : 0;
+  const bucket = preview?.bucket ?? null;
+  const showBalance = Boolean(preview && bucket && preview.inOneYear && preview.days > 0);
+  const showOtherYearNote = Boolean(preview && bucket && !preview.inOneYear && preview.days > 0);
+  // A request in another policy year than the balance on screen says which
+  // year's days it counts against.
+  const otherYear =
+    preview && balance && preview.policyYear !== balance.policyYear ? preview.policyYear : null;
+  const remainingAfter = preview?.after ?? 0;
+  // More than is left: still asked for, once they say they understand the
+  // rest may be unpaid (October 2026, Dominguez).
+  const overBalance = showBalance && remainingAfter < 0;
+  // "weekends don't count", "Thu, Dec 25: office closed".
+  const skipNote = preview
+    ? [
+        preview.weekendDays > 0 ? t('weekends don’t count') : null,
+        ...preview.closedDays.map((day) =>
+          t('{day}: office closed', { day: formatCalendarDate(day, { year: false }) }),
+        ),
+      ].filter(Boolean)
+    : [];
 
   async function submit(event: React.FormEvent) {
     event.preventDefault();
@@ -541,6 +565,7 @@ function RequestForm({
         isHalfDay: singleDay ? isHalfDay : false,
         notes: notes.trim() || undefined,
         employeeId: employeeId || undefined,
+        acknowledgedUnpaid: overBalance ? acknowledged : undefined,
       });
       onCreated();
     } catch (err) {
@@ -693,40 +718,94 @@ function RequestForm({
           </div>
         )}
 
-        {showOtherYearNote && (
-          <p className="text-sm text-slate-600">
-            {plural(requestedDays, '{n} day', '{n} days')} ·{' '}
+        {preview && preview.days === 0 && (
+          <p className="text-sm text-slate-600" data-testid="time-off-days">
+            {t('Nothing to take off — those days are a weekend or the office is closed.')}
+          </p>
+        )}
+
+        {showOtherYearNote && preview && (
+          <p className="text-sm text-slate-600" data-testid="time-off-days">
+            {plural(preview.days, '{n} day', '{n} days')} ·{' '}
             {t('falls outside the {year} policy year, so it does not come off the balance above.', {
-              year: balance.policyYear,
+              year: preview.policyYear,
             })}
           </p>
         )}
 
-        {showBalance &&
-          (remainingAfter < 0 ? (
-            <Alert tone="warning">
-              {t(
-                bucket === 'sick'
-                  ? 'That is {days}, which puts you {over} over your sick allowance. You can still ask — a manager decides.'
-                  : 'That is {days}, which puts you {over} over your PTO allowance. You can still ask — a manager decides.',
-                {
-                  days: plural(requestedDays, '{n} day', '{n} days'),
-                  over: Math.abs(remainingAfter),
-                },
-              )}
-            </Alert>
-          ) : (
-            <p className="text-sm text-slate-600">
-              {plural(requestedDays, '{n} day', '{n} days')} ·{' '}
-              {t('{n} left afterwards.', { n: remainingAfter })}
+        {showBalance && preview && (
+          <p className="text-sm text-slate-600" data-testid="time-off-days">
+            {plural(preview.days, '{n} day', '{n} days')}
+            {skipNote.length > 0 && ` (${skipNote.join('; ')})`}
+            {!overBalance &&
+              ` · ${
+                otherYear
+                  ? t('counts against the {year} policy year: {n} left afterwards.', {
+                      year: otherYear,
+                      n: remainingAfter,
+                    })
+                  : forName
+                    ? t('{name} will have {n} left.', { name: forName, n: remainingAfter })
+                    : t('{n} left afterwards.', { n: remainingAfter })
+              }`}
+          </p>
+        )}
+
+        {overBalance && preview && (
+          <div
+            role="alert"
+            data-testid="past-balance"
+            className="space-y-2 rounded-lg bg-amber-50 px-3 py-3 text-sm text-amber-950 ring-1 ring-inset ring-amber-300"
+          >
+            <p className="font-semibold">
+              {forName
+                ? t(
+                    bucket === 'sick'
+                      ? '{name} has {left} sick days left — this asks for {days}.'
+                      : '{name} has {left} PTO days left — this asks for {days}.',
+                    {
+                      name: forName,
+                      left: Math.max(0, preview.remaining ?? 0),
+                      days: plural(preview.days, '{n} day', '{n} days'),
+                    },
+                  )
+                : t(
+                    bucket === 'sick'
+                      ? 'You have {left} sick days left — this asks for {days}.'
+                      : 'You have {left} PTO days left — this asks for {days}.',
+                    {
+                      left: Math.max(0, preview.remaining ?? 0),
+                      days: plural(preview.days, '{n} day', '{n} days'),
+                    },
+                  )}
             </p>
-          ))}
+            <p>
+              {t(
+                'The {over} past it may be unpaid. You can still ask — a manager decides, and sees that you knew.',
+                { over: plural(Math.abs(remainingAfter), '{n} day', '{n} days') },
+              )}
+            </p>
+            <label className="flex items-start gap-2 font-medium">
+              <input
+                type="checkbox"
+                checked={acknowledged}
+                onChange={(event) => setAcknowledged(event.target.checked)}
+                className="mt-0.5 rounded border-amber-400 text-brand-600 focus:ring-brand-600"
+              />
+              {forName
+                ? t('{name} understands the days past their balance may be unpaid.', {
+                    name: forName,
+                  })
+                : t('I understand I’m asking for more than I have left, and it may be unpaid.')}
+            </label>
+          </div>
+        )}
 
         {problem && <Alert>{problem}</Alert>}
 
         <button
           type="submit"
-          disabled={busy || !startDate}
+          disabled={busy || !startDate || (overBalance && !acknowledged)}
           className="w-full rounded-lg bg-brand-600 px-4 py-3 text-base font-semibold text-white hover:bg-brand-700 disabled:opacity-60 sm:w-auto sm:px-6"
         >
           {busy ? t('Sending…') : t('Send request')}

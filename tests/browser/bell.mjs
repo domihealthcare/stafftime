@@ -194,9 +194,12 @@ await step('Help says which version this is, and whether it is the live one', as
   await admin.goto(`${BASE}/help`, { waitUntil: 'networkidle' });
   const card = admin.getByTestId('version-card');
   await card.getByText('About this version').waitFor({ timeout: 10000 });
+  // A release number (October 2026), and when that release went out.
   const version = await card.getByTestId('app-version').innerText();
-  if (!/^\d{4}\.\d{2}\.\d{2}( \([0-9a-f]{7}\))?$/.test(version))
-    throw new Error(`the version reads "${version}"`);
+  if (!/^\d+\.\d+\.\d+$/.test(version)) throw new Error(`the version reads "${version}"`);
+  const released = await card.getByTestId('app-released').innerText();
+  if (!/^\w{3}, \w{3} \d{1,2}, \d{4}, \d{1,2}:\d{2}\s[AP]M ET$/.test(released))
+    throw new Error(`released reads "${released}"`);
   await card.getByText(/^Test — /).waitFor({ timeout: 5000 });
 });
 await admin.screenshot({ path: `${OUT}/121-help-version.png`, fullPage: true });

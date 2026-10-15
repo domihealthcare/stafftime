@@ -41,6 +41,7 @@ const ADMINISTER = [
   { to: '/staff', label: 'Staff' },
   { to: '/kiosks', label: 'Kiosks' },
   { to: '/locations', label: 'Locations' },
+  { to: '/vendors', label: 'Vendor payments' },
 ];
 
 const APP_NAME = 'Domi Staff';

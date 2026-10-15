@@ -123,7 +123,11 @@ avatars") an **admin may also put one up for somebody**, from Edit on the
 Staff screen, fitted and shrunk the same way; the person is told under the
 bell and can change or remove it. Still only a profile photo of the person.
 Apart from that, the only files the app stores are the payroll export
-spreadsheets it generates itself.
+spreadsheets it generates itself. The practice's own spreadsheets brought onto
+the portal in October 2026 — the diagnostics guide, the fee schedule, vendor
+payments — are **pasted or typed in as text**, never uploaded, and hold no
+patient details; the I-693 applicants list (patients, with dates of birth and
+ID numbers) was deliberately left out.
 
 **Captured clock-in location** is kept, because it is the point of a browser
 punch, but on a short leash: never returned with a timesheet, readable one entry
@@ -965,6 +969,45 @@ Beyond the phases, the parts worth knowing about before picking up work:
   OSHA training as license types, staff confirming their own hours each pay
   period, and NJ earned-sick-leave accrual changes. **On hold**: monthly OIG
   exclusion screening.
+- **Time off, from staff feedback** (15 October 2026, Dominguez): a request
+  takes **weekdays only, and not a weekday the office is closed all day**
+  (Ivanna's Wednesday to Wednesday is 6 days, not 8) — one rule for
+  balances, every request listed, the form and "Approve the clean time off"
+  (`pto/counted-days.ts`). Asking for **more than is left** is still allowed
+  once the person ticks that it **may be unpaid**; refused without it, and
+  shown to whoever decides as **Past the balance** (`PtoRequest.pastBalance`).
+  The form now asks the server what a request takes (`GET /pto/preview`).
+  **Sick days are never prorated** (Jennifer's 5 had shown as 2.2) — except
+  **hourly staff starting on or after 16 October 2026**
+  (`PtoPolicy.sickAccrualFrom`, Practice settings), who **earn** them: an hour
+  per 30 hours worked, up to the year's days ("going forward, any new staff
+  that is hourly would get the accumulation" — not the general accrual change
+  turned down below). A **pop-up on Home at the start of each month** with
+  the PTO and sick days left, once (`Employee.balanceReminderMonth`; not in
+  somebody's first month). Migration `20261015020000_time_off_counting`;
+  see *Which days a request takes* and after in `docs/architecture.md`;
+  `tests/browser/time-off-feedback.mjs`.
+- **Reference tables** (15 October 2026, Dominguez — the practice's
+  spreadsheets on the portal): Resources → **Reference**: the **diagnostics
+  guide** (insurance × ultrasound/test: Yes / No / PA, time and prep — for
+  everyone) and the **fee schedule** (insurance × CPT — managers and admins
+  only). **Pasted from the spreadsheet as text, never uploaded**, so the
+  contracted rates are never in the repo; **not loaded on the live site yet —
+  Dominguez to paste them in** (Help says how). Search by row, narrow by
+  column, Yes/No/PA coloured; managers edit cells or paste again.
+  `ReferenceTable`, `src/reference/` (`paste.ts` reads Excel's quoted cells),
+  `pages/ReferenceTablePage.tsx`; `tests/browser/reference-tables.mjs`. The
+  **I-693 applicants** sheet was **not brought in** — patients, with dates of
+  birth and ID numbers (*Data this app does not hold*).
+- **Vendor payments** (15 October 2026, Dominguez — the "Payments to vendors"
+  sheet): **admins only**, Manage → Vendor payments: each vendor, and every
+  invoice, check or cash payment, **To pay → Sent → Completed** with the
+  days; what is not completed yet, and what each was paid this year. Notes
+  never carry a patient's name (the sheet's did); the schema guard pins
+  `Vendor` and `VendorPayment`. No history imported — "going forward".
+  `src/vendors/`, `pages/VendorsPage.tsx`, migration
+  `20261015030000_reference_tables_vendor_payments`;
+  `tests/browser/vendors.mjs`.
 - **Turned down: "PTO about to be lost"** (9 October 2026, Dominguez): a
   reminder to use PTO before it fails to carry over was proposed and refused —
   not in the practice's interest. Do not propose it again.
@@ -1327,11 +1370,14 @@ Beyond the phases, the parts worth knowing about before picking up work:
   wears an **OT** pill beside the total. A profile photo is **moved and zoomed
   into the circle** before it is saved (`PhotoCropDialog`); it is still cropped,
   shrunk and re-encoded in the browser, so nothing about the rule changed.
-- **Version on the Help page** — "About this version": the build date and
-  commit baked in when the bundle is built (`VERCEL_GIT_COMMIT_SHA` on Vercel,
-  git locally), whether it is the test or live site, and — because
+- **Version on the Help page** — "About this version": since October 2026
+  (Dominguez) a **release number**, `version` in the root `package.json`
+  (**1.0.0** from 15 October 2026), and **when it went out** (the build time,
+  New Jersey's clock); whether it is the test or live site; and — because
   `/api/config` reports the commit the server runs — a "newer version is live,
-  reload" prompt when a tab is out of date.
+  reload" prompt when a tab is out of date. **Bump the version in every PR
+  that is a release**: the last part for fixes, the middle for new features,
+  the first for a big change.
 - **On a phone's home screen** (September 2026): an installable web app —
   manifest, the round logo-with-slogan badge as its icon, opens full screen as
   "Domi Staff" — not a store app. A one-time tip on the sign-in screen of a

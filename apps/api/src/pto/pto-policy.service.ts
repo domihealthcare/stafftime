@@ -1,8 +1,15 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
-import { EmploymentStatus, Prisma, PtoPolicy, PtoStatus, PtoType } from '@prisma/client';
+import { EmploymentStatus, PayType, Prisma, PtoPolicy, PtoStatus, PtoType } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
-import { practiceToday } from '../common/util/zoned-time.util';
+import { isoDate } from '../common/util/calendar-date.util';
+import { localDateIn, PRACTICE_ZONE, practiceToday } from '../common/util/zoned-time.util';
+import { closedFor, countedDays, loadClosedDays } from './counted-days';
 import { AdjustPtoBalanceDto, UpdatePtoPolicyDto } from './dto/pto.dto';
+
+/// NJ earned sick leave: an hour of sick time for every 30 hours worked.
+export const HOURS_WORKED_PER_SICK_HOUR = 30;
+/// Sick time is kept in days; a day of it is 8 hours.
+export const HOURS_PER_SICK_DAY = 8;
 
 /**
  * Which requests draw down which allowance.
@@ -33,6 +40,19 @@ export interface AllowanceBalance {
   remaining: number;
   /// Of `used`, days taken before Domi Staff, as a manager entered them.
   usedBefore: number;
+  /// Sick time earned as they work, for hourly staff who started after the
+  /// practice's date for it (October 2026): what `entitled` was worked out
+  /// from. Absent for everybody given the year's days up front.
+  accrual?: SickAccrual;
+}
+
+/// Sick time earned as it is worked: an hour for every 30 hours, up to the
+/// year's days.
+export interface SickAccrual {
+  hoursWorked: number;
+  hoursEarned: number;
+  /// The most it can come to this year, in days.
+  upToDays: number;
 }
 
 export interface PtoBalance {
@@ -116,7 +136,16 @@ export class PtoPolicyService {
     await this.get();
     return this.prisma.ptoPolicy.update({
       where: { singleton: SINGLETON },
-      data: { ...dto, updatedById },
+      data: {
+        ...dto,
+        sickAccrualFrom:
+          dto.sickAccrualFrom === undefined
+            ? undefined
+            : dto.sickAccrualFrom
+              ? new Date(`${dto.sickAccrualFrom}T00:00:00.000Z`)
+              : null,
+        updatedById,
+      },
     });
   }
 
@@ -162,6 +191,8 @@ export class PtoPolicyService {
         id: true,
         hireDate: true,
         createdAt: true,
+        payType: true,
+        locations: { select: { locationId: true } },
         ptoAllowance: { select: { vacationDaysPerYear: true, sickDaysPerYear: true } },
         ptoStartingPoints: {
           select: {
@@ -177,14 +208,6 @@ export class PtoPolicyService {
 
     const policyYear = year ?? this.policyYearOf(practiceToday(), policy);
     const { start, end } = this.yearBounds(policyYear, policy);
-    const person: PersonalTerms = {
-      hireDate: employee.hireDate,
-      allowance: employee.ptoAllowance ?? null,
-      startingPoints: new Map(
-        (employee.ptoStartingPoints ?? []).map((point) => [point.policyYear, point]),
-      ),
-    };
-    const startingPoint = person.startingPoints.get(policyYear);
 
     // Carry-over is counted from when they were added to the app, or their
     // hire date if that is later — nothing before was booked here.
@@ -193,29 +216,54 @@ export class PtoPolicyService {
         ? employee.hireDate
         : employee.createdAt;
     // One read for this year and every year the carry-over walks back
-    // through; each year is picked out below by daysWithin, which counts
+    // through; each year is picked out below by countedDays, which counts
     // nothing outside it.
     const firstYear = Math.min(this.policyYearOf(since, policy), policyYear);
-    const requests = await this.prisma.ptoRequest.findMany({
-      where: {
-        employeeId,
-        status: { in: [PtoStatus.PENDING, PtoStatus.APPROVED] },
-        startDate: { lt: end },
-        endDate: { gte: this.yearBounds(firstYear, policy).start },
-      },
-      select: {
-        type: true,
-        status: true,
-        startDate: true,
-        endDate: true,
-        isHalfDay: true,
-      },
-    });
+    const firstStart = this.yearBounds(firstYear, policy).start;
+    const lastDay = new Date(end.getTime() - 86_400_000);
+
+    const person: PersonalTerms = {
+      hireDate: employee.hireDate,
+      allowance: employee.ptoAllowance ?? null,
+      startingPoints: new Map(
+        (employee.ptoStartingPoints ?? []).map((point) => [point.policyYear, point]),
+      ),
+      accruesSick: accruesSick(policy, employee),
+      hoursByYear: new Map(),
+    };
+    if (person.accruesSick) {
+      person.hoursByYear = await this.hoursWorkedByYear(employeeId, policy, firstStart, end);
+    }
+    const startingPoint = person.startingPoints.get(policyYear);
+
+    const [requests, closures] = await Promise.all([
+      this.prisma.ptoRequest.findMany({
+        where: {
+          employeeId,
+          status: { in: [PtoStatus.PENDING, PtoStatus.APPROVED] },
+          startDate: { lt: end },
+          endDate: { gte: firstStart },
+        },
+        select: {
+          type: true,
+          status: true,
+          startDate: true,
+          endDate: true,
+          isHalfDay: true,
+        },
+      }),
+      loadClosedDays(this.prisma, isoDate(firstStart), isoDate(lastDay)),
+    ]);
+    // Weekends and the days their office is shut never come off it.
+    const closed = closedFor(
+      closures,
+      (employee.locations ?? []).map((row) => row.locationId),
+    );
 
     const tally = (bucket: 'vacation' | 'sick', status: PtoStatus) =>
       requests
         .filter((r) => TYPE_BUCKET[r.type] === bucket && r.status === status)
-        .reduce((sum, r) => sum + daysWithin(r, start, end), 0);
+        .reduce((sum, r) => sum + countedDays(r, closed, start, end), 0);
 
     const approved = requests.filter((r) => r.status === PtoStatus.APPROVED);
     const carriedVacation = this.carryOverInto(
@@ -225,27 +273,42 @@ export class PtoPolicyService {
       since,
       person,
       'vacation',
+      closed,
     );
-    const carriedSick = this.carryOverInto(approved, policyYear, policy, since, person, 'sick');
+    const carriedSick = this.carryOverInto(
+      approved,
+      policyYear,
+      policy,
+      since,
+      person,
+      'sick',
+      closed,
+    );
 
-    const vacationEntitled = this.entitlementFor(
-      policyYear,
-      policy,
-      employee.hireDate,
-      yearlyDays(policy, person, 'vacation'),
+    const vacationEntitled = this.entitlementFor(policyYear, policy, person, 'vacation');
+    const sickEntitled = this.entitlementFor(policyYear, policy, person, 'sick');
+
+    const sick = this.assemble(
+      sickEntitled,
+      carriedSick,
+      tally('sick', PtoStatus.APPROVED),
+      tally('sick', PtoStatus.PENDING),
+      startingPoint?.sickUsed ?? 0,
     );
-    const sickEntitled = this.entitlementFor(
-      policyYear,
-      policy,
-      employee.hireDate,
-      yearlyDays(policy, person, 'sick'),
-    );
+    if (person.accruesSick) {
+      const hoursWorked = person.hoursByYear.get(policyYear) ?? 0;
+      sick.accrual = {
+        hoursWorked: round1(hoursWorked),
+        hoursEarned: earnedSickHours(hoursWorked),
+        upToDays: round1(yearlyDays(policy, person, 'sick')),
+      };
+    }
 
     const balance: PtoBalance = {
       employeeId,
       policyYear,
       yearStart: start.toISOString().slice(0, 10),
-      yearEnd: new Date(end.getTime() - 86_400_000).toISOString().slice(0, 10),
+      yearEnd: lastDay.toISOString().slice(0, 10),
       vacation: this.assemble(
         vacationEntitled,
         carriedVacation,
@@ -253,18 +316,43 @@ export class PtoPolicyService {
         tally('vacation', PtoStatus.PENDING),
         startingPoint?.vacationUsed ?? 0,
       ),
-      sick: this.assemble(
-        sickEntitled,
-        carriedSick,
-        tally('sick', PtoStatus.APPROVED),
-        tally('sick', PtoStatus.PENDING),
-        startingPoint?.sickUsed ?? 0,
-      ),
+      sick,
       unpaidAndOther: requests
         .filter((r) => TYPE_BUCKET[r.type] === null && r.status === PtoStatus.APPROVED)
-        .reduce((sum, r) => sum + daysWithin(r, start, end), 0),
+        .reduce((sum, r) => sum + countedDays(r, closed, start, end), 0),
     };
     return { balance, person };
+  }
+
+  /**
+   * Hours worked in each policy year, for sick time earned as it is worked:
+   * closed punches only, each counted in the year its day falls in. A
+   * clock-out the app made at midnight is a guess until a manager corrects
+   * it, so it earns nothing until then.
+   */
+  private async hoursWorkedByYear(
+    employeeId: string,
+    policy: PtoPolicy,
+    from: Date,
+    to: Date,
+  ): Promise<Map<number, number>> {
+    const entries = await this.prisma.timeEntry.findMany({
+      where: {
+        employeeId,
+        clockOutAt: { not: null },
+        autoClockedOutAt: null,
+        clockInAt: { gte: from, lt: to },
+      },
+      select: { clockInAt: true, clockOutAt: true },
+    });
+    const hours = new Map<number, number>();
+    for (const entry of entries) {
+      const day = new Date(`${localDateIn(entry.clockInAt, PRACTICE_ZONE)}T00:00:00Z`);
+      const year = this.policyYearOf(day, policy);
+      const worked = (entry.clockOutAt!.getTime() - entry.clockInAt.getTime()) / 3_600_000;
+      hours.set(year, (hours.get(year) ?? 0) + Math.max(0, worked));
+    }
+    return hours;
   }
 
   /**
@@ -381,22 +469,36 @@ export class PtoPolicyService {
     };
   }
 
-  /// A mid-year starter gets the share of the year they are present for, if the
-  /// policy says to prorate. With no hire date on record there is nothing to
-  /// prorate from, so the whole year's allowance.
+  /**
+   * What somebody is given for a policy year.
+   *
+   * PTO: a mid-year starter gets the share of the year they are present for,
+   * if the policy says to prorate. With no hire date on record there is
+   * nothing to prorate from, so the whole year's allowance.
+   *
+   * Sick days (October 2026, Dominguez): never cut down for starting part-way
+   * — everybody is given the year's days — except hourly staff who started on
+   * or after the practice's date for it, who **earn** them as they work: an
+   * hour for every 30 hours worked, up to the year's days.
+   */
   private entitlementFor(
     policyYear: number,
     policy: PtoPolicy,
-    hireDate: Date | null,
-    fullEntitlement: number,
+    person: PersonalTerms,
+    bucket: 'vacation' | 'sick',
   ): number {
-    if (!hireDate) return fullEntitlement;
+    const fullEntitlement = yearlyDays(policy, person, bucket);
+    const hireDate = person.hireDate;
     const { start, end } = this.yearBounds(policyYear, policy);
-
-    if (hireDate >= end) {
+    if (hireDate && hireDate >= end) {
       return 0;
     }
-    if (!policy.prorateFirstYear || hireDate <= start) {
+    if (bucket === 'sick') {
+      if (!person.accruesSick) return fullEntitlement;
+      const earned = earnedSickHours(person.hoursByYear.get(policyYear) ?? 0) / HOURS_PER_SICK_DAY;
+      return round1(Math.min(fullEntitlement, earned));
+    }
+    if (!hireDate || !policy.prorateFirstYear || hireDate <= start) {
       return fullEntitlement;
     }
 
@@ -413,6 +515,7 @@ export class PtoPolicyService {
     since: Date,
     person: PersonalTerms,
     bucket: 'vacation' | 'sick',
+    closed: Set<string>,
   ): number {
     // What a manager said really carried in wins over any working-out.
     const stated = carriedOverStated(person.startingPoints.get(policyYear), bucket);
@@ -432,17 +535,12 @@ export class PtoPolicyService {
       carried = carriedOverStated(point, bucket) ?? carried;
 
       const { start, end } = this.yearBounds(year, policy);
-      const entitled = this.entitlementFor(
-        year,
-        policy,
-        person.hireDate,
-        yearlyDays(policy, person, bucket),
-      );
+      const entitled = this.entitlementFor(year, policy, person, bucket);
 
       const used =
         approved
           .filter((r) => TYPE_BUCKET[r.type] === bucket)
-          .reduce((sum, r) => sum + daysWithin(r, start, end), 0) +
+          .reduce((sum, r) => sum + countedDays(r, closed, start, end), 0) +
         (bucket === 'vacation' ? (point?.vacationUsed ?? 0) : (point?.sickUsed ?? 0));
 
       carried = Math.min(cap, Math.max(0, entitled + carried - used));
@@ -468,24 +566,36 @@ export class PtoPolicyService {
 
 // ---------------------------------------------------------------------------
 
-/// Days of a request that fall inside a policy year. A request spanning New Year
-/// is counted against each year for the part that lands in it.
+/// Days of a request that fall inside a policy year: weekdays only, and not
+/// the days in `closed` (see counted-days.ts). A request spanning New Year is
+/// counted against each year for the part that lands in it.
 export function daysWithin(
   request: { startDate: Date; endDate: Date; isHalfDay: boolean },
   start: Date,
   end: Date,
+  closed: Set<string> = new Set(),
 ): number {
-  const from = request.startDate < start ? start : request.startDate;
-  // endDate is inclusive; end is exclusive.
-  const lastAllowed = new Date(end.getTime() - 86_400_000);
-  const to = request.endDate > lastAllowed ? lastAllowed : request.endDate;
+  return countedDays(request, closed, start, end);
+}
 
-  if (to < from) {
-    return 0;
-  }
+/// Whole hours of sick time earned by the hours worked.
+export function earnedSickHours(hoursWorked: number): number {
+  return Math.floor(hoursWorked / HOURS_WORKED_PER_SICK_HOUR);
+}
 
-  const days = Math.round((to.getTime() - from.getTime()) / 86_400_000) + 1;
-  return request.isHalfDay && days === 1 ? 0.5 : days;
+/**
+ * Whether somebody earns sick time as they work rather than being given the
+ * year's days: hourly, and started (hired, or added to the app when there is
+ * no hire date) on or after the practice's date for it — "going forward, any
+ * new staff that is hourly would get the accumulation" (Dominguez, October
+ * 2026). No date set: nobody does.
+ */
+export function accruesSick(
+  policy: Pick<PtoPolicy, 'sickAccrualFrom'>,
+  person: { payType: PayType; hireDate: Date | null; createdAt: Date },
+): boolean {
+  if (!policy.sickAccrualFrom || person.payType !== PayType.HOURLY) return false;
+  return (person.hireDate ?? person.createdAt) >= policy.sickAccrualFrom;
 }
 
 interface StartingPointTerms {
@@ -500,6 +610,10 @@ interface PersonalTerms {
   hireDate: Date | null;
   allowance: { vacationDaysPerYear: number | null; sickDaysPerYear: number | null } | null;
   startingPoints: Map<number, StartingPointTerms>;
+  /// Earns sick time as they work (see `accruesSick`).
+  accruesSick: boolean;
+  /// Hours worked in each policy year — only read for somebody who accrues.
+  hoursByYear: Map<number, number>;
 }
 
 function yearlyDays(policy: PtoPolicy, person: PersonalTerms, bucket: 'vacation' | 'sick'): number {

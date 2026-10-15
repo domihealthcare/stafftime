@@ -143,6 +143,16 @@ export function RequestsToDecide({ onDecided }: { onDecided: () => void }) {
                 · {PTO_TYPE_LABELS[request.type]}, {range(request)}
                 {request.isHalfDay ? ' (half day)' : ''}
               </span>
+              {request.pastBalance && ' '}
+              {request.pastBalance && (
+                <span
+                  data-testid="past-balance-flag"
+                  title="More than was left — they said they understand it may be unpaid"
+                  className="rounded bg-amber-100 px-1.5 text-xs font-medium text-amber-900"
+                >
+                  past their balance · may be unpaid
+                </span>
+              )}
               {request.notes && (
                 <span className="text-xs text-slate-600" title={request.notes}>
                   {' '}

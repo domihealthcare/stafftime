@@ -24,6 +24,18 @@ const signIn = async (page, email) => {
   await page.getByText('Not clocked in').waitFor({ timeout: 15000 });
 };
 const YEAR = new Date().getFullYear();
+// Weekdays only count (October 2026), so the week asked for runs Monday to
+// Friday whatever the year: the first Monday of a month, and its Friday.
+const firstMonday = (year, month) => {
+  const d = new Date(Date.UTC(year, month - 1, 1));
+  while (d.getUTCDay() !== 1) d.setUTCDate(d.getUTCDate() + 1);
+  return d;
+};
+const iso = (d) => d.toISOString().slice(0, 10);
+const plusDays = (d, n) => new Date(d.getTime() + n * 86_400_000);
+const JUNE_MON = iso(firstMonday(YEAR, 6));
+const JUNE_FRI = iso(plusDays(firstMonday(YEAR, 6), 4));
+const AUG_MON = iso(firstMonday(YEAR, 8));
 /// The balance card. `filter({hasText})` on a bare div resolves to the
 /// innermost match, which is only the heading's wrapper.
 const balanceCard = (page) => page.locator('main > div').filter({ hasText: 'Your balance' }).first();
@@ -106,23 +118,29 @@ await step('an employee cannot change it', async () => {
 await step('the request form says how many days are left afterwards', async () => {
   await emp.getByRole('button', { name: '+ Request time off' }).click();
   await emp.getByLabel('Type').selectOption('VACATION');
-  await emp.getByLabel('First day').fill(`${YEAR}-06-01`);
-  await emp.getByLabel('Last day').fill(`${YEAR}-06-05`);
+  await emp.getByLabel('First day').fill(JUNE_MON);
+  await emp.getByLabel('Last day').fill(JUNE_FRI);
   await emp.getByText(/5 days · .* left afterwards/).waitFor({ timeout: 10000 });
 });
 await emp.screenshot({ path: `${OUT}/31-pto-balance.png`, fullPage: true });
 
 await step('asking for more than the allowance warns but still allows it', async () => {
-  await emp.getByLabel('First day').fill(`${YEAR}-06-01`);
+  await emp.getByLabel('First day').fill(JUNE_MON);
   await emp.getByLabel('Last day').fill(`${YEAR}-07-20`);
-  await emp.getByText(/over your PTO allowance/).waitFor({ timeout: 10000 });
+  // Asked anyway once they say they understand the rest may be unpaid
+  // (October 2026, Dominguez).
+  const warning = emp.getByTestId('past-balance');
+  await warning.getByText(/may be unpaid/).first().waitFor({ timeout: 10000 });
+  if (await emp.getByRole('button', { name: 'Send request' }).isEnabled())
+    throw new Error('it could be sent without saying they understand');
+  await warning.getByRole('checkbox').check();
   if (!(await emp.getByRole('button', { name: 'Send request' }).isEnabled()))
     throw new Error('over-allowance request was blocked rather than warned');
 });
 
 await step('a taken request shows up against the balance', async () => {
-  await emp.getByLabel('First day').fill(`${YEAR}-06-01`);
-  await emp.getByLabel('Last day').fill(`${YEAR}-06-05`);
+  await emp.getByLabel('First day').fill(JUNE_MON);
+  await emp.getByLabel('Last day').fill(JUNE_FRI);
   await emp.getByRole('button', { name: 'Send request' }).click();
   const card = balanceCard(emp);
   await card.getByText('Awaiting approval').waitFor({ timeout: 15000 });
@@ -134,7 +152,7 @@ await step('a taken request shows up against the balance', async () => {
 await step('sick days draw on their own allowance, not PTO', async () => {
   await emp.getByRole('button', { name: '+ Request time off' }).click();
   await emp.getByLabel('Type').selectOption('SICK');
-  await emp.getByLabel('First day').fill(`${YEAR}-08-03`);
+  await emp.getByLabel('First day').fill(AUG_MON);
   await emp.getByText(/1 day · 4 left afterwards/).waitFor({ timeout: 10000 });
 });
 
@@ -143,7 +161,8 @@ await step('a request in a different policy year says so instead of misreporting
   await emp.getByLabel('Type').selectOption('VACATION');
   await emp.getByLabel('First day').fill(`${YEAR + 1}-06-01`);
   await emp.getByLabel('Last day').fill(`${YEAR + 1}-06-05`);
-  await emp.getByText(/falls outside the \d+ policy year/).waitFor({ timeout: 10000 });
+  // It counts against that year's days, and says so.
+  await emp.getByText(/counts against the \d+ policy year/).waitFor({ timeout: 10000 });
 });
 
 // --- the switch-over: time taken before Domi Staff (Dominguez, September 2026) ---
