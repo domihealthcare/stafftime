@@ -20,10 +20,13 @@ import type {
   ReadBooking,
   Rep,
   RepeatInput,
+  ReplyAnswer,
 } from '../lib/types';
 import { useConfirm, type ConfirmOptions } from './ConfirmDialog';
 import { InviteePicker, NOBODY, type InviteeSelection } from './InviteePicker';
 import { BookingPaste } from './BookingPaste';
+import { EventReplies, REPLY_MARK } from './EventReplies';
+import { FindATime } from './FindATime';
 import { RepeatPicker } from './RepeatPicker';
 import { Alert, Badge, Card, buttonClass } from './ui';
 
@@ -175,7 +178,9 @@ export function EventChip({
       type="button"
       onClick={() => onOpen(event)}
       data-testid={`${event.kind === 'EVENT' ? 'event' : event.kind.toLowerCase()}-chip`}
-      aria-label={`${event.title}, ${eventTimeLabel(event, day)}, ${audience}`}
+      aria-label={`${event.title}, ${eventTimeLabel(event, day)}, ${audience}${
+        event.myReply ? `, ${t(REPLY_MARK[event.myReply].words)}` : ''
+      }`}
       className={`block w-full rounded-md px-1.5 py-1 text-left text-xs leading-tight ring-1 ring-inset ${style.chip}`}
     >
       <span className="block truncate font-semibold">
@@ -188,6 +193,16 @@ export function EventChip({
         {joinLink(event) && (
           <span aria-hidden="true" title={t('Video call')} className="ml-1 font-normal">
             🎥
+          </span>
+        )}
+        {event.myReply && (
+          <span
+            aria-hidden="true"
+            title={t(REPLY_MARK[event.myReply].words)}
+            data-testid="event-chip-reply"
+            className="ml-1 font-normal"
+          >
+            {REPLY_MARK[event.myReply].mark}
           </span>
         )}
       </span>
@@ -209,11 +224,14 @@ export function EventDialog({
   onEdit,
   onDuplicate,
   onRemoved,
+  onAnswered,
   onClose,
 }: {
   event: PracticeEvent;
   canEdit: boolean;
   onEdit: () => void;
+  /// A meeting: the viewer answered going, maybe or can't go.
+  onAnswered?: (answer: ReplyAnswer) => void;
   /// "Add another date like this": the same, on a day still to choose. The
   /// diagnostics schedule is "usually similar but not always the same".
   onDuplicate?: () => void;
@@ -369,6 +387,8 @@ export function EventDialog({
           )}
         </dl>
 
+        {event.kind === 'EVENT' && <EventReplies event={event} onAnswered={onAnswered} />}
+
         {closed && (
           <p className="mt-3 text-xs text-slate-500">
             {t(
@@ -450,6 +470,14 @@ export function EventDialog({
 function inputValue(date: Date): string {
   const pad = (n: number) => String(n).padStart(2, '0');
   return `${localDate(date)}T${pad(date.getHours())}:${pad(date.getMinutes())}`;
+}
+
+/// How long a meeting is, from the form, for "Find a time": an hour when the
+/// times don't make sense yet, and never outside 15 minutes to 8 hours.
+function meetingMinutes(startsAt: string, endsAt: string): number {
+  const minutes = Math.round((new Date(endsAt).getTime() - new Date(startsAt).getTime()) / 60_000);
+  if (!Number.isFinite(minutes) || minutes <= 0) return 60;
+  return Math.min(480, Math.max(15, minutes));
 }
 
 /// Adding an event, diagnostics date, holiday or closure, or changing one.
@@ -1178,6 +1206,19 @@ export function EventForm({
               Angelina.
             </p>
           </div>
+        )}
+
+        {kind === 'EVENT' && !allDay && (
+          <FindATime
+            invitees={invitees}
+            from={startsAt.slice(0, 10)}
+            minutes={meetingMinutes(startsAt, endsAt)}
+            eventId={event?.id}
+            onPick={(start, end) => {
+              setStartsAt(inputValue(new Date(start)));
+              setEndsAt(inputValue(new Date(end)));
+            }}
+          />
         )}
 
         {(closed || holiday) && !event && (

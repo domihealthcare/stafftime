@@ -1139,8 +1139,9 @@ Beyond the phases, the parts worth knowing about before picking up work:
   in the month, only to the people they are for (managers see all), go to
   phones through the existing calendar feed, and ring the bell when added,
   moved or cancelled. **Calendar only — never hours, overtime or payroll**;
-  anybody paid to attend clocks in as usual. **No replies** (going / can't
-  go) for now. All four choices confirmed by Dominguez. `PracticeEvent`,
+  anybody paid to attend clocks in as usual. **Replies** came later (see
+  *Replies to meetings and Find a time*). All four choices confirmed by
+  Dominguez. `PracticeEvent`,
   `src/events/`.
 - **The practice calendar** (7 October 2026, Dominguez: "a calendar that
   staff can reference for multiple things … events, diagnostic schedule,
@@ -1223,6 +1224,25 @@ Beyond the phases, the parts worth knowing about before picking up work:
   admin (dominguez@ — not admin@) from `docs/google-meet-setup.md`. The
   Google sign-in is shared (`google/google-auth.service.ts`): as office@ for
   delegated scopes, or as the robot itself.
+- **Replies to meetings and Find a time** (15 October 2026, Dominguez —
+  chosen from replies, staff booking meetings and Find a time; **staff still
+  do not book meetings**): the people a meeting is for answer **Going /
+  Maybe / Can't go** in its pop-up, one answer per date
+  (`PracticeEventReply`, migration `20261015010000_event_replies`), and
+  **everybody it is for sees who is going**, who can't and who hasn't said
+  (Dominguez's choice); a ✓ / ? / ✗ on the chip shows your own. Meetings
+  only, never closures, holidays, diagnostics or rep lunches. Whoever made it
+  hears on the bell when somebody can't go; no day-before reminder for them;
+  a new time clears that date's answers and asks again. In the event form,
+  **Find a time everyone is free** (managers) lists the best few times in the
+  next two weeks, 7am–7pm, going by the rota (drafts too), time off,
+  availability and other meetings — nobody busy first, then most already at
+  work — with **Use this time**; it cannot see anybody's own calendar.
+  `events/event-replies.service.ts`, `events/find-a-time.ts` (pure) and
+  `find-a-time.service.ts`, `components/EventReplies.tsx`,
+  `components/FindATime.tsx`; see *Replies and "Find a time"* in
+  `docs/architecture.md`; `tests/browser/event-replies.mjs`. Worth carrying
+  to the EMR module if it takes events.
 - **Calendar invites** (September 2026, Dominguez — most staff are on
   personal Google accounts): each published shift goes to the person on it,
   and each practice event to the people it is for, as a real invite from a

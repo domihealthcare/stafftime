@@ -2,6 +2,7 @@ import { BadRequestException, Injectable, Logger, NotFoundException } from '@nes
 import {
   EmploymentStatus,
   EventAudience,
+  EventReplyAnswer,
   NotificationKind,
   PracticeEventKind,
   Prisma,
@@ -111,9 +112,16 @@ const REMINDED: PracticeEventKind[] = [PracticeEventKind.EVENT, PracticeEventKin
 const YEARLY: PracticeEventKind[] = [PracticeEventKind.CLOSURE, PracticeEventKind.HOLIDAY];
 
 /// Who counts as staff for an event: the same people a survey asks.
-const WORKING: { in: EmploymentStatus[] } = {
+export const WORKING: { in: EmploymentStatus[] } = {
   in: [EmploymentStatus.ACTIVE, EmploymentStatus.ON_LEAVE],
 };
+
+/// Who is on a chosen list, by id.
+export interface InviteeIds {
+  employeeIds: string[];
+  jobRoleIds: string[];
+  locationIds: string[];
+}
 
 /// Checked input, ready to write.
 interface Checked {
@@ -132,7 +140,7 @@ interface Checked {
     atLocationId: string | null;
     repId: string | null;
   };
-  invitees: { employeeIds: string[]; jobRoleIds: string[]; locationIds: string[] };
+  invitees: InviteeIds;
   /// The rule and the date it counts from, when it repeats.
   repeat: { firstDate: string; rule: RepeatRule } | null;
 }
@@ -196,7 +204,21 @@ export class EventsService {
       select: EVENT_SELECT,
       orderBy: [{ startsAt: 'asc' }, { title: 'asc' }],
     });
-    return rows.map((row) => present(row, { manager: manages, seesCell }));
+    // The viewer's own answer to each meeting, for the chip and the pop-up.
+    const mine = await this.prisma.practiceEventReply.findMany({
+      where: {
+        employeeId: viewer.id,
+        eventId: {
+          in: rows.filter((row) => row.kind === PracticeEventKind.EVENT).map((r) => r.id),
+        },
+      },
+      select: { eventId: true, answer: true },
+    });
+    const answers = new Map(mine.map((reply) => [reply.eventId, reply.answer]));
+    return rows.map((row) => ({
+      ...present(row, { manager: manages, seesCell }),
+      myReply: answers.get(row.id) ?? null,
+    }));
   }
 
   /// The events one person is invited to, for their calendar feed.
@@ -249,14 +271,32 @@ export class EventsService {
       (scope === 'following' && before.seriesId) || (!before.seriesId && input.repeat);
 
     if (!following) {
-      const after = await this.prisma.$transaction(async (tx) => {
+      // Going at 12:30 is no answer about 3:00: a new time asks again.
+      const retimed =
+        before.allDay !== input.data.allDay ||
+        before.startsAt.getTime() !== input.data.startsAt.getTime() ||
+        before.endsAt.getTime() !== input.data.endsAt.getTime();
+      const { after, cleared } = await this.prisma.$transaction(async (tx) => {
         await tx.practiceEvent.update({ where: { id }, data: input.data });
         await tx.practiceEventInvitee.deleteMany({ where: { eventId: id } });
         await tx.practiceEventInvitee.createMany({ data: inviteeRows([id], input) });
-        return tx.practiceEvent.findUniqueOrThrow({ where: { id }, select: EVENT_SELECT });
+        const { count } = retimed
+          ? await tx.practiceEventReply.deleteMany({ where: { eventId: id } })
+          : { count: 0 };
+        return {
+          after: await tx.practiceEvent.findUniqueOrThrow({ where: { id }, select: EVENT_SELECT }),
+          cleared: count,
+        };
       });
       this.logger.log(`Event ${id} changed by ${actor.id}`);
-      await this.tellAboutChange(before, after, actor, undefined);
+      await this.tellAboutChange(
+        before,
+        after,
+        actor,
+        cleared > 0
+          ? `${whenAndWhere(after)}. The time changed — say again whether you can go.`
+          : undefined,
+      );
       return { ...present(after), created: 1 };
     }
 
@@ -323,7 +363,19 @@ export class EventsService {
       orderBy: { startsAt: 'asc' },
     });
     for (const row of rows) {
-      await this.inbox.notify(await this.invited(row), notice(row, 'reminder'));
+      // Nobody is reminded about a meeting they said they can't go to.
+      const away = new Set(
+        (
+          await this.prisma.practiceEventReply.findMany({
+            where: { eventId: row.id, answer: EventReplyAnswer.NOT_GOING },
+            select: { employeeId: true },
+          })
+        ).map((reply) => reply.employeeId),
+      );
+      await this.inbox.notify(
+        (await this.invited(row)).filter((person) => !away.has(person)),
+        notice(row, 'reminder'),
+      );
       await this.prisma.practiceEvent.update({
         where: { id: row.id },
         data: { reminderSentAt: now },
@@ -906,17 +958,28 @@ export function audienceWhere(row: AudienceOf): Prisma.EmployeeWhereInput {
     };
   }
   if (row.audience === EventAudience.CHOSEN) {
-    const people = row.invitees.flatMap((i) => (i.employee ? [i.employee.id] : []));
-    const roles = row.invitees.flatMap((i) => (i.jobRole ? [i.jobRole.id] : []));
-    const offices = row.invitees.flatMap((i) => (i.location ? [i.location.id] : []));
-    const any: Prisma.EmployeeWhereInput[] = [];
-    if (people.length) any.push({ id: { in: people } });
-    if (roles.length) any.push({ jobRoles: { some: { jobRoleId: { in: roles } } } });
-    if (offices.length) any.push({ locations: { some: { locationId: { in: offices } } } });
-    // Everything on the list since removed leaves nobody, not everybody.
-    return { employmentStatus: WORKING, OR: any.length > 0 ? any : [{ id: { in: [] } }] };
+    return chosenWhere({
+      employeeIds: row.invitees.flatMap((i) => (i.employee ? [i.employee.id] : [])),
+      jobRoleIds: row.invitees.flatMap((i) => (i.jobRole ? [i.jobRole.id] : [])),
+      locationIds: row.invitees.flatMap((i) => (i.location ? [i.location.id] : [])),
+    });
   }
   return { employmentStatus: WORKING };
+}
+
+/// The people on a chosen list — any mix of people, job roles and offices —
+/// as an employee filter. Also asked by "Find a time" before anything is saved.
+export function chosenWhere(list: InviteeIds): Prisma.EmployeeWhereInput {
+  const any: Prisma.EmployeeWhereInput[] = [];
+  if (list.employeeIds.length) any.push({ id: { in: list.employeeIds } });
+  if (list.jobRoleIds.length) {
+    any.push({ jobRoles: { some: { jobRoleId: { in: list.jobRoleIds } } } });
+  }
+  if (list.locationIds.length) {
+    any.push({ locations: { some: { locationId: { in: list.locationIds } } } });
+  }
+  // Everything on the list since removed leaves nobody, not everybody.
+  return { employmentStatus: WORKING, OR: any.length > 0 ? any : [{ id: { in: [] } }] };
 }
 
 /// The dates of a series as instants: each at the same wall-clock times on
@@ -1116,7 +1179,7 @@ function daysBetween(from: string, to: string): number {
 }
 
 /// The schedule, open on the week the event is in.
-function scheduleLink(row: EventRow): string {
+export function scheduleLink(row: Pick<EventRow, 'startsAt'>): string {
   return `/schedule?week=${localDateIn(row.startsAt, PRACTICE_ZONE)}`;
 }
 

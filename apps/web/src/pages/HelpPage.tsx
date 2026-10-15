@@ -482,8 +482,13 @@ const STAFF: Section[] = [
             with a 📅 in the month): office meetings, meetings you have been added to, and
             practice-wide days like a wellness event. A 🔁 means it repeats, a 🎥 that it is a video
             call. Tap one for the time, the place and who it is for — and a{' '}
-            <strong>Join video call</strong> button when there is one. The bell tells you when one
-            is added, moved or cancelled, and reminds you the day before; they reach your
+            <strong>Join video call</strong> button when there is one. For a meeting you are on, say
+            whether you are coming — <strong>Going</strong>, <strong>Maybe</strong> or{' '}
+            <strong>Can&rsquo;t go</strong> — and see who else is; everybody it is for sees the
+            answers, a ✓, ? or ✗ on the event shows yours, and whoever set it up hears if you
+            can&rsquo;t go. Each date of a repeating meeting is answered on its own, and if the time
+            changes you are asked again. The bell tells you when one is added, moved or cancelled,
+            and reminds you the day before (unless you said you can&rsquo;t go); they reach your
             phone&rsquo;s calendar too, as an invite or through the calendar link. An event is not a
             shift — if you are being paid to be there, clock in as usual.
           </p>
@@ -1489,6 +1494,26 @@ const MANAGERS: Section[] = [
             remove <strong>just that date</strong> or <strong>that date and all after it</strong>.
             Events never count as hours or overtime — anybody being paid to attend clocks in as
             usual, so payroll stays with the punches.
+          </p>
+        ),
+      },
+      {
+        question: 'Finding a time, and who is coming',
+        answer: (
+          <p>
+            In the event form, once <strong>who it is for</strong> is filled in, press{' '}
+            <strong>Find a time everyone is free</strong>. It looks at the two weeks from the day in{' '}
+            <strong>Starts</strong>, 7am to 7pm, for a meeting as long as the one in the form, and
+            lists the best few times: nobody off or in another meeting first, then the most people
+            already on the rota (drafts too), so nobody comes in specially. Each time says who is
+            not on the rota then, and anything to check — a day asked off, a half day, a time they
+            said they can&rsquo;t work. <strong>Use this time</strong> puts it into Starts and Ends;{' '}
+            <strong>Look at the next two weeks</strong> looks further. It goes only by what the app
+            knows — it cannot see anybody&rsquo;s own calendar. Once it is saved, the people it is
+            for answer <strong>Going</strong>, <strong>Maybe</strong> or{' '}
+            <strong>Can&rsquo;t go</strong> in its pop-up; click the event to see who has answered
+            and who hasn&rsquo;t. You hear on the bell when somebody can&rsquo;t go to a meeting you
+            set up. Changing a date&rsquo;s time clears its answers and asks again.
           </p>
         ),
       },

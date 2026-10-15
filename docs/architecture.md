@@ -3952,7 +3952,8 @@ people's phones. Decided with Dominguez, from four questions:
   attend clocks in as usual, so pay still comes only from punches — the one
   source the timesheet, the export and ADP all agree on.
 - **Managers and admins** make, change and remove them.
-- **No replies** (going / can't go) for now.
+- **Replies** (going / can't go): none at first; added October 2026 — see
+  *Replies and "Find a time"*.
 
 `PracticeEvent` (not `Event`, which reads as a DOM or Node event) stores a
 pair of instants whether or not it is all-day, so "what is on this week" is
@@ -4263,6 +4264,63 @@ staff are on personal Google accounts, and under Trusted they would all have
 knocked. The sign-in moved to `google/google-auth.service.ts`, shared with
 calendar invites and Drive, with a token per scope — so a scope the admin has
 not allowed spoils none of the others.
+
+### Replies and "Find a time"
+
+Asked for in October 2026 (Dominguez: "schedule meetings on this app that
+will create a google calendar invite, meet, etc."). Of the three things
+offered he chose **replies** and **Find a time**, with **everybody invited
+seeing the answers**; **staff still do not book meetings**, only managers and
+admins.
+
+**Replies** — `PracticeEventReply`, one row per person per **date** (each
+date of a series is its own `PracticeEvent`, so it is answered on its own):
+`GOING`, `NOT_GOING` or `MAYBE`, and nothing else — no note. Only meetings
+(`kind: EVENT`); closures, holidays, diagnostics and rep lunches are not
+things anybody says they will go to. `events/event-replies.service.ts`:
+
+- **Who answers**: the people it is for (`audienceWhere`), until it ends. A
+  manager not on the list can look but not answer.
+- **Who sees**: everybody it is for, and managers — going, maybe, can't go and
+  not answered yet, by name (Dominguez's choice, as a calendar invite does).
+  An answer from somebody since taken off the list is not shown. Somebody it
+  is not for gets 404 on both routes, so they cannot learn it is there.
+- **The list** (`GET /events`) carries the viewer's own answer as `myReply`,
+  shown as ✓ / ? / ✗ on the chip; the pop-up asks `GET /events/:id/replies`.
+- **Told**: whoever made it (`createdById`) hears on the bell when somebody
+  first says they can't go. Nobody else is told about answers.
+- **Day-before reminder**: not to anybody who said they can't go.
+- **A new time asks again**: changing one date's start, end or all-day clears
+  its answers, and the "Event changed" notice says so. Changing "this and all
+  after it" rewrites those dates, so their answers go too — even when only
+  the words changed. Removing a date removes its answers (cascade).
+- Google Calendar invites keep their own replies; the two are not joined.
+
+**Find a time** — a button in the event form, once who it is for is chosen
+(`components/FindATime.tsx`, `POST /events/find-a-time`, managers only). It
+looks at 14 days from the day in Starts (or today), **7am to 7pm** New Jersey
+time, every half hour, for the length of meeting in the form, and judges each
+person at each time (`events/find-a-time.ts`, pure):
+
+- **busy** — approved full-day time off, or another timed meeting they are on
+  (not one they said they can't go to, and not the one being edited or its
+  series);
+- **check** — a half day, time off still asked for, a shift covering only part
+  of it, or availability saying they can't (off the rota);
+- **at work** — a shift (drafts included, not cancelled) covering all of it;
+- otherwise **free**, but not on the rota then.
+
+Best first: fewest busy, fewest to check, most at work, a weekday before a
+weekend, earliest — at most two a day and never overlapping, six in all.
+"At work" ranks high because the practice's meetings happen in working hours:
+a time when everybody is already in costs nobody a trip. It reads only what
+the app holds; it cannot see anybody's own calendar, and says so. Suggests,
+never decides: **Use this time** fills in Starts and Ends, and any time can
+still be typed. Closures are not looked at — the rota already leaves a shut
+office empty.
+
+`tests/browser/event-replies.mjs`. Worth carrying to the EMR module if it
+takes practice events.
 
 ## Calendar invites
 

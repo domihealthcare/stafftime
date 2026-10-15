@@ -55,6 +55,10 @@ import type {
   DirectoryEntry,
   PlanResult,
   PracticeEvent,
+  EventAudience,
+  EventReplies,
+  ReplyAnswer,
+  FoundTimes,
   Rep,
   RepInput,
   PracticeSettings,
@@ -1491,6 +1495,27 @@ export const api = {
     }),
   deleteEvent: (id: string, scope: 'one' | 'following' = 'one') =>
     request<{ deleted: number }>(`/events/${id}?scope=${scope}`, { method: 'DELETE' }),
+  /// Who is going to a meeting.
+  eventReplies: (id: string) => request<EventReplies>(`/events/${id}/replies`),
+  /// The signed-in person's answer to a meeting.
+  replyToEvent: (id: string, answer: ReplyAnswer) =>
+    request<EventReplies>(`/events/${id}/reply`, {
+      method: 'PUT',
+      body: JSON.stringify({ answer }),
+    }),
+  /// The best few times for a meeting being booked (managers).
+  findATime: (body: {
+    audience: EventAudience;
+    invitees?: { employeeIds: string[]; jobRoleIds: string[]; locationIds: string[] };
+    from: string;
+    days?: number;
+    minutes: number;
+    eventId?: string;
+  }) =>
+    request<FoundTimes>('/events/find-a-time', {
+      method: 'POST',
+      body: JSON.stringify(body),
+    }),
 
   /// `latest`: only the newest few, plus the primary post wherever it falls.
   announcements: (latest?: number) =>

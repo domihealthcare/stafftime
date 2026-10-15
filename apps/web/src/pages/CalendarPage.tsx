@@ -623,6 +623,11 @@ export function CalendarPage() {
             setOpenEvent(null);
             void load();
           }}
+          onAnswered={(answer) =>
+            setEvents((all) =>
+              all.map((one) => (one.id === openEvent.id ? { ...one, myReply: answer } : one)),
+            )
+          }
         />
       )}
     </div>

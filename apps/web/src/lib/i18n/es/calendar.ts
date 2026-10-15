@@ -72,6 +72,20 @@ export const CALENDAR: Record<string, string> = {
   'Brings catering': 'Trae catering',
   'Office orders (self-order)': 'La oficina pide la comida',
 
+  // Replies to a meeting (components/EventReplies.tsx)
+  'Are you going?': '¿Vas a ir?',
+  Going: 'Voy',
+  Maybe: 'Quizás',
+  'Can’t go': 'No puedo ir',
+  'Not answered yet': 'Sin responder',
+  'Show who': 'Ver quiénes',
+  'Who is going': 'Quiénes van',
+  'Could not save your answer.': 'No se pudo guardar tu respuesta.',
+  'Nobody is on the list any more.': 'Ya no hay nadie en la lista.',
+  'you’re going': 'vas a ir',
+  'you might go': 'quizás vayas',
+  'you can’t go': 'no puedes ir',
+
   // Holidays and closures card
   'Holidays and closures': 'Feriados y cierres',
   'Previous year': 'Año anterior',

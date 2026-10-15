@@ -1178,6 +1178,48 @@ export interface PracticeEvent {
   invitees: EventInvitee[];
   /// The series this date belongs to, if it repeats.
   series: EventSeries | null;
+  /// A meeting: the viewer's own answer, if they gave one. Absent from a save.
+  myReply?: ReplyAnswer | null;
+}
+
+/// Going, can't go or maybe — to a meeting (October 2026).
+export type ReplyAnswer = 'GOING' | 'NOT_GOING' | 'MAYBE';
+
+export interface ReplyPerson {
+  id: string;
+  name: string;
+}
+
+/// Who is going to a meeting, for everybody it is for.
+export interface EventReplies {
+  /// Whether the viewer is on the list and it has not happened yet.
+  canReply: boolean;
+  mine: ReplyAnswer | null;
+  going: ReplyPerson[];
+  maybe: ReplyPerson[];
+  notGoing: ReplyPerson[];
+  /// Not said yet.
+  waiting: ReplyPerson[];
+}
+
+/// One suggested time from "Find a time".
+export interface TimeSuggestion {
+  startsAt: string;
+  endsAt: string;
+  total: number;
+  /// On the rota for all of it.
+  atWork: number;
+  /// Free, but not on the rota then.
+  notOnRota: string[];
+  check: { name: string; why: string }[];
+  busy: { name: string; why: string }[];
+}
+
+export interface FoundTimes {
+  from: string;
+  days: number;
+  people: number;
+  suggestions: TimeSuggestion[];
 }
 
 export interface EventInput {
