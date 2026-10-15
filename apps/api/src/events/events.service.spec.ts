@@ -156,8 +156,13 @@ function build(
     update: jest.fn().mockResolvedValue({}),
     delete: jest.fn().mockResolvedValue({}),
   };
+  /// Answers to meetings: none unless a test gives some.
+  const practiceEventReply = {
+    findMany: jest.fn().mockResolvedValue([]),
+    deleteMany: jest.fn().mockResolvedValue({ count: 0 }),
+  };
   // What runs inside a transaction: the same stand-ins.
-  const tx = { practiceEvent, practiceEventInvitee, practiceEventSeries };
+  const tx = { practiceEvent, practiceEventInvitee, practiceEventSeries, practiceEventReply };
   const prisma = {
     ...tx,
     $transaction: jest.fn(async (fn: (client: typeof tx) => unknown) => fn(tx)),
@@ -206,6 +211,7 @@ function build(
     practiceEvent,
     practiceEventInvitee,
     practiceEventSeries,
+    practiceEventReply,
     inbox,
     rows,
   };
@@ -1424,5 +1430,62 @@ describe('describeWhen', () => {
         endsAt: new Date('2026-10-17T05:00:00.000Z'),
       }),
     ).toBe('Fri, Oct 16, 6:00 PM – Sat, Oct 17, 1:00 AM');
+  });
+});
+
+describe('replies to meetings', () => {
+  it('gives each viewer their own answer with the events', async () => {
+    const { service, practiceEventReply } = build();
+    practiceEventReply.findMany.mockResolvedValue([{ eventId: 'ev-1', answer: 'GOING' }]);
+    const [event] = await service.list(
+      '2099-10-12T04:00:00.000Z',
+      '2099-10-19T04:00:00.000Z',
+      staff,
+    );
+    expect(event.myReply).toBe('GOING');
+    expect(practiceEventReply.findMany.mock.calls[0][0].where).toEqual({
+      employeeId: 'emp-1',
+      eventId: { in: ['ev-1'] },
+    });
+  });
+
+  it('clears the answers when a date moves, and says so', async () => {
+    const { service, practiceEventReply, inbox } = build({ invited: ['emp-1', 'emp-2'] });
+    practiceEventReply.deleteMany.mockResolvedValue({ count: 2 });
+    await service.update(
+      'ev-1',
+      input({ startsAt: '2099-10-14T18:00:00.000Z', endsAt: '2099-10-14T19:00:00.000Z' }),
+      manager,
+    );
+    expect(practiceEventReply.deleteMany).toHaveBeenCalledWith({ where: { eventId: 'ev-1' } });
+    const [, changed] = inbox.notify.mock.calls.find(([, n]) =>
+      n.title.startsWith('Event changed'),
+    )!;
+    expect(changed.body).toContain('say again whether you can go');
+  });
+
+  it('keeps the answers when only the words change', async () => {
+    const { service, practiceEventReply } = build();
+    await service.update('ev-1', input({ title: 'Office meeting (new phones)' }), manager);
+    expect(practiceEventReply.deleteMany).not.toHaveBeenCalled();
+  });
+
+  it('does not remind somebody who said they can’t go', async () => {
+    const { service, practiceEvent, practiceEventReply, inbox } = build({
+      invited: ['emp-1', 'emp-2'],
+    });
+    practiceEvent.findMany.mockResolvedValue([
+      row({
+        startsAt: new Date('2099-10-02T13:00:00.000Z'),
+        endsAt: new Date('2099-10-02T14:00:00.000Z'),
+      }),
+    ]);
+    practiceEventReply.findMany.mockResolvedValue([{ employeeId: 'emp-2' }]);
+    await service.sendReminders(new Date('2099-10-01T15:00:00.000Z'));
+    expect(inbox.notify.mock.calls[0][0]).toEqual(['emp-1']);
+    expect(practiceEventReply.findMany.mock.calls[0][0].where).toEqual({
+      eventId: 'ev-1',
+      answer: 'NOT_GOING',
+    });
   });
 });

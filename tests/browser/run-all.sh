@@ -78,6 +78,7 @@ reset_state() {
     -c "update employees set \"wantsWeeklySummary\" = true;" \
     -c "update employees set \"clocksIn\" = true;" \
     -c "delete from shifts where notes = 'clocks-in-suite';" \
+    -c "delete from shifts where notes = 'event-replies-suite';" \
     -c "delete from shifts where notes = 'minimums-suite';" \
     -c "delete from shifts where notes = 'extensions-suite';" \
     -c "delete from office_extensions where extension = '199';" \
@@ -121,7 +122,7 @@ reset_state() {
 
 # The scheduler suite builds its rotas in February 2027 so that clearing them
 # cannot touch the shift the seed puts on today's date.
-SUITES="${SUITES:-drive refusals correct auth kiosk export locations pto pto-policy presets calendar scheduler checklists phone reset payroll credentials privacy race attention announcements resources directory availability surveys dashboard date-ranges help adp profile rota wfh overtime bell rota-print closing install golive staff staff-profile birthdays events closures recurring standing usual-week own-roles hand-entry removed-shift quick-add credential-types clinical care-plan wellness productivity schedule-phone clock-place extensions shift-notes shift-hours repeat-weeks news-social punch-reminders main-job-role auto-clock-out digest-topics practice-calendar cover patterns clashes approve-clean publish-check export-check license-reminders overtime-forecast onboarding-reminders missed-shifts availability-clash usual-hours minimums ask moving-holidays time-off-shifts ai-helpers ask-cover payroll-due not-signed-in tomorrow auto-onboarding review360 running-late corrections clean-time-off weekly required rota-cost on-call push spanish clocks-in}"
+SUITES="${SUITES:-drive refusals correct auth kiosk export locations pto pto-policy presets calendar scheduler checklists phone reset payroll credentials privacy race attention announcements resources directory availability surveys dashboard date-ranges help adp profile rota wfh overtime bell rota-print closing install golive staff staff-profile birthdays events closures recurring standing usual-week own-roles hand-entry removed-shift quick-add credential-types clinical care-plan wellness productivity schedule-phone clock-place extensions shift-notes shift-hours repeat-weeks news-social punch-reminders main-job-role auto-clock-out digest-topics practice-calendar cover patterns clashes approve-clean publish-check export-check license-reminders overtime-forecast onboarding-reminders missed-shifts availability-clash usual-hours minimums ask moving-holidays time-off-shifts ai-helpers ask-cover payroll-due not-signed-in tomorrow auto-onboarding review360 running-late corrections clean-time-off weekly required rota-cost on-call push spanish clocks-in event-replies}"
 
 # Full output per suite goes to a file, and only the step lines are printed, so
 # a failure's detail is still there to read rather than truncated away.
