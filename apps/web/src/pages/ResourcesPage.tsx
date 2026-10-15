@@ -1,3 +1,4 @@
+import { ReferenceSection } from '../components/ReferenceSection';
 import { JobRoleDot } from '../components/JobRoleTag';
 import { createContext, useCallback, useContext, useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
@@ -95,6 +96,7 @@ export function ResourcesPage() {
 
         <div className="space-y-6">
           <FormsSection />
+          <ReferenceSection />
           {sections.map((section) => (
             <SectionBlock
               key={section.jobRole?.id ?? 'everyone'}

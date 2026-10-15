@@ -36,6 +36,15 @@ const signIn = async (page, email) => {
 const YEAR = new Date().getFullYear() + 1;
 const START = `${YEAR}-03-09`;
 const END = `${YEAR}-03-13`;
+// Weekdays only count (October 2026, Dominguez: "please do not include
+// weekends"), and which weekdays these are depends on the year.
+const WEEKDAYS = (() => {
+  let count = 0;
+  for (let d = new Date(`${START}T12:00:00Z`); d <= new Date(`${END}T12:00:00Z`); d.setUTCDate(d.getUTCDate() + 1)) {
+    if (d.getUTCDay() !== 0 && d.getUTCDay() !== 6) count += 1;
+  }
+  return count;
+})();
 
 const empCtx = await browser.newContext({ viewport: { width: 420, height: 950 } });
 const emp = await empCtx.newPage();
@@ -81,7 +90,7 @@ await step('an employee submits a request', async () => {
   await emp.getByRole('button', { name: 'Send request' }).click();
   await formClosed(emp);
   await cards(emp).getByText('Family trip').waitFor({ timeout: 15000 });
-  await cards(emp).getByText('5 days').waitFor({ timeout: 5000 });
+  await cards(emp).getByText(`${WEEKDAYS} days`).waitFor({ timeout: 5000 });
 });
 await emp.screenshot({ path: `${OUT}/26-pto-employee.png`, fullPage: true });
 

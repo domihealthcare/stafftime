@@ -24,6 +24,7 @@ import {
   TabletPinReminder,
 } from '../components/HomeCards';
 import { HomeRequired } from '../components/RequiredItems';
+import { MonthBalancePopup } from '../components/MonthBalancePopup';
 import { OnCallNow } from '../components/OnCallNow';
 import { SuggestionBoxCard } from '../components/SuggestionBox';
 import { MyOvertimeNotice } from '../components/OvertimeAlerts';
@@ -324,6 +325,7 @@ export function ClockPage() {
   return (
     <div className="grid items-start gap-4 lg:grid-cols-3 lg:grid-rows-[auto_1fr] lg:gap-6">
       <h1 className="sr-only">{t('Home')}</h1>
+      <MonthBalancePopup />
       <div className="space-y-4 lg:col-span-2 lg:row-start-1" data-testid="home-clock">
         <MyOvertimeNotice />
 

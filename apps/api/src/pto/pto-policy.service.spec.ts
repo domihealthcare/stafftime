@@ -11,6 +11,8 @@ const DEFAULT_POLICY = {
   yearStartMonth: 1,
   yearStartDay: 1,
   prorateFirstYear: true,
+  // No sick time earned as it is worked unless a test says so.
+  sickAccrualFrom: null as Date | null,
   updatedById: null,
   createdAt: new Date(),
   updatedAt: new Date(),
@@ -61,10 +63,10 @@ describe('daysWithin', () => {
 
   it('splits a request that spans New Year across both years', () => {
     const request = { startDate: day('2026-12-30'), endDate: day('2027-01-02'), isHalfDay: false };
-    // 30, 31 December fall in 2026.
+    // Wednesday 30 and Thursday 31 December fall in 2026.
     expect(daysWithin(request, start, end)).toBe(2);
-    // 1, 2 January fall in 2027.
-    expect(daysWithin(request, day('2027-01-01'), day('2028-01-01'))).toBe(2);
+    // Friday 1 January falls in 2027; Saturday the 2nd does not count.
+    expect(daysWithin(request, day('2027-01-01'), day('2028-01-01'))).toBe(1);
   });
 
   it('is zero for a request entirely outside the year', () => {
@@ -86,6 +88,12 @@ describe('PtoPolicyService', () => {
       hireDate?: Date | null;
       createdAt?: Date;
       allowance?: { vacationDaysPerYear: number | null; sickDaysPerYear: number | null } | null;
+      payType?: 'HOURLY' | 'SALARY';
+      offices?: string[];
+      /// Closures in the range, as the database holds them.
+      closures?: unknown[];
+      /// Punches, for sick time earned as it is worked.
+      entries?: Array<{ clockInAt: Date; clockOutAt: Date }>;
       startingPoints?: Array<{
         policyYear: number;
         vacationUsed?: number;
@@ -118,6 +126,8 @@ describe('PtoPolicyService', () => {
           id: 'emp-1',
           hireDate: options.hireDate === undefined ? day('2020-01-01') : options.hireDate,
           createdAt: options.createdAt ?? day('2026-09-25'),
+          payType: options.payType ?? 'SALARY',
+          locations: (options.offices ?? []).map((locationId) => ({ locationId })),
           ptoAllowance: options.allowance ?? null,
           ptoStartingPoints: startingPoints,
         }),
@@ -141,6 +151,8 @@ describe('PtoPolicyService', () => {
         // Every call returns the same set; the service filters by year itself.
         findMany: jest.fn().mockResolvedValue(requests),
       },
+      practiceEvent: { findMany: jest.fn().mockResolvedValue(options.closures ?? []) },
+      timeEntry: { findMany: jest.fn().mockResolvedValue(options.entries ?? []) },
     };
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     return { service: new PtoPolicyService(prisma as any), prisma };
@@ -337,10 +349,10 @@ describe('PtoPolicyService', () => {
       const { service } = build({
         hireDate: day('2020-01-01'),
         createdAt: day('2026-09-25'),
-        requests: [approved(PtoType.VACATION, '2026-11-02', '2026-11-13')],
+        requests: [approved(PtoType.VACATION, '2026-11-02', '2026-11-17')],
       });
       const balance = await service.balanceFor('emp-1', 2027);
-      // 2026: 12 of 15 taken, 3 left to roll over.
+      // 2026: 12 weekdays of 15 taken, 3 left to roll over.
       expect(balance.vacation.carriedOver).toBe(3);
     });
 
@@ -357,9 +369,9 @@ describe('PtoPolicyService', () => {
     });
 
     it('carries less than the cap when less is left', async () => {
-      // 2025: used 13 of 15, so 2 unused.
+      // 2025: used 13 weekdays of 15, so 2 unused.
       const { service } = build({
-        requests: [approved(PtoType.VACATION, '2025-03-03', '2025-03-15')],
+        requests: [approved(PtoType.VACATION, '2025-03-03', '2025-03-19')],
         hireDate: day('2025-01-01'),
         createdAt: day('2025-01-01'),
       });
@@ -456,6 +468,119 @@ describe('PtoPolicyService', () => {
     });
   });
 
+  describe('which days count (October 2026)', () => {
+    it('leaves out the weekend: Ivanna’s Wednesday to Wednesday is 6 days, not 8', async () => {
+      const { service } = build({
+        hireDate: day('2026-01-01'),
+        requests: [approved(PtoType.VACATION, '2026-10-21', '2026-10-28')],
+      });
+      const balance = await service.balanceFor('emp-1', 2026);
+      expect(balance.vacation).toMatchObject({ used: 6, remaining: 9 });
+    });
+
+    it('leaves out a weekday the office is closed all day', async () => {
+      const { service } = build({
+        hireDate: day('2026-01-01'),
+        offices: ['loc-nb'],
+        requests: [approved(PtoType.VACATION, '2026-12-21', '2026-12-25')],
+        closures: [
+          {
+            // Christmas Day, both offices: all day on New Jersey's clock.
+            startsAt: new Date('2026-12-25T05:00:00.000Z'),
+            endsAt: new Date('2026-12-26T05:00:00.000Z'),
+            audience: 'EVERYONE',
+            locationId: null,
+          },
+        ],
+      });
+      const balance = await service.balanceFor('emp-1', 2026);
+      expect(balance.vacation.used).toBe(4);
+    });
+
+    it('still counts a day only another office is shut', async () => {
+      const { service } = build({
+        hireDate: day('2026-01-01'),
+        offices: ['loc-nb'],
+        requests: [approved(PtoType.VACATION, '2026-12-21', '2026-12-21')],
+        closures: [
+          {
+            startsAt: new Date('2026-12-21T05:00:00.000Z'),
+            endsAt: new Date('2026-12-22T05:00:00.000Z'),
+            audience: 'LOCATION',
+            locationId: 'loc-wny',
+          },
+        ],
+      });
+      const balance = await service.balanceFor('emp-1', 2026);
+      expect(balance.vacation.used).toBe(1);
+    });
+  });
+
+  describe('sick days (October 2026)', () => {
+    const FROM = day('2026-10-16');
+    const accruing = { ...DEFAULT_POLICY, sickAccrualFrom: FROM };
+    /// A punch of `hours` on a day in November 2026.
+    const punch = (date: string, hours: number) => ({
+      clockInAt: new Date(`${date}T14:00:00.000Z`),
+      clockOutAt: new Date(new Date(`${date}T14:00:00.000Z`).getTime() + hours * 3_600_000),
+    });
+
+    it('are never cut down for starting part-way through the year', async () => {
+      const { service } = build({ hireDate: day('2026-09-01') });
+      const balance = await service.balanceFor('emp-1', 2026);
+      expect(balance.sick.entitled).toBe(5);
+      expect(balance.vacation.entitled).toBeLessThan(15);
+    });
+
+    it('are earned as they work by hourly staff starting from the practice’s date', async () => {
+      // 95 hours worked: three whole hours earned, 3/8 of a day.
+      const { service } = build({
+        policy: accruing,
+        payType: 'HOURLY',
+        hireDate: day('2026-11-02'),
+        entries: [punch('2026-11-02', 40), punch('2026-11-09', 40), punch('2026-11-16', 15)],
+      });
+      const balance = await service.balanceFor('emp-1', 2026);
+      expect(balance.sick).toMatchObject({ entitled: 0.4, remaining: 0.4 });
+      expect(balance.sick.accrual).toEqual({ hoursWorked: 95, hoursEarned: 3, upToDays: 5 });
+    });
+
+    it('never come to more than the year’s days', async () => {
+      const entries = Array.from({ length: 40 }, (_, i) =>
+        punch(`2026-11-${String((i % 28) + 1).padStart(2, '0')}`, 40),
+      );
+      const { service } = build({
+        policy: accruing,
+        payType: 'HOURLY',
+        hireDate: day('2026-11-01'),
+        entries,
+      });
+      const balance = await service.balanceFor('emp-1', 2026);
+      expect(balance.sick.entitled).toBe(5);
+    });
+
+    it('do not count a clock-out the app made at midnight', async () => {
+      const { service, prisma } = build({
+        policy: accruing,
+        payType: 'HOURLY',
+        hireDate: day('2026-11-01'),
+      });
+      await service.balanceFor('emp-1', 2026);
+      expect(prisma.timeEntry.findMany.mock.calls[0][0].where).toMatchObject({
+        clockOutAt: { not: null },
+        autoClockedOutAt: null,
+      });
+    });
+
+    it('are given in full to salaried staff, and hourly staff who started before', async () => {
+      const salaried = build({ policy: accruing, payType: 'SALARY', hireDate: day('2026-11-01') });
+      expect((await salaried.service.balanceFor('emp-1', 2026)).sick.entitled).toBe(5);
+      const before = build({ policy: accruing, payType: 'HOURLY', hireDate: day('2026-03-01') });
+      expect((await before.service.balanceFor('emp-1', 2026)).sick.entitled).toBe(5);
+      expect(before.prisma.timeEntry.findMany).not.toHaveBeenCalled();
+    });
+  });
+
   describe('changing the policy', () => {
     it('is reflected immediately in the balance', async () => {
       const { service } = build({ policy: { ...DEFAULT_POLICY, vacationDaysPerYear: 20 } });
@@ -524,14 +649,27 @@ describe('PtoPolicyService', () => {
       expect(balance.sick.entitled).toBe(5);
     });
 
-    it('is prorated in a first year like anybody’s', async () => {
+    it('has PTO prorated in a first year like anybody’s, and sick days in full', async () => {
       const { service } = build({
         hireDate: day('2026-07-02'),
         allowance: { vacationDaysPerYear: 10, sickDaysPerYear: 4 },
       });
       const balance = await service.balanceFor('emp-1', 2026);
       expect(balance.vacation.entitled).toBe(5);
-      expect(balance.sick.entitled).toBe(2);
+      expect(balance.sick.entitled).toBe(4);
+    });
+
+    it('is given the 5 sick days typed in, not a share of them (Jennifer, October 2026)', async () => {
+      // Hourly, started before sick time was earned as it is worked.
+      const { service } = build({
+        hireDate: day('2026-07-20'),
+        payType: 'HOURLY',
+        allowance: { vacationDaysPerYear: null, sickDaysPerYear: 5 },
+        policy: { ...DEFAULT_POLICY, sickAccrualFrom: day('2026-10-16') },
+      });
+      const balance = await service.balanceFor('emp-1', 2026);
+      expect(balance.sick).toMatchObject({ entitled: 5, remaining: 5 });
+      expect(balance.sick.accrual).toBeUndefined();
     });
   });
 

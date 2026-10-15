@@ -79,6 +79,41 @@ describe('what this app deliberately does not store', () => {
     );
   });
 
+  /// Vendor payments (October 2026, Dominguez): money and paperwork only. The
+  /// spreadsheet they replace had patients' names in its notes; nothing here
+  /// is for a patient, and a new column has to be decided out loud.
+  it('keeps vendor payments to money and paperwork', () => {
+    const fieldsOf = (name: string) =>
+      model(name)
+        .split('\n')
+        .map((line) => line.trim())
+        .filter((line) => line && !line.startsWith('//') && !line.startsWith('@@'))
+        .map((line) => line.split(/\s+/)[0])
+        .sort();
+    expect(fieldsOf('Vendor')).toEqual(
+      ['active', 'address', 'createdAt', 'details', 'id', 'name', 'payments', 'updatedAt'].sort(),
+    );
+    expect(fieldsOf('VendorPayment')).toEqual(
+      [
+        'amount',
+        'checkNumber',
+        'completedOn',
+        'createdAt',
+        'createdById',
+        'forWhat',
+        'id',
+        'invoiceNumber',
+        'method',
+        'note',
+        'sentOn',
+        'status',
+        'updatedAt',
+        'vendor',
+        'vendorId',
+      ].sort(),
+    );
+  });
+
   it('keeps the admins-only staff record to what was agreed, off the Employee row', () => {
     const fieldsOf = (name: string) =>
       model(name)

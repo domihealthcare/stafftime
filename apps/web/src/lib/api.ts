@@ -55,6 +55,14 @@ import type {
   DirectoryEntry,
   PlanResult,
   PracticeEvent,
+  TimeOffPreview,
+  ReferenceTable,
+  ReferenceTableInput,
+  ReferenceTableSummary,
+  Vendor,
+  VendorInput,
+  VendorPayment,
+  VendorPaymentInput,
   EventAudience,
   EventReplies,
   ReplyAnswer,
@@ -625,10 +633,36 @@ export const api = {
     isHalfDay?: boolean;
     notes?: string;
     employeeId?: string;
+    /// More than is left: ticked to say the rest may be unpaid.
+    acknowledgedUnpaid?: boolean;
   }) =>
     request<PtoRequest>('/pto', { method: 'POST', body: JSON.stringify(body) }).then(
       timeOffChanged,
     ),
+  /// What a request would take and leave, before it is sent.
+  ptoPreview: (params: {
+    type: string;
+    startDate: string;
+    endDate: string;
+    isHalfDay?: boolean;
+    employeeId?: string;
+  }) =>
+    request<TimeOffPreview>(
+      `/pto/preview${toQuery({
+        type: params.type,
+        startDate: params.startDate,
+        endDate: params.endDate,
+        isHalfDay: params.isHalfDay ? 'true' : undefined,
+        employeeId: params.employeeId || undefined,
+      })}`,
+    ),
+  /// The start-of-month pop-up with your time off left, if it is due.
+  ptoMonthReminder: () =>
+    request<{ show: false } | { show: true; month: string; balance: PtoBalance }>(
+      '/pto/month-reminder',
+    ),
+  ptoMonthReminderSeen: () =>
+    request<{ month: string }>('/pto/month-reminder/seen', { method: 'POST' }),
   /// "Help me word it" on declining time off (AI): a reason to edit.
   declineWording: (id: string, notes: string) =>
     request<{ reason: string | null }>(`/pto/${id}/decline-wording`, {
@@ -667,8 +701,12 @@ export const api = {
     request<{ deleted: boolean }>(`/pto/${id}/recorded`, { method: 'DELETE' }).then(timeOffChanged),
 
   ptoPolicy: () => request<PtoPolicy>('/pto/policy'),
-  updatePtoPolicy: (body: Partial<Omit<PtoPolicy, 'id'>>) =>
-    request<PtoPolicy>('/pto/policy', { method: 'PATCH', body: JSON.stringify(body) }),
+  updatePtoPolicy: (
+    body: Partial<Omit<PtoPolicy, 'id' | 'sickAccrualFrom'>> & {
+      /// "2026-10-16", or null for nobody.
+      sickAccrualFrom?: string | null;
+    },
+  ) => request<PtoPolicy>('/pto/policy', { method: 'PATCH', body: JSON.stringify(body) }),
   ptoBalance: (employeeId?: string) =>
     request<PtoBalance>(`/pto/balance${employeeId ? `?employeeId=${employeeId}` : ''}`),
   staffPtoBalances: () => request<StaffBalance[]>('/pto/balances'),
@@ -1495,6 +1533,40 @@ export const api = {
     }),
   deleteEvent: (id: string, scope: 'one' | 'following' = 'one') =>
     request<{ deleted: number }>(`/events/${id}?scope=${scope}`, { method: 'DELETE' }),
+  // ---------------------------------------------------------------- reference tables
+  referenceTables: () => request<ReferenceTableSummary[]>('/reference-tables'),
+  referenceTable: (id: string) => request<ReferenceTable>(`/reference-tables/${id}`),
+  createReferenceTable: (body: ReferenceTableInput) =>
+    request<ReferenceTable>('/reference-tables', { method: 'POST', body: JSON.stringify(body) }),
+  updateReferenceTable: (id: string, body: ReferenceTableInput) =>
+    request<ReferenceTable>(`/reference-tables/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify(body),
+    }),
+  deleteReferenceTable: (id: string) =>
+    request<{ deleted: boolean }>(`/reference-tables/${id}`, { method: 'DELETE' }),
+
+  // ---------------------------------------------------------------- vendor payments
+  vendors: () => request<Vendor[]>('/vendors'),
+  createVendor: (body: VendorInput) =>
+    request<Vendor>('/vendors', { method: 'POST', body: JSON.stringify(body) }),
+  updateVendor: (id: string, body: VendorInput) =>
+    request<Vendor>(`/vendors/${id}`, { method: 'PUT', body: JSON.stringify(body) }),
+  deleteVendor: (id: string) =>
+    request<{ deleted: boolean }>(`/vendors/${id}`, { method: 'DELETE' }),
+  addVendorPayment: (vendorId: string, body: VendorPaymentInput) =>
+    request<VendorPayment>(`/vendors/${vendorId}/payments`, {
+      method: 'POST',
+      body: JSON.stringify(body),
+    }),
+  updateVendorPayment: (id: string, body: VendorPaymentInput) =>
+    request<VendorPayment>(`/vendors/payments/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify(body),
+    }),
+  deleteVendorPayment: (id: string) =>
+    request<{ deleted: boolean }>(`/vendors/payments/${id}`, { method: 'DELETE' }),
+
   /// Who is going to a meeting.
   eventReplies: (id: string) => request<EventReplies>(`/events/${id}/replies`),
   /// The signed-in person's answer to a meeting.

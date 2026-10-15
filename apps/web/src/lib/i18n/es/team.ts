@@ -219,4 +219,17 @@ export const TEAM: Record<string, string> = {
   'Waiting for you': 'Pendiente para ti',
   'Nothing is waiting for you. ✓': 'No tienes nada pendiente. ✓',
   'Done ({n})': 'Hechas ({n})',
+
+  // Reference tables (components/ReferenceSection.tsx, pages/ReferenceTablePage.tsx),
+  // October 2026.
+  Reference: 'Consulta',
+  '{rows} rows · {columns} columns': '{rows} filas · {columns} columnas',
+  'Could not load that table.': 'No se pudo cargar esa tabla.',
+  'Back to Resources': 'Volver a Recursos',
+  'Find a row': 'Buscar una fila',
+  'An insurance, a code…': 'Un seguro, un código…',
+  'Only columns with': 'Solo columnas con',
+  'Aetna, Echo…': 'Aetna, Echo…',
+  'No rows match.': 'Ninguna fila coincide.',
+  'Updated {date}.': 'Actualizado el {date}.',
 };

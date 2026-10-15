@@ -1,12 +1,11 @@
 import { useEffect, useState } from 'react';
 import { api, type AppConfig } from '../lib/api';
-import { BUILD, versionLabel } from '../lib/version';
+import { BUILD, releasedLabel, versionLabel } from '../lib/version';
 
 /**
  * Which version of Domi Staff this is, and whether it is the one that is live.
  *
- * The version is baked in when the app is built, so it changes by itself with
- * every deploy. The server says which commit it is running; if that differs
+ * The version number and release time are baked in when the app is built. The server says which commit it is running; if that differs
  * from this page's, the tab was opened before the latest deploy and a reload
  * brings it up to date.
  */
@@ -24,14 +23,6 @@ export function VersionCard() {
     };
   }, []);
 
-  const released = new Date(BUILD.builtAt).toLocaleString(undefined, {
-    weekday: 'short',
-    day: 'numeric',
-    month: 'short',
-    year: 'numeric',
-    hour: 'numeric',
-    minute: '2-digit',
-  });
   // Only comparable when both sides know their commit (Vercel says; a laptop
   // running the dev server may not).
   const stale = Boolean(config?.version && BUILD.commit && config.version !== BUILD.commit);
@@ -50,11 +41,15 @@ export function VersionCard() {
       </h2>
       <dl className="mt-2 grid grid-cols-[auto_1fr] gap-x-4 gap-y-1 text-slate-700">
         <dt className="text-slate-500">Version</dt>
-        <dd className="font-medium text-slate-900" data-testid="app-version">
-          {versionLabel()}
+        <dd
+          className="font-medium text-slate-900"
+          data-testid="app-version"
+          title={BUILD.commit ? `Build ${BUILD.commit}` : undefined}
+        >
+          {versionLabel().replace(/^Version /, '')}
         </dd>
         <dt className="text-slate-500">Released</dt>
-        <dd>{released}</dd>
+        <dd data-testid="app-released">{releasedLabel()}</dd>
         {config && (
           <>
             <dt className="text-slate-500">Site</dt>
@@ -68,7 +63,7 @@ export function VersionCard() {
       </dl>
       {stale ? (
         <div className="mt-3 flex flex-wrap items-center gap-3 rounded-lg bg-amber-50 px-3 py-2 text-amber-900 ring-1 ring-inset ring-amber-200">
-          <span>A newer version ({config?.version}) is live.</span>
+          <span>A newer version is live.</span>
           <button
             type="button"
             onClick={() => window.location.reload()}

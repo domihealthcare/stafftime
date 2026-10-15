@@ -1,6 +1,7 @@
 import { BadRequestException, ForbiddenException, NotFoundException } from '@nestjs/common';
 import { Prisma, PtoStatus, PtoType, Role } from '@prisma/client';
 import { countDays, isoDate } from '../common/util/calendar-date.util';
+import { countedDays } from './counted-days';
 import { PtoService } from './pto.service';
 
 describe('date helpers', () => {
@@ -35,6 +36,8 @@ describe('PtoService', () => {
       overlap?: unknown;
       request?: unknown;
       shifts?: unknown[];
+      /// What is left of the allowance a request draws on, before it.
+      remaining?: number;
     } = {},
   ) {
     const prisma = {
@@ -79,9 +82,27 @@ describe('PtoService', () => {
       ptoRequested: jest.fn().mockResolvedValue(undefined),
       ptoDecided: jest.fn().mockResolvedValue(undefined),
     };
+    // Counting by the real rule (weekdays), with no closures; the balance as given.
+    const days = {
+      counterFor: jest.fn(
+        async () => (r: Parameters<typeof countedDays>[0]) => countedDays(r, new Set()),
+      ),
+      preview: jest.fn(async (r: Parameters<typeof countedDays>[0]) => {
+        const taken = countedDays(r, new Set());
+        const remaining = options.remaining ?? 10;
+        return {
+          days: taken,
+          bucket: 'vacation',
+          inOneYear: true,
+          remaining,
+          after: remaining - taken,
+        };
+      }),
+    };
     return {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      service: new PtoService(prisma as any, notifications as any),
+      service: new PtoService(prisma as any, notifications as any, days as any),
+      days,
       prisma,
       notifications,
     };
@@ -160,6 +181,30 @@ describe('PtoService', () => {
         employee,
       );
       expect(created.days).toBe(0.5);
+    });
+
+    it('counts weekdays only: Friday to Monday is two days', async () => {
+      const { service } = build();
+      const created = await service.create(
+        request({ startDate: '2026-11-06', endDate: '2026-11-09' }),
+        employee,
+      );
+      expect(created.days).toBe(2);
+    });
+
+    it('refuses more than is left until they say the rest may be unpaid', async () => {
+      const { service, prisma } = build({ remaining: 2 });
+      await expect(service.create(request(), employee)).rejects.toThrow(/may be unpaid/);
+      expect(prisma.ptoRequest.create).not.toHaveBeenCalled();
+
+      await service.create(request({ acknowledgedUnpaid: true }), employee);
+      expect(prisma.ptoRequest.create.mock.calls[0][0].data.pastBalance).toBe(true);
+    });
+
+    it('marks nothing when it fits', async () => {
+      const { service, prisma } = build({ remaining: 3 });
+      await service.create(request(), employee);
+      expect(prisma.ptoRequest.create.mock.calls[0][0].data.pastBalance).toBe(false);
     });
 
     it('refuses a half day spanning more than one date', async () => {

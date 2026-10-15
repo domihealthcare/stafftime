@@ -45,7 +45,7 @@ function Allowance({ label, allowance }: { label: string; allowance: AllowanceBa
   const t = useT();
   const over = allowance.remaining < 0;
 
-  if (hasNone(allowance)) {
+  if (hasNone(allowance) && !allowance.accrual) {
     return (
       <div className="rounded-lg bg-slate-50 p-3">
         <span className="text-sm font-medium text-slate-700">{label}</span>
@@ -71,7 +71,10 @@ function Allowance({ label, allowance }: { label: string; allowance: AllowanceBa
       </p>
 
       <dl className="mt-2 space-y-0.5 text-xs text-slate-600">
-        <Line term={t('Allowance')} value={allowance.entitled} />
+        <Line
+          term={allowance.accrual ? t('Earned so far') : t('Allowance')}
+          value={allowance.entitled}
+        />
         {allowance.carriedOver > 0 && (
           <Line term={t('Carried over')} value={allowance.carriedOver} />
         )}
@@ -86,6 +89,15 @@ function Allowance({ label, allowance }: { label: string; allowance: AllowanceBa
         )}
         {allowance.pending > 0 && <Line term={t('Awaiting approval')} value={allowance.pending} />}
       </dl>
+
+      {allowance.accrual && (
+        <p className="mt-2 text-xs text-slate-500" data-testid="sick-accrual">
+          {t(
+            'Earned as you work: an hour for every 30 hours worked, up to {days} days a year. {worked} hours worked so far this year.',
+            { days: allowance.accrual.upToDays, worked: allowance.accrual.hoursWorked },
+          )}
+        </p>
+      )}
 
       {over && (
         <p className="mt-2 text-xs font-medium text-rose-700">

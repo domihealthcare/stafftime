@@ -7,13 +7,15 @@ import {
 } from '@nestjs/common';
 import { EmploymentStatus, Prisma, PtoStatus, Role, ShiftStatus } from '@prisma/client';
 import { AuthUser } from '../common/auth/auth-user';
-import { addUtcDays, countDays, isoDate, toUtcDate } from '../common/util/calendar-date.util';
+import { addUtcDays, isoDate, toUtcDate } from '../common/util/calendar-date.util';
 import { PRACTICE_ZONE, practiceToday, zonedTimeToUtc } from '../common/util/zoned-time.util';
 import { NotificationsService } from '../email/notifications.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { loadTimeOffClashes } from './time-off-clashes';
+import { TimeOffDaysService } from './time-off-days.service';
 import {
   CreatePtoRequestDto,
+  PreviewPtoRequestDto,
   QueryPtoRequestsDto,
   RecordPtoDto,
   ReviewPtoRequestDto,
@@ -35,6 +37,7 @@ export class PtoService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly notifications: NotificationsService,
+    private readonly days: TimeOffDaysService,
   ) {}
 
   async create(dto: CreatePtoRequestDto, actor: AuthUser) {
@@ -58,6 +61,22 @@ export class PtoService {
 
     await this.assertNoOverlap(employeeId, startDate, endDate);
 
+    // More than is left: asked anyway, once they have said they understand
+    // the rest may be unpaid (October 2026, Dominguez). Whoever decides sees it.
+    const preview = await this.days.preview({
+      employeeId,
+      type: dto.type,
+      startDate,
+      endDate,
+      isHalfDay: dto.isHalfDay ?? false,
+    });
+    const pastBalance = preview.after !== null && preview.inOneYear && preview.after < 0;
+    if (pastBalance && !dto.acknowledgedUnpaid) {
+      throw new BadRequestException(
+        `That is more ${preview.bucket === 'sick' ? 'sick time' : 'PTO'} than is left (${preview.remaining} left, ${preview.days} asked for). Tick that you understand the days past it may be unpaid, then send it again.`,
+      );
+    }
+
     const request = await this.prisma.ptoRequest.create({
       data: {
         employeeId,
@@ -66,6 +85,7 @@ export class PtoService {
         endDate,
         isHalfDay: dto.isHalfDay ?? false,
         notes: dto.notes,
+        pastBalance,
       },
       include: REQUEST_INCLUDE,
     });
@@ -76,7 +96,16 @@ export class PtoService {
     // the request: until now a request could sit for a week because nobody looked.
     await this.notifyQuietly(() => this.notifications.ptoRequested(request.id));
 
-    return this.decorate(request);
+    return (await this.decorateAll([request]))[0];
+  }
+
+  /// What a request would take and leave, before it is sent — the form's
+  /// "6 days · 4 left afterwards", and its warning past the balance.
+  async preview(dto: PreviewPtoRequestDto, actor: AuthUser) {
+    const employeeId = this.resolveEmployeeId(dto, actor);
+    const { startDate, endDate } = this.parseDates(dto.startDate, dto.endDate);
+    const isHalfDay = dto.isHalfDay === 'true' && startDate.getTime() === endDate.getTime();
+    return this.days.preview({ employeeId, type: dto.type, startDate, endDate, isHalfDay });
   }
 
   /**
@@ -129,7 +158,7 @@ export class PtoService {
       include: REQUEST_INCLUDE,
     });
     this.logger.log(`Time off ${recorded.id} recorded for ${dto.employeeId} by ${actor.id}`);
-    return this.decorate(recorded);
+    return (await this.decorateAll([recorded]))[0];
   }
 
   /**
@@ -170,7 +199,7 @@ export class PtoService {
       orderBy: [{ status: 'asc' }, { startDate: 'asc' }],
     });
 
-    return requests.map((request) => this.decorate(request));
+    return this.decorateAll(requests);
   }
 
   async findOne(id: string, actor: AuthUser) {
@@ -186,7 +215,7 @@ export class PtoService {
       // employee's business either.
       throw new NotFoundException(`Request ${id} not found`);
     }
-    return this.decorate(request);
+    return (await this.decorateAll([request]))[0];
   }
 
   /// Approve or deny. Managers only, and never your own request.
@@ -251,7 +280,7 @@ export class PtoService {
 
     await this.notifyQuietly(() => this.notifications.ptoDecided(updated.id, shiftsHandled));
 
-    return this.decorate(updated);
+    return (await this.decorateAll([updated]))[0];
   }
 
   /**
@@ -358,7 +387,7 @@ export class PtoService {
       include: REQUEST_INCLUDE,
     });
 
-    return this.decorate(updated);
+    return (await this.decorateAll([updated]))[0];
   }
 
   /// What a manager needs to look at: pending requests, soonest first.
@@ -417,7 +446,7 @@ export class PtoService {
 
   // -------------------------------------------------------------------------
 
-  private resolveEmployeeId(dto: CreatePtoRequestDto, actor: AuthUser): string {
+  private resolveEmployeeId(dto: { employeeId?: string }, actor: AuthUser): string {
     if (!dto.employeeId || dto.employeeId === actor.id) {
       return actor.id;
     }
@@ -466,15 +495,19 @@ export class PtoService {
     }
   }
 
-  /// Adds the derived facts every screen wants, so neither has to work them out.
-  private decorate<T extends { startDate: Date; endDate: Date; isHalfDay: boolean }>(request: T) {
-    const days = countDays(request.startDate, request.endDate);
-    return {
+  /// Adds the derived facts every screen wants, so neither has to work them
+  /// out: the dates as plain days, and the days it takes — weekdays only, not
+  /// the days the person's office is shut (`counted-days.ts`).
+  private async decorateAll<
+    T extends { employeeId: string; startDate: Date; endDate: Date; isHalfDay: boolean },
+  >(requests: T[]) {
+    const count = await this.days.counterFor(requests);
+    return requests.map((request) => ({
       ...request,
       startDate: isoDate(request.startDate),
       endDate: isoDate(request.endDate),
-      days: request.isHalfDay ? 0.5 : days,
-    };
+      days: count(request),
+    }));
   }
 }
 
