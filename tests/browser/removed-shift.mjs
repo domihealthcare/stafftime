@@ -43,9 +43,11 @@ await signInAs(admin, 'admin@domihealthcare.com');
 const frankie = await (await browser.newContext({ viewport: { width: 1280, height: 900 } })).newPage();
 await signInAs(frankie, 'frontdesk@domihealthcare.com');
 
-// The 15th of this month, so it is in the month the Schedule opens on.
+// The 15th of this month, so it is in the month the Schedule opens on — or
+// the 16th when today is the 15th, because the seed puts a shift on today and
+// the day would then read "2 shifts".
 const day = new Date();
-day.setDate(15);
+day.setDate(day.getDate() === 15 ? 16 : 15);
 day.setHours(9, 0, 0, 0);
 const end = new Date(day);
 end.setHours(13);
