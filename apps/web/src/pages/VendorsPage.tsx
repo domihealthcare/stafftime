@@ -50,9 +50,10 @@ export function VendorsPage() {
   const [vendors, setVendors] = useState<Vendor[] | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [showFormer, setShowFormer] = useState(false);
+  const [search, setSearch] = useState('');
   const [vendorForm, setVendorForm] = useState<{ vendor?: Vendor } | null>(null);
   const [paymentForm, setPaymentForm] = useState<{
-    vendor: Vendor;
+    vendor?: Vendor;
     payment?: VendorPayment;
   } | null>(null);
 
@@ -71,7 +72,19 @@ export function VendorsPage() {
   }
   if (!vendors) return error ? <Alert>{error}</Alert> : <Spinner />;
 
-  const shown = vendors.filter((vendor) => vendor.active || showFormer);
+  const needle = search.trim().toLowerCase();
+  const shown = vendors.filter(
+    (vendor) =>
+      (vendor.active || showFormer) &&
+      (!needle ||
+        [
+          vendor.name,
+          vendor.details,
+          ...vendor.payments.flatMap((p) => [p.forWhat, p.checkNumber, p.invoiceNumber]),
+        ]
+          .filter(Boolean)
+          .some((text) => String(text).toLowerCase().includes(needle))),
+  );
   const outstanding = vendors.reduce((sum, vendor) => sum + vendor.outstanding, 0);
   const year = new Date().getFullYear();
 
@@ -121,13 +134,35 @@ export function VendorsPage() {
         <button
           type="button"
           onClick={() => setVendorForm({})}
-          className={buttonClass('primary', 'sm')}
+          className={buttonClass('secondary', 'sm')}
         >
           + Vendor
         </button>
+        <button
+          type="button"
+          onClick={() => setPaymentForm({})}
+          className={buttonClass('primary', 'sm')}
+        >
+          + Payment
+        </button>
+      </div>
+      <div className="mb-4">
+        <label htmlFor="vendor-search" className="sr-only">
+          Search vendors
+        </label>
+        <input
+          id="vendor-search"
+          type="search"
+          value={search}
+          onChange={(event) => setSearch(event.target.value)}
+          placeholder="Search vendors, check # or invoice #…"
+          className={inputClass}
+        />
       </div>
 
-      {shown.length === 0 ? (
+      {shown.length === 0 && needle ? (
+        <Card className="p-4 text-sm text-slate-600">Nobody matches “{search.trim()}”.</Card>
+      ) : shown.length === 0 ? (
         <Card className="p-4 text-sm text-slate-600">
           No vendors yet. Add each one you pay — a company, or somebody paid by the month or by the
           reading — then their payments under them.
@@ -255,6 +290,7 @@ export function VendorsPage() {
       {paymentForm && (
         <PaymentForm
           vendor={paymentForm.vendor}
+          vendors={vendors.filter((v) => v.active)}
           payment={paymentForm.payment}
           onClose={() => setPaymentForm(null)}
           onSaved={() => {
@@ -395,17 +431,26 @@ function VendorForm({
 }
 
 function PaymentForm({
-  vendor,
+  vendor: given,
+  vendors,
   payment,
   onClose,
   onSaved,
 }: {
-  vendor: Vendor;
+  vendor?: Vendor;
+  vendors: Vendor[];
   payment?: VendorPayment;
   onClose: () => void;
   onSaved: () => void;
 }) {
   const id = useId();
+  // Opened from the top of the page, the vendor is found by typing a bit of
+  // the name ("Cid" finds George Cid).
+  const [vendor, setVendor] = useState<Vendor | undefined>(given);
+  const [query, setQuery] = useState('');
+  const matches = query.trim()
+    ? vendors.filter((v) => v.name.toLowerCase().includes(query.trim().toLowerCase())).slice(0, 6)
+    : [];
   const today = new Date().toLocaleDateString('en-CA', { timeZone: 'America/New_York' });
   const [form, setForm] = useState({
     forWhat: payment?.forWhat ?? '',
@@ -433,6 +478,10 @@ function PaymentForm({
 
   async function save(event: React.FormEvent) {
     event.preventDefault();
+    if (!vendor) {
+      setProblem('Choose the vendor first — type part of their name.');
+      return;
+    }
     const amount = form.amount.trim() ? Number(form.amount.replace(/[$,\s]/g, '')) : null;
     if (amount !== null && (!Number.isFinite(amount) || amount < 0)) {
       setProblem('The amount should be dollars and cents, like 1,900.00.');
@@ -445,7 +494,7 @@ function PaymentForm({
       checkNumber: form.method === 'CHECK' ? form.checkNumber.trim() || undefined : undefined,
       amount: amount === null ? null : Math.round(amount * 100) / 100,
       status: form.status,
-      sentOn: form.status === 'TO_PAY' ? null : form.sentOn || null,
+      sentOn: form.sentOn || null,
       completedOn: form.status === 'COMPLETED' ? form.completedOn || null : null,
       note: form.note.trim() || undefined,
     };
@@ -464,10 +513,70 @@ function PaymentForm({
   const label = 'block text-sm font-medium text-slate-700';
   return (
     <Modal
-      title={payment ? `Change a payment to ${vendor.name}` : `Payment to ${vendor.name}`}
+      title={
+        payment
+          ? `Change a payment to ${vendor?.name}`
+          : vendor
+            ? `Payment to ${vendor.name}`
+            : 'New payment'
+      }
       onClose={onClose}
     >
       <form onSubmit={(event) => void save(event)} className="grid gap-3 sm:grid-cols-2">
+        {!given && (
+          <div className="sm:col-span-2">
+            <label htmlFor={`${id}-vendor`} className={label}>
+              Vendor
+            </label>
+            {vendor ? (
+              <p className="mt-1 flex items-center gap-2 text-sm text-slate-900">
+                <span className="font-medium">{vendor.name}</span>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setVendor(undefined);
+                    setQuery('');
+                  }}
+                  className="text-xs font-medium text-brand-700 hover:text-brand-900"
+                >
+                  Change
+                </button>
+              </p>
+            ) : (
+              <>
+                <input
+                  id={`${id}-vendor`}
+                  autoComplete="off"
+                  value={query}
+                  onChange={(event) => setQuery(event.target.value)}
+                  placeholder="Start typing a name…"
+                  className={inputClass}
+                />
+                {query.trim() && (
+                  <ul className="mt-1 divide-y divide-slate-100 rounded-lg ring-1 ring-slate-200">
+                    {matches.length === 0 ? (
+                      <li className="px-3 py-2 text-sm text-slate-500">
+                        No vendor by that name — add them with + Vendor first.
+                      </li>
+                    ) : (
+                      matches.map((match) => (
+                        <li key={match.id}>
+                          <button
+                            type="button"
+                            onClick={() => setVendor(match)}
+                            className="block w-full px-3 py-2 text-left text-sm text-slate-900 hover:bg-brand-50"
+                          >
+                            {match.name}
+                          </button>
+                        </li>
+                      ))
+                    )}
+                  </ul>
+                )}
+              </>
+            )}
+          </div>
+        )}
         <div className="sm:col-span-2">
           <label htmlFor={`${id}-for`} className={label}>
             What for
@@ -484,7 +593,7 @@ function PaymentForm({
         </div>
         <div>
           <label htmlFor={`${id}-amount`} className={label}>
-            Amount
+            Amount <span className="font-normal text-slate-500">(optional)</span>
           </label>
           <input
             id={`${id}-amount`}
@@ -527,7 +636,7 @@ function PaymentForm({
         {form.method === 'CHECK' && (
           <div>
             <label htmlFor={`${id}-check`} className={label}>
-              Check #
+              Check # <span className="font-normal text-slate-500">(optional)</span>
             </label>
             <input
               id={`${id}-check`}
@@ -561,21 +670,18 @@ function PaymentForm({
             ))}
           </div>
         </fieldset>
-        {form.status !== 'TO_PAY' && (
-          <div>
-            <label htmlFor={`${id}-sent`} className={label}>
-              Sent or given on
-            </label>
-            <input
-              id={`${id}-sent`}
-              type="date"
-              required
-              value={form.sentOn}
-              onChange={(event) => setForm({ ...form, sentOn: event.target.value })}
-              className={inputClass}
-            />
-          </div>
-        )}
+        <div>
+          <label htmlFor={`${id}-sent`} className={label}>
+            Date sent <span className="font-normal text-slate-500">(optional)</span>
+          </label>
+          <input
+            id={`${id}-sent`}
+            type="date"
+            value={form.sentOn}
+            onChange={(event) => setForm({ ...form, sentOn: event.target.value })}
+            className={inputClass}
+          />
+        </div>
         {form.status === 'COMPLETED' && (
           <div>
             <label htmlFor={`${id}-done`} className={label}>

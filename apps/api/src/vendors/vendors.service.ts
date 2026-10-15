@@ -125,15 +125,12 @@ function vendorFields(dto: VendorInput) {
 }
 
 /// What is saved: a check needs no number to be owed, but cash has none; the
-/// dates follow the status, so "completed" always has a day it was done.
+/// day it was sent is optional, but "completed" always has a day it was done.
 export function paymentFields(dto: VendorPaymentInput) {
   const sentOn = dto.sentOn ? new Date(`${dto.sentOn}T00:00:00.000Z`) : null;
   const completedOn = dto.completedOn ? new Date(`${dto.completedOn}T00:00:00.000Z`) : null;
   if (dto.status === VendorPaymentStatus.COMPLETED && !completedOn) {
     throw new BadRequestException('Say the day it was completed — received and deposited.');
-  }
-  if (dto.status === VendorPaymentStatus.SENT && !sentOn) {
-    throw new BadRequestException('Say the day it was sent or given.');
   }
   if (sentOn && completedOn && completedOn < sentOn) {
     throw new BadRequestException('It cannot be completed before it was sent.');
@@ -145,7 +142,7 @@ export function paymentFields(dto: VendorPaymentInput) {
     checkNumber: dto.method === VendorPaymentMethod.CHECK ? dto.checkNumber?.trim() || null : null,
     amount: dto.amount ?? null,
     status: dto.status,
-    sentOn: dto.status === VendorPaymentStatus.TO_PAY ? null : sentOn,
+    sentOn,
     completedOn: dto.status === VendorPaymentStatus.COMPLETED ? completedOn : null,
     note: dto.note?.trim() || null,
   };

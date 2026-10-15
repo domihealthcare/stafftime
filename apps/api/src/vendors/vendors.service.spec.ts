@@ -25,8 +25,8 @@ describe('paymentFields', () => {
     expect(paymentFields({ ...base, method: VendorPaymentMethod.CASH }).checkNumber).toBeNull();
   });
 
-  it('needs the day it was sent once sent, and the day it cleared once completed', () => {
-    expect(() => paymentFields({ ...base, status: VendorPaymentStatus.SENT })).toThrow(/sent/);
+  it('needs the day it cleared once completed, and the day sent is optional', () => {
+    expect(paymentFields({ ...base, status: VendorPaymentStatus.SENT }).sentOn).toBeNull();
     expect(() =>
       paymentFields({ ...base, status: VendorPaymentStatus.COMPLETED, sentOn: '2025-10-21' }),
     ).toThrow(/completed/);
@@ -54,9 +54,9 @@ describe('paymentFields', () => {
     ).toThrow(/before it was sent/);
   });
 
-  it('drops dates that do not go with the status', () => {
+  it('keeps the day sent whatever the status, but a day completed only once completed', () => {
     expect(
       paymentFields({ ...base, sentOn: '2025-10-21', completedOn: '2025-10-28' }),
-    ).toMatchObject({ sentOn: null, completedOn: null });
+    ).toMatchObject({ sentOn: new Date('2025-10-21T00:00:00.000Z'), completedOn: null });
   });
 });

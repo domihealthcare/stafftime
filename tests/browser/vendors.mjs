@@ -64,13 +64,29 @@ await step('a check to pay, then sent, then completed', async () => {
   dialog = admin.getByRole('dialog', { name: /Change a payment/ });
   await dialog.getByRole('radio', { name: 'Completed' }).check();
   // Sent and completed both start on today; a completed one needs both.
-  await dialog.getByLabel('Sent or given on').fill('2026-10-01');
+  await dialog.getByLabel(/Date sent/).fill('2026-10-01');
   await dialog.getByLabel('Received and deposited on').fill('2026-10-08');
   await dialog.getByRole('button', { name: 'Save changes' }).click();
   await payment.getByText('Completed', { exact: true }).waitFor({ timeout: 10000 });
   await payment.getByText(/Check #1499 · Invoice #570 · sent .*Oct 1.* · completed .*Oct 8/).waitFor();
   await admin.getByTestId('vendor-outstanding').getByText('Every payment is completed.').waitFor();
   await admin.screenshot({ path: `${OUT}/vendor-payments.png`, fullPage: true });
+});
+
+await step('a payment is added from the top by typing part of the vendor name', async () => {
+  await admin.getByRole('button', { name: '+ Payment' }).first().click();
+  const dialog = admin.getByRole('dialog', { name: 'New payment' });
+  await dialog.getByLabel('Vendor').fill('Diagn');
+  await dialog.getByRole('button', { name: 'MVRS Diagnostics' }).click();
+  await dialog.getByLabel('What for').fill('October 2026');
+  await dialog.getByLabel(/Date sent/).fill('2026-10-12');
+  await dialog.getByRole('button', { name: 'Add payment' }).click();
+  await admin.getByTestId('vendor-payment').filter({ hasText: 'October 2026' }).getByText(/sent .*Oct 12/).waitFor({ timeout: 10000 });
+  await admin.getByLabel('Search vendors').fill('zzz');
+  await admin.getByText('Nobody matches').waitFor();
+  await admin.getByLabel('Search vendors').fill('1499');
+  await admin.getByTestId('vendor-MVRS Diagnostics').waitFor();
+  await admin.getByLabel('Search vendors').fill('');
 });
 
 await step('a completed payment with no day it was done is refused, in words', async () => {

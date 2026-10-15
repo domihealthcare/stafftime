@@ -4455,8 +4455,11 @@ In place of the "Payments to vendors" spreadsheet, **admins only** (Manage →
 Vendor payments, `/vendors`): `Vendor` (name, what for, address for checks,
 still paying them) and `VendorPayment` (what for, amount, invoice #, check /
 cash / other with the check #, **To pay → Sent → Completed** with the days, a
-short note). A completed payment needs the day it cleared, a sent one the day
-it went; the dates that do not go with the status are dropped. The page counts
+short note). A completed payment needs the day it cleared; check #, amount,
+invoice # and the **date sent** are all optional (15 October 2026, Dominguez),
+the date kept whatever the status. **+ Payment** at the top of the page finds
+the vendor by typing part of the name ("Cid" finds George Cid), and a search
+box narrows vendors by name, what for, check # or invoice #. The page counts
 what is not completed yet and what each vendor was paid this year. The sheet's
 "readings" notes held patients' names; here the note says *how many*, never
 whose, and the schema guard pins both tables' fields. History was not
