@@ -1,7 +1,7 @@
 import { formatBirthday } from '../lib/birthday';
 import { formatTime } from '../lib/format';
 import { getLanguage, locale, t as translate, useT } from '../lib/i18n';
-import type { DirectoryEntry, OfficeExtension } from '../lib/types';
+import type { DirectoryEntry, OfficeExtension, ScheduleReview } from '../lib/types';
 import { HoverNote } from './HoverNote';
 import { Badge } from './ui';
 
@@ -128,4 +128,20 @@ function birthdayLabel(month: number | null, day: number | null): string | null 
     month: 'short',
     day: 'numeric',
   });
+}
+
+/// Who reviews this provider's patient schedule today (October 2026), on
+/// their Directory and Staff cards, so everybody knows whose it is. Nothing
+/// for somebody who is not a provider; "nobody" when nobody is set.
+export function ScheduleReviewLine({ review }: { review: ScheduleReview | undefined }) {
+  const t = useT();
+  if (!review) return null;
+  return (
+    <p className="mt-1 text-sm text-slate-700" data-testid="schedule-review-today">
+      <span aria-hidden="true">📋</span>{' '}
+      {review.reviewer
+        ? t('Today’s schedule reviewed by {name}', { name: review.reviewer.name })
+        : t('Nobody is reviewing today’s schedule')}
+    </p>
+  );
 }

@@ -1,7 +1,13 @@
 import { Avatar } from '../components/Avatar';
 import { JobRoleDot, JobRoleTag } from '../components/JobRoleTag';
 import { HoverNote } from '../components/HoverNote';
-import { ContactLines, PresenceBadges, homeHours } from '../components/PersonDetails';
+import {
+  ContactLines,
+  PresenceBadges,
+  ScheduleReviewLine,
+  homeHours,
+} from '../components/PersonDetails';
+import { useTodaysScheduleReviews } from '../lib/schedule-reviews';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { usePersonMenu } from '../components/PersonMenu';
@@ -10,7 +16,7 @@ import { ApiError, api } from '../lib/api';
 import { displayName } from '../lib/format';
 import { t as translate, useT } from '../lib/i18n';
 import { useIsManager, useSession } from '../lib/session';
-import type { DirectoryEntry, OfficeExtension } from '../lib/types';
+import type { DirectoryEntry, OfficeExtension, ScheduleReview } from '../lib/types';
 import { OfficeExtensionsCard, extensionOf } from '../components/OfficeExtensions';
 
 /// Long enough that the list is not a stale picture of the morning, short
@@ -35,6 +41,7 @@ export function DirectoryPage() {
   const [location, setLocation] = useState('');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const reviews = useTodaysScheduleReviews();
   // "See profile" from a right-click arrives as ?person=id.
   const [searchParams, setSearchParams] = useSearchParams();
   const onlyPerson = searchParams.get('person');
@@ -237,6 +244,7 @@ export function DirectoryPage() {
               isYou={person.id === employee?.id}
               canResetPin={isManager && person.id !== employee?.id}
               extension={extensionOf(extensions, person.id)}
+              review={reviews.get(person.id)}
             />
           ))}
         </div>
@@ -251,10 +259,13 @@ function PersonCard({
   isYou,
   canResetPin,
   extension,
+  review,
   onContextMenu,
 }: {
   onContextMenu: (event: React.MouseEvent) => void;
   person: DirectoryEntry;
+  /// Who reviews their patient schedule today, for a provider.
+  review?: ScheduleReview;
   isYou: boolean;
   canResetPin: boolean;
   extension: OfficeExtension | null;
@@ -290,6 +301,7 @@ function PersonCard({
             </p>
           )}
           {person.about && <p className="mt-1 text-sm text-slate-700">{person.about}</p>}
+          <ScheduleReviewLine review={review} />
 
           <ContactLines
             person={person}

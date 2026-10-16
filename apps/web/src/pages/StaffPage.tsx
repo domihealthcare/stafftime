@@ -11,10 +11,12 @@ import type {
   Location,
   OfficeExtension,
   Role,
+  ScheduleReview,
 } from '../lib/types';
 import { extensionOf } from '../components/OfficeExtensions';
 import { Avatar } from '../components/Avatar';
-import { ContactLines, PresenceBadges } from '../components/PersonDetails';
+import { ContactLines, PresenceBadges, ScheduleReviewLine } from '../components/PersonDetails';
+import { useTodaysScheduleReviews } from '../lib/schedule-reviews';
 import { useConfirm } from '../components/ConfirmDialog';
 import { ImportStaff } from '../components/ImportStaff';
 import { JobRoleTag } from '../components/JobRoleTag';
@@ -41,6 +43,7 @@ export function StaffPage() {
   /// you" — so a card here says everything a Directory card does.
   const [directory, setDirectory] = useState<Map<string, DirectoryEntry>>(new Map());
   const [extensions, setExtensions] = useState<OfficeExtension[]>([]);
+  const reviews = useTodaysScheduleReviews();
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [adding, setAdding] = useState(false);
@@ -311,6 +314,7 @@ export function StaffPage() {
               person={person}
               entry={directory.get(person.id)}
               extension={extensionOf(extensions, person.id)}
+              review={reviews.get(person.id)}
               jobRoles={jobRoles}
               isMe={person.id === me?.id}
               canOpenProfile={me?.role === 'ADMIN'}
@@ -347,6 +351,7 @@ function StaffCard({
   person,
   entry,
   extension,
+  review,
   jobRoles,
   isMe,
   canOpenProfile,
@@ -357,6 +362,8 @@ function StaffCard({
   entry?: DirectoryEntry;
   /// Their line on the office extensions list, if any.
   extension: OfficeExtension | null;
+  /// Who reviews their patient schedule today, for a provider.
+  review?: ScheduleReview;
   /// Every job role, with its members — which of them this person is in.
   jobRoles: JobRole[];
   isMe: boolean;
@@ -413,6 +420,7 @@ function StaffCard({
             {person.locations.map((l) => l.location.name).join(', ') || 'No location assigned'}
           </p>
           {entry?.about && <p className="mt-1 text-sm text-slate-700">{entry.about}</p>}
+          <ScheduleReviewLine review={review} />
           <ContactLines
             person={person}
             extension={extension}

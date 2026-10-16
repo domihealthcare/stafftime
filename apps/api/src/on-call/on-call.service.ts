@@ -25,9 +25,9 @@ import { clockWords, onCallOn, RotaRule, turnDateAt } from './on-call';
 /// The most a screen asks for at once.
 const MAX_DAYS = 93;
 
-const WORKING = [EmploymentStatus.ACTIVE, EmploymentStatus.ON_LEAVE];
+export const WORKING = [EmploymentStatus.ACTIVE, EmploymentStatus.ON_LEAVE];
 
-const PERSON = {
+export const PERSON = {
   id: true,
   firstName: true,
   lastName: true,
@@ -36,11 +36,11 @@ const PERSON = {
   photoUpdatedAt: true,
 } satisfies Prisma.EmployeeSelect;
 
-type Person = Prisma.EmployeeGetPayload<{ select: typeof PERSON }>;
+export type Person = Prisma.EmployeeGetPayload<{ select: typeof PERSON }>;
 
 /// Who can be on call: anybody in a job role that carries the clinical forms
 /// (Provider), as for provider productivity.
-const PROVIDER: Prisma.EmployeeWhereInput = {
+export const PROVIDER: Prisma.EmployeeWhereInput = {
   employmentStatus: { in: WORKING },
   jobRoles: { some: { jobRole: { usesClinicalForms: true } } },
 };
@@ -539,7 +539,7 @@ export class OnCallService {
 
 /// "Dr. Jonathan Dominguez" for somebody with letters after their name,
 /// otherwise the name they go by.
-function named(person: Person) {
+export function named(person: Person) {
   const first = person.preferredName ?? person.firstName;
   const doctor = person.postNominals && /\b(MD|DO)\b/i.test(person.postNominals);
   return {

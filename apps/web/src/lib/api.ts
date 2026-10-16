@@ -12,6 +12,8 @@ import type {
   OnCallRota,
   OnCallSchedule,
   OnCallSwap,
+  ScheduleReviewDays,
+  ScheduleReviewPattern,
   RotaCost,
   MyRequirement,
   RequirementInput,
@@ -1379,6 +1381,29 @@ export const api = {
   pushTest: () => request<unknown>('/push/test', { method: 'POST' }),
   /// Admins: switch phone notifications on for the practice.
   pushSwitchOn: () => request<unknown>('/push/switch-on', { method: 'POST' }),
+  /// Who reviews which provider's patient schedule: everybody reads it,
+  /// managers and admins change it.
+  scheduleReviews: (from: string, to: string) =>
+    request<ScheduleReviewDays>(`/schedule-reviews${toQuery({ from, to })}`),
+  scheduleReviewPattern: () => request<ScheduleReviewPattern>('/schedule-reviews/pattern'),
+  saveScheduleReviewPattern: (entries: ScheduleReviewPattern['entries']) =>
+    request<ScheduleReviewPattern>('/schedule-reviews/pattern', {
+      method: 'PUT',
+      body: JSON.stringify({ entries }),
+    }),
+  setScheduleReviewDay: (
+    date: string,
+    providerId: string,
+    body: { reviewerId: string | null; note?: string },
+  ) =>
+    request<ScheduleReviewDays>(`/schedule-reviews/days/${date}/${providerId}`, {
+      method: 'PUT',
+      body: JSON.stringify(body),
+    }),
+  clearScheduleReviewDay: (date: string, providerId: string) =>
+    request<ScheduleReviewDays>(`/schedule-reviews/days/${date}/${providerId}`, {
+      method: 'DELETE',
+    }),
   /// The provider on-call schedule: providers, managers and admins.
   onCall: (from: string, to: string) => request<OnCallSchedule>(`/on-call${toQuery({ from, to })}`),
   onCallRotas: () => request<OnCallRota[]>('/on-call/rotas'),

@@ -24,6 +24,7 @@ import { ReimbursementsModule } from './reimbursements/reimbursements.module';
 import { VendorsModule } from './vendors/vendors.module';
 import { RequirementsModule } from './requirements/requirements.module';
 import { OnCallModule } from './on-call/on-call.module';
+import { ScheduleReviewsModule } from './schedule-reviews/schedule-reviews.module';
 import { InvitesModule } from './invites/invites.module';
 import { ExportsModule } from './exports/exports.module';
 import { JobRolesModule } from './job-roles/job-roles.module';
@@ -65,6 +66,7 @@ import { TimeEntriesModule } from './time-entries/time-entries.module';
     VendorsModule,
     RequirementsModule,
     OnCallModule,
+    ScheduleReviewsModule,
     InvitesModule,
     TimeEntriesModule,
     ClosingModule,
