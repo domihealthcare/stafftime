@@ -116,10 +116,18 @@ describe('AuthService', () => {
 
     it('does the same hashing work for an unknown account, so timing does not leak', async () => {
       const { service } = build(null);
-      const started = Date.now();
-      await service.login('nobody@domihealthcare.com', 'whatever', {}).catch(() => undefined);
-      // A skipped verify would return in well under a millisecond.
-      expect(Date.now() - started).toBeGreaterThan(5);
+      const verify = jest.spyOn(passwords, 'verify');
+      try {
+        await service.login('nobody@domihealthcare.com', 'whatever', {}).catch(() => undefined);
+        // Checked against a real argon2id hash, not skipped. Asserting on the
+        // call rather than the time taken: a fast runner once finished the
+        // hashing in exactly the 5 ms the old test wanted it to exceed.
+        expect(verify).toHaveBeenCalledTimes(1);
+        expect(verify).toHaveBeenCalledWith('whatever', expect.stringMatching(/^\$argon2id\$/));
+        await expect(verify.mock.results[0].value).resolves.toBe(false);
+      } finally {
+        verify.mockRestore();
+      }
     });
 
     it('treats an account with no password set as a failed sign-in', async () => {
