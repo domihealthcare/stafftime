@@ -78,9 +78,11 @@ await step('a payment is added from the top by typing part of the vendor name', 
   const dialog = admin.getByRole('dialog', { name: 'New payment' });
   await dialog.getByLabel('Vendor').fill('Diagn');
   await dialog.getByRole('button', { name: 'MVRS Diagnostics' }).click();
-  await dialog.getByLabel('What for').fill('October 2026');
-  await dialog.getByLabel(/Date sent/).fill('2026-10-12');
-  await dialog.getByRole('button', { name: 'Add payment' }).click();
+  // Once chosen, the pop-up is named after the vendor.
+  const picked = admin.getByRole('dialog', { name: 'Payment to MVRS Diagnostics' });
+  await picked.getByLabel('What for').fill('October 2026');
+  await picked.getByLabel(/Date sent/).fill('2026-10-12');
+  await picked.getByRole('button', { name: 'Add payment' }).click();
   await admin.getByTestId('vendor-payment').filter({ hasText: 'October 2026' }).getByText(/sent .*Oct 12/).waitFor({ timeout: 10000 });
   await admin.getByLabel('Search vendors').fill('zzz');
   await admin.getByText('Nobody matches').waitFor();

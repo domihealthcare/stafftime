@@ -1,4 +1,3 @@
-import { ReferenceSection } from '../components/ReferenceSection';
 import { JobRoleDot } from '../components/JobRoleTag';
 import { createContext, useCallback, useContext, useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
@@ -557,6 +556,52 @@ function hostOf(url: string): string {
  * uses the clinical forms; the care plan (CCM and APCM) also for managers and admins.
  * Anybody with neither sees no section at all.
  */
+/// The practice's reference boards (October 2026, Dominguez — made from its
+/// spreadsheets): the diagnostics board for everybody, the reimbursements for
+/// managers and admins.
+function ReferenceSection() {
+  const t = useT();
+  const isManager = useIsManager();
+  return (
+    <section aria-label={t('Reference')} data-testid="reference-section">
+      <h2 className="mb-2 text-sm font-semibold uppercase tracking-wide text-slate-600">
+        {t('Reference')}
+      </h2>
+      <Card className="divide-y divide-slate-100">
+        <div className="p-3">
+          <Link
+            to="/diagnostics"
+            className="block text-sm font-semibold text-brand-800 hover:text-brand-900"
+          >
+            {t('Diagnostics')} →
+          </Link>
+          <p className="mt-0.5 text-xs text-slate-600">
+            {t(
+              'Which insurance covers which ultrasound or test, how long it takes, the prep and the self-pay price.',
+            )}
+          </p>
+        </div>
+        {isManager && (
+          <div className="p-3">
+            <div className="flex flex-wrap items-center gap-2">
+              <Link
+                to="/reimbursements"
+                className="text-sm font-semibold text-brand-800 hover:text-brand-900"
+              >
+                Reimbursements →
+              </Link>
+              <Badge>Managers and admins</Badge>
+            </div>
+            <p className="mt-0.5 text-xs text-slate-600">
+              What each insurance pays for each code, searchable.
+            </p>
+          </div>
+        )}
+      </Card>
+    </section>
+  );
+}
+
 function FormsSection() {
   const t = useT();
   const { employee } = useSession();

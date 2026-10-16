@@ -710,6 +710,29 @@ const STAFF: Section[] = [
         ),
       },
       {
+        question: 'Does this insurance cover that ultrasound or test?',
+        answer: (
+          <>
+            <p>
+              <Screen>Diagnostics</Screen> — on Home under Quick, or on Resources. Pick{' '}
+              <strong>Ultrasounds</strong> or <strong>Testing</strong>, then type the insurance in{' '}
+              <strong>Find an insurance</strong>: its answer for every test comes up in large boxes,
+              with the time and prep. <strong>YES</strong> (green) is covered, <strong>NO</strong>{' '}
+              (red) is not, <strong>PA</strong> (blue) needs a prior authorization first, and{' '}
+              <strong>Call ref #</strong> means call the insurance for a reference number. A dash
+              means it is not on the guide yet — ask a manager. A <strong>*</strong> has a note:
+              point at it or tap it.
+            </p>
+            <p>
+              Pick a test in <strong>Test</strong> to see every insurance for that one test. The
+              self-pay price is at the bottom of the board, and the reminders (what cannot be done
+              the same day) at the top. <strong>Big board</strong> fills the screen; Escape or{' '}
+              <strong>Exit big board</strong> puts it back.
+            </p>
+          </>
+        ),
+      },
+      {
         question: 'Are surveys really anonymous?',
         answer: (
           <>
@@ -2046,25 +2069,28 @@ const MANAGERS: Section[] = [
         ),
       },
       {
-        question: 'Reference tables: the diagnostics guide and the fee schedule',
+        question: 'Keeping the diagnostics and reimbursements boards',
         answer: (
           <>
             <p>
-              On <Screen>Resources</Screen>, under <strong>Reference</strong>, press{' '}
-              <strong>+ Add a table</strong>. In Excel or Google Sheets, select the table from its
-              headings down, copy it, and paste it into the box — there is nothing to upload. Say
-              how many <strong>heading rows</strong> stay at the top (the diagnostics guide has two:
-              the procedures, then their time and prep) and how many <strong>name columns</strong>{' '}
-              say what each row is (the insurance and plan), and who reads it: everyone (the
-              diagnostics guide) or managers and admins only (the fee schedule).
+              Both were loaded from the practice&rsquo;s spreadsheets and are kept here now.{' '}
+              <Screen>Diagnostics</Screen> is for everyone; <Screen>Manage → Reimbursements</Screen>{' '}
+              (also on Resources) is for managers and admins only.
             </p>
             <p>
-              Anyone it is for can search it by row and narrow it to some columns —
-              &ldquo;Aetna&rdquo;, &ldquo;Echo&rdquo;; Yes, No and PA are coloured. To change a
-              cell, press <strong>Edit cells</strong>, click it, and save; <strong>+ Row</strong>{' '}
-              and <strong>+ Column</strong> add more. To start again from the spreadsheet, use{' '}
-              <strong>Name, notes, paste again…</strong>. Reference only — never a patient&rsquo;s
-              details.
+              On either, press <strong>Edit the board</strong>. On Diagnostics, click a cell to
+              choose YES, NO, PA, Call ref # or N/A, with an optional note (never a patient&rsquo;s
+              name); click a test or an insurance to change its details — time, prep, self-pay, how
+              it is found in eCW — move it or remove it; <strong>+ Test</strong>,{' '}
+              <strong>+ Insurance</strong> and <strong>Reminders…</strong> add the rest. On
+              Reimbursements, click an amount and type the new one (or words like &ldquo;$34.45 /
+              75.26&rdquo;, or nothing to clear it), and click a code or an insurance to change,
+              move or remove it.
+            </p>
+            <p>
+              On Reimbursements, search by code or description, narrow the insurances, and press a
+              code for every insurance&rsquo;s amount for it, highest first. The most any insurance
+              shown pays for a code is in green.
             </p>
           </>
         ),
