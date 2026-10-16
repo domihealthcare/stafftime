@@ -394,6 +394,13 @@ model Employee {
   onCallSwapsAsked   OnCallSwap[]      @relation("OnCallSwapRequester")
   onCallSwapsToMe    OnCallSwap[]      @relation("OnCallSwapPartner")
 
+  /// Who reviews which provider's patient schedule (October 2026).
+  scheduleReviewsOfMine    ScheduleReviewer[]  @relation("ScheduleReviewerProvider")
+  scheduleReviewsByMe      ScheduleReviewer[]  @relation("ScheduleReviewerReviewer")
+  scheduleReviewDaysOfMine ScheduleReviewDay[] @relation("ScheduleReviewDayProvider")
+  scheduleReviewDaysByMe   ScheduleReviewDay[] @relation("ScheduleReviewDayReviewer")
+  setScheduleReviewDays    ScheduleReviewDay[] @relation("ScheduleReviewDaySetBy")
+
   /// Phones and computers that get the bell's notifications as push
   /// notifications (October 2026).
   pushSubscriptions PushSubscription[]
@@ -3402,4 +3409,44 @@ model VendorPayment {
 
   @@index([vendorId, createdAt])
   @@map("vendor_payments")
+}
+
+/// Who reviews a provider's patient schedule (in eCW) on each weekday — the
+/// usual pattern (October 2026, Dominguez: "admin/manager/staff that are
+/// responsible for reviewing providers schedule … so they are aware they are
+/// to review a certain schedule and others are aware which schedule is being
+/// reviewed"). Only who and which provider: never a patient or an
+/// appointment. Managers and admins keep it; everybody reads it.
+model ScheduleReviewer {
+  providerId String   @db.Uuid
+  /// 1 = Monday … 7 = Sunday: the day of the provider's schedule.
+  weekday    Int
+  reviewerId String   @db.Uuid
+  updatedAt  DateTime @updatedAt
+
+  provider Employee @relation("ScheduleReviewerProvider", fields: [providerId], references: [id], onDelete: Cascade)
+  reviewer Employee @relation("ScheduleReviewerReviewer", fields: [reviewerId], references: [id], onDelete: Cascade)
+
+  @@id([providerId, weekday])
+  @@index([reviewerId])
+  @@map("schedule_reviewers")
+}
+
+/// One day changed from the usual: somebody else reviews that provider's
+/// schedule for that date, or (reviewerId null) nobody does.
+model ScheduleReviewDay {
+  date       DateTime @db.Date
+  providerId String   @db.Uuid
+  reviewerId String?  @db.Uuid
+  /// Short, optional, read by everybody: "Kayla is off".
+  note       String?
+  setById    String?  @db.Uuid
+  updatedAt  DateTime @updatedAt
+
+  provider Employee  @relation("ScheduleReviewDayProvider", fields: [providerId], references: [id], onDelete: Cascade)
+  reviewer Employee? @relation("ScheduleReviewDayReviewer", fields: [reviewerId], references: [id], onDelete: Cascade)
+  setBy    Employee? @relation("ScheduleReviewDaySetBy", fields: [setById], references: [id], onDelete: SetNull)
+
+  @@id([date, providerId])
+  @@map("schedule_review_days")
 }

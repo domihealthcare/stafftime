@@ -3774,6 +3774,44 @@ described, from 1 October 2026 — only when both providers are found
 (Dominguez by email, Dr. Badia by name, exactly one match); otherwise a
 manager sets it. `tests/browser/on-call.mjs`.
 
+## Provider schedule reviews
+
+October 2026, Dominguez: admins, managers and staff take turns reviewing the
+providers' **patient schedules** (in eCW), and need to know whose is theirs
+— and everybody else whose is being looked after. The app keeps **who reviews
+which provider's schedule on which day**, nothing more: no patient, no
+appointment, no link into eCW. `ScheduleReviewer` and `ScheduleReviewDay` are
+pinned field by field in the schema guard.
+
+**The rules** (`schedule-reviews/schedule-reviews.ts`, pure, the one place):
+a **usual pattern** gives each provider a reviewer per weekday
+(`ScheduleReviewer`, keyed by provider and weekday); a **changed day**
+(`ScheduleReviewDay`, keyed by date and provider) beats it — somebody else,
+or `reviewerId` null for nobody. A reviewer who is no longer here (not
+`ACTIVE` or `ON_LEAVE`) counts as nobody, so the screens never name somebody
+who has left. Simpler than on call on purpose: one pattern, saved whole and
+applying from now (there is nothing to keep about past reviews — no done tick
+was wanted), and no weeks of the month. Providers are on-call's `PROVIDER`
+(a job role with *uses clinical forms*), shared from `on-call.service.ts`.
+
+**Who does what.** Everybody signed in reads the days (`GET
+/schedule-reviews?from&to`, 31 days at most) and the pattern; managers and
+admins save the pattern (`PUT /schedule-reviews/pattern`) and change or
+restore one day (`PUT` / `DELETE /schedule-reviews/days/:date/:providerId`),
+today or later only, for a provider only, to somebody still here.
+
+**Where it shows.** Schedule → **Reviews** (a tab beside Shifts and Calendar
+for everybody, On call after it for those who have it; four fit on a phone):
+the week, Sunday first, a card a day — staff see the schedules somebody
+reviews, managers every provider (a line with nobody included) and press a
+line to change that day. **Schedules you review** on Home for the reviewer
+(`MyScheduleReviews`: the next seven days, three days at most). And "Today's
+schedule reviewed by …" — or "Nobody is reviewing today's schedule" — on a
+provider's Directory card and, so the two agree, their Staff card
+(`ScheduleReviewLine`, `useTodaysScheduleReviews`). Nothing on the bell or by
+email: not chosen.
+
+
 ## Phone notifications
 
 October 2026, Dominguez — from the survey of similar apps, every one of

@@ -568,6 +568,20 @@ const STAFF: Section[] = [
           </p>
         ),
       },
+      {
+        question: 'Whose patient schedule am I reviewing?',
+        answer: (
+          <p>
+            If you review providers&rsquo; patient schedules, <Screen>Home</Screen> shows{' '}
+            <strong>Schedules you review</strong>: today and the next few days you have one.{' '}
+            <Screen>Schedule</Screen> → <strong>Reviews</strong> shows the whole week — every
+            provider and who is reviewing their schedule — so everybody knows whose is being looked
+            after, and a provider&rsquo;s card in the <Screen>Directory</Screen> says who is
+            reviewing it today. The schedules themselves stay in eCW. A manager sets who reviews
+            which; if you can&rsquo;t do one, tell them.
+          </p>
+        ),
+      },
     ],
   },
   {
@@ -1987,6 +2001,21 @@ const MANAGERS: Section[] = [
             <strong> Back to the usual</strong> undoes it. Both providers are told. Swaps the
             providers agree between themselves happen on their own, and you are told. On call is
             never hours or pay.
+          </p>
+        ),
+      },
+      {
+        question: 'Who reviews which provider’s schedule?',
+        answer: (
+          <p>
+            <Screen>Schedule</Screen> → <strong>Reviews</strong> →{' '}
+            <strong>The usual pattern</strong> → <strong>Change it</strong>: for each provider, who
+            reviews their patient schedule on each day of the week — an admin, a manager or anybody
+            on staff. For one day only, press the line in the week and choose somebody else or
+            nobody, with a note everybody can read; <strong>Back to the usual</strong> undoes it.
+            Everybody sees the week, the reviewer sees it on <Screen>Home</Screen>, and a
+            provider&rsquo;s <Screen>Directory</Screen> card says who is reviewing it today. Only
+            who and which provider is kept — never a patient.
           </p>
         ),
       },

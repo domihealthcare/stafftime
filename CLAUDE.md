@@ -931,6 +931,30 @@ Beyond the phases, the parts worth knowing about before picking up work:
   `pages/OnCallPage.tsx`; `tests/browser/on-call.mjs`. Worth carrying to the
   EMR module. Dominguez would like to look into something better than the
   answering service's fixed noon hand-over — not started.
+- **Provider schedule reviews** (16 October 2026, Dominguez: "admin/manager/
+  staff that are responsible for reviewing providers schedule … so they are
+  aware they are to review a certain schedule and others are aware which
+  schedule is being reviewed"; his choices: the **patient schedule** in eCW,
+  a **usual pattern with changes**, **no done tick**, shown on **Home**, a
+  **list everybody sees** and the **provider's Directory card**):
+  **Schedule → Reviews** (`/schedule-reviews`, a tab for everybody). A usual
+  pattern — for each provider (a job role with *uses clinical forms*, as for
+  on call), who reviews their schedule on each weekday, anybody still here —
+  and **one day changed** by a manager (somebody else or nobody, a short note
+  everybody reads; **Back to the usual**), today or later only. The week,
+  Sunday first, for everybody; managers also see providers with nobody and
+  press a line to change it. **Schedules you review** on the reviewer's Home
+  (today and the next days they have one, three at most); "Today's schedule
+  reviewed by …" on the provider's Directory and Staff cards. **No
+  notifications** (not chosen). **Only who and which provider** — never a
+  patient or an appointment; the schema guard pins `ScheduleReviewer` and
+  `ScheduleReviewDay`. Somebody who has left counts as nobody.
+  `schedule-reviews/schedule-reviews.ts` (rules, pure) and
+  `schedule-reviews.service.ts`, `pages/ScheduleReviewsPage.tsx`,
+  `components/MyScheduleReviews.tsx`, migration
+  `20261016030000_schedule_reviews`; `tests/browser/schedule-reviews.mjs`.
+  Worth carrying to the EMR module, where it could sit beside the real
+  appointment schedule.
 - **Phone notifications** (10 October 2026, Dominguez: "are we able to do
   this since we dont have an iphone/android app?" — yes, web push):
   whatever rings somebody's bell (`InboxService.notify`) also goes to each

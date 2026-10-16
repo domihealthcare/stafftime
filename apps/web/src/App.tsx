@@ -38,6 +38,9 @@ const ReimbursementsPage = lazy(() =>
 const VendorsPage = lazy(() =>
   import('./pages/VendorsPage').then((m) => ({ default: m.VendorsPage })),
 );
+const ScheduleReviewsPage = lazy(() =>
+  import('./pages/ScheduleReviewsPage').then((m) => ({ default: m.ScheduleReviewsPage })),
+);
 const OnCallPage = lazy(() =>
   import('./pages/OnCallPage').then((m) => ({ default: m.OnCallPage })),
 );
@@ -221,6 +224,7 @@ function Routed() {
           <Route path="vendors" element={<VendorsPage />} />
           <Route path="required" element={<RequiredPage />} />
           <Route path="on-call" element={<OnCallPage />} />
+          <Route path="schedule-reviews" element={<ScheduleReviewsPage />} />
           <Route path="timesheet" element={<TimesheetPage />} />
           <Route path="schedule" element={<SchedulePage />} />
           <Route path="schedule/calendar" element={<CalendarPage />} />

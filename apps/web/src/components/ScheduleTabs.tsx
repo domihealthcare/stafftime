@@ -4,7 +4,7 @@ import { useSession } from '../lib/session';
 import { useT } from '../lib/i18n';
 
 /**
- * Shifts | Calendar, at the top of both (October 2026). The practice calendar
+ * Shifts | Calendar | Reviews (| On call), at the top of each (October 2026). The practice calendar
  * — meetings, diagnostics, holidays, closures and pay days — lives under
  * Schedule rather than in a tab of its own, so a phone's bottom bar stays at
  * five.
@@ -26,6 +26,10 @@ export function ScheduleTabs() {
       </NavLink>
       <NavLink to="/schedule/calendar" className={tab}>
         {t('Calendar')}
+      </NavLink>
+      {/* Who reviews which provider's patient schedule: everybody (October 2026). */}
+      <NavLink to="/schedule-reviews" className={tab}>
+        {t('Reviews')}
       </NavLink>
       {/* Providers, managers and admins (October 2026). */}
       {canSeeOnCall(employee) && (

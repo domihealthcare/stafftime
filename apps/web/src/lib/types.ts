@@ -1833,6 +1833,29 @@ export interface OnCallSchedule {
   providers: OnCallPerson[];
 }
 
+/// Who reviews a provider's patient schedule on a day (October 2026). Only
+/// who and which provider: the schedules themselves stay in eCW.
+export interface ScheduleReview {
+  providerId: string;
+  reviewer: OnCallPerson | null;
+  /// The usual pattern, a manager's change for the day, or nobody set.
+  source: 'USUAL' | 'CHANGED' | 'NONE';
+  note: string | null;
+}
+
+export interface ScheduleReviewDays {
+  providers: OnCallPerson[];
+  days: { date: string; reviews: ScheduleReview[] }[];
+}
+
+export interface ScheduleReviewPattern {
+  providers: OnCallPerson[];
+  /// 1 = Monday … 7 = Sunday.
+  entries: { providerId: string; weekday: number; reviewerId: string }[];
+  /// Everybody still here, who can be picked.
+  reviewers: OnCallPerson[];
+}
+
 export interface OnCallRota {
   startsOn: string;
   changesAt: string;

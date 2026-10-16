@@ -230,4 +230,23 @@ export const SCHEDULE: Record<string, string> = {
     'El tiempo por enfermedad se acumula mientras trabajas: una hora por cada 30 horas, hasta {days} días.',
   'Got it': 'Entendido',
   '{n} waiting for approval': '{n} esperando aprobación',
+
+  // Schedule reviews — who reviews which provider's patient schedule
+  Reviews: 'Revisiones',
+  'Schedule reviews': 'Revisión de agendas',
+  'Who reviews each provider’s patient schedule, day by day, so everybody knows whose is being looked after. The schedules themselves stay in eCW.':
+    'Quién revisa la agenda de pacientes de cada proveedor, día por día, para que todos sepan cuál se está revisando. Las agendas en sí se quedan en eCW.',
+  '← Previous week': '← Semana anterior',
+  'Next week →': 'Semana siguiente →',
+  'Nobody is in a provider job role yet, so there are no schedules to review.':
+    'Todavía nadie tiene el puesto de proveedor, así que no hay agendas que revisar.',
+  'No schedules to review.': 'No hay agendas que revisar.',
+  'A provider': 'Un proveedor',
+  Nobody: 'Nadie',
+  Changed: 'Cambiado',
+  'Schedules you review': 'Agendas que revisas',
+  'All reviews →': 'Todas las revisiones →',
+  'Their patient schedules, in eCW.': 'Sus agendas de pacientes, en eCW.',
+  'Today’s schedule reviewed by {name}': 'La agenda de hoy la revisa {name}',
+  'Nobody is reviewing today’s schedule': 'Nadie está revisando la agenda de hoy',
 };

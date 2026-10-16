@@ -52,6 +52,35 @@ describe('what this app deliberately does not store', () => {
   /// loud — and pinned here, so neither table grows a column without the
   /// same conversation, and none of it moves onto Employee, whose row goes
   /// out with rotas, timesheets and the Directory.
+  /// Who reviews which provider's patient schedule (October 2026): the
+  /// schedules are in eCW, and this keeps only who and which provider. Pinned
+  /// so an appointment or a patient never creeps in beside them.
+  it('keeps schedule reviews to who reviews which provider', () => {
+    const fieldsOf = (name: string) =>
+      model(name)
+        .split('\n')
+        .map((line) => line.trim())
+        .filter((line) => line && !line.startsWith('//') && !line.startsWith('@@'))
+        .map((line) => line.split(/\s+/)[0])
+        .sort();
+    expect(fieldsOf('ScheduleReviewer')).toEqual(
+      ['provider', 'providerId', 'reviewer', 'reviewerId', 'updatedAt', 'weekday'].sort(),
+    );
+    expect(fieldsOf('ScheduleReviewDay')).toEqual(
+      [
+        'date',
+        'note',
+        'provider',
+        'providerId',
+        'reviewer',
+        'reviewerId',
+        'setBy',
+        'setById',
+        'updatedAt',
+      ].sort(),
+    );
+  });
+
   /// The reps who book lunches (October 2026, Dominguez): business contacts,
   /// and only what was asked for. Pinned so the list never quietly becomes a
   /// CRM with somebody's home address in it.
