@@ -578,8 +578,10 @@ const STAFF: Section[] = [
         answer: (
           <p>
             Press <strong>Request time off</strong> on <Screen>Home</Screen> or on{' '}
-            <Screen>Schedule</Screen>, choose <strong>Sick</strong> or <strong>PTO</strong> and the
-            dates, and send it. Your days left and what you have asked for are on the Schedule;{' '}
+            <Screen>Schedule</Screen>, choose <strong>Sick</strong>, <strong>PTO</strong> or{' '}
+            <strong>Unpaid</strong> and the dates, and send it. <strong>Unpaid</strong> is for a day
+            you want off without using your sick days or PTO — for any reason, even if you still
+            have days left. Your days left and what you have asked for are on the Schedule;{' '}
             <strong>All your time off</strong> there shows the rest. If you are on the rota on any
             of those days, the form lists the shifts before you send it. You get an email when a
             manager decides, with their reason if they give one — and, if they took your shifts off
@@ -1785,8 +1787,8 @@ const MANAGERS: Section[] = [
             With requests waiting, the Schedule&rsquo;s requests and the <Screen>Time off</Screen>{' '}
             screen offer <strong>Approve all N with nothing to check</strong>: after asking, it
             approves every request that is PTO or sick with enough days left, leaves nobody too thin
-            and lands on no shifts. Each person is told as usual. Anything with a catch stays for
-            you to look at one by one.
+            and lands on no shifts. Unpaid days are always left for you to decide one by one. Each
+            person is told as usual. Anything with a catch stays for you to look at one by one.
           </p>
         ),
       },
@@ -1839,11 +1841,12 @@ const MANAGERS: Section[] = [
         answer: (
           <p>
             On somebody&rsquo;s profile (<Screen>Manage → Staff</Screen>, press their name), press{' '}
-            <strong>+ Record past time off</strong>: Sick or PTO, the days, and a comment if you
-            like. It counts as approved and comes off their balance; nobody is notified. The profile
-            shows only what is left and what is coming up; <strong>See all</strong> opens everything
-            on file, where a recorded day can be removed. Use it or the total under{' '}
-            <strong>Adjust</strong> for the same days, not both — both would count them twice.
+            <strong>+ Record past time off</strong>: Sick, PTO or Unpaid, the days, and a comment if
+            you like. It counts as approved and Sick or PTO comes off their balance; nobody is
+            notified. The profile shows only what is left and what is coming up;{' '}
+            <strong>See all</strong> opens everything on file, where a recorded day can be removed.
+            Use it or the total under <strong>Adjust</strong> for the same days, not both — both
+            would count them twice.
           </p>
         ),
       },

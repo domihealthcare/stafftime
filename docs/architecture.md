@@ -776,6 +776,15 @@ so requests made before then still read correctly; the create DTO refuses the
 rest (`REQUESTABLE_PTO_TYPES`) and the form offers only the two. The form
 starts on **Sick**, or on PTO once the person's own sick days are used up.
 
+**Unpaid came back on 16 October 2026** as a third choice (staff asked for
+unpaid sick days; Dominguez: "more generalized to just unpaid day"). It is the
+old `UNPAID` value, so no migration: it draws on neither allowance
+(`TYPE_BUCKET`), the form says "unpaid, so it uses none of your sick days or
+PTO" instead of a balance, and the past-the-balance tick never applies.
+"Approve the clean time off" counts only PTO and sick, so an unpaid request is
+always decided one at a time. Time off is not in the payroll export, so
+nothing there changes: the manager deciding is the one who reads "Unpaid".
+
 ### Carry-over
 
 Worked out by walking forward from the hire year: each year's unused days,

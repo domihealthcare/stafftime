@@ -368,7 +368,8 @@ function RecordForm({
     >
       <p className="text-sm text-slate-700">
         For days already taken — before Domi Staff, or a day nobody asked for in the app. It is
-        recorded as approved and comes off their balance. Nobody is notified.
+        recorded as approved and Sick or PTO comes off their balance (Unpaid comes off neither).
+        Nobody is notified.
       </p>
       {totalsBefore > 0 && (
         <Alert tone="warning">

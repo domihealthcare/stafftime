@@ -22,8 +22,9 @@ export function timeOffOn(
 }
 
 /// VACATION is shown as "PTO", the practice's word for it and the name of its
-/// allowance. The last four are only for requests made before September 2026,
-/// when the form offered them; a new request is Sick or PTO (Dominguez).
+/// allowance. Personal, Bereavement and Other are only for requests made
+/// before September 2026, when the form offered them; a new request is Sick,
+/// PTO or Unpaid (Dominguez; Unpaid again from October 2026).
 export const PTO_TYPE_LABELS: Record<PtoType, string> = {
   VACATION: 'PTO',
   SICK: 'Sick',
@@ -39,7 +40,11 @@ export function ptoTypeLabel(type: PtoType): string {
 }
 
 /// What a new request can be, in the order the form offers them.
-export const REQUESTABLE_PTO_TYPES = ['SICK', 'VACATION'] as const satisfies readonly PtoType[];
+export const REQUESTABLE_PTO_TYPES = [
+  'SICK',
+  'VACATION',
+  'UNPAID',
+] as const satisfies readonly PtoType[];
 
 /// Nothing to have, nothing taken and nothing asked for: somebody who does
 /// not get this kind of time off (Dominguez, October 2026: "not all employees

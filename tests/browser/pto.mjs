@@ -63,11 +63,12 @@ await step('an employee is not offered the "for someone else" picker', async () 
     throw new Error('employee was offered the on-behalf-of picker');
 });
 
-await step('a request is Sick or PTO, and starts on Sick', async () => {
-  // Dominguez, September 2026: the other kinds were more than the practice uses.
+await step('a request is Sick, PTO or Unpaid, and starts on Sick', async () => {
+  // Dominguez, September 2026: the other kinds were more than the practice
+  // uses. Unpaid came back in October 2026 ("just unpaid day").
   const type = emp.getByLabel('Type');
   const options = await type.locator('option').allInnerTexts();
-  if (options.join() !== 'Sick,PTO') throw new Error(`the form offers: ${options.join(', ')}`);
+  if (options.join() !== 'Sick,PTO,Unpaid') throw new Error(`the form offers: ${options.join(', ')}`);
   if ((await type.inputValue()) !== 'SICK') throw new Error(`it starts on ${await type.inputValue()}`);
   // And the server agrees: an old kind is refused, in words.
   const refused = await emp.evaluate(async () => {
@@ -78,7 +79,7 @@ await step('a request is Sick or PTO, and starts on Sick', async () => {
     });
     return { status: r.status, body: await r.text() };
   });
-  if (refused.status !== 400 || !refused.body.includes('Sick or PTO'))
+  if (refused.status !== 400 || !refused.body.includes('Sick, PTO or Unpaid'))
     throw new Error(`a personal day was answered ${refused.status}: ${refused.body}`);
 });
 
@@ -215,6 +216,34 @@ await step('a manager cannot decide their own request', async () => {
   await ownCard.getByRole('button', { name: 'Withdraw' }).waitFor({ timeout: 5000 });
 });
 await mgr.screenshot({ path: `${OUT}/28-pto-manager-own.png`, fullPage: true });
+
+await step('an unpaid day uses none of their sick days or PTO', async () => {
+  // October 2026, Dominguez: a day off without pay, for any reason, even with
+  // days left.
+  const balance = () =>
+    emp.evaluate(async (year) => (await fetch(`/api/pto/balance?year=${year}`, { credentials: 'include' })).json(), YEAR);
+  const before = await balance();
+  await openTimeOff(emp);
+  await emp.getByRole('button', { name: '+ Request time off' }).click();
+  await emp.getByLabel('Type').selectOption('UNPAID');
+  await emp.getByLabel('First day').fill(`${YEAR}-05-05`);
+  await emp.getByLabel(/Notes/).fill('Moving house');
+  await emp
+    .getByTestId('time-off-days')
+    .getByText(/1 day · unpaid, so it uses none of your sick days or PTO/)
+    .waitFor({ timeout: 10000 });
+  if ((await emp.getByTestId('past-balance').count()) > 0)
+    throw new Error('an unpaid day asked about the balance');
+  await emp.getByRole('button', { name: 'Send request' }).click();
+  await formClosed(emp);
+  const card = cards(emp).locator('> div').filter({ hasText: 'Moving house' }).first();
+  await card.getByText(/Unpaid/).first().waitFor({ timeout: 15000 });
+  const after = await balance();
+  for (const bucket of ['sick', 'vacation']) {
+    if (after[bucket].pending !== before[bucket].pending || after[bucket].remaining !== before[bucket].remaining)
+      throw new Error(`${bucket} moved: ${JSON.stringify(before[bucket])} → ${JSON.stringify(after[bucket])}`);
+  }
+});
 
 await browser.close();
 console.log(`\n${errors.length === 0 ? 'ALL PTO CHECKS PASSED' : `PROBLEMS (${errors.length}):`}`);

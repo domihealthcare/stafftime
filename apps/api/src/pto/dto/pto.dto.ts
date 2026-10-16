@@ -18,13 +18,13 @@ import {
   ValidateIf,
 } from 'class-validator';
 
-/// A new request is sick or PTO (VACATION), nothing else (Dominguez,
-/// September 2026). The other types stay in the database for requests made
-/// before then.
-export const REQUESTABLE_PTO_TYPES: PtoType[] = [PtoType.SICK, PtoType.VACATION];
+/// A new request is sick, PTO (VACATION) or unpaid, nothing else (Dominguez,
+/// September 2026; unpaid from October 2026, "more generalized to just unpaid
+/// day"). The other types stay in the database for requests made before then.
+export const REQUESTABLE_PTO_TYPES: PtoType[] = [PtoType.SICK, PtoType.VACATION, PtoType.UNPAID];
 
 export class CreatePtoRequestDto {
-  @IsIn(REQUESTABLE_PTO_TYPES, { message: 'Time off is either Sick or PTO.' })
+  @IsIn(REQUESTABLE_PTO_TYPES, { message: 'Time off is Sick, PTO or Unpaid.' })
   type!: PtoType;
 
   /// First day off, inclusive. A plain date: "2026-11-03".
@@ -59,7 +59,7 @@ export class CreatePtoRequestDto {
 
 /// "What would this take?" — the request form, before it is sent.
 export class PreviewPtoRequestDto {
-  @IsIn(REQUESTABLE_PTO_TYPES, { message: 'Time off is either Sick or PTO.' })
+  @IsIn(REQUESTABLE_PTO_TYPES, { message: 'Time off is Sick, PTO or Unpaid.' })
   type!: PtoType;
 
   @IsDateString()
@@ -83,7 +83,7 @@ export class RecordPtoDto {
   @IsUUID('4')
   employeeId!: string;
 
-  @IsIn(REQUESTABLE_PTO_TYPES, { message: 'Time off is either Sick or PTO.' })
+  @IsIn(REQUESTABLE_PTO_TYPES, { message: 'Time off is Sick, PTO or Unpaid.' })
   type!: PtoType;
 
   @IsDateString()

@@ -36,14 +36,15 @@ describe('AdjustPtoBalanceDto', () => {
 describe('CreatePtoRequestDto', () => {
   const dates = { startDate: '2026-11-02', endDate: '2026-11-02' };
 
-  it('takes sick and PTO', async () => {
+  it('takes sick, PTO and unpaid', async () => {
     expect(await problems(CreatePtoRequestDto, { ...dates, type: 'SICK' })).toEqual([]);
     expect(await problems(CreatePtoRequestDto, { ...dates, type: 'VACATION' })).toEqual([]);
+    expect(await problems(CreatePtoRequestDto, { ...dates, type: 'UNPAID' })).toEqual([]);
   });
 
   it('no longer takes the other kinds', async () => {
     expect(await problems(CreatePtoRequestDto, { ...dates, type: 'PERSONAL' })).toEqual([
-      'Time off is either Sick or PTO.',
+      'Time off is Sick, PTO or Unpaid.',
     ]);
   });
 });
