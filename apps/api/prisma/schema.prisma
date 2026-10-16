@@ -3356,6 +3356,8 @@ model ReimbursementRate {
 enum VendorPaymentMethod {
   CHECK
   CASH
+  /// Paid through QuickBooks (October 2026, Dominguez).
+  QUICKBOOKS
   OTHER
 }
 
