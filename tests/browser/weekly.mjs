@@ -52,7 +52,13 @@ await step('Email settings has "Your week", on to start with; turned off it stay
   const card = frankie.getByTestId('weekly-summary');
   const toggle = card.getByRole('switch', { name: 'Your week' });
   if ((await toggle.getAttribute('aria-checked')) !== 'true') throw new Error('not on to start with');
+  // The switch flips on screen before the save is done; reloading before it
+  // is done brought the old value back (CI, October 2026). Wait for the save.
+  const saved = frankie.waitForResponse(
+    (r) => r.url().includes('/api/auth/preferences') && r.request().method() !== 'GET',
+  );
   await toggle.click();
+  if (!(await saved).ok()) throw new Error('the save failed');
   await card.getByText('Off. Your hours are on your Timesheet').waitFor({ timeout: 10000 });
   await frankie.reload({ waitUntil: 'networkidle' });
   if ((await toggle.getAttribute('aria-checked')) !== 'false') throw new Error('did not stay off');
