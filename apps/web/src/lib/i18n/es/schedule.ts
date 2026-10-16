@@ -184,6 +184,10 @@ export const SCHEDULE: Record<string, string> = {
   'First day': 'Primer día',
   'Last day': 'Último día',
   'Leave empty for a single day.': 'Déjalo vacío si es un solo día.',
+  'unpaid, so it uses none of your sick days or PTO.':
+    'sin pago, así que no usa tus días de enfermedad ni tu PTO.',
+  'unpaid, so it uses none of {name}’s sick days or PTO.':
+    'sin pago, así que no usa los días de enfermedad ni el PTO de {name}.',
   'Half day': 'Medio día',
   Notes: 'Notas',
   '(optional)': '(opcional)',

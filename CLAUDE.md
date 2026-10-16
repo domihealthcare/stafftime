@@ -1538,7 +1538,13 @@ Beyond the phases, the parts worth knowing about before picking up work:
   profiles* in `docs/architecture.md`.
 - **Time off is Sick or PTO** (September 2026, Dominguez): a new request is
   one or the other, starting on Sick (PTO once the person's sick days are
-  used up); `VACATION` is shown as "PTO". Older kinds stay readable. For the
+  used up); `VACATION` is shown as "PTO". Older kinds stay readable.
+  **Unpaid** is a third choice since 16 October 2026 (staff asked for unpaid
+  sick days; Dominguez: "more generalized to just unpaid day"): `UNPAID`,
+  for any reason, using **neither** balance even with days left. Managers
+  decide it as usual; **Approve the clean time off** always leaves it for a
+  look. Time off is still not in the payroll export, so "unpaid" is what the
+  manager reads, not a pay code. For the
   switch-over, Time off → **Staff balances** (managers and admins) shows
   everybody's days left, and **Adjust** takes the PTO and sick days somebody
   had already taken this year before Domi Staff, what really carried over

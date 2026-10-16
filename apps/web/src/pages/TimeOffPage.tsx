@@ -724,6 +724,16 @@ function RequestForm({
           </p>
         )}
 
+        {type === 'UNPAID' && preview && preview.days > 0 && (
+          <p className="text-sm text-slate-600" data-testid="time-off-days">
+            {plural(preview.days, '{n} day', '{n} days')}
+            {skipNote.length > 0 && ` (${skipNote.join('; ')})`} ·{' '}
+            {forName
+              ? t('unpaid, so it uses none of {name}’s sick days or PTO.', { name: forName })
+              : t('unpaid, so it uses none of your sick days or PTO.')}
+          </p>
+        )}
+
         {showOtherYearNote && preview && (
           <p className="text-sm text-slate-600" data-testid="time-off-days">
             {plural(preview.days, '{n} day', '{n} days')} ·{' '}
