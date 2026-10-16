@@ -63,6 +63,9 @@ const imported = await ada.evaluate(
       email: `${first.toLowerCase()}.clean@example.com`,
       role: 'EMPLOYEE',
       payType: 'HOURLY',
+      // Hired before 16 October 2026, so they have the year's sick days rather
+      // than earning them by the hour (Practice settings' sick accrual start).
+      hireDate: '2025-01-06',
       locationIds: [nb],
       primaryLocationId: nb,
       jobRoleIds: roleIds,
