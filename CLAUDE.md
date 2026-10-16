@@ -124,10 +124,10 @@ Staff screen, fitted and shrunk the same way; the person is told under the
 bell and can change or remove it. Still only a profile photo of the person.
 Apart from that, the only files the app stores are the payroll export
 spreadsheets it generates itself. The practice's own spreadsheets brought onto
-the portal in October 2026 — the diagnostics guide, the fee schedule, vendor
-payments — are **pasted or typed in as text**, never uploaded, and hold no
-patient details; the I-693 applicants list (patients, with dates of birth and
-ID numbers) was deliberately left out.
+the portal in October 2026 — the diagnostics guide and the reimbursements
+(loaded from the sheets by migration), vendor payments (typed in) — are
+never uploaded, and hold no patient details; the I-693 applicants list
+(patients, with dates of birth and ID numbers) was deliberately left out.
 
 **Captured clock-in location** is kept, because it is the point of a browser
 punch, but on a short leash: never returned with a timesheet, readable one entry
@@ -987,18 +987,30 @@ Beyond the phases, the parts worth knowing about before picking up work:
   somebody's first month). Migration `20261015020000_time_off_counting`;
   see *Which days a request takes* and after in `docs/architecture.md`;
   `tests/browser/time-off-feedback.mjs`.
-- **Reference tables** (15 October 2026, Dominguez — the practice's
-  spreadsheets on the portal): Resources → **Reference**: the **diagnostics
-  guide** (insurance × ultrasound/test: Yes / No / PA, time and prep — for
-  everyone) and the **fee schedule** (insurance × CPT — managers and admins
-  only). **Pasted from the spreadsheet as text, never uploaded**, so the
-  contracted rates are never in the repo; **not loaded on the live site yet —
-  Dominguez to paste them in** (Help says how). Search by row, narrow by
-  column, Yes/No/PA coloured; managers edit cells or paste again.
-  `ReferenceTable`, `src/reference/` (`paste.ts` reads Excel's quoted cells),
-  `pages/ReferenceTablePage.tsx`; `tests/browser/reference-tables.mjs`. The
+- **Diagnostics and reimbursements** (16 October 2026, Dominguez: "it
+  shouldn't be an excel, it should be an app inside the app with the similar
+  format … a 'big board' for staff to reference … reimbursements also … a big
+  board, but also searchable … preloaded with the data that is already
+  there"; replaced the 15 October pasted reference tables, never used).
+  **Diagnostics** (`/diagnostics`, everybody; Home's Quick card, Resources →
+  Reference): insurances × ultrasounds or tests (two halves, as on the sheet),
+  YES / NO / PA / Call ref # / N/A coloured as the sheet, time and prep above,
+  self-pay below, the sheet's reminders, a plan's eCW insurance / payer ID /
+  insurance ID; **Find an insurance** gives its answers as large tiles, **Test**
+  narrows to one; **Big board** fills the screen. **Reimbursements**
+  (`/reimbursements`, **managers and admins only**; Manage and Resources):
+  CPT × insurance amounts, searchable by code or description, insurances
+  narrowed, a code pressed for every insurer's amount highest first, big
+  board. Both **loaded from the sheets** by migration
+  `20261016020000_diagnostics_reimbursements_data` (so the contracted rates
+  are now in the private repo — accepted, as asked) and kept in place by
+  managers and admins (**Edit the board**). `src/diagnostics/`,
+  `src/reimbursements/`, `pages/DiagnosticsPage.tsx`,
+  `pages/ReimbursementsPage.tsx`, `components/BigBoard.tsx`; schema guard pins
+  every field; `tests/browser/diagnostics.mjs`, `reimbursements.mjs`. The
   **I-693 applicants** sheet was **not brought in** — patients, with dates of
-  birth and ID numbers (*Data this app does not hold*).
+  birth and ID numbers (*Data this app does not hold*). Worth carrying to the
+  EMR module.
 - **Vendor payments** (15 October 2026, Dominguez — the "Payments to vendors"
   sheet): **admins only**, Manage → Vendor payments: each vendor, and every
   invoice, check or cash payment, **To pay → Sent → Completed** with the

@@ -19,7 +19,8 @@ import { EmailModule } from './email/email.module';
 import { EmployeesModule } from './employees/employees.module';
 import { EventsModule } from './events/events.module';
 import { RepsModule } from './reps/reps.module';
-import { ReferenceModule } from './reference/reference.module';
+import { DiagnosticsModule } from './diagnostics/diagnostics.module';
+import { ReimbursementsModule } from './reimbursements/reimbursements.module';
 import { VendorsModule } from './vendors/vendors.module';
 import { RequirementsModule } from './requirements/requirements.module';
 import { OnCallModule } from './on-call/on-call.module';
@@ -59,7 +60,8 @@ import { TimeEntriesModule } from './time-entries/time-entries.module';
     ShiftsModule,
     EventsModule,
     RepsModule,
-    ReferenceModule,
+    DiagnosticsModule,
+    ReimbursementsModule,
     VendorsModule,
     RequirementsModule,
     OnCallModule,

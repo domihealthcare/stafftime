@@ -1996,35 +1996,73 @@ export interface CleanTimeOffCheck {
   why: string | null;
 }
 
-/// A reference table (October 2026): the diagnostics guide, the fee schedule.
-export type ReferenceAudience = 'EVERYONE' | 'MANAGERS';
+/// The diagnostics board (October 2026): which insurance covers which test.
+export type DiagnosticSection = 'ULTRASOUND' | 'TESTING';
+export type DiagnosticAnswer = 'YES' | 'NO' | 'PA' | 'CALL_REF' | 'NA';
 
-export interface ReferenceTableSummary {
+export interface DiagnosticTest {
   id: string;
-  title: string;
-  notes: string | null;
-  audience: ReferenceAudience;
-  headerRows: number;
-  keyColumns: number;
-  sortOrder: number;
-  updatedAt: string;
-  rowCount: number;
-  columnCount: number;
+  section: DiagnosticSection;
+  name: string;
+  detail: string | null;
+  duration: string | null;
+  prep: string | null;
+  selfPay: string | null;
 }
 
-export interface ReferenceTable extends Omit<ReferenceTableSummary, 'rowCount' | 'columnCount'> {
-  rows: string[][];
+export interface DiagnosticPlan {
+  id: string;
+  name: string;
+  ecwName: string | null;
+  payerId: string | null;
+  insuranceId: string | null;
+  note: string | null;
 }
 
-export interface ReferenceTableInput {
-  title: string;
-  notes?: string;
-  audience: ReferenceAudience;
-  headerRows: number;
-  keyColumns: number;
-  /// Pasted from the spreadsheet, or the rows as edited.
-  pasted?: string;
-  rows?: string[][];
+export interface DiagnosticCell {
+  testId: string;
+  planId: string;
+  answer: DiagnosticAnswer;
+  note: string | null;
+}
+
+export interface DiagnosticsBoard {
+  tests: DiagnosticTest[];
+  plans: DiagnosticPlan[];
+  answers: DiagnosticCell[];
+  reminders: { id: string; section: DiagnosticSection; text: string }[];
+  updatedAt: string | null;
+}
+
+export type DiagnosticTestInput = Omit<DiagnosticTest, 'id'>;
+export type DiagnosticPlanInput = Omit<DiagnosticPlan, 'id'>;
+
+/// The reimbursements board (October 2026), managers and admins: what each
+/// insurance pays per code. An amount ("78.32") or the sheet's own words.
+export interface ReimbursementCode {
+  id: string;
+  code: string;
+  description: string | null;
+}
+
+export interface ReimbursementPayer {
+  id: string;
+  name: string;
+  note: string | null;
+}
+
+export interface ReimbursementRate {
+  codeId: string;
+  payerId: string;
+  amount: string | null;
+  text: string | null;
+}
+
+export interface ReimbursementsBoard {
+  codes: ReimbursementCode[];
+  payers: ReimbursementPayer[];
+  rates: ReimbursementRate[];
+  updatedAt: string | null;
 }
 
 /// Vendor payments (October 2026), admins only.

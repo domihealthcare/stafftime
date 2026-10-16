@@ -34,6 +34,7 @@ const MANAGE = [
   { to: '/credentials', label: 'Licenses' },
   { to: '/job-roles', label: 'Job roles' },
   { to: '/reps', label: 'Reps' },
+  { to: '/reimbursements', label: 'Reimbursements' },
   { to: '/export', label: 'Export' },
 ];
 const PRODUCTIVITY_MANAGE = { to: '/productivity', label: 'Provider productivity' };

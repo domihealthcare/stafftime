@@ -4425,29 +4425,74 @@ keeps closures and approved time off, so nothing shows twice (Dominguez).
 Off until `GOOGLE_CALENDAR_INVITES=on` — deliberately a setting, not
 detected, since what the feed carries hangs on it.
 
-## Reference tables (October 2026)
+## Diagnostics and reimbursements (October 2026)
 
-The practice's spreadsheets of facts to look up, on the portal (Dominguez:
-"lets make it so this can be done on the portal going forward"): the
-**diagnostics guide** (which insurance covers which ultrasound or test — Yes,
-No or PA — with its time and prep; for everyone) and the **fee schedule** (what
-each insurance pays per CPT code; managers and admins only). A third sheet
-offered, the I-693 applicants list, was left out: it is patients, with dates
-of birth and ID numbers (see *Data this app does not hold*).
+Two of the practice's spreadsheets, as boards of their own. The first try (15
+October) was a generic "reference table" that a manager pasted a sheet into;
+Dominguez turned it down before anything was pasted: "it shouldn't be an
+excel, it should be an app inside the app with the similar format and for
+diagnostics should be able to have a 'big board' for staff to reference. The
+reimbursements also should have a big board, but also searchable. It can be
+preloaded with the data that is already there." So each has its own tables,
+its own screen, and starts with what the sheet held. The I-693 applicants
+sheet stays out: it is patients, with dates of birth and ID numbers (see *Data
+this app does not hold*).
 
-`ReferenceTable`: a title, notes, who reads it (`EVERYONE` or `MANAGERS`), how
-many **heading rows** stay at the top and how many **name columns** say what a
-row is, and the cells as `string[][]` in JSON, saved whole. **Pasted, never
-uploaded**: in the spreadsheet the cells are copied, and pasted as text into
-the form; `reference/paste.ts` reads the tabs, line breaks and Excel's "quoted
-cells" with line breaks in them (unit-tested). The fee schedule's contracted
-rates are therefore never in the code repository, only in the database.
-Reading: a row search and an "only columns with" filter (the fee schedule is
-38 insurers wide), headings sticky, the first column sticky, Yes / No / PA
-coloured (`cellTone`, mirrored in the web's `lib/reference.ts`). Managers and
-admins **Edit cells** in place, add rows and columns, or paste again. Somebody
-a table is not for gets 404. On Resources under **Reference**; `/reference/:id`.
-`tests/browser/reference-tables.mjs`. Worth carrying to the EMR module.
+**Loaded from the sheets.** `prisma/migrations/20261016020000_diagnostics_
+reimbursements_data` is plain `INSERT`s, generated once from
+`DIAGNOSTIC_INFO.xlsx` and `Reimbursements - Domi TCHG.xlsx` with fixed ids,
+so the browser suites can put the boards back by running it again
+(`run-all.sh`). Tidied on the way in, nothing invented: a test's heading split
+into its name and the line under it ("Cannot be scheduled same day with
+another LE", "DOMI only"); "20 min / Fast 6 hrs" into time and prep (N/A is no
+prep); the eCW column into the insurance, payer ID and insurance ID, with "NON
+PAR - MUST SAY QUAL CARE" as a note; the two halves' insurances matched by
+name, so a plan is one row for both; a reimbursement cell with two amounts
+("$34.45 / 75.26", "$24.79 (Dr) 21.07 (NP)") kept as written. **This puts the
+contracted rates in the code repository** (private), which the pasted version
+had avoided — accepted, because Dominguez asked for them preloaded.
+
+**Diagnostics** (`/diagnostics`, everybody signed in; on Home's Quick card and
+Resources → Reference). `DiagnosticTest` (a column: section Ultrasounds or
+Testing, name, the line under it, time, prep, self-pay), `DiagnosticPlan` (a
+row: name, and how it is found in eCW — insurance, payer ID, insurance ID —
+and a note), `DiagnosticCoverage` (a cell: YES / NO / PA / CALL_REF / NA, and a
+note — "Needs records sent. Call 973-274-4396"), `DiagnosticReminder` (the
+amber lines above a half). No cell is "not on the guide: ask a manager". The
+board is sent whole (`GET /diagnostics`, about 30 × 35) so searching costs no
+round trip. **Find an insurance** narrows the rows, and when it comes down to
+one shows its answer for every test as large tiles, with the eCW line; **Test**
+narrows to one column — every insurance for that test. Green, red and blue as
+on the sheet, the word always shown. **Big board** (`components/BigBoard.tsx`)
+covers the page with the board alone, bigger, full screen where the browser
+allows it (not an iPhone); Escape puts it back. Staff's words are in Spanish;
+the board's own contents stay as the practice wrote them.
+
+**Reimbursements** (`/reimbursements`, managers and admins only — the practice's
+money; Manage → Reimbursements and Resources). `ReimbursementCode` (CPT or
+HCPCS, with a modifier as the sheet had it: "99213 (95)"; unique),
+`ReimbursementPayer`, `ReimbursementRate` (an `amount`, four decimals as the
+sheet had them and shown to the cent, **or** `text` — a database check allows
+exactly one). Search by code (from the start, spaces ignored) or description,
+and narrow the insurances; the most any insurance shown pays for a code is
+green. Pressing a code — or a search that comes down to one — shows every
+insurance's amount for it, highest first. Big board as above.
+
+**Kept in place** by managers and admins on both: **Edit the board**, then a
+cell (Diagnostics: a pop-up with the answer and a note; Reimbursements: typed
+straight in — an amount, words, or nothing to clear it, `reimbursements/
+rate.ts`), a test, insurance or code (details, move one place, remove — asking
+first), **+ Test / + Insurance / + Code**, and Diagnostics' **Reminders…**. Every
+change answers with the whole board. Moving rewrites every `sortOrder` in the
+list (`common/util/move-in-order.ts`). The schema guard pins every field of
+the seven tables; the diagnostics models are let past its "no `diagnos…` model
+names" rule by name only, since they are about insurances, not a patient's
+diagnosis. `tests/browser/diagnostics.mjs`, `reimbursements.mjs`. Worth
+carrying to the EMR module.
+
+The 15 October `reference_tables` table is dropped by
+`20261016010000_diagnostics_reimbursements` — or, should anything have been
+pasted into it on the live site, renamed `reference_tables_retired` and kept.
 
 ## Vendor payments (October 2026)
 

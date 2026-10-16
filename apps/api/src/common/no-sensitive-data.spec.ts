@@ -114,6 +114,62 @@ describe('what this app deliberately does not store', () => {
     );
   });
 
+  /// The diagnostics and reimbursements boards (October 2026, Dominguez):
+  /// which insurance covers which test, and what it pays per code — about
+  /// insurances and tests, never a patient. Exactly these fields, so a
+  /// "patient" or "booked for" column has to be decided out loud.
+  it('keeps the diagnostics and reimbursements boards to insurances, tests and codes', () => {
+    const fieldsOf = (name: string) =>
+      model(name)
+        .split('\n')
+        .map((line) => line.trim())
+        .filter((line) => line && !line.startsWith('//') && !line.startsWith('@@'))
+        .map((line) => line.split(/\s+/)[0])
+        .sort();
+    expect(fieldsOf('DiagnosticTest')).toEqual(
+      [
+        'answers',
+        'createdAt',
+        'detail',
+        'duration',
+        'id',
+        'name',
+        'prep',
+        'section',
+        'selfPay',
+        'sortOrder',
+        'updatedAt',
+      ].sort(),
+    );
+    expect(fieldsOf('DiagnosticPlan')).toEqual(
+      [
+        'answers',
+        'createdAt',
+        'ecwName',
+        'id',
+        'insuranceId',
+        'name',
+        'note',
+        'payerId',
+        'sortOrder',
+        'updatedAt',
+      ].sort(),
+    );
+    expect(fieldsOf('DiagnosticCoverage')).toEqual(
+      ['answer', 'id', 'note', 'plan', 'planId', 'test', 'testId', 'updatedAt'].sort(),
+    );
+    expect(fieldsOf('DiagnosticReminder')).toEqual(['id', 'section', 'sortOrder', 'text'].sort());
+    expect(fieldsOf('ReimbursementCode')).toEqual(
+      ['code', 'createdAt', 'description', 'id', 'rates', 'sortOrder', 'updatedAt'].sort(),
+    );
+    expect(fieldsOf('ReimbursementPayer')).toEqual(
+      ['createdAt', 'id', 'name', 'note', 'rates', 'sortOrder', 'updatedAt'].sort(),
+    );
+    expect(fieldsOf('ReimbursementRate')).toEqual(
+      ['amount', 'code', 'codeId', 'id', 'payer', 'payerId', 'text', 'updatedAt'].sort(),
+    );
+  });
+
   it('keeps the admins-only staff record to what was agreed, off the Employee row', () => {
     const fieldsOf = (name: string) =>
       model(name)
@@ -316,8 +372,19 @@ describe('what this app deliberately does not store', () => {
   /// the one easy way to change that is a model or column that sounds like one.
   it('holds no patient data: the clinical forms keep nothing on the server', () => {
     const names = [...schema.matchAll(/\nmodel (\w+) \{/g)].map((match) => match[1]);
+    // The diagnostics board is about insurances and tests, not a patient's
+    // diagnosis; its names are let through only because every field of it is
+    // pinned above. Their fields are still checked here.
+    const diagnosticsBoard = [
+      'DiagnosticTest',
+      'DiagnosticPlan',
+      'DiagnosticCoverage',
+      'DiagnosticReminder',
+    ];
     for (const name of names) {
-      expect(name).not.toMatch(/patient|clinical|assessment|mrn|diagnos|carePlan|cognitive/i);
+      if (!diagnosticsBoard.includes(name)) {
+        expect(name).not.toMatch(/patient|clinical|assessment|mrn|diagnos|carePlan|cognitive/i);
+      }
       const fields = model(name)
         .split('\n')
         .map((line) => line.trim())

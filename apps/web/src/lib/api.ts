@@ -56,9 +56,12 @@ import type {
   PlanResult,
   PracticeEvent,
   TimeOffPreview,
-  ReferenceTable,
-  ReferenceTableInput,
-  ReferenceTableSummary,
+  DiagnosticAnswer,
+  DiagnosticPlanInput,
+  DiagnosticSection,
+  DiagnosticsBoard,
+  DiagnosticTestInput,
+  ReimbursementsBoard,
   Vendor,
   VendorInput,
   VendorPayment,
@@ -1533,18 +1536,79 @@ export const api = {
     }),
   deleteEvent: (id: string, scope: 'one' | 'following' = 'one') =>
     request<{ deleted: number }>(`/events/${id}?scope=${scope}`, { method: 'DELETE' }),
-  // ---------------------------------------------------------------- reference tables
-  referenceTables: () => request<ReferenceTableSummary[]>('/reference-tables'),
-  referenceTable: (id: string) => request<ReferenceTable>(`/reference-tables/${id}`),
-  createReferenceTable: (body: ReferenceTableInput) =>
-    request<ReferenceTable>('/reference-tables', { method: 'POST', body: JSON.stringify(body) }),
-  updateReferenceTable: (id: string, body: ReferenceTableInput) =>
-    request<ReferenceTable>(`/reference-tables/${id}`, {
+  // ---------------------------------------------------------------- diagnostics
+  diagnostics: () => request<DiagnosticsBoard>('/diagnostics'),
+  setDiagnosticAnswer: (body: {
+    testId: string;
+    planId: string;
+    answer: DiagnosticAnswer | null;
+    note?: string;
+  }) =>
+    request<DiagnosticsBoard>('/diagnostics/answers', {
       method: 'PUT',
       body: JSON.stringify(body),
     }),
-  deleteReferenceTable: (id: string) =>
-    request<{ deleted: boolean }>(`/reference-tables/${id}`, { method: 'DELETE' }),
+  setDiagnosticReminders: (section: DiagnosticSection, lines: string[]) =>
+    request<DiagnosticsBoard>('/diagnostics/reminders', {
+      method: 'PUT',
+      body: JSON.stringify({ section, lines }),
+    }),
+  saveDiagnosticTest: (id: string | null, body: DiagnosticTestInput) =>
+    request<DiagnosticsBoard>(id ? `/diagnostics/tests/${id}` : '/diagnostics/tests', {
+      method: id ? 'PUT' : 'POST',
+      body: JSON.stringify(body),
+    }),
+  moveDiagnosticTest: (id: string, by: -1 | 1) =>
+    request<DiagnosticsBoard>(`/diagnostics/tests/${id}/move`, {
+      method: 'POST',
+      body: JSON.stringify({ by }),
+    }),
+  deleteDiagnosticTest: (id: string) =>
+    request<DiagnosticsBoard>(`/diagnostics/tests/${id}`, { method: 'DELETE' }),
+  saveDiagnosticPlan: (id: string | null, body: DiagnosticPlanInput) =>
+    request<DiagnosticsBoard>(id ? `/diagnostics/plans/${id}` : '/diagnostics/plans', {
+      method: id ? 'PUT' : 'POST',
+      body: JSON.stringify(body),
+    }),
+  moveDiagnosticPlan: (id: string, by: -1 | 1) =>
+    request<DiagnosticsBoard>(`/diagnostics/plans/${id}/move`, {
+      method: 'POST',
+      body: JSON.stringify({ by }),
+    }),
+  deleteDiagnosticPlan: (id: string) =>
+    request<DiagnosticsBoard>(`/diagnostics/plans/${id}`, { method: 'DELETE' }),
+
+  // ---------------------------------------------------------------- reimbursements
+  reimbursements: () => request<ReimbursementsBoard>('/reimbursements'),
+  setReimbursementRate: (codeId: string, payerId: string, value: string) =>
+    request<ReimbursementsBoard>('/reimbursements/rates', {
+      method: 'PUT',
+      body: JSON.stringify({ codeId, payerId, value }),
+    }),
+  saveReimbursementCode: (id: string | null, body: { code: string; description?: string }) =>
+    request<ReimbursementsBoard>(id ? `/reimbursements/codes/${id}` : '/reimbursements/codes', {
+      method: id ? 'PUT' : 'POST',
+      body: JSON.stringify(body),
+    }),
+  moveReimbursementCode: (id: string, by: -1 | 1) =>
+    request<ReimbursementsBoard>(`/reimbursements/codes/${id}/move`, {
+      method: 'POST',
+      body: JSON.stringify({ by }),
+    }),
+  deleteReimbursementCode: (id: string) =>
+    request<ReimbursementsBoard>(`/reimbursements/codes/${id}`, { method: 'DELETE' }),
+  saveReimbursementPayer: (id: string | null, body: { name: string; note?: string }) =>
+    request<ReimbursementsBoard>(id ? `/reimbursements/payers/${id}` : '/reimbursements/payers', {
+      method: id ? 'PUT' : 'POST',
+      body: JSON.stringify(body),
+    }),
+  moveReimbursementPayer: (id: string, by: -1 | 1) =>
+    request<ReimbursementsBoard>(`/reimbursements/payers/${id}/move`, {
+      method: 'POST',
+      body: JSON.stringify({ by }),
+    }),
+  deleteReimbursementPayer: (id: string) =>
+    request<ReimbursementsBoard>(`/reimbursements/payers/${id}`, { method: 'DELETE' }),
 
   // ---------------------------------------------------------------- vendor payments
   vendors: () => request<Vendor[]>('/vendors'),

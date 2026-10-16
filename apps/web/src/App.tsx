@@ -29,8 +29,11 @@ const DirectoryPage = lazy(() =>
   import('./pages/DirectoryPage').then((m) => ({ default: m.DirectoryPage })),
 );
 const RepsPage = lazy(() => import('./pages/RepsPage').then((m) => ({ default: m.RepsPage })));
-const ReferenceTablePage = lazy(() =>
-  import('./pages/ReferenceTablePage').then((m) => ({ default: m.ReferenceTablePage })),
+const DiagnosticsPage = lazy(() =>
+  import('./pages/DiagnosticsPage').then((m) => ({ default: m.DiagnosticsPage })),
+);
+const ReimbursementsPage = lazy(() =>
+  import('./pages/ReimbursementsPage').then((m) => ({ default: m.ReimbursementsPage })),
 );
 const VendorsPage = lazy(() =>
   import('./pages/VendorsPage').then((m) => ({ default: m.VendorsPage })),
@@ -213,7 +216,8 @@ function Routed() {
           <Route path="dashboard" element={<DashboardPage />} />
           <Route path="job-roles" element={<JobRolesPage />} />
           <Route path="reps" element={<RepsPage />} />
-          <Route path="reference/:id" element={<ReferenceTablePage />} />
+          <Route path="diagnostics" element={<DiagnosticsPage />} />
+          <Route path="reimbursements" element={<ReimbursementsPage />} />
           <Route path="vendors" element={<VendorsPage />} />
           <Route path="required" element={<RequiredPage />} />
           <Route path="on-call" element={<OnCallPage />} />
