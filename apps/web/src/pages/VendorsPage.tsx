@@ -31,6 +31,7 @@ const STATUS: Record<VendorPaymentStatus, { label: string; tone: 'warning' | 'in
 const METHOD: Record<VendorPaymentMethod, string> = {
   CHECK: 'Check',
   CASH: 'Cash',
+  QUICKBOOKS: 'QuickBooks',
   OTHER: 'Other',
 };
 
@@ -630,6 +631,7 @@ function PaymentForm({
           >
             <option value="CHECK">Check</option>
             <option value="CASH">Cash</option>
+            <option value="QUICKBOOKS">QuickBooks</option>
             <option value="OTHER">Other</option>
           </select>
         </div>

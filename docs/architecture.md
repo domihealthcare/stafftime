@@ -4546,7 +4546,7 @@ pasted into it on the live site, renamed `reference_tables_retired` and kept.
 In place of the "Payments to vendors" spreadsheet, **admins only** (Manage →
 Vendor payments, `/vendors`): `Vendor` (name, what for, address for checks,
 still paying them) and `VendorPayment` (what for, amount, invoice #, check /
-cash / other with the check #, **To pay → Sent → Completed** with the days, a
+cash / QuickBooks / other with the check #, **To pay → Sent → Completed** with the days, a
 short note). A completed payment needs the day it cleared; check #, amount,
 invoice # and the **date sent** are all optional (15 October 2026, Dominguez),
 the date kept whatever the status. **+ Payment** at the top of the page finds

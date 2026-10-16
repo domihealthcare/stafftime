@@ -2089,7 +2089,7 @@ export interface ReimbursementsBoard {
 }
 
 /// Vendor payments (October 2026), admins only.
-export type VendorPaymentMethod = 'CHECK' | 'CASH' | 'OTHER';
+export type VendorPaymentMethod = 'CHECK' | 'CASH' | 'QUICKBOOKS' | 'OTHER';
 export type VendorPaymentStatus = 'TO_PAY' | 'SENT' | 'COMPLETED';
 
 export interface VendorPayment {
