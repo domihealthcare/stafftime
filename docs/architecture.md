@@ -4585,11 +4585,18 @@ returns to it; the search box is focused on a laptop but not on a phone, and is
 sticky.
 
 **Printing** is `/phone-book/print` (`PhoneBookPrintPage`, outside `Layout`),
-given the same `q`, `category` and `starred`: two columns on letter paper,
-starred first, `break-inside: avoid` per entry, neighbouring offices with the
-same numbers printed as one line of addresses (`printedOffices`), and — with
-no heading chosen — a page break before each heading. Its tab title becomes the
-PDF's file name.
+given the same `q`, `category` and `starred` (and `staff=1`). It is **made for
+handing to patients** (Dominguez, 18 October 2026): the default *patient copy*
+is one column at 13-point names and 12-point lines, each address on its own line
+with the phone number in bold beneath, a line asking them to call and check
+their insurance is accepted, and a ★ legend when anything is starred. It
+**leaves out fax numbers and every note** — the notes are written for staff
+(what to fax over, account numbers, NPIs, an account manager's cell). The
+*Staff copy* tick adds both, in two denser columns (`printedOffices` joins
+neighbouring offices with the same numbers), headed "not for patients".
+Starred first either way; `break-inside: avoid` per entry; a page break before
+each heading only when everything is printed (no heading, search or star
+chosen). Its tab title becomes the PDF's file name.
 
 **The stars** are the document's yellow-highlighted entries (white and
 paragraph shading in it are not highlights); the list went to Dominguez to

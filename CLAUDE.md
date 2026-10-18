@@ -1058,9 +1058,15 @@ Beyond the phases, the parts worth knowing about before picking up work:
   are untidy**: staff fix them with Edit. **Same day, Dominguez's four asks**:
   (1) **printable** — **Print** on the page opens `/phone-book/print`
   (outside the layout, like the printed rota) with the heading, search or
-  "preferred only" being looked at: two columns, starred first, an entry never
-  split, shared numbers printed once; with nothing chosen, **one heading to a
-  page**. (2) **Starred / preferred** — the document's **yellow-highlighted**
+  "preferred only" being looked at. **Made for patients** (Dominguez: "easier
+  to read, as this will be distributed to patients"): the default **patient
+  copy** is large type in one column, each place's name, addresses (one a
+  line) and bold phone number, a line asking them to call and check their
+  insurance, and a ★ legend — **no fax numbers and none of the notes**, which
+  are the staff's (what to fax over, account numbers, an account manager's
+  cell). A **Staff copy** tick adds fax numbers and notes in a denser two-column
+  list headed "not for patients". Starred first; with everything printed, **one
+  heading to a page**. (2) **Starred / preferred** — the document's **yellow-highlighted**
   entries (39) are `ReferralContact.preferred`, shown with an amber ★, first
   within a heading, a **Preferred only** button and a tick in the form.
   (3) **Several offices** — `ReferralOffice` (label, address, phone, fax; a

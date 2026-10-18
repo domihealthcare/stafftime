@@ -200,7 +200,7 @@ await step('only a manager removes an entry', async () => {
   await manager.context().close();
 });
 
-await step('a heading prints as a list of everybody in it, starred first', async () => {
+await step('a heading prints as a patient-ready list of everybody in it, starred first; the staff copy adds fax numbers and notes', async () => {
   await staff.goto(`${BASE}/phone-book?category=Cardiology`, { waitUntil: 'networkidle' });
   await staff.getByTestId('phone-book-entry').first().waitFor({ timeout: 10000 });
   const onScreen = await staff.getByTestId('phone-book-entry').count();
@@ -210,6 +210,24 @@ await step('a heading prints as a list of everybody in it, starred first', async
   const printed = await staff.getByTestId('print-entry').count();
   if (printed !== onScreen) throw new Error(`${printed} printed, ${onScreen} on screen`);
   if ((await staff.getByTestId('print-category').count()) !== 1) throw new Error('more than one heading');
+  // Handed to patients: names, addresses and phone numbers, with nothing of the staff's.
+  await staff.getByTestId('print-patient-copy').waitFor();
+  const paper = await staff.getByTestId('print-patient-copy').innerText();
+  if (/\bFax\b/i.test(paper)) throw new Error('a fax number is on the patient copy');
+  if (/HNNJ|HNJH|NPI|Does not accept/i.test(paper)) throw new Error('staff notes are on the patient copy');
+  if (!/Please call the office/.test(paper)) throw new Error('no line telling patients to call');
+  if (!/Phone \(?\d{3}/.test(paper)) throw new Error('no phone numbers');
+  if ((await staff.locator('.category-page').count()) !== 0) throw new Error('a single heading broke onto a new page');
+  const size = await staff.getByTestId('print-entry').first().locator('h3').evaluate((h) => getComputedStyle(h).fontSize);
+  // The staff copy has them, and says it is not for patients.
+  await staff.getByLabel(/Staff copy/).check();
+  await staff.getByTestId('print-staff-copy').waitFor();
+  const inside = await staff.getByTestId('print-staff-copy').innerText();
+  if (!/Fax/.test(inside) || !/TAKES HNNJ FOR STRESS TEST/.test(inside)) throw new Error('the staff copy lacks fax numbers or notes');
+  if (!/not for patients/i.test(inside)) throw new Error('the staff copy does not say so');
+  await staff.getByLabel(/Staff copy/).uncheck();
+  await staff.getByTestId('print-patient-copy').waitFor();
+  if (Number.parseFloat(size) < 16) throw new Error(`names print at ${size}`);
   // On paper the toolbar goes and no menu is in the way.
   await staff.emulateMedia({ media: 'print' });
   if (await staff.getByRole('button', { name: 'Print' }).isVisible()) throw new Error('Print shows on paper');
@@ -221,7 +239,7 @@ await step('a heading prints as a list of everybody in it, starred first', async
   if ((await staff.getByLabel('Listed under').first().inputValue()) !== 'Cardiology') throw new Error('back lost the heading');
 });
 
-await step('printing everything gives each heading its own page; the starred alone prints too', async () => {
+await step('printing everything gives each heading its own page; the starred alone prints together', async () => {
   await staff.goto(`${BASE}/phone-book/print`, { waitUntil: 'networkidle' });
   await staff.getByTestId('print-entry').first().waitFor({ timeout: 10000 });
   if ((await staff.getByTestId('print-category').count()) < 40) throw new Error('headings missing');
@@ -230,6 +248,7 @@ await step('printing everything gives each heading its own page; the starred alo
   const entries = await staff.getByTestId('print-entry').count();
   const stars = await staff.getByTestId('print-entry').filter({ hasText: '★' }).count();
   if (entries !== stars || entries < 20) throw new Error(`${entries} printed, ${stars} starred`);
+  if ((await staff.locator('.category-page').count()) !== 0) throw new Error('the starred list breaks a page at every heading');
 });
 
 await step('the form asks for places, not patients, and there is no file upload', async () => {
