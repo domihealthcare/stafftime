@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useId, useMemo, useState } from 'react';
 import { ApiError, api } from '../lib/api';
+import { useIsManager } from '../lib/session';
 import { categoriesOf, groupByCategory, linkify, searchContacts } from '../lib/phone-book';
 import type { ReferralContact, ReferralContactInput } from '../lib/types';
 import { useConfirm } from '../components/ConfirmDialog';
@@ -121,6 +122,7 @@ function ContactForm({
 }) {
   const id = useId();
   const confirm = useConfirm();
+  const isManager = useIsManager();
   const [form, setForm] = useState<ReferralContactInput>(
     contact
       ? {
@@ -259,7 +261,7 @@ function ContactForm({
           <button type="button" onClick={onClose} className={buttonClass('secondary', 'md')}>
             Cancel
           </button>
-          {contact && (
+          {contact && isManager && (
             <button
               type="button"
               onClick={() => void remove()}

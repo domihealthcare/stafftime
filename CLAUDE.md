@@ -1047,8 +1047,8 @@ Beyond the phases, the parts worth knowing about before picking up work:
 - **Phone book for referrals** (18 October 2026, Dominguez: "a searchable
   phone book for referrals for staff to use and edit" — from the practice's
   PHONE_BOOK.docx): `/phone-book`, on Home's Quick card and Resources →
-  Reference, for **everybody signed in to read, add, change and remove**
-  (confirmed by "for staff to use and edit"; no manager gate). Labs, Holy
+  Reference, for **everybody signed in to read, add and change**, and **managers and
+  admins only to remove** (Dominguez, 18 October 2026). Labs, Holy
   Name services, home care, DME, hospitals, pharmacies, imaging and every
   specialty as a **Listed under** heading, 318 entries loaded by migration
   `20261018020000_phone_book_data` from the document: each entry's first

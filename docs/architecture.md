@@ -4564,9 +4564,9 @@ imported — the sheet stays the archive; the portal is "going forward".
 where patients are sent — labs, hospitals, imaging, home care, DME, pharmacies
 and every specialty — in `ReferralContact` (`referral_contacts`): `category`
 ("Listed under"), `name`, then the **first** `phone`, `fax`, `address`,
-`email`, `website`, and `notes` for everything else as written. Read **and
-kept by everybody signed in** (no `@Roles`, deliberately: "for staff to use and
-edit"); every write logs who made it and sets `updatedById`. The whole book
+`email`, `website`, and `notes` for everything else as written. Read, added to and
+corrected by everybody signed in ("for staff to use and edit"); **only managers
+and admins remove** an entry (`@Roles(Role.MANAGER)` on delete, 18 October 2026); every write logs who made it and sets `updatedById`. The whole book
 (a few hundred rows) goes to the browser in one `GET /phone-book` and is
 searched there (`lib/phone-book.ts`): every word typed must appear in some
 field, and a word of three or more digits also matches a number however it

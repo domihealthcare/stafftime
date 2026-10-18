@@ -92,7 +92,7 @@ await step('Listed under shows one heading at a time', async () => {
   await staff.getByLabel('Listed under').first().selectOption('');
 });
 
-await step('anybody adds an entry, fixes it and removes it', async () => {
+await step('anybody adds and fixes an entry; only a manager removes it', async () => {
   await staff.getByRole('button', { name: '+ Add an entry' }).click();
   let dialog = staff.getByRole('dialog', { name: 'New phone book entry' });
   await dialog.getByLabel('Name').fill('Phone-book suite sleep lab');
@@ -114,9 +114,23 @@ await step('anybody adds an entry, fixes it and removes it', async () => {
 
   await card.getByRole('button', { name: /^Edit/ }).click();
   dialog = staff.getByRole('dialog', { name: /Change Phone-book suite sleep lab/ });
-  await dialog.getByRole('button', { name: 'Remove' }).click();
-  await staff.getByRole('button', { name: 'Yes, remove it' }).click();
-  await staff.getByText(/Nothing matches/).waitFor({ timeout: 10000 });
+  if (await dialog.getByRole('button', { name: 'Remove' }).count()) throw new Error('staff are offered Remove');
+  await dialog.getByRole('button', { name: 'Cancel' }).click();
+  const id = await staff.evaluate(async () => {
+    const all = await (await fetch('/api/phone-book')).json();
+    return all.find((c) => c.name === 'Phone-book suite sleep lab').id;
+  });
+  const refused = await staff.evaluate(async (id) => (await fetch(`/api/phone-book/${id}`, { method: 'DELETE' })).status, id);
+  if (refused !== 403) throw new Error(`staff removed an entry: ${refused}`);
+
+  const manager = await signIn('manager@domihealthcare.com');
+  await manager.goto(`${BASE}/phone-book`, { waitUntil: 'networkidle' });
+  await manager.getByLabel('Search', { exact: true }).fill('phone-book suite');
+  await manager.getByTestId('phone-book-entry').getByRole('button', { name: /^Edit/ }).click();
+  await manager.getByRole('dialog', { name: /Change Phone-book suite sleep lab/ }).getByRole('button', { name: 'Remove' }).click();
+  await manager.getByRole('button', { name: 'Yes, remove it' }).click();
+  await manager.getByText(/Nothing matches/).waitFor({ timeout: 10000 });
+  await manager.context().close();
 });
 
 await step('the form asks for places, not patients, and there is no file upload', async () => {
@@ -126,7 +140,7 @@ await step('the form asks for places, not patients, and there is no file upload'
   await staff.getByRole('button', { name: 'Cancel' }).click();
 });
 
-await step('the book is also on Resources, and is kept by everybody', async () => {
+await step('the book is also on Resources, and staff can read, add and fix it', async () => {
   await staff.goto(`${BASE}/resources`, { waitUntil: 'networkidle' });
   await staff.getByTestId('reference-section').getByRole('link', { name: /Phone book/ }).waitFor({ timeout: 10000 });
   const rows = await staff.evaluate(async () => (await fetch('/api/phone-book')).status);

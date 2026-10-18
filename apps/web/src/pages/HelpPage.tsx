@@ -767,9 +767,9 @@ const STAFF: Section[] = [
             </p>
             <p>
               The book is kept by all of us. Press <strong>Edit</strong> on an entry to fix a number
-              or add a note, or <strong>+ Add an entry</strong> for a new place;{' '}
-              <strong>Remove</strong> is inside Edit. Please write about the place only &mdash;
-              never a patient&rsquo;s name or details.
+              or add a note, or <strong>+ Add an entry</strong> for a new place; only a manager can{' '}
+              <strong>Remove</strong> an entry (inside Edit). Please write about the place only
+              &mdash; never a patient&rsquo;s name or details.
             </p>
           </>
         ),
