@@ -16,10 +16,11 @@ import type { ReferralContact } from '../lib/types';
  * name, address and phone number and nothing a patient has no use for — no fax
  * numbers, and none of the notes, which are the staff's (what to fax over,
  * account numbers, an account manager's cell). **Staff copy** adds the fax
- * numbers and notes in a denser two-column list. Starred first either way;
- * with everything printed (no heading, search or star chosen), one heading to a
- * page. Sits outside the layout, as
- * the printed rota does, since paper has no menus.
+ * numbers and notes in a denser list. Two columns either way, and as few pages
+ * as will still read easily (Dominguez: "cardiology should only be 2 pages",
+ * as in the practice's own book): headings run on rather than each starting a
+ * page. Starred first. Sits outside the layout, as the printed rota does, since
+ * paper has no menus.
  */
 export function PhoneBookPrintPage() {
   const [params, setParams] = useSearchParams();
@@ -117,9 +118,9 @@ export function PhoneBookPrintPage() {
             className={`rounded-xl bg-white p-6 shadow-sm print:rounded-none print:p-0 print:shadow-none ${staffCopy ? 'staff-copy' : 'patient-copy'}`}
             data-testid={staffCopy ? 'print-staff-copy' : 'print-patient-copy'}
           >
-            <header className="mb-4 flex items-end justify-between gap-4 border-b-2 border-slate-700 pb-3">
+            <header className="mb-2 flex items-end justify-between gap-4 border-b-2 border-slate-700 pb-2">
               <div>
-                <h1 className="text-3xl font-bold text-slate-900" data-testid="print-title">
+                <h1 className="text-2xl font-bold text-slate-900" data-testid="print-title">
                   {title}
                 </h1>
                 <p className="mt-1 text-sm text-slate-700">
@@ -128,10 +129,10 @@ export function PhoneBookPrintPage() {
                     : `Referrals from Domi Healthcare · printed ${printedAt}`}
                 </p>
               </div>
-              <BrandLogoForPrint className="h-12 w-auto" />
+              <BrandLogoForPrint className="h-10 w-auto" />
             </header>
             {!staffCopy && (
-              <p className="mb-3 text-base text-slate-900">
+              <p className="mb-2 text-sm text-slate-900">
                 Please call the office to make your appointment, and to check that they accept your
                 insurance.
                 {anyStarred && (
@@ -145,14 +146,10 @@ export function PhoneBookPrintPage() {
               </p>
             )}
             {groups.length === 0 && <p className="text-base text-slate-700">Nothing to print.</p>}
-            {groups.map((group, index) => (
-              <section
-                key={group.category}
-                className={index > 0 && !preferredOnly && !query ? 'category-page' : ''}
-                data-testid="print-category"
-              >
+            {groups.map((group) => (
+              <section key={group.category} className="category" data-testid="print-category">
                 {(groups.length > 1 || !category) && (
-                  <h2 className="mb-2 mt-4 border-b border-slate-500 text-xl font-bold uppercase tracking-wide text-slate-900">
+                  <h2 className="mb-1 mt-3 border-b border-slate-500 text-lg font-bold uppercase tracking-wide text-slate-900">
                     {group.category}
                   </h2>
                 )}
@@ -174,13 +171,11 @@ export function PhoneBookPrintPage() {
                             {line.fax && <span> · Fax {line.fax}</span>}
                           </p>
                         ) : (
-                          // For a patient: each address on a line of its own and the
-                          // number to ring under it, in bold.
-                          <div key={officeIndex} className="entry-line mb-1 text-slate-900">
-                            {line.label && <p className="font-semibold">{line.label}</p>}
-                            {line.addresses.map((address) => (
-                              <p key={address}>{address}</p>
-                            ))}
+                          // For a patient: the addresses together, the number to ring
+                          // under them in bold.
+                          <div key={officeIndex} className="entry-line mb-0.5 text-slate-900">
+                            {line.label && <span className="font-semibold">{line.label}: </span>}
+                            {line.addresses.length > 0 && <span>{line.addresses.join(' · ')}</span>}
                             {line.phone && <p className="font-bold">Phone {line.phone}</p>}
                           </div>
                         ),
@@ -207,23 +202,24 @@ export function PhoneBookPrintPage() {
   );
 }
 
-/// Patient copy: one column on letter paper, 13-point names and 12-point
-/// lines, space between places, an entry never split across pages. Staff copy:
-/// two denser columns. A heading to a page when everything is printed.
+/// Patient copy: two columns on letter paper, 13-point names and 12-point lines
+/// — big enough to read, short enough that a heading such as Cardiology is two
+/// pages, as the practice's own book was. An entry is never split. Staff copy:
+/// denser still. Headings run on, one after another, so the whole book is as few pages as it can be.
 const PRINT_CSS = `
-@page { size: letter portrait; margin: 0.6in; }
+@page { size: letter portrait; margin: 0.5in; }
 .entry { break-inside: avoid; }
-.patient-copy .entries { column-count: 1; }
-.patient-copy .entry { margin-bottom: 0.2in; padding-bottom: 0.12in; border-bottom: 1px solid #cbd5e1; }
-.patient-copy .entry-name { font-size: 13pt; line-height: 1.25; margin-bottom: 0.03in; }
-.patient-copy .entry-line { font-size: 12pt; line-height: 1.4; }
+.patient-copy .entries { column-count: 2; column-gap: 0.3in; }
+.patient-copy .entry { margin-bottom: 0.1in; padding-bottom: 0.06in; border-bottom: 1px solid #cbd5e1; }
+.patient-copy .entry-name { font-size: 13pt; line-height: 1.2; margin-bottom: 0.02in; }
+.patient-copy .entry-line { font-size: 12pt; line-height: 1.3; }
 .staff-copy .entries { column-count: 2; column-gap: 0.3in; }
 .staff-copy .entry { margin-bottom: 0.09in; padding-bottom: 0.05in; border-bottom: 1px dotted #94a3b8; }
 .staff-copy .entry-name { font-size: 11pt; line-height: 1.2; }
 .staff-copy .entry-line { font-size: 10pt; line-height: 1.3; }
-@media screen { .staff-copy .entries { column-count: 1; } @media (min-width: 768px) { .staff-copy .entries { column-count: 2; } } }
+@media screen { .entries { column-count: 1 !important; } @media (min-width: 768px) { .entries { column-count: 2 !important; } } }
 @media print {
-  .category-page { break-before: page; }
+  .category h2 { break-after: avoid; }
   body { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
 }
 `;

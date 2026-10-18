@@ -1060,13 +1060,15 @@ Beyond the phases, the parts worth knowing about before picking up work:
   (outside the layout, like the printed rota) with the heading, search or
   "preferred only" being looked at. **Made for patients** (Dominguez: "easier
   to read, as this will be distributed to patients"): the default **patient
-  copy** is large type in one column, each place's name, addresses (one a
-  line) and bold phone number, a line asking them to call and check their
+  copy** is large, easy type in two columns, each place's name, its addresses and bold phone
+  number, a line asking them to call and check their
   insurance, and a ★ legend — **no fax numbers and none of the notes**, which
   are the staff's (what to fax over, account numbers, an account manager's
   cell). A **Staff copy** tick adds fax numbers and notes in a denser two-column
-  list headed "not for patients". Starred first; with everything printed, **one
-  heading to a page**. (2) **Starred / preferred** — the document's **yellow-highlighted**
+  list headed "not for patients". Starred first. **Short on purpose** (Dominguez: "less pages,
+  ideally how it is on the document — cardiology should only be 2 pages"):
+  Cardiology is one page, the whole book about 22, headings running on rather
+  than a page each. (2) **Starred / preferred** — the document's **yellow-highlighted**
   entries (39) are `ReferralContact.preferred`, shown with an amber ★, first
   within a heading, a **Preferred only** button and a tick in the form.
   (3) **Several offices** — `ReferralOffice` (label, address, phone, fax; a

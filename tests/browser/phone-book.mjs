@@ -217,7 +217,6 @@ await step('a heading prints as a patient-ready list of everybody in it, starred
   if (/HNNJ|HNJH|NPI|Does not accept/i.test(paper)) throw new Error('staff notes are on the patient copy');
   if (!/Please call the office/.test(paper)) throw new Error('no line telling patients to call');
   if (!/Phone \(?\d{3}/.test(paper)) throw new Error('no phone numbers');
-  if ((await staff.locator('.category-page').count()) !== 0) throw new Error('a single heading broke onto a new page');
   const size = await staff.getByTestId('print-entry').first().locator('h3').evaluate((h) => getComputedStyle(h).fontSize);
   // The staff copy has them, and says it is not for patients.
   await staff.getByLabel(/Staff copy/).check();
@@ -233,22 +232,26 @@ await step('a heading prints as a patient-ready list of everybody in it, starred
   if (await staff.getByRole('button', { name: 'Print' }).isVisible()) throw new Error('Print shows on paper');
   if (await staff.getByRole('navigation').count()) throw new Error('a menu is on the page');
   await staff.emulateMedia({ media: 'screen' });
-  await staff.pdf({ path: `${OUT}/phone-book-cardiology.pdf`, format: 'Letter' });
+  const pdf = await staff.pdf({ path: `${OUT}/phone-book-cardiology.pdf`, format: 'Letter', preferCSSPageSize: true });
+  const pages = (pdf.toString('latin1').match(/\/Type\s*\/Page[^s]/g) ?? []).length;
+  if (pages < 1 || pages > 2) throw new Error(`Cardiology prints on ${pages} pages`);
   await staff.getByRole('link', { name: /Back to the phone book/ }).click();
   await staff.getByLabel('Listed under').first().waitFor();
   if ((await staff.getByLabel('Listed under').first().inputValue()) !== 'Cardiology') throw new Error('back lost the heading');
 });
 
-await step('printing everything gives each heading its own page; the starred alone prints together', async () => {
+await step('printing everything is a short run of pages, headings running on; the starred alone prints together', async () => {
   await staff.goto(`${BASE}/phone-book/print`, { waitUntil: 'networkidle' });
   await staff.getByTestId('print-entry').first().waitFor({ timeout: 10000 });
   if ((await staff.getByTestId('print-category').count()) < 40) throw new Error('headings missing');
+  const book = await staff.pdf({ format: 'Letter', preferCSSPageSize: true });
+  const bookPages = (book.toString('latin1').match(/\/Type\s*\/Page[^s]/g) ?? []).length;
+  if (bookPages > 30) throw new Error(`the whole book prints on ${bookPages} pages`);
   await staff.goto(`${BASE}/phone-book/print?starred=1`, { waitUntil: 'networkidle' });
   await staff.getByTestId('print-entry').first().waitFor({ timeout: 10000 });
   const entries = await staff.getByTestId('print-entry').count();
   const stars = await staff.getByTestId('print-entry').filter({ hasText: '★' }).count();
   if (entries !== stars || entries < 20) throw new Error(`${entries} printed, ${stars} starred`);
-  if ((await staff.locator('.category-page').count()) !== 0) throw new Error('the starred list breaks a page at every heading');
 });
 
 await step('the form asks for places, not patients, and there is no file upload', async () => {
