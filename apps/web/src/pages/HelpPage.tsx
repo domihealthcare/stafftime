@@ -770,8 +770,11 @@ const STAFF: Section[] = [
             </p>
             <p>
               <strong>Print</strong> prints what you are looking at — all the cardiologists, say, or
-              everything starred. Pick the heading first, then press Print. With no heading picked
-              it prints the whole book, one heading to a page.
+              everything starred. Pick the heading first, then press Print. The copy that comes up
+              is the one to hand to a patient: large print, names, addresses and phone numbers, with
+              no fax numbers and none of our notes. Tick <strong>Staff copy</strong> for the fax
+              numbers and notes — that one is not for patients. With no heading picked it prints the
+              whole book, one heading to a page.
             </p>
             <p>
               The book is kept by all of us. Press <strong>Edit</strong> on an entry to fix a number
