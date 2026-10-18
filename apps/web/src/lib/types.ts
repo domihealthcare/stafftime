@@ -1132,7 +1132,7 @@ export type RepFood = 'CATERING' | 'SELF_ORDER';
 /// Whether the practice wants a rep back.
 export type RepStatus = 'PREFERRED' | 'OK' | 'RESTRICTED' | 'DO_NOT_BOOK';
 
-/// A rep who books lunches, from Manage → Reps (managers and admins).
+/// A rep who books lunches, from Manage → Offices → Reps (managers and admins).
 export interface Rep {
   id: string;
   name: string;

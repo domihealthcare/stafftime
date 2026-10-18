@@ -1,6 +1,6 @@
 import { chromium } from 'playwright';
 import { mkdirSync } from 'node:fs';
-import { openMenu } from './nav.mjs';
+import { openMenu, goToManage } from './nav.mjs';
 
 const OUT = process.argv[2] || new URL('./shots/', import.meta.url).pathname;
 mkdirSync(OUT, { recursive: true });
@@ -29,8 +29,7 @@ const admin = await browser.newPage({ viewport: { width: 1280, height: 1200 } })
 admin.on('pageerror', (e) => errors.push(`pageerror: ${e.message}`));
 await signIn(admin, 'admin@domihealthcare.com');
 // Under Manage since September 2026, not on the top bar.
-await openMenu(admin, 'Manage');
-await admin.getByRole('link', { name: 'Onboarding & Offboarding', exact: true }).click();
+await goToManage(admin, 'Onboarding & Offboarding');
 
 await step('an admin starts with nothing on the go', async () => {
   await admin.getByText('Onboarding & Offboarding').waitFor({ timeout: 15000 });
@@ -156,8 +155,7 @@ const mgrCtx = await browser.newContext({ viewport: { width: 1280, height: 1000 
 const manager = await mgrCtx.newPage();
 manager.on('pageerror', (e) => errors.push(`pageerror: ${e.message}`));
 await signIn(manager, 'manager@domihealthcare.com');
-await openMenu(manager, 'Manage');
-await manager.getByRole('link', { name: 'Onboarding & Offboarding', exact: true }).click();
+await goToManage(manager, 'Onboarding & Offboarding');
 
 await step('a manager runs the checklist', async () => {
   await manager.locator('main').getByRole('button', { name: /Frankie/ }).first().click();

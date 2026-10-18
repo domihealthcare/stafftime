@@ -1091,6 +1091,26 @@ Beyond the phases, the parts worth knowing about before picking up work:
   single address/phone/fax become a first office; entries nobody had touched
   are dropped and re-read), `…040000_phone_book_data_v2`;
   `tests/browser/phone-book.mjs`. Worth carrying to the EMR module.
+- **Manage in five headings** (18 October 2026, Dominguez: "lets cut down the
+  manage options — job roles can be with staff, locations and kiosks together,
+  etc."): up to fifteen entries became five, each opening its first screen
+  with a **strip of tabs** to the others — **Dashboard**; **People** (Staff,
+  Job roles, Licenses, Onboarding & Offboarding, Provider productivity);
+  **Offices** (Locations, Kiosks, Closing checklists, Reps); **Surveys &
+  reading** (Surveys, Required reading); **Money** (Export, Reimbursements,
+  Vendor payments). The grouping was Claude's from Dominguez's two examples —
+  change it in one place, `lib/manage-sections.ts` (which screen sits under
+  which heading, and who may open it). Nothing else moved: every screen keeps
+  its address and its server-side permission, and a person sees only the tabs
+  they may open (a manager has no Staff tab; the strip is left off when only
+  one tab is left, so staff answering a survey see none). The header's Manage
+  menu and the phone's More → Manage show the five; the heading stays lit on
+  each of its tabs (`components/SectionTabs.tsx`, `NavMenu`'s `matches`). Help
+  has **Where is everything under Manage?**, and "Manage → X" in Help and the
+  screens now reads "Manage → People → X". Older entries above still say
+  "Manage → X": read them with this map. Browser suites reach a Manage screen
+  with `goToManage(page, 'Job roles')` in `tests/browser/nav.mjs`
+  (`SECTION_OF` is the same map); `tests/browser/manage-sections.mjs`.
 - **Turned down: "PTO about to be lost"** (9 October 2026, Dominguez): a
   reminder to use PTO before it fails to carry over was proposed and refused —
   not in the practice's interest. Do not propose it again.

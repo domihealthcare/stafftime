@@ -1,7 +1,7 @@
 import { chromium } from 'playwright';
 import { clockOut } from './clock-out.mjs';
 import { mkdirSync } from 'node:fs';
-import { goTo, openMenu, pressDownload } from './nav.mjs';
+import { goTo, openMenu, pressDownload, goToManage } from './nav.mjs';
 // Screenshots go wherever the caller says, or into ./shots (gitignored).
 const OUT = process.argv[2] || new URL('./shots/', import.meta.url).pathname;
 mkdirSync(OUT, { recursive: true });
@@ -41,9 +41,7 @@ await step('a punch to export', async () => {
   await page.getByRole('button', { name: 'Clock in' }).waitFor({ timeout: 20000 });
 });
 
-await openMenu(page, 'Manage');
-
-await page.getByRole('link', { name: /^Export/ }).first().click();
+await goToManage(page, 'Export');
 await page.getByText('Export timesheets').waitFor({ timeout: 15000 });
 
 await step('nothing has been exported yet', async () => {
@@ -134,8 +132,7 @@ await step('pressing it again makes the correction', async () => {
 });
 
 await step('the export screen warns that the correction has not reached payroll', async () => {
-  await openMenu(page, 'Manage');
-  await page.getByRole('link', { name: /^Export/ }).first().click();
+  await goToManage(page, 'Export');
   // The screen opens on last week again, so point it back at today.
   const today = new Date().toISOString().slice(0, 10);
   await page.getByRole('button', { name: 'Custom', exact: true }).click();

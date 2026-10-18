@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { NavLink, useLocation } from 'react-router-dom';
 import { useT } from '../lib/i18n';
 import { NavIcon } from './NavIcons';
-import type { NavMenuItem } from './NavMenu';
+import { itemIsActive, type NavMenuItem } from './NavMenu';
 
 const tabClass = ({ isActive }: { isActive: boolean }) =>
   `relative flex min-h-14 flex-1 flex-col items-center justify-center gap-0.5 px-1 text-[11px] font-medium focus:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-brand-600 ${
@@ -34,13 +34,11 @@ export function PhoneTabBar({
   const plainItems: NavMenuItem[] = [
     { to: '/timesheet', label: 'Timesheet' },
     { to: '/news', label: 'News' },
-    ...(manageItems.some((item) => item.to === '/surveys')
+    ...(manageItems.some((item) => itemIsActive(item, '/surveys'))
       ? []
       : [{ to: '/surveys', label: 'Surveys' }]),
   ];
-  const onMoreScreen = [...plainItems, ...manageItems].some(
-    (item) => pathname === item.to || pathname.startsWith(`${item.to}/`),
-  );
+  const onMoreScreen = [...plainItems, ...manageItems].some((item) => itemIsActive(item, pathname));
 
   // Picking a screen closes the sheet; so does a tap elsewhere, or Escape.
   useEffect(() => {
@@ -117,13 +115,11 @@ export function PhoneTabBar({
                       <NavLink
                         key={item.to}
                         to={item.to}
-                        className={({ isActive }) =>
-                          `block rounded-lg px-3 py-3 text-sm ${
-                            isActive
-                              ? 'bg-brand-50 text-brand-800'
-                              : 'text-slate-700 hover:bg-slate-100'
-                          }`
-                        }
+                        className={`block rounded-lg px-3 py-3 text-sm ${
+                          itemIsActive(item, pathname)
+                            ? 'bg-brand-50 text-brand-800'
+                            : 'text-slate-700 hover:bg-slate-100'
+                        }`}
                       >
                         {item.label}
                       </NavLink>

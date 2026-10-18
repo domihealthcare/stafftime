@@ -875,7 +875,7 @@ export function EventForm({
               <p className="mt-0.5">
                 {readNote.newRep} is not on the reps list yet —{' '}
                 <Link to="/reps" className="font-medium text-brand-700 underline">
-                  add them under Manage → Reps
+                  add them under Manage → Offices → Reps
                 </Link>
                 , then choose them here.
               </p>
@@ -932,7 +932,7 @@ export function EventForm({
             <p className="mt-1 text-xs text-slate-500">
               Not on the list?{' '}
               <Link to="/reps" className="font-medium text-brand-700 underline">
-                Add them under Manage → Reps
+                Add them under Manage → Offices → Reps
               </Link>
               .
             </p>

@@ -1227,6 +1227,44 @@ const PRODUCTIVITY: Section[] = [
 
 const MANAGERS: Section[] = [
   {
+    title: 'Finding your way',
+    topics: [
+      {
+        question: 'Where is everything under Manage?',
+        answer: (
+          <>
+            <p>
+              <Screen>Manage</Screen> has five headings, and each opens a strip of tabs across the
+              top of the screen to the others that belong with it:
+            </p>
+            <ul className="mt-2 list-disc space-y-1 pl-5">
+              <li>
+                <strong>Dashboard</strong> — the week at a glance, and what is waiting on you.
+              </li>
+              <li>
+                <strong>People</strong> — Staff (admins), Job roles, Licenses, Onboarding &amp;
+                Offboarding and Provider productivity.
+              </li>
+              <li>
+                <strong>Offices</strong> — Locations and Kiosks (admins), Closing checklists and
+                Reps.
+              </li>
+              <li>
+                <strong>Surveys &amp; reading</strong> — Surveys and Required reading.
+              </li>
+              <li>
+                <strong>Money</strong> — Export, Reimbursements and Vendor payments (admins).
+              </li>
+            </ul>
+            <p className="mt-2">
+              You see only the tabs you may open. On a phone, Manage is under <strong>More</strong>.
+            </p>
+          </>
+        ),
+      },
+    ],
+  },
+  {
     title: 'Hours and payroll',
     topics: [
       {
@@ -1321,9 +1359,9 @@ const MANAGERS: Section[] = [
         answer: (
           <>
             <p>
-              <Screen>Manage → Export</Screen> opens on the last pay period. Check the summary — it
-              says how many entries are flagged — then download the Excel file and upload it to
-              payroll. Save the columns you use as a report so next time is one tap.
+              <Screen>Manage → Money → Export</Screen> opens on the last pay period. Check the
+              summary — it says how many entries are flagged — then download the Excel file and
+              upload it to payroll. Save the columns you use as a report so next time is one tap.
             </p>
             <p>
               Before the file is made, <strong>Before you export</strong> lists anything worth a
@@ -1429,7 +1467,7 @@ const MANAGERS: Section[] = [
               role&rsquo;s colour; the key above the rota says which is which. Work from home is
               violet, open shifts amber, drafts a dashed outline. Two job roles that should look the
               same (Administrative and Manager, say) can be given the same colour under Manage
-              &rarr; Job roles.
+              &rarr; People &rarr; Job roles.
             </li>
             <li>
               <strong>Right-click</strong> somebody&rsquo;s name or shift — on the week, in the
@@ -1493,14 +1531,14 @@ const MANAGERS: Section[] = [
         question: 'A minimum per office and job role',
         answer: (
           <p>
-            <Screen>Manage → Job roles</Screen> → <strong>Minimum on each day</strong>: the fewest
-            people you want on in a job role at an office on a day it is open — say 2 Front Desk at
-            North Bergen. Blank means none. Where there is one, Too many off at once warns when time
-            off would leave fewer than that, and days the rota leaves short (drafts counted; working
-            from home and open shifts not) are listed on the Schedule banner and in the nightly
-            email for the next two weeks, and in <strong>Before you publish</strong>. A day counts
-            once anything is on the rota at that office, so an unbuilt week is left to the
-            &ldquo;not published yet&rdquo; reminder. It never stops anything.
+            <Screen>Manage → People → Job roles</Screen> → <strong>Minimum on each day</strong>: the
+            fewest people you want on in a job role at an office on a day it is open — say 2 Front
+            Desk at North Bergen. Blank means none. Where there is one, Too many off at once warns
+            when time off would leave fewer than that, and days the rota leaves short (drafts
+            counted; working from home and open shifts not) are listed on the Schedule banner and in
+            the nightly email for the next two weeks, and in <strong>Before you publish</strong>. A
+            day counts once anything is on the rota at that office, so an unbuilt week is left to
+            the &ldquo;not published yet&rdquo; reminder. It never stops anything.
           </p>
         ),
       },
@@ -1649,20 +1687,20 @@ const MANAGERS: Section[] = [
         answer: (
           <>
             <p>
-              Keep the reps under <Screen>Manage → Reps</Screen>: name, cell phone, company,
-              medication, whether they bring catering or the office orders, a status (Preferred, OK
-              to book, Has restrictions, Don&rsquo;t book) and notes. Then on{' '}
+              Keep the reps under <Screen>Manage → Offices → Reps</Screen>: name, cell phone,
+              company, medication, whether they bring catering or the office orders, a status
+              (Preferred, OK to book, Has restrictions, Don&rsquo;t book) and notes. Then on{' '}
               <Screen>Schedule → Calendar</Screen> choose <strong>+ Add → Rep lunch</strong>, pick
               the rep, the office and the time; it is named after the rep. A rep marked{' '}
               <strong>Don&rsquo;t book</strong> asks you to confirm first, and a rep with
               restrictions shows their notes as you pick them. Everyone sees the lunch with the rep,
               company, medication and food; the front desk also sees the rep&rsquo;s cell phone (a
-              job role setting, under Manage → Job roles); the status and notes are for managers
-              only. Staff at that office are told when a lunch is added, moved or cancelled, and{' '}
-              <strong>every evening at 6pm</strong> hear whether there is a rep lunch there the next
-              day — or that there is none, so they bring their own. That evening notice goes only
-              for days somebody is scheduled at the office and it is not closed. Correcting a
-              rep&rsquo;s name renames their lunches too.
+              job role setting, under Manage → People → Job roles); the status and notes are for
+              managers only. Staff at that office are told when a lunch is added, moved or
+              cancelled, and <strong>every evening at 6pm</strong> hear whether there is a rep lunch
+              there the next day — or that there is none, so they bring their own. That evening
+              notice goes only for days somebody is scheduled at the office and it is not closed.
+              Correcting a rep&rsquo;s name renames their lunches too.
             </p>
             <p>
               When the AI helpers are on, a new entry has{' '}
@@ -1881,11 +1919,11 @@ const MANAGERS: Section[] = [
         question: 'Shortcuts for one person (admins)',
         answer: (
           <p>
-            On somebody&rsquo;s profile (<Screen>Manage → Staff</Screen>, press their name),{' '}
-            <strong>For …</strong> opens their Schedule, Timesheet, Licenses, Onboarding &amp;
-            offboarding or Availability showing them only — <strong>Show everyone</strong> goes back
-            to the whole list — and <strong>+ Request time off for …</strong> opens the request form
-            already for them.
+            On somebody&rsquo;s profile (<Screen>Manage → People → Staff</Screen>, press their
+            name), <strong>For …</strong> opens their Schedule, Timesheet, Licenses, Onboarding
+            &amp; offboarding or Availability showing them only — <strong>Show everyone</strong>{' '}
+            goes back to the whole list — and <strong>+ Request time off for …</strong> opens the
+            request form already for them.
           </p>
         ),
       },
@@ -1893,10 +1931,10 @@ const MANAGERS: Section[] = [
         question: 'Writing down time off day by day (admins)',
         answer: (
           <p>
-            On somebody&rsquo;s profile (<Screen>Manage → Staff</Screen>, press their name), press{' '}
-            <strong>+ Record past time off</strong>: Sick, PTO or Unpaid, the days, and a comment if
-            you like. It counts as approved and Sick or PTO comes off their balance; nobody is
-            notified. The profile shows only what is left and what is coming up;{' '}
+            On somebody&rsquo;s profile (<Screen>Manage → People → Staff</Screen>, press their
+            name), press <strong>+ Record past time off</strong>: Sick, PTO or Unpaid, the days, and
+            a comment if you like. It counts as approved and Sick or PTO comes off their balance;
+            nobody is notified. The profile shows only what is left and what is coming up;{' '}
             <strong>See all</strong> opens everything on file, where a recorded day can be removed.
             Use it or the total under <strong>Adjust</strong> for the same days, not both — both
             would count them twice.
@@ -1907,13 +1945,13 @@ const MANAGERS: Section[] = [
         question: 'Starting or leaving',
         answer: (
           <p>
-            <Screen>Manage → Onboarding &amp; Offboarding</Screen> tracks each step for a new hire
-            or a leaver — who did it and when. The paperwork itself stays in the personnel file;
-            nothing is uploaded here. Providers see theirs in the account menu (Your onboarding).
-            Front Desk and MA staff have it in no menu, so you can tick their tasks for them — but
-            anybody new is reminded about the tasks that are theirs two days before each is due and
-            once if it goes overdue, and the reminder opens their checklist so they can tick those
-            off themselves. The nightly email still lists overdue tasks for managers.
+            <Screen>Manage → People → Onboarding &amp; Offboarding</Screen> tracks each step for a
+            new hire or a leaver — who did it and when. The paperwork itself stays in the personnel
+            file; nothing is uploaded here. Providers see theirs in the account menu (Your
+            onboarding). Front Desk and MA staff have it in no menu, so you can tick their tasks for
+            them — but anybody new is reminded about the tasks that are theirs two days before each
+            is due and once if it goes overdue, and the reminder opens their checklist so they can
+            tick those off themselves. The nightly email still lists overdue tasks for managers.
           </p>
         ),
       },
@@ -1922,10 +1960,10 @@ const MANAGERS: Section[] = [
         answer: (
           <ul>
             <li>
-              <Screen>Manage → Closing checklists</Screen> → <strong>Clock-outs</strong>: each
-              day&rsquo;s clock-outs, with what was missed, call counts under target, and anybody
-              who clocked out without the checklist. The same shows in the banner there and in the
-              nightly email.
+              <Screen>Manage → Offices → Closing checklists</Screen> → <strong>Clock-outs</strong>:
+              each day&rsquo;s clock-outs, with what was missed, call counts under target, and
+              anybody who clocked out without the checklist. The same shows in the banner there and
+              in the nightly email.
             </li>
             <li>
               <strong>Restock</strong>: supplies ticked as needed, per office. Asking again for the
@@ -1944,11 +1982,11 @@ const MANAGERS: Section[] = [
         question: 'License renewals',
         answer: (
           <p>
-            <Screen>Manage → Licenses</Screen> opens on what lapses in the next 60 days. Record the
-            expiry date only; press <strong>Renew</strong> to put in the new date. The person whose
-            license it is hears about it too — under the bell and by email, at 60 days, at 30 days
-            and once it lapses — so they can renew before you have to chase them. An old card with a
-            newer one recorded beside it is not mentioned.
+            <Screen>Manage → People → Licenses</Screen> opens on what lapses in the next 60 days.
+            Record the expiry date only; press <strong>Renew</strong> to put in the new date. The
+            person whose license it is hears about it too — under the bell and by email, at 60 days,
+            at 30 days and once it lapses — so they can renew before you have to chase them. An old
+            card with a newer one recorded beside it is not mentioned.
           </p>
         ),
       },
@@ -1957,8 +1995,8 @@ const MANAGERS: Section[] = [
         answer: (
           <>
             <p>
-              <Screen>Manage → Licenses → License types</Screen> is the practice&rsquo;s list: a
-              name, how often it is renewed, and for each job role whether it is{' '}
+              <Screen>Manage → People → Licenses → License types</Screen> is the practice&rsquo;s
+              list: a name, how often it is renewed, and for each job role whether it is{' '}
               <strong>required</strong>, <strong>optional</strong> or not needed. Add one with{' '}
               <strong>+ New license type</strong>; <strong>Edit</strong> changes it, and{' '}
               <strong>Remove</strong> stops asking for it (what is on file stays).
@@ -1979,8 +2017,8 @@ const MANAGERS: Section[] = [
         answer: (
           <>
             <p>
-              <Screen>Manage → Provider productivity</Screen> replaces the Patients &amp; Providers
-              sheet. Choose a provider (anybody in the Provider job role) then{' '}
+              <Screen>Manage → People → Provider productivity</Screen> replaces the Patients &amp;
+              Providers sheet. Choose a provider (anybody in the Provider job role) then{' '}
               <strong>+ New statement</strong>. For each interval (two weeks on the sheet) fill in
               the patients <em>expected</em> and the patients <em>seen</em>; the difference and what
               it is worth work themselves out as you type. A short period stays negative, as on the
@@ -2079,7 +2117,7 @@ const MANAGERS: Section[] = [
         answer: (
           <>
             <p>
-              <Screen>Manage → Required reading</Screen> →{' '}
+              <Screen>Manage → Surveys & reading → Required reading</Screen> →{' '}
               <strong>+ Ask people to read or do something</strong>. Pick{' '}
               <strong>something to read</strong> (they press “I’ve read it”) or{' '}
               <strong>something to do</strong> (“Done”), give it a title, and point it at a News
@@ -2105,10 +2143,10 @@ const MANAGERS: Section[] = [
         answer: (
           <>
             <p>
-              <Screen>Manage → Job roles</Screen>. Add, rename or remove roles, choose each one's
-              colour, and put people in them — somebody can be in several. A job role decides which
-              resources somebody sees, and nothing else: being in "Manager" gives no extra power in
-              the app.
+              <Screen>Manage → People → Job roles</Screen>. Add, rename or remove roles, choose each
+              one's colour, and put people in them — somebody can be in several. A job role decides
+              which resources somebody sees, and nothing else: being in "Manager" gives no extra
+              power in the app.
             </p>
             <p className="mt-2">
               A shift for somebody is always for one of <em>their</em> job roles: the Job role list
@@ -2118,10 +2156,11 @@ const MANAGERS: Section[] = [
             </p>
             <p className="mt-2">
               Somebody in several roles has a <strong>main job role</strong>, chosen by an admin
-              under <strong>Edit</strong> on <Screen>Manage → Staff</Screen>. It is listed first,
-              shift forms start on it, and in the Directory&rsquo;s <strong>In now</strong> they are
-              shown under it — unless the shift they clocked in to is for another role, when they
-              are shown under that one. Without a choice it is their first role in this list.
+              under <strong>Edit</strong> on <Screen>Manage → People → Staff</Screen>. It is listed
+              first, shift forms start on it, and in the Directory&rsquo;s <strong>In now</strong>{' '}
+              they are shown under it — unless the shift they clocked in to is for another role,
+              when they are shown under that one. Without a choice it is their first role in this
+              list.
             </p>
           </>
         ),
@@ -2145,8 +2184,9 @@ const MANAGERS: Section[] = [
           <>
             <p>
               Both were loaded from the practice&rsquo;s spreadsheets and are kept here now.{' '}
-              <Screen>Diagnostics</Screen> is for everyone; <Screen>Manage → Reimbursements</Screen>{' '}
-              (also on Resources) is for managers and admins only.
+              <Screen>Diagnostics</Screen> is for everyone;{' '}
+              <Screen>Manage → Money → Reimbursements</Screen> (also on Resources) is for managers
+              and admins only.
             </p>
             <p>
               On either, press <strong>Edit the board</strong>. On Diagnostics, click a cell to
@@ -2170,10 +2210,11 @@ const MANAGERS: Section[] = [
         question: 'Running a survey',
         answer: (
           <p>
-            On <Screen>Manage → Surveys</Screen>, write the questions (1–5 rating, pick one, or a
-            written answer) and choose who it is for: everyone, a job role or a location. You see
-            how many have answered, never who. Results appear once you close it, and only if at
-            least three people answered — ask a small group and there may be nothing to show.
+            On <Screen>Manage → Surveys & reading → Surveys</Screen>, write the questions (1–5
+            rating, pick one, or a written answer) and choose who it is for: everyone, a job role or
+            a location. You see how many have answered, never who. Results appear once you close it,
+            and only if at least three people answered — ask a small group and there may be nothing
+            to show.
           </p>
         ),
       },
@@ -2182,13 +2223,13 @@ const MANAGERS: Section[] = [
         answer: (
           <>
             <p>
-              On <Screen>Manage → Surveys</Screen>, under <strong>360 feedback</strong>, press{' '}
-              <strong>Start a 360</strong>. It starts with five 1–5 ratings (teamwork,
-              communication, reliability, helpfulness, professionalism) and two written answers,
-              each asked about a colleague and, in the first person, about yourself — change, add or
-              remove any before starting. Everybody here then is asked about everybody else, and
-              told under the bell. One can be open at a time; give it a closing day, or press{' '}
-              <strong>Close</strong>.
+              On <Screen>Manage → Surveys & reading → Surveys</Screen>, under{' '}
+              <strong>360 feedback</strong>, press <strong>Start a 360</strong>. It starts with five
+              1–5 ratings (teamwork, communication, reliability, helpfulness, professionalism) and
+              two written answers, each asked about a colleague and, in the first person, about
+              yourself — change, add or remove any before starting. Everybody here then is asked
+              about everybody else, and told under the bell. One can be open at a time; give it a
+              closing day, or press <strong>Close</strong>.
             </p>
             <p>
               Once closed, <strong>Reports</strong> lists everybody but you, with how many
@@ -2222,10 +2263,11 @@ const MANAGERS: Section[] = [
         question: 'The suggestion box',
         answer: (
           <p>
-            Notes from the suggestion box are under <Screen>Manage → Surveys</Screen>, at the
-            bottom, with what sort of note each is (an idea, something not working, a shout-out or a
-            question) and the day it arrived — never who sent it or when in the day. While any are
-            waiting, Home says how many, and the nightly email says so too, without the words. Press{' '}
+            Notes from the suggestion box are under{' '}
+            <Screen>Manage → Surveys & reading → Surveys</Screen>, at the bottom, with what sort of
+            note each is (an idea, something not working, a shout-out or a question) and the day it
+            arrived — never who sent it or when in the day. While any are waiting, Home says how
+            many, and the nightly email says so too, without the words. Press{' '}
             <strong>Mark as dealt with</strong> once you have, and it stops being chased.
           </p>
         ),
@@ -2259,13 +2301,13 @@ const MANAGERS: Section[] = [
         question: 'Vendor payments (admins)',
         answer: (
           <p>
-            <Screen>Manage → Vendor payments</Screen> takes the place of the payments spreadsheet.
-            Add each vendor or contractor once — what they are paid for and where checks go — then
-            each payment under them: what it is for, the amount, the invoice and check numbers, and
-            where it is: <strong>To pay</strong>, <strong>Sent</strong> (with the day) or{' '}
-            <strong>Completed</strong> (received and deposited, with the day). The top of the page
-            says how many are not completed yet. Untick <strong>Still paying them</strong> to put a
-            vendor away with their payments kept. Notes are for the paperwork — never a
+            <Screen>Manage → Money → Vendor payments</Screen> takes the place of the payments
+            spreadsheet. Add each vendor or contractor once — what they are paid for and where
+            checks go — then each payment under them: what it is for, the amount, the invoice and
+            check numbers, and where it is: <strong>To pay</strong>, <strong>Sent</strong> (with the
+            day) or <strong>Completed</strong> (received and deposited, with the day). The top of
+            the page says how many are not completed yet. Untick <strong>Still paying them</strong>{' '}
+            to put a vendor away with their payments kept. Notes are for the paperwork — never a
             patient&rsquo;s name; say how many readings, not whose.
           </p>
         ),
@@ -2275,10 +2317,10 @@ const MANAGERS: Section[] = [
         answer: (
           <ul>
             <li>
-              <Screen>Manage → Staff</Screen> — add people one at a time or several at once. Press{' '}
-              <strong>Edit</strong> on somebody&rsquo;s card to change their email, phone, access
-              (Employee, Manager or Admin), job roles and their main one, offices and ADP File #,
-              send their welcome email, or give them a temporary password or tablet PIN.
+              <Screen>Manage → People → Staff</Screen> — add people one at a time or several at
+              once. Press <strong>Edit</strong> on somebody&rsquo;s card to change their email,
+              phone, access (Employee, Manager or Admin), job roles and their main one, offices and
+              ADP File #, send their welcome email, or give them a temporary password or tablet PIN.
             </li>
             <li>
               Untick <strong>Clocks in</strong> for somebody who does not clock in — the providers.
@@ -2319,13 +2361,13 @@ const MANAGERS: Section[] = [
               and bring them back from the same place.
             </li>
             <li>
-              <Screen>Manage → Kiosks</Screen> — make a computer or tablet at the front desk the
-              office&rsquo;s time clock.
+              <Screen>Manage → Offices → Kiosks</Screen> — make a computer or tablet at the front
+              desk the office&rsquo;s time clock.
             </li>
             <li>
-              <Screen>Manage → Locations</Screen> — the office addresses, the geofence and office
-              network. Stand at the front desk and press <strong>Use my current location</strong> to
-              set the pin.
+              <Screen>Manage → Offices → Locations</Screen> — the office addresses, the geofence and
+              office network. Stand at the front desk and press{' '}
+              <strong>Use my current location</strong> to set the pin.
             </li>
           </ul>
         ),
@@ -2335,12 +2377,12 @@ const MANAGERS: Section[] = [
         answer: (
           <>
             <p>
-              <Screen>Manage → Staff → Add several people</Screen>. In Excel or Google Sheets,
-              select the list <strong>with its row of column names</strong>, copy, and paste it into
-              the box. It needs a name, email, office (North Bergen, West New York or Both) and hire
-              date; phone, job roles, access, birthday and ADP File # are optional. From a birthday
-              only the month and day are kept — the year is dropped before anything is sent. Any
-              other column — a social security number, say — is ignored and never kept.
+              <Screen>Manage → People → Staff → Add several people</Screen>. In Excel or Google
+              Sheets, select the list <strong>with its row of column names</strong>, copy, and paste
+              it into the box. It needs a name, email, office (North Bergen, West New York or Both)
+              and hire date; phone, job roles, access, birthday and ADP File # are optional. From a
+              birthday only the month and day are kept — the year is dropped before anything is
+              sent. Any other column — a social security number, say — is ignored and never kept.
             </p>
             <p>
               Every line is checked and shown first. Anything marked in red is fixed in the
@@ -2366,8 +2408,8 @@ const MANAGERS: Section[] = [
             </p>
             <ol className="list-decimal space-y-1 pl-5">
               <li>
-                On any device, open <Screen>Manage → Kiosks</Screen>, add one for that office and
-                note the pairing code. It works for 15 minutes.
+                On any device, open <Screen>Manage → Offices → Kiosks</Screen>, add one for that
+                office and note the pairing code. It works for 15 minutes.
               </li>
               <li>
                 On the front-desk computer, open <strong>{window.location.host}/kiosk</strong> in

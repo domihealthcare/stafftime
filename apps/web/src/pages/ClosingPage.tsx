@@ -35,7 +35,7 @@ const KIND_LABELS: Record<ClosingItemKind, string> = {
 };
 
 /**
- * Manage → Closing checklists: what Front Desk and MAs confirmed when they
+ * Manage → Offices → Closing checklists: what Front Desk and MAs confirmed when they
  * clocked out, the restock list their supply ticks built, and the lists
  * themselves.
  */

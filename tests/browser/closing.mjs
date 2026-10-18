@@ -1,6 +1,6 @@
 import { chromium } from 'playwright';
 import { mkdirSync } from 'node:fs';
-import { openMenu } from './nav.mjs';
+import { goTo, openMenu, goToManage } from './nav.mjs';
 import { openAccountMenu } from './account-menu.mjs';
 
 // Closing checklists: what Front Desk and MAs confirm when they clock out, the
@@ -90,8 +90,21 @@ await step('managers find them under Manage, with Closing checklists, not on the
   const bar = (await mgr.getByRole('navigation').getByRole('link').allInnerTexts()).map((t) => t.trim());
   if (bar.includes('Checklists') || bar.includes('Licenses')) throw new Error(`top bar: ${bar.join(', ')}`);
   const manage = await menuItems(mgr, 'Manage');
-  for (const name of ['Closing checklists', 'Onboarding & Offboarding', 'Licenses'])
+  for (const name of ['People', 'Offices'])
     if (!manage.includes(name)) throw new Error(`Manage lacks ${name}: ${manage.join(', ')}`);
+  // Each heading opens a strip of tabs to its screens.
+  const tabs = async (section) =>
+    (await mgr.getByRole('navigation', { name: `${section} screens` }).getByRole('link').allInnerTexts()).map((t) => t.trim());
+  await goToManage(mgr, 'Licenses');
+  const people = await tabs('People');
+  for (const name of ['Onboarding & Offboarding', 'Licenses', 'Job roles'])
+    if (!people.includes(name)) throw new Error(`People lacks ${name}: ${people.join(', ')}`);
+  if (people.includes('Staff')) throw new Error('a manager is offered Staff');
+  await goToManage(mgr, 'Closing checklists');
+  const offices = await tabs('Offices');
+  if (!offices.includes('Closing checklists')) throw new Error(`Offices lacks Closing checklists: ${offices.join(', ')}`);
+  // Leave Closing, so opening it later loads the records afresh.
+  await goTo(mgr, 'Home');
 });
 
 await step('a Provider sees their own in the account menu', async () => {
@@ -186,8 +199,7 @@ await step('staff cannot read the records, the restock list or the templates', a
 // ------------------------------------------------------------------ managers
 
 const openClosing = async () => {
-  await openMenu(mgr, 'Manage');
-  await mgr.getByRole('navigation').getByRole('link', { name: 'Closing checklists', exact: true }).click();
+  await goToManage(mgr, 'Closing checklists');
   await mgr.getByRole('heading', { name: 'Closing checklists' }).waitFor({ timeout: 15000 });
 };
 
