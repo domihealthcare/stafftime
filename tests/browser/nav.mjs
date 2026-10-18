@@ -76,3 +76,36 @@ export async function pressDownload(page, name) {
   const check = page.getByTestId('export-check');
   if (await check.count()) await check.getByRole('button', { name: 'Export anyway' }).click();
 }
+
+/// Manage groups its screens under five headings (October 2026, Dominguez:
+/// "cut down the manage options"): each heading opens its first screen, with
+/// a strip of tabs to the rest.
+export const SECTION_OF = {
+  Dashboard: 'Dashboard',
+  Staff: 'People',
+  'Job roles': 'People',
+  Licenses: 'People',
+  'Onboarding & Offboarding': 'People',
+  'Provider productivity': 'People',
+  Locations: 'Offices',
+  Kiosks: 'Offices',
+  'Closing checklists': 'Offices',
+  Reps: 'Offices',
+  Surveys: 'Surveys & reading',
+  'Required reading': 'Surveys & reading',
+  Export: 'Money',
+  Reimbursements: 'Money',
+  'Vendor payments': 'Money',
+};
+
+/// Opens one of Manage's screens the way a person does: Manage, its heading,
+/// then the tab (on a phone, Manage is inside More).
+export async function goToManage(page, label) {
+  const section = SECTION_OF[label];
+  if (!section) throw new Error(`${label} is not a Manage screen`);
+  await openMenu(page, 'Manage');
+  await page.getByRole('navigation').getByRole('link', { name: section, exact: true }).first().click();
+  if (section !== label) {
+    await page.getByRole('navigation', { name: `${section} screens` }).getByRole('link', { name: label, exact: true }).click();
+  }
+}

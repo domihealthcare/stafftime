@@ -335,8 +335,8 @@ function MainScreen({
 
       {staff.length === 0 && !error ? (
         <Alert tone="warning">
-          Nobody works at this office yet. An administrator adds people to it from Manage → Staff in
-          Domi Staff.
+          Nobody works at this office yet. An administrator adds people to it from Manage → People →
+          Staff in Domi Staff.
         </Alert>
       ) : (
         <button

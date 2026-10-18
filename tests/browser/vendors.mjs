@@ -1,6 +1,6 @@
 import { chromium } from 'playwright';
 import { mkdirSync } from 'node:fs';
-import { goTo, navLink } from './nav.mjs';
+import { goTo, navLink, goToManage } from './nav.mjs';
 
 const OUT = process.argv[2] || new URL('./shots/', import.meta.url).pathname;
 mkdirSync(OUT, { recursive: true });
@@ -36,7 +36,7 @@ async function signIn(email, viewport = { width: 1280, height: 1000 }) {
 const admin = await signIn('admin@domihealthcare.com');
 
 await step('an admin opens Vendor payments from Manage and adds a vendor', async () => {
-  await goTo(admin, 'Vendor payments');
+  await goToManage(admin, 'Vendor payments');
   await admin.getByRole('heading', { name: 'Vendor payments' }).waitFor({ timeout: 10000 });
   await admin.getByRole('button', { name: '+ Vendor' }).click();
   const dialog = admin.getByRole('dialog', { name: 'New vendor' });
@@ -109,8 +109,14 @@ await step('a completed payment with no day it was done is refused, in words', a
 await step('managers and staff have no vendor payments', async () => {
   for (const email of ['manager@domihealthcare.com', 'frontdesk@domihealthcare.com']) {
     const page = await signIn(email);
-    const link = await navLink(page, 'Vendor payments');
-    if (await link.isVisible().catch(() => false)) throw new Error(`${email} is offered it`);
+    // A manager has the Money section but not this tab; staff have no Manage.
+    if (email.startsWith('manager')) {
+      await goToManage(page, 'Export');
+      const tab = page.getByRole('navigation', { name: 'Money screens' }).getByRole('link', { name: 'Vendor payments' });
+      if (await tab.count()) throw new Error(`${email} is offered it`);
+    } else if (await (await navLink(page, 'Vendor payments')).isVisible().catch(() => false)) {
+      throw new Error(`${email} is offered it`);
+    }
     const status = await page.evaluate(async () => (await fetch('/api/vendors')).status);
     if (status !== 403) throw new Error(`${email} read it: ${status}`);
     await page.context().close();

@@ -149,7 +149,7 @@ export function GoLiveCard() {
             <p className="mt-2 font-medium">Next:</p>
             <ol className="mt-1 list-decimal space-y-0.5 pl-5 text-xs">
               <li>
-                Add your staff: <strong>Manage → Staff → Add several people</strong>.
+                Add your staff: <strong>Manage → People → Staff → Add several people</strong>.
               </li>
               <li>
                 Switch test mode off: in Vercel, set <code>APP_ENVIRONMENT</code> to{' '}

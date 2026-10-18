@@ -1,6 +1,6 @@
 import { chromium } from 'playwright';
 import { mkdirSync } from 'node:fs';
-import { goTo, openMenu } from './nav.mjs';
+import { goTo, openMenu, goToManage, SECTION_OF } from './nav.mjs';
 
 const OUT = process.argv[2] || new URL('./shots/', import.meta.url).pathname;
 mkdirSync(OUT, { recursive: true });
@@ -26,6 +26,8 @@ async function signIn(page, email) {
 }
 
 async function go(page, menu, link) {
+  // Manage's screens are under five headings now (October 2026).
+  if (menu === 'Manage' && SECTION_OF[link]) return goToManage(page, link);
   await openMenu(page, menu);
   await page.getByRole('navigation').getByRole('link', { name: link, exact: true }).click();
 }
@@ -304,7 +306,7 @@ await step('the admin header is a single row on a phone, with Manage under More'
   if (height > 24 + 28 + 44) throw new Error(`the header is ${height}px tall`);
 
   await openMenu(adm, 'Manage');
-  for (const name of ['Job roles', 'Export', 'Staff', 'Kiosks', 'Locations']) {
+  for (const name of ['People', 'Offices', 'Surveys & reading', 'Money']) {
     const link = adm.getByRole('link', { name, exact: true });
     await link.waitFor({ timeout: 5000 });
     const box = await link.boundingBox();

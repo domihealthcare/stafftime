@@ -1,7 +1,7 @@
 import { chromium } from 'playwright';
 import { clockOut } from './clock-out.mjs';
 import { mkdirSync } from 'node:fs';
-import { goTo, navLink, openMenu } from './nav.mjs';
+import { goTo, navLink, openMenu, goToManage, SECTION_OF } from './nav.mjs';
 // Screenshots go wherever the caller says, or into ./shots (gitignored).
 const OUT = process.argv[2] || new URL('./shots/', import.meta.url).pathname;
 mkdirSync(OUT, { recursive: true });
@@ -104,8 +104,7 @@ await step('a punch can be made and closed from a phone', async () => {
 });
 
 await step('a checklist can be started from a phone', async () => {
-  await openMenu(page, 'Manage');
-  await page.getByRole('navigation').getByRole('link', { name: 'Onboarding & Offboarding', exact: true }).click();
+  await goToManage(page, 'Onboarding & Offboarding');
   await page.getByRole('button', { name: 'Start a checklist' }).click();
   await assertNoSidewaysScroll(page, 'Start a checklist');
 
@@ -119,16 +118,18 @@ await page.screenshot({ path: `${OUT}/50-phone-clock.png`, fullPage: true });
 const UNDER_MORE = new Set([
   // Time off left Manage in October 2026: requests are on the Schedule,
   // balances on the Dashboard, the rules in Practice settings.
-  'Timesheet', 'News', 'Surveys', 'Required reading', 'Dashboard', 'Closing checklists',
-  'Onboarding & Offboarding', 'Licenses', 'Job roles', 'Reps', 'Export', 'Staff', 'Kiosks', 'Locations',
+  // Manage's fifteen screens are five headings now (October 2026).
+  'Timesheet', 'News', 'Dashboard', 'People', 'Offices', 'Surveys & reading', 'Money',
 ]);
 
-await step('the bottom bar reads Home, Schedule, Directory, Resources, More', async () => {
+await step('the bottom bar reads Home, Schedule, Directory, Phone book, Resources, More', async () => {
   // October 2026, Dominguez (option B): Time off is inside Schedule, News on
-  // Home, and Timesheet with the rest under More.
-  const links = await page.getByRole('navigation').getByRole('link').allInnerTexts();
+  // Home, and Timesheet with the rest under More. The phone book has a tab of
+  // its own (Dominguez: used many times a day, so easily accessible).
+  // The bottom bar only: a Manage screen has its own strip of tabs above it.
+  const links = await page.getByRole('navigation', { name: 'Main' }).getByRole('link').allInnerTexts();
   const order = links.map((text) => text.trim().split(/\s/)[0]).filter((word) => word);
-  if (order.join() !== 'Home,Schedule,Directory,Resources' || (await page.getByRole('button', { name: 'More', exact: true }).count()) !== 1)
+  if (order.join() !== 'Home,Schedule,Directory,Phone,Resources' || (await page.getByRole('button', { name: 'More', exact: true }).count()) !== 1)
     throw new Error(`the bottom bar reads ${order.join(', ')}`);
 });
 
@@ -167,7 +168,8 @@ for (const [label, screen] of [
   ['Locations', 'Locations'],
 ]) {
   await step(`the ${screen.toLowerCase()} screen fits a phone`, async () => {
-    await (await navLink(page, label)).click();
+    if (SECTION_OF[label]) await goToManage(page, label);
+    else await (await navLink(page, label)).click();
     await assertNoSidewaysScroll(page, screen);
   });
 }
@@ -232,8 +234,7 @@ await step('the month view fits a phone', async () => {
 await page.screenshot({ path: `${OUT}/53a-phone-month.png`, fullPage: true });
 
 await step('an open checklist fits a phone', async () => {
-  await openMenu(page, 'Manage');
-  await page.getByRole('navigation').getByRole('link', { name: 'Onboarding & Offboarding', exact: true }).click();
+  await goToManage(page, 'Onboarding & Offboarding');
   await page.getByRole('button', { name: /onboarding/ }).first().click();
   await page.getByText('Form I-9 completed and verified').first().waitFor({ timeout: 15000 });
   // A task row carries a title, a due date and two buttons on one line, which

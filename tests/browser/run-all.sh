@@ -128,7 +128,7 @@ reset_state() {
   # The phone book, back to the practice's Word document.
   psql -h "$PGHOST_LOCAL" -p "$PGPORT_LOCAL" -U "$PGUSER_LOCAL" -d "$PGDATABASE_LOCAL" -q \
     -c "delete from referral_contacts;" \
-    -f "$API_DIR/prisma/migrations/20261018020000_phone_book_data/migration.sql"
+    -f "$API_DIR/prisma/migrations/20261018040000_phone_book_data_v2/migration.sql"
   # The diagnostics and reimbursements boards, back to the practice's sheets.
   psql -h "$PGHOST_LOCAL" -p "$PGPORT_LOCAL" -U "$PGUSER_LOCAL" -d "$PGDATABASE_LOCAL" -q \
     -c "delete from diagnostic_tests; delete from diagnostic_plans; delete from diagnostic_reminders;" \
@@ -138,7 +138,7 @@ reset_state() {
 
 # The scheduler suite builds its rotas in February 2027 so that clearing them
 # cannot touch the shift the seed puts on today's date.
-SUITES="${SUITES:-drive refusals correct auth kiosk export locations pto pto-policy presets calendar scheduler checklists phone reset payroll credentials privacy race attention announcements resources directory availability surveys dashboard date-ranges help adp profile rota wfh overtime bell rota-print closing install golive staff staff-profile birthdays events closures recurring standing usual-week own-roles hand-entry removed-shift quick-add credential-types clinical care-plan wellness productivity schedule-phone clock-place extensions shift-notes shift-hours repeat-weeks news-social punch-reminders main-job-role auto-clock-out digest-topics practice-calendar cover patterns clashes approve-clean publish-check export-check license-reminders overtime-forecast onboarding-reminders missed-shifts availability-clash usual-hours minimums ask moving-holidays time-off-shifts ai-helpers ask-cover payroll-due not-signed-in tomorrow auto-onboarding review360 running-late corrections clean-time-off weekly required rota-cost on-call push spanish clocks-in event-replies time-off-feedback vendors diagnostics reimbursements schedule-reviews phone-book}"
+SUITES="${SUITES:-drive refusals correct auth kiosk export locations pto pto-policy presets calendar scheduler checklists phone reset payroll credentials privacy race attention announcements resources directory availability surveys dashboard date-ranges help adp profile rota wfh overtime bell rota-print closing install golive staff staff-profile birthdays events closures recurring standing usual-week own-roles hand-entry removed-shift quick-add credential-types clinical care-plan wellness productivity schedule-phone clock-place extensions shift-notes shift-hours repeat-weeks news-social punch-reminders main-job-role auto-clock-out digest-topics practice-calendar cover patterns clashes approve-clean publish-check export-check license-reminders overtime-forecast onboarding-reminders missed-shifts availability-clash usual-hours minimums ask moving-holidays time-off-shifts ai-helpers ask-cover payroll-due not-signed-in tomorrow auto-onboarding review360 running-late corrections clean-time-off weekly required rota-cost on-call push spanish clocks-in event-replies time-off-feedback vendors diagnostics reimbursements schedule-reviews phone-book manage-sections}"
 
 # Full output per suite goes to a file, and only the step lines are printed, so
 # a failure's detail is still there to read rather than truncated away.

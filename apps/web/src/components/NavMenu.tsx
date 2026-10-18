@@ -1,9 +1,18 @@
 import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { NavLink, useLocation } from 'react-router-dom';
+import { onPath } from '../lib/manage-sections';
 
 export interface NavMenuItem {
   to: string;
   label: string;
+  /// Other screens that belong under this entry (a section's other tabs), so
+  /// it stays highlighted on any of them.
+  matches?: string[];
+}
+
+/// Whether the person is on this entry's screen, or one of its other tabs.
+export function itemIsActive(item: NavMenuItem, pathname: string) {
+  return [item.to, ...(item.matches ?? [])].some((to) => onPath(to, pathname));
 }
 
 /**
@@ -30,7 +39,7 @@ export function NavMenu({
   const { pathname } = useLocation();
 
   // Highlighted when you are on one of its screens, like any other tab.
-  const isActive = items.some((item) => pathname === item.to || pathname.startsWith(`${item.to}/`));
+  const isActive = items.some((item) => itemIsActive(item, pathname));
 
   // Picking a screen closes it; so does anywhere else, or Escape.
   useEffect(() => setOpen(false), [pathname]);
@@ -76,11 +85,11 @@ export function NavMenu({
             <NavLink
               key={item.to}
               to={item.to}
-              className={({ isActive: here }) =>
-                `block rounded-lg px-3 py-2 text-sm ${
-                  here ? 'bg-brand-50 text-brand-800' : 'text-slate-700 hover:bg-slate-100'
-                }`
-              }
+              className={`block rounded-lg px-3 py-2 text-sm ${
+                itemIsActive(item, pathname)
+                  ? 'bg-brand-50 text-brand-800'
+                  : 'text-slate-700 hover:bg-slate-100'
+              }`}
             >
               {item.label}
             </NavLink>

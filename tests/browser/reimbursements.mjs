@@ -1,6 +1,6 @@
 import { chromium } from 'playwright';
 import { mkdirSync } from 'node:fs';
-import { goTo, navLink } from './nav.mjs';
+import { goTo, navLink, goToManage } from './nav.mjs';
 
 const OUT = process.argv[2] || new URL('./shots/', import.meta.url).pathname;
 mkdirSync(OUT, { recursive: true });
@@ -37,7 +37,7 @@ const board = manager.getByTestId('reimbursements-table');
 const row = (code) => board.getByRole('row').filter({ has: manager.getByRole('rowheader', { name: new RegExp(`^${code.replace(/[()]/g, "\\$&")}(?=\\s|$)`) }) });
 
 await step('a manager opens Reimbursements from Manage, loaded with the sheet', async () => {
-  await goTo(manager, 'Reimbursements');
+  await goToManage(manager, 'Reimbursements');
   await manager.getByRole('heading', { name: 'Reimbursements' }).waitFor({ timeout: 10000 });
   await board.getByRole('columnheader', { name: /^Medicare \('25\)/ }).waitFor({ timeout: 10000 });
   await board.getByRole('columnheader', { name: /^BCBS NJ.*Including Omnia & Anthem/ }).waitFor();

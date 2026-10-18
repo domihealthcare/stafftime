@@ -1,6 +1,6 @@
 import { chromium } from 'playwright';
 import { mkdirSync } from 'node:fs';
-import { openMenu } from './nav.mjs';
+import { openMenu, goToManage } from './nav.mjs';
 
 const OUT = process.argv[2] || new URL('./shots/', import.meta.url).pathname;
 mkdirSync(OUT, { recursive: true });
@@ -48,8 +48,7 @@ mgr.on('pageerror', (e) => errors.push(`manager pageerror: ${e.message}`));
 await signIn(mgr, 'manager@domihealthcare.com');
 
 await step('a manager finds the dashboard under Manage', async () => {
-  await openMenu(mgr, 'Manage');
-  await mgr.getByRole('navigation').getByRole('link', { name: 'Dashboard', exact: true }).click();
+  await goToManage(mgr, 'Dashboard');
   await mgr.getByRole('heading', { name: 'Dashboard' }).waitFor({ timeout: 15000 });
 });
 

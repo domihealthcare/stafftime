@@ -5,7 +5,9 @@ import { TIME_OFF_CHANGED, api } from '../lib/api';
 import { AccountMenu } from './AccountMenu';
 import { SloganStrip, Wordmark } from './Brand';
 import { NavIcon } from './NavIcons';
-import { NavMenu } from './NavMenu';
+import { NavMenu, type NavMenuItem } from './NavMenu';
+import { SectionTabs } from './SectionTabs';
+import { visibleSections } from '../lib/manage-sections';
 import { PhoneTabBar } from './PhoneTabBar';
 import { useIsPhone } from '../lib/use-is-phone';
 import { NotificationBell } from './NotificationBell';
@@ -21,29 +23,6 @@ const linkClasses = ({ isActive }: { isActive: boolean }) =>
       ? 'bg-brand-50 text-brand-800'
       : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'
   }`;
-
-/// Running the practice. Time off and Surveys joined it when their tabs went
-/// (October 2026, Dominguez): staff reach time off from Schedule and Home,
-/// and surveys from Home and News.
-const MANAGE = [
-  { to: '/dashboard', label: 'Dashboard' },
-  { to: '/surveys', label: 'Surveys' },
-  { to: '/required', label: 'Required reading' },
-  { to: '/closing', label: 'Closing checklists' },
-  { to: '/checklists', label: 'Onboarding & Offboarding' },
-  { to: '/credentials', label: 'Licenses' },
-  { to: '/job-roles', label: 'Job roles' },
-  { to: '/reps', label: 'Reps' },
-  { to: '/reimbursements', label: 'Reimbursements' },
-  { to: '/export', label: 'Export' },
-];
-const PRODUCTIVITY_MANAGE = { to: '/productivity', label: 'Provider productivity' };
-const ADMINISTER = [
-  { to: '/staff', label: 'Staff' },
-  { to: '/kiosks', label: 'Kiosks' },
-  { to: '/locations', label: 'Locations' },
-  { to: '/vendors', label: 'Vendor payments' },
-];
 
 const APP_NAME = 'Domi Staff';
 
@@ -86,14 +65,21 @@ export function Layout() {
   const isManager = useIsManager();
   const isAdmin = useIsAdmin();
   const { employee } = useSession();
-  // What Manage holds — on a laptop in the header, on a phone under More.
-  // Somebody's own licenses, onboarding and productivity are in the account
-  // menu, with the rest of what is theirs.
-  const manageItems = [
-    ...(isManager ? MANAGE : []),
-    ...(isAdmin ? ADMINISTER : []),
-    ...(employee?.canManageProductivity || isAdmin ? [PRODUCTIVITY_MANAGE] : []),
-  ];
+  // What Manage holds — on a laptop in the header, on a phone under More —
+  // grouped under five headings, each opening a screen with tabs to the rest
+  // (October 2026, Dominguez: "lets cut down the manage options"). Somebody's
+  // own licenses, onboarding and productivity are in the account menu, with
+  // the rest of what is theirs.
+  const sections = visibleSections({
+    isManager,
+    isAdmin,
+    canManageProductivity: Boolean(employee?.canManageProductivity),
+  });
+  const manageItems: NavMenuItem[] = sections.map((section) => ({
+    to: section.tabs[0].to,
+    label: section.label,
+    matches: section.tabs.map((tab) => tab.to),
+  }));
   const mainRef = useRef<HTMLElement>(null);
   useRouteAnnouncer(mainRef);
   const [pendingPto, setPendingPto] = useState(0);
@@ -170,8 +156,9 @@ export function Layout() {
           {/* The everyday screens are links of their own, each with its icon
               (October 2026, Dominguez — option B of three renderings): Home
               first, so a punch is never behind a menu, then Schedule (which
-              carries time off and its badge), Timesheet, Directory and
-              Resources. News is on Home. What only managers need sits under
+              carries time off and its badge), Timesheet, Directory,
+              Phone book (used many times a day, so a link of its own — October
+              2026, Dominguez) and Resources. News is on Home. What only managers need sits under
               Manage. On a phone the bottom bar takes over (PhoneTabBar).
 
               `relative` so a menu opens against the nav. */}
@@ -208,6 +195,10 @@ export function Layout() {
                 <NavIcon name="directory" />
                 {t('Directory')}
               </NavLink>
+              <NavLink to="/phone-book" className={linkClasses}>
+                <NavIcon name="phoneBook" />
+                {t('Phone book')}
+              </NavLink>
               <NavLink to="/resources" className={linkClasses}>
                 <NavIcon name="resources" />
                 {t('Resources')}
@@ -230,6 +221,7 @@ export function Layout() {
         tabIndex={-1}
         className="mx-auto max-w-6xl px-4 py-6 pb-24 focus:outline-none sm:pb-6"
       >
+        <SectionTabs sections={sections} />
         {/* Screens load when first opened; the header stays while they do. */}
         <Suspense
           fallback={

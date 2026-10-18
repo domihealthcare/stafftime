@@ -1,6 +1,6 @@
 import { chromium } from 'playwright';
 import { mkdirSync } from 'node:fs';
-import { goTo } from './nav.mjs';
+import { goTo, goToManage } from './nav.mjs';
 
 const OUT = process.argv[2] || new URL('./shots/', import.meta.url).pathname;
 mkdirSync(OUT, { recursive: true });
@@ -26,6 +26,7 @@ async function signIn(page, email) {
 }
 
 async function openSurveys(page) {
+  // Managers reach it under Manage → Surveys & reading, staff under More or Home.
   await goTo(page, 'Surveys');
   await page.getByRole('heading', { name: 'Surveys and feedback' }).waitFor({ timeout: 15000 });
 }

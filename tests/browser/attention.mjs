@@ -8,7 +8,7 @@
 import { chromium } from 'playwright';
 import { mkdirSync } from 'node:fs';
 import { accountMenuHas, pickFromAccountMenu } from './account-menu.mjs';
-import { goTo, openMenu } from './nav.mjs';
+import { goTo, openMenu, goToManage } from './nav.mjs';
 
 const OUT = process.argv[2] || new URL('./shots/', import.meta.url).pathname;
 mkdirSync(OUT, { recursive: true });
@@ -99,8 +99,7 @@ await step('marking somebody as left raises it on the schedule', async () => {
   // containing Frankie Front-Desk" matched a wrapper holding every card, and
   // the first attempt at this confidently marked the wrong person as having
   // left. On a screen with one card per person that is not a risk worth taking.
-  await openMenu(admin, 'Manage');
-  await admin.getByRole('link', { name: /^Staff/ }).first().click();
+  await goToManage(admin, 'Staff');
   const card = admin.getByTestId('staff-frontdesk@domihealthcare.com');
   await card.waitFor({ timeout: 15000 });
 
@@ -138,8 +137,7 @@ await admin.screenshot({ path: `${OUT}/72-attention-banner.png`, fullPage: true 
 await step('the banner goes to the screen where it would be fixed', async () => {
   // Not one banner listing everything everywhere. The leaver's shifts belong on
   // the schedule; the kiosks page has nothing to say about them.
-  await openMenu(admin, 'Manage');
-  await admin.getByRole('link', { name: /^Kiosks/ }).first().click();
+  await goToManage(admin, 'Kiosks');
   await admin.getByText(/Kiosks/).first().waitFor({ timeout: 15000 });
   await admin.waitForTimeout(1000);
 

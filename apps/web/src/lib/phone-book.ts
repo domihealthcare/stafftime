@@ -1,37 +1,49 @@
 import type { ReferralContact } from './types';
 
+/// What the page and the printout both ask of the book: which words, which
+/// heading, and whether only the starred.
+export interface BookFilter {
+  query: string;
+  category: string;
+  preferredOnly: boolean;
+}
+
 /// The phone book's search and layout rules (October 2026), kept out of the
 /// screen so they can be read in one place.
-
-const FIELDS = [
-  'category',
-  'name',
-  'phone',
-  'fax',
-  'address',
-  'email',
-  'website',
-  'notes',
-] as const;
 
 const digitsOf = (text: string) => text.replace(/\D/g, '');
 
 /// Everything searchable about an entry: its words, and its numbers with the
 /// punctuation taken out — so "2018543" finds (201) 854-3…, however it was
-/// written in the book.
+/// written in the book. Every office counts, not just the first.
 function haystack(contact: ReferralContact) {
-  const words = FIELDS.map((field) => contact[field] ?? '')
+  const words = [
+    contact.category,
+    contact.name,
+    contact.email,
+    contact.website,
+    contact.notes,
+    ...contact.offices.flatMap((office) => [
+      office.label,
+      office.address,
+      office.phone,
+      office.fax,
+    ]),
+  ]
+    .map((part) => part ?? '')
     .join('\n')
     .toLowerCase();
   return { words, digits: digitsOf(words) };
 }
 
-/// Entries matching every word typed (any order, any field), in book order.
-/// A word of three digits or more also matches a number written any way.
-export function searchContacts(contacts: ReferralContact[], query: string, category = '') {
-  const tokens = query.toLowerCase().split(/\s+/).filter(Boolean);
+/// Entries matching every word typed (any order, any field), the starred
+/// only if asked. A word of three digits or more also matches a number
+/// written any way.
+export function searchContacts(contacts: ReferralContact[], filter: BookFilter) {
+  const tokens = filter.query.toLowerCase().split(/\s+/).filter(Boolean);
   return contacts.filter((contact) => {
-    if (category && contact.category !== category) return false;
+    if (filter.category && contact.category !== filter.category) return false;
+    if (filter.preferredOnly && !contact.preferred) return false;
     if (tokens.length === 0) return true;
     const { words, digits } = haystack(contact);
     return tokens.every((token) => {
@@ -59,8 +71,11 @@ export function groupByCategory(contacts: ReferralContact[]) {
   }
   return categoriesOf(contacts).map((category) => ({
     category,
-    contacts: (groups.get(category) ?? []).sort((a, b) =>
-      a.name.localeCompare(b.name, 'en', { sensitivity: 'base' }),
+    // Starred first, then A to Z.
+    contacts: (groups.get(category) ?? []).sort(
+      (a, b) =>
+        Number(b.preferred) - Number(a.preferred) ||
+        a.name.localeCompare(b.name, 'en', { sensitivity: 'base' }),
     ),
   }));
 }
@@ -70,6 +85,39 @@ export function groupByCategory(contacts: ReferralContact[]) {
 function isFaxNumber(before: string) {
   const fax = /\bf(?:ax)?\b([^\d\n]{0,32})$/i.exec(before);
   return Boolean(fax) && !/phone|\bph\b|call|\btel\b|cell/i.test(fax?.[1] ?? '');
+}
+
+/// Offices as they are printed: neighbours with no name of their own and the
+/// same phone and fax (eight addresses of one practice, one number) are one
+/// line of addresses with the numbers once, instead of eight copies.
+export function printedOffices(offices: ReferralContact['offices']) {
+  const lines: {
+    label: string | null;
+    addresses: string[];
+    phone: string | null;
+    fax: string | null;
+  }[] = [];
+  for (const office of offices) {
+    const last = lines[lines.length - 1];
+    if (
+      last &&
+      !office.label &&
+      !last.label &&
+      office.address &&
+      last.phone === office.phone &&
+      last.fax === office.fax
+    ) {
+      last.addresses.push(office.address);
+    } else {
+      lines.push({
+        label: office.label,
+        addresses: office.address ? [office.address] : [],
+        phone: office.phone,
+        fax: office.fax,
+      });
+    }
+  }
+  return lines;
 }
 
 export type Piece =

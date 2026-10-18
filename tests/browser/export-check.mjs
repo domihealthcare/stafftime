@@ -1,7 +1,7 @@
 import { chromium } from 'playwright';
 import { execFileSync } from 'node:child_process';
 import { mkdirSync } from 'node:fs';
-import { openMenu } from './nav.mjs';
+import { openMenu, goToManage } from './nav.mjs';
 
 const OUT = process.argv[2] || new URL('./shots/', import.meta.url).pathname;
 mkdirSync(OUT, { recursive: true });
@@ -105,8 +105,7 @@ await step('set-up: a week with something in every section', async () => {
 
 async function openPeriod(from, to) {
   await mgr.goto(`${BASE}/`, { waitUntil: 'networkidle' });
-  await openMenu(mgr, 'Manage');
-  await mgr.getByRole('link', { name: 'Export' }).click();
+  await goToManage(mgr, 'Export');
   await mgr.getByText('Export timesheets').waitFor({ timeout: 10000 });
   await mgr.getByRole('button', { name: 'Custom', exact: true }).click();
   await mgr.getByLabel('From').fill(from);

@@ -1,7 +1,7 @@
 import { Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { AuthUser } from '../common/auth/auth-user';
 import { PrismaService } from '../prisma/prisma.service';
-import { ContactInput } from './dto/contact.dto';
+import { ContactInput, OfficeInput } from './dto/contact.dto';
 
 /**
  * The referral phone book (October 2026, Dominguez: "a searchable phone book
@@ -21,12 +21,18 @@ export class PhoneBookService {
   list() {
     return this.prisma.referralContact.findMany({
       orderBy: [{ category: 'asc' }, { name: 'asc' }],
+      include: OFFICES,
     });
   }
 
   async create(dto: ContactInput, actor: AuthUser) {
     const contact = await this.prisma.referralContact.create({
-      data: { ...contactFields(dto), updatedById: actor.id },
+      data: {
+        ...contactFields(dto),
+        updatedById: actor.id,
+        offices: { create: officeRows(dto.offices) },
+      },
+      include: OFFICES,
     });
     this.logger.log(`Phone book entry ${contact.id} added by ${actor.id}`);
     return contact;
@@ -34,10 +40,19 @@ export class PhoneBookService {
 
   async update(id: string, dto: ContactInput, actor: AuthUser) {
     await this.require(id);
-    const contact = await this.prisma.referralContact.update({
-      where: { id },
-      data: { ...contactFields(dto), updatedById: actor.id },
-    });
+    // The offices are sent whole, so they are replaced whole, in one step.
+    const [, contact] = await this.prisma.$transaction([
+      this.prisma.referralOffice.deleteMany({ where: { contactId: id } }),
+      this.prisma.referralContact.update({
+        where: { id },
+        data: {
+          ...contactFields(dto),
+          updatedById: actor.id,
+          offices: { create: officeRows(dto.offices) },
+        },
+        include: OFFICES,
+      }),
+    ]);
     this.logger.log(`Phone book entry ${id} changed by ${actor.id}`);
     return contact;
   }
@@ -58,17 +73,34 @@ export class PhoneBookService {
   }
 }
 
+const OFFICES = { offices: { orderBy: { sortOrder: 'asc' as const } } };
+
 /// What is saved: text trimmed, and anything left empty is kept as nothing.
 export function contactFields(dto: ContactInput) {
-  const optional = (value?: string | null) => value?.trim() || null;
   return {
     category: dto.category.trim(),
     name: dto.name.trim(),
-    phone: optional(dto.phone),
-    fax: optional(dto.fax),
-    address: optional(dto.address),
-    email: optional(dto.email),
-    website: optional(dto.website),
-    notes: optional(dto.notes),
+    preferred: dto.preferred ?? false,
+    email: tidy(dto.email),
+    website: tidy(dto.website),
+    notes: tidy(dto.notes),
   };
+}
+
+/// An entry's offices, in the order written, leaving out any with nothing in
+/// them (a blank row left on the form).
+export function officeRows(offices: OfficeInput[] = []) {
+  return offices
+    .map((office) => ({
+      label: tidy(office.label),
+      address: tidy(office.address),
+      phone: tidy(office.phone),
+      fax: tidy(office.fax),
+    }))
+    .filter((office) => office.label || office.address || office.phone || office.fax)
+    .map((office, sortOrder) => ({ ...office, sortOrder }));
+}
+
+function tidy(value?: string | null) {
+  return value?.trim() || null;
 }

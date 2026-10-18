@@ -1,7 +1,7 @@
 import { chromium } from 'playwright';
 import { execFileSync } from 'node:child_process';
 import { mkdirSync } from 'node:fs';
-import { goTo } from './nav.mjs';
+import { goTo, goToManage } from './nav.mjs';
 
 const OUT = process.argv[2] || new URL('./shots/', import.meta.url).pathname;
 mkdirSync(OUT, { recursive: true });
@@ -96,7 +96,7 @@ await step('nothing is flagged before a minimum is set', async () => {
 });
 
 await step('a manager sets 3 Front Desk at North Bergen on Job roles', async () => {
-  await goTo(mgr, 'Job roles');
+  await goToManage(mgr, 'Job roles');
   const card = mgr.getByTestId('staffing-minimums');
   await card.waitFor({ timeout: 15000 });
   await card.getByLabel('Minimum Front Desk at North Bergen').fill('3');

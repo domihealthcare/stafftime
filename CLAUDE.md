@@ -1046,27 +1046,71 @@ Beyond the phases, the parts worth knowing about before picking up work:
   `tests/browser/vendors.mjs`.
 - **Phone book for referrals** (18 October 2026, Dominguez: "a searchable
   phone book for referrals for staff to use and edit" — from the practice's
-  PHONE_BOOK.docx): `/phone-book`, on Home's Quick card and Resources →
-  Reference, for **everybody signed in to read, add and change**, and **managers and
-  admins only to remove** (Dominguez, 18 October 2026). Labs, Holy
+  PHONE_BOOK.docx): `/phone-book`, for **everybody signed in to read, add and
+  change**, and **managers and admins only to remove** (Dominguez). Labs, Holy
   Name services, home care, DME, hospitals, pharmacies, imaging and every
-  specialty as a **Listed under** heading, 318 entries loaded by migration
-  `20261018020000_phone_book_data` from the document: each entry's first
-  phone, fax, address, email and website in their own fields and everything
-  else **as the book wrote it** in the notes (other offices and numbers,
-  insurances taken, what to fax over) — every number and email in the
-  document was checked present. The split into entries was made by a
-  script from the document's layout, so **a few entries are untidy** (the
-  book's own formatting was inconsistent): staff fix them with Edit. Search
-  takes any words in any field, and a number however it is written; a
-  phone number in the book is a call link, a fax number is not. Entries are
-  about **places only — never a patient** (the form says so; the schema
-  guard pins `ReferralContact`). Lab account numbers and NPIs in notes are
-  the practice's business identifiers, not a person's. The page body is
-  English; only its two Resources/Home labels have Spanish.
-  `src/phone-book/`, `pages/PhoneBookPage.tsx`, `lib/phone-book.ts`,
-  migrations `20261018010000_phone_book` and `20261018020000_phone_book_data`;
+  specialty as a **Listed under** heading, 315 entries loaded by migrations
+  `20261018020000_phone_book_data` (first read) and
+  `20261018040000_phone_book_data_v2` (re-read with offices and stars; adds
+  only entries not already there, so staff's edits are kept) from the
+  document — every number and email in it was checked present. The split into
+  entries was made by a script from the document's layout, so **a few entries
+  are untidy**: staff fix them with Edit. **Same day, Dominguez's four asks**:
+  (1) **printable** — **Print** on the page opens `/phone-book/print`
+  (outside the layout, like the printed rota) with the heading, search or
+  "preferred only" being looked at. **Made for patients** (Dominguez: "easier
+  to read, as this will be distributed to patients"): the default **patient
+  copy** is large, easy type in two columns, each place's name, its addresses and bold phone
+  number, a line asking them to call and check their
+  insurance, and a ★ legend — **no fax numbers and none of the notes**, which
+  are the staff's (what to fax over, account numbers, an account manager's
+  cell). A **Staff copy** tick adds fax numbers and notes in a denser two-column
+  list headed "not for patients". Starred first. **Short on purpose** (Dominguez: "less pages,
+  ideally how it is on the document — cardiology should only be 2 pages"):
+  Cardiology is one page, the whole book about 22, headings running on rather
+  than a page each. (2) **Starred / preferred** — the document's **yellow-highlighted**
+  entries (39) are `ReferralContact.preferred`, shown with an amber ★, first
+  within a heading, a **Preferred only** button and a tick in the form.
+  (3) **Several offices** — `ReferralOffice` (label, address, phone, fax; a
+  box may hold several numbers): the document's multi-address entries
+  (Apex Heart's eight, LabCorp's five patient sites) are one entry with an
+  office each; **+ Add another address** in the form. (4) **Easy to reach** —
+  its own tab in the laptop header and on the phone's bottom bar (a sixth
+  tab), still on Home's Quick card and Resources; the search is focused on a
+  laptop (not a phone, where the keyboard would cover the list), stays in
+  view while scrolling, and lives in the address (`?q=&category=&starred=`)
+  so Back returns to it. Search takes any words in any field and every
+  office, and a number however it is written; a phone number is a call link,
+  a fax number is not. Entries are about **places only — never a patient**
+  (the form says so; the schema guard pins both tables). Lab account numbers
+  and NPIs in notes are the practice's business identifiers, not a person's.
+  The page body is English; only its labels on Home, the header and
+  Resources have Spanish. `src/phone-book/`, `pages/PhoneBookPage.tsx`,
+  `pages/PhoneBookPrintPage.tsx`, `lib/phone-book.ts`, migrations
+  `20261018010000_phone_book`, `…030000_phone_book_offices` (the old
+  single address/phone/fax become a first office; entries nobody had touched
+  are dropped and re-read), `…040000_phone_book_data_v2`;
   `tests/browser/phone-book.mjs`. Worth carrying to the EMR module.
+- **Manage in five headings** (18 October 2026, Dominguez: "lets cut down the
+  manage options — job roles can be with staff, locations and kiosks together,
+  etc."): up to fifteen entries became five, each opening its first screen
+  with a **strip of tabs** to the others — **Dashboard**; **People** (Staff,
+  Job roles, Licenses, Onboarding & Offboarding, Provider productivity);
+  **Offices** (Locations, Kiosks, Closing checklists, Reps); **Surveys &
+  reading** (Surveys, Required reading); **Money** (Export, Reimbursements,
+  Vendor payments). The grouping was Claude's from Dominguez's two examples —
+  change it in one place, `lib/manage-sections.ts` (which screen sits under
+  which heading, and who may open it). Nothing else moved: every screen keeps
+  its address and its server-side permission, and a person sees only the tabs
+  they may open (a manager has no Staff tab; the strip is left off when only
+  one tab is left, so staff answering a survey see none). The header's Manage
+  menu and the phone's More → Manage show the five; the heading stays lit on
+  each of its tabs (`components/SectionTabs.tsx`, `NavMenu`'s `matches`). Help
+  has **Where is everything under Manage?**, and "Manage → X" in Help and the
+  screens now reads "Manage → People → X". Older entries above still say
+  "Manage → X": read them with this map. Browser suites reach a Manage screen
+  with `goToManage(page, 'Job roles')` in `tests/browser/nav.mjs`
+  (`SECTION_OF` is the same map); `tests/browser/manage-sections.mjs`.
 - **Turned down: "PTO about to be lost"** (9 October 2026, Dominguez): a
   reminder to use PTO before it fails to carry over was proposed and refused —
   not in the practice's interest. Do not propose it again.
