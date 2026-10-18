@@ -123,12 +123,13 @@ const UNDER_MORE = new Set([
   'Onboarding & Offboarding', 'Licenses', 'Job roles', 'Reps', 'Export', 'Staff', 'Kiosks', 'Locations',
 ]);
 
-await step('the bottom bar reads Home, Schedule, Directory, Resources, More', async () => {
+await step('the bottom bar reads Home, Schedule, Directory, Phone book, Resources, More', async () => {
   // October 2026, Dominguez (option B): Time off is inside Schedule, News on
-  // Home, and Timesheet with the rest under More.
+  // Home, and Timesheet with the rest under More. The phone book has a tab of
+  // its own (Dominguez: used many times a day, so easily accessible).
   const links = await page.getByRole('navigation').getByRole('link').allInnerTexts();
   const order = links.map((text) => text.trim().split(/\s/)[0]).filter((word) => word);
-  if (order.join() !== 'Home,Schedule,Directory,Resources' || (await page.getByRole('button', { name: 'More', exact: true }).count()) !== 1)
+  if (order.join() !== 'Home,Schedule,Directory,Phone,Resources' || (await page.getByRole('button', { name: 'More', exact: true }).count()) !== 1)
     throw new Error(`the bottom bar reads ${order.join(', ')}`);
 });
 

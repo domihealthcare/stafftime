@@ -152,6 +152,10 @@ export function PhoneTabBar({
           <NavIcon name="directory" size="md" />
           {t('Directory')}
         </NavLink>
+        <NavLink to="/phone-book" className={tabClass}>
+          <NavIcon name="phoneBook" size="md" />
+          {t('Phone book')}
+        </NavLink>
         <NavLink to="/resources" className={tabClass}>
           <NavIcon name="resources" size="md" />
           {t('Resources')}

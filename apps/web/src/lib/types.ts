@@ -2089,28 +2089,42 @@ export interface ReimbursementsBoard {
 }
 
 /// The referral phone book (October 2026), kept by all staff.
+export interface ReferralOffice {
+  id: string;
+  label: string | null;
+  address: string | null;
+  phone: string | null;
+  fax: string | null;
+}
+
 export interface ReferralContact {
   id: string;
   category: string;
   name: string;
-  phone: string | null;
-  fax: string | null;
-  address: string | null;
+  /// Starred: one of the practice's preferred places.
+  preferred: boolean;
   email: string | null;
   website: string | null;
   notes: string | null;
+  offices: ReferralOffice[];
   updatedAt: string;
+}
+
+export interface ReferralOfficeInput {
+  label?: string | null;
+  address?: string | null;
+  phone?: string | null;
+  fax?: string | null;
 }
 
 export interface ReferralContactInput {
   category: string;
   name: string;
-  phone?: string | null;
-  fax?: string | null;
-  address?: string | null;
+  preferred?: boolean;
   email?: string | null;
   website?: string | null;
   notes?: string | null;
+  offices?: ReferralOfficeInput[];
 }
 
 /// Vendor payments (October 2026), admins only.

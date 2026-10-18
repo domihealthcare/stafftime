@@ -128,7 +128,7 @@ reset_state() {
   # The phone book, back to the practice's Word document.
   psql -h "$PGHOST_LOCAL" -p "$PGPORT_LOCAL" -U "$PGUSER_LOCAL" -d "$PGDATABASE_LOCAL" -q \
     -c "delete from referral_contacts;" \
-    -f "$API_DIR/prisma/migrations/20261018020000_phone_book_data/migration.sql"
+    -f "$API_DIR/prisma/migrations/20261018040000_phone_book_data_v2/migration.sql"
   # The diagnostics and reimbursements boards, back to the practice's sheets.
   psql -h "$PGHOST_LOCAL" -p "$PGPORT_LOCAL" -U "$PGUSER_LOCAL" -d "$PGDATABASE_LOCAL" -q \
     -c "delete from diagnostic_tests; delete from diagnostic_plans; delete from diagnostic_reminders;" \

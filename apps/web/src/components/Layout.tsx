@@ -170,8 +170,9 @@ export function Layout() {
           {/* The everyday screens are links of their own, each with its icon
               (October 2026, Dominguez — option B of three renderings): Home
               first, so a punch is never behind a menu, then Schedule (which
-              carries time off and its badge), Timesheet, Directory and
-              Resources. News is on Home. What only managers need sits under
+              carries time off and its badge), Timesheet, Directory,
+              Phone book (used many times a day, so a link of its own — October
+              2026, Dominguez) and Resources. News is on Home. What only managers need sits under
               Manage. On a phone the bottom bar takes over (PhoneTabBar).
 
               `relative` so a menu opens against the nav. */}
@@ -207,6 +208,10 @@ export function Layout() {
               <NavLink to="/directory" className={linkClasses}>
                 <NavIcon name="directory" />
                 {t('Directory')}
+              </NavLink>
+              <NavLink to="/phone-book" className={linkClasses}>
+                <NavIcon name="phoneBook" />
+                {t('Phone book')}
               </NavLink>
               <NavLink to="/resources" className={linkClasses}>
                 <NavIcon name="resources" />

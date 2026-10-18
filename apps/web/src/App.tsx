@@ -38,6 +38,9 @@ const ReimbursementsPage = lazy(() =>
 const PhoneBookPage = lazy(() =>
   import('./pages/PhoneBookPage').then((m) => ({ default: m.PhoneBookPage })),
 );
+const PhoneBookPrintPage = lazy(() =>
+  import('./pages/PhoneBookPrintPage').then((m) => ({ default: m.PhoneBookPrintPage })),
+);
 const VendorsPage = lazy(() =>
   import('./pages/VendorsPage').then((m) => ({ default: m.VendorsPage })),
 );
@@ -204,6 +207,7 @@ function Routed() {
         {/* Paper has no header or menus, so the printable rota sits outside the layout. */}
         <Route path="schedule/print" element={<RotaPrintPage />} />
         <Route path="schedule/calendar/print" element={<CalendarPrintPage />} />
+        <Route path="phone-book/print" element={<PhoneBookPrintPage />} />
         <Route element={<Layout />}>
           <Route index element={<ClockPage />} />
           <Route path="news" element={<NewsPage />} />

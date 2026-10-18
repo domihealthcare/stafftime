@@ -4560,29 +4560,55 @@ imported — the sheet stays the archive; the portal is "going forward".
 
 ## The referral phone book (October 2026)
 
-`/phone-book` (Home → Quick, Resources → Reference): the practice's list of
-where patients are sent — labs, hospitals, imaging, home care, DME, pharmacies
-and every specialty — in `ReferralContact` (`referral_contacts`): `category`
-("Listed under"), `name`, then the **first** `phone`, `fax`, `address`,
-`email`, `website`, and `notes` for everything else as written. Read, added to and
+`/phone-book` (a tab in the header and on the phone's bottom bar; Home → Quick;
+Resources → Reference): the practice's list of where patients are sent —
+labs, hospitals, imaging, home care, DME, pharmacies and every specialty.
+`ReferralContact` (`referral_contacts`): `category` ("Listed under"), `name`,
+`preferred` (the star), `email`, `website`, `notes` (everything else as
+written), and its `ReferralOffice` rows (`referral_offices`: `label`,
+`address`, `phone`, `fax`, `sortOrder`) — an address with its own numbers, one
+per place; a phone or fax box may hold several numbers. Read, added to and
 corrected by everybody signed in ("for staff to use and edit"); **only managers
-and admins remove** an entry (`@Roles(Role.MANAGER)` on delete, 18 October 2026); every write logs who made it and sets `updatedById`. The whole book
-(a few hundred rows) goes to the browser in one `GET /phone-book` and is
-searched there (`lib/phone-book.ts`): every word typed must appear in some
-field, and a word of three or more digits also matches a number however it
-was written. `linkify` makes numbers dial (`tel:`), addresses write
-(`mailto:`) and links open; a number after "Fax" or "F:" is left plain, unless
-a phone or a call is named in between. Categories are free text, so a new one
-is made by typing it in the form.
+and admins remove** (`@Roles(Role.MANAGER)` on delete). Every write logs who
+made it and sets `updatedById`. A save sends the entry whole and **replaces
+its offices whole**, in one transaction (`PhoneBookService.update`); a blank
+office row is dropped.
 
-Loaded by `20261018020000_phone_book_data` from PHONE_BOOK.docx. The split was
-done by a script (headings → category; a bold, unindented line after contact
-details starts the next entry; labelled lines fill the fields; anything else is
-kept in the notes), then checked for losses: every phone number and email in
-the document is in the migration. The document's formatting is inconsistent,
-so some entries are untidy; staff fix them in the app. Notes are about places,
-never a patient — the form says so and the schema guard pins the fields.
-`tests/browser/phone-book.mjs` (the runner puts the book back from the data
+The whole book (a few hundred rows) goes to the browser in one
+`GET /phone-book` and is searched there (`lib/phone-book.ts`): every word typed
+must appear in some field of the entry or any of its offices, and a word of
+three or more digits also matches a number however it was written. `linkify`
+makes numbers dial (`tel:`), addresses write (`mailto:`) and links open; a number
+after "Fax" or "F:" is left plain, unless a phone or a call is named in between.
+The page keeps its search, heading and "preferred only" in the address, so Back
+returns to it; the search box is focused on a laptop but not on a phone, and is
+sticky.
+
+**Printing** is `/phone-book/print` (`PhoneBookPrintPage`, outside `Layout`),
+given the same `q`, `category` and `starred`: two columns on letter paper,
+starred first, `break-inside: avoid` per entry, neighbouring offices with the
+same numbers printed as one line of addresses (`printedOffices`), and — with
+no heading chosen — a page break before each heading. Its tab title becomes the
+PDF's file name.
+
+**The stars** are the document's yellow-highlighted entries (white and
+paragraph shading in it are not highlights); the list went to Dominguez to
+confirm. Categories are free text, so a new one is made by typing it in.
+
+Loaded by `20261018020000_phone_book_data` from PHONE_BOOK.docx, then re-read by
+`20261018040000_phone_book_data_v2` once offices and stars existed. The split is
+by script (headings → category; a bold, unindented line after contact details
+starts the next entry; an address starts an office, a phone line gives its
+number to the offices waiting for one; a short line before an address-less phone
+is its label), then checked for losses: every phone number and email in the
+document is in the data. The v2 insert only adds an entry whose name is not
+already under that heading, so **anything staff changed in between is left
+alone**; `…030000_phone_book_offices` first moves each remaining entry's old
+single address, phone and fax into a first office and drops the entries nobody
+had touched (no `updatedById`). The document's formatting is inconsistent, so
+some entries are untidy; staff fix them in the app. Notes are about places,
+never a patient — the form says so and the schema guard pins both tables.
+`tests/browser/phone-book.mjs` (the runner puts the book back from the v2 data
 migration between suites).
 
 ## Drive folders on Resources

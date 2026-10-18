@@ -753,23 +753,33 @@ const STAFF: Section[] = [
         answer: (
           <>
             <p>
-              <Screen>Phone book</Screen> — on Home under Quick, or on Resources. It is the
-              practice&rsquo;s list of the labs, hospitals, imaging centers, home care, equipment
-              suppliers and specialists we send patients to. Type in <strong>Search</strong> — a
-              name, a specialty, an insurance (&ldquo;wellcare&rdquo;), a street or even part of a
-              number — and the list narrows as you type. <strong>Listed under</strong> shows one
-              heading at a time.
+              <Screen>Phone book</Screen> — its own tab in the header, and on the bottom bar of a
+              phone. It is the practice&rsquo;s list of the labs, hospitals, imaging centers, home
+              care, equipment suppliers and specialists we send patients to. Type in{' '}
+              <strong>Search</strong> — a name, a specialty, an insurance (&ldquo;wellcare&rdquo;),
+              a street or even part of a number — and the list narrows as you type. The search stays
+              at the top as you scroll. <strong>Listed under</strong> shows one heading at a time.
             </p>
             <p>
-              Press a phone number to call it (on a phone), an email to write to it, an address to
-              open the map. A fax number is not pressable. <strong>Notes</strong> hold the rest:
-              other offices, what the place takes and what to fax over.
+              A <strong>★</strong> marks the practice&rsquo;s preferred places, and they come first
+              under each heading; <strong>Preferred only</strong> shows just those. Some places have
+              several offices, each with its own address, phone and fax. Press a phone number to
+              call it (on a phone), an email to write to it, an address to open the map. A fax
+              number is not pressable. <strong>Notes</strong> hold the rest: what the place takes
+              and what to fax over.
+            </p>
+            <p>
+              <strong>Print</strong> prints what you are looking at — all the cardiologists, say, or
+              everything starred. Pick the heading first, then press Print. With no heading picked
+              it prints the whole book, one heading to a page.
             </p>
             <p>
               The book is kept by all of us. Press <strong>Edit</strong> on an entry to fix a number
-              or add a note, or <strong>+ Add an entry</strong> for a new place; only a manager can{' '}
-              <strong>Remove</strong> an entry (inside Edit). Please write about the place only
-              &mdash; never a patient&rsquo;s name or details.
+              or add a note, tick <strong>Preferred</strong> to star it, or press{' '}
+              <strong>+ Add another address</strong> for another office.{' '}
+              <strong>+ Add an entry</strong> puts in a new place; only a manager can{' '}
+              <strong>Remove</strong> one (inside Edit). Please write about the place only &mdash;
+              never a patient&rsquo;s name or details.
             </p>
           </>
         ),

@@ -3430,22 +3430,42 @@ model ReferralContact {
   category    String
   /// The place, or the doctor and the practice.
   name        String
-  /// The number to call first. Others are written in the notes.
-  phone       String?
-  fax         String?
-  address     String?
+  /// Starred: the practice's preferred places to send people (October 2026,
+  /// Dominguez: "the highlighted ones should be starred/preferred").
+  preferred   Boolean  @default(false)
   email       String?
   website     String?
-  /// Everything else, as the book had it: other numbers and offices, what
-  /// insurances it takes, what to fax over. Never a patient.
+  /// Everything else, as the book had it: what the place takes, what to fax
+  /// over, other numbers. Never a patient.
   notes       String?
   /// Who last changed it.
   updatedById String?  @db.Uuid
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
+  offices ReferralOffice[]
+
   @@index([category, name])
   @@map("referral_contacts")
+}
+
+/// One place to go for an entry: an address with its own phone and fax
+/// (October 2026, Dominguez: "multiple addresses/phone and fax numbers for the
+/// same person/group"). A phone or fax box may hold several numbers.
+model ReferralOffice {
+  id        String  @id @default(uuid()) @db.Uuid
+  contactId String  @db.Uuid
+  /// "Hoboken", "Main office" — optional.
+  label     String?
+  address   String?
+  phone     String?
+  fax       String?
+  sortOrder Int     @default(0)
+
+  contact ReferralContact @relation(fields: [contactId], references: [id], onDelete: Cascade)
+
+  @@index([contactId, sortOrder])
+  @@map("referral_offices")
 }
 
 /// Who reviews a provider's patient schedule (in eCW) on each weekday — the

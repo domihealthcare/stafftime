@@ -148,27 +148,30 @@ describe('what this app deliberately does not store', () => {
   /// patient — so exactly these fields, and a "patient" or "referred" column
   /// has to be decided out loud.
   it('keeps the phone book to places and how to reach them', () => {
-    const fields = model('ReferralContact')
-      .split('\n')
-      .map((line) => line.trim())
-      .filter((line) => line && !line.startsWith('//') && !line.startsWith('@@'))
-      .map((line) => line.split(/\s+/)[0])
-      .sort();
-    expect(fields).toEqual(
+    const fieldsOf = (name: string) =>
+      model(name)
+        .split('\n')
+        .map((line) => line.trim())
+        .filter((line) => line && !line.startsWith('//') && !line.startsWith('@@'))
+        .map((line) => line.split(/\s+/)[0])
+        .sort();
+    expect(fieldsOf('ReferralContact')).toEqual(
       [
-        'address',
         'category',
         'createdAt',
         'email',
-        'fax',
         'id',
         'name',
         'notes',
-        'phone',
+        'offices',
+        'preferred',
         'updatedAt',
         'updatedById',
         'website',
       ].sort(),
+    );
+    expect(fieldsOf('ReferralOffice')).toEqual(
+      ['address', 'contact', 'contactId', 'fax', 'id', 'label', 'phone', 'sortOrder'].sort(),
     );
   });
 

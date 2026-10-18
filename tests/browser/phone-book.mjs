@@ -1,5 +1,6 @@
 import { chromium } from 'playwright';
 import { mkdirSync } from 'node:fs';
+import { goTo } from './nav.mjs';
 
 const OUT = process.argv[2] || new URL('./shots/', import.meta.url).pathname;
 mkdirSync(OUT, { recursive: true });
@@ -16,9 +17,13 @@ const step = async (name, fn) => {
 
 /**
  * The referral phone book (October 2026, Dominguez: "a searchable phone book
- * for referrals for staff to use and edit"): everybody signed in searches it,
- * presses a number to call, and adds, fixes and removes entries. Loaded from
- * the practice's Word phone book by migration.
+ * for referrals for staff to use and edit"; then "it has to be able to be
+ * printed", "the highlighted ones should be starred/preferred", "multiple
+ * addresses/phone and fax numbers for the same person/group", and "used
+ * multiple times on a daily basis for staff so should be easily accessible").
+ * Everybody signed in searches it, presses a number to call and adds and fixes
+ * entries; only managers remove one. Loaded from the practice's Word phone
+ * book by migration.
  */
 async function signIn(email, viewport = { width: 1280, height: 1000 }) {
   const ctx = await browser.newContext({ viewport });
@@ -36,11 +41,13 @@ const count = async (page) => (await page.getByTestId('phone-book-count').innerT
 const search = async (page, text) => {
   await page.getByLabel('Search', { exact: true }).fill(text);
 };
+const card = (page, name) =>
+  page.getByTestId('phone-book-entry').filter({ has: page.getByRole('heading', { name }) });
 
 const staff = await signIn('frontdesk@domihealthcare.com');
 
-await step('front desk staff open the Phone book from Home and see the loaded book', async () => {
-  await staff.getByTestId('quick-actions').getByRole('link', { name: 'Phone book' }).click();
+await step('it has a tab of its own in the header, one press from anywhere', async () => {
+  await goTo(staff, 'Phone book');
   await staff.getByRole('heading', { name: 'Phone book', level: 1 }).waitFor({ timeout: 10000 });
   await staff.getByTestId('phone-book-entry').first().waitFor({ timeout: 10000 });
   const text = await count(staff);
@@ -49,10 +56,25 @@ await step('front desk staff open the Phone book from Home and see the loaded bo
   await staff.screenshot({ path: `${OUT}/phone-book.png`, fullPage: false });
 });
 
-await step('searching a name narrows the list as it is typed', async () => {
+await step('on a laptop the search box is ready to type in', async () => {
+  const focused = await staff.evaluate(() => document.activeElement?.id);
+  if (focused !== 'phone-book-search') throw new Error(`focus is on ${focused}`);
+});
+
+await step('the search stays in view while the list scrolls', async () => {
+  await staff.evaluate(() => window.scrollTo(0, 2500));
+  const box = await staff.locator('#phone-book-search').boundingBox();
+  if (!box || box.y < 0 || box.y > 200) throw new Error(`search is at ${box?.y}`);
+  await staff.evaluate(() => window.scrollTo(0, 0));
+});
+
+await step('searching a name narrows the list as it is typed, and the address remembers it', async () => {
   await search(staff, 'quest');
   await staff.getByRole('heading', { name: 'Quest Diagnostic Lab' }).waitFor({ timeout: 5000 });
   if (/^\d+ entries\.$/.test(await count(staff))) throw new Error('nothing was narrowed');
+  if (!/[?&]q=quest/.test(staff.url())) throw new Error(`the search is not in the address: ${staff.url()}`);
+  await staff.reload({ waitUntil: 'networkidle' });
+  await staff.getByRole('heading', { name: 'Quest Diagnostic Lab' }).waitFor({ timeout: 10000 });
   await search(staff, 'quest zzzz-no-such');
   await staff.getByText(/Nothing matches/).waitFor({ timeout: 5000 });
 });
@@ -66,20 +88,15 @@ await step('a number finds its entry however it is written', async () => {
 
 await step('an insurance or a specialty in the notes is searchable too', async () => {
   await search(staff, 'hnjh cardiology');
-  const cards = staff.getByTestId('phone-book-entry');
-  await cards.first().waitFor({ timeout: 5000 });
-  if ((await cards.count()) < 1) throw new Error('no cardiology entry mentions HNJH');
+  await staff.getByTestId('phone-book-entry').first().waitFor({ timeout: 5000 });
 });
 
 await step('a phone number is a call link, a fax number is not', async () => {
   await search(staff, 'LabCorp');
-  const card = staff.getByTestId('phone-book-entry').filter({ hasText: 'Fax for bw results' }).first();
-  await card.waitFor({ timeout: 5000 });
-  const dial = card.locator('a[href^="tel:"]').first();
-  if ((await dial.getAttribute('href')) !== 'tel:+18006315250') {
-    throw new Error(`LabCorp dials ${await dial.getAttribute('href')}`);
-  }
-  const hrefs = await card.locator('a[href^="tel:"]').evaluateAll((links) => links.map((a) => a.getAttribute('href')));
+  const labcorp = staff.getByTestId('phone-book-entry').filter({ hasText: 'Fax for bw results' }).first();
+  await labcorp.waitFor({ timeout: 5000 });
+  const hrefs = await labcorp.locator('a[href^="tel:"]').evaluateAll((links) => links.map((a) => a.getAttribute('href')));
+  if (hrefs[0] !== 'tel:+18006315250') throw new Error(`LabCorp dials ${hrefs[0]}`);
   if (hrefs.includes('tel:+18552274491')) throw new Error('the fax number can be dialled');
 });
 
@@ -92,28 +109,78 @@ await step('Listed under shows one heading at a time', async () => {
   await staff.getByLabel('Listed under').first().selectOption('');
 });
 
-await step('anybody adds and fixes an entry; only a manager removes it', async () => {
+await step('the practice’s highlighted entries are starred, and Preferred only shows just those', async () => {
+  await search(staff, 'sarti');
+  const sarti = card(staff, /Dr\. Evan Sarti/);
+  await sarti.getByText('Preferred', { exact: true }).waitFor({ timeout: 5000 });
+  await search(staff, '');
+  const all = Number((await count(staff)).match(/(\d+) entries/)[1]);
+  await staff.getByRole('button', { name: /Preferred only/ }).click();
+  await staff.waitForFunction(() => /of \d+ entries/.test(document.querySelector('[data-testid=phone-book-count]').textContent));
+  const starred = Number((await count(staff)).match(/^(\d+) of/)[1]);
+  if (!(starred > 20 && starred < all / 2)) throw new Error(`${starred} starred of ${all}`);
+  const cards = await staff.getByTestId('phone-book-entry').count();
+  const stars = await staff.getByTestId('phone-book-entry').filter({ hasText: 'Preferred' }).count();
+  if (cards !== stars) throw new Error(`${cards} cards, ${stars} starred`);
+  await staff.getByRole('button', { name: /Preferred only/ }).click();
+});
+
+await step('within a heading the starred come first', async () => {
+  await staff.getByLabel('Listed under').first().selectOption('ENT');
+  const names = await staff.getByTestId('phone-book-entry').evaluateAll((cards) =>
+    cards.map((c) => ({ name: c.querySelector('h3').innerText.replace(/Preferred/, '').trim(), starred: /Preferred/.test(c.querySelector('h3').textContent) })));
+  const firstUnstarred = names.findIndex((n) => !n.starred);
+  if (firstUnstarred !== -1 && names.slice(firstUnstarred).some((n) => n.starred)) throw new Error(JSON.stringify(names));
+  await staff.getByLabel('Listed under').first().selectOption('');
+});
+
+await step('one entry can have several offices, each with its own phone and fax', async () => {
+  await search(staff, 'De La Torre hepatology');
+  const hepatology = card(staff, /^Dr\. Andrew De La Torre$/);
+  await hepatology.waitFor({ timeout: 5000 });
+  if ((await hepatology.getByTestId('phone-book-office').count()) !== 3) throw new Error('not three offices');
+  await search(staff, '169 York Street');
+  await card(staff, /^Dr\. Andrew De La Torre$/).waitFor({ timeout: 5000 });
+});
+
+await step('anybody adds an entry with two offices and a star, and fixes it', async () => {
+  await search(staff, '');
   await staff.getByRole('button', { name: '+ Add an entry' }).click();
   let dialog = staff.getByRole('dialog', { name: 'New phone book entry' });
-  await dialog.getByLabel('Name').fill('Phone-book suite sleep lab');
+  await dialog.getByLabel('Name', { exact: true }).fill('Phone-book suite sleep lab');
   await dialog.getByLabel('Listed under').fill('Sleep studies');
-  await dialog.getByLabel('Phone').fill('(201) 555-0142');
+  await dialog.getByLabel(/Preferred/).check();
+  const first = dialog.getByTestId('phone-book-office-form').nth(0);
+  await first.getByLabel('Office name').fill('Hoboken');
+  await first.getByLabel('Address').fill('1 Main St, Hoboken, NJ');
+  await first.getByLabel('Phone').fill('(201) 555-0142, (201) 555-0143');
+  await first.getByLabel('Fax').fill('(201) 555-0144');
+  await dialog.getByRole('button', { name: '+ Add another address' }).click();
+  const second = dialog.getByTestId('phone-book-office-form').nth(1);
+  await second.getByLabel('Address').fill('9 Broad St, Newark, NJ');
+  await second.getByLabel('Phone').fill('(973) 555-0100');
   await dialog.getByLabel('Notes').fill('Fax the order first.');
   await dialog.getByRole('button', { name: 'Add entry' }).click();
   await search(staff, 'phone-book suite');
-  let card = staff.getByTestId('phone-book-entry').filter({ hasText: 'Phone-book suite sleep lab' });
-  await card.getByText('Fax the order first.').waitFor({ timeout: 10000 });
-  await staff.getByRole('heading', { name: /^Sleep studies/ }).waitFor();
+  let entry = card(staff, /Phone-book suite sleep lab/);
+  await entry.getByText('Fax the order first.').waitFor({ timeout: 10000 });
+  if ((await entry.getByTestId('phone-book-office').count()) !== 2) throw new Error('not two offices');
+  await entry.getByText('Preferred', { exact: true }).waitFor();
+  const hrefs = await entry.locator('a[href^="tel:"]').evaluateAll((l) => l.map((a) => a.getAttribute('href')));
+  if (hrefs.length !== 3) throw new Error(`call links: ${JSON.stringify(hrefs)}`);
 
-  await card.getByRole('button', { name: /^Edit/ }).click();
+  await entry.getByRole('button', { name: /^Edit/ }).click();
   dialog = staff.getByRole('dialog', { name: /Change Phone-book suite sleep lab/ });
-  await dialog.getByLabel('Notes').fill('Fax the order first. Takes Wellcare.');
+  await dialog.getByTestId('phone-book-office-form').nth(1).getByRole('button', { name: 'Remove this office' }).click();
   await dialog.getByRole('button', { name: 'Save changes' }).click();
-  card = staff.getByTestId('phone-book-entry').filter({ hasText: 'Phone-book suite sleep lab' });
-  await card.getByText('Takes Wellcare.', { exact: false }).waitFor({ timeout: 10000 });
+  entry = card(staff, /Phone-book suite sleep lab/);
+  await staff.waitForFunction(() => document.querySelectorAll('[data-testid=phone-book-office]').length === 1);
+});
 
-  await card.getByRole('button', { name: /^Edit/ }).click();
-  dialog = staff.getByRole('dialog', { name: /Change Phone-book suite sleep lab/ });
+await step('only a manager removes an entry', async () => {
+  const entry = card(staff, /Phone-book suite sleep lab/);
+  await entry.getByRole('button', { name: /^Edit/ }).click();
+  const dialog = staff.getByRole('dialog', { name: /Change Phone-book suite sleep lab/ });
   if (await dialog.getByRole('button', { name: 'Remove' }).count()) throw new Error('staff are offered Remove');
   await dialog.getByRole('button', { name: 'Cancel' }).click();
   const id = await staff.evaluate(async () => {
@@ -133,26 +200,61 @@ await step('anybody adds and fixes an entry; only a manager removes it', async (
   await manager.context().close();
 });
 
+await step('a heading prints as a list of everybody in it, starred first', async () => {
+  await staff.goto(`${BASE}/phone-book?category=Cardiology`, { waitUntil: 'networkidle' });
+  await staff.getByTestId('phone-book-entry').first().waitFor({ timeout: 10000 });
+  const onScreen = await staff.getByTestId('phone-book-entry').count();
+  await staff.getByRole('link', { name: 'Print' }).click();
+  await staff.getByTestId('print-title').waitFor({ timeout: 10000 });
+  if (!/Cardiology/.test(await staff.getByTestId('print-title').innerText())) throw new Error('title');
+  const printed = await staff.getByTestId('print-entry').count();
+  if (printed !== onScreen) throw new Error(`${printed} printed, ${onScreen} on screen`);
+  if ((await staff.getByTestId('print-category').count()) !== 1) throw new Error('more than one heading');
+  // On paper the toolbar goes and no menu is in the way.
+  await staff.emulateMedia({ media: 'print' });
+  if (await staff.getByRole('button', { name: 'Print' }).isVisible()) throw new Error('Print shows on paper');
+  if (await staff.getByRole('navigation').count()) throw new Error('a menu is on the page');
+  await staff.emulateMedia({ media: 'screen' });
+  await staff.pdf({ path: `${OUT}/phone-book-cardiology.pdf`, format: 'Letter' });
+  await staff.getByRole('link', { name: /Back to the phone book/ }).click();
+  await staff.getByLabel('Listed under').first().waitFor();
+  if ((await staff.getByLabel('Listed under').first().inputValue()) !== 'Cardiology') throw new Error('back lost the heading');
+});
+
+await step('printing everything gives each heading its own page; the starred alone prints too', async () => {
+  await staff.goto(`${BASE}/phone-book/print`, { waitUntil: 'networkidle' });
+  await staff.getByTestId('print-entry').first().waitFor({ timeout: 10000 });
+  if ((await staff.getByTestId('print-category').count()) < 40) throw new Error('headings missing');
+  await staff.goto(`${BASE}/phone-book/print?starred=1`, { waitUntil: 'networkidle' });
+  await staff.getByTestId('print-entry').first().waitFor({ timeout: 10000 });
+  const entries = await staff.getByTestId('print-entry').count();
+  const stars = await staff.getByTestId('print-entry').filter({ hasText: '★' }).count();
+  if (entries !== stars || entries < 20) throw new Error(`${entries} printed, ${stars} starred`);
+});
+
 await step('the form asks for places, not patients, and there is no file upload', async () => {
+  await staff.goto(`${BASE}/phone-book`, { waitUntil: 'networkidle' });
   await staff.getByRole('button', { name: '+ Add an entry' }).click();
   await staff.getByText('About the place only — never a patient’s name or details.').waitFor();
   if ((await staff.locator('input[type=file]').count()) !== 0) throw new Error('a file input is on the page');
   await staff.getByRole('button', { name: 'Cancel' }).click();
 });
 
-await step('the book is also on Resources, and staff can read, add and fix it', async () => {
+await step('it is also on Home’s Quick card and Resources', async () => {
+  await staff.goto(`${BASE}/`, { waitUntil: 'networkidle' });
+  await staff.getByTestId('quick-actions').getByRole('link', { name: 'Phone book' }).waitFor({ timeout: 10000 });
   await staff.goto(`${BASE}/resources`, { waitUntil: 'networkidle' });
   await staff.getByTestId('reference-section').getByRole('link', { name: /Phone book/ }).waitFor({ timeout: 10000 });
-  const rows = await staff.evaluate(async () => (await fetch('/api/phone-book')).status);
-  if (rows !== 200) throw new Error(`staff read it: ${rows}`);
 });
 
-await step('it fits a phone without scrolling sideways', async () => {
+await step('on a phone it is a tab on the bottom bar and fits without scrolling sideways', async () => {
   const phone = await signIn('manager@domihealthcare.com', { width: 390, height: 800 });
-  await phone.goto(`${BASE}/phone-book`, { waitUntil: 'networkidle' });
+  await phone.getByRole('navigation', { name: 'Main' }).getByRole('link', { name: 'Phone book' }).click();
   await phone.getByTestId('phone-book-entry').first().waitFor({ timeout: 10000 });
   const wide = await phone.evaluate(() => document.documentElement.scrollWidth > window.innerWidth + 1);
   if (wide) throw new Error('the page scrolls sideways');
+  const focused = await phone.evaluate(() => document.activeElement?.id);
+  if (focused === 'phone-book-search') throw new Error('the keyboard would cover the list');
   await phone.context().close();
 });
 
