@@ -21,6 +21,7 @@ import { EventsModule } from './events/events.module';
 import { RepsModule } from './reps/reps.module';
 import { DiagnosticsModule } from './diagnostics/diagnostics.module';
 import { ReimbursementsModule } from './reimbursements/reimbursements.module';
+import { PhoneBookModule } from './phone-book/phone-book.module';
 import { VendorsModule } from './vendors/vendors.module';
 import { RequirementsModule } from './requirements/requirements.module';
 import { OnCallModule } from './on-call/on-call.module';
@@ -64,6 +65,7 @@ import { TimeEntriesModule } from './time-entries/time-entries.module';
     DiagnosticsModule,
     ReimbursementsModule,
     VendorsModule,
+    PhoneBookModule,
     RequirementsModule,
     OnCallModule,
     ScheduleReviewsModule,

@@ -749,6 +749,32 @@ const STAFF: Section[] = [
         ),
       },
       {
+        question: 'Who do we refer this patient to? (the phone book)',
+        answer: (
+          <>
+            <p>
+              <Screen>Phone book</Screen> — on Home under Quick, or on Resources. It is the
+              practice&rsquo;s list of the labs, hospitals, imaging centers, home care, equipment
+              suppliers and specialists we send patients to. Type in <strong>Search</strong> — a
+              name, a specialty, an insurance (&ldquo;wellcare&rdquo;), a street or even part of a
+              number — and the list narrows as you type. <strong>Listed under</strong> shows one
+              heading at a time.
+            </p>
+            <p>
+              Press a phone number to call it (on a phone), an email to write to it, an address to
+              open the map. A fax number is not pressable. <strong>Notes</strong> hold the rest:
+              other offices, what the place takes and what to fax over.
+            </p>
+            <p>
+              The book is kept by all of us. Press <strong>Edit</strong> on an entry to fix a number
+              or add a note, or <strong>+ Add an entry</strong> for a new place; only a manager can{' '}
+              <strong>Remove</strong> an entry (inside Edit). Please write about the place only
+              &mdash; never a patient&rsquo;s name or details.
+            </p>
+          </>
+        ),
+      },
+      {
         question: 'Are surveys really anonymous?',
         answer: (
           <>

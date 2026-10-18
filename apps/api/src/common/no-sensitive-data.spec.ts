@@ -143,6 +143,35 @@ describe('what this app deliberately does not store', () => {
     );
   });
 
+  /// The referral phone book (October 2026, Dominguez): the places patients
+  /// are sent and the numbers for it, kept by all staff. About places, never a
+  /// patient — so exactly these fields, and a "patient" or "referred" column
+  /// has to be decided out loud.
+  it('keeps the phone book to places and how to reach them', () => {
+    const fields = model('ReferralContact')
+      .split('\n')
+      .map((line) => line.trim())
+      .filter((line) => line && !line.startsWith('//') && !line.startsWith('@@'))
+      .map((line) => line.split(/\s+/)[0])
+      .sort();
+    expect(fields).toEqual(
+      [
+        'address',
+        'category',
+        'createdAt',
+        'email',
+        'fax',
+        'id',
+        'name',
+        'notes',
+        'phone',
+        'updatedAt',
+        'updatedById',
+        'website',
+      ].sort(),
+    );
+  });
+
   /// The diagnostics and reimbursements boards (October 2026, Dominguez):
   /// which insurance covers which test, and what it pays per code — about
   /// insurances and tests, never a patient. Exactly these fields, so a

@@ -164,7 +164,7 @@ function HeadlineWords({ post }: { post: Announcement }) {
 // ------------------------------------------------------------------ quick
 
 /// The things people come to do besides clocking: ask for time off, set
-/// availability, look up the diagnostics, and — for whoever has them — the
+/// availability, look up the diagnostics and the referral phone book, and — for whoever has them — the
 /// clinical forms.
 export function QuickActions() {
   const t = useT();
@@ -200,6 +200,9 @@ export function QuickActions() {
         </Link>
         <Link to="/diagnostics" className={button}>
           {t('Diagnostics')}
+        </Link>
+        <Link to="/phone-book" className={button}>
+          {t('Phone book')}
         </Link>
         {forms && (
           <Link to="/resources" className={button}>

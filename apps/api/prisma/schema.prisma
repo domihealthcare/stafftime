@@ -3413,6 +3413,41 @@ model VendorPayment {
   @@map("vendor_payments")
 }
 
+// ---------------------------------------------------------------------------
+// Phone book for referrals (October 2026)
+// ---------------------------------------------------------------------------
+//
+// The practice's list of where patients are sent — labs, hospitals, imaging,
+// home care, equipment, specialists — with the numbers staff need to make the
+// referral. Loaded from the practice's Word phone book, and kept by staff:
+// anybody signed in may read, add, change or remove an entry. About the
+// places, never a patient: a note says what the place takes, not whom was sent
+// there. `no-sensitive-data.spec.ts` pins the fields.
+
+model ReferralContact {
+  id          String   @id @default(uuid()) @db.Uuid
+  /// "Labs", "Hospitals", "Cardiology" — the heading it is listed under.
+  category    String
+  /// The place, or the doctor and the practice.
+  name        String
+  /// The number to call first. Others are written in the notes.
+  phone       String?
+  fax         String?
+  address     String?
+  email       String?
+  website     String?
+  /// Everything else, as the book had it: other numbers and offices, what
+  /// insurances it takes, what to fax over. Never a patient.
+  notes       String?
+  /// Who last changed it.
+  updatedById String?  @db.Uuid
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([category, name])
+  @@map("referral_contacts")
+}
+
 /// Who reviews a provider's patient schedule (in eCW) on each weekday — the
 /// usual pattern (October 2026, Dominguez: "admin/manager/staff that are
 /// responsible for reviewing providers schedule … so they are aware they are

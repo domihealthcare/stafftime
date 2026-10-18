@@ -2088,6 +2088,31 @@ export interface ReimbursementsBoard {
   updatedAt: string | null;
 }
 
+/// The referral phone book (October 2026), kept by all staff.
+export interface ReferralContact {
+  id: string;
+  category: string;
+  name: string;
+  phone: string | null;
+  fax: string | null;
+  address: string | null;
+  email: string | null;
+  website: string | null;
+  notes: string | null;
+  updatedAt: string;
+}
+
+export interface ReferralContactInput {
+  category: string;
+  name: string;
+  phone?: string | null;
+  fax?: string | null;
+  address?: string | null;
+  email?: string | null;
+  website?: string | null;
+  notes?: string | null;
+}
+
 /// Vendor payments (October 2026), admins only.
 export type VendorPaymentMethod = 'CHECK' | 'CASH' | 'QUICKBOOKS' | 'OTHER';
 export type VendorPaymentStatus = 'TO_PAY' | 'SENT' | 'COMPLETED';
