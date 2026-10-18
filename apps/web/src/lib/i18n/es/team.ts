@@ -227,6 +227,9 @@ export const TEAM: Record<string, string> = {
   Reference: 'Consulta',
   'Which insurance covers which ultrasound or test, how long it takes, the prep and the self-pay price.':
     'Qué seguro cubre cada ultrasonido o prueba, cuánto tarda, la preparación y el precio de pago propio.',
+  'Phone book': 'Guía telefónica',
+  'Labs, hospitals, imaging, home care, equipment and specialists we refer to — searchable, and yours to keep up to date.':
+    'Laboratorios, hospitales, imágenes, cuidado en el hogar, equipos y especialistas a los que referimos: se puede buscar y a ti te toca mantenerla al día.',
   'Could not load the diagnostics.': 'No se pudieron cargar los diagnósticos.',
   'Loading the diagnostics': 'Cargando los diagnósticos',
   Ultrasounds: 'Ultrasonidos',

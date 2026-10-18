@@ -35,6 +35,9 @@ const DiagnosticsPage = lazy(() =>
 const ReimbursementsPage = lazy(() =>
   import('./pages/ReimbursementsPage').then((m) => ({ default: m.ReimbursementsPage })),
 );
+const PhoneBookPage = lazy(() =>
+  import('./pages/PhoneBookPage').then((m) => ({ default: m.PhoneBookPage })),
+);
 const VendorsPage = lazy(() =>
   import('./pages/VendorsPage').then((m) => ({ default: m.VendorsPage })),
 );
@@ -220,6 +223,7 @@ function Routed() {
           <Route path="job-roles" element={<JobRolesPage />} />
           <Route path="reps" element={<RepsPage />} />
           <Route path="diagnostics" element={<DiagnosticsPage />} />
+          <Route path="phone-book" element={<PhoneBookPage />} />
           <Route path="reimbursements" element={<ReimbursementsPage />} />
           <Route path="vendors" element={<VendorsPage />} />
           <Route path="required" element={<RequiredPage />} />

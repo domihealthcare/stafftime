@@ -4558,6 +4558,33 @@ whose, and the schema guard pins both tables' fields. History was not
 imported — the sheet stays the archive; the portal is "going forward".
 `tests/browser/vendors.mjs`.
 
+## The referral phone book (October 2026)
+
+`/phone-book` (Home → Quick, Resources → Reference): the practice's list of
+where patients are sent — labs, hospitals, imaging, home care, DME, pharmacies
+and every specialty — in `ReferralContact` (`referral_contacts`): `category`
+("Listed under"), `name`, then the **first** `phone`, `fax`, `address`,
+`email`, `website`, and `notes` for everything else as written. Read **and
+kept by everybody signed in** (no `@Roles`, deliberately: "for staff to use and
+edit"); every write logs who made it and sets `updatedById`. The whole book
+(a few hundred rows) goes to the browser in one `GET /phone-book` and is
+searched there (`lib/phone-book.ts`): every word typed must appear in some
+field, and a word of three or more digits also matches a number however it
+was written. `linkify` makes numbers dial (`tel:`), addresses write
+(`mailto:`) and links open; a number after "Fax" or "F:" is left plain, unless
+a phone or a call is named in between. Categories are free text, so a new one
+is made by typing it in the form.
+
+Loaded by `20261018020000_phone_book_data` from PHONE_BOOK.docx. The split was
+done by a script (headings → category; a bold, unindented line after contact
+details starts the next entry; labelled lines fill the fields; anything else is
+kept in the notes), then checked for losses: every phone number and email in
+the document is in the migration. The document's formatting is inconsistent,
+so some entries are untidy; staff fix them in the app. Notes are about places,
+never a patient — the form says so and the schema guard pins the fields.
+`tests/browser/phone-book.mjs` (the runner puts the book back from the data
+migration between suites).
+
 ## Drive folders on Resources
 
 A Resources link whose address is a Drive folder

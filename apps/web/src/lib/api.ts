@@ -64,6 +64,8 @@ import type {
   DiagnosticsBoard,
   DiagnosticTestInput,
   ReimbursementsBoard,
+  ReferralContact,
+  ReferralContactInput,
   Vendor,
   VendorInput,
   VendorPayment,
@@ -1634,6 +1636,15 @@ export const api = {
     }),
   deleteReimbursementPayer: (id: string) =>
     request<ReimbursementsBoard>(`/reimbursements/payers/${id}`, { method: 'DELETE' }),
+
+  // ---------------------------------------------------------------- phone book
+  phoneBook: () => request<ReferralContact[]>('/phone-book'),
+  createPhoneBookEntry: (body: ReferralContactInput) =>
+    request<ReferralContact>('/phone-book', { method: 'POST', body: JSON.stringify(body) }),
+  updatePhoneBookEntry: (id: string, body: ReferralContactInput) =>
+    request<ReferralContact>(`/phone-book/${id}`, { method: 'PUT', body: JSON.stringify(body) }),
+  deletePhoneBookEntry: (id: string) =>
+    request<{ deleted: boolean }>(`/phone-book/${id}`, { method: 'DELETE' }),
 
   // ---------------------------------------------------------------- vendor payments
   vendors: () => request<Vendor[]>('/vendors'),

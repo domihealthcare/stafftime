@@ -557,8 +557,8 @@ function hostOf(url: string): string {
  * Anybody with neither sees no section at all.
  */
 /// The practice's reference boards (October 2026, Dominguez — made from its
-/// spreadsheets): the diagnostics board for everybody, the reimbursements for
-/// managers and admins.
+/// spreadsheets): the diagnostics board and the referral phone book for
+/// everybody, the reimbursements for managers and admins.
 function ReferenceSection() {
   const t = useT();
   const isManager = useIsManager();
@@ -578,6 +578,19 @@ function ReferenceSection() {
           <p className="mt-0.5 text-xs text-slate-600">
             {t(
               'Which insurance covers which ultrasound or test, how long it takes, the prep and the self-pay price.',
+            )}
+          </p>
+        </div>
+        <div className="p-3">
+          <Link
+            to="/phone-book"
+            className="block text-sm font-semibold text-brand-800 hover:text-brand-900"
+          >
+            {t('Phone book')} →
+          </Link>
+          <p className="mt-0.5 text-xs text-slate-600">
+            {t(
+              'Labs, hospitals, imaging, home care, equipment and specialists we refer to — searchable, and yours to keep up to date.',
             )}
           </p>
         </div>

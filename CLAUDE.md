@@ -1044,6 +1044,29 @@ Beyond the phases, the parts worth knowing about before picking up work:
   `src/vendors/`, `pages/VendorsPage.tsx`, migration
   `20261015030000_reference_tables_vendor_payments`;
   `tests/browser/vendors.mjs`.
+- **Phone book for referrals** (18 October 2026, Dominguez: "a searchable
+  phone book for referrals for staff to use and edit" — from the practice's
+  PHONE_BOOK.docx): `/phone-book`, on Home's Quick card and Resources →
+  Reference, for **everybody signed in to read, add, change and remove**
+  (confirmed by "for staff to use and edit"; no manager gate). Labs, Holy
+  Name services, home care, DME, hospitals, pharmacies, imaging and every
+  specialty as a **Listed under** heading, 318 entries loaded by migration
+  `20261018020000_phone_book_data` from the document: each entry's first
+  phone, fax, address, email and website in their own fields and everything
+  else **as the book wrote it** in the notes (other offices and numbers,
+  insurances taken, what to fax over) — every number and email in the
+  document was checked present. The split into entries was made by a
+  script from the document's layout, so **a few entries are untidy** (the
+  book's own formatting was inconsistent): staff fix them with Edit. Search
+  takes any words in any field, and a number however it is written; a
+  phone number in the book is a call link, a fax number is not. Entries are
+  about **places only — never a patient** (the form says so; the schema
+  guard pins `ReferralContact`). Lab account numbers and NPIs in notes are
+  the practice's business identifiers, not a person's. The page body is
+  English; only its two Resources/Home labels have Spanish.
+  `src/phone-book/`, `pages/PhoneBookPage.tsx`, `lib/phone-book.ts`,
+  migrations `20261018010000_phone_book` and `20261018020000_phone_book_data`;
+  `tests/browser/phone-book.mjs`. Worth carrying to the EMR module.
 - **Turned down: "PTO about to be lost"** (9 October 2026, Dominguez): a
   reminder to use PTO before it fails to carry over was proposed and refused —
   not in the practice's interest. Do not propose it again.
