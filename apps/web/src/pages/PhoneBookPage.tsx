@@ -1,7 +1,13 @@
 import { useCallback, useEffect, useId, useMemo, useRef, useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { ApiError, api } from '../lib/api';
-import { categoriesOf, groupByCategory, linkify, searchContacts } from '../lib/phone-book';
+import {
+  categoriesOf,
+  doctorsOf,
+  groupByCategory,
+  linkify,
+  searchContacts,
+} from '../lib/phone-book';
 import { useIsPhone } from '../lib/use-is-phone';
 import { useIsManager } from '../lib/session';
 import type { ReferralContact, ReferralContactInput, ReferralOffice } from '../lib/types';
@@ -35,7 +41,7 @@ function Linked({ text }: { text: string }) {
 function Line({ label, children }: { label: string; children: React.ReactNode }) {
   return (
     <div className="flex gap-2 text-sm">
-      <dt className="w-12 shrink-0 text-xs font-semibold uppercase tracking-wide text-slate-600">
+      <dt className="w-16 shrink-0 text-xs font-semibold uppercase tracking-wide text-slate-600">
         {label}
       </dt>
       <dd className="min-w-0 flex-1 text-slate-800 [overflow-wrap:anywhere]">{children}</dd>
@@ -73,7 +79,7 @@ function OfficeBlock({ office, several }: { office: ReferralOffice; several: boo
         )}
         {office.fax && <Line label="Fax">{office.fax}</Line>}
         {office.address && (
-          <Line label="Where">
+          <Line label="Location">
             <a
               href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(office.address)}`}
               target="_blank"
@@ -91,15 +97,35 @@ function OfficeBlock({ office, several }: { office: ReferralOffice; several: boo
 
 function ContactCard({ contact, onEdit }: { contact: ReferralContact; onEdit: () => void }) {
   const several = contact.offices.length > 1;
+  const { doctors, note } = doctorsOf(contact.name);
   return (
     <Card
       className={`flex min-w-0 flex-col p-3 ${contact.preferred ? 'border-amber-300 bg-amber-50/40' : ''}`}
       testId="phone-book-entry"
     >
       <div className="flex items-start justify-between gap-2">
-        <h3 className="min-w-0 text-sm font-semibold text-slate-900 [overflow-wrap:anywhere]">
-          {contact.preferred && <Star className="mr-1" />}
-          {contact.name}
+        <h3
+          className="min-w-0 text-sm font-semibold text-slate-900 [overflow-wrap:anywhere]"
+          data-testid="phone-book-name"
+        >
+          {doctors.length > 1 ? (
+            <>
+              <span className="block">
+                {doctors.map((doctor, index) => (
+                  <span key={doctor} className="block">
+                    {index === 0 && contact.preferred && <Star className="mr-1" />}
+                    {doctor}
+                  </span>
+                ))}
+              </span>
+              {note && <span className="block text-xs font-normal text-slate-600">{note}</span>}
+            </>
+          ) : (
+            <>
+              {contact.preferred && <Star className="mr-1" />}
+              {contact.name}
+            </>
+          )}
         </h3>
         <button
           type="button"
@@ -273,7 +299,7 @@ function ContactForm({
             <span aria-hidden="true" className="text-amber-500">
               ★{' '}
             </span>
-            Preferred — one of the places we send people first
+            Preferred - one of the places we send people first
           </span>
         </label>
 
@@ -281,7 +307,7 @@ function ContactForm({
           <legend className={label}>
             Offices{' '}
             <span className="font-normal text-slate-600">
-              (an address with its phone and fax — add one for each place; several numbers can go in
+              (an address with its phone and fax - add one for each place; several numbers can go in
               one box)
             </span>
           </legend>
@@ -404,7 +430,7 @@ function ContactForm({
             className={inputClass}
           />
           <p className="mt-1 text-xs text-slate-600">
-            About the place only — never a patient’s name or details.
+            About the place only - never a patient’s name or details.
           </p>
         </div>
         {problem && <Alert>{problem}</Alert>}
@@ -438,7 +464,7 @@ function ContactForm({
  * the phone and in the header, the search box ready on a laptop and kept in
  * view while scrolling, and what was searched kept in the address so Back
  * returns to it. Starred places come first, and a heading or the whole search
- * prints. Everybody signed in searches it and keeps it. Places only — never a
+ * prints. Everybody signed in searches it and keeps it. Places only - never a
  * patient.
  */
 export function PhoneBookPage() {
@@ -495,7 +521,7 @@ export function PhoneBookPage() {
     <div className="max-w-6xl">
       <PageHeading
         title="Phone book"
-        subtitle="Where patients are referred — labs, hospitals, imaging, home care, equipment and specialists — and the numbers to do it. Anybody can add or fix an entry."
+        subtitle="Where patients are referred - labs, hospitals, imaging, home care, equipment and specialists - and the numbers to do it. Anybody can add or fix an entry."
       />
       {error && (
         <div className="mb-3">

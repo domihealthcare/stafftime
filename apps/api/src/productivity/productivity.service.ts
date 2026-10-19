@@ -88,8 +88,8 @@ export function presentStatement(row: StatementRow) {
 
 /**
  * Provider productivity (Dominguez, September 2026): managers and admins work
- * out each provider's numbers for a period — intervals, patients expected,
- * patients seen, a multiplier on the difference — and publish it, and the
+ * out each provider's numbers for a period - intervals, patients expected,
+ * patients seen, a multiplier on the difference - and publish it, and the
  * provider can then read theirs. Nobody else's, and nothing that is not
  * published.
  *
@@ -521,7 +521,7 @@ export class ProductivityService {
     }
   }
 
-  /// A bell entry with no numbers in it — the same care as every notification.
+  /// A bell entry with no numbers in it - the same care as every notification.
   private async tell(employeeId: string, what: 'ready' | 'updated', start: string, end: string) {
     await this.inbox.notify([employeeId], {
       kind: NotificationKind.PRODUCTIVITY,

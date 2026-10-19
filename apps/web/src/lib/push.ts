@@ -2,8 +2,8 @@ import { api } from './api';
 
 /**
  * Phone notifications in the browser (October 2026): turning them on for this
- * device, and off. The worker (`/push-sw.js`) only shows notifications — no
- * offline anything — and is registered only when somebody turns them on.
+ * device, and off. The worker (`/push-sw.js`) only shows notifications - no
+ * offline anything - and is registered only when somebody turns them on.
  */
 
 export type PushState =
@@ -40,7 +40,7 @@ export async function pushState(): Promise<PushState> {
   return subscription ? 'on' : 'off';
 }
 
-/// "iPhone", "Android", "Mac", "Windows" — so somebody can tell devices apart.
+/// "iPhone", "Android", "Mac", "Windows" - so somebody can tell devices apart.
 export function deviceName(): string {
   const ua = navigator.userAgent;
   if (/iPhone/.test(ua)) return 'iPhone';

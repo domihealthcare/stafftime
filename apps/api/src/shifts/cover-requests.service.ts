@@ -37,14 +37,14 @@ const nameOf = (person: { firstName: string; preferredName: string | null; lastN
   `${person.preferredName ?? person.firstName} ${person.lastName}`;
 
 /**
- * "Someone called out: ask who can cover" (October 2026, Dominguez — a
- * "smarter" idea). On an open shift, a manager asks chosen people — by bell
- * and email — whether they can take it; the first to say yes gets it (put on
+ * "Someone called out: ask who can cover" (October 2026, Dominguez - a
+ * "smarter" idea). On an open shift, a manager asks chosen people - by bell
+ * and email - whether they can take it; the first to say yes gets it (put on
  * it and published), the manager is told, and the others still to answer hear
  * it is covered. Everybody saying no tells the manager too.
  *
  * Staff never see open shifts: only the people asked see this one, and only
- * its day, hours, place and job role — never who else was asked. Only people
+ * its day, hours, place and job role - never who else was asked. Only people
  * who are free then can be asked (not already working, not on leave), from
  * the same ranking as "Who can cover this?". Saying yes checks again: the
  * shift must still be open and not started, and they must not be working then.
@@ -181,7 +181,7 @@ export class CoverRequestsService {
       },
     });
     const manager = viewer.role === Role.MANAGER || viewer.role === Role.ADMIN;
-    // Somebody not asked learns nothing — not even that it exists.
+    // Somebody not asked learns nothing - not even that it exists.
     if (!request || (request.asks.length === 0 && !manager)) {
       throw new NotFoundException('That request does not exist.');
     }
@@ -264,7 +264,7 @@ export class CoverRequestsService {
       throw new BadRequestException('You already have a shift then, so you cannot take this one.');
     }
 
-    // Claimed only if it is still open — two people saying yes at the same
+    // Claimed only if it is still open - two people saying yes at the same
     // moment cannot both get it.
     const taken = await this.prisma.$transaction(async (tx) => {
       const claimed = await tx.shift.updateMany({

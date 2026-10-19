@@ -7,9 +7,9 @@ import { PtoBalance, PtoPolicyService } from './pto-policy.service';
 /**
  * A pop-up at the start of every month with the time off somebody has left
  * (October 2026, Dominguez, from staff feedback: "so they are aware"). Shown
- * on Home the first time they open it in a month, once — the month they last
+ * on Home the first time they open it in a month, once - the month they last
  * saw it is kept on them. Not for somebody with neither PTO nor sick time,
- * nor anybody who has left, nor somebody added to the app this month — they
+ * nor anybody who has left, nor somebody added to the app this month - they
  * have only just started, and will have it from next month.
  */
 @Injectable()

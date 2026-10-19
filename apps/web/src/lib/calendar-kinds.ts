@@ -3,7 +3,7 @@ import type { EventKind } from './types';
 /**
  * The kinds of entry on the practice calendar (October 2026, Dominguez: "a
  * calendar that staff can reference for multiple things"), each with the
- * words and colours it wears everywhere it is shown — the Calendar, the rota's
+ * words and colours it wears everywhere it is shown - the Calendar, the rota's
  * events row, the month, Home. Pay days are not stored: they are worked out
  * from the pay period, so they are a kind here but never an event. So is
  * "My shifts", the signed-in person's own schedule (October 2026, Dominguez:
@@ -13,12 +13,12 @@ import type { EventKind } from './types';
  * Tailwind finds class names by reading the source, so each is written out
  * whole rather than built from a colour name.
  */
-export type CalendarKind = EventKind | 'PAY_DAY' | 'MY_SHIFT';
+export type CalendarKind = EventKind | 'PAY_DAY' | 'MY_SHIFT' | 'PROVIDERS';
 
 export interface KindStyle {
-  /// "Diagnostics" — a filter chip, a heading.
+  /// "Diagnostics" - a filter chip, a heading.
   label: string;
-  /// "Diagnostics date" — a form's heading, a menu item.
+  /// "Diagnostics date" - a form's heading, a menu item.
   one: string;
   emoji: string;
   /// A chip: tint, text, ring and hover.
@@ -37,6 +37,14 @@ export const KIND_STYLE: Record<CalendarKind, KindStyle> = {
     chip: 'bg-brand-50 text-brand-900 ring-brand-300 hover:bg-brand-100',
     subtle: 'text-brand-800',
     dot: 'bg-brand-600',
+  },
+  PROVIDERS: {
+    label: 'Providers',
+    one: 'Providers',
+    emoji: '🧑‍⚕️',
+    chip: 'bg-violet-50 text-violet-950 ring-violet-300',
+    subtle: 'text-violet-800',
+    dot: 'bg-violet-600',
   },
   EVENT: {
     label: 'Meetings & events',
@@ -92,6 +100,7 @@ export const KIND_STYLE: Record<CalendarKind, KindStyle> = {
 /// The order they are listed in, filtered by and shown on a day.
 export const CALENDAR_KINDS: CalendarKind[] = [
   'MY_SHIFT',
+  'PROVIDERS',
   'CLOSURE',
   'HOLIDAY',
   'PAY_DAY',

@@ -20,7 +20,7 @@ import { NotificationsService } from '../email/notifications.service';
 import { PrismaService } from '../prisma/prisma.service';
 
 /**
- * Tells new hires about their own onboarding tasks coming due, or overdue —
+ * Tells new hires about their own onboarding tasks coming due, or overdue -
  * see `checklists/onboarding-reminders.ts` for when and why. Run by the
  * five-minute timer and, as a fallback, the nightly job. Each reminder is
  * recorded (`ChecklistTaskReminder`) before it is sent, so a second run sends

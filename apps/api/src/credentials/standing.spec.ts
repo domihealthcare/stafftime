@@ -15,7 +15,7 @@ describe('where somebody stands against the licenses their job roles ask for', (
   const bls = type('bls', 'BLS', 6);
   const flu = type('flu', 'Flu vaccine', 8);
 
-  it('says what is missing, lapsed, due soon or current — required first', () => {
+  it('says what is missing, lapsed, due soon or current - required first', () => {
     const lines = standingFor(
       [
         { credentialTypeId: 'bls', required: false, jobRoleName: 'Provider', type: bls },

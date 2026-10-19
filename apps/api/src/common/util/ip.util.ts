@@ -2,7 +2,7 @@
  * IP allow-list matching for the fallback clock-in check.
  *
  * Supports exact matches (IPv4 and IPv6) and IPv4 CIDR blocks such as
- * "203.0.113.0/24" — enough for an office's static IP or small block.
+ * "203.0.113.0/24" - enough for an office's static IP or small block.
  * IPv6 CIDR is not supported; an IPv6 entry must be an exact match.
  */
 

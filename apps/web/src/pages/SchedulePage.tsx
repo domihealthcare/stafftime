@@ -81,7 +81,7 @@ import {
 import { RotaCostCard } from '../components/RotaCost';
 
 /// Where the week/month choice is remembered. Per browser, per person on that
-/// browser — it never leaves the device and nothing depends on it.
+/// browser - it never leaves the device and nothing depends on it.
 const VIEW_KEY = 'domi.schedule.view';
 const GROUPING_KEY = 'domi.schedule.grouping';
 
@@ -90,7 +90,7 @@ export function SchedulePage() {
   const isManager = useIsManager();
   const { employee: me } = useSession();
   const isPhone = useIsPhone();
-  /// Everyone together, by office, or by job role — remembered like the view.
+  /// Everyone together, by office, or by job role - remembered like the view.
   const [grouping, setGrouping] = useState<RotaGrouping>(() => {
     try {
       const saved = window.localStorage.getItem(GROUPING_KEY);
@@ -104,7 +104,7 @@ export function SchedulePage() {
   /// One person's shifts only ('' for everyone), in the week and the month.
   /// Kept while moving between weeks and months, so a manager can page
   /// through somebody's autumn. On a phone a manager starts on their own
-  /// schedule, as staff do (Dominguez, October 2026) — a phone is for
+  /// schedule, as staff do (Dominguez, October 2026) - a phone is for
   /// checking when you are on; the rota is built on a laptop, which starts on
   /// everyone.
   const [personFilter, setPersonFilter] = useState(() => (isManager && isPhone && me ? me.id : ''));
@@ -116,7 +116,7 @@ export function SchedulePage() {
   /// one. The week view is where shifts are added and removed; the month view
   /// is an overview, and a day in it is a way back to that week.
   ///
-  /// Remembered, because whichever one you want you tend to want every time —
+  /// Remembered, because whichever one you want you tend to want every time -
   /// a manager building rotas lives in the week, somebody checking their own
   /// shifts lives in the month, and neither should re-pick it after every trip
   /// to another screen. Browser storage can throw (private windows, blocked
@@ -289,7 +289,7 @@ export function SchedulePage() {
   const [copying, setCopying] = useState(false);
 
   /// The days on screen. A month is shown as whole Sunday-to-Saturday weeks, so
-  /// every row has seven days and the month sits inside it — which means the
+  /// every row has seven days and the month sits inside it - which means the
   /// range loaded is a little wider than the month itself.
   const days = useMemo(
     () =>
@@ -396,11 +396,11 @@ export function SchedulePage() {
   }
 
   // A published shift that is removed is kept as CANCELLED, so staff who saw
-  // it have a record — but it is not on anymore. The week (RotaTable) always
+  // it have a record - but it is not on anymore. The week (RotaTable) always
   // left those out; the month showed them, so a removed shift was still there.
   //
   // The month narrows by the same office and job role filters as the week
-  // (`lib/shift-filters.ts`): an office keeps the shifts at that office — not
+  // (`lib/shift-filters.ts`): an office keeps the shifts at that office - not
   // work from home, which has its own choice; a job role keeps the shifts for
   // that role, not everything its people do. "MAs in North Bergen" is both.
   const roleMembers = useMemo(
@@ -423,7 +423,7 @@ export function SchedulePage() {
   }, [shifts, personFilter, locationFilter, roleFilter, roleMembers]);
 
   /// Who can be picked in the month: everybody still here, and anybody who
-  /// has left but still has a shift on screen, so it can be found and moved —
+  /// has left but still has a shift on screen, so it can be found and moved -
   /// narrowed to the office and job role chosen beside it.
   const pickablePeople = useMemo(() => {
     const onScreen = new Set(shifts.map((shift) => shift.employeeId));
@@ -443,7 +443,7 @@ export function SchedulePage() {
   }, [employees, shifts, personFilter, roleFilter, locationFilter, roleMembers]);
   const pickedPerson = employees.find((person) => person.id === personFilter) ?? null;
 
-  /// Drafts on screen — the week or the month being looked at — that staff
+  /// Drafts on screen - the week or the month being looked at - that staff
   /// cannot see yet, narrowed by the same filters as the rota.
   const draftsOnScreen = useMemo(
     () =>
@@ -458,7 +458,7 @@ export function SchedulePage() {
   );
   const period = view === 'week' ? 'this week' : 'this month';
 
-  /// Publishes drafts together, after one question — staff are told, so it is
+  /// Publishes drafts together, after one question - staff are told, so it is
   /// not something to do by a stray click. The question is "Before you
   /// publish" when anything about them is worth a look (time off, overtime,
   /// a lapsed license…); a check that fails never stands in the way.
@@ -532,7 +532,7 @@ export function SchedulePage() {
     if (!who && !where) return null;
     return who && where ? `${who} at ${where}` : (who ?? where);
   }, [pickedPerson, jobRoles, roleFilter, locations, locationFilter]);
-  /// How many shifts that leaves in the month itself — not the days either
+  /// How many shifts that leaves in the month itself - not the days either
   /// side that square off the grid.
   const scopedShiftCount = useMemo(() => {
     let count = 0;
@@ -579,7 +579,7 @@ export function SchedulePage() {
       )}
 
       {/* On a phone: Previous, This week and Next share one row, and the
-          time-off button and Week / Month the next — each row the full width,
+          time-off button and Week / Month the next - each row the full width,
           rather than wrapping wherever they happen to run out of room. */}
       <div className="mb-4 flex flex-wrap items-center gap-2">
         <div className="grid w-full grid-cols-3 gap-2 sm:flex sm:w-auto">
@@ -618,7 +618,7 @@ export function SchedulePage() {
         </div>
 
         {/* Switching keeps you where you were: a week in March goes to March,
-            and picking a day in March goes back to that week — not to today. */}
+            and picking a day in March goes back to that week - not to today. */}
         <div className="flex w-full items-center gap-2 sm:ml-auto sm:w-auto">
           <RequestTimeOffButton />
           <div className="flex flex-1 rounded-lg border border-slate-300 bg-white p-0.5 sm:flex-none">
@@ -918,7 +918,7 @@ export function SchedulePage() {
             defaultDate={eventForm.day ?? newEventDay(view === 'week' ? weekStart : monthStart)}
             onSaved={(created) => {
               setEventForm(null);
-              setEventNotice(created > 1 ? `Saved — ${created} dates are on the schedule.` : null);
+              setEventNotice(created > 1 ? `Saved - ${created} dates are on the schedule.` : null);
               void load();
             }}
             onCancel={() => setEventForm(null)}
@@ -1002,7 +1002,7 @@ export function SchedulePage() {
       )}
 
       {/* Which month or week this is, large, right above the calendar and under
-          the buttons (Dominguez, September 2026) — it was a small label beside
+          the buttons (Dominguez, September 2026) - it was a small label beside
           Previous and Next, easy to miss. */}
       <h2
         className="mb-3 text-2xl font-bold text-slate-900 sm:text-3xl"
@@ -1030,8 +1030,8 @@ export function SchedulePage() {
             <p className="mb-2 text-sm text-slate-700" data-testid="month-person">
               Only <span className="font-semibold">{monthScope}</span>
               {scopedShiftCount === 0
-                ? ' — no shifts this month.'
-                : ` — ${scopedShiftCount} shift${scopedShiftCount === 1 ? '' : 's'} this month.`}
+                ? ' - no shifts this month.'
+                : ` - ${scopedShiftCount} shift${scopedShiftCount === 1 ? '' : 's'} this month.`}
             </p>
           )}
           <RotaLegend
@@ -1070,7 +1070,7 @@ export function SchedulePage() {
           )}
           <RotaTable
             days={days}
-            // One person picked: their row alone — no open shifts either.
+            // One person picked: their row alone - no open shifts either.
             shifts={
               isManager && personFilter
                 ? shifts.filter((shift) => shift.employeeId === personFilter)
@@ -1194,7 +1194,7 @@ export function SchedulePage() {
       <div className="mt-3 grid gap-3 sm:grid-cols-[1fr_auto] sm:items-start">
         <CalendarLinkCard />
         <Link to="/availability" className={`inline-block ${buttonClass('secondary', 'md')}`}>
-          {isManager ? 'Availability — yours and the team’s' : t('When you can’t work')}
+          {isManager ? 'Availability - yours and the team’s' : t('When you can’t work')}
         </Link>
       </div>
       {personMenu.menu}
@@ -1203,7 +1203,7 @@ export function SchedulePage() {
   );
 }
 
-/// The value the Employee list uses for "nobody yet — an open shift".
+/// The value the Employee list uses for "nobody yet - an open shift".
 const OPEN_SHIFT = 'open';
 
 function NewShiftForm({
@@ -1263,7 +1263,7 @@ function NewShiftForm({
   const [busy, setBusy] = useState(false);
   const confirm = useConfirm();
 
-  // Only offer locations the chosen employee is actually assigned to — the API
+  // Only offer locations the chosen employee is actually assigned to - the API
   // rejects anything else, and a disabled option explains why better than a 400.
   const selectedEmployee =
     employeeId === OPEN_SHIFT
@@ -1345,7 +1345,7 @@ function NewShiftForm({
             className="mt-1 w-full rounded-lg border-slate-300 text-sm shadow-sm focus:border-brand-600 focus:ring-brand-600"
           >
             <option value="">Choose someone…</option>
-            <option value={OPEN_SHIFT}>Nobody yet — an open shift to fill</option>
+            <option value={OPEN_SHIFT}>Nobody yet - an open shift to fill</option>
             {employees
               .filter((employee) => employee.employmentStatus === 'ACTIVE')
               .map((employee) => (
@@ -1547,7 +1547,7 @@ function CoverageStrip({ days }: { days: CoverageDay[] }) {
           <ul className="mt-1 space-y-0.5 text-xs">
             {conflicts.slice(0, 5).map(({ day, shift }) => (
               <li key={shift.id}>
-                {shift.employeeName} —{' '}
+                {shift.employeeName} -{' '}
                 {new Date(`${day.date}T00:00:00Z`).toLocaleDateString(undefined, {
                   timeZone: 'UTC',
                   weekday: 'short',
@@ -1610,7 +1610,7 @@ function AvailabilityNotice({
       <ul className="mt-1 space-y-0.5 text-xs">
         {clashes.slice(0, 8).map(({ day, shift, reason }) => (
           <li key={shift.id}>
-            <span className="font-medium">{shift.employeeName}</span> —{' '}
+            <span className="font-medium">{shift.employeeName}</span> -{' '}
             {new Date(`${day.date}T00:00:00Z`).toLocaleDateString(undefined, {
               timeZone: 'UTC',
               weekday: 'short',
@@ -1634,7 +1634,7 @@ function AvailabilityNotice({
  * it is saved (Dominguez, September 2026).
  *
  * Shown at the top of the schedule in both views. Overtime is a per-week
- * question either way, which is why one component serves both — a month view
+ * question either way, which is why one component serves both - a month view
  * that quietly used a different rule would be worse than one that said nothing.
  */
 function OvertimeNotice({
@@ -1684,11 +1684,11 @@ function OvertimeNotice({
         <ul className="space-y-0.5">
           {overtime.map((warning) => (
             <li key={`${warning.employeeId}-${warning.weekStart}`}>
-              <span className="font-semibold">{warning.employeeName}</span> —{' '}
+              <span className="font-semibold">{warning.employeeName}</span> -{' '}
               {warning.scheduledHours} hours in the week of {week(warning.weekStart)}, so{' '}
               <span className="font-semibold">{warning.overtimeHours} at overtime</span>
               {/* The hours are totalled across the practice, so say when some of
-                  them are somewhere this screen is not showing — otherwise the
+                  them are somewhere this screen is not showing - otherwise the
                   number looks wrong to whoever is reading it. */}
               {warning.spansLocations && ' (including hours at another location)'}
             </li>
@@ -1704,7 +1704,7 @@ function OvertimeNotice({
 }
 
 /**
- * A month at a glance — who is on, and when.
+ * A month at a glance - who is on, and when.
  *
  * This is mostly a staff screen. A manager builds the rota a week at a time on
  * a laptop; an employee opens the month to see which days they are working, and
@@ -1749,7 +1749,7 @@ function MonthGrid({
   const t = useT();
   const today = new Date().toDateString();
   // On a phone a square is forty pixels wide, so it shows three and counts the
-  // rest. From `sm` up the square grows to list every shift — a manager reads
+  // rest. From `sm` up the square grows to list every shift - a manager reads
   // the month to see who is on, and "+4 more" answers nothing.
   const MAX_LINES = 3;
 
@@ -1787,8 +1787,8 @@ function MonthGrid({
           // reader and a laptop get; the short one is what fits in a column
           // about forty pixels wide, where "1pm–9pm" truncates to "1p…" and
           // tells nobody anything. The start time on its own still answers the
-          // question an employee opened the month to ask — am I on at nine or
-          // at one — and the rest is one tap away in the week.
+          // question an employee opened the month to ask - am I on at nine or
+          // at one - and the rest is one tap away in the week.
           const described = dayShifts.map((shift) =>
             showNames
               ? `${shift.employee?.firstName ?? 'Open'} ${formatTimeCompact(shift.startsAt)}–${formatTimeCompact(shift.endsAt)}`
@@ -1808,13 +1808,13 @@ function MonthGrid({
                 weekday: 'long',
                 month: 'long',
                 day: 'numeric',
-              })} — ${
+              })} - ${
                 dayShifts.length === 0
                   ? t('no shifts')
                   : `${plural(dayShifts.length, '{n} shift', '{n} shifts')}: ${described.join(', ')}`
-              }${cakes.length > 0 ? ` — ${t('birthday: {names}', { names: cakes.join(', ') })}` : ''}${
+              }${cakes.length > 0 ? ` - ${t('birthday: {names}', { names: cakes.join(', ') })}` : ''}${
                 dayEvents.length > 0
-                  ? ` — ${t(dayEvents.length === 1 ? 'event: {titles}' : 'events: {titles}', {
+                  ? ` - ${t(dayEvents.length === 1 ? 'event: {titles}' : 'events: {titles}', {
                       titles: dayEvents.map((event) => event.title).join(', '),
                     })}`
                   : ''
@@ -1852,7 +1852,7 @@ function MonthGrid({
               ))}
 
               {dayShifts.length === 0 ? (
-                <span className="mt-1 block text-[11px] text-slate-300 sm:text-xs">—</span>
+                <span className="mt-1 block text-[11px] text-slate-300 sm:text-xs">-</span>
               ) : (
                 <span className="mt-0.5 block space-y-0.5">
                   {dayShifts.map((shift, index) => {

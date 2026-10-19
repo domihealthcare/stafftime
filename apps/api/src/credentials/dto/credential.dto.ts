@@ -54,7 +54,7 @@ export class CreateCredentialDto {
   notes?: string;
 }
 
-/// Everything is replaceable, including the expiry — a renewal is usually the
+/// Everything is replaceable, including the expiry - a renewal is usually the
 /// same credential with a new date on it.
 export class UpdateCredentialDto {
   @IsOptional()
@@ -95,7 +95,7 @@ export class QueryCredentialsDto {
   @IsEnum(CredentialKind)
   kind?: CredentialKind;
 
-  /// Only what expires within this many days — the question a practice manager
+  /// Only what expires within this many days - the question a practice manager
   /// actually asks. Anything already expired is always included.
   @IsOptional()
   @Type(() => Number)

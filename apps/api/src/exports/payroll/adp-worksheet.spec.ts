@@ -8,9 +8,9 @@ import {
   WorksheetError,
 } from './adp-worksheet';
 
-/// Shaped the way ADP's instructions describe an exported worksheet — three
+/// Shaped the way ADP's instructions describe an exported worksheet - three
 /// header rows marked with "!", the employees, then footer rows from the next
-/// "!" — but invented: a real export from Domi's account may name its columns
+/// "!" - but invented: a real export from Domi's account may name its columns
 /// differently, which is exactly why the app learns them from the paste.
 const WORKSHEET = [
   '!PAYDATA,Worksheet,Domi Week 38',

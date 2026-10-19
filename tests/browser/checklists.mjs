@@ -38,16 +38,16 @@ await step('an admin starts with nothing on the go', async () => {
 
 await step('the seeded templates are there to look at', async () => {
   await admin.getByText('Templates').first().waitFor({ timeout: 10000 });
-  await admin.getByText('New hire — Domi Healthcare').first().waitFor({ timeout: 5000 });
-  await admin.getByText('Departure — Domi Healthcare').first().waitFor({ timeout: 5000 });
+  await admin.getByText('New hire - Domi Healthcare').first().waitFor({ timeout: 5000 });
+  await admin.getByText('Departure - Domi Healthcare').first().waitFor({ timeout: 5000 });
 });
 
 await step('a template opens to show what it will create', async () => {
-  await admin.getByRole('button', { name: /New hire — Domi Healthcare/ }).click();
+  await admin.getByRole('button', { name: /New hire - Domi Healthcare/ }).click();
   await admin.getByText('Form I-9 completed and verified').first().waitFor({ timeout: 5000 });
   // The I-9 is due three days after the start date.
   await admin.getByText('3 days after').first().waitFor({ timeout: 5000 });
-  await admin.getByRole('button', { name: /New hire — Domi Healthcare/ }).click();
+  await admin.getByRole('button', { name: /New hire - Domi Healthcare/ }).click();
 });
 await admin.screenshot({ path: `${OUT}/40-templates.png`, fullPage: true });
 
@@ -85,8 +85,8 @@ await step('a task ticks off', async () => {
 });
 
 await step('nowhere on the screen asks for a file', async () => {
-  // This app tracks that the I-9 was done. The form itself — and the social
-  // security number on it — stays in the personnel file. If a file input ever
+  // This app tracks that the I-9 was done. The form itself - and the social
+  // security number on it - stays in the personnel file. If a file input ever
   // appears here again, it was not an accident anybody meant.
   if ((await admin.locator('input[type=file]').count()) > 0)
     throw new Error('a checklist offered to take an upload');
@@ -197,7 +197,7 @@ async function openTemplate(page, name) {
 }
 
 await step('an admin can open a template for editing', async () => {
-  await openTemplate(admin, /New hire — Domi Healthcare/);
+  await openTemplate(admin, /New hire - Domi Healthcare/);
   await admin.getByRole('button', { name: 'Edit this template' }).click();
   await admin.getByLabel('Template name').waitFor({ timeout: 10000 });
 });
@@ -231,7 +231,7 @@ await step('the change is on the template, described in plain words', async () =
 });
 
 await step('a task can be reordered and removed', async () => {
-  await openTemplate(admin, /New hire — Domi Healthcare/);
+  await openTemplate(admin, /New hire - Domi Healthcare/);
   await admin.getByRole('button', { name: 'Edit this template' }).click();
   await admin.getByLabel('Task 1 title').waitFor({ timeout: 10000 });
 
@@ -256,7 +256,7 @@ await step('the edit does not disturb a checklist already under way', async () =
   // The running checklist names the template it came from, so there are now two
   // buttons carrying that text. openTemplate takes the later one, which is the
   // template card.
-  await openTemplate(admin, /New hire — Domi Healthcare/);
+  await openTemplate(admin, /New hire - Domi Healthcare/);
   await admin.getByRole('button', { name: 'Edit this template' }).click();
   await admin.getByLabel('Task 1 title').fill('COMPLETELY DIFFERENT WORDING');
   await admin.getByRole('button', { name: 'Save the template' }).click();
@@ -312,7 +312,7 @@ await step('a template with no name or no tasks is refused with a reason', async
 await step('a manager can read the templates but not change them', async () => {
   await manager.reload({ waitUntil: 'networkidle' });
   await manager.getByText('Templates').first().waitFor({ timeout: 15000 });
-  await openTemplate(manager, /Departure — Domi Healthcare/);
+  await openTemplate(manager, /Departure - Domi Healthcare/);
 
   for (const name of ['Edit this template', 'Retire this template', '+ New onboarding template']) {
     if ((await manager.getByRole('button', { name }).count()) > 0)

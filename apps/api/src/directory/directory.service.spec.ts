@@ -204,7 +204,7 @@ describe('DirectoryService', () => {
     ]);
     const [row] = await service.list(employee, NOW);
     expect(row.onNow?.jobRole).toEqual(admin);
-    // The role only — never the shift's times.
+    // The role only - never the shift's times.
     const { select } = prisma.employee.findMany.mock.calls[0][0];
     expect(select.timeEntries.select.shift).toEqual({
       select: { jobRole: { select: { id: true, name: true, sortOrder: true, colour: true } } },

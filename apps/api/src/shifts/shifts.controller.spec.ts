@@ -5,7 +5,7 @@ import { ShiftsService } from './shifts.service';
 
 /// Staff read their own shifts, and never a draft: a shift reaches them when
 /// a manager publishes it (docs/architecture.md).
-describe('ShiftsController — what staff can read', () => {
+describe('ShiftsController - what staff can read', () => {
   const staff = { id: 'emp-1', email: 'a@example.com', role: Role.EMPLOYEE };
   const manager = { id: 'mgr-1', email: 'm@example.com', role: Role.MANAGER };
 

@@ -8,15 +8,15 @@ import { Card } from '../../components/ui';
  *
  * What is still needed is shown all the time, not only after a PDF is tried
  * (Dominguez, October 2026: "should be easier to see"): each section's card
- * says how many things it needs, and the list — each one a button that jumps
- * to its answer — opens from there. It starts folded (Dominguez, October
+ * says how many things it needs, and the list - each one a button that jumps
+ * to its answer - opens from there. It starts folded (Dominguez, October
  * 2026: a blank section's list of eighteen crowded the form on a phone). The
  * red messages under the fields themselves still wait for a first try, so a
  * blank form is not a wall of red.
  *
  * The amber is held back until somebody has moved past a section
  * (`useMovedOn`, below; Dominguez, October 2026: "only highlight in orange if
- * they move onto the next section and a required item is missing" — first
+ * they move onto the next section and a required item is missing" - first
  * on the BrainCheck Care Plan, then the other two). Until then an unfinished
  * section is plain, with a quiet count; the required fields keep their star
  * throughout.
@@ -172,7 +172,7 @@ function StatusBadge({ count, flagged }: { count: number; flagged: boolean }) {
 
 /// The bar that stays at the top while the form scrolls: a pill per section
 /// (green with a tick when complete, amber with its count when not), and how
-/// much is left overall — a button down to the full list.
+/// much is left overall - a button down to the full list.
 export function ProgressBar({
   sections,
   pending,
@@ -221,7 +221,7 @@ export function ProgressBar({
             }`}
             data-testid="progress-left"
           >
-            {pending.length} thing{pending.length === 1 ? '' : 's'} still needed — see the list
+            {pending.length} thing{pending.length === 1 ? '' : 's'} still needed - see the list
           </button>
         )}
       </div>
@@ -309,7 +309,7 @@ export function PendingList({
   );
 }
 
-/// English, or English and Spanish — the only two ways a PDF is printed.
+/// English, or English and Spanish - the only two ways a PDF is printed.
 export function LanguageChoice({
   value,
   onChange,
@@ -389,7 +389,7 @@ export function DownloadButton({
       </button>
       <p className="mt-1 text-xs text-slate-500">
         {detail}
-        {done && <span className="ml-1 font-medium text-emerald-700">— ✓ downloaded</span>}
+        {done && <span className="ml-1 font-medium text-emerald-700"> - ✓ downloaded</span>}
       </p>
     </div>
   );

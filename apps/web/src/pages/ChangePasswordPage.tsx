@@ -7,7 +7,7 @@ import { PASSWORD_RULE, meetsPasswordRule } from '../lib/password';
 import { plural, useT } from '../lib/i18n';
 
 /**
- * Shown on its own when a temporary password is still in force — the server
+ * Shown on its own when a temporary password is still in force - the server
  * blocks every other route until it is replaced, so there is nowhere else to go.
  * Also reachable from the header as an ordinary password change.
  */

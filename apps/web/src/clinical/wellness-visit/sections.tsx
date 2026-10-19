@@ -29,7 +29,7 @@ const choicesIn = (options: readonly Option[], language: Language): Choice[] =>
 
 /// A question in the language it is asked in; in Spanish, the English under
 /// it, smaller, so whoever is asking can follow. The required mark goes after
-/// the question itself rather than under the English — so the fields around
+/// the question itself rather than under the English - so the fields around
 /// it are not told `required`.
 function Asked({
   words,
@@ -81,7 +81,7 @@ export function PatientSection({
   return (
     <div className="space-y-4">
       <p className="text-sm text-slate-600" data-testid="preparer-line">
-        Completed by <span className="font-medium text-slate-900">{preparedBy}</span> — the person
+        Completed by <span className="font-medium text-slate-900">{preparedBy}</span> - the person
         signed in.
       </p>
       <Grid>
@@ -119,7 +119,7 @@ export function PatientSection({
       {page === 1 && (
         <RadioGroup
           path="patient.language"
-          label="Patient’s preferred language — the questions are shown in it"
+          label="Patient’s preferred language - the questions are shown in it"
           required
           options={[
             { value: 'en', label: 'English' },
@@ -239,7 +239,7 @@ export function SpmsqSection({
   return (
     <div className="space-y-4">
       <p className="text-sm text-slate-600">
-        Mark each answer correct or incorrect. Only that is kept — never what the patient said.
+        Mark each answer correct or incorrect. Only that is kept - never what the patient said.
       </p>
       <div className="space-y-3">
         {SPMSQ.map((item, index) => (
@@ -271,7 +271,7 @@ export function SpmsqSection({
             <span className="font-semibold text-slate-900">{SPMSQ_BANDS[score.band].en}</span>
             <span className="text-slate-700">
               {' '}
-              — {score.errors} of 10 incorrect
+              - {score.errors} of 10 incorrect
               {score.adjusted !== score.errors &&
                 `, counted as ${score.adjusted} for the education allowance`}
               .
@@ -314,7 +314,7 @@ export function ServicesSection({
                   {service.name}
                   {service.frequency && (
                     <span className="ml-1 font-normal italic text-slate-500">
-                      — {service.frequency}
+                      - {service.frequency}
                     </span>
                   )}
                 </span>

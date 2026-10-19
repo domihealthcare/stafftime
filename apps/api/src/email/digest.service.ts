@@ -10,7 +10,7 @@ export type { DigestContents };
 /**
  * The nightly round-up.
  *
- * What goes in it is `AttentionService`'s job — the same list the banners on
+ * What goes in it is `AttentionService`'s job - the same list the banners on
  * the screens read, so the email and the app cannot disagree. This is only
  * about sending it.
  *
@@ -38,7 +38,7 @@ export class DigestService {
     const itemCount = Object.values(contents).reduce((sum, list) => sum + list.length, 0);
 
     if (itemCount === 0) {
-      this.logger.log('Nothing to chase today — no digest sent');
+      this.logger.log('Nothing to chase today - no digest sent');
       return { sent: 0, contents };
     }
 

@@ -3,8 +3,8 @@ import { mkdirSync } from 'node:fs';
 import { goTo } from './nav.mjs';
 
 // Clocked out automatically at midnight (October 2026, Dominguez): a punch left
-// open from an earlier day is closed at the midnight that ended it — with or
-// without a shift — so nobody is stuck the next morning. It is a warning both
+// open from an earlier day is closed at the midnight that ended it - with or
+// without a shift - so nobody is stuck the next morning. It is a warning both
 // ways: the person is told, and managers must correct the time before the
 // hours can be approved.
 const OUT = process.argv[2] || new URL('./shots/', import.meta.url).pathname;
@@ -75,7 +75,7 @@ const locations = (await call(frankie, '/locations')).body;
 const northBergen = locations.find((l) => l.name === 'North Bergen');
 
 /// Frankie clocks in (from home, which needs no location), and the admin moves
-/// the clock-in back to yesterday — the punch Frankie forgot to close.
+/// the clock-in back to yesterday - the punch Frankie forgot to close.
 async function forgottenPunch(hoursAgo) {
   const punched = await call(frankie, '/time-entries/clock-in', {
     method: 'POST',

@@ -25,7 +25,7 @@ const step = async (name, fn) => {
 /**
  * Required reading and tasks (Dominguez, October 2026: "something the
  * admin/managers can require for need to know information or required
- * tasks" — a nag, never a gate). A manager asks people to read and confirm
+ * tasks" - a nag, never a gate). A manager asks people to read and confirm
  * a News post, or to do something; they see it on Home and confirm; the
  * manager sees who has; reminders go out until they do.
  *

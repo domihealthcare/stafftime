@@ -8,7 +8,7 @@ import type { ReviewMeeting } from '../lib/types';
 
 /**
  * A manager has offered times to talk your 360 feedback through (October
- * 2026, Dominguez): pick one, and it goes on both calendars — the bell, email
+ * 2026, Dominguez): pick one, and it goes on both calendars - the bell, email
  * and phone calendars, with a video link if they made one.
  */
 export function ReviewMeetingPage() {

@@ -106,7 +106,7 @@ export function KiosksPage() {
         <h2 className="mb-1 text-lg font-semibold text-slate-900">Staff PINs</h2>
         <p className="mb-3 text-sm text-slate-600">
           Only staff with a PIN appear on the kiosk. PINs are stored hashed and cannot be read back
-          — if someone forgets theirs, set a new one.
+          - if someone forgets theirs, set a new one.
         </p>
         {loading ? (
           <Card className="p-6">

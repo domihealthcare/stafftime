@@ -20,10 +20,10 @@ const step = async (name, fn) => {
 };
 
 /**
- * Shifts nobody turned up for (Dominguez, October 2026 — making the app
+ * Shifts nobody turned up for (Dominguez, October 2026 - making the app
  * smarter): a published shift that is over, in the last two weeks, with no
  * punch that day, no approved time off and no closure. On the Timesheet
- * banner, the Dashboard and in the nightly email — managers only. Settled by
+ * banner, the Dashboard and in the nightly email - managers only. Settled by
  * adding the hours by hand, recording the time off, or removing the shift.
  *
  * Max gets a published shift six days ago, 9 to 5 at West New York; written
@@ -64,7 +64,7 @@ const label = new Date(`${DAY}T12:00:00Z`).toLocaleDateString('en-US', {
   month: 'short',
   day: 'numeric',
 });
-const LINE = `Max Assistant — ${label}, 9:00 AM–5:00 PM at West New York`;
+const LINE = `Max Assistant - ${label}, 9:00 AM–5:00 PM at West New York`;
 
 async function signIn(email) {
   const ctx = await browser.newContext({ viewport: { width: 1280, height: 1000 } });

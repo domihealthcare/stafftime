@@ -39,7 +39,7 @@ export function CalendarInvitesCard() {
         setNotice(`${sent} sent so far…`);
         if (result.remaining === 0 || result.failed > 0) break;
       }
-      setNotice(sent === 0 ? 'Nothing was waiting.' : `Done — ${sent} sent or updated.`);
+      setNotice(sent === 0 ? 'Nothing was waiting.' : `Done - ${sent} sent or updated.`);
     } catch (err) {
       setError(err instanceof ApiError ? err.message : 'Could not send them.');
     } finally {
@@ -85,7 +85,7 @@ export function CalendarInvitesCard() {
           {status.lastError && (
             <div className="mt-3">
               <Alert>
-                Google said: {status.lastError}. Nothing is lost — the app tries again after the
+                Google said: {status.lastError}. Nothing is lost - the app tries again after the
                 next change and every night.
               </Alert>
             </div>

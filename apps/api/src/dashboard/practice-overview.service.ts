@@ -17,7 +17,7 @@ const CLOSING_DAYS = 7;
 
 /**
  * The Dashboard's second half (Dominguez, September 2026): everything a
- * manager keeps an eye on besides hours — surveys, licenses, onboarding and
+ * manager keeps an eye on besides hours - surveys, licenses, onboarding and
  * offboarding, closing checklists, and what is waiting on a manager.
  *
  * Counts and short lists only, each read from the service or query its own

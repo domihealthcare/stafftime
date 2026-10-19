@@ -10,14 +10,14 @@ import type { Announcement } from '../lib/types';
  * reader's, remembered on this device; English until they pick Español.
  *
  * A post's Spanish is the admin's when they wrote or checked it, otherwise
- * the AI service's — asked for the first time somebody wants it, then kept for
+ * the AI service's - asked for the first time somebody wants it, then kept for
  * everybody (`GET /announcements/:id/spanish`). The poll, likes and comments
  * stay as written.
  */
 
 export type NewsLanguage = Language;
 
-/// The reader's choice — since October 2026 the whole app's language, the
+/// The reader's choice - since October 2026 the whole app's language, the
 /// same on Home, News and Your profile.
 export function useNewsLanguage(): [NewsLanguage, (language: NewsLanguage) => void] {
   return useLanguage();

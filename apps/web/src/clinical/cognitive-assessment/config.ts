@@ -6,7 +6,7 @@
  *
  * Each choice has a `value`, which the form keeps, and a `label`, which the
  * screen and the PDFs show. Change a label freely; change a value only if you
- * mean a different answer — and give it a Spanish line in translations.es.ts
+ * mean a different answer - and give it a Spanish line in translations.es.ts
  * if the patient's handout uses it.
  *
  * Nothing in this file is about a patient. It is the blank form.
@@ -63,7 +63,7 @@ export type RequirementKey = (typeof REQUIREMENTS)[number]['key'];
 
 // ------------------------------------------------------------------ billing
 
-/// Shown beside the time field. Helper text only — never filled in for them.
+/// Shown beside the time field. Helper text only - never filled in for them.
 export const TYPICAL_MINUTES = 60;
 
 /// G2212 (prolonged service). Left null until billing (Coronis) confirms the
@@ -150,7 +150,7 @@ export const CAPACITY = choices(
 
 /// FAST (Functional Assessment Staging), done on screen: the provider picks
 /// the highest stage whose description fits. Stage 1 (no difficulty) is left
-/// out on purpose — the form has no "no impairment" choice anywhere.
+/// out on purpose - the form has no "no impairment" choice anywhere.
 /// Descriptions paraphrase Reisberg's FAST; a provider to check the wording.
 export const FAST_STAGES: (Choice & { description: string })[] = [
   {

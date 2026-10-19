@@ -55,7 +55,7 @@ export function VersionCard() {
             <dt className="text-slate-500">Site</dt>
             <dd>
               {config.isTestEnvironment
-                ? 'Test — for trying things out; hours here are not paid'
+                ? 'Test - for trying things out; hours here are not paid'
                 : 'Live'}
             </dd>
           </>

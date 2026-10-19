@@ -21,7 +21,7 @@ const step = async (name, fn) => {
 };
 
 /**
- * "You're on tomorrow" (October 2026, Dominguez — "should be able to turn
+ * "You're on tomorrow" (October 2026, Dominguez - "should be able to turn
  * off as a user"): from 6pm, everybody with a published shift tomorrow is
  * told on the bell and by email, once, unless they turned it off on Email
  * settings. The five-minute timer sends it, so this suite calls the timer.

@@ -558,7 +558,7 @@ describe('AnnouncementsService', () => {
 
     const theirs = { id: 'c1', announcementId: 'post-1', authorId: 'emp-2', body: 'Hello' };
 
-    it('lets only the writer change a comment — not even an admin', async () => {
+    it('lets only the writer change a comment - not even an admin', async () => {
       const { service } = build({ comment: theirs });
       await expect(service.editComment('post-1', 'c1', 'Changed', admin)).rejects.toBeInstanceOf(
         ForbiddenException,
@@ -729,5 +729,32 @@ describe('AnnouncementsService', () => {
       const { service } = build({ one: post({ titleEs: null }) });
       await expect(service.spanish('post-1', staff)).resolves.toBeNull();
     });
+  });
+});
+
+describe('AnnouncementsService.assertCanPost', () => {
+  const make = (person: unknown) =>
+    new AnnouncementsService(
+      { employee: { findUnique: jest.fn().mockResolvedValue(person) } } as never,
+      {} as never,
+      {} as never,
+    );
+
+  it('lets an admin post without a look-up', async () => {
+    await expect(make(null).assertCanPost(admin)).resolves.toBeUndefined();
+  });
+
+  it('lets staff and managers post only when an admin switched it on', async () => {
+    const on = make({ canPostNews: true, employmentStatus: 'ACTIVE' });
+    await expect(on.assertCanPost(staff)).resolves.toBeUndefined();
+    await expect(on.assertCanPost(manager)).resolves.toBeUndefined();
+    const off = make({ canPostNews: false, employmentStatus: 'ACTIVE' });
+    await expect(off.assertCanPost(staff)).rejects.toBeInstanceOf(ForbiddenException);
+    await expect(off.assertCanPost(manager)).rejects.toBeInstanceOf(ForbiddenException);
+  });
+
+  it('refuses somebody who has left', async () => {
+    const gone = make({ canPostNews: true, employmentStatus: 'TERMINATED' });
+    await expect(gone.assertCanPost(staff)).rejects.toBeInstanceOf(ForbiddenException);
   });
 });

@@ -39,8 +39,8 @@ export function StaffPage() {
   const [staff, setStaff] = useState<Employee[]>([]);
   const [locations, setLocations] = useState<Location[]>([]);
   const [jobRoles, setJobRoles] = useState<JobRole[]>([]);
-  /// The Directory's view of each person — in now, working from home, "about
-  /// you" — so a card here says everything a Directory card does.
+  /// The Directory's view of each person - in now, working from home, "about
+  /// you" - so a card here says everything a Directory card does.
   const [directory, setDirectory] = useState<Map<string, DirectoryEntry>>(new Map());
   const [extensions, setExtensions] = useState<OfficeExtension[]>([]);
   const reviews = useTodaysScheduleReviews();
@@ -104,7 +104,7 @@ export function StaffPage() {
   async function welcomeEveryone() {
     const sure = await confirm({
       title: `Send welcome emails to ${waiting.length} ${waiting.length === 1 ? 'person' : 'people'}?`,
-      body: 'Each gets a link to choose their password — good for a week — with how to put Domi Staff on their phone and answers to the usual first-day questions. People who already have a password or have already been sent one are left out.',
+      body: 'Each gets a link to choose their password - good for a week - with how to put Domi Staff on their phone and answers to the usual first-day questions. People who already have a password or have already been sent one are left out.',
       confirmLabel: 'Send them',
       cancelLabel: 'Not yet',
       tone: 'neutral',
@@ -218,7 +218,7 @@ export function StaffPage() {
                 (imported.added === 1
                   ? 'Their onboarding checklist has started. '
                   : `Onboarding checklists started for ${imported.onboarding} new ${imported.onboarding === 1 ? 'hire' : 'hires'}. `)}
-              Nobody has been emailed yet — send the welcome emails when you are ready.
+              Nobody has been emailed yet - send the welcome emails when you are ready.
             </span>
           </Alert>
         </div>
@@ -235,7 +235,7 @@ export function StaffPage() {
             <strong>
               {waiting.length} {waiting.length === 1 ? 'person has' : 'people have'}
             </strong>{' '}
-            not been sent a welcome email — the link to choose their password, with how to put Domi
+            not been sent a welcome email - the link to choose their password, with how to put Domi
             Staff on their phone.
           </p>
           <button
@@ -364,7 +364,7 @@ function StaffCard({
   extension: OfficeExtension | null;
   /// Who reviews their patient schedule today, for a provider.
   review?: ScheduleReview;
-  /// Every job role, with its members — which of them this person is in.
+  /// Every job role, with its members - which of them this person is in.
   jobRoles: JobRole[];
   isMe: boolean;
   /// Admins only: the name opens their staff profile (address, pay, time off).

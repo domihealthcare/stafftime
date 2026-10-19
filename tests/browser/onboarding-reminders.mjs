@@ -24,7 +24,7 @@ const step = async (name, fn) => {
 
 /**
  * Reminders to a new hire about their own onboarding tasks (Dominguez,
- * October 2026 — making the app smarter): due soon (today to two days ahead)
+ * October 2026 - making the app smarter): due soon (today to two days ahead)
  * and overdue (up to two weeks), on the bell and by email, each said once for
  * a given due date, one message per person. Run by the nightly job and by the
  * five-minute timer; this suite uses the timer, as cron-job.org does.
@@ -119,12 +119,12 @@ await step('the timer sends one message, and a second run sends nothing more', a
 
 const frankie = await signIn('frontdesk@domihealthcare.com');
 
-await step('Frankie hears about both of theirs in one, overdue first — and nothing else', async () => {
+await step('Frankie hears about both of theirs in one, overdue first - and nothing else', async () => {
   const got = await reminders(frankie);
   if (got.length !== 1) throw new Error(`Frankie was told: ${JSON.stringify(got)}`);
   const [{ title, body }] = got;
   if (title !== '2 of your onboarding tasks need doing') throw new Error(`title: ${title}`);
-  if (!/^“Reminder-suite emergency contact” — was due .+; “Reminder-suite handbook” — due tomorrow\./.test(body))
+  if (!/^“Reminder-suite emergency contact” - was due .+; “Reminder-suite handbook” - due tomorrow\./.test(body))
     throw new Error(`body: ${body}`);
   if (/done already|W-4|HIPAA/.test(body)) throw new Error(`said too much: ${body}`);
 });

@@ -89,7 +89,7 @@ await step('downloading produces a real .xlsx', async () => {
   const path = `${DOWNLOADS}/${download.suggestedFilename()}`;
   await download.saveAs(path);
 
-  // The file is named by the days it covers, the last one included — as the
+  // The file is named by the days it covers, the last one included - as the
   // "To (included)" box says (it used to name the day after).
   if (download.suggestedFilename() !== `domi-timesheet_${PERIOD_FROM}_to_${PERIOD_TO}.xlsx`)
     throw new Error(`unexpected filename: ${download.suggestedFilename()}`);

@@ -3,7 +3,7 @@ import { displayName } from '../lib/format';
 import type { Employee, JobRole } from '../lib/types';
 
 /**
- * One person, or everyone — a dropdown you can type into (Dominguez,
+ * One person, or everyone - a dropdown you can type into (Dominguez,
  * September 2026: the Schedule's month view, to see one person's month).
  *
  * Closed, it reads as the person chosen, or "Everyone". Open, typing part of

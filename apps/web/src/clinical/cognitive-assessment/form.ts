@@ -16,14 +16,14 @@ export { hasConcern, toggleChoice } from '../common/choices';
  *
  * It lives only in the page's memory (React state) and is gone when the page
  * closes. Nothing here is ever sent to the server or written to the browser's
- * storage — see docs/architecture.md, "The clinical forms".
+ * storage - see docs/architecture.md, "The clinical forms".
  *
  * Every answer is kept as a plain string, even numbers and dates, so a
  * half-typed value is never lost or reshaped while somebody is typing it.
  * Dates are YYYY-MM-DD, as a date input gives them.
  */
 
-/// Done today, or at a prior visit — a statement, not a date and a name
+/// Done today, or at a prior visit - a statement, not a date and a name
 /// (Dominguez, September 2026): "completed at a prior visit; reviewed today
 /// and still valid or updated".
 export type Completion = 'today' | 'prior';

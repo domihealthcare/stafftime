@@ -46,7 +46,7 @@ export class CredentialsController {
     return this.types.standing(user, employeeId);
   }
 
-  /// Employees see their own and nothing else — enforced in the service.
+  /// Employees see their own and nothing else - enforced in the service.
   @Get()
   list(@Query() query: QueryCredentialsDto, @CurrentUser() user: AuthUser) {
     return this.credentials.findAll(query, user);

@@ -3,7 +3,7 @@ import { AttentionService } from './attention.service';
 import { DigestService } from './digest.service';
 import { DIGEST_TOPICS, contentsFor } from './digest-topics';
 
-/// Midday UTC — morning in New Jersey — so a date means the same day on the server's
+/// Midday UTC - morning in New Jersey - so a date means the same day on the server's
 /// clock and at the practice, as real punches and the 5am round-up do.
 const day = (value: string) => new Date(`${value}T12:00:00.000Z`);
 /// A date-only value, as the round-up's "today" is: midnight UTC of the date.
@@ -49,7 +49,7 @@ function build(
     employeeChecklistTask: { findMany: jest.fn().mockResolvedValue(data.tasks ?? []) },
     timeEntry: {
       // Three questions of this table: punches with no clock-out, hours
-      // entered by hand — the one that asks about `enteredByHandAt` — and the
+      // entered by hand - the one that asks about `enteredByHandAt` - and the
       // last four weeks' punches for patterns, the one that asks about lateness.
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       findMany: jest.fn(async (args: any) =>
@@ -183,9 +183,9 @@ describe('DigestService', () => {
 
     const contents = await attention.gather();
     expect(contents.missingPunches[0]).toBe(
-      'Frankie Front-Desk — clocked in Sep 15, 2026 and never out',
+      'Frankie Front-Desk - clocked in Sep 15, 2026 and never out',
     );
-    expect(contents.overdueTasks[0]).toBe('Frankie Front-Desk — Form I-9, due Sep 10, 2026');
+    expect(contents.overdueTasks[0]).toBe('Frankie Front-Desk - Form I-9, due Sep 10, 2026');
   });
 
   it('lists a punch the app clocked out at midnight as a clock-out to correct', async () => {
@@ -202,9 +202,9 @@ describe('DigestService', () => {
 
     const contents = await attention.gather();
     expect(contents.missingPunches[0]).toBe(
-      'Frankie Front-Desk — clocked in 8:52 AM on Oct 5, 2026, clocked out automatically at midnight; correct the time',
+      'Frankie Front-Desk - clocked in 8:52 AM on Oct 5, 2026, clocked out automatically at midnight; correct the time',
     );
-    // Until a manager corrects it, however old — but never once approved.
+    // Until a manager corrects it, however old - but never once approved.
     const where = prisma.timeEntry.findMany.mock.calls[0][0].where;
     expect(where.status).toEqual({ not: 'APPROVED' });
     expect(where.OR).toContainEqual({ autoClockedOutAt: { not: null }, isMissingPunch: true });
@@ -216,7 +216,7 @@ describe('DigestService', () => {
     });
 
     const contents = await attention.gather();
-    expect(contents.undecidedTimeOff[0]).toBe('Frankie Front-Desk — Nov 3, 2026');
+    expect(contents.undecidedTimeOff[0]).toBe('Frankie Front-Desk - Nov 3, 2026');
   });
 
   it('renders a range when it is one', async () => {
@@ -225,7 +225,7 @@ describe('DigestService', () => {
     });
 
     const contents = await attention.gather();
-    expect(contents.undecidedTimeOff[0]).toBe('Frankie Front-Desk — Nov 3, 2026 to Nov 7, 2026');
+    expect(contents.undecidedTimeOff[0]).toBe('Frankie Front-Desk - Nov 3, 2026 to Nov 7, 2026');
   });
 
   it('leaves people who have left out of it', async () => {
@@ -261,9 +261,9 @@ describe('DigestService', () => {
  *
  * Time is pinned for all of these. The rota check only speaks when the coming
  * Monday is close, so left to the real clock these tests would pass on a Friday
- * and fail on a Tuesday — which is worse than not having them.
+ * and fail on a Tuesday - which is worse than not having them.
  */
-describe('DigestService — who gets it', () => {
+describe('DigestService - who gets it', () => {
   it('only emails managers who have not turned it off', async () => {
     const { service, prisma } = build({
       credentials: [{ name: 'BLS card', expiresOn: day('2026-01-01'), employee: frankie }],
@@ -291,7 +291,7 @@ describe('DigestService — who gets it', () => {
   });
 });
 
-describe('DigestService — who gets which part', () => {
+describe('DigestService - who gets which part', () => {
   const morgan = { email: 'morgan@domihealthcare.com', firstName: 'Morgan' };
   const ada = { email: 'ada@domihealthcare.com', firstName: 'Ada' };
   const lapsed = { name: 'BLS card', expiresOn: day('2026-01-01'), employee: frankie };
@@ -366,7 +366,7 @@ describe('DigestService — who gets which part', () => {
   });
 });
 
-describe('DigestService — what is going wrong at the office', () => {
+describe('DigestService - what is going wrong at the office', () => {
   afterEach(() => jest.useRealTimers());
 
   /// Thursday 24 September 2026. Four days before Monday the 28th, which is
@@ -389,7 +389,7 @@ describe('DigestService — what is going wrong at the office', () => {
 
       const { silentKiosks } = await attention.gather();
       expect(silentKiosks).toEqual([
-        'North Bergen — the Front desk tablet was last used Sep 20, 2026',
+        'North Bergen - the Front desk tablet was last used Sep 20, 2026',
       ]);
     });
 
@@ -410,7 +410,7 @@ describe('DigestService — what is going wrong at the office', () => {
 
       const { silentKiosks } = await attention.gather();
       expect(silentKiosks[0]).toBe(
-        'West New York — the Front desk tablet has not been used since it was paired on Sep 18, 2026',
+        'West New York - the Front desk tablet has not been used since it was paired on Sep 18, 2026',
       );
     });
 
@@ -468,7 +468,7 @@ describe('DigestService — what is going wrong at the office', () => {
       const { attention, prisma } = build({ locations: [northBergen([])] });
 
       expect((await attention.gather()).unpublishedRota).toEqual([]);
-      // Not just filtered out afterwards — never asked for.
+      // Not just filtered out afterwards - never asked for.
       expect(prisma.location.findMany).not.toHaveBeenCalled();
     });
 
@@ -491,7 +491,7 @@ describe('DigestService — what is going wrong at the office', () => {
       const { attention } = build({ locations: [northBergen([])] });
 
       expect((await attention.gather()).unpublishedRota).toEqual([
-        'North Bergen — nothing scheduled for the week of Sep 28, 2026, starting in 4 days',
+        'North Bergen - nothing scheduled for the week of Sep 28, 2026, starting in 4 days',
       ]);
     });
 
@@ -505,7 +505,7 @@ describe('DigestService — what is going wrong at the office', () => {
       });
 
       expect((await attention.gather()).unpublishedRota).toEqual([
-        'North Bergen — 2 shifts drafted but not published for the week of Sep 28, 2026, starting in 4 days',
+        'North Bergen - 2 shifts drafted but not published for the week of Sep 28, 2026, starting in 4 days',
       ]);
     });
 
@@ -576,7 +576,7 @@ describe('DigestService — what is going wrong at the office', () => {
     it('names a required one with nothing on file, and never an optional one', async () => {
       const { attention } = build({ standing: [provider([])] });
       expect((await attention.gather()).missingCredentials).toEqual([
-        'Bola Oyelaran — DEA registration, required for Provider, not on file',
+        'Bola Oyelaran - DEA registration, required for Provider, not on file',
       ]);
     });
 
@@ -606,7 +606,7 @@ describe('DigestService — what is going wrong at the office', () => {
     it('says whose, how long, who entered them and why', async () => {
       const { attention } = build({ handEntries: [handEntry] });
       expect((await attention.gather()).handEntries).toEqual([
-        'Frankie Front-Desk — 8.50 hours on Sep 28, 2026 at North Bergen, entered by Morgan Manager: the app would not let them clock in (“Said it could not find her location”)',
+        'Frankie Front-Desk - 8.50 hours on Sep 28, 2026 at North Bergen, entered by Morgan Manager: the app would not let them clock in (“Said it could not find her location”)',
       ]);
     });
 
@@ -641,7 +641,7 @@ describe('DigestService — what is going wrong at the office', () => {
       });
 
       expect((await attention.gather()).unapprovedHours).toEqual([
-        'Frankie Front-Desk — 6 shifts not approved, oldest Sep 8, 2026',
+        'Frankie Front-Desk - 6 shifts not approved, oldest Sep 8, 2026',
       ]);
     });
 
@@ -695,7 +695,7 @@ describe('DigestService — what is going wrong at the office', () => {
       });
 
       expect((await attention.gather()).missedShifts).toEqual([
-        'Max Medical — Tue, Sep 22, 9:00 AM–5:00 PM at North Bergen',
+        'Max Medical - Tue, Sep 22, 9:00 AM–5:00 PM at North Bergen',
       ]);
       expect(DIGEST_TOPICS.HOURS).toContain('missedShifts');
     });
@@ -720,7 +720,7 @@ describe('DigestService — what is going wrong at the office', () => {
       });
 
       expect((await attention.gather()).shiftsForLeavers).toEqual([
-        'Max Medical — 2 shifts from Sep 28, 2026, but marked as no longer employed',
+        'Max Medical - 2 shifts from Sep 28, 2026, but marked as no longer employed',
       ]);
     });
 
@@ -749,7 +749,7 @@ describe('DigestService — what is going wrong at the office', () => {
       for (const line of shiftsForLeavers) expect(line).toMatch(/1 shift from/);
     });
 
-    it('looks forward only — a shift they actually worked is not a mistake', async () => {
+    it('looks forward only - a shift they actually worked is not a mistake', async () => {
       onThursday();
       const { attention, prisma } = build();
       await attention.gather();
@@ -780,8 +780,8 @@ describe('DigestService — what is going wrong at the office', () => {
         ],
       });
       expect((await attention.gather()).openShifts).toEqual([
-        'North Bergen — 3 open shifts nobody is on yet, the first Sep 28, 2026 (Front Desk ×2, Medical Assistant)',
-        'West New York — 1 open shift nobody is on yet, the first Oct 1, 2026 (any role)',
+        'North Bergen - 3 open shifts nobody is on yet, the first Sep 28, 2026 (Front Desk ×2, Medical Assistant)',
+        'West New York - 1 open shift nobody is on yet, the first Oct 1, 2026 (any role)',
       ]);
     });
 
@@ -833,8 +833,8 @@ describe('DigestService — what is going wrong at the office', () => {
         ],
       });
       expect((await attention.gather()).closingGaps).toEqual([
-        'Frankie Front-Desk — North Bergen, Sep 24, 2026: TVs off; Calls answered 12 of 20',
-        'Max Assistant — West New York, Sep 24, 2026: clocked out without the closing checklist',
+        'Frankie Front-Desk - North Bergen, Sep 24, 2026: TVs off; Calls answered 12 of 20',
+        'Max Assistant - West New York, Sep 24, 2026: clocked out without the closing checklist',
       ]);
     });
 
@@ -847,8 +847,8 @@ describe('DigestService — what is going wrong at the office', () => {
         ],
       });
       expect((await attention.gather()).suppliesNeeded).toEqual([
-        'North Bergen — 2 to order: Gloves S/M/L (asked 3 times), Lidocaine',
-        'West New York — 1 to order: Electrodes',
+        'North Bergen - 2 to order: Gloves S/M/L (asked 3 times), Lidocaine',
+        'West New York - 1 to order: Electrodes',
       ]);
     });
   });
@@ -871,7 +871,7 @@ describe('DigestService — what is going wrong at the office', () => {
         patternPunches: ['2026-10-05', '2026-10-12', '2026-10-19'].map(lateMonday),
       });
       expect((await attention.gather()).punchPatterns).toEqual([
-        'Frankie Front-Desk — Late 3 times in the last 4 weeks, 3 Mondays running',
+        'Frankie Front-Desk - Late 3 times in the last 4 weeks, 3 Mondays running',
       ]);
     });
 
@@ -933,7 +933,7 @@ describe('DigestService — what is going wrong at the office', () => {
         closureShifts: [shift(frankie, 'North Bergen', 'nb'), shift(null, 'West New York', 'wny')],
       });
       expect((await attention.gather()).shiftsInClosures).toEqual([
-        'Christmas Day, Dec 25, 2026 (both offices closed) — 2 shifts scheduled: Frankie Front-Desk at North Bergen, an open shift at West New York',
+        'Christmas Day, Dec 25, 2026 (both offices closed) - 2 shifts scheduled: Frankie Front-Desk at North Bergen, an open shift at West New York',
       ]);
     });
 
@@ -956,7 +956,7 @@ describe('DigestService — what is going wrong at the office', () => {
       });
       const { shiftsInClosures } = await attention.gather();
       expect(shiftsInClosures).toEqual([
-        'Burst pipe, Dec 25, 2026 (North Bergen closed) — 1 shift scheduled: Frankie Front-Desk at North Bergen',
+        'Burst pipe, Dec 25, 2026 (North Bergen closed) - 1 shift scheduled: Frankie Front-Desk at North Bergen',
       ]);
       const call = prisma.shift.findMany.mock.calls.find(
         // eslint-disable-next-line @typescript-eslint/no-explicit-any

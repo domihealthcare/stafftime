@@ -6,8 +6,8 @@
  * Storing a fixed offset would silently move everyone's shift by an hour twice
  * a year.
  *
- * Node has no built-in for local-to-UTC in an arbitrary zone — `Intl` only goes
- * the other way — so the offset is found by asking what the wall clock reads at
+ * Node has no built-in for local-to-UTC in an arbitrary zone - `Intl` only goes
+ * the other way - so the offset is found by asking what the wall clock reads at
  * a guessed instant and correcting.
  */
 
@@ -116,14 +116,14 @@ export function addDaysTo(date: string, days: number): string {
  * The first day of the overtime week an instant falls in, in a given timezone.
  *
  * `startsOn` is the weekday overtime weeks begin on (1 = Monday … 7 =
- * Sunday): the pay period's first day, since September 2026 — see
+ * Sunday): the pay period's first day, since September 2026 - see
  * `workweekStartsOn` in `settings/pay-period.ts`. Monday when no pay period
  * has been set.
  *
  * Shared by the payroll export, which splits hours over forty, and the rota's
  * overtime warning, which predicts them. Those two must agree about where a
  * week begins or the schedule will promise one thing and the payslip say
- * another — a late shift on the last day in particular has to land in the week
+ * another - a late shift on the last day in particular has to land in the week
  * the person experienced, not the week UTC puts it in.
  */
 export function weekStartIn(instant: Date, zone: string, startsOn = 1): string {
@@ -152,7 +152,7 @@ export function localTimeIn(instant: Date, zone: string): string {
 }
 
 /// Where the practice is. Both offices are in New Jersey; the server runs in
-/// UTC, where "today" turns over at 8pm (7pm in winter) — which put this
+/// UTC, where "today" turns over at 8pm (7pm in winter) - which put this
 /// evening's punches in tomorrow and marked things due today as overdue.
 export const PRACTICE_ZONE = 'America/New_York';
 
@@ -166,4 +166,3 @@ export function practiceToday(now: Date = new Date()): Date {
 export function practiceDayStart(now: Date = new Date()): Date {
   return zonedTimeToUtc(localDateIn(now, PRACTICE_ZONE), '00:00', PRACTICE_ZONE);
 }
-

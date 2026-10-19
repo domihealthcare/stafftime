@@ -15,8 +15,8 @@ export type GuessOutcome =
   { kind: 'right' } | { kind: 'wrong' } | { kind: 'locked'; message: string };
 
 /**
- * Every place that asks for somebody's password — signing in, changing it,
- * choosing a tablet PIN — counts a wrong one against the same lockout.
+ * Every place that asks for somebody's password - signing in, changing it,
+ * choosing a tablet PIN - counts a wrong one against the same lockout.
  * Otherwise a browser left signed in would offer unlimited guesses at the
  * password behind it.
  *

@@ -24,7 +24,7 @@ import { Alert, Spinner, buttonClass } from '../components/ui';
  * It prints what staff are meant to rely on, and nothing else: **published**
  * shifts only (drafts are counted on screen so nobody prints a half-built
  * week by accident), no open shifts (only managers see those), and time off
- * as a plain "Off" — never the kind, because the wall is not the place to
+ * as a plain "Off" - never the kind, because the wall is not the place to
  * say who is off sick.
  */
 export function RotaPrintPage() {
@@ -204,7 +204,7 @@ export function RotaPrintPage() {
               className="rounded-lg bg-amber-50 px-3 py-2 text-sm text-amber-900 ring-1 ring-inset ring-amber-200"
             >
               {drafts} draft shift{drafts === 1 ? ' is' : 's are'} not on this printout. Only
-              published shifts are printed — publish {drafts === 1 ? 'it' : 'them'} on the schedule
+              published shifts are printed - publish {drafts === 1 ? 'it' : 'them'} on the schedule
               first if {drafts === 1 ? 'it belongs' : 'they belong'} on the wall.
             </p>
           </div>
@@ -370,7 +370,7 @@ export function RotaPrintPage() {
                                 ))}
                                 {!off && mine.length === 0 && (
                                   <span className="text-slate-300" aria-label="Not on">
-                                    —
+                                    -
                                   </span>
                                 )}
                               </td>
@@ -383,7 +383,7 @@ export function RotaPrintPage() {
                 )}
 
                 <p className="mt-3 text-xs text-slate-500">
-                  Published shifts only. The rota can change after this was printed — Domi Staff
+                  Published shifts only. The rota can change after this was printed - Domi Staff
                   always has the latest.
                 </p>
               </section>

@@ -1,7 +1,7 @@
 import { EmploymentStatus, Role } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 
-/// The managers and admins who work at an office — told when somebody there
+/// The managers and admins who work at an office - told when somebody there
 /// is running late or has not turned up. Nobody at that office: every manager
 /// and admin, so it reaches somebody. Never the person it is about.
 export async function officeManagers(

@@ -9,7 +9,11 @@ import { plainToInstance } from 'class-transformer';
 import { validateSync } from 'class-validator';
 import { AuthUser } from '../common/auth/auth-user';
 import { PrismaService } from '../prisma/prisma.service';
-import { PresetOptionsDto, SaveReportPresetDto, UpdateReportPresetDto } from './dto/report-preset.dto';
+import {
+  PresetOptionsDto,
+  SaveReportPresetDto,
+  UpdateReportPresetDto,
+} from './dto/report-preset.dto';
 
 const PRESET_SELECT = {
   id: true,
@@ -70,9 +74,7 @@ export class ReportPresetsService {
         data: {
           name: dto.name?.trim(),
           isShared: dto.isShared,
-          options: dto.options
-            ? (dto.options as unknown as Prisma.InputJsonValue)
-            : undefined,
+          options: dto.options ? (dto.options as unknown as Prisma.InputJsonValue) : undefined,
         },
         select: PRESET_SELECT,
       });
@@ -111,7 +113,7 @@ export class ReportPresetsService {
     const errors = validateSync(options, { whitelist: true, forbidNonWhitelisted: true });
     if (errors.length > 0) {
       throw new ConflictException(
-        'That saved report is no longer valid — re-save it from the export screen.',
+        'That saved report is no longer valid - re-save it from the export screen.',
       );
     }
     return options;

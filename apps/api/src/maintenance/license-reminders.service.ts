@@ -7,7 +7,7 @@ import { NotificationsService } from '../email/notifications.service';
 import { PrismaService } from '../prisma/prisma.service';
 
 /**
- * Tells people about their own licenses running out — see
+ * Tells people about their own licenses running out - see
  * `credentials/license-reminders.ts` for when and why. Run by the nightly job.
  * Each reminder is recorded (`CredentialReminder`) before it is sent, so a
  * second run the same night sends nothing more.

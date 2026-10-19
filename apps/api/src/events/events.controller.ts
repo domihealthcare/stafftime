@@ -39,7 +39,7 @@ export class EventsController {
     return this.events.create(dto, user);
   }
 
-  /// "Copy last year's holidays" — every closure in one year, a year on.
+  /// "Copy last year's holidays" - every closure in one year, a year on.
   @Post('closures/copy')
   @Roles(Role.MANAGER)
   @HttpCode(HttpStatus.OK)

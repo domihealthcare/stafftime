@@ -14,7 +14,7 @@ export interface BookFilter {
 const digitsOf = (text: string) => text.replace(/\D/g, '');
 
 /// Everything searchable about an entry: its words, and its numbers with the
-/// punctuation taken out — so "2018543" finds (201) 854-3…, however it was
+/// punctuation taken out - so "2018543" finds (201) 854-3…, however it was
 /// written in the book. Every office counts, not just the first.
 function haystack(contact: ReferralContact) {
   const words = [
@@ -81,7 +81,7 @@ export function groupByCategory(contacts: ReferralContact[]) {
 }
 
 /// Whether the words just before a number say it is a fax: "Fax:", "F:",
-/// "Fax for results:" — unless a call or a phone is named in between.
+/// "Fax for results:" - unless a call or a phone is named in between.
 function isFaxNumber(before: string) {
   const fax = /\bf(?:ax)?\b([^\d\n]{0,32})$/i.exec(before);
   return Boolean(fax) && !/phone|\bph\b|call|\btel\b|cell/i.test(fax?.[1] ?? '');
@@ -120,6 +120,29 @@ export function printedOffices(offices: ReferralContact['offices']) {
   return lines;
 }
 
+/// The people in an entry's name, one to a line. A group is written the way the
+/// practice's book had it - "Dr. A / Dr. B / Dr. C" or "Dr. A, Dr. B" - and
+/// reads better listed. A specialty in brackets after the last one that none
+/// of the others has ("(Interventional Cardiology)") is the whole group's, so
+/// it comes out as a note. A single name is left exactly as it is. The full name
+/// is still what is searched, so any one doctor finds the group.
+export function doctorsOf(name: string): { doctors: string[]; note: string | null } {
+  const parts = name
+    .trim()
+    .split(/\s*\/\s*|,\s*(?=Dr\.?\s)|\s+(?=Dr\.?\s)/i)
+    .map((part) => part.trim())
+    .filter(Boolean);
+  if (parts.length < 2) return { doctors: [name.trim()], note: null };
+  const last = parts[parts.length - 1];
+  const bracket = /\s*\(([^()]+)\)\s*$/.exec(last);
+  const othersHaveOne = parts.slice(0, -1).some((part) => /\([^()]+\)\s*$/.test(part));
+  if (bracket && !othersHaveOne) {
+    parts[parts.length - 1] = last.slice(0, bracket.index).trim();
+    return { doctors: parts, note: bracket[1].trim() };
+  }
+  return { doctors: parts, note: null };
+}
+
 export type Piece =
   { kind: 'text'; text: string } | { kind: 'phone' | 'email' | 'web'; text: string; href: string };
 
@@ -128,7 +151,7 @@ const PIECES =
 
 /// A line of the book cut into plain words and things to press: a number
 /// dials, an address writes an email, a link opens. A fax number is left as
-/// text — nobody dials it — which is told by "fax" or "F:" just before it.
+/// text - nobody dials it - which is told by "fax" or "F:" just before it.
 export function linkify(text: string): Piece[] {
   const pieces: Piece[] = [];
   let last = 0;

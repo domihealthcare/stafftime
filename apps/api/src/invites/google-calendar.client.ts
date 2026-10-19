@@ -28,7 +28,7 @@ export interface InviteBody {
 
 /**
  * Sends and cancels invites from a "Domi Staff" calendar that belongs to the
- * host account (office@) — Dominguez, September 2026.
+ * host account (office@) - Dominguez, September 2026.
  *
  * Off until `GOOGLE_CALENDAR_INVITES` is `on`, which an admin sets once the
  * Workspace admin has allowed CALENDAR_SCOPE (docs/google-meet-setup.md).
@@ -46,7 +46,7 @@ export class GoogleCalendarClient {
   private readonly switchedOn: boolean;
   private calendarId: string | null = null;
   /// The calendar being looked up or made, shared by everybody who asks
-  /// meanwhile — parallel saves would otherwise each make a calendar.
+  /// meanwhile - parallel saves would otherwise each make a calendar.
   private pending: Promise<string> | null = null;
 
   constructor(
@@ -81,7 +81,7 @@ export class GoogleCalendarClient {
     const created = await this.request('POST', `${calendarPath(calendar)}/events`, payload);
     if (created.status === 404) await this.forgetCalendar();
     if (created.status !== 409) return this.check(created, `send ${eventId}`);
-    // Already there — sent before, perhaps since cancelled: replace it whole.
+    // Already there - sent before, perhaps since cancelled: replace it whole.
     // A cancelled event comes back to life with status "confirmed".
     const replaced = await this.request(
       'PUT',
@@ -100,7 +100,7 @@ export class GoogleCalendarClient {
   }
 
   /**
-   * The calendar is gone — somebody deleted it in office@'s Google Calendar.
+   * The calendar is gone - somebody deleted it in office@'s Google Calendar.
    * Forget it and everything sent from it, so the next round makes a new one
    * and sends every invite again rather than failing for ever.
    */
@@ -114,7 +114,7 @@ export class GoogleCalendarClient {
     ]);
   }
 
-  /// The "Domi Staff" calendar, made the first time it is needed — once,
+  /// The "Domi Staff" calendar, made the first time it is needed - once,
   /// however many invites are being sent at the same moment.
   private calendar(): Promise<string> {
     if (this.calendarId) return Promise.resolve(this.calendarId);

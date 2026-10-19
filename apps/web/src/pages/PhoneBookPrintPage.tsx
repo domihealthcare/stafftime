@@ -3,17 +3,63 @@ import { Link, useSearchParams } from 'react-router-dom';
 import { BrandLogoForPrint } from '../components/Brand';
 import { Alert, Spinner, buttonClass } from '../components/ui';
 import { api } from '../lib/api';
-import { groupByCategory, printedOffices, searchContacts } from '../lib/phone-book';
+import { doctorsOf, groupByCategory, printedOffices, searchContacts } from '../lib/phone-book';
 import type { ReferralContact } from '../lib/types';
+
+/// One place on paper: the doctors one to a line, then each office. For a patient
+/// that is the addresses and the number to ring; the staff copy adds the fax
+/// numbers and the notes.
+function PrintEntry({ contact, staffCopy }: { contact: ReferralContact; staffCopy: boolean }) {
+  const { doctors, note } = doctorsOf(contact.name);
+  return (
+    <article className="entry" data-testid="print-entry">
+      <h3 className="entry-name font-bold text-slate-900">
+        {doctors.map((doctor, index) => (
+          <span key={doctor} className="block">
+            {index === 0 && contact.preferred && <span aria-label="Recommended">★ </span>}
+            {doctor}
+          </span>
+        ))}
+        {note && <span className="block text-[0.85em] font-normal italic">{note}</span>}
+      </h3>
+      {printedOffices(contact.offices).map((line, officeIndex) =>
+        staffCopy ? (
+          <p key={officeIndex} className="entry-line text-slate-900">
+            {line.label && <strong>{line.label}: </strong>}
+            {line.addresses.length > 0 && <span>{line.addresses.join(' · ')} </span>}
+            {line.phone && <span className="font-bold">Ph {line.phone}</span>}
+            {line.fax && <span> · Fax {line.fax}</span>}
+          </p>
+        ) : (
+          // For a patient: the addresses together, the number to ring under
+          // them in bold.
+          <div key={officeIndex} className="entry-line mb-0.5 text-slate-900">
+            {line.label && <span className="font-semibold">{line.label}: </span>}
+            {line.addresses.length > 0 && <span>{line.addresses.join(' · ')}</span>}
+            {line.phone && <p className="font-bold">Phone {line.phone}</p>}
+          </div>
+        ),
+      )}
+      {(contact.email || contact.website) && (
+        <p className="entry-line text-slate-900">
+          {[contact.email, contact.website].filter(Boolean).join(' · ')}
+        </p>
+      )}
+      {staffCopy && contact.notes && (
+        <p className="entry-line whitespace-pre-line italic text-slate-700">{contact.notes}</p>
+      )}
+    </article>
+  );
+}
 
 /**
  * The phone book on paper (October 2026, Dominguez: "it has to be able to be
- * printed — i.e. cardiology, a printed list of all the cardiologists", then
+ * printed - i.e. cardiology, a printed list of all the cardiologists", then
  * "easier to read, as this will be distributed to patients"): what the Phone
- * book shows — a heading, a search, or only the starred, passed from there.
+ * book shows - a heading, a search, or only the starred, passed from there.
  *
  * **The patient copy is the default**: big type, one column, each place's
- * name, address and phone number and nothing a patient has no use for — no fax
+ * name, address and phone number and nothing a patient has no use for - no fax
  * numbers, and none of the notes, which are the staff's (what to fax over,
  * account numbers, an account manager's cell). **Staff copy** adds the fax
  * numbers and notes in a denser list. Two columns either way, and as few pages
@@ -47,13 +93,11 @@ export function PhoneBookPrintPage() {
   const total = groups.reduce((sum, group) => sum + group.contacts.length, 0);
   const anyStarred = groups.some((group) => group.contacts.some((contact) => contact.preferred));
 
-  const title = [
-    category || 'Referral list',
-    preferredOnly ? 'preferred' : '',
-    query ? `“${query}”` : '',
-  ]
+  // What was searched for is how the list was made, not what it is called, so
+  // it is left off the paper.
+  const title = [category || 'Referral list', preferredOnly ? 'preferred' : '']
     .filter(Boolean)
-    .join(' · ');
+    .join(' - ');
   // The tab title becomes the file name when somebody saves it as a PDF.
   useEffect(() => {
     const previous = document.title;
@@ -93,7 +137,7 @@ export function PhoneBookPrintPage() {
               className="rounded border-slate-300 text-brand-600 focus:ring-brand-600"
             />
             <span>
-              <strong>Staff copy</strong> — add fax numbers and notes (not for patients)
+              <strong>Staff copy</strong> - add fax numbers and notes (not for patients)
             </span>
           </label>
           <span className="flex-1" />
@@ -125,25 +169,24 @@ export function PhoneBookPrintPage() {
                 </h1>
                 <p className="mt-1 text-sm text-slate-700">
                   {staffCopy
-                    ? `Staff copy — not for patients · ${total} ${total === 1 ? 'entry' : 'entries'} · printed ${printedAt}`
+                    ? `Staff copy - not for patients · ${total} ${total === 1 ? 'entry' : 'entries'} · printed ${printedAt}`
                     : `Referrals from Domi Healthcare · printed ${printedAt}`}
                 </p>
               </div>
               <BrandLogoForPrint className="h-10 w-auto" />
             </header>
             {!staffCopy && (
-              <p className="mb-2 text-sm text-slate-900">
-                Please call the office to make your appointment, and to check that they accept your
-                insurance.
+              <div className="mb-2 space-y-1 text-sm text-slate-900">
+                <p>
+                  Please call the office to make your appointment, and to check that they accept
+                  your insurance.
+                </p>
                 {anyStarred && (
-                  <>
-                    {' '}
-                    <span className="font-semibold">
-                      <span aria-hidden="true">★</span> marks the places we recommend first.
-                    </span>
-                  </>
+                  <p className="font-semibold">
+                    <span aria-hidden="true">★</span> marks the places we recommend first.
+                  </p>
                 )}
-              </p>
+              </div>
             )}
             {groups.length === 0 && <p className="text-base text-slate-700">Nothing to print.</p>}
             {groups.map((group) => (
@@ -153,46 +196,21 @@ export function PhoneBookPrintPage() {
                     {group.category}
                   </h2>
                 )}
-                <div className="entries">
-                  {group.contacts.map((contact) => (
-                    <article key={contact.id} className="entry" data-testid="print-entry">
-                      <h3 className="entry-name font-bold text-slate-900">
-                        {contact.preferred && <span aria-label="Recommended">★ </span>}
-                        {contact.name}
-                      </h3>
-                      {printedOffices(contact.offices).map((line, officeIndex) =>
-                        staffCopy ? (
-                          <p key={officeIndex} className="entry-line text-slate-900">
-                            {line.label && <strong>{line.label}: </strong>}
-                            {line.addresses.length > 0 && (
-                              <span>{line.addresses.join(' · ')} </span>
-                            )}
-                            {line.phone && <span className="font-bold">Ph {line.phone}</span>}
-                            {line.fax && <span> · Fax {line.fax}</span>}
-                          </p>
-                        ) : (
-                          // For a patient: the addresses together, the number to ring
-                          // under them in bold.
-                          <div key={officeIndex} className="entry-line mb-0.5 text-slate-900">
-                            {line.label && <span className="font-semibold">{line.label}: </span>}
-                            {line.addresses.length > 0 && <span>{line.addresses.join(' · ')}</span>}
-                            {line.phone && <p className="font-bold">Phone {line.phone}</p>}
-                          </div>
-                        ),
-                      )}
-                      {(contact.email || contact.website) && (
-                        <p className="entry-line text-slate-900">
-                          {[contact.email, contact.website].filter(Boolean).join(' · ')}
-                        </p>
-                      )}
-                      {staffCopy && contact.notes && (
-                        <p className="entry-line whitespace-pre-line italic text-slate-700">
-                          {contact.notes}
-                        </p>
-                      )}
-                    </article>
-                  ))}
-                </div>
+                {/* The starred are a block of their own above the rest, so they are
+                    at the top of both columns, not just the first. */}
+                {[
+                  group.contacts.filter((contact) => contact.preferred),
+                  group.contacts.filter((contact) => !contact.preferred),
+                ].map(
+                  (block, blockIndex) =>
+                    block.length > 0 && (
+                      <div key={blockIndex} className="entries">
+                        {block.map((contact) => (
+                          <PrintEntry key={contact.id} contact={contact} staffCopy={staffCopy} />
+                        ))}
+                      </div>
+                    ),
+                )}
               </section>
             ))}
           </div>
@@ -203,7 +221,7 @@ export function PhoneBookPrintPage() {
 }
 
 /// Patient copy: two columns on letter paper, 13-point names and 12-point lines
-/// — big enough to read, short enough that a heading such as Cardiology is two
+/// - big enough to read, short enough that a heading such as Cardiology is two
 /// pages, as the practice's own book was. An entry is never split. Staff copy:
 /// denser still. Headings run on, one after another, so the whole book is as few pages as it can be.
 const PRINT_CSS = `

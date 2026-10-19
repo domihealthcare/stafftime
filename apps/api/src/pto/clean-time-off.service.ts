@@ -7,11 +7,11 @@ import { PtoPolicyService } from './pto-policy.service';
 import { PtoService } from './pto.service';
 
 /**
- * "Approve the clean time off" — see `clean-time-off.ts`. The Schedule and
+ * "Approve the clean time off" - see `clean-time-off.ts`. The Schedule and
  * the Time off screen ask which waiting requests are clean; the button then
  * sends those ids, and each is checked again here before it is approved
  * through the ordinary review (so the person is told as usual). A request
- * that changed in between — a shift added, another request approved — is
+ * that changed in between - a shift added, another request approved - is
  * left for a look.
  */
 @Injectable()

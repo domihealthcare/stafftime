@@ -19,7 +19,7 @@ const step = async (name, fn) => {
 };
 
 /**
- * "Approve the clean time off" (October 2026, Dominguez — a "smarter" idea):
+ * "Approve the clean time off" (October 2026, Dominguez - a "smarter" idea):
  * one button approves every waiting request that is PTO or sick with enough
  * days left, leaves nobody too thin and lands on no shifts; the rest stay for
  * a look. Cleo and Cy (`*.clean@example.com`) join Frankie in her job roles at

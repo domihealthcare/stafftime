@@ -1,7 +1,7 @@
 /**
  * Demo data for the manager review.
  *
- * `db:seed` gives you the two locations and four accounts — enough to sign in,
+ * `db:seed` gives you the two locations and four accounts - enough to sign in,
  * not enough to judge anything. A timesheet with one entry in it tells a
  * practice manager nothing about whether the timesheet is any good.
  *
@@ -17,7 +17,7 @@
  *
  * It is a **reset**: every existing shift, punch, time off request and
  * checklist is cleared first, so the app holds the demo week and nothing else.
- * Locations and accounts are left alone — those belong to `db:seed`, and a
+ * Locations and accounts are left alone - those belong to `db:seed`, and a
  * reviewer may have set real geofence coordinates.
  *
  *   npm run demo:seed --workspace @stafftime/api
@@ -64,7 +64,7 @@ interface Person {
   pin: string;
   /// Which weekdays they work (1 = Monday).
   days: number[];
-  /// Job roles by name — several for those who cover more than one job, which
+  /// Job roles by name - several for those who cover more than one job, which
   /// is the case the directory's colours are there to show.
   jobRoles: string[];
   /// 555-01xx: reserved for fiction, so nobody is ever dialled by accident.
@@ -209,7 +209,7 @@ export async function loadDemoData(prisma: PrismaClient) {
   const locations = await prisma.location.findMany({ select: { id: true, slug: true } });
   const office = new Map(locations.map((l) => [l.slug, l.id]));
   if (!office.has('north-bergen') || !office.has('west-new-york')) {
-    throw new Error('Run `npm run db:seed` first — the locations are missing.');
+    throw new Error('Run `npm run db:seed` first - the locations are missing.');
   }
 
   await clearPreviousDemoData(prisma);
@@ -386,7 +386,7 @@ export async function loadDemoData(prisma: PrismaClient) {
       clockOutVerification: VerificationMethod.KIOSK,
     },
   });
-  // One entry a manager had to fix, with the reason recorded — so the audit
+  // One entry a manager had to fix, with the reason recorded - so the audit
   // trail on the timesheet is not theoretical.
   const corrected = await prisma.timeEntry.findFirst({
     where: { employeeId: created[2].id, clockOutAt: { not: null } },
@@ -462,7 +462,7 @@ function assertNotProduction() {
  * timesheet with a generated week next to leftovers from somebody's
  * experiments is harder to read than either on its own.
  *
- * Locations, accounts and checklist templates are left alone — those are
+ * Locations, accounts and checklist templates are left alone - those are
  * `db:seed`'s job, and a reviewer may have set real geofence coordinates.
  */
 async function clearPreviousDemoData(prisma: PrismaClient) {
@@ -487,7 +487,7 @@ async function clearPreviousDemoData(prisma: PrismaClient) {
 }
 
 /**
- * A few **open shifts** — slots nobody is on yet — so a reviewer sees what one
+ * A few **open shifts** - slots nobody is on yet - so a reviewer sees what one
  * looks like and how it is flagged: Saturday-morning front desk at both
  * offices this week and next, and an extra MA at North Bergen next Thursday,
  * still a draft.
@@ -542,7 +542,7 @@ async function seedTimeOff(
       start: weekdaysFromToday(11),
       end: weekdaysFromToday(15),
       status: PtoStatus.PENDING,
-      notes: 'Flights already booked — sorry for the short notice.',
+      notes: 'Flights already booked - sorry for the short notice.',
     },
     {
       employeeId: created[5].id,
@@ -601,7 +601,7 @@ async function seedTimeOff(
   }
 
   // Somebody on approved leave did not also clock in that day. Pending and
-  // denied requests keep their shifts on purpose — that is what makes the
+  // denied requests keep their shifts on purpose - that is what makes the
   // "shifts already scheduled in those dates" panel show something.
   for (const request of requests.filter((r) => r.status === PtoStatus.APPROVED)) {
     const until = new Date(request.end.getTime() + 86_400_000);

@@ -98,7 +98,7 @@ function listOf(items: string[]): string {
 }
 
 /// "Mondays and Thursdays", "Every day", "Every other Saturday", "The first
-/// and third Saturday of the month" — Sunday first, as the calendar reads.
+/// and third Saturday of the month" - Sunday first, as the calendar reads.
 /// Mid-sentence (`start` false) it is "every day", "the first Saturday…".
 export function describeRepeat(days: number[], weeks: RepeatWeeks, start = true): string {
   const phrase = describe(days, weeks);

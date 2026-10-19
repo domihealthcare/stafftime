@@ -33,7 +33,7 @@ describe('shifts nobody turned up for', () => {
     expect(findMissedShifts({ now: NOW, shifts: [today], ...none })).toEqual([]);
   });
 
-  it('counts any punch that day — late, early, by hand — as turning up', () => {
+  it('counts any punch that day - late, early, by hand - as turning up', () => {
     const lateAndShort = {
       employeeId: 'emp-1',
       clockInAt: at('2026-10-06T19:00:00Z'),
@@ -88,10 +88,10 @@ describe('shifts nobody turned up for', () => {
 
   it('says who, when and where', () => {
     expect(describeMissedShift(shift())).toBe(
-      'Frankie Front-Desk — Tue, Oct 6, 9:00 AM–5:00 PM at North Bergen',
+      'Frankie Front-Desk - Tue, Oct 6, 9:00 AM–5:00 PM at North Bergen',
     );
     expect(describeMissedShift(shift({ isRemote: true }))).toBe(
-      'Frankie Front-Desk — Tue, Oct 6, 9:00 AM–5:00 PM working from home',
+      'Frankie Front-Desk - Tue, Oct 6, 9:00 AM–5:00 PM working from home',
     );
   });
 });

@@ -45,7 +45,7 @@ describe('availability that clashes with a regular shift', () => {
     const [clash] = regularShiftClashes([shift()], [rule()], TODAY);
     expect(clash.firstDate).toBe('2026-10-19');
     expect(describeRegularShiftClash(clash)).toBe(
-      'Frankie Front-Desk — regular Mondays 9:00 AM–5:00 PM at North Bergen, but not available Mondays, 3:00 PM–9:00 PM (from Mon, Oct 19)',
+      'Frankie Front-Desk - regular Mondays 9:00 AM–5:00 PM at North Bergen, but not available Mondays, 3:00 PM–9:00 PM (from Mon, Oct 19)',
     );
   });
 

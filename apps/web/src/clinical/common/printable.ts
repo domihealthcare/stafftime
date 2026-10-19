@@ -3,15 +3,15 @@
  *
  * The PDFs use Helvetica, one of the fonts every PDF reader already has, so
  * nothing needs embedding and eCW shows the text exactly as typed. It covers
- * English and Spanish (á é í ó ú ü ñ ¿ ¡) and the rest of Western Europe —
- * the "WinAnsi" character set — but not every alphabet. A few look-alikes
+ * English and Spanish (á é í ó ú ü ñ ¿ ¡) and the rest of Western Europe -
+ * the "WinAnsi" character set - but not every alphabet. A few look-alikes
  * that phones and pasted text bring in are swapped for ones it has; anything
  * else is caught by the form before a PDF is made, so it can be retyped
  * rather than silently dropped.
  */
 
 /// The characters WinAnsi adds above plain ASCII outside Latin-1.
-const WIN_ANSI_EXTRAS = new Set('€‚ƒ„…†‡ˆ‰Š‹ŒŽ‘’“”•–—˜™š›œžŸ');
+const WIN_ANSI_EXTRAS = new Set('€‚ƒ„…†‡ˆ‰Š‹ŒŽ‘’“”•– - ˜™š›œžŸ');
 
 /// Look-alikes swapped for something Helvetica has.
 const SUBSTITUTES: Record<string, string> = {

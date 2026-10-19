@@ -31,13 +31,13 @@ export interface RetimeResult extends PlanResult {
 }
 
 /**
- * New hours for a shift — and, if asked, for the ones like it after it
+ * New hours for a shift - and, if asked, for the ones like it after it
  * (Dominguez, October 2026: "Gaby is 7-2 but it is changing to 1-8, so
  * instead of Celeste doing 1 by 1, she can just edit all").
  *
  * "Like it" means the same person (for an open shift: the same job role), the
  * same office, at home or not as this one is, and the same hours as this one
- * had — on the same weekday, or on any day. Shifts that have started, and
+ * had - on the same weekday, or on any day. Shifts that have started, and
  * cancelled ones, are left alone. Hours are the office's wall clock, as a
  * repeat writes them, so a clock change does not shift them.
  *
@@ -265,8 +265,8 @@ export class ShiftRetimeService {
   /**
    * Gives a regular shift the new hours and place from `from` on, for all its days or
    * only `weekdays`. A regular shift begun before `from` is ended the day
-   * before and carried on as new ones — the days that move at the new hours,
-   * any others at the old — so it never claims hours it did not have. Its
+   * before and carried on as new ones - the days that move at the new hours,
+   * any others at the old - so it never claims hours it did not have. Its
    * shifts from `from` on are pointed at whichever one now writes their day,
    * so stopping or editing it later still finds them.
    *

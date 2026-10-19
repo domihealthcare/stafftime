@@ -65,7 +65,7 @@ export class EmployeesController {
     return this.employees.findAll({ locationId, status });
   }
 
-  /// The signed-in employee's own record — available to every role.
+  /// The signed-in employee's own record - available to every role.
   @Get('me')
   me(@CurrentUser() user: AuthUser) {
     return this.employees.findOne(user.id);
@@ -85,7 +85,7 @@ export class EmployeesController {
     @CurrentUser() actor: AuthUser,
   ) {
     const updated = await this.employees.update(id, dto);
-    // A hire date given later — the import had none — starts it then.
+    // A hire date given later - the import had none - starts it then.
     const onboardingStarted = dto.hireDate
       ? await this.checklists.startOnboardingIfNew(id, actor)
       : false;

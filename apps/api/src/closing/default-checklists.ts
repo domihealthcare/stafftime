@@ -1,7 +1,7 @@
 import type { ClosingItemKind } from '@prisma/client';
 
 /**
- * The closing checklists the practice started with — Front Desk Checklist 2026
+ * The closing checklists the practice started with - Front Desk Checklist 2026
  * and Medical Assistant Responsibilities, as sent by Dominguez in September
  * 2026, worded lightly for a phone screen. From here on they are the managers'
  * to edit in the app; this is only the starting point, written once into a new
@@ -9,7 +9,7 @@ import type { ClosingItemKind } from '@prisma/client';
  * introduced them).
  *
  * Standing rules ("notify the doctor if vitals are out of range") are
- * reminders, not ticks — decided with Dominguez. The two call counts are
+ * reminders, not ticks - decided with Dominguez. The two call counts are
  * numbers, with "calls answered" flagged below 20.
  */
 export interface DefaultItem {
@@ -43,7 +43,7 @@ export const DEFAULT_CHECKLISTS: Record<string, DefaultSection[]> = {
       isPosition: true,
       items: [
         task(
-          'Checked each patient in: insurance active, copay collected correctly, PCP is JD/CI/JB — noted under insurance notes (e.g. “Active via ECW +PCP(DOM) 04/01/26 KB”)',
+          'Checked each patient in: insurance active, copay collected correctly, PCP is JD/CI/JB - noted under insurance notes (e.g. “Active via ECW +PCP(DOM) 04/01/26 KB”)',
         ),
         task(
           'Scanned for every patient: photo ID, insurance card (front & back), new patient forms',
@@ -63,10 +63,10 @@ export const DEFAULT_CHECKLISTS: Record<string, DefaultSection[]> = {
         task(
           'All voicemails and texts from the previous day returned (checked morning and before close)',
         ),
-        task('Referral information provided — ECW Referral section read'),
+        task('Referral information provided - ECW Referral section read'),
         task('Follow-up appointments scheduled per the provider’s instructions'),
         task(
-          'Tomorrow’s representative lunch confirmed — rep messaged with the time, place and provider they will see',
+          'Tomorrow’s representative lunch confirmed - rep messaged with the time, place and provider they will see',
         ),
         task('“Homework” done: Needs Appt / Inform/Normal / Action Needed'),
       ],
@@ -75,7 +75,7 @@ export const DEFAULT_CHECKLISTS: Record<string, DefaultSection[]> = {
       title: 'Everyone',
       items: [
         reminder(
-          'Answer incoming calls. Never leave a patient on hold longer than 1 minute. With a patient in front of you, do not answer — silence the call if needed, but do NOT lower the call volume.',
+          'Answer incoming calls. Never leave a patient on hold longer than 1 minute. With a patient in front of you, do not answer - silence the call if needed, but do NOT lower the call volume.',
         ),
         task('TVs and scanners powered off'),
         task('Enough forms available (e.g. new patient forms, flu consent forms)'),
@@ -121,7 +121,7 @@ export const DEFAULT_CHECKLISTS: Record<string, DefaultSection[]> = {
       ],
     },
     {
-      title: 'Inventory — tick anything we need more of',
+      title: 'Inventory - tick anything we need more of',
       items: [
         'Albuterol',
         'Pregnancy Test',

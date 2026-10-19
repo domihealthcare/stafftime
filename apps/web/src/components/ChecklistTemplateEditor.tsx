@@ -78,7 +78,7 @@ const blankTask = (): DraftTask => ({
  * read as a list, so it is edited as a list, and reordering is then just moving
  * an item rather than renumbering everything around it.
  *
- * Nothing here can disturb a checklist already under way — those are snapshots
+ * Nothing here can disturb a checklist already under way - those are snapshots
  * taken when they were started. That is what makes a template safe to edit.
  */
 export function ChecklistTemplateEditor({
@@ -165,8 +165,8 @@ export function ChecklistTemplateEditor({
             onChange={(event) => setName(event.target.value)}
             placeholder={
               editingKind === 'ONBOARDING'
-                ? 'New hire — Domi Healthcare'
-                : 'Departure — Domi Healthcare'
+                ? 'New hire - Domi Healthcare'
+                : 'Departure - Domi Healthcare'
             }
             className="w-full rounded-lg border border-slate-300 px-2 py-1.5"
           />
@@ -319,7 +319,7 @@ export function ChecklistTemplateEditor({
       )}
 
       <p className="mt-3 text-xs text-slate-500">
-        Editing a template never changes a checklist that is already under way — those keep the
+        Editing a template never changes a checklist that is already under way - those keep the
         wording they were started with, so what somebody signed stays what they signed.
       </p>
 

@@ -9,7 +9,7 @@ export function JobRoleTag({
 }: {
   name: string;
   colour: string | null | undefined;
-  /// Marked as their main job role — shown where somebody holds several.
+  /// Marked as their main job role - shown where somebody holds several.
   main?: boolean;
 }) {
   return (

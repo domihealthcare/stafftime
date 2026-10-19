@@ -43,7 +43,7 @@ export class CreateAnnouncementDto {
   @MaxLength(160)
   title!: string;
 
-  /// May be empty when the post carries a poll — the question says it all.
+  /// May be empty when the post carries a poll - the question says it all.
   @IsString()
   @MaxLength(10_000)
   body!: string;
@@ -64,7 +64,7 @@ export class CreateAnnouncementDto {
   poll?: PollDto;
 
   /// The post in Spanish (October 2026). Empty clears it; left out on an edit,
-  /// it stays — unless the English changed, when it is cleared to be redone.
+  /// it stays - unless the English changed, when it is cleared to be redone.
   @IsOptional()
   @IsString()
   @MaxLength(160)
@@ -75,7 +75,7 @@ export class CreateAnnouncementDto {
   @MaxLength(12_000)
   bodyEs?: string;
 
-  /// The Spanish is the AI service's, as it came — shown to staff as such.
+  /// The Spanish is the AI service's, as it came - shown to staff as such.
   @IsOptional()
   @IsBoolean()
   spanishByAi?: boolean;
@@ -105,7 +105,7 @@ export class UpdateAnnouncementDto {
   showOnTimeClock?: boolean;
 
   /// Left out: the poll stays as it is. `null`: it is taken off. A poll: it
-  /// replaces the old one — refused once anybody has voted, unless only the
+  /// replaces the old one - refused once anybody has voted, unless only the
   /// question's wording changed.
   @IsOptional()
   @ValidateNested()
@@ -113,7 +113,7 @@ export class UpdateAnnouncementDto {
   poll?: PollDto | null;
 
   /// The post in Spanish (October 2026). Empty clears it; left out on an edit,
-  /// it stays — unless the English changed, when it is cleared to be redone.
+  /// it stays - unless the English changed, when it is cleared to be redone.
   @IsOptional()
   @IsString()
   @MaxLength(160)
@@ -124,7 +124,7 @@ export class UpdateAnnouncementDto {
   @MaxLength(12_000)
   bodyEs?: string;
 
-  /// The Spanish is the AI service's, as it came — shown to staff as such.
+  /// The Spanish is the AI service's, as it came - shown to staff as such.
   @IsOptional()
   @IsBoolean()
   spanishByAi?: boolean;

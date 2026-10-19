@@ -27,9 +27,9 @@ function build(
   });
   const prisma = {
     employee: {
-      findUnique: jest.fn().mockResolvedValue(
-        options.employee === undefined ? NEW_STARTER : options.employee,
-      ),
+      findUnique: jest
+        .fn()
+        .mockResolvedValue(options.employee === undefined ? NEW_STARTER : options.employee),
       findMany: jest.fn().mockResolvedValue(options.waiting ?? []),
       count: jest.fn().mockResolvedValue(0),
       update: jest.fn().mockResolvedValue({}),
@@ -80,7 +80,7 @@ describe('welcome emails', () => {
     expect(notifications.welcome.mock.calls[0][0].firstName).toBe('Janie');
   });
 
-  it('is not for somebody who already has a password — that would be a reset they did not ask for', async () => {
+  it('is not for somebody who already has a password - that would be a reset they did not ask for', async () => {
     const { service, notifications } = build({
       employee: { ...NEW_STARTER, passwordHash: 'argon2…' },
     });
@@ -130,7 +130,11 @@ describe('welcome emails', () => {
     const result = await service.sendWelcomeToEveryone();
     expect(result.sent).toBe(1);
     expect(result.failed).toEqual([
-      expect.objectContaining({ name: 'Bo B', email: 'bo@x.com', reason: expect.stringMatching(/bounced/) }),
+      expect.objectContaining({
+        name: 'Bo B',
+        email: 'bo@x.com',
+        reason: expect.stringMatching(/bounced/),
+      }),
     ]);
     expect(result.remaining).toBe(0);
     const where = prisma.employee.findMany.mock.calls[0][0].where;

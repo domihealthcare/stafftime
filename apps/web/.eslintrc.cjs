@@ -16,7 +16,7 @@ module.exports = {
       // browser or be kept in it (September 2026). Nothing in this folder may
       // talk to the server, store anything, or log anything. If one of these
       // fires, the answer is almost certainly a different design, not an
-      // exception — see docs/architecture.md, "The clinical forms".
+      // exception - see docs/architecture.md, "The clinical forms".
       files: ['src/clinical/**/*.{ts,tsx}'],
       rules: {
         'no-restricted-imports': [

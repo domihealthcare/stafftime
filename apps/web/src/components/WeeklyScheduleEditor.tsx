@@ -188,7 +188,7 @@ export function WeeklyScheduleEditor({
         <div className="space-y-2">
           <p>From {formatCalendarDate(from, { year: false })} on:</p>
           {working.length === 0 ? (
-            <p>No regular shifts — the ones they have stop.</p>
+            <p>No regular shifts - the ones they have stop.</p>
           ) : (
             <ul className="list-disc pl-5">
               {working.map((day) => (
@@ -244,7 +244,7 @@ export function WeeklyScheduleEditor({
   return (
     <div data-testid="weekly-schedule">
       {offices.length === 0 ? (
-        <Alert tone="warning">Give them an office first — a shift has to be somewhere.</Alert>
+        <Alert tone="warning">Give them an office first - a shift has to be somewhere.</Alert>
       ) : (
         <>
           {held.length === 0 && (
@@ -268,7 +268,7 @@ export function WeeklyScheduleEditor({
                         className="rounded border-slate-300 text-brand-600 focus:ring-brand-600"
                       />
                       {dayName}
-                      {!row.works && <span className="font-normal text-slate-500">— off</span>}
+                      {!row.works && <span className="font-normal text-slate-500"> - off</span>}
                     </label>
                     {row.works && working.length > 1 && (
                       <button
@@ -386,8 +386,8 @@ export function WeeklyScheduleEditor({
             )}
           </div>
           <p className="mt-2 text-xs text-slate-500">
-            Kept eight weeks ahead on the rota, every night, with no end date. A one-off change — a
-            day off, a swap — is made on the Schedule as usual.
+            Kept eight weeks ahead on the rota, every night, with no end date. A one-off change - a
+            day off, a swap - is made on the Schedule as usual.
           </p>
         </>
       )}
@@ -418,7 +418,7 @@ function SavedNotice({ result }: { result: WeeklyScheduleResult }) {
         {result.skipped.length > 0 && (
           <p className="mt-1 text-sm">
             {result.skipped.length} {result.skipped.length === 1 ? 'day was' : 'days were'} left off
-            — they already had a shift then, or were on approved leave:{' '}
+            - they already had a shift then, or were on approved leave:{' '}
             {result.skipped
               .slice(0, 6)
               .map((skip) => formatCalendarDate(skip.date, { year: false }))

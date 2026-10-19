@@ -2,8 +2,8 @@ import { chromium } from 'playwright';
 import { mkdirSync } from 'node:fs';
 import { openMore, openNews } from './nav.mjs';
 
-// The bell beside your name: notifications that are yours alone — a new post,
-// a shift added to your schedule, your time off decided — with an unread count,
+// The bell beside your name: notifications that are yours alone - a new post,
+// a shift added to your schedule, your time off decided - with an unread count,
 // read by choosing one. Plus News as its own tab, and the version on Help.
 const OUT = process.argv[2] || new URL('./shots/', import.meta.url).pathname;
 mkdirSync(OUT, { recursive: true });
@@ -200,7 +200,7 @@ await step('Help says which version this is, and whether it is the live one', as
   const released = await card.getByTestId('app-released').innerText();
   if (!/^\w{3}, \w{3} \d{1,2}, \d{4}, \d{1,2}:\d{2}\s[AP]M ET$/.test(released))
     throw new Error(`released reads "${released}"`);
-  await card.getByText(/^Test — /).waitFor({ timeout: 5000 });
+  await card.getByText(/^Test - /).waitFor({ timeout: 5000 });
 });
 await admin.screenshot({ path: `${OUT}/121-help-version.png`, fullPage: true });
 

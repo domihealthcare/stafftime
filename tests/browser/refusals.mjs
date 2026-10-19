@@ -64,7 +64,7 @@ await step('blocked location permission explains what to do', async () => {
 });
 
 // 3. Claiming to be the time clock. A kiosk punch skips the location check, so
-// only the time clock itself may make one — never an ordinary signed-in call,
+// only the time clock itself may make one - never an ordinary signed-in call,
 // from home, for yourself or a colleague.
 await step('a punch that claims to come from the time clock is refused', async () => {
   const page = await signedInPage({});
@@ -90,7 +90,7 @@ await step('a punch that claims to come from the time clock is refused', async (
 
 // Not a refusal, but the other side of one: somebody who works at both offices,
 // standing at West New York with North Bergen picked, is clocked in where they
-// are — not turned away as "outside North Bergen".
+// are - not turned away as "outside North Bergen".
 let managersPunch;
 let managersShift;
 let managersPage;
@@ -152,7 +152,7 @@ if (managersPage) {
   await managersPage.context().close();
 }
 
-// 4. A session that ends while the app is open — eight hours idle on a phone —
+// 4. A session that ends while the app is open - eight hours idle on a phone - 
 // goes back to the sign-in screen, rather than leaving errors on a screen that
 // can do nothing about them.
 await step('an ended session goes back to sign-in on the next tap', async () => {

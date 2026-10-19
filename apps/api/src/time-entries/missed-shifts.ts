@@ -10,14 +10,14 @@ import { localDateIn, PRACTICE_ZONE } from '../common/util/zoned-time.util';
 import { PrismaService } from '../prisma/prisma.service';
 
 /**
- * Shifts nobody turned up for (October 2026, Dominguez — making the app
+ * Shifts nobody turned up for (October 2026, Dominguez - making the app
  * smarter). The person is reminded 15 minutes into a shift with no punch
  * ("You haven't clocked in yet"), but once the shift was over nothing told a
  * manager: a missed day was found at payroll, or not at all.
  *
  * A **published** shift with somebody on it, **over**, in the last two weeks,
  * with **no punch of theirs that day** (or overlapping it, for a shift past
- * midnight) — a hand entry counts, so "+ Add hours" settles it — and not on
+ * midnight) - a hand entry counts, so "+ Add hours" settles it - and not on
  * **approved time off** that day, nor in a **closure** of its office when it
  * started. Current staff only: a leaver's shifts are already on their own list.
  *
@@ -96,7 +96,7 @@ export function findMissedShifts(input: {
     .sort((a, b) => a.startsAt.getTime() - b.startsAt.getTime());
 }
 
-/// "Frankie Front-Desk — Tue, Oct 6, 9:00 AM–5:00 PM at North Bergen".
+/// "Frankie Front-Desk - Tue, Oct 6, 9:00 AM–5:00 PM at North Bergen".
 export function describeMissedShift(shift: PastShift): string {
   const day = shift.startsAt.toLocaleDateString('en-US', {
     timeZone: PRACTICE_ZONE,
@@ -111,7 +111,7 @@ export function describeMissedShift(shift: PastShift): string {
       minute: '2-digit',
     });
   const where = shift.isRemote ? 'working from home' : `at ${shift.locationName}`;
-  return `${shift.employeeName} — ${day}, ${time(shift.startsAt)}–${time(shift.endsAt)} ${where}`;
+  return `${shift.employeeName} - ${day}, ${time(shift.startsAt)}–${time(shift.endsAt)} ${where}`;
 }
 
 export async function loadMissedShifts(

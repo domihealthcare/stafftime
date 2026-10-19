@@ -18,7 +18,7 @@ export function atPlace(shift: Pick<Shift, 'locationId' | 'isRemote'>, place: st
 
 /**
  * Whether a shift belongs under a job role. A shift carries the role it is
- * for — always one its person holds — so that decides: a provider's
+ * for - always one its person holds - so that decides: a provider's
  * administrative shift is not a Provider shift. A shift saved before roles
  * were required, with none, falls back to whether its person is in the role;
  * an open shift with none is for no role in particular.

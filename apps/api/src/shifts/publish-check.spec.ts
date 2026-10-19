@@ -68,8 +68,8 @@ describe('before you publish', () => {
       }),
     );
     expect(linesOf(check, 'leave')).toEqual([
-      'Frankie Front-Desk — Tue, Oct 13: on approved PTO',
-      'Frankie Front-Desk — Wed, Oct 14: asked for that day off (not decided)',
+      'Frankie Front-Desk - Tue, Oct 13: on approved PTO',
+      'Frankie Front-Desk - Wed, Oct 14: asked for that day off (not decided)',
     ]);
   });
 
@@ -78,7 +78,7 @@ describe('before you publish', () => {
       input({ unavailable: new Map([['shift-1', 'Not available Tuesdays (all day)']]) }),
     );
     expect(linesOf(check, 'availability')).toEqual([
-      'Frankie Front-Desk — Tue, Oct 13, 9:00 AM–5:00 PM: Not available Tuesdays (all day)',
+      'Frankie Front-Desk - Tue, Oct 13, 9:00 AM–5:00 PM: Not available Tuesdays (all day)',
     ]);
   });
 
@@ -90,7 +90,7 @@ describe('before you publish', () => {
       locationId,
     });
     expect(linesOf(publishWarnings(input({ closures: [closure(null)] })), 'closures')).toEqual([
-      'Frankie Front-Desk at North Bergen, Tue, Oct 13 — Columbus Day',
+      'Frankie Front-Desk at North Bergen, Tue, Oct 13 - Columbus Day',
     ]);
     expect(linesOf(publishWarnings(input({ closures: [closure(NB)] })), 'closures')).toHaveLength(
       1,
@@ -110,14 +110,14 @@ describe('before you publish', () => {
       }),
     );
     expect(linesOf(check, 'leavers')).toEqual([
-      'Frankie Front-Desk — 2 shifts from Tue, Oct 13, after their last day (Mon, Oct 12)',
+      'Frankie Front-Desk - 2 shifts from Tue, Oct 13, after their last day (Mon, Oct 12)',
     ]);
   });
 
   it('flags a required license that has run out before the shift, not on the day it expires', () => {
     const lapse = (expiresOn: string) => [{ employeeId: 'emp-1', typeName: 'DEA', expiresOn }];
     expect(linesOf(publishWarnings(input({ lapses: lapse('2026-10-05') })), 'licenses')).toEqual([
-      'Frankie Front-Desk — DEA expired Mon, Oct 5, before 1 shift from Tue, Oct 13',
+      'Frankie Front-Desk - DEA expired Mon, Oct 5, before 1 shift from Tue, Oct 13',
     ]);
     expect(linesOf(publishWarnings(input({ lapses: lapse('2026-10-13') })), 'licenses')).toEqual(
       [],
@@ -148,7 +148,7 @@ describe('before you publish', () => {
     );
     expect(check.sections.map((section) => section.key)).toEqual(['licenses', 'overtime', 'open']);
     expect(linesOf(check, 'overtime')).toEqual([
-      'Frankie Front-Desk — 44 hrs the week of Sun, Oct 11 (4 over 40)',
+      'Frankie Front-Desk - 44 hrs the week of Sun, Oct 11 (4 over 40)',
     ]);
     expect(linesOf(check, 'open')).toEqual([
       'Tue, Oct 13 · North Bergen · Medical Assistant · 9:00 AM–5:00 PM',

@@ -8,7 +8,7 @@ const admin = { id: 'adm-1', email: 'dominguez@domihealthcare.com', role: Role.A
 
 const hoursAgo = (hours: number) => new Date(Date.now() - hours * 3_600_000);
 
-/// A day with no punch at all, entered by a manager — and then looked into by
+/// A day with no punch at all, entered by a manager - and then looked into by
 /// somebody else, because every one is either a habit or a problem with the app.
 function build(
   options: {
@@ -134,7 +134,7 @@ describe('adding hours by hand', () => {
     );
   });
 
-  it('never over hours already there — that one is corrected instead', async () => {
+  it('never over hours already there - that one is corrected instead', async () => {
     const { service, tx, created } = build({
       clash: { clockInAt: hoursAgo(9), clockOutAt: hoursAgo(5) },
     });
@@ -195,7 +195,7 @@ describe('looking into hours entered by hand', () => {
     await expect(service.checkHandEntry('entry-1', {}, admin)).rejects.toThrow(BadRequestException);
   });
 
-  it('once — a second look does not overwrite the first', async () => {
+  it('once - a second look does not overwrite the first', async () => {
     const { service } = build({ existing: handEntry, checked: 0 });
     await expect(service.checkHandEntry('entry-1', {}, admin)).rejects.toThrow(
       /already looked into/,

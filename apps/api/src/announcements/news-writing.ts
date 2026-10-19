@@ -3,10 +3,10 @@ import { AiService, stringFields } from '../ai/ai.service';
 /**
  * The AI service's two jobs on News (October 2026, Dominguez):
  *
- * - **Help me write it** — an admin's rough notes made into a post to edit.
- * - **Spanish** — a post translated, for staff who switch News to Español.
+ * - **Help me write it** - an admin's rough notes made into a post to edit.
+ * - **Spanish** - a post translated, for staff who switch News to Español.
  *
- * Both send only the post's own words (and an admin's notes) — staff news,
+ * Both send only the post's own words (and an admin's notes) - staff news,
  * never patient details; the editor says so. Nothing is kept by the AI side.
  */
 
@@ -47,7 +47,7 @@ export function draftPost(ai: AiService, adminId: string, notes: string, title?:
 }
 
 export function translatePost(ai: AiService, askedBy: string, words: PostWords) {
-  const prompt = `Title:\n${words.title}\n\nMessage:\n${words.body || '(none — the post is a poll)'}`;
+  const prompt = `Title:\n${words.title}\n\nMessage:\n${words.body || '(none - the post is a poll)'}`;
   return ai
     .json<PostWords>(askedBy, { system: TRANSLATE_RULES, prompt, schema: WORDS_SCHEMA })
     .then((result) =>

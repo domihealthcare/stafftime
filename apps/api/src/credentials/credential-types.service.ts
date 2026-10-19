@@ -29,7 +29,7 @@ const TYPE_SELECT = {
 
 /**
  * The licenses and certificates the practice asks for, and which job roles
- * need each one — required or optional (Dominguez, September 2026). Managers
+ * need each one - required or optional (Dominguez, September 2026). Managers
  * keep the list in the app: add a type, say who needs it and how often it is
  * renewed.
  *

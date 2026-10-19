@@ -29,7 +29,7 @@ class AskCorrectionDto {
 
 class ApproveCorrectionDto {
   /// The hours already went to payroll, and the manager means to correct
-  /// them anyway — as for Edit.
+  /// them anyway - as for Edit.
   @IsOptional()
   @IsBoolean()
   acknowledgeExported?: boolean;

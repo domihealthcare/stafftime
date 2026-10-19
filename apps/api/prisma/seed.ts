@@ -18,11 +18,11 @@ const prisma = new PrismaClient();
  * test staff, so the API is usable the moment the database is up.
  *
  * Coordinates are approximate town-centre points and the geofence radii are
- * placeholders — see docs/open-questions.md. Replace both with surveyed values
+ * placeholders - see docs/open-questions.md. Replace both with surveyed values
  * before anyone clocks in for real.
  *
  * Every seeded account shares one well-known development password. That is
- * acceptable precisely because this script is for local work only — never point
+ * acceptable precisely because this script is for local work only - never point
  * it at a real database. Production accounts are created with
  * `npm run create-admin`, which prompts for a password.
  */
@@ -98,11 +98,11 @@ async function seedJobRoles() {
 async function main() {
   const northBergen = await prisma.location.upsert({
     where: { slug: 'north-bergen' },
-    // Reset the geofence too, so seeding always gives a known starting point —
+    // Reset the geofence too, so seeding always gives a known starting point -
     // otherwise an experiment on the Locations screen quietly persists.
     //
     // 500 *feet*. This was 150 metres before the unit changed, and 150 is the
-    // number a careless rename leaves behind — which would shrink the geofence
+    // number a careless rename leaves behind - which would shrink the geofence
     // to under a third and refuse people at their own front desk.
     update: {
       latitude: 40.804,
@@ -200,7 +200,7 @@ async function main() {
     const pinHash = await hash(DEV_PINS[person.email]);
     const employee = await prisma.employee.upsert({
       where: { email: person.email },
-      // Reset every field a half-finished experiment could have left changed —
+      // Reset every field a half-finished experiment could have left changed -
       // a lockout, a changed password, somebody marked as having left, a
       // switched-off digest. The point of `db:seed` is a *known* starting
       // state, and a field left out here is one that quietly persists and makes
@@ -298,7 +298,7 @@ async function main() {
 
   console.log('\nSeeded locations:');
   console.table([northBergen, westNewYork].map((l) => ({ name: l.name, slug: l.slug })));
-  console.log(`Seeded sign-ins — every account's password is: ${DEV_PASSWORD}`);
+  console.log(`Seeded sign-ins - every account's password is: ${DEV_PASSWORD}`);
   console.table(withPins);
   console.log(
     'ma@domihealthcare.com starts with a temporary password, to demonstrate the forced change.\n',
@@ -324,13 +324,13 @@ main()
 /// care practice actually has to get through, in roughly the order they happen,
 /// so the practice can edit a real list rather than build one from nothing.
 ///
-/// Several of these produce a document — an I-9, a W-4, a signed handbook. This
+/// Several of these produce a document - an I-9, a W-4, a signed handbook. This
 /// app tracks whether the task was done and by whom; the paperwork itself lives
 /// in the personnel file, wherever the practice keeps it. A timekeeping app is
 /// not the right place for a social security number.
 ///
 /// `dueOffsetDays` is relative to the hire date (onboarding) or the last day
-/// (offboarding) — negative means before it.
+/// (offboarding) - negative means before it.
 const ONBOARDING_TASKS: TemplateTaskSeed[] = [
   {
     title: 'Signed offer letter on file',
@@ -403,7 +403,7 @@ const ONBOARDING_TASKS: TemplateTaskSeed[] = [
   },
   {
     title: 'EMR account requested',
-    description: 'Domi EMR is a separate system — this is a request to whoever administers it.',
+    description: 'Domi EMR is a separate system - this is a request to whoever administers it.',
     owner: TaskOwner.ADMIN,
     dueOffsetDays: 0,
   },
@@ -537,7 +537,7 @@ interface TemplateTaskSeed {
   dueOffsetDays?: number;
 }
 
-/// Replaces the default templates outright, the way the rest of the seed does —
+/// Replaces the default templates outright, the way the rest of the seed does -
 /// so `db:seed` gives a known starting state rather than a pile of copies.
 /// Checklists already started are snapshots, so this cannot disturb them.
 async function seedChecklistTemplates() {
@@ -549,14 +549,14 @@ async function seedChecklistTemplates() {
   }[] = [
     {
       kind: ChecklistKind.ONBOARDING,
-      name: 'New hire — Domi Healthcare',
+      name: 'New hire - Domi Healthcare',
       description:
         'Everything from the signed offer letter to the 30-day check-in. Edit it to match how the practice actually works.',
       tasks: ONBOARDING_TASKS,
     },
     {
       kind: ChecklistKind.OFFBOARDING,
-      name: 'Departure — Domi Healthcare',
+      name: 'Departure - Domi Healthcare',
       description: 'Final pay, equipment back, and every system the person had access to.',
       tasks: OFFBOARDING_TASKS,
     },

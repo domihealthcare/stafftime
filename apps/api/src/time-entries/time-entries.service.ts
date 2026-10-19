@@ -41,7 +41,7 @@ import { LocationVerificationService, VerifiableLocation } from './location-veri
  *
  * A `select` rather than an `include`, and that is the whole point: an include
  * returns every scalar on the row, which means the captured coordinates and IP
- * of every punch went out with every timesheet, to every screen, forever — and
+ * of every punch went out with every timesheet, to every screen, forever - and
  * nothing on the screens ever used them.
  *
  * They are still recorded, because a disputed punch is the reason to capture
@@ -114,7 +114,7 @@ const TIME_ENTRY_SELECT = {
 } satisfies Prisma.TimeEntrySelect;
 
 /// The longest single stretch of hours a manager can enter by hand. Anything
-/// longer is a typo — a wrong date or am for pm — not a shift.
+/// longer is a typo - a wrong date or am for pm - not a shift.
 const HAND_ENTRY_MAX_HOURS = 16;
 
 /// How far from a punch we will look for a scheduled shift to attach it to.
@@ -122,7 +122,7 @@ const SHIFT_MATCH_WINDOW_MINUTES = 240;
 
 /// How early somebody may clock in to a work-from-home shift. Unlike an office
 /// punch, nothing else proves they are working, so the shift itself is the
-/// permission — and it is kept close to the shift.
+/// permission - and it is kept close to the shift.
 const REMOTE_EARLY_MINUTES = 30;
 
 @Injectable()
@@ -161,7 +161,7 @@ export class TimeEntriesService {
     await this.closeForgotten(employeeId);
 
     const now = new Date();
-    // The shift they are on, or about to be, wherever it is — to tell whether
+    // The shift they are on, or about to be, wherever it is - to tell whether
     // they are clocking in somewhere else.
     const scheduled = await this.findShiftNear(employeeId, now);
     const otherPlace = (isOther: boolean) => ({
@@ -169,7 +169,7 @@ export class TimeEntriesService {
       otherPlaceReason: isOther ? dto.otherPlaceReason?.trim() || null : null,
     });
 
-    // Working from home. No office check, and — as promised to staff — no
+    // Working from home. No office check, and - as promised to staff - no
     // location or IP recorded. Chosen on the phone any day (October 2026,
     // Dominguez: somebody may be approved to work from home for the day);
     // without a work-from-home shift it is allowed, after a warning, and
@@ -210,7 +210,7 @@ export class TimeEntriesService {
     if (!outcome.allowed && dto.method !== ClockMethod.KIOSK) {
       // Everybody at the practice works at both offices, and the phone picks
       // one before it knows where they are. If they are standing at their
-      // other office, that is where they clocked in — not a refusal.
+      // other office, that is where they clocked in - not a refusal.
       for (const other of await this.otherAssignedLocations(employeeId, dto.locationId)) {
         const attempt = check(await this.loadVerifiableLocation(other), true);
         if (attempt.allowed) {
@@ -235,7 +235,7 @@ export class TimeEntriesService {
       longitude: dto.longitude,
       accuracyMeters: dto.accuracyMeters,
       ip,
-      // At an office, but not the one of the shift — or the shift was from home.
+      // At an office, but not the one of the shift - or the shift was from home.
       ...otherPlace(
         scheduled !== null && (scheduled.isRemote || scheduled.locationId !== locationId),
       ),
@@ -307,11 +307,11 @@ export class TimeEntriesService {
 
   /**
    * Closes the open punch, then records its closing checklist. The punch comes
-   * first and stands on its own: nothing about the checklist — missing,
-   * skipped, or failing to save — can stop somebody clocking out.
+   * first and stands on its own: nothing about the checklist - missing,
+   * skipped, or failing to save - can stop somebody clocking out.
    */
   /**
-   * `via` is how this clock-out is being made — the time clock passes KIOSK;
+   * `via` is how this clock-out is being made - the time clock passes KIOSK;
    * everything else is a phone or browser. It is judged on that, not on how the
    * shift was clocked in: a shift started at the time clock and ended from a
    * phone at home is a phone clock-out, checked (and flagged if away) as one.
@@ -415,7 +415,7 @@ export class TimeEntriesService {
     //
     // Without it, six taps on a slow phone were six writes to the same row,
     // each stamping its own clock-out time over the last. The hours barely
-    // moved — they were milliseconds apart — but the *verification* came along
+    // moved - they were milliseconds apart - but the *verification* came along
     // for the ride, so a punch correctly flagged NEEDS_REVIEW could be
     // overwritten by a later one that passed, and the flag simply vanished.
     const updated = await this.prisma.timeEntry.updateMany({
@@ -475,7 +475,7 @@ export class TimeEntriesService {
     return entry;
   }
 
-  /// The employee's currently open punch, if any — drives the clock-in/out button.
+  /// The employee's currently open punch, if any - drives the clock-in/out button.
   /// A punch left open from an earlier day is closed at its midnight first, so
   /// Home offers today's clock-in rather than yesterday's clock-out.
   async findCurrent(employeeId: string) {
@@ -524,7 +524,7 @@ export class TimeEntriesService {
 
   /**
    * Hours for a day with no punch at all, entered by a manager (Dominguez,
-   * September 2026) — somebody forgot, had no phone, would rather not share
+   * September 2026) - somebody forgot, had no phone, would rather not share
    * their location while there is no time clock, or the app refused them.
    *
    * A correction (`edit`) fixes a punch that exists; this makes one that does
@@ -532,7 +532,7 @@ export class TimeEntriesService {
    * for yourself, never over a punch already there, and a deliberate yes when
    * the day's pay period has already gone to payroll. The entry is marked
    * `enteredByHandAt` and listed for somebody to look into until they have
-   * (`checkHandEntry`, and the Timesheet banner and nightly round-up) —
+   * (`checkHandEntry`, and the Timesheet banner and nightly round-up) -
    * treated like a bug report, because each one is either a habit to fix or
    * a problem with the app.
    *
@@ -583,7 +583,7 @@ export class TimeEntriesService {
     try {
       return await this.prisma.$transaction(
         async (tx) => {
-          // Anything of theirs that overlaps — including a punch still open,
+          // Anything of theirs that overlaps - including a punch still open,
           // which runs until somebody closes it. Correct that one instead.
           const clash = await tx.timeEntry.findFirst({
             where: {
@@ -679,7 +679,7 @@ export class TimeEntriesService {
 
   /**
    * Hours added to a day whose pay period has already gone to payroll never
-   * reach that run, so — like a correction to paid hours — it is allowed, but
+   * reach that run, so - like a correction to paid hours - it is allowed, but
    * not by accident.
    */
   private async assertDayNotPaidOrAcknowledged(clockInAt: Date, dto: AddHoursDto) {
@@ -726,7 +726,7 @@ export class TimeEntriesService {
    * Refusing outright would be worse: the database would stay wrong forever,
    * and the mistake is usually exactly what needs fixing. But changing a number
    * that has already gone to payroll, with nobody noticing, means the
-   * spreadsheet and this app quietly disagree — so the manager has to say they
+   * spreadsheet and this app quietly disagree - so the manager has to say they
    * know, and the entry is then flagged until it reaches a later run.
    */
   private assertEditIsDeliberate(
@@ -745,7 +745,7 @@ export class TimeEntriesService {
   }
 
   /**
-   * Where a punch was made from — one entry, on purpose, and written to the log.
+   * Where a punch was made from - one entry, on purpose, and written to the log.
    *
    * This is the only route that returns coordinates. Capturing them is what
    * makes a browser clock-in trustworthy, and there is one honest reason to
@@ -898,7 +898,7 @@ export class TimeEntriesService {
   }
 
   /// Attach the punch to the nearest scheduled shift, so "late" means something.
-  /// A published work-from-home shift that covers `at` — from half an hour
+  /// A published work-from-home shift that covers `at` - from half an hour
   /// before it starts to when it ends.
   private findRemoteShift(employeeId: string, at: Date) {
     return this.prisma.shift.findFirst({
@@ -915,7 +915,7 @@ export class TimeEntriesService {
   }
 
   /// Their published shift on at `at`, or nearest to it within the same window
-  /// as a punch is matched to a shift — at any office, or from home.
+  /// as a punch is matched to a shift - at any office, or from home.
   private findShiftNear(employeeId: string, at: Date) {
     const windowMs = SHIFT_MATCH_WINDOW_MINUTES * 60_000;
     return this.prisma.shift.findFirst({

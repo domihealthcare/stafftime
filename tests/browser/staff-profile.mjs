@@ -16,8 +16,8 @@ const step = async (name, fn) => {
 
 /**
  * Staff profiles (October 2026, Dominguez): a name on the Staff screen opens
- * everything the practice keeps about that person — address, emergency
- * contact, pay and position over time, time off — and time off already taken
+ * everything the practice keeps about that person - address, emergency
+ * contact, pay and position over time, time off - and time off already taken
  * can be written down there with an optional comment. Admins only: a manager
  * sees the Staff screen as before and the API refuses them the record.
  */
@@ -83,7 +83,7 @@ await step('address and emergency contact are kept and shown', async () => {
   if (!contact.includes('Jamie Profilesuite (Sister)') || !contact.includes('201-555-0100')) {
     throw new Error(`emergency contact reads "${contact}"`);
   }
-  // And it is still there after a reload — it was stored, not just shown.
+  // And it is still there after a reload - it was stored, not just shown.
   await admin.reload({ waitUntil: 'networkidle' });
   await admin.getByTestId('home-address').getByText('12 Main Street').waitFor();
 });
@@ -143,7 +143,7 @@ await step('time off already taken is recorded with a comment and comes off the 
     (id) => fetch(`/api/pto/balance?employeeId=${id}`).then((r) => r.json()),
     person.id,
   );
-  // In a pop-up since October 2026 — the profile keeps only a summary.
+  // In a pop-up since October 2026 - the profile keeps only a summary.
   await card.getByRole('button', { name: '+ Record past time off' }).click();
   const form = admin
     .getByRole('dialog', { name: 'Record time off already taken' })
@@ -154,9 +154,16 @@ await step('time off already taken is recorded with a comment and comes off the 
     d.setDate(d.getDate() - offset);
     return d.toLocaleDateString('en-CA');
   };
-  await form.getByLabel('First day').fill(day(3));
-  await form.getByLabel('Last day').fill(day(2));
-  await form.getByLabel('Comment (optional)').fill('Flu — doctor’s note on file');
+  // Time off counts weekdays only, so the two days are a Monday to Thursday and the day after.
+  let start = 3;
+  for (;;) {
+    const weekday = new Date(Date.now() - start * 86400000).getDay();
+    if (weekday >= 1 && weekday <= 4) break;
+    start += 1;
+  }
+  await form.getByLabel('First day').fill(day(start));
+  await form.getByLabel('Last day').fill(day(start - 1));
+  await form.getByLabel('Comment (optional)').fill('Flu - doctor’s note on file');
   const saved = admin.waitForResponse((r) => r.url().endsWith('/pto/record'));
   await form.getByRole('button', { name: 'Record it' }).click();
   if (!(await saved).ok()) throw new Error('record refused');
@@ -166,7 +173,7 @@ await step('time off already taken is recorded with a comment and comes off the 
   const all = admin.getByTestId('staff-time-off-all');
   const entry = all.getByTestId('staff-time-off-entry').first();
   await entry.getByText('recorded after the fact by').waitFor();
-  await entry.getByText('Flu — doctor’s note on file').waitFor();
+  await entry.getByText('Flu - doctor’s note on file').waitFor();
   await all.getByRole('button', { name: 'Close' }).click();
   const after = await admin.evaluate(
     (id) => fetch(`/api/pto/balance?employeeId=${id}`).then((r) => r.json()),

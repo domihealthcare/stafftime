@@ -1,11 +1,11 @@
-/// Spanish for the app's frame (menus, bell, phone bar) and Your profile — see ../index.ts and the glossary in ./common.ts.
+/// Spanish for the app's frame (menus, bell, phone bar) and Your profile - see ../index.ts and the glossary in ./common.ts.
 export const SHELL: Record<string, string> = {
   // The header and the phone bar
   '{n} time-off request to decide': '{n} solicitud de tiempo libre por decidir',
   '{n} time-off requests to decide': '{n} solicitudes de tiempo libre por decidir',
 
   // The account menu
-  'Your account — {name}': 'Tu cuenta — {name}',
+  'Your account - {name}': 'Tu cuenta - {name}',
   'Sign out and lose what you have entered?': '¿Cerrar sesión y perder lo que escribiste?',
   'Signing out clears {what}. It is not saved anywhere, so it cannot be got back.':
     'Al cerrar sesión se borra {what}. No se guarda en ningún lugar, así que no se puede recuperar.',
@@ -25,17 +25,17 @@ export const SHELL: Record<string, string> = {
 
   // Phone notifications
   'Phone notifications': 'Notificaciones en el teléfono',
-  'Get what rings the bell — shift changes, time off, reminders to clock in — on this phone’s lock screen. No app to download.':
-    'Recibe lo que suena en la campana — cambios de turno, tiempo libre, recordatorios para marcar entrada — en la pantalla de bloqueo de este teléfono. No hay que descargar ninguna app.',
-  'Not switched on for the practice yet — an admin does that in Practice settings.':
-    'Todavía no está activado para la práctica — un administrador lo hace en Ajustes de la práctica.',
+  'Get what rings the bell - shift changes, time off, reminders to clock in - on this phone’s lock screen. No app to download.':
+    'Recibe lo que suena en la campana - cambios de turno, tiempo libre, recordatorios para marcar entrada - en la pantalla de bloqueo de este teléfono. No hay que descargar ninguna app.',
+  'Not switched on for the practice yet - an admin does that in Practice settings.':
+    'Todavía no está activado para la práctica - un administrador lo hace en Ajustes de la práctica.',
   'This browser cannot show notifications.': 'Este navegador no puede mostrar notificaciones.',
   'On an iPhone, put Domi Staff on your Home Screen first (in Safari: Share → Add to Home Screen), open it from there, and come back here. See Help → Put Domi Staff on your phone.':
     'En un iPhone, primero pon Domi Staff en tu pantalla de inicio (en Safari: Compartir → Agregar a inicio), ábrelo desde ahí y vuelve aquí. Mira Ayuda → Put Domi Staff on your phone.',
   'Notifications are blocked for Domi Staff on this device. Allow them in the phone’s settings (or the browser’s site settings), then come back here.':
     'Las notificaciones de Domi Staff están bloqueadas en este dispositivo. Permítelas en la configuración del teléfono (o en la configuración del sitio del navegador) y luego vuelve aquí.',
   '✓ On for this device': '✓ Activadas en este dispositivo',
-  'Sent — it should arrive in a moment.': 'Enviada — debería llegar en un momento.',
+  'Sent - it should arrive in a moment.': 'Enviada - debería llegar en un momento.',
   'Send me a test': 'Envíame una prueba',
   'Turned off for this device.': 'Desactivadas en este dispositivo.',
   'Turn off': 'Desactivar',
@@ -69,8 +69,8 @@ export const SHELL: Record<string, string> = {
   'Change photo': 'Cambiar foto',
   'Add a photo': 'Agregar una foto',
   'Remove photo': 'Quitar foto',
-  'A photo of you — move and zoom it to fit the circle. Colleagues see it; take it down whenever you like.':
-    'Una foto tuya — muévela y haz zoom para que quepa en el círculo. Tus compañeros la ven; quítala cuando quieras.',
+  'A photo of you - move and zoom it to fit the circle. Colleagues see it; take it down whenever you like.':
+    'Una foto tuya - muévela y haz zoom para que quepa en el círculo. Tus compañeros la ven; quítala cuando quieras.',
   'The app’s screens, in English or Spanish.': 'Las pantallas de la app, en inglés o en español.',
   'Name you go by': 'Nombre que usas',
   'Leave empty to use {name}. Payroll keeps your legal name.':
@@ -105,8 +105,8 @@ export const SHELL: Record<string, string> = {
   // Tablet PIN
   'Could not save that PIN.': 'No se pudo guardar ese PIN.',
   'Tablet PIN': 'PIN de la tableta',
-  'Set on {date}. It is never shown — choose a new one below if you have forgotten it.':
-    'Definido el {date}. Nunca se muestra — elige uno nuevo abajo si lo olvidaste.',
+  'Set on {date}. It is never shown - choose a new one below if you have forgotten it.':
+    'Definido el {date}. Nunca se muestra - elige uno nuevo abajo si lo olvidaste.',
   'Not set yet. You need one to clock in at the front-desk tablet.':
     'Todavía no está definido. Lo necesitas para marcar entrada en la tableta de la recepción.',
   'New PIN': 'PIN nuevo',

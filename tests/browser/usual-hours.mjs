@@ -20,10 +20,10 @@ const step = async (name, fn) => {
 };
 
 /**
- * Smarter starting hours on a new shift (Dominguez, October 2026 — making the
+ * Smarter starting hours on a new shift (Dominguez, October 2026 - making the
  * app smarter): the ＋ on the rota and + Add start on the person's usual for
- * that day — their regular shift, or what they have worked most often on that
- * weekday lately — instead of 9 to 5, with a line saying so. Only until the
+ * that day - their regular shift, or what they have worked most often on that
+ * weekday lately - instead of 9 to 5, with a line saying so. Only until the
  * manager changes the hours or place by hand.
  *
  * Frankie has worked 7 to 3 at North Bergen the last two Wednesdays; the
@@ -122,7 +122,7 @@ await step('the ＋ on Wednesday starts on 7 to 3, and says why', async () => {
   const hint = dialog.getByTestId('usual-shift-hint');
   await hint.waitFor({ timeout: 10000 });
   const text = (await hint.innerText()).trim();
-  if (text !== 'Started on 7:00 AM–3:00 PM at North Bergen — what they have worked most on this weekday lately.')
+  if (text !== 'Started on 7:00 AM–3:00 PM at North Bergen - what they have worked most on this weekday lately.')
     throw new Error(`hint: ${text}`);
   const start = await dialog.getByLabel('Starts').inputValue();
   const end = await dialog.getByLabel('Ends').inputValue();

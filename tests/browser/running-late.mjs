@@ -35,10 +35,10 @@ function sql(statement) {
 }
 
 /**
- * "Running late" and the managers' no-show alert (October 2026, Dominguez —
+ * "Running late" and the managers' no-show alert (October 2026, Dominguez - 
  * two "smarter" ideas). From Home, somebody not clocked in tells the managers
  * of the office they will be about N minutes late; the timesheet shows it;
- * 30 minutes into a shift with no clock-in the office's managers are told —
+ * 30 minutes into a shift with no clock-in the office's managers are told - 
  * not before the "running late" time plus a quarter of an hour.
  * Shifts here are noted 'running-late-suite', which run-all.sh clears.
  */

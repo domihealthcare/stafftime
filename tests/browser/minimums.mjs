@@ -21,7 +21,7 @@ const step = async (name, fn) => {
 };
 
 /**
- * A minimum per office per job role (Dominguez, October 2026 — making the app
+ * A minimum per office per job role (Dominguez, October 2026 - making the app
  * smarter): set on Job roles, it flags days the rota leaves short on the
  * Schedule banner, in the nightly email and in Before you publish, and Too
  * many off at once goes by it. Warns, never refuses.

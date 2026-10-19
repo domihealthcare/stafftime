@@ -5,7 +5,7 @@ import { ApiError, api } from '../lib/api';
 import type { CoverView } from '../lib/types';
 
 /**
- * "Can you cover…?" — where somebody asked to cover an open shift answers
+ * "Can you cover…?" - where somebody asked to cover an open shift answers
  * (October 2026, Dominguez). Linked from the bell and the email. Only the
  * people asked can open it, and it shows only the shift: never who else was
  * asked. The first yes gets it.
@@ -45,7 +45,7 @@ export function CoverPage() {
     return (
       <div className="max-w-xl">
         <PageHeading title="Cover a shift" />
-        <Alert>That request is not there — it may not have been for you.</Alert>
+        <Alert>That request is not there - it may not have been for you.</Alert>
       </div>
     );
   }
@@ -63,7 +63,7 @@ export function CoverPage() {
             <p className="mt-3 text-sm text-slate-700">
               {view.myAnswer === false
                 ? 'You said you can’t. Changed your mind? It is still open.'
-                : 'The first to say yes gets it — it goes straight onto your schedule.'}
+                : 'The first to say yes gets it - it goes straight onto your schedule.'}
             </p>
             <div className="mt-3 flex flex-wrap gap-2">
               <button
@@ -89,7 +89,7 @@ export function CoverPage() {
         )}
         {view.state === 'yours' && (
           <p className="mt-3 text-sm font-medium text-emerald-800" role="status">
-            It’s yours — thank you! It is on your{' '}
+            It’s yours - thank you! It is on your{' '}
             <Link to="/schedule" className="underline">
               schedule
             </Link>
@@ -98,12 +98,12 @@ export function CoverPage() {
         )}
         {view.state === 'covered' && (
           <p className="mt-3 text-sm text-slate-700" role="status">
-            It’s covered — somebody else said yes first. Thank you for being asked.
+            It’s covered - somebody else said yes first. Thank you for being asked.
           </p>
         )}
         {view.state === 'stopped' && (
           <p className="mt-3 text-sm text-slate-700" role="status">
-            It no longer needs covering. Thanks — you do not need to answer.
+            It no longer needs covering. Thanks - you do not need to answer.
           </p>
         )}
         {view.state === 'started' && (

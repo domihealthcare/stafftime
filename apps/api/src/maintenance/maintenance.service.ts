@@ -40,7 +40,7 @@ export interface PurgeReport {
   /// Shifts written out for standing shifts ("every Monday, no end date")
   /// coming into range.
   standingShifts: number;
-  /// Calendar invites sent, changed or cancelled — shifts and events coming
+  /// Calendar invites sent, changed or cancelled - shifts and events coming
   /// into range, and anything a save did not get to.
   calendarInvites: number;
   /// Punches still open from yesterday, clocked out at midnight.
@@ -204,7 +204,7 @@ export class MaintenanceService {
   /**
    * The day-before reminders for tomorrow's events and closures (asked for by
    * Dominguez, September 2026). Here because this is the job that runs every
-   * night — at 5am in New Jersey, so "tomorrow" is the next day. Like the
+   * night - at 5am in New Jersey, so "tomorrow" is the next day. Like the
    * digest, never allowed to fail the tidying up.
    */
   private async remindAboutTomorrow(): Promise<number> {
@@ -241,7 +241,7 @@ export class MaintenanceService {
   /**
    * Clears the coordinates and IP off punches older than the retention window.
    *
-   * The punch itself is untouched — the time, the location it was attributed
+   * The punch itself is untouched - the time, the location it was attributed
    * to, and what the geofence check concluded all stay. What goes is the raw
    * position: a record of where each member of staff physically was on each
    * morning, which stops being useful long before it stops being sensitive.
@@ -285,7 +285,7 @@ export class MaintenanceService {
   }
 
   /// A pairing code that expired unused is still a credential. Clearing it
-  /// leaves the device row alone — an admin can issue a fresh code.
+  /// leaves the device row alone - an admin can issue a fresh code.
   private async clearExpiredPairingCodes(): Promise<number> {
     const result = await this.prisma.kioskDevice.updateMany({
       where: {
@@ -302,8 +302,8 @@ export class MaintenanceService {
    * Bytes nothing points at any more.
    *
    * Payroll export files are the only thing this app stores bytes for. The
-   * storage backend has no foreign key back to the records that reference it —
-   * on purpose, so it stays a storage backend — and voiding an export clears
+   * storage backend has no foreign key back to the records that reference it -
+   * on purpose, so it stays a storage backend - and voiding an export clears
    * the metadata's pointer before the bytes go. That order is right (the other
    * way round leaves a download that 404s) but a failure between the two steps
    * leaves bytes behind. This is the sweep for them.

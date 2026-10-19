@@ -20,7 +20,7 @@ const step = async (name, fn) => {
 };
 
 /**
- * "Payroll is due, hours aren't approved" (Dominguez, October 2026 — a
+ * "Payroll is due, hours aren't approved" (Dominguez, October 2026 - a
  * "smarter" idea). From two working days before a pay period ends until the
  * day before it is paid, what still stands between its hours and payroll
  * leads the Timesheet banner and the round-up.
@@ -78,7 +78,7 @@ const ada = await signIn('admin@domihealthcare.com');
 const mgr = await signIn('manager@domihealthcare.com');
 
 await step('set-up: a period ending tomorrow, and two of Max’s punches from yesterday', async () => {
-  // Starting 12 days ago, it ends tomorrow — inside two working days of it.
+  // Starting 12 days ago, it ends tomorrow - inside two working days of it.
   const status = await settings(ada, njDay(-12));
   if (status !== 200) throw new Error(`settings answered ${status}`);
   const yesterday = njDay(-1);

@@ -85,7 +85,7 @@ await step(
     if (label !== 'Front Desk') throw new Error(`main job role starts as ${label}`);
     const options = await main.locator('option').allTextContents();
     if (options.join() !== 'Front Desk,Medical Assistant')
-      throw new Error(`offers ${options.join(', ')} — only the roles they hold`);
+      throw new Error(`offers ${options.join(', ')} - only the roles they hold`);
   },
 );
 
@@ -350,7 +350,7 @@ await step('an admin puts up a photo for somebody, fitted and shrunk like their 
 await admin.screenshot({ path: `${OUT}/staff-photo-admin.png`, fullPage: true });
 
 await step(
-  'an admin is not offered the Photo section for themselves — that is on Your profile',
+  'an admin is not offered the Photo section for themselves - that is on Your profile',
   async () => {
     await adminEditor.getByRole('button', { name: 'Close' }).click();
     await admin.getByRole('button', { name: 'Edit Ada Admin' }).click();

@@ -9,7 +9,7 @@ import { Alert, Badge, buttonClass } from './ui';
 
 /**
  * Required reading and tasks (October 2026, Dominguez): what a manager has
- * asked somebody to read and confirm, or to do. A nag, never a gate — the
+ * asked somebody to read and confirm, or to do. A nag, never a gate - the
  * card sits on Home until it is confirmed, and nothing stops a clock-in.
  */
 
@@ -202,7 +202,7 @@ export function PostConfirm({
     >
       <p className="flex-1 text-sm text-amber-900">
         {due
-          ? t('Please confirm you have read this — {due}.', { due: due.text.toLowerCase() })
+          ? t('Please confirm you have read this - {due}.', { due: due.text.toLowerCase() })
           : t('Please confirm you have read this.')}
       </p>
       {error && <Alert>{error}</Alert>}

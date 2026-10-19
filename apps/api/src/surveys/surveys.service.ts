@@ -52,7 +52,7 @@ const ACTIVE: { in: EmploymentStatus[] } = {
 /**
  * Pulse surveys: short, anonymous, and only readable once it is safe to.
  *
- * The promise to staff is that nobody — admins included — can find out what
+ * The promise to staff is that nobody - admins included - can find out what
  * they said. Three things keep it:
  *
  * - **Answers carry no person and no time.** `SurveyResponse` has an id and a
@@ -149,7 +149,7 @@ export class SurveysService {
   }
 
   /// A draft can be rewritten freely; once it is open, the questions are fixed
-  /// — changing a question under people who already answered it would make
+  /// - changing a question under people who already answered it would make
   /// their answers mean something else.
   async update(id: string, dto: SurveyInput, actor: AuthUser) {
     const existing = await this.require(id);
@@ -196,7 +196,7 @@ export class SurveysService {
       {
         kind: NotificationKind.SURVEY_OPEN,
         title: `New survey: ${row.title}`,
-        body: 'Anonymous — nobody can see who answered what.',
+        body: 'Anonymous - nobody can see who answered what.',
         link: '/surveys',
       },
     );
@@ -221,7 +221,7 @@ export class SurveysService {
   async remove(id: string, actor: AuthUser) {
     const existing = await this.require(id);
     if (existing.status === SurveyStatus.OPEN) {
-      throw new BadRequestException('Close it first — people may be answering it now.');
+      throw new BadRequestException('Close it first - people may be answering it now.');
     }
     await this.prisma.survey.delete({ where: { id } });
     this.logger.log(`Survey ${id} deleted by ${actor.id}`);
@@ -231,7 +231,7 @@ export class SurveysService {
   /**
    * Answering. Two writes, deliberately in two transactions:
    *
-   * 1. that this person has taken part — refused if they already have;
+   * 1. that this person has taken part - refused if they already have;
    * 2. the answers, with no person and no time.
    *
    * If the second fails the first is taken back, so a failed save does not
@@ -275,7 +275,7 @@ export class SurveysService {
   }
 
   /**
-   * What people said — once it is safe to show.
+   * What people said - once it is safe to show.
    *
    * Free-text answers come back in a random order, so the order they were
    * written in is not a clue.
@@ -346,8 +346,8 @@ export class SurveysService {
 
   /**
    * For the Dashboard: the surveys open now and those closed in the last 30
-   * days, with how many could answer and how many have — the same counts the
-   * Surveys screen shows — and whether results can be shown. Never answers.
+   * days, with how many could answer and how many have - the same counts the
+   * Surveys screen shows - and whether results can be shown. Never answers.
    */
   async overview(now = new Date()) {
     const since = new Date(now.getTime() - 30 * 86_400_000);
@@ -390,7 +390,7 @@ export class SurveysService {
   }
 
   /// How many people an audience is, each audience counted once however many
-  /// surveys share it — most are for everyone.
+  /// surveys share it - most are for everyone.
   private audienceCounter() {
     const counted = new Map<string, Promise<number>>();
     return (row: Pick<SurveyRow, 'audience' | 'jobRole' | 'location'>) => {
@@ -486,7 +486,7 @@ export class SurveysService {
   }
 }
 
-/// What staff see of a survey: the questions, and not how many have answered —
+/// What staff see of a survey: the questions, and not how many have answered -
 /// a count ticking up while you watch a colleague finish is its own clue.
 function forStaff(row: SurveyRow) {
   return {

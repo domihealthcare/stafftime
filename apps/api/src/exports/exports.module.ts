@@ -23,7 +23,7 @@ import { TimesheetExportService } from './timesheet-export.service';
     AdpSettingsService,
     {
       // The registry of payroll targets. Adding a provider is a class and one
-      // line here — nothing in the timesheet logic changes.
+      // line here - nothing in the timesheet logic changes.
       provide: PAYROLL_EXPORTERS,
       inject: [AdpSettingsService],
       useFactory: (adp: AdpSettingsService): PayrollExporter[] => [

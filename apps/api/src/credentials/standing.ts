@@ -6,7 +6,7 @@
  * out each line.
  */
 
-/// How far ahead a license counts as "due soon" — the same 60 days as the
+/// How far ahead a license counts as "due soon" - the same 60 days as the
 /// Licenses screen and the nightly round-up.
 export const DUE_SOON_DAYS = 60;
 
@@ -40,8 +40,8 @@ export interface StandingLine {
  * One line per license type any of their job roles asks for, required first,
  * then in the practice's order.
  *
- * A credential counts for a type when it was recorded as that type, or —
- * for ones recorded free-hand before types existed — carries exactly its
+ * A credential counts for a type when it was recorded as that type, or -
+ * for ones recorded free-hand before types existed - carries exactly its
  * name. The one that runs longest is the one that counts: a renewal
  * recorded alongside the old card should not leave them "expired".
  */

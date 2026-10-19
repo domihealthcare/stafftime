@@ -17,22 +17,25 @@ import {
 import { AI_NOTE, useAiOn } from '../lib/ai';
 import { ApiError, api } from '../lib/api';
 import { locale, t as translate, useT } from '../lib/i18n';
-import { useIsAdmin, useIsManager } from '../lib/session';
+import { useIsAdmin, useIsManager, useSession } from '../lib/session';
 import type { Announcement, MyRequirement, PollInput } from '../lib/types';
 
 /**
- * Every announcement, newest first — the practice's noticeboard.
+ * Every announcement, newest first - the practice's noticeboard.
  *
  * Admins write here. One post is always primary, and that one leads the home
  * screen; the rest stay here to be scrolled back through, like a blog.
  *
  * Everybody signed in can like a post, comment under it, and vote in its poll
- * (October 2026) — all by name. A link from the bell ends in `#post-<id>`, and
+ * (October 2026) - all by name. A link from the bell ends in `#post-<id>`, and
  * the page scrolls to that post once it has loaded.
  */
 export function NewsPage() {
   const t = useT();
   const isAdmin = useIsAdmin();
+  const { employee: me } = useSession();
+  /// Admins, and people an admin has switched on (October 2026).
+  const canPost = isAdmin || me?.canPostNews === true;
   const isManager = useIsManager();
   const aiOn = useAiOn();
   /// Posts somebody has been asked to read and confirm (required reading).
@@ -80,7 +83,7 @@ export function NewsPage() {
       <PageHeading
         title={t('News')}
         subtitle={
-          isAdmin
+          canPost
             ? t(
                 'Everything posted for staff, newest first. The primary post is the one everybody sees when they sign in.',
               )
@@ -101,7 +104,7 @@ export function NewsPage() {
         </div>
       )}
 
-      {isAdmin && (
+      {canPost && (
         <div className="mb-4">
           {writing ? (
             <PostForm
@@ -134,7 +137,7 @@ export function NewsPage() {
               key={post.id}
               post={post}
               aiOn={aiOn}
-              canManage={isAdmin}
+              canManage={canPost}
               canRequire={isManager}
               required={asked.find((item) => item.announcement?.id === post.id)}
               onConfirmed={(id) =>
@@ -318,7 +321,7 @@ function PostCard({
 
 /// One form for writing and editing. The primary tick behaves differently in
 /// the two cases the rule makes special: the first post has to be primary, and
-/// the current primary cannot be unticked — only replaced by ticking another.
+/// the current primary cannot be unticked - only replaced by ticking another.
 function PostForm({
   post,
   aiOn = false,
@@ -335,7 +338,7 @@ function PostForm({
   const [title, setTitle] = useState(post?.title ?? '');
   const [body, setBody] = useState(post?.body ?? '');
   // The Spanish (October 2026): typed, or translated by the AI service and
-  // then read through. `touched` is whether it was redone in this edit — if
+  // then read through. `touched` is whether it was redone in this edit - if
   // the English changes and it was not, it is cleared rather than left
   // saying the old thing.
   const [titleEs, setTitleEs] = useState(post?.titleEs ?? '');
@@ -523,7 +526,7 @@ function PostForm({
           <summary className="cursor-pointer px-3 py-2 text-sm font-medium text-slate-700">
             In Spanish{' '}
             <span className="font-normal text-slate-500">
-              (optional — for staff who read the news in Español)
+              (optional - for staff who read the news in Español)
             </span>
           </summary>
           <div className="space-y-2 px-3 pb-3">
@@ -575,7 +578,7 @@ function PostForm({
             </label>
             {spanishByAi && titleEs && (
               <p className="text-xs text-slate-500">
-                Translated by the AI service — shown to staff as &ldquo;Traducido
+                Translated by the AI service - shown to staff as &ldquo;Traducido
                 automáticamente&rdquo; until somebody edits it.
               </p>
             )}
@@ -594,7 +597,7 @@ function PostForm({
             <span className="font-medium text-slate-700">Primary announcement</span>
             <span className="block text-xs text-slate-500">
               {firstPost
-                ? 'The first post is always primary — there has to be one.'
+                ? 'The first post is always primary - there has to be one.'
                 : post?.isPrimary
                   ? 'This is the primary post. To change that, make another post primary.'
                   : 'Shown at the top of everybody’s home screen, in place of the current one.'}
@@ -615,12 +618,12 @@ function PostForm({
             {/* The hint is described-by, not inside the label: its words would
                 otherwise become part of the box's name. */}
             <label htmlFor="post-on-time-clock" className="font-medium text-slate-700">
-              Show publicly — on the time clock and the sign-in page
+              Show publicly - on the time clock and the sign-in page
             </label>
             <p id="post-on-time-clock-hint" className="text-xs text-slate-500">
               It goes on the front-desk time clock, where patients can see it, and under the sign-in
               form, which anyone on the internet can open. Leave this off for anything internal.
-              Only the title and message are shown there — no likes, comments or poll.
+              Only the title and message are shown there - no likes, comments or poll.
             </p>
           </div>
         </div>
@@ -682,7 +685,7 @@ function cleanPoll(draft: PollDraft): PollInput {
 
 /// Adding a poll to a post: a question, two to ten choices, and whether
 /// people may pick more than one. Once anybody has voted, only the question
-/// can change — the choices are what they voted on.
+/// can change - the choices are what they voted on.
 function PollEditor({
   poll,
   votesIn,

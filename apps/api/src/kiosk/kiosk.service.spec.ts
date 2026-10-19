@@ -208,7 +208,7 @@ describe('KioskService', () => {
       expect(query.take).toBe(PUBLIC_POSTS);
     });
 
-    it('reads the title and words only — no author, likes, comments or poll', async () => {
+    it('reads the title and words only - no author, likes, comments or poll', async () => {
       const { service, prisma } = build();
       await service.timeClockPosts();
 

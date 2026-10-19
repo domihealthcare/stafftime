@@ -8,7 +8,7 @@ const DEMO_TAG = 'demo:';
  * the demo staff (who all share one well-known password) and every shift,
  * punch, request, checklist, post, survey and event made while trying the app out.
  *
- * What stays is the practice's own set-up — decided with Dominguez, September
+ * What stays is the practice's own set-up - decided with Dominguez, September
  * 2026: the offices and their pins, practice settings and the ADP set-up, job
  * roles and who is in them, closing checklists, checklist templates,
  * resources, time-off rules, kiosks, and every account that is not a demo
@@ -77,7 +77,7 @@ export async function clearTestData(prisma: PrismaClient) {
 
 export type TestDataCounts = Awaited<ReturnType<typeof clearTestData>>;
 
-/** What clearing would remove, and — as important — which accounts it keeps. */
+/** What clearing would remove, and - as important - which accounts it keeps. */
 export async function previewTestData(prisma: PrismaClient) {
   const [
     demoStaff,

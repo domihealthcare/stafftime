@@ -8,7 +8,7 @@ import { locale, t as translate, useT } from '../lib/i18n';
 const POLL_MS = 60_000;
 
 /**
- * The bell beside your name: things the app wants you, specifically, to know —
+ * The bell beside your name: things the app wants you, specifically, to know -
  * your time off decided, your schedule changed, a survey waiting for you.
  *
  * The badge is a count of unread ones. Opening the bell lists the newest;
@@ -42,12 +42,12 @@ export function NotificationBell() {
   }, []);
 
   // On arrival, on every screen change, every minute, and when the tab comes
-  // back into view — cheap, and a stale badge is the thing people notice.
+  // back into view - cheap, and a stale badge is the thing people notice.
   useEffect(() => {
     refreshCount();
   }, [refreshCount, pathname]);
   useEffect(() => {
-    // Not while the phone is locked or the tab is in the background — that is
+    // Not while the phone is locked or the tab is in the background - that is
     // data and battery for a badge nobody can see. Coming back refreshes it.
     const timer = window.setInterval(
       () => document.visibilityState === 'visible' && refreshCount(),

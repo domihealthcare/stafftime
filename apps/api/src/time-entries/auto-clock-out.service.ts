@@ -16,19 +16,19 @@ import {
  * forgot to clock out the day prior").
  *
  * A punch begun on an earlier day in New Jersey and never closed is closed at
- * the **midnight that ended that day** — the time the app clocked them out,
+ * the **midnight that ended that day** - the time the app clocked them out,
  * recorded as it is, never a guess at when they really left. That is almost
  * always too late, so it is a warning both ways:
  *
  * - the entry is a **missing punch** for a manager to correct (listed on the
  *   Timesheet banner, the dashboard and the nightly email until corrected, and
- *   refused for approval until then — see `TimeEntriesService.approve`);
+ *   refused for approval until then - see `TimeEntriesService.approve`);
  * - the person is told, on the bell and by email, so they can say when they
  *   actually finished.
  *
  * With a shift or without one: the point is that nobody is stuck. It runs from
  * the outside timer and the nightly job for everybody, and for one person
- * whenever they open Home, clock in, or use the time clock — so a timer that
+ * whenever they open Home, clock in, or use the time clock - so a timer that
  * missed a night still never traps anybody on yesterday's punch.
  *
  * Each entry is closed with a compare-and-set (`clockOutAt: null`), so two
@@ -43,7 +43,7 @@ export class AutoClockOutService {
     private readonly notifications: NotificationsService,
   ) {}
 
-  /// Closes every punch left open from before today — or only this person's.
+  /// Closes every punch left open from before today - or only this person's.
   /// Returns how many it closed.
   async closeForgotten(options: { employeeId?: string; now?: Date } = {}): Promise<number> {
     const now = options.now ?? new Date();

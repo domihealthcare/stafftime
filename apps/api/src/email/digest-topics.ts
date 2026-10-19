@@ -12,7 +12,7 @@ import type { DigestContents } from './attention.service';
  * somebody else's (`Employee.mutedDigestTopics`).
  *
  * **Nothing falls through the gap.** A part nobody is down for goes to
- * everyone who gets the round-up, as it did before there was a choice — so
+ * everyone who gets the round-up, as it did before there was a choice - so
  * the last manager to untick licenses cannot quietly stop anybody hearing
  * that one has lapsed.
  *
@@ -53,7 +53,7 @@ export interface TopicReader {
   mutedDigestTopics: DigestTopic[];
 }
 
-/// The people down for `topic` — or, when nobody is, all of them.
+/// The people down for `topic` - or, when nobody is, all of them.
 export function readersOf<T extends TopicReader>(topic: DigestTopic, people: T[]): T[] {
   const chosen = people.filter((person) => !person.mutedDigestTopics.includes(topic));
   return chosen.length > 0 ? chosen : people;

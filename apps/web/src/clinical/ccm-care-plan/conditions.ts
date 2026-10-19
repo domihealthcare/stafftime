@@ -4,7 +4,7 @@ import type { CarePlanForm } from './form';
 import { PHRASES, PLAN_LISTS } from './phrases';
 
 /**
- * The chronic conditions a care plan can cover — the practice's CCM
+ * The chronic conditions a care plan can cover - the practice's CCM
  * diagnosis list (Dominguez, October 2026), with its ICD-10 codes.
  *
  * `label` is the list's own short name and `name` the one a care plan
@@ -13,7 +13,7 @@ import { PHRASES, PLAN_LISTS } from './phrases';
  * - its own Google Form where there was one;
  * - Alzheimer's uses the Dementia form, the nearest there was;
  * - HTN and Osteoporosis use lists made from the sample care plan;
- * - the rest use `shared` — the choices most forms have in common — until
+ * - the rest use `shared` - the choices most forms have in common - until
  *   they have a form of their own. Typed answers work for all of them.
  *
  * The codes are printed on the care plan as they are here. Three were
@@ -305,7 +305,7 @@ export function conditionHeading(form: CarePlanForm, value: string, language: La
   return language === 'es' ? `Plan de Atención para ${name}` : `${name} Care Plan`;
 }
 
-/// The title of a condition's section on the form: "HTN — Hypertension (I10)".
+/// The title of a condition's section on the form: "HTN - Hypertension (I10)".
 export function conditionTitle(form: CarePlanForm, value: string): string {
   if (value === OTHER_CONDITION) {
     const code = form.otherCondition.icd10.trim().toUpperCase();
@@ -313,6 +313,6 @@ export function conditionTitle(form: CarePlanForm, value: string): string {
   }
   const condition = conditionOf(value);
   if (!condition) return value;
-  const name = condition.name !== condition.label ? ` — ${condition.name}` : '';
+  const name = condition.name !== condition.label ? ` - ${condition.name}` : '';
   return `${condition.label}${name} (${condition.icd10})`;
 }

@@ -8,7 +8,7 @@ import { KioskService } from './kiosk.service';
  *
  * Deliberately separate from SessionAuthGuard: a kiosk token proves only "this
  * tablet is bound to North Bergen". It cannot read a timesheet, see the staff
- * list beyond that location, or act as anyone — each punch still needs a PIN.
+ * list beyond that location, or act as anyone - each punch still needs a PIN.
  */
 @Injectable()
 export class KioskDeviceGuard implements CanActivate {

@@ -4,7 +4,7 @@ declare const __BUILD__: { version: string; commit: string | null; builtAt: stri
 export const BUILD = __BUILD__;
 
 /**
- * "Version 1.2.0" — the release number, from the root package.json. It goes
+ * "Version 1.2.0" - the release number, from the root package.json. It goes
  * up with every release (October 2026, Dominguez: a version number rather than
  * the build date and commit): the last part for fixes, the middle for new
  * features, the first for a big change.
@@ -15,7 +15,7 @@ export function versionLabel(build = BUILD): string {
 
 /**
  * When this release was built, which is when it went out: "Thu, Oct 15, 2026,
- * 4:12 PM ET" — on the practice's clock, whatever the reader's.
+ * 4:12 PM ET" - on the practice's clock, whatever the reader's.
  */
 export function releasedLabel(build = BUILD): string {
   const when = new Date(build.builtAt).toLocaleString('en-US', {

@@ -34,7 +34,7 @@ class EnvironmentVariables {
   NODE_ENV: NodeEnv = NodeEnv.Development;
 
   /// Defaults to production, so a deployment is only ever a test environment on
-  /// purpose — never by forgetting to set something.
+  /// purpose - never by forgetting to set something.
   @IsEnum(AppEnvironment)
   APP_ENVIRONMENT: AppEnvironment = AppEnvironment.Production;
 
@@ -103,7 +103,7 @@ class EnvironmentVariables {
 
   /// Email provider. Both of these have to be set for mail to actually leave
   /// the building; with either missing, messages are written to the server log
-  /// instead — loudly, in production.
+  /// instead - loudly, in production.
   @IsOptional()
   @IsString()
   RESEND_API_KEY?: string;
@@ -184,7 +184,7 @@ class EnvironmentVariables {
   PIN_LOCKOUT_MINUTES = 10;
 
   /// A PIN entered again this soon after a time-clock punch repeats that punch
-  /// instead of reversing it — the answer to the first was lost and somebody
+  /// instead of reversing it - the answer to the first was lost and somebody
   /// tried again. The browser suites clock people in and out within seconds,
   /// so they set it to 0.
   @Type(() => Number)
@@ -199,7 +199,7 @@ class EnvironmentVariables {
 
   /// Where generated payroll export files are kept: "database" (the default,
   /// and the only one that works on Vercel) or "disk" for local work. Nothing
-  /// else in this app stores a file — see src/storage/file-storage.ts.
+  /// else in this app stores a file - see src/storage/file-storage.ts.
   @IsEnum(FileStorageBackend)
   FILE_STORAGE: FileStorageBackend = FileStorageBackend.Database;
 
@@ -208,7 +208,7 @@ class EnvironmentVariables {
   FILE_STORAGE_DIR = './var/uploads';
 
   /// Enables the one-time, browser-based creation of the first administrator.
-  /// Unset it once that account exists — the route then disappears.
+  /// Unset it once that account exists - the route then disappears.
   @IsOptional()
   @IsString()
   @MinLength(8)

@@ -142,7 +142,7 @@ export function NotificationsPage() {
             <h2 className="text-sm font-semibold text-slate-900">The nightly round-up</h2>
             <p className="mt-1 text-sm text-slate-600">
               One email, once a night, listing what needs a look. It is only sent on nights when
-              there is something to say — most nights there is not.
+              there is something to say - most nights there is not.
             </p>
           </div>
 
@@ -208,7 +208,7 @@ export function NotificationsPage() {
 
         <p className="mt-3 text-xs text-slate-500">
           {subscribed
-            ? 'Turning this off loses the nudge, not the information — all of it is still on the screen it belongs to.'
+            ? 'Turning this off loses the nudge, not the information - all of it is still on the screen it belongs to.'
             : 'You are not being emailed. All of this is still on the screen it belongs to; nothing is hidden from you.'}
         </p>
 
@@ -285,7 +285,7 @@ function WhoGetsWhat({
       <h2 className="text-sm font-semibold text-slate-900">Who gets what</h2>
       <p className="mt-1 text-sm text-slate-600">
         {canEdit
-          ? 'Every manager and admin, and the parts of the round-up each one gets. Tick and untick for anybody — they can change their own here too.'
+          ? 'Every manager and admin, and the parts of the round-up each one gets. Tick and untick for anybody - they can change their own here too.'
           : 'Every manager and admin, and the parts of the round-up each one gets. Only an admin can change somebody else’s.'}
       </p>
 
@@ -399,7 +399,7 @@ function Tick({ on, label }: { on: boolean; label: string }) {
     </span>
   ) : (
     <span className="text-slate-300" aria-label={`Does not get ${label}`}>
-      —
+      -
     </span>
   );
 }

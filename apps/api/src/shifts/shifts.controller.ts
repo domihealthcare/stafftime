@@ -55,7 +55,7 @@ export class ShiftsController {
     private readonly publishChecks: PublishCheckService,
   ) {}
 
-  /// "Every Tuesday and Thursday, 9 to 5, until March" — or, with no last
+  /// "Every Tuesday and Thursday, 9 to 5, until March" - or, with no last
   /// date, "every Monday" for good: a standing shift.
   @Post('repeat')
   @Roles(Role.MANAGER)
@@ -87,7 +87,7 @@ export class ShiftsController {
     return this.planning.stopStanding(id, dto);
   }
 
-  /// Sets somebody's usual week — each day off, or hours and a place — as
+  /// Sets somebody's usual week - each day off, or hours and a place - as
   /// their regular shifts, from a given day on.
   @Post('weekly/:employeeId')
   @Roles(Role.MANAGER)
@@ -117,7 +117,7 @@ export class ShiftsController {
     return this.planning.publishMany(dto.ids);
   }
 
-  /// "Before you publish": what is worth a look about these drafts — time
+  /// "Before you publish": what is worth a look about these drafts - time
   /// off, availability, overtime, closures, leavers, lapsed licenses, open
   /// shifts. Only reads; publishing is still the route above.
   @Post('publish-check')
@@ -128,7 +128,7 @@ export class ShiftsController {
   }
 
   /// A first draft for the open shifts on screen: somebody free for each,
-  /// or nobody. Only reads — the manager keeps the ones they want.
+  /// or nobody. Only reads - the manager keeps the ones they want.
   @Post('suggest-cover')
   @Roles(Role.MANAGER)
   @HttpCode(HttpStatus.OK)
@@ -143,7 +143,7 @@ export class ShiftsController {
     return this.planning.coverage(query);
   }
 
-  /// What one shift would do to somebody's week — asked before saving it, so
+  /// What one shift would do to somebody's week - asked before saving it, so
   /// the scheduler can warn first rather than after.
   @Get('overtime-check')
   @Roles(Role.MANAGER)
@@ -157,8 +157,8 @@ export class ShiftsController {
     });
   }
 
-  /// Somebody's usual hours and place for a day — their regular shift, or what
-  /// they have worked most often lately — for a new shift to start on.
+  /// Somebody's usual hours and place for a day - their regular shift, or what
+  /// they have worked most often lately - for a new shift to start on.
   @Get('usual')
   @Roles(Role.MANAGER)
   async usual(@Query() query: UsualShiftDto) {
@@ -179,7 +179,7 @@ export class ShiftsController {
   }
 
   /// Managers see the whole schedule; employees only ever see their own
-  /// shifts, and never a draft — a shift reaches them when it is published.
+  /// shifts, and never a draft - a shift reaches them when it is published.
   @Get()
   findAll(@Query() query: QueryShiftsDto, @CurrentUser() user: AuthUser) {
     if (user.role === Role.EMPLOYEE) {
@@ -203,7 +203,7 @@ export class ShiftsController {
     return shift;
   }
 
-  /// Who could work this shift, best first, and why — for putting somebody in
+  /// Who could work this shift, best first, and why - for putting somebody in
   /// an open shift or replacing whoever is on it.
   @Get(':id/cover-options')
   @Roles(Role.MANAGER)
@@ -217,7 +217,7 @@ export class ShiftsController {
     return this.shifts.update(id, dto);
   }
 
-  /// New hours for a shift — this one, the same weekday from here on, or
+  /// New hours for a shift - this one, the same weekday from here on, or
   /// every later shift of theirs at those hours.
   @Post(':id/retime')
   @Roles(Role.MANAGER)

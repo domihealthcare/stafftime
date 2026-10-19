@@ -59,10 +59,7 @@ export class ChecklistsController {
 
   @Patch('templates/:id')
   @Roles(Role.ADMIN)
-  updateTemplate(
-    @Param('id', ParseUUIDPipe) id: string,
-    @Body() dto: UpdateTemplateDto,
-  ) {
+  updateTemplate(@Param('id', ParseUUIDPipe) id: string, @Body() dto: UpdateTemplateDto) {
     return this.templates.update(id, dto);
   }
 
@@ -83,7 +80,7 @@ export class ChecklistsController {
   // Checklists
   // -------------------------------------------------------------------------
 
-  /// Employees see their own and nothing else — enforced in the service, not here.
+  /// Employees see their own and nothing else - enforced in the service, not here.
   @Get()
   list(@Query() query: QueryChecklistsDto, @CurrentUser() user: AuthUser) {
     return this.checklists.findAll(query, user);

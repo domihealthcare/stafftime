@@ -43,9 +43,9 @@ describe('who is on call', () => {
   it('counts a Sunday with the Saturday before it, even across the month', () => {
     // November 2026 starts on a Sunday: the 1st belongs to October's 5th weekend.
     expect(weekOfMonthOf('2026-11-01')).toEqual({ nth: 5, last: true });
-    // August 2026: Saturdays 1, 8, 15, 22, 29 — the 4th weekend is 22–23.
+    // August 2026: Saturdays 1, 8, 15, 22, 29 - the 4th weekend is 22–23.
     expect(weekOfMonthOf('2026-08-23')).toEqual({ nth: 4, last: false });
-    // January 2027: Saturdays 2, 9, 16, 23, 30 — the 4th weekend is 23–24.
+    // January 2027: Saturdays 2, 9, 16, 23, 30 - the 4th weekend is 23–24.
     expect(who('2027-01-23')).toBe(B);
     expect(who('2027-01-24')).toBe(B);
   });

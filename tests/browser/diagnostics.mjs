@@ -16,7 +16,7 @@ const step = async (name, fn) => {
 };
 
 /**
- * The diagnostics board (October 2026, Dominguez — the DIAGNOSTIC_INFO sheet
+ * The diagnostics board (October 2026, Dominguez - the DIAGNOSTIC_INFO sheet
  * as "an app inside the app … a 'big board' for staff to reference"), loaded
  * with the sheet: everybody looks an insurance up, managers and admins keep
  * it. run-all.sh puts the sheet's data back after.
@@ -142,7 +142,7 @@ await step('a manager sets an answer with a note, then clears it', async () => {
   dialog = manager.getByRole('dialog', { name: 'Aetna-MCARE · Aorta' });
   await dialog.getByRole('radio', { name: /Not known/ }).check();
   await dialog.getByRole('button', { name: 'Save' }).click();
-  await target.getByRole('button', { name: '—' }).waitFor({ timeout: 10000 });
+  await target.getByRole('button', { name: '-' }).waitFor({ timeout: 10000 });
 });
 
 await step('a manager adds a test, moves it and removes it', async () => {

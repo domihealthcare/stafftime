@@ -1,6 +1,6 @@
 import type { Employee } from './types';
 
-/// The 99483 cognitive assessment: providers only — people whose job role
+/// The 99483 cognitive assessment: providers only - people whose job role
 /// uses the clinical forms. Access level brings nothing.
 export function canUseCognitiveAssessment(employee: Employee): boolean {
   return employee.usesClinicalForms === true;
@@ -23,8 +23,8 @@ export function canUseWellnessForm(employee: Employee): boolean {
 }
 
 /// Which page of the wellness form somebody starts on: a provider (a job role
-/// with the clinical forms) the questionnaire, page 1; everybody else — the
-/// Medical Assistants — the preventive services, page 2.
+/// with the clinical forms) the questionnaire, page 1; everybody else - the
+/// Medical Assistants - the preventive services, page 2.
 export function wellnessStartPage(employee: Employee): 1 | 2 {
   return employee.usesClinicalForms === true ? 1 : 2;
 }

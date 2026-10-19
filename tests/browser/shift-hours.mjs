@@ -4,7 +4,7 @@ import { mkdirSync } from 'node:fs';
 // New hours for a shift from its pop-up (Dominguez, October 2026: "Gaby is
 // 7-2 but it is changing to 1-8, so instead of Celeste doing 1 by 1, she can
 // just edit all"): just this shift, every later one on the same weekday, or
-// all of the person's later shifts at those hours — the regular shift behind
+// all of the person's later shifts at those hours - the regular shift behind
 // them following, so weeks not written out yet come at the new hours too.
 // And the place with them ("needs to be able to update location as well"):
 // another of their offices, or work from home.

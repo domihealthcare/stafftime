@@ -16,9 +16,9 @@ const step = async (name, fn) => {
 
 /**
  * The Staff screen (asked for by Dominguez, September 2026): each card is a
- * summary with one Edit button, and everything else — their details, email and
+ * summary with one Edit button, and everything else - their details, email and
  * phone included, the welcome email, a temporary password, a tablet PIN, and
- * marking them as having left — is inside it. "No longer employed" used to sit
+ * marking them as having left - is inside it. "No longer employed" used to sit
  * on every card, one tap from "Edit details", and was too easy to press.
  */
 async function signIn(email, viewport = { width: 1280, height: 1000 }) {

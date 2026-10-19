@@ -22,11 +22,11 @@ const VALID_MINUTES = 30;
 const MAX_PER_HOUR = 5;
 
 /// How long a reset request takes to answer at the least, whether or not an
-/// email went — a little over a usual send.
+/// email went - a little over a usual send.
 const MIN_ANSWER_MS = 1_500;
 
 /// A welcome link waits in an inbox until somebody's first day, so it lasts
-/// longer than a reset link — a week — and still works only once.
+/// longer than a reset link - a week - and still works only once.
 const WELCOME_VALID_DAYS = 7;
 
 /// Resend's free plan takes two messages a second; a pause between welcome
@@ -59,7 +59,7 @@ export class PasswordResetService {
 
   /**
    * Always reports the same thing. Whether an email goes out, and to whom, is
-   * not the caller's business — that is the whole point.
+   * not the caller's business - that is the whole point.
    */
   async request(email: string, ipAddress?: string): Promise<{ message: string }> {
     // The same answer is not enough if it comes back faster for an address
@@ -143,8 +143,8 @@ export class PasswordResetService {
       },
     });
 
-    // One message for every way a link can be no good — expired, already used,
-    // never existed — because distinguishing them tells an attacker which
+    // One message for every way a link can be no good - expired, already used,
+    // never existed - because distinguishing them tells an attacker which
     // guesses were close.
     const refusal = new BadRequestException(
       'That link has expired or has already been used. Ask for a new one.',
@@ -190,7 +190,7 @@ export class PasswordResetService {
    * Sends somebody their welcome email: a link to choose their first password,
    * with how to put the app on their phone and the day-one questions answered.
    *
-   * Only for somebody who has not chosen a password yet — for anybody else a
+   * Only for somebody who has not chosen a password yet - for anybody else a
    * "set your password" link is a password reset they did not ask for, and
    * "Forgotten your password?" is the way. Records when it went, so the Staff
    * screen shows who has been invited.
@@ -246,7 +246,7 @@ export class PasswordResetService {
       employee.email,
     );
 
-    // With no email provider — a developer's machine, or a test deployment —
+    // With no email provider - a developer's machine, or a test deployment -
     // the message is written to the server log, where the link can be copied.
     // Counted as sent there; on a live deployment it is a failure.
     const loggedForTesting =
@@ -272,7 +272,7 @@ export class PasswordResetService {
 
   /**
    * Welcome emails for everybody who has not had one and has not chosen a
-   * password — the first-day send, after the staff list goes in. Demo staff are
+   * password - the first-day send, after the staff list goes in. Demo staff are
    * never included. Sent in batches; `remaining` says whether to call again.
    */
   async sendWelcomeToEveryone(): Promise<{

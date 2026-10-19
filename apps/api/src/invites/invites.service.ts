@@ -58,11 +58,11 @@ export interface SyncResult {
  * Keeps people's calendars matching the rota and the events list, as real
  * invites from the "Domi Staff" Google calendar (Dominguez, September 2026):
  * a published shift to the person on it, a practice event to the people it
- * is for — nobody else. Closures stay on the subscribed feed.
+ * is for - nobody else. Closures stay on the subscribed feed.
  *
  * It does not follow each change as it happens. It compares what should be
  * on calendars with what was last sent (`CalendarInvite`) and sends only the
- * difference — after any save that could change it, every night, and when an
+ * difference - after any save that could change it, every night, and when an
  * admin presses "Send now". So a change made any way at all (a copied week, a
  * deleted person, an office renamed) still reaches people, and a failure is
  * put right on the next round rather than lost.
@@ -260,7 +260,7 @@ export class CalendarInvitesService {
   }
 
   /**
-   * Two saves at once — publishing a week sends one per shift — would both
+   * Two saves at once - publishing a week sends one per shift - would both
    * see the same shift to send, and people would get the email twice. So each
    * invite is claimed first, in the database, by moving its fingerprint on
    * from what the round saw; only the round that manages it calls Google.
@@ -338,13 +338,13 @@ type ShiftForInvite = {
   };
 };
 
-/// A shift, as the feed has always shown it: "Work — North Bergen".
+/// A shift, as the feed has always shown it: "Work - North Bergen".
 export function shiftInvite(shift: ShiftForInvite, email: string): InviteBody {
   return {
-    summary: shift.isRemote ? 'Work from home' : `Work — ${shift.location.name}`,
+    summary: shift.isRemote ? 'Work from home' : `Work - ${shift.location.name}`,
     description: [
       shift.notes,
-      `From the rota in Domi Staff — a change there changes this too. ${LINK}`,
+      `From the rota in Domi Staff - a change there changes this too. ${LINK}`,
     ]
       .filter(Boolean)
       .join('\n\n'),

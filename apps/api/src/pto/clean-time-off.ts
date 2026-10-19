@@ -1,7 +1,7 @@
 import { PtoType } from '@prisma/client';
 
 /**
- * "Approve the clean time off" (October 2026, Dominguez — a "smarter" idea,
+ * "Approve the clean time off" (October 2026, Dominguez - a "smarter" idea,
  * like "Approve the clean hours"). What makes a request clean: PTO or sick,
  * with enough left of it once this request is counted, nobody left too thin
  * by it ("Too many off at once"), and no shift of theirs still to come in the
@@ -10,7 +10,7 @@ import { PtoType } from '@prisma/client';
 export interface RequestFacts {
   type: PtoType;
   /// What is left of that allowance, this request and every other waiting
-  /// one counted — null for a kind that draws on no allowance.
+  /// one counted - null for a kind that draws on no allowance.
   remaining: number | null;
   clashes: number;
   shifts: number;

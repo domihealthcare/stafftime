@@ -66,14 +66,14 @@ describe('buildCalendar', () => {
   const shift = {
     uid: 'shift-1@staff.domihealthcare.com',
     sequence: 1700000000,
-    summary: 'Work — North Bergen',
+    summary: 'Work - North Bergen',
     location: '7650 Bergenline Ave, North Bergen, NJ',
     start: new Date('2026-09-23T13:00:00.000Z'),
     end: new Date('2026-09-23T21:00:00.000Z'),
   };
 
   const build = (events = [shift]) =>
-    buildCalendar(events, { name: 'Frankie Front-Desk — Domi', now: NOW });
+    buildCalendar(events, { name: 'Frankie Front-Desk - Domi', now: NOW });
 
   it('uses CRLF line endings throughout', () => {
     const output = build();
@@ -94,7 +94,7 @@ describe('buildCalendar', () => {
 
   it('names the calendar for the apps that show it', () => {
     const output = build();
-    expect(output).toContain('X-WR-CALNAME:Frankie Front-Desk — Domi');
+    expect(output).toContain('X-WR-CALNAME:Frankie Front-Desk - Domi');
   });
 
   it('asks subscribers to refresh', () => {
@@ -194,7 +194,7 @@ describe('buildCalendar', () => {
       [
         {
           ...shift,
-          summary: 'Work — '.repeat(20),
+          summary: 'Work - '.repeat(20),
           description: 'Cover the front desk, answer phones; check the fridge logs. '.repeat(5),
         },
       ],

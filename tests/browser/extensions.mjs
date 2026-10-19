@@ -2,12 +2,12 @@ import { chromium } from 'playwright';
 import { mkdirSync } from 'node:fs';
 import { goTo } from './nav.mjs';
 
-// Office extensions in the Directory (October 2026, Dominguez — from the
+// Office extensions in the Directory (October 2026, Dominguez - from the
 // practice's "Office Extensions" sheet, then the new phone system's list on 7
 // October): everybody reads the list, laid out by section; a person's 5xx
 // number rings their mobile on their work-from-home days; managers keep the
 // list, and a line matched to somebody shows on their
-// Directory and Staff cards — the from-home number first on a day at home.
+// Directory and Staff cards - the from-home number first on a day at home.
 const OUT = process.argv[2] || new URL('./shots/', import.meta.url).pathname;
 mkdirSync(OUT, { recursive: true });
 const BASE = process.env.BASE_URL || 'http://127.0.0.1:5173';

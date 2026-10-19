@@ -34,7 +34,7 @@ const addDays = (date, n) => {
   return d.toISOString().slice(0, 10);
 };
 /// Today at the practice. The machine's own date is UTC on a CI runner, which
-/// from 8pm in New Jersey is already tomorrow — and the app, rightly, is not.
+/// from 8pm in New Jersey is already tomorrow - and the app, rightly, is not.
 const localToday = () =>
   new Intl.DateTimeFormat('en-CA', { timeZone: 'America/New_York' }).format(new Date());
 const periodContaining = (date) => {

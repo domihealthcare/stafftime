@@ -242,7 +242,7 @@ describe('AuthService', () => {
       expect(sessions.issue).toHaveBeenCalled();
     });
 
-    it('refuses a terminated employee — but only after the password checks out', async () => {
+    it('refuses a terminated employee - but only after the password checks out', async () => {
       const { service } = build({ ...active(), employmentStatus: 'TERMINATED' });
 
       // Correct password: told the account is closed.

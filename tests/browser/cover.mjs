@@ -21,12 +21,12 @@ const step = async (name, fn) => {
 };
 
 /**
- * "Who can cover this?" (Dominguez, October 2026 — making the app smarter):
+ * "Who can cover this?" (Dominguez, October 2026 - making the app smarter):
  * the shift's pop-up ranks who could work it, best first, with the reason.
  *
  * An open shift at North Bergen, Tuesday 9 February 2027, 9am–5pm, no job
  * role. Frankie is free; Ada has 32 hours that week already, so this takes
- * her to 40 — close to overtime; Morgan is already on at West New York then.
+ * her to 40 - close to overtime; Morgan is already on at West New York then.
  * February 2027, which run-all.sh clears between suites.
  */
 async function signIn(email) {
@@ -105,20 +105,20 @@ await step('the full list is ranked: free, then with a catch, then those already
     })),
   );
   const expected = [
-    { label: 'Free — best first', options: [{ text: 'Frankie Front-Desk — free · 8 hrs that week', disabled: false }] },
+    { label: 'Free - best first', options: [{ text: 'Frankie Front-Desk - free · 8 hrs that week', disabled: false }] },
     {
       label: 'Could, but check first',
-      options: [{ text: 'Ada Admin — Close to overtime: 40 hrs that week', disabled: false }],
+      options: [{ text: 'Ada Admin - Close to overtime: 40 hrs that week', disabled: false }],
     },
     {
       label: 'Already on, or off that day',
-      options: [{ text: 'Morgan Manager — Already on 8:00 AM–4:00 PM (West New York)', disabled: true }],
+      options: [{ text: 'Morgan Manager - Already on 8:00 AM–4:00 PM (West New York)', disabled: true }],
     },
   ];
   if (JSON.stringify(groups) !== JSON.stringify(expected)) throw new Error(`listed: ${JSON.stringify(groups)}`);
 });
 
-await step('picking Ada says why to think twice — the overtime warning, not twice over', async () => {
+await step('picking Ada says why to think twice - the overtime warning, not twice over', async () => {
   await picker.selectOption(idOf('admin@domihealthcare.com'));
   await dialog.getByTestId('overtime-preview').waitFor({ timeout: 10000 });
   if (await dialog.getByTestId('cover-notes').count()) throw new Error('overtime was said twice');
@@ -137,14 +137,14 @@ await step('pressing a suggestion picks them, and Assign puts them in it', async
   await mgr.getByTestId('rota-row-Frankie Front-Desk').getByTestId('shift-chip').waitFor({ timeout: 10000 });
 });
 
-await step('on her shift now, the list says so — and only her job role is offered', async () => {
+await step('on her shift now, the list says so - and only her job role is offered', async () => {
   await mgr.getByTestId('rota-row-Frankie Front-Desk').getByTestId('shift-chip').click();
   const own = mgr.getByRole('dialog', { name: 'Frankie Front-Desk' });
   const line = own.getByLabel('Who works it').locator('option:checked');
   await own.getByLabel('Who works it').locator('optgroup').first().waitFor({ state: 'attached', timeout: 10000 });
   const text = await line.textContent();
-  if (text !== 'Frankie Front-Desk — on it now') throw new Error(`her line reads "${text}"`);
-  // Assigned, the shift took her main job role, Front Desk — and nobody else
+  if (text !== 'Frankie Front-Desk - on it now') throw new Error(`her line reads "${text}"`);
+  // Assigned, the shift took her main job role, Front Desk - and nobody else
   // at North Bergen is in it, so there is nobody to suggest.
   if (await own.getByTestId('cover-suggestions').count()) throw new Error('suggested somebody outside Front Desk');
   await own.getByRole('button', { name: 'Close' }).click();
@@ -165,7 +165,7 @@ await step('a first draft: three open shifts on Wednesday, two people free, nobo
   const draft = mgr.getByRole('dialog', { name: 'Suggested for the open shifts' });
   await draft.getByTestId('cover-proposal').nth(2).waitFor({ timeout: 10000 });
   const lines = await draft.getByTestId('cover-proposal').allTextContents();
-  // Frankie and Morgan have 8 hours that week each; Ada would reach 40 — a
+  // Frankie and Morgan have 8 hours that week each; Ada would reach 40 - a
   // catch, so never suggested.
   const named = lines.filter((line) => /Frankie Front-Desk|Morgan Manager/.test(line));
   if (named.length !== 2 || !lines.some((line) => /Nobody is free then/.test(line)))

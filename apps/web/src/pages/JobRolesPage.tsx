@@ -16,8 +16,8 @@ import type { Employee, JobRole } from '../lib/types';
 /**
  * What people do at the practice, and who does it.
  *
- * Managers keep this. Somebody can be in several — a front desk colleague who
- * also rooms patients is in Front Desk and Medical Assistant — and it decides
+ * Managers keep this. Somebody can be in several - a front desk colleague who
+ * also rooms patients is in Front Desk and Medical Assistant - and it decides
  * which resources they see. It does not change what they may do in the app:
  * that is their access level on the Staff screen.
  */
@@ -45,7 +45,7 @@ export function JobRolesPage() {
     void load();
   }, [load]);
 
-  /// A single role changed — swap it in rather than reloading everything, so
+  /// A single role changed - swap it in rather than reloading everything, so
   /// adding five people to Front Desk does not flicker the page five times.
   const replace = (updated: JobRole) =>
     setRoles((current) => current.map((role) => (role.id === updated.id ? updated : role)));
@@ -65,7 +65,7 @@ export function JobRolesPage() {
           <Link to="/resources" className="font-medium underline">
             resources
           </Link>{' '}
-          someone sees — nothing else. Being in <em>Administrative</em> or <em>Manager</em> here
+          someone sees - nothing else. Being in <em>Administrative</em> or <em>Manager</em> here
           does not let anyone approve hours or change settings; that is their access level, set by
           an admin on the Staff screen.
         </Alert>
@@ -405,7 +405,7 @@ function RoleForm({
         <span>
           People in this role see their own licenses and onboarding, in their account menu
           <span className="block text-xs text-slate-500">
-            On for Provider. Their own records only — it gives no extra access.
+            On for Provider. Their own records only - it gives no extra access.
           </span>
         </span>
       </label>

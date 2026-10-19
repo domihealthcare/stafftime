@@ -55,7 +55,7 @@ export function Badge({ children, tone = 'neutral' }: { children: ReactNode; ton
   );
 }
 
-/// Errors are shown, never swallowed — a refused clock-in must say why.
+/// Errors are shown, never swallowed - a refused clock-in must say why.
 export function Alert({ tone = 'danger', children }: { tone?: Tone; children: ReactNode }) {
   return (
     <div

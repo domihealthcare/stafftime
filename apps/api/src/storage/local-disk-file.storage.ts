@@ -10,7 +10,7 @@ import { isValidStorageKey, newStorageKey } from './storage-key';
 /// The second implementation exists to prove the seam is real, and it is
 /// genuinely useful for local work: you can open the folder and look at what
 /// was written. It is **not** suitable for the Vercel deployment, where the
-/// filesystem is ephemeral and every serverless instance has its own — a file
+/// filesystem is ephemeral and every serverless instance has its own - a file
 /// written by one request would be missing from the next.
 @Injectable()
 export class LocalDiskFileStorage implements FileStorage {
@@ -27,9 +27,7 @@ export class LocalDiskFileStorage implements FileStorage {
 
     await mkdir(dirname(path), { recursive: true });
     await writeFile(path, bytes, { mode: 0o600 });
-    this.logger.log(
-      `Stored ${bytes.byteLength} bytes (${meta.contentType}) at ${storageKey}`,
-    );
+    this.logger.log(`Stored ${bytes.byteLength} bytes (${meta.contentType}) at ${storageKey}`);
 
     return {
       storageKey,
@@ -52,7 +50,7 @@ export class LocalDiskFileStorage implements FileStorage {
   }
 
   /// Two checks, not one. The key is validated against the pattern, and the
-  /// resolved path is then confirmed to still be inside the root — belt and
+  /// resolved path is then confirmed to still be inside the root - belt and
   /// braces, because getting this wrong turns a download route into "read any
   /// file on the server".
   private pathFor(storageKey: string): string {

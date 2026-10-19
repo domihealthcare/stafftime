@@ -1,3 +1,4 @@
+import { ScheduleTabs } from '../components/ScheduleTabs';
 import { Fragment, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { api } from '../lib/api';
 import { OnePersonNote, useOnePerson } from '../components/OnePerson';
@@ -196,6 +197,7 @@ export function TimesheetPage() {
             : t('Your recorded hours.')
         }
       />
+      <ScheduleTabs />
       {personId && isManager && (
         <OnePersonNote
           name={
@@ -382,19 +384,19 @@ export function TimesheetPage() {
                         <td className="px-3 py-1.5 text-slate-700">
                           {entry.employee
                             ? `${entry.employee.firstName} ${entry.employee.lastName}`
-                            : '—'}
+                            : '-'}
                         </td>
                       )}
                       <td className="px-3 py-1.5 tabular-nums text-slate-700">
                         <span className="whitespace-nowrap">{formatTime(entry.clockInAt)} –</span>{' '}
                         <span className="whitespace-nowrap">
-                          {entry.clockOutAt ? formatTime(entry.clockOutAt) : '—'}
+                          {entry.clockOutAt ? formatTime(entry.clockOutAt) : '-'}
                         </span>
                       </td>
                       <td className="whitespace-nowrap px-3 py-1.5 tabular-nums font-medium text-slate-900">
                         {entry.clockOutAt
                           ? durationHours(entry.clockInAt, entry.clockOutAt).toFixed(2)
-                          : '—'}
+                          : '-'}
                       </td>
                       <td className="whitespace-nowrap px-3 py-1.5">
                         <VerificationBadge entry={entry} />
@@ -466,14 +468,14 @@ export function TimesheetPage() {
                     <p className="text-sm text-slate-600">{formatDate(entry.clockInAt)}</p>
                     <p className="mt-0.5 text-sm tabular-nums text-slate-700">
                       {formatTime(entry.clockInAt)} –{' '}
-                      {entry.clockOutAt ? formatTime(entry.clockOutAt) : '—'}
+                      {entry.clockOutAt ? formatTime(entry.clockOutAt) : '-'}
                     </p>
                   </div>
                   <div className="shrink-0 text-right">
                     <p className="font-semibold tabular-nums text-slate-900">
                       {entry.clockOutAt
                         ? `${durationHours(entry.clockInAt, entry.clockOutAt).toFixed(2)}h`
-                        : '—'}
+                        : '-'}
                     </p>
                     <div className="mt-1 flex justify-end">
                       <VerificationBadge entry={entry} />
@@ -577,7 +579,7 @@ export function TimesheetPage() {
       {employee && !isManager && (
         <p className="mt-3 text-xs text-slate-500">
           {t(
-            'Something look wrong? Ask a manager to edit it — every edit is recorded with a reason.',
+            'Something look wrong? Ask a manager to edit it - every edit is recorded with a reason.',
           )}
         </p>
       )}
@@ -585,13 +587,13 @@ export function TimesheetPage() {
   );
 }
 
-/// The day a punch began, on the viewer's calendar — the same day `formatDate`
-/// shows — as "YYYY-MM-DD", for the Day filter.
+/// The day a punch began, on the viewer's calendar - the same day `formatDate`
+/// shows - as "YYYY-MM-DD", for the Day filter.
 function dayKey(iso: string): string {
   return new Date(iso).toLocaleDateString('en-CA');
 }
 
-/// Closed, waiting on approval, and without a single flag — what "Approve all
+/// Closed, waiting on approval, and without a single flag - what "Approve all
 /// with nothing flagged" takes. Mirrors `CLEAN_ENTRY_WHERE` in the API's
 /// `time-entries/clean-entry.ts`, which is what actually decides.
 function isCleanEntry(entry: TimeEntry): boolean {
@@ -614,7 +616,7 @@ function hasFlags(entry: TimeEntry): boolean {
 }
 
 /**
- * Who entered a day by hand and why, and — for managers — whether somebody
+ * Who entered a day by hand and why, and - for managers - whether somebody
  * has looked into it yet. Not the manager who entered it: the list is there
  * so a second person sees each one.
  */
@@ -642,7 +644,7 @@ function HandEntryLine({
             : t('Entered by hand:')}
         </span>{' '}
         {t(handEntryReasonLabel(entry.handEntryReason))}
-        {entry.handEntryNote ? ` — “${entry.handEntryNote}”` : ''}
+        {entry.handEntryNote ? ` - “${entry.handEntryNote}”` : ''}
       </p>
       {isManager &&
         (entry.handEntryCheckedAt ? (
@@ -744,7 +746,7 @@ function Flags({ entry }: { entry: TimeEntry }) {
   if (entry.isLate) flags.push({ label: 'Late', tone: 'warning' });
   if (entry.isEarlyDeparture) flags.push({ label: 'Left early', tone: 'warning' });
   if (entry.autoClockedOutAt && entry.isMissingPunch) {
-    // The clock-out is the app's, at midnight — not when they left.
+    // The clock-out is the app's, at midnight - not when they left.
     // Short, to fit the column; the banner and Edit say the rest.
     flags.push({ label: 'Clocked out at midnight', tone: 'danger' });
   } else if (entry.isMissingPunch) {
@@ -759,7 +761,7 @@ function Flags({ entry }: { entry: TimeEntry }) {
   if (entry.status === 'NEEDS_REVIEW') flags.push({ label: 'Needs review', tone: 'danger' });
 
   if (flags.length === 0) {
-    return <span className="text-xs text-slate-500">—</span>;
+    return <span className="text-xs text-slate-500">-</span>;
   }
 
   return (

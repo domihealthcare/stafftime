@@ -26,7 +26,7 @@ import { clearTestData, previewTestData } from './test-data';
  * terminal needed" and then asked for one at the last step, which is the step
  * that decides whether the managers see an empty timesheet or a realistic one.
  *
- * Two guards, and they are not belt-and-braces — either one alone would be
+ * Two guards, and they are not belt-and-braces - either one alone would be
  * insufficient:
  *
  * - **Admin only.** It creates accounts and wipes hours.
@@ -75,8 +75,8 @@ export class DemoController {
   /**
    * The step between trying the app out and using it for real: the demo staff
    * and everything made while testing go; the practice's set-up stays (see
-   * `test-data.ts`). Test deployments only, like loading the demo — on a live
-   * one this would delete real hours — and the body has to spell out the
+   * `test-data.ts`). Test deployments only, like loading the demo - on a live
+   * one this would delete real hours - and the body has to spell out the
    * confirmation, so no stray request can set it off.
    */
   @Post('clear')
@@ -94,7 +94,7 @@ export class DemoController {
   private assertTest() {
     if (this.config.get<string>('APP_ENVIRONMENT') !== 'test') {
       throw new ForbiddenException(
-        'This is the live site. Test data can only be cleared on a test deployment — ' +
+        'This is the live site. Test data can only be cleared on a test deployment - ' +
           'here it would delete real hours.',
       );
     }

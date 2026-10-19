@@ -8,7 +8,7 @@
  * printed in English, Spanish or both. The condition plans' choices are in
  * phrases.ts and conditions.ts.
  *
- * The Spanish was read and approved by a native speaker (October 2026) —
+ * The Spanish was read and approved by a native speaker (October 2026) -
  * see NEEDS_NATIVE_SPEAKER_REVIEW.
  *
  * Nothing in this file is about a patient. It is the blank form.
@@ -26,14 +26,14 @@ export interface Bilingual {
 
 export type Language = 'en' | 'es';
 /// What a care plan PDF is printed in: English, or English and then Spanish
-/// on fresh pages, the way the practice's own care plans were — the only two
+/// on fresh pages, the way the practice's own care plans were - the only two
 /// choices (Dominguez, October 2026).
 export type { PrintLanguage as PdfLanguage } from '../common/layout';
 
 /// The Spanish here, in phrases.ts and in text.ts was read and approved by a
 /// native speaker (Dominguez, October 2026). Set it back to true while new
 /// Spanish waits for the same read: the form then says so beside the
-/// language choice — never on the care plan itself.
+/// language choice - never on the care plan itself.
 export const NEEDS_NATIVE_SPEAKER_REVIEW = false;
 
 const bi = (...rows: [string, string, string][]): Bilingual[] =>
@@ -219,7 +219,7 @@ export const REPORTS_SIDE_EFFECTS = bi(
 
 /// Height, weight and blood pressure are required, as on the Google Form;
 /// the rest only when there is one to record. The Spanish care plan keeps
-/// the same units — inches and pounds — and translates only the words
+/// the same units - inches and pounds - and translates only the words
 /// (Dominguez, October 2026).
 export const VITALS = [
   { key: 'height', label: 'Height', es: 'Estatura', unit: 'inches', required: true },
@@ -315,7 +315,7 @@ export type PlanPart = (typeof PLAN_PARTS)[number]['key'];
 export const SMART_GOAL = {
   label: 'Targeted SMART goal',
   es: 'Objetivo SMART específico',
-  hint: 'Specific, measurable, achievable, relevant and time-bound — "Walk 20 minutes, 5 days a week, by the next visit".',
+  hint: 'Specific, measurable, achievable, relevant and time-bound - "Walk 20 minutes, 5 days a week, by the next visit".',
 };
 
 // ------------------------------------------------------------- the practice
@@ -330,7 +330,7 @@ export const LETTERHEAD = {
 
 /// The provider who reviews and signs every care plan, whoever prepares it
 /// (Dominguez, October 2026). The person signed in is printed as Prepared by;
-/// the care plan carries this provider's electronic signature — his choice,
+/// the care plan carries this provider's electronic signature - his choice,
 /// made knowing the PDF is made before he has seen it (Dominguez, 9 October
 /// 2026).
 export const REVIEWING_PROVIDER = {

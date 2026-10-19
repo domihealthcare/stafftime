@@ -1111,6 +1111,64 @@ Beyond the phases, the parts worth knowing about before picking up work:
   "Manage → X": read them with this map. Browser suites reach a Manage screen
   with `goToManage(page, 'Job roles')` in `tests/browser/nav.mjs`
   (`SECTION_OF` is the same map); `tests/browser/manage-sections.mjs`.
+- **Phone book, tidied** (19 October 2026, Dominguez, from a printout): the
+  printed title no longer carries the search words (a search for "pulm" prints
+  as the heading it found); the star is explained on a line of its own; **the
+  starred are a block at the top of every heading across both columns**, then
+  the rest; an office is under **Location**, not "Where"; and **a group of
+  doctors is listed one to a line** ("Dr. A / Dr. B" or "Dr. A, Dr. B" in the
+  name), with a specialty in brackets after the last one shown once as the
+  group's note (`doctorsOf` in `lib/phone-book.ts`); the whole name is still
+  what is searched, so any one doctor finds the group. Cardiology is two pages.
+- **News and the whole rota for staff an admin chooses** (19 October 2026,
+  Dominguez: Administrative access "needs to post notifications (about
+  schedule etc) and view everyone's schedule"; named: Angelica Notario;
+  schedule chosen as a **read-only rota of published shifts**): two switches on
+  the Staff editor, `Employee.canPostNews` (writes, edits and removes any News
+  post) and `canSeeEveryonesSchedule` (an **Everyone** tab under Schedule,
+  week and month, time off as "Off", no drafts, open shifts or notes, nothing
+  changeable). Job roles still grant no power. Migration
+  `20261019020000_news_and_schedule_access` switches Angelica Notario on only
+  if exactly one current person has that name: **check the Staff screen on the
+  live site**. `shifts/everyones-schedule.*`, `pages/EveryonesSchedulePage.tsx`;
+  `tests/browser/everyone-schedule.mjs`. Worth carrying to the EMR module.
+- **Timesheet is a tab beside Shifts** (19 October 2026, Dominguez: "put
+  schedule and timesheet together so the header remains only 1 row"): off the
+  laptop header, on the Schedule's strip; Schedule stays lit on it.
+- **Managers change the kind of time off** (19 October 2026, Angelica
+  Dominguez via Dominguez: an hourly person put a sick day down as PTO): on
+  Time off requests, **Change to** (Sick / PTO / Unpaid) on any waiting or
+  approved request that is not the manager's own, past days included, after a
+  confirmation. Balances move because they read the type afresh; nobody is
+  told. `PATCH /pto/:id/type`, `PtoService.changeType`;
+  `tests/browser/time-off-type.mjs`.
+- **Schedule review groups, and the pattern from the provider sheet** (19
+  October 2026, Dominguez, from the practice's Schedule Review picture and
+  *Domi Schedule NB & WNY 2026*): beside the per-provider pattern, **Schedule
+  → Reviews** has **Who reviews each group** (`ScheduleReviewArea`: name and
+  one reviewer, everybody reads, managers edit; on a reviewer's Home as
+  "Always · …"). Started as Telemedicine = Kayla B, NB Providers = Angelica N,
+  NB Bloodwork & Nursing = Kayla B, WNY ALL = Tatiyana R. The sheet also set the
+  **usual per-provider pattern** Monday to Friday: a provider on telemedicine
+  that day is reviewed by Kayla B, at North Bergen by Angelica N, at West New
+  York by Tatiyana R (Saturdays change by the week of the month, so are left
+  out). Migrations `20261019030000_schedule_review_areas` and
+  `20261019040000_schedule_review_pattern_from_sheet` match people by name and
+  providers by initials (JD, CI, JB, DD, KH), each only when exactly one fits,
+  and leave a provider who already has a pattern alone: **check Reviews on the
+  live site and fill any gap in the app**. The sheet's
+  assignment of Claude's reading (location decides the reviewer) is an
+  assumption to confirm. `tests/browser/schedule-reviews.mjs`.
+- **Providers on the calendar** (19 October 2026, Dominguez: "so staff know
+  what offices are open and who should be there and who's scheduled to be on
+  telemedicine"): a **Providers** kind on Schedule → Calendar (month, list and
+  the printed month, filterable by office): each day, each office's providers
+  with their hours, and **Telemedicine** for work-from-home shifts. Built from
+  the **published** shifts of people in a provider job role (so it is only as
+  right as the rota), names, offices and hours only; which offices are shut
+  is the Closures kind beside it. Everybody reads it. Not in the phone calendar
+  feed. `GET /calendar/providers`, `CalendarService.providerPlaces`,
+  `components/ProviderPlaces.tsx`; `tests/browser/provider-calendar.mjs`.
 - **Turned down: "PTO about to be lost"** (9 October 2026, Dominguez): a
   reminder to use PTO before it fails to carry over was proposed and refused —
   not in the practice's interest. Do not propose it again.
@@ -1844,6 +1902,14 @@ surprising, and `docs/open-questions.md` is what is still waiting on a decision.
 The guides for staff and managers are on the app's own Help page.
 
 ## Ways of working
+- **No em dashes, anywhere in the portal or in what is written for it**
+  (Dominguez, 19 October 2026: "for all the portal and going forward don't use
+  em dashes"). Use a plain hyphen, a comma or a new sentence. Code, screens,
+  emails, messages, Help, the AI helpers' output (told not to, and stripped) and
+  the lists loaded by migration are clean, and a unit test
+  (`common/no-em-dashes.spec.ts`) fails on one in the API or web code. Older
+  entries in this file and in `docs/` still have them: leave them, and write
+  none new.
 - Confirm scope and data accuracy before drafting deliverables — don't build ahead
   of confirmed requirements.
 - Prefer iterative discovery: try things, report findings back, refine the

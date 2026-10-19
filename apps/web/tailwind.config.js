@@ -10,7 +10,7 @@ export default {
       // lightness, so a tint and a hover read as the same colour. White text
       // on 600 is 6.0:1 and on 700 is 7.7:1.
       colors: {
-        // Slate's own 500 is 4.3:1 on the page's slate-100 — under AA for small
+        // Slate's own 500 is 4.3:1 on the page's slate-100 - under AA for small
         // text, and hint text is set in it about 270 times. Darkened a step so
         // it is 5.4:1 there and the hint/body distinction survives.
         slate: { 500: '#566579' },
@@ -28,8 +28,8 @@ export default {
         },
       },
       // The website sets its type in Avenir. It is not a web font anyone may
-      // serve, so it is used where the device already has it — every iPhone,
-      // iPad and Mac — and everything else gets its own system face.
+      // serve, so it is used where the device already has it - every iPhone,
+      // iPad and Mac - and everything else gets its own system face.
       fontFamily: {
         sans: [
           '"Avenir Next"',
@@ -72,7 +72,7 @@ export default {
   // The form markup across this app is written for this plugin: inputs carry a
   // border *colour* (`border-slate-300`) and rely on the plugin's base styles
   // for the border itself. Without it, Tailwind's reset leaves every field with
-  // `border-width: 0` — a text box with no visible box, which is exactly how it
+  // `border-width: 0` - a text box with no visible box, which is exactly how it
   // shipped until somebody setting the app up for the first time said the text
   // "starts very close to the left side".
   plugins: [forms],

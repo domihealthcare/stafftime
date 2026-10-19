@@ -33,7 +33,7 @@ export class CreateEmployeeDto {
   @Length(1, 80)
   preferredName?: string | null;
 
-  /// Letters after their name — "MD", "APN-C" — printed beside it on the
+  /// Letters after their name - "MD", "APN-C" - printed beside it on the
   /// clinical forms. Empty or null clears it.
   @IsOptional()
   @ValidateIf((_, value) => value !== null && value !== '')
@@ -63,12 +63,22 @@ export class CreateEmployeeDto {
   @IsEnum(PayType)
   payType?: PayType;
 
-  /// False for somebody who does not clock in — the providers, to start with
+  /// False for somebody who does not clock in - the providers, to start with
   /// (October 2026, Dominguez). Nobody chases their punches; the Directory
   /// shows them where their shift is. On unless an admin turns it off.
   @IsOptional()
   @IsBoolean()
   clocksIn?: boolean;
+
+  /// Posts News without being an admin (October 2026, Dominguez).
+  @IsOptional()
+  @IsBoolean()
+  canPostNews?: boolean;
+
+  /// Reads everybody's published rota, read-only, without being a manager.
+  @IsOptional()
+  @IsBoolean()
+  canSeeEveryonesSchedule?: boolean;
 
   /// Optional: without it, time off is not prorated for a first part-year.
   @IsOptional()
@@ -86,7 +96,7 @@ export class CreateEmployeeDto {
   @Length(1, 120)
   externalId?: string;
 
-  /// ADP TotalSource's File # — ADP's own staff number, needed on every row of
+  /// ADP TotalSource's File # - ADP's own staff number, needed on every row of
   /// the payroll import. Empty or null clears it.
   @IsOptional()
   @ValidateIf((_, value) => value !== null && value !== '')
@@ -100,7 +110,7 @@ export class CreateEmployeeDto {
   @Length(1, 60)
   badgeId?: string;
 
-  /// Birthday, month and day only — never the year. Null clears it.
+  /// Birthday, month and day only - never the year. Null clears it.
   @IsOptional()
   @ValidateIf((_, value) => value !== null)
   @IsInt()
@@ -115,7 +125,7 @@ export class CreateEmployeeDto {
   @Max(31)
   birthdayDay?: number | null;
 
-  /// Locations this employee may work — and therefore clock in at.
+  /// Locations this employee may work - and therefore clock in at.
   @IsOptional()
   @IsArray()
   @ArrayUnique()

@@ -84,7 +84,7 @@ export class ExportTimesheetDto {
   @IsString()
   @Matches(/^[A-Za-z0-9]{0,8}$/, {
     message:
-      'The Batch ID is letters and numbers only, 8 at most — for example the pay date, 07312023.',
+      'The Batch ID is letters and numbers only, 8 at most - for example the pay date, 07312023.',
   })
   batchId?: string;
 

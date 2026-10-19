@@ -24,7 +24,7 @@ export class GoogleProblem extends Error {
  * Signs the app in to Google, for Meet links and calendar invites (September
  * 2026, Dominguez). See docs/google-meet-setup.md.
  *
- * One Google Cloud service account — a robot login belonging to the app. It
+ * One Google Cloud service account - a robot login belonging to the app. It
  * gets a token two ways:
  *
  * - **As the host account** (office@, `GOOGLE_MEET_HOST`), for exactly the
@@ -133,8 +133,8 @@ export class GoogleAuthService {
       error_description?: string;
     };
     if (!response.ok || !body.access_token) {
-      // unauthorized_client almost always means the admin step — domain-wide
-      // delegation for this scope — is missing or has a typo.
+      // unauthorized_client almost always means the admin step - domain-wide
+      // delegation for this scope - is missing or has a typo.
       this.logger.error(
         `Google would not give a token for ${scope}${subject ? ` as ${subject}` : ''}: ${
           body.error ?? response.status

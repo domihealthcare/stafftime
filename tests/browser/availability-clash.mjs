@@ -20,9 +20,9 @@ const step = async (name, fn) => {
 };
 
 /**
- * Availability that clashes with a regular shift (Dominguez, October 2026 —
+ * Availability that clashes with a regular shift (Dominguez, October 2026 - 
  * making the app smarter): somebody with a regular Wednesday shift says they
- * are not available Wednesdays. Saved, as availability always is — and the
+ * are not available Wednesdays. Saved, as availability always is - and the
  * managers hear at once on the bell, and it is listed on the Schedule banner
  * and in the nightly email until the regular shift or the availability changes.
  *
@@ -106,7 +106,7 @@ await step('not available Wednesday afternoons: saved, as availability always is
 });
 
 const mgr = await signIn('manager@domihealthcare.com');
-const LINE = /^Frankie Front-Desk — regular Wednesdays 9:00 AM–5:00 PM at North Bergen, but not available Wednesdays, 1:00 PM–9:00 PM \(from .+\)$/;
+const LINE = /^Frankie Front-Desk - regular Wednesdays 9:00 AM–5:00 PM at North Bergen, but not available Wednesdays, 1:00 PM–9:00 PM \(from .+\)$/;
 
 await step('the managers hear at once, on the bell', async () => {
   const inbox = await mgr.evaluate(() => fetch('/api/notifications').then((r) => r.json()));

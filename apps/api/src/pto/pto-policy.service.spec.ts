@@ -113,7 +113,7 @@ describe('PtoPolicyService', () => {
     const requests = options.requests ?? [];
     const prisma = {
       ptoPolicy: {
-        // One row, keyed by its singleton column — see the service.
+        // One row, keyed by its singleton column - see the service.
         findUnique: jest
           .fn()
           .mockResolvedValue('policy' in options ? options.policy : DEFAULT_POLICY),
@@ -338,7 +338,7 @@ describe('PtoPolicyService', () => {
     // every earlier year.
     it('counts nothing from years before they were added to the app', async () => {
       // Hired 2020, added September 2026: what 2025 left is not known, so
-      // nothing is assumed — a manager enters what really rolled over.
+      // nothing is assumed - a manager enters what really rolled over.
       const { service } = build({ hireDate: day('2020-01-01'), createdAt: day('2026-09-25') });
       const balance = await service.balanceFor('emp-1', 2026);
       expect(balance.vacation).toMatchObject({ entitled: 15, carriedOver: 0, available: 15 });
@@ -357,7 +357,7 @@ describe('PtoPolicyService', () => {
     });
 
     it('carries unused days into the next year, up to the cap', async () => {
-      // 2025: used 8 of 15, so 7 unused — capped at 5.
+      // 2025: used 8 of 15, so 7 unused - capped at 5.
       const { service } = build({
         requests: [approved(PtoType.VACATION, '2025-03-03', '2025-03-12')],
         hireDate: day('2024-01-01'),

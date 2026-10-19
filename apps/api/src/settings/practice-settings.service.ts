@@ -19,7 +19,7 @@ function isUniqueViolation(error: unknown): boolean {
  * The practice's own scheduling rules.
  *
  * Both of these were constants until somebody had an opinion about them, which
- * is the right order — but a guess that has been overruled should not need a
+ * is the right order - but a guess that has been overruled should not need a
  * deploy to change.
  */
 @Injectable()
@@ -31,7 +31,7 @@ export class PracticeSettingsService {
    * with the defaults rather than nothing.
    *
    * Get-or-create with the unique column carrying the weight, exactly as
-   * `PtoPolicyService.get` does — and for the reason written up there, which
+   * `PtoPolicyService.get` does - and for the reason written up there, which
    * was not theoretical: twenty concurrent first reads of the PTO policy
    * produced eighteen rows before the unique column was added. The schedule
    * screen reads these settings alongside coverage, so it has the same shape of

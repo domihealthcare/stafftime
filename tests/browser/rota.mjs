@@ -56,7 +56,7 @@ await step('an office with nothing open has an open-shift row, and no flag', asy
 await step('repeating open shifts: two Front Desk slots every Saturday, nobody named', async () => {
   await mgr.getByRole('button', { name: '+ Add', exact: true }).click();
   await mgr.getByRole('menuitem', { name: 'Repeating shifts', exact: true }).click();
-  await mgr.getByLabel('Employee').selectOption({ label: 'Nobody yet — open shifts to fill' });
+  await mgr.getByLabel('Employee').selectOption({ label: 'Nobody yet - open shifts to fill' });
   await mgr.getByLabel('Location', { exact: true }).selectOption({ label: 'North Bergen' });
   await mgr.getByLabel(/^Job role/).selectOption({ label: 'Front Desk' });
   await mgr.getByLabel('How many each day').fill('2');
@@ -89,9 +89,9 @@ await step('the round-up flags open shifts in the next fortnight', async () => {
   await mgr.getByTestId('needs-attention').getByRole('button', { name: /Worth a look/ }).click();
   await mgr.getByText('Open shifts nobody is on yet', { exact: true }).waitFor({ timeout: 10000 });
   // Two a Saturday, and how many Saturdays land in the fortnight depends on
-  // today's weekday — two of them from a Saturday on. The count itself is unit
+  // today's weekday - two of them from a Saturday on. The count itself is unit
   // tested; here it is the line that matters.
-  await mgr.getByText(/North Bergen — (2|4) open shifts nobody is on yet/).waitFor({ timeout: 5000 });
+  await mgr.getByText(/North Bergen - (2|4) open shifts nobody is on yet/).waitFor({ timeout: 5000 });
   await mgr.getByRole('button', { name: 'Next →' }).click();
   await openRow('North Bergen').getByTestId('open-shift').nth(1).waitFor({ timeout: 10000 });
 });
@@ -99,7 +99,7 @@ await step('the round-up flags open shifts in the next fortnight', async () => {
 await step('putting somebody in an open shift moves it to their row', async () => {
   await openChips().first().click();
   const dialog = mgr.getByRole('dialog');
-  // Each name is followed by why (or why not) — "— free · 4 hrs that week".
+  // Each name is followed by why (or why not) - " - free · 4 hrs that week".
   const picker = dialog.getByLabel('Put somebody in it');
   await picker.locator('option', { hasText: 'Frankie Front-Desk' }).first().waitFor({ state: 'attached' });
   await picker.selectOption(

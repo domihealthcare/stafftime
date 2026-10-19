@@ -59,7 +59,7 @@ export class CreateLocationDto {
 
   /// Feet. The floor is not arbitrary: a fix indoors is commonly accurate to a
   /// hundred feet or worse, and the check rejects a fix whose own accuracy is
-  /// wider than twice the radius — so a very small radius does not make
+  /// wider than twice the radius - so a very small radius does not make
   /// clocking in stricter, it makes it fail.
   @IsOptional()
   @IsInt()

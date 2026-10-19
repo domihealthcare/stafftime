@@ -28,7 +28,7 @@ const SELECT = {
 } as const;
 
 /**
- * Who gets which part of the nightly round-up, for the whole practice — the
+ * Who gets which part of the nightly round-up, for the whole practice - the
  * table on Email settings (October 2026, Dominguez: "certain managers should
  * be notified of certain things").
  *

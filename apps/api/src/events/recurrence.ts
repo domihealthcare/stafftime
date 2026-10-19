@@ -4,7 +4,7 @@ import { addDaysTo, isoWeekdayOf } from '../common/util/zoned-time.util';
  * Repeating events: which days a series lands on.
  *
  * Worked on calendar dates ("2026-10-02"), never on instants, so a series at
- * 9am stays at 9am through the clocks changing — the caller turns each date
+ * 9am stays at 9am through the clocks changing - the caller turns each date
  * back into instants on the practice's clock. A series is written out as one
  * event per date (like repeating shifts), so any one of them can be moved or
  * removed on its own; the rule is kept so "this and all after it" can be
@@ -55,7 +55,7 @@ export function ruleProblem(firstDate: string, rule: RepeatRule): string | null 
   if (!/^\d{4}-\d{2}-\d{2}$/.test(rule.until)) return 'Choose when it stops repeating.';
   if (rule.until < firstDate) return 'It has to stop repeating after it starts.';
   if (rule.until > addDaysTo(firstDate, MAX_SPAN_DAYS)) {
-    return 'A repeating event can run for at most a year — add another series after that.';
+    return 'A repeating event can run for at most a year - add another series after that.';
   }
   if (rule.frequency === 'WEEKLY') {
     const days = rule.weekdays ?? [];

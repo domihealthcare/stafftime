@@ -22,10 +22,10 @@ import { PollView, PostActions } from './PostSocial';
 import { Card } from './ui';
 
 /**
- * The cards around the clock on the Home screen (October 2026, Dominguez —
+ * The cards around the clock on the Home screen (October 2026, Dominguez -
  * option B, "Home"): the news under the clock on the left, and on the right a
  * column of quick buttons, birthdays, holidays and what is coming up, and
- * surveys. Every one fails quietly — Home is for clocking in, and a card that
+ * surveys. Every one fails quietly - Home is for clocking in, and a card that
  * cannot load is not worth an error between somebody and the button.
  */
 
@@ -33,7 +33,7 @@ const linkClass = 'text-sm font-medium text-brand-700 hover:text-brand-900';
 
 // ------------------------------------------------------------------- news
 
-/// The primary post in full, then the next few newest as headlines — News no
+/// The primary post in full, then the next few newest as headlines - News no
 /// longer has a tab of its own, so this is where people read it. The primary
 /// can be liked and voted on here; comments are read and written on News.
 export function HomeNews() {
@@ -164,7 +164,7 @@ function HeadlineWords({ post }: { post: Announcement }) {
 // ------------------------------------------------------------------ quick
 
 /// The things people come to do besides clocking: ask for time off, set
-/// availability, look up the diagnostics and the referral phone book, and — for whoever has them — the
+/// availability, look up the diagnostics and the referral phone book, and - for whoever has them - the
 /// clinical forms.
 export function QuickActions() {
   const t = useT();
@@ -225,8 +225,8 @@ export function QuickActions() {
 // ------------------------------------------------------------- tablet PIN
 
 /// Somebody at an office with a working time clock who has not chosen a PIN
-/// yet (Dominguez, October 2026). Shown on Home only — not the bell, not an
-/// email — and gone once they have one.
+/// yet (Dominguez, October 2026). Shown on Home only - not the bell, not an
+/// email - and gone once they have one.
 export function TabletPinReminder() {
   const t = useT();
   const { employee } = useSession();
@@ -262,8 +262,8 @@ export function TabletPinReminder() {
 
 // -------------------------------------------------------------- coming up
 
-/// Holidays and closures, and meetings and events, in the next 30 days — the
-/// ones this person sees on the Schedule (the server sends only those) — and
+/// Holidays and closures, and meetings and events, in the next 30 days - the
+/// ones this person sees on the Schedule (the server sends only those) - and
 /// the next pay day. Not the diagnostics: there is a date most weekends, and
 /// they would push everything else off; they are on the Calendar.
 export function ComingUp() {

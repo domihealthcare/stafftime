@@ -194,7 +194,7 @@ await step('a rota that crosses 40 hours is called out, in hours', async () => {
 await page.screenshot({ path: `${OUT}/39a-overtime.png`, fullPage: true });
 
 await step('the warning follows the week, not the days on screen', async () => {
-  // The following week has none of those shifts, so it must go quiet — and
+  // The following week has none of those shifts, so it must go quiet - and
   // coming back must bring it back, rather than it being sticky UI state.
   await page.getByRole('button', { name: 'Next →' }).click();
   await page.waitForTimeout(1500);
@@ -265,7 +265,7 @@ await step('an empty day is visibly empty rather than blank', async () => {
     throw new Error(`every day in the month has a shift, so nothing was tested: ${labels[0]}`);
 
   const text = await cells.nth(emptyIndex).innerText();
-  if (!/—/.test(text))
+  if (!/(^|\s)-(\s|$)/.test(text))
     throw new Error(`an empty day rendered as "${text.replace(/\n/g, ' ')}" rather than a dash`);
 });
 
@@ -291,7 +291,7 @@ await step('Previous and Next move a month, not a week', async () => {
 // --- one person's month ---
 
 const personBox = page.getByRole('combobox', { name: 'Show person' });
-// Only the picker's own list — the office and job role selects have options too.
+// Only the picker's own list - the office and job role selects have options too.
 const personList = page.getByRole('listbox', { name: 'Show person' });
 
 await step('a manager can find one person by typing part of their name', async () => {
@@ -303,7 +303,7 @@ await step('a manager can find one person by typing part of their name', async (
     throw new Error(`"frank" matched ${await options.count()} options`);
   await personList.getByRole('option', { name: /Frankie Front-Desk/ }).click();
   const shown = await page.getByTestId('month-person').innerText();
-  if (!/^Only Frankie Front-Desk — \d+ shifts? this month\.$/.test(shown))
+  if (!/^Only Frankie Front-Desk - \d+ shifts? this month\.$/.test(shown))
     throw new Error(`the month says "${shown}"`);
   if ((await personBox.inputValue()) !== 'Frankie Front-Desk')
     throw new Error(`the box reads "${await personBox.inputValue()}"`);
@@ -363,11 +363,11 @@ await step('✕ goes back to everyone', async () => {
 await step('the month narrows to one job role at one office (Front Desk in North Bergen)', async () => {
   // Frankie is Front Desk and Medical Assistant at North Bergen; Max is an MA
   // at West New York. The rota above is all Frankie's, at North Bergen, and
-  // made as Front Desk — her first role, which the forms pick for her.
+  // made as Front Desk - her first role, which the forms pick for her.
   await page.getByLabel('Show job role').selectOption({ label: 'Front Desk' });
   await page.getByLabel('Show location').selectOption({ label: 'North Bergen' });
   const shown = await page.getByTestId('month-person').innerText();
-  if (!/^Only Front Desk at North Bergen — [1-9]\d* shifts? this month\.$/.test(shown))
+  if (!/^Only Front Desk at North Bergen - [1-9]\d* shifts? this month\.$/.test(shown))
     throw new Error(`the month says "${shown}"`);
   // A group is several people, so the squares go back to names.
   const monday = page.getByTestId('month-grid').getByRole('button').nth(1);
@@ -380,7 +380,7 @@ await step('a job role shows the shifts for that role, not everything its people
   // Frankie is an MA too, but none of these shifts are MA shifts (Dominguez,
   // September 2026: Provider in North Bergen showed more than it should).
   await page.getByLabel('Show job role').selectOption({ label: 'Medical Assistant' });
-  await page.getByText('Only Medical Assistant at North Bergen — no shifts this month.').waitFor({
+  await page.getByText('Only Medical Assistant at North Bergen - no shifts this month.').waitFor({
     timeout: 5000,
   });
   await page.getByLabel('Show job role').selectOption({ label: 'Front Desk' });
@@ -400,7 +400,7 @@ await step('the person list only offers people in that group', async () => {
 
 await step('the other office leaves North Bergen shifts out', async () => {
   await page.getByLabel('Show location').selectOption({ label: 'West New York' });
-  await page.getByText('Only Front Desk at West New York — no shifts this month.').waitFor({
+  await page.getByText('Only Front Desk at West New York - no shifts this month.').waitFor({
     timeout: 5000,
   });
 });
@@ -408,7 +408,7 @@ await step('the other office leaves North Bergen shifts out', async () => {
 await step('an office alone, and back to all', async () => {
   await page.getByLabel('Show job role').selectOption({ label: 'All job roles' });
   await page.getByLabel('Show location').selectOption({ label: 'North Bergen' });
-  await page.getByText(/^Only North Bergen — [1-9]\d* shifts? this month\.$/).waitFor({ timeout: 5000 });
+  await page.getByText(/^Only North Bergen - [1-9]\d* shifts? this month\.$/).waitFor({ timeout: 5000 });
   await page.getByLabel('Show location').selectOption({ label: 'All locations' });
   if ((await page.getByTestId('month-person').count()) > 0)
     throw new Error('still narrowed with every filter off');
@@ -445,7 +445,7 @@ await step('picking a day opens that week', async () => {
 await step('an employee sees when they are on, not their own name', async () => {
   // This is mostly who the month view is for: somebody checking which days
   // they are working. They only ever see their own shifts, so the name would
-  // be their own name twenty times over — the time is the useful part.
+  // be their own name twenty times over - the time is the useful part.
   const empCtx = await browser.newContext({ viewport: { width: 1280, height: 1000 } });
   const emp = await empCtx.newPage();
   await emp.goto(`${BASE}/`, { waitUntil: 'networkidle' });
@@ -467,7 +467,7 @@ await step('an employee sees when they are on, not their own name', async () => 
   const withShifts = emp
     .getByTestId('month-grid')
     .getByRole('button')
-    .filter({ hasNotText: '—' })
+    .filter({ hasNotText: '-' })
     .first();
   const label = await withShifts.getAttribute('aria-label');
 

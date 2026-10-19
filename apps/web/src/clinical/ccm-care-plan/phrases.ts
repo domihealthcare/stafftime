@@ -3,17 +3,17 @@
  * of them each condition's plan lists under each question.
  *
  * Taken from the practice's Google Forms, one per condition (October 2026;
- * obvious typos fixed, wording otherwise as written — including the forms'
+ * obvious typos fixed, wording otherwise as written - including the forms'
  * own "my", which is the patient speaking). A phrase used by several
  * conditions is written once here, so a correction reaches all of them.
  *
  * To change wording: edit `en` or `es` below. To offer a phrase for another
  * condition: add its id to that condition's list. To add a new one: add it to
  * PHRASES with an id nobody has used, then to a list. Never reuse or change
- * an id — it is only a name, but keeping it fixed keeps things simple.
+ * an id - it is only a name, but keeping it fixed keeps things simple.
  *
  * The Spanish was read and approved by a native speaker (October 2026; a
- * new phrase should be read the same way — NEEDS_NATIVE_SPEAKER_REVIEW in
+ * new phrase should be read the same way - NEEDS_NATIVE_SPEAKER_REVIEW in
  * config.ts). It was written to match the practice's existing Spanish care
  * plans: "Gerente de Atención" for Care Manager, "proveedor de salud"
  * for provider, "referido" for referral.
@@ -2008,7 +2008,7 @@ export const PHRASES: Record<string, Phrase> = {
 /// - One per Google Form: afib … seizures.
 /// - `htn` and `osteoporosis` had no form: they are made from the
 ///   practice's sample care plan (with the blood-pressure choices from the
-///   CAD and CHF forms for htn) — check them.
+///   CAD and CHF forms for htn) - check them.
 /// - `shared` is for conditions with no form yet: the choices five or more
 ///   of the forms have in common.
 export const PLAN_LISTS: Record<string, Record<PlanPart, string[]>> = {

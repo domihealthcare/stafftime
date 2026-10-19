@@ -17,7 +17,7 @@ const office = (id: string, name: string) => ({
 
 /**
  * Everybody works at both offices. The phone picks one before it knows where
- * the person is, so standing at the other one must clock them in there — not
+ * the person is, so standing at the other one must clock them in there - not
  * be refused as "outside North Bergen".
  */
 function build(passesAt: string | null, otherOffices = ['wny']) {

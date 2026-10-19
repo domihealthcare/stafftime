@@ -4,7 +4,7 @@ import { buttonClass } from './ui';
 
 /**
  * A board filling the screen (October 2026, Dominguez: "a 'big board' for
- * staff to reference") — the diagnostics and reimbursements boards, bigger,
+ * staff to reference") - the diagnostics and reimbursements boards, bigger,
  * with nothing else on screen: on a front-desk monitor, or a phone turned
  * sideways. Full screen where the browser allows it (not an iPhone), and a
  * cover over the page either way. Escape, or the button, puts it back.

@@ -4,7 +4,7 @@ import { mkdirSync, readFileSync } from 'node:fs';
 
 // Overtime, as the rota is built: the scheduler warns while a shift is being
 // added, asks before saving one that puts somebody over, says so at the top of
-// the week and beside their total — and the person is told too, on their own
+// the week and beside their total - and the person is told too, on their own
 // screens and by email. Plus the confirmation pop-up's escape hatches.
 const OUT = process.argv[2] || new URL('./shots/', import.meta.url).pathname;
 mkdirSync(OUT, { recursive: true });

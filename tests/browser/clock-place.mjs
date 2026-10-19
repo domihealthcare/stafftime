@@ -5,8 +5,8 @@ import { clockOut } from './clock-out.mjs';
 
 // Choosing where to clock in (October 2026, Dominguez): every one of your
 // offices and Work from home is offered every day, the place of today's shift
-// first. Somewhere else is allowed — a member of staff moved to the other
-// office, or approved to work from home for the day — after a warning and a
+// first. Somewhere else is allowed - a member of staff moved to the other
+// office, or approved to work from home for the day - after a warning and a
 // pop-up, with an optional reason, and it is flagged on the timesheet.
 const OUT = process.argv[2] || new URL('./shots/', import.meta.url).pathname;
 mkdirSync(OUT, { recursive: true });
@@ -41,7 +41,7 @@ await page.addInitScript(() => {
   };
 });
 
-// A published North Bergen shift for Morgan, on now — made through the API so
+// A published North Bergen shift for Morgan, on now - made through the API so
 // the suite does not depend on the time of day it runs at.
 const shiftId = await page.evaluate(async () => {
   const me = await fetch('/api/profile').then((r) => r.json());
@@ -82,7 +82,7 @@ await step('every office and Work from home are offered, the shift’s office fi
   await select.waitFor({ timeout: 15000 });
   const options = await select.locator('option').allInnerTexts();
   if (options.length !== 3) throw new Error(`options: ${options.join(' | ')}`);
-  if (options[0] !== 'North Bergen — your shift') throw new Error(`first: ${options[0]}`);
+  if (options[0] !== 'North Bergen - your shift') throw new Error(`first: ${options[0]}`);
   if (options[2] !== 'Work from home') throw new Error(`last: ${options[2]}`);
   if ((await select.inputValue()) === 'home') throw new Error('starts on home');
   if ((await page.getByTestId('other-place').count()) !== 0) throw new Error('a warning for the shift’s own office');
@@ -99,7 +99,7 @@ await step('home warns too, and the pop-up lets them go back', async () => {
   await select.selectOption({ label: 'Work from home' });
   await page.getByTestId('other-place').getByText('Your shift today is at North Bergen.').waitFor({ timeout: 5000 });
   await page.getByText('Working from home: no location is asked for or recorded.').waitFor({ timeout: 5000 });
-  await page.getByRole('button', { name: 'Clock in — working from home' }).click();
+  await page.getByRole('button', { name: 'Clock in - working from home' }).click();
   const dialog = page.getByRole('alertdialog');
   await dialog.getByText('Clock in from home?').waitFor({ timeout: 5000 });
   await dialog.getByRole('button', { name: 'Go back' }).click();
@@ -110,7 +110,7 @@ await step('home warns too, and the pop-up lets them go back', async () => {
 await step('confirmed, it clocks in from home with the reason, and no position is asked for or sent', async () => {
   await page.getByTestId('other-place').getByLabel(/Why\?/).fill('Approved by Angelica, car trouble');
   const punched = page.waitForResponse((r) => r.url().endsWith('/api/time-entries/clock-in'));
-  await page.getByRole('button', { name: 'Clock in — working from home' }).click();
+  await page.getByRole('button', { name: 'Clock in - working from home' }).click();
   await page.getByRole('alertdialog').getByRole('button', { name: 'Clock in from home' }).click();
   const response = await punched;
   if (!response.ok()) throw new Error(`refused: ${await response.text()}`);

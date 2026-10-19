@@ -245,7 +245,7 @@ export class KioskService {
     });
   }
 
-  /// The staff shown at a given kiosk — assigned to its location and still
+  /// The staff shown at a given kiosk - assigned to its location and still
   /// employed. Somebody with no PIN yet is listed too, marked `hasPin: false`,
   /// so the tablet can tell them how to choose one rather than leave them
   /// wondering why their name is missing (Dominguez, October 2026). Only
@@ -272,7 +272,7 @@ export class KioskService {
     }));
   }
 
-  /// The News posts ticked to show publicly — the same ones the sign-in page
+  /// The News posts ticked to show publicly - the same ones the sign-in page
   /// shows (`findPublicPosts`). The same for every office's time clock.
   async timeClockPosts() {
     return findPublicPosts(this.prisma);

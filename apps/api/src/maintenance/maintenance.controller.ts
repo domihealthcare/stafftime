@@ -24,7 +24,7 @@ import { PunchRemindersService } from './punch-reminders.service';
  * having one.
  *
  * The punch reminders are called every few minutes by an outside timer
- * (cron-job.org — Vercel's free plan runs its own once a day), so they have
+ * (cron-job.org - Vercel's free plan runs its own once a day), so they have
  * their own secret, `PUNCH_REMINDER_SECRET`: the one handed to an outside
  * service can send reminders and nothing else, never the nightly round-up.
  * See docs/punch-reminders-setup.md.

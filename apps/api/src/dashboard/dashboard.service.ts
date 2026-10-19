@@ -11,8 +11,8 @@ export const MAX_WEEKS = 26;
 /**
  * The manager dashboard: how the practice's weeks have actually gone.
  *
- * Built only from what the app already holds — punches, the rota, approved
- * leave, availability — and from the same rules the rest of the app uses, so
+ * Built only from what the app already holds - punches, the rota, approved
+ * leave, availability - and from the same rules the rest of the app uses, so
  * a number here never disagrees with the timesheet, the scheduler or the
  * payroll export about what a week or an hour of overtime is.
  */

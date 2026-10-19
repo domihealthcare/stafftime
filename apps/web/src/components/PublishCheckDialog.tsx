@@ -2,9 +2,9 @@ import type { PublishCheck } from '../lib/types';
 import { WarningsDialog } from './WarningsDialog';
 
 /**
- * "Before you publish" (October 2026, Dominguez — making the app smarter):
- * what is worth a look about the drafts about to go out — time off,
- * availability, overtime, closures, leavers, lapsed licenses, open shifts —
+ * "Before you publish" (October 2026, Dominguez - making the app smarter):
+ * what is worth a look about the drafts about to go out - time off,
+ * availability, overtime, closures, leavers, lapsed licenses, open shifts -
  * in one place, before staff are told. Warns, never refuses: **Publish
  * anyway** always works. The rules are the server's (`shifts/publish-check.ts`).
  */

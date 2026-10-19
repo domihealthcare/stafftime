@@ -1,9 +1,9 @@
 /*
- * Domi Staff — phone notifications (October 2026).
+ * Domi Staff - phone notifications (October 2026).
  *
  * This worker only shows notifications and opens the app when one is tapped.
  * It has NO fetch handler and caches nothing, on purpose: the app must never
- * seem to work offline — a punch with no signal has to plainly fail (see
+ * seem to work offline - a punch with no signal has to plainly fail (see
  * "On a phone's home screen" in CLAUDE.md). tests/browser/push.mjs checks
  * that it stays that way.
  *

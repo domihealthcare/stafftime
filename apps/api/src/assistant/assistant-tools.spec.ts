@@ -71,7 +71,7 @@ function sources(): AssistantSources & { calls: Record<string, unknown[]> } {
         homeToday: null,
       },
     ],
-    attention: async () => ({ missedShifts: ['Max — Tue'], openShifts: [] }),
+    attention: async () => ({ missedShifts: ['Max - Tue'], openShifts: [] }),
   };
 }
 
@@ -140,7 +140,7 @@ describe('what Ask Domi Staff can look up', () => {
     );
     expect(rows).toEqual([
       {
-        who: 'Open shift — nobody yet',
+        who: 'Open shift - nobody yet',
         day: '2026-10-14',
         from: '09:00',
         until: '17:00',
@@ -160,7 +160,7 @@ describe('what Ask Domi Staff can look up', () => {
     expect(
       JSON.parse((await runTool('needs_attention', {}, morgan, sources(), NOW)).content),
     ).toEqual({
-      missedShifts: ['Max — Tue'],
+      missedShifts: ['Max - Tue'],
     });
   });
 });

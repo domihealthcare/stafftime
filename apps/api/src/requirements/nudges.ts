@@ -3,14 +3,14 @@ import { addDaysTo } from '../common/util/zoned-time.util';
 
 /**
  * When somebody is reminded about something they have been asked to read or
- * do (October 2026, Dominguez: "nag" — never a gate). Told once when it is
+ * do (October 2026, Dominguez: "nag" - never a gate). Told once when it is
  * set; after that:
  *
  * - **With a due date**: two days before it, the day after it passes, and
  *   then once a week.
  * - **Without one**: once a week after it was set.
  *
- * At most `MAX_WEEKS` weekly reminders — after two months of emails, it is a
+ * At most `MAX_WEEKS` weekly reminders - after two months of emails, it is a
  * conversation for a manager, who can see who is still to do it and press
  * **Remind them now**. The card on Home stays until it is done either way.
  *
@@ -76,7 +76,7 @@ export interface WaitingItem {
   stage: NudgeStage;
 }
 
-/// "Please read …" / "To do: …" — the first word of it.
+/// "Please read …" / "To do: …" - the first word of it.
 export function askedWording(item: {
   kind: RequirementKind;
   title: string;
@@ -120,7 +120,7 @@ export function nudgeWording(items: WaitingItem[]): { title: string; body: strin
   const lines = sorted.map(
     (item) =>
       `“${item.title}”${
-        item.dueOn ? ` — ${item.stage === 'OVERDUE' ? 'was due' : 'due'} ${day(item.dueOn)}` : ''
+        item.dueOn ? ` - ${item.stage === 'OVERDUE' ? 'was due' : 'due'} ${day(item.dueOn)}` : ''
       }`,
   );
   return {

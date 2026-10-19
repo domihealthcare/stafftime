@@ -20,13 +20,13 @@ const step = async (name, fn) => {
 };
 
 /**
- * Patterns in clocking in and out (Dominguez, October 2026 — making the app
+ * Patterns in clocking in and out (Dominguez, October 2026 - making the app
  * smarter): late 3 times in 4 weeks, forgetting to clock out or leaving early
  * twice. On the Dashboard and in the nightly email, managers only; never a
  * banner, and the person is not told.
  *
- * A late punch needs a shift and a clock-in at the right moment, weeks ago —
- * which no screen can make — so this suite writes past punches straight into
+ * A late punch needs a shift and a clock-in at the right moment, weeks ago - 
+ * which no screen can make - so this suite writes past punches straight into
  * the database, tagged `patterns-suite`, which run-all.sh removes. Frankie is
  * late on the same weekday three weeks running; Max forgot to clock out twice.
  */
@@ -44,7 +44,7 @@ function sql(statement) {
   );
 }
 
-/// A day `daysAgo` before today (UTC), at 13:15 UTC — morning in New Jersey,
+/// A day `daysAgo` before today (UTC), at 13:15 UTC - morning in New Jersey,
 /// so the same date there.
 const dayAgo = (daysAgo) => {
   const date = new Date();
@@ -106,8 +106,8 @@ await step('the Dashboard lists each pattern, with the weekday when it repeats',
     line.replace(/Which days\?$/, '').trim(),
   );
   const expected = [
-    `Frankie Front-Desk — Late 3 times in the last 4 weeks, 3 ${weekday}s running`,
-    'Max Assistant — Forgot to clock out twice in the last 4 weeks',
+    `Frankie Front-Desk - Late 3 times in the last 4 weeks, 3 ${weekday}s running`,
+    'Max Assistant - Forgot to clock out twice in the last 4 weeks',
   ];
   if (JSON.stringify(lines) !== JSON.stringify(expected)) throw new Error(`listed: ${lines.join(' | ')}`);
 });

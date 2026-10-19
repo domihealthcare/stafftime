@@ -11,7 +11,7 @@ import { PASSWORD_RULE, meetsPasswordRule } from '../lib/password';
  *
  * Setting a password here signs out every session on the account, including any
  * the person did not start. If the reason for the reset was that somebody else
- * had the old password, leaving their session alive would defeat the exercise —
+ * had the old password, leaving their session alive would defeat the exercise -
  * so the screen says that rather than letting it be a surprise.
  */
 export function ResetPasswordPage() {
@@ -86,7 +86,7 @@ export function ResetPasswordPage() {
       <form onSubmit={(event) => void submit(event)} className="space-y-4">
         {/* The hint sits outside the label and is tied on with
             aria-describedby. Inside it, it would become part of the field's
-            name — "New password At least 8 characters…" — which is both wrong
+            name - "New password At least 8 characters…" - which is both wrong
             for a screen reader and impossible to address in a test. */}
         <PasswordField
           id="new"

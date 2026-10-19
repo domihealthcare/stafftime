@@ -6,7 +6,7 @@ export const WORK_FROM_HOME = 'wfh';
 /**
  * Which office a work-from-home shift is counted under, for reports and the
  * payroll export: the person's main office, or their first. Staff never see
- * it — the rota says "Work from home" — but every shift belongs to an office,
+ * it - the rota says "Work from home" - but every shift belongs to an office,
  * so the rota's office view, the dashboard and the export still add up.
  */
 export function homeOfficeOf(person: Pick<Employee, 'locations'> | undefined): string {
@@ -19,7 +19,7 @@ export function homeOfficeOf(person: Pick<Employee, 'locations'> | undefined): s
 }
 
 /**
- * Where a shift is: one of the offices, or — for a shift with somebody on it —
+ * Where a shift is: one of the offices, or - for a shift with somebody on it -
  * Work from home (Dominguez, September 2026). It replaced a "Work from home"
  * tick box next to an office list, which made a manager pick an office for a
  * shift that was not at one.

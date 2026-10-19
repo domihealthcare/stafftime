@@ -148,18 +148,18 @@ interface Checked {
 export type Scope = 'one' | 'following';
 
 /**
- * Events: office meetings, provider meetings, a wellness day — and closures:
+ * Events: office meetings, provider meetings, a wellness day - and closures:
  * Christmas, Christmas Eve from 1pm, one office shut for a burst pipe.
  *
  * On the schedule and on people's phones, and nowhere near the hours. An event
- * is not a shift — it adds nothing to scheduled hours, overtime or payroll
+ * is not a shift - it adds nothing to scheduled hours, overtime or payroll
  * (decided with Dominguez, September 2026). Somebody paid to be there clocks
  * in as usual. A closure is for both offices or one; a shift that lands in it
  * is warned about on the rota, in its forms and in the round-up, never
  * refused, and pay is untouched (holiday pay is an open question).
  *
- * An event can repeat — every 2 weeks on Friday, every week on Monday and
- * Friday, the first Friday of the month — and be for any mix of job roles,
+ * An event can repeat - every 2 weeks on Friday, every week on Monday and
+ * Friday, the first Friday of the month - and be for any mix of job roles,
  * offices and people. A series is written out one row per date, so one date
  * can be moved or removed on its own, or everything from one date on.
  *
@@ -189,7 +189,7 @@ export class EventsService {
 
     const manages = viewer.role === Role.MANAGER || viewer.role === Role.ADMIN;
     // A rep's cell phone: managers, and job roles that make the calls (Front
-    // Desk — Dominguez, October 2026).
+    // Desk - Dominguez, October 2026).
     const seesCell =
       manages ||
       (await this.prisma.jobRole.count({
@@ -260,7 +260,7 @@ export class EventsService {
   }
 
   /**
-   * Changes one date, or — `following` — this date and every one after it in
+   * Changes one date, or - `following` - this date and every one after it in
    * its series. Adding a repeat to a one-off event makes it the first date of
    * a new series.
    */
@@ -294,7 +294,7 @@ export class EventsService {
         after,
         actor,
         cleared > 0
-          ? `${whenAndWhere(after)}. The time changed — say again whether you can go.`
+          ? `${whenAndWhere(after)}. The time changed - say again whether you can go.`
           : undefined,
       );
       return { ...present(after), created: 1 };
@@ -316,7 +316,7 @@ export class EventsService {
     return { ...present(first), created: count };
   }
 
-  /// Removes one date, or — `following` — this date and every one after it.
+  /// Removes one date, or - `following` - this date and every one after it.
   async remove(id: string, actor: AuthUser, scope: Scope = 'one') {
     const row = await this.require(id);
     const upcoming = row.endsAt > new Date();
@@ -337,7 +337,7 @@ export class EventsService {
       notice(
         row,
         'cancelled',
-        removed > 1 ? `From ${describeWhen(row)} on — ${removed} dates.` : undefined,
+        removed > 1 ? `From ${describeWhen(row)} on - ${removed} dates.` : undefined,
       ),
     );
     return { deleted: removed };
@@ -386,7 +386,7 @@ export class EventsService {
   }
 
   /// The same closure or holiday on the same date in each of the next `years`
-  /// years, as separate one-off entries — a moving holiday on its own day
+  /// years, as separate one-off entries - a moving holiday on its own day
   /// each year (`moving-holidays.ts`), and anything still wrong can be fixed
   /// one year at a time. Returns how many were made.
   private async repeatClosureYearly(row: EventRow, years: number, actor: AuthUser) {
@@ -421,8 +421,8 @@ export class EventsService {
 
   /**
    * "Copy last year's holidays": every closure and holiday that started in
-   * `fromYear`, put on the same date the year after — same times, same
-   * offices — for a manager to check. Holidays that move (Thanksgiving) land on the wrong
+   * `fromYear`, put on the same date the year after - same times, same
+   * offices - for a manager to check. Holidays that move (Thanksgiving) land on the wrong
    * day and are fixed by hand; that is why nothing repeats by itself.
    *
    * A closure already there (same name, same start) is skipped, so pressing
@@ -446,13 +446,13 @@ export class EventsService {
     const created: EventRow[] = [];
     const skipped: string[] = [];
     /// Moving holidays put on their new day, and fixed ones landing on a
-    /// weekend — said, so the manager can check.
+    /// weekend - said, so the manager can check.
     const movedDays: string[] = [];
     const onWeekend: string[] = [];
     for (const row of rows) {
       const moved = closureInYear(row, toYear);
       if (!moved) {
-        skipped.push(`${row.title} — 29 February has no date in ${toYear}`);
+        skipped.push(`${row.title} - 29 February has no date in ${toYear}`);
         continue;
       }
       const { startsAt, endsAt } = moved;
@@ -465,16 +465,16 @@ export class EventsService {
         },
       });
       if (already) {
-        skipped.push(`${row.title} — already on ${toYear}'s calendar`);
+        skipped.push(`${row.title} - already on ${toYear}'s calendar`);
         continue;
       }
 
       const before = localDateIn(row.startsAt, PRACTICE_ZONE);
       const after = localDateIn(startsAt, PRACTICE_ZONE);
       if (movedFirstDay(row.title, before, toYear)) {
-        movedDays.push(`${row.title} — ${shortDay(before)} → ${shortDay(after)}`);
+        movedDays.push(`${row.title} - ${shortDay(before)} → ${shortDay(after)}`);
       } else if (weekendDay(after)) {
-        onWeekend.push(`${row.title} — ${shortDay(after)} is a ${weekendDay(after)}`);
+        onWeekend.push(`${row.title} - ${shortDay(after)} is a ${weekendDay(after)}`);
       }
 
       created.push(
@@ -527,7 +527,7 @@ export class EventsService {
   }
 
   /**
-   * Writes an event — one row, or one row per date of its series — with its
+   * Writes an event - one row, or one row per date of its series - with its
    * invitees. Ids are made here so the whole series goes in two statements
    * rather than one round trip per date.
    */
@@ -588,7 +588,7 @@ export class EventsService {
 
   /**
    * Takes a date and everything after it out of its series, and ends the
-   * series the day before — or removes the series if nothing is left of it.
+   * series the day before - or removes the series if nothing is left of it.
    * A one-off event is just removed. Returns how many dates went.
    */
   private async cutFrom(tx: Prisma.TransactionClient, row: EventRow): Promise<number> {
@@ -681,7 +681,7 @@ export class EventsService {
     return people.map((person) => person.id);
   }
 
-  /// The events somebody is invited to — the same people `invited` counts.
+  /// The events somebody is invited to - the same people `invited` counts.
   private async visibleTo(employeeId: string): Promise<Prisma.PracticeEventWhereInput> {
     const person = await this.prisma.employee.findUnique({
       where: { id: employeeId },
@@ -749,16 +749,16 @@ export class EventsService {
           : holiday
             ? 'Name the holiday.'
             : diagnostic
-              ? 'Say which tests — "US + ECHO", "ANS + VNG".'
+              ? 'Say which tests - "US + ECHO", "ANS + VNG".'
               : 'Give the event a name.',
       );
     }
     if (holiday && !dto.allDay) {
-      throw new BadRequestException('A holiday is a whole day — tick "All day".');
+      throw new BadRequestException('A holiday is a whole day - tick "All day".');
     }
     if (holiday && dto.repeat) {
       throw new BadRequestException(
-        'A holiday does not repeat within the year — use "Repeat every year" instead.',
+        'A holiday does not repeat within the year - use "Repeat every year" instead.',
       );
     }
     let atLocationId: string | null = null;
@@ -773,7 +773,7 @@ export class EventsService {
       (dto.audience === EventAudience.JOB_ROLE || dto.audience === EventAudience.CHOSEN)
     ) {
       throw new BadRequestException(
-        'A closure is for both offices or one office — not a job role or a list of people.',
+        'A closure is for both offices or one office - not a job role or a list of people.',
       );
     }
 
@@ -806,7 +806,7 @@ export class EventsService {
       }
       if (endsAt.getTime() - startsAt.getTime() > MAX_TIMED_DAYS * 86_400_000) {
         throw new BadRequestException(
-          `A timed event can last at most ${MAX_TIMED_DAYS} days — tick "All day" for longer.`,
+          `A timed event can last at most ${MAX_TIMED_DAYS} days - tick "All day" for longer.`,
         );
       }
     }
@@ -905,8 +905,8 @@ export class EventsService {
 
 /**
  * A pasted video call link, or null. Only a real https address is kept: the
- * app shows it as a button and puts it on people's phones, so anything else —
- * a javascript: address above all — must never get that far. A database check
+ * app shows it as a button and puts it on people's phones, so anything else -
+ * a javascript: address above all - must never get that far. A database check
  * says the same.
  */
 function checkMeetingUrl(value: string | undefined): string | null {
@@ -929,7 +929,7 @@ function checkMeetingUrl(value: string | undefined): string | null {
 /// Who an event is for, as an employee filter.
 export function audienceWhere(row: AudienceOf): Prisma.EmployeeWhereInput {
   // Everybody sees a rep lunch on the calendar, but it is told only to the
-  // people on the rota at its office that day — a published shift there, not
+  // people on the rota at its office that day - a published shift there, not
   // from home (Dominguez, October 2026: "why am I being notified of lunches of
   // locations i am not scheduled for?"). Booked before the rota is out, it
   // reaches them the evening before instead (`lunch-notices.service.ts`). A
@@ -967,7 +967,7 @@ export function audienceWhere(row: AudienceOf): Prisma.EmployeeWhereInput {
   return { employmentStatus: WORKING };
 }
 
-/// The people on a chosen list — any mix of people, job roles and offices —
+/// The people on a chosen list - any mix of people, job roles and offices -
 /// as an employee filter. Also asked by "Find a time" before anything is saved.
 export function chosenWhere(list: InviteeIds): Prisma.EmployeeWhereInput {
   const any: Prisma.EmployeeWhereInput[] = [];
@@ -1154,7 +1154,7 @@ function notice(
               // Your office is no longer the one shut, or it is not shut at all.
               dropped: `Open as usual: ${row.title}`,
               cancelled: `Open as usual: ${row.title}`,
-              reminder: `Tomorrow — ${closed.toLowerCase()}: ${row.title}`,
+              reminder: `Tomorrow - ${closed.toLowerCase()}: ${row.title}`,
             }
           : {
               added: `New event: ${row.title}`,
@@ -1187,7 +1187,7 @@ export function scheduleLink(row: Pick<EventRow, 'startsAt'>): string {
 /// times, whatever the clocks are doing), or null for a 29 February.
 function closureInYear(row: EventRow, year: number): { startsAt: Date; endsAt: Date } | null {
   const firstDay = localDateIn(row.startsAt, PRACTICE_ZONE);
-  // A moving holiday — Thanksgiving, Memorial Day — goes to its day that
+  // A moving holiday - Thanksgiving, Memorial Day - goes to its day that
   // year (see moving-holidays.ts); anything else keeps its date.
   const movedTo = movedFirstDay(row.title, firstDay, year);
   if (!movedTo && firstDay.slice(5) === '02-29') return null;

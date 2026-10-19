@@ -27,7 +27,7 @@ async function signIn(page, email) {
 }
 
 // Next week's Monday on the Schedule, whose weeks run Sunday to Saturday on
-// New Jersey's calendar — not Monday-based on the test machine's clock, which
+// New Jersey's calendar - not Monday-based on the test machine's clock, which
 // on a Sunday (or a Saturday evening in UTC) picked a day still in this week.
 const pad = (n) => String(n).padStart(2, '0');
 const ymd = (d) => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;

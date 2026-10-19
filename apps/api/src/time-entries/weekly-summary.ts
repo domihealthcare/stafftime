@@ -1,9 +1,9 @@
 import { PRACTICE_ZONE } from '../common/util/zoned-time.util';
 
 /**
- * "Your week" (October 2026, Dominguez — a "smarter" idea, with an off switch
- * like "You're on tomorrow"). On Sunday evening — the first day of the week on
- * screen — each person hears the hours they worked last week and the shifts
+ * "Your week" (October 2026, Dominguez - a "smarter" idea, with an off switch
+ * like "You're on tomorrow"). On Sunday evening - the first day of the week on
+ * screen - each person hears the hours they worked last week and the shifts
  * they are down for this week. The words, kept apart from the sending.
  */
 
@@ -22,7 +22,7 @@ export interface WeeklySummaryInput {
   lastFrom: string;
   lastTo: string;
   hours: number;
-  /// Clock-outs the app made at midnight, not corrected yet — left out.
+  /// Clock-outs the app made at midnight, not corrected yet - left out.
   toCorrect: number;
   shifts: SummaryShift[];
   /// False for somebody who does not clock in (`Employee.clocksIn`): with no
@@ -71,7 +71,7 @@ export function weeklySummaryWords(
         ]),
     ...(input.toCorrect > 0
       ? [
-          `${input.toCorrect} ${input.toCorrect === 1 ? 'day is' : 'days are'} not counted yet — clocked out by the app at midnight, for a manager to correct.`,
+          `${input.toCorrect} ${input.toCorrect === 1 ? 'day is' : 'days are'} not counted yet - clocked out by the app at midnight, for a manager to correct.`,
         ]
       : []),
     shifts === 0 ? 'Nothing on the rota for you this week yet.' : 'This week:',

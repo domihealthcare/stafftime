@@ -6,9 +6,9 @@ import { useIsManager, useSession } from '../lib/session';
 import { helpTopicsFor } from './HelpPage';
 
 /**
- * "Ask Domi Staff" (October 2026, Dominguez — the AI half of making the app
+ * "Ask Domi Staff" (October 2026, Dominguez - the AI half of making the app
  * smarter): a question in plain words, answered by Claude from what the person
- * can already see in the app. The conversation lives on this screen only —
+ * can already see in the app. The conversation lives on this screen only -
  * nothing is kept, here or on the server; leaving the page ends it.
  * See `apps/api/src/assistant/`.
  */
@@ -80,7 +80,7 @@ export function AskPage() {
     <div className="max-w-3xl">
       <PageHeading
         title="Ask Domi Staff"
-        subtitle="Ask about your shifts, time off, the practice calendar, who is in, or how to do something in the app — in your own words."
+        subtitle="Ask about your shifts, time off, the practice calendar, who is in, or how to do something in the app - in your own words."
       />
 
       {!enabled ? (
@@ -172,9 +172,9 @@ export function AskPage() {
 
           <p className="mt-3 text-xs text-slate-600" data-testid="ask-privacy">
             Answers come from Claude, an AI service run by Anthropic. Your question, this
-            conversation and what it looks up to answer you — the Help guide, your own shifts and
+            conversation and what it looks up to answer you - the Help guide, your own shifts and
             time off, the calendar, colleagues&rsquo; names and work contact details
-            {isManager ? ', and for managers the rota and time off requests' : ''} — are sent to it.
+            {isManager ? ', and for managers the rota and time off requests' : ''} - are sent to it.
             Nothing is kept here: leaving this page ends the conversation. It only looks things up;
             it cannot change anything. Never type patient details.
             {left !== null && <> {left} uses of the AI helpers left today.</>}

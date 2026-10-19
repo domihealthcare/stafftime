@@ -5,7 +5,7 @@ import type { ReadBooking } from '../lib/types';
 import { buttonClass } from './ui';
 
 /**
- * "Fill this in from a message" (October 2026, Dominguez — an AI idea): a
+ * "Fill this in from a message" (October 2026, Dominguez - an AI idea): a
  * rep's email or text pasted in, and the calendar's form filled from it to
  * check before saving. Only the pasted words are sent; the office and rep
  * are found in the app's own lists on the server. Nothing is saved here.
@@ -22,7 +22,7 @@ export function BookingPaste({ onRead }: { onRead: (booking: ReadBooking) => voi
     try {
       const { booking } = await api.readBooking(text.trim());
       if (!booking) {
-        setProblem('Could not read that one — fill the form in by hand.');
+        setProblem('Could not read that one - fill the form in by hand.');
         return;
       }
       onRead(booking);
@@ -53,7 +53,7 @@ export function BookingPaste({ onRead }: { onRead: (booking: ReadBooking) => voi
     >
       <label className="block text-sm">
         <span className="mb-1 block font-medium text-slate-700">
-          Paste the email or text — a rep booking a lunch, a diagnostics day, a meeting
+          Paste the email or text - a rep booking a lunch, a diagnostics day, a meeting
         </span>
         <textarea
           aria-label="The message"
@@ -61,7 +61,7 @@ export function BookingPaste({ onRead }: { onRead: (booking: ReadBooking) => voi
           onChange={(event) => setText(event.target.value)}
           rows={4}
           maxLength={5000}
-          placeholder="Hi! Sarah from Pfizer — can I bring lunch to West New York next Tuesday at 12:30? Eliquis."
+          placeholder="Hi! Sarah from Pfizer - can I bring lunch to West New York next Tuesday at 12:30? Eliquis."
           className="w-full rounded-lg border border-slate-300 px-2 py-1.5 text-sm"
         />
       </label>

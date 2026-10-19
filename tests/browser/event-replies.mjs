@@ -19,7 +19,7 @@ const step = async (name, fn) => {
  *
  * A manager booking a meeting for Frankie and Max asks for a time; with both
  * on the rota next Wednesday 9 to 5, the best is 9:00 that morning, both at
- * work. Then each answers — Frankie can't go, Max is going — and both see
+ * work. Then each answers - Frankie can't go, Max is going - and both see
  * both answers (Dominguez: everybody it is for sees who is going). The
  * manager who made it hears that Frankie can't go. Moving it clears the
  * answers. Nobody else can answer, or learn it is there.

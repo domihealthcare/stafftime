@@ -15,7 +15,7 @@ import { unprintableCharacters } from '../common/printable';
  *
  * One list, used three ways: the checklist of what is missing beside the
  * buttons, the tick on each section in the progress bar, and the buttons
- * themselves — a PDF is only made when the list is empty.
+ * themselves - a PDF is only made when the list is empty.
  */
 
 export type SectionKey = 'requirements' | 'visit' | ElementKey;
@@ -115,7 +115,7 @@ export function validate(form: AssessmentForm, today: string): Problem[] {
       'Tick to confirm it was completed at a prior visit and reviewed today.',
     );
   }
-  // Completed at a prior visit, an element's own answers are optional — the
+  // Completed at a prior visit, an element's own answers are optional - the
   // statement is enough (Dominguez, September 2026). Driving and the care
   // plan are always required.
   const { A, B, C, D, E, F, G, H, I, J } = form;

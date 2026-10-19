@@ -49,11 +49,17 @@ export class CalendarController {
     return { payDays: await this.calendar.payDays(query.from, query.to) };
   }
 
+  /// Where the providers are, by day: office or telemedicine. Anybody signed in.
+  @Get('providers')
+  providers(@Query() query: PayDaysQuery) {
+    return this.calendar.providerPlaces(query.from, query.to);
+  }
+
   /**
    * The feed itself.
    *
    * Public because a calendar app cannot send a session cookie or an auth
-   * header — the unguessable token in the path is the credential. `.ics` is in
+   * header - the unguessable token in the path is the credential. `.ics` is in
    * the path because some clients decide how to handle a subscription by
    * extension rather than content type.
    */

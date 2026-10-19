@@ -5,7 +5,7 @@ import type { Employee, JobRole, Location } from '../lib/types';
 
 /**
  * Who an event is for, as Dominguez asked (September 2026): one searchable
- * box where any mix is added — "Providers, Kayla, Angelina" — or Everyone.
+ * box where any mix is added - "Providers, Kayla, Angelina" - or Everyone.
  *
  * Type part of a name, a job role or an office; pick it from the list; it
  * becomes a tag with an ✕. Arrow keys and Enter work as well as the mouse,

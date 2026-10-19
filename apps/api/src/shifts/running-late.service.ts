@@ -7,13 +7,13 @@ import { PrismaService } from '../prisma/prisma.service';
 import { LATE_CHOICES, LATE_FROM_MINUTES_BEFORE, runningLateWords } from './running-late';
 
 /**
- * "Running late" (October 2026, Dominguez — a "smarter" idea): from Home,
+ * "Running late" (October 2026, Dominguez - a "smarter" idea): from Home,
  * before or during a shift they have not clocked in for, somebody tells the
  * managers of that office they will be about 10, 20, 30, 45 or 60 minutes
  * late. On the bell (and phones with notifications on), not by email. Saying
  * it again changes the time and tells them again. The timesheet shows it
  * beside the late flag, and it holds back the no-show alert until that time
- * has passed (`PunchRemindersService`). It excuses nothing by itself — the
+ * has passed (`PunchRemindersService`). It excuses nothing by itself - the
  * entry is still flagged late; it says they let somebody know.
  */
 @Injectable()

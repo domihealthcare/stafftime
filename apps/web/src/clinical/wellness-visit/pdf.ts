@@ -46,8 +46,8 @@ const QUESTION_WIDTH = 300;
 const WORDS = {
   en: {
     form: 'Annual Wellness Supplement Form',
-    questionnaire: 'Annual Wellness Visit — Questionnaire',
-    preventive: 'Annual Wellness Visit — Preventive Services',
+    questionnaire: 'Annual Wellness Visit - Questionnaire',
+    preventive: 'Annual Wellness Visit - Preventive Services',
     patient: 'Patient',
     dob: 'Date of birth',
     visit: 'Date of visit',
@@ -69,7 +69,7 @@ const WORDS = {
   },
   es: {
     form: 'Formulario Suplementario de Bienestar Anual',
-    questionnaire: 'Visita Anual de Bienestar — Cuestionario',
+    questionnaire: 'Visita Anual de Bienestar - Cuestionario',
     patient: 'Paciente',
     dob: 'Fecha de nacimiento',
     visit: 'Fecha de la visita',
@@ -91,7 +91,7 @@ const WORDS = {
   },
 };
 
-/// "10-01-2026 AWV Questionnaire.pdf" — by the visit date, nothing about the
+/// "10-01-2026 AWV Questionnaire.pdf" - by the visit date, nothing about the
 /// patient.
 export const questionnaireFilename = (form: WellnessForm) =>
   pdfFilename(form.patient.visitDate, 'AWV Questionnaire');
@@ -113,7 +113,7 @@ function stampLines(form: WellnessForm): string[] {
 // ------------------------------------------------------ page 1: questionnaire
 
 /// "Who do you live with?" → "who do you live with?", "¿Con quién vive?" →
-/// "¿con quién vive?" — to follow the answer mid-sentence.
+/// "¿con quién vive?" - to follow the answer mid-sentence.
 const lowerFirst = (text: string) =>
   text.replace(
     /^([¿¡]?)(\p{L})/u,
@@ -217,7 +217,7 @@ export async function questionnairePdf(
       ? `${WORDS.en.confidential} / ${WORDS.es.confidential}`
       : WORDS.en.confidential;
   return pdf.finish({
-    title: `${LETTERHEAD.name} — ${title}`,
+    title: `${LETTERHEAD.name} - ${title}`,
     lines: stampLines(form),
     footer: `${confidential}. ${stamp}`,
   });
@@ -229,7 +229,7 @@ export async function questionnairePdf(
 export function serviceText(form: WellnessForm, key: string): string {
   const answer = form.services[key];
   const service = SERVICES.find((s) => s.key === key);
-  const parts = [COMPLETED.find((c) => c.value === answer.completed)?.label ?? '—'];
+  const parts = [COMPLETED.find((c) => c.value === answer.completed)?.label ?? '-'];
   if (answer.completed === YES) {
     if (service?.hasResult) {
       parts.push(
@@ -270,7 +270,7 @@ export async function preventivePdf(
   pdf.field(words.signature, words.signedBy(who, stamp));
 
   return pdf.finish({
-    title: `${LETTERHEAD.name} — ${words.preventive}`,
+    title: `${LETTERHEAD.name} - ${words.preventive}`,
     lines: stampLines(form),
     footer: `${words.confidential}. ${stamp}`,
   });

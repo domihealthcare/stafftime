@@ -73,7 +73,7 @@ describe('captured location is not part of a timesheet', () => {
 
     for (const field of CAPTURED) expect(select).not.toHaveProperty(field);
 
-    // What the check concluded is still there — that is the useful part.
+    // What the check concluded is still there - that is the useful part.
     expect(select).toHaveProperty('clockInVerification', true);
   });
 
@@ -87,7 +87,7 @@ describe('captured location is not part of a timesheet', () => {
     const trail = await service.locationTrail('entry-1', admin);
     expect(trail.clockInLatitude).toBe('40.804100');
     // Not old enough for the sweep, and it has its coordinates, so nothing was
-    // cleared — the caller can tell "never captured" from "aged out".
+    // cleared - the caller can tell "never captured" from "aged out".
     expect(trail.cleared).toBe(false);
   });
 

@@ -5,11 +5,11 @@ import { SERVICES, SOCIAL_HISTORY, SPMSQ, type PdfLanguage } from './config';
  *
  * Like the other clinical forms it lives only in the page's memory (React
  * state) and is gone when the page closes. Nothing here is ever sent to the
- * server or written to the browser's storage — see docs/architecture.md,
+ * server or written to the browser's storage - see docs/architecture.md,
  * "The clinical forms".
  *
  * The two pages are filled in separately, usually by two people on two
- * devices — the provider page 1, the Medical Assistant page 2 — and each
+ * devices - the provider page 1, the Medical Assistant page 2 - and each
  * makes its own PDF. Only the patient's line is shared, for when one person
  * does both.
  */

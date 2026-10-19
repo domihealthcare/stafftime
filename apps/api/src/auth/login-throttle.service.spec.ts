@@ -61,7 +61,7 @@ describe('LoginThrottleService', () => {
   });
 
   it('throttles an address working through a list of accounts', async () => {
-    // Four accounts, one attempt each — far fewer failures than the office
+    // Four accounts, one attempt each - far fewer failures than the office
     // above, and a much clearer attack.
     const { service } = build([
       ...against('a@domihealthcare.com', 1),

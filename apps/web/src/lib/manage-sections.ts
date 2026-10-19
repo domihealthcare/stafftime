@@ -1,10 +1,10 @@
 /**
  * What Manage holds, grouped (October 2026, Dominguez: "lets cut down the
- * manage options — job roles can be with staff, locations and kiosks together,
+ * manage options - job roles can be with staff, locations and kiosks together,
  * etc."). Fifteen separate screens were a long list to hunt through, so they
  * sit under five headings and each heading opens one of its screens with a
  * strip of tabs to the rest. The screens, their addresses and what each
- * person may open are unchanged — only where they are reached from.
+ * person may open are unchanged - only where they are reached from.
  */
 
 /// Who may open a screen: managers and admins, admins only, or the people an

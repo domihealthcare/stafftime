@@ -324,7 +324,7 @@ const STATE_BADGE: Record<
 };
 
 /**
- * One person against what their job roles ask for — required first. A
+ * One person against what their job roles ask for - required first. A
  * missing optional one is shown plainly, never in red: it is worth having,
  * not chased.
  */
@@ -396,7 +396,7 @@ function StandingCard({
 /**
  * The practice's list of license types, and which job roles need each one
  * (Dominguez, September 2026). Managers add one, say how often it is renewed
- * and who needs it — required or optional — and change it as things change.
+ * and who needs it - required or optional - and change it as things change.
  */
 function CredentialTypesPanel({
   types,
@@ -617,7 +617,7 @@ function CredentialTypeEditor({
           />
         </label>
         <p className="self-end text-xs text-slate-500 sm:col-span-2">
-          With it, recording one only needs the date it was done — the expiry is worked out. Leave
+          With it, recording one only needs the date it was done - the expiry is worked out. Leave
           it empty when it varies.
         </p>
       </div>
@@ -979,7 +979,7 @@ function CredentialForm({
             <span className="mt-1 block text-xs text-slate-500">
               {worksOutExpiry
                 ? `Worked out: ${type.renewalMonths} months after the date it was done.`
-                : `Renewed every ${type.renewalMonths} months — the date it was done is enough.`}
+                : `Renewed every ${type.renewalMonths} months - the date it was done is enough.`}
             </span>
           )}
         </label>
@@ -998,7 +998,7 @@ function CredentialForm({
       </div>
 
       <p className="mt-3 text-xs text-slate-500">
-        Dates only. The license number and the document itself belong in the personnel file — this
+        Dates only. The license number and the document itself belong in the personnel file - this
         screen exists so nothing lapses unnoticed, not to hold the paperwork.
       </p>
 

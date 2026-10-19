@@ -16,7 +16,7 @@ const HEADINGS: Record<keyof Attention, string> = {
   openShifts: 'Open shifts nobody is on yet',
   shiftsInClosures: 'Shifts while an office is closed',
   unapprovedHours: 'Hours nobody has approved yet',
-  handEntries: 'Hours entered by hand — find out why',
+  handEntries: 'Hours entered by hand - find out why',
   missingPunches: 'Clock-outs to correct',
   missedShifts: 'Shifts with no clock-in',
   payrollDue: 'Payroll is due',

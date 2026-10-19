@@ -79,7 +79,7 @@ export interface DriveDownload {
  * the link (October 2026).
  *
  * The folder is shared with the robot alone, not "anyone with the link", and
- * staff open its files through the app — so nobody needs a Google account, and
+ * staff open its files through the app - so nobody needs a Google account, and
  * joining or leaving the practice changes nothing in Drive. A file passes
  * through on its way to the browser and is never kept, which is what keeps it
  * inside *Data this app does not hold*.
@@ -134,7 +134,7 @@ export class GoogleDriveClient {
   }
 
   /**
-   * The file, if it is somewhere inside the folder — found by walking up from
+   * The file, if it is somewhere inside the folder - found by walking up from
    * the file, never trusting the browser to say where it is. The robot may
    * well see other folders, shared for other job roles; this is what keeps a
    * link's files to the people who may see the link.
@@ -173,7 +173,7 @@ export class GoogleDriveClient {
     }
   }
 
-  /// The file's contents, for the browser — Google's own documents as a PDF.
+  /// The file's contents, for the browser - Google's own documents as a PDF.
   /// Only for a file `inside` has found.
   async open(fileId: string): Promise<DriveDownload> {
     const file = await this.meta(fileId);

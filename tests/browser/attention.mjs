@@ -1,6 +1,6 @@
 // The nightly round-up, shown on the screens instead of only in an email.
 //
-// The per-check logic is unit tested with the clock pinned — several of the
+// The per-check logic is unit tested with the clock pinned - several of the
 // checks only speak on certain days, which is not something a browser suite can
 // honestly arrange. What is tested here is the plumbing: that the endpoint is
 // manager-only, that a banner appears on the screen where the thing would be
@@ -51,7 +51,7 @@ await step('an employee is not offered the notification settings', async () => {
 // A quiet practice has next week's rota out. From Thursday to Sunday the
 // round-up rightly chases an office with nothing published for next week, and
 // whether an office counts as "rota'd here recently" depends on what earlier
-// suites left behind — so without this the check below passed or failed by the
+// suites left behind - so without this the check below passed or failed by the
 // day of the week and the suite order. Removed again by run-all's reset.
 await step('next week is published at every office', () => admin.evaluate(async () => {
   const ok = async (r) => { if (!r.ok) throw new Error(await r.text()); return r.json(); };
@@ -115,7 +115,7 @@ await step('marking somebody as left raises it on the schedule', async () => {
     .click();
 
   // The screen hides former staff by default, so the card going away is what
-  // success looks like here — not a badge appearing on it.
+  // success looks like here - not a badge appearing on it.
   await card.waitFor({ state: 'detached', timeout: 15000 });
 
   await goTo(admin, 'Schedule');
@@ -245,7 +245,7 @@ await step('changing the threshold changes what the rota warns about', async () 
   await admin.getByText('Saved.', { exact: true }).waitFor({ timeout: 15000 });
 
   // The seeded rota is a single 8-hour shift today, which is over 20 for
-  // nobody — so build a week that clears the new line but not the old one.
+  // nobody - so build a week that clears the new line but not the old one.
   await goTo(admin, 'Schedule');
   await admin.getByRole('button', { name: '+ Add', exact: true }).click();
   await admin.getByRole('menuitem', { name: 'Repeating shifts', exact: true }).click();
@@ -263,7 +263,7 @@ await step('changing the threshold changes what the rota warns about', async () 
   // 5 × 6 hours = 30: nothing at all under the default 40, ten hours of
   // overtime under the 20 just set.
   //
-  // Navigated by month rather than by week — the week label reads
+  // Navigated by month rather than by week - the week label reads
   // "Mar 1 – Mar 7, 2027", so matching on the month name means stepping through
   // twenty-odd weeks and hoping the loop bound is generous enough.
   await admin.getByRole('button', { name: 'Month', exact: true }).click();

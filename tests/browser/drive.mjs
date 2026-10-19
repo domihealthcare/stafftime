@@ -159,7 +159,7 @@ await step('manager creates a shift', async () => {
   await page.getByLabel('Starts').fill(`${createdDay}T09:00`);
   await page.getByLabel('Ends').fill(`${createdDay}T17:00`);
   // Wait for the save itself before moving on. Saving checks overtime first,
-  // so the POST comes a round trip after the click — navigating away on the
+  // so the POST comes a round trip after the click - navigating away on the
   // strength of a button that is always visible could abandon it unsent.
   const saved = page.waitForResponse(
     (r) => r.url().endsWith('/api/shifts') && r.request().method() === 'POST',

@@ -2,7 +2,7 @@ import { locale } from './i18n';
 /**
  * Hours on the practice's clock, in New Jersey, whatever the browser's own
  * time zone. For the few places that send the server a bare "HH:MM" for it to
- * read as New Jersey time — the shift pop-up's Hours and place — so a laptop
+ * read as New Jersey time - the shift pop-up's Hours and place - so a laptop
  * set to another zone cannot move a shift by the difference on every save
  * (October 2026: a browser in UTC moved one 4 hours each time).
  *
@@ -61,7 +61,7 @@ export function atPracticeTime(onDayOf: string, time: string): string {
 }
 
 /// Today on the practice's calendar, as the first and last instants of the
-/// day — what Home asks the server for. Not the browser's day: the app's
+/// day - what Home asks the server for. Not the browser's day: the app's
 /// "today" is New Jersey's, and a browser in another zone (CI's, in UTC)
 /// otherwise lost a shift that ran past its own midnight (October 2026).
 export function practiceToday(now: Date = new Date()): { start: string; end: string } {

@@ -140,7 +140,7 @@ describe('AvailabilityService', () => {
       const tuesdays = build({ series: [series([2])] });
       await tuesdays.service.create({ kind: UnavailabilityKind.WEEKLY, weekday: 2 }, frankie, NOW);
       expect(tuesdays.notifications.availabilityClash).toHaveBeenCalledWith('emp-1', [
-        'Frankie Front-Desk — regular Tuesdays 9:00 AM–5:00 PM at North Bergen, but not available Tuesdays (all day) (from Tue, Sep 29)',
+        'Frankie Front-Desk - regular Tuesdays 9:00 AM–5:00 PM at North Bergen, but not available Tuesdays (all day) (from Tue, Sep 29)',
       ]);
 
       // The same, against a regular Monday shift: nothing to say.

@@ -1,7 +1,7 @@
 import { describeRule, occurrenceDates, ruleProblem } from './recurrence';
 
 describe('occurrenceDates', () => {
-  it('lands every 2 weeks on a Friday — the office meeting', () => {
+  it('lands every 2 weeks on a Friday - the office meeting', () => {
     expect(
       occurrenceDates('2026-10-02', {
         frequency: 'WEEKLY',
@@ -12,7 +12,7 @@ describe('occurrenceDates', () => {
     ).toEqual(['2026-10-02', '2026-10-16', '2026-10-30', '2026-11-13']);
   });
 
-  it('alternates with a second series starting the week after — the admin meeting', () => {
+  it('alternates with a second series starting the week after - the admin meeting', () => {
     expect(
       occurrenceDates('2026-10-09', {
         frequency: 'WEEKLY',
@@ -47,7 +47,7 @@ describe('occurrenceDates', () => {
     ).toEqual(['2026-10-05', '2026-10-12']);
   });
 
-  it('runs straight through the clocks going back — dates, not instants', () => {
+  it('runs straight through the clocks going back - dates, not instants', () => {
     expect(
       occurrenceDates('2026-10-30', {
         frequency: 'WEEKLY',

@@ -17,7 +17,7 @@ describe('moving holidays', () => {
   it('moves a holiday that was on its day, by its name', () => {
     expect(movedFirstDay('Thanksgiving', '2026-11-26', 2027)).toBe('2027-11-25');
     expect(movedFirstDay('Day after Thanksgiving', '2026-11-27', 2027)).toBe('2027-11-26');
-    expect(movedFirstDay('Office closed — Memorial Day', '2026-05-25', 2027)).toBe('2027-05-31');
+    expect(movedFirstDay('Office closed - Memorial Day', '2026-05-25', 2027)).toBe('2027-05-31');
     expect(movedFirstDay('Labor Day', '2026-09-07', 2027)).toBe('2027-09-06');
     expect(movedFirstDay('MLK Day', '2026-01-19', 2027)).toBe('2027-01-18');
     expect(movedFirstDay("Presidents' Day", '2026-02-16', 2027)).toBe('2027-02-15');

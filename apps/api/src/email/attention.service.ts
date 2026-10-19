@@ -57,7 +57,7 @@ const ROTA_RECENTLY_USED_DAYS = 28;
 /// still true.
 const UNAPPROVED_HOURS_DAYS = 7;
 
-/// How far ahead an open shift — one nobody is on yet — gets flagged. Two
+/// How far ahead an open shift - one nobody is on yet - gets flagged. Two
 /// weeks: the rota being built and the one after it.
 const OPEN_SHIFT_HORIZON_DAYS = 14;
 
@@ -108,7 +108,7 @@ export interface DigestContents {
   closingGaps: string[];
   suppliesNeeded: string[];
   newSuggestions: string[];
-  /// The same thing again and again — late most Mondays, forgetting to clock
+  /// The same thing again and again - late most Mondays, forgetting to clock
   /// out. Dashboard and email only, never a banner: see `punch-patterns.ts`.
   punchPatterns: string[];
   /// Heading past the overtime line this week on hours actually worked plus
@@ -116,7 +116,7 @@ export interface DigestContents {
   /// a banner: see `time-entries/overtime-forecast.ts`.
   overtimeHeading: string[];
   /// Too many from one job role off at once at one office, in the next two
-  /// weeks. Dashboard and email, and on the request — never a banner.
+  /// weeks. Dashboard and email, and on the request - never a banner.
   timeOffClashes: string[];
 }
 
@@ -125,7 +125,7 @@ export interface DigestContents {
  * looking: a licence that lapsed last week, a tablet that stopped working on
  * Tuesday, next week's rota still unpublished, a punch with no clock-out.
  *
- * One source of truth, read twice — by the nightly email and by the banners on
+ * One source of truth, read twice - by the nightly email and by the banners on
  * the screens. That sharing is the point. Two implementations would drift, and
  * the failure would be silent and embarrassing: an email that chases something
  * the screen says is fine, or the reverse.
@@ -219,7 +219,7 @@ export class AttentionService {
       }),
 
       // Clock-outs to correct: a punch still open from an earlier day (rare
-      // now — they are closed at midnight), and one the app clocked out at
+      // now - they are closed at midnight), and one the app clocked out at
       // midnight that no manager has corrected yet, however old.
       this.prisma.timeEntry.findMany({
         where: {
@@ -297,32 +297,32 @@ export class AttentionService {
 
     return {
       expiredCredentials: expired.map(
-        (row) => `${who(row.employee)} — ${row.name}, expired ${day(row.expiresOn)}`,
+        (row) => `${who(row.employee)} - ${row.name}, expired ${day(row.expiresOn)}`,
       ),
       expiringCredentials: expiring.map(
-        (row) => `${who(row.employee)} — ${row.name}, expires ${day(row.expiresOn)}`,
+        (row) => `${who(row.employee)} - ${row.name}, expires ${day(row.expiresOn)}`,
       ),
       overdueTasks: tasks.map(
         (row) =>
-          `${who(row.checklist.employee)} — ${row.title}${
+          `${who(row.checklist.employee)} - ${row.title}${
             row.dueAt ? `, due ${day(row.dueAt)}` : ''
           }`,
       ),
       missingPunches: punches.map((row) =>
         row.autoClockedOutAt
-          ? `${who(row.employee)} — clocked in ${clock(row.clockInAt)} on ${on(row.clockInAt)}, clocked out automatically at midnight; correct the time`
-          : `${who(row.employee)} — clocked in ${on(row.clockInAt)} and never out`,
+          ? `${who(row.employee)} - clocked in ${clock(row.clockInAt)} on ${on(row.clockInAt)}, clocked out automatically at midnight; correct the time`
+          : `${who(row.employee)} - clocked in ${on(row.clockInAt)} and never out`,
       ),
       missedShifts: missed.map(describeMissedShift),
       payrollDue,
       correctionsAsked: corrections.map(
-        (row) => `${who(row.employee)} — ${askedWords(row)} — “${row.reason}”`,
+        (row) => `${who(row.employee)} - ${askedWords(row)} - “${row.reason}”`,
       ),
       regularShiftClashes: regularClashes.map(describeRegularShiftClash),
       belowMinimum: shortDays.map(describeShortDay),
       undecidedTimeOff: timeOff.map(
         (row) =>
-          `${who(row.employee)} — ${day(row.startDate)}${
+          `${who(row.employee)} - ${day(row.startDate)}${
             row.startDate.getTime() === row.endDate.getTime() ? '' : ` to ${day(row.endDate)}`
           }`,
       ),
@@ -332,7 +332,7 @@ export class AttentionService {
       shiftsInClosures,
       ...closing,
       newSuggestions,
-      punchPatterns: patterns.map((pattern) => `${pattern.employeeName} — ${pattern.summary}`),
+      punchPatterns: patterns.map((pattern) => `${pattern.employeeName} - ${pattern.summary}`),
       timeOffClashes: clashes.map(describeClash),
       overtimeHeading: forecast.people.map((person) =>
         describeOvertimeHeading(person, forecast.thresholdHours),
@@ -342,9 +342,9 @@ export class AttentionService {
 
   /**
    * The suggestion box, as a count: how many are waiting and since which day
-   * (October 2026, Dominguez — "tell managers"). Never the words: the email
+   * (October 2026, Dominguez - "tell managers"). Never the words: the email
    * leaves the app, and what somebody wrote anonymously stays on the Surveys
-   * screen. Nor the bell — a notification is stamped to the minute, and the box
+   * screen. Nor the bell - a notification is stamped to the minute, and the box
    * promises to keep only the day. Until a manager marks them dealt with.
    */
   private async newSuggestions(day: (date: Date) => string): Promise<string[]> {
@@ -425,14 +425,14 @@ export class AttentionService {
 
     const names = await this.namesFor(unapproved.map((row) => row.employeeId));
 
-    // One line per person, earliest first — the oldest unapproved hours are the
+    // One line per person, earliest first - the oldest unapproved hours are the
     // ones closest to missing a pay run.
     const unapprovedHours = unapproved
       .filter((row) => row._min.clockInAt !== null)
       .sort((a, b) => a._min.clockInAt!.getTime() - b._min.clockInAt!.getTime())
       .map((row) => {
         const count = row._count._all;
-        return `${names.get(row.employeeId) ?? 'Somebody'} — ${count} shift${
+        return `${names.get(row.employeeId) ?? 'Somebody'} - ${count} shift${
           count === 1 ? '' : 's'
         } not approved, oldest ${on(row._min.clockInAt!)}`;
       });
@@ -442,7 +442,7 @@ export class AttentionService {
     // Keyed by id rather than by name. Two people called the same thing is
     // unlikely in a practice of twenty and not impossible anywhere, and the
     // failure would be a line naming one of them with the other's shifts
-    // counted in — a wrong number in an email that accuses somebody.
+    // counted in - a wrong number in an email that accuses somebody.
     const byLeaver = new Map<string, { name: string; first: Date; count: number }>();
     for (const shift of leaverShifts) {
       // The query asks for a terminated employee, so there always is one.
@@ -478,12 +478,12 @@ export class AttentionService {
         const mix = [...roles.entries()]
           .map(([role, n]) => (n > 1 ? `${role} ×${n}` : role))
           .join(', ');
-        return `${name} — ${count} open shift${count === 1 ? '' : 's'} nobody is on yet, the first ${on(first)} (${mix})`;
+        return `${name} - ${count} open shift${count === 1 ? '' : 's'} nobody is on yet, the first ${on(first)} (${mix})`;
       }),
       silentKiosks: kiosks.map((device) =>
         device.lastSeenAt
-          ? `${device.location.name} — the ${device.name} tablet was last used ${on(device.lastSeenAt)}`
-          : `${device.location.name} — the ${device.name} tablet has not been used since it was paired${
+          ? `${device.location.name} - the ${device.name} tablet was last used ${on(device.lastSeenAt)}`
+          : `${device.location.name} - the ${device.name} tablet has not been used since it was paired${
               device.pairedAt ? ` on ${on(device.pairedAt)}` : ''
             }`,
       ),
@@ -491,7 +491,7 @@ export class AttentionService {
       unapprovedHours,
       shiftsForLeavers: [...byLeaver.values()].map(
         ({ name, first, count }) =>
-          `${name} — ${count} shift${count === 1 ? '' : 's'} from ${on(
+          `${name} - ${count} shift${count === 1 ? '' : 's'} from ${on(
             first,
           )}, but marked as no longer employed`,
       ),
@@ -499,7 +499,7 @@ export class AttentionService {
   }
 
   /**
-   * Required licenses with nothing on file at all — "DEA registration" for a
+   * Required licenses with nothing on file at all - "DEA registration" for a
    * provider who has none recorded. Lapsed and lapsing ones are already listed
    * above; this is the gap nothing else would show. Optional ones are never
    * chased.
@@ -511,7 +511,7 @@ export class AttentionService {
         .filter((line) => line.required && line.state === 'MISSING')
         .map(
           (line) =>
-            `${person.employee.firstName} ${person.employee.lastName} — ${line.type.name}, required for ${line.forRoles.join(' and ')}, not on file`,
+            `${person.employee.firstName} ${person.employee.lastName} - ${line.type.name}, required for ${line.forRoles.join(' and ')}, not on file`,
         ),
     );
   }
@@ -521,7 +521,7 @@ export class AttentionService {
    *
    * No time window, unlike the rest: each one is a question to answer (a
    * habit, a phone setting, a problem with the app), and it stays on the list
-   * until somebody answers it — like a bug report (Dominguez, September 2026).
+   * until somebody answers it - like a bug report (Dominguez, September 2026).
    */
   private async handEntries(
     who: (person: { firstName: string; lastName: string }) => string,
@@ -551,14 +551,14 @@ export class AttentionService {
         : 'no reason given';
       const by = entry.enteredBy ? ` by ${who(entry.enteredBy)}` : '';
       const note = entry.handEntryNote ? ` (“${entry.handEntryNote}”)` : '';
-      return `${who(entry.employee)} — ${hours} hours on ${on(entry.clockInAt)} at ${
+      return `${who(entry.employee)} - ${hours} hours on ${on(entry.clockInAt)} at ${
         entry.location.name
       }, entered${by}: ${reason}${note}`;
     });
   }
 
   /**
-   * Shifts that land while their office is closed — somebody on the rota on
+   * Shifts that land while their office is closed - somebody on the rota on
    * Christmas Day, or at North Bergen the afternoon it shuts early. A closure
    * never refuses a shift (Dominguez, September 2026): somebody may really be
    * doing admin that day. So it is said here, one line per closure, until the
@@ -623,7 +623,7 @@ export class AttentionService {
           `${shift.employee ? `${shift.employee.firstName} ${shift.employee.lastName}` : 'an open shift'} at ${shift.location.name}`,
       );
       return [
-        `${closure.title}, ${on(closure.startsAt)} (${where}) — ${inside.length} shift${
+        `${closure.title}, ${on(closure.startsAt)} (${where}) - ${inside.length} shift${
           inside.length === 1 ? '' : 's'
         } scheduled: ${people.join(', ')}`,
       ];
@@ -631,8 +631,8 @@ export class AttentionService {
   }
 
   /**
-   * Closing checklists from yesterday and today with something missed — a
-   * task left unticked, a count short of its target, or no checklist at all —
+   * Closing checklists from yesterday and today with something missed - a
+   * task left unticked, a count short of its target, or no checklist at all -
    * and the supplies still waiting to be ordered, one line per office.
    *
    * Two days rather than "since a manager last looked": there is no "seen"
@@ -663,7 +663,7 @@ export class AttentionService {
 
     const closingGaps = records.map((record) => {
       const name = `${record.employee.preferredName ?? record.employee.firstName} ${record.employee.lastName}`;
-      const where = `${name} — ${record.location.name}, ${day(record.day)}`;
+      const where = `${name} - ${record.location.name}, ${day(record.day)}`;
       if (!record.submitted) return `${where}: clocked out without the closing checklist`;
       const missed = record.answers
         .filter(
@@ -694,7 +694,7 @@ export class AttentionService {
       ]);
     }
     const suppliesNeeded = [...byLocation.entries()].map(
-      ([place, items]) => `${place} — ${items.length} to order: ${items.join(', ')}`,
+      ([place, items]) => `${place} - ${items.length} to order: ${items.join(', ')}`,
     );
 
     return { closingGaps, suppliesNeeded };
@@ -712,7 +712,7 @@ export class AttentionService {
    * Only locations rota'd through the app recently are chased, so a location
    * that is scheduled some other way does not complain every night forever.
    *
-   * How close is close enough is the practice's to set — four days is a guess
+   * How close is close enough is the practice's to set - four days is a guess
    * about how far ahead Domi publishes, and a guess is a poor thing to bake in.
    */
   private async unpublishedRota(today: Date, day: (date: Date) => string): Promise<string[]> {
@@ -755,13 +755,13 @@ export class AttentionService {
           daysUntilMonday === 1 ? '' : 's'
         }`;
         return drafts > 0
-          ? `${location.name} — ${drafts} shift${drafts === 1 ? '' : 's'} drafted but not published for ${when}`
-          : `${location.name} — nothing scheduled for ${when}`;
+          ? `${location.name} - ${drafts} shift${drafts === 1 ? '' : 's'} drafted but not published for ${when}`
+          : `${location.name} - nothing scheduled for ${when}`;
       });
   }
 
   /**
-   * Time clocks that have gone quiet — not opened for a day, **and** a whole
+   * Time clocks that have gone quiet - not opened for a day, **and** a whole
    * published shift at their office has come and gone since.
    *
    * The second half is there because the time clock may be the front-desk

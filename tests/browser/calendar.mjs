@@ -27,7 +27,7 @@ page.on('pageerror', (e) => errors.push(`pageerror: ${e.message}`));
 await page.goto(`${BASE}/`, { waitUntil: 'networkidle' });
 
 await step('the test-environment banner shows before anyone signs in', async () => {
-  await page.getByText(/Test environment — nothing here is real/).waitFor({ timeout: 15000 });
+  await page.getByText(/Test environment - nothing here is real/).waitFor({ timeout: 15000 });
 });
 await page.screenshot({ path: `${OUT}/35-test-banner.png`, fullPage: true });
 

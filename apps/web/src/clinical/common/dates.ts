@@ -1,7 +1,7 @@
 /// Dates on the form are YYYY-MM-DD strings, as a date input gives them.
 
 /// The day number (days since 1 January 1970) of a real calendar date, or null
-/// for anything else — "2026-02-30" included.
+/// for anything else - "2026-02-30" included.
 export function dayNumber(value: string): number | null {
   if (!/^\d{4}-\d{2}-\d{2}$/.test(value)) return null;
   const time = Date.parse(`${value}T00:00:00Z`);
@@ -9,13 +9,13 @@ export function dayNumber(value: string): number | null {
   return Math.round(time / 86_400_000);
 }
 
-/// "09/29/2026" — how dates are written on the note.
+/// "09/29/2026" - how dates are written on the note.
 export function usDate(value: string): string {
   const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(value);
   return match ? `${match[2]}/${match[3]}/${match[1]}` : value;
 }
 
-/// A downloaded PDF's name: "10-01-2026 Care Plan.pdf" — the date as
+/// A downloaded PDF's name: "10-01-2026 Care Plan.pdf" - the date as
 /// MM-DD-YYYY and a short title (Dominguez, October 2026: "MM/DD/YYYY
 /// Title"; a "/" cannot be in a file name, so dashes). Nothing about the
 /// patient: the name shows in download lists and on shared devices.
@@ -74,7 +74,7 @@ const MONTHS = {
   ],
 };
 
-/// "September 29, 2026" / "29 de septiembre de 2026" — spelled out, so
+/// "September 29, 2026" / "29 de septiembre de 2026" - spelled out, so
 /// nobody has to guess which number is the month.
 export function longDate(iso: string, language: 'en' | 'es'): string {
   const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(iso);

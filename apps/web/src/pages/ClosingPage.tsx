@@ -201,7 +201,7 @@ function RecordCard({ record }: { record: ClosingRecord }) {
         <div className="mt-3 space-y-3 border-t border-slate-100 pt-3 text-sm">
           {!record.submitted && (
             <p className="text-rose-800">
-              Clocked out without the checklist — every line below is outstanding.
+              Clocked out without the checklist - every line below is outstanding.
             </p>
           )}
           {sections.map((section) => {
@@ -237,7 +237,7 @@ function RecordCard({ record }: { record: ClosingRecord }) {
                               {answer.target !== null ? ` (target ${answer.target})` : ''}
                             </strong>
                           )}
-                          {missed && <span className="sr-only"> — not ticked</span>}
+                          {missed && <span className="sr-only"> - not ticked</span>}
                         </span>
                       </li>
                     );
@@ -340,7 +340,7 @@ function Supplies() {
           <ul className="mt-2 space-y-1 text-sm text-slate-600">
             {done.map((row) => (
               <li key={row.id}>
-                {row.text} — {row.location.name},{' '}
+                {row.text} - {row.location.name},{' '}
                 {new Date(row.orderedAt!).toLocaleDateString(undefined, {
                   month: 'short',
                   day: 'numeric',
@@ -376,7 +376,7 @@ function EditLists() {
     void load();
   }, [load]);
 
-  /// Every change: do it, say so, and reload the whole list — small enough
+  /// Every change: do it, say so, and reload the whole list - small enough
   /// that the order on screen is always the order in the database.
   const change = async (work: () => Promise<unknown>, done: string) => {
     setError(null);

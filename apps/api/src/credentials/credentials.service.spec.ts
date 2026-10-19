@@ -9,7 +9,7 @@ const other = { id: 'emp-2', email: 'mo@domihealthcare.com', role: Role.EMPLOYEE
 
 const day = (value: string) => new Date(`${value}T00:00:00.000Z`);
 
-/// A whole day, the way `@db.Date` stores one — UTC midnight, not "now plus N
+/// A whole day, the way `@db.Date` stores one - UTC midnight, not "now plus N
 /// days", which carries a time of day and rounds unpredictably. Counted from
 /// the practice's today, as the service does: from 8pm in New Jersey the
 /// server's UTC date is already tomorrow, and these tests failed every evening.
@@ -99,7 +99,7 @@ describe('CredentialsService', () => {
 
   it('never asks the database for a licence number or a scan', async () => {
     // The point of this screen is the *date*. A licence number, a scan, a
-    // signature — none of it belongs in a timekeeping app, so the query that
+    // signature - none of it belongs in a timekeeping app, so the query that
     // feeds every credential response must not reach for them. If somebody adds
     // a column back, this is what should stop them.
     const { service, prisma } = build();

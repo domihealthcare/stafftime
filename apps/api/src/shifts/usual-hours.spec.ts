@@ -52,7 +52,7 @@ describe('the hours a new shift starts on', () => {
     }
   });
 
-  it('is what they worked most often on that weekday — at least twice', () => {
+  it('is what they worked most often on that weekday - at least twice', () => {
     const mondays = [
       past('2026-10-05'),
       past('2026-09-28'),

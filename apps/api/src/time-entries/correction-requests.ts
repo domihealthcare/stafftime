@@ -1,7 +1,7 @@
 import { PRACTICE_ZONE } from '../common/util/zoned-time.util';
 
 /**
- * "Ask for a correction" (October 2026, Dominguez — a "smarter" idea). The
+ * "Ask for a correction" (October 2026, Dominguez - a "smarter" idea). The
  * rules and words with no database in them.
  */
 
@@ -9,7 +9,7 @@ import { PRACTICE_ZONE } from '../common/util/zoned-time.util';
 /// hand.
 export const CORRECTION_MAX_HOURS = 16;
 
-/// How far the times asked for may move from the punch's own clock-in —
+/// How far the times asked for may move from the punch's own clock-in -
 /// enough for a forgotten clock-out late at night, not a different day.
 export const CORRECTION_MAX_SHIFT_HOURS = 18;
 
@@ -57,7 +57,7 @@ export function correctionProblem(
   return null;
 }
 
-/// "Thu, Oct 8: in 9:00 AM, out 5:00 PM" — the times asked for.
+/// "Thu, Oct 8: in 9:00 AM, out 5:00 PM" - the times asked for.
 export function askedWords(asked: { clockInAt: Date; clockOutAt: Date }): string {
   return `${day(asked.clockInAt)}: in ${time(asked.clockInAt)}, out ${time(asked.clockOutAt)}`;
 }

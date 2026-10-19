@@ -2,22 +2,22 @@ import { PayRateUnit, PayType } from '@prisma/client';
 import { addDaysTo, datesBetween, weekStartOf } from '../common/util/zoned-time.util';
 
 /**
- * What the rota on screen costs (October 2026, Dominguez — from the survey of
+ * What the rota on screen costs (October 2026, Dominguez - from the survey of
  * similar apps: "rota cost should be for only certain individuals", hourly
  * and salaried staff both). Shown on the Schedule to the people an admin has
  * chosen (`Employee.canSeeRotaCost`), never anybody else, and only as totals
- * — by office and by day, never by person, so nobody's pay can be read off it.
+ * - by office and by day, never by person, so nobody's pay can be read off it.
  *
  * - **Hourly pay** (`PayRateUnit.HOURLY`): the rate in force on the shift's
  *   day × its scheduled hours. Hours past the overtime line in an overtime
  *   week (the pay period's weeks, as everywhere) are at **1.5×** for hourly
  *   staff (`PayType.HOURLY`); salaried staff with an hourly rate are exempt.
  * - **Salaried pay** (`PayRateUnit.YEARLY`): a year ÷ 52 a week, so ÷ 364 a
- *   day, for every day on screen they are employed — on the rota or not,
+ *   day, for every day on screen they are employed - on the rota or not,
  *   because a salary is paid either way. Put under the offices of their
  *   shifts on screen, by hours, or their main office with none.
  *
- * Scheduled hours, drafts included — what the rota as built would cost, not
+ * Scheduled hours, drafts included - what the rota as built would cost, not
  * what was worked, and not taxes or benefits. People on the rota with no pay
  * on file are named, so a total is never quietly short.
  *

@@ -24,11 +24,11 @@ import type {
 } from '../lib/types';
 
 /**
- * The reimbursements board (October 2026, Dominguez — the practice's
+ * The reimbursements board (October 2026, Dominguez - the practice's
  * "Reimbursements - Domi TCHG" sheet: "The reimbursements also should have a
  * big board, but also searchable"). Codes down the side, insurances across,
- * what each pays in each cell. Managers and admins only — the practice's
- * money — so the screen is in English, like the rest of their tools.
+ * what each pays in each cell. Managers and admins only - the practice's
+ * money - so the screen is in English, like the rest of their tools.
  *
  * Search by code or description, narrow the insurances, or press a code for
  * every insurance's amount for it, highest first. **Big board** fills the
@@ -163,7 +163,7 @@ export function ReimbursementsPage() {
       {editing && (
         <div className="mb-3 flex flex-wrap items-center gap-2 rounded-lg bg-brand-50 px-3 py-2 text-sm text-slate-800 ring-1 ring-inset ring-brand-200">
           <span className="mr-auto">
-            Click an amount to change it — an amount, or words like “$34.45 / 75.26”; empty it to
+            Click an amount to change it - an amount, or words like “$34.45 / 75.26”; empty it to
             clear it. Click a code or an insurance to change, move or remove it.
           </span>
           <button
@@ -439,7 +439,7 @@ function RatesTable({
                           onClick={() => setActive(key)}
                           className="block min-h-[1.25rem] w-full text-right hover:bg-brand-50"
                         >
-                          {rate ? formatRate(rate) : '—'}
+                          {rate ? formatRate(rate) : '-'}
                         </button>
                       ) : rate ? (
                         formatRate(rate)

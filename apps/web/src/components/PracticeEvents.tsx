@@ -32,13 +32,13 @@ import { Alert, Badge, Card, buttonClass } from './ui';
 
 /**
  * Practice events on the schedule: office meetings, provider meetings, a
- * wellness day — and closures: Christmas, Christmas Eve from 1pm, one office
+ * wellness day - and closures: Christmas, Christmas Eve from 1pm, one office
  * shut for the day (September 2026). Since October 2026 also holidays that
  * shut nothing (Election Day) and the diagnostics schedule ("US + ECHO 8–2,
  * West New York"), all on the practice calendar.
  *
  * Not shifts. They sit above the rota and in the month, go to phones through
- * the calendar feed, and add nothing to anybody's hours — somebody paid to be
+ * the calendar feed, and add nothing to anybody's hours - somebody paid to be
  * there clocks in as usual (decided with Dominguez). A shift that lands in a
  * closure is warned about, never refused, and pay is untouched.
  */
@@ -93,7 +93,7 @@ export function eventsOnDay(events: PracticeEvent[], day: string): PracticeEvent
     );
 }
 
-/// Midnight on the viewer's clock — the end of a "closes at 1pm" day.
+/// Midnight on the viewer's clock - the end of a "closes at 1pm" day.
 const atMidnight = (iso: string) => {
   const date = new Date(iso);
   return date.getHours() === 0 && date.getMinutes() === 0;
@@ -122,12 +122,12 @@ function bareTime(event: PracticeEvent, day?: string): string {
   return t('all day');
 }
 
-/// "Everyone", "Provider", "North Bergen" — or for a closure, which offices.
+/// "Everyone", "Provider", "North Bergen" - or for a closure, which offices.
 export function audienceLabel(event: PracticeEvent): string {
   if (atAnOffice(event.kind)) return event.atLocation?.name ?? t('An office since removed');
   if (event.audience === 'CHOSEN') {
     const names = event.invitees.map((invitee) => invitee.name);
-    if (names.length === 0) return t('Nobody — everyone on the list has since gone');
+    if (names.length === 0) return t('Nobody - everyone on the list has since gone');
     return names.length <= 3
       ? names.join(', ')
       : t('{names} and {n} more', { names: names.slice(0, 2).join(', '), n: names.length - 2 });
@@ -217,7 +217,7 @@ export function EventChip({
   );
 }
 
-/// What one event is, and — for managers — a way to change or remove it.
+/// What one event is, and - for managers - a way to change or remove it.
 export function EventDialog({
   event,
   canEdit,
@@ -392,7 +392,7 @@ export function EventDialog({
         {closed && (
           <p className="mt-3 text-xs text-slate-500">
             {t(
-              'Anybody scheduled then is flagged to managers. Pay is not changed by a closure — anybody who works clocks in as usual.',
+              'Anybody scheduled then is flagged to managers. Pay is not changed by a closure - anybody who works clocks in as usual.',
             )}
           </p>
         )}
@@ -506,7 +506,7 @@ export function EventForm({
   /// Where a new event starts: the first day on screen, or today if that is
   /// in the past.
   defaultDate: Date;
-  /// With how many dates were written — more than one for a series.
+  /// With how many dates were written - more than one for a series.
   onSaved: (created: number) => void;
   onCancel: () => void;
 }) {
@@ -570,7 +570,7 @@ export function EventForm({
   /// A diagnostics date: the office it is at.
   const [atLocationId, setAtLocationId] = useState(source?.atLocation?.id ?? '');
   /// Offered only once Google Meet is set up (Practice settings can't: it is
-  /// two server settings — see docs/google-meet-setup.md).
+  /// two server settings - see docs/google-meet-setup.md).
   const [meetAvailable, setMeetAvailable] = useState(false);
   const [createMeet, setCreateMeet] = useState(false);
   useEffect(() => {
@@ -645,7 +645,7 @@ export function EventForm({
     else if (!event) setAllDay(next === 'CLOSURE');
   }
 
-  /// The form filled from a pasted message — everything still to be checked.
+  /// The form filled from a pasted message - everything still to be checked.
   function applyBooking(booking: ReadBooking) {
     chooseKind(booking.kind);
     if (booking.kind !== 'REP_LUNCH' && booking.title) setTitle(booking.title);
@@ -719,7 +719,7 @@ export function EventForm({
     const chosen =
       invitees.employeeIds.length + invitees.jobRoleIds.length + invitees.locationIds.length > 0;
     if (kind === 'EVENT' && !invitees.everyone && !chosen) {
-      setError('Add who it is for — Everyone, or job roles, offices and people.');
+      setError('Add who it is for - Everyone, or job roles, offices and people.');
       return;
     }
     if (repLunch && !repId) {
@@ -736,7 +736,7 @@ export function EventForm({
       meetingUrl.trim() &&
       !/^https:\/\/\S+$/.test(meetingUrl.trim())
     ) {
-      setError('Paste the whole video call link — it starts https://');
+      setError('Paste the whole video call link - it starts https://');
       return;
     }
     if (showRepeat && repeat?.frequency === 'WEEKLY' && (repeat.weekdays ?? []).length === 0) {
@@ -867,13 +867,13 @@ export function EventForm({
             data-testid="booking-read"
             className="rounded-lg bg-brand-50 px-3 py-2 text-sm text-slate-800 ring-1 ring-inset ring-brand-200 sm:col-span-2"
           >
-            <p>Filled in from the message — check it before saving.</p>
+            <p>Filled in from the message - check it before saving.</p>
             {readNote.missing.length > 0 && (
               <p className="mt-0.5">The message did not say {readNote.missing.join(', ')}.</p>
             )}
             {readNote.newRep && (
               <p className="mt-0.5">
-                {readNote.newRep} is not on the reps list yet —{' '}
+                {readNote.newRep} is not on the reps list yet -{' '}
                 <Link to="/reps" className="font-medium text-brand-700 underline">
                   add them under Manage → Offices → Reps
                 </Link>
@@ -924,7 +924,7 @@ export function EventForm({
               {(reps ?? []).map((rep) => (
                 <option key={rep.id} value={rep.id}>
                   {rep.name}
-                  {rep.company ? ` — ${rep.company}` : ''}
+                  {rep.company ? ` - ${rep.company}` : ''}
                   {rep.status === 'DO_NOT_BOOK' ? ' (don’t book)' : ''}
                 </option>
               ))}
@@ -1085,7 +1085,7 @@ export function EventForm({
               {locations.map((location) => (
                 <option
                   key={location.id}
-                  value={`${location.name} — ${location.addressLine1}, ${location.city}, ${location.state}`}
+                  value={`${location.name} - ${location.addressLine1}, ${location.city}, ${location.state}`}
                 />
               ))}
             </datalist>
@@ -1202,7 +1202,7 @@ export function EventForm({
               locations={locations}
             />
             <p className="mt-1 text-xs text-slate-500">
-              Everyone, or any mix of job roles, offices and people — e.g. Provider, Kayla,
+              Everyone, or any mix of job roles, offices and people - e.g. Provider, Kayla,
               Angelina.
             </p>
           </div>
@@ -1291,12 +1291,12 @@ export function EventForm({
           {closed
             ? 'Staff at the office see it on their schedule, get a notification and have it on their phone if they sync their calendar. Shifts during it are flagged to managers, never refused. Pay is not changed.'
             : holiday
-              ? 'Everyone sees it on the calendar and on their phone if they sync it. It shuts nothing — nobody is notified and shifts are not flagged. If an office is shut, add a closure instead.'
+              ? 'Everyone sees it on the calendar and on their phone if they sync it. It shuts nothing - nobody is notified and shifts are not flagged. If an office is shut, add a closure instead.'
               : diagnostic
-                ? 'Everyone sees it on the calendar and gets a notification when a date is added, moved or cancelled. Write when the tests are on — never a patient’s name or who is booked.'
+                ? 'Everyone sees it on the calendar and gets a notification when a date is added, moved or cancelled. Write when the tests are on - never a patient’s name or who is booked.'
                 : repLunch
-                  ? 'Everyone sees it on the calendar — the rep, company, medication and whether they bring catering. Staff at that office are told when it is added, moved or cancelled, and every evening hear whether there is a rep lunch the next day. The front desk sees the rep’s cell; the status and notes stay with managers.'
-                  : 'Everybody it is for sees it on their schedule and gets a notification; it reaches their phone if they sync their calendar. It does not count as work hours — anybody paid to be there clocks in as usual.'}
+                  ? 'Everyone sees it on the calendar - the rep, company, medication and whether they bring catering. Staff at that office are told when it is added, moved or cancelled, and every evening hear whether there is a rep lunch the next day. The front desk sees the rep’s cell; the status and notes stay with managers.'
+                  : 'Everybody it is for sees it on their schedule and gets a notification; it reaches their phone if they sync their calendar. It does not count as work hours - anybody paid to be there clocks in as usual.'}
         </p>
 
         {error && (
@@ -1335,7 +1335,7 @@ function RepDetails({ rep }: { rep: EventRep }) {
   );
   return (
     <>
-      {row(t('Rep'), `${rep.name}${rep.company ? ` — ${rep.company}` : ''}`)}
+      {row(t('Rep'), `${rep.name}${rep.company ? ` - ${rep.company}` : ''}`)}
       {rep.medication && row(t('Medication'), rep.medication)}
       {rep.food && row(t('Lunch'), t(FOOD_LABEL[rep.food]))}
       {rep.cellPhone &&
@@ -1418,7 +1418,7 @@ export function useClosureCheck(proposed: ProposedPlace | null): PracticeEvent[]
 function closureLine(closure: PracticeEvent): string {
   const where =
     closure.audience === 'LOCATION' ? `${audienceLabel(closure)} is` : 'Both offices are';
-  return `${where} closed — ${closure.title} (${bareTime(closure)})`;
+  return `${where} closed - ${closure.title} (${bareTime(closure)})`;
 }
 
 /// The warning inside a shift form.
@@ -1434,7 +1434,7 @@ export function ClosureWarning({ closures }: { closures: PracticeEvent[] }) {
           <span aria-hidden="true">🔒</span> {closureLine(closure)}
         </p>
       ))}
-      <p className="mt-0.5">You can still add the shift — it will be flagged on the rota.</p>
+      <p className="mt-0.5">You can still add the shift - it will be flagged on the rota.</p>
     </div>
   );
 }
@@ -1470,8 +1470,8 @@ export async function confirmClosure(
 const newYear = (year: number) => new Date(year, 0, 1).toISOString();
 
 /**
- * The year's holidays and closures, for everybody — staff see the ones at
- * their offices — with, for managers, "+ Add holiday", "+ Add closure" and
+ * The year's holidays and closures, for everybody - staff see the ones at
+ * their offices - with, for managers, "+ Add holiday", "+ Add closure" and
  * "Copy into next year". Copying puts each one on the same date a year on, to be checked:
  * a holiday that moves, like Thanksgiving, lands on the wrong day.
  */
@@ -1525,9 +1525,9 @@ export function ClosuresCard({
             there are left alone.
           </p>
           <p className="mt-1">
-            The holidays that move from year to year — Thanksgiving and the day after, Memorial Day,
+            The holidays that move from year to year - Thanksgiving and the day after, Memorial Day,
             Labor Day, MLK Day, Presidents&rsquo; Day, Columbus Day, Election Day, Good Friday,
-            Easter — go to their day in {year + 1}. You&rsquo;ll see a list of what moved, and of
+            Easter - go to their day in {year + 1}. You&rsquo;ll see a list of what moved, and of
             any that land on a weekend.
           </p>
         </>
@@ -1548,7 +1548,7 @@ export function ClosuresCard({
             : ''
         }${
           done.onWeekend.length > 0
-            ? ` On a weekend — check which day the office takes instead: ${done.onWeekend.join('; ')}.`
+            ? ` On a weekend - check which day the office takes instead: ${done.onWeekend.join('; ')}.`
             : ''
         }${done.skipped.length > 0 ? ` Skipped: ${done.skipped.join('; ')}.` : ''}`,
       );
@@ -1667,7 +1667,7 @@ export function ClosuresCard({
   );
 }
 
-/// A card, or — inside the Schedule's tabbed card — just its contents.
+/// A card, or - inside the Schedule's tabbed card - just its contents.
 function Wrap({
   bare,
   testId,

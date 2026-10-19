@@ -117,7 +117,7 @@ await step('a manager sets the usual pattern', async () => {
   await card.getByText(`${weekdayName(today)}: Frankie Front-Desk`).waitFor();
   const line = manager.getByTestId(`reviews-${today}`).getByTestId('review-line');
   const text = await line.innerText();
-  if (!/Max Assistant\s*—\s*Frankie Front-Desk/.test(text)) throw new Error(`today reads "${text}"`);
+  if (!/Max Assistant\s* - \s*Frankie Front-Desk/.test(text)) throw new Error(`today reads "${text}"`);
 });
 await manager.screenshot({ path: `${OUT}/schedule-reviews-manager.png`, fullPage: true });
 
@@ -203,7 +203,32 @@ await step('a day gone by cannot be changed', async () => {
   if (notProvider.status !== 400) throw new Error(`a non-provider answered ${notProvider.status}`);
 });
 
-await step('on a phone all four Schedule tabs fit without scrolling sideways', async () => {
+await step('the groups: everybody reads who reviews each, a manager edits them', async () => {
+  const seen = await call(frankie, '/schedule-reviews/areas');
+  const names = seen.body.areas.map((area) => area.name);
+  if (names.join('|') !== 'Telemedicine|NB Providers|NB Bloodwork & Nursing|WNY ALL')
+    throw new Error(`groups were ${names}`);
+  const refused = await call(frankie, '/schedule-reviews/areas', {
+    method: 'PUT',
+    body: JSON.stringify({ areas: [] }),
+  });
+  if (refused.status !== 403) throw new Error(`staff saving answered ${refused.status}`);
+  await manager.goto(`${BASE}/schedule-reviews`, { waitUntil: 'networkidle' });
+  const card = manager.getByTestId('review-areas');
+  await card.getByText('Telemedicine').waitFor({ timeout: 15000 });
+  await card.getByRole('button', { name: 'Edit' }).click();
+  const dialog = manager.getByTestId('review-areas-edit');
+  await dialog.getByLabel('Who reviews Telemedicine').selectOption({ label: 'Morgan Manager' });
+  await dialog.getByRole('button', { name: 'Save' }).click();
+  await card.getByText('Morgan Manager').first().waitFor({ timeout: 15000 });
+  // Put it back as found.
+  await call(manager, '/schedule-reviews/areas', {
+    method: 'PUT',
+    body: JSON.stringify({ areas: seen.body.areas.map((a) => ({ name: a.name, reviewerId: null })) }),
+  });
+});
+
+await step('on a phone all five Schedule tabs fit without scrolling sideways', async () => {
   // A manager has On call as well: the most tabs anybody gets.
   const phone = await signIn('manager@domihealthcare.com', { width: 390, height: 844 });
   await phone.goto(`${BASE}/schedule-reviews`, { waitUntil: 'networkidle' });
@@ -216,7 +241,7 @@ await step('on a phone all four Schedule tabs fit without scrolling sideways', a
   const overflow = await tabs.evaluate((nav) =>
     [...nav.querySelectorAll('a')].some((a) => a.scrollWidth > a.clientWidth + 1),
   );
-  if ((await tabs.getByRole('link').count()) !== 4) throw new Error('expected four tabs');
+  if ((await tabs.getByRole('link').count()) !== 5) throw new Error('expected five tabs');
   if (overflow) throw new Error('a tab’s name does not fit');
   await phone.screenshot({ path: `${OUT}/schedule-reviews-phone.png`, fullPage: true });
 });

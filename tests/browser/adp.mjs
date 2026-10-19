@@ -47,7 +47,7 @@ const WORKSHEET = [
 const pad = (n) => String(n).padStart(2, '0');
 const localDay = (d) => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
 // 45 days ago, 9:00 to 17:30 local: 8.5 hours, on a day no other suite puts
-// hours on — anybody else with hours that day would have no File # either.
+// hours on - anybody else with hours that day would have no File # either.
 const workDay = new Date();
 workDay.setDate(workDay.getDate() - 45);
 workDay.setHours(9, 0, 0, 0);
@@ -121,7 +121,7 @@ await step('Practice settings says ADP is not set up, and what it needs', async 
   await card.getByText('Not set up', { exact: true }).waitFor({ timeout: 15000 });
   await card.getByText('Enter the ADP company code.').waitFor({ timeout: 5000 });
   if ((await admin.locator('input[type=file]').count()) > 0)
-    throw new Error('there is a file input — the worksheet is pasted, never uploaded');
+    throw new Error('there is a file input - the worksheet is pasted, never uploaded');
 });
 
 await step('something that is not an ADP worksheet is refused, saying why', async () => {
@@ -169,7 +169,7 @@ await step('without a File # the export names who is missing one', async () => {
   await mgr.getByRole('button', { name: 'Download ADP import file' }).click();
   // "Before you export" says so first (October 2026)…
   const check = mgr.getByTestId('export-check-adp');
-  await check.getByText(/Frankie Front-Desk — an admin adds it/).waitFor({ timeout: 15000 });
+  await check.getByText(/Frankie Front-Desk - an admin adds it/).waitFor({ timeout: 15000 });
   // …and ADP itself still refuses the file.
   await mgr.getByTestId('export-check').getByRole('button', { name: 'Export anyway' }).click();
   await mgr.getByText(/No ADP File # for Frankie Front-Desk/).waitFor({ timeout: 15000 });

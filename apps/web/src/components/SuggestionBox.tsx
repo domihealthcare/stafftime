@@ -10,14 +10,14 @@ import { useDialog } from './useDialog';
 /**
  * The suggestion box, as something you can see rather than a link (October
  * 2026, Dominguez: "creative in how it's viewed … even like a pop up"). A card
- * with a box on it and the four sorts of note it takes — all four, so nobody
- * reads it as "only for shout-outs" (Dominguez, the same day) — each of which
+ * with a box on it and the four sorts of note it takes - all four, so nobody
+ * reads it as "only for shout-outs" (Dominguez, the same day) - each of which
  * opens the pop-up with that sort picked. There you write it and watch it go
  * into the box.
  *
  * Nothing about the rules changed: the message, the kind picked (four values
  * everybody shares) and the day are all that is kept. Managers hear that
- * something is waiting from the nightly round-up — never the words, and never
+ * something is waiting from the nightly round-up - never the words, and never
  * through the bell, which would stamp the minute it arrived.
  */
 
@@ -58,7 +58,7 @@ export function feedbackKindLabel(kind: FeedbackKind | null): string | null {
   return found ? `${found.emoji} ${translate(found.label)}` : null;
 }
 
-const ANONYMOUS_LINE = 'Anonymous — no name and no time are kept, only the day it arrives.';
+const ANONYMOUS_LINE = 'Anonymous - no name and no time are kept, only the day it arrives.';
 
 /// What "anonymous" means here, in plain words (Dominguez, October 2026: "put
 /// something explaining that the suggestion box really is anonymous"). Every
@@ -76,13 +76,13 @@ export function HowItIsAnonymous() {
         <li>
           <strong>{t('No time is kept')}</strong>{' '}
           {t(
-            '— only the day it arrived, so nobody can match it to who was on a break or at the desk.',
+            ' - only the day it arrived, so nobody can match it to who was on a break or at the desk.',
           )}
         </li>
         <li>
           <strong>{t('Nobody can find out who wrote it')}</strong>{' '}
           {t(
-            '— not managers, not admins. There is no screen, report or export that could show it, because the app never kept it.',
+            ' - not managers, not admins. There is no screen, report or export that could show it, because the app never kept it.',
           )}
         </li>
         <li>
@@ -91,7 +91,7 @@ export function HowItIsAnonymous() {
         </li>
         <li>
           {t(
-            'You have to be signed in to send one, so the box is not open to the whole internet — but who you are is dropped as soon as the note is in.',
+            'You have to be signed in to send one, so the box is not open to the whole internet - but who you are is dropped as soon as the note is in.',
           )}
         </li>
       </ul>
@@ -169,7 +169,7 @@ export function SuggestionBoxCard() {
           onClick={() => setExplaining((shown) => !shown)}
           className="tap font-medium text-slate-600 hover:text-slate-900"
         >
-          <span aria-hidden="true">🔒</span> {t('Truly anonymous — how?')}
+          <span aria-hidden="true">🔒</span> {t('Truly anonymous - how?')}
         </button>
         {isManager && waiting > 0 && (
           <Link

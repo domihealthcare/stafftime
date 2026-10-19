@@ -76,8 +76,8 @@ export function LocationsPage() {
       )}
 
       <div className="mt-4 space-y-4">
-        {/* The spinner is for the first load only. A reload — after adding a
-            location — keeps the cards mounted: swapping them for a spinner
+        {/* The spinner is for the first load only. A reload - after adding a
+            location - keeps the cards mounted: swapping them for a spinner
             rebuilt every card from the server and silently threw away a
             position somebody had captured at the front desk but not saved. */}
         {loading && locations.length === 0 ? (
@@ -87,7 +87,7 @@ export function LocationsPage() {
         ) : locations.length === 0 ? (
           <Card className="p-6">
             <p className="text-sm text-slate-600">
-              No locations yet. Add North Bergen and West New York — you can put in rough
+              No locations yet. Add North Bergen and West New York - you can put in rough
               coordinates now and fix them precisely from your phone at each front desk.
             </p>
           </Card>
@@ -372,7 +372,7 @@ function LocationCard({
           className={`${field} font-mono text-sm`}
         />
         <p className="mt-1 text-xs text-slate-500">
-          Comma separated. Used as a fallback when a browser will not share its location — only
+          Comma separated. Used as a fallback when a browser will not share its location - only
           useful if this office has a static IP.
         </p>
       </div>
@@ -420,7 +420,7 @@ function AddLocationForm({ onCreated }: { onCreated: () => void }) {
   const [postalCode, setPostalCode] = useState('');
   const [latitude, setLatitude] = useState('');
   const [longitude, setLongitude] = useState('');
-  // Feet. 500 ft ≈ 150 m, which is what this was before the unit changed —
+  // Feet. 500 ft ≈ 150 m, which is what this was before the unit changed -
   // leaving "150" here would have made every new office a third of the size.
   const [radius, setRadius] = useState('500');
   const [busy, setBusy] = useState(false);
@@ -610,7 +610,7 @@ function AddLocationForm({ onCreated }: { onCreated: () => void }) {
             </div>
           </div>
           <p className="mt-2 text-xs text-slate-500">
-            Rough coordinates are fine for now — correct them from your phone at the front desk
+            Rough coordinates are fine for now - correct them from your phone at the front desk
             before anyone clocks in.
           </p>
         </div>

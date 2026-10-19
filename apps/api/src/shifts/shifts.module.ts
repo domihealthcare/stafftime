@@ -1,4 +1,6 @@
 import { Module } from '@nestjs/common';
+import { EveryonesScheduleController } from './everyones-schedule.controller';
+import { EveryonesScheduleService } from './everyones-schedule.service';
 import { CoverOptionsService } from './cover-options.service';
 import { CoverRequestsController } from './cover-requests.controller';
 import { CoverRequestsService } from './cover-requests.service';
@@ -12,7 +14,12 @@ import { ShiftsController } from './shifts.controller';
 import { ShiftsService } from './shifts.service';
 
 @Module({
-  controllers: [ShiftsController, CoverRequestsController, RunningLateController],
+  controllers: [
+    ShiftsController,
+    CoverRequestsController,
+    RunningLateController,
+    EveryonesScheduleController,
+  ],
   providers: [
     ShiftsService,
     ShiftPlanningService,
@@ -22,6 +29,7 @@ import { ShiftsService } from './shifts.service';
     CoverRequestsService,
     RunningLateService,
     PublishCheckService,
+    EveryonesScheduleService,
   ],
   exports: [ShiftsService, ShiftPlanningService, OvertimeService],
 })

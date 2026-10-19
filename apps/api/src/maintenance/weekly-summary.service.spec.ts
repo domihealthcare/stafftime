@@ -25,7 +25,7 @@ describe('your week, the words', () => {
       title: 'Your week: 38.5 hours worked · 1 shift coming up',
       body: [
         'Last week (Oct 4–Oct 10): 38.5 hours worked.',
-        '1 day is not counted yet — clocked out by the app at midnight, for a manager to correct.',
+        '1 day is not counted yet - clocked out by the app at midnight, for a manager to correct.',
         'This week:',
         'Mon, Oct 12: 9:00 AM–5:00 PM at North Bergen',
       ].join('\n'),

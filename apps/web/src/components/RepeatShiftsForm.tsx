@@ -14,9 +14,9 @@ import { WeekdayToggles } from './WeekdayToggles';
 import { RepeatWeeksPicker } from './RepeatWeeksPicker';
 import { EVERY_WEEK, firstDates, isEveryWeek, type RepeatWeeks } from '../lib/repeat-pattern';
 
-/// Builds a rota in one go — the alternative being a manager creating forty
+/// Builds a rota in one go - the alternative being a manager creating forty
 /// shifts by hand.
-/// The Employee list's value for open shifts — slots nobody is on yet.
+/// The Employee list's value for open shifts - slots nobody is on yet.
 const OPEN = 'open';
 
 export function RepeatShiftsForm({
@@ -51,7 +51,7 @@ export function RepeatShiftsForm({
   const [busy, setBusy] = useState(false);
   const [problem, setProblem] = useState<string | null>(null);
 
-  // Only the locations this person is assigned to — the API rejects the rest.
+  // Only the locations this person is assigned to - the API rejects the rest.
   const selected =
     employeeId === OPEN ? undefined : employees.find((employee) => employee.id === employeeId);
   const available = selected
@@ -119,7 +119,7 @@ export function RepeatShiftsForm({
     <Card className="p-5">
       <h3 className="text-sm font-semibold text-slate-900">Repeating shifts</h3>
       <p className="mt-0.5 text-sm text-slate-600">
-        One rota line at a time — days, which weeks, hours, and how far ahead, or for good.
+        One rota line at a time - days, which weeks, hours, and how far ahead, or for good.
       </p>
 
       <form onSubmit={(event) => void submit(event)} className="mt-4 space-y-4">
@@ -136,7 +136,7 @@ export function RepeatShiftsForm({
               className={field}
             >
               <option value="">Choose someone…</option>
-              <option value={OPEN}>Nobody yet — open shifts to fill</option>
+              <option value={OPEN}>Nobody yet - open shifts to fill</option>
               {employees
                 .filter((employee) => employee.employmentStatus === 'ACTIVE')
                 .map((employee) => (
@@ -297,7 +297,7 @@ export function RepeatShiftsForm({
             className="mt-0.5 rounded border-slate-300 text-brand-600 focus:ring-brand-600"
           />
           <span>
-            No end date — it keeps going
+            No end date - it keeps going
             <span className="block text-xs text-slate-500">
               For a regular shift, like every Monday. The rota is kept filled eight weeks ahead;
               stop it any time under Regular shifts.

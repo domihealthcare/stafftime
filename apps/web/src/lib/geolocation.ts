@@ -23,7 +23,7 @@ const TIMEOUT_MS = 15_000;
  * Asks the browser where we are.
  *
  * The browser prompt only appears on a user gesture, so this must be called
- * directly from the clock-in click — not from an effect on page load.
+ * directly from the clock-in click - not from an effect on page load.
  */
 export function getCurrentPosition(): Promise<Position> {
   return new Promise((resolve, reject) => {

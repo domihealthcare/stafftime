@@ -4,7 +4,7 @@ import { hash, verify } from '@node-rs/argon2';
 /**
  * Weak bases, checked against the password with its padding stripped.
  *
- * A 12-character minimum does not stop "password1234" — it invites it. So the
+ * A 12-character minimum does not stop "password1234" - it invites it. So the
  * check is on the stem: strip digits and punctuation, and if what remains is one
  * of these, the length was decoration.
  */
@@ -76,7 +76,7 @@ export class PasswordService {
   }
 
   /**
-   * At least 8 characters and at least one number — the rule Dominguez chose
+   * At least 8 characters and at least one number - the rule Dominguez chose
    * in September 2026, replacing a 12-character minimum whose advice ("three
    * unrelated words") did not suit the practice.
    *

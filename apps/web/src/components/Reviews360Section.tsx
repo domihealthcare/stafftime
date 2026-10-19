@@ -11,8 +11,8 @@ import { Alert, Badge, Card, buttonClass, inputClass } from './ui';
 
 /**
  * 360 feedback on the Surveys page (October 2026, Dominguez): for everybody,
- * an open 360 and how far they have got; for managers, starting one — the
- * starter questions, changeable — closing it, and its reports.
+ * an open 360 and how far they have got; for managers, starting one - the
+ * starter questions, changeable - closing it, and its reports.
  */
 export function Reviews360Section() {
   const t = useT();
@@ -79,7 +79,7 @@ export function Reviews360Section() {
         <Card className="p-4" testId="reviews360-manage">
           <div className="flex flex-wrap items-start justify-between gap-3">
             <p className="min-w-0 text-sm text-slate-600">
-              Everybody rates everybody — and themselves — anonymously. Reports are for managers and
+              Everybody rates everybody - and themselves - anonymously. Reports are for managers and
               admins only, once it closes; from a report you offer times to talk it through.
             </p>
             {!open && !starting && (
@@ -180,7 +180,7 @@ export function Reviews360Section() {
 }
 
 function StartForm({ onCancel, onStarted }: { onCancel: () => void; onStarted: () => void }) {
-  const [title, setTitle] = useState(`360 feedback — ${new Date().getFullYear()}`);
+  const [title, setTitle] = useState(`360 feedback - ${new Date().getFullYear()}`);
   const [intro, setIntro] = useState('');
   const [closesOn, setClosesOn] = useState(practiceDate(new Date(Date.now() + 14 * 86_400_000)));
   const [questions, setQuestions] = useState<Review360QuestionInput[] | null>(null);
@@ -266,7 +266,7 @@ function StartForm({ onCancel, onStarted }: { onCancel: () => void; onStarted: (
 
       <fieldset>
         <legend className="text-sm font-medium text-slate-700">
-          Questions — asked about each colleague, and about yourself
+          Questions - asked about each colleague, and about yourself
         </legend>
         {!questions ? (
           <p className="text-sm text-slate-500">Loading the starter questions…</p>
@@ -315,7 +315,7 @@ function StartForm({ onCancel, onStarted }: { onCancel: () => void; onStarted: (
                 />
                 <input
                   aria-label={`Question ${index + 1}: about yourself`}
-                  placeholder="About yourself (optional — the same words otherwise)"
+                  placeholder="About yourself (optional - the same words otherwise)"
                   value={question.selfPrompt ?? ''}
                   maxLength={200}
                   onChange={(event) => change(index, { selfPrompt: event.target.value })}

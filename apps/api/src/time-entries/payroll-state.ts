@@ -2,7 +2,7 @@
  * Whether a set of hours has already been sent to payroll, and whether it has
  * changed since.
  *
- * Its own file because two features need the same rule — the timesheet, to
+ * Its own file because two features need the same rule - the timesheet, to
  * refuse a careless correction, and the export preview, to count the ones that
  * have not reached payroll yet. Two copies of this rule would eventually
  * disagree, and the disagreement would be about somebody's pay.

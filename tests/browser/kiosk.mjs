@@ -286,7 +286,7 @@ await step('a wrong PIN is refused and the entry is cleared', async () => {
   await tablet.getByText('Enter your PIN').waitFor({ timeout: 5000 });
   await typePin('9999');
   await tablet.getByRole('alert').waitFor({ timeout: 10000 });
-  // All the dots must be empty again — no half-typed PIN left on a shared screen.
+  // All the dots must be empty again - no half-typed PIN left on a shared screen.
   const filled = await tablet.locator('.bg-brand-600.rounded-full').count();
   if (filled > 0) throw new Error(`${filled} PIN digits left on screen after failure`);
 });
@@ -306,7 +306,7 @@ await step('the confirmation returns to the main screen by itself', async () => 
 });
 
 // Frankie works Front Desk and MA, so clocking out starts with the closing
-// checklist — shown after the PIN, with nothing punched until the PIN is given
+// checklist - shown after the PIN, with nothing punched until the PIN is given
 // again.
 await step('the same PIN again shows the closing checklist first, and punches nothing yet', async () => {
   await pick(/Frankie/);

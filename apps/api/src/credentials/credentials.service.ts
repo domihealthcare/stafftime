@@ -63,7 +63,7 @@ export class CredentialsService {
   constructor(private readonly prisma: PrismaService) {}
 
   async findAll(query: QueryCredentialsDto, actor: AuthUser) {
-    // Everyone can see their own. Only managers see everybody's — knowing who
+    // Everyone can see their own. Only managers see everybody's - knowing who
     // is licensed to do what is part of running the rota.
     const employeeId = actor.role === Role.EMPLOYEE ? actor.id : query.employeeId;
     const state = query.state ?? 'active';
@@ -241,13 +241,13 @@ export class CredentialsService {
   }
 }
 
-/// The practice's today — in New Jersey, not on the server's UTC clock.
+/// The practice's today - in New Jersey, not on the server's UTC clock.
 function today(): Date {
   return practiceToday();
 }
 
 /// Negative once it has lapsed. Zero means it expires today, which still counts
-/// as valid — a licence is good until the end of the day it runs out.
+/// as valid - a licence is good until the end of the day it runs out.
 export function daysUntil(date: Date): number {
   return Math.round((date.getTime() - today().getTime()) / 86_400_000);
 }

@@ -11,7 +11,7 @@ const SEARCH_DAYS = 14;
 /**
  * "Find a time" in the event form (October 2026, Dominguez): the best few
  * times in the next two weeks for everybody the meeting is for, going by the
- * rota, time off, availability and their other meetings — never anybody's own
+ * rota, time off, availability and their other meetings - never anybody's own
  * calendar. Best first: nobody off or in another meeting, then as many as
  * possible already at work. Pressing one puts it in Starts and Ends; any
  * other time can still be typed.
@@ -117,7 +117,7 @@ export function FindATime({
               </p>
               {found.suggestions.length === 0 ? (
                 <p className="mt-2 font-medium text-slate-800">
-                  Nothing between 7am and 7pm in those days — try the next two weeks, or a shorter
+                  Nothing between 7am and 7pm in those days - try the next two weeks, or a shorter
                   meeting.
                 </p>
               ) : (
@@ -213,12 +213,12 @@ function SuggestionRow({
       </p>
       {suggestion.check.map((person) => (
         <p key={`check-${person.name}`} className="text-xs text-amber-800">
-          Check: {person.name} — {person.why}
+          Check: {person.name} - {person.why}
         </p>
       ))}
       {suggestion.busy.map((person) => (
         <p key={`busy-${person.name}`} className="text-xs text-rose-700">
-          {person.name} — {person.why}
+          {person.name} - {person.why}
         </p>
       ))}
     </li>

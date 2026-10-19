@@ -7,7 +7,7 @@ import { Alert, Card, buttonClass, inputClass } from './ui';
 import { useDialog } from './useDialog';
 
 /**
- * The practice's phone extensions in the Directory (October 2026, Dominguez —
+ * The practice's phone extensions in the Directory (October 2026, Dominguez -
  * from its "Office Extensions" sheet), laid out like the sheet: a column per
  * section. A person's 5xx number rings their mobile on the days they work from
  * home. Managers and admins keep it with Edit.

@@ -10,12 +10,12 @@ import {
 } from '../common/util/zoned-time.util';
 
 /**
- * What "Ask Domi Staff" can look up (October 2026, Dominguez — the AI half of
+ * What "Ask Domi Staff" can look up (October 2026, Dominguez - the AI half of
  * making the app smarter). Every tool answers **as the person asking**, by the
  * same rules as the screens: staff see their own shifts and time off, the
  * practice calendar meant for them and the Directory; managers and admins also
  * see the rota, time off requests and what needs a look. A tool that is not
- * theirs is not offered — and refused if asked for anyway.
+ * theirs is not offered - and refused if asked for anyway.
  *
  * Nothing here reaches patient details, the suggestion box, survey answers,
  * staff profiles (address, pay), licenses or punch locations: those are never
@@ -119,7 +119,7 @@ export function toolsFor(actor: AuthUser): Anthropic.Beta.BetaTool[] {
   return managesStaff(actor) ? [...EVERYONE, ...MANAGERS] : EVERYONE;
 }
 
-/// Where the tools read from — the app's own services, as the asker.
+/// Where the tools read from - the app's own services, as the asker.
 export interface AssistantSources {
   shifts(query: { employeeId?: string; from: Date; to: Date; publishedOnly: boolean }): Promise<
     {
@@ -306,7 +306,7 @@ async function run(
         .map((shift) => ({
           who: shift.employee
             ? `${shift.employee.preferredName ?? shift.employee.firstName} ${shift.employee.lastName}`
-            : 'Open shift — nobody yet',
+            : 'Open shift - nobody yet',
           ...shiftLine(shift),
           draft: shift.status === 'DRAFT' || undefined,
         }));

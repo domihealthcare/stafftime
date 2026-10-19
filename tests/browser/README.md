@@ -2,8 +2,8 @@
 
 These are end-to-end checks driven by a real Chromium against a real API and a
 real Postgres. They exist because most of what can go wrong in this app goes
-wrong between the pieces — a cookie that never gets sent, an error code the
-frontend reads from the wrong place, a Save button that stays disabled — and
+wrong between the pieces - a cookie that never gets sent, an error code the
+frontend reads from the wrong place, a Save button that stays disabled - and
 none of that shows up in unit tests.
 
 Each file is a suite of named steps. A step that throws is reported as `FAIL`
@@ -16,8 +16,8 @@ You need three things up first:
 1. **Postgres** with the schema migrated and seeded
    (`npm run db:up && npm run db:migrate && npm run db:seed` from the repo root;
    the runner re-seeds between suites itself).
-2. **The API** on `:3000` — `npm run dev:api`.
-3. **The web dev server** on `:5173` — `npm run dev:web`.
+2. **The API** on `:3000` - `npm run dev:api`.
+3. **The web dev server** on `:5173` - `npm run dev:web`.
 
 Then, once, from this directory:
 
@@ -47,14 +47,14 @@ first argument.
 | --- | --- | --- |
 | `CHROMIUM_PATH` | whatever Playwright downloaded | Point at a preinstalled Chromium instead of downloading one. |
 | `PGHOST_LOCAL` / `PGPORT_LOCAL` | `127.0.0.1` / `5433` | Where `run-all.sh` resets state between suites. |
-| `API_URL` | `http://127.0.0.1:3000/api` | `race.mjs` and `punch-reminders.mjs` use it — they talk to the API directly rather than through the web server's proxy. |
+| `API_URL` | `http://127.0.0.1:3000/api` | `race.mjs` and `punch-reminders.mjs` use it - they talk to the API directly rather than through the web server's proxy. |
 | `PUNCH_REMINDER_SECRET` | none | Must match the API's: `punch-reminders.mjs` calls the reminders route the way the outside timer does. CI sets both. |
 
 ## Things worth knowing
 
 - **`getByText('…')` is a case-insensitive substring match.** Waiting for a
   short confirmation like `'Saved.'` also matches "…from the position currently
-  saved." — which was already on the Locations screen, so the wait finished
+  saved." - which was already on the Locations screen, so the wait finished
   before the save request did and the check that followed read the old value,
   failing only when CI happened to be slow. After an action that writes, wait
   for the write itself (`page.waitForResponse(...)`, set up *before* the click)
@@ -88,8 +88,8 @@ The deployed app sends a Content-Security-Policy and a set of other security
 headers (see `vercel.json`). A CSP that is wrong turns the whole app into a
 blank page, and a deployment is the worst place to find that out.
 
-`vite preview` serves the real production bundle with those same headers — it
-reads them out of `vercel.json` rather than keeping a copy — so the suites can
+`vite preview` serves the real production bundle with those same headers - it
+reads them out of `vercel.json` rather than keeping a copy - so the suites can
 be pointed at it:
 
 ```bash
@@ -103,7 +103,7 @@ geolocation and the kiosk all work under it.
 ## The phone suite
 
 `phone.mjs` runs the whole app at 390px and fails on any screen where the page
-itself scrolls sideways. It makes its own data — a punch, a checklist — rather
+itself scrolls sideways. It makes its own data - a punch, a checklist - rather
 than depending on whichever suite ran before it, so it can be run on its own:
 
 ```bash

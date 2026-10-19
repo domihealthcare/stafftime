@@ -40,7 +40,7 @@ const MONTHS = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 
 
 const admin = await signIn('admin@domihealthcare.com');
 
-await step('an admin sets a birthday on the Staff screen — a month and a day, no year', async () => {
+await step('an admin sets a birthday on the Staff screen - a month and a day, no year', async () => {
   await admin.goto(`${BASE}/staff`, { waitUntil: 'networkidle' });
   const card = admin.getByTestId('staff-frontdesk@domihealthcare.com');
   await card.getByRole('button', { name: /^Edit / }).click();
@@ -112,7 +112,7 @@ await step('the Schedule has a cake on the day, for everybody, and on the person
   // are told apart (Dominguez, September 2026).
   const under = await header.first().innerText();
   if (!/Frankie F\b/.test(under)) throw new Error(`under the day: ${under}`);
-  // Their own row carries it only on their own birthday — and Frankie's is today.
+  // Their own row carries it only on their own birthday - and Frankie's is today.
   // Weeks start on Sunday on screen, so the week ends on Saturday (it assumed
   // Monday, and failed every Friday and Saturday).
   const sameWeek = key(inTwoDays) <= key(new Date(today.getTime() + (6 - today.getDay()) * 86_400_000));

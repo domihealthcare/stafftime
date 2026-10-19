@@ -21,7 +21,7 @@ function task(overrides: Partial<ReminderTask> = {}): ReminderTask {
 }
 
 describe('when a new hire is reminded about their own onboarding tasks', () => {
-  it('from two days before the due date, and for two weeks after it — nothing else', () => {
+  it('from two days before the due date, and for two weeks after it - nothing else', () => {
     expect(taskStageFor(3)).toBeNull();
     expect(taskStageFor(2)).toBe(ChecklistReminderStage.DUE_SOON);
     expect(taskStageFor(0)).toBe(ChecklistReminderStage.DUE_SOON);
@@ -30,7 +30,7 @@ describe('when a new hire is reminded about their own onboarding tasks', () => {
     expect(taskStageFor(-15)).toBeNull();
   });
 
-  it('says nothing on the day the checklist starts — that notice has just gone', () => {
+  it('says nothing on the day the checklist starts - that notice has just gone', () => {
     expect(dueTaskReminders([task({ checklistStartedOn: TODAY })], TODAY)).toEqual([]);
     expect(dueTaskReminders([task()], TODAY)).toEqual([
       expect.objectContaining({ stage: ChecklistReminderStage.DUE_SOON, daysLeft: 1 }),
@@ -66,7 +66,7 @@ describe('when a new hire is reminded about their own onboarding tasks', () => {
     ]);
     expect(words.title).toBe('2 of your onboarding tasks need doing');
     expect(words.body).toBe(
-      '“Emergency contact recorded” — was due Tue, Oct 6; “Employee handbook read and acknowledged” — due tomorrow. Tick each off on your onboarding checklist once it is done, or tell a manager if something is in the way.',
+      '“Emergency contact recorded” - was due Tue, Oct 6; “Employee handbook read and acknowledged” - due tomorrow. Tick each off on your onboarding checklist once it is done, or tell a manager if something is in the way.',
     );
   });
 });

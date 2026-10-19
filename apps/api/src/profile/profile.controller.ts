@@ -69,7 +69,7 @@ export class ProfileController {
     return this.profiles.removePhoto(employeeId, user.id);
   }
 
-  /// Anybody signed in may see a colleague's photo — it is in the Directory.
+  /// Anybody signed in may see a colleague's photo - it is in the Directory.
   /// The URL carries the photo's version, so it can be cached.
   @Get('photo/:employeeId')
   async photo(@Param('employeeId', ParseUUIDPipe) employeeId: string, @Res() response: Response) {

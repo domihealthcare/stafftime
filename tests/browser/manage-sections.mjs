@@ -17,7 +17,7 @@ const step = async (name, fn) => {
 
 /**
  * Manage in five headings (October 2026, Dominguez: "lets cut down the manage
- * options — job roles can be with staff, locations and kiosks together, etc."):
+ * options - job roles can be with staff, locations and kiosks together, etc."):
  * Dashboard, People (Staff, Job roles, Licenses, Onboarding & Offboarding,
  * Provider productivity), Offices (Locations, Kiosks, Closing checklists,
  * Reps), Surveys & reading, and Money (Export, Reimbursements, Vendor

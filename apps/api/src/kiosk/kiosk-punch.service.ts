@@ -14,7 +14,7 @@ import type { PairedDevice } from './kiosk.service';
 const PIN_REJECTED = 'That PIN was not recognised. Try again or ask a manager.';
 
 /// Wrong PINs at one time clock, against anybody, before it pauses. Each person
-/// is also locked after MAX_PIN_ATTEMPTS of their own; this is the other half —
+/// is also locked after MAX_PIN_ATTEMPTS of their own; this is the other half -
 /// somebody at the desk trying a few PINs against every name in turn, which the
 /// per-person limit never sees. Generous enough that a busy morning of typos
 /// never trips it (decided September 2026, with the front-desk computer as the
@@ -23,7 +23,7 @@ const DEVICE_MAX_FAILURES = 10;
 const DEVICE_WINDOW_MINUTES = 15;
 const DEVICE_PAUSE_MINUTES = 5;
 
-/// CHECKLIST: nothing was punched — this person is clocking out and has a
+/// CHECKLIST: nothing was punched - this person is clocking out and has a
 /// closing checklist to fill in first. The tablet shows it, then sends the PIN
 /// again with the answers.
 export type PunchAction = 'CLOCKED_IN' | 'CLOCKED_OUT' | 'CHECKLIST';
@@ -45,9 +45,9 @@ export class KioskPunchService {
   private readonly logger = new Logger(KioskPunchService.name);
   private readonly maxAttempts: number;
   private readonly lockoutMinutes: number;
-  /// A PIN entered again this soon after a punch is taken as the same punch —
+  /// A PIN entered again this soon after a punch is taken as the same punch -
   /// the answer to the first was lost on the way back and the person tried
-  /// again — rather than as its reverse, which would clock them straight back
+  /// again - rather than as its reverse, which would clock them straight back
   /// out (or in). Nobody means to clock out two minutes after clocking in.
   private readonly repeatWindowMs: number;
 
@@ -196,7 +196,7 @@ export class KioskPunchService {
     if (open) {
       // The checklist comes before the punch, not after: a person walking away
       // from a shared tablet mid-checklist leaves nothing half-done behind.
-      // Nothing is held on the server between the two calls — the second one
+      // Nothing is held on the server between the two calls - the second one
       // proves the PIN again.
       if (!closing) {
         const checklist = await this.closing.applicableFor(employee.id, open.locationId);
@@ -285,13 +285,13 @@ export class KioskPunchService {
       throw new UnauthorizedException(
         `Too many wrong PINs at this time clock. It takes PINs again in ${minutes} minute${
           minutes === 1 ? '' : 's'
-        } — or clock in on your phone.`,
+        } - or clock in on your phone.`,
       );
     }
   }
 
   /// Counts a wrong PIN against the time clock, in a window that a correct PIN
-  /// does not reset — otherwise somebody could slip their own PIN in between
+  /// does not reset - otherwise somebody could slip their own PIN in between
   /// guesses and never be stopped.
   private async recordDeviceFailure(deviceId: string): Promise<void> {
     const state = await this.prisma.kioskDevice.findUnique({

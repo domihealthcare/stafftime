@@ -22,7 +22,7 @@ const step = async (name, fn) => {
 /**
  * The AI helpers (October 2026, Dominguez): help writing a News post, News in
  * Spanish with an English | Español switch, a pasted booking read into the
- * calendar's form, and wording for declining time off — plus the decline
+ * calendar's form, and wording for declining time off - plus the decline
  * pop-up itself, which mended the Schedule's Decline (it sent no reason, so
  * the server refused it).
  *
@@ -367,7 +367,7 @@ await step('“Help me word it” fills the reason from what the manager typed',
   await mgr.context().route('**/api/pto/*/decline-wording', async (route) => {
     sent.push(route.request().postDataJSON());
     await route.fulfill({
-      json: { reason: 'Sorry Frankie — we are short at the front desk that day. Could another day work?' },
+      json: { reason: 'Sorry Frankie - we are short at the front desk that day. Could another day work?' },
     });
   });
   const asked = await call(frankie, '/pto', {

@@ -3,12 +3,12 @@ import { mkdirSync, readFileSync } from 'node:fs';
 import { getDocument } from 'pdfjs-dist/legacy/build/pdf.mjs';
 
 // The Annual Wellness Visit form (October 2026): the practice's Annual
-// Wellness Supplement Form, a page at a time — the Medical Assistant does page
+// Wellness Supplement Form, a page at a time - the Medical Assistant does page
 // 2 (preventive services), the provider page 1 (the questionnaire and SPMSQ)
 // in the patient's language. Each page makes its own PDF for eCW, entirely in
 // the browser. As with the other clinical forms, what matters most is what
-// does NOT happen — the patient's details never reach the server and are never
-// kept in the browser — so this suite watches every request and every kind of
+// does NOT happen - the patient's details never reach the server and are never
+// kept in the browser - so this suite watches every request and every kind of
 // storage while a fake patient is entered. Fake data only.
 const OUT = process.argv[2] || new URL('./shots/', import.meta.url).pathname;
 mkdirSync(OUT, { recursive: true });
@@ -259,7 +259,7 @@ await step('page 2, filled in, downloads as "AWV Preventive Services" in English
   });
   const all = pages.join(' ');
   for (const piece of [
-    'Annual Wellness Visit — Preventive Services',
+    'Annual Wellness Visit - Preventive Services',
     'Abdominal aortic aneurysm screening',
     'Breast cancer screening (Mammogram) - 1x/ yr',
     'Result: Neg',
@@ -277,7 +277,7 @@ await step('page 2, filled in, downloads as "AWV Preventive Services" in English
 });
 
 await step(
-  'saying page 2 arrived clears it — and the patient, since page 1 is untouched',
+  'saying page 2 arrived clears it - and the patient, since page 1 is untouched',
   async () => {
     await page
       .getByTestId('download-check')
@@ -372,7 +372,7 @@ await step(
         .check();
     }
     await pick(s, /^Education/, 'Beyond high school');
-    // 3 incorrect, one more counted for education beyond high school: 4 — mild.
+    // 3 incorrect, one more counted for education beyond high school: 4 - mild.
     await page
       .getByTestId('spmsq-score')
       .getByText('Mild cognitive impairment')
@@ -401,7 +401,7 @@ await step(
     });
     const all = pages.join(' ');
     for (const piece of [
-      'Annual Wellness Visit — Questionnaire',
+      'Annual Wellness Visit - Questionnaire',
       'Social History / Functional Ability Assessment',
       'Asked in Spanish',
       'Hija Testfamily',
@@ -417,7 +417,7 @@ await step(
       'Beyond high school',
       'Electronically signed by',
       // And again in Spanish.
-      'Visita Anual de Bienestar — Cuestionario',
+      'Visita Anual de Bienestar - Cuestionario',
       '¿con quién vive? Hija',
       'escala de dolor (0-10): 6',
       '3 días por semana',
@@ -428,7 +428,7 @@ await step(
       if (!all.includes(piece)) throw new Error(`page 1 lacks "${piece}"`);
     }
     const spanishStarts = pages.findIndex((text) =>
-      text.includes('Visita Anual de Bienestar — Cuestionario'),
+      text.includes('Visita Anual de Bienestar - Cuestionario'),
     );
     if (spanishStarts < 1) throw new Error(`Spanish starts on page ${spanishStarts + 1}`);
     if (pages[spanishStarts].includes('Social History'))
@@ -472,7 +472,7 @@ await step('saying page 1 arrived clears it, and leaving no longer asks', async 
 });
 
 await step('the patient’s details never reached the server', async () => {
-  if (requests.length === 0) throw new Error('no requests seen at all — is the listener working?');
+  if (requests.length === 0) throw new Error('no requests seen at all - is the listener working?');
   const leaks = requests.filter(({ url, body }) =>
     SECRETS.some((secret) => decodeURIComponent(url).includes(secret) || body.includes(secret)),
   );

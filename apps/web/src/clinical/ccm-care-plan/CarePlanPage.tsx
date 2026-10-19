@@ -44,7 +44,7 @@ import { FIXED_SECTIONS, planSection, validate } from './validate';
  * patient gets, then a plan for each chronic condition chosen (at least two),
  * made into one PDF in English, or English and Spanish.
  *
- * For providers (a job role with the clinical forms), managers and admins —
+ * For providers (a job role with the clinical forms), managers and admins -
  * unlike the BrainCheck Care Plan, whose access level brings nothing. Like it,
  * the form runs entirely in the browser: what is typed is never sent to the
  * server, never written to the browser's storage, and is gone when the page
@@ -173,7 +173,7 @@ function CarePlanScreen({ employee }: { employee: Employee }) {
       setMade(snapshot);
     } catch {
       setFailure(
-        'The PDF could not be made. Nothing was sent anywhere and the form is as you left it — try again, and tell the office if it keeps happening.',
+        'The PDF could not be made. Nothing was sent anywhere and the form is as you left it - try again, and tell the office if it keeps happening.',
       );
     } finally {
       setMaking(false);
@@ -226,7 +226,7 @@ function CarePlanScreen({ employee }: { employee: Employee }) {
       <div className="mx-auto max-w-4xl" translate="no" data-testid="ccm-care-plan">
         <PageHeading
           title="APCM Care Plan"
-          subtitle="For CCM and APCM. Stays on this device — nothing is sent or saved. Download the care plan at the end, in English, or English and Spanish."
+          subtitle="For CCM and APCM. Stays on this device - nothing is sent or saved. Download the care plan at the end, in English, or English and Spanish."
         />
 
         {cleared && (
@@ -323,7 +323,7 @@ function CarePlanScreen({ employee }: { employee: Employee }) {
             <div className="mt-4 max-w-sm">
               <DownloadButton
                 label="Download the care plan"
-                detail={`For eCW Documents and the patient — ${
+                detail={`For eCW Documents and the patient - ${
                   form.pdfLanguage === 'both' ? 'English and Spanish' : 'English'
                 }, prepared by you and signed electronically by ${reviewingProviderName()}. Print it from the PDF.`}
                 making={making}
@@ -347,7 +347,7 @@ function CarePlanScreen({ employee }: { employee: Employee }) {
                   onClick={clearForm}
                   className="mt-3 min-h-[44px] rounded-lg bg-brand-600 px-4 text-sm font-semibold text-white hover:bg-brand-700"
                 >
-                  Yes, it downloaded — clear the form
+                  Yes, it downloaded - clear the form
                 </button>
               </div>
             )}

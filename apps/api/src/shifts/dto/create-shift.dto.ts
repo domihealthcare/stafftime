@@ -11,7 +11,7 @@ import {
 } from 'class-validator';
 
 export class CreateShiftDto {
-  /// Who works it. Null or absent makes an **open shift** — a slot at a
+  /// Who works it. Null or absent makes an **open shift** - a slot at a
   /// location that still needs somebody.
   @IsOptional()
   @ValidateIf((_, value) => value !== null)
@@ -22,7 +22,7 @@ export class CreateShiftDto {
   locationId!: string;
 
   /// What job the shift is for (Front Desk, MA…). For somebody's shift, one
-  /// of the roles they hold — see `held-job-role.ts`; for an open one, any.
+  /// of the roles they hold - see `held-job-role.ts`; for an open one, any.
   @IsOptional()
   @ValidateIf((_, value) => value !== null)
   @IsUUID('4')
@@ -43,7 +43,7 @@ export class CreateShiftDto {
   @IsEnum(ShiftStatus)
   status?: ShiftStatus;
 
-  /// The manager's note — "7–12 upstairs, 12–3 downstairs". Shown to the
+  /// The manager's note - "7–12 upstairs, 12–3 downstairs". Shown to the
   /// person on it, and on the printed rota. On an edit, null (or blank)
   /// clears it.
   @IsOptional()

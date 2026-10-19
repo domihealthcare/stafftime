@@ -27,7 +27,7 @@ export class ClosingCountDto {
   value!: number;
 }
 
-/// What somebody filled in at clock-out. Ids only, and numbers — never words:
+/// What somebody filled in at clock-out. Ids only, and numbers - never words:
 /// there is no free text anywhere in a closing checklist.
 export class ClosingSubmissionDto {
   /// They chose to clock out without it.

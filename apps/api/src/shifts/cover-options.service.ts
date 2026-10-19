@@ -16,16 +16,16 @@ import {
 } from './cover-options';
 
 /**
- * "Who can cover this?" — everybody who could work a shift, best first, with
+ * "Who can cover this?" - everybody who could work a shift, best first, with
  * the reason for each (Dominguez, October 2026: making the app smarter).
  *
  * Asked from the shift's pop-up on the rota, for an open shift or for one
  * whose person needs replacing. The people are those the shift could go to
- * at all: still working here, at its office, and — for a shift with a job
- * role — in that role. The rules are the scheduler's own: the overtime week
+ * at all: still working here, at its office, and - for a shift with a job
+ * role - in that role. The rules are the scheduler's own: the overtime week
  * starts on the pay period's weekday and counts every office and drafts;
  * availability is `clashFor`; time off is the approved and the undecided.
- * Nothing is stored and nobody is told — it only reads.
+ * Nothing is stored and nobody is told - it only reads.
  */
 @Injectable()
 export class CoverOptionsService {
@@ -158,7 +158,7 @@ export class CoverOptionsService {
   }
 
   /**
-   * A first draft for these open shifts — the ones on the rota on screen —
+   * A first draft for these open shifts - the ones on the rota on screen -
    * somebody free for each, or nobody. Only reads: the manager ticks the ones
    * to keep and they are assigned as usual. See `planCover`.
    */

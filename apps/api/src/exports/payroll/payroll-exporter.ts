@@ -6,7 +6,7 @@ import { TimesheetData } from '../timesheet-export.service';
  * wants", exactly as the brief asks for: one interface, one class per provider,
  * and adding Gusto or Paychex later touches nothing in the timesheet logic.
  *
- * The aggregation — who worked, for how long, what counts as overtime — happens
+ * The aggregation - who worked, for how long, what counts as overtime - happens
  * once in `TimesheetExportService` and is handed to the exporter already done.
  * An exporter's whole job is layout: which columns, in what order, with which
  * pay codes.
@@ -23,14 +23,14 @@ export interface PayrollExporter {
   readonly description: string;
 
   /**
-   * Whether it can actually be used yet, and why not when not — shown to the
+   * Whether it can actually be used yet, and why not when not - shown to the
    * manager verbatim. ADP TotalSource waits on settings an admin enters, and
    * says so rather than being absent: a target that is not set up is easier
    * to finish when the app names what is missing.
    */
   readiness(): Promise<PayrollReadiness>;
 
-  /// Options this target insists on, applied before the hours are added up —
+  /// Options this target insists on, applied before the hours are added up -
   /// a payroll import needs overtime split, whatever the form said.
   adjust?(dto: ExportTimesheetDto): ExportTimesheetDto;
 

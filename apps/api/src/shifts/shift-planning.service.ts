@@ -47,7 +47,7 @@ import {
 const MAX_GENERATED_SHIFTS = 200;
 const MAX_SPAN_DAYS = 400;
 
-/// How far ahead a standing shift — one with no end date — is written out.
+/// How far ahead a standing shift - one with no end date - is written out.
 /// Eight weeks: past anything a manager plans or staff look at in the month
 /// view, and the nightly job keeps it there.
 export const STANDING_DAYS_AHEAD = 56;
@@ -78,7 +78,7 @@ export interface PlanResult {
   skipped: PlannedSkip[];
   /// The dates that now have a shift, for the UI to jump to.
   dates: string[];
-  /// Anyone these shifts leave past the overtime line, week by week — said
+  /// Anyone these shifts leave past the overtime line, week by week - said
   /// with the result, because a repeating rota can reach weeks nobody is
   /// looking at yet.
   overtime: OvertimeWarning[];
@@ -257,7 +257,7 @@ export class ShiftPlanningService {
    * `STANDING_DAYS_AHEAD` days ahead. Run by the nightly job.
    *
    * It carries on from the day after the last date already written, never
-   * before — so a shift a manager removed by hand stays removed — and it
+   * before - so a shift a manager removed by hand stays removed - and it
    * clashes, skips and warns exactly as a repeat does. Nobody is told under
    * the bell: they were told "every Monday, no end date" when it was made,
    * and a new line every night would be noise.
@@ -329,8 +329,8 @@ export class ShiftPlanningService {
   }
 
   /// The standing shifts still running, for the Schedule's list of them.
-  /// One stopped before its first day — replaced in a usual week before it
-  /// began — never ran, and is left out.
+  /// One stopped before its first day - replaced in a usual week before it
+  /// began - never ran, and is left out.
   async standing(now: Date = new Date()) {
     const today = localDateIn(now, PRACTICE_ZONE);
     const running = await this.prisma.shiftSeries.findMany({
@@ -550,7 +550,7 @@ export class ShiftPlanningService {
           published.length === 1
             ? 'A shift taken off your schedule'
             : `${published.length} shifts taken off your schedule`,
-        body: `${capitalised(patternPhrase(patternOf(series)))} after ${shortDay(lastDate)} — that regular shift has ended.`,
+        body: `${capitalised(patternPhrase(patternOf(series)))} after ${shortDay(lastDate)} - that regular shift has ended.`,
         link: '/schedule',
       });
     }
@@ -560,8 +560,8 @@ export class ShiftPlanningService {
   }
 
   /**
-   * Sets somebody's usual week in one go — "Mondays 12 to 8 at North Bergen,
-   * Tuesdays 9 to 5 at West New York, Fridays from home" — from `from` on
+   * Sets somebody's usual week in one go - "Mondays 12 to 8 at North Bergen,
+   * Tuesdays 9 to 5 at West New York, Fridays from home" - from `from` on
    * (Dominguez, September 2026). Before, a person whose hours or office
    * differ day to day needed a regular shift made for each day by hand.
    *
@@ -653,7 +653,7 @@ export class ShiftPlanningService {
     for (const group of wanted.values()) group.daysOfWeek.sort();
 
     // A usual week is made of every-week regular shifts. One on certain weeks
-    // only — the first Saturday of the month — is left running beside it.
+    // only - the first Saturday of the month - is left running beside it.
     const current = await this.prisma.shiftSeries.findMany({
       where: { employeeId, endsOn: null, everyWeeks: 1, weeksOfMonth: { isEmpty: true } },
       include: { location: { select: { timezone: true } } },
@@ -814,7 +814,7 @@ export class ShiftPlanningService {
   }
 
   /**
-   * Takes a regular shift's shifts off the rota from `from` — on the given
+   * Takes a regular shift's shifts off the rota from `from` - on the given
    * weekdays only, when given. A draft is deleted, a published shift is
    * cancelled so the person keeps a record of it; one already started, or
    * with a punch against it, is never touched.
@@ -862,7 +862,7 @@ export class ShiftPlanningService {
    * Copies a week forward.
    *
    * Shifts move by whole days rather than a fixed number of milliseconds, and
-   * are rebuilt from their local wall-clock time — so a 9am shift copied across
+   * are rebuilt from their local wall-clock time - so a 9am shift copied across
    * a clock change is still 9am, not 8 or 10.
    */
   async copyWeek(dto: CopyWeekDto, createdById: string): Promise<PlanResult> {
@@ -977,7 +977,7 @@ export class ShiftPlanningService {
   /**
    * Publishes several drafts in one go.
    *
-   * Only drafts are touched — an id that is already published, cancelled or
+   * Only drafts are touched - an id that is already published, cancelled or
    * gone is counted as skipped, never an error, so a stale screen can still
    * press the button. Each person hears once ("4 new shifts on your schedule"),
    * not once per shift, and hears about overtime once, on the crossing.
@@ -1030,7 +1030,7 @@ export class ShiftPlanningService {
    * Day-by-day staffing for a window: who is on, how many hours are covered,
    * who is away, and who the rota is about to push into overtime.
    *
-   * The point is the gaps — a day with nobody scheduled, somebody scheduled
+   * The point is the gaps - a day with nobody scheduled, somebody scheduled
    * while they are on approved leave, or a week that has quietly passed forty
    * hours for someone.
    */
@@ -1118,7 +1118,7 @@ export class ShiftPlanningService {
           status: shift.status,
           // The thing a manager needs to see: scheduled while on leave.
           conflictsWithLeave: shift.employeeId !== null && awayIds.has(shift.employeeId),
-          // And scheduled when they said they could not work — a warning, not
+          // And scheduled when they said they could not work - a warning, not
           // a refusal, because sometimes a manager has to ask anyway.
           unavailable: clashFor((shift.employeeId && rulesFor.get(shift.employeeId)) || [], {
             date,
@@ -1154,7 +1154,7 @@ export class ShiftPlanningService {
       days,
       // Only people past the line. "Close to it" is said while a shift is
       // being added (see OvertimeService.check), not left standing afterwards
-      // — asked for by Dominguez, September 2026.
+      // - asked for by Dominguez, September 2026.
       overtime: await this.overtimeForWeeksTouching(dates, query.locationId),
       // The response says which line it applied. Without it the screen has to
       // guess, and a screen that guesses "40" while the practice has set 20
@@ -1183,7 +1183,7 @@ export class ShiftPlanningService {
    *
    * Scheduled hours, not worked ones: this is a question about a rota being
    * built, and mixing in actual punches would make the number impossible to
-   * explain. Hourly staff only, matching the payroll export — see the note
+   * explain. Hourly staff only, matching the payroll export - see the note
    * there about pay type not being the legal test for exempt status.
    *
    * The threshold is the practice's, not a constant: forty is the federal line
@@ -1265,7 +1265,7 @@ export class ShiftPlanningService {
     employeeId: string,
     count: number,
     dates: string[],
-    /// For a regular shift: which days, in words — "Mondays".
+    /// For a regular shift: which days, in words - "Mondays".
     standing?: string,
   ) {
     if (count === 0) return;
@@ -1517,7 +1517,7 @@ const WEEKDAY_PLURAL = [
   'Sundays',
 ];
 
-/// "Mondays", "Mondays and Thursdays", "Mondays, Wednesdays and Fridays" —
+/// "Mondays", "Mondays and Thursdays", "Mondays, Wednesdays and Fridays" -
 /// in the week's order as the practice reads it, Sunday first.
 export function weekdaysPhrase(daysOfWeek: number[]): string {
   const names = [...new Set(daysOfWeek)]
@@ -1553,7 +1553,7 @@ export function clockTime(time: string): string {
   return `${hour}${m ? `:${String(m).padStart(2, '0')}` : ''}${h < 12 ? 'am' : 'pm'}`;
 }
 
-/// "Mondays 12pm–8pm, Tuesdays 9am–5pm" — Sunday first; "no regular shifts"
+/// "Mondays 12pm–8pm, Tuesdays 9am–5pm" - Sunday first; "no regular shifts"
 /// for an empty week. Offices are left to the Schedule, one tap away.
 export function weekSummary(days: { dayOfWeek: number; startTime: string; endTime: string }[]) {
   if (days.length === 0) return 'no regular shifts';

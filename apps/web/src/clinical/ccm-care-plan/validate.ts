@@ -5,7 +5,7 @@ import { OTHER_CONDITION, conditionOf } from './conditions';
 import { lines, planFor, type CarePlanForm } from './form';
 
 /**
- * What still stands between the care plan and its PDF — one list, used for
+ * What still stands between the care plan and its PDF - one list, used for
  * the checklist beside the button, the ticks in the progress bar and the
  * button itself, as on the 99483 form.
  */
@@ -226,7 +226,7 @@ export function validate(form: CarePlanForm, today: string): Problem[] {
         plan[part.key].length > 0 || !blank(plan.other[part.key]),
         section,
         `plans.${condition}.${part.key}`,
-        `${name}: ${part.label.toLowerCase()} — tick at least one, or write one.`,
+        `${name}: ${part.label.toLowerCase()} - tick at least one, or write one.`,
       );
     }
     need(

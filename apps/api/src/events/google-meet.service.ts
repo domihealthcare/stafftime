@@ -68,7 +68,7 @@ export class GoogleMeetService {
           ? 'the Workspace admin has not allowed the app to create meetings yet'
           : error.reason;
       throw new BadGatewayException(
-        `Google did not make a Meet link (${reason}). Nothing was saved — try again, or paste a link instead.`,
+        `Google did not make a Meet link (${reason}). Nothing was saved - try again, or paste a link instead.`,
       );
     }
   }

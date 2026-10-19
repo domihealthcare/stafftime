@@ -158,7 +158,7 @@ await step('the scheduler warns about a shift on a time somebody can’t work, b
 await mgr.screenshot({ path: `${OUT}/96-scheduler-availability.png`, fullPage: true });
 
 await step('a manager sees everyone’s, and cannot change Frankie’s', async () => {
-  await mgr.getByRole('link', { name: 'Availability — yours and the team’s' }).click();
+  await mgr.getByRole('link', { name: 'Availability - yours and the team’s' }).click();
   const card = mgr.getByTestId('team-Frankie Front-Desk');
   await card.waitFor({ timeout: 15000 });
   await card.getByText(/Saturdays \(all day\)/).waitFor({ timeout: 5000 });
@@ -176,7 +176,7 @@ await step('removing a weekly rule that has not started just deletes it', async 
   await card.getByRole('button', { name: 'Remove' }).click();
   await frankie.getByRole('alertdialog', { name: 'Remove this?' }).getByRole('button', { name: 'Yes, remove' }).click();
   await frankie.getByText('Removed.', { exact: true }).waitFor({ timeout: 10000 });
-  // Gone from the list — waited for, not sampled once, so a slow reload
+  // Gone from the list - waited for, not sampled once, so a slow reload
   // cannot pass or fail this by timing alone.
   await card.waitFor({ state: 'detached', timeout: 10000 });
   const rules = (await json(frankie, '/availability')).body.rules;

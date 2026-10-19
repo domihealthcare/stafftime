@@ -1,13 +1,13 @@
 import { addDaysTo, isoWeekdayOf } from '../common/util/zoned-time.util';
 
 /**
- * Moving holidays, copied right (October 2026, Dominguez — making the app
+ * Moving holidays, copied right (October 2026, Dominguez - making the app
  * smarter). **Copy these into next year** kept every closure and holiday on
  * the same date, so Thanksgiving, Memorial Day, Labor Day and the rest had to
  * be fixed by hand each year. Here the US holidays that move are recognised
  * by name, and moved by their rule ("the fourth Thursday of November").
  *
- * Only when this year's entry was really on the rule's day — a "Thanksgiving
+ * Only when this year's entry was really on the rule's day - a "Thanksgiving
  * lunch" on 20 November is somebody's event, not the holiday, and keeps its
  * date. Anything not recognised keeps its date, as before. Nothing is decided
  * about a fixed holiday landing on a weekend (which day the office takes off
@@ -100,7 +100,7 @@ export const MOVING_HOLIDAYS: MovingHoliday[] = [
 ];
 
 /// Where a closure or holiday that started on `firstDay` (in `fromYear`)
-/// starts next year: the moving holiday's day when it was on it, else null —
+/// starts next year: the moving holiday's day when it was on it, else null -
 /// keep the same date.
 export function movedFirstDay(title: string, firstDay: string, toYear: number): string | null {
   const fromYear = Number(firstDay.slice(0, 4));

@@ -40,9 +40,9 @@ const money = (amount: number) =>
 const day = (date: string) => formatCalendarDate(date);
 
 /**
- * Vendor payments (October 2026, Dominguez — in place of the "Payments to
+ * Vendor payments (October 2026, Dominguez - in place of the "Payments to
  * vendors" spreadsheet): each vendor or contractor and every invoice, check
- * or cash payment to them — to pay, sent, completed. Admins only. Money and
+ * or cash payment to them - to pay, sent, completed. Admins only. Money and
  * paperwork only: never a patient's name.
  */
 export function VendorsPage() {
@@ -165,8 +165,8 @@ export function VendorsPage() {
         <Card className="p-4 text-sm text-slate-600">Nobody matches “{search.trim()}”.</Card>
       ) : shown.length === 0 ? (
         <Card className="p-4 text-sm text-slate-600">
-          No vendors yet. Add each one you pay — a company, or somebody paid by the month or by the
-          reading — then their payments under them.
+          No vendors yet. Add each one you pay - a company, or somebody paid by the month or by the
+          reading - then their payments under them.
         </Card>
       ) : (
         <div className="grid gap-4 lg:grid-cols-2">
@@ -480,7 +480,7 @@ function PaymentForm({
   async function save(event: React.FormEvent) {
     event.preventDefault();
     if (!vendor) {
-      setProblem('Choose the vendor first — type part of their name.');
+      setProblem('Choose the vendor first - type part of their name.');
       return;
     }
     const amount = form.amount.trim() ? Number(form.amount.replace(/[$,\s]/g, '')) : null;
@@ -557,7 +557,7 @@ function PaymentForm({
                   <ul className="mt-1 divide-y divide-slate-100 rounded-lg ring-1 ring-slate-200">
                     {matches.length === 0 ? (
                       <li className="px-3 py-2 text-sm text-slate-500">
-                        No vendor by that name — add them with + Vendor first.
+                        No vendor by that name - add them with + Vendor first.
                       </li>
                     ) : (
                       matches.map((match) => (
@@ -712,7 +712,7 @@ function PaymentForm({
             className={inputClass}
           />
           <p className="mt-1 text-xs text-slate-500">
-            Never a patient&rsquo;s name — say how many readings, not whose.
+            Never a patient&rsquo;s name - say how many readings, not whose.
           </p>
         </div>
         {problem && (

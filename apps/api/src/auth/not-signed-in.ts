@@ -2,9 +2,9 @@ import { ClockMethod, EmploymentStatus } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 
 /**
- * "Staff who never signed in" (October 2026, Dominguez — a "smarter" idea):
+ * "Staff who never signed in" (October 2026, Dominguez - a "smarter" idea):
  * everybody still at the practice who has not once signed in to the app, and
- * why that may be, so an admin can do the right thing — send the welcome
+ * why that may be, so an admin can do the right thing - send the welcome
  * email, send it again because the link ran out, or tell them their
  * temporary password. Shown on the Staff screen. Nothing new is stored.
  */
@@ -26,7 +26,7 @@ export interface NotSignedIn {
   email: string;
   standing: SignInStanding;
   welcomeSentAt: Date | null;
-  /// Has clocked in at the front-desk time clock — so is working, just not
+  /// Has clocked in at the front-desk time clock - so is working, just not
   /// in the app.
   usesTimeClock: boolean;
   /// The welcome email can (still) be sent: only to somebody with no password.

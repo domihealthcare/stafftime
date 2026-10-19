@@ -38,7 +38,7 @@ export interface OnCallDayView {
 export const WEEKS_OF_MONTH = [0, 1, 2, 3, 4, -1] as const;
 
 /// Which week of the month a day is in, for the rota: the nth of its weekday,
-/// and whether it is the last — a Sunday counted with the Saturday before.
+/// and whether it is the last - a Sunday counted with the Saturday before.
 export function weekOfMonthOf(date: string): { nth: number; last: boolean } {
   const anchor = isoWeekdayOf(date) === 7 ? addDaysTo(date, -1) : date;
   const day = Number(anchor.slice(8, 10));
@@ -95,7 +95,7 @@ export function turnDateAt(today: string, timeNow: string, rotas: RotaRule[]): s
   return timeNow < changesAt ? addDaysTo(today, -1) : today;
 }
 
-/// "Mondays", "the 4th Saturday", "the last Friday" — an entry in words.
+/// "Mondays", "the 4th Saturday", "the last Friday" - an entry in words.
 export function entryWords(weekday: number, weekOfMonth: number): string {
   const days = ['', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
   if (weekOfMonth === 0) return `${days[weekday]}s`;

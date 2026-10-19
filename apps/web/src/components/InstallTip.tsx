@@ -64,19 +64,19 @@ export function InstallTip() {
             <p className="mt-1">
               Tap <strong>Share</strong> <ShareIcon /> in Chrome&rsquo;s address bar at the top (or{' '}
               <strong>⋯</strong>, then <strong>Share</strong>), then{' '}
-              <strong>Add to Home Screen</strong>. It opens like an app — no app store needed.
+              <strong>Add to Home Screen</strong>. It opens like an app - no app store needed.
             </p>
           ) : kind === 'ios' ? (
             <p className="mt-1">
               Tap <strong>Share</strong> <ShareIcon /> at the bottom of Safari, then{' '}
-              <strong>Add to Home Screen</strong>. It opens like an app — no app store needed.
+              <strong>Add to Home Screen</strong>. It opens like an app - no app store needed.
             </p>
           ) : canPrompt ? (
-            <p className="mt-1">It opens like an app — no app store needed.</p>
+            <p className="mt-1">It opens like an app - no app store needed.</p>
           ) : (
             <p className="mt-1">
               Tap the <strong>⋮</strong> menu in Chrome, then <strong>Add to Home screen</strong>{' '}
-              (or <strong>Install app</strong>). It opens like an app — no app store needed.
+              (or <strong>Install app</strong>). It opens like an app - no app store needed.
             </p>
           )}
           <div className="mt-3 flex items-center gap-4">

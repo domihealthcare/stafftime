@@ -30,13 +30,13 @@ import type {
 /// Shown wherever somebody is about to say something. It has to be true, and
 /// it is: see `SurveysService` and the guard in no-sensitive-data.spec.ts.
 const ANONYMOUS =
-  'Anonymous — your name is never stored with what you say, and nobody, including admins, can find out.';
+  'Anonymous - your name is never stored with what you say, and nobody, including admins, can find out.';
 
 /**
  * Pulse surveys and the suggestion box.
  *
  * Everybody sees the surveys meant for them and the box. Managers also write
- * surveys, read the box, and see results — once a survey is closed and at
+ * surveys, read the box, and see results - once a survey is closed and at
  * least three people answered, so no result can point at a person.
  */
 export function SurveysPage() {
@@ -90,7 +90,7 @@ export function SurveysPage() {
         </h2>
         {thanked && (
           <div className="mb-3">
-            <Alert tone="success">{t('Thank you — sent anonymously.')}</Alert>
+            <Alert tone="success">{t('Thank you - sent anonymously.')}</Alert>
           </div>
         )}
         {toAnswer.length === 0 ? (
@@ -490,7 +490,7 @@ function ResultsView({ results }: { results: SurveyResults }) {
           {question.kind === 'RATING' && question.counts && (
             <div className="mt-1">
               <p className="text-sm text-slate-700">
-                Average <span className="font-semibold">{question.average ?? '—'}</span> out of 5
+                Average <span className="font-semibold">{question.average ?? '-'}</span> out of 5
               </p>
               <Bars labels={['1', '2', '3', '4', '5']} counts={question.counts} />
             </div>

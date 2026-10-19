@@ -143,7 +143,7 @@ await step('scheduling somebody while the office is closed warns, asks, and then
   const row = manager.getByTestId('rota-row-Frankie Front-Desk');
   await row.getByRole('button', { name: /^Add a shift for Frankie Front-Desk on Friday/ }).click();
   const dialog = manager.getByRole('dialog', { name: 'Shift for Frankie Front-Desk' });
-  await dialog.getByTestId('closure-warning').getByText(/Both offices are closed — Christmas Day/).waitFor({ timeout: 10000 });
+  await dialog.getByTestId('closure-warning').getByText(/Both offices are closed - Christmas Day/).waitFor({ timeout: 10000 });
   await manager.screenshot({ path: `${OUT}/closures-warning.png`, fullPage: true });
   await dialog.getByRole('button', { name: 'Add shift' }).click();
   const asked = manager.getByRole('alertdialog', { name: 'The office is closed then' });

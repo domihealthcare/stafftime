@@ -18,7 +18,7 @@ interface Preset {
 
 /// The pay periods, fetched once a day and shared: every picker on every
 /// screen asks the same question, and "this pay period" only moves at a date
-/// change — so a tab left open overnight asks again the next day.
+/// change - so a tab left open overnight asks again the next day.
 let payPeriodRequest: Promise<PayPeriodInfo | null> | null = null;
 let payPeriodDay = '';
 function loadPayPeriod(): Promise<PayPeriodInfo | null> {
@@ -94,8 +94,8 @@ export function usePresetRange(key: PresetKey, fallback: PresetKey): DayRange | 
 }
 
 /**
- * Which days a screen is about: a row of shortcuts — this or last week, pay
- * period or month — and, for anything else, two dates.
+ * Which days a screen is about: a row of shortcuts - this or last week, pay
+ * period or month - and, for anything else, two dates.
  *
  * The pay-period shortcuts come from the server, which counts fortnights from
  * the practice's pay-period start, so the Timesheet and the Export can never

@@ -6,7 +6,7 @@ const FRIDAY = 5;
 
 /**
  * The day a pay period is paid: the Friday after it ends (Dominguez, October
- * 2026). A period that ends on a Friday is paid the Friday a week later —
+ * 2026). A period that ends on a Friday is paid the Friday a week later -
  * "after", not "on".
  */
 export function payDayFor(periodEnd: string): string {

@@ -11,7 +11,7 @@ import {
 import { parseRate } from './rate';
 
 /**
- * The reimbursements board (October 2026, Dominguez — the practice's
+ * The reimbursements board (October 2026, Dominguez - the practice's
  * "Reimbursements - Domi TCHG" sheet, "a big board, but also searchable"):
  * what each insurance pays for each CPT code. The practice's money, so
  * managers and admins only, reading and keeping alike (the controller).
@@ -22,7 +22,7 @@ export class ReimbursementsService {
 
   constructor(private readonly prisma: PrismaService) {}
 
-  /// The whole board: about 170 codes × 36 insurances, 1,650 amounts — sent
+  /// The whole board: about 170 codes × 36 insurances, 1,650 amounts - sent
   /// at once so searching is instant.
   async board() {
     const [codes, payers, rates] = await Promise.all([

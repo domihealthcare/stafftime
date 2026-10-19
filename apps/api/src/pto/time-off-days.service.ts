@@ -33,7 +33,7 @@ export interface TimeOffPreview {
 /**
  * The days a time-off request takes, worked out the same way everywhere
  * (`counted-days.ts`: weekdays, not a day the person's office is shut), and
- * what that does to their balance — for the request form before it is sent,
+ * what that does to their balance - for the request form before it is sent,
  * the "this may be unpaid" check when it is, and the request lists.
  */
 @Injectable()

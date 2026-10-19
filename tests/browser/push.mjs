@@ -20,7 +20,7 @@ const step = async (name, fn) => {
 
 /**
  * Phone notifications (Dominguez, October 2026: "are we able to do this since
- * we dont have an iphone/android app?" — yes, web push). What rings the bell
+ * we dont have an iphone/android app?" - yes, web push). What rings the bell
  * also goes to each device somebody turned on. The worker only shows
  * notifications: no fetch handler, no cache, never registered until turned
  * on, so a punch with no signal still plainly fails.

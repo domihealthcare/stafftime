@@ -5,7 +5,7 @@ import type { PtoAdjustment, PtoPolicy, StaffBalance } from '../lib/types';
 import { Alert, Card, Spinner, buttonClass } from './ui';
 
 /**
- * Everybody's time off this policy year, for managers and admins — and the
+ * Everybody's time off this policy year, for managers and admins - and the
  * way to put in what the app never saw (Dominguez, September 2026): days
  * people had already taken before Domi Staff, and a yearly allowance of their
  * own for anybody not on the practice's.
@@ -22,7 +22,7 @@ export function StaffPtoBalances({
 }: {
   /// The practice's policy, if the screen already has it; otherwise read here.
   policy?: PtoPolicy;
-  /// Something was saved — the manager's own balance may be among them.
+  /// Something was saved - the manager's own balance may be among them.
   onChanged?: () => void;
   /// Open from the start (the Dashboard, October 2026) rather than on a tap.
   startOpen?: boolean;
@@ -337,7 +337,7 @@ export function AdjustForm({
           field(
             'vacationCarriedOver',
             'PTO rolled over into this year',
-            'All that rolled over, even if some is used — used days go in PTO already taken. Blank: worked out by the app (none before Domi Staff).',
+            'All that rolled over, even if some is used - used days go in PTO already taken. Blank: worked out by the app (none before Domi Staff).',
             String(row.balance.vacation.carriedOver),
           )}
         {(policy.sickCarryoverDays > 0 || row.sickCarriedOver !== null) &&

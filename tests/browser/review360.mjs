@@ -186,7 +186,7 @@ await step('the manager offers two times; Frankie is told, picks one, and it is 
   const card = morgan.getByTestId('review360-meeting');
   await card.getByRole('button', { name: 'Offer times to meet' }).click();
   await card.getByTestId('offer-times').getByRole('button', { name: 'Send 2 times' }).click();
-  await card.getByText(/Times offered — waiting for Frankie/).waitFor({ timeout: 10000 });
+  await card.getByText(/Times offered - waiting for Frankie/).waitFor({ timeout: 10000 });
 
   const note = (await call(frankie, '/notifications')).body.items.find((n) =>
     n.title.endsWith('would like to meet about your 360 feedback'),

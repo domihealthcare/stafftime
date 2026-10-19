@@ -21,18 +21,18 @@ export const ON_NOW_WINDOW_HOURS = 16;
  *
  * Work contact details only: name, email, phone (confirmed as fine to share
  * with colleagues, September 2026), job roles and locations. Nothing from the
- * personnel side — pay type, hire date, status — and nobody who has left.
+ * personnel side - pay type, hire date, status - and nobody who has left.
  * Birthdays (month and day, no year) are here too, since September 2026, so
  * colleagues can wish each other a happy birthday.
  *
  * And who is working from home today (October 2026, Dominguez): a published
  * work-from-home shift today that has not yet ended, so colleagues know not
  * to look for them at the desk even before they clock in. Only that one fact
- * and its hours — nobody's office shifts, which staff still do not see.
+ * and its hours - nobody's office shifts, which staff still do not see.
  *
  * And somebody who does not clock in (`Employee.clocksIn`, October 2026,
  * Dominguez: "it still should show where they are for that shift in the
- * directory") is "in now" at their shift's office — or working from home —
+ * directory") is "in now" at their shift's office - or working from home -
  * while a published shift of theirs is running, unless they are on approved
  * time off that day. Where, not the shift's hours.
  */
@@ -41,7 +41,7 @@ export class DirectoryService {
   constructor(private readonly prisma: PrismaService) {}
 
   /**
-   * Whose birthday falls between two dates — this week on the home screen,
+   * Whose birthday falls between two dates - this week on the home screen,
    * the days on screen in the Schedule. Everybody still here; no year, so no
    * ages, because none is stored.
    */
@@ -188,7 +188,7 @@ export class DirectoryService {
                 // What they are working as: the job role of the shift they
                 // clocked in to (Dominguez, October 2026: "it should be how
                 // they are scheduled"); null without one, when the Directory
-                // goes by their main job role. Only the role — never the
+                // goes by their main job role. Only the role - never the
                 // shift's times, which colleagues do not see.
                 jobRole: open.shift?.jobRole ?? null,
                 ...(showSince ? { since: open.clockInAt } : {}),

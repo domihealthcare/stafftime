@@ -413,6 +413,43 @@ describe('PtoService', () => {
     });
   });
 
+  describe('changing the kind', () => {
+    const approved = {
+      id: 'pto-1',
+      employeeId: 'emp-1',
+      status: PtoStatus.APPROVED,
+      type: PtoType.VACATION,
+    };
+
+    it('lets a manager turn somebody else’s PTO into Sick, even for days gone by', async () => {
+      const { service, prisma } = build({ request: approved });
+      await service.changeType('pto-1', PtoType.SICK, manager);
+      expect(prisma.ptoRequest.update.mock.calls[0][0].data.type).toBe(PtoType.SICK);
+    });
+
+    it('not their own, and not one already denied or cancelled', async () => {
+      const own = build({ request: approved });
+      await expect(
+        own.service.changeType('pto-1', PtoType.SICK, { ...manager, id: 'emp-1' }),
+      ).rejects.toThrow(ForbiddenException);
+      const denied = build({ request: { ...approved, status: PtoStatus.DENIED } });
+      await expect(denied.service.changeType('pto-1', PtoType.SICK, manager)).rejects.toThrow(
+        BadRequestException,
+      );
+    });
+
+    it('refuses a change to what it already is, and an unknown request', async () => {
+      const same = build({ request: approved });
+      await expect(same.service.changeType('pto-1', PtoType.VACATION, manager)).rejects.toThrow(
+        BadRequestException,
+      );
+      const none = build();
+      await expect(none.service.changeType('pto-1', PtoType.SICK, manager)).rejects.toThrow(
+        NotFoundException,
+      );
+    });
+  });
+
   describe('cancelling', () => {
     const future = {
       id: 'pto-1',
@@ -520,7 +557,7 @@ describe('PtoService', () => {
       await service.conflictingShifts('pto-1');
 
       const where = prisma.shift.findMany.mock.calls[0][0].where;
-      // Up to the end of the 5th, not its midnight start — and New Jersey's
+      // Up to the end of the 5th, not its midnight start - and New Jersey's
       // days (EST, UTC−5), not UTC's, so an evening shift the night before
       // is not counted.
       expect(where.startsAt).toEqual({ lt: new Date('2026-11-06T05:00:00.000Z') });

@@ -53,7 +53,7 @@ export class ResourcesService {
    * One section for everybody, then one per job role.
    *
    * Staff see the everybody section and their own roles. Managers see every
-   * role, including empty ones, because they are the ones filling them — with
+   * role, including empty ones, because they are the ones filling them - with
    * their own marked, so they can still see what their staff see.
    */
   async sections(actor: AuthUser) {
@@ -135,7 +135,7 @@ export class ResourcesService {
    * folder inside it, for whoever may see the link. Nothing is kept.
    *
    * `off` until Google is set up; `unreadable` when the robot cannot see the
-   * folder — a manager is told which address to share it with.
+   * folder - a manager is told which address to share it with.
    */
   async driveFiles(
     id: string,
@@ -174,7 +174,7 @@ export class ResourcesService {
 
   /**
    * One file from the folder a link points at (October 2026, Dominguez), for
-   * whoever may see the link — so the folder is shared with the robot alone
+   * whoever may see the link - so the folder is shared with the robot alone
    * and staff need no Google account. Handed on as it comes; never kept.
    */
   async driveFile(id: string, fileId: string, actor: AuthUser): Promise<DriveDownload> {

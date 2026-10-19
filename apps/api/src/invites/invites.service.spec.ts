@@ -100,7 +100,7 @@ describe('CalendarInvitesService', () => {
       const { service } = build({ shifts: [SHIFT] });
       const [wanted] = await service.wanted(NOW);
       expect(wanted.body.attendees).toEqual([{ email: 'frankie@example.com' }]);
-      expect(wanted.body.summary).toBe('Work — North Bergen');
+      expect(wanted.body.summary).toBe('Work - North Bergen');
       expect(wanted.body.location).toBe('1 Main St, North Bergen, NJ');
     });
 
@@ -140,7 +140,7 @@ describe('CalendarInvitesService', () => {
       await expect(service.sync({ now: NOW })).resolves.toMatchObject({ sent: 1, remaining: 0 });
       expect(google.put).toHaveBeenCalledWith(
         'shift11111111222243338444555555555555',
-        expect.objectContaining({ summary: 'Work — North Bergen' }),
+        expect.objectContaining({ summary: 'Work - North Bergen' }),
       );
       expect(prisma.calendarInvite.create.mock.calls[0][0].data).toMatchObject({
         kind: CalendarInviteKind.SHIFT,

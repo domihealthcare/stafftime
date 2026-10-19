@@ -17,7 +17,7 @@ const step = async (name, fn) => {
   catch (e) { console.log(`FAIL  ${name}: ${e.message}`); errors.push(`${name}: ${e.message}`); }
 };
 
-/// A date n days from today — New Jersey's today, as the app counts it. From
+/// A date n days from today - New Jersey's today, as the app counts it. From
 /// 8pm there the UTC date is already tomorrow, and "21 days left" read 20.
 const dayOffset = (n) => {
   const today = new Intl.DateTimeFormat('en-CA', { timeZone: 'America/New_York' }).format(new Date());

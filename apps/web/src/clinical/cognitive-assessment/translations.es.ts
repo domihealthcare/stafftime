@@ -51,7 +51,7 @@ export const HANDOUT_STRINGS = {
     notYet: 'Not yet',
     header: (name: string, dob: string, date: string) =>
       `${name}  |  Date of birth: ${dob}  |  Visit: ${date}`,
-    footer: 'Domi Healthcare — memory care plan',
+    footer: 'Domi Healthcare - memory care plan',
   },
   es: {
     title: 'Su plan de cuidado de la memoria',
@@ -86,7 +86,7 @@ export const HANDOUT_STRINGS = {
     notYet: 'Todavía no',
     header: (name: string, dob: string, date: string) =>
       `${name}  |  Fecha de nacimiento: ${dob}  |  Visita: ${date}`,
-    footer: 'Domi Healthcare — plan de cuidado de la memoria',
+    footer: 'Domi Healthcare - plan de cuidado de la memoria',
   },
 };
 

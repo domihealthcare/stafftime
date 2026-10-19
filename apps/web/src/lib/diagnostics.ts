@@ -1,6 +1,6 @@
 import type { DiagnosticAnswer } from './types';
 
-/// How each answer on the diagnostics board reads and looks — green, red and
+/// How each answer on the diagnostics board reads and looks - green, red and
 /// blue as on the practice's sheet, with the word always shown, so nothing
 /// rests on the colour alone.
 export const ANSWERS: DiagnosticAnswer[] = ['YES', 'NO', 'PA', 'CALL_REF', 'NA'];

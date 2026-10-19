@@ -93,7 +93,7 @@ await step('staff answer on a phone', async () => {
   await form.getByLabel('Afternoons').check();
   await form.getByLabel('Anything else?').fill('More water in the break room.');
   await form.getByRole('button', { name: 'Send anonymously' }).click();
-  await frankie.getByText('Thank you — sent anonymously.').waitFor({ timeout: 10000 });
+  await frankie.getByText('Thank you - sent anonymously.').waitFor({ timeout: 10000 });
   const overflow = await frankie.evaluate(() => document.documentElement.scrollWidth > window.innerWidth);
   if (overflow) throw new Error('the surveys screen scrolls sideways on a phone');
 });
@@ -219,7 +219,7 @@ await step('Home has the suggestion box as a card with a box on it, not a link',
 
 await step('the card and the pop-up both explain how it is anonymous', async () => {
   const card = frankie.getByTestId('suggestion-box-card');
-  const how = card.getByRole('button', { name: /Truly anonymous — how\?/ });
+  const how = card.getByRole('button', { name: /Truly anonymous - how\?/ });
   await how.click();
   const explained = card.getByTestId('how-anonymous');
   await explained.getByText('Your name is not saved with it.').waitFor({ timeout: 5000 });
@@ -279,7 +279,7 @@ await step('the suggestion box keeps the message, the kind and the day, nothing 
   if (staffRead.status !== 403) throw new Error(`staff reading the box answered ${staffRead.status}`);
 });
 
-await step('managers are told something is waiting — the count, never the words', async () => {
+await step('managers are told something is waiting - the count, never the words', async () => {
   const attention = (await json(mgr, '/attention')).body;
   const lines = attention.newSuggestions ?? [];
   if (!lines.some((line) => /suggestions? waiting to be read/.test(line)))

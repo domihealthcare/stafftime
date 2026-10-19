@@ -143,16 +143,16 @@ describe('OvertimeService', () => {
     beforeAll(() => jest.useFakeTimers({ now: new Date('2026-10-07T15:00:00Z') }));
     afterAll(() => jest.useRealTimers());
 
-    it('lists this week and later ones that go over — not close ones, not past weeks', async () => {
+    it('lists this week and later ones that go over - not close ones, not past weeks', async () => {
       const { service, prisma } = build({
         shifts: [
-          // Last week, over — finished, so not mentioned.
+          // Last week, over - finished, so not mentioned.
           ...['2026-09-28', '2026-09-29', '2026-09-30', '2026-10-01', '2026-10-02'].map((d) =>
             shiftOn(d, 9),
           ),
           // This week: 44.
           ...['2026-10-05', '2026-10-06', '2026-10-07', '2026-10-08'].map((d) => shiftOn(d, 11)),
-          // Next week: 38, close — agreed and under the line, so not mentioned.
+          // Next week: 38, close - agreed and under the line, so not mentioned.
           ...['2026-10-12', '2026-10-13'].map((d) => shiftOn(d, 19)),
           // The week after: 16, fine.
           shiftOn('2026-10-19', 16),

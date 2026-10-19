@@ -20,7 +20,7 @@ function when(date: string): string {
 }
 
 /**
- * Colleagues' birthdays in the coming week, on the screen everybody opens —
+ * Colleagues' birthdays in the coming week, on the screen everybody opens -
  * asked for by Dominguez (September 2026) so people can wish each other a
  * happy birthday. Nothing is shown in a week without one.
  */

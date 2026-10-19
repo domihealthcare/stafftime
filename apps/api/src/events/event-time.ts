@@ -24,7 +24,7 @@ export function allDayDates(event: { startsAt: Date; endsAt: Date }) {
 }
 
 /**
- * When an event is, in words, on the practice's clock — for a notification.
+ * When an event is, in words, on the practice's clock - for a notification.
  *
  * "Wed, Oct 15" · "Wed, Oct 15 – Fri, Oct 17" ·
  * "Tue, Oct 14, 12:30 PM–1:30 PM" · "Fri, Oct 17, 6:00 PM – Sat, Oct 18, 1:00 AM"

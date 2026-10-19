@@ -26,7 +26,7 @@ export function clashPeople(people: TimeOffClash['off']): string {
 
 /**
  * On a request a manager is deciding: approving it leaves an office short of
- * one job role (October 2026 — too many off at once, seen before the second
+ * one job role (October 2026 - too many off at once, seen before the second
  * request is approved rather than after). A warning; Approve still works.
  */
 export function ClashNote({
@@ -72,7 +72,7 @@ export function ClashNote({
               : `${left} of ${clash.total} in ${clash.jobRoleName}`}{' '}
             on {clashDays(clash)}
             {clash.minimum !== null && <> (minimum {clash.minimum})</>}
-            {others.length > 0 && <> — also off: {clashPeople(others)}</>}.
+            {others.length > 0 && <> - also off: {clashPeople(others)}</>}.
           </li>
         );
       })}

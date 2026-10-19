@@ -32,8 +32,8 @@ function listed(counts: TestDataCounts) {
 
 /**
  * The step from trying the app out to using it for real. Test deployments and
- * admins only, like the demo data it clears. It shows what goes and — so
- * nobody is surprised — which accounts stay, before anything is touched.
+ * admins only, like the demo data it clears. It shows what goes and - so
+ * nobody is surprised - which accounts stay, before anything is touched.
  */
 export function GoLiveCard() {
   const confirm = useConfirm();
@@ -93,7 +93,7 @@ export function GoLiveCard() {
     <Card className="mt-6 p-4" testId="go-live">
       <h2 className="text-sm font-semibold text-slate-900">Start using it for real</h2>
       <p className="mt-1 text-sm text-slate-600">
-        Clears out the testing — the demo staff, who all share one password, and every shift, punch,
+        Clears out the testing - the demo staff, who all share one password, and every shift, punch,
         request, post and survey made while trying the app out. Your set-up stays: the offices and
         their pins, these settings, the ADP set-up, job roles, closing checklists, checklist
         templates, resources, kiosks and every real account.
@@ -110,7 +110,7 @@ export function GoLiveCard() {
           <div className="rounded-lg bg-amber-50 p-3 ring-1 ring-inset ring-amber-200">
             <p className="font-medium text-amber-900">Removed</p>
             {listed(preview.removing).length === 0 ? (
-              <p className="mt-1 text-amber-900">Nothing — it is already clear.</p>
+              <p className="mt-1 text-amber-900">Nothing - it is already clear.</p>
             ) : (
               <ul className="mt-1 list-disc space-y-0.5 pl-5 text-amber-900">
                 {listed(preview.removing).map((line) => (

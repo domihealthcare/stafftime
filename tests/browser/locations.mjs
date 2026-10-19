@@ -21,7 +21,7 @@ const step = async (name, fn) => {
 const ctx = await browser.newContext({
   viewport: { width: 420, height: 900 },
   permissions: ['geolocation'],
-  // A point ~80m from the seeded North Bergen pin — as if standing in the office.
+  // A point ~80m from the seeded North Bergen pin - as if standing in the office.
   geolocation: { latitude: 40.80472, longitude: -74.012, accuracy: 12 },
 });
 const page = await ctx.newPage();
@@ -76,7 +76,7 @@ await step('nothing is saved until Save is pressed', async () => {
 await page.screenshot({ path: `${OUT}/25-locations-captured.png`, fullPage: true });
 
 await step('saving persists the coordinates and the radius', async () => {
-  // Feet. 400 ft is about 122 m — tight enough that the point 300 m away below
+  // Feet. 400 ft is about 122 m - tight enough that the point 300 m away below
   // is outside it, and wide enough that the accuracy rule does not reject the
   // fix before the distance is even considered.
   await page.locator('input[id^="radius-"]').first().fill('400');
@@ -144,7 +144,7 @@ await step('an IP allow-list entry round-trips', async () => {
 await step('adding a location leaves an unsaved edit in another card alone', async () => {
   // Adding a location reloads the list. That reload must not rebuild the other
   // cards from the server and throw away what somebody has typed or captured
-  // but not yet saved — at the front desk, that is a pin they walked over to get.
+  // but not yet saved - at the front desk, that is a pin they walked over to get.
   await latField().fill('40.805555');
 
   await page.getByRole('button', { name: '+ Add a location' }).click();

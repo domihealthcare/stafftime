@@ -4,7 +4,7 @@ import { goTo, openMenu, goToManage } from './nav.mjs';
 import { openAccountMenu } from './account-menu.mjs';
 
 // Closing checklists: what Front Desk and MAs confirm when they clock out, the
-// manager's view of them and of the restock list, editing the lists — and
+// manager's view of them and of the restock list, editing the lists - and
 // Licenses / Onboarding moved off the top bar.
 const OUT = process.argv[2] || new URL('./shots/', import.meta.url).pathname;
 mkdirSync(OUT, { recursive: true });
@@ -144,7 +144,7 @@ await step('both roles’ lists are there, with rules as reminders rather than t
   const reminders = form().getByTestId('closing-reminders');
   await reminders.getByText(/Never leave a patient on hold longer than 1 minute/).waitFor({ timeout: 5000 });
   await reminders.getByText(/If vitals are out of the normal range/).waitFor({ timeout: 5000 });
-  for (const section of ['Everyone', 'Check In', 'Before checking out', 'Inventory — tick anything we need more of'])
+  for (const section of ['Everyone', 'Check In', 'Before checking out', 'Inventory - tick anything we need more of'])
     await form().getByTestId(`closing-section-${section}`).waitFor({ timeout: 5000 });
   if ((await form().getByRole('checkbox', { name: /If vitals are out/ }).count()) > 0)
     throw new Error('a rule can be ticked');
@@ -163,7 +163,7 @@ await step('the North Bergen trash line shows only on a Tuesday or Thursday', as
   if (shown !== trashDay) throw new Error(`shown=${shown} on a ${nowInNJ}`);
 });
 
-await step('there is nowhere to type words — ticks and numbers only', async () => {
+await step('there is nowhere to type words - ticks and numbers only', async () => {
   const free = await form().locator('textarea, input[type=text], input:not([type])').count();
   if (free > 0) throw new Error(`${free} free-text boxes on the checklist`);
 });
@@ -216,9 +216,9 @@ await step('the manager sees the clock-out, what was missed, and the short call 
 await step('the banner and the nightly round-up both carry it', async () => {
   await mgr.getByTestId('needs-attention').getByText(/Closing checklists with something missed/).waitFor({ timeout: 10000 });
   const attention = (await call(mgr, '/attention')).body;
-  if (!attention.closingGaps.some((line) => /Frankie Front-Desk — North Bergen/.test(line)))
+  if (!attention.closingGaps.some((line) => /Frankie Front-Desk - North Bergen/.test(line)))
     throw new Error(`closingGaps: ${JSON.stringify(attention.closingGaps)}`);
-  if (!attention.suppliesNeeded.some((line) => /North Bergen — 1 to order: Gloves S\/M\/L/.test(line)))
+  if (!attention.suppliesNeeded.some((line) => /North Bergen - 1 to order: Gloves S\/M\/L/.test(line)))
     throw new Error(`suppliesNeeded: ${JSON.stringify(attention.suppliesNeeded)}`);
 });
 await mgr.screenshot({ path: `${OUT}/131-closing-records.png`, fullPage: true });

@@ -19,7 +19,7 @@ const step = async (name, fn) => {
 };
 
 /**
- * Onboarding starts by itself (October 2026, Dominguez — a "smarter" idea):
+ * Onboarding starts by itself (October 2026, Dominguez - a "smarter" idea):
  * somebody new added with a hire date has the default onboarding checklist
  * started for them, counting from that date. Not somebody hired long ago,
  * and never a second one. The same for offboarding, when a last day is set. The people here are `*.onboard@example.com`, which

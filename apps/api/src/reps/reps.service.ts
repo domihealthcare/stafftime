@@ -6,8 +6,8 @@ import { RepInput } from './dto/rep.dto';
 import { repLunchTitle } from './rep-lunch-title';
 
 /**
- * The reps who book lunches (October 2026, Dominguez): name — what matters
- * most, as they do the scheduling — cell phone, company, medication, catering
+ * The reps who book lunches (October 2026, Dominguez): name - what matters
+ * most, as they do the scheduling - cell phone, company, medication, catering
  * or self-order, how welcome they are, and notes. Managers and admins keep the
  * list; nobody else reads it whole.
  */

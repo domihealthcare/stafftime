@@ -5,7 +5,7 @@ import { PLAN_PARTS, type PdfLanguage, type PlanPart, type VitalKey, VITALS } fr
  *
  * Like the 99483 form, it lives only in the page's memory (React state) and
  * is gone when the page closes. Nothing here is ever sent to the server or
- * written to the browser's storage — see docs/architecture.md, "The clinical
+ * written to the browser's storage - see docs/architecture.md, "The clinical
  * forms".
  *
  * Every answer is a plain string (or a list of the values ticked), even
@@ -14,7 +14,7 @@ import { PLAN_PARTS, type PdfLanguage, type PlanPart, type VitalKey, VITALS } fr
 
 /// One chronic condition's plan.
 export interface ConditionPlan extends Record<PlanPart, string[]> {
-  /// Typed beside each question's ticks — the Google Forms' "Other:".
+  /// Typed beside each question's ticks - the Google Forms' "Other:".
   other: Record<PlanPart, string>;
   smartGoal: string;
   /// The forms' "Problems notes".

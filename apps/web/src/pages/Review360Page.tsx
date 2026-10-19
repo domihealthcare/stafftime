@@ -19,7 +19,7 @@ import type { Review360Detail, Review360Person } from '../lib/types';
 
 /**
  * 360 feedback, answering (October 2026, Dominguez). Everybody in it says how
- * each colleague is doing — and how they are doing themselves — on a few 1–5
+ * each colleague is doing - and how they are doing themselves - on a few 1–5
  * ratings and two written answers, or passes somebody over. Each person once:
  * nothing links an answer back to who gave it, so it cannot be changed after.
  */
@@ -76,7 +76,7 @@ export function Review360Page() {
             </li>
             <li>
               {t(
-                'The app keeps, separately, that you have done somebody — so you cannot do them twice. It never links that to what you said.',
+                'The app keeps, separately, that you have done somebody - so you cannot do them twice. It never links that to what you said.',
               )}
             </li>
             <li>
@@ -86,7 +86,7 @@ export function Review360Page() {
               )}
             </li>
             <li>
-              {t('Write so the words could have come from anybody — that part is up to you.')}
+              {t('Write so the words could have come from anybody - that part is up to you.')}
             </li>
           </ul>
         </details>
@@ -105,7 +105,7 @@ export function Review360Page() {
 
       {!review.takingPart ? (
         <Alert tone="info">
-          {t('You are not in this one — it is for the people here when it started.')}
+          {t('You are not in this one - it is for the people here when it started.')}
           {isManager && (
             <>
               {' '}
@@ -309,7 +309,7 @@ function RateDialog({
               onClick={() => void send(true)}
               className={buttonClass('secondary', 'md')}
             >
-              {t('Skip — I don’t work with them enough')}
+              {t('Skip - I don’t work with them enough')}
             </button>
           )}
         </div>

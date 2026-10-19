@@ -4,16 +4,16 @@ import type { NotSignedIn } from '../lib/types';
 import { buttonClass } from './ui';
 
 /**
- * "Staff who never signed in" (October 2026, Dominguez — a "smarter" idea):
+ * "Staff who never signed in" (October 2026, Dominguez - a "smarter" idea):
  * everybody still here who has never once signed in to the app, with what is
- * most likely holding them up and the one thing to do about it — usually
+ * most likely holding them up and the one thing to do about it - usually
  * the welcome email, sent or sent again. On the Staff screen (admins).
  */
 const SAYS: Record<NotSignedIn['standing'], string> = {
   'not-invited': 'Never sent a welcome email',
   'link-expired': 'Welcome link ran out',
   'temporary-password':
-    'Has a temporary password from an admin — give it to them, or they can use “Forgotten your password?”',
+    'Has a temporary password from an admin - give it to them, or they can use “Forgotten your password?”',
   'password-not-used': 'Chose a password but has not signed in yet',
   'link-waiting': 'Welcome link sent, still good',
 };
@@ -60,7 +60,7 @@ export function NotSignedInCard({ refreshKey }: { refreshKey: number }) {
         <span className="font-semibold text-slate-900">
           {people.length} {people.length === 1 ? 'person has' : 'people have'} never signed in
         </span>
-        <span className="text-slate-600">— and what to do about each</span>
+        <span className="text-slate-600"> - and what to do about each</span>
       </summary>
       <ul className="divide-y divide-slate-100 border-t border-slate-100 px-4">
         {people.map((person) => (

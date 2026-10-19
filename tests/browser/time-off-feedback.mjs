@@ -140,7 +140,7 @@ await step('more than is left needs a tick that it may be unpaid, and the manage
   await frankie.getByLabel('First day').fill(iso(plusDays(NEXT_WED, 5)));
   await frankie.getByLabel('Last day').fill(iso(plusDays(NEXT_WED, 18)));
   const warning = frankie.getByTestId('past-balance');
-  await warning.getByText(/sick days left — this asks for 10 days/).waitFor({ timeout: 10000 });
+  await warning.getByText(/sick days left - this asks for 10 days/).waitFor({ timeout: 10000 });
   const send = frankie.getByRole('button', { name: 'Send request' });
   if (await send.isEnabled()) throw new Error('it could be sent without the tick');
 

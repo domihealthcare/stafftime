@@ -7,8 +7,8 @@ import { Alert, Card, buttonClass, inputClass } from './ui';
 
 /**
  * What the rota on screen costs (October 2026, Dominguez: "only for certain
- * individuals" — he, Kayla and Angelica to start with). Totals only — by
- * office and by day, never by person — so nobody's pay can be read off it.
+ * individuals" - he, Kayla and Angelica to start with). Totals only - by
+ * office and by day, never by person - so nobody's pay can be read off it.
  * Hourly pay for scheduled hours (overtime at time and a half) and salaries
  * for the days on screen; drafts included; no taxes or benefits.
  */
@@ -25,7 +25,7 @@ export function RotaCostCard({
   /// "YYYY-MM-DD", inclusive.
   from: string;
   to: string;
-  /// "this week", "in October" — how the screen's range reads.
+  /// "this week", "in October" - how the screen's range reads.
   period: string;
   /// Changes whenever the rota on screen does, so the cost follows it.
   refreshKey: string;
@@ -125,7 +125,7 @@ export function RotaCostCard({
   );
 }
 
-/** Admins choose who sees the rota's cost — on Practice settings. */
+/** Admins choose who sees the rota's cost - on Practice settings. */
 export function RotaCostAccessCard() {
   const confirm = useConfirm();
   const [holders, setHolders] = useState<PersonName[] | null>(null);
@@ -182,7 +182,7 @@ export function RotaCostAccessCard() {
     <Card className="p-4" testId="rota-cost-access">
       <h2 className="text-base font-semibold text-slate-900">Who sees the rota’s cost</h2>
       <p className="mt-1 text-sm text-slate-600">
-        The people listed here see what the rota costs above it on the Schedule — totals by office
+        The people listed here see what the rota costs above it on the Schedule - totals by office
         and day, worked out from the pay on staff profiles. Nobody else does, admins included,
         unless they are on the list.
       </p>

@@ -2,14 +2,14 @@
  * Words on many staff screens: navigation, menus, buttons, days.
  *
  * Glossary, to keep every screen saying the same thing:
- * clock in / out — marcar entrada / salida · shift — turno · schedule —
- * horario · timesheet — hoja de horas · time off — tiempo libre · PTO — PTO
- * (días pagados) · sick — enfermedad · office — oficina · job role — puesto ·
- * availability — disponibilidad · work from home — trabajo desde casa ·
- * on call — de guardia · manager — gerente · Home — Inicio · Directory —
- * Directorio · Resources — Recursos · News — Noticias · survey — encuesta ·
- * suggestion box — buzón de sugerencias · profile — perfil · tablet PIN —
- * PIN de la tableta · bell — campana · draft — borrador · published —
+ * clock in / out - marcar entrada / salida · shift - turno · schedule -
+ * horario · timesheet - hoja de horas · time off - tiempo libre · PTO - PTO
+ * (días pagados) · sick - enfermedad · office - oficina · job role - puesto ·
+ * availability - disponibilidad · work from home - trabajo desde casa ·
+ * on call - de guardia · manager - gerente · Home - Inicio · Directory -
+ * Directorio · Resources - Recursos · News - Noticias · survey - encuesta ·
+ * suggestion box - buzón de sugerencias · profile - perfil · tablet PIN -
+ * PIN de la tableta · bell - campana · draft - borrador · published -
  * publicado.
  */
 export const COMMON: Record<string, string> = {

@@ -5,10 +5,10 @@ import { addDaysTo, isoWeekdayOf } from '../common/util/zoned-time.util';
  * October 2026: "repeat shifts on like 1st Saturday of the month").
  *
  * Three kinds, one at a time:
- * - every week — what repeating shifts always did;
- * - every 2, 3 or 4 weeks — counted in calendar weeks, Sunday first as the
+ * - every week - what repeating shifts always did;
+ * - every 2, 3 or 4 weeks - counted in calendar weeks, Sunday first as the
  *   rota reads, from the week of `cycleFrom`;
- * - certain weeks of the month — the first to fourth, or the last, of each
+ * - certain weeks of the month - the first to fourth, or the last, of each
  *   chosen weekday: "the first Saturday", "the second and fourth Friday".
  *   The first Saturday is the one on the 1st–7th, the second on the 8th–14th,
  *   and so on; the last is the one with fewer than seven days of the month
@@ -47,7 +47,7 @@ export function patternProblem(pattern: RepeatPattern): string | null {
   return null;
 }
 
-/// Weekly every week, with nothing else to it — what a usual week is made of.
+/// Weekly every week, with nothing else to it - what a usual week is made of.
 export function isEveryWeek(pattern: RepeatPattern): boolean {
   return (pattern.everyWeeks ?? 1) === 1 && (pattern.weeksOfMonth ?? []).length === 0;
 }
@@ -82,7 +82,7 @@ const ORDINAL: Record<number, string> = {
 const EVERY: Record<number, string> = { 2: 'other', 3: 'third', 4: 'fourth' };
 
 /// "Mondays", "every other Saturday", "the first and third Saturday of the
-/// month" — for the bell and the server's messages. Sunday first.
+/// month" - for the bell and the server's messages. Sunday first.
 export function patternPhrase(pattern: RepeatPattern): string {
   const days = [...new Set(pattern.daysOfWeek)].sort((a, b) => (a % 7) - (b % 7));
   const weeks = [...new Set(pattern.weeksOfMonth ?? [])].sort(

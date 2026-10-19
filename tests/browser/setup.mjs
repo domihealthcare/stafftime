@@ -47,7 +47,7 @@ await step('mismatched passwords block submission before any request', async () 
 await step('the right token creates the account and signs you straight in', async () => {
   await page.getByLabel('Setup token').fill('demo-setup-token-1234');
   await page.getByRole('button', { name: 'Create administrator' }).click();
-  // Straight into the app — no second sign-in, no forced password change.
+  // Straight into the app - no second sign-in, no forced password change.
   await page.getByText('Not clocked in').waitFor({ timeout: 20000 });
   await page.getByRole('button', { name: 'Manage', exact: true }).waitFor({ timeout: 5000 });
 });

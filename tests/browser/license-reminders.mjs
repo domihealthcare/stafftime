@@ -23,7 +23,7 @@ const step = async (name, fn) => {
 };
 
 /**
- * Reminders to the person whose license runs out (Dominguez, October 2026 —
+ * Reminders to the person whose license runs out (Dominguez, October 2026 - 
  * making the app smarter): at 60 days, at 30 days and once lapsed, on the bell
  * and by email, each said once for a given expiry date. Run by the nightly job
  * and by the five-minute timer; this suite uses the timer, as cron-job.org does.

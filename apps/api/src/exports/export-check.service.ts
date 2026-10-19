@@ -8,7 +8,7 @@ import { ExportCheck, exportWarnings } from './export-check';
 import { DEFAULT_STATUSES, TimesheetExportService } from './timesheet-export.service';
 
 /**
- * Reads what bears on a pay period before it goes to payroll — see
+ * Reads what bears on a pay period before it goes to payroll - see
  * `export-check.ts` for what is said and why. The entries are the export's
  * own selection (period, office, people) at every status, so the ones the
  * file would leave out can be named; overtime and File #s come from the

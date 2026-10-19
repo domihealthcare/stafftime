@@ -1,6 +1,6 @@
 import { Field, inputClass } from './ui';
 
-/// The most a shift's note can hold — the server's limit too.
+/// The most a shift's note can hold - the server's limit too.
 export const SHIFT_NOTE_MAX = 500;
 
 /**

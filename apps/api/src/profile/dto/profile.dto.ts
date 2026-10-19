@@ -15,7 +15,7 @@ export class UpdateProfileDto {
   @IsOptional()
   @IsString()
   @Matches(/^[\d\s()+.\-x]*$/i, {
-    message: 'A phone number is digits, spaces and ( ) + - . only — for example (201) 555-0142.',
+    message: 'A phone number is digits, spaces and ( ) + - . only - for example (201) 555-0142.',
   })
   @MaxLength(25)
   phone?: string;

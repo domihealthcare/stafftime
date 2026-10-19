@@ -6,7 +6,7 @@ export const PUBLIC_POSTS = 3;
 /**
  * The News posts an admin ticked to show publicly (Dominguez, October 2026):
  * on the front-desk time clock, where patients can see it, and under the
- * sign-in form, which anyone on the internet can open — "they are both
+ * sign-in form, which anyone on the internet can open - "they are both
  * public", so one tick covers both. Title and words only: no author, likes,
  * comments or poll. Every other read of News needs a session.
  */

@@ -6,7 +6,7 @@ import { StandingLine, standingFor } from './standing';
 export type { StandingLine };
 
 /**
- * Each person against the licenses their job roles ask for — one person, or
+ * Each person against the licenses their job roles ask for - one person, or
  * everybody still employed who is asked for anything. One query, shared by
  * the Licenses screen, the nightly round-up and the Dashboard, so they cannot
  * disagree.

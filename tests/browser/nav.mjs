@@ -1,7 +1,7 @@
 // Getting around the way a person does on either layout (October 2026: Home,
 // Schedule, Timesheet, Directory and Resources in the laptop header, Manage a
 // menu beside them; on a phone Home, Schedule, Directory and Resources along
-// the bottom and the rest — Timesheet, News, Surveys, Manage — under More).
+// the bottom and the rest - Timesheet, News, Surveys, Manage - under More).
 export async function openMore(page) {
   const more = page.getByRole('button', { name: 'More', exact: true });
   if (await more.isVisible().catch(() => false)) {
@@ -23,9 +23,29 @@ const escape = (text) => text.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 export async function navLink(page, name) {
   const pattern = typeof name === 'string' ? new RegExp(`^${escape(name)}`) : name;
   const find = () => page.getByRole('navigation').getByRole('link', { name: pattern }).first();
+  // Just after signing in nothing is on the page yet: wait for any way in.
+  if (typeof name === 'string' && name === 'Timesheet') {
+    await page
+      .getByRole('navigation', { name: 'Main' })
+      .getByRole('link', { name: /^Schedule/ })
+      .or(page.getByRole('button', { name: 'More', exact: true }))
+      .or(find())
+      .first()
+      .waitFor({ timeout: 20000 })
+      .catch(() => {});
+  }
   if (await find().isVisible().catch(() => false)) return find();
   await openMore(page);
   if (await find().isVisible().catch(() => false)) return find();
+  // Timesheet is a tab on the Schedule's strip on a laptop (October 2026).
+  if (typeof name === 'string' && name === 'Timesheet') {
+    const schedule = page.getByRole('navigation', { name: 'Main' }).getByRole('link', { name: /^Schedule/ });
+    if (await schedule.isVisible().catch(() => false)) {
+      await schedule.click();
+      await page.getByRole('navigation', { name: 'Schedule or calendar' }).waitFor({ timeout: 15000 });
+      if (await find().isVisible().catch(() => false)) return find();
+    }
+  }
   const manage = page.getByRole('button', { name: 'Manage', exact: true });
   if (await manage.isVisible().catch(() => false)) {
     if ((await manage.getAttribute('aria-expanded')) !== 'true') await manage.click();
@@ -61,7 +81,7 @@ export async function showRegularShifts(page) {
 }
 
 /// Presses one of the Export screen's Download buttons and, when "Before you
-/// export" comes up first (October 2026), answers Export anyway — so suites
+/// export" comes up first (October 2026), answers Export anyway - so suites
 /// about the file itself get the file.
 export async function pressDownload(page, name) {
   await page.getByRole('button', { name }).click();

@@ -21,7 +21,7 @@ import { WeeklyScheduleEditor } from './WeeklyScheduleEditor';
 const LIST_PAGE = 8;
 
 /**
- * The regular shifts with no end date — "Rosa, every Monday, 8 to 4" — and
+ * The regular shifts with no end date - "Rosa, every Monday, 8 to 4" - and
  * stop them or change them from a date on (asked for by Dominguez,
  * September 2026). Each keeps the rota filled eight weeks ahead, every night,
  * until then. Managers and admins only.
@@ -83,7 +83,7 @@ export function StandingShiftsCard({
   const who = (item: StandingShift) =>
     item.employee
       ? displayName(item.employee)
-      : `Open shift${item.openCount > 1 ? ` ×${item.openCount}` : ''}${item.jobRole ? ` — ${item.jobRole.name}` : ''}`;
+      : `Open shift${item.openCount > 1 ? ` ×${item.openCount}` : ''}${item.jobRole ? ` - ${item.jobRole.name}` : ''}`;
 
   const person = (item: StandingShift) =>
     item.employeeId ? employees.find((e) => e.id === item.employeeId) : undefined;
@@ -201,7 +201,7 @@ export function StandingShiftsCard({
       <p className={`text-xs text-slate-500 ${bare ? '' : 'mt-0.5'}`}>
         Repeating shifts with no end date. Each keeps the rota filled eight weeks ahead until it is
         stopped. The quickest way to make them is somebody&rsquo;s{' '}
-        <span className="font-medium">usual week</span>, below — every day at once.
+        <span className="font-medium">usual week</span>, below - every day at once.
       </p>
 
       <div ref={weekBox} className="mt-3 rounded-lg bg-slate-50 p-3" data-testid="usual-week">

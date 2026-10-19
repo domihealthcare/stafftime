@@ -36,7 +36,7 @@ describe('running late', () => {
     const shift = { startsAt: SHIFT.startsAt, isRemote: false, locationName: 'North Bergen' };
     expect(runningLateWords('Ana Lopez', shift, 20)).toEqual({
       title: 'Ana Lopez is running late',
-      body: 'About 20 minutes late for 9:00 AM at North Bergen — expected around 9:20 AM.',
+      body: 'About 20 minutes late for 9:00 AM at North Bergen - expected around 9:20 AM.',
       link: '/directory',
     });
     expect(noShowWords('Ana Lopez', { ...shift, isRemote: true }, null).title).toBe(

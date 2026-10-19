@@ -44,7 +44,7 @@ export class CreatePtoRequestDto {
   @Length(1, 500)
   notes?: string;
 
-  /// Managers may file a request on someone else's behalf — for the person who
+  /// Managers may file a request on someone else's behalf - for the person who
   /// phones in sick rather than opening the app.
   @IsOptional()
   @IsUUID('4')
@@ -57,7 +57,7 @@ export class CreatePtoRequestDto {
   acknowledgedUnpaid?: boolean;
 }
 
-/// "What would this take?" — the request form, before it is sent.
+/// "What would this take?" - the request form, before it is sent.
 export class PreviewPtoRequestDto {
   @IsIn(REQUESTABLE_PTO_TYPES, { message: 'Time off is Sick, PTO or Unpaid.' })
   type!: PtoType;
@@ -96,11 +96,18 @@ export class RecordPtoDto {
   @IsBoolean()
   isHalfDay?: boolean;
 
-  /// Optional — "called out, came back with a doctor's note".
+  /// Optional - "called out, came back with a doctor's note".
   @IsOptional()
   @IsString()
   @Length(0, 500)
   comment?: string;
+}
+
+/// A manager correcting what kind of time off a request is (October 2026,
+/// Dominguez: an hourly person put a sick day down as PTO).
+export class ChangePtoTypeDto {
+  @IsIn(REQUESTABLE_PTO_TYPES, { message: 'Time off is Sick, PTO or Unpaid.' })
+  type!: PtoType;
 }
 
 export class ReviewPtoRequestDto {
@@ -108,7 +115,7 @@ export class ReviewPtoRequestDto {
   @Transform(({ value }) => (typeof value === 'string' ? value.toUpperCase() : value))
   decision!: PtoStatus;
 
-  /// Shown to the employee. Required when denying — "no" without a reason is
+  /// Shown to the employee. Required when denying - "no" without a reason is
   /// how a request turns into a conversation nobody has a record of.
   @IsOptional()
   @IsString()
@@ -145,7 +152,7 @@ export class QueryPtoRequestsDto {
   to?: string;
 }
 
-/// The practice's rules. Every field optional — an admin changes one line at a
+/// The practice's rules. Every field optional - an admin changes one line at a
 /// time, not the whole policy.
 export class UpdatePtoPolicyDto {
   @IsOptional()

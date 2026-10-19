@@ -6,10 +6,10 @@ import { onPattern, patternPhrase, RepeatPattern } from '../shifts/repeat-patter
 import { appliesOn, describe, overlaps, Rule, twelveHour } from './availability.rules';
 
 /**
- * Availability that clashes with a regular shift (October 2026, Dominguez —
+ * Availability that clashes with a regular shift (October 2026, Dominguez -
  * making the app smarter). Somebody with a regular Monday shift can say they
  * are no longer free on Mondays; availability needs no approval, so nothing
- * stopped it, and nobody found out until the rota for that week was built —
+ * stopped it, and nobody found out until the rota for that week was built -
  * or the shift, written out weeks ahead, was simply not worked.
  *
  * For each regular shift with somebody on it, still running, every date it
@@ -64,7 +64,7 @@ export function regularShiftClashes(
     const from = shift.startsOn > today ? shift.startsOn : today;
     const to = shift.endsOn && shift.endsOn < horizon ? shift.endsOn : horizon;
     // A shift past midnight counts until the end of its first day, the day a
-    // rule is about — as the scheduler does.
+    // rule is about - as the scheduler does.
     const endTime = shift.endTime <= shift.startTime ? '24:00' : shift.endTime;
     const met = new Map<string, string>();
     for (let date = from; date <= to; date = addDaysTo(date, 1)) {
@@ -91,7 +91,7 @@ export function regularShiftClashes(
   );
 }
 
-/// "Frankie Front-Desk — regular Mondays 9:00 AM–5:00 PM at North Bergen, but
+/// "Frankie Front-Desk - regular Mondays 9:00 AM–5:00 PM at North Bergen, but
 /// not available Mondays, 3:00 PM–9:00 PM (from Mon, Oct 19)".
 export function describeRegularShiftClash(clash: RegularShiftClash): string {
   const { shift } = clash;
@@ -103,7 +103,7 @@ export function describeRegularShiftClash(clash: RegularShiftClash): string {
     month: 'short',
     day: 'numeric',
   });
-  return `${shift.employeeName} — regular ${patternPhrase(shift)} ${twelveHour(
+  return `${shift.employeeName} - regular ${patternPhrase(shift)} ${twelveHour(
     shift.startTime,
   )}–${twelveHour(shift.endTime)} ${where}, but ${rule.charAt(0).toLowerCase()}${rule.slice(
     1,

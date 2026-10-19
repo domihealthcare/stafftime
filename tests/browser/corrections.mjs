@@ -33,10 +33,10 @@ function sql(statement) {
 }
 
 /**
- * "Ask for a correction" (October 2026, Dominguez — a "smarter" idea): on
+ * "Ask for a correction" (October 2026, Dominguez - a "smarter" idea): on
  * their own Timesheet, somebody asks for an entry's times to be fixed, saying
  * why. Managers down for hours are told, see it at the top of the Timesheet
- * and in the round-up, and approve it — an ordinary edit, with the reason —
+ * and in the round-up, and approve it - an ordinary edit, with the reason - 
  * or decline it with one; the person is told either way. The entries here
  * carry the note 'corrections-suite', which run-all.sh clears.
  */
@@ -97,7 +97,7 @@ await step('Frankie asks, from her Timesheet, for a later clock-out, saying why'
   const inAt = sql(`select to_char("clockInAt" at time zone 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS"Z"') from time_entries where id = '${firstId}'`);
   const asked = await call(frankie, `/time-entries/${firstId}/correction`, {
     method: 'POST',
-    body: JSON.stringify({ clockInAt: inAt, clockOutAt: outAt, reason: 'Forgot to clock out — stayed to close' }),
+    body: JSON.stringify({ clockInAt: inAt, clockOutAt: outAt, reason: 'Forgot to clock out - stayed to close' }),
   });
   if (asked.status !== 201) throw new Error(`asking answered ${asked.status}: ${JSON.stringify(asked.body)}`);
   await showTimesheet(frankie, 'correction-waiting');
@@ -137,13 +137,13 @@ await step('managers are told on the bell, and it is in the round-up', async () 
 await step('approving makes it an ordinary edit with the reason, and Frankie is told', async () => {
   await morgan.goto(`${BASE}/timesheet`, { waitUntil: 'networkidle' });
   const card = morgan.getByTestId('corrections-to-decide');
-  await card.getByText('Forgot to clock out — stayed to close').waitFor({ timeout: 10000 });
+  await card.getByText('Forgot to clock out - stayed to close').waitFor({ timeout: 10000 });
   await morgan.screenshot({ path: `${OUT}/corrections-to-decide.png` });
   await card.getByRole('button', { name: 'Approve' }).click();
   await card.waitFor({ state: 'detached', timeout: 10000 });
   const row = sql(`select "editReason" || '|' || "isManuallyEdited" || '|' || extract(epoch from "clockOutAt" - "clockInAt")::int from time_entries where id = '${firstId}'`);
   const [reason, edited, seconds] = row.split('|');
-  if (reason !== 'Asked for by Frankie Front-Desk: Forgot to clock out — stayed to close') throw new Error(reason);
+  if (reason !== 'Asked for by Frankie Front-Desk: Forgot to clock out - stayed to close') throw new Error(reason);
   if (edited !== 'true' || seconds !== String(90 * 60)) throw new Error(row);
   const told = await bell(frankie, 'CORRECTION');
   if (!told.some((n) => n.title === 'Your correction was approved')) throw new Error(JSON.stringify(told));

@@ -12,7 +12,7 @@ import { buttonClass } from './ui';
 export interface ConfirmOptions {
   /// The question, as the heading: "Remove this shift?"
   title: string;
-  /// What happens if they go ahead — who loses what, and whether it comes back.
+  /// What happens if they go ahead - who loses what, and whether it comes back.
   body?: ReactNode;
   /// The button that does it. Says what it does ("Yes, remove"), never "OK".
   confirmLabel?: string;
@@ -29,7 +29,7 @@ const ConfirmContext = createContext<Ask | null>(null);
 /**
  * One confirmation pop-up for the whole app.
  *
- * Anything that removes something — a shift, a person, a post, a PIN — asks
+ * Anything that removes something - a shift, a person, a post, a PIN - asks
  * first, through here, and asks the same way everywhere: a modal in the middle
  * of the screen that has to be answered, with the safe choice focused. It
  * replaces the browser's own `confirm()` box, which some phones suppress
@@ -48,7 +48,7 @@ export function ConfirmProvider({ children }: { children: ReactNode }) {
     (options) =>
       new Promise<boolean>((resolve) => {
         setPending((current) => {
-          // A second question while one is open answers the first with no —
+          // A second question while one is open answers the first with no -
           // never two pop-ups stacked, and never a promise left hanging.
           current?.resolve(false);
           return { options, resolve };

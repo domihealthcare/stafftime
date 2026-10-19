@@ -10,7 +10,7 @@ import { PracticeSettingsService } from '../settings/practice-settings.service';
 /// normal day: a late finish or a swapped shift away from going over. A
 /// constant for now, like the threshold was, until the practice asks to move it.
 ///
-/// Only ever said while a shift is being added or assigned — never left
+/// Only ever said while a shift is being added or assigned - never left
 /// standing on the rota or on the person's screens once the shift is saved
 /// (Dominguez, September 2026).
 export const NEAR_OVERTIME_HOURS = 4;
@@ -27,7 +27,7 @@ export function overtimeLevel(hours: number, thresholdHours: number): OvertimeLe
 /// What adding (or moving, or assigning) one shift does to somebody's week,
 /// worked out before it is saved so the scheduler can say so first.
 export interface OvertimeCheck {
-  /// Overtime is an hourly question — salaried staff are never warned about.
+  /// Overtime is an hourly question - salaried staff are never warned about.
   hourly: boolean;
   weekStart: string;
   /// The week without this shift, and with it.
@@ -49,8 +49,8 @@ export interface OwnOvertimeWeek {
 export type WeekTotals = Map<string, number>;
 
 /**
- * Overtime as the rota builds it — one person, one week, before and after a
- * change — and telling the person when a published change puts them over.
+ * Overtime as the rota builds it - one person, one week, before and after a
+ * change - and telling the person when a published change puts them over.
  *
  * Counted the same way as the scheduler's weekly warning: scheduled hours,
  * every location, the week starting Monday in the shift's own office time,
@@ -115,7 +115,7 @@ export class OvertimeService {
 
   /// The signed-in person's own weeks, from this one on, that their published
   /// rota puts past the line. Drafts are left out: they are the manager's
-  /// workings, not the rota yet. "Close to the line" is not listed — once a
+  /// workings, not the rota yet. "Close to the line" is not listed - once a
   /// rota is agreed, only actually going over is worth a warning.
   async mine(employeeId: string): Promise<OwnOvertimeWeek[]> {
     const employee = await this.prisma.employee.findUnique({
@@ -211,7 +211,7 @@ export class OvertimeService {
     return totals;
   }
 
-  /// The weekday overtime weeks start on — the pay period's first day — for
+  /// The weekday overtime weeks start on - the pay period's first day - for
   /// callers that work out which weeks a change touches.
   workweekStartsOn(): Promise<number> {
     return this.settings.workweekStartsOn();
@@ -226,7 +226,7 @@ export class OvertimeService {
   /**
    * Tells each person whose published week has just gone over the line.
    *
-   * Only on the crossing — a week that was already over and gets one more
+   * Only on the crossing - a week that was already over and gets one more
    * shift does not send a second email, and drafts send nothing until they are
    * published. Awaited but never thrown, like every other notification: a rota change
    * must never fail because an email could not be sent.

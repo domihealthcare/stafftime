@@ -69,11 +69,11 @@ export class FindATimeService {
       orderBy: [{ firstName: 'asc' }, { lastName: 'asc' }],
     });
     if (people.length === 0) {
-      throw new BadRequestException('Add who it is for first — nobody is on the list yet.');
+      throw new BadRequestException('Add who it is for first - nobody is on the list yet.');
     }
     const ids = people.map((person) => person.id);
 
-    // The meeting being changed is not in its own way — nor, for a series,
+    // The meeting being changed is not in its own way - nor, for a series,
     // its other dates.
     const editing = dto.eventId
       ? await this.prisma.practiceEvent.findUnique({
@@ -193,7 +193,7 @@ export class FindATimeService {
   }
 }
 
-/// Whether another meeting is for this person — `visibleTo`'s rule.
+/// Whether another meeting is for this person - `visibleTo`'s rule.
 export function isFor(meeting: MeetingFor, id: string, roles: string[], offices: string[]) {
   switch (meeting.audience) {
     case EventAudience.EVERYONE:

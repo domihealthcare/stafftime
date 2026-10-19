@@ -57,10 +57,10 @@ export function AccountMenu() {
         aria-expanded={open}
         aria-haspopup="menu"
         // The visible name is hidden at phone width and the initials are
-        // decorative, which left this button with no accessible name at all —
+        // decorative, which left this button with no accessible name at all -
         // a screen reader announced "button" and nothing else. The label does
         // not depend on the viewport.
-        aria-label={t('Your account — {name}', {
+        aria-label={t('Your account - {name}', {
           name: `${employee?.firstName ?? ''} ${employee?.lastName ?? ''}`,
         }).trim()}
         className="flex items-center gap-2 rounded-lg px-2 py-1.5 text-sm text-slate-700 hover:bg-slate-100"
@@ -100,7 +100,7 @@ export function AccountMenu() {
             </NavLink>
             {/* What is somebody's own lives here with the rest of what is
                 theirs (October 2026, when the Team menu went). Licenses and
-                onboarding for job roles that keep them (Provider) — a manager
+                onboarding for job roles that keep them (Provider) - a manager
                 has them under Manage; productivity once one is published. */}
             {!isManager && employee?.seesOwnPersonnelTabs && (
               <>

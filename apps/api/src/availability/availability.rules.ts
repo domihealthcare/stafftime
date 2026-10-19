@@ -1,7 +1,7 @@
 import { UnavailabilityKind } from '@prisma/client';
 import { isoWeekdayOf } from '../common/util/zoned-time.util';
 
-/// The parts of a rule the clash check needs — shaped like the database row,
+/// The parts of a rule the clash check needs - shaped like the database row,
 /// with dates as plain "YYYY-MM-DD" strings.
 export interface Rule {
   kind: UnavailabilityKind;
@@ -44,20 +44,20 @@ export function appliesOn(rule: Rule, date: string): boolean {
 }
 
 /// Overlap, not containment: a shift that only starts before somebody's 5pm
-/// cut-off still has them working past it. Touching ends do not count — a
+/// cut-off still has them working past it. Touching ends do not count - a
 /// shift ending at 17:00 fits "not after 5".
 export function overlaps(rule: Rule, shift: LocalShift): boolean {
   if (rule.startTime === null || rule.endTime === null) return true;
   return rule.startTime < shift.endTime && shift.startTime < rule.endTime;
 }
 
-/// The first rule a shift runs into, described for the manager — or null.
+/// The first rule a shift runs into, described for the manager - or null.
 export function clashFor(rules: Rule[], shift: LocalShift): string | null {
   const hit = rules.find((rule) => appliesOn(rule, shift.date) && overlaps(rule, shift));
   return hit ? describe(hit) : null;
 }
 
-/// "Not available Tuesdays, 5:00 PM–9:00 PM" — what the scheduler shows.
+/// "Not available Tuesdays, 5:00 PM–9:00 PM" - what the scheduler shows.
 export function describe(rule: Rule): string {
   const when =
     rule.kind === UnavailabilityKind.WEEKLY

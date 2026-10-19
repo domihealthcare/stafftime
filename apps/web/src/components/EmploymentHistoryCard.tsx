@@ -29,7 +29,7 @@ export function formatPay(rate: number, unit: PayRateUnit): string {
 /**
  * Pay and position over time, on a staff profile (October 2026, Dominguez):
  * every raise and promotion with the day it took effect. Admins only, like
- * the rest of the profile. A record — ADP pays people, and the payroll export
+ * the rest of the profile. A record - ADP pays people, and the payroll export
  * never reads this.
  */
 export function EmploymentHistoryCard({
@@ -51,7 +51,7 @@ export function EmploymentHistoryCard({
   async function remove(change: EmploymentChange) {
     const sure = await confirm({
       title: `Remove this ${CHANGE_KIND_LABELS[change.kind].toLowerCase()}?`,
-      body: `The ${formatCalendarDate(change.effectiveOn)} entry comes off their history for good. Nothing else changes — ADP is not affected.`,
+      body: `The ${formatCalendarDate(change.effectiveOn)} entry comes off their history for good. Nothing else changes - ADP is not affected.`,
       confirmLabel: 'Yes, remove it',
       cancelLabel: 'Keep it',
     });
@@ -150,7 +150,7 @@ export function EmploymentHistoryCard({
       {record.changes.length === 0 ? (
         !adding && (
           <p className="mt-4 text-sm text-slate-600">
-            No history yet. Add where they started — their first position and pay — then each raise
+            No history yet. Add where they started - their first position and pay - then each raise
             or promotion with the day it took effect.
           </p>
         )
@@ -313,7 +313,7 @@ function ChangeForm({
           )}
         </Field>
       </div>
-      <Field label="Position" hint="Their job title, if it changed — e.g. Lead Medical Assistant.">
+      <Field label="Position" hint="Their job title, if it changed - e.g. Lead Medical Assistant.">
         {(props) => (
           <input
             {...props}

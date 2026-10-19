@@ -2,7 +2,7 @@ import { chromium } from 'playwright';
 import { goTo } from './nav.mjs';
 import { mkdirSync } from 'node:fs';
 // License types (Dominguez, September 2026): what the practice asks for, which
-// job roles need each one — required or optional — and how often it renews.
+// job roles need each one - required or optional - and how often it renews.
 // Managers keep the list; each person is shown against it.
 const OUT = process.argv[2] || new URL('./shots/', import.meta.url).pathname;
 mkdirSync(OUT, { recursive: true });
@@ -80,14 +80,14 @@ await step('the banner and the nightly round-up say so', async () => {
   await openLicenses();
   const banner = mgr.getByTestId('needs-attention');
   await banner.getByText('Required licenses not on file').waitFor({ timeout: 10000 });
-  await banner.getByText('Max Assistant — Hep B vaccine, required for Medical Assistant, not on file').waitFor({ timeout: 5000 });
+  await banner.getByText('Max Assistant - Hep B vaccine, required for Medical Assistant, not on file').waitFor({ timeout: 5000 });
 });
 
 await step('Record it starts the form on that person and license; the date it was done is enough', async () => {
   await mgr.getByRole('button', { name: 'By person' }).click();
   await mgr.getByRole('button', { name: 'Record Hep B vaccine for Max Assistant' }).click();
   if ((await mgr.getByLabel('Which').inputValue()) === '') throw new Error('the license was not chosen');
-  await mgr.getByText('Renewed every 12 months — the date it was done is enough.').waitFor({ timeout: 5000 });
+  await mgr.getByText('Renewed every 12 months - the date it was done is enough.').waitFor({ timeout: 5000 });
   await mgr.getByLabel('Done on').fill(dayOffset(-10));
   await mgr.getByText('Worked out: 12 months after the date it was done.').waitFor({ timeout: 5000 });
   const saved = mgr.waitForResponse((r) => r.url().endsWith('/api/credentials') && r.request().method() === 'POST');

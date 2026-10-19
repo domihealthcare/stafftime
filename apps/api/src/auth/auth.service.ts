@@ -56,7 +56,7 @@ export class AuthService {
     if (!employee?.passwordHash) {
       await this.passwords.verify(password, DUMMY_HASH);
       // A real account with no password yet has nothing to guess, so it does
-      // not count toward throttling the connection — otherwise a morning of
+      // not count toward throttling the connection - otherwise a morning of
       // new starters trying before they open their welcome email could lock
       // the whole office out of signing in.
       if (!employee) await this.throttle.recordFailure(email, context.ipAddress);
@@ -95,7 +95,7 @@ export class AuthService {
   }
 
   /// Changing your own password. Requires the current one, even though you are
-  /// already signed in — an unattended browser should not be a takeover.
+  /// already signed in - an unattended browser should not be a takeover.
   async changePassword(
     employeeId: string,
     currentPassword: string,
@@ -147,7 +147,7 @@ export class AuthService {
     return { otherSessionsSignedOut };
   }
 
-  /// An administrator setting a temporary password — for onboarding, or when
+  /// An administrator setting a temporary password - for onboarding, or when
   /// someone is locked out. The holder must replace it at next sign-in.
   async setTemporaryPassword(employeeId: string, temporaryPassword: string): Promise<void> {
     const employee = await this.prisma.employee.findUnique({

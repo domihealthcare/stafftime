@@ -50,7 +50,7 @@ describe('heading for overtime on hours actually worked', () => {
       },
     ]);
     expect(describeOvertimeHeading(people[0], 40)).toBe(
-      'Frankie Front-Desk — 33 hrs worked + 11 still on the rota = 44 this week (the rota alone: 40)',
+      'Frankie Front-Desk - 33 hrs worked + 11 still on the rota = 44 this week (the rota alone: 40)',
     );
   });
 
@@ -98,7 +98,7 @@ describe('heading for overtime on hours actually worked', () => {
         40,
       ),
     ).toBe(
-      'Max Assistant — 42.5 hrs worked this week, past the 40 (the rota already had them over)',
+      'Max Assistant - 42.5 hrs worked this week, past the 40 (the rota already had them over)',
     );
   });
 });

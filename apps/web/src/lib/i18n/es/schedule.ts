@@ -1,12 +1,12 @@
-/// Spanish for the schedule screens — see ../index.ts and the glossary in ./common.ts.
+/// Spanish for the schedule screens - see ../index.ts and the glossary in ./common.ts.
 export const SCHEDULE: Record<string, string> = {
-  // Availability — when you can't work
+  // Availability - when you can't work
   'Could not load availability.': 'No se pudo cargar la disponibilidad.',
   'Loading availability': 'Cargando disponibilidad',
   '← Schedule': '← Horario',
   'When you can’t work': 'Cuándo no puedes trabajar',
-  'Tell your managers the times you can’t work — every week, or on a particular date. For whole days away, ask for time off instead.':
-    'Diles a tus gerentes cuándo no puedes trabajar — cada semana o en una fecha en particular. Para días completos fuera, pide tiempo libre.',
+  'Tell your managers the times you can’t work - every week, or on a particular date. For whole days away, ask for time off instead.':
+    'Diles a tus gerentes cuándo no puedes trabajar - cada semana o en una fecha en particular. Para días completos fuera, pide tiempo libre.',
   'The schedule is published up to': 'El horario está publicado hasta el',
   ', so changes here count from': ', así que los cambios aquí cuentan desde el',
   '. For anything sooner, talk to a manager.': '. Para algo antes, habla con un gerente.',
@@ -22,7 +22,7 @@ export const SCHEDULE: Record<string, string> = {
   'No particular dates.': 'Ninguna fecha en particular.',
   'From {date}': 'Desde el {date}',
   ' until {date}': ' hasta el {date}',
-  'Published — ask a manager': 'Publicado — pregúntale a un gerente',
+  'Published - ask a manager': 'Publicado - pregúntale a un gerente',
   Ending: 'Terminando',
   'Remove this?': '¿Quitar esto?',
   '{rule}. Managers will no longer be warned about it when they build the rota; weeks already published stay as they are.':
@@ -38,10 +38,10 @@ export const SCHEDULE: Record<string, string> = {
   From: 'Desde',
   Until: 'Hasta',
   Why: 'Por qué',
-  '(optional — managers see this)': '(opcional — los gerentes lo ven)',
+  '(optional - managers see this)': '(opcional - los gerentes lo ven)',
   'School pick-up': 'Recoger a los niños de la escuela',
-  'Counts from {date} — the weeks before that are already published.':
-    'Cuenta desde el {date} — las semanas anteriores ya están publicadas.',
+  'Counts from {date} - the weeks before that are already published.':
+    'Cuenta desde el {date} - las semanas anteriores ya están publicadas.',
 
   // Days of the week
   Monday: 'Lunes',
@@ -85,8 +85,8 @@ export const SCHEDULE: Record<string, string> = {
   Open: 'Abierto',
   Birthday: 'Cumpleaños',
   'Over the overtime line this week': 'Pasa del límite de horas extra esta semana',
-  '{hours} hours in the overtime week from {date} (it follows the pay period), every location — the overtime line is {line}':
-    '{hours} horas en la semana de horas extra desde el {date} (sigue el período de pago), todas las oficinas — el límite de horas extra es {line}',
+  '{hours} hours in the overtime week from {date} (it follows the pay period), every location - the overtime line is {line}':
+    '{hours} horas en la semana de horas extra desde el {date} (sigue el período de pago), todas las oficinas - el límite de horas extra es {line}',
   '⚠ {n} h overtime': '⚠ {n} h de horas extra',
   'half day': 'medio día',
   'Time off ({kind}){half}': 'Tiempo libre ({kind}){half}',
@@ -193,26 +193,26 @@ export const SCHEDULE: Record<string, string> = {
   '(optional)': '(opcional)',
   'You’re on the rota then:': 'Tienes turnos en esas fechas:',
   'working from home': 'trabajando desde casa',
-  'Your manager will sort those out when they decide — you’ll be told.':
-    'Tu gerente los arreglará cuando decida — se te avisará.',
+  'Your manager will sort those out when they decide - you’ll be told.':
+    'Tu gerente los arreglará cuando decida - se te avisará.',
   'falls outside the {year} policy year, so it does not come off the balance above.':
     'cae fuera del año de la política {year}, así que no se descuenta del saldo de arriba.',
   'weekends don’t count': 'los fines de semana no cuentan',
   'counts against the {year} policy year: {n} left afterwards.':
     'cuenta para el año de la política {year}: te quedarán {n}.',
   '{day}: office closed': '{day}: oficina cerrada',
-  'Nothing to take off — those days are a weekend or the office is closed.':
-    'No hay nada que descontar — esos días son fin de semana o la oficina está cerrada.',
-  'You have {left} sick days left — this asks for {days}.':
-    'Te quedan {left} días de enfermedad — esto pide {days}.',
-  'You have {left} PTO days left — this asks for {days}.':
-    'Te quedan {left} días de PTO — esto pide {days}.',
-  'The {over} past it may be unpaid. You can still ask — a manager decides, and sees that you knew.':
-    'Los {over} de más pueden no ser pagados. Igual puedes pedirlo — un gerente decide, y verá que lo sabías.',
+  'Nothing to take off - those days are a weekend or the office is closed.':
+    'No hay nada que descontar - esos días son fin de semana o la oficina está cerrada.',
+  'You have {left} sick days left - this asks for {days}.':
+    'Te quedan {left} días de enfermedad - esto pide {days}.',
+  'You have {left} PTO days left - this asks for {days}.':
+    'Te quedan {left} días de PTO - esto pide {days}.',
+  'The {over} past it may be unpaid. You can still ask - a manager decides, and sees that you knew.':
+    'Los {over} de más pueden no ser pagados. Igual puedes pedirlo - un gerente decide, y verá que lo sabías.',
   'I understand I’m asking for more than I have left, and it may be unpaid.':
     'Entiendo que estoy pidiendo más de lo que me queda, y que puede no ser pagado.',
-  'Past the balance — asked knowing the extra days may be unpaid.':
-    'Pasa del saldo — pedido sabiendo que los días de más pueden no ser pagados.',
+  'Past the balance - asked knowing the extra days may be unpaid.':
+    'Pasa del saldo - pedido sabiendo que los días de más pueden no ser pagados.',
   '{n} left afterwards.': 'Te quedarán {n}.',
   'Sending…': 'Enviando…',
   'Send request': 'Enviar solicitud',
@@ -231,7 +231,7 @@ export const SCHEDULE: Record<string, string> = {
   'Got it': 'Entendido',
   '{n} waiting for approval': '{n} esperando aprobación',
 
-  // Schedule reviews — who reviews which provider's patient schedule
+  // Schedule reviews - who reviews which provider's patient schedule
   Reviews: 'Revisiones',
   'Schedule reviews': 'Revisión de agendas',
   'Who reviews each provider’s patient schedule, day by day, so everybody knows whose is being looked after. The schedules themselves stay in eCW.':

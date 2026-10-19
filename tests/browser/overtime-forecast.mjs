@@ -20,14 +20,14 @@ const step = async (name, fn) => {
 };
 
 /**
- * Heading for overtime on hours actually worked (Dominguez, October 2026 —
+ * Heading for overtime on hours actually worked (Dominguez, October 2026 - 
  * making the app smarter): hours worked so far this week plus what the rota
  * still has them down for, past the line. Dashboard and nightly email,
  * managers only, never a banner.
  *
  * "This week" moves with the calendar, so the set-up works on any day: Max
  * clocked in two hours ago and is still in, with a 40-hour draft shift
- * starting in a minute — 42 hours, whatever the weekday. Written straight into
+ * starting in a minute - 42 hours, whatever the weekday. Written straight into
  * the database, tagged `overtime-forecast-suite`; run-all.sh removes it.
  */
 function sql(statement) {
@@ -88,7 +88,7 @@ await step('the Dashboard names Max, with hours worked and still on the rota', a
   const max = overview.overtimeForecast.people.find((p) => p.employeeName === 'Max Assistant');
   if (!max || max.worked < 1.9 || max.stillScheduled < 39.9 || max.projected <= 40)
     throw new Error(`forecast: ${JSON.stringify(max)}`);
-  if (!/^Max Assistant — [\d.]+ hrs \([\d.]+ worked \+ [\d.]+ still on the rota\) · (rota alone: [\d.]+|the rota already had them over)$/.test(text.trim()))
+  if (!/^Max Assistant - [\d.]+ hrs \([\d.]+ worked \+ [\d.]+ still on the rota\) · (rota alone: [\d.]+|the rota already had them over)$/.test(text.trim()))
     throw new Error(`read "${text}"`);
 });
 await card.screenshot({ path: `${OUT}/overtime-forecast.png` });

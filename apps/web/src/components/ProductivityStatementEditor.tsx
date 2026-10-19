@@ -34,7 +34,7 @@ function addDays(iso: string, days: number): string {
  * The difference and the amount work themselves out as you type, by the same
  * sums the server uses when it saves.
  *
- * Nothing here is compulsory except the dates and the counts — leave the
+ * Nothing here is compulsory except the dates and the counts - leave the
  * expected boxes empty for a provider with no target, and the multiplier empty
  * for one with no money in it.
  */

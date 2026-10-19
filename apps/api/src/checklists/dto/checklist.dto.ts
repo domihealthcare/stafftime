@@ -36,7 +36,7 @@ export class TemplateTaskDto {
   owner?: TaskOwner;
 
   /// Days relative to the hire date (onboarding) or last day (offboarding).
-  /// Negative is before it — an I-9 is due on day one, equipment goes back on
+  /// Negative is before it - an I-9 is due on day one, equipment goes back on
   /// the last day, and a background check might be -7.
   @IsOptional()
   @Type(() => Number)
@@ -73,7 +73,7 @@ export class CreateTemplateDto {
 }
 
 /// Everything about a template is replaceable, including the whole task list,
-/// which is sent whole rather than patched task by task — a checklist is read
+/// which is sent whole rather than patched task by task - a checklist is read
 /// as a list, so it is edited as a list.
 export class UpdateTemplateDto {
   @IsOptional()
@@ -113,7 +113,7 @@ export class StartChecklistDto {
   templateId?: string;
 
   /// Defaults to the employee's hire date for onboarding, or their termination
-  /// date for offboarding. Given explicitly when neither is right — a start
+  /// date for offboarding. Given explicitly when neither is right - a start
   /// date that has not been entered yet, say.
   @IsOptional()
   @IsISO8601()

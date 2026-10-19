@@ -19,8 +19,8 @@ export function itemIsActive(item: NavMenuItem, pathname: string) {
  * A heading in the top bar that opens a short list of screens.
  *
  * A disclosure rather than an ARIA menu on purpose: the items are ordinary
- * links, so they read and behave as links — to a screen reader, and to the
- * browser suites — and only their visibility changes.
+ * links, so they read and behave as links - to a screen reader, and to the
+ * browser suites - and only their visibility changes.
  */
 export function NavMenu({
   label,

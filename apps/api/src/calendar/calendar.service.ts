@@ -13,7 +13,7 @@ import { CalendarInvitesService } from '../invites/invites.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { localDateIn, PRACTICE_ZONE } from '../common/util/zoned-time.util';
 import { payDaysBetween } from '../settings/pay-days';
-import { OnCallService } from '../on-call/on-call.service';
+import { named, OnCallService, PERSON, PROVIDER } from '../on-call/on-call.service';
 import { PracticeSettingsService } from '../settings/practice-settings.service';
 import { FEEDS, type FeedPart } from './feeds';
 import { buildCalendar, type CalendarEvent } from './ical';
@@ -39,6 +39,63 @@ export class CalendarService {
     private readonly settings: PracticeSettingsService,
     private readonly onCall: OnCallService,
   ) {}
+
+  /**
+   * Where the providers are, for the practice calendar (October 2026,
+   * Dominguez: so staff know which office has whom, and who is on
+   * telemedicine): the **published** shifts of people in a provider job role
+   * between two days, each at its office or - for a work-from-home shift -
+   * on telemedicine. Names, offices and hours only. Anybody signed in.
+   */
+  async providerPlaces(from: string, to: string) {
+    const start = new Date(`${from}T00:00:00.000Z`);
+    const end = new Date(`${to}T00:00:00.000Z`);
+    if (Number.isNaN(start.getTime()) || end < start) {
+      throw new BadRequestException(
+        'Give the days as from and to, the first no later than the last.',
+      );
+    }
+    if (end.getTime() - start.getTime() > 62 * 86_400_000) {
+      throw new BadRequestException('At most 62 days at a time.');
+    }
+    const rows = await this.prisma.shift.findMany({
+      where: {
+        status: 'PUBLISHED',
+        employee: PROVIDER,
+        // A day either side: the browser reads each shift on its own clock.
+        startsAt: {
+          gte: new Date(start.getTime() - 86_400_000),
+          lt: new Date(end.getTime() + 2 * 86_400_000),
+        },
+      },
+      select: {
+        id: true,
+        isRemote: true,
+        startsAt: true,
+        endsAt: true,
+        location: { select: { id: true, name: true } },
+        employee: { select: PERSON },
+      },
+      orderBy: { startsAt: 'asc' },
+    });
+    return {
+      shifts: rows.flatMap((row) =>
+        row.employee
+          ? [
+              {
+                id: row.id,
+                provider: named(row.employee),
+                isRemote: row.isRemote,
+                locationId: row.location.id,
+                locationName: row.location.name,
+                startsAt: row.startsAt,
+                endsAt: row.endsAt,
+              },
+            ]
+          : [],
+      ),
+    };
+  }
 
   /// Pay days from `from` to `to` (YYYY-MM-DD, inclusive): the Friday after
   /// each pay period ends. None until a pay period is set.
@@ -70,7 +127,7 @@ export class CalendarService {
    * Creates a token, or replaces the existing one.
    *
    * Replacing is how someone un-shares a link they pasted somewhere they should
-   * not have — the old URL stops working immediately.
+   * not have - the old URL stops working immediately.
    */
   async issueToken(employeeId: string): Promise<{ token: string }> {
     const token = randomBytes(TOKEN_BYTES).toString('base64url');
@@ -93,7 +150,7 @@ export class CalendarService {
   /**
    * Builds the feed for a token.
    *
-   * The token *is* the credential — calendar apps cannot send an auth header —
+   * The token *is* the credential - calendar apps cannot send an auth header -
    * so it is long, random, per-employee, and revocable, and the feed exposes
    * only that one person's schedule.
    *
@@ -124,8 +181,8 @@ export class CalendarService {
     const to = new Date(now.getTime() + WINDOW_AHEAD_DAYS * 86_400_000);
 
     // Once shifts and events go out as calendar invites (Dominguez,
-    // September 2026), the feed carries only what is not invited — closures
-    // and approved time off — so nobody sees a shift or a meeting twice.
+    // September 2026), the feed carries only what is not invited - closures
+    // and approved time off - so nobody sees a shift or a meeting twice.
     const invited = this.invites.enabled;
 
     const wantsEvents = Object.values(PracticeEventKind).some((kind) => wants(kind));
@@ -177,7 +234,7 @@ export class CalendarService {
       wants('PAY_DAYS')
         ? this.payDays(localDateIn(from, PRACTICE_ZONE), localDateIn(to, PRACTICE_ZONE))
         : Promise.resolve([]),
-      // Their own on-call turns, noon to noon — a provider's only (October 2026).
+      // Their own on-call turns, noon to noon - a provider's only (October 2026).
       wants('ON_CALL') ? this.onCall.turnsFor(employee.id, from, to) : Promise.resolve([]),
     ]);
     // Invites carry meetings only; closures, holidays and diagnostics stay here.
@@ -192,7 +249,7 @@ export class CalendarService {
         // Namespaced and stable, so an edited shift updates in place.
         uid: `shift-${shift.id}@staff.domihealthcare.com`,
         sequence: secondsSinceEpoch(shift.updatedAt),
-        summary: `Work — ${shift.location.name}`,
+        summary: `Work - ${shift.location.name}`,
         description: shift.notes ?? undefined,
         location: [shift.location.addressLine1, shift.location.city, shift.location.state]
           .filter(Boolean)
@@ -215,7 +272,7 @@ export class CalendarService {
           sequence: secondsSinceEpoch(event.updatedAt),
           summary: summaryOf(event),
           // Google Calendar ignores URL, so the link is also first in the
-          // notes — where every calendar app makes it tappable.
+          // notes - where every calendar app makes it tappable.
           // A rep lunch says who and what; never the rep's phone or the
           // managers' notes.
           description:
@@ -281,8 +338,8 @@ export class CalendarService {
     return buildCalendar(events, {
       name:
         feed === 'domi'
-          ? `${displayName} ${employee.lastName} — Domi Staff`
-          : `${chosen.name} — Domi Staff`,
+          ? `${displayName} ${employee.lastName} - Domi Staff`
+          : `${chosen.name} - Domi Staff`,
       description:
         feed !== 'domi'
           ? `${chosen.name} from Domi Staff.`
@@ -296,14 +353,14 @@ export class CalendarService {
 }
 
 /// "Office meeting", for a closure "Closed: Christmas Day" / "North Bergen
-/// closed: Burst pipe", for diagnostics "US + ECHO — West New York".
+/// closed: Burst pipe", for diagnostics "US + ECHO - West New York".
 function summaryOf(event: EventRow): string {
   if (event.kind === PracticeEventKind.REP_LUNCH) {
     const company = event.rep?.company ? ` (${event.rep.company})` : '';
-    return `${event.title}${company}${event.atLocation ? ` — ${event.atLocation.name}` : ''}`;
+    return `${event.title}${company}${event.atLocation ? ` - ${event.atLocation.name}` : ''}`;
   }
   if (event.kind === PracticeEventKind.DIAGNOSTIC) {
-    return event.atLocation ? `${event.title} — ${event.atLocation.name}` : event.title;
+    return event.atLocation ? `${event.title} - ${event.atLocation.name}` : event.title;
   }
   if (event.kind !== PracticeEventKind.CLOSURE) return event.title;
   return event.audience === EventAudience.LOCATION && event.location
@@ -311,7 +368,7 @@ function summaryOf(event: EventRow): string {
     : `Closed: ${event.title}`;
 }
 
-/// "Medication: Ozempic", "Lunch: catering" — what staff need to know.
+/// "Medication: Ozempic", "Lunch: catering" - what staff need to know.
 function repLines(rep: NonNullable<EventRow['rep']>): string[] {
   return [
     rep.medication ? `Medication: ${rep.medication}` : null,

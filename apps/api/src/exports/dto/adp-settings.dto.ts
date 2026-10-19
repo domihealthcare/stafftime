@@ -1,7 +1,7 @@
 import { IsOptional, IsString, Matches, MaxLength, ValidateIf } from 'class-validator';
 
 export class UpdateAdpSettingsDto {
-  /// ADP's company code — the "ccc" in PRcccEPI. Empty clears it.
+  /// ADP's company code - the "ccc" in PRcccEPI. Empty clears it.
   @IsOptional()
   @IsString()
   @Matches(/^\s*([A-Za-z0-9]{2,6})?\s*$/, {

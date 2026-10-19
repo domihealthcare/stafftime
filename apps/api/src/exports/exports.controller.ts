@@ -52,7 +52,7 @@ export class ExportsController {
   }
 
   /// Where hours can be sent, including the targets that are not ready yet and
-  /// why — a provider the practice is waiting on is easier to chase when the
+  /// why - a provider the practice is waiting on is easier to chase when the
   /// app names it.
   @Get('targets')
   targets() {
@@ -77,7 +77,7 @@ export class ExportsController {
   }
 
   /// "Before you export": what is worth a look about this period before it
-  /// goes to payroll — unapproved hours, midnight clock-outs, hand entries,
+  /// goes to payroll - unapproved hours, midnight clock-outs, hand entries,
   /// corrections, missing ADP File #s, overtime. Only reads.
   @Post('timesheet/check')
   @HttpCode(HttpStatus.OK)
@@ -89,7 +89,7 @@ export class ExportsController {
    * Produces the file **and records what went out**.
    *
    * The brief asks for an export record so a run can be audited or repeated,
-   * and this is the only route that produces one — there is no way to send
+   * and this is the only route that produces one - there is no way to send
    * hours to payroll without leaving a trace of which hours they were.
    */
   @Post('timesheet')
@@ -131,7 +131,7 @@ export class ExportsController {
       .send(file.bytes);
   }
 
-  /// No longer the run that counts — superseded, or sent in error. The record
+  /// No longer the run that counts - superseded, or sent in error. The record
   /// and its file stay.
   @Post('history/:id/void')
   @HttpCode(HttpStatus.OK)

@@ -176,7 +176,7 @@ await step('Max is told, says yes, and the days change hands', async () => {
   }
   await max.goto(`${BASE}/on-call`, { waitUntil: 'networkidle' });
   await max.getByRole('button', { name: 'Yes, swap' }).click();
-  await max.getByText(/Done — you are on call/).waitFor();
+  await max.getByText(/Done - you are on call/).waitFor();
   const days = (await call(max, `/on-call?from=${monday}&to=${thursday}`)).body.days;
   const mon = days.find((d) => d.date === monday);
   const thu = days.find((d) => d.date === thursday);

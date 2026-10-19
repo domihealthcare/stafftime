@@ -1,7 +1,7 @@
 /**
  * The sums behind a productivity statement, kept apart from the database so the
  * screen, the provider's view and the tests can all be held to the same
- * numbers. Money is worked in whole cents — never floating dollars — so 23 over
+ * numbers. Money is worked in whole cents - never floating dollars - so 23 over
  * at $50.00 is exactly $1,150.00 and a $12.35 multiplier cannot drift.
  *
  * The practice's sheet, for the record: two two-week intervals of 169 and 154
@@ -18,7 +18,7 @@ export interface IntervalInput {
 }
 
 export interface StatementTotals {
-  /// Null when no interval has a target — then there is only a count.
+  /// Null when no interval has a target - then there is only a count.
   expected: number | null;
   actual: number;
   /// Actual less expected. Null with no target.

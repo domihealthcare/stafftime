@@ -19,7 +19,7 @@ const step = async (name, fn) => {
 };
 
 /**
- * "Staff who never signed in" (Dominguez, October 2026 — a "smarter" idea):
+ * "Staff who never signed in" (Dominguez, October 2026 - a "smarter" idea):
  * on the Staff screen, everybody still here who has never signed in, why
  * that may be, and the welcome email to send (or send again). Admins only.
  * Two people are added for it, Nora and Tess (`@example.com`; run-all.sh

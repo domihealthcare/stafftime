@@ -10,8 +10,8 @@ const BASE = process.env.BASE_URL || 'http://127.0.0.1:5173';
 /**
  * Where the API writes its log.
  *
- * With no email provider configured — which is the default, and what the suites
- * run against — the reset email is written to the server log instead of being
+ * With no email provider configured - which is the default, and what the suites
+ * run against - the reset email is written to the server log instead of being
  * sent. That is also how a developer gets the link locally, so reading it from
  * there tests the real path rather than a test-only shortcut.
  *
@@ -69,7 +69,7 @@ await step('an address with no account is answered, not rejected', async () => {
 });
 
 await step('a real address is answered in exactly the same words', async () => {
-  // Any difference here — wording, timing, a different screen — is a way to
+  // Any difference here - wording, timing, a different screen - is a way to
   // find out who works at the practice.
   await page.goto(`${BASE}/forgot-password`, { waitUntil: 'networkidle' });
   await page.getByLabel('Email').fill('frontdesk@domihealthcare.com');

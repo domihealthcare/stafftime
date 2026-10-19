@@ -25,7 +25,7 @@ describe('distanceInMeters', () => {
   it('measures the distance between the two Domi locations', () => {
     const westNewYork = { latitude: 40.7878, longitude: -74.0143 };
     const distance = distanceInMeters(northBergen, westNewYork);
-    // The offices are roughly 1.8km apart — comfortably outside each other's geofence.
+    // The offices are roughly 1.8km apart - comfortably outside each other's geofence.
     expect(distance).toBeGreaterThan(1500);
     expect(distance).toBeLessThan(2200);
   });

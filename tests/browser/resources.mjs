@@ -45,7 +45,7 @@ async function addResource(page, sectionName, { kind = 'link', title, url, body 
   await form.getByRole('button', { name: 'Add it' }).click();
 }
 
-// A manager — not an admin — keeps job roles. That is the point of the step.
+// A manager - not an admin - keeps job roles. That is the point of the step.
 const mgr = await browser.newPage({ viewport: { width: 1280, height: 1100 } });
 mgr.on('pageerror', (e) => errors.push(`manager pageerror: ${e.message}`));
 await signIn(mgr, 'manager@domihealthcare.com');

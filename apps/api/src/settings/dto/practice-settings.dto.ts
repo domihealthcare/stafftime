@@ -7,7 +7,7 @@ export class UpdatePracticeSettingsDto {
    *
    * Bounded rather than free: below about twenty the warning fires for every
    * part-timer and stops meaning anything, and above sixty it would never fire
-   * at all — either way the setting quietly turns the feature off, which is not
+   * at all - either way the setting quietly turns the feature off, which is not
    * what somebody adjusting a number expects to have done.
    */
   @IsOptional()

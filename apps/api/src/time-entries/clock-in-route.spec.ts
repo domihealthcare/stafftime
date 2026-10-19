@@ -5,7 +5,7 @@ import { TimeEntriesController } from './time-entries.controller';
 /**
  * A kiosk punch skips the location check, so it may only come from the time
  * clock. On the ordinary clock-in route anybody signed in could otherwise
- * claim to be one — from home, and on a colleague's behalf.
+ * claim to be one - from home, and on a colleague's behalf.
  */
 describe('the phone clock-in route', () => {
   const employee = { id: 'emp-1', email: 'x@y.z', role: Role.EMPLOYEE };
@@ -29,7 +29,11 @@ describe('the phone clock-in route', () => {
 
   it('passes an ordinary phone punch through', async () => {
     const { controller, timeEntries } = build();
-    await controller.clockIn({ locationId: 'loc-1', method: ClockMethod.WEB }, employee, '203.0.113.7');
+    await controller.clockIn(
+      { locationId: 'loc-1', method: ClockMethod.WEB },
+      employee,
+      '203.0.113.7',
+    );
     expect(timeEntries.clockIn).toHaveBeenCalled();
   });
 });
