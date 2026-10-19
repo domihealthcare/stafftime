@@ -1,3 +1,4 @@
+import { ScheduleTabs } from '../components/ScheduleTabs';
 import { Fragment, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { api } from '../lib/api';
 import { OnePersonNote, useOnePerson } from '../components/OnePerson';
@@ -196,6 +197,7 @@ export function TimesheetPage() {
             : t('Your recorded hours.')
         }
       />
+      <ScheduleTabs />
       {personId && isManager && (
         <OnePersonNote
           name={

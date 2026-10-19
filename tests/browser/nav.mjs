@@ -26,6 +26,15 @@ export async function navLink(page, name) {
   if (await find().isVisible().catch(() => false)) return find();
   await openMore(page);
   if (await find().isVisible().catch(() => false)) return find();
+  // Timesheet is a tab on the Schedule's strip on a laptop (October 2026).
+  if (typeof name === 'string' && name === 'Timesheet') {
+    const schedule = page.getByRole('navigation', { name: 'Main' }).getByRole('link', { name: /^Schedule/ });
+    if (await schedule.isVisible().catch(() => false)) {
+      await schedule.click();
+      await page.getByRole('navigation', { name: 'Schedule or calendar' }).waitFor({ timeout: 15000 });
+      if (await find().isVisible().catch(() => false)) return find();
+    }
+  }
   const manage = page.getByRole('button', { name: 'Manage', exact: true });
   if (await manage.isVisible().catch(() => false)) {
     if ((await manage.getAttribute('aria-expanded')) !== 'true') await manage.click();

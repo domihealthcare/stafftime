@@ -37,6 +37,10 @@ export function ScheduleTabs() {
           {t('On call')}
         </NavLink>
       )}
+      {/* Hours worked, beside the rota (October 2026, Dominguez: one header row). */}
+      <NavLink to="/timesheet" className={tab}>
+        {t('Timesheet')}
+      </NavLink>
     </nav>
   );
 }

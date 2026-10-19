@@ -171,7 +171,16 @@ export function Layout() {
                 <NavIcon name="home" />
                 {t('Home')}
               </NavLink>
-              <NavLink to="/schedule" className={linkClasses}>
+              {/* Timesheet is a tab beside Shifts and Calendar (October 2026,
+                  Dominguez: one row), so Schedule stays lit on it too. */}
+              <NavLink
+                to="/schedule"
+                className={(state) =>
+                  linkClasses({
+                    isActive: state.isActive || pathname.startsWith('/timesheet'),
+                  })
+                }
+              >
                 <NavIcon name="schedule" />
                 {t('Schedule')}
                 {pendingPto > 0 && (
@@ -186,10 +195,6 @@ export function Layout() {
                     {pendingPto}
                   </span>
                 )}
-              </NavLink>
-              <NavLink to="/timesheet" className={linkClasses}>
-                <NavIcon name="timesheet" />
-                {t('Timesheet')}
               </NavLink>
               <NavLink to="/directory" className={linkClasses}>
                 <NavIcon name="directory" />
