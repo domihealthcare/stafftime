@@ -23,11 +23,13 @@ import {
   shiftLine,
   type MySchedule,
 } from '../components/MySchedule';
-import type { Location, PracticeEvent } from '../lib/types';
+import { placesOn } from '../components/ProviderPlaces';
+import type { Location, PracticeEvent, ProviderPlaces } from '../lib/types';
 
 /// Each kind's ink on paper: strong enough to read in black and white too.
 const PRINT_INK: Record<CalendarKind, string> = {
   MY_SHIFT: 'text-brand-800 font-semibold',
+  PROVIDERS: 'text-violet-800',
   CLOSURE: 'text-slate-900 font-bold',
   HOLIDAY: 'text-amber-800 font-semibold',
   PAY_DAY: 'text-emerald-800 font-semibold',
@@ -65,6 +67,7 @@ export function CalendarPrintPage() {
   const [events, setEvents] = useState<PracticeEvent[]>([]);
   const [payDays, setPayDays] = useState<string[]>([]);
   const [mine, setMine] = useState<MySchedule>(NO_SCHEDULE);
+  const [places, setPlaces] = useState<ProviderPlaces>({ shifts: [] });
   const myId = me?.id;
   const [locations, setLocations] = useState<Location[]>([]);
   const [loading, setLoading] = useState(true);
@@ -109,6 +112,18 @@ export function CalendarPrintPage() {
       cancelled = true;
     };
   }, [myId, days]);
+
+  // Where the providers are, when "Providers" is printed.
+  useEffect(() => {
+    let cancelled = false;
+    api
+      .providerPlaces(localDate(days[0]), localDate(days[days.length - 1]))
+      .then((found) => !cancelled && setPlaces(found))
+      .catch(() => !cancelled && setPlaces({ shifts: [] }));
+    return () => {
+      cancelled = true;
+    };
+  }, [days]);
 
   const monthName = monthStart.toLocaleDateString(undefined, { month: 'long', year: 'numeric' });
   // The tab title becomes the file name when somebody saves it as a PDF.
@@ -269,6 +284,18 @@ export function CalendarPrintPage() {
                                     </>
                                   );
                                 })()}
+                                {placesOn(
+                                  kinds.includes('PROVIDERS') ? places : { shifts: [] },
+                                  key,
+                                  office,
+                                ).map((group) => (
+                                  <li key={group.key} className={PRINT_INK.PROVIDERS}>
+                                    <strong>
+                                      {group.key === 'TELE' ? 'Telemedicine' : group.label}
+                                    </strong>
+                                    : {group.people.join(', ')}
+                                  </li>
+                                ))}
                                 {paid.includes(key) && (
                                   <li className={PRINT_INK.PAY_DAY}>💵 Pay day</li>
                                 )}

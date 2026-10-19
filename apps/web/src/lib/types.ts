@@ -1871,6 +1871,20 @@ export interface ScheduleReviewAreas {
   reviewers: OnCallPerson[];
 }
 
+/// `GET /calendar/providers`: published provider shifts, by office or
+/// telemedicine (a work-from-home shift).
+export interface ProviderPlaces {
+  shifts: {
+    id: string;
+    provider: OnCallPerson;
+    isRemote: boolean;
+    locationId: string;
+    locationName: string;
+    startsAt: string;
+    endsAt: string;
+  }[];
+}
+
 export interface ScheduleReview {
   providerId: string;
   reviewer: OnCallPerson | null;

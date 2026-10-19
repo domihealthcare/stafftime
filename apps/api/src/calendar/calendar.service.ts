@@ -13,7 +13,7 @@ import { CalendarInvitesService } from '../invites/invites.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { localDateIn, PRACTICE_ZONE } from '../common/util/zoned-time.util';
 import { payDaysBetween } from '../settings/pay-days';
-import { OnCallService } from '../on-call/on-call.service';
+import { named, OnCallService, PERSON, PROVIDER } from '../on-call/on-call.service';
 import { PracticeSettingsService } from '../settings/practice-settings.service';
 import { FEEDS, type FeedPart } from './feeds';
 import { buildCalendar, type CalendarEvent } from './ical';
@@ -39,6 +39,63 @@ export class CalendarService {
     private readonly settings: PracticeSettingsService,
     private readonly onCall: OnCallService,
   ) {}
+
+  /**
+   * Where the providers are, for the practice calendar (October 2026,
+   * Dominguez: so staff know which office has whom, and who is on
+   * telemedicine): the **published** shifts of people in a provider job role
+   * between two days, each at its office or - for a work-from-home shift -
+   * on telemedicine. Names, offices and hours only. Anybody signed in.
+   */
+  async providerPlaces(from: string, to: string) {
+    const start = new Date(`${from}T00:00:00.000Z`);
+    const end = new Date(`${to}T00:00:00.000Z`);
+    if (Number.isNaN(start.getTime()) || end < start) {
+      throw new BadRequestException(
+        'Give the days as from and to, the first no later than the last.',
+      );
+    }
+    if (end.getTime() - start.getTime() > 62 * 86_400_000) {
+      throw new BadRequestException('At most 62 days at a time.');
+    }
+    const rows = await this.prisma.shift.findMany({
+      where: {
+        status: 'PUBLISHED',
+        employee: PROVIDER,
+        // A day either side: the browser reads each shift on its own clock.
+        startsAt: {
+          gte: new Date(start.getTime() - 86_400_000),
+          lt: new Date(end.getTime() + 2 * 86_400_000),
+        },
+      },
+      select: {
+        id: true,
+        isRemote: true,
+        startsAt: true,
+        endsAt: true,
+        location: { select: { id: true, name: true } },
+        employee: { select: PERSON },
+      },
+      orderBy: { startsAt: 'asc' },
+    });
+    return {
+      shifts: rows.flatMap((row) =>
+        row.employee
+          ? [
+              {
+                id: row.id,
+                provider: named(row.employee),
+                isRemote: row.isRemote,
+                locationId: row.location.id,
+                locationName: row.location.name,
+                startsAt: row.startsAt,
+                endsAt: row.endsAt,
+              },
+            ]
+          : [],
+      ),
+    };
+  }
 
   /// Pay days from `from` to `to` (YYYY-MM-DD, inclusive): the Friday after
   /// each pay period ends. None until a pay period is set.

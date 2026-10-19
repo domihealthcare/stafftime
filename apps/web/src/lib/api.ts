@@ -12,6 +12,7 @@ import type {
   OnCallRota,
   OnCallSchedule,
   OnCallSwap,
+  ProviderPlaces,
   ScheduleReviewAreas,
   ScheduleReviewDays,
   ScheduleReviewPattern,
@@ -1566,6 +1567,11 @@ export const api = {
   payDays: (from: string, to: string) =>
     request<{ payDays: string[] }>(
       `/calendar/pay-days?from=${encodeURIComponent(from)}&to=${encodeURIComponent(to)}`,
+    ),
+  /// Where the providers are (office or telemedicine) from one day to another.
+  providerPlaces: (from: string, to: string) =>
+    request<ProviderPlaces>(
+      `/calendar/providers?from=${encodeURIComponent(from)}&to=${encodeURIComponent(to)}`,
     ),
   /// Every closure and holiday in `fromYear`, put on the same date the year after.
   copyClosures: (fromYear: number) =>

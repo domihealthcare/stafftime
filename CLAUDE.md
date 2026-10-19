@@ -1159,6 +1159,16 @@ Beyond the phases, the parts worth knowing about before picking up work:
   live site and fill any gap in the app**. The sheet's
   assignment of Claude's reading (location decides the reviewer) is an
   assumption to confirm. `tests/browser/schedule-reviews.mjs`.
+- **Providers on the calendar** (19 October 2026, Dominguez: "so staff know
+  what offices are open and who should be there and who's scheduled to be on
+  telemedicine"): a **Providers** kind on Schedule → Calendar (month, list and
+  the printed month, filterable by office): each day, each office's providers
+  with their hours, and **Telemedicine** for work-from-home shifts. Built from
+  the **published** shifts of people in a provider job role (so it is only as
+  right as the rota), names, offices and hours only; which offices are shut
+  is the Closures kind beside it. Everybody reads it. Not in the phone calendar
+  feed. `GET /calendar/providers`, `CalendarService.providerPlaces`,
+  `components/ProviderPlaces.tsx`; `tests/browser/provider-calendar.mjs`.
 - **Turned down: "PTO about to be lost"** (9 October 2026, Dominguez): a
   reminder to use PTO before it fails to carry over was proposed and refused —
   not in the practice's interest. Do not propose it again.

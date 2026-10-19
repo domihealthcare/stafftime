@@ -13,7 +13,7 @@ import type { EventKind } from './types';
  * Tailwind finds class names by reading the source, so each is written out
  * whole rather than built from a colour name.
  */
-export type CalendarKind = EventKind | 'PAY_DAY' | 'MY_SHIFT';
+export type CalendarKind = EventKind | 'PAY_DAY' | 'MY_SHIFT' | 'PROVIDERS';
 
 export interface KindStyle {
   /// "Diagnostics" - a filter chip, a heading.
@@ -37,6 +37,14 @@ export const KIND_STYLE: Record<CalendarKind, KindStyle> = {
     chip: 'bg-brand-50 text-brand-900 ring-brand-300 hover:bg-brand-100',
     subtle: 'text-brand-800',
     dot: 'bg-brand-600',
+  },
+  PROVIDERS: {
+    label: 'Providers',
+    one: 'Providers',
+    emoji: '🧑‍⚕️',
+    chip: 'bg-violet-50 text-violet-950 ring-violet-300',
+    subtle: 'text-violet-800',
+    dot: 'bg-violet-600',
   },
   EVENT: {
     label: 'Meetings & events',
@@ -92,6 +100,7 @@ export const KIND_STYLE: Record<CalendarKind, KindStyle> = {
 /// The order they are listed in, filtered by and shown on a day.
 export const CALENDAR_KINDS: CalendarKind[] = [
   'MY_SHIFT',
+  'PROVIDERS',
   'CLOSURE',
   'HOLIDAY',
   'PAY_DAY',

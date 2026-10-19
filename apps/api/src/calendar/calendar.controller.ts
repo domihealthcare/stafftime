@@ -49,6 +49,12 @@ export class CalendarController {
     return { payDays: await this.calendar.payDays(query.from, query.to) };
   }
 
+  /// Where the providers are, by day: office or telemedicine. Anybody signed in.
+  @Get('providers')
+  providers(@Query() query: PayDaysQuery) {
+    return this.calendar.providerPlaces(query.from, query.to);
+  }
+
   /**
    * The feed itself.
    *

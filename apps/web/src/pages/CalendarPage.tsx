@@ -18,6 +18,7 @@ import {
 } from '../components/MySchedule';
 import { Alert, Card, PageHeading, Spinner, buttonClass } from '../components/ui';
 import { api } from '../lib/api';
+import { ProviderDayChips, placesOn } from '../components/ProviderPlaces';
 import { CALENDAR_KINDS, KIND_STYLE, officeShort, type CalendarKind } from '../lib/calendar-kinds';
 import {
   addDays,
@@ -30,7 +31,14 @@ import {
 } from '../lib/format';
 import { locale, t as translate, useT } from '../lib/i18n';
 import { useIsManager, useSession } from '../lib/session';
-import type { Employee, EventKind, JobRole, Location, PracticeEvent } from '../lib/types';
+import type {
+  Employee,
+  EventKind,
+  JobRole,
+  Location,
+  PracticeEvent,
+  ProviderPlaces,
+} from '../lib/types';
 import { useIsPhone } from '../lib/use-is-phone';
 
 /// Remembered per browser: a convenience, never relied on.
@@ -111,6 +119,8 @@ export function CalendarPage() {
   const [version, setVersion] = useState(0);
   /// Your own shifts and time off, for "My shifts".
   const [mine, setMine] = useState<MySchedule>(NO_SCHEDULE);
+  /// Where the providers are, for "Providers".
+  const [places, setPlaces] = useState<ProviderPlaces>({ shifts: [] });
 
   const days = useMemo(() => monthGrid(monthStart), [monthStart]);
   const first = days[0];
@@ -152,6 +162,18 @@ export function CalendarPage() {
       cancelled = true;
     };
   }, [myId, first, last]);
+
+  // Where the providers are. Not worth failing the calendar over either.
+  useEffect(() => {
+    let cancelled = false;
+    api
+      .providerPlaces(localDate(first), localDate(last))
+      .then((found) => !cancelled && setPlaces(found))
+      .catch(() => !cancelled && setPlaces({ shifts: [] }));
+    return () => {
+      cancelled = true;
+    };
+  }, [first, last]);
 
   // Only managers add, and only adding to a meeting needs the staff list.
   useEffect(() => {
@@ -216,6 +238,8 @@ export function CalendarPage() {
   );
   const shownPayDays = isShown('PAY_DAY') ? payDays : [];
   const shownMine = isShown('MY_SHIFT') ? mine : NO_SCHEDULE;
+  const shownPlaces = isShown('PROVIDERS') ? places : { shifts: [] };
+  const hasPlaces = (key: string) => placesOn(shownPlaces, key, office).length > 0;
   const hasMine = (key: string) => {
     const { shifts, off } = myDay(shownMine, me?.id, key);
     return shifts.length > 0 || off !== null;
@@ -230,7 +254,7 @@ export function CalendarPage() {
       <PageHeading
         title={t('Calendar')}
         subtitle={t(
-          'Your shifts, diagnostics, rep lunches, holidays, closures, meetings and pay days.',
+          'Your shifts, where the providers are, diagnostics, rep lunches, holidays, closures, meetings and pay days.',
         )}
       />
       <ScheduleTabs />
@@ -511,6 +535,10 @@ export function CalendarPage() {
                       events={events}
                       compact={isPhone}
                     />
+                    <ProviderDayChips
+                      groups={placesOn(shownPlaces, key, office)}
+                      compact={isPhone}
+                    />
                     {paid && <PayDayChip compact={isPhone} />}
                     {dayEvents.map((event) =>
                       isPhone ? (
@@ -544,7 +572,10 @@ export function CalendarPage() {
               .map((day) => localDate(day))
               .filter(
                 (key) =>
-                  hasMine(key) || shownPayDays.includes(key) || eventsOnDay(shown, key).length > 0,
+                  hasMine(key) ||
+                  hasPlaces(key) ||
+                  shownPayDays.includes(key) ||
+                  eventsOnDay(shown, key).length > 0,
               )
               .map((key) => (
                 <li
@@ -569,6 +600,7 @@ export function CalendarPage() {
                       day={key}
                       events={events}
                     />
+                    <ProviderDayChips groups={placesOn(shownPlaces, key, office)} />
                     {shownPayDays.includes(key) && <PayDayChip />}
                     {eventsOnDay(shown, key).map((event) => (
                       <EventChip key={event.id} event={event} day={key} onOpen={setOpenEvent} />
@@ -580,6 +612,7 @@ export function CalendarPage() {
           {monthDays.every(
             (day) =>
               !hasMine(localDate(day)) &&
+              !hasPlaces(localDate(day)) &&
               !shownPayDays.includes(localDate(day)) &&
               eventsOnDay(shown, localDate(day)).length === 0,
           ) && (
