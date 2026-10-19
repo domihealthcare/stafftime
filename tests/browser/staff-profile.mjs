@@ -154,8 +154,15 @@ await step('time off already taken is recorded with a comment and comes off the 
     d.setDate(d.getDate() - offset);
     return d.toLocaleDateString('en-CA');
   };
-  await form.getByLabel('First day').fill(day(3));
-  await form.getByLabel('Last day').fill(day(2));
+  // Time off counts weekdays only, so the two days are a Monday to Thursday and the day after.
+  let start = 3;
+  for (;;) {
+    const weekday = new Date(Date.now() - start * 86400000).getDay();
+    if (weekday >= 1 && weekday <= 4) break;
+    start += 1;
+  }
+  await form.getByLabel('First day').fill(day(start));
+  await form.getByLabel('Last day').fill(day(start - 1));
   await form.getByLabel('Comment (optional)').fill('Flu - doctor’s note on file');
   const saved = admin.waitForResponse((r) => r.url().endsWith('/pto/record'));
   await form.getByRole('button', { name: 'Record it' }).click();

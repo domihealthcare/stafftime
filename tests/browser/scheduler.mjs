@@ -265,7 +265,7 @@ await step('an empty day is visibly empty rather than blank', async () => {
     throw new Error(`every day in the month has a shift, so nothing was tested: ${labels[0]}`);
 
   const text = await cells.nth(emptyIndex).innerText();
-  if (!/ - /.test(text))
+  if (!/(^|\s)-(\s|$)/.test(text))
     throw new Error(`an empty day rendered as "${text.replace(/\n/g, ' ')}" rather than a dash`);
 });
 
