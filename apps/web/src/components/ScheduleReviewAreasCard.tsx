@@ -11,7 +11,13 @@ import { Alert, Card, buttonClass, inputClass } from './ui';
  * Nursing, WNY All. Everybody reads it; managers and admins edit it. Beside
  * the day-by-day provider schedule below it, never a patient.
  */
-export function ScheduleReviewAreasCard({ canEdit }: { canEdit: boolean }) {
+export function ScheduleReviewAreasCard({
+  canEdit,
+  onSaved,
+}: {
+  canEdit: boolean;
+  onSaved?: () => void;
+}) {
   const t = useT();
   const [found, setFound] = useState<ScheduleReviewAreas | null>(null);
   const [editing, setEditing] = useState(false);
@@ -49,6 +55,7 @@ export function ScheduleReviewAreasCard({ canEdit }: { canEdit: boolean }) {
           {found.areas.map((area) => (
             <li key={area.id}>
               <span className="font-semibold text-slate-900">{area.name}</span>
+              {area.forResources && <span className="sr-only"> ({t('resource')})</span>}
               {' = '}
               <span className={area.reviewer ? 'font-semibold text-brand-700' : 'text-slate-500'}>
                 {area.reviewer ? area.reviewer.name : t('nobody yet')}
@@ -64,6 +71,7 @@ export function ScheduleReviewAreasCard({ canEdit }: { canEdit: boolean }) {
           onSaved={(next) => {
             setFound(next);
             setEditing(false);
+            onSaved?.();
           }}
         />
       )}
@@ -81,7 +89,11 @@ function EditAreas({
   onSaved: (next: ScheduleReviewAreas) => void;
 }) {
   const [rows, setRows] = useState(
-    found.areas.map((area) => ({ name: area.name, reviewerId: area.reviewer?.id ?? '' })),
+    found.areas.map((area) => ({
+      name: area.name,
+      reviewerId: area.reviewer?.id ?? '',
+      forResources: area.forResources,
+    })),
   );
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -94,7 +106,11 @@ function EditAreas({
     try {
       onSaved(
         await api.saveScheduleReviewAreas(
-          rows.map((row) => ({ name: row.name, reviewerId: row.reviewerId || null })),
+          rows.map((row) => ({
+            name: row.name,
+            reviewerId: row.reviewerId || null,
+            forResources: row.forResources,
+          })),
         ),
       );
     } catch (err) {
@@ -129,6 +145,15 @@ function EditAreas({
                 </option>
               ))}
             </select>
+            <label className="flex items-center gap-1 text-xs text-slate-600">
+              <input
+                type="checkbox"
+                checked={row.forResources}
+                onChange={(event) => change(index, { forResources: event.target.checked })}
+                className="rounded border-slate-300 text-brand-600 focus:ring-brand-600"
+              />
+              Resource (on each day)
+            </label>
             <button
               type="button"
               className="text-sm font-medium text-slate-500 hover:text-slate-900"
@@ -141,7 +166,9 @@ function EditAreas({
         <button
           type="button"
           className={buttonClass('secondary', 'sm')}
-          onClick={() => setRows((current) => [...current, { name: '', reviewerId: '' }])}
+          onClick={() =>
+            setRows((current) => [...current, { name: '', reviewerId: '', forResources: false }])
+          }
         >
           + Add a group
         </button>

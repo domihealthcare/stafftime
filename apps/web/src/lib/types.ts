@@ -1866,7 +1866,7 @@ export interface OnCallSchedule {
 /// who and which provider: the schedules themselves stay in eCW.
 /// The groups of schedules and who reviews each, as on the practice's sheet.
 export interface ScheduleReviewAreas {
-  areas: { id: string; name: string; reviewer: OnCallPerson | null }[];
+  areas: { id: string; name: string; forResources: boolean; reviewer: OnCallPerson | null }[];
   /// Who can be picked: everybody still here.
   reviewers: OnCallPerson[];
 }

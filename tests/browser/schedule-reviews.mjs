@@ -169,7 +169,7 @@ await step('a manager changes one day, with a note, and puts it back', async () 
   const day = manager.getByTestId(`reviews-${today}`);
   await day.getByText('Changed').waitFor();
   await day.getByText('“Frankie is at training”').waitFor();
-  await day.getByText('Nobody').waitFor();
+  await day.getByTestId('review-line').getByText('Nobody').waitFor();
 
   // Everybody else sees it at once.
   await frankie.reload({ waitUntil: 'networkidle' });
@@ -203,10 +203,38 @@ await step('a day gone by cannot be changed', async () => {
   if (notProvider.status !== 400) throw new Error(`a non-provider answered ${notProvider.status}`);
 });
 
+await step('each day shows where the provider is, and the resources beside the providers', async () => {
+  const max = (await call(admin, '/employees')).body.find((p) => p.email === 'ma@domihealthcare.com');
+  const made = await call(manager, '/shifts', {
+    method: 'POST',
+    body: JSON.stringify({
+      employeeId: max.id,
+      locationId: max.locations[0].locationId,
+      startsAt: `${today}T14:00:00.000Z`,
+      endsAt: `${today}T20:00:00.000Z`,
+      status: 'PUBLISHED',
+    }),
+  });
+  if (made.status !== 201) throw new Error(`a shift answered ${made.status} ${JSON.stringify(made.body)}`);
+  await frankie.goto(`${BASE}/schedule-reviews`, { waitUntil: 'networkidle' });
+  const day = frankie.getByTestId(`reviews-${today}`);
+  await day.getByTestId('review-place').first().waitFor({ timeout: 15000 });
+  const weekday = new Date(`${today}T12:00:00Z`).getUTCDay();
+  const resources = day.getByTestId('review-resources');
+  if (weekday >= 1 && weekday <= 5) {
+    for (const name of ['NB BW', 'NB Nurse', 'WNY BW', 'WNY Nurse']) {
+      await resources.getByText(name, { exact: true }).waitFor({ timeout: 5000 });
+    }
+  } else if (await resources.count()) {
+    throw new Error('resources shown on a weekend');
+  }
+  await call(manager, `/shifts/${made.body.id}`, { method: 'DELETE' });
+});
+
 await step('the groups: everybody reads who reviews each, a manager edits them', async () => {
   const seen = await call(frankie, '/schedule-reviews/areas');
   const names = seen.body.areas.map((area) => area.name);
-  if (names.join('|') !== 'Telemedicine|NB Providers|NB Bloodwork & Nursing|WNY ALL')
+  if (names.join('|') !== 'Telemedicine|NB Providers|WNY Providers|NB BW|NB Nurse|WNY BW|WNY Nurse')
     throw new Error(`groups were ${names}`);
   const refused = await call(frankie, '/schedule-reviews/areas', {
     method: 'PUT',
@@ -224,7 +252,7 @@ await step('the groups: everybody reads who reviews each, a manager edits them',
   // Put it back as found.
   await call(manager, '/schedule-reviews/areas', {
     method: 'PUT',
-    body: JSON.stringify({ areas: seen.body.areas.map((a) => ({ name: a.name, reviewerId: null })) }),
+    body: JSON.stringify({ areas: seen.body.areas.map((a) => ({ name: a.name, reviewerId: null, forResources: a.forResources })) }),
   });
 });
 

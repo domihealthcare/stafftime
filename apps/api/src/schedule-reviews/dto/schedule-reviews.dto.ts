@@ -1,6 +1,7 @@
 import { Type } from 'class-transformer';
 import {
   ArrayMaxSize,
+  IsBoolean,
   IsArray,
   IsInt,
   IsOptional,
@@ -55,6 +56,11 @@ export class ScheduleReviewAreaInput {
   @IsOptional()
   @IsUUID()
   reviewerId?: string | null;
+
+  /// A resource group (bloodwork, nursing) shown on each day.
+  @IsOptional()
+  @IsBoolean()
+  forResources?: boolean;
 }
 
 /// The whole list of groups, in order, saved at once.

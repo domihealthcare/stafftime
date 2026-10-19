@@ -1169,6 +1169,18 @@ Beyond the phases, the parts worth knowing about before picking up work:
   is the Closures kind beside it. Everybody reads it. Not in the phone calendar
   feed. `GET /calendar/providers`, `CalendarService.providerPlaces`,
   `components/ProviderPlaces.tsx`; `tests/browser/provider-calendar.mjs`.
+- **Reviews, tidied** (19 October 2026, Dominguez: "why does reviews and on
+  call have different formats from the others … reviews should show … the
+  location … and include the resources"): Reviews and On call now lay out like
+  Shifts and Calendar (title, then the tab strip, in the same centred width).
+  Each provider on the Reviews week wears a **place tag** for that day, from
+  their published shifts: the office in its rota colour (NB, WNY) or **Tele**
+  (violet). The groups gained **resources**: a group ticked *Resource (on each
+  day)* in the editor (`ScheduleReviewArea.forResources`) is listed on every
+  weekday's card. The starting list is now Telemedicine, NB Providers, WNY
+  Providers, and the resources NB BW, NB Nurse, WNY BW, WNY Nurse (migration
+  `20261019050000_review_resources` splits the old groups, keeping each one's
+  reviewer, and touches only groups still under their starting names).
 - **Turned down: "PTO about to be lost"** (9 October 2026, Dominguez): a
   reminder to use PTO before it fails to carry over was proposed and refused —
   not in the practice's interest. Do not propose it again.

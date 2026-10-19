@@ -67,7 +67,7 @@ describe('what this app deliberately does not store', () => {
       ['provider', 'providerId', 'reviewer', 'reviewerId', 'updatedAt', 'weekday'].sort(),
     );
     expect(fieldsOf('ScheduleReviewArea')).toEqual(
-      ['id', 'name', 'reviewer', 'reviewerId', 'sortOrder', 'updatedAt'].sort(),
+      ['forResources', 'id', 'name', 'reviewer', 'reviewerId', 'sortOrder', 'updatedAt'].sort(),
     );
     expect(fieldsOf('ScheduleReviewDay')).toEqual(
       [

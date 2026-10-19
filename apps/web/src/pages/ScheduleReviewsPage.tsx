@@ -13,14 +13,19 @@ import {
   inputClass,
 } from '../components/ui';
 import { ApiError, api } from '../lib/api';
-import { formatCalendarDate } from '../lib/format';
+import { formatCalendarDate, localDate, parseDay } from '../lib/format';
+import { REMOTE_COLOUR, locationColourFn, tint } from '../lib/shift-colours';
+import { officeShort } from '../lib/calendar-kinds';
 import { t as translate, useT } from '../lib/i18n';
 import { practiceDate } from '../lib/practice-time';
 import { WEEKDAY_NAMES, WEEK_ORDER, addDays, sundayOf } from '../lib/schedule-reviews';
 import { useIsManager, useSession } from '../lib/session';
 import type {
+  Location,
   OnCallPerson,
+  ProviderPlaces,
   ScheduleReview,
+  ScheduleReviewAreas,
   ScheduleReviewDays,
   ScheduleReviewPattern,
 } from '../lib/types';
@@ -45,6 +50,11 @@ export function ScheduleReviewsPage() {
   const [notice, setNotice] = useState<string | null>(null);
   const [opened, setOpened] = useState<{ date: string; review: ScheduleReview } | null>(null);
   const [generation, setGeneration] = useState(0);
+  /// Where each provider is that week (their published shifts), and the groups
+  /// - neither is worth failing the page over.
+  const [places, setPlaces] = useState<ProviderPlaces>({ shifts: [] });
+  const [offices, setOffices] = useState<Location[]>([]);
+  const [areas, setAreas] = useState<ScheduleReviewAreas | null>(null);
   const reload = (message: string) => {
     setNotice(message);
     setGeneration((n) => n + 1);
@@ -71,6 +81,42 @@ export function ScheduleReviewsPage() {
     };
   }, [week, isManager, generation]);
 
+  useEffect(() => {
+    let cancelled = false;
+    Promise.all([
+      api.providerPlaces(week, addDays(week, 6)),
+      api.listLocations(),
+      api.scheduleReviewAreas(),
+    ])
+      .then(([found, locations, groups]) => {
+        if (cancelled) return;
+        setPlaces(found);
+        setOffices(locations);
+        setAreas(groups);
+      })
+      .catch(() => undefined);
+    return () => {
+      cancelled = true;
+    };
+  }, [week, generation]);
+
+  const colourOf = useMemo(() => locationColourFn(offices), [offices]);
+  /// A provider's place or places on a day: office (in its colour) or Tele.
+  const placesOf = (providerId: string, date: string): PlaceTag[] => {
+    const tags = new Map<string, PlaceTag>();
+    for (const shift of places.shifts) {
+      if (shift.provider.id !== providerId || localDate(new Date(shift.startsAt)) !== date)
+        continue;
+      const key = shift.isRemote ? 'TELE' : shift.locationId;
+      tags.set(key, {
+        label: shift.isRemote ? 'Tele' : officeShort(shift.locationName),
+        colour: shift.isRemote ? REMOTE_COLOUR : colourOf(shift.locationId),
+      });
+    }
+    return [...tags.values()];
+  };
+  const resourceGroups = (areas?.areas ?? []).filter((area) => area.forResources);
+
   const providers = useMemo(
     () => new Map((found?.providers ?? []).map((provider) => [provider.id, provider])),
     [found],
@@ -79,137 +125,167 @@ export function ScheduleReviewsPage() {
   const thisWeek = sundayOf(today);
 
   return (
-    <div className="max-w-6xl space-y-5">
-      <ScheduleTabs />
+    <div className="mx-auto max-w-6xl">
       <PageHeading
         title={t('Schedule reviews')}
         subtitle={t(
           'Who reviews each provider’s patient schedule, day by day, so everybody knows whose is being looked after. The schedules themselves stay in eCW.',
         )}
       />
-      <ScheduleReviewAreasCard canEdit={isManager} />
-      {error && <Alert>{error}</Alert>}
-      {notice && (
-        <Alert tone="success">
-          <span role="status">{notice}</span>
-        </Alert>
-      )}
+      <ScheduleTabs />
+      <div className="space-y-5">
+        <ScheduleReviewAreasCard canEdit={isManager} onSaved={() => setGeneration((n) => n + 1)} />
+        {error && <Alert>{error}</Alert>}
+        {notice && (
+          <Alert tone="success">
+            <span role="status">{notice}</span>
+          </Alert>
+        )}
 
-      <div className="flex flex-wrap items-center gap-2">
-        <button
-          type="button"
-          className={buttonClass('secondary', 'sm')}
-          onClick={() => setWeek(addDays(week, -7))}
-        >
-          {t('← Previous week')}
-        </button>
-        <button
-          type="button"
-          className={buttonClass('secondary', 'sm')}
-          disabled={week === thisWeek}
-          onClick={() => setWeek(thisWeek)}
-        >
-          {t('This week')}
-        </button>
-        <button
-          type="button"
-          className={buttonClass('secondary', 'sm')}
-          onClick={() => setWeek(addDays(week, 7))}
-        >
-          {t('Next week →')}
-        </button>
-      </div>
-      <h2 className="text-xl font-semibold text-slate-900">
-        {formatCalendarDate(week, { year: false })} –{' '}
-        {formatCalendarDate(addDays(week, 6), { year: false })}
-      </h2>
+        <div className="flex flex-wrap items-center gap-2">
+          <button
+            type="button"
+            className={buttonClass('secondary', 'sm')}
+            onClick={() => setWeek(addDays(week, -7))}
+          >
+            {t('← Previous week')}
+          </button>
+          <button
+            type="button"
+            className={buttonClass('secondary', 'sm')}
+            disabled={week === thisWeek}
+            onClick={() => setWeek(thisWeek)}
+          >
+            {t('This week')}
+          </button>
+          <button
+            type="button"
+            className={buttonClass('secondary', 'sm')}
+            onClick={() => setWeek(addDays(week, 7))}
+          >
+            {t('Next week →')}
+          </button>
+        </div>
+        <h2 className="text-xl font-semibold text-slate-900">
+          {formatCalendarDate(week, { year: false })} –{' '}
+          {formatCalendarDate(addDays(week, 6), { year: false })}
+        </h2>
 
-      {!found ? (
-        error ? null : (
-          <Spinner />
-        )
-      ) : found.providers.length === 0 ? (
-        <Alert tone="info">
-          {t('Nobody is in a provider job role yet, so there are no schedules to review.')}
-        </Alert>
-      ) : (
-        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-          {found.days.map((day) => {
-            // Managers see every provider, to set the empty ones; everybody
-            // else the schedules somebody reviews.
-            const shown = isManager ? day.reviews : day.reviews.filter((r) => r.reviewer);
-            const canChange = isManager && day.date >= today;
-            return (
-              <Card
-                key={day.date}
-                className={`p-4 ${day.date === today ? 'ring-2 ring-brand-600' : ''}`}
-                testId={`reviews-${day.date}`}
-              >
-                <h3 className="flex items-center gap-2 font-semibold text-slate-900">
-                  {formatCalendarDate(day.date, { year: false })}
-                  {day.date === today && <Badge tone="info">{t('Today')}</Badge>}
-                </h3>
-                {shown.length === 0 ? (
-                  <p className="mt-2 text-sm text-slate-500">{t('No schedules to review.')}</p>
-                ) : (
-                  <ul className="mt-2 space-y-1.5">
-                    {shown.map((review) => {
-                      const provider = providers.get(review.providerId);
-                      const line = (
-                        <ReviewLine
-                          provider={provider}
-                          review={review}
-                          mine={!!me && review.reviewer?.id === me}
-                        />
-                      );
-                      return (
-                        <li key={review.providerId}>
-                          {canChange ? (
-                            <button
-                              type="button"
-                              className="w-full rounded-md px-2 py-1 text-left hover:bg-slate-50 focus-visible:bg-slate-50"
-                              aria-label={t('Change who reviews {provider} on {day}', {
-                                provider: provider?.name ?? '',
-                                day: formatCalendarDate(day.date, { year: false }),
-                              })}
-                              onClick={() => setOpened({ date: day.date, review })}
+        {!found ? (
+          error ? null : (
+            <Spinner />
+          )
+        ) : found.providers.length === 0 ? (
+          <Alert tone="info">
+            {t('Nobody is in a provider job role yet, so there are no schedules to review.')}
+          </Alert>
+        ) : (
+          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+            {found.days.map((day) => {
+              // Managers see every provider, to set the empty ones; everybody
+              // else the schedules somebody reviews.
+              const shown = isManager ? day.reviews : day.reviews.filter((r) => r.reviewer);
+              const canChange = isManager && day.date >= today;
+              return (
+                <Card
+                  key={day.date}
+                  className={`p-4 ${day.date === today ? 'ring-2 ring-brand-600' : ''}`}
+                  testId={`reviews-${day.date}`}
+                >
+                  <h3 className="flex items-center gap-2 font-semibold text-slate-900">
+                    {formatCalendarDate(day.date, { year: false })}
+                    {day.date === today && <Badge tone="info">{t('Today')}</Badge>}
+                  </h3>
+                  {shown.length === 0 ? (
+                    <p className="mt-2 text-sm text-slate-500">{t('No schedules to review.')}</p>
+                  ) : (
+                    <ul className="mt-2 space-y-1.5">
+                      {shown.map((review) => {
+                        const provider = providers.get(review.providerId);
+                        const line = (
+                          <ReviewLine
+                            provider={provider}
+                            review={review}
+                            places={placesOf(review.providerId, day.date)}
+                            mine={!!me && review.reviewer?.id === me}
+                          />
+                        );
+                        return (
+                          <li key={review.providerId}>
+                            {canChange ? (
+                              <button
+                                type="button"
+                                className="w-full rounded-md px-2 py-1 text-left hover:bg-slate-50 focus-visible:bg-slate-50"
+                                aria-label={t('Change who reviews {provider} on {day}', {
+                                  provider: provider?.name ?? '',
+                                  day: formatCalendarDate(day.date, { year: false }),
+                                })}
+                                onClick={() => setOpened({ date: day.date, review })}
+                              >
+                                {line}
+                              </button>
+                            ) : (
+                              <div className="px-2 py-1">{line}</div>
+                            )}
+                          </li>
+                        );
+                      })}
+                    </ul>
+                  )}
+                  {resourceGroups.length > 0 && isWeekday(day.date) && (
+                    <ul
+                      className="mt-3 space-y-0.5 border-t border-slate-200 pt-2 text-sm"
+                      aria-label={t('Resources')}
+                      data-testid="review-resources"
+                    >
+                      {resourceGroups.map((group) => (
+                        <li key={group.id}>
+                          <span className="font-medium text-slate-900">{group.name}</span>
+                          <span className="text-slate-500"> - </span>
+                          {group.reviewer ? (
+                            <span
+                              className={
+                                group.reviewer.id === me
+                                  ? 'font-semibold text-brand-800'
+                                  : 'text-slate-800'
+                              }
                             >
-                              {line}
-                            </button>
+                              {group.reviewer.id === me ? t('You') : group.reviewer.name}
+                            </span>
                           ) : (
-                            <div className="px-2 py-1">{line}</div>
+                            <span className="text-slate-500">{t('Nobody')}</span>
                           )}
                         </li>
-                      );
-                    })}
-                  </ul>
-                )}
-              </Card>
-            );
-          })}
-        </div>
-      )}
+                      ))}
+                    </ul>
+                  )}
+                </Card>
+              );
+            })}
+          </div>
+        )}
 
-      {isManager && pattern && (
-        <PatternCard
-          pattern={pattern}
-          onSaved={() => reload('Saved. The usual pattern applies to every week from now on.')}
-        />
-      )}
+        {isManager && pattern && (
+          <PatternCard
+            pattern={pattern}
+            onSaved={() => reload('Saved. The usual pattern applies to every week from now on.')}
+          />
+        )}
 
-      {opened && pattern && (
-        <DayDialog
-          date={opened.date}
-          review={opened.review}
-          provider={providers.get(opened.review.providerId)}
-          pattern={pattern}
-          onClose={() => setOpened(null)}
-          onDone={(message) => {
-            setOpened(null);
-            reload(message);
-          }}
-        />
-      )}
+        {opened && pattern && (
+          <DayDialog
+            date={opened.date}
+            review={opened.review}
+            provider={providers.get(opened.review.providerId)}
+            pattern={pattern}
+            onClose={() => setOpened(null)}
+            onDone={(message) => {
+              setOpened(null);
+              reload(message);
+            }}
+          />
+        )}
+      </div>
     </div>
   );
 }
@@ -217,16 +293,28 @@ export function ScheduleReviewsPage() {
 function ReviewLine({
   provider,
   review,
+  places,
   mine,
 }: {
   provider: OnCallPerson | undefined;
   review: ScheduleReview;
+  places: PlaceTag[];
   mine: boolean;
 }) {
   const t = useT();
   return (
     <span className="block text-sm" data-testid="review-line">
       <span className="font-medium text-slate-900">{provider?.name ?? t('A provider')}</span>
+      {places.map((place) => (
+        <span
+          key={place.label}
+          data-testid="review-place"
+          className="ml-1.5 inline-block rounded border px-1.5 text-xs font-semibold text-slate-800"
+          style={{ borderColor: place.colour, backgroundColor: tint(place.colour, '33') }}
+        >
+          {place.label}
+        </span>
+      ))}
       <span className="text-slate-500"> - </span>
       {review.reviewer ? (
         <span className={mine ? 'font-semibold text-brand-800' : 'text-slate-800'}>
@@ -243,6 +331,18 @@ function ReviewLine({
       {review.note && <span className="block text-xs text-slate-600">“{review.note}”</span>}
     </span>
   );
+}
+
+/// Where a provider is on a day, as a small coloured tag.
+interface PlaceTag {
+  label: string;
+  colour: string;
+}
+
+/// The Reviews week has resources (bloodwork, nursing) on weekdays only.
+function isWeekday(date: string): boolean {
+  const day = parseDay(date)?.getDay() ?? 0;
+  return day >= 1 && day <= 5;
 }
 
 /// One provider's schedule on one day: somebody else, nobody, or back to the

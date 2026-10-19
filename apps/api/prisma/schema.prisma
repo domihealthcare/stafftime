@@ -3503,6 +3503,9 @@ model ScheduleReviewArea {
   id         String   @id @default(uuid()) @db.Uuid
   name       String
   sortOrder  Int      @default(0)
+  /// Bloodwork, nursing and the like rather than providers: shown on each day
+  /// of the Reviews week, beside the providers (October 2026, Dominguez).
+  forResources Boolean @default(false)
   reviewerId String?  @db.Uuid
   updatedAt  DateTime @updatedAt
 

@@ -1404,7 +1404,9 @@ export const api = {
   scheduleReviews: (from: string, to: string) =>
     request<ScheduleReviewDays>(`/schedule-reviews${toQuery({ from, to })}`),
   scheduleReviewAreas: () => request<ScheduleReviewAreas>('/schedule-reviews/areas'),
-  saveScheduleReviewAreas: (areas: { name: string; reviewerId: string | null }[]) =>
+  saveScheduleReviewAreas: (
+    areas: { name: string; reviewerId: string | null; forResources: boolean }[],
+  ) =>
     request<ScheduleReviewAreas>('/schedule-reviews/areas', {
       method: 'PUT',
       body: JSON.stringify({ areas }),

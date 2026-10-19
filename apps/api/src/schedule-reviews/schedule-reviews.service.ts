@@ -112,7 +112,7 @@ export class ScheduleReviewsService {
   async areas() {
     const [rows, reviewers] = await Promise.all([
       this.prisma.scheduleReviewArea.findMany({
-        select: { id: true, name: true, reviewerId: true },
+        select: { id: true, name: true, reviewerId: true, forResources: true },
         orderBy: [{ sortOrder: 'asc' }, { name: 'asc' }],
       }),
       this.prisma.employee.findMany({
@@ -128,6 +128,7 @@ export class ScheduleReviewsService {
       areas: rows.map((row) => ({
         id: row.id,
         name: row.name,
+        forResources: row.forResources,
         // Somebody who has left counts as nobody, as for the usual pattern.
         reviewer: row.reviewerId ? (people.get(row.reviewerId) ?? null) : null,
       })),
@@ -155,6 +156,7 @@ export class ScheduleReviewsService {
           name: names[index],
           sortOrder: index + 1,
           reviewerId: area.reviewerId ?? null,
+          forResources: area.forResources ?? false,
         })),
       }),
     ]);
