@@ -71,69 +71,71 @@ export function OnCallPage() {
   }
 
   return (
-    <div className="max-w-5xl space-y-5">
-      <ScheduleTabs />
+    <div className="mx-auto max-w-6xl">
       <PageHeading
         title="On call"
         subtitle="Which provider takes the after-hours calls. Each day’s turn runs from noon to noon the next day."
       />
-      {error && <Alert>{error}</Alert>}
-      {notice && (
-        <Alert tone="success">
-          <span role="status">{notice}</span>
-        </Alert>
-      )}
-      {!schedule ? (
-        error ? null : (
-          <Spinner />
-        )
-      ) : (
-        <>
-          <NowCard schedule={schedule} me={employee?.id ?? null} />
-          <SwapList
-            swaps={swaps}
-            me={employee?.id ?? ''}
-            onChanged={(message) => {
-              setNotice(message);
-              reload();
-            }}
-            onError={setError}
-          />
-          <MonthView
-            month={month}
-            onMonth={setMonth}
-            days={schedule.days}
-            me={employee?.id ?? null}
-            onOpen={setOpened}
-          />
-          <PatternCard
+      <ScheduleTabs />
+      <div className="space-y-5">
+        {error && <Alert>{error}</Alert>}
+        {notice && (
+          <Alert tone="success">
+            <span role="status">{notice}</span>
+          </Alert>
+        )}
+        {!schedule ? (
+          error ? null : (
+            <Spinner />
+          )
+        ) : (
+          <>
+            <NowCard schedule={schedule} me={employee?.id ?? null} />
+            <SwapList
+              swaps={swaps}
+              me={employee?.id ?? ''}
+              onChanged={(message) => {
+                setNotice(message);
+                reload();
+              }}
+              onError={setError}
+            />
+            <MonthView
+              month={month}
+              onMonth={setMonth}
+              days={schedule.days}
+              me={employee?.id ?? null}
+              onOpen={setOpened}
+            />
+            <PatternCard
+              providers={schedule.providers}
+              canEdit={isManager}
+              onSaved={(message) => {
+                setNotice(message);
+                reload();
+              }}
+            />
+            <p className="text-sm text-slate-600">
+              Put your own on-call days on your phone: <strong>Schedule → Calendar</strong> →{' '}
+              <strong>Separate calendars</strong> → <strong>My on call</strong>.
+            </p>
+          </>
+        )}
+        {opened && schedule && (
+          <DayDialog
+            day={opened}
             providers={schedule.providers}
-            canEdit={isManager}
-            onSaved={(message) => {
+            me={employee?.id ?? ''}
+            canChange={isManager}
+            onClose={() => setOpened(null)}
+            onDone={(message) => {
+              setOpened(null);
               setNotice(message);
               reload();
             }}
           />
-          <p className="text-sm text-slate-600">
-            Put your own on-call days on your phone: <strong>Schedule → Calendar</strong> →{' '}
-            <strong>Separate calendars</strong> → <strong>My on call</strong>.
-          </p>
-        </>
-      )}
-      {opened && schedule && (
-        <DayDialog
-          day={opened}
-          providers={schedule.providers}
-          me={employee?.id ?? ''}
-          canChange={isManager}
-          onClose={() => setOpened(null)}
-          onDone={(message) => {
-            setOpened(null);
-            setNotice(message);
-            reload();
-          }}
-        />
-      )}
+        )}
+      </div>
     </div>
   );
 }
