@@ -12,6 +12,7 @@ import type {
   OnCallRota,
   OnCallSchedule,
   OnCallSwap,
+  EveryonesSchedule,
   ProviderPlaces,
   ScheduleReviewAreas,
   ScheduleReviewDays,
