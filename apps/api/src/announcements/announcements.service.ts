@@ -158,6 +158,20 @@ export class AnnouncementsService {
     private readonly ai: AiService,
   ) {}
 
+  /// Writing, editing and removing posts: admins, and anybody an admin has
+  /// switched on (`canPostNews`, October 2026), read afresh so a change takes
+  /// effect at once.
+  async assertCanPost(user: { id: string; role: Role }) {
+    if (user.role === Role.ADMIN) return;
+    const person = await this.prisma.employee.findUnique({
+      where: { id: user.id },
+      select: { canPostNews: true, employmentStatus: true },
+    });
+    if (!person?.canPostNews || person.employmentStatus === EmploymentStatus.TERMINATED) {
+      throw new ForbiddenException('Only admins, or people an admin has chosen, can post News.');
+    }
+  }
+
   /// Newest first, the primary among them where it falls - the News page reads
   /// like a blog, and the home screen shows the primary separately.
   ///

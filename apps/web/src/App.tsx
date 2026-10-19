@@ -94,6 +94,9 @@ const ClosingPage = lazy(() =>
 const SchedulePage = lazy(() =>
   import('./pages/SchedulePage').then((m) => ({ default: m.SchedulePage })),
 );
+const EveryonesSchedulePage = lazy(() =>
+  import('./pages/EveryonesSchedulePage').then((m) => ({ default: m.EveryonesSchedulePage })),
+);
 const CalendarPage = lazy(() =>
   import('./pages/CalendarPage').then((m) => ({ default: m.CalendarPage })),
 );
@@ -236,6 +239,7 @@ function Routed() {
           <Route path="timesheet" element={<TimesheetPage />} />
           <Route path="schedule" element={<SchedulePage />} />
           <Route path="schedule/calendar" element={<CalendarPage />} />
+          <Route path="schedule/everyone" element={<EveryonesSchedulePage />} />
           <Route path="availability" element={<AvailabilityPage />} />
           <Route path="password" element={<ChangePasswordPage forced={false} />} />
           <Route path="notifications" element={<NotificationsPage />} />

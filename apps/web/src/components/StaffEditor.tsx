@@ -67,6 +67,8 @@ export function StaffEditor({
     role: person.role,
     payType: person.payType ?? 'HOURLY',
     clocksIn: person.clocksIn ?? true,
+    canPostNews: person.canPostNews ?? false,
+    canSeeEveryonesSchedule: person.canSeeEveryonesSchedule ?? false,
     jobRoleIds: heldRoles.map((jobRole) => jobRole.id),
     mainJobRoleId: heldRoles[0]?.id ?? '',
     locationIds: person.locations.map((l) => l.locationId),
@@ -157,6 +159,8 @@ export function StaffEditor({
         role: form.role,
         payType: form.payType,
         clocksIn: form.clocksIn,
+        canPostNews: form.canPostNews,
+        canSeeEveryonesSchedule: form.canSeeEveryonesSchedule,
         locationIds: form.locationIds,
         primaryLocationId: form.locationIds[0],
         adpFileNumber: form.adpFileNumber.trim() || null,
@@ -388,6 +392,44 @@ export function StaffEditor({
                   </span>
                 </span>
               </label>
+
+              {form.role !== 'ADMIN' && (
+                <label className="mt-4 flex items-start gap-2 text-sm">
+                  <input
+                    type="checkbox"
+                    checked={form.canPostNews}
+                    onChange={(event) => set('canPostNews', event.target.checked)}
+                    className="mt-0.5 rounded border-slate-300 text-brand-600 focus:ring-brand-600"
+                  />
+                  <span>
+                    <span className="font-medium text-slate-700">Can post News</span>
+                    <span className="block text-xs text-slate-500">
+                      For the person who writes the schedule and pay period notices. They can write,
+                      edit and remove any post, polls included. Admins always can.
+                    </span>
+                  </span>
+                </label>
+              )}
+              {form.role === 'EMPLOYEE' && (
+                <label className="mt-4 flex items-start gap-2 text-sm">
+                  <input
+                    type="checkbox"
+                    checked={form.canSeeEveryonesSchedule}
+                    onChange={(event) => set('canSeeEveryonesSchedule', event.target.checked)}
+                    className="mt-0.5 rounded border-slate-300 text-brand-600 focus:ring-brand-600"
+                  />
+                  <span>
+                    <span className="font-medium text-slate-700">
+                      Can see everyone&rsquo;s schedule
+                    </span>
+                    <span className="block text-xs text-slate-500">
+                      A read-only rota under Schedule: everybody&rsquo;s published shifts by week
+                      and month, with time off shown as &ldquo;Off&rdquo; and no drafts or open
+                      shifts. They cannot change anything. Managers and admins see the rota anyway.
+                    </span>
+                  </span>
+                </label>
+              )}
 
               <fieldset className="mt-4">
                 <legend className="text-sm font-medium text-slate-700">Job roles</legend>

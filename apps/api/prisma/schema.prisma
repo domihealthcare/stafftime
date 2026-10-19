@@ -361,6 +361,12 @@ model Employee {
   /// for certain individuals"). Chosen by an admin in Practice settings,
   /// separate from the access level: an admin does not see it unless chosen.
   canSeeRotaCost            Boolean                  @default(false)
+  /// October 2026, Dominguez: Administrative staff who are not admins post
+  /// News (schedule and pay-period notices) and read everybody's published
+  /// rota. Two switches an admin sets on the Staff editor, separate from the
+  /// access level; an admin has both anyway.
+  canPostNews               Boolean                  @default(false)
+  canSeeEveryonesSchedule   Boolean                  @default(false)
   productivityPlan          ProductivityPlan?        @relation("ProductivityPlanSubject")
   productivityStatements    ProductivityStatement[]  @relation("ProductivityStatementSubject")
   createdProductivity       ProductivityStatement[]  @relation("ProductivityStatementCreatedBy")

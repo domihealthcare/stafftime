@@ -731,3 +731,30 @@ describe('AnnouncementsService', () => {
     });
   });
 });
+
+describe('AnnouncementsService.assertCanPost', () => {
+  const make = (person: unknown) =>
+    new AnnouncementsService(
+      { employee: { findUnique: jest.fn().mockResolvedValue(person) } } as never,
+      {} as never,
+      {} as never,
+    );
+
+  it('lets an admin post without a look-up', async () => {
+    await expect(make(null).assertCanPost(admin)).resolves.toBeUndefined();
+  });
+
+  it('lets staff and managers post only when an admin switched it on', async () => {
+    const on = make({ canPostNews: true, employmentStatus: 'ACTIVE' });
+    await expect(on.assertCanPost(staff)).resolves.toBeUndefined();
+    await expect(on.assertCanPost(manager)).resolves.toBeUndefined();
+    const off = make({ canPostNews: false, employmentStatus: 'ACTIVE' });
+    await expect(off.assertCanPost(staff)).rejects.toBeInstanceOf(ForbiddenException);
+    await expect(off.assertCanPost(manager)).rejects.toBeInstanceOf(ForbiddenException);
+  });
+
+  it('refuses somebody who has left', async () => {
+    const gone = make({ canPostNews: true, employmentStatus: 'TERMINATED' });
+    await expect(gone.assertCanPost(staff)).rejects.toBeInstanceOf(ForbiddenException);
+  });
+});

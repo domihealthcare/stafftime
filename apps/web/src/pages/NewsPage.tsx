@@ -17,7 +17,7 @@ import {
 import { AI_NOTE, useAiOn } from '../lib/ai';
 import { ApiError, api } from '../lib/api';
 import { locale, t as translate, useT } from '../lib/i18n';
-import { useIsAdmin, useIsManager } from '../lib/session';
+import { useIsAdmin, useIsManager, useSession } from '../lib/session';
 import type { Announcement, MyRequirement, PollInput } from '../lib/types';
 
 /**
@@ -33,6 +33,9 @@ import type { Announcement, MyRequirement, PollInput } from '../lib/types';
 export function NewsPage() {
   const t = useT();
   const isAdmin = useIsAdmin();
+  const { employee: me } = useSession();
+  /// Admins, and people an admin has switched on (October 2026).
+  const canPost = isAdmin || me?.canPostNews === true;
   const isManager = useIsManager();
   const aiOn = useAiOn();
   /// Posts somebody has been asked to read and confirm (required reading).
@@ -80,7 +83,7 @@ export function NewsPage() {
       <PageHeading
         title={t('News')}
         subtitle={
-          isAdmin
+          canPost
             ? t(
                 'Everything posted for staff, newest first. The primary post is the one everybody sees when they sign in.',
               )
@@ -101,7 +104,7 @@ export function NewsPage() {
         </div>
       )}
 
-      {isAdmin && (
+      {canPost && (
         <div className="mb-4">
           {writing ? (
             <PostForm
@@ -134,7 +137,7 @@ export function NewsPage() {
               key={post.id}
               post={post}
               aiOn={aiOn}
-              canManage={isAdmin}
+              canManage={canPost}
               canRequire={isManager}
               required={asked.find((item) => item.announcement?.id === post.id)}
               onConfirmed={(id) =>

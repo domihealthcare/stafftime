@@ -124,6 +124,35 @@ export interface Employee extends EmployeeSummary {
   canManageProductivity?: boolean;
   /// Signed-in person only: an admin has chosen them to see the rota's cost.
   canSeeRotaCost?: boolean;
+  /// An admin has switched on News posting for them (admins always can).
+  canPostNews?: boolean;
+  /// An admin has switched on the read-only whole schedule for them.
+  canSeeEveryonesSchedule?: boolean;
+}
+
+/// `GET /schedule-view`: the whole published rota, read-only. Time off is a
+/// bare range, never the kind.
+export interface EveryonesSchedule {
+  locations: { id: string; name: string; slug: string }[];
+  people: {
+    id: string;
+    firstName: string;
+    lastName: string;
+    preferredName: string | null;
+    photoUpdatedAt: string | null;
+    locationIds: string[];
+    jobRoles: { id: string; name: string }[];
+  }[];
+  shifts: {
+    id: string;
+    employeeId: string;
+    locationId: string;
+    isRemote: boolean;
+    startsAt: string;
+    endsAt: string;
+    jobRole: { id: string; name: string; colour: string | null } | null;
+  }[];
+  off: { employeeId: string; startDate: string; endDate: string }[];
 }
 
 export interface Shift {

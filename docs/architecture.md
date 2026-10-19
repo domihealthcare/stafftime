@@ -5163,3 +5163,38 @@ request already on file, nobody notified. A recorded entry can be removed
 The older **Adjust** totals stay for people with only totals to hand. The
 form warns when a person has such a total, because recording the same days
 both ways counts them twice.
+
+## Posting News and reading the whole rota without being an admin (October 2026)
+
+Dominguez, 19 October 2026: Administrative staff (named: Angelica Notario)
+need to post notices about the pay period and the schedule, and to see
+everybody's schedule. Job roles grant no power in this app, so this is two
+per-person switches on `Employee`, set by an admin in the Staff editor and
+separate from the access level (the same shape as `canSeeRotaCost`):
+
+- `canPostNews`: writes, edits and removes any News post, polls and the AI
+  helpers included. The News routes no longer use `@Roles(Role.ADMIN)`; each
+  calls `AnnouncementsService.assertCanPost`, which lets an admin through and
+  otherwise reads the flag afresh (so switching it off takes effect at once;
+  somebody who has left is refused).
+- `canSeeEveryonesSchedule`: a read-only rota at `/schedule/everyone` (an
+  **Everyone** tab beside Shifts, for staff with the switch). `GET
+  /schedule-view?from&to` (`shifts/everyones-schedule.*`) returns published,
+  assigned shifts only (no drafts, open or cancelled shifts, no notes), each
+  person's name, photo, job roles and offices, and approved time off as a bare
+  range, never the kind. At most 45 days a request. Managers and admins may
+  call it too. Nothing can be changed from it, and the ordinary `GET /shifts`
+  still gives staff only their own shifts.
+
+Migration `20261019020000_news_and_schedule_access` switches both on for
+Angelica Notario only when exactly one current member of staff has that name:
+**check the Staff screen on the live site**. `tests/browser/everyone-schedule.mjs`.
+Worth carrying to the EMR module.
+
+## Timesheet beside Shifts (October 2026)
+
+Dominguez: put Schedule and Timesheet together so the header stays one row.
+Timesheet is no longer a header link on a laptop; it is a tab on the Schedule's
+strip (`ScheduleTabs`), and Schedule stays lit on `/timesheet`. The phone's
+More list is unchanged. `tests/browser/nav.mjs` `navLink` goes through Schedule
+for Timesheet.

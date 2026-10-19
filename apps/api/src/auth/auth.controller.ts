@@ -211,6 +211,8 @@ export class AuthController {
         mutedDigestTopics: true,
         canManageProductivity: true,
         canSeeRotaCost: true,
+        canPostNews: true,
+        canSeeEveryonesSchedule: true,
         lastLoginAt: true,
         locations: {
           select: {

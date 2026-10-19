@@ -630,6 +630,10 @@ export const api = {
     request<Partial<TimesheetExportOptions>>(`/exports/presets/${id}/options`),
 
   // -------------------------------------------------------------------------- pto
+  /// Everybody's published shifts, read-only (managers, admins, and people an
+  /// admin has chosen).
+  scheduleView: (from: string, to: string) =>
+    request<EveryonesSchedule>(`/schedule-view${toQuery({ from, to })}`),
   listPto: (params: Record<string, string | undefined> = {}) =>
     request<PtoRequest[]>(`/pto${toQuery(params)}`),
   ptoPendingCount: () => request<{ pending: number }>('/pto/pending-count'),
@@ -854,6 +858,8 @@ export const api = {
       role: string;
       payType: string;
       clocksIn: boolean;
+      canPostNews: boolean;
+      canSeeEveryonesSchedule: boolean;
       /// ACTIVE brings back somebody marked as having left.
       employmentStatus: 'ACTIVE';
       locationIds: string[];

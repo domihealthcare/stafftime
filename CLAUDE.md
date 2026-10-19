@@ -1120,6 +1120,21 @@ Beyond the phases, the parts worth knowing about before picking up work:
   name), with a specialty in brackets after the last one shown once as the
   group's note (`doctorsOf` in `lib/phone-book.ts`); the whole name is still
   what is searched, so any one doctor finds the group. Cardiology is two pages.
+- **News and the whole rota for staff an admin chooses** (19 October 2026,
+  Dominguez: Administrative access "needs to post notifications (about
+  schedule etc) and view everyone's schedule"; named: Angelica Notario;
+  schedule chosen as a **read-only rota of published shifts**): two switches on
+  the Staff editor, `Employee.canPostNews` (writes, edits and removes any News
+  post) and `canSeeEveryonesSchedule` (an **Everyone** tab under Schedule,
+  week and month, time off as "Off", no drafts, open shifts or notes, nothing
+  changeable). Job roles still grant no power. Migration
+  `20261019020000_news_and_schedule_access` switches Angelica Notario on only
+  if exactly one current person has that name: **check the Staff screen on the
+  live site**. `shifts/everyones-schedule.*`, `pages/EveryonesSchedulePage.tsx`;
+  `tests/browser/everyone-schedule.mjs`. Worth carrying to the EMR module.
+- **Timesheet is a tab beside Shifts** (19 October 2026, Dominguez: "put
+  schedule and timesheet together so the header remains only 1 row"): off the
+  laptop header, on the Schedule's strip; Schedule stays lit on it.
 - **Turned down: "PTO about to be lost"** (9 October 2026, Dominguez): a
   reminder to use PTO before it fails to carry over was proposed and refused —
   not in the practice's interest. Do not propose it again.

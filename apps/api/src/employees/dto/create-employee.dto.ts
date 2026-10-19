@@ -70,6 +70,16 @@ export class CreateEmployeeDto {
   @IsBoolean()
   clocksIn?: boolean;
 
+  /// Posts News without being an admin (October 2026, Dominguez).
+  @IsOptional()
+  @IsBoolean()
+  canPostNews?: boolean;
+
+  /// Reads everybody's published rota, read-only, without being a manager.
+  @IsOptional()
+  @IsBoolean()
+  canSeeEveryonesSchedule?: boolean;
+
   /// Optional: without it, time off is not prorated for a first part-year.
   @IsOptional()
   @ValidateIf((_, value) => value !== null)

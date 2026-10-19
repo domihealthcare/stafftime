@@ -12,13 +12,11 @@ import {
   Put,
   Query,
 } from '@nestjs/common';
-import { Role } from '@prisma/client';
 import { AuthUser } from '../common/auth/auth-user';
 import { CurrentUser } from '../common/auth/current-user.decorator';
 import { Public } from '../common/auth/public.decorator';
 import { PrismaService } from '../prisma/prisma.service';
 import { findPublicPosts } from './public-posts';
-import { Roles } from '../common/auth/roles.decorator';
 import { AnnouncementsService } from './announcements.service';
 import {
   CommentDto,
@@ -30,7 +28,8 @@ import {
   VoteDto,
 } from './dto/announcement.dto';
 
-/// Reading needs a session and nothing more; writing posts is admin only.
+/// Reading needs a session and nothing more; writing posts is for admins and
+/// the people an admin has switched on (`Employee.canPostNews`).
 /// Liking, commenting and voting are for anybody signed in, under their own
 /// name. The one exception is `public`: the posts an admin ticked to show
 /// publicly, title and words only, for the sign-in page - which anyone on the
@@ -72,24 +71,24 @@ export class AnnouncementsController {
   }
 
   @Post()
-  @Roles(Role.ADMIN)
-  create(@Body() dto: CreateAnnouncementDto, @CurrentUser() user: AuthUser) {
+  async create(@Body() dto: CreateAnnouncementDto, @CurrentUser() user: AuthUser) {
+    await this.announcements.assertCanPost(user);
     return this.announcements.create(dto, user);
   }
 
   /// "Help me write it": the admin's notes as a post to edit. Nothing saved.
   @Post('draft')
-  @Roles(Role.ADMIN)
   @HttpCode(HttpStatus.OK)
-  draft(@Body() dto: DraftPostDto, @CurrentUser() user: AuthUser) {
+  async draft(@Body() dto: DraftPostDto, @CurrentUser() user: AuthUser) {
+    await this.announcements.assertCanPost(user);
     return this.announcements.draft(dto.notes, dto.title, user);
   }
 
   /// The editor's words in Spanish, to check before saving. Nothing saved.
   @Post('translate')
-  @Roles(Role.ADMIN)
   @HttpCode(HttpStatus.OK)
-  translate(@Body() dto: TranslatePostDto, @CurrentUser() user: AuthUser) {
+  async translate(@Body() dto: TranslatePostDto, @CurrentUser() user: AuthUser) {
+    await this.announcements.assertCanPost(user);
     return this.announcements.translate({ title: dto.title, body: dto.body }, user);
   }
 
@@ -101,18 +100,18 @@ export class AnnouncementsController {
   }
 
   @Patch(':id')
-  @Roles(Role.ADMIN)
-  update(
+  async update(
     @Param('id', ParseUUIDPipe) id: string,
     @Body() dto: UpdateAnnouncementDto,
     @CurrentUser() user: AuthUser,
   ) {
+    await this.announcements.assertCanPost(user);
     return this.announcements.update(id, dto, user);
   }
 
   @Delete(':id')
-  @Roles(Role.ADMIN)
-  remove(@Param('id', ParseUUIDPipe) id: string, @CurrentUser() user: AuthUser) {
+  async remove(@Param('id', ParseUUIDPipe) id: string, @CurrentUser() user: AuthUser) {
+    await this.announcements.assertCanPost(user);
     return this.announcements.remove(id, user);
   }
 
@@ -166,12 +165,12 @@ export class AnnouncementsController {
   }
 
   @Patch(':id/poll')
-  @Roles(Role.ADMIN)
-  setPollState(
+  async setPollState(
     @Param('id', ParseUUIDPipe) id: string,
     @Body() dto: PollStateDto,
     @CurrentUser() user: AuthUser,
   ) {
+    await this.announcements.assertCanPost(user);
     return this.announcements.setPollClosed(id, dto.closed, user);
   }
 }

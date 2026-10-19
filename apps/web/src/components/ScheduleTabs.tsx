@@ -37,6 +37,13 @@ export function ScheduleTabs() {
           {t('On call')}
         </NavLink>
       )}
+      {/* The read-only whole rota, for staff an admin has chosen (October 2026).
+          Managers and admins have the real rota under Shifts. */}
+      {employee?.role === 'EMPLOYEE' && employee.canSeeEveryonesSchedule && (
+        <NavLink to="/schedule/everyone" className={tab}>
+          {t('Everyone')}
+        </NavLink>
+      )}
       {/* Hours worked, beside the rota (October 2026, Dominguez: one header row). */}
       <NavLink to="/timesheet" className={tab}>
         {t('Timesheet')}
