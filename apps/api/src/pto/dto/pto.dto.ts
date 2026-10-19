@@ -103,6 +103,13 @@ export class RecordPtoDto {
   comment?: string;
 }
 
+/// A manager correcting what kind of time off a request is (October 2026,
+/// Dominguez: an hourly person put a sick day down as PTO).
+export class ChangePtoTypeDto {
+  @IsIn(REQUESTABLE_PTO_TYPES, { message: 'Time off is Sick, PTO or Unpaid.' })
+  type!: PtoType;
+}
+
 export class ReviewPtoRequestDto {
   @IsEnum(PtoStatus, { message: 'A decision must be APPROVED or DENIED.' })
   @Transform(({ value }) => (typeof value === 'string' ? value.toUpperCase() : value))

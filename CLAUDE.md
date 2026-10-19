@@ -1135,6 +1135,13 @@ Beyond the phases, the parts worth knowing about before picking up work:
 - **Timesheet is a tab beside Shifts** (19 October 2026, Dominguez: "put
   schedule and timesheet together so the header remains only 1 row"): off the
   laptop header, on the Schedule's strip; Schedule stays lit on it.
+- **Managers change the kind of time off** (19 October 2026, Angelica
+  Dominguez via Dominguez: an hourly person put a sick day down as PTO): on
+  Time off requests, **Change to** (Sick / PTO / Unpaid) on any waiting or
+  approved request that is not the manager's own, past days included, after a
+  confirmation. Balances move because they read the type afresh; nobody is
+  told. `PATCH /pto/:id/type`, `PtoService.changeType`;
+  `tests/browser/time-off-type.mjs`.
 - **Turned down: "PTO about to be lost"** (9 October 2026, Dominguez): a
   reminder to use PTO before it fails to carry over was proposed and refused —
   not in the practice's interest. Do not propose it again.

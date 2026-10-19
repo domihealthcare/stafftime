@@ -5,7 +5,7 @@ import {
   Logger,
   NotFoundException,
 } from '@nestjs/common';
-import { EmploymentStatus, Prisma, PtoStatus, Role, ShiftStatus } from '@prisma/client';
+import { EmploymentStatus, Prisma, PtoStatus, PtoType, Role, ShiftStatus } from '@prisma/client';
 import { AuthUser } from '../common/auth/auth-user';
 import { addUtcDays, isoDate, toUtcDate } from '../common/util/calendar-date.util';
 import { PRACTICE_ZONE, practiceToday, zonedTimeToUtc } from '../common/util/zoned-time.util';
@@ -216,6 +216,41 @@ export class PtoService {
       throw new NotFoundException(`Request ${id} not found`);
     }
     return (await this.decorateAll([request]))[0];
+  }
+
+  /**
+   * Corrects what kind of time off a request is - an hourly person who put a
+   * sick day down as PTO (October 2026). Allowed while it is waiting or
+   * approved, for days already past too, because the balance reads the type
+   * afresh. Never your own, as with deciding a request. Nobody is told; the
+   * balance on their screen moves.
+   */
+  async changeType(id: string, type: PtoType, actor: AuthUser) {
+    const request = await this.prisma.ptoRequest.findUnique({
+      where: { id },
+      select: { id: true, employeeId: true, status: true, type: true },
+    });
+    if (!request) {
+      throw new NotFoundException(`Request ${id} not found`);
+    }
+    if (request.employeeId === actor.id) {
+      throw new ForbiddenException(
+        'You cannot change the kind of your own time off. Ask another manager or an administrator.',
+      );
+    }
+    if (request.status !== PtoStatus.PENDING && request.status !== PtoStatus.APPROVED) {
+      throw new BadRequestException('Only a waiting or approved request can be changed.');
+    }
+    if (request.type === type) {
+      throw new BadRequestException('It is already that kind of time off.');
+    }
+    const updated = await this.prisma.ptoRequest.update({
+      where: { id },
+      data: { type, ...(type === PtoType.UNPAID ? { pastBalance: false } : {}) },
+      include: REQUEST_INCLUDE,
+    });
+    this.logger.log(`Time off ${id} changed from ${request.type} to ${type} by ${actor.id}`);
+    return (await this.decorateAll([updated]))[0];
   }
 
   /// Approve or deny. Managers only, and never your own request.

@@ -19,6 +19,7 @@ import { CurrentUser } from '../common/auth/current-user.decorator';
 import { Roles } from '../common/auth/roles.decorator';
 import {
   AdjustPtoBalanceDto,
+  ChangePtoTypeDto,
   CreatePtoRequestDto,
   PreviewPtoRequestDto,
   QueryPtoRequestsDto,
@@ -197,6 +198,18 @@ export class PtoController {
     @CurrentUser() user: AuthUser,
   ) {
     return this.pto.review(id, dto, user);
+  }
+
+  /// Correct the kind of a request (PTO to Sick, say), waiting or approved,
+  /// past days included. Managers, never their own.
+  @Patch(':id/type')
+  @Roles(Role.MANAGER)
+  changeType(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Body() dto: ChangePtoTypeDto,
+    @CurrentUser() user: AuthUser,
+  ) {
+    return this.pto.changeType(id, dto.type, user);
   }
 
   /// Withdraw your own, or cancel someone else's as a manager.

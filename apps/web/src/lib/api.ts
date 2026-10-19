@@ -95,6 +95,7 @@ import type {
   PtoBalance,
   PtoPolicy,
   PtoRequest,
+  PtoType,
   ReportPreset,
   DriveFolderListing,
   Resource,
@@ -693,6 +694,12 @@ export const api = {
     }).then(timeOffChanged),
   cancelPto: (id: string) =>
     request<PtoRequest>(`/pto/${id}/cancel`, { method: 'PATCH' }).then(timeOffChanged),
+  /// A manager correcting the kind (PTO to Sick, say) of someone else's request.
+  changePtoType: (id: string, type: PtoType) =>
+    request<PtoRequest>(`/pto/${id}/type`, {
+      method: 'PATCH',
+      body: JSON.stringify({ type }),
+    }).then(timeOffChanged),
   ptoConflicts: (id: string) => request<ConflictingShift[]>(`/pto/${id}/conflicts`),
   /// Too many from the same job role and office off on those days, this one counted.
   ptoClashes: (id: string) => request<TimeOffClash[]>(`/pto/${id}/clashes`),

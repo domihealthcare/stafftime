@@ -32,6 +32,7 @@ import {
   PageHeading,
   Spinner,
   buttonClass,
+  inputClass,
 } from '../components/ui';
 
 const TYPE_LABELS: Record<PtoType, string> = PTO_TYPE_LABELS;
@@ -290,6 +291,8 @@ function RequestCard({
 
   // A manager may decide anyone's request but their own.
   const canDecide = isManager && !isMine && request.status === 'PENDING';
+  // A manager can put right the kind of anyone else's request, even a past one.
+  const canChangeType = isManager && !isMine && ['PENDING', 'APPROVED'].includes(request.status);
   const canCancel = (isMine || isManager) && ['PENDING', 'APPROVED'].includes(request.status);
 
   return (
@@ -363,6 +366,37 @@ function RequestCard({
                 Deny
               </button>
             </>
+          )}
+          {canChangeType && (
+            <label className="flex items-center gap-1 text-sm text-slate-600">
+              <span>Change to</span>
+              <select
+                aria-label="Change the kind of time off"
+                disabled={busy}
+                value=""
+                onChange={async (event) => {
+                  const next = event.target.value as PtoType;
+                  if (!next) return;
+                  const name =
+                    request.employee?.preferredName ?? request.employee?.firstName ?? 'their';
+                  const sure = await confirm({
+                    title: `Change this to ${TYPE_LABELS[next]}?`,
+                    body: `${name}’s ${TYPE_LABELS[request.type].toLowerCase()}, ${formatRange(request.startDate, request.endDate, request.isHalfDay)}, will count as ${TYPE_LABELS[next].toLowerCase()} instead, and their balances will move.`,
+                    confirmLabel: `Yes, change it`,
+                    cancelLabel: 'Leave it',
+                  });
+                  if (sure) await act(() => api.changePtoType(request.id, next));
+                }}
+                className={inputClass}
+              >
+                <option value="">Choose…</option>
+                {REQUESTABLE_PTO_TYPES.filter((value) => value !== request.type).map((value) => (
+                  <option key={value} value={value}>
+                    {TYPE_LABELS[value]}
+                  </option>
+                ))}
+              </select>
+            </label>
           )}
           {canCancel && (
             <button
