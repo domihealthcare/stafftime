@@ -23,6 +23,17 @@ const escape = (text) => text.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 export async function navLink(page, name) {
   const pattern = typeof name === 'string' ? new RegExp(`^${escape(name)}`) : name;
   const find = () => page.getByRole('navigation').getByRole('link', { name: pattern }).first();
+  // Just after signing in nothing is on the page yet: wait for any way in.
+  if (typeof name === 'string' && name === 'Timesheet') {
+    await page
+      .getByRole('navigation', { name: 'Main' })
+      .getByRole('link', { name: /^Schedule/ })
+      .or(page.getByRole('button', { name: 'More', exact: true }))
+      .or(find())
+      .first()
+      .waitFor({ timeout: 20000 })
+      .catch(() => {});
+  }
   if (await find().isVisible().catch(() => false)) return find();
   await openMore(page);
   if (await find().isVisible().catch(() => false)) return find();
