@@ -66,6 +66,9 @@ describe('what this app deliberately does not store', () => {
     expect(fieldsOf('ScheduleReviewer')).toEqual(
       ['provider', 'providerId', 'reviewer', 'reviewerId', 'updatedAt', 'weekday'].sort(),
     );
+    expect(fieldsOf('ScheduleReviewArea')).toEqual(
+      ['id', 'name', 'reviewer', 'reviewerId', 'sortOrder', 'updatedAt'].sort(),
+    );
     expect(fieldsOf('ScheduleReviewDay')).toEqual(
       [
         'date',

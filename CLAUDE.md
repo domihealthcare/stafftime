@@ -1142,6 +1142,23 @@ Beyond the phases, the parts worth knowing about before picking up work:
   confirmation. Balances move because they read the type afresh; nobody is
   told. `PATCH /pto/:id/type`, `PtoService.changeType`;
   `tests/browser/time-off-type.mjs`.
+- **Schedule review groups, and the pattern from the provider sheet** (19
+  October 2026, Dominguez, from the practice's Schedule Review picture and
+  *Domi Schedule NB & WNY 2026*): beside the per-provider pattern, **Schedule
+  → Reviews** has **Who reviews each group** (`ScheduleReviewArea`: name and
+  one reviewer, everybody reads, managers edit; on a reviewer's Home as
+  "Always · …"). Started as Telemedicine = Kayla B, NB Providers = Angelica N,
+  NB Bloodwork & Nursing = Kayla B, WNY ALL = Tatiyana R. The sheet also set the
+  **usual per-provider pattern** Monday to Friday: a provider on telemedicine
+  that day is reviewed by Kayla B, at North Bergen by Angelica N, at West New
+  York by Tatiyana R (Saturdays change by the week of the month, so are left
+  out). Migrations `20261019030000_schedule_review_areas` and
+  `20261019040000_schedule_review_pattern_from_sheet` match people by name and
+  providers by initials (JD, CI, JB, DD, KH), each only when exactly one fits,
+  and leave a provider who already has a pattern alone: **check Reviews on the
+  live site and fill any gap in the app**. The sheet's
+  assignment of Claude's reading (location decides the reviewer) is an
+  assumption to confirm. `tests/browser/schedule-reviews.mjs`.
 - **Turned down: "PTO about to be lost"** (9 October 2026, Dominguez): a
   reminder to use PTO before it fails to carry over was proposed and refused —
   not in the practice's interest. Do not propose it again.

@@ -405,6 +405,7 @@ model Employee {
   scheduleReviewsByMe      ScheduleReviewer[]  @relation("ScheduleReviewerReviewer")
   scheduleReviewDaysOfMine ScheduleReviewDay[] @relation("ScheduleReviewDayProvider")
   scheduleReviewDaysByMe   ScheduleReviewDay[] @relation("ScheduleReviewDayReviewer")
+  scheduleReviewAreas      ScheduleReviewArea[] @relation("ScheduleReviewAreaReviewer")
   setScheduleReviewDays    ScheduleReviewDay[] @relation("ScheduleReviewDaySetBy")
 
   /// Phones and computers that get the bell's notifications as push
@@ -3493,6 +3494,22 @@ model ScheduleReviewer {
   @@id([providerId, weekday])
   @@index([reviewerId])
   @@map("schedule_reviewers")
+}
+
+/// A group of schedules with one reviewer, as the practice's own sheet has it
+/// (October 2026, Dominguez: Telemedicine, NB Providers, NB Bloodwork and
+/// Nursing, WNY All). Beside the per-provider pattern. Only a name and who.
+model ScheduleReviewArea {
+  id         String   @id @default(uuid()) @db.Uuid
+  name       String
+  sortOrder  Int      @default(0)
+  reviewerId String?  @db.Uuid
+  updatedAt  DateTime @updatedAt
+
+  reviewer Employee? @relation("ScheduleReviewAreaReviewer", fields: [reviewerId], references: [id], onDelete: SetNull)
+
+  @@index([reviewerId])
+  @@map("schedule_review_areas")
 }
 
 /// One day changed from the usual: somebody else reviews that provider's

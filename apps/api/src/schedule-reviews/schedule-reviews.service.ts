@@ -9,7 +9,11 @@ import {
 } from '../common/util/zoned-time.util';
 import { named, PERSON, PROVIDER, WORKING } from '../on-call/on-call.service';
 import { PrismaService } from '../prisma/prisma.service';
-import { ScheduleReviewDayInput, ScheduleReviewPatternInput } from './dto/schedule-reviews.dto';
+import {
+  ScheduleReviewAreasInput,
+  ScheduleReviewDayInput,
+  ScheduleReviewPatternInput,
+} from './dto/schedule-reviews.dto';
 import { reviewOn, reviewRules } from './schedule-reviews';
 
 /// The most a screen asks for at once.
@@ -101,6 +105,61 @@ export class ScheduleReviewsService {
     ]);
     this.logger.log(`Schedule review pattern saved by ${actor.id}`);
     return this.pattern();
+  }
+
+  /// The groups of schedules and who reviews each, in order, with who can be
+  /// picked (for managers).
+  async areas() {
+    const [rows, reviewers] = await Promise.all([
+      this.prisma.scheduleReviewArea.findMany({
+        select: { id: true, name: true, reviewerId: true },
+        orderBy: [{ sortOrder: 'asc' }, { name: 'asc' }],
+      }),
+      this.prisma.employee.findMany({
+        where: { employmentStatus: { in: WORKING } },
+        select: PERSON,
+        orderBy: [{ firstName: 'asc' }, { lastName: 'asc' }],
+      }),
+    ]);
+    const people = await this.people(
+      rows.flatMap((row) => (row.reviewerId ? [row.reviewerId] : [])),
+    );
+    return {
+      areas: rows.map((row) => ({
+        id: row.id,
+        name: row.name,
+        // Somebody who has left counts as nobody, as for the usual pattern.
+        reviewer: row.reviewerId ? (people.get(row.reviewerId) ?? null) : null,
+      })),
+      reviewers: reviewers.map(named),
+    };
+  }
+
+  /// The whole list, replacing what was there; a group keeps its id when
+  /// it is sent back with one.
+  async saveAreas(dto: ScheduleReviewAreasInput, actor: AuthUser) {
+    const names = dto.areas.map((area) => area.name.trim());
+    if (names.some((name) => !name)) {
+      throw new BadRequestException('Every group needs a name.');
+    }
+    if (new Set(names.map((name) => name.toLowerCase())).size !== names.length) {
+      throw new BadRequestException('Each group needs its own name.');
+    }
+    await this.assertReviewers(
+      dto.areas.flatMap((area) => (area.reviewerId ? [area.reviewerId] : [])),
+    );
+    await this.prisma.$transaction([
+      this.prisma.scheduleReviewArea.deleteMany({}),
+      this.prisma.scheduleReviewArea.createMany({
+        data: dto.areas.map((area, index) => ({
+          name: names[index],
+          sortOrder: index + 1,
+          reviewerId: area.reviewerId ?? null,
+        })),
+      }),
+    ]);
+    this.logger.log(`Schedule review groups saved by ${actor.id}`);
+    return this.areas();
   }
 
   /// One provider's schedule on one date: somebody else, or nobody. Today

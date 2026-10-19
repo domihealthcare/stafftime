@@ -12,6 +12,7 @@ import type {
   OnCallRota,
   OnCallSchedule,
   OnCallSwap,
+  ScheduleReviewAreas,
   ScheduleReviewDays,
   ScheduleReviewPattern,
   RotaCost,
@@ -1400,6 +1401,12 @@ export const api = {
   /// managers and admins change it.
   scheduleReviews: (from: string, to: string) =>
     request<ScheduleReviewDays>(`/schedule-reviews${toQuery({ from, to })}`),
+  scheduleReviewAreas: () => request<ScheduleReviewAreas>('/schedule-reviews/areas'),
+  saveScheduleReviewAreas: (areas: { name: string; reviewerId: string | null }[]) =>
+    request<ScheduleReviewAreas>('/schedule-reviews/areas', {
+      method: 'PUT',
+      body: JSON.stringify({ areas }),
+    }),
   scheduleReviewPattern: () => request<ScheduleReviewPattern>('/schedule-reviews/pattern'),
   saveScheduleReviewPattern: (entries: ScheduleReviewPattern['entries']) =>
     request<ScheduleReviewPattern>('/schedule-reviews/pattern', {

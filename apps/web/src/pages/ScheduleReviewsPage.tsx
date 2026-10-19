@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Modal } from '../components/Modal';
+import { ScheduleReviewAreasCard } from '../components/ScheduleReviewAreasCard';
 import { ScheduleTabs } from '../components/ScheduleTabs';
 import {
   Alert,
@@ -86,6 +87,7 @@ export function ScheduleReviewsPage() {
           'Who reviews each provider’s patient schedule, day by day, so everybody knows whose is being looked after. The schedules themselves stay in eCW.',
         )}
       />
+      <ScheduleReviewAreasCard canEdit={isManager} />
       {error && <Alert>{error}</Alert>}
       {notice && (
         <Alert tone="success">

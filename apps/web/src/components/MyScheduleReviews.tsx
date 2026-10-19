@@ -24,12 +24,22 @@ export function MyScheduleReviews() {
   const t = useT();
   const { employee } = useSession();
   const me = employee?.id ?? null;
+  const [groups, setGroups] = useState<string[]>([]);
   const [days, setDays] = useState<{ date: string; providers: OnCallPerson[] }[]>([]);
 
   useEffect(() => {
     if (!me) return;
     let cancelled = false;
     const today = practiceDate();
+    api
+      .scheduleReviewAreas()
+      .then((found) => {
+        if (!cancelled)
+          setGroups(
+            found.areas.filter((area) => area.reviewer?.id === me).map((area) => area.name),
+          );
+      })
+      .catch(() => !cancelled && setGroups([]));
     api
       .scheduleReviews(today, addDays(today, DAYS_AHEAD))
       .then((found) => {
@@ -54,7 +64,7 @@ export function MyScheduleReviews() {
     };
   }, [me]);
 
-  if (days.length === 0) return null;
+  if (days.length === 0 && groups.length === 0) return null;
   const today = practiceDate();
   const tomorrow = addDays(today, 1);
   const when = (date: string) =>
@@ -74,6 +84,13 @@ export function MyScheduleReviews() {
           {t('All reviews →')}
         </Link>
       </div>
+      {groups.length > 0 && (
+        <p className="mt-2 text-sm text-slate-800">
+          <strong>{t('Always')}</strong>
+          {' · '}
+          {groups.join(', ')}
+        </p>
+      )}
       <ul className="mt-2 space-y-1 text-sm text-slate-800">
         {days.map((day) => (
           <li key={day.date}>

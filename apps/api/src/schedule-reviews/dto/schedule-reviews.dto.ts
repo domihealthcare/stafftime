@@ -46,3 +46,22 @@ export class ScheduleReviewDayInput {
   @MaxLength(200)
   note?: string;
 }
+
+export class ScheduleReviewAreaInput {
+  @IsString()
+  @MaxLength(80)
+  name!: string;
+
+  @IsOptional()
+  @IsUUID()
+  reviewerId?: string | null;
+}
+
+/// The whole list of groups, in order, saved at once.
+export class ScheduleReviewAreasInput {
+  @IsArray()
+  @ArrayMaxSize(20)
+  @ValidateNested({ each: true })
+  @Type(() => ScheduleReviewAreaInput)
+  areas!: ScheduleReviewAreaInput[];
+}

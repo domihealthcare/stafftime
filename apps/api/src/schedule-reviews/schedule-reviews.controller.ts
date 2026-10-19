@@ -3,7 +3,11 @@ import { Role } from '@prisma/client';
 import { AuthUser } from '../common/auth/auth-user';
 import { CurrentUser } from '../common/auth/current-user.decorator';
 import { Roles } from '../common/auth/roles.decorator';
-import { ScheduleReviewDayInput, ScheduleReviewPatternInput } from './dto/schedule-reviews.dto';
+import {
+  ScheduleReviewAreasInput,
+  ScheduleReviewDayInput,
+  ScheduleReviewPatternInput,
+} from './dto/schedule-reviews.dto';
 import { ScheduleReviewsService } from './schedule-reviews.service';
 
 /// Who reviews which provider's patient schedule. Everybody signed in reads
@@ -15,6 +19,18 @@ export class ScheduleReviewsController {
   @Get()
   days(@Query('from') from: string, @Query('to') to: string) {
     return this.reviews.days(from, to);
+  }
+
+  /// Before `days/...`; the groups and their reviewers, for everybody.
+  @Get('areas')
+  areas() {
+    return this.reviews.areas();
+  }
+
+  @Put('areas')
+  @Roles(Role.MANAGER)
+  saveAreas(@Body() dto: ScheduleReviewAreasInput, @CurrentUser() user: AuthUser) {
+    return this.reviews.saveAreas(dto, user);
   }
 
   @Get('pattern')

@@ -1864,6 +1864,13 @@ export interface OnCallSchedule {
 
 /// Who reviews a provider's patient schedule on a day (October 2026). Only
 /// who and which provider: the schedules themselves stay in eCW.
+/// The groups of schedules and who reviews each, as on the practice's sheet.
+export interface ScheduleReviewAreas {
+  areas: { id: string; name: string; reviewer: OnCallPerson | null }[];
+  /// Who can be picked: everybody still here.
+  reviewers: OnCallPerson[];
+}
+
 export interface ScheduleReview {
   providerId: string;
   reviewer: OnCallPerson | null;
