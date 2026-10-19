@@ -4,9 +4,9 @@ import { IsBoolean, IsIn, IsOptional, IsString, IsUUID, Matches } from 'class-va
 export const RETIME_SCOPES = ['ONE', 'SAME_WEEKDAY', 'LATER'] as const;
 export type RetimeScope = (typeof RETIME_SCOPES)[number];
 
-/// "Gaby is 7 to 2, from Wednesday it is 1 to 8" — new hours for a shift,
+/// "Gaby is 7 to 2, from Wednesday it is 1 to 8" - new hours for a shift,
 /// and for this shift only, for the same weekday from here on, or for every
-/// later shift of theirs at those hours — and, if asked, at another office or
+/// later shift of theirs at those hours - and, if asked, at another office or
 /// from home (Dominguez, October 2026: "needs to be able to update location as
 /// well").
 export class RetimeShiftDto {

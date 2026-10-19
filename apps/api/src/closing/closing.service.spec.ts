@@ -86,7 +86,7 @@ const entry = (locationId = NB) => ({
   clockInAt: new Date('2026-09-24T13:00:00Z'),
 });
 
-describe('ClosingService — what applies', () => {
+describe('ClosingService - what applies', () => {
   it('leaves out items for another day of the week', async () => {
     const { service } = build();
     const sections = await service.applicableFor('emp-1', NB, FRIDAY);
@@ -112,7 +112,7 @@ describe('ClosingService — what applies', () => {
   });
 });
 
-describe('ClosingService — recording a clock-out', () => {
+describe('ClosingService - recording a clock-out', () => {
   it('flags unticked tasks and a count under its target, and nothing for reminders', async () => {
     const { service, created } = build();
     await service.recordForClockOut(entry(WNY), {

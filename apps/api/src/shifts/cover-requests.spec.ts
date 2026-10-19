@@ -165,7 +165,7 @@ describe('asking', () => {
 });
 
 describe('answering', () => {
-  it('a yes takes the shift — published — and tells the manager and those still to answer', async () => {
+  it('a yes takes the shift - published - and tells the manager and those still to answer', async () => {
     const { service, tx, notifications } = build();
     jest.spyOn(service, 'view').mockResolvedValue({} as never);
     await service.answer('req-1', true, ana, NOW);

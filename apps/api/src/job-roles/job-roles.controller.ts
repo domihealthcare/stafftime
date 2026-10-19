@@ -65,7 +65,7 @@ export class JobRolesController {
     return this.jobRoles.addMember(id, dto.employeeId, user);
   }
 
-  /// Their main job role — one they already hold.
+  /// Their main job role - one they already hold.
   @Put(':id/members/:employeeId/main')
   @Roles(Role.MANAGER)
   @HttpCode(HttpStatus.OK)

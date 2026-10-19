@@ -6,10 +6,10 @@
  * no signal would take a punch it could not keep.
  *
  * Android's browsers offer their own install prompt through
- * `beforeinstallprompt`, which fires once, early — often before the sign-in
- * screen has mounted — so it is caught here, at start-up, and held until the
+ * `beforeinstallprompt`, which fires once, early - often before the sign-in
+ * screen has mounted - so it is caught here, at start-up, and held until the
  * tip asks for it. iPhones have no such event; there the tip explains Share →
- * Add to Home Screen instead — in Safari at the bottom of the screen, in
+ * Add to Home Screen instead - in Safari at the bottom of the screen, in
  * Chrome in the address bar.
  */
 

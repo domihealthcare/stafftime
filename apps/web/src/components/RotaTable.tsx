@@ -108,7 +108,7 @@ function addDayKey(day: string, days: number): string {
 }
 
 /**
- * The week as a rota: one row per person, one column per day — and, above
+ * The week as a rota: one row per person, one column per day - and, above
  * the people, a row of **open shifts** for each office: slots the practice
  * needs filled that nobody is on yet, flagged until somebody is.
  *
@@ -160,7 +160,7 @@ export function RotaTable({
   events?: PracticeEvent[];
   onOpenEvent?: (event: PracticeEvent) => void;
   overtimeThresholdHours: number;
-  /// From the server, per person per week and across every location — so a
+  /// From the server, per person per week and across every location - so a
   /// row filtered to one office still shows the week as a whole.
   overtime?: OvertimeWarning[];
   /// For staff: their own weeks, from their published shifts.
@@ -194,7 +194,7 @@ export function RotaTable({
   const [adding, setAdding] = useState<{ row: Row; day: Date } | null>(null);
   const dayMenu = useContextMenu();
 
-  /// What a right-click on a day offers (October 2026, Dominguez — in place of
+  /// What a right-click on a day offers (October 2026, Dominguez - in place of
   /// the ＋ in every cell, which made the page longer).
   const dayMenuItems = (row: Row, day: Date): ContextMenuItem[] => {
     const items: ContextMenuItem[] = [
@@ -265,7 +265,7 @@ export function RotaTable({
         };
     }
     // No figures from the server yet (still loading): nothing, rather than
-    // a guess from the row — the row's week and the overtime week need not
+    // a guess from the row - the row's week and the overtime week need not
     // be the same seven days, so its sum could warn where the server would not.
     return null;
   };
@@ -278,7 +278,7 @@ export function RotaTable({
       }
     }
     // A shift while its office is closed says so first: it is the likelier
-    // mistake — a repeating rota running straight through Christmas.
+    // mistake - a repeating rota running straight through Christmas.
     for (const shift of shifts) {
       const [closure] = closuresCovering(events, shift);
       if (closure) map.set(shift.id, t('Office closed: {title}', { title: closure.title }));
@@ -585,7 +585,7 @@ export function RotaTable({
               </th>
             </tr>
             {/* Their own row, above the people, because an event is for a group
-                rather than for one person — and it is not a shift. */}
+                rather than for one person - and it is not a shift. */}
             {weekEvents.length > 0 && (
               <tr className="border-b border-slate-200 bg-white" data-testid="rota-events-row">
                 <th
@@ -749,7 +749,7 @@ export function RotaTable({
                           )}
                           <div
                             // For a manager, a click anywhere but on a shift falls
-                            // through to the cell — time off and birthdays too.
+                            // through to the cell - time off and birthdays too.
                             className={`relative flex flex-col gap-1 ${canEdit ? 'pointer-events-none' : ''}`}
                           >
                             {row.kind === 'person' &&
@@ -821,7 +821,7 @@ export function RotaTable({
                         <span
                           data-testid={`week-standing-${standing.level}`}
                           title={t(
-                            '{hours} hours in the overtime week from {date} (it follows the pay period), every location — the overtime line is {line}',
+                            '{hours} hours in the overtime week from {date} (it follows the pay period), every location - the overtime line is {line}',
                             {
                               hours: standing.hours,
                               date: formatCalendarDate(standing.weekStart, { year: false }),
@@ -935,7 +935,7 @@ function ShiftChip({
   events: PracticeEvent[];
   /// The office's colour: what fills the chip.
   colour: string;
-  /// The job role's colour, as the outline — the shift's own role, or the
+  /// The job role's colour, as the outline - the shift's own role, or the
   /// person's first.
   roleColour: string | null;
   warning?: string;
@@ -1163,8 +1163,8 @@ function Dialog({
 
 /**
  * A first draft for the week's open shifts (Dominguez, October 2026): the
- * server suggests somebody free for each — by the same ranking as "Who can
- * cover this?", never two shifts at once, hours spread — and the manager
+ * server suggests somebody free for each - by the same ranking as "Who can
+ * cover this?", never two shifts at once, hours spread - and the manager
  * ticks the ones to keep. Nothing is saved until then, and they are assigned
  * as if picked one by one: drafts stay drafts until published.
  */
@@ -1224,8 +1224,8 @@ function SuggestCoverDialog({
   return (
     <Dialog title="Suggested for the open shifts" onClose={onClose}>
       <p className="text-xs text-slate-600">
-        Somebody free for each — not off, not past what they said they can work, not near overtime,
-        and never two at once — with the fewest hours that week first. Untick any you don&rsquo;t
+        Somebody free for each - not off, not past what they said they can work, not near overtime,
+        and never two at once - with the fewest hours that week first. Untick any you don&rsquo;t
         want. Nothing changes until you press Assign.
       </p>
       {problem && (
@@ -1274,7 +1274,7 @@ function SuggestCoverDialog({
                   <div className="pl-6">
                     <span className="block text-slate-600">{label}</span>
                     <span className="text-xs text-amber-800">
-                      Nobody is free then — click the shift to see who could, with a catch.
+                      Nobody is free then - click the shift to see who could, with a catch.
                     </span>
                   </div>
                 )}
@@ -1360,7 +1360,7 @@ function ShiftDialog({
       )
       .map((other) => other.employeeId as string),
   );
-  // People who work at this office — and, for a shift with a job role, only
+  // People who work at this office - and, for a shift with a job role, only
   // those in it: somebody's shift is always for one of their own roles.
   const candidates = employees
     .filter(
@@ -1411,7 +1411,7 @@ function ShiftDialog({
   const overtimeCheck = useOvertimeCheck(proposed);
 
   // New hours (Dominguez, October 2026: "Gaby is 7-2 but it is changing to
-  // 1-8, so instead of Celeste doing 1 by 1, she can just edit all") — and a
+  // 1-8, so instead of Celeste doing 1 by 1, she can just edit all") - and a
   // new place ("needs to be able to update location as well").
   const [startTime, setStartTime] = useState(clockOf(shift.startsAt));
   const [endTime, setEndTime] = useState(clockOf(shift.endsAt));
@@ -1580,7 +1580,7 @@ function ShiftDialog({
       {shift.seriesId && (
         <p className="mt-2 text-xs text-slate-500" data-testid="shift-is-regular">
           <span aria-hidden="true">🔁</span> Part of a regular shift with no end date. Changing or
-          removing this one leaves the rest — unless you change the hours or place of the later ones
+          removing this one leaves the rest - unless you change the hours or place of the later ones
           too, below. To end them all, use Regular shifts below the rota.
         </p>
       )}
@@ -1610,7 +1610,7 @@ function ShiftDialog({
                             value={option.employeeId}
                             disabled={clashes(option) || busyIds.has(option.employeeId)}
                           >
-                            {option.name} — {coverLabel(option)}
+                            {option.name} - {coverLabel(option)}
                           </option>
                         ))}
                       </optgroup>
@@ -1620,7 +1620,7 @@ function ShiftDialog({
               : candidates.map((p) => (
                   <option key={p.id} value={p.id} disabled={busyIds.has(p.id)}>
                     {p.preferredName ?? p.firstName} {p.lastName}
-                    {busyIds.has(p.id) ? ' — already on then' : ''}
+                    {busyIds.has(p.id) ? ' - already on then' : ''}
                   </option>
                 ))}
           </select>
@@ -1827,7 +1827,7 @@ function ShiftDialog({
 }
 
 /// Adding a shift straight into a cell: for that person, or an open one for
-/// that office — once, or repeating from that day (Dominguez, September 2026:
+/// that office - once, or repeating from that day (Dominguez, September 2026:
 /// the + had no way to repeat, so a regular shift meant going to Repeating
 /// shifts and starting again).
 function QuickAddDialog({
@@ -1842,7 +1842,7 @@ function QuickAddDialog({
 }: {
   row: Row;
   day: Date;
-  /// Their time off that day, if any — said before the shift is made.
+  /// Their time off that day, if any - said before the shift is made.
   off: PtoRequest | null;
   locations: Location[];
   jobRoles: JobRole[];
@@ -2135,7 +2135,7 @@ function QuickAddDialog({
                   className="mt-0.5 rounded border-slate-300 text-brand-600 focus:ring-brand-600"
                 />
                 <span>
-                  No end date — it keeps going
+                  No end date - it keeps going
                   <span className="block text-xs text-slate-500">
                     Kept filled eight weeks ahead; stop it any time under Regular shifts.
                   </span>

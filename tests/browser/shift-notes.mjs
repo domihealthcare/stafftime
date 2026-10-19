@@ -3,7 +3,7 @@ import { goTo } from './nav.mjs';
 import { mkdirSync } from 'node:fs';
 // A note on a shift (Dominguez, October 2026: "so I can write 7–12 upstairs
 // and 12–3 downstairs"): written when the shift is added or from the shift's
-// pop-up, shown on the chip, and seen by the person on it — with a word under
+// pop-up, shown on the chip, and seen by the person on it - with a word under
 // the bell when it changes on a published shift.
 const OUT = process.argv[2] || new URL('./shots/', import.meta.url).pathname;
 mkdirSync(OUT, { recursive: true });

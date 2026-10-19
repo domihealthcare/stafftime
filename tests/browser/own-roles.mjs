@@ -58,7 +58,7 @@ async function openWeek() {
 const frankieRow = () => mgr.getByTestId('rota-row-Frankie Front-Desk');
 const options = (select) => select.locator('option').allTextContents();
 
-await step('the + on the rota offers only his one job role — no "Not specified"', async () => {
+await step('the + on the rota offers only his one job role - no "Not specified"', async () => {
   await openWeek();
   const max = mgr.getByTestId('rota-row-Max Assistant');
   await max.getByRole('button', { name: /^Add a shift for Max Assistant on Tuesday/ }).click();
@@ -114,7 +114,7 @@ await step('the server refuses a shift as a role she does not hold', async () =>
   if (refused.status !== 400) throw new Error(`answered ${refused.status}`);
   if (!/not in Provider/.test(JSON.stringify(refused.body)))
     throw new Error(`said ${JSON.stringify(refused.body)}`);
-  // …and, in two roles, one with none given gets her first — never "any".
+  // …and, in two roles, one with none given gets her first - never "any".
   const vague = await api('/shifts', {
     method: 'POST',
     body: JSON.stringify({
@@ -131,7 +131,7 @@ await step('the server refuses a shift as a role she does not hold', async () =>
 });
 
 await step('an open Front Desk shift can only be given to somebody in Front Desk', async () => {
-  // Tuesday next week, the week the rota is opened on — worked out in the
+  // Tuesday next week, the week the rota is opened on - worked out in the
   // page, on New Jersey time like the rota; the runner's own clock is UTC,
   // a week ahead on a Saturday evening.
   const { startsAt, endsAt } = await mgr.evaluate(() => {
@@ -202,20 +202,20 @@ await step('the month by job role counts the shifts for that role, not all its p
   const scope = mgr.getByTestId('month-person');
   await scope.getByText('Medical Assistant at North Bergen').waitFor({ timeout: 5000 });
   const text = await scope.innerText();
-  if (!/— 1 shift this month/.test(text)) throw new Error(`it said "${text}"`);
+  if (!/ - 1 shift this month/.test(text)) throw new Error(`it said "${text}"`);
 });
 
 await step('Work from home is a place to narrow the month to', async () => {
   await mgr.getByLabel('Show job role').selectOption({ label: 'All job roles' });
   await mgr.getByLabel('Show location').selectOption({ label: 'Work from home' });
   const text = await mgr.getByTestId('month-person').innerText();
-  if (!/^Only Working from home — 1 shift this month/.test(text)) throw new Error(`it said "${text}"`);
+  if (!/^Only Working from home - 1 shift this month/.test(text)) throw new Error(`it said "${text}"`);
   // …and North Bergen no longer counts the day she is at home.
   await mgr.getByLabel('Show location').selectOption({ label: 'North Bergen' });
   await mgr.getByRole('combobox', { name: 'Show person' }).click();
   await mgr.getByRole('listbox', { name: 'Show person' }).getByRole('option', { name: /Frankie Front-Desk/ }).click();
   const there = await mgr.getByTestId('month-person').innerText();
-  if (!/— 1 shift this month/.test(there)) throw new Error(`at North Bergen it said "${there}"`);
+  if (!/ - 1 shift this month/.test(there)) throw new Error(`at North Bergen it said "${there}"`);
 });
 
 await step('the week narrowed to Work from home shows a section of its own', async () => {

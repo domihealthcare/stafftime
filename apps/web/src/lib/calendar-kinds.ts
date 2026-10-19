@@ -3,7 +3,7 @@ import type { EventKind } from './types';
 /**
  * The kinds of entry on the practice calendar (October 2026, Dominguez: "a
  * calendar that staff can reference for multiple things"), each with the
- * words and colours it wears everywhere it is shown — the Calendar, the rota's
+ * words and colours it wears everywhere it is shown - the Calendar, the rota's
  * events row, the month, Home. Pay days are not stored: they are worked out
  * from the pay period, so they are a kind here but never an event. So is
  * "My shifts", the signed-in person's own schedule (October 2026, Dominguez:
@@ -16,9 +16,9 @@ import type { EventKind } from './types';
 export type CalendarKind = EventKind | 'PAY_DAY' | 'MY_SHIFT';
 
 export interface KindStyle {
-  /// "Diagnostics" — a filter chip, a heading.
+  /// "Diagnostics" - a filter chip, a heading.
   label: string;
-  /// "Diagnostics date" — a form's heading, a menu item.
+  /// "Diagnostics date" - a form's heading, a menu item.
   one: string;
   emoji: string;
   /// A chip: tint, text, ring and hover.

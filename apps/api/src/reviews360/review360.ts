@@ -10,7 +10,7 @@ import { PRACTICE_ZONE } from '../common/util/zoned-time.util';
  */
 
 /// Fewer colleagues than this and a person's report could point at who said
-/// what — the pulse surveys' own number (confirmed at 3 by Dominguez).
+/// what - the pulse surveys' own number (confirmed at 3 by Dominguez).
 export const MIN_RATERS = 3;
 
 /// Offering to meet: this many times to pick from.

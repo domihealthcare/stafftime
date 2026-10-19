@@ -265,13 +265,13 @@ export class AuthController {
       /// Their offices with a paired time clock, while they have no PIN for it;
       /// empty once they have one.
       tabletPinOffices,
-      /// Whether their own licenses and onboarding are in the account menu — Providers,
+      /// Whether their own licenses and onboarding are in the account menu - Providers,
       /// as the practice has it. Managers and admins have them under Manage.
       seesOwnPersonnelTabs: jobRoles.some((membership) => membership.jobRole.seesOwnPersonnelTabs),
-      /// Whether the clinical forms are under Resources → Forms — Providers. Job role only:
+      /// Whether the clinical forms are under Resources → Forms - Providers. Job role only:
       /// being a manager or admin does not bring them.
       usesClinicalForms: jobRoles.some((membership) => membership.jobRole.usesClinicalForms),
-      /// Whether the Annual Wellness Visit form is under Resources → Forms — Providers and
+      /// Whether the Annual Wellness Visit form is under Resources → Forms - Providers and
       /// Medical Assistants by job role; managers and admins have it anyway.
       usesWellnessForm: jobRoles.some((membership) => membership.jobRole.usesWellnessForm),
     };

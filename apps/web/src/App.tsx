@@ -270,14 +270,14 @@ function AppRoutes() {
         <Routes>
           {/*
           The kiosk lives outside the signed-in app entirely: its own route, its
-          own device credential, and no SessionProvider — a tablet must never be
+          own device credential, and no SessionProvider - a tablet must never be
           able to inherit a person's session.
         */}
           <Route path="/kiosk" element={<KioskApp />} />
 
           {/*
           Password reset is for people who cannot sign in, so it lives outside
-          the session gate — otherwise the only way to reach it would be to
+          the session gate - otherwise the only way to reach it would be to
           already have the thing you have lost.
         */}
           <Route path="/forgot-password" element={<ForgotPasswordPage />} />
@@ -300,7 +300,7 @@ function AppRoutes() {
 
 /*
   A "data router" around the same routes as before, which stay where they
-  were — in <Routes> above. It is here for one thing: `useBlocker`, which only
+  were - in <Routes> above. It is here for one thing: `useBlocker`, which only
   works under one. The clinical form uses it to ask before somebody leaves a
   half-filled form by a link or the Back button (September 2026); a plain
   BrowserRouter cannot stop either.

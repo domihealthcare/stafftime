@@ -401,7 +401,7 @@ describe('EventsService', () => {
       });
     });
 
-    it('tells everybody it is for, under the bell — but not the manager who made it', async () => {
+    it('tells everybody it is for, under the bell - but not the manager who made it', async () => {
       const { service, inbox } = build({ invited: ['emp-1', 'emp-2', 'mgr-1'] });
       await service.create(input(), manager);
 
@@ -520,7 +520,7 @@ describe('closures', () => {
         manager,
       ),
     ).rejects.toThrow(
-      'A closure is for both offices or one office — not a job role or a list of people.',
+      'A closure is for both offices or one office - not a job role or a list of people.',
     );
   });
 
@@ -636,8 +636,8 @@ describe('closures', () => {
       const result = await service.copyClosures(2026, manager);
       expect(result.copied).toBe(0);
       expect(result.skipped).toEqual([
-        "Christmas Day — already on 2027's calendar",
-        "Christmas Eve — already on 2027's calendar",
+        "Christmas Day - already on 2027's calendar",
+        "Christmas Eve - already on 2027's calendar",
       ]);
       expect(practiceEvent.create).not.toHaveBeenCalled();
     });
@@ -662,8 +662,8 @@ describe('closures', () => {
         startsAt: new Date('2027-11-25T05:00:00.000Z'),
         endsAt: new Date('2027-11-27T05:00:00.000Z'),
       });
-      expect(result.moved).toEqual(['Thanksgiving — Thu, Nov 26, 2026 → Thu, Nov 25, 2027']);
-      expect(result.onWeekend).toEqual(['Christmas Day — Sat, Dec 25, 2027 is a Saturday']);
+      expect(result.moved).toEqual(['Thanksgiving - Thu, Nov 26, 2026 → Thu, Nov 25, 2027']);
+      expect(result.onWeekend).toEqual(['Christmas Day - Sat, Dec 25, 2027 is a Saturday']);
     });
 
     it('does not guess where 29 February goes', async () => {
@@ -678,7 +678,7 @@ describe('closures', () => {
         }),
       ]);
       const result = await service.copyClosures(2028, manager);
-      expect(result.skipped).toEqual(['Leap day — 29 February has no date in 2029']);
+      expect(result.skipped).toEqual(['Leap day - 29 February has no date in 2029']);
     });
 
     it('sends each person one notification for the lot, not one per holiday', async () => {
@@ -749,7 +749,7 @@ describe('holidays', () => {
     ).rejects.toThrow(BadRequestException);
   });
 
-  it('rings nobody’s bell — it only names a day', async () => {
+  it('rings nobody’s bell - it only names a day', async () => {
     const { service, inbox } = build();
     await service.create(electionDay(), manager);
     expect(inbox.notify).not.toHaveBeenCalled();
@@ -1010,7 +1010,7 @@ describe('video call link', () => {
     ).toBe(true);
   });
 
-  it('refuses anything that is not an https address — a script above all', async () => {
+  it('refuses anything that is not an https address - a script above all', async () => {
     const { service } = build();
     await expect(
       service.create(input({ meetingUrl: 'javascript:alert(1)' }), manager),
@@ -1277,7 +1277,7 @@ describe('repeating', () => {
         where: { id: 'series-1' },
         data: { untilDate: new Date('2099-10-29T00:00:00.000Z') },
       });
-      // Oct 30, Nov 13, Nov 27, Dec 11, Dec 25 — at 10am now.
+      // Oct 30, Nov 13, Nov 27, Dec 11, Dec 25 - at 10am now.
       const written = practiceEvent.createMany.mock.calls[0][0].data;
       expect(written).toHaveLength(5);
       expect(written[1].startsAt.toISOString()).toBe('2099-11-13T15:00:00.000Z');
@@ -1324,7 +1324,7 @@ describe('repeating', () => {
       expect(inbox.notify).toHaveBeenCalledTimes(1);
       expect(inbox.notify.mock.calls[0][1]).toMatchObject({
         title: 'Cancelled: Office meeting',
-        body: expect.stringMatching(/ on — 5 dates\.$/),
+        body: expect.stringMatching(/ on - 5 dates\.$/),
       });
     });
   });
@@ -1386,7 +1386,7 @@ describe('reminders the day before', () => {
     ]);
     await service.sendReminders(NOW);
     expect(inbox.notify.mock.calls[0][1].title).toBe(
-      'Tomorrow — north bergen closed: Christmas Eve',
+      'Tomorrow - north bergen closed: Christmas Eve',
     );
   });
 });

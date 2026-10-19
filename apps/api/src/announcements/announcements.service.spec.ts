@@ -558,7 +558,7 @@ describe('AnnouncementsService', () => {
 
     const theirs = { id: 'c1', announcementId: 'post-1', authorId: 'emp-2', body: 'Hello' };
 
-    it('lets only the writer change a comment — not even an admin', async () => {
+    it('lets only the writer change a comment - not even an admin', async () => {
       const { service } = build({ comment: theirs });
       await expect(service.editComment('post-1', 'c1', 'Changed', admin)).rejects.toBeInstanceOf(
         ForbiddenException,

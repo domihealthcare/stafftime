@@ -7,7 +7,7 @@ import { Alert, Card, buttonClass } from '../components/ui';
  * Fills a test deployment with something worth looking at.
  *
  * Only rendered on a test deployment, and only for an admin. It is destructive
- * — every shift, punch, time-off request and checklist goes — so it says so
+ * - every shift, punch, time-off request and checklist goes - so it says so
  * plainly and asks twice rather than hiding behind a tooltip.
  */
 export function DemoDataCard() {
@@ -49,7 +49,7 @@ export function DemoDataCard() {
     <Card className="mt-6 p-4">
       <h2 className="text-sm font-semibold text-slate-900">Demo data</h2>
       <p className="mt-1 text-sm text-slate-600">
-        Fills this test deployment with five realistic weeks — eight more staff across both offices,
+        Fills this test deployment with five realistic weeks - eight more staff across both offices,
         rotas, punches that are mostly fine and occasionally not, time off in every state, and a
         checklist part-way through. An empty timesheet tells a practice manager nothing.
       </p>
@@ -82,7 +82,7 @@ export function DemoDataCard() {
             </ul>
             <p className="mt-2 text-xs">
               Every demo account signs in with{' '}
-              <span className="font-mono">{summary.sharedPassword}</span> — which is why this only
+              <span className="font-mono">{summary.sharedPassword}</span> - which is why this only
               works on a test deployment.
             </p>
           </Alert>

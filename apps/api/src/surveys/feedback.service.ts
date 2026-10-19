@@ -6,7 +6,7 @@ import { PrismaService } from '../prisma/prisma.service';
 /**
  * The suggestion box. Anybody signed in can post; managers read it.
  *
- * Nothing about the sender is kept — not their id, not the time of day. The
+ * Nothing about the sender is kept - not their id, not the time of day. The
  * session is needed to post (so the box is not open to the internet), and is
  * then thrown away.
  */

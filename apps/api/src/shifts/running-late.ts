@@ -1,7 +1,7 @@
 import { PRACTICE_ZONE } from '../common/util/zoned-time.util';
 
 /**
- * "Running late" and the no-show alert (October 2026, Dominguez — two
+ * "Running late" and the no-show alert (October 2026, Dominguez - two
  * "smarter" ideas). The words, kept apart from the sending so they can be
  * tested on their own.
  */
@@ -36,7 +36,7 @@ const where = (shift: LateShift) =>
 export function runningLateWords(name: string, shift: LateShift, minutes: number) {
   return {
     title: `${name} is running late`,
-    body: `About ${minutes} minutes late for ${time(shift.startsAt)} ${where(shift)} — expected around ${time(new Date(shift.startsAt.getTime() + minutes * 60_000))}.`,
+    body: `About ${minutes} minutes late for ${time(shift.startsAt)} ${where(shift)} - expected around ${time(new Date(shift.startsAt.getTime() + minutes * 60_000))}.`,
     link: '/directory',
   };
 }

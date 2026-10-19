@@ -104,7 +104,7 @@ describe('asking and deciding', () => {
     );
     expect(notifications.correctionAsked).toHaveBeenCalledWith('emp-ana', {
       title: 'Ana Lopez asked for a correction',
-      body: 'Thu, Oct 8: in 9:00 AM, out 5:00 PM — “Forgot to clock out”',
+      body: 'Thu, Oct 8: in 9:00 AM, out 5:00 PM - “Forgot to clock out”',
     });
   });
 

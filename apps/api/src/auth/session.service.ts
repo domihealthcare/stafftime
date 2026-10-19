@@ -19,7 +19,7 @@ export interface IssuedSession {
 const TOKEN_BYTES = 32;
 
 /// Sessions are looked up by the hash of the token, so this must be a fast,
-/// deterministic digest — not a password hash. The token's own 256 bits of
+/// deterministic digest - not a password hash. The token's own 256 bits of
 /// entropy are what make it unguessable.
 export function hashToken(token: string): string {
   return createHash('sha256').update(token).digest('hex');
@@ -62,7 +62,7 @@ export class SessionService {
    * Resolves a token to its owner, or null.
    *
    * A session dies at its absolute expiry, when revoked, or after a stretch of
-   * inactivity — a shared front-desk browser left open overnight should not
+   * inactivity - a shared front-desk browser left open overnight should not
    * still be signed in come morning.
    */
   async resolve(token: string): Promise<SessionOwner | null> {
@@ -96,7 +96,7 @@ export class SessionService {
     }
 
     // A terminated employee's session stops working immediately, without anyone
-    // having to remember to revoke it — which is the point of server-side sessions.
+    // having to remember to revoke it - which is the point of server-side sessions.
     if (session.employee.employmentStatus === 'TERMINATED') {
       return null;
     }

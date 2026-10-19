@@ -37,7 +37,7 @@ const PRINT_INK: Record<CalendarKind, string> = {
 };
 
 /**
- * The practice calendar on paper (October 2026, Dominguez) — the month the
+ * The practice calendar on paper (October 2026, Dominguez) - the month the
  * practice used to keep by hand, for the wall: one landscape page, Sunday
  * first, each day with its diagnostics, rep lunches, holidays, closures,
  * meetings and pay days. It prints what the Calendar shows (`?kinds=` and

@@ -10,7 +10,10 @@ import { DEFAULT_COLUMN_KEYS, type TimesheetColumnKey } from './columns';
 import { ExportTimesheetDto } from './dto/export-timesheet.dto';
 
 /// Finished work that has been signed off, which is what payroll runs on.
-export const DEFAULT_STATUSES: TimeEntryStatus[] = [TimeEntryStatus.COMPLETED, TimeEntryStatus.APPROVED];
+export const DEFAULT_STATUSES: TimeEntryStatus[] = [
+  TimeEntryStatus.COMPLETED,
+  TimeEntryStatus.APPROVED,
+];
 
 /// Longest period we will build in one go, to keep a mis-typed date range from
 /// pulling years of entries into memory.
@@ -44,7 +47,7 @@ export interface TimesheetData {
   ///
   /// Carried here rather than re-queried, because a payroll export records
   /// which hours went out and a second query could quietly select a different
-  /// set — an entry corrected between the two, say. The record of what was
+  /// set - an entry corrected between the two, say. The record of what was
   /// paid has to come from the same read as the file.
   entryIds: string[];
   meta: {
@@ -140,7 +143,7 @@ export class TimesheetExportService {
     // The same threshold the rota warns on. If these two ever disagreed, the
     // schedule would promise one thing and the payslip say another.
     const { overtimeThresholdHours, payPeriodStart } = await this.settings.get();
-    // Overtime is a whole week's hours, at any office — whatever this file is
+    // Overtime is a whole week's hours, at any office - whatever this file is
     // limited to. So the weeks it touches are read in full (a day either side
     // covers any time zone) and this file's entries take their own share.
     const context =
@@ -276,7 +279,7 @@ export class TimesheetExportService {
    * Per-employee totals for the period.
    *
    * Overtime, when asked for, is worked out per calendar week rather than across
-   * the whole period — 45 hours one week and 35 the next is five hours of
+   * the whole period - 45 hours one week and 35 the next is five hours of
    * overtime, not zero. Salaried staff are treated as exempt and never split.
    *
    * The threshold comes from the practice's settings rather than a constant, so
@@ -291,7 +294,7 @@ export class TimesheetExportService {
     thresholdHours: number,
     /// Every entry in the weeks this file touches, at any office. Overtime is
     /// the hours past the threshold in the week as a whole, in time order, and
-    /// each of this file's entries carries the part of it that fell in it —
+    /// each of this file's entries carries the part of it that fell in it -
     /// so exporting one office, or a period that starts mid-week, neither loses
     /// overtime nor counts it twice.
     context: EntryWithRelations[] = entries,
@@ -422,8 +425,8 @@ export function formatTime(date: Date, zone: string): string {
   return `${p.hour === '24' ? '00' : p.hour}:${p.minute}`;
 }
 
-/// Identifies the overtime week a punch falls in — starting on the pay
-/// period's weekday — in the location's timezone, so a late shift on the last
+/// Identifies the overtime week a punch falls in - starting on the pay
+/// period's weekday - in the location's timezone, so a late shift on the last
 /// day does not land in the wrong week.
 ///
 /// Lives in `common/util/zoned-time.util.ts` because the rota's overtime

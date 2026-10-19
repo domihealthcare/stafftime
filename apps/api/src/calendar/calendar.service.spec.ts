@@ -162,7 +162,7 @@ describe('CalendarService', () => {
       const { service } = build({ shifts: [shift] });
       const feed = await service.feedForToken('token', NOW);
 
-      expect(feed).toContain('SUMMARY:Work — North Bergen');
+      expect(feed).toContain('SUMMARY:Work - North Bergen');
       expect(feed).toContain('DTSTART:20260923T130000Z');
       expect(feed).toContain('DTEND:20260923T210000Z');
       expect(feed).toContain('LOCATION:7650 Bergenline Ave\\, North Bergen\\, NJ');
@@ -233,7 +233,7 @@ describe('CalendarService', () => {
         },
       });
       expect(await service.feedForToken('token', NOW)).toContain(
-        'X-WR-CALNAME:Frank Front-Desk — Domi Staff',
+        'X-WR-CALNAME:Frank Front-Desk - Domi Staff',
       );
     });
 
@@ -270,7 +270,7 @@ describe('CalendarService', () => {
       kind: 'EVENT',
       title: 'Office meeting',
       description: 'Bring your questions about the new phones.',
-      place: 'North Bergen office — break room',
+      place: 'North Bergen office - break room',
       allDay: false,
       startsAt: new Date('2026-10-14T16:30:00.000Z'),
       endsAt: new Date('2026-10-14T17:30:00.000Z'),
@@ -292,7 +292,7 @@ describe('CalendarService', () => {
       expect(feed).toContain('SUMMARY:Office meeting');
       expect(feed).toContain('DTSTART:20261014T163000Z');
       expect(feed).toContain('DTEND:20261014T173000Z');
-      expect(feed).toContain('LOCATION:North Bergen office — break room');
+      expect(feed).toContain('LOCATION:North Bergen office - break room');
       expect(feed).toContain('DESCRIPTION:Bring your questions about the new phones.');
       expect(feed).toContain('TRANSP:OPAQUE');
     });
@@ -382,7 +382,7 @@ describe('CalendarService', () => {
         ],
       });
       const feed = await service.feedForToken('token', NOW);
-      expect(feed).toContain('SUMMARY:US + ECHO — West New York');
+      expect(feed).toContain('SUMMARY:US + ECHO - West New York');
       expect(feed).toContain('LOCATION:5901 Bergenline Ave\\, West New York\\, NJ');
       expect(feed).toContain('TRANSP:TRANSPARENT');
     });
@@ -435,14 +435,14 @@ describe('CalendarService', () => {
         'Office meeting',
       ]);
       expect(await service.feedForToken('token', NOW, 'diagnostics')).toContain(
-        'X-WR-CALNAME:Diagnostics — Domi Staff',
+        'X-WR-CALNAME:Diagnostics - Domi Staff',
       );
     });
 
     it('keeps your shifts and pay days to their own calendars', async () => {
       const { service, prisma, events } = everything();
       const shifts = await service.feedForToken('token', NOW, 'shifts');
-      expect(summaries(shifts)).toEqual(['Work — North Bergen']);
+      expect(summaries(shifts)).toEqual(['Work - North Bergen']);
       expect(events.forPerson).not.toHaveBeenCalled();
       const pay = await service.feedForToken('token', NOW, 'pay-days');
       expect(new Set(summaries(pay))).toEqual(new Set(['Pay day']));
@@ -504,7 +504,7 @@ describe('CalendarService', () => {
         ],
       });
       const feed = (await service.feedForToken('token', NOW)).replace(/\r\n /g, '');
-      expect(feed).toContain('SUMMARY:Rep lunch: Jane Smith (Novo Nordisk) — North Bergen');
+      expect(feed).toContain('SUMMARY:Rep lunch: Jane Smith (Novo Nordisk) - North Bergen');
       expect(feed).toContain('Medication: Ozempic');
       expect(feed).toContain('Lunch: the office orders');
       expect(feed).not.toContain('555-0142');
@@ -608,7 +608,7 @@ describe('CalendarService', () => {
       expect(feed).not.toContain('Office meeting');
       expect(feed).toContain('SUMMARY:Closed: Christmas Day');
       // Invites carry meetings only; the diagnostics schedule stays here.
-      expect(feed).toContain('SUMMARY:US + ECHO — North Bergen');
+      expect(feed).toContain('SUMMARY:US + ECHO - North Bergen');
       expect(feed).toContain('SUMMARY:Vacation');
       // Said at the top of the calendar, for anybody who wonders where they went.
       expect(feed).toContain('Office closures and approved time off');

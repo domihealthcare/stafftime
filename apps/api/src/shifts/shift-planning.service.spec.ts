@@ -148,7 +148,7 @@ describe('ShiftPlanningService', () => {
       const { service, created } = build();
       const result = await service.repeat(repeat(), 'mgr-1');
 
-      // Tuesdays 22, 29 Sep; Thursdays 24 Sep, 1 Oct — 4 in that range.
+      // Tuesdays 22, 29 Sep; Thursdays 24 Sep, 1 Oct - 4 in that range.
       expect(result.created).toBe(4);
       expect(created).toHaveLength(4);
       expect(result.dates).toEqual(['2026-09-22', '2026-09-24', '2026-09-29', '2026-10-01']);
@@ -320,7 +320,7 @@ describe('ShiftPlanningService', () => {
     });
   });
 
-  describe('standing shifts — no end date', () => {
+  describe('standing shifts - no end date', () => {
     // Tuesday 29 September 2026, mid-morning in New Jersey.
     const NOW = new Date('2026-09-29T14:00:00Z');
     const mondays = (overrides: Record<string, unknown> = {}) =>
@@ -498,7 +498,7 @@ describe('ShiftPlanningService', () => {
             }),
           ],
         });
-        // 28 Oct to 24 Nov: Saturdays 31 Oct, 7, 14 and 21 Nov — the 7th.
+        // 28 Oct to 24 Nov: Saturdays 31 Oct, 7, 14 and 21 Nov - the 7th.
         expect(await service.extendStandingShifts(NOW)).toBe(1);
         expect((created[0].startsAt as Date).toISOString()).toBe('2026-11-07T13:00:00.000Z');
       });
@@ -560,7 +560,7 @@ describe('ShiftPlanningService', () => {
         expect(result).toEqual({ lastDate: '2026-10-09', removed: 5 });
         expect(inbox.notify.mock.calls[0][1]).toMatchObject({
           title: 'A shift taken off your schedule',
-          body: 'Mondays and Thursdays after Fri, Oct 9 — that regular shift has ended.',
+          body: 'Mondays and Thursdays after Fri, Oct 9 - that regular shift has ended.',
         });
       });
 
@@ -598,7 +598,7 @@ describe('ShiftPlanningService', () => {
         ]);
         await service.stopStanding('series-1', { lastDate: '2026-10-09' }, NOW);
         expect(inbox.notify.mock.calls[0][1].body).toBe(
-          'The first and third Saturday of the month after Fri, Oct 9 — that regular shift has ended.',
+          'The first and third Saturday of the month after Fri, Oct 9 - that regular shift has ended.',
         );
       });
 
@@ -1032,7 +1032,7 @@ describe('ShiftPlanningService', () => {
     });
   });
 
-  describe('open shifts — slots nobody is on yet', () => {
+  describe('open shifts - slots nobody is on yet', () => {
     const open = (overrides: Record<string, unknown> = {}) =>
       repeat({ employeeId: undefined, jobRoleId: 'fd', ...overrides });
 
@@ -1050,7 +1050,7 @@ describe('ShiftPlanningService', () => {
       expect(created).toHaveLength(8);
     });
 
-    it('does not check leave or clashes — nobody is on it to clash', async () => {
+    it('does not check leave or clashes - nobody is on it to clash', async () => {
       const { service, prisma } = build({ clash: { id: 'x' }, leave: { type: 'VACATION' } });
       const result = await service.repeat(open(), 'mgr-1');
       expect(result.skipped).toEqual([]);
@@ -1232,8 +1232,8 @@ describe('ShiftPlanningService', () => {
   });
 
   describe('coverage', () => {
-    /// The mock returns the same shifts for both of coverage's queries — the
-    /// day grid and the week totals — which is what a real database would do
+    /// The mock returns the same shifts for both of coverage's queries - the
+    /// day grid and the week totals - which is what a real database would do
     /// when the window is a whole week at one location.
     function coveragePrisma(shifts: unknown[], leave: unknown[] = [], unavailable: unknown[] = []) {
       return {
@@ -1282,7 +1282,7 @@ describe('ShiftPlanningService', () => {
         id: 'u-1',
         employeeId: 'emp-1',
         kind: 'WEEKLY',
-        weekday: 2, // Tuesday — the shift above is Tuesday 22 September, 9–5 Eastern
+        weekday: 2, // Tuesday - the shift above is Tuesday 22 September, 9–5 Eastern
         date: null,
         startTime: null,
         endTime: null,
@@ -1355,8 +1355,8 @@ describe('ShiftPlanningService', () => {
      * turns the warning off in exactly the case a manager needed it.
      */
     describe('overtime', () => {
-      /// Takes the same shifts for both of coverage's queries — the day grid
-      /// and the week totals — which is what a real database would do.
+      /// Takes the same shifts for both of coverage's queries - the day grid
+      /// and the week totals - which is what a real database would do.
       function withShifts(shifts: unknown[]) {
         return coverageSetup(shifts);
       }
@@ -1369,7 +1369,7 @@ describe('ShiftPlanningService', () => {
       };
 
       /// A shift of `hours` hours starting 9am Eastern on `date`. A long one
-      /// runs past midnight UTC, which is the point — the week it belongs to is
+      /// runs past midnight UTC, which is the point - the week it belongs to is
       /// decided in New Jersey, not in UTC.
       const shiftOn = (date: string, hours: number, over: Record<string, unknown> = {}) => {
         const startsAt = new Date(`${date}T13:00:00.000Z`);
@@ -1532,7 +1532,7 @@ describe('ShiftPlanningService', () => {
           shiftOn('2026-09-22', 12),
           shiftOn('2026-09-23', 12),
           shiftOn('2026-09-24', 12),
-          // Sunday the 27th, 9pm Eastern — still the 21st's week.
+          // Sunday the 27th, 9pm Eastern - still the 21st's week.
           {
             ...shiftOn('2026-09-27', 3),
             startsAt: new Date('2026-09-28T01:00:00.000Z'),

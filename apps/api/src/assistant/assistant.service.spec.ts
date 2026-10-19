@@ -109,7 +109,7 @@ describe('Ask Domi Staff', () => {
     const { service, create } = build();
     create.mockResolvedValueOnce({ stop_reason: 'refusal', content: [] });
     await expect(service.ask('Something odd', [], frankie, NOW)).resolves.toMatchObject({
-      answer: 'Sorry — I can’t help with that one.',
+      answer: 'Sorry - I can’t help with that one.',
     });
   });
 

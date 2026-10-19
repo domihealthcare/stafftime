@@ -59,12 +59,12 @@ export class ChecklistsService {
 
   /**
    * Starts somebody's onboarding without being asked (October 2026,
-   * Dominguez — a "smarter" idea): when a new member of staff is added with a
+   * Dominguez - a "smarter" idea): when a new member of staff is added with a
    * hire date, or given one, the practice's default onboarding template is
    * copied for them, counting from that date, as **Start checklist** would.
    *
-   * Only for somebody actually new — hired no more than `AUTO_ONBOARDING_DAYS`
-   * ago, or not yet started — so adding the existing staff, or correcting a
+   * Only for somebody actually new - hired no more than `AUTO_ONBOARDING_DAYS`
+   * ago, or not yet started - so adding the existing staff, or correcting a
    * long-serving person's hire date, starts nothing. Never a second time: not
    * if they have ever had an onboarding checklist, finished or not. Nothing
    * happens (and nothing is refused) when there is no default template yet,
@@ -160,7 +160,7 @@ export class ChecklistsService {
   ///
   /// The copy is the point. Referencing the template would mean that editing
   /// "sign the 2026 handbook" to say 2027 silently rewrites what forty people
-  /// already signed off — and a signed acknowledgement of a document nobody can
+  /// already signed off - and a signed acknowledgement of a document nobody can
   /// name any more is worth nothing in an audit.
   async start(dto: StartChecklistDto, actor: AuthUser) {
     const employee = await this.prisma.employee.findUnique({
@@ -299,7 +299,7 @@ export class ChecklistsService {
 
     if (dto.status === ChecklistTaskStatus.NOT_APPLICABLE && !dto.note?.trim()) {
       throw new BadRequestException(
-        'Say why it does not apply — a skipped task with no reason is worse than an unfinished one.',
+        'Say why it does not apply - a skipped task with no reason is worse than an unfinished one.',
       );
     }
 
@@ -360,7 +360,7 @@ export class ChecklistsService {
   }
 
   /// Managers and admins run these checklists. An employee may tick off the
-  /// items that are theirs to do — read the handbook, hand in a form — and
+  /// items that are theirs to do - read the handbook, hand in a form - and
   /// nothing else, on their own checklist only.
   private assertMayCompleteTask(
     task: { owner: TaskOwner; checklist: { employeeId: string } },

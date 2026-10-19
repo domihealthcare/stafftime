@@ -20,7 +20,7 @@ import { ProductivityService } from './productivity.service';
 
 /// Provider productivity. Working it out is for the people an admin has chosen
 /// (`canManageProductivity`), checked on every route below; a provider reads
-/// only their own, and only once it is published — `mine` takes the person from
+/// only their own, and only once it is published - `mine` takes the person from
 /// the session, never from the request.
 @Controller('productivity')
 export class ProductivityController {

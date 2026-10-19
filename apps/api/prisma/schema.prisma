@@ -1,4 +1,4 @@
-// Domi Staff (formerly Domi Time & Scheduling) — core data model
+// Domi Staff (formerly Domi Time & Scheduling) - core data model
 //
 // Conventions (kept aligned with Domi EMR so a future merge is cheap):
 //  - UUID primary keys
@@ -67,7 +67,7 @@ enum VerificationMethod {
 
 /// Why a manager had to enter somebody's hours by hand. Every hand entry is
 /// chased until somebody has found out why (Dominguez, September 2026), and
-/// these are the usual answers — APP_REFUSED is the one that is a bug report.
+/// these are the usual answers - APP_REFUSED is the one that is a bug report.
 enum HandEntryReason {
   /// Forgot to clock in or out.
   FORGOT
@@ -122,15 +122,15 @@ model Location {
   /// IANA timezone, e.g. "America/New_York".
   timezone     String  @default("America/New_York")
 
-  /// Geofence centre. Decimal(9,6) gives ~11cm precision — plenty for a radius check.
+  /// Geofence centre. Decimal(9,6) gives ~11cm precision - plenty for a radius check.
   latitude           Decimal @db.Decimal(9, 6)
   longitude          Decimal @db.Decimal(9, 6)
   /// How far from the centre a web/mobile punch may be and still count as "at
   /// work".
   ///
   /// Feet, because the people setting it are in New Jersey and think in feet.
-  /// The distance maths is metric underneath — a great-circle calculation
-  /// returns metres — and converts once, at the comparison. Storing the unit
+  /// The distance maths is metric underneath - a great-circle calculation
+  /// returns metres - and converts once, at the comparison. Storing the unit
   /// somebody types avoids the alternative, where 500 feet is saved as 152
   /// metres and read back as 499, which looks like the app losing their input.
   geofenceRadiusFeet Int     @default(500)
@@ -179,7 +179,7 @@ model Employee {
   /// so staff records can be matched later without a messy migration.
   externalId String? @unique
 
-  /// ADP TotalSource's "File #" for this person — ADP's own staff number,
+  /// ADP TotalSource's "File #" for this person - ADP's own staff number,
   /// which every row of the payroll import file needs. Not an identity number:
   /// it means nothing outside the practice's ADP account. Null until an admin
   /// enters it; the ADP export names anybody still missing one.
@@ -188,7 +188,7 @@ model Employee {
   firstName      String
   lastName       String
   preferredName  String?
-  /// Letters after their name — "MD", "APN-C" (September 2026). Set by an
+  /// Letters after their name - "MD", "APN-C" (September 2026). Set by an
   /// admin; printed beside the name on the clinical forms a provider makes.
   /// A title, not a licence number: those stay out (see no-sensitive-data).
   postNominals   String?
@@ -196,7 +196,7 @@ model Employee {
   /// A number colleagues can reach them on, shown in the Directory. Their own
   /// to set on their profile; an admin can set it too.
   phone          String?
-  /// Birthday — month and day only, never the year (decided with Dominguez,
+  /// Birthday - month and day only, never the year (decided with Dominguez,
   /// September 2026): enough for colleagues to wish somebody a happy
   /// birthday, without an age or a date of birth in the app. Shown on the
   /// home screen that week, on the Schedule and in the Directory. Set by an
@@ -208,7 +208,7 @@ model Employee {
   /// One line about themselves for the Directory, e.g. "Spanish speaker".
   about          String?
   /// The language the app speaks to them in: "en" or "es" (October 2026,
-  /// Dominguez — Spanish for the staff screens). Their own to choose.
+  /// Dominguez - Spanish for the staff screens). Their own to choose.
   language       String    @default("en")
   /// When their profile photo last changed, or null for none. Doubles as the
   /// photo URL's version, so a new photo is never served from a stale cache.
@@ -216,7 +216,7 @@ model Employee {
 
   role             Role             @default(EMPLOYEE)
   /// ACTIVE from the start (September 2026): nothing ever moved anybody out of
-  /// PENDING, and clocking in, the scheduler and the Directory all want ACTIVE —
+  /// PENDING, and clocking in, the scheduler and the Directory all want ACTIVE - 
   /// so the first imported staff could not clock in at all.
   employmentStatus EmploymentStatus @default(ACTIVE)
   payType          PayType          @default(HOURLY)
@@ -238,7 +238,7 @@ model Employee {
   /// hire's account exists before they can sign in.
   passwordHash       String?
   passwordUpdatedAt  DateTime?
-  /// When a welcome email — a link to choose a first password — last went
+  /// When a welcome email - a link to choose a first password - last went
   /// out. Null until one is sent; the Staff screen shows it so an admin knows
   /// who has been invited and who still needs to be.
   welcomeSentAt      DateTime?
@@ -254,16 +254,16 @@ model Employee {
   /// Whether this manager gets the nightly round-up of what needs a look.
   ///
   /// On by default, and theirs to turn off. The digest only sends when there is
-  /// something to say, so it is not noisy — but a practice with two managers
+  /// something to say, so it is not noisy - but a practice with two managers
   /// and one admin does not need all three chasing the same lapsed licence, and
   /// an unwanted daily email is one that gets filtered, taking the one that
   /// mattered with it. Ignored for employees, who never receive it.
   wantsDailyDigest     Boolean       @default(true)
-  /// "You're on tomorrow" — the evening before each day they work, on the
+  /// "You're on tomorrow" - the evening before each day they work, on the
   /// bell and by email (October 2026, Dominguez: "should be able to turn off
   /// as a user"). On by default; theirs to turn off on Email settings.
   wantsShiftReminders  Boolean       @default(true)
-  /// "Your week" on Sunday evening — hours worked, next week's shifts — on
+  /// "Your week" on Sunday evening - hours worked, next week's shifts - on
   /// the bell and by email (October 2026, Dominguez). Theirs to turn off.
   wantsWeeklySummary   Boolean       @default(true)
   /// The month ("2026-11") they last saw the start-of-month pop-up with their
@@ -273,7 +273,7 @@ model Employee {
   /// Dominguez: "certain managers should be notified of certain things").
   /// Stored as what is left out, so a part added later reaches everybody until
   /// somebody says otherwise. Set by the person or by an admin. A part nobody
-  /// is down for still goes to everyone who gets the round-up — see
+  /// is down for still goes to everyone who gets the round-up - see
   /// `email/digest-topics.ts`. The Time off part also decides who is told of a
   /// new request as it comes in.
   mutedDigestTopics    DigestTopic[] @default([])
@@ -432,7 +432,7 @@ model EmployeeLocation {
 /// The practice's time-off rules. One row, edited by an admin.
 ///
 /// Kept as data rather than constants because these are a policy decision the
-/// practice owns, and they will change — a new handbook, a new state rule, a
+/// practice owns, and they will change - a new handbook, a new state rule, a
 /// different carry-over. Defaults are Domi's starting point: 15 days PTO, 5
 /// sick days, 5 days of PTO carried into the next year.
 /// The practice's PTO rules. There is exactly one of these, and the database
@@ -440,7 +440,7 @@ model EmployeeLocation {
 /// be created even by two requests arriving at the same moment.
 ///
 /// Without it, two concurrent first reads both find nothing and both insert,
-/// and the practice quietly ends up with two policies — one of which nobody's
+/// and the practice quietly ends up with two policies - one of which nobody's
 /// edits ever reach.
 model PtoPolicy {
   id        String @id @default(uuid()) @db.Uuid
@@ -465,7 +465,7 @@ model PtoPolicy {
   prorateFirstYear Boolean @default(true)
 
   /// Sick days (October 2026, Dominguez): everybody is given the year's days,
-  /// never cut down for starting part-way — except hourly staff who started
+  /// never cut down for starting part-way - except hourly staff who started
   /// on or after this date, who earn them as they work (NJ earned sick leave:
   /// an hour for every 30 hours worked, up to the year's days). Null: nobody
   /// earns them; everybody is given them. Set to the day it was decided.
@@ -481,7 +481,7 @@ model PtoPolicy {
 }
 
 /// One person's own yearly allowance, when it is not the practice's (part-time
-/// or long-serving staff — Dominguez, September 2026). Either number may be
+/// or long-serving staff - Dominguez, September 2026). Either number may be
 /// null, meaning the practice's. Set by a manager or admin on the Time off
 /// screen. Prorated for a first year like the practice's.
 model PtoAllowance {
@@ -503,7 +503,7 @@ model PtoAllowance {
 
 /// What the app did not see, for one person in one policy year: days of PTO
 /// and sick time already taken before Domi Staff (the switch-over, September
-/// 2026 — Dominguez), and optionally what really carried over into that year.
+/// 2026 - Dominguez), and optionally what really carried over into that year.
 /// A null carry-over means "work it out", as for any other year.
 ///
 /// Counted as taken in that year's balance, and so in what carries on from it.
@@ -530,14 +530,14 @@ model PtoStartingPoint {
 
 /// Practice-wide scheduling rules the managers set for themselves.
 ///
-/// These started as constants in the code, which is the right place to start —
+/// These started as constants in the code, which is the right place to start - 
 /// the numbers had to come from somewhere and nobody had an opinion yet. They
 /// are here now because both turned out to be a guess standing in for something
 /// only the practice knows: how far ahead Domi publishes a rota, and what it
 /// treats as too many hours.
 ///
 /// A database-enforced singleton, the same shape as `PtoPolicy` and for the
-/// same reason — see the note on `PtoPolicyService.get`.
+/// same reason - see the note on `PtoPolicyService.get`.
 model PracticeSettings {
   id        String @id @default(uuid()) @db.Uuid
   singleton Int    @unique @default(1)
@@ -569,7 +569,7 @@ model PracticeSettings {
 /// PracticeSettings, and apart from it because it is payroll's business.
 ///
 /// The header and footer rows are copied from a worksheet the practice exported
-/// out of its own TotalSource account — ADP's instructions say the import must
+/// out of its own TotalSource account - ADP's instructions say the import must
 /// keep them. The employee rows of that worksheet are never stored. See
 /// exports/payroll/adp-worksheet.ts.
 model AdpSettings {
@@ -601,7 +601,7 @@ model AdpSettings {
 /// Half days are handled by `isHalfDay` on a single-day request rather than by
 /// pretending a date is a time.
 ///
-/// Balances and accrual are deliberately absent — the brief asks for requests
+/// Balances and accrual are deliberately absent - the brief asks for requests
 /// and approval, and how Domi accrues PTO is not settled. See
 /// docs/open-questions.md.
 model PtoRequest {
@@ -616,11 +616,11 @@ model PtoRequest {
   /// Only meaningful when startDate equals endDate.
   isHalfDay Boolean  @default(false)
 
-  /// The employee's reason, optional — sick leave should not require one.
+  /// The employee's reason, optional - sick leave should not require one.
   notes String?
 
   /// Asked for more than was left of the allowance, and said they understood
-  /// the rest may be unpaid (October 2026, Dominguez) — shown to whoever
+  /// the rest may be unpaid (October 2026, Dominguez) - shown to whoever
   /// decides it.
   pastBalance Boolean @default(false)
 
@@ -631,8 +631,8 @@ model PtoRequest {
 
   cancelledAt DateTime?
 
-  /// Set when an admin wrote down time off somebody had already taken — the
-  /// back-log from before Domi Staff, or a day nobody asked for in the app —
+  /// Set when an admin wrote down time off somebody had already taken - the
+  /// back-log from before Domi Staff, or a day nobody asked for in the app - 
   /// rather than it being asked for (October 2026, Dominguez). Such a row is
   /// APPROVED from the start and counts against the balance like any other;
   /// its comment, if any, is the reviewNote.
@@ -654,7 +654,7 @@ model PtoRequest {
 // Saved reports
 // ---------------------------------------------------------------------------
 
-/// A named set of export options — "Biweekly payroll", "North Bergen overtime".
+/// A named set of export options - "Biweekly payroll", "North Bergen overtime".
 ///
 /// The options are stored as JSON rather than columns because they are the
 /// export screen's own shape, and every added option would otherwise be a
@@ -688,7 +688,7 @@ model ReportPreset {
 ///
 /// The device itself proves where a punch happened, which is why a kiosk punch
 /// needs no geolocation. Binding is the whole security model here, so a device
-/// is created for a specific location and cannot be moved — pair a new one
+/// is created for a specific location and cannot be moved - pair a new one
 /// instead.
 model KioskDevice {
   id         String @id @default(uuid()) @db.Uuid
@@ -763,18 +763,18 @@ model Session {
 /// A scheduled shift, built by a manager in the scheduler.
 model Shift {
   id         String      @id @default(uuid()) @db.Uuid
-  /// Who works it — or null for an **open shift**: a slot the practice needs
+  /// Who works it - or null for an **open shift**: a slot the practice needs
   /// filled (say Front Desk at North Bergen, 8 to 4) that nobody is on yet.
   /// Open shifts are flagged on the schedule and in the nightly round-up until
   /// somebody is put in them.
   employeeId String?     @db.Uuid
   locationId String      @db.Uuid
-  /// What job the shift is for, when it matters — an open Front Desk shift
+  /// What job the shift is for, when it matters - an open Front Desk shift
   /// should be filled from Front Desk. Optional: most assigned shifts are
   /// simply "Rosa, 8 to 5".
   jobRoleId  String?     @db.Uuid
-  /// Worked from home. The location stays — it is the office the hours
-  /// belong to — but clocking in during the shift needs no office check.
+  /// Worked from home. The location stays - it is the office the hours
+  /// belong to - but clocking in during the shift needs no office check.
   isRemote   Boolean     @default(false)
   startsAt   DateTime
   endsAt     DateTime
@@ -812,7 +812,7 @@ model Shift {
 
 /// A **standing shift**: "Rosa works every Monday, 8 to 4" with no end date
 /// (asked for by Dominguez, September 2026). Like a repeating event, its
-/// shifts are written out as ordinary Shift rows — but only so far ahead
+/// shifts are written out as ordinary Shift rows - but only so far ahead
 /// (`STANDING_DAYS_AHEAD`), and the nightly job writes the next ones as the
 /// weeks go by, so the rota never runs dry and nobody picks a stop date.
 ///
@@ -821,7 +821,7 @@ model Shift {
 /// more.
 model ShiftSeries {
   id           String      @id @default(uuid()) @db.Uuid
-  /// Null for standing **open shifts** — a slot filled week after week.
+  /// Null for standing **open shifts** - a slot filled week after week.
   employeeId   String?     @db.Uuid
   locationId   String      @db.Uuid
   jobRoleId    String?     @db.Uuid
@@ -846,7 +846,7 @@ model ShiftSeries {
   status       ShiftStatus
   notes        String?
 
-  /// Its first date, and — once stopped — its last. Null: no end date.
+  /// Its first date, and - once stopped - its last. Null: no end date.
   startsOn      DateTime  @db.Date
   endsOn        DateTime? @db.Date
   /// The last date shifts have been written out to. The nightly job carries
@@ -929,7 +929,7 @@ model TimeEntry {
   isEarlyDeparture Boolean   @default(false)
   isManuallyEdited Boolean   @default(false)
   isMissingPunch   Boolean   @default(false)
-  /// Clocked in somewhere other than the shift they were on — another office,
+  /// Clocked in somewhere other than the shift they were on - another office,
   /// or from home with no work-from-home shift (October 2026, Dominguez). It
   /// is allowed, after a warning, and shown on the timesheet with the reason
   /// they gave, if any.
@@ -937,7 +937,7 @@ model TimeEntry {
   otherPlaceReason String?
   /// Still clocked in at midnight, so the app clocked them out (October 2026,
   /// Dominguez): `clockOutAt` is that midnight and this is when the app did
-  /// it. The entry is a missing punch for a manager to correct — listed until
+  /// it. The entry is a missing punch for a manager to correct - listed until
   /// one does (`isMissingPunch` goes false on the correction), and it cannot be
   /// approved before then. See `time-entries/auto-clock-out.service.ts`.
   autoClockedOutAt DateTime?
@@ -1010,8 +1010,8 @@ enum CorrectionStatus {
 }
 
 /// "Ask for a correction" (October 2026, Dominguez): somebody asks for the
-/// times on one of their own entries to be fixed — forgot to clock out, the
-/// phone died — with a reason. A manager approves it, which makes it an
+/// times on one of their own entries to be fixed - forgot to clock out, the
+/// phone died - with a reason. A manager approves it, which makes it an
 /// ordinary edit with that reason, or declines it with one.
 model CorrectionRequest {
   id            String           @id @default(uuid()) @db.Uuid
@@ -1037,7 +1037,7 @@ model CorrectionRequest {
 }
 
 /// "Your week" sent to somebody for the week starting `weekStart` (a Sunday)
-/// — claimed before it is sent, so the five-minute timer sends it once.
+/// - claimed before it is sent, so the five-minute timer sends it once.
 model WeeklySummary {
   employeeId String   @db.Uuid
   weekStart  DateTime @db.Date
@@ -1058,8 +1058,8 @@ enum ChecklistKind {
   OFFBOARDING
 }
 
-/// Who is expected to do a task. Not a permission — an admin can complete
-/// anything — but it tells a new hire which items are theirs.
+/// Who is expected to do a task. Not a permission - an admin can complete
+/// anything - but it tells a new hire which items are theirs.
 enum TaskOwner {
   EMPLOYEE
   MANAGER
@@ -1108,7 +1108,7 @@ model ChecklistTemplateTask {
   description String?
   owner       TaskOwner @default(ADMIN)
 
-  /// Due date relative to the anchor date of the instance — the hire date for
+  /// Due date relative to the anchor date of the instance - the hire date for
   /// onboarding, the last day for offboarding. Negative means before it.
   dueOffsetDays Int?
 
@@ -1213,7 +1213,7 @@ model ChecklistTaskReminder {
 
 /// Bytes held by the database file-storage adapter (see src/storage). Kept in
 /// its own table, with no foreign key to whatever references it, so the adapter
-/// stays a storage backend and knows nothing about checklists — swapping in a
+/// stays a storage backend and knows nothing about checklists - swapping in a
 /// blob store later touches only src/storage.
 ///
 /// Listing documents never touches this table, so a file listing cannot
@@ -1237,7 +1237,7 @@ model StoredFile {
 /// next request lands in another, so it would count almost nothing.
 ///
 /// The email is stored hashed. The throttle needs to know how many *different*
-/// accounts an address has gone after, not which — and a plaintext column here
+/// accounts an address has gone after, not which - and a plaintext column here
 /// would be a standing list of who somebody tried to sign in as.
 model LoginAttempt {
   id        String   @id @default(uuid()) @db.Uuid
@@ -1295,13 +1295,13 @@ enum PayrollExportStatus {
 ///
 /// The brief asks for this so an export can be re-run or audited, and that is
 /// exactly what it is for: which hours left the building, for what period, to
-/// which system, produced by whom, and the file itself — byte for byte, so a
+/// which system, produced by whom, and the file itself - byte for byte, so a
 /// disagreement with payroll six weeks later can be settled by looking rather
 /// than by re-deriving from data that may since have changed.
 model PayrollExport {
   id String @id @default(uuid()) @db.Uuid
 
-  /// Which exporter produced it — "spreadsheet", "adp-totalsource". A string
+  /// Which exporter produced it - "spreadsheet", "adp-totalsource". A string
   /// rather than an enum so adding a provider is a new class, not a migration.
   target String
   status PayrollExportStatus @default(GENERATED)
@@ -1366,13 +1366,13 @@ model PayrollExportEntry {
 // ---------------------------------------------------------------------------
 
 enum CredentialKind {
-  /// A state professional licence — medical, nursing, pharmacy.
+  /// A state professional licence - medical, nursing, pharmacy.
   LICENSE
   /// Board certification, or a specialty credential.
   CERTIFICATION
   /// CPR / BLS / ACLS card.
   LIFE_SUPPORT
-  /// DEA registration, CLIA, NPI — anything with a renewal date.
+  /// DEA registration, CLIA, NPI - anything with a renewal date.
   REGISTRATION
   IMMUNIZATION
   BACKGROUND_CHECK
@@ -1391,7 +1391,7 @@ enum CredentialKind {
 /// renews every couple of years, long after onboarding is finished, and the
 /// renewal has nowhere to go if the only home is a one-off task.
 ///
-/// For a medical practice this is the compliance risk that bites quietly —
+/// For a medical practice this is the compliance risk that bites quietly - 
 /// nobody notices a lapsed licence until somebody asks for it.
 model EmployeeCredential {
   id         String         @id @default(uuid()) @db.Uuid
@@ -1399,7 +1399,7 @@ model EmployeeCredential {
   kind       CredentialKind
   /// What it is, in the practice's own words: "NJ Registered Nurse licence".
   name       String
-  /// Who issued it. Optional — not every credential has a meaningful issuer.
+  /// Who issued it. Optional - not every credential has a meaningful issuer.
   issuer     String?
   issuedOn   DateTime?      @db.Date
   /// The whole point of the record. Whole days, like every other date here.
@@ -1430,7 +1430,7 @@ model EmployeeCredential {
 }
 
 /// How near a credential is to running out when its holder is reminded
-/// (October 2026, Dominguez — making the app smarter).
+/// (October 2026, Dominguez - making the app smarter).
 enum CredentialReminderStage {
   /// 60 days or fewer to go.
   DAYS_60
@@ -1458,8 +1458,8 @@ model CredentialReminder {
   @@map("credential_reminders")
 }
 
-/// A license or certificate the practice asks for — "DEA registration",
-/// "Flu vaccine" — and which job roles need it (Dominguez, September 2026).
+/// A license or certificate the practice asks for - "DEA registration",
+/// "Flu vaccine" - and which job roles need it (Dominguez, September 2026).
 /// Managers make and change these in the app; the ones a migration starts
 /// with are only a starting point.
 ///
@@ -1485,7 +1485,7 @@ model CredentialType {
   @@map("credential_types")
 }
 
-/// That a job role needs a license type — required, or optional ("worth
+/// That a job role needs a license type - required, or optional ("worth
 /// having": shown on the person's list but never chased when missing).
 model CredentialRequirement {
   credentialTypeId String  @db.Uuid
@@ -1505,7 +1505,7 @@ model CredentialRequirement {
 // ---------------------------------------------------------------------------
 
 /// A post on the staff noticeboard. Written by an admin, read by everyone who
-/// is signed in — never shown on the public login page, which anyone on the
+/// is signed in - never shown on the public login page, which anyone on the
 /// internet can open.
 ///
 /// While any post exists, exactly one is primary: it is the first thing on the
@@ -1520,7 +1520,7 @@ model Announcement {
   isPrimary       Boolean @default(false)
   /// Also shown on the front-desk time clock (October 2026, Dominguez). Off
   /// unless an admin ticks it: patients can see the tablet, so only the posts
-  /// chosen for it appear there — read-only, no likes, comments or poll.
+  /// chosen for it appear there - read-only, no likes, comments or poll.
   showOnTimeClock Boolean @default(false)
 
   /// The post in Spanish, for staff who switch News to Español (October
@@ -1586,8 +1586,8 @@ model AnnouncementLike {
 }
 
 /// A poll on a News post (October 2026, Dominguez): a question and its
-/// choices, written by the admin with the post. **Votes are named** — the
-/// post shows who picked what — which is the difference from a pulse survey,
+/// choices, written by the admin with the post. **Votes are named** - the
+/// post shows who picked what - which is the difference from a pulse survey,
 /// whose answers are truly anonymous. The choices are fixed once anybody has
 /// voted; the admin can close voting and open it again.
 model AnnouncementPoll {
@@ -1646,7 +1646,7 @@ model AnnouncementPollVote {
 ///
 /// Not the same thing as `Employee.role`, which is what somebody may *do in
 /// this app* (Employee / Manager / Admin). A job role called "Administrative"
-/// decides which resources a person sees and nothing else — it grants no
+/// decides which resources a person sees and nothing else - it grants no
 /// access. The two are kept apart so that tidying the job list can never
 /// quietly hand somebody the payroll export.
 ///
@@ -1680,7 +1680,7 @@ model JobRole {
   /// People in this role see their own licenses and onboarding under Team.
   /// Starts true for Provider only (September 2026).
   seesOwnPersonnelTabs   Boolean                 @default(false)
-  /// People in this role get the clinical forms under Team — the 99483
+  /// People in this role get the clinical forms under Team - the 99483
   /// cognitive assessment. Starts true for Provider only (September 2026).
   /// The forms run in the browser and store nothing, so this shows a screen
   /// and grants no access to anything.
@@ -1688,7 +1688,7 @@ model JobRole {
   /// People in this role get the Annual Wellness Visit form under Resources →
   /// Forms (October 2026, Dominguez): Medical Assistants fill in its second
   /// page, providers its first. Starts true for Provider and Medical
-  /// Assistant. Like the other forms it stores nothing — a screen, no power.
+  /// Assistant. Like the other forms it stores nothing - a screen, no power.
   usesWellnessForm       Boolean                 @default(false)
   /// People in this role see a rep's cell phone on a rep lunch (October
   /// 2026, Dominguez: "front desk can see the cell"). Starts true for Front
@@ -1700,7 +1700,7 @@ model JobRole {
 
 /// Somebody may hold several job roles (front desk staff who also work as
 /// MAs). One of them is their **main** job role (October 2026, Dominguez:
-/// "everyone should have a 'primary' role") — first in shift forms, the one a
+/// "everyone should have a 'primary' role") - first in shift forms, the one a
 /// shift gets when none is named, and where the Directory lists them when
 /// they are in without a shift saying otherwise. At most one per person, by a
 /// partial unique index in the migration; the service keeps "at least one" by
@@ -1738,7 +1738,7 @@ model Resource {
   jobRoleId String?      @db.Uuid
   kind      ResourceKind
   title     String
-  /// For a LINK. Only http(s) — checked in the service.
+  /// For a LINK. Only http(s) - checked in the service.
   url       String?
   /// For a PAGE, or a line of explanation under a LINK.
   body      String?
@@ -1769,14 +1769,14 @@ enum UnavailabilityKind {
 }
 
 /// When somebody cannot work. Staff set their own; the scheduler warns when a
-/// shift lands on it, but does not refuse — a manager sometimes has to ask.
+/// shift lands on it, but does not refuse - a manager sometimes has to ask.
 ///
 /// Times are wall-clock times at the shift's location ("17:00"), not instants:
 /// "after 5" means after 5 in North Bergen whatever the clocks did. Both null
 /// means the whole day.
 ///
 /// **A published week is fixed.** Staff may change their availability any time,
-/// but a change only reaches weeks whose rota is not yet published — confirmed
+/// but a change only reaches weeks whose rota is not yet published - confirmed
 /// by Dominguez, September 2026. So a weekly rule carries the dates it applies
 /// between: a new one starts at the first open week, and removing one ends it
 /// there rather than rewriting weeks people are already working to. A one-off
@@ -1811,7 +1811,7 @@ model Unavailability {
 }
 
 // ---------------------------------------------------------------------------
-// Events — office meetings, provider meetings, a wellness day (September 2026)
+// Events - office meetings, provider meetings, a wellness day (September 2026)
 //
 // Asked for by Dominguez: something on the schedule that is not a shift, for
 // everyone, one job role or one office, and on people's phones through the
@@ -1823,8 +1823,8 @@ model Unavailability {
 // - **Managers and admins** make, change and remove them.
 // - **No replies** (going / can't go) for now.
 //
-// A **closure** — Christmas, Christmas Eve from 1pm, a burst pipe at one
-// office — is the same record with `kind: CLOSURE`, for both offices or one.
+// A **closure** - Christmas, Christmas Eve from 1pm, a burst pipe at one
+// office - is the same record with `kind: CLOSURE`, for both offices or one.
 // It warns wherever a shift lands in it and never refuses one, and changes
 // nothing about pay: how holidays are paid is not settled
 // (docs/open-questions.md).
@@ -1837,11 +1837,11 @@ enum PracticeEventKind {
   EVENT
   /// An office shut: warned about on the rota, in its forms and the round-up.
   CLOSURE
-  /// A named day — Election Day, Veterans Day — that shuts nothing. For
+  /// A named day - Election Day, Veterans Day - that shuts nothing. For
   /// everyone, all day; no notification, no rota warning.
   HOLIDAY
   /// When a test is offered at an office: "US + ECHO 8–2, West New York".
-  /// For everyone. When it is on — never who is booked into it.
+  /// For everyone. When it is on - never who is booked into it.
   DIAGNOSTIC
   /// A drug rep bringing lunch to an office, with the rep from the list.
   REP_LUNCH
@@ -1852,7 +1852,7 @@ enum EventAudience {
   EVERYONE
   /// One job role. Events made before "Chosen" still use it.
   JOB_ROLE
-  /// One office — and for a closure, the office that is shut.
+  /// One office - and for a closure, the office that is shut.
   LOCATION
   /// Any mix of job roles, offices and people, in PracticeEventInvitee
   /// (September 2026: "Providers, Kayla, Angelina").
@@ -1882,9 +1882,9 @@ model PracticeEvent {
   title       String
   /// Plain text. Line breaks are kept; nothing is interpreted as markup.
   description String?
-  /// Where it is, as typed: "North Bergen office — break room", "Zoom".
+  /// Where it is, as typed: "North Bergen office - break room", "Zoom".
   place       String?
-  /// A video call to join — pasted from Google Meet, Zoom or Teams. https only,
+  /// A video call to join - pasted from Google Meet, Zoom or Teams. https only,
   /// so it can never be a script dressed up as a link.
   meetingUrl  String?
   allDay      Boolean           @default(false)
@@ -1894,7 +1894,7 @@ model PracticeEvent {
   audience     EventAudience @default(EVERYONE)
   /// For JOB_ROLE. Null after the role is deleted, which leaves nobody invited.
   jobRoleId    String?       @db.Uuid
-  /// For LOCATION — and for a closure, the one office that is shut.
+  /// For LOCATION - and for a closure, the one office that is shut.
   locationId   String?       @db.Uuid
   /// The office it happens at, for a diagnostics date or a rep lunch. Not who
   /// it is for: both are for everyone, wherever they work.
@@ -1940,7 +1940,7 @@ enum RepFood {
 enum RepStatus {
   PREFERRED
   OK
-  /// Fine, with conditions — what they are is in the notes.
+  /// Fine, with conditions - what they are is in the notes.
   RESTRICTED
   /// Not to be booked. Warned about when a lunch is added, never refused.
   DO_NOT_BOOK
@@ -1970,7 +1970,7 @@ model Rep {
   @@map("reps")
 }
 
-/// The night-before rep lunch notice for one office and day — "Rep lunch
+/// The night-before rep lunch notice for one office and day - "Rep lunch
 /// tomorrow" or "No rep lunch tomorrow, bring your own" (October 2026,
 /// Dominguez). Claimed before it is sent, so the five-minute timer sends each
 /// once however often it runs.
@@ -1988,7 +1988,7 @@ model LunchNotice {
 }
 
 /// Who a CHOSEN event is for: each row is one person, one job role or one
-/// office — exactly one of the three (a database check says so). Removing the
+/// office - exactly one of the three (a database check says so). Removing the
 /// person, role or office removes the row.
 model PracticeEventInvitee {
   id         String  @id @default(uuid()) @db.Uuid
@@ -2009,7 +2009,7 @@ model PracticeEventInvitee {
   @@map("practice_event_invitees")
 }
 
-/// Going, can't go, or maybe (October 2026, Dominguez). Meetings only — not
+/// Going, can't go, or maybe (October 2026, Dominguez). Meetings only - not
 /// closures, holidays, diagnostics or rep lunches.
 enum EventReplyAnswer {
   GOING
@@ -2021,7 +2021,7 @@ enum EventReplyAnswer {
 /// is going and who can't (Dominguez's choice), like a calendar invite. Each
 /// date of a series is answered on its own; an answer is cleared when the
 /// date's time changes, and goes with the date when it is removed. Only the
-/// answer — no note.
+/// answer - no note.
 model PracticeEventReply {
   id         String           @id @default(uuid()) @db.Uuid
   eventId    String           @db.Uuid
@@ -2070,7 +2070,7 @@ model PracticeEventSeries {
 // person to what they said. Answers carry no person and no time. Who has taken
 // part is kept apart (so nobody answers twice, and a manager can see how many
 // have), with no link to which answers were theirs. Results appear only once a
-// survey is closed and at least three people answered — see
+// survey is closed and at least three people answered - see
 // docs/architecture.md for why "closed" as well as "three".
 //
 // `no-sensitive-data.spec.ts` fails if a person or a timestamp is ever added
@@ -2144,7 +2144,7 @@ model SurveyQuestion {
   @@map("survey_questions")
 }
 
-/// One person's answers — with no person, and no time.
+/// One person's answers - with no person, and no time.
 model SurveyResponse {
   id       String @id @default(uuid()) @db.Uuid
   surveyId String @db.Uuid
@@ -2171,7 +2171,7 @@ model SurveyAnswer {
   @@map("survey_answers")
 }
 
-/// That somebody has answered — not what, and not when. Keeps anybody from
+/// That somebody has answered - not what, and not when. Keeps anybody from
 /// answering twice, and gives the manager a response count.
 model SurveyParticipant {
   surveyId   String @db.Uuid
@@ -2187,7 +2187,7 @@ model SurveyParticipant {
 // ---------------------------------------------------------------------------
 // 360 feedback (October 2026, Dominguez: "a survey on all employees by all
 // employees, completely anonymous though produces a report for the employee
-// that we — as admin/managers — are able to set up a time to meet with the
+// that we - as admin/managers - are able to set up a time to meet with the
 // employee and discuss").
 //
 // Everybody here when it opens is asked about everybody else, and about
@@ -2195,7 +2195,7 @@ model SurveyParticipant {
 // somebody (`Review360Response`, `Review360Answer`) carries no rater and no
 // time; that somebody has rated somebody (`Review360Rated`) is kept apart,
 // only so nobody rates the same person twice, with no link to the answers.
-// A person's report is for managers and admins only — never the person — and
+// A person's report is for managers and admins only - never the person - and
 // only once it is closed and at least three colleagues rated them.
 //
 // `no-sensitive-data.spec.ts` fails if a rater or a timestamp is ever added
@@ -2257,7 +2257,7 @@ model Review360Subject {
   @@map("review_360_subjects")
 }
 
-/// What one person said about one person — with no rater, and no time.
+/// What one person said about one person - with no rater, and no time.
 /// `isSelf` is a person's answers about themselves.
 model Review360Response {
   id        String  @id @default(uuid()) @db.Uuid
@@ -2288,7 +2288,7 @@ model Review360Answer {
 }
 
 /// That somebody has rated somebody, or passed them over ("I don't work with
-/// them enough") — not what, and not when. Keeps anybody from rating the same
+/// them enough") - not what, and not when. Keeps anybody from rating the same
 /// person twice, and shows them their own progress.
 model Review360Rated {
   reviewId  String  @db.Uuid
@@ -2361,13 +2361,13 @@ model Feedback {
   @@map("feedback")
 }
 
-/// A person's profile photo — the one thing staff upload to the app.
+/// A person's profile photo - the one thing staff upload to the app.
 ///
 /// A deliberate, narrow exception to *Data this app does not hold* (decided
 /// by Dominguez, September 2026): a picture of themselves that they choose,
 /// that colleagues see in the Directory and the header. The browser crops it
-/// square, shrinks it and re-encodes it as a small JPEG before it is sent —
-/// which also drops the camera's metadata, location included — and the server
+/// square, shrinks it and re-encodes it as a small JPEG before it is sent - 
+/// which also drops the camera's metadata, location included - and the server
 /// accepts nothing else. It is removable at any time, and goes with them if
 /// the person is deleted.
 model EmployeePhoto {
@@ -2437,12 +2437,12 @@ enum NotificationKind {
 }
 
 /// Something the app wants one person to know, shown under the bell in the
-/// header — "your time off was approved", "your schedule changed".
+/// header - "your time off was approved", "your schedule changed".
 ///
 /// One row per person per event, written at the moment it happens, with the
 /// words as they were then: a notification is a record of being told, not a
 /// live view, and reads the same tomorrow. It links to the screen where the
-/// thing is. Nothing sensitive goes in it — the same wording an email would
+/// thing is. Nothing sensitive goes in it - the same wording an email would
 /// carry, and often the same moment. Deleted by the nightly job after 90 days,
 /// read or not.
 model Notification {
@@ -2463,13 +2463,13 @@ model Notification {
 }
 
 // ---------------------------------------------------------------------------
-// Closing checklists — what Front Desk and Medical Assistants confirm at
+// Closing checklists - what Front Desk and Medical Assistants confirm at
 // clock-out (September 2026). The template belongs to a job role and is the
 // managers' to edit; each clock-out keeps its own copy of the wording, so a
 // later edit never rewrites what somebody ticked.
 //
 // Never anything about a patient: ticks, numbers and supplies only. There is
-// deliberately no free-text box — see "Data this app does not hold".
+// deliberately no free-text box - see "Data this app does not hold".
 // ---------------------------------------------------------------------------
 
 enum ClosingItemKind {
@@ -2527,7 +2527,7 @@ model ClosingItem {
   @@map("closing_items")
 }
 
-/// One clock-out's checklist. Written even when nothing was filled in — a
+/// One clock-out's checklist. Written even when nothing was filled in - a
 /// clock-out that skipped the checklist is itself worth a manager knowing.
 model ClosingRecord {
   id          String   @id @default(uuid()) @db.Uuid
@@ -2541,7 +2541,7 @@ model ClosingRecord {
   /// False when they clocked out without filling it in (a manager clocking
   /// them out, an old browser, a tablet that lost its connection).
   submitted   Boolean  @default(true)
-  /// How many ticked tasks were missed and counts fell short — kept so the
+  /// How many ticked tasks were missed and counts fell short - kept so the
   /// round-up does not have to reread every answer.
   gaps        Int      @default(0)
   createdAt   DateTime @default(now())
@@ -2606,7 +2606,7 @@ enum CalendarInviteKind {
   EVENT
 }
 
-/// One invite the app has sent from the "Domi Staff" Google calendar — for a
+/// One invite the app has sent from the "Domi Staff" Google calendar - for a
 /// published shift (to the person on it) or a practice event (to the people
 /// it is for). Dominguez, September 2026: staff get real invites instead of
 /// waiting for a subscribed feed to refresh.
@@ -2660,7 +2660,7 @@ model ProductivityPlan {
   id         String @id @default(uuid()) @db.Uuid
   employeeId String @unique @db.Uuid
 
-  /// Length of one counting interval — two weeks on the sheet, a pay period.
+  /// Length of one counting interval - two weeks on the sheet, a pay period.
   intervalWeeks         Int      @default(2)
   /// How many intervals make one statement. The sheet adds two.
   intervalsPerStatement Int      @default(1)
@@ -2686,7 +2686,7 @@ model ProductivityPlan {
   @@map("productivity_plans")
 }
 
-/// One provider's productivity for one period — a row of the sheet. Private
+/// One provider's productivity for one period - a row of the sheet. Private
 /// to managers and admins while it is a draft; once published, the provider
 /// it is about can read it, and nobody else can.
 model ProductivityStatement {
@@ -2761,11 +2761,11 @@ model ProductivityCount {
 }
 
 // ---------------------------------------------------------------------------
-// Staff profiles — the admins-only record (October 2026)
+// Staff profiles - the admins-only record (October 2026)
 // ---------------------------------------------------------------------------
 
 /// Somebody's home address and who to call in an emergency (October 2026,
-/// Dominguez — a deliberate change to *Data this app does not hold*). Read and
+/// Dominguez - a deliberate change to *Data this app does not hold*). Read and
 /// changed only by admins, on the person's staff profile.
 ///
 /// Its own table rather than columns on Employee, on purpose: an Employee row
@@ -2801,7 +2801,7 @@ enum EmploymentChangeKind {
   PROMOTION
   /// A raise, or any other change to pay alone.
   PAY_CHANGE
-  /// A new position that is not a promotion — a move sideways.
+  /// A new position that is not a promotion - a move sideways.
   POSITION_CHANGE
   OTHER
 }
@@ -2833,7 +2833,7 @@ model EmploymentChange {
   effectiveOn DateTime             @db.Date
   kind        EmploymentChangeKind
 
-  /// A job title — "Lead Medical Assistant" — free text, since titles and
+  /// A job title - "Lead Medical Assistant" - free text, since titles and
   /// job roles are not the same list. Null when only pay changed.
   position String?
   /// Both or neither (a database constraint), never negative.
@@ -2857,7 +2857,7 @@ model EmploymentChange {
 ///
 /// A line is a person ("Kayla Bermeo") or a phone ("NB Front Desk"), in a
 /// section ("Admin Team"). `homeExtension` is the 5xx number that rings the
-/// person's mobile on the days they work from home (`homeDays`, as written —
+/// person's mobile on the days they work from home (`homeDays`, as written - 
 /// "Thursday"). It is an extension, not their mobile number, which the app
 /// does not hold. A person line may be matched to their account so their
 /// Directory card shows it too.
@@ -2881,7 +2881,7 @@ model OfficeExtension {
 }
 
 /// The fewest people the practice wants on in one job role at one office on a
-/// day the office is open — "North Bergen needs at least 2 Front Desk"
+/// day the office is open - "North Bergen needs at least 2 Front Desk"
 /// (October 2026, Dominguez). Optional: with none, "Too many off at once" goes
 /// by more than half. Managers set it on Job roles. See
 /// `staffing/minimums.ts`.
@@ -2913,7 +2913,7 @@ model AssistantUsage {
   @@map("assistant_usage")
 }
 
-/// "Someone called out: ask who can cover" (October 2026, Dominguez — a
+/// "Someone called out: ask who can cover" (October 2026, Dominguez - a
 /// "smarter" idea). A manager asks chosen people, by bell and email, whether
 /// they can take an open shift; the first to say yes gets it. Staff still never
 /// see open shifts: only the people asked hear about this one. One request per
@@ -2921,7 +2921,7 @@ model AssistantUsage {
 model CoverRequest {
   id        String    @id @default(uuid()) @db.Uuid
   shiftId   String    @db.Uuid
-  /// The manager who asked — told the answers. Kept if they leave.
+  /// The manager who asked - told the answers. Kept if they leave.
   askedById String?   @db.Uuid
   createdAt DateTime  @default(now())
   /// Set when it is over: somebody said yes, the manager stopped asking, or
@@ -2958,10 +2958,10 @@ model CoverAsk {
 // Required reading and tasks (October 2026, Dominguez: "something the
 // admin/managers can require for need to know information or required
 // tasks"). A manager asks a set of people to confirm they have read
-// something — a News post, a Resources page, a few lines — or to do
+// something - a News post, a Resources page, a few lines - or to do
 // something and say so. The app nags; it never stops anybody clocking in.
 //
-// Records *that* somebody confirmed, and when — never a document or a
+// Records *that* somebody confirmed, and when - never a document or a
 // signature (see "Data this app does not hold").
 // ---------------------------------------------------------------------------
 
@@ -2979,7 +2979,7 @@ model Requirement {
   /// What to read or do, in plain text. Line breaks are kept.
   body  String?
   /// Somewhere else to read or do it: a training video, a Drive document.
-  /// https only — checked in the service.
+  /// https only - checked in the service.
   url   String?
 
   /// What to read, when it is in the app. Either, both or neither.
@@ -2990,7 +2990,7 @@ model Requirement {
   dueOn DateTime? @db.Date
 
   /// For everybody working here. Otherwise the people, job roles and offices
-  /// in RequirementTarget — read as they are today, so a new hire in a job
+  /// in RequirementTarget - read as they are today, so a new hire in a job
   /// role is asked too.
   everyone Boolean @default(false)
 
@@ -3064,7 +3064,7 @@ model RequirementNudge {
 // ---------------------------------------------------------------------------
 // Provider on-call (October 2026, Dominguez: "provider on call schedule will
 // def be needed"). Which provider takes the after-hours calls, a day at a
-// time — "usually a day 12-12", the answering service's day. A usual pattern
+// time - "usually a day 12-12", the answering service's day. A usual pattern
 // by weekday, with exceptions for a week of the month ("every weekend except
 // the 4th"), changed for a single day by a manager or swapped between two
 // providers. Not paid and not hours: never on the timesheet, the rota's
@@ -3135,7 +3135,7 @@ enum OnCallSwapStatus {
   CANCELLED
 }
 
-/// A provider asking another to take an on-call day — and, if they like, to
+/// A provider asking another to take an on-call day - and, if they like, to
 /// give one back. Takes effect when the other says yes.
 model OnCallSwap {
   id          String           @id @default(uuid()) @db.Uuid
@@ -3160,7 +3160,7 @@ model OnCallSwap {
 }
 
 // ---------------------------------------------------------------------------
-// Phone notifications (October 2026, Dominguez — from the survey of similar
+// Phone notifications (October 2026, Dominguez - from the survey of similar
 // apps). A device where somebody turned on notifications: whatever rings their
 // bell is also pushed there, through the browser maker's push service (Apple's,
 // Google's, Mozilla's), encrypted so that service cannot read it. No app
@@ -3175,7 +3175,7 @@ model PushSubscription {
   endpoint   String    @unique
   p256dh     String
   auth       String
-  /// "iPhone", "Android", "Mac" — so somebody can tell their devices apart.
+  /// "iPhone", "Android", "Mac" - so somebody can tell their devices apart.
   device     String?
   createdAt  DateTime  @default(now())
   lastSentAt DateTime?
@@ -3187,7 +3187,7 @@ model PushSubscription {
 }
 
 /// The app's own key pair for phone notifications, made when an admin switches
-/// them on in Practice settings — so nobody has to make one in a terminal and
+/// them on in Practice settings - so nobody has to make one in a terminal and
 /// paste it into Vercel. `VAPID_PUBLIC_KEY` / `VAPID_PRIVATE_KEY`, if set,
 /// win. The private key only lets this app send notifications to the devices
 /// that turned them on; changing it means every device turns them on again.
@@ -3230,7 +3230,7 @@ enum DiagnosticAnswer {
   NA
 }
 
-/// A test the practice books — a column on the board: "Abdomen", "ECHO",
+/// A test the practice books - a column on the board: "Abdomen", "ECHO",
 /// "EEG". How long it takes, the prep, and the self-pay price.
 model DiagnosticTest {
   id        String               @id @default(uuid()) @db.Uuid
@@ -3253,7 +3253,7 @@ model DiagnosticTest {
   @@map("diagnostic_tests")
 }
 
-/// An insurance plan — a row on the board, for both sections: "Aetna -
+/// An insurance plan - a row on the board, for both sections: "Aetna -
 /// COMM", with how it is found in eCW (the insurance, payer ID and
 /// insurance ID) and anything to say on the phone ("Must say QualCare").
 model DiagnosticPlan {
@@ -3271,7 +3271,7 @@ model DiagnosticPlan {
   @@map("diagnostic_plans")
 }
 
-/// One cell of the board. No row is "not known yet — ask".
+/// One cell of the board. No row is "not known yet - ask".
 model DiagnosticCoverage {
   id        String           @id @default(uuid()) @db.Uuid
   testId    String           @db.Uuid
@@ -3298,7 +3298,7 @@ model DiagnosticReminder {
   @@map("diagnostic_reminders")
 }
 
-/// A CPT or HCPCS code — a row on the reimbursements board: "99213", with
+/// A CPT or HCPCS code - a row on the reimbursements board: "99213", with
 /// a modifier where the sheet had one ("99213 (95)"), and what it is.
 model ReimbursementCode {
   id          String              @id @default(uuid()) @db.Uuid
@@ -3312,7 +3312,7 @@ model ReimbursementCode {
   @@map("reimbursement_codes")
 }
 
-/// An insurance — a column on the reimbursements board.
+/// An insurance - a column on the reimbursements board.
 model ReimbursementPayer {
   id        String              @id @default(uuid()) @db.Uuid
   name      String
@@ -3326,8 +3326,8 @@ model ReimbursementPayer {
   @@map("reimbursement_payers")
 }
 
-/// What one insurance pays for one code: an amount, or — where the sheet
-/// gave two ("$34.45 / 75.26", "$24.79 (Dr) 21.07 (NP)") — the words as
+/// What one insurance pays for one code: an amount, or - where the sheet
+/// gave two ("$34.45 / 75.26", "$24.79 (Dr) 21.07 (NP)") - the words as
 /// written. Exactly one of the two.
 model ReimbursementRate {
   id        String             @id @default(uuid()) @db.Uuid
@@ -3347,8 +3347,8 @@ model ReimbursementRate {
 // Vendor payments (October 2026)
 // ---------------------------------------------------------------------------
 //
-// What the practice pays its vendors and contractors — invoices, checks, cash
-// — and whether each has gone out and cleared, in place of the "Payments to
+// What the practice pays its vendors and contractors - invoices, checks, cash
+// - and whether each has gone out and cleared, in place of the "Payments to
 // vendors" spreadsheet. Admins only. Money and paperwork only: never a
 // patient's name (the sheet's "readings" notes had them; here a note says how
 // many, not whose). `no-sensitive-data.spec.ts` pins the fields.
@@ -3399,7 +3399,7 @@ model VendorPayment {
   status        VendorPaymentStatus @default(TO_PAY)
   /// When it was sent or given.
   sentOn        DateTime?           @db.Date
-  /// When it was received and deposited — done.
+  /// When it was received and deposited - done.
   completedOn   DateTime?           @db.Date
   /// Short, and never a patient's name.
   note          String?
@@ -3417,8 +3417,8 @@ model VendorPayment {
 // Phone book for referrals (October 2026)
 // ---------------------------------------------------------------------------
 //
-// The practice's list of where patients are sent — labs, hospitals, imaging,
-// home care, equipment, specialists — with the numbers staff need to make the
+// The practice's list of where patients are sent - labs, hospitals, imaging,
+// home care, equipment, specialists - with the numbers staff need to make the
 // referral. Loaded from the practice's Word phone book, and kept by staff:
 // anybody signed in may read, add, change or remove an entry. About the
 // places, never a patient: a note says what the place takes, not whom was sent
@@ -3426,7 +3426,7 @@ model VendorPayment {
 
 model ReferralContact {
   id          String   @id @default(uuid()) @db.Uuid
-  /// "Labs", "Hospitals", "Cardiology" — the heading it is listed under.
+  /// "Labs", "Hospitals", "Cardiology" - the heading it is listed under.
   category    String
   /// The place, or the doctor and the practice.
   name        String
@@ -3455,7 +3455,7 @@ model ReferralContact {
 model ReferralOffice {
   id        String  @id @default(uuid()) @db.Uuid
   contactId String  @db.Uuid
-  /// "Hoboken", "Main office" — optional.
+  /// "Hoboken", "Main office" - optional.
   label     String?
   address   String?
   phone     String?
@@ -3468,7 +3468,7 @@ model ReferralOffice {
   @@map("referral_offices")
 }
 
-/// Who reviews a provider's patient schedule (in eCW) on each weekday — the
+/// Who reviews a provider's patient schedule (in eCW) on each weekday - the
 /// usual pattern (October 2026, Dominguez: "admin/manager/staff that are
 /// responsible for reviewing providers schedule … so they are aware they are
 /// to review a certain schedule and others are aware which schedule is being

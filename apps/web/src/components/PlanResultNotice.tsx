@@ -6,7 +6,7 @@ const REASON_LABELS: Record<string, string> = {
   ON_APPROVED_LEAVE: 'on approved leave',
 };
 
-/// What a bulk operation actually did — including what it refused to do, which
+/// What a bulk operation actually did - including what it refused to do, which
 /// is the part a manager needs.
 export function PlanResultNotice({
   result,
@@ -57,7 +57,7 @@ export function PlanResultNotice({
                   month: 'short',
                   day: 'numeric',
                 })}{' '}
-                — {REASON_LABELS[skip.reason] ?? skip.detail}
+                - {REASON_LABELS[skip.reason] ?? skip.detail}
               </li>
             ))}
             {result.skipped.length > 8 && <li>…and {result.skipped.length - 8} more</li>}
@@ -74,7 +74,7 @@ export function PlanResultNotice({
           <ul className="mt-1 space-y-0.5 text-xs">
             {result.overtime.slice(0, 8).map((week) => (
               <li key={`${week.employeeId}-${week.weekStart}`}>
-                <span className="font-medium">{week.employeeName}</span> — week of{' '}
+                <span className="font-medium">{week.employeeName}</span> - week of{' '}
                 {new Date(`${week.weekStart}T00:00:00Z`).toLocaleDateString(undefined, {
                   timeZone: 'UTC',
                   month: 'short',

@@ -52,11 +52,11 @@ describe('declineWording', () => {
 
   it('sends the first name, the dates and the manager’s reason, and trims what comes back', async () => {
     const ai = {
-      json: jest.fn().mockResolvedValue({ reason: '  Sorry Frankie — we need you that day.  ' }),
+      json: jest.fn().mockResolvedValue({ reason: '  Sorry Frankie - we need you that day.  ' }),
     };
     await expect(
       declineWording(ai as never, prisma() as never, 'req-1', 'mgr-1', 'christmas week is full'),
-    ).resolves.toBe('Sorry Frankie — we need you that day.');
+    ).resolves.toBe('Sorry Frankie - we need you that day.');
     const [managerId, request] = ai.json.mock.calls[0];
     expect(managerId).toBe('mgr-1');
     expect(request.prompt).toContain('Person: Frankie');

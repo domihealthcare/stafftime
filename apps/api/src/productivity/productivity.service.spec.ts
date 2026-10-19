@@ -286,7 +286,7 @@ describe('publishing', () => {
 });
 
 describe('what a provider can read', () => {
-  it('is only their own, and only what is published — the person comes from the session', async () => {
+  it('is only their own, and only what is published - the person comes from the session', async () => {
     const { service, prisma } = build();
     const shown = await service.mine(provider);
     expect(prisma.productivityStatement.findMany.mock.calls[0][0].where).toEqual({

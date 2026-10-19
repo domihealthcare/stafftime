@@ -47,7 +47,7 @@ const Grid = ({ children }: { children: ReactNode }) => (
 );
 
 /// Under every box where somebody types: it goes on the care plan as it is.
-const AS_TYPED = 'Printed as typed — in the Spanish copy too.';
+const AS_TYPED = 'Printed as typed - in the Spanish copy too.';
 
 // ------------------------------------------------------------------ patient
 
@@ -62,7 +62,7 @@ export function PatientSection({
   return (
     <div className="space-y-4">
       <p className="text-sm text-slate-600" data-testid="preparer-line">
-        Prepared by <span className="font-medium text-slate-900">{preparedBy}</span> — the person
+        Prepared by <span className="font-medium text-slate-900">{preparedBy}</span> - the person
         signed in.
         {reviewedBy && (
           <>
@@ -247,7 +247,7 @@ export function SupportSection({ form, update }: SectionProps) {
         {!s.noProviders && (
           <TextArea
             path="support.providers"
-            label="The providers they see routinely — one a line"
+            label="The providers they see routinely - one a line"
             required
             rows={3}
             hint={`Specialty, name and anything useful: "CARD: Dr. Rivera" ${AS_TYPED}`}
@@ -274,7 +274,7 @@ export function SupportSection({ form, update }: SectionProps) {
         {!s.noPeople && (
           <TextArea
             path="support.people"
-            label="Who in their support system can help them manage their health — one a line"
+            label="Who in their support system can help them manage their health - one a line"
             required
             rows={2}
             hint={`Name and relationship: "Maria Lopez (daughter)". ${AS_TYPED}`}

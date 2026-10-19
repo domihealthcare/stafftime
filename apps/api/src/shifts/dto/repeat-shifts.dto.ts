@@ -24,7 +24,7 @@ import { MAX_EVERY_WEEKS, WEEKS_OF_MONTH } from '../repeat-pattern';
 
 /// "Every Tuesday and Thursday, 9 to 5, until March."
 export class RepeatShiftsDto {
-  /// Who works them. Absent makes **open shifts** — slots still to fill.
+  /// Who works them. Absent makes **open shifts** - slots still to fill.
   @IsOptional()
   @IsUUID('4')
   employeeId?: string;
@@ -77,7 +77,7 @@ export class RepeatShiftsDto {
   everyWeeks?: number;
 
   /// Only certain weeks of the month: 1–4 for the first to fourth, -1 for the
-  /// last — "the first Saturday". Absent or empty: every week.
+  /// last - "the first Saturday". Absent or empty: every week.
   @IsOptional()
   @IsArray()
   @ArrayUnique()
@@ -85,7 +85,7 @@ export class RepeatShiftsDto {
   weeksOfMonth?: number[];
 
   /// First and last calendar date to consider, inclusive. No last date makes
-  /// a **standing shift** — "I always work Mondays" — kept filled a few weeks
+  /// a **standing shift** - "I always work Mondays" - kept filled a few weeks
   /// ahead by the nightly job until it is stopped.
   @IsDateString()
   from!: string;
@@ -158,7 +158,7 @@ export class UpdateStandingShiftDto {
   everyWeeks?: number;
 
   /// Only certain weeks of the month: 1–4 for the first to fourth, -1 for the
-  /// last — "the first Saturday". Absent: as it was; empty: not by
+  /// last - "the first Saturday". Absent: as it was; empty: not by
   /// the month.
   @IsOptional()
   @IsArray()
@@ -180,7 +180,7 @@ export class WeeklyDayDto {
   @Max(7)
   dayOfWeek!: number;
 
-  /// The office — for a work-from-home day, the one it is counted under.
+  /// The office - for a work-from-home day, the one it is counted under.
   @IsUUID('4')
   locationId!: string;
 
@@ -217,7 +217,7 @@ export class SetWeeklyScheduleDto {
   @IsDateString()
   from?: string;
 
-  /// What new shifts are made as. Absent: published — a person's usual week
+  /// What new shifts are made as. Absent: published - a person's usual week
   /// is not a draft to review.
   @IsOptional()
   @IsIn([ShiftStatus.DRAFT, ShiftStatus.PUBLISHED])

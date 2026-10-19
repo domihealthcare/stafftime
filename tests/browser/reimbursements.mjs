@@ -16,7 +16,7 @@ const step = async (name, fn) => {
 };
 
 /**
- * The reimbursements board (October 2026, Dominguez — the "Reimbursements -
+ * The reimbursements board (October 2026, Dominguez - the "Reimbursements -
  * Domi TCHG" sheet: "a big board, but also searchable"), loaded with the
  * sheet. Managers and admins only. run-all.sh puts the sheet's data back.
  */
@@ -97,7 +97,7 @@ await step('a manager changes an amount, then clears it', async () => {
   saved = manager.waitForResponse((r) => r.url().endsWith('/api/reimbursements/rates'));
   await box.press('Enter');
   await saved;
-  await row('99211').getByRole('button', { name: 'Change 99211, Braven - MCARE' }).getByText('—').waitFor();
+  await row('99211').getByRole('button', { name: 'Change 99211, Braven - MCARE' }).getByText('-').waitFor();
 });
 
 await step('a manager adds a code, and a code already there is refused', async () => {

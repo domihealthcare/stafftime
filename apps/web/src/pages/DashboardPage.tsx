@@ -21,7 +21,7 @@ const PTO_LABEL: Record<string, string> = {
 
 /**
  * How the practice's weeks have actually gone: hours, overtime, lateness and
- * time off, by location and week — from what the app already holds, by the
+ * time off, by location and week - from what the app already holds, by the
  * same rules as the timesheet and the scheduler.
  */
 export function DashboardPage() {
@@ -58,7 +58,7 @@ export function DashboardPage() {
     <div className="max-w-5xl">
       <PageHeading
         title="Dashboard"
-        subtitle="How the weeks have gone, and what else needs a manager — licenses, surveys, onboarding and closing checklists."
+        subtitle="How the weeks have gone, and what else needs a manager - licenses, surveys, onboarding and closing checklists."
       />
 
       {error && (
@@ -124,7 +124,7 @@ export function DashboardPage() {
               : `${thisWeek.overtime.length} ${thisWeek.overtime.length === 1 ? 'person' : 'people'} past ${data.overtimeThresholdHours} hours`
           }
           previous={lastWeek && `Last week ${hours(lastWeek.total.overtimeHours)}`}
-          note={locationId ? 'Both locations — overtime is per person' : undefined}
+          note={locationId ? 'Both locations - overtime is per person' : undefined}
         />
         <StatTile
           label="Late clock-ins"
@@ -202,7 +202,7 @@ export function DashboardPage() {
                 .flatMap((week) =>
                   week.overtime.map((person) => (
                     <li key={`${week.weekStart}-${person.name}`}>
-                      <span className="font-medium">{person.name}</span> — {person.hours} hours in
+                      <span className="font-medium">{person.name}</span> - {person.hours} hours in
                       the week of {shortDate(week.weekStart)}, {person.overtimeHours} at overtime
                     </li>
                   )),
@@ -437,7 +437,7 @@ function HoursChart({
   );
 }
 
-/// Every number on the page, week by week — the chart's table view, and the
+/// Every number on the page, week by week - the chart's table view, and the
 /// place the figures the tiles leave out live.
 function WeekTable({
   data,
@@ -516,7 +516,7 @@ function days(value: number): string {
 }
 
 function percent(part: number, whole: number): string {
-  return whole ? `${Math.round((part / whole) * 100)}%` : '—';
+  return whole ? `${Math.round((part / whole) * 100)}%` : '-';
 }
 
 function shortDate(date: string): string {

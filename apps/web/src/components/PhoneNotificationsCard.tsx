@@ -8,7 +8,7 @@ import { useT } from '../lib/i18n';
 type Status = Awaited<ReturnType<typeof api.pushStatus>>;
 
 /**
- * Phone notifications for this device (October 2026, Dominguez — "are we
+ * Phone notifications for this device (October 2026, Dominguez - "are we
  * able to do this since we dont have an iphone/android app?": yes). What
  * rings the bell also arrives on the phone's lock screen. On an iPhone it
  * needs Domi Staff on the Home Screen first. Each device is turned on and
@@ -61,13 +61,13 @@ export function PhoneNotificationsCard() {
       </h2>
       <p className="mt-1 text-sm text-slate-600">
         {t(
-          'Get what rings the bell — shift changes, time off, reminders to clock in — on this phone’s lock screen. No app to download.',
+          'Get what rings the bell - shift changes, time off, reminders to clock in - on this phone’s lock screen. No app to download.',
         )}
       </p>
       <div className="mt-3 space-y-3 text-sm">
         {!status.available ? (
           <p className="text-slate-600">
-            {t('Not switched on for the practice yet — an admin does that in Practice settings.')}
+            {t('Not switched on for the practice yet - an admin does that in Practice settings.')}
           </p>
         ) : state === 'unsupported' ? (
           <p className="text-slate-600">{t('This browser cannot show notifications.')}</p>
@@ -90,7 +90,7 @@ export function PhoneNotificationsCard() {
               type="button"
               disabled={busy}
               onClick={() =>
-                void act(() => api.pushTest(), t('Sent — it should arrive in a moment.'))
+                void act(() => api.pushTest(), t('Sent - it should arrive in a moment.'))
               }
               className={buttonClass('secondary', 'sm')}
             >
@@ -142,7 +142,7 @@ export function PhoneNotificationsCard() {
   );
 }
 
-/** Admins switch phone notifications on for everybody — on Practice settings. */
+/** Admins switch phone notifications on for everybody - on Practice settings. */
 export function PhoneNotificationsSwitch() {
   const [on, setOn] = useState<boolean | null>(null);
   const [busy, setBusy] = useState(false);

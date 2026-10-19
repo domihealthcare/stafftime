@@ -33,7 +33,7 @@ import { toUtcDate } from '../common/util/calendar-date.util';
 /// (or out). Dominguez, October 2026: "notify the person, 15 minutes after".
 export const PUNCH_REMINDER_AFTER_MINUTES = 15;
 
-/// Nothing is said about a shift that started — or ended — longer ago than
+/// Nothing is said about a shift that started - or ended - longer ago than
 /// this. The first check after this goes live, or after the timer was off for
 /// a while, must not dig up the morning's shifts and send a pile of stale
 /// reminders at once.
@@ -53,27 +53,27 @@ export interface PunchReminderReport {
   /// People told they are still clocked in after their shift ended.
   clockOut: number;
   /// Punches left open past midnight, closed at that midnight (and the person
-  /// told) — see `AutoClockOutService`.
+  /// told) - see `AutoClockOutService`.
   autoClockedOut: number;
   /// Offices told this evening about tomorrow's rep lunch, or that there is
-  /// none — see `LunchNoticesService`.
+  /// none - see `LunchNoticesService`.
   lunchNotices: number;
-  /// People told a license of theirs runs out soon, or has — see
+  /// People told a license of theirs runs out soon, or has - see
   /// `LicenseRemindersService`. Also run nightly; each is sent once.
   licenseReminders: number;
   /// New hires told a task of theirs on their onboarding checklist is due
-  /// soon, or overdue — see `OnboardingRemindersService`. Also run nightly.
+  /// soon, or overdue - see `OnboardingRemindersService`. Also run nightly.
   onboardingReminders: number;
-  /// People reminded about something they were asked to read or do — see
+  /// People reminded about something they were asked to read or do - see
   /// `requirements/nudges.ts`. Also run nightly.
   requiredReminders: number;
-  /// People told in the evening "You're on tomorrow" — see
+  /// People told in the evening "You're on tomorrow" - see
   /// `shifts/tomorrow-reminder.ts`.
   tomorrowReminders: number;
   /// Shifts the office's managers were told nobody had clocked in for, 30
   /// minutes in.
   noShows: number;
-  /// People sent "Your week" on Sunday evening — see `WeeklySummaryService`.
+  /// People sent "Your week" on Sunday evening - see `WeeklySummaryService`.
   weeklySummaries: number;
 }
 
@@ -360,7 +360,7 @@ export class PunchRemindersService {
 
   /// Clocked in for it: a punch that began before now and was still going at
   /// the shift's start, or began after it. An open punch from earlier counts
-  /// too — they cannot clock in again until it is closed, so telling them to
+  /// too - they cannot clock in again until it is closed, so telling them to
   /// would be no help.
   private async hasPunchFor(employeeId: string, startsAt: Date, now: Date): Promise<boolean> {
     const count = await this.prisma.timeEntry.count({
@@ -388,7 +388,7 @@ export class PunchRemindersService {
     return count > 0;
   }
 
-  /// The office — or both — closed when the shift starts.
+  /// The office - or both - closed when the shift starts.
   private async closed(locationId: string, startsAt: Date): Promise<boolean> {
     const count = await this.prisma.practiceEvent.count({
       where: {

@@ -1,7 +1,7 @@
 import { Prisma, TimeEntryStatus } from '@prisma/client';
 
 /**
- * Hours with nothing flagged — the ones a manager can approve in one go
+ * Hours with nothing flagged - the ones a manager can approve in one go
  * (October 2026, Dominguez: "Approve the clean hours").
  *
  * "Clean" is exactly "no badge on the timesheet": closed, not already

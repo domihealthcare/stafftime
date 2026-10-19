@@ -19,7 +19,7 @@ const step = async (name, fn) => {
 };
 
 /**
- * Too many off at once (Dominguez, October 2026 — making the app smarter):
+ * Too many off at once (Dominguez, October 2026 - making the app smarter):
  * more than half of one job role at an office off the same day, approved or
  * asked for. Warned on the request while a manager decides it, on the
  * Dashboard and in the nightly email; never refused.
@@ -87,7 +87,7 @@ await step('set-up: three MAs at North Bergen, and two of them ask for the same 
 });
 
 const toDecide = mgr.getByTestId('requests-to-decide');
-// Each request's own line, by the name it starts with — the warning inside
+// Each request's own line, by the name it starts with - the warning inside
 // it is a list too, and names the others off.
 const lineFor = (name) =>
   toDecide.locator('ul.divide-y > li').filter({ has: mgr.locator('span.font-medium', { hasText: name }) });

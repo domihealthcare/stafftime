@@ -25,7 +25,7 @@ import type {
 const WEEKDAYS = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
 
 /**
- * When somebody cannot work — every week, or on one date.
+ * When somebody cannot work - every week, or on one date.
  *
  * Staff set their own. The one rule is that a published week is fixed: a
  * change reaches the first week whose rota is not out yet, and the screen says
@@ -72,7 +72,7 @@ export function AvailabilityPage() {
         <PageHeading
           title={t('When you can’t work')}
           subtitle={t(
-            'Tell your managers the times you can’t work — every week, or on a particular date. For whole days away, ask for time off instead.',
+            'Tell your managers the times you can’t work - every week, or on a particular date. For whole days away, ask for time off instead.',
           )}
         />
       </div>
@@ -224,7 +224,7 @@ function RuleRow({
           </p>
         </div>
         {rule.locked ? (
-          <Badge>{t('Published — ask a manager')}</Badge>
+          <Badge>{t('Published - ask a manager')}</Badge>
         ) : rule.effectiveUntil ? (
           <Badge>{t('Ending')}</Badge>
         ) : (
@@ -393,7 +393,7 @@ function RuleForm({
           <span className="mb-1 block font-medium text-slate-700">
             {t('Why')}{' '}
             <span className="font-normal text-slate-500">
-              {t('(optional — managers see this)')}
+              {t('(optional - managers see this)')}
             </span>
           </span>
           <input
@@ -409,7 +409,7 @@ function RuleForm({
 
       {kind === 'WEEKLY' && (
         <p className="mt-3 text-xs text-slate-500">
-          {t('Counts from {date} — the weeks before that are already published.', {
+          {t('Counts from {date} - the weeks before that are already published.', {
             date: formatCalendarDate(firstOpenDate),
           })}
         </p>
@@ -482,7 +482,7 @@ function TeamList({ team }: { team: TeamAvailability[] }) {
                 {person.rules.map((rule) => (
                   <li key={rule.id}>
                     {rule.description.replace(/^Not available (on )?/, '')}
-                    {rule.note && <span className="text-slate-500"> — {rule.note}</span>}
+                    {rule.note && <span className="text-slate-500"> - {rule.note}</span>}
                   </li>
                 ))}
               </ul>

@@ -235,7 +235,7 @@ export function buildTimesheetCsv(data: TimesheetData): string {
     }
     let text = String(value);
     // A cell starting = + - @ would be run as a formula by Excel, and some
-    // text here — the name somebody goes by — is typed by staff themselves.
+    // text here - the name somebody goes by - is typed by staff themselves.
     if (typeof value === 'string' && /^[=+\-@\t\r]/.test(text)) text = `'${text}`;
     return /[",\n]/.test(text) ? `"${text.replace(/"/g, '""')}"` : text;
   };

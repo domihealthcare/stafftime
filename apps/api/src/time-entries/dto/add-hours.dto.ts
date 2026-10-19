@@ -9,7 +9,7 @@ import {
   Length,
 } from 'class-validator';
 
-/// A manager entering a day that has no punch at all — somebody forgot, or the
+/// A manager entering a day that has no punch at all - somebody forgot, or the
 /// app would not let them. Always with a reason, because every one of these is
 /// looked into afterwards (Dominguez, September 2026).
 export class AddHoursDto {
@@ -28,7 +28,7 @@ export class AddHoursDto {
   @IsEnum(HandEntryReason)
   reason!: HandEntryReason;
 
-  /// What happened, in the manager's words — the start of finding out why.
+  /// What happened, in the manager's words - the start of finding out why.
   @IsString()
   @Length(3, 500)
   note!: string;

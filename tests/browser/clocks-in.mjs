@@ -65,7 +65,7 @@ await step('an admin unticks Clocks in, and the Staff card says so', async () =>
   await admin.getByTestId(`staff-${MAX}`).getByText('Doesn’t clock in').waitFor({ timeout: 10000 });
 });
 
-// A published West New York shift for Max, on now — made through the API
+// A published West New York shift for Max, on now - made through the API
 // so the suite does not depend on the time of day it runs at. Kept inside New
 // Jersey's day, like clock-place.mjs, so Home calls it today's.
 const manager = await signIn('manager@domihealthcare.com');

@@ -19,12 +19,12 @@ import { conditionHeading, conditionShort, planChoices } from './conditions';
 import { lines, planFor, type CarePlanForm } from './form';
 
 /**
- * The care plan in words, in English or Spanish — what the PDF prints.
+ * The care plan in words, in English or Spanish - what the PDF prints.
  *
  * The general care plan is written as sentences, the way the practice's own
  * care plans read ("Overall physical health is rated as "Fair.""); each
  * condition's plan lists what was ticked under each question. Anything typed
- * is printed exactly as typed, in either language — nothing is ever sent
+ * is printed exactly as typed, in either language - nothing is ever sent
  * away to be translated.
  *
  * The Spanish was read and approved by a native speaker (October 2026).
@@ -117,7 +117,7 @@ function listed(list: readonly Bilingual[], values: string[], language: Language
 const dateIn = (iso: string, language: Language) =>
   language === 'es' ? longDate(iso, 'es') : longDate(iso, 'en');
 
-/// 63 inches → "63 inches (5 ft 3 in)" / "63 pulgadas (5 pies 3 pulg.)" —
+/// 63 inches → "63 inches (5 ft 3 in)" / "63 pulgadas (5 pies 3 pulg.)" -
 /// the same units in both languages, only the words translated.
 function height(inches: string, language: Language): string {
   const value = Number(inches);

@@ -1,6 +1,6 @@
 import { randomBytes } from 'node:crypto';
 
-/// Keys look like `2026/09/3f6a…` — 16 random bytes under a year/month folder,
+/// Keys look like `2026/09/3f6a…` - 16 random bytes under a year/month folder,
 /// so a filesystem backend never accumulates a single directory with tens of
 /// thousands of entries in it.
 ///

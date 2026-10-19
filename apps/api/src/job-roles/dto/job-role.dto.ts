@@ -47,14 +47,14 @@ export class CreateJobRoleDto {
 
 export class UpdateJobRoleDto {
   /// Whether people in this role see their own licenses and onboarding under
-  /// Team. It shows them their own records and nothing more — no power.
+  /// Team. It shows them their own records and nothing more - no power.
   @IsOptional()
   @IsBoolean()
   seesOwnPersonnelTabs?: boolean;
 
   /// Whether people in this role get the clinical forms (the 99483 cognitive
   /// assessment) under Resources → Forms. The forms run in the browser and keep nothing,
-  /// so this shows a screen and nothing more — no power.
+  /// so this shows a screen and nothing more - no power.
   @IsOptional()
   @IsBoolean()
   usesClinicalForms?: boolean;

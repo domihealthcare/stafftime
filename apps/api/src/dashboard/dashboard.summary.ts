@@ -66,7 +66,7 @@ const EMPTY: WeekFigures = {
  *   still at work, or a missing clock-out that *What needs a look* chases; it
  *   is counted as a punch but not as hours.
  * - Overtime is per person per week across both locations, hourly staff only,
- *   against the practice's own threshold — the same rule as the scheduler, but
+ *   against the practice's own threshold - the same rule as the scheduler, but
  *   on hours *worked* rather than scheduled.
  * - Time off counts weekdays only: a week's leave from Monday to Sunday is
  *   five days away from work, not seven. A half day counts as half.

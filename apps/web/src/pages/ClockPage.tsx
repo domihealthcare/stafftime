@@ -37,21 +37,21 @@ type Status = 'loading' | 'ready' | 'working';
 /// The "office" that is working from home, in the place list.
 const HOME = 'home';
 
-/// How early a work-from-home shift can be clocked into — the server's
+/// How early a work-from-home shift can be clocked into - the server's
 /// REMOTE_EARLY_MINUTES.
 const REMOTE_EARLY_MINUTES = 30;
 
 /**
- * Home (October 2026, Dominguez — option B; it was the Clock screen): the
+ * Home (October 2026, Dominguez - option B; it was the Clock screen): the
  * clock-in card and the news on the left two-thirds, and on the right third
  * quick buttons, birthdays, holidays and what is coming up, and surveys. On a
- * phone they stack — the clock first, the news last.
+ * phone they stack - the clock first, the news last.
  */
 export function ClockPage() {
   const t = useT();
   const { employee } = useSession();
   const [entry, setEntry] = useState<TimeEntry | null>(null);
-  /// Today's shifts, earliest first — somebody can have two (an office shift in
+  /// Today's shifts, earliest first - somebody can have two (an office shift in
   /// the morning, working from home in the afternoon).
   const [todaysShifts, setTodaysShifts] = useState<Shift[]>([]);
   /// Today's events, for whether a rep is bringing lunch to today's office.
@@ -59,7 +59,7 @@ export function ClockPage() {
   /// Where they are clocking in: one of their offices, or HOME. Every one is
   /// offered every day (October 2026, Dominguez); the shift's comes first.
   const [place, setPlace] = useState<string>('');
-  /// Why somewhere other than the shift — optional.
+  /// Why somewhere other than the shift - optional.
   const [otherReason, setOtherReason] = useState('');
   const confirm = useConfirm();
   /// Once somebody picks a place themselves, the defaults below leave it alone.
@@ -72,7 +72,7 @@ export function ClockPage() {
   const [error, setError] = useState<string | null>(null);
   const [offerKiosk, setOfferKiosk] = useState(false);
   /// Their closing checklist for the punch they are in, fetched ahead so that
-  /// pressing Clock out can open it — or ask for the location — at once.
+  /// pressing Clock out can open it - or ask for the location - at once.
   const [checklist, setChecklist] = useState<ApplicableSection[]>([]);
   const [closing, setClosing] = useState(false);
   const [, forceTick] = useState(0);
@@ -120,8 +120,8 @@ export function ClockPage() {
     void load();
   }, [load]);
 
-  // An installed app can sit in the background all day. Coming back to it —
-  // after clocking in at the front desk, say — it must show the truth, not
+  // An installed app can sit in the background all day. Coming back to it -
+  // after clocking in at the front desk, say - it must show the truth, not
   // what it knew this morning.
   useEffect(() => {
     const refresh = () => {
@@ -154,7 +154,7 @@ export function ClockPage() {
 
   const primaryOffice = (assignedLocations.find((l) => l.isPrimary) ?? assignedLocations[0])
     ?.locationId;
-  /// Where today's shift is — HOME for a work-from-home one — if it is one of
+  /// Where today's shift is - HOME for a work-from-home one - if it is one of
   /// the places they can pick.
   const shiftPlace = !todaysShift
     ? null
@@ -231,10 +231,10 @@ export function ClockPage() {
         body: `${elsewhereNote} ${
           otherReason.trim()
             ? t(
-                'You can still clock in here — it will show on your timesheet, with your reason, so your manager can see why.',
+                'You can still clock in here - it will show on your timesheet, with your reason, so your manager can see why.',
               )
             : t(
-                'You can still clock in here — it will show on your timesheet, so your manager can see why.',
+                'You can still clock in here - it will show on your timesheet, so your manager can see why.',
               )
         }`,
         confirmLabel:
@@ -258,7 +258,7 @@ export function ClockPage() {
     let position: Awaited<ReturnType<typeof getCurrentPosition>> | null = null;
     let locationProblem: string | null = null;
     try {
-      // Must run inside the click handler — the browser prompt needs the gesture.
+      // Must run inside the click handler - the browser prompt needs the gesture.
       // Working from home, it is never asked for.
       position = remote ? null : await getCurrentPosition();
     } catch (err) {
@@ -300,7 +300,7 @@ export function ClockPage() {
     } catch (err) {
       if (err instanceof ApiError) {
         // When the phone could not say where they are, that is the real reason
-        // — the server's "allow location access" would only hide it.
+        // - the server's "allow location access" would only hide it.
         setError(err.status === 403 && locationProblem ? locationProblem : err.message);
         // 403 here means verification failed, and the kiosk is the way around it.
         setOfferKiosk(err.status === 403);
@@ -431,7 +431,7 @@ export function ClockPage() {
               {places.map((option) => (
                 <option key={option.value} value={option.value}>
                   {placeLabel(option)}
-                  {option.value === shiftPlace ? ` — ${t('your shift')}` : ''}
+                  {option.value === shiftPlace ? ` - ${t('your shift')}` : ''}
                 </option>
               ))}
             </select>
@@ -515,7 +515,7 @@ export function ClockPage() {
               : isClockedIn
                 ? t('Clock out')
                 : remote
-                  ? t('Clock in — working from home')
+                  ? t('Clock in - working from home')
                   : t('Clock in')}
           </button>
         )}

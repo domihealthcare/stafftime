@@ -64,12 +64,12 @@ interface FormState {
 
 /**
  * The practice calendar (October 2026, Dominguez: "a calendar that staff can
- * reference for multiple things — events, diagnostic schedule,
+ * reference for multiple things - events, diagnostic schedule,
  * holidays/office closures"). Everything on one month, the way the practice
  * already kept it on paper: diagnostics with the office they are at, holidays,
  * closures, meetings, and pay days worked out from the pay period.
  *
- * Everybody sees it — the events meant for them, and every diagnostics date,
+ * Everybody sees it - the events meant for them, and every diagnostics date,
  * holiday and pay day. Managers and admins add and change entries here.
  */
 export function CalendarPage() {
@@ -171,7 +171,7 @@ export function CalendarPage() {
   }
 
   /// From All, a kind shows that kind alone; more can be added, and taking
-  /// the last one off — or picking every one — is All again.
+  /// the last one off - or picking every one - is All again.
   function pickKind(kind: CalendarKind | 'ALL') {
     setChosen((was) => {
       let next: CalendarKind[];
@@ -197,7 +197,7 @@ export function CalendarPage() {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   }
 
-  /// What is shown: the kinds ticked, and — with an office chosen — what is
+  /// What is shown: the kinds ticked, and - with an office chosen - what is
   /// at that office or shuts it, plus everything practice-wide.
   const shown = useMemo(
     () =>
@@ -340,7 +340,7 @@ export function CalendarPage() {
                       ['DIAGNOSTIC', 'When a test is offered at an office'],
                       ['REP_LUNCH', 'A rep bringing lunch to an office'],
                       ['EVENT', 'A meeting or something on the calendar'],
-                      ['HOLIDAY', 'A named day — the offices stay open'],
+                      ['HOLIDAY', 'A named day - the offices stay open'],
                       ['CLOSURE', 'An office shut, once or every year'],
                     ] as const
                   ).map(([kind, hint]) => (
@@ -420,7 +420,7 @@ export function CalendarPage() {
             defaultDate={form.day ?? newEntryDay(monthStart)}
             onSaved={(created) => {
               setForm(null);
-              setNotice(created > 1 ? `Saved — ${created} dates are on the calendar.` : 'Saved.');
+              setNotice(created > 1 ? `Saved - ${created} dates are on the calendar.` : 'Saved.');
               void load();
             }}
             onCancel={() => setForm(null)}

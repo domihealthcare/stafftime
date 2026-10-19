@@ -1,4 +1,4 @@
-/// Spanish for the team screens — see ../index.ts and the glossary in ./common.ts.
+/// Spanish for the team screens - see ../index.ts and the glossary in ./common.ts.
 export const TEAM: Record<string, string> = {
   // Timesheet
   'Could not load timesheet.': 'No se pudo cargar la hoja de horas.',
@@ -18,8 +18,8 @@ export const TEAM: Record<string, string> = {
   Verified: 'Verificado',
   Flags: 'Avisos',
   'Edited:': 'Editado:',
-  'Something look wrong? Ask a manager to edit it — every edit is recorded with a reason.':
-    '¿Algo no se ve bien? Pídele a un gerente que lo edite — cada cambio queda registrado con un motivo.',
+  'Something look wrong? Ask a manager to edit it - every edit is recorded with a reason.':
+    '¿Algo no se ve bien? Pídele a un gerente que lo edite - cada cambio queda registrado con un motivo.',
   'Entered by hand by {name}:': 'Ingresado a mano por {name}:',
   'Entered by hand:': 'Ingresado a mano:',
   'Not where scheduled:': 'No donde estaba programado:',
@@ -94,7 +94,7 @@ export const TEAM: Record<string, string> = {
   'On leave': 'De licencia',
   'Working from home {from}–{to}': 'Trabajando desde casa {from}–{to}',
   'Ext. {number}': 'Ext. {number}',
-  ' today — they are working from home': ' hoy — está trabajando desde casa',
+  ' today - they are working from home': ' hoy - está trabajando desde casa',
   ' (office {number})': ' (oficina {number})',
   '· {number} from home': '· {number} desde casa',
   'Birthday {date}': 'Cumpleaños {date}',
@@ -140,14 +140,14 @@ export const TEAM: Record<string, string> = {
   'Short anonymous check-ins, and a suggestion box that is always open.':
     'Encuestas cortas y anónimas, y un buzón de sugerencias que siempre está abierto.',
   'For you': 'Para ti',
-  'Thank you — sent anonymously.': 'Gracias — enviado de forma anónima.',
+  'Thank you - sent anonymously.': 'Gracias - enviado de forma anónima.',
   'You have answered everything open. Thank you.': 'Ya respondiste todo lo abierto. Gracias.',
   'No surveys open right now.': 'No hay encuestas abiertas ahora.',
   'Already answered: {titles}': 'Ya respondidas: {titles}',
   'Could not open that survey.': 'No se pudo abrir esa encuesta.',
   'Could not send that.': 'No se pudo enviar.',
-  'Anonymous — your name is never stored with what you say, and nobody, including admins, can find out.':
-    'Anónimo — tu nombre nunca se guarda con lo que dices, y nadie, ni siquiera los administradores, puede saberlo.',
+  'Anonymous - your name is never stored with what you say, and nobody, including admins, can find out.':
+    'Anónimo - tu nombre nunca se guarda con lo que dices, y nadie, ni siquiera los administradores, puede saberlo.',
   '1 poor · 5 great': '1 mal · 5 excelente',
   'Sending…': 'Enviando…',
   'Send anonymously': 'Enviar de forma anónima',
@@ -182,7 +182,7 @@ export const TEAM: Record<string, string> = {
   '{n} person has voted.': '{n} persona ha votado.',
   '{n} people have voted.': '{n} personas han votado.',
   'Votes are not anonymous': 'Los votos no son anónimos',
-  ' — everybody can see who picked what.': ' — todos pueden ver quién eligió qué.',
+  ' - everybody can see who picked what.': ' - todos pueden ver quién eligió qué.',
   '{n} vote': '{n} voto',
   '{n} votes': '{n} votos',
   'Take my vote back': 'Quitar mi voto',
@@ -222,13 +222,13 @@ export const TEAM: Record<string, string> = {
 
   // The diagnostics board (pages/DiagnosticsPage.tsx, components/BigBoard.tsx,
   // the Reference section on Resources), October 2026. "Diagnostics" is in
-  // calendar.ts. The board's own contents — test and insurance names, prep —
+  // calendar.ts. The board's own contents - test and insurance names, prep -
   // are the practice's and stay as written.
   Reference: 'Consulta',
   'Which insurance covers which ultrasound or test, how long it takes, the prep and the self-pay price.':
     'Qué seguro cubre cada ultrasonido o prueba, cuánto tarda, la preparación y el precio de pago propio.',
   'Phone book': 'Guía telefónica',
-  'Labs, hospitals, imaging, home care, equipment and specialists we refer to — searchable, and yours to keep up to date.':
+  'Labs, hospitals, imaging, home care, equipment and specialists we refer to - searchable, and yours to keep up to date.':
     'Laboratorios, hospitales, imágenes, cuidado en el hogar, equipos y especialistas a los que referimos: se puede buscar y a ti te toca mantenerla al día.',
   'Could not load the diagnostics.': 'No se pudieron cargar los diagnósticos.',
   'Loading the diagnostics': 'Cargando los diagnósticos',

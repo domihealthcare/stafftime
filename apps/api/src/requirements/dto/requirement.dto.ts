@@ -31,7 +31,7 @@ export class RequirementInput {
   @MaxLength(4000)
   body?: string;
 
-  /// A training video, a Drive document. https only — checked in the service.
+  /// A training video, a Drive document. https only - checked in the service.
   @IsOptional()
   @IsString()
   @MaxLength(2000)

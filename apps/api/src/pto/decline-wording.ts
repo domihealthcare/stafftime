@@ -5,13 +5,13 @@ import { PrismaService } from '../prisma/prisma.service';
 import { loadTimeOffClashes, shortDate, TimeOffClash } from './time-off-clashes';
 
 /**
- * "Help me word it" when declining time off (October 2026, Dominguez — an AI
+ * "Help me word it" when declining time off (October 2026, Dominguez - an AI
  * idea): a short, kind reason for the person, from the manager's own few
  * words, to edit before it is sent.
  *
  * What goes to the AI service: the person's first name, the kind of time off
- * and the dates, what the manager typed, and — when the manager typed
- * nothing — how many in that job role at that office would be off, as counts.
+ * and the dates, what the manager typed, and - when the manager typed
+ * nothing - how many in that job role at that office would be off, as counts.
  * Never a colleague's name: staff do not see each other's time off, and the
  * reason is shown to the person.
  */
@@ -34,7 +34,7 @@ const KIND: Partial<Record<PtoType, string>> = {
 };
 
 /// "2 of 3 in Medical Assistant at North Bergen would be off on Tue, Dec 22"
-/// — counts only.
+/// - counts only.
 export function clashFacts(clashes: TimeOffClash[]): string[] {
   return clashes.slice(0, 4).map((clash) => {
     const when =

@@ -143,6 +143,35 @@ await step('one entry can have several offices, each with its own phone and fax'
   await card(staff, /^Dr\. Andrew De La Torre$/).waitFor({ timeout: 5000 });
 });
 
+await step('a group lists its doctors one to a line, and any one of them finds it', async () => {
+  await search(staff, 'Benoff');
+  const group = card(staff, /Gomez Marquez/);
+  await group.waitFor({ timeout: 5000 });
+  const lines = await group.getByTestId('phone-book-name').locator('span.block').allInnerTexts();
+  if (lines.length < 2 || !lines.some((l) => /Gomez Marquez/.test(l)) || !lines.some((l) => /Benoff/.test(l)))
+    throw new Error(`the doctors are not one to a line: ${JSON.stringify(lines)}`);
+  // A specialty that belongs to the whole group is a note, not stuck to the last doctor.
+  await search(staff, 'Mulkay Cohen');
+  const shared = card(staff, /Angel Mulkay/);
+  await shared.getByText('Interventional Cardiology', { exact: true }).waitFor({ timeout: 5000 });
+});
+
+await step('an office is under Location, not Where', async () => {
+  await search(staff, 'Quest');
+  const quest = card(staff, 'Quest Diagnostic Lab');
+  await quest.waitFor({ timeout: 5000 });
+  const labels = await staff.getByTestId('phone-book-entry').first().locator('dt').allInnerTexts();
+  if (labels.some((l) => /where/i.test(l))) throw new Error(`still says Where: ${labels.join(', ')}`);
+  await search(staff, 'Verghese');
+  await card(staff, /Verghese/).getByText('Location', { exact: true }).waitFor({ timeout: 5000 });
+});
+
+await step('no em dashes anywhere on the phone book', async () => {
+  await search(staff, '');
+  const text = await staff.locator('body').innerText();
+  if (/\u2014/.test(text)) throw new Error('an em dash is on the page');
+});
+
 await step('anybody adds an entry with two offices and a star, and fixes it', async () => {
   await search(staff, '');
   await staff.getByRole('button', { name: '+ Add an entry' }).click();
@@ -210,6 +239,22 @@ await step('a heading prints as a patient-ready list of everybody in it, starred
   const printed = await staff.getByTestId('print-entry').count();
   if (printed !== onScreen) throw new Error(`${printed} printed, ${onScreen} on screen`);
   if ((await staff.getByTestId('print-category').count()) !== 1) throw new Error('more than one heading');
+  // What was searched for is not on the paper, the star is explained on a line of its own,
+  // and the starred are a block above the rest.
+  await staff.goto(`${BASE}/phone-book/print?q=pulm`, { waitUntil: 'networkidle' });
+  await staff.getByTestId('print-title').waitFor({ timeout: 10000 });
+  if (/pulm/i.test(await staff.getByTestId('print-title').innerText())) throw new Error('the search words are in the title');
+  if (/\u2014/.test(await staff.locator('body').innerText())) throw new Error('an em dash on the printout');
+  const legend = staff.locator('p', { hasText: 'marks the places we recommend first' });
+  if (await legend.filter({ hasText: 'Please call the office' }).count()) throw new Error('the star is explained on the same line');
+  await legend.first().waitFor({ timeout: 5000 });
+  const blocks = await staff.locator('[data-testid=print-category] .entries').evaluateAll((els) =>
+    els.map((e) => [...e.querySelectorAll('[data-testid=print-entry]')].map((a) => /★/.test(a.querySelector('h3').textContent))));
+  if (!(blocks[0].length > 0 && blocks[0].every(Boolean) && blocks.slice(1).every((b) => b.every((x) => !x))))
+    throw new Error(`starred are not a block at the top: ${JSON.stringify(blocks)}`);
+  await staff.goto(`${BASE}/phone-book?category=Cardiology`, { waitUntil: 'networkidle' });
+  await staff.getByRole('link', { name: 'Print' }).click();
+  await staff.getByTestId('print-title').waitFor({ timeout: 10000 });
   // Handed to patients: names, addresses and phone numbers, with nothing of the staff's.
   await staff.getByTestId('print-patient-copy').waitFor();
   const paper = await staff.getByTestId('print-patient-copy').innerText();
@@ -257,7 +302,7 @@ await step('printing everything is a short run of pages, headings running on; th
 await step('the form asks for places, not patients, and there is no file upload', async () => {
   await staff.goto(`${BASE}/phone-book`, { waitUntil: 'networkidle' });
   await staff.getByRole('button', { name: '+ Add an entry' }).click();
-  await staff.getByText('About the place only — never a patient’s name or details.').waitFor();
+  await staff.getByText('About the place only - never a patient’s name or details.').waitFor();
   if ((await staff.locator('input[type=file]').count()) !== 0) throw new Error('a file input is on the page');
   await staff.getByRole('button', { name: 'Cancel' }).click();
 });

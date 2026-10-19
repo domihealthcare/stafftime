@@ -34,7 +34,7 @@ export interface PushMessage {
 }
 
 /**
- * Phone notifications (October 2026, Dominguez — from the survey of similar
+ * Phone notifications (October 2026, Dominguez - from the survey of similar
  * apps, instead of texts: no Twilio, no carrier registration, no cost).
  * Whatever rings somebody's bell (`InboxService.notify`) is also pushed to
  * each device where they turned notifications on, through that browser's own
@@ -205,7 +205,7 @@ export class PushService {
     return this.status(employeeId);
   }
 
-  /// "Send me a test" — to every device of theirs.
+  /// "Send me a test" - to every device of theirs.
   async test(employeeId: string) {
     await this.send([employeeId], {
       title: 'Phone notifications are on',

@@ -55,7 +55,7 @@ const TEMPLATE_INCLUDE = {
  * The one promise that shapes everything here: **a checklist never stops
  * anybody clocking out.** Unticked tasks and short counts are recorded and
  * flagged to managers, a skipped checklist is recorded as skipped, and a
- * failure writing any of it is logged and swallowed — the same rule the app
+ * failure writing any of it is logged and swallowed - the same rule the app
  * already applies to a clock-out it cannot verify.
  */
 @Injectable()
@@ -70,7 +70,7 @@ export class ClosingService {
    * The checklist this person gets when closing a punch at this office on this
    * day: every section of every job role they hold, with items for other days
    * of the week or other offices left out. Empty for anybody whose roles have
-   * no checklist — they clock out as before.
+   * no checklist - they clock out as before.
    */
   async applicableFor(
     employeeId: string,
@@ -470,7 +470,7 @@ export class ClosingService {
   // ---------------------------------------------------------------- seeding
 
   /**
-   * Puts the starting checklists back for Front Desk and Medical Assistant —
+   * Puts the starting checklists back for Front Desk and Medical Assistant -
    * for the seed, which always gives a known starting point. Never called by
    * the running app: once live, the checklists are the managers'.
    */

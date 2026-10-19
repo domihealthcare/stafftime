@@ -520,7 +520,7 @@ describe('PtoService', () => {
       await service.conflictingShifts('pto-1');
 
       const where = prisma.shift.findMany.mock.calls[0][0].where;
-      // Up to the end of the 5th, not its midnight start — and New Jersey's
+      // Up to the end of the 5th, not its midnight start - and New Jersey's
       // days (EST, UTC−5), not UTC's, so an evening shift the night before
       // is not counted.
       expect(where.startsAt).toEqual({ lt: new Date('2026-11-06T05:00:00.000Z') });

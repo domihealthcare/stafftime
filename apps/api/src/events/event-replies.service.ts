@@ -19,14 +19,14 @@ type Person = { id: string; firstName: string; preferredName: string | null; las
  * Replies to meetings (October 2026, Dominguez): going, can't go or maybe.
  *
  * Only the people a meeting is for answer, one answer each per date, and they
- * all see who is going, who can't, who might and who has not said yet — like
+ * all see who is going, who can't, who might and who has not said yet - like
  * a calendar invite (Dominguez's choice). Managers and admins see it for any
  * meeting. Only meetings: closures, holidays, diagnostics and rep lunches are
  * not things anybody says they will go to.
  *
  * The person who made the meeting hears on the bell when somebody can't go.
  * A "can't go" also keeps the day-before reminder away. An answer is the
- * person's own and says nothing more — no note.
+ * person's own and says nothing more - no note.
  */
 @Injectable()
 export class EventRepliesService {
@@ -93,7 +93,7 @@ export class EventRepliesService {
     });
     this.logger.log(`${viewer.id} answered ${answer} to event ${eventId}`);
 
-    // Whoever made it hears about a "can't go" — once, not on every change
+    // Whoever made it hears about a "can't go" - once, not on every change
     // back and forth, and never about their own.
     if (
       answer === EventReplyAnswer.NOT_GOING &&

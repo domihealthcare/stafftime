@@ -4,10 +4,10 @@ import type { CoverOptions, CoverRequestStatus } from '../lib/types';
 import { buttonClass } from './ui';
 
 /**
- * "Someone called out: ask who can cover" (October 2026, Dominguez — a
+ * "Someone called out: ask who can cover" (October 2026, Dominguez - a
  * "smarter" idea), in an open shift's pop-up on the rota. Tick who to ask
- * — the good fits from "Who can cover this?" start ticked; the ones with a
- * catch are offered, unticked, with the catch — and they are asked by bell
+ * - the good fits from "Who can cover this?" start ticked; the ones with a
+ * catch are offered, unticked, with the catch - and they are asked by bell
  * and email. The first to say yes gets the shift; the manager is told, and
  * so are the others. Only the people asked hear about it.
  */
@@ -79,7 +79,7 @@ export function AskToCover({
           {status.state === 'covered' && status.takenBy ? (
             <p>
               {status.takenBy.preferredName ?? status.takenBy.firstName} {status.takenBy.lastName}{' '}
-              said yes — the shift is theirs.
+              said yes - the shift is theirs.
             </p>
           ) : (
             <>
@@ -91,15 +91,15 @@ export function AskToCover({
                   hour: 'numeric',
                   minute: '2-digit',
                 })}
-                {status.state === 'stopped' && ' — stopped asking'}
-                {status.state === 'started' && ' — the shift has started'}:
+                {status.state === 'stopped' && ' - stopped asking'}
+                {status.state === 'started' && ' - the shift has started'}:
               </p>
               <ul className="mt-0.5 space-y-0.5">
                 {status.asks.map((ask) => (
                   <li key={ask.employee.id}>
                     {ask.employee.preferredName ?? ask.employee.firstName} {ask.employee.lastName}{' '}
                     <span className="text-slate-600">
-                      — {ask.answer === null ? 'not answered yet' : ask.answer ? 'yes' : 'no'}
+                      - {ask.answer === null ? 'not answered yet' : ask.answer ? 'yes' : 'no'}
                     </span>
                   </li>
                 ))}
@@ -133,7 +133,7 @@ export function AskToCover({
                   {option.name}
                   <span className="text-slate-600">
                     {' '}
-                    — {option.fit === 'good' ? 'free' : (option.reasons[0]?.text ?? 'check first')}
+                    - {option.fit === 'good' ? 'free' : (option.reasons[0]?.text ?? 'check first')}
                   </span>
                 </span>
               </label>

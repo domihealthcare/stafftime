@@ -53,7 +53,7 @@ export class CalendarController {
    * The feed itself.
    *
    * Public because a calendar app cannot send a session cookie or an auth
-   * header — the unguessable token in the path is the credential. `.ics` is in
+   * header - the unguessable token in the path is the credential. `.ics` is in
    * the path because some clients decide how to handle a subscription by
    * extension rather than content type.
    */

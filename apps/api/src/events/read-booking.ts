@@ -3,13 +3,13 @@ import { localDateIn, PRACTICE_ZONE } from '../common/util/zoned-time.util';
 import { PrismaService } from '../prisma/prisma.service';
 
 /**
- * "Fill this in from a message" (October 2026, Dominguez — an AI idea): a
+ * "Fill this in from a message" (October 2026, Dominguez - an AI idea): a
  * manager pastes a rep's email or text, or a note about a diagnostics day,
  * and the calendar's form is filled in from it to check before saving.
  *
  * Only the pasted words go to the AI service, with today's date and the two
  * offices' names. Which office and which rep are matched here, against the
- * app's own lists — the reps list (and its notes and statuses) never leaves.
+ * app's own lists - the reps list (and its notes and statuses) never leaves.
  * Nothing is saved: the form is.
  */
 
@@ -45,7 +45,7 @@ export interface ReadBooking {
   allDay: boolean;
   locationId: string | null;
   repId: string | null;
-  /// A rep the message names who is not on the list — to add under Reps.
+  /// A rep the message names who is not on the list - to add under Reps.
   newRep: { name: string; company: string; medication: string } | null;
   place: string;
   description: string;
@@ -78,7 +78,7 @@ const SCHEMA = stringFields(
   },
 );
 
-const RULES = `Domi Healthcare is a primary care practice with two offices in New Jersey: North Bergen and West New York. A manager has pasted a message — usually a drug rep booking a lunch, or a note about a diagnostics day — to put it on the practice calendar.
+const RULES = `Domi Healthcare is a primary care practice with two offices in New Jersey: North Bergen and West New York. A manager has pasted a message - usually a drug rep booking a lunch, or a note about a diagnostics day - to put it on the practice calendar.
 
 Read what the message says into the fields.
 - Use only what it says. Leave a field empty rather than guess; never invent a date, time, office or name.

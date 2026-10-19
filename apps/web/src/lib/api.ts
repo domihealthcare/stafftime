@@ -188,7 +188,7 @@ async function request<T>(path: string, init: RequestInit = {}): Promise<T> {
 
   if (!response.ok) {
     // A 401 anywhere but signing in or checking a password means the session
-    // has ended — eight hours idle on a phone, typically. Say so to the app,
+    // has ended - eight hours idle on a phone, typically. Say so to the app,
     // which goes back to the sign-in screen instead of leaving an error on a
     // screen that can do nothing about it.
     if (response.status === 401 && !NOT_A_SESSION_ANSWER.some((p) => path.startsWith(p))) {
@@ -207,7 +207,7 @@ const NOT_A_SESSION_ANSWER = ['/auth/login', '/auth/change-password', '/auth/me'
 
 /**
  * Fetches a file and hands back a blob. There is no URL a browser could open
- * directly — the payroll export files go through an authorised route — so a
+ * directly - the payroll export files go through an authorised route - so a
  * download has to be fetched and then handed to the browser.
  */
 async function download(path: string): Promise<{ blob: Blob; filename: string }> {
@@ -246,7 +246,7 @@ function filenameFromDisposition(header: string | null): string {
  * Pulls the machine-readable hint out of an error body.
  *
  * Nest spreads an exception's object payload across the top level, so a guard
- * throwing `{ message, code }` arrives as `{ message, code }` — not nested.
+ * throwing `{ message, code }` arrives as `{ message, code }` - not nested.
  * The nested shape is checked too, for handlers that wrap their payload.
  */
 function extractCode(body: unknown): string | undefined {
@@ -302,7 +302,7 @@ export interface ClockInPayload {
   longitude?: number;
   accuracyMeters?: number;
   employeeId?: string;
-  /// Working from home — any day, flagged when there is no work-from-home shift.
+  /// Working from home - any day, flagged when there is no work-from-home shift.
   workFromHome?: boolean;
   /// Why somewhere other than the shift, if they said.
   otherPlaceReason?: string;
@@ -330,7 +330,7 @@ export interface KioskSession {
   locationName: string;
 }
 
-/// A News post ticked to show publicly — on the time clock and the sign-in
+/// A News post ticked to show publicly - on the time clock and the sign-in
 /// page: the words only, no author, likes, comments or poll.
 export interface PublicPost {
   id: string;
@@ -351,7 +351,7 @@ export interface KioskEmployee {
 }
 
 export interface KioskPunchResult {
-  /// CHECKLIST: nothing punched yet — fill in the closing checklist, then send
+  /// CHECKLIST: nothing punched yet - fill in the closing checklist, then send
   /// the PIN again with it.
   action: 'CLOCKED_IN' | 'CLOCKED_OUT' | 'CHECKLIST';
   checklist?: ApplicableSection[];
@@ -1150,7 +1150,7 @@ export const api = {
     everyWeeks?: number;
     weeksOfMonth?: number[];
     from: string;
-    /// Absent: no end date — a standing shift.
+    /// Absent: no end date - a standing shift.
     until?: string;
     status?: string;
     notes?: string;
@@ -1176,7 +1176,7 @@ export const api = {
       method: 'POST',
       body: JSON.stringify(body),
     }),
-  /// Somebody's usual week — a day not listed is a day off — from `from` on.
+  /// Somebody's usual week - a day not listed is a day off - from `from` on.
   setWeeklySchedule: (
     employeeId: string,
     body: {
@@ -1209,7 +1209,7 @@ export const api = {
   }) => request<PlanResult>('/shifts/copy-week', { method: 'POST', body: JSON.stringify(body) }),
   coverage: (params: { from: string; to: string; locationId?: string }) =>
     request<Coverage>(`/shifts/coverage${toQuery(params)}`),
-  /// Where somebody's week would land with this shift in it — asked before saving.
+  /// Where somebody's week would land with this shift in it - asked before saving.
   staffingMinimums: () => request<StaffingMinimum[]>('/staffing/minimums'),
   setStaffingMinimums: (minimums: StaffingMinimum[]) =>
     request<StaffingMinimum[]>('/staffing/minimums', {
@@ -1263,7 +1263,7 @@ export const api = {
       notes?: string | null;
     },
   ) => request<Shift>(`/shifts/${id}`, { method: 'PATCH', body: JSON.stringify(body) }),
-  /// New hours ("13:00", on the office's clock) and place for a shift — this
+  /// New hours ("13:00", on the office's clock) and place for a shift - this
   /// one, the same weekday from here on, or every later shift of theirs at its
   /// hours.
   retimeShift: (
@@ -1360,7 +1360,7 @@ export const api = {
   /// Provider productivity. A provider reads only their own published
   /// statements; the rest is for managers and admins.
   myProductivity: () => request<Omit<ProductivityStatement, 'employee'>[]>('/productivity/mine'),
-  /// Who may work out provider productivity — chosen by an admin.
+  /// Who may work out provider productivity - chosen by an admin.
   /// Phone notifications: this person's devices.
   pushStatus: () =>
     request<{
@@ -1430,7 +1430,7 @@ export const api = {
   }) => request<{ id: string }>('/on-call/swaps', { method: 'POST', body: JSON.stringify(body) }),
   answerOnCallSwap: (id: string, answer: 'accept' | 'decline' | 'cancel') =>
     request<{ status: string }>(`/on-call/swaps/${id}/${answer}`, { method: 'POST' }),
-  /// What the rota costs, from one day to another (inclusive) — chosen people only.
+  /// What the rota costs, from one day to another (inclusive) - chosen people only.
   rotaCost: (from: string, to: string) => request<RotaCost>(`/rota-cost${toQuery({ from, to })}`),
   rotaCostAccess: () => request<PersonName[]>('/rota-cost/access'),
   grantRotaCostAccess: (employeeId: string) =>
@@ -1500,7 +1500,7 @@ export const api = {
     request<PracticeEvent[]>(
       `/events?from=${encodeURIComponent(from)}&to=${encodeURIComponent(to)}`,
     ),
-  /// `created` is how many dates were written — more than one for a series.
+  /// `created` is how many dates were written - more than one for a series.
   createEvent: (body: EventInput) =>
     request<PracticeEvent & { created: number }>('/events', {
       method: 'POST',
@@ -1552,7 +1552,7 @@ export const api = {
     request<{
       copied: number;
       skipped: string[];
-      /// Moving holidays put on their day next year: "Thanksgiving — Thu, Nov 26, 2026 → …".
+      /// Moving holidays put on their day next year: "Thanksgiving - Thu, Nov 26, 2026 → …".
       moved: string[];
       /// Fixed holidays landing on a weekend next year, to check.
       onWeekend: string[];
@@ -1692,7 +1692,7 @@ export const api = {
   /// `latest`: only the newest few, plus the primary post wherever it falls.
   announcements: (latest?: number) =>
     request<Announcement[]>(latest ? `/announcements?latest=${latest}` : '/announcements'),
-  /// The posts ticked to show publicly — needs no session, for the sign-in page.
+  /// The posts ticked to show publicly - needs no session, for the sign-in page.
   publicPosts: () => request<PublicPost[]>('/announcements/public'),
   primaryAnnouncement: () =>
     request<{ announcement: Announcement | null }>('/announcements/primary'),

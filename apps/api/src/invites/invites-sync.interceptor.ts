@@ -4,8 +4,8 @@ import { from, Observable, switchMap } from 'rxjs';
 import { CalendarInvitesService } from './invites.service';
 
 /**
- * After a save that could change somebody's calendar — a shift, an event, a
- * person, an office, a job role's members — brings the invites up to date
+ * After a save that could change somebody's calendar - a shift, an event, a
+ * person, an office, a job role's members - brings the invites up to date
  * before answering. Awaited, not left running: on Vercel anything still
  * going after the response is frozen.
  *

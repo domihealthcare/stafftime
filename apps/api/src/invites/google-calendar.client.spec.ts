@@ -6,7 +6,7 @@ function reply(status: number, body: unknown = {}) {
 }
 
 const BODY: InviteBody = {
-  summary: 'Work — North Bergen',
+  summary: 'Work - North Bergen',
   start: { dateTime: '2026-10-02T12:00:00.000Z', timeZone: 'America/New_York' },
   end: { dateTime: '2026-10-02T20:00:00.000Z', timeZone: 'America/New_York' },
   transparency: 'opaque',

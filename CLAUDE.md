@@ -1111,6 +1111,15 @@ Beyond the phases, the parts worth knowing about before picking up work:
   "Manage → X": read them with this map. Browser suites reach a Manage screen
   with `goToManage(page, 'Job roles')` in `tests/browser/nav.mjs`
   (`SECTION_OF` is the same map); `tests/browser/manage-sections.mjs`.
+- **Phone book, tidied** (19 October 2026, Dominguez, from a printout): the
+  printed title no longer carries the search words (a search for "pulm" prints
+  as the heading it found); the star is explained on a line of its own; **the
+  starred are a block at the top of every heading across both columns**, then
+  the rest; an office is under **Location**, not "Where"; and **a group of
+  doctors is listed one to a line** ("Dr. A / Dr. B" or "Dr. A, Dr. B" in the
+  name), with a specialty in brackets after the last one shown once as the
+  group's note (`doctorsOf` in `lib/phone-book.ts`); the whole name is still
+  what is searched, so any one doctor finds the group. Cardiology is two pages.
 - **Turned down: "PTO about to be lost"** (9 October 2026, Dominguez): a
   reminder to use PTO before it fails to carry over was proposed and refused —
   not in the practice's interest. Do not propose it again.
@@ -1844,6 +1853,14 @@ surprising, and `docs/open-questions.md` is what is still waiting on a decision.
 The guides for staff and managers are on the app's own Help page.
 
 ## Ways of working
+- **No em dashes, anywhere in the portal or in what is written for it**
+  (Dominguez, 19 October 2026: "for all the portal and going forward don't use
+  em dashes"). Use a plain hyphen, a comma or a new sentence. Code, screens,
+  emails, messages, Help, the AI helpers' output (told not to, and stripped) and
+  the lists loaded by migration are clean, and a unit test
+  (`common/no-em-dashes.spec.ts`) fails on one in the API or web code. Older
+  entries in this file and in `docs/` still have them: leave them, and write
+  none new.
 - Confirm scope and data accuracy before drafting deliverables — don't build ahead
   of confirmed requirements.
 - Prefer iterative discovery: try things, report findings back, refine the

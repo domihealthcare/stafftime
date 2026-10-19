@@ -1,7 +1,7 @@
 import { useId, useState, type ReactNode } from 'react';
 
 /**
- * A word or name that shows a short note when you point at it — or tap it on a
+ * A word or name that shows a short note when you point at it - or tap it on a
  * phone, where there is no pointing, or reach it with the keyboard. For detail
  * that is handy but would crowd the line, like somebody's hours (Dominguez,
  * October 2026: "when you hover over the name, it shows the shift timing").

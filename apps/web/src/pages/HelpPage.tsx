@@ -32,7 +32,7 @@ const STAFF: Section[] = [
           <>
             <p>
               Open <Screen>Home</Screen> and press the big button. The first time, your phone asks
-              whether the app may use your location — say yes. It checks you are at one of your
+              whether the app may use your location - say yes. It checks you are at one of your
               offices, and only at the moment you press the button.
             </p>
             <p>If you are on the office wi-fi, that can count instead of your location.</p>
@@ -70,7 +70,7 @@ const STAFF: Section[] = [
               opens in its own window from the Start menu, Dock or desktop.
             </p>
             <p>
-              It still needs a signal to clock in or out — nothing is saved on the phone to send
+              It still needs a signal to clock in or out - nothing is saved on the phone to send
               later, so if it says it could not reach the server, the punch did not happen.
             </p>
           </>
@@ -82,8 +82,8 @@ const STAFF: Section[] = [
           <p>
             Yes. <Screen>Your profile</Screen> → <strong>Language</strong> →{' '}
             <strong>Español</strong> (or <strong>Español</strong> beside the news on Home). The
-            screens you use every day switch at once — Home, the Schedule, your time off, the
-            Timesheet, the Directory and more — and stay in Spanish on any phone or computer you
+            screens you use every day switch at once - Home, the Schedule, your time off, the
+            Timesheet, the Directory and more - and stay in Spanish on any phone or computer you
             sign in on. People’s names, News posts and what managers type stay as written; this Help
             guide, the bell’s messages and emails are still in English for now.
           </p>
@@ -94,7 +94,7 @@ const STAFF: Section[] = [
         answer: (
           <>
             <p>
-              Yes — whatever rings the bell (your shifts changing, time off decided, the reminder to
+              Yes - whatever rings the bell (your shifts changing, time off decided, the reminder to
               clock in, a colleague asking you to cover) can also appear on your lock screen. Open{' '}
               <Screen>Your profile</Screen> (or <strong>Get these on your phone</strong> under the
               bell) and press <strong>Turn on for this device</strong>, then <strong>Allow</strong>.{' '}
@@ -102,7 +102,7 @@ const STAFF: Section[] = [
             </p>
             <p>
               <strong>On an iPhone</strong> put Domi Staff on your Home Screen first (above) and
-              open it from there — Safari alone cannot. Android phones and computers work in the
+              open it from there - Safari alone cannot. Android phones and computers work in the
               browser. Each phone is turned on, and off, on itself. They come through Apple’s or
               Google’s notification service, locked so neither can read them.
             </p>
@@ -114,16 +114,16 @@ const STAFF: Section[] = [
         answer: (
           <>
             <p>
-              The time clock is the Domi Staff screen at the front desk — on the office computer or
+              The time clock is the Domi Staff screen at the front desk - on the office computer or
               a tablet. Press <strong>Clock in or out</strong>, pick your name, type your PIN, and
               it clocks you in or out. It only lists the people who work at that office. At North
-              Bergen it is the <strong>Time Clock</strong> app on the front-desk iPad — see{' '}
+              Bergen it is the <strong>Time Clock</strong> app on the front-desk iPad - see{' '}
               <strong>The front-desk iPad</strong>, below.
             </p>
             <p>
               You choose your own PIN under <Screen>Your profile</Screen> in the account menu: 4 to
               8 digits, with your password to show it is you. Nobody can see it, managers included.
-              Forgotten it? Choose a new one there, or ask a manager to set one for you — and do not
+              Forgotten it? Choose a new one there, or ask a manager to set one for you - and do not
               use somebody else&rsquo;s.
             </p>
           </>
@@ -135,12 +135,12 @@ const STAFF: Section[] = [
           <>
             <p>
               On <Screen>Home</Screen>, choose <strong>Work from home</strong> as the Location, then{' '}
-              <strong>Clock in — working from home</strong>. No location is asked for or recorded,
+              <strong>Clock in - working from home</strong>. No location is asked for or recorded,
               and the punch is marked &ldquo;Work from home&rdquo;. With a work-from-home shift on,
               it is already chosen for you.
             </p>
             <p>
-              Without a work-from-home shift you can still do it — say you were approved to work
+              Without a work-from-home shift you can still do it - say you were approved to work
               from home today. You will see a warning and can say why; it shows on your timesheet as
               &ldquo;Not where scheduled&rdquo;, with your reason, for your manager to see.
             </p>
@@ -154,15 +154,15 @@ const STAFF: Section[] = [
             <p>The message on the screen says why. The usual reasons:</p>
             <ul>
               <li>
-                <strong>Location blocked</strong> — allow location for this site in your phone's
+                <strong>Location blocked</strong> - allow location for this site in your phone's
                 browser settings, then try again.
               </li>
               <li>
-                <strong>Too far away</strong> — you need to be at the office. Indoors the phone's
+                <strong>Too far away</strong> - you need to be at the office. Indoors the phone's
                 position can be poor; step near a window, or use the front-desk tablet.
               </li>
               <li>
-                <strong>Not assigned to this office</strong> — a manager can add you.
+                <strong>Not assigned to this office</strong> - a manager can add you.
               </li>
             </ul>
             <p>If you still cannot, use the tablet and tell a manager so they know.</p>
@@ -175,12 +175,12 @@ const STAFF: Section[] = [
           <>
             <p>
               Front Desk and Medical Assistants get their closing checklist when they press{' '}
-              <strong>Clock out</strong> — on your phone or at the front-desk tablet. Front Desk
+              <strong>Clock out</strong> - on your phone or at the front-desk tablet. Front Desk
               first picks which desk they worked (Check In, Outdesk, or both). Tick what you did,
               enter the call counts, and tick any supplies we need more of; then clock out.
             </p>
             <p>
-              You can always clock out, even with lines unticked — anything left is passed to a
+              You can always clock out, even with lines unticked - anything left is passed to a
               manager, not held against the punch. At the tablet you enter your PIN once to see the
               list and again to clock out. There is nowhere to type: never put a patient&rsquo;s
               details anywhere in it.
@@ -194,10 +194,10 @@ const STAFF: Section[] = [
           <p>
             Clock out as soon as you notice. Then, on your <Screen>Timesheet</Screen>, press{' '}
             <strong>Ask to fix</strong> on that entry, put in the times you really worked and say
-            what happened. A manager approves it — it is then recorded with your reason, so nobody
-            has to remember later why it changed — or tells you why not; you are told either way.
+            what happened. A manager approves it - it is then recorded with your reason, so nobody
+            has to remember later why it changed - or tells you why not; you are told either way.
             You cannot change your own punches yourself. If you have a shift, the app reminds you by
-            email and under the bell 15 minutes after it ends while you are still clocked in — and
+            email and under the bell 15 minutes after it ends while you are still clocked in - and
             15 minutes after it starts if you have not clocked in. If you are still clocked in at
             midnight, the app clocks you out at 12:00 AM and tells you, so you can clock in as usual
             the next day; tell your manager when you really finished, because those hours cannot be
@@ -210,7 +210,7 @@ const STAFF: Section[] = [
         answer: (
           <p>
             On <Screen>Home</Screen>, before you clock in, press <strong>Running late?</strong> and
-            pick about how late — 10, 20, 30, 45 minutes or an hour. The managers of your office are
+            pick about how late - 10, 20, 30, 45 minutes or an hour. The managers of your office are
             told straight away, and your timesheet shows that you let them know. Press{' '}
             <strong>Change</strong> to give a new time. Clock in as usual when you get there.
           </p>
@@ -223,7 +223,7 @@ const STAFF: Section[] = [
             Tell a manager, and tell them what the app said if it refused you. They add the hours
             for you, with the reason, and it shows on your timesheet as{' '}
             <strong>Entered by hand</strong>. Each time that happens somebody looks into why, so it
-            can be put right — a phone setting, or a problem with the app.
+            can be put right - a phone setting, or a problem with the app.
           </p>
         ),
       },
@@ -232,7 +232,7 @@ const STAFF: Section[] = [
   {
     // The North Bergen iPad (October 2026): the time clock, shared with BrainCheck
     // Assess for patients and the Google Home app for the thermostats. Never put
-    // a passcode here — this guide is shown to everybody.
+    // a passcode here - this guide is shown to everybody.
     title: 'The front-desk iPad',
     topics: [
       {
@@ -242,14 +242,14 @@ const STAFF: Section[] = [
             <p>The iPad at the North Bergen front desk does three jobs:</p>
             <ul>
               <li>
-                <strong>Time Clock</strong> — clocking in and out. This is what it shows the rest of
+                <strong>Time Clock</strong> - clocking in and out. This is what it shows the rest of
                 the time.
               </li>
               <li>
-                <strong>BrainCheck</strong> — patients take the BrainCheck Assess test on it.
+                <strong>BrainCheck</strong> - patients take the BrainCheck Assess test on it.
               </li>
               <li>
-                <strong>Google Home</strong> — the thermostats at both offices.
+                <strong>Google Home</strong> - the thermostats at both offices.
               </li>
             </ul>
             <p>
@@ -268,8 +268,8 @@ const STAFF: Section[] = [
               under the screen and tap <strong>Time Clock</strong>.
             </li>
             <li>
-              Press <strong>Clock in or out</strong>, then find your name in the list — type the
-              first letters to narrow it down — and type your PIN. It says whether you are now in or
+              Press <strong>Clock in or out</strong>, then find your name in the list - type the
+              first letters to narrow it down - and type your PIN. It says whether you are now in or
               out.
             </li>
             <li>
@@ -288,13 +288,13 @@ const STAFF: Section[] = [
         answer: (
           <>
             <p>
-              A patient may be taking their test — <strong>do not interrupt</strong>. Clock in on
+              A patient may be taking their test - <strong>do not interrupt</strong>. Clock in on
               your phone instead, or come back when they are done.
             </p>
             <p>
               If the Home button does nothing, the iPad is locked to one app (Apple&rsquo;s{' '}
               <em>Guided Access</em>) while a patient has it. Only somebody with the Guided Access
-              code can end it — a manager, or the MA running the test.
+              code can end it - a manager, or the MA running the test.
             </p>
           </>
         ),
@@ -304,7 +304,7 @@ const STAFF: Section[] = [
         answer: (
           <p>
             It restarts by itself after an overnight update. Somebody who has the iPad&rsquo;s
-            passcode unlocks it and taps <strong>Time Clock</strong> — it is still set up, nothing
+            passcode unlocks it and taps <strong>Time Clock</strong> - it is still set up, nothing
             needs doing to it. If nobody in the office has the passcode, clock in on your phone and
             tell a manager.
           </p>
@@ -344,7 +344,7 @@ const STAFF: Section[] = [
                 <strong>End</strong>.
               </li>
               <li>
-                <strong>Sign out of BrainCheck</strong> — every time, even with another patient
+                <strong>Sign out of BrainCheck</strong> - every time, even with another patient
                 straight after. Nobody should find the last person&rsquo;s results, or the provider
                 screens, still open.
               </li>
@@ -376,7 +376,7 @@ const STAFF: Section[] = [
         answer: (
           <p>
             <Screen>Timesheet</Screen> shows every punch and the total. Use the shortcuts along the
-            top — this week, last week, this or last pay period, this or last month — or{' '}
+            top - this week, last week, this or last pay period, this or last month - or{' '}
             <strong>Custom</strong> to pick any two dates. The arrows step back and forward a period
             at a time. Pay is every two weeks.
           </p>
@@ -387,16 +387,16 @@ const STAFF: Section[] = [
         answer: (
           <ul>
             <li>
-              <strong>Late</strong> — clocked in more than five minutes after your shift started.
+              <strong>Late</strong> - clocked in more than five minutes after your shift started.
             </li>
             <li>
-              <strong>Left early</strong> — clocked out more than five minutes before it ended.
+              <strong>Left early</strong> - clocked out more than five minutes before it ended.
             </li>
             <li>
-              <strong>Missing punch</strong> — there is a clock-in with no clock-out.
+              <strong>Missing punch</strong> - there is a clock-in with no clock-out.
             </li>
             <li>
-              <strong>Edited</strong> — a manager corrected it; the reason is shown underneath.
+              <strong>Edited</strong> - a manager corrected it; the reason is shown underneath.
             </li>
           </ul>
         ),
@@ -408,7 +408,7 @@ const STAFF: Section[] = [
             <Screen>Schedule</Screen> shows your shifts by week or by month, and in the week your
             time off too: &ldquo;Time off&rdquo; once it is approved, &ldquo;Asked off&rdquo; while
             it is waiting. Your shifts reach your own calendar (Google, Apple or Outlook) either as
-            invites to your email — accept them if asked — or through the calendar link on that
+            invites to your email - accept them if asked - or through the calendar link on that
             screen, which keeps itself up to date; <strong>Your calendar</strong> on that screen
             says which. Treat the link like a password: anyone who has it can see what is on it.
           </p>
@@ -419,8 +419,8 @@ const STAFF: Section[] = [
         answer: (
           <p>
             When somebody calls out, a manager may ask a few people whether they can cover. You get
-            a note under the bell and an email — &ldquo;Can you cover Tue, Feb 16, 9:00 AM–5:00
-            PM?&rdquo; — with a link. Open it and press <strong>Yes, I&rsquo;ll take it</strong> or{' '}
+            a note under the bell and an email - &ldquo;Can you cover Tue, Feb 16, 9:00 AM–5:00
+            PM?&rdquo; - with a link. Open it and press <strong>Yes, I&rsquo;ll take it</strong> or{' '}
             <strong>No, I can&rsquo;t</strong>. The first person to say yes gets the shift, and it
             goes straight onto their schedule; if somebody beat you to it, the link says so. Saying
             no is fine, and you can still say yes later while it is open.
@@ -431,8 +431,8 @@ const STAFF: Section[] = [
         question: 'The reminder the evening before I work',
         answer: (
           <p>
-            From 6pm the evening before a day you work, you get a note under the bell and an email —
-            &ldquo;You&rsquo;re on tomorrow, 9:00 AM–5:00 PM at North Bergen&rdquo; — with any note
+            From 6pm the evening before a day you work, you get a note under the bell and an email -
+            &ldquo;You&rsquo;re on tomorrow, 9:00 AM–5:00 PM at North Bergen&rdquo; - with any note
             on the shift. Nothing on a day off, or when the office is closed. If you would rather
             not have it, turn off <strong>You&rsquo;re on tomorrow</strong> under the menu →{' '}
             <Screen>Email settings</Screen>; your shifts are still on your Schedule, and you are
@@ -455,8 +455,8 @@ const STAFF: Section[] = [
         answer: (
           <>
             <p>
-              Now and then the practice runs a 360: you say how each colleague is doing — a few 1–5
-              ratings and two short written answers — and how you think you are doing. It is under{' '}
+              Now and then the practice runs a 360: you say how each colleague is doing - a few 1–5
+              ratings and two short written answers - and how you think you are doing. It is under{' '}
               <Screen>Surveys</Screen> and on <Screen>Home</Screen> while it is open. Tap a name to
               answer, or <strong>Skip</strong> anybody you do not work with enough. Each person
               once: it cannot be changed after, because nothing links it back to you.
@@ -481,16 +481,16 @@ const STAFF: Section[] = [
             On <Screen>Schedule</Screen>, in the <strong>Events</strong> row above your shifts (and
             with a 📅 in the month): office meetings, meetings you have been added to, and
             practice-wide days like a wellness event. A 🔁 means it repeats, a 🎥 that it is a video
-            call. Tap one for the time, the place and who it is for — and a{' '}
+            call. Tap one for the time, the place and who it is for - and a{' '}
             <strong>Join video call</strong> button when there is one. For a meeting you are on, say
-            whether you are coming — <strong>Going</strong>, <strong>Maybe</strong> or{' '}
-            <strong>Can&rsquo;t go</strong> — and see who else is; everybody it is for sees the
+            whether you are coming - <strong>Going</strong>, <strong>Maybe</strong> or{' '}
+            <strong>Can&rsquo;t go</strong> - and see who else is; everybody it is for sees the
             answers, a ✓, ? or ✗ on the event shows yours, and whoever set it up hears if you
             can&rsquo;t go. Each date of a repeating meeting is answered on its own, and if the time
             changes you are asked again. The bell tells you when one is added, moved or cancelled,
             and reminds you the day before (unless you said you can&rsquo;t go); they reach your
             phone&rsquo;s calendar too, as an invite or through the calendar link. An event is not a
-            shift — if you are being paid to be there, clock in as usual.
+            shift - if you are being paid to be there, clock in as usual.
           </p>
         ),
       },
@@ -498,8 +498,8 @@ const STAFF: Section[] = [
         question: 'When is the office closed?',
         answer: (
           <p>
-            Holidays and other closures show with a 🔒 in the same Events row — &ldquo;Closed all
-            day&rdquo; for Christmas, &ldquo;Closed from 1pm&rdquo; for an early close — and{' '}
+            Holidays and other closures show with a 🔒 in the same Events row - &ldquo;Closed all
+            day&rdquo; for Christmas, &ldquo;Closed from 1pm&rdquo; for an early close - and{' '}
             <strong>Holidays and closures</strong> further down <Screen>Schedule</Screen> lists the
             whole year. You only see the ones for your office. They reach your phone through the
             calendar link too, and the bell tells you when one is added or called off.
@@ -512,13 +512,13 @@ const STAFF: Section[] = [
           <p>
             On <Screen>Schedule</Screen>, press <strong>Calendar</strong> at the top (next to
             Shifts). It shows the month with <strong>your own shifts</strong> 🕘 and approved days
-            off 🌴 (under Show, <strong>My shifts</strong> — pick it alone to see just your schedule
+            off 🌴 (under Show, <strong>My shifts</strong> - pick it alone to see just your schedule
             for the month; tap a shift to open its week), the <strong>diagnostics</strong> 🩺 (which
-            tests, the hours, and the office — WNY or NB), <strong>rep lunches</strong> 🍽️ (the rep,
-            their company, the medication, and whether they bring catering or the office orders —
+            tests, the hours, and the office - WNY or NB), <strong>rep lunches</strong> 🍽️ (the rep,
+            their company, the medication, and whether they bring catering or the office orders -
             the bell tells you the evening before whether there is one at your office),{' '}
             <strong>holidays</strong> ⭐ (the offices are open unless there is also a closure),{' '}
-            <strong>closures</strong> 🔒, meetings and events 📅, and <strong>pay days</strong> 💵 —
+            <strong>closures</strong> 🔒, meetings and events 📅, and <strong>pay days</strong> 💵 -
             the Friday after each pay period ends. Under <strong>Show</strong>, keep{' '}
             <strong>All</strong>, or tap one kind to see only that, and more to add them; All puts
             everything back. Pick an office to see only its diagnostics and rep lunches, and choose{' '}
@@ -527,7 +527,7 @@ const STAFF: Section[] = [
             you have chosen to show. Everything on it reaches your phone&rsquo;s calendar through
             the calendar link at the bottom of the page: <strong>Everything in one calendar</strong>
             , or <strong>Separate calendars</strong> to add only the ones you want (say, just
-            Diagnostics and Pay days) — each shows on your phone as its own calendar you can colour
+            Diagnostics and Pay days) - each shows on your phone as its own calendar you can colour
             and switch off. Use one or the other, not both, or things show twice.
           </p>
         ),
@@ -536,7 +536,7 @@ const STAFF: Section[] = [
         question: 'What do 🍽️ and 🥪 on my shift mean?',
         answer: (
           <p>
-            🍽️ means a rep is bringing lunch to that office that day — tap or hover for who, when,
+            🍽️ means a rep is bringing lunch to that office that day - tap or hover for who, when,
             and whether they bring catering or the office orders. 🥪 means there is no rep lunch, so
             bring your own. Home says the same under today&rsquo;s shift, and the bell tells
             everybody on the rota at that office the evening before. Work-from-home shifts have
@@ -561,7 +561,7 @@ const STAFF: Section[] = [
           <p>
             Open <Screen>Schedule</Screen> → <strong>When you can’t work</strong>. Add a weekday you
             are never free (all day or between two times), or a single date. Nobody has to approve
-            it. It only affects weeks whose schedule has not been published yet — a published week
+            it. It only affects weeks whose schedule has not been published yet - a published week
             is fixed, so for a date inside one, talk to your manager or ask for time off. If it
             clashes with a regular shift of yours, the managers are told, so they can sort the shift
             out with you.
@@ -574,8 +574,8 @@ const STAFF: Section[] = [
           <p>
             If you review providers&rsquo; patient schedules, <Screen>Home</Screen> shows{' '}
             <strong>Schedules you review</strong>: today and the next few days you have one.{' '}
-            <Screen>Schedule</Screen> → <strong>Reviews</strong> shows the whole week — every
-            provider and who is reviewing their schedule — so everybody knows whose is being looked
+            <Screen>Schedule</Screen> → <strong>Reviews</strong> shows the whole week - every
+            provider and who is reviewing their schedule - so everybody knows whose is being looked
             after, and a provider&rsquo;s card in the <Screen>Directory</Screen> says who is
             reviewing it today. The schedules themselves stay in eCW. A manager sets who reviews
             which; if you can&rsquo;t do one, tell them.
@@ -594,11 +594,11 @@ const STAFF: Section[] = [
             Press <strong>Request time off</strong> on <Screen>Home</Screen> or on{' '}
             <Screen>Schedule</Screen>, choose <strong>Sick</strong>, <strong>PTO</strong> or{' '}
             <strong>Unpaid</strong> and the dates, and send it. <strong>Unpaid</strong> is for a day
-            you want off without using your sick days or PTO — for any reason, even if you still
+            you want off without using your sick days or PTO - for any reason, even if you still
             have days left. Your days left and what you have asked for are on the Schedule;{' '}
             <strong>All your time off</strong> there shows the rest. If you are on the rota on any
             of those days, the form lists the shifts before you send it. You get an email when a
-            manager decides, with their reason if they give one — and, if they took your shifts off
+            manager decides, with their reason if they give one - and, if they took your shifts off
             the schedule, it says so.
           </p>
         ),
@@ -620,8 +620,8 @@ const STAFF: Section[] = [
             </p>
             <p>
               Sick days are given for the whole year, however late in it you started. Hourly staff
-              who started from 16 October 2026 earn them as they work instead — an hour for every 30
-              hours worked, up to the year&rsquo;s days — and their balance shows how much so far.
+              who started from 16 October 2026 earn them as they work instead - an hour for every 30
+              hours worked, up to the year&rsquo;s days - and their balance shows how much so far.
             </p>
           </>
         ),
@@ -655,13 +655,13 @@ const STAFF: Section[] = [
           <>
             <p>
               Yes. Under every post, <strong>Like</strong> and <strong>Comment</strong>; a post with
-              a poll has its choices in it — tap one to vote, tap another to change your mind, or{' '}
+              a poll has its choices in it - tap one to vote, tap another to change your mind, or{' '}
               <strong>Take my vote back</strong>. On Home you can like and vote on the top post;
               comments are on <Screen>News</Screen>.
             </p>
             <p className="mt-2">
               <strong>All of it is under your name</strong>: everybody can see who liked a post, who
-              wrote a comment and who picked what in a poll. (Surveys are different — those are
+              wrote a comment and who picked what in a poll. (Surveys are different - those are
               anonymous.) You can change or delete your own comments; managers can delete any.
               Whoever wrote the post, and everybody who has already commented, gets a note on the
               bell when somebody comments. Never write anything about a patient.
@@ -674,14 +674,14 @@ const STAFF: Section[] = [
         answer: (
           <>
             <p>
-              Something a manager has asked you to read — a new policy, a News post, a page on{' '}
-              <Screen>Resources</Screen> — or to do, like a training video. Open it from the card,
+              Something a manager has asked you to read - a new policy, a News post, a page on{' '}
+              <Screen>Resources</Screen> - or to do, like a training video. Open it from the card,
               then press <strong>I’ve read it</strong> or <strong>Done</strong> so the practice
               knows. A post you have been asked to read has the same button on it in News.
             </p>
             <p>
-              You are told on the bell and by email when it is set, and reminded — two days before
-              it is due, after it passes, and once a week — until you confirm. It never stops you
+              You are told on the bell and by email when it is set, and reminded - two days before
+              it is due, after it passes, and once a week - until you confirm. It never stops you
               clocking in. Everything asked of you, and what you have done, is under{' '}
               <strong>See all</strong>.
             </p>
@@ -695,11 +695,11 @@ const STAFF: Section[] = [
             <Screen>Directory</Screen> lists everybody with their work email, phone number, job
             roles and offices. <strong>In now</strong> means they are clocked in at the moment.{' '}
             <strong>Working from home today</strong> lists who is clocked in from home, and anybody
-            whose shift today is from home but who has not clocked in yet — point at a name (or tap
+            whose shift today is from home but who has not clocked in yet - point at a name (or tap
             it on a phone) to see their hours. Each job role has its own colour, so you can tell at
             a glance who is front desk, MA or provider. <strong>Office extensions</strong> lists
             every desk phone and person by section, as on the practice’s sheet. A “from home” number
-            rings that person’s mobile on the days they work from home — on those days their card
+            rings that person’s mobile on the days they work from home - on those days their card
             shows it first.
           </p>
         ),
@@ -710,7 +710,7 @@ const STAFF: Section[] = [
           <p>
             Birthdays in the coming week are on <Screen>Home</Screen>, with a cake on the day in the{' '}
             <Screen>Schedule</Screen> and on each person&rsquo;s card in the{' '}
-            <Screen>Directory</Screen>. Only the month and day are kept — never the year. Yours is
+            <Screen>Directory</Screen>. Only the month and day are kept - never the year. Yours is
             on <Screen>Your profile</Screen>; if it is wrong or missing, ask a manager.
           </p>
         ),
@@ -721,7 +721,7 @@ const STAFF: Section[] = [
           <p>
             <Screen>Resources</Screen>. You see the resources for everyone, plus those for each of
             your job roles. A Google Drive folder (📁) opens in place: tap a file and it opens in a
-            new tab — no Google account needed.
+            new tab - no Google account needed.
           </p>
         ),
       },
@@ -730,13 +730,13 @@ const STAFF: Section[] = [
         answer: (
           <>
             <p>
-              <Screen>Diagnostics</Screen> — on Home under Quick, or on Resources. Pick{' '}
+              <Screen>Diagnostics</Screen> - on Home under Quick, or on Resources. Pick{' '}
               <strong>Ultrasounds</strong> or <strong>Testing</strong>, then type the insurance in{' '}
               <strong>Find an insurance</strong>: its answer for every test comes up in large boxes,
               with the time and prep. <strong>YES</strong> (green) is covered, <strong>NO</strong>{' '}
               (red) is not, <strong>PA</strong> (blue) needs a prior authorization first, and{' '}
               <strong>Call ref #</strong> means call the insurance for a reference number. A dash
-              means it is not on the guide yet — ask a manager. A <strong>*</strong> has a note:
+              means it is not on the guide yet - ask a manager. A <strong>*</strong> has a note:
               point at it or tap it.
             </p>
             <p>
@@ -753,11 +753,11 @@ const STAFF: Section[] = [
         answer: (
           <>
             <p>
-              <Screen>Phone book</Screen> — its own tab in the header, and on the bottom bar of a
+              <Screen>Phone book</Screen> - its own tab in the header, and on the bottom bar of a
               phone. It is the practice&rsquo;s list of the labs, hospitals, imaging centers, home
               care, equipment suppliers and specialists we send patients to. Type in{' '}
-              <strong>Search</strong> — a name, a specialty, an insurance (&ldquo;wellcare&rdquo;),
-              a street or even part of a number — and the list narrows as you type. The search stays
+              <strong>Search</strong> - a name, a specialty, an insurance (&ldquo;wellcare&rdquo;),
+              a street or even part of a number - and the list narrows as you type. The search stays
               at the top as you scroll. <strong>Listed under</strong> shows one heading at a time.
             </p>
             <p>
@@ -769,11 +769,11 @@ const STAFF: Section[] = [
               and what to fax over.
             </p>
             <p>
-              <strong>Print</strong> prints what you are looking at — all the cardiologists, say, or
+              <strong>Print</strong> prints what you are looking at - all the cardiologists, say, or
               everything starred. Pick the heading first, then press Print. The copy that comes up
               is the one to hand to a patient: large print, names, addresses and phone numbers, with
               no fax numbers and none of our notes. Tick <strong>Staff copy</strong> for the fax
-              numbers and notes — that one is not for patients. A heading such as Cardiology is a
+              numbers and notes - that one is not for patients. A heading such as Cardiology is a
               page or two; with no heading picked it prints the whole book.
             </p>
             <p>
@@ -781,8 +781,8 @@ const STAFF: Section[] = [
               or add a note, tick <strong>Preferred</strong> to star it, or press{' '}
               <strong>+ Add another address</strong> for another office.{' '}
               <strong>+ Add an entry</strong> puts in a new place; only a manager can{' '}
-              <strong>Remove</strong> one (inside Edit). Please write about the place only &mdash;
-              never a patient&rsquo;s name or details.
+              <strong>Remove</strong> one (inside Edit). Please write about the place only - never a
+              patient&rsquo;s name or details.
             </p>
           </>
         ),
@@ -792,8 +792,8 @@ const STAFF: Section[] = [
         answer: (
           <>
             <p>
-              Yes. Your answers are saved with no name and no time on them, so nobody — managers and
-              admins included — can tell who said what. The app does note, separately, that you have
+              Yes. Your answers are saved with no name and no time on them, so nobody - managers and
+              admins included - can tell who said what. The app does note, separately, that you have
               taken part, so you cannot answer twice.
             </p>
             <p>
@@ -804,9 +804,9 @@ const STAFF: Section[] = [
               The <strong>suggestion box</strong> is on <Screen>Home</Screen> too, and always open:
               press <strong>Drop a note in</strong>, pick what sort of note it is if you like (an
               idea, something not working, a shout-out or a question), write it and send it. Only
-              your message, the sort you picked and the day it arrived are kept — never your name or
-              the time — so nobody, managers and admins included, can find out who sent it.
-              <strong>Truly anonymous — how?</strong> on the card says the rest. The managers are
+              your message, the sort you picked and the day it arrived are kept - never your name or
+              the time - so nobody, managers and admins included, can find out who sent it.
+              <strong>Truly anonymous - how?</strong> on the card says the rest. The managers are
               told the next morning that something is waiting, and read it in the app.
             </p>
           </>
@@ -824,7 +824,7 @@ const STAFF: Section[] = [
             Menu under your name → <strong>Your profile</strong>. Add a photo, the name you go by,
             pronouns, your phone number and a line about yourself. Colleagues see them in the
             Directory. Your photo is cropped square and shrunk on your phone before it is sent;
-            remove it whenever you like. An admin can also put one up for you — you are told under
+            remove it whenever you like. An admin can also put one up for you - you are told under
             the bell, and can change it or take it down here.
           </p>
         ),
@@ -834,7 +834,7 @@ const STAFF: Section[] = [
         answer: (
           <p>
             When a license or certificate of yours runs out in 60 days, again at 30 days, and if it
-            lapses, you get a note under the bell and an email — once each. The bell note opens your
+            lapses, you get a note under the bell and an email - once each. The bell note opens your
             licenses with their dates. Once it is renewed, give a manager the new expiry date; they
             enter it, and the reminders start again from the new date.
           </p>
@@ -844,7 +844,7 @@ const STAFF: Section[] = [
         question: 'I was reminded about an onboarding task.',
         answer: (
           <p>
-            When you start, some steps on your onboarding checklist are yours to do — reading the
+            When you start, some steps on your onboarding checklist are yours to do - reading the
             handbook, giving an emergency contact. Two days before one is due, and once if it goes
             past its date, you get a note under the bell and an email, with everything due in one
             message. The note opens your checklist: tick the task off there once it is done. If
@@ -857,12 +857,12 @@ const STAFF: Section[] = [
         answer: (
           <p>
             When it is switched on, <strong>Ask Domi Staff</strong> is on Home&rsquo;s Quick card:
-            ask in your own words — &ldquo;When am I next on?&rdquo;, &ldquo;How much PTO do I have
+            ask in your own words - &ldquo;When am I next on?&rdquo;, &ldquo;How much PTO do I have
             left?&rdquo;, &ldquo;Who is in at North Bergen?&rdquo;, &ldquo;How do I put the app on
-            my phone?&rdquo; — and it answers from what you can already see in the app and from this
+            my phone?&rdquo; - and it answers from what you can already see in the app and from this
             Help guide. Answers come from Claude, an AI service run by Anthropic, so your question
             and what it looks up for you are sent to it; nothing is kept in Domi Staff, and leaving
-            the page ends the conversation. It only looks things up — it cannot change anything —
+            the page ends the conversation. It only looks things up - it cannot change anything -
             and you can ask 40 questions a day. Never type patient details into it.
           </p>
         ),
@@ -890,7 +890,7 @@ const STAFF: Section[] = [
         question: 'I used a shared computer.',
         answer: (
           <p>
-            Sign out when you are done — menu under your name → <strong>Sign out</strong>. The
+            Sign out when you are done - menu under your name → <strong>Sign out</strong>. The
             front-desk tablet does not need this: it never signs anybody in.
           </p>
         ),
@@ -899,7 +899,7 @@ const STAFF: Section[] = [
         question: 'What is the bell at the top?',
         answer: (
           <p>
-            Your notifications — things that are just for you: a shift added to, changed on or taken
+            Your notifications - things that are just for you: a shift added to, changed on or taken
             off your schedule, a meeting, event or office closure added, moved or cancelled, your
             time off decided, overtime on your schedule, a survey waiting for you, your checklist
             starting, new posts on <Screen>News</Screen>, and comments on posts you wrote or
@@ -913,7 +913,7 @@ const STAFF: Section[] = [
         answer: (
           <p>
             It is at the bottom of this page, under <strong>About this version</strong>: a number
-            like 1.2.0, and when that version went out. The number goes up with every new version —
+            like 1.2.0, and when that version went out. The number goes up with every new version -
             the last part for fixes, the middle for new features. If it says a newer version is
             live, reload the page to get it.
           </p>
@@ -927,7 +927,7 @@ const STAFF: Section[] = [
             were when you clocked in on your phone is kept for 90 days and then deleted; it is not
             shown on timesheets. Clocking in from home records nothing about where you are. Your
             tablet PIN is stored scrambled, so nobody can read it back. It holds no social security
-            number, no ID numbers and no personnel documents — those stay in your personnel file.
+            number, no ID numbers and no personnel documents - those stay in your personnel file.
           </p>
         ),
       },
@@ -951,7 +951,7 @@ const CARE_PLAN: Section[] = [
             <ul>
               <li>
                 Fill in the patient, then the general care plan, support, allergies and medications,
-                and the numbers to track — the same questions as the practice&rsquo;s Google Form.
+                and the numbers to track - the same questions as the practice&rsquo;s Google Form.
               </li>
               <li>
                 Choose at least two chronic conditions. Each adds its own section with the questions
@@ -965,7 +965,7 @@ const CARE_PLAN: Section[] = [
               <li>
                 Choose <strong>English</strong> or <strong>English and Spanish</strong> (one PDF,
                 English first, then the same in Spanish), download it, then tell it the PDF arrived
-                — that clears the form.
+                - that clears the form.
               </li>
               <li>
                 You are named on it as the person who prepared it; it is signed electronically by{' '}
@@ -979,7 +979,7 @@ const CARE_PLAN: Section[] = [
         question: 'Does the care plan form keep anything?',
         answer: (
           <p>
-            No. What you type stays on your device and is never sent to Domi Staff or saved in it —
+            No. What you type stays on your device and is never sent to Domi Staff or saved in it -
             leaving, reloading or signing out clears it, and it asks first. The PDF is a patient
             record on your device: upload it to eCW Documents, give the patient their copy, then
             delete it.
@@ -991,8 +991,8 @@ const CARE_PLAN: Section[] = [
         answer: (
           <p>
             The questions&rsquo; answers and every ticked choice are printed in Spanish in the
-            Spanish half; height stays in inches and weight in pounds. Anything you type — names,
-            providers, the SMART goal, &ldquo;Other&rdquo; — is printed exactly as typed, so write
+            Spanish half; height stays in inches and weight in pounds. Anything you type - names,
+            providers, the SMART goal, &ldquo;Other&rdquo; - is printed exactly as typed, so write
             it in Spanish if the patient reads Spanish. If somebody&rsquo;s primary language is
             Spanish the PDF starts as English and Spanish.
           </p>
@@ -1024,26 +1024,26 @@ const WELLNESS: Section[] = [
           <>
             <p>
               <Screen>Resources</Screen> → <Screen>Forms</Screen> →{' '}
-              <strong>Annual Wellness Visit</strong> — the practice&rsquo;s Annual Wellness
+              <strong>Annual Wellness Visit</strong> - the practice&rsquo;s Annual Wellness
               Supplement Form, one page at a time.
             </p>
             <ul>
               <li>
-                <strong>Page 2, preventive services</strong> — the medical assistant. For each
+                <strong>Page 2, preventive services</strong> - the medical assistant. For each
                 service tick Yes, No or Offered/Refused; for a Yes, the date it was done
                 (MM/DD/YYYY, or just the month and year, or the year) and the result if there is
                 one.
               </li>
               <li>
-                <strong>Page 1, the questionnaire</strong> — the provider, with the patient: social
+                <strong>Page 1, the questionnaire</strong> - the provider, with the patient: social
                 history and functional ability, then the SPMSQ. Choose the patient&rsquo;s preferred
                 language first and the questions are shown in it, to read as written.
               </li>
             </ul>
             <p>
               Providers open on page 1 and everybody else on page 2; the buttons at the top switch.
-              Each page has its own PDF — <em>AWV Questionnaire</em> and{' '}
-              <em>AWV Preventive Services</em> — signed electronically by whoever made it. Upload
+              Each page has its own PDF - <em>AWV Questionnaire</em> and{' '}
+              <em>AWV Preventive Services</em> - signed electronically by whoever made it. Upload
               both to eCW Documents.
             </p>
           </>
@@ -1053,7 +1053,7 @@ const WELLNESS: Section[] = [
         question: 'The SPMSQ score',
         answer: (
           <p>
-            Mark each answer correct or incorrect — what the patient actually said is not kept — and
+            Mark each answer correct or incorrect - what the patient actually said is not kept - and
             choose their education. The score is worked out as on the paper form: 0&ndash;2
             incorrect is normal, 3&ndash;4 mild, 5&ndash;7 moderate and 8 or more severe cognitive
             impairment, with one more incorrect allowed for grade school or less and one less for
@@ -1091,7 +1091,7 @@ const PROVIDERS: Section[] = [
               is on <Screen>Home</Screen> too. Your days are shaded.
             </p>
             <p>
-              To swap, press one of your days, choose who should take it and — if you like — one of
+              To swap, press one of your days, choose who should take it and - if you like - one of
               their days you will take back, then <strong>Ask them</strong>. They are told on the
               bell and by email and answer <strong>Yes, swap</strong> or{' '}
               <strong>No, I can’t</strong> on the same screen; the days change hands only when they
@@ -1113,11 +1113,11 @@ const PROVIDERS: Section[] = [
           <>
             <p>
               <Screen>Resources</Screen> → <Screen>Forms</Screen>, at the top →{' '}
-              <strong>BrainCheck Care Plan</strong> — the cognitive assessment and care plan, billed
+              <strong>BrainCheck Care Plan</strong> - the cognitive assessment and care plan, billed
               as CPT 99483.
             </p>
             <ul>
-              <li>Tick the requirements at the top first — all four are needed to bill 99483.</li>
+              <li>Tick the requirements at the top first - all four are needed to bill 99483.</li>
               <li>
                 Fill in the patient and visit. You are the provider: your name and letters come from
                 your staff record.
@@ -1132,7 +1132,7 @@ const PROVIDERS: Section[] = [
               </li>
               <li>
                 Download the <strong>note</strong> and the <strong>handout</strong>, then tell it
-                both arrived — that clears the form.
+                both arrived - that clears the form.
               </li>
             </ul>
           </>
@@ -1144,7 +1144,7 @@ const PROVIDERS: Section[] = [
           <>
             <p>
               No. What you type stays on your device and is never sent to Domi Staff or saved in it
-              — leaving, reloading or signing out clears it, and it asks first.
+              - leaving, reloading or signing out clears it, and it asks first.
             </p>
             <p>
               The two PDFs you download are patient records on your device. Use your own or a
@@ -1159,7 +1159,7 @@ const PROVIDERS: Section[] = [
         answer: (
           <p>
             Switch an element to <strong>Prior visit</strong> and tick the statement that it was
-            reviewed today and is still valid or updated. Its details become optional — open{' '}
+            reviewed today and is still valid or updated. Its details become optional - open{' '}
             <strong>Add details</strong> to record anything new. The history and exam (A) start as a
             prior visit. Driving (G) and the care plan (J) are needed either way.
           </p>
@@ -1172,12 +1172,12 @@ const PROVIDERS: Section[] = [
             <p>
               Each area&rsquo;s problem is written from your answers above; press{' '}
               <strong>Edit</strong> to change it. Goals and actions that fit your answers are marked{' '}
-              <strong>Suggested</strong> and listed first — nothing is ticked for you. Each area
+              <strong>Suggested</strong> and listed first - nothing is ticked for you. Each area
               needs a goal and something that will be done.
             </p>
             <p>
               Ticked goals and actions go on the handout in plain words, in <strong>English</strong>
-              , or <strong>English and Spanish</strong> (English first, then the same in Spanish) —
+              , or <strong>English and Spanish</strong> (English first, then the same in Spanish) -
               choose under <strong>PDFs</strong>. Anything you type is printed as typed.
             </p>
           </>
@@ -1210,9 +1210,9 @@ const PRODUCTIVITY: Section[] = [
             <p>
               <Screen>Your productivity</Screen>, in the account menu. Your manager works out each
               period and publishes it when it is ready; you are told under the bell. Each one shows
-              the patients expected and seen in every interval, the difference, and &mdash; where
-              your arrangement has one &mdash; the multiplier and the amount. A short period shows
-              as a negative.
+              the patients expected and seen in every interval, the difference, and - where your
+              arrangement has one - the multiplier and the amount. A short period shows as a
+              negative.
             </p>
             <p>
               Only you can see yours. If a number looks wrong, tell your manager: they can correct
@@ -1239,21 +1239,21 @@ const MANAGERS: Section[] = [
             </p>
             <ul className="mt-2 list-disc space-y-1 pl-5">
               <li>
-                <strong>Dashboard</strong> — the week at a glance, and what is waiting on you.
+                <strong>Dashboard</strong> - the week at a glance, and what is waiting on you.
               </li>
               <li>
-                <strong>People</strong> — Staff (admins), Job roles, Licenses, Onboarding &amp;
+                <strong>People</strong> - Staff (admins), Job roles, Licenses, Onboarding &amp;
                 Offboarding and Provider productivity.
               </li>
               <li>
-                <strong>Offices</strong> — Locations and Kiosks (admins), Closing checklists and
+                <strong>Offices</strong> - Locations and Kiosks (admins), Closing checklists and
                 Reps.
               </li>
               <li>
-                <strong>Surveys &amp; reading</strong> — Surveys and Required reading.
+                <strong>Surveys &amp; reading</strong> - Surveys and Required reading.
               </li>
               <li>
-                <strong>Money</strong> — Export, Reimbursements and Vendor payments (admins).
+                <strong>Money</strong> - Export, Reimbursements and Vendor payments (admins).
               </li>
             </ul>
             <p className="mt-2">
@@ -1296,8 +1296,8 @@ const MANAGERS: Section[] = [
         question: 'Corrections staff ask for',
         answer: (
           <p>
-            Staff can press <strong>Ask to fix</strong> on their own entries — a forgotten
-            clock-out, a phone that died — with the times and what happened. You are told under the
+            Staff can press <strong>Ask to fix</strong> on their own entries - a forgotten
+            clock-out, a phone that died - with the times and what happened. You are told under the
             bell (if hours are your part of the round-up), and they wait in{' '}
             <strong>Corrections asked for</strong> at the top of the <Screen>Timesheet</Screen> and
             in the nightly email. <strong>Approve</strong> makes it an ordinary edit, with
@@ -1313,7 +1313,7 @@ const MANAGERS: Section[] = [
             When somebody presses <strong>Running late?</strong> on Home, the managers of their
             office are told under the bell (and on phones with notifications on), and the timesheet
             shows it beside the late flag. Thirty minutes into a shift with nobody clocked in, the
-            same managers hear &ldquo;… isn&rsquo;t clocked in&rdquo; — once, not on approved time
+            same managers hear &ldquo;… isn&rsquo;t clocked in&rdquo; - once, not on approved time
             off or a closure, and not until a quarter of an hour after the time somebody said they
             would be late. The Directory has their phone number.
           </p>
@@ -1323,8 +1323,8 @@ const MANAGERS: Section[] = [
         question: 'Shifts with no clock-in',
         answer: (
           <p>
-            When a published shift is over and the person never clocked in that day — not on
-            approved time off, and the office was not closed — it is listed on the{' '}
+            When a published shift is over and the person never clocked in that day - not on
+            approved time off, and the office was not closed - it is listed on the{' '}
             <Screen>Timesheet</Screen> banner, counted on the Dashboard and in the nightly email,
             for two weeks. It goes once you have done whichever is true:{' '}
             <strong>+ Add hours</strong> if they worked and forgot, record the time off if they were
@@ -1340,7 +1340,7 @@ const MANAGERS: Section[] = [
             <p>
               On <Screen>Timesheet</Screen>, press <strong>+ Add hours</strong>: who, the day, when
               they started and finished, why it is by hand, and what happened. You cannot add your
-              own hours — another manager does. <strong>Edit</strong> is still the way to fix a
+              own hours - another manager does. <strong>Edit</strong> is still the way to fix a
               punch that is there, such as a missing clock-out.
             </p>
             <p>
@@ -1360,7 +1360,7 @@ const MANAGERS: Section[] = [
           <>
             <p>
               <Screen>Manage → Money → Export</Screen> opens on the last pay period. Check the
-              summary — it says how many entries are flagged — then download the Excel file and
+              summary - it says how many entries are flagged - then download the Excel file and
               upload it to payroll. Save the columns you use as a report so next time is one tap.
             </p>
             <p>
@@ -1368,7 +1368,7 @@ const MANAGERS: Section[] = [
               look in that period: hours nobody has approved, somebody clocked out at midnight or
               still clocked in (their hours are left out until the time is fixed), hours entered by
               hand that nobody has looked into, corrections made after hours went to payroll,
-              overtime, and — for ADP — anybody without an ADP File #. It only warns:{' '}
+              overtime, and - for ADP - anybody without an ADP File #. It only warns:{' '}
               <strong>Export anyway</strong> always makes the file, and a period with nothing to say
               downloads straight away.
             </p>
@@ -1405,7 +1405,7 @@ const MANAGERS: Section[] = [
               <strong>Copy last week</strong> when most weeks look the same, then adjust.
             </li>
             <li>
-              A new shift for somebody — the ＋ on the rota, or <strong>+ Add</strong> — starts on
+              A new shift for somebody - the ＋ on the rota, or <strong>+ Add</strong> - starts on
               <strong> their usual</strong> for that day: their regular shift if they have one,
               otherwise the hours and office they have worked most often on that weekday lately (or
               on any day, if that weekday has nothing settled). A line under the times says where it
@@ -1419,8 +1419,8 @@ const MANAGERS: Section[] = [
             </li>
             <li>
               Under the days, <strong>Which weeks</strong> chooses every week, every other week (or
-              every 3 or 4), or <strong>certain weeks of the month</strong> — the 1st, 2nd, 3rd, 4th
-              or last — for a shift like the first Saturday of the month. The first few dates it
+              every 3 or 4), or <strong>certain weeks of the month</strong> - the 1st, 2nd, 3rd, 4th
+              or last - for a shift like the first Saturday of the month. The first few dates it
               makes are shown before you save. The 1st Saturday is the one on the 1st to the 7th;
               &ldquo;Last&rdquo; is the last one, even in a month with five. It works with No end
               date too, and a regular shift&rsquo;s <strong>Edit…</strong> can change it.
@@ -1433,8 +1433,8 @@ const MANAGERS: Section[] = [
               remove a single week as usual; the rest carry on.
             </li>
             <li>
-              For somebody whose hours or office differ day to day — Mondays 12 to 8 at North
-              Bergen, Tuesdays 9 to 5 at West New York, Fridays from home — set their{' '}
+              For somebody whose hours or office differ day to day - Mondays 12 to 8 at North
+              Bergen, Tuesdays 9 to 5 at West New York, Fridays from home - set their{' '}
               <strong>usual week</strong> instead: under <strong>Regular shifts</strong>, choose
               them in <strong>Set somebody&rsquo;s usual week</strong> (or press{' '}
               <strong>Their week…</strong> beside one of theirs), tick the days they work and give
@@ -1446,8 +1446,8 @@ const MANAGERS: Section[] = [
             <li>
               The week is a <strong>rota</strong>: a row per person, a column per day. Click the
               empty space in a day to add a shift there, or click a shift to change who works it,
-              publish it or remove it. <strong>Right-click</strong> a day — on the week or in the
-              month — for <strong>Add a shift</strong>, <strong>Add time off</strong> (for that
+              publish it or remove it. <strong>Right-click</strong> a day - on the week or in the
+              month - for <strong>Add a shift</strong>, <strong>Add time off</strong> (for that
               person, from that day), or an <strong>event</strong>, <strong>rep lunch</strong>,{' '}
               <strong>diagnostics date</strong> or <strong>holiday or closure</strong> on it.
               Removing a shift, or taking somebody off one, asks you to confirm first. Each
@@ -1458,8 +1458,8 @@ const MANAGERS: Section[] = [
               <strong>by job role</strong>, and filter to one office or one role.
             </li>
             <li>
-              The <strong>Month</strong> filters the same way — one office, one job role, or both
-              (MAs in North Bergen) — and the box beside them shows one person&rsquo;s shifts: type
+              The <strong>Month</strong> filters the same way - one office, one job role, or both
+              (MAs in North Bergen) - and the box beside them shows one person&rsquo;s shifts: type
               part of their name, pick them, and page through their months. ✕ goes back to everyone.
             </li>
             <li>
@@ -1470,8 +1470,8 @@ const MANAGERS: Section[] = [
               &rarr; People &rarr; Job roles.
             </li>
             <li>
-              <strong>Right-click</strong> somebody&rsquo;s name or shift — on the week, in the
-              month, or on their Directory card — for <strong>See profile</strong>,{' '}
+              <strong>Right-click</strong> somebody&rsquo;s name or shift - on the week, in the
+              month, or on their Directory card - for <strong>See profile</strong>,{' '}
               <strong>See schedule</strong> (their month, on its own),{' '}
               <strong>Open in Staff</strong> for admins, and <strong>Publish N draft shifts</strong>{' '}
               when that person has drafts. The bar above the rota that counts drafts has{' '}
@@ -1489,13 +1489,13 @@ const MANAGERS: Section[] = [
             </li>
             <li>
               Time-off requests waiting on you, and anybody the rota puts into overtime, are one
-              line each above the rota — click the line to open it, then Approve or Decline from
+              line each above the rota - click the line to open it, then Approve or Decline from
               there.
             </li>
             <li>
               <strong>Print</strong> gives the week on paper, one page per office, for the
               break-room wall. Only published shifts are printed, open shifts never, and time off
-              just says &ldquo;Off&rdquo; — never sick or vacation.
+              just says &ldquo;Off&rdquo; - never sick or vacation.
             </li>
           </ul>
         ),
@@ -1504,7 +1504,7 @@ const MANAGERS: Section[] = [
         question: 'What is an open shift?',
         answer: (
           <p>
-            A shift the office needs covered that nobody is on yet — say two Front Desk on Saturday
+            A shift the office needs covered that nobody is on yet - say two Front Desk on Saturday
             morning. Make them with <strong>+ Add → Shift</strong> or{' '}
             <strong>+ Add → Repeating shifts</strong> by choosing &ldquo;Nobody yet&rdquo;, or with
             a click in an office&rsquo;s Open shifts row. They are flagged on the rota, in the
@@ -1518,7 +1518,7 @@ const MANAGERS: Section[] = [
         answer: (
           <p>
             When you decide a time-off request, a warning under it says if approving it leaves an
-            office short of one job role — more than half of them off that day, counting requests
+            office short of one job role - more than half of them off that day, counting requests
             still waiting as well as approved ones (so for a role of one or two, all of them). It
             names who else is off. It is only a warning: Approve still works. The Dashboard lists
             the next 8 weeks&rsquo; clashes, and the nightly email the next 2. Where you have set a
@@ -1532,7 +1532,7 @@ const MANAGERS: Section[] = [
         answer: (
           <p>
             <Screen>Manage → People → Job roles</Screen> → <strong>Minimum on each day</strong>: the
-            fewest people you want on in a job role at an office on a day it is open — say 2 Front
+            fewest people you want on in a job role at an office on a day it is open - say 2 Front
             Desk at North Bergen. Blank means none. Where there is one, Too many off at once warns
             when time off would leave fewer than that, and days the rota leaves short (drafts
             counted; working from home and open shifts not) are listed on the Schedule banner and in
@@ -1550,7 +1550,7 @@ const MANAGERS: Section[] = [
             who, over the last four weeks, was late 3 times or more (it says &ldquo;3 Mondays
             running&rdquo; when it is the same day each week), forgot to clock out twice, or left
             early twice. <strong>Which days?</strong> lists them. Only managers see it, and the
-            person is not told — it is a reason to ask how things are going, not a verdict. Hours
+            person is not told - it is a reason to ask how things are going, not a verdict. Hours
             entered by hand are not counted.
           </p>
         ),
@@ -1563,7 +1563,7 @@ const MANAGERS: Section[] = [
             clocking in early and staying late add up too. On the <strong>Dashboard</strong>, and in
             the nightly email under Hours, is everybody paid by the hour whose hours{' '}
             <strong>worked so far this week</strong> plus what the rota{' '}
-            <strong>still has them down for</strong> come to more than the line — in time to shorten
+            <strong>still has them down for</strong> come to more than the line - in time to shorten
             a later shift. It shows what the rota alone would have been, so you can tell whether the
             overtime is the rota&rsquo;s or the extra minutes&rsquo;. Somebody still clocked in
             counts up to now; a clock-out the app made at midnight is left out until it is
@@ -1575,26 +1575,26 @@ const MANAGERS: Section[] = [
         question: 'Who can cover this?',
         answer: (
           <p>
-            Click any shift on the rota — open, or one whose person needs replacing — and{' '}
+            Click any shift on the rota - open, or one whose person needs replacing - and{' '}
             <strong>Who can cover this</strong> suggests who to ask first: people at that office in
             the shift&rsquo;s job role who are free then, not off, haven&rsquo;t said they
             can&rsquo;t work then, and are furthest from overtime. Press a name to pick them. The
-            list under it has everybody, in three groups — free, could but check first (with the
+            list under it has everybody, in three groups - free, could but check first (with the
             reason: asked for the day off, not available then, close to or into overtime), and
-            already on or off that day — so you can still choose anyone, and the usual warnings
+            already on or off that day - so you can still choose anyone, and the usual warnings
             follow.
           </p>
         ),
       },
       {
-        question: 'Somebody called out — asking who can cover',
+        question: 'Somebody called out - asking who can cover',
         answer: (
           <p>
             Make their shift an open shift (take them off it, or approve their time off and leave it
             open), then click it on the rota. Under <strong>Ask people to cover</strong>, press{' '}
             <strong>Choose who to ask</strong>: the people free then are listed, the best fits
             already ticked and the rest with their catch. <strong>Ask</strong> sends each a note on
-            the bell and an email. The first to say yes gets the shift — published to them — and you
+            the bell and an email. The first to say yes gets the shift - published to them - and you
             are told; the others still to answer hear it is covered. If everybody says no, you are
             told that too. The same pop-up shows who said what, lets you ask more people, or{' '}
             <strong>Stop asking</strong>. Only the people you ask see the shift; nobody else does.
@@ -1606,8 +1606,8 @@ const MANAGERS: Section[] = [
         answer: (
           <p>
             When a week has open shifts, press <strong>✨ Suggest people for them</strong> on the
-            amber line above the rota. It proposes somebody free for each — the same rules as Who
-            can cover this, never two shifts at once, and the hours spread so nobody gets them all —
+            amber line above the rota. It proposes somebody free for each - the same rules as Who
+            can cover this, never two shifts at once, and the hours spread so nobody gets them all -
             and says &ldquo;Nobody is free then&rdquo; where nobody is. Untick any you don&rsquo;t
             want and press <strong>Assign</strong>. Nothing changes before that, and drafts stay
             drafts until you publish.
@@ -1620,19 +1620,19 @@ const MANAGERS: Section[] = [
           <p>
             On <Screen>Schedule</Screen>, choose <strong>+ Add → Event</strong>: a name, a time (or
             tick <strong>All day</strong>, for one day or several), where it is, and{' '}
-            <strong>who it is for</strong> — Everyone, or type into the box and add any mix of job
+            <strong>who it is for</strong> - Everyone, or type into the box and add any mix of job
             roles, offices and people (say <em>Provider</em>, <em>Kayla</em>, <em>Angelina</em>).
-            For a call, paste its link into <strong>Video call link</strong> — or, once Google Meet
+            For a call, paste its link into <strong>Video call link</strong> - or, once Google Meet
             is set up, tick <strong>Create a Google Meet link</strong> (hosted by office@; anybody
             with the link goes straight in, so share it only with the people invited). To make it
             repeat, choose from <strong>Repeats</strong>: every week, every 2 weeks, every month
-            (the same date, or e.g. the first Friday), or <strong>Custom</strong> — every 2 weeks on
-            Monday and Friday — until a date up to a year ahead. For meetings on alternate Fridays,
+            (the same date, or e.g. the first Friday), or <strong>Custom</strong> - every 2 weeks on
+            Monday and Friday - until a date up to a year ahead. For meetings on alternate Fridays,
             make each one every 2 weeks, starting a week apart. Everybody it is for sees it in the
             Events row, gets one notification for the whole series and a reminder the day before,
             and has it on their phone if they sync their calendar. Click an event to change or
             remove <strong>just that date</strong> or <strong>that date and all after it</strong>.
-            Events never count as hours or overtime — anybody being paid to attend clocks in as
+            Events never count as hours or overtime - anybody being paid to attend clocks in as
             usual, so payroll stays with the punches.
           </p>
         ),
@@ -1646,10 +1646,10 @@ const MANAGERS: Section[] = [
             <strong>Starts</strong>, 7am to 7pm, for a meeting as long as the one in the form, and
             lists the best few times: nobody off or in another meeting first, then the most people
             already on the rota (drafts too), so nobody comes in specially. Each time says who is
-            not on the rota then, and anything to check — a day asked off, a half day, a time they
+            not on the rota then, and anything to check - a day asked off, a half day, a time they
             said they can&rsquo;t work. <strong>Use this time</strong> puts it into Starts and Ends;{' '}
             <strong>Look at the next two weeks</strong> looks further. It goes only by what the app
-            knows — it cannot see anybody&rsquo;s own calendar. Once it is saved, the people it is
+            knows - it cannot see anybody&rsquo;s own calendar. Once it is saved, the people it is
             for answer <strong>Going</strong>, <strong>Maybe</strong> or{' '}
             <strong>Can&rsquo;t go</strong> in its pop-up; click the event to see who has answered
             and who hasn&rsquo;t. You hear on the bell when somebody can&rsquo;t go to a meeting you
@@ -1665,17 +1665,17 @@ const MANAGERS: Section[] = [
             <strong>+ Add closure</strong> under Holidays and closures. Tick{' '}
             <strong>Repeat every year</strong> to enter it for the next several years at once. Close{' '}
             <strong>both offices or just one</strong>, for the whole day (Christmas Day), several
-            days, or part of one (Christmas Eve from 1pm — put midnight as when it opens again).
+            days, or part of one (Christmas Eve from 1pm - put midnight as when it opens again).
             Staff at that office see it and are told. Nothing stops you scheduling somebody during a
             closure, but it is flagged: a warning in the shift form, ⚠ on the shift, and a line in
             the Schedule banner and the nightly email until the shift is moved. Once a year is
             filled in, <strong>Copy these into next year</strong> puts every closure on the same
-            date the following year — except the holidays that move (Thanksgiving and the day after,
+            date the following year - except the holidays that move (Thanksgiving and the day after,
             Memorial Day, Labor Day, MLK Day, Presidents&rsquo; Day, Columbus Day, Election Day,
             Good Friday, Easter), which go to their own day, recognised by name. Afterwards it lists
             what moved and any fixed holiday that lands on a weekend, so you can decide which day
             the office takes instead. Closures do not change pay: holiday pay is not set up. A day
-            that is marked but <strong>shuts nothing</strong> — Election Day, Black Friday — is a{' '}
+            that is marked but <strong>shuts nothing</strong> - Election Day, Black Friday - is a{' '}
             <strong>holiday</strong> instead (<strong>+ Add holiday</strong>): everyone sees it on
             the calendar, nobody is notified and no shift is flagged. Copy into next year takes
             holidays too.
@@ -1698,15 +1698,15 @@ const MANAGERS: Section[] = [
               job role setting, under Manage → People → Job roles); the status and notes are for
               managers only. Staff at that office are told when a lunch is added, moved or
               cancelled, and <strong>every evening at 6pm</strong> hear whether there is a rep lunch
-              there the next day — or that there is none, so they bring their own. That evening
+              there the next day - or that there is none, so they bring their own. That evening
               notice goes only for days somebody is scheduled at the office and it is not closed.
               Correcting a rep&rsquo;s name renames their lunches too.
             </p>
             <p>
               When the AI helpers are on, a new entry has{' '}
               <strong>✨ Fill this in from a message</strong>: paste the rep&rsquo;s email or text
-              (or a note about a diagnostics day) and the form is filled in — kind, date, time,
-              office and rep — for you to check before saving. It says what the message left out,
+              (or a note about a diagnostics day) and the form is filled in - kind, date, time,
+              office and rep - for you to check before saving. It says what the message left out,
               and names a rep who is not on the list yet so you can add them. Only the pasted words
               are sent; the reps list stays here.
             </p>
@@ -1721,10 +1721,10 @@ const MANAGERS: Section[] = [
             <strong>+ Add → Diagnostics date</strong>: which tests (&ldquo;US + ECHO&rdquo;,
             &ldquo;ANS + VNG&rdquo;), the office, and the hours. A pattern like &ldquo;every other
             Sunday at West New York&rdquo; can be entered once with <strong>Repeat</strong>; when a
-            date is different, click a date and use <strong>Add another date like this</strong> — it
+            date is different, click a date and use <strong>Add another date like this</strong> - it
             copies the tests, hours and office, and you change the day. Everyone sees diagnostics
             and is told when one is added, moved or cancelled (no day-before reminder). Write when
-            the tests are on and anything the front desk should know — never a patient&rsquo;s name
+            the tests are on and anything the front desk should know - never a patient&rsquo;s name
             or who is booked.
           </p>
         ),
@@ -1738,7 +1738,7 @@ const MANAGERS: Section[] = [
             person can clock in from anywhere from half an hour before it starts until it ends, with
             no location asked for or recorded. Behind the scenes it is counted under their main
             office, so the office view of the rota and the reports still add up. Anybody can also
-            choose Work from home — or their other office — on a day the rota has them elsewhere,
+            choose Work from home - or their other office - on a day the rota has them elsewhere,
             after a warning; the punch is marked <strong>Not where scheduled</strong> on the
             timesheet with the reason they gave, so check it before approving the hours.
           </p>
@@ -1755,15 +1755,15 @@ const MANAGERS: Section[] = [
             </p>
             <ul className="mt-2 list-disc space-y-1 pl-5">
               <li>
-                <strong>Just this shift</strong> — one day.
+                <strong>Just this shift</strong> - one day.
               </li>
               <li>
-                <strong>This and every later Wednesday like it</strong> (whichever day it is) —
+                <strong>This and every later Wednesday like it</strong> (whichever day it is) -
                 their shifts on that weekday, at the same office and the same old hours, from this
                 one on.
               </li>
               <li>
-                <strong>This and all of their later shifts at those hours</strong> — the same, on
+                <strong>This and all of their later shifts at those hours</strong> - the same, on
                 any day: when somebody&rsquo;s 7 to 2 becomes 1 to 8 for good, or they move to the
                 other office.
               </li>
@@ -1783,7 +1783,7 @@ const MANAGERS: Section[] = [
         answer: (
           <p>
             Write it in <strong>Notes</strong> when you add a shift, or click a shift on the rota,
-            type in its Notes box and press <strong>Save note</strong> — say{' '}
+            type in its Notes box and press <strong>Save note</strong> - say{' '}
             <em>7–12 upstairs, 12–3 downstairs</em>. It shows on the shift with 📝, on their Home
             screen that day, on their phone calendar and on the printed rota. If the shift is
             published they are told under the bell when the note changes. Empty the box and save to
@@ -1797,7 +1797,7 @@ const MANAGERS: Section[] = [
           <p>
             In <Screen>Directory</Screen>, under their name, choose{' '}
             <strong>Set a new tablet PIN</strong> and tell them it in person. They can change it to
-            one of their own on their profile. Nobody can see a PIN once it is set — you can only
+            one of their own on their profile. Nobody can see a PIN once it is set - you can only
             replace it.
           </p>
         ),
@@ -1807,7 +1807,7 @@ const MANAGERS: Section[] = [
         answer: (
           <>
             <p>
-              <strong>Overtime</strong> — the rota puts somebody past the weekly threshold (40
+              <strong>Overtime</strong> - the rota puts somebody past the weekly threshold (40
               hours, across both offices). Weeks for overtime start on the pay period&rsquo;s first
               day, so each pay period is two of them; Practice settings shows which day. It shows in
               red at the top of the schedule and beside their weekly total. Adding or assigning a
@@ -1818,7 +1818,7 @@ const MANAGERS: Section[] = [
               is flagged.
             </p>
             <p>
-              <strong>Unavailable</strong> — the shift lands on time they have said they cannot
+              <strong>Unavailable</strong> - the shift lands on time they have said they cannot
               work. Both are warnings: the shift is still saved, and you decide.
             </p>
           </>
@@ -1828,7 +1828,7 @@ const MANAGERS: Section[] = [
         question: 'When should the schedule be published?',
         answer: (
           <p>
-            Before staff can rely on it — and once a week is published, staff can no longer change
+            Before staff can rely on it - and once a week is published, staff can no longer change
             their availability for it. The app chases an unpublished week four days before it
             starts; an admin can change that under Practice settings.
           </p>
@@ -1838,8 +1838,8 @@ const MANAGERS: Section[] = [
         question: 'Can I see who is free?',
         answer: (
           <p>
-            <Screen>Schedule</Screen> → <strong>Availability — yours and the team’s</strong> lists
-            what everybody has said they cannot work. You can read it but not change it — it is
+            <Screen>Schedule</Screen> → <strong>Availability - yours and the team’s</strong> lists
+            what everybody has said they cannot work. You can read it but not change it - it is
             theirs. When somebody adds a time that clashes with one of their regular shifts in the
             next eight weeks, you hear at once under the bell, and it is listed on the Schedule
             banner and in the nightly email until the regular shift or the availability changes.
@@ -1865,7 +1865,7 @@ const MANAGERS: Section[] = [
             once, with the approval. A half day keeps its shift. <strong>Decline</strong> asks for
             the reason the person will read; when the AI helpers are on,{' '}
             <strong>✨ Help me word it</strong> turns a few words (or, with none, how many would be
-            off — never who) into a kind reason for you to edit. To put in a request for somebody
+            off - never who) into a kind reason for you to edit. To put in a request for somebody
             (one they made by phone), press <strong>+ Request time off</strong> and choose them
             under <strong>For</strong>.
           </p>
@@ -1889,8 +1889,8 @@ const MANAGERS: Section[] = [
           <p>
             Everybody&rsquo;s days left are on the <Screen>Dashboard</Screen>, under{' '}
             <strong>Time off balances</strong>, with a search box and <strong>Adjust</strong>. The
-            practice&rsquo;s rules — PTO and sick days a year, what carries over, when the year
-            starts — are in <Screen>Practice settings</Screen> (account menu), where an admin
+            practice&rsquo;s rules - PTO and sick days a year, what carries over, when the year
+            starts - are in <Screen>Practice settings</Screen> (account menu), where an admin
             changes them. Requests count weekdays only, and not a day the office is closed all day.
             Sick days are never prorated for starting part-way through the year; hourly staff
             starting on or after the date in the rules earn them as they work (an hour for every 30
@@ -1904,13 +1904,13 @@ const MANAGERS: Section[] = [
         answer: (
           <p>
             On the <Screen>Dashboard</Screen>, under <strong>Time off balances</strong>, press{' '}
-            <strong>Adjust</strong> beside the person — or, as an admin, press{' '}
+            <strong>Adjust</strong> beside the person - or, as an admin, press{' '}
             <strong>Adjust balance</strong> under Time off on their profile. Enter the PTO and sick
             days they had already taken this year, rolled-over days included; anything booked in the
             app counts by itself. Under <strong>PTO a year</strong> choose the practice&rsquo;s
             amount, their own (part-time, long service) or <strong>No PTO</strong> for somebody who
             does not get it. <strong>PTO rolled over into this year</strong> is all that rolled over
-            from last year — the app cannot know it, because it was not in use then, so it counts
+            from last year - the app cannot know it, because it was not in use then, so it counts
             none until you enter it.
           </p>
         ),
@@ -1921,8 +1921,8 @@ const MANAGERS: Section[] = [
           <p>
             On somebody&rsquo;s profile (<Screen>Manage → People → Staff</Screen>, press their
             name), <strong>For …</strong> opens their Schedule, Timesheet, Licenses, Onboarding
-            &amp; offboarding or Availability showing them only — <strong>Show everyone</strong>{' '}
-            goes back to the whole list — and <strong>+ Request time off for …</strong> opens the
+            &amp; offboarding or Availability showing them only - <strong>Show everyone</strong>{' '}
+            goes back to the whole list - and <strong>+ Request time off for …</strong> opens the
             request form already for them.
           </p>
         ),
@@ -1936,7 +1936,7 @@ const MANAGERS: Section[] = [
             a comment if you like. It counts as approved and Sick or PTO comes off their balance;
             nobody is notified. The profile shows only what is left and what is coming up;{' '}
             <strong>See all</strong> opens everything on file, where a recorded day can be removed.
-            Use it or the total under <strong>Adjust</strong> for the same days, not both — both
+            Use it or the total under <strong>Adjust</strong> for the same days, not both - both
             would count them twice.
           </p>
         ),
@@ -1946,10 +1946,10 @@ const MANAGERS: Section[] = [
         answer: (
           <p>
             <Screen>Manage → People → Onboarding &amp; Offboarding</Screen> tracks each step for a
-            new hire or a leaver — who did it and when. The paperwork itself stays in the personnel
+            new hire or a leaver - who did it and when. The paperwork itself stays in the personnel
             file; nothing is uploaded here. Providers see theirs in the account menu (Your
             onboarding). Front Desk and MA staff have it in no menu, so you can tick their tasks for
-            them — but anybody new is reminded about the tasks that are theirs two days before each
+            them - but anybody new is reminded about the tasks that are theirs two days before each
             is due and once if it goes overdue, and the reminder opens their checklist so they can
             tick those off themselves. The nightly email still lists overdue tasks for managers.
           </p>
@@ -1973,7 +1973,7 @@ const MANAGERS: Section[] = [
             <li>
               <strong>Edit lists</strong>: add, reword, reorder or remove lines; limit a line to
               certain days or one office; make a section a desk that only shows when somebody worked
-              it. Any job role can have a list — somebody in two roles gets both.
+              it. Any job role can have a list - somebody in two roles gets both.
             </li>
           </ul>
         ),
@@ -1984,8 +1984,8 @@ const MANAGERS: Section[] = [
           <p>
             <Screen>Manage → People → Licenses</Screen> opens on what lapses in the next 60 days.
             Record the expiry date only; press <strong>Renew</strong> to put in the new date. The
-            person whose license it is hears about it too — under the bell and by email, at 60 days,
-            at 30 days and once it lapses — so they can renew before you have to chase them. An old
+            person whose license it is hears about it too - under the bell and by email, at 60 days,
+            at 30 days and once it lapses - so they can renew before you have to chase them. An old
             card with a newer one recorded beside it is not mentioned.
           </p>
         ),
@@ -2005,7 +2005,7 @@ const MANAGERS: Section[] = [
               <strong>By person</strong> shows everybody against what their job roles ask for. A
               required one that is not on file is flagged there, on the banner and in the nightly
               email; optional ones are only listed. Press <strong>Record it</strong> on one and the
-              form starts on that person and license — when the license has a renewal interval, the
+              form starts on that person and license - when the license has a renewal interval, the
               date it was done is enough and the expiry is worked out. The same list is on the
               person&rsquo;s card under <Screen>Staff → Edit</Screen>, and staff see their own.
             </p>
@@ -2028,9 +2028,9 @@ const MANAGERS: Section[] = [
               Every provider&rsquo;s model differs, so nothing is compulsory. Under{' '}
               <strong>How theirs is counted</strong> you can set the length of an interval, how many
               make one statement, the patients expected, the multiplier and kinds of visit to count
-              separately (for example In-Office and Hospital) &mdash; all optional, and only the
-              starting point for each new statement. Leave the expected boxes empty for a provider
-              with no target, and the multiplier empty for one with no money in it.
+              separately (for example In-Office and Hospital) - all optional, and only the starting
+              point for each new statement. Leave the expected boxes empty for a provider with no
+              target, and the multiplier empty for one with no money in it.
             </p>
             <p>
               Only the people an admin has chosen see this screen; admins choose them at the bottom
@@ -2038,9 +2038,8 @@ const MANAGERS: Section[] = [
               <strong>Publish</strong>. Then that provider, and nobody else, can read it under{' '}
               <Screen>Your productivity</Screen> (account menu) and is told it is ready.{' '}
               <strong>Unpublish</strong> takes it back. Add a <strong>Paid on</strong> date or a
-              short note (&ldquo;Paid with 08.15.25&rdquo;) &mdash; the provider reads the note, so
-              never put a patient&rsquo;s name or details in it. Only counts are kept, never
-              patients.
+              short note (&ldquo;Paid with 08.15.25&rdquo;) - the provider reads the note, so never
+              put a patient&rsquo;s name or details in it. Only counts are kept, never patients.
             </p>
           </>
         ),
@@ -2055,7 +2054,7 @@ const MANAGERS: Section[] = [
         answer: (
           <p>
             <Screen>Manage → Dashboard</Screen>: hours worked against scheduled, overtime, late
-            clock-ins and time off, with a chart per location, and — looking ahead — shifts in the
+            clock-ins and time off, with a chart per location, and - looking ahead - shifts in the
             next two weeks that clash with somebody's availability or push them into overtime.{' '}
             <strong>Across the practice</strong> adds what is waiting on a manager (time off, hours
             to approve, missing clock-outs, hours entered by hand), licenses lapsed, due or missing,
@@ -2070,7 +2069,7 @@ const MANAGERS: Section[] = [
           <p>
             <Screen>Schedule</Screen> → <strong>On call</strong> →{' '}
             <strong>The usual pattern</strong> → <strong>Change it</strong>: a provider for each
-            weekday, then any exceptions — “the 4th Saturday → Dr. Badia” — and the hand-over time
+            weekday, then any exceptions - “the 4th Saturday → Dr. Badia” - and the hand-over time
             (noon, for the answering service). It is saved from a day you choose, so who was on call
             before stays as it was. Weekends are counted by their Saturday, so the 4th weekend is
             the 4th Saturday and the Sunday after it. For one day only, press the day and choose who
@@ -2087,12 +2086,12 @@ const MANAGERS: Section[] = [
           <p>
             <Screen>Schedule</Screen> → <strong>Reviews</strong> →{' '}
             <strong>The usual pattern</strong> → <strong>Change it</strong>: for each provider, who
-            reviews their patient schedule on each day of the week — an admin, a manager or anybody
+            reviews their patient schedule on each day of the week - an admin, a manager or anybody
             on staff. For one day only, press the line in the week and choose somebody else or
             nobody, with a note everybody can read; <strong>Back to the usual</strong> undoes it.
             Everybody sees the week, the reviewer sees it on <Screen>Home</Screen>, and a
             provider&rsquo;s <Screen>Directory</Screen> card says who is reviewing it today. Only
-            who and which provider is kept — never a patient.
+            who and which provider is kept - never a patient.
           </p>
         ),
       },
@@ -2104,9 +2103,9 @@ const MANAGERS: Section[] = [
             <strong>Who sees the rota’s cost</strong>): a line above the rota on the{' '}
             <Screen>Schedule</Screen> gives the week or month on screen in dollars, by office, and
             opens to show hourly pay, the overtime extra, salaries and each day. It is worked out
-            from the pay on each person’s staff profile — scheduled hours (drafts too) at their
+            from the pay on each person’s staff profile - scheduled hours (drafts too) at their
             hourly rate, hours past the overtime line at time and a half, and a salary as a year ÷
-            52 a week — so it is what the rota would cost, not what was worked, and leaves out taxes
+            52 a week - so it is what the rota would cost, not what was worked, and leaves out taxes
             and benefits. Anybody on the rota with no pay on file is named, so a total is never
             quietly short. Never by person.
           </p>
@@ -2121,8 +2120,8 @@ const MANAGERS: Section[] = [
               <strong>+ Ask people to read or do something</strong>. Pick{' '}
               <strong>something to read</strong> (they press “I’ve read it”) or{' '}
               <strong>something to do</strong> (“Done”), give it a title, and point it at a News
-              post, a Resources page or a web link if there is one. Choose who it is for — Everyone,
-              or any mix of job roles, offices and people — and a due date if it has one. On a News
+              post, a Resources page or a web link if there is one. Choose who it is for - Everyone,
+              or any mix of job roles, offices and people - and a due date if it has one. On a News
               post, <strong>Require reading</strong> starts it for you.
             </p>
             <p>
@@ -2133,7 +2132,7 @@ const MANAGERS: Section[] = [
               Somebody who joins a chosen job role or office later is asked too.{' '}
               <strong>Stop asking</strong> takes it off everybody’s Home and keeps the record of who
               confirmed. It is a reminder, never a gate: nobody is stopped clocking in. The app
-              records only that somebody confirmed, and when — no signature or document.
+              records only that somebody confirmed, and when - no signature or document.
             </p>
           </>
         ),
@@ -2144,7 +2143,7 @@ const MANAGERS: Section[] = [
           <>
             <p>
               <Screen>Manage → People → Job roles</Screen>. Add, rename or remove roles, choose each
-              one's colour, and put people in them — somebody can be in several. A job role decides
+              one's colour, and put people in them - somebody can be in several. A job role decides
               which resources somebody sees, and nothing else: being in "Manager" gives no extra
               power in the app.
             </p>
@@ -2158,7 +2157,7 @@ const MANAGERS: Section[] = [
               Somebody in several roles has a <strong>main job role</strong>, chosen by an admin
               under <strong>Edit</strong> on <Screen>Manage → People → Staff</Screen>. It is listed
               first, shift forms start on it, and in the Directory&rsquo;s <strong>In now</strong>{' '}
-              they are shown under it — unless the shift they clocked in to is for another role,
+              they are shown under it - unless the shift they clocked in to is for another role,
               when they are shown under that one. Without a choice it is their first role in this
               list.
             </p>
@@ -2171,7 +2170,7 @@ const MANAGERS: Section[] = [
           <p>
             On <Screen>Resources</Screen>, add a link (Drive, ADP, a vendor portal) or write a page,
             for everyone or for one job role. There are no uploads. For a Google Drive folder, share
-            it in Drive with the app&rsquo;s own address (the form shows it) as a Viewer — not
+            it in Drive with the app&rsquo;s own address (the form shows it) as a Viewer - not
             &ldquo;Anyone with the link&rdquo;. Staff then open its files through the app, so nobody
             needs access in Drive and nothing changes there when somebody joins or leaves. Google
             Docs, Sheets and Slides open as PDFs; Google Forms open only in Drive.
@@ -2191,8 +2190,8 @@ const MANAGERS: Section[] = [
             <p>
               On either, press <strong>Edit the board</strong>. On Diagnostics, click a cell to
               choose YES, NO, PA, Call ref # or N/A, with an optional note (never a patient&rsquo;s
-              name); click a test or an insurance to change its details — time, prep, self-pay, how
-              it is found in eCW — move it or remove it; <strong>+ Test</strong>,{' '}
+              name); click a test or an insurance to change its details - time, prep, self-pay, how
+              it is found in eCW - move it or remove it; <strong>+ Test</strong>,{' '}
               <strong>+ Insurance</strong> and <strong>Reminders…</strong> add the rest. On
               Reimbursements, click an amount and type the new one (or words like &ldquo;$34.45 /
               75.26&rdquo;, or nothing to clear it), and click a code or an insurance to change,
@@ -2213,7 +2212,7 @@ const MANAGERS: Section[] = [
             On <Screen>Manage → Surveys & reading → Surveys</Screen>, write the questions (1–5
             rating, pick one, or a written answer) and choose who it is for: everyone, a job role or
             a location. You see how many have answered, never who. Results appear once you close it,
-            and only if at least three people answered — ask a small group and there may be nothing
+            and only if at least three people answered - ask a small group and there may be nothing
             to show.
           </p>
         ),
@@ -2227,7 +2226,7 @@ const MANAGERS: Section[] = [
               <strong>360 feedback</strong>, press <strong>Start a 360</strong>. It starts with five
               1–5 ratings (teamwork, communication, reliability, helpfulness, professionalism) and
               two written answers, each asked about a colleague and, in the first person, about
-              yourself — change, add or remove any before starting. Everybody here then is asked
+              yourself - change, add or remove any before starting. Everybody here then is asked
               about everybody else, and told under the bell. One can be open at a time; give it a
               closing day, or press <strong>Close</strong>.
             </p>
@@ -2235,7 +2234,7 @@ const MANAGERS: Section[] = [
               Once closed, <strong>Reports</strong> lists everybody but you, with how many
               colleagues rated each. A report shows once at least three did: colleagues&rsquo;
               average and spread beside the person&rsquo;s own rating, and the written answers in a
-              random order. Reports are for managers and admins only — never the person — and yours
+              random order. Reports are for managers and admins only - never the person - and yours
               is for somebody else to go through with you.
             </p>
             <p>
@@ -2266,7 +2265,7 @@ const MANAGERS: Section[] = [
             Notes from the suggestion box are under{' '}
             <Screen>Manage → Surveys & reading → Surveys</Screen>, at the bottom, with what sort of
             note each is (an idea, something not working, a shout-out or a question) and the day it
-            arrived — never who sent it or when in the day. While any are waiting, Home says how
+            arrived - never who sent it or when in the day. While any are waiting, Home says how
             many, and the nightly email says so too, without the words. Press{' '}
             <strong>Mark as dealt with</strong> once you have, and it stops being chased.
           </p>
@@ -2277,13 +2276,13 @@ const MANAGERS: Section[] = [
         answer: (
           <>
             <p>
-              Banners on each screen list what needs attention there — unapproved hours, missing
+              Banners on each screen list what needs attention there - unapproved hours, missing
               punches, lapsing licenses, next week unpublished, and so on. The same list is emailed
               each night.
             </p>
             <p>
               Under the menu → <Screen>Email settings</Screen>, untick the parts somebody else looks
-              after — the rota, hours, time off, licenses and so on — or turn the email off.
+              after - the rota, hours, time off, licenses and so on - or turn the email off.
               <strong> Who gets what</strong>, below it, shows every manager&rsquo;s choices; an
               admin can change anybody&rsquo;s there. A part nobody has chosen still goes to
               everybody, so nothing is missed. Time off also decides who is told as each request
@@ -2302,12 +2301,12 @@ const MANAGERS: Section[] = [
         answer: (
           <p>
             <Screen>Manage → Money → Vendor payments</Screen> takes the place of the payments
-            spreadsheet. Add each vendor or contractor once — what they are paid for and where
-            checks go — then each payment under them: what it is for, the amount, the invoice and
+            spreadsheet. Add each vendor or contractor once - what they are paid for and where
+            checks go - then each payment under them: what it is for, the amount, the invoice and
             check numbers, and where it is: <strong>To pay</strong>, <strong>Sent</strong> (with the
             day) or <strong>Completed</strong> (received and deposited, with the day). The top of
             the page says how many are not completed yet. Untick <strong>Still paying them</strong>{' '}
-            to put a vendor away with their payments kept. Notes are for the paperwork — never a
+            to put a vendor away with their payments kept. Notes are for the paperwork - never a
             patient&rsquo;s name; say how many readings, not whose.
           </p>
         ),
@@ -2317,19 +2316,19 @@ const MANAGERS: Section[] = [
         answer: (
           <ul>
             <li>
-              <Screen>Manage → People → Staff</Screen> — add people one at a time or several at
+              <Screen>Manage → People → Staff</Screen> - add people one at a time or several at
               once. Press <strong>Edit</strong> on somebody&rsquo;s card to change their email,
               phone, access (Employee, Manager or Admin), job roles and their main one, offices and
               ADP File #, send their welcome email, or give them a temporary password or tablet PIN.
             </li>
             <li>
-              Untick <strong>Clocks in</strong> for somebody who does not clock in — the providers.
+              Untick <strong>Clocks in</strong> for somebody who does not clock in - the providers.
               Nobody reminds them or chases a shift with no punch, Home shows their shift instead of
               the Clock in button, and the Directory shows them <em>On shift</em> at their
               shift&rsquo;s office while it runs.
             </li>
             <li>
-              Adding somebody new with a hire date — one at a time or several — starts their{' '}
+              Adding somebody new with a hire date - one at a time or several - starts their{' '}
               <strong>onboarding checklist</strong> (the default template) by itself, counting from
               that date; so does giving a hire date later. Not for somebody hired more than 30 days
               ago, and never a second one. Marking somebody as having left starts their{' '}
@@ -2338,19 +2337,19 @@ const MANAGERS: Section[] = [
             <li>
               <strong>People who have never signed in</strong>, at the top of the Staff screen,
               lists everybody still here who has not once signed in, with what is most likely
-              holding each up — never sent a welcome email, the link ran out, a temporary password
-              not used yet — and a button to send the welcome email, or send it again. It says who
+              holding each up - never sent a welcome email, the link ran out, a temporary password
+              not used yet - and a button to send the welcome email, or send it again. It says who
               clocks in at the time clock, so is working, just not using the app.
             </li>
             <li>
               Under <strong>Photo</strong> in the same editor you can put up somebody&rsquo;s
-              profile photo — moved and zoomed into the circle and shrunk on your screen, like their
+              profile photo - moved and zoomed into the circle and shrunk on your screen, like their
               own. They are told under the bell, and can change it or take it down on Your profile.
             </li>
             <li>
               Press somebody&rsquo;s <strong>name</strong> (or <strong>Profile</strong>) for their
               staff profile: contact details, home address, emergency contact, hire date, pay and
-              position over time — each raise and promotion with the day it took effect — and their
+              position over time - each raise and promotion with the day it took effect - and their
               time off. Only admins can open it; the address, emergency contact and pay are shown
               nowhere else, not to managers and not in the payroll export.
             </li>
@@ -2361,11 +2360,11 @@ const MANAGERS: Section[] = [
               and bring them back from the same place.
             </li>
             <li>
-              <Screen>Manage → Offices → Kiosks</Screen> — make a computer or tablet at the front
+              <Screen>Manage → Offices → Kiosks</Screen> - make a computer or tablet at the front
               desk the office&rsquo;s time clock.
             </li>
             <li>
-              <Screen>Manage → Offices → Locations</Screen> — the office addresses, the geofence and
+              <Screen>Manage → Offices → Locations</Screen> - the office addresses, the geofence and
               office network. Stand at the front desk and press{' '}
               <strong>Use my current location</strong> to set the pin.
             </li>
@@ -2381,8 +2380,8 @@ const MANAGERS: Section[] = [
               Sheets, select the list <strong>with its row of column names</strong>, copy, and paste
               it into the box. It needs a name, email, office (North Bergen, West New York or Both)
               and hire date; phone, job roles, access, birthday and ADP File # are optional. From a
-              birthday only the month and day are kept — the year is dropped before anything is
-              sent. Any other column — a social security number, say — is ignored and never kept.
+              birthday only the month and day are kept - the year is dropped before anything is
+              sent. Any other column - a social security number, say - is ignored and never kept.
             </p>
             <p>
               Every line is checked and shown first. Anything marked in red is fixed in the
@@ -2403,7 +2402,7 @@ const MANAGERS: Section[] = [
         answer: (
           <>
             <p>
-              Any computer or tablet at the front desk can be the office&rsquo;s time clock — no
+              Any computer or tablet at the front desk can be the office&rsquo;s time clock - no
               special device needed.
             </p>
             <ol className="list-decimal space-y-1 pl-5">
@@ -2418,14 +2417,14 @@ const MANAGERS: Section[] = [
               <li>
                 That browser is now the time clock, for a year, through restarts. Keep it in its own
                 window, or pin the tab, so the desk can use the computer for other work. Clearing
-                the browser&rsquo;s history or cookies unpairs it — pair it again the same way.
+                the browser&rsquo;s history or cookies unpairs it - pair it again the same way.
               </li>
             </ol>
             <p>
               <strong>On an iPad or other tablet</strong>, open the same address and first choose{' '}
               <strong>Share → Add to Home Screen</strong>, leaving <em>Open as Web App</em> on. That
               makes a <strong>Time Clock</strong> app that opens straight on the time clock, full
-              screen, with no address bar. Pair it inside that app rather than in the browser — the
+              screen, with no address bar. Pair it inside that app rather than in the browser - the
               two keep separate cookies. Apple&rsquo;s Guided Access (Settings → Accessibility) can
               then keep the tablet on it.
             </p>
@@ -2443,7 +2442,7 @@ const MANAGERS: Section[] = [
         answer: (
           <p>
             Under the menu → <strong>Practice settings</strong>: the overtime threshold, how early
-            an unpublished week is chased, and the <strong>pay period start</strong> — the first day
+            an unpublished week is chased, and the <strong>pay period start</strong> - the first day
             of any one pay period. The pay-period shortcuts stay greyed out until it is set. The{' '}
             <strong>ADP TotalSource</strong> section there sets up the ADP import file: the company
             code, a worksheet exported from ADP pasted in, and which columns take which hours. Each
@@ -2455,7 +2454,7 @@ const MANAGERS: Section[] = [
         question: 'Giving a provider the BrainCheck Care Plan',
         answer: (
           <p>
-            Add them to the <strong>Provider</strong> job role (<Screen>Job roles</Screen>) — the
+            Add them to the <strong>Provider</strong> job role (<Screen>Job roles</Screen>) - the
             role has &ldquo;clinical forms&rdquo; switched on. Then, in <Screen>Staff</Screen> →{' '}
             <strong>Edit</strong>, fill in <strong>Letters after their name</strong> (MD, APN…) so
             the note shows their credentials.
@@ -2471,17 +2470,17 @@ const MANAGERS: Section[] = [
               one shown at the top of everybody's home screen; tick another to move it.{' '}
               <strong>+ Add a poll</strong> on a post asks a question with two to ten choices (tick{' '}
               <strong>People can pick more than one</strong> for tick boxes). Votes are named; for
-              anonymous answers, use a survey. Once anybody has voted the choices are fixed —{' '}
+              anonymous answers, use a survey. Once anybody has voted the choices are fixed -{' '}
               <strong>Close voting</strong> on the post stops it, and it can be opened again.
               Managers and admins can delete anybody's comment. Tick <strong>Show publicly</strong>{' '}
               to put a post on the front-desk time clock and under the sign-in form too (the newest
-              three ticked) — title and message only. Patients at the desk, and anyone on the
+              three ticked) - title and message only. Patients at the desk, and anyone on the
               internet, can read those, so keep it to things anybody may read.
             </p>
             <p>
               When the AI helpers are on, <strong>✨ Help me write it</strong> turns rough notes
               into a title and message to edit, and <strong>In Spanish</strong> under the message
-              holds the post in Spanish for staff who read News in Español — type it, or press{' '}
+              holds the post in Spanish for staff who read News in Español - type it, or press{' '}
               <strong>✨ Translate from the English</strong> and read it through. Left empty, it is
               translated automatically the first time somebody asks; change the English and the
               Spanish is cleared unless you redo it too. Never put patient details in a post.
@@ -2599,7 +2598,7 @@ function managersGuide(): Section[] {
   return [...MANAGERS, ...CARE_PLAN, ...WELLNESS];
 }
 
-/// Every Help topic this person can read, as plain text — what Ask Domi Staff
+/// Every Help topic this person can read, as plain text - what Ask Domi Staff
 /// picks from for "how do I…?" questions. Managers read both guides.
 export function helpTopicsFor(employee: Reader, isManager: boolean): HelpTopicText[] {
   const sections = isManager ? [...staffGuide(employee), ...managersGuide()] : staffGuide(employee);

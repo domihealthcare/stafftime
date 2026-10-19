@@ -238,7 +238,7 @@ describe('JobRolesService', () => {
     );
   });
 
-  it('lists every role somebody holds — there can be several', async () => {
+  it('lists every role somebody holds - there can be several', async () => {
     const { service } = build();
     await expect(service.idsFor('emp-1')).resolves.toEqual(['role-1', 'role-3']);
   });

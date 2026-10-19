@@ -46,7 +46,7 @@ export class SpreadsheetExporter implements PayrollExporter {
   }
 }
 
-/// "domi-timesheet_2026-09-07_to_2026-09-20_north-bergen" — a name somebody can
+/// "domi-timesheet_2026-09-07_to_2026-09-20_north-bergen" - a name somebody can
 /// still find in six months, and the one the app has always produced.
 export function filenameFor(data: TimesheetData): string {
   const slug = (value: string) =>

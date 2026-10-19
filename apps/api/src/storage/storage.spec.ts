@@ -75,7 +75,7 @@ describe('DatabaseFileStorage', () => {
     const ref = await storage.put(Buffer.from('%PDF-1.7'), meta);
 
     expect(ref.sizeBytes).toBe(8);
-    // Same file, same checksum — which is how a duplicate upload is noticed.
+    // Same file, same checksum - which is how a duplicate upload is noticed.
     const again = await storage.put(Buffer.from('%PDF-1.7'), meta);
     expect(again.checksum).toBe(ref.checksum);
     expect(again.storageKey).not.toBe(ref.storageKey);
@@ -118,9 +118,7 @@ describe('LocalDiskFileStorage', () => {
 
   it('writes under the root, in a year/month folder', async () => {
     const ref = await storage.put(Buffer.from('x'), meta);
-    await expect(readFile(join(root, ref.storageKey))).resolves.toEqual(
-      Buffer.from('x'),
-    );
+    await expect(readFile(join(root, ref.storageKey))).resolves.toEqual(Buffer.from('x'));
   });
 
   it('will not read its way out of the root', async () => {

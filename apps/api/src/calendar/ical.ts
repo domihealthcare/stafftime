@@ -27,7 +27,7 @@ export interface CalendarEvent {
   endDate?: Date;
   status?: 'CONFIRMED' | 'TENTATIVE' | 'CANCELLED';
   transparent?: boolean;
-  /// A link to open — a video call. Already checked to be https.
+  /// A link to open - a video call. Already checked to be https.
   url?: string;
 }
 
@@ -127,7 +127,7 @@ export function escapeText(value: string): string {
  * Folds a line to 75 octets, continuing with a leading space.
  *
  * Counted in octets rather than characters because a multi-byte character split
- * across the boundary would corrupt it — so the split point is found by byte
+ * across the boundary would corrupt it - so the split point is found by byte
  * length, never mid-character.
  */
 export function fold(line: string): string {

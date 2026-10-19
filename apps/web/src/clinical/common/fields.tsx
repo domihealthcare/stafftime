@@ -7,7 +7,7 @@ import { toggleChoice, type Choice } from './choices';
  * Every one of them is set so the browser keeps nothing of what is typed:
  * autocomplete off and no `name` (browsers file remembered entries by name),
  * spell-check off (some spell-checkers send the text away to be checked), and
- * the page never submits a <form> — submitting is when a browser saves what
+ * the page never submits a <form> - submitting is when a browser saves what
  * was in it. The ids carry a prefix made fresh on each visit, so they cannot
  * key a remembered entry either.
  *
@@ -19,7 +19,7 @@ interface FieldContextValue {
   /// The id of the element for an answer's dotted path.
   idFor: (path: string) => string;
   /// The problem to show under an answer, once somebody has tried to make the
-  /// PDF — not while they are still filling it in.
+  /// PDF - not while they are still filling it in.
   problemFor: (path: string) => string | undefined;
 }
 
@@ -279,7 +279,7 @@ export function RadioGroup({
   );
 }
 
-/// A small "i" that shows a note on hover — or on a tap, since a tablet has
+/// A small "i" that shows a note on hover - or on a tap, since a tablet has
 /// no hover. Used where a list would crowd the form (the conflicting codes).
 export function InfoTip({ label, children }: { label: string; children: ReactNode }) {
   const [open, setOpen] = useState(false);

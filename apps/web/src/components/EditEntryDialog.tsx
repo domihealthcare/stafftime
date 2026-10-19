@@ -8,7 +8,7 @@ import { useDialog } from './useDialog';
 /**
  * Manager correction of a punch.
  *
- * A reason is mandatory — the API requires it and, more to the point, it is the
+ * A reason is mandatory - the API requires it and, more to the point, it is the
  * record that resolves a payroll dispute later. The dialog says plainly that the
  * edit is recorded against the manager's name.
  */
@@ -72,7 +72,7 @@ export function EditEntryDialog({
       onSaved();
     } catch (err) {
       if (err instanceof ApiError && err.code === 'ALREADY_EXPORTED') {
-        // Not a failure — a question. The same button now says what it will do.
+        // Not a failure - a question. The same button now says what it will do.
         setExportedWarning(err.message);
       } else {
         setError(err instanceof Error ? err.message : 'Could not save that correction.');
@@ -139,7 +139,7 @@ export function EditEntryDialog({
               className="mt-1 w-full rounded-lg border-slate-300 text-sm shadow-sm focus:border-brand-600 focus:ring-brand-600"
             />
             <p className="mt-1 text-xs text-slate-500">
-              Leave empty for a missing punch — it stays flagged for review.
+              Leave empty for a missing punch - it stays flagged for review.
             </p>
             {outBeforeIn && (
               <p className="mt-1 text-xs text-rose-600">Clock-out must be after clock-in.</p>
@@ -167,7 +167,7 @@ export function EditEntryDialog({
 
           {exportedWarning && (
             <Alert tone="warning">
-              {exportedWarning} Press save again to make the correction anyway — it will be flagged
+              {exportedWarning} Press save again to make the correction anyway - it will be flagged
               so it can go out in the next run.
             </Alert>
           )}

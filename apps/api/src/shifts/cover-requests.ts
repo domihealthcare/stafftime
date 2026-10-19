@@ -1,8 +1,8 @@
 import { PRACTICE_ZONE } from '../common/util/zoned-time.util';
 
 /**
- * "Someone called out: ask who can cover" (October 2026, Dominguez — a
- * "smarter" idea). The words, and what a person asked is shown — pure, so
+ * "Someone called out: ask who can cover" (October 2026, Dominguez - a
+ * "smarter" idea). The words, and what a person asked is shown - pure, so
  * they can be tested without a database. See `cover-requests.service.ts`.
  */
 
@@ -42,7 +42,7 @@ export interface Words {
 export function askWords(shift: CoverShift): Words {
   return {
     title: `Can you cover ${coverWhen(shift)}?`,
-    body: `A shift ${coverWhere(shift)} needs somebody. The first to say yes gets it — answer in Domi Staff.`,
+    body: `A shift ${coverWhere(shift)} needs somebody. The first to say yes gets it - answer in Domi Staff.`,
   };
 }
 
@@ -58,7 +58,7 @@ export function takenWords(shift: CoverShift, who: string): Words {
 export function coveredWords(shift: CoverShift): Words {
   return {
     title: `${coverWhen(shift)} is covered`,
-    body: 'Somebody else said yes first — thank you for being asked.',
+    body: 'Somebody else said yes first - thank you for being asked.',
   };
 }
 
@@ -66,7 +66,7 @@ export function coveredWords(shift: CoverShift): Words {
 export function nobodyWords(shift: CoverShift, asked: number): Words {
   return {
     title: `Nobody you asked can cover ${coverWhen(shift)}`,
-    body: `All ${asked} said no. The shift ${coverWhere(shift)} is still open — ask somebody else, or put somebody in it.`,
+    body: `All ${asked} said no. The shift ${coverWhere(shift)} is still open - ask somebody else, or put somebody in it.`,
   };
 }
 
@@ -74,7 +74,7 @@ export function nobodyWords(shift: CoverShift, asked: number): Words {
 export function stoppedWords(shift: CoverShift): Words {
   return {
     title: `${coverWhen(shift)} no longer needs covering`,
-    body: 'Thanks — you do not need to answer.',
+    body: 'Thanks - you do not need to answer.',
   };
 }
 

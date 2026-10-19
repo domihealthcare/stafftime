@@ -4,7 +4,7 @@ import { pickFromAccountMenu } from './account-menu.mjs';
 import { goTo } from './nav.mjs';
 
 // Your profile: the name you go by, pronouns, phone, a line about you, and a
-// photo — and colleagues seeing all of it in the Directory.
+// photo - and colleagues seeing all of it in the Directory.
 const OUT = process.argv[2] || new URL('./shots/', import.meta.url).pathname;
 mkdirSync(OUT, { recursive: true });
 // Defaults to the dev server; point at `vite preview` to test the built bundle
@@ -71,7 +71,7 @@ await step('the only file input anywhere takes images, and nothing else', async 
 });
 
 await step('a large photo is cropped square and shrunk before it is sent', async () => {
-  // A 1600×1000 picture, drawn in the page — no fixture file needed.
+  // A 1600×1000 picture, drawn in the page - no fixture file needed.
   const png = await frankie.evaluate(() => {
     const canvas = document.createElement('canvas');
     canvas.width = 1600;

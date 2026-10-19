@@ -3,7 +3,7 @@ import { useT } from '../lib/i18n';
 import type { ApplicableSection, ClosingSubmission } from '../lib/types';
 
 /**
- * The closing checklist, shown before somebody clocks out — on their phone and
+ * The closing checklist, shown before somebody clocks out - on their phone and
  * on the front-desk tablet alike.
  *
  * Never a gate. "Clock out" works with anything left unticked (it is passed to
@@ -75,7 +75,7 @@ export function ClosingChecklistForm({
         </h2>
         <p className="mt-1 text-sm text-slate-600">
           {t(
-            '{roles} closing checklist. Anything you leave unticked goes to a manager — you can always clock out.',
+            '{roles} closing checklist. Anything you leave unticked goes to a manager - you can always clock out.',
             { roles: roles.join(` ${t('and')} `) },
           )}
         </p>

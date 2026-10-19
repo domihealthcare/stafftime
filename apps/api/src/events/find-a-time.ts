@@ -9,13 +9,13 @@ import {
 
 /**
  * "Find a time" (October 2026, Dominguez): when a manager books a meeting,
- * the times in the next few weeks that suit everybody it is for — going by
+ * the times in the next few weeks that suit everybody it is for - going by
  * what the app knows: the rota, time off, availability and the other
  * meetings they are in. It cannot see anybody's own calendar.
  *
  * Best first: nobody off or in another meeting, nothing to check, and as many
  * as possible already on the rota then (at work, so nobody comes in for it);
- * weekdays before weekends, then earliest. Suggests, never decides — the
+ * weekdays before weekends, then earliest. Suggests, never decides - the
  * manager picks one and can still type any time.
  *
  * Pure: `find-a-time.service.ts` loads the people.

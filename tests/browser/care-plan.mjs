@@ -5,8 +5,8 @@ import { getDocument } from 'pdfjs-dist/legacy/build/pdf.mjs';
 // The CCM care plan (October 2026): the general care plan and two or more
 // chronic conditions, made into one PDF in English, Spanish or both, entirely
 // in the browser. For providers, managers and admins. As with the 99483 form,
-// what matters most is what does NOT happen — the patient's details never
-// reach the server and are never kept in the browser — so this suite watches
+// what matters most is what does NOT happen - the patient's details never
+// reach the server and are never kept in the browser - so this suite watches
 // every request and every kind of storage while a fake patient is entered.
 // Fake data only.
 const OUT = process.argv[2] || new URL('./shots/', import.meta.url).pathname;
@@ -66,7 +66,7 @@ await step('somebody who is not a provider, manager or admin has no link, and th
   const desk = await ctx.newPage();
   await signIn(desk, 'frontdesk@domihealthcare.com');
   await desk.goto(`${BASE}/resources`, { waitUntil: 'networkidle' });
-  // Frankie is a Medical Assistant too, so Forms holds the wellness form — but no care plan.
+  // Frankie is a Medical Assistant too, so Forms holds the wellness form - but no care plan.
   const forms = desk.getByTestId('clinical-tools');
   await forms.getByRole('link', { name: /^Annual Wellness Visit/ }).waitFor({ timeout: 10000 });
   if ((await forms.getByRole('link', { name: /^APCM Care Plan/ }).count()) > 0) throw new Error('the link is on Resources');
@@ -124,7 +124,7 @@ await step('each section says what it still needs, before anybody tries for a PD
   const general = section('general');
   if ((await general.getAttribute('data-complete')) !== 'false') throw new Error('general reads as complete');
   await general.getByText(/still needed/).first().waitFor({ timeout: 5000 });
-  // The list starts folded (October 2026) — the count shows, the items open from it.
+  // The list starts folded (October 2026) - the count shows, the items open from it.
   const here = general.getByTestId('pending-here');
   if (await here.getByRole('button', { name: 'Rate overall physical health.' }).isVisible())
     throw new Error('the list starts open');
@@ -165,7 +165,7 @@ await step('each condition chosen adds its own form’s questions', async () => 
   if ((await section('plan:copd').count()) > 0) throw new Error('COPD still has a section');
 });
 
-await step('a Spanish speaker’s care plan starts as English and Spanish — one of only two choices', async () => {
+await step('a Spanish speaker’s care plan starts as English and Spanish - one of only two choices', async () => {
   await pick(section('patient'), /^Primary language/, 'Spanish');
   const group = page.getByRole('radiogroup', { name: 'Language' });
   const choices = await group.getByRole('radio').count();
@@ -348,7 +348,7 @@ await step('saying it downloaded clears the form', async () => {
 });
 
 await step('the patient’s details never reached the server', async () => {
-  if (requests.length === 0) throw new Error('no requests seen at all — is the listener working?');
+  if (requests.length === 0) throw new Error('no requests seen at all - is the listener working?');
   const leaks = requests.filter(({ url, body }) =>
     SECRETS.some((secret) => decodeURIComponent(url).includes(secret) || body.includes(secret)),
   );

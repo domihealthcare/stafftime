@@ -199,7 +199,7 @@ export function ProfilePage() {
             </div>
             <p className="mt-2 text-xs text-slate-500">
               {t(
-                'A photo of you — move and zoom it to fit the circle. Colleagues see it; take it down whenever you like.',
+                'A photo of you - move and zoom it to fit the circle. Colleagues see it; take it down whenever you like.',
               )}
             </p>
           </div>
@@ -366,7 +366,7 @@ export function ProfilePage() {
 /**
  * The PIN you clock in with at the front-desk tablet.
  *
- * Yours to choose, and never shown — not here, not to a manager. It is stored
+ * Yours to choose, and never shown - not here, not to a manager. It is stored
  * the way a password is, so nobody can read it back; somebody who forgets it
  * chooses a new one, or asks a manager to set one.
  */
@@ -419,7 +419,7 @@ function PinCard({ profile, onSaved }: { profile: Profile; onSaved: (next: Profi
         <p className="mt-1 text-sm text-slate-600" data-testid="pin-status">
           {profile.hasPin && profile.pinUpdatedAt
             ? t(
-                'Set on {date}. It is never shown — choose a new one below if you have forgotten it.',
+                'Set on {date}. It is never shown - choose a new one below if you have forgotten it.',
                 {
                   date: new Date(profile.pinUpdatedAt).toLocaleDateString(locale(), {
                     month: 'long',

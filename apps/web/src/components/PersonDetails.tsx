@@ -6,7 +6,7 @@ import { HoverNote } from './HoverNote';
 import { Badge } from './ui';
 
 /// Where somebody is right now, as the Directory says it: in now (and since
-/// when, for managers — the server leaves it out for everybody else), working
+/// when, for managers - the server leaves it out for everybody else), working
 /// from home today, on leave. Shared with the Staff screen so the two cannot
 /// say different things about the same person.
 export function PresenceBadges({
@@ -46,7 +46,7 @@ export function homeHours(shift: { startsAt: string; endsAt: string }): string {
   });
 }
 
-/// Email and phone that open the mail app and the dialler, and the birthday —
+/// Email and phone that open the mail app and the dialler, and the birthday -
 /// month and day only. As on a Directory card.
 export function ContactLines({
   person,
@@ -76,7 +76,7 @@ export function ContactLines({
               <strong className="tabular-nums">
                 {t('Ext. {number}', { number: extension.homeExtension })}
               </strong>
-              {t(' today — they are working from home')}
+              {t(' today - they are working from home')}
               <span className="text-slate-500">
                 {t(' (office {number})', { number: extension.extension })}
               </span>

@@ -3,9 +3,9 @@ import { twelveHour } from '../availability/availability.rules';
 import { shortDate } from '../pto/time-off-clashes';
 
 /**
- * "Before you publish" (October 2026, Dominguez — making the app smarter):
+ * "Before you publish" (October 2026, Dominguez - making the app smarter):
  * everything worth a look about the drafts about to go out, gathered into one
- * pop-up instead of left scattered over the rota. Warns, never refuses — the
+ * pop-up instead of left scattered over the rota. Warns, never refuses - the
  * manager can always publish anyway.
  *
  * Pure: `PublishCheckService` loads the drafts and what bears on them, by the
@@ -131,7 +131,7 @@ export function publishWarnings(input: PublishCheckInput): PublishCheck {
       const hit = hits.find((request) => request.approved) ?? hits[0];
       if (!hit) return [];
       return [
-        `${shift.employeeName} — ${shortDate(shift.date)}: ${
+        `${shift.employeeName} - ${shortDate(shift.date)}: ${
           hit.approved
             ? `on approved ${leaveLabel(hit.type)}`
             : 'asked for that day off (not decided)'
@@ -147,18 +147,18 @@ export function publishWarnings(input: PublishCheckInput): PublishCheck {
       );
       if (!closure) return [];
       return [
-        `${shift.employeeName ?? 'An open shift'} at ${shift.locationName}, ${shortDate(shift.date)} — ${closure.title}`,
+        `${shift.employeeName ?? 'An open shift'} at ${shift.locationName}, ${shortDate(shift.date)} - ${closure.title}`,
       ];
     }),
     availability: staffed.flatMap((shift) => {
       const reason = input.unavailable.get(shift.id);
       return reason
-        ? [`${shift.employeeName} — ${shortDate(shift.date)}, ${hours(shift)}: ${reason}`]
+        ? [`${shift.employeeName} - ${shortDate(shift.date)}, ${hours(shift)}: ${reason}`]
         : [];
     }),
     overtime: input.overtime.map(
       (week) =>
-        `${week.employeeName} — ${week.scheduledHours} hrs the week of ${shortDate(week.weekStart)} (${
+        `${week.employeeName} - ${week.scheduledHours} hrs the week of ${shortDate(week.weekStart)} (${
           week.overtimeHours
         } over ${input.thresholdHours})`,
     ),
@@ -192,7 +192,7 @@ export function publishWarnings(input: PublishCheckInput): PublishCheck {
 }
 
 /// One line per person and license, however many shifts it covers: "Dr. Robin
-/// Doe — DEA expired Mon, Oct 5, before 3 shifts from Tue, Oct 13".
+/// Doe - DEA expired Mon, Oct 5, before 3 shifts from Tue, Oct 13".
 function licenseLines(staffed: CheckShift[], lapses: CheckLapse[]): string[] {
   const out: string[] = [];
   for (const lapse of lapses) {
@@ -201,7 +201,7 @@ function licenseLines(staffed: CheckShift[], lapses: CheckLapse[]): string[] {
     );
     if (after.length === 0) continue;
     out.push(
-      `${after[0].employeeName} — ${lapse.typeName} expired ${shortDate(lapse.expiresOn)}, before ${count(
+      `${after[0].employeeName} - ${lapse.typeName} expired ${shortDate(lapse.expiresOn)}, before ${count(
         after.length,
       )} from ${shortDate(after[0].date)}`,
     );
@@ -226,7 +226,7 @@ function leaverLines(staffed: CheckShift[], leavers: Map<string, CheckLeaver>): 
     if (after.length === 0) continue;
     seen.add(id);
     out.push(
-      `${shift.employeeName} — ${count(after.length)} from ${shortDate(after[0].date)}, ${
+      `${shift.employeeName} - ${count(after.length)} from ${shortDate(after[0].date)}, ${
         leaver.lastDay && after[0].date > leaver.lastDay
           ? `after their last day (${shortDate(leaver.lastDay)})`
           : 'but marked as no longer employed'

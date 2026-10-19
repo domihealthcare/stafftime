@@ -19,7 +19,7 @@ describe('dueNow', () => {
       period: { from: '2026-10-18', to: '2026-10-31' },
       payDay: '2026-11-06',
     });
-    // After the period ends — the new one has begun, but this one is due.
+    // After the period ends - the new one has begun, but this one is due.
     expect(dueNow('2026-11-03', ANCHOR)?.period.from).toBe('2026-10-18');
     expect(dueNow('2026-11-05', ANCHOR)?.payDay).toBe('2026-11-06');
     expect(dueNow('2026-11-06', ANCHOR)).toBeNull();
@@ -44,8 +44,8 @@ describe('describePayrollDue', () => {
     expect(describePayrollDue(due, '2026-10-29')).toEqual([
       'Pay period Sun, Oct 18 – Sat, Oct 31 ends Sat, Oct 31, paid Fri, Nov 6',
       '14 entries not approved yet, for 6 people',
-      '2 clock-outs made at midnight to correct — they cannot be approved until then',
-      '1 punch still open from an earlier day — nobody clocked out',
+      '2 clock-outs made at midnight to correct - they cannot be approved until then',
+      '1 punch still open from an earlier day - nobody clocked out',
     ]);
     expect(describePayrollDue(due, '2026-10-31')[0]).toContain('ends today');
     expect(describePayrollDue(due, '2026-11-02')[0]).toContain('ended Sat, Oct 31');

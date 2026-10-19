@@ -13,11 +13,11 @@ import { PrismaService } from '../prisma/prisma.service';
 import { WEEKLY_SUMMARY_FROM, weeklySummaryWords } from '../time-entries/weekly-summary';
 
 /**
- * "Your week" on Sunday evening (October 2026, Dominguez — see
+ * "Your week" on Sunday evening (October 2026, Dominguez - see
  * `time-entries/weekly-summary.ts`). Run by the five-minute timer: from 6pm on
  * a Sunday in New Jersey, everybody active who has not turned it off
  * (`Employee.wantsWeeklySummary`) and had hours last week or has shifts this
- * week is told once — claimed in `WeeklySummary` before sending.
+ * week is told once - claimed in `WeeklySummary` before sending.
  */
 @Injectable()
 export class WeeklySummaryService {

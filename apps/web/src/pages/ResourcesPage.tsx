@@ -29,7 +29,7 @@ import type { Resource, ResourceKind, ResourceSection } from '../lib/types';
  * Managers see every role, so they can fill them, with their own marked.
  *
  * Nothing here is a file. A document stays wherever the practice keeps it, and
- * a resource links to it — nothing is uploaded to this app.
+ * a resource links to it - nothing is uploaded to this app.
  */
 /// The address a manager shares a Drive folder with, for the link form.
 const DriveShareWith = createContext<string | null>(null);
@@ -430,7 +430,7 @@ function ResourceForm({
             value={title}
             onChange={(event) => setTitle(event.target.value)}
             maxLength={160}
-            placeholder={kind === 'LINK' ? 'ADP — pay stubs and W-2s' : 'Opening the office'}
+            placeholder={kind === 'LINK' ? 'ADP - pay stubs and W-2s' : 'Opening the office'}
             className="w-full rounded-lg border border-slate-300 px-2 py-1.5"
           />
         </label>
@@ -468,7 +468,7 @@ function ResourceForm({
               />
               <span className="mt-1 block text-xs text-slate-500">
                 A Google Drive folder&rsquo;s address lists what is in it here, and staff open its
-                files through the app — no Google account needed.{' '}
+                files through the app - no Google account needed.{' '}
                 {driveShareWith ? (
                   <>
                     In Drive, share the folder with{' '}
@@ -509,7 +509,7 @@ function ResourceForm({
       </div>
 
       <p className="mt-3 text-xs text-slate-500">
-        Documents stay where the practice keeps them — link to the folder rather than uploading
+        Documents stay where the practice keeps them - link to the folder rather than uploading
         anything here.
       </p>
 
@@ -540,7 +540,7 @@ function ResourceForm({
   );
 }
 
-/// "drive.google.com" — enough to know where a link goes before tapping it.
+/// "drive.google.com" - enough to know where a link goes before tapping it.
 function hostOf(url: string): string {
   try {
     return new URL(url).hostname.replace(/^www\./, '');
@@ -551,12 +551,12 @@ function hostOf(url: string): string {
 
 /**
  * Forms, first on the page (October 2026, Dominguez: "a Forms section of
- * the resources") — the clinical forms, filled in and made into PDFs in the
+ * the resources") - the clinical forms, filled in and made into PDFs in the
  * browser. The BrainCheck Care Plan (CPT 99483) is only for people whose job role
  * uses the clinical forms; the care plan (CCM and APCM) also for managers and admins.
  * Anybody with neither sees no section at all.
  */
-/// The practice's reference boards (October 2026, Dominguez — made from its
+/// The practice's reference boards (October 2026, Dominguez - made from its
 /// spreadsheets): the diagnostics board and the referral phone book for
 /// everybody, the reimbursements for managers and admins.
 function ReferenceSection() {
@@ -590,7 +590,7 @@ function ReferenceSection() {
           </Link>
           <p className="mt-0.5 text-xs text-slate-600">
             {t(
-              'Labs, hospitals, imaging, home care, equipment and specialists we refer to — searchable, and yours to keep up to date.',
+              'Labs, hospitals, imaging, home care, equipment and specialists we refer to - searchable, and yours to keep up to date.',
             )}
           </p>
         </div>

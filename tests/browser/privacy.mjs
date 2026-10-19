@@ -2,7 +2,7 @@
 //
 // These are API-level rules with no screen behind them, so the suite signs in
 // through the real UI to get a real session cookie and then asks the API
-// directly — through the browser's own request context, so the session, the
+// directly - through the browser's own request context, so the session, the
 // cookie flags and the CSP all apply exactly as they do in the app.
 import { chromium } from 'playwright';
 import { clockOut } from './clock-out.mjs';

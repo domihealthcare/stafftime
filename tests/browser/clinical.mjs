@@ -3,10 +3,10 @@ import { mkdirSync, readFileSync } from 'node:fs';
 import { getDocument } from 'pdfjs-dist/legacy/build/pdf.mjs';
 
 // The 99483 cognitive assessment (September 2026): a provider-only form that
-// makes two PDFs entirely in the browser — the clinical note and the patient's
-// care plan, in English or Spanish. What matters most is what does NOT happen —
+// makes two PDFs entirely in the browser - the clinical note and the patient's
+// care plan, in English or Spanish. What matters most is what does NOT happen - 
 // the patient's details never reach the server and are never kept in the
-// browser — so this suite watches every request and every kind of browser
+// browser - so this suite watches every request and every kind of browser
 // storage while a fake patient is entered. Fake data only, here and anywhere.
 const OUT = process.argv[2] || new URL('./shots/', import.meta.url).pathname;
 mkdirSync(OUT, { recursive: true });
@@ -40,7 +40,7 @@ const call = (page, path, init = {}) =>
     [path, init],
   );
 
-/// Each page's text, as a PDF reader would find it — which only works if the
+/// Each page's text, as a PDF reader would find it - which only works if the
 /// PDF holds real text rather than a picture of some.
 async function pdfPages(path) {
   const doc = await getDocument({ data: new Uint8Array(readFileSync(path)), verbosity: 0 }).promise;
@@ -84,7 +84,7 @@ await step('somebody who is not a Provider sees no link to it, and the page says
   const nav = await page.getByRole('navigation').getByRole('link').allInnerTexts();
   if (nav.some((t) => /cognitive|braincheck/i.test(t))) throw new Error(`navigation: ${nav.join(', ')}`);
   await page.goto(`${BASE}/resources`, { waitUntil: 'networkidle' });
-  // Frankie is a Medical Assistant too, so Forms holds the wellness form — and only that.
+  // Frankie is a Medical Assistant too, so Forms holds the wellness form - and only that.
   const forms = page.getByTestId('clinical-tools');
   await forms.getByRole('link', { name: /^Annual Wellness Visit/ }).waitFor({ timeout: 10000 });
   if ((await forms.getByRole('link', { name: /BrainCheck/ }).count()) > 0) throw new Error('the link is on Resources');
@@ -153,7 +153,7 @@ await step('the requirements come first, before the patient', async () => {
 });
 
 await step('a section turns amber only once the provider has moved on past it', async () => {
-  // Nothing touched yet: unfinished, but plain — no amber anywhere.
+  // Nothing touched yet: unfinished, but plain - no amber anywhere.
   const amber = () =>
     page.locator('[data-testid^="section-"][data-flagged="true"]').evaluateAll((all) =>
       all.map((el) => el.getAttribute('data-testid')),
@@ -374,7 +374,7 @@ await step('the whole form, filled in with a fake patient, makes the note', asyn
     'Requirements confirmed',
     'Historian: John Testhistorian, son',
     'At a prior visit; reviewed today and still valid or updated.',
-    'Stage 4 — Needs help with complex tasks',
+    'Stage 4 - Needs help with complex tasks',
     'Home: fall risk',
     'Remove tripping hazards',
     'Financial power of attorney Not yet',
@@ -475,7 +475,7 @@ await step('saying both downloaded clears the form', async () => {
 });
 
 await step('the patient’s details never reached the server', async () => {
-  if (requests.length === 0) throw new Error('no requests seen at all — is the listener working?');
+  if (requests.length === 0) throw new Error('no requests seen at all - is the listener working?');
   const leaks = requests.filter(({ url, body }) =>
     SECRETS.some((secret) => decodeURIComponent(url).includes(secret) || body.includes(secret)),
   );

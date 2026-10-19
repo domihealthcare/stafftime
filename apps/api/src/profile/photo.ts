@@ -48,7 +48,7 @@ export function checkPhoto(image: string): Buffer {
 }
 
 /// Width and height from a JPEG's start-of-frame marker, or null if there is
-/// none — which also catches something that only starts like a JPEG.
+/// none - which also catches something that only starts like a JPEG.
 export function jpegSize(bytes: Buffer): { width: number; height: number } | null {
   let at = 2;
   while (at + 9 < bytes.length) {

@@ -157,7 +157,7 @@ export class OnCallService {
     const today = localDateIn(now, PRACTICE_ZONE);
     if (dto.startsOn < today) {
       throw new BadRequestException(
-        'Start it today or later — who was on call before stays as it was.',
+        'Start it today or later - who was on call before stays as it was.',
       );
     }
     const keys = new Set<string>();
@@ -256,7 +256,7 @@ export class OnCallService {
         [before, after].filter((id): id is string => !!id && id !== actor.id),
         {
           title: `On call ${dayWords(date)}: now ${name(after)}`,
-          body: `A manager changed who is on call ${dayWords(date)} — it was ${name(before)}.${dto.note?.trim() ? ` “${dto.note.trim()}”` : ''}`,
+          body: `A manager changed who is on call ${dayWords(date)} - it was ${name(before)}.${dto.note?.trim() ? ` “${dto.note.trim()}”` : ''}`,
         },
         { email: true },
       );

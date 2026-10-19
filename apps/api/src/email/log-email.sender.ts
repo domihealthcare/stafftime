@@ -9,7 +9,7 @@ import { EmailMessage, EmailResult, EmailSender } from './email-sender';
  * prerequisite for running the app locally. A developer testing a password
  * reset copies the link out of the terminal.
  *
- * It is also what a deployment falls back to if no provider is configured —
+ * It is also what a deployment falls back to if no provider is configured -
  * loudly, with a warning on every message, so a silent non-delivery in
  * production is impossible to mistake for success.
  */

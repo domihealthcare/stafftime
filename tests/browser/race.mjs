@@ -1,6 +1,6 @@
 // Two taps at once.
 //
-// Not a browser suite — there is nothing to look at. It fires genuinely
+// Not a browser suite - there is nothing to look at. It fires genuinely
 // concurrent requests at the real API against real Postgres, because that is
 // the only place a race exists: a unit test with a mocked client cannot have
 // one, and a serialized test runner will not produce one.
@@ -122,8 +122,8 @@ await step('simultaneous clock-outs write once, not once each', async () => {
 
 await step('the punch on file is the one that won, verification and all', async () => {
   // This is what the clock-out race actually cost. Each losing write carried
-  // its own verification result, so a punch made from the car park — correctly
-  // recorded as MANUAL and flagged for review — could be quietly overwritten by
+  // its own verification result, so a punch made from the car park - correctly
+  // recorded as MANUAL and flagged for review - could be quietly overwritten by
   // a tap that happened to land afterwards from inside the geofence.
   //
   // So: fire one clock-out from 2km away alongside four from the office, and

@@ -7,7 +7,7 @@
  * "Email address" are all the email), so a list made for something else can
  * usually be pasted as it is.
  *
- * Columns the app does not keep are named back and ignored — never stored.
+ * Columns the app does not keep are named back and ignored - never stored.
  * That matters because a list kept for HR purposes may well have a social
  * security number on it, which this app deliberately does not hold (see "Data
  * this app does not hold" in CLAUDE.md). A birthday column is read for its
@@ -79,7 +79,7 @@ const FIELD_NAMES: Record<Field, string> = {
   payType: 'Pay type',
   hireDate: 'Hire date',
   adpFileNumber: 'ADP File #',
-  birthday: 'Birthday (month and day — the year is dropped)',
+  birthday: 'Birthday (month and day - the year is dropped)',
   offices: 'Offices',
   jobRoles: 'Job roles',
 };
@@ -114,7 +114,7 @@ const HEADINGS: [Field, string[]][] = [
   ],
 ];
 
-/// Second chance for headings phrased another way — "Employment Start
+/// Second chance for headings phrased another way - "Employment Start
 /// Date", "Mobile Phone Number", "E-mail Address (work)".
 const LOOSE: [Field, (key: string) => boolean][] = [
   ['email', (key) => key.includes('email')],
@@ -339,7 +339,7 @@ export function readStaffList(
       problems.push(`"${phone}" is not a phone number`);
 
     // Optional (September 2026): left blank, it can be filled in later on the
-    // Staff screen. "7/2026" — a month and year — means the 1st of the month.
+    // Staff screen. "7/2026" - a month and year - means the 1st of the month.
     const hireText = cell('hireDate');
     const monthYear = /^(\d{1,2})[/.-](\d{4})$/.exec(hireText);
     const hireDate = hireText
@@ -348,7 +348,7 @@ export function readStaffList(
         : readDate(hireText)
       : null;
     if (hireText && !hireDate)
-      problems.push(`Cannot read the hire date "${hireText}" — use 3/1/2024`);
+      problems.push(`Cannot read the hire date "${hireText}" - use 3/1/2024`);
 
     const accessText = squash(cell('role'));
     let role: Role = 'EMPLOYEE';
@@ -368,7 +368,7 @@ export function readStaffList(
     const birthdayText = cell('birthday');
     const birthday = birthdayText ? readBirthday(birthdayText) : null;
     if (birthdayText && !birthday) {
-      problems.push(`Cannot read the birthday "${birthdayText}" — use 11/9 or Nov 9`);
+      problems.push(`Cannot read the birthday "${birthdayText}" - use 11/9 or Nov 9`);
     }
 
     const adp = cell('adpFileNumber');
@@ -388,7 +388,7 @@ export function readStaffList(
       }
     }
     if (matchedOffices.length === 0 && !problems.some((p) => p.startsWith('No office'))) {
-      problems.push('No office — which one do they work at?');
+      problems.push('No office - which one do they work at?');
     }
 
     const matchedRoles: Pick<JobRole, 'id' | 'name'>[] = [];

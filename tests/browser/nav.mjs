@@ -1,7 +1,7 @@
 // Getting around the way a person does on either layout (October 2026: Home,
 // Schedule, Timesheet, Directory and Resources in the laptop header, Manage a
 // menu beside them; on a phone Home, Schedule, Directory and Resources along
-// the bottom and the rest — Timesheet, News, Surveys, Manage — under More).
+// the bottom and the rest - Timesheet, News, Surveys, Manage - under More).
 export async function openMore(page) {
   const more = page.getByRole('button', { name: 'More', exact: true });
   if (await more.isVisible().catch(() => false)) {
@@ -61,7 +61,7 @@ export async function showRegularShifts(page) {
 }
 
 /// Presses one of the Export screen's Download buttons and, when "Before you
-/// export" comes up first (October 2026), answers Export anyway — so suites
+/// export" comes up first (October 2026), answers Export anyway - so suites
 /// about the file itself get the file.
 export async function pressDownload(page, name) {
   await page.getByRole('button', { name }).click();

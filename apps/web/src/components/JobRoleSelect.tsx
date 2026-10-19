@@ -11,7 +11,7 @@ export function rolesHeldBy(personId: string, jobRoles: JobRole[]): JobRole[] {
 
 /**
  * Which job role a shift is for. For somebody's shift, only the roles they
- * hold — no "any" and no "not specified" (Dominguez, September 2026: "I
+ * hold - no "any" and no "not specified" (Dominguez, September 2026: "I
  * shouldn't have the option to be 'any job role', only the job roles assigned
  * to me"). With one role it is simply that one. The server holds the same rule
  * (`held-job-role.ts`).
@@ -80,7 +80,7 @@ export function JobRoleSelect({
         </select>
         {personId && (
           <p className="mt-1 text-xs text-amber-700" data-testid="no-job-role">
-            They are not in any job role yet — add them to one on Staff.
+            They are not in any job role yet - add them to one on Staff.
           </p>
         )}
       </>

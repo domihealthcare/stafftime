@@ -140,7 +140,7 @@ export function ChecklistTaskRow({
   );
 }
 
-/// Today where the person is — not in UTC, which is already tomorrow after
+/// Today where the person is - not in UTC, which is already tomorrow after
 /// 8pm in New Jersey and marked things due today as overdue.
 function today(): string {
   return localDate(new Date());

@@ -3,7 +3,7 @@ import { mkdirSync } from 'node:fs';
 import { goTo } from './nav.mjs';
 
 // The Schedule on a phone (October 2026, Dominguez): a manager starts on their
-// own schedule, as staff do — a phone is for checking when you are on — with
+// own schedule, as staff do - a phone is for checking when you are on - with
 // the picker's ✕ back to everyone; the rota's name column folds to the photo and a
 // first name so the week has the room; and the buttons above it sit in tidy
 // full-width rows. On a laptop, where rotas are built, it still starts on
@@ -93,7 +93,7 @@ await step('on a laptop a manager still starts on everyone', async () => {
   await laptopCtx.close();
 });
 
-await step('on a phone the key starts open, and names every job role’s outline — for staff too', async () => {
+await step('on a phone the key starts open, and names every job role’s outline - for staff too', async () => {
   for (const email of ['manager@domihealthcare.com', 'frontdesk@domihealthcare.com']) {
     const ctx = await browser.newContext({ viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true });
     const page = await ctx.newPage();

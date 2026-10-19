@@ -18,8 +18,8 @@ import { FOOD_LABEL, STATUS_LABEL } from '../lib/reps';
 import type { Rep, RepFood, RepInput, RepStatus } from '../lib/types';
 
 /**
- * The reps who book lunches (October 2026, Dominguez): name — the most
- * important, as they do the scheduling — cell phone, company, medication,
+ * The reps who book lunches (October 2026, Dominguez): name - the most
+ * important, as they do the scheduling - cell phone, company, medication,
  * catering or self-order, how welcome they are, and notes ("some reps we may
  * not want or some have certain restrictions"). Managers and admins keep it;
  * a rep lunch on the calendar picks from it.
@@ -303,7 +303,7 @@ function RepForm({
             />
           )}
         </Field>
-        <Field label="Medication" hint="What they represent — one or several.">
+        <Field label="Medication" hint="What they represent - one or several.">
           {(props) => (
             <input
               {...props}
@@ -348,7 +348,7 @@ function RepForm({
         <div className="sm:col-span-2">
           <Field
             label="Notes"
-            hint="For managers only — restrictions, what went well or badly. Staff never see these."
+            hint="For managers only - restrictions, what went well or badly. Staff never see these."
           >
             {(props) => (
               <textarea

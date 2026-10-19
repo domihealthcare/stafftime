@@ -6,7 +6,7 @@
  * neighbouring roles stay tellable apart. The server stores the key and
  * refuses anything else, so a role cannot end up a colour nobody can read.
  *
- * The colour is only ever a dot or a stripe beside the role's name — the
+ * The colour is only ever a dot or a stripe beside the role's name - the
  * name itself stays in slate. Three of these sit below 3:1 on white, which is
  * fine for a mark next to a label and not fine for the label.
  *

@@ -11,7 +11,7 @@ import { DateRange, payPeriodContaining } from '../settings/pay-period';
 import { payDayFor } from '../settings/pay-days';
 
 /**
- * "Payroll is due, hours aren't approved" (October 2026, Dominguez — a
+ * "Payroll is due, hours aren't approved" (October 2026, Dominguez - a
  * "smarter" idea). From two working days before a pay period ends until the
  * day before it is paid, what still stands between its hours and the payroll
  * export goes to the top of the round-up and the Timesheet banner: entries not
@@ -85,12 +85,12 @@ export function describePayrollDue(due: PayrollDue, today: string): string[] {
       : []),
     ...(due.toCorrect > 0
       ? [
-          `${plural(due.toCorrect, 'clock-out', 'clock-outs')} made at midnight to correct — ${due.toCorrect === 1 ? 'it' : 'they'} cannot be approved until then`,
+          `${plural(due.toCorrect, 'clock-out', 'clock-outs')} made at midnight to correct - ${due.toCorrect === 1 ? 'it' : 'they'} cannot be approved until then`,
         ]
       : []),
     ...(due.stillIn > 0
       ? [
-          `${plural(due.stillIn, 'punch', 'punches')} still open from an earlier day — nobody clocked out`,
+          `${plural(due.stillIn, 'punch', 'punches')} still open from an earlier day - nobody clocked out`,
         ]
       : []),
   ];

@@ -12,7 +12,7 @@ export interface WarningSection {
 }
 
 /**
- * A "worth a look first" pop-up before something goes out — "Before you
+ * A "worth a look first" pop-up before something goes out - "Before you
  * publish" (the rota, to staff) and "Before you export" (hours, to payroll).
  * Sections of short lines, most serious first, a few shown and the rest on
  * "Show N more". Warns, never refuses: the go-ahead button always works.

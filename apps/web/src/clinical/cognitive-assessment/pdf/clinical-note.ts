@@ -42,7 +42,7 @@ import { PdfWriter } from '../../common/pdf-writer';
 /**
  * PDF 1: the clinical note, uploaded to the chart in eCW Documents.
  *
- * It has to stand on its own — the progress note in eCW only points to it —
+ * It has to stand on its own - the progress note in eCW only points to it -
  * so everything entered is here: the requirements confirmed, the visit, each
  * element and how it was completed, the care plan and the attestation.
  */
@@ -83,7 +83,7 @@ export async function clinicalNotePdf(
   const stamp = practiceTimestamp(generatedAt);
   const { visit, requirements } = form;
 
-  pdf.title('Cognitive Assessment and Care Plan Services — CPT 99483');
+  pdf.title('Cognitive Assessment and Care Plan Services - CPT 99483');
   pdf.paragraph('Domi Healthcare', { muted: true });
 
   pdf.heading('Patient and visit');
@@ -141,13 +141,13 @@ export async function clinicalNotePdf(
   return pdf.finish({
     title: NOTE_TITLE,
     lines: [patientLine(form)],
-    footer: `Generated ${stamp} — upload to eCW Documents and reference in the DOS progress note.`,
+    footer: `Generated ${stamp} - upload to eCW Documents and reference in the DOS progress note.`,
   });
 }
 
 type ElementWriter = (pdf: PdfWriter, form: AssessmentForm) => void;
 
-/// Writes `label: value` only when there is something to say — a prior-visit
+/// Writes `label: value` only when there is something to say - a prior-visit
 /// element may leave its own answers blank.
 const optional = (pdf: PdfWriter, label: string, value: string) => {
   if (has(value)) pdf.field(label, value);

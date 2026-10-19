@@ -16,7 +16,7 @@ const step = async (name, fn) => {
 
 /**
  * Practice events (September 2026, asked for by Dominguez): office meetings,
- * provider meetings, a wellness day — on the schedule for the people they are
+ * provider meetings, a wellness day - on the schedule for the people they are
  * for, under the bell, and on their phones through the calendar feed. Never
  * counted as hours. Managers make them.
  *
@@ -79,7 +79,7 @@ await step('a manager adds an office meeting from the Schedule', async () => {
   await form.getByLabel('Starts').fill(`${key(wednesday)}T12:30`);
   // Moving the start keeps the length; set the end explicitly anyway.
   await form.getByLabel('Ends').fill(`${key(wednesday)}T13:30`);
-  await form.getByLabel('Where (optional)').fill('North Bergen office — break room');
+  await form.getByLabel('Where (optional)').fill('North Bergen office - break room');
   await form.getByLabel('Details (optional)').fill('New phones, and the holiday rota.');
   const saved = manager.waitForResponse((r) => r.url().endsWith('/api/events') && r.request().method() === 'POST');
   await form.getByRole('button', { name: 'Add event' }).click();
@@ -155,12 +155,12 @@ await step('staff see the events for them, and only those', async () => {
   }
 });
 
-await step('tapping one shows when, where and what — and no Edit for staff', async () => {
+await step('tapping one shows when, where and what - and no Edit for staff', async () => {
   await frankie.getByTestId('rota-events-row').getByText('Office meeting').click();
   const dialog = frankie.getByRole('dialog', { name: 'Office meeting' });
   await dialog.waitFor({ timeout: 5000 });
   const text = await dialog.innerText();
-  for (const expected of ['12:30pm–1:30pm', 'North Bergen office — break room', 'Everyone', 'New phones']) {
+  for (const expected of ['12:30pm–1:30pm', 'North Bergen office - break room', 'Everyone', 'New phones']) {
     if (!text.includes(expected)) throw new Error(`missing "${expected}" in: ${text}`);
   }
   if (await dialog.getByRole('button', { name: 'Edit' }).count()) throw new Error('staff can edit');
@@ -205,7 +205,7 @@ await step('it is in the month too', async () => {
   await frankie.getByRole('button', { name: 'Week', exact: true }).click();
 });
 
-await step('it goes to the phone through the calendar feed — only the ones for them', async () => {
+await step('it goes to the phone through the calendar feed - only the ones for them', async () => {
   const feed = await frankie.evaluate(async () => {
     const { token } = await fetch('/api/calendar/link', { method: 'POST' }).then((r) => r.json());
     return fetch(`/api/calendar/${token}/domi.ics`, { cache: 'no-store' }).then((r) => r.text());

@@ -44,7 +44,7 @@ export class NotificationsService {
 
   /// Sends and waits; failures are logged, never thrown.
   private async dispatch(to: string, subject: string, body: string[]): Promise<void> {
-    const text = [...body, '', '—', 'Domi Staff', this.appUrl].join('\n');
+    const text = [...body, '', '-', 'Domi Staff', this.appUrl].join('\n');
 
     try {
       await this.email.send({ to, subject: this.prefixed(subject), text });
@@ -80,7 +80,7 @@ export class NotificationsService {
     await this.inbox.notify([request.employee.id], {
       kind: NotificationKind.TIME_OFF_DECIDED,
       title: approved ? 'Your time off is approved' : 'Your time off request was not approved',
-      body: `${capitalise(describeType(request.type))}, ${describeRange(request.startDate, request.endDate, request.isHalfDay)} — ${decider}${request.reviewNote ? `: “${request.reviewNote}”` : ''}${
+      body: `${capitalise(describeType(request.type))}, ${describeRange(request.startDate, request.endDate, request.isHalfDay)} - ${decider}${request.reviewNote ? `: “${request.reviewNote}”` : ''}${
         shiftsTakenOff > 0
           ? `. ${shiftsTakenOff === 1 ? 'Your shift on those days is' : `Your ${shiftsTakenOff} shifts on those days are`} off your schedule.`
           : ''
@@ -101,7 +101,7 @@ export class NotificationsService {
               '',
               shiftsTakenOff > 0
                 ? `${shiftsTakenOff === 1 ? 'Your shift on those days has' : `Your ${shiftsTakenOff} shifts on those days have`} been taken off your schedule.`
-                : 'Any shifts already on the schedule for those days are still there — a manager will sort the cover out.',
+                : 'Any shifts already on the schedule for those days are still there - a manager will sort the cover out.',
             ]
           : ['', 'Talk to your manager if you need to sort something out.']),
       ],
@@ -149,7 +149,7 @@ export class NotificationsService {
   }
 
   /// Something to know now, on the bell (and so on phones with notifications
-  /// on) but not by email — by the time an email is read it is old news:
+  /// on) but not by email - by the time an email is read it is old news:
   /// somebody running late, somebody not in yet.
   async bell(
     employeeIds: string[],
@@ -161,7 +161,7 @@ export class NotificationsService {
   }
 
   /// Something for these people to act on, on the bell and by email, linking
-  /// to where it is done — asked to cover, offered times to meet.
+  /// to where it is done - asked to cover, offered times to meet.
   async personal(
     employeeIds: string[],
     kind: NotificationKind,
@@ -253,7 +253,7 @@ export class NotificationsService {
   }
 
   /// "Your rota puts you into overtime". Sent once, when a published change
-  /// first takes somebody's week over the line — so they hear it from the app
+  /// first takes somebody's week over the line - so they hear it from the app
   /// before they hear it from their payslip, and can say so if it is a mistake.
   async scheduledIntoOvertime(
     employeeId: string,
@@ -278,7 +278,7 @@ export class NotificationsService {
     await this.inbox.notify([employeeId], {
       kind: NotificationKind.OVERTIME,
       title: 'Your schedule puts you into overtime',
-      body: `${scheduledHours} hours in the week starting ${week} — ${over} past the ${thresholdHours}-hour line.`,
+      body: `${scheduledHours} hours in the week starting ${week} - ${over} past the ${thresholdHours}-hour line.`,
       link: '/schedule',
     });
 
@@ -293,7 +293,7 @@ export class NotificationsService {
     ]);
   }
 
-  /// "You haven't clocked in yet" — 15 minutes into a published shift with no
+  /// "You haven't clocked in yet" - 15 minutes into a published shift with no
   /// punch (see `maintenance/punch-reminders.service.ts`).
   async missedClockIn(
     employeeId: string,
@@ -328,7 +328,7 @@ export class NotificationsService {
     ]);
   }
 
-  /// "You're still clocked in" — 15 minutes after their shift ended.
+  /// "You're still clocked in" - 15 minutes after their shift ended.
   async missedClockOut(
     employeeId: string,
     shift: { endsAt: Date; isRemote: boolean; locationName: string },
@@ -364,7 +364,7 @@ export class NotificationsService {
     ]);
   }
 
-  /// "Your DEA expires in 30 days" — to the person whose license it is (see
+  /// "Your DEA expires in 30 days" - to the person whose license it is (see
   /// `credentials/license-reminders.ts`). Managers already hear it in the
   /// nightly round-up; this is so the holder can renew before being chased.
   async licenseReminder(employeeId: string, words: { title: string; body: string }): Promise<void> {
@@ -390,7 +390,7 @@ export class NotificationsService {
     ]);
   }
 
-  /// "You're on tomorrow" — the evening before a day they work (see
+  /// "You're on tomorrow" - the evening before a day they work (see
   /// `shifts/tomorrow-reminder.ts`). Theirs to turn off on Email settings.
   async shiftTomorrow(
     employeeId: string,
@@ -471,7 +471,7 @@ export class NotificationsService {
     ]);
   }
 
-  /// Something to read and confirm, or to do — when it is set, a reminder, or
+  /// Something to read and confirm, or to do - when it is set, a reminder, or
   /// a manager's "Remind them now" (see `requirements/nudges.ts`). The bell
   /// and an email to each; the emails a few at a time, so thirty people do
   /// not take thirty round trips one after another.
@@ -540,7 +540,7 @@ export class NotificationsService {
     await this.required([employeeId], words);
   }
 
-  /// "You were clocked out automatically" — still clocked in at midnight (see
+  /// "You were clocked out automatically" - still clocked in at midnight (see
   /// `time-entries/auto-clock-out.service.ts`). A warning: the clock-out time
   /// is almost certainly wrong, and only they know the right one.
   async autoClockedOut(
@@ -565,7 +565,7 @@ export class NotificationsService {
     await this.dispatch(employee.email, 'You were clocked out automatically', [
       `Hello ${employee.preferredName ?? employee.firstName},`,
       '',
-      `You were still clocked in at midnight — since ${since} — so the app clocked you out at ${clockTime(entry.clockOutAt)}.`,
+      `You were still clocked in at midnight - since ${since} - so the app clocked you out at ${clockTime(entry.clockOutAt)}.`,
       '',
       'That is probably not when you finished. Tell your manager what time you really left, so they can correct it before your hours are approved.',
       '',
@@ -576,7 +576,7 @@ export class NotificationsService {
   }
 
   /**
-   * The nightly round-up of what nobody has got to yet — laid out in
+   * The nightly round-up of what nobody has got to yet - laid out in
    * `digest-email.ts`. Sections with nothing in them are left out entirely
    * rather than printed empty: an email that is mostly "nothing to report"
    * teaches people to skim past it, and then they skim past the one that
@@ -603,12 +603,12 @@ export class NotificationsService {
     }
   }
 
-  /// The reset link itself. Sent to an address that may not belong to anyone —
+  /// The reset link itself. Sent to an address that may not belong to anyone -
   /// the caller decides that, and never says either way.
   /**
    * The welcome email, with the link to choose a first password. Unlike the
-   * other messages the caller needs to know whether it went — the Staff screen
-   * records who has been sent one — so this reports it, still without throwing.
+   * other messages the caller needs to know whether it went - the Staff screen
+   * records who has been sent one - so this reports it, still without throwing.
    */
   async welcome(details: WelcomeDetails, to: string): Promise<EmailResult> {
     const message = welcomeEmail(details);
@@ -641,7 +641,7 @@ export class NotificationsService {
       '',
       `That link works once and stops working in ${validMinutes} minutes.`,
       '',
-      'If this was not you, you can ignore this — your password has not changed. Tell an administrator if it keeps happening.',
+      'If this was not you, you can ignore this - your password has not changed. Tell an administrator if it keeps happening.',
     ]);
   }
 }

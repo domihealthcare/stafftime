@@ -7,8 +7,8 @@
  * which one is in use. Adding SendGrid or SES later is one class.
  *
  * Sending is **best effort by contract**. A provider being down must never fail
- * the thing the person was actually doing — approving time off, resetting a
- * password — so callers do not await a guarantee and implementations log rather
+ * the thing the person was actually doing - approving time off, resetting a
+ * password - so callers do not await a guarantee and implementations log rather
  * than throw. An email that did not arrive is a nuisance; a time-off approval
  * that failed because a mail server hiccuped is a bug.
  */
@@ -28,7 +28,7 @@ export interface EmailMessage {
 
 export interface EmailResult {
   delivered: boolean;
-  /// Why not, when not. Logged, never shown to the person who triggered it —
+  /// Why not, when not. Logged, never shown to the person who triggered it -
   /// "your reset email bounced" tells an attacker the address exists.
   reason?: string;
 }

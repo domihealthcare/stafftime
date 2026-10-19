@@ -153,7 +153,7 @@ export function SettingsPage() {
                 <span className="text-sm text-slate-600">every two weeks</span>
               </div>
               <p className="mt-1 text-xs text-slate-500">
-                The first day of any pay period — a recent payslip shows one. Every period is two
+                The first day of any pay period - a recent payslip shows one. Every period is two
                 weeks from it, and it powers the &ldquo;This pay period&rdquo; and &ldquo;Last pay
                 period&rdquo; shortcuts on the Timesheet and Export screens.
               </p>
@@ -168,7 +168,7 @@ export function SettingsPage() {
                     : 'Monday'}
                 </strong>
                 {payStart ? ', the pay period’s first day' : ' until a pay period is set'}: each pay
-                period is two weeks, and hours past the overtime line in either week are overtime —
+                period is two weeks, and hours past the overtime line in either week are overtime -
                 on the schedule, the dashboard and the payroll export.
               </p>
             </div>
@@ -212,8 +212,8 @@ export function SettingsPage() {
   );
 }
 
-/// The practice's time off rules — PTO and sick days a year, carry-over, when
-/// the year starts — moved here from Time off & balances (October 2026,
+/// The practice's time off rules - PTO and sick days a year, carry-over, when
+/// the year starts - moved here from Time off & balances (October 2026,
 /// Dominguez), beside the other numbers the practice sets for itself.
 /// Somebody's own amount is under Adjust, on the Dashboard or their profile.
 function TimeOffRules({ canEdit }: { canEdit: boolean }) {

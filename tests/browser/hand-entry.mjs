@@ -71,8 +71,8 @@ await step('the hours save, marked as entered by hand, and go on "Worth a look"'
   if (response.status() !== 201) throw new Error(`POST answered ${response.status()}`);
   await manager.getByRole('dialog').waitFor({ state: 'detached', timeout: 10000 });
   const banner = manager.getByTestId('needs-attention');
-  await banner.getByText('Hours entered by hand — find out why').waitFor({ timeout: 10000 });
-  await banner.getByText(/Frankie Front-Desk — 8\.50 hours .* entered by Morgan Manager: the app would not let them clock in/).waitFor({ timeout: 5000 });
+  await banner.getByText('Hours entered by hand - find out why').waitFor({ timeout: 10000 });
+  await banner.getByText(/Frankie Front-Desk - 8\.50 hours .* entered by Morgan Manager: the app would not let them clock in/).waitFor({ timeout: 5000 });
 });
 
 await step('on the timesheet it says who entered it and why, and waits for somebody else', async () => {
@@ -130,7 +130,7 @@ await step('another manager marks it looked into, with what they found, and it l
   await admin.getByText('Looked into by Ada Admin:').first().waitFor({ timeout: 10000 });
   await admin.getByText('Location was off for Safari').first().waitFor({ timeout: 5000 });
   await admin.waitForTimeout(500);
-  if (await admin.getByText('Hours entered by hand — find out why').count()) {
+  if (await admin.getByText('Hours entered by hand - find out why').count()) {
     throw new Error('still on "Worth a look" after being looked into');
   }
 });

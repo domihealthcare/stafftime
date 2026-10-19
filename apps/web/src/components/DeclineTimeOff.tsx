@@ -9,8 +9,8 @@ import { buttonClass } from './ui';
 
 /**
  * Declining time off, with the reason the person will read (October 2026).
- * The Schedule's Decline used to send none, which the server refuses — a
- * decline needs a reason — so it failed; now the Schedule and the Time off
+ * The Schedule's Decline used to send none, which the server refuses - a
+ * decline needs a reason - so it failed; now the Schedule and the Time off
  * screen both use this. With the AI helpers on, **Help me word it** turns a
  * few words into a kind reason to edit (`POST /pto/:id/decline-wording`).
  */
@@ -67,7 +67,7 @@ function DeclineDialog({
     try {
       const { reason: worded } = await api.declineWording(request.id, reason.trim());
       if (worded) setReason(worded);
-      else setProblem('Could not word that one — write it in your own words.');
+      else setProblem('Could not word that one - write it in your own words.');
     } catch (cause) {
       setProblem(cause instanceof ApiError ? cause.message : 'Could not word that just now.');
     } finally {
@@ -120,7 +120,7 @@ function DeclineDialog({
             {busy === 'wording' ? 'Wording it…' : '✨ Help me word it'}
           </button>
           <p className="mt-0.5 text-xs text-slate-500">
-            Uses what you typed (or, if nothing, how many would be off — never who). {AI_NOTE}
+            Uses what you typed (or, if nothing, how many would be off - never who). {AI_NOTE}
           </p>
         </div>
       )}

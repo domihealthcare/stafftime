@@ -2,8 +2,8 @@
  * The colours a job role can wear, by key.
  *
  * A fixed set rather than any hex: these are a categorical palette validated
- * for colour-blind readers in this order, so the first few roles — the ones
- * seen together most — stay tellable apart. The web app maps each key to its
+ * for colour-blind readers in this order, so the first few roles - the ones
+ * seen together most - stay tellable apart. The web app maps each key to its
  * hex (`apps/web/src/lib/job-role-colours.ts`); keep the two lists in step.
  */
 export const JOB_ROLE_COLOURS = [
@@ -19,7 +19,7 @@ export const JOB_ROLE_COLOURS = [
 
 export type JobRoleColour = (typeof JOB_ROLE_COLOURS)[number];
 
-/// The first colour no role is wearing yet, or — once all eight are taken —
+/// The first colour no role is wearing yet, or - once all eight are taken -
 /// the one worn by the fewest, so a ninth role doubles up as little as it can.
 export function nextFreeColour(inUse: string[]): JobRoleColour {
   const counts = new Map<string, number>(JOB_ROLE_COLOURS.map((colour) => [colour, 0]));

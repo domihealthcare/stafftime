@@ -13,7 +13,7 @@ export function lunchesAt(events: PracticeEvent[], locationId: string, day: stri
 
 /// "Rep lunch at 12:30pm with Jane Smith (Novo Nordisk), bringing catering",
 /// or "No rep lunch, bring your own lunch". No dashes: the month grid uses
-/// "—" for a day with nothing on it.
+/// "-" for a day with nothing on it.
 export function lunchWords(lunches: PracticeEvent[]): string {
   if (lunches.length === 0) return t('No rep lunch, bring your own lunch');
   return lunches
@@ -37,7 +37,7 @@ export function lunchWords(lunches: PracticeEvent[]): string {
  * Lunch on a shift (October 2026, Dominguez: "if there is lunch scheduled
  * (or not scheduled) should show that in the employees shift - via an
  * icon"): 🍽️ when a rep is bringing lunch to that office that day, 🥪 when
- * nobody is — bring your own. Shifts at an office only; from home there is
+ * nobody is - bring your own. Shifts at an office only; from home there is
  * nothing to say. The words are in the tooltip and for screen readers.
  */
 export function LunchIcon({ shift, events }: { shift: Shift; events: PracticeEvent[] }) {

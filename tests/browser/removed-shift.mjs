@@ -43,7 +43,7 @@ await signInAs(admin, 'admin@domihealthcare.com');
 const frankie = await (await browser.newContext({ viewport: { width: 1280, height: 900 } })).newPage();
 await signInAs(frankie, 'frontdesk@domihealthcare.com');
 
-// The 15th of this month, so it is in the month the Schedule opens on — or
+// The 15th of this month, so it is in the month the Schedule opens on - or
 // the 16th when today is the 15th, because the seed puts a shift on today and
 // the day would then read "2 shifts".
 const day = new Date();
@@ -72,7 +72,7 @@ if (shift.status !== 201) throw new Error(`the shift answered ${shift.status}`);
 const monthCell = async () => {
   await goTo(frankie, 'Schedule');
   await frankie.getByRole('button', { name: 'Month', exact: true }).click();
-  const cell = frankie.locator(`button[aria-label^="${dayLabel} —"]`);
+  const cell = frankie.locator(`button[aria-label^="${dayLabel} - "]`);
   await cell.waitFor({ timeout: 10000 });
   return cell.getAttribute('aria-label');
 };

@@ -247,8 +247,8 @@ function Managing() {
         )
       ) : items.length === 0 ? (
         <EmptyState>
-          Nothing asked yet. Use “+ Ask people to read or do something” — a policy to read, a
-          training to do — and the app reminds them until they confirm.
+          Nothing asked yet. Use “+ Ask people to read or do something” - a policy to read, a
+          training to do - and the app reminds them until they confirm.
         </EmptyState>
       ) : (
         <ul className="space-y-3">
@@ -352,7 +352,7 @@ function audienceText(item: RequirementSummary): string {
     ...(item.targets?.locations.map((office) => office.name) ?? []),
     ...(item.targets?.employees.map(displayName) ?? []),
   ];
-  return names.length > 0 ? names.join(', ') : 'nobody — everyone chosen has since gone';
+  return names.length > 0 ? names.join(', ') : 'nobody - everyone chosen has since gone';
 }
 
 function WhoConfirmed({ id }: { id: string }) {
@@ -492,7 +492,7 @@ function RequirementForm({
                 checked={kind === 'READ'}
                 onChange={() => setKind('READ')}
               />
-              Something to read — they press “I’ve read it”
+              Something to read - they press “I’ve read it”
             </label>
             <label className="flex items-center gap-2">
               <input
@@ -501,7 +501,7 @@ function RequirementForm({
                 checked={kind === 'TASK'}
                 onChange={() => setKind('TASK')}
               />
-              Something to do — they press “Done”
+              Something to do - they press “Done”
             </label>
           </div>
         </fieldset>
@@ -572,7 +572,7 @@ function RequirementForm({
               </select>
             )}
           </Field>
-          <Field label="A web link" hint="Optional. https:// only — a training video, a document.">
+          <Field label="A web link" hint="Optional. https:// only - a training video, a document.">
             {(props) => (
               <input
                 {...props}

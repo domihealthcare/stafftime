@@ -3,7 +3,7 @@ import { mkdirSync } from 'node:fs';
 import { goTo } from './nav.mjs';
 
 // Working from home: a manager marks a shift as work from home, and during it
-// the person clocks in from anywhere — no location asked for, none recorded —
+// the person clocks in from anywhere - no location asked for, none recorded - 
 // and the punch says Remote wherever it is shown. Plus the rota's colours.
 const OUT = process.argv[2] || new URL('./shots/', import.meta.url).pathname;
 mkdirSync(OUT, { recursive: true });
@@ -126,13 +126,13 @@ await step('the hours are not on the line, but pointing at the name shows them',
 await step('the Clock screen offers to clock in from home, and says nothing is recorded', async () => {
   await mgr.reload({ waitUntil: 'networkidle' });
   await mgr.getByText(/Today’s shift: .* · Work from home/).waitFor({ timeout: 15000 });
-  await mgr.getByRole('button', { name: 'Clock in — working from home' }).waitFor({ timeout: 5000 });
+  await mgr.getByRole('button', { name: 'Clock in - working from home' }).waitFor({ timeout: 5000 });
   await mgr.getByText('Working from home: no location is asked for or recorded.').waitFor({ timeout: 5000 });
 });
 
 await step('clocking in from home works without a location, and none is asked for', async () => {
   const punched = mgr.waitForResponse((r) => r.url().endsWith('/api/time-entries/clock-in'));
-  await mgr.getByRole('button', { name: 'Clock in — working from home' }).click();
+  await mgr.getByRole('button', { name: 'Clock in - working from home' }).click();
   const response = await punched;
   if (!response.ok()) throw new Error(`clock-in refused: ${await response.text()}`);
   const body = JSON.parse(response.request().postData() ?? '{}');
@@ -320,7 +320,7 @@ await step('an earlier office shift the same day does not hide the work-from-hom
   }
   await goTo(mgr, 'Home');
   await mgr.getByText(/Today’s shift: .* · Work from home/).waitFor({ timeout: 15000 });
-  await mgr.getByRole('button', { name: 'Clock in — working from home' }).waitFor({ timeout: 5000 });
+  await mgr.getByRole('button', { name: 'Clock in - working from home' }).waitFor({ timeout: 5000 });
 });
 
 await browser.close();

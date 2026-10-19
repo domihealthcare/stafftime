@@ -4,7 +4,7 @@ import { useConfirm } from './ConfirmDialog';
 import { buttonClass } from './ui';
 
 /**
- * "Approve the clean time off" (October 2026, Dominguez — a "smarter" idea,
+ * "Approve the clean time off" (October 2026, Dominguez - a "smarter" idea,
  * like "Approve the clean hours"): one button for every waiting request that
  * is PTO or sick with enough days left, leaves nobody too thin and lands on no
  * shifts. Each is checked again on the server, and approved the ordinary way

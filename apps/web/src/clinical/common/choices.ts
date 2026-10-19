@@ -24,7 +24,7 @@ export function labelOf(list: readonly Choice[], value: string): string {
 }
 
 /// Ticking a box in a list that has a "None": None clears the rest, and
-/// anything else clears None — so "None" and a concern are never both ticked.
+/// anything else clears None - so "None" and a concern are never both ticked.
 export function toggleChoice(current: string[], value: string, on: boolean): string[] {
   if (!on) return current.filter((item) => item !== value);
   if (value === NONE) return [NONE];

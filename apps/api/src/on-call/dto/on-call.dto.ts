@@ -60,7 +60,7 @@ export class OnCallDayInput {
   note?: string;
 }
 
-/// "Can you take my Saturday?" — and, if offered, a day of theirs back.
+/// "Can you take my Saturday?" - and, if offered, a day of theirs back.
 export class OnCallSwapInput {
   @Matches(DATE_ONLY, { message: 'Choose your day as a date.' })
   giveDate!: string;

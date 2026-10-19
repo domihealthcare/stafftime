@@ -40,16 +40,16 @@ const SECTIONS: { key: DiagnosticSection; label: string; all: string }[] = [
 ];
 
 /**
- * The diagnostics board (October 2026, Dominguez — the practice's
+ * The diagnostics board (October 2026, Dominguez - the practice's
  * DIAGNOSTIC_INFO sheet, "an app inside the app with the similar format …
  * a 'big board' for staff to reference"): insurances down the side, the
  * ultrasounds or the tests across the top, and in each cell whether it is
- * covered, not covered or needs a PA — with each test's time and prep above
+ * covered, not covered or needs a PA - with each test's time and prep above
  * and its self-pay price below, as on the sheet.
  *
  * Find an insurance and its answers come up as large tiles; pick a test and
  * the board narrows to it. **Big board** fills the screen. Managers and admins
- * change it in place — a cell, a test, an insurance — from **Edit the board**.
+ * change it in place - a cell, a test, an insurance - from **Edit the board**.
  */
 export function DiagnosticsPage() {
   const t = useT();
@@ -303,7 +303,7 @@ function Key() {
       ))}
       <span className="inline-flex items-center gap-1">
         <span className="rounded bg-white px-1.5 py-0.5 text-slate-400 ring-1 ring-inset ring-slate-200">
-          —
+          -
         </span>
         {t('Not on the guide: ask a manager')}
       </span>
@@ -340,7 +340,7 @@ function PlanAnswers({
               <div className="flex items-baseline justify-between gap-2">
                 <span className="font-semibold">{test.name}</span>
                 <span className="text-lg font-bold">
-                  {cell ? t(ANSWER_SHORT[cell.answer]) : '—'}
+                  {cell ? t(ANSWER_SHORT[cell.answer]) : '-'}
                 </span>
               </div>
               <p className="text-sm">
@@ -460,7 +460,7 @@ function DiagnosticsTable({
                 key={entry.id}
                 className={`${pad} border-b border-slate-200 bg-slate-50 align-top text-slate-700`}
               >
-                {timeAndPrep(entry, t('No prep')) || '—'}
+                {timeAndPrep(entry, t('No prep')) || '-'}
               </td>
             ))}
           </tr>
@@ -487,7 +487,7 @@ function DiagnosticsTable({
               </th>
               {tests.map((entry) => {
                 const found = cells.get(`${entry.id}:${row.id}`);
-                const label = found ? t(ANSWER_SHORT[found.answer]) : '—';
+                const label = found ? t(ANSWER_SHORT[found.answer]) : '-';
                 const shown = found?.note ? (
                   <HoverNote note={found.note}>{label} *</HoverNote>
                 ) : (
@@ -534,7 +534,7 @@ function DiagnosticsTable({
                 key={entry.id}
                 className={`${pad} border-t border-slate-200 bg-slate-100 text-center font-semibold text-slate-900`}
               >
-                {entry.selfPay ?? '—'}
+                {entry.selfPay ?? '-'}
               </td>
             ))}
           </tr>
@@ -712,7 +712,7 @@ function CellEditor({
               checked={answer === ''}
               onChange={() => setAnswer('')}
             />
-            Not known — leave it empty
+            Not known - leave it empty
           </label>
         </fieldset>
         {answer && (

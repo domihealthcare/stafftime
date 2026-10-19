@@ -20,7 +20,7 @@ const step = async (name, fn) => {
 /**
  * Domi Staff on a phone's home screen: an installable web app, with a manifest
  * and the practice's roof logo as its icon, and a one-time tip on the sign-in
- * screen of a phone. No service worker, on purpose — see docs/architecture.md.
+ * screen of a phone. No service worker, on purpose - see docs/architecture.md.
  *
  * Chromium stands in for both phones here: the tip decides by user agent, and
  * `beforeinstallprompt` (Android's own install prompt) is dispatched by hand,
@@ -111,7 +111,7 @@ await step('the page links the manifest and an iPhone icon', async () => {
 /**
  * The time clock has a page of its own, so that a tablet adding /kiosk to its
  * home screen gets a "Time Clock" app that opens on the time clock, with no
- * browser bar — while every other page, the sign-in included, still installs
+ * browser bar - while every other page, the sign-in included, still installs
  * as Domi Staff exactly as before.
  */
 async function headOf(page) {
@@ -185,7 +185,7 @@ await step('a computer gets no tip', async () => {
   await ctx.close();
 });
 
-await step('an iPhone is told Share, then Add to Home Screen — and once closed it stays closed', async () => {
+await step('an iPhone is told Share, then Add to Home Screen - and once closed it stays closed', async () => {
   const { ctx, page } = await context(IPHONE);
   await page.goto(`${BASE}/`, { waitUntil: 'networkidle' });
   await tip(page).waitFor({ timeout: 10000 });

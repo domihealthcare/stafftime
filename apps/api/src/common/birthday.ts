@@ -5,7 +5,7 @@ import { BadRequestException } from '@nestjs/common';
 const DAYS_IN_MONTH = [31, 29, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31];
 
 /**
- * A birthday is a month and a day — never a year (September 2026). Both or
+ * A birthday is a month and a day - never a year (September 2026). Both or
  * neither: half a birthday is a mistake, not a choice.
  */
 export function assertBirthday(month?: number | null, day?: number | null): void {
@@ -31,11 +31,9 @@ export interface Birthday<T> {
  * which date. A 29 February birthday is kept on 28 February in a year without
  * one, rather than silently skipped.
  */
-export function birthdaysBetween<T extends { birthdayMonth: number | null; birthdayDay: number | null }>(
-  people: T[],
-  from: string,
-  to: string,
-): Birthday<T>[] {
+export function birthdaysBetween<
+  T extends { birthdayMonth: number | null; birthdayDay: number | null },
+>(people: T[], from: string, to: string): Birthday<T>[] {
   const start = new Date(`${from}T00:00:00Z`);
   const end = new Date(`${to}T00:00:00Z`);
   const found: Birthday<T>[] = [];
@@ -48,7 +46,11 @@ export function birthdaysBetween<T extends { birthdayMonth: number | null; birth
       if (person.birthdayMonth === null || person.birthdayDay === null) continue;
       const onThisDay =
         (person.birthdayMonth === month && person.birthdayDay === date) ||
-        (!leap && person.birthdayMonth === 2 && person.birthdayDay === 29 && month === 2 && date === 28);
+        (!leap &&
+          person.birthdayMonth === 2 &&
+          person.birthdayDay === 29 &&
+          month === 2 &&
+          date === 28);
       if (onThisDay) found.push({ person, date: day.toISOString().slice(0, 10) });
     }
   }

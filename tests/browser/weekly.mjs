@@ -21,7 +21,7 @@ const step = async (name, fn) => {
 };
 
 /**
- * "Your week" (October 2026, Dominguez — a "smarter" idea, with an off switch
+ * "Your week" (October 2026, Dominguez - a "smarter" idea, with an off switch
  * like "You're on tomorrow"): on Sunday from 6pm, last week's hours and this
  * week's shifts. Run on a Sunday evening in New Jersey, the suite checks it
  * arrives, once; at any other time, that the timer sends nothing. The switch

@@ -1,16 +1,16 @@
 /**
- * The Annual Wellness Visit form (October 2026, Dominguez) — the practice's
+ * The Annual Wellness Visit form (October 2026, Dominguez) - the practice's
  * "Annual Wellness Supplement Form" (02.2024), page for page:
  *
- * - **Page 1**, the questionnaire — social history and functional ability,
+ * - **Page 1**, the questionnaire - social history and functional ability,
  *   then the Short Portable Mental Status Questionnaire (SPMSQ). The provider
  *   does it with the patient, **in the patient's preferred language**: for a
  *   Spanish speaker the questions are shown in Spanish, to be read as written.
- * - **Page 2**, preventive services — done by the Medical Assistant, in
+ * - **Page 2**, preventive services - done by the Medical Assistant, in
  *   English.
  *
  * Each question carries its Spanish beside it (`es`). The Spanish here was
- * written for this form and has not yet been read by a native speaker — see
+ * written for this form and has not yet been read by a native speaker - see
  * NEEDS_NATIVE_SPEAKER_REVIEW.
  *
  * Nothing in this file is about a patient. It is the blank form.
@@ -21,7 +21,7 @@ export type { PrintLanguage as PdfLanguage } from '../common/layout';
 
 /// Set to false once a native speaker has read the Spanish in this file and
 /// approved it (as was done for the other two forms). While true, the form
-/// says so on screen beside the Spanish — never on the PDF.
+/// says so on screen beside the Spanish - never on the PDF.
 export const NEEDS_NATIVE_SPEAKER_REVIEW = true;
 
 /// Words in both languages.
@@ -401,7 +401,7 @@ export const SOCIAL_HISTORY: Question[] = [
 // ------------------------------------------------------------ page 1: SPMSQ
 
 /// The Short Portable Mental Status Questionnaire (Pfeiffer, 1975), as on the
-/// form. Only whether each answer was right is kept — never the answer itself
+/// form. Only whether each answer was right is kept - never the answer itself
 /// (the patient's phone number, birthday or mother's maiden name).
 export const SPMSQ: Words[] = [
   { en: 'What are the date, month, and year?', es: '¿Cuál es la fecha de hoy (día, mes y año)?' },
@@ -456,7 +456,7 @@ export const SPMSQ_BANDS: Record<SpmsqBand, Words & { range: string }> = {
 
 export interface SpmsqScore {
   errors: number;
-  /// After the education allowance — what the band is read from.
+  /// After the education allowance - what the band is read from.
   adjusted: number;
   band: SpmsqBand;
 }

@@ -10,17 +10,17 @@ import { PrismaService } from '../prisma/prisma.service';
 import { workweekStartsOn } from '../settings/pay-period';
 
 /**
- * Overtime from hours actually worked (October 2026, Dominguez — making the
+ * Overtime from hours actually worked (October 2026, Dominguez - making the
  * app smarter). The rota warns when the *schedule* takes somebody past the
  * line; nothing caught overtime that creeps in from clocking in early or
  * staying late until payroll. Part-way through the week this adds up what
  * each hourly person has **worked so far** and what the rota **still has
- * them down for**, and names those heading past the line — in time to trim a
+ * them down for**, and names those heading past the line - in time to trim a
  * shift before the overtime is paid.
  *
  * The week is the overtime week (the pay period's weekday, as everywhere);
  * hours count at both offices; drafts count, as on the rota. A punch the app
- * closed at midnight and nobody has corrected is left out — its hours are
+ * closed at midnight and nobody has corrected is left out - its hours are
  * the app's guess, and it is on the managers' list to fix already. Hourly
  * staff only, as in the payroll export. Managers only: the Dashboard and the
  * nightly email, never a banner.
@@ -97,7 +97,7 @@ export function forecastOvertime(input: {
     .sort((a, b) => b.projected - a.projected || a.employeeName.localeCompare(b.employeeName));
 }
 
-/// "Frankie Front-Desk — 34.5 hrs worked + 8 still on the rota = 42.5 (the
+/// "Frankie Front-Desk - 34.5 hrs worked + 8 still on the rota = 42.5 (the
 /// rota alone: 40)".
 export function describeOvertimeHeading(person: OvertimeHeading, threshold: number): string {
   const head =
@@ -106,7 +106,7 @@ export function describeOvertimeHeading(person: OvertimeHeading, threshold: numb
       : `${person.worked} hrs worked this week, past the ${threshold}`;
   const rota =
     person.rota > threshold ? 'the rota already had them over' : `the rota alone: ${person.rota}`;
-  return `${person.employeeName} — ${head} (${rota})`;
+  return `${person.employeeName} - ${head} (${rota})`;
 }
 
 export async function loadOvertimeForecast(

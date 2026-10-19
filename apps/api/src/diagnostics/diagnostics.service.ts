@@ -12,7 +12,7 @@ import {
 } from './dto/diagnostics.dto';
 
 /**
- * The diagnostics board (October 2026, Dominguez — the practice's
+ * The diagnostics board (October 2026, Dominguez - the practice's
  * DIAGNOSTIC_INFO sheet made into "a 'big board' for staff to reference"):
  * which insurance covers which ultrasound or test, how long it takes, the
  * prep, and the self-pay price. Everybody signed in reads it; managers and

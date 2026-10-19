@@ -45,7 +45,7 @@ export class ShiftsService {
     return loadUsualShift(this.prisma, employeeId, date);
   }
 
-  /// A shift for somebody, or — with no employee — an open shift that still
+  /// A shift for somebody, or - with no employee - an open shift that still
   /// needs filling.
   async create(dto: CreateShiftDto, createdById: string) {
     const { startsAt, endsAt } = this.parseWindow(dto.startsAt, dto.endsAt);

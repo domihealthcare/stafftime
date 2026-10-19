@@ -10,7 +10,7 @@ import { SPANISH } from './es';
  *
  * The choice is each person's (`Employee.language`, on Your profile, and the
  * English | Español switch on News), remembered on the device too so the
- * screens before sign-in follow it. The Spanish is in `./es/` — written for
+ * screens before sign-in follow it. The Spanish is in `./es/` - written for
  * the practice and **still to be read by a native speaker**
  * (`NEEDS_NATIVE_SPEAKER_REVIEW`).
  *

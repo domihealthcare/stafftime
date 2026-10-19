@@ -66,8 +66,8 @@ export class PayrollExportsService {
    *
    * The record and the entry links are written in one transaction with the
    * bytes already stored: a run that is half-recorded is worse than one that
-   * failed outright, because the next question — "have these hours been paid?"
-   * — would get the wrong answer.
+   * failed outright, because the next question - "have these hours been paid?"
+   * - would get the wrong answer.
    */
   async run(dto: ExportTimesheetDto, target: string, actor: AuthUser) {
     const exporter = this.exporterFor(target);
@@ -125,7 +125,7 @@ export class PayrollExportsService {
     });
 
     this.logger.log(
-      `Payroll export ${record.id} (${exporter.key}) — ${data.meta.entryCount} entries, ${data.meta.totalHours} hours, by ${actor.id}`,
+      `Payroll export ${record.id} (${exporter.key}) - ${data.meta.entryCount} entries, ${data.meta.totalHours} hours, by ${actor.id}`,
     );
 
     return { record: this.decorate(record), file };
@@ -162,7 +162,7 @@ export class PayrollExportsService {
     };
   }
 
-  /// Marks a run as no longer the one that counts — superseded by a later run,
+  /// Marks a run as no longer the one that counts - superseded by a later run,
   /// or sent in error. The record and its file stay.
   async void(id: string, actor: AuthUser) {
     const record = await this.prisma.payrollExport.findUnique({
@@ -196,7 +196,7 @@ export class PayrollExportsService {
         status: PayrollExportStatus.FAILED,
         // The screen sends instants ("2026-09-14T04:00:00.000Z"); a bare date is
         // also valid. Appending a time to either, as this once did, gave an
-        // invalid date — and the refusal the manager needed to read was lost
+        // invalid date - and the refusal the manager needed to read was lost
         // behind the crash it caused.
         periodStart: new Date(dto.from),
         periodEnd: lastDayOf(new Date(dto.to)),

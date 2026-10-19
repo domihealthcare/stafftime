@@ -90,7 +90,7 @@ export class SurveysController {
 export class FeedbackController {
   constructor(private readonly feedback: FeedbackService) {}
 
-  /// Needs a session to post — the box is not open to the internet — and then
+  /// Needs a session to post - the box is not open to the internet - and then
   /// keeps nothing from it.
   @Post()
   post(@Body() dto: FeedbackInput) {

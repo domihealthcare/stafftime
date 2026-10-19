@@ -17,7 +17,7 @@ function card(overrides: Partial<ReminderCredential> = {}): ReminderCredential {
 }
 
 describe('when somebody is reminded about their own license', () => {
-  it('at 60 days, at 30 days, and for 30 days after it lapses — nothing before or after', () => {
+  it('at 60 days, at 30 days, and for 30 days after it lapses - nothing before or after', () => {
     expect(stageFor(61)).toBeNull();
     expect(stageFor(60)).toBe(CredentialReminderStage.DAYS_60);
     expect(stageFor(31)).toBe(CredentialReminderStage.DAYS_60);
@@ -114,14 +114,12 @@ describe('sending them', () => {
       },
       credentialReminder: {
         create: alreadySent
-          ? jest
-              .fn()
-              .mockRejectedValue(
-                new Prisma.PrismaClientKnownRequestError('unique', {
-                  code: 'P2002',
-                  clientVersion: 'x',
-                }),
-              )
+          ? jest.fn().mockRejectedValue(
+              new Prisma.PrismaClientKnownRequestError('unique', {
+                code: 'P2002',
+                clientVersion: 'x',
+              }),
+            )
           : jest.fn().mockResolvedValue({}),
       },
     };

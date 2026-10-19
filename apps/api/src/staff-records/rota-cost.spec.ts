@@ -73,7 +73,7 @@ describe('what the rota costs', () => {
     const shifts = [
       shift('ana', '2026-10-15', '00:00', '20:00'), // Thu, 20h
       shift('ana', '2026-10-16', '00:00', '20:00'), // Fri, 20h
-      shift('ana', '2026-10-18', '09:00', '17:00'), // Sun, 8h — all overtime
+      shift('ana', '2026-10-18', '09:00', '17:00'), // Sun, 8h - all overtime
     ];
     const cost = rotaCost({
       from: '2026-10-18',

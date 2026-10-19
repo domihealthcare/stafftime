@@ -55,7 +55,7 @@ type ChangeRow = EmploymentChange & { recordedBy: { firstName: string; lastName:
  * The admins-only side of a staff profile (October 2026, Dominguez): home
  * address, emergency contact, and pay and position over time.
  *
- * A deliberate change to *Data this app does not hold* — see CLAUDE.md. It
+ * A deliberate change to *Data this app does not hold* - see CLAUDE.md. It
  * lives in its own tables and its own module so that nothing else in the API
  * can send it anywhere by accident: an Employee row goes out with rotas,
  * timesheets and the Directory; these tables are read here and nowhere else.

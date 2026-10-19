@@ -42,7 +42,7 @@ interface Loaded {
 /**
  * Everything the practice keeps about one person, on one page (October 2026,
  * Dominguez): contact details, address and emergency contact, employment,
- * pay and position over time, and time off. **Admins only** — opened from a
+ * pay and position over time, and time off. **Admins only** - opened from a
  * name on the Staff screen. The address, emergency contact and pay are kept
  * nowhere else in the app and shown nowhere else.
  */
@@ -148,7 +148,7 @@ export function StaffProfilePage() {
 
       <p className="text-xs text-slate-600">
         Only administrators can see this page. The address, emergency contact and pay are not shown
-        anywhere else in the app — not to managers, not in the Directory, not in the payroll export.
+        anywhere else in the app - not to managers, not in the Directory, not in the payroll export.
       </p>
 
       {!terminated && <ShortcutsFor person={person} isMe={isMe} />}

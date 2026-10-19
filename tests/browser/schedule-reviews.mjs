@@ -117,7 +117,7 @@ await step('a manager sets the usual pattern', async () => {
   await card.getByText(`${weekdayName(today)}: Frankie Front-Desk`).waitFor();
   const line = manager.getByTestId(`reviews-${today}`).getByTestId('review-line');
   const text = await line.innerText();
-  if (!/Max Assistant\s*—\s*Frankie Front-Desk/.test(text)) throw new Error(`today reads "${text}"`);
+  if (!/Max Assistant\s* - \s*Frankie Front-Desk/.test(text)) throw new Error(`today reads "${text}"`);
 });
 await manager.screenshot({ path: `${OUT}/schedule-reviews-manager.png`, fullPage: true });
 

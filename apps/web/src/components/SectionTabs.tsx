@@ -6,7 +6,7 @@ import { sectionFor, type ManageSection } from '../lib/manage-sections';
  * People holds Staff, Job roles, Licenses and Onboarding; Offices holds
  * Locations, Kiosks, Closing checklists and Reps; and so on (October 2026,
  * Dominguez). Shown only when the person can open at least two of the
- * section's screens — a manager does not see Staff's tab, and somebody
+ * section's screens - a manager does not see Staff's tab, and somebody
  * answering a survey sees no strip at all.
  */
 export function SectionTabs({ sections }: { sections: ManageSection[] }) {

@@ -1,7 +1,7 @@
 import { useSearchParams } from 'react-router-dom';
 
 /**
- * A screen narrowed to one person by `?person=<id>` — how a staff profile's
+ * A screen narrowed to one person by `?person=<id>` - how a staff profile's
  * "For Robin" shortcuts open Timesheet, Licenses, Onboarding and Availability
  * (October 2026, Dominguez: things should be reachable from the person, not
  * only from their own screen). The Schedule has had `?person=` since

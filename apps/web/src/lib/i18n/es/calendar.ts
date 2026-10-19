@@ -48,7 +48,7 @@ export const CALENDAR: Record<string, string> = {
   'from {time}': 'desde {time}',
   'An office since removed': 'Una oficina que ya no existe',
   'A job role since removed': 'Un puesto que ya no existe',
-  'Nobody — everyone on the list has since gone': 'Nadie — todos los de la lista ya se fueron',
+  'Nobody - everyone on the list has since gone': 'Nadie - todos los de la lista ya se fueron',
   '{names} and {n} more': '{names} y {n} más',
   'for {who}': 'para {who}',
   'at {who}': 'en {who}',
@@ -63,8 +63,8 @@ export const CALENDAR: Record<string, string> = {
   '{office} staff': 'Personal de {office}',
   Details: 'Detalles',
   'Join video call': 'Unirse a la videollamada',
-  'Anybody scheduled then is flagged to managers. Pay is not changed by a closure — anybody who works clocks in as usual.':
-    'Se avisa a los gerentes de cualquiera que tenga turno en ese momento. Un cierre no cambia el pago — quien trabaje marca entrada como siempre.',
+  'Anybody scheduled then is flagged to managers. Pay is not changed by a closure - anybody who works clocks in as usual.':
+    'Se avisa a los gerentes de cualquiera que tenga turno en ese momento. Un cierre no cambia el pago - quien trabaje marca entrada como siempre.',
   Rep: 'Representante',
   Medication: 'Medicamento',
   Lunch: 'Almuerzo',
@@ -103,11 +103,11 @@ export const CALENDAR: Record<string, string> = {
   'Yes, turn it off': 'Sí, desactivarla',
   'Keep syncing': 'Seguir sincronizando',
   'Could not turn that off.': 'No se pudo desactivar.',
-  'Could not copy automatically — select the address and copy it.':
-    'No se pudo copiar automáticamente — selecciona la dirección y cópiala.',
+  'Could not copy automatically - select the address and copy it.':
+    'No se pudo copiar automáticamente - selecciona la dirección y cópiala.',
   'Your shifts (two weeks ahead) and practice events arrive as calendar invites to':
     'Tus turnos (con dos semanas de anticipación) y los eventos de la práctica llegan como invitaciones de calendario a',
-  '— accept them if your calendar asks.': '— acéptalas si tu calendario lo pide.',
+  ' - accept them if your calendar asks.': ' - acéptalas si tu calendario lo pide.',
   'Syncing is on for office closures and your approved time off.':
     'La sincronización está activada para los cierres de oficina y tu tiempo libre aprobado.',
   'Office closures and your approved time off can go in your calendar too.':
@@ -135,8 +135,8 @@ export const CALENDAR: Record<string, string> = {
     'Ajustes → Apps → Calendario → Cuentas → Añadir cuenta → Otra → Añadir calendario suscrito → pegar.',
   'Add calendar → Subscribe from web → paste.':
     'Agregar calendario → Suscribirse desde la web → pegar.',
-  'Keep these addresses to yourself. Anyone who has one can see your schedule without signing in — that is how calendar subscriptions work. If one gets out, regenerate below: every address changes at once.':
-    'No compartas estas direcciones. Cualquiera que tenga una puede ver tu horario sin iniciar sesión — así funcionan las suscripciones de calendario. Si alguna se comparte, genera una nueva abajo: todas las direcciones cambian a la vez.',
+  'Keep these addresses to yourself. Anyone who has one can see your schedule without signing in - that is how calendar subscriptions work. If one gets out, regenerate below: every address changes at once.':
+    'No compartas estas direcciones. Cualquiera que tenga una puede ver tu horario sin iniciar sesión - así funcionan las suscripciones de calendario. Si alguna se comparte, genera una nueva abajo: todas las direcciones cambian a la vez.',
   'Calendars usually check for changes every few hours, so a new shift may take a while to appear.':
     'Los calendarios suelen buscar cambios cada pocas horas, así que un turno nuevo puede tardar un rato en aparecer.',
   'Regenerate the link': 'Generar un enlace nuevo',

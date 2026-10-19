@@ -13,7 +13,7 @@ describe('LocationVerificationService', () => {
     name: 'North Bergen',
     latitude: 40.804,
     longitude: -74.012,
-    // 492 ft is 150 m — the value the migration converts the old default to,
+    // 492 ft is 150 m - the value the migration converts the old default to,
     // kept here so the distances the rest of this file reasons about still mean
     // what their comments say.
     geofenceRadiusFeet: 492,
@@ -22,7 +22,7 @@ describe('LocationVerificationService', () => {
     isActive: true,
   };
 
-  /// A point ~1.8km away — the other office.
+  /// A point ~1.8km away - the other office.
   const westNewYorkCoords = { latitude: 40.7878, longitude: -74.0143 };
   /// A point ~55m from the North Bergen pin, well inside the fence.
   const insideFence = { latitude: 40.8045, longitude: -74.012 };
@@ -97,8 +97,8 @@ describe('LocationVerificationService', () => {
     it('treats the radius as feet, not as metres', () => {
       // The one mistake this conversion invites: reading 492 as metres, which
       // would make the fence three times too big. Every other case in this file
-      // passes either way — the other office is 1.8km out and the inside point
-      // is 55m in — so this is the point that tells them apart. 250m is outside
+      // passes either way - the other office is 1.8km out and the inside point
+      // is 55m in - so this is the point that tells them apart. 250m is outside
       // a 492 ft (150 m) fence and comfortably inside a 492 m one.
       const justOutside = { latitude: 40.806246, longitude: -74.012 };
       const result = service.verify(attempt({ ...justOutside, accuracyMeters: 20 }));

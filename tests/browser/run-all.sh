@@ -134,6 +134,9 @@ reset_state() {
     -c "delete from diagnostic_tests; delete from diagnostic_plans; delete from diagnostic_reminders;" \
     -c "delete from reimbursement_codes; delete from reimbursement_payers;" \
     -f "$API_DIR/prisma/migrations/20261016020000_diagnostics_reimbursements_data/migration.sql"
+  # And the same words without the em dashes the portal no longer uses.
+  psql -h "$PGHOST_LOCAL" -p "$PGPORT_LOCAL" -U "$PGUSER_LOCAL" -d "$PGDATABASE_LOCAL" -q \
+    -f "$API_DIR/prisma/migrations/20261019010000_no_em_dashes/migration.sql"
 }
 
 # The scheduler suite builds its rotas in February 2027 so that clearing them
@@ -159,6 +162,6 @@ reset_state
 if [ "$failed" -eq 0 ]; then
   printf "\n===== every suite passed =====\n"
 else
-  printf "\n===== SOME SUITES FAILED — full output in %s =====\n" "$LOG_DIR"
+  printf "\n===== SOME SUITES FAILED - full output in %s =====\n" "$LOG_DIR"
 fi
 exit $failed

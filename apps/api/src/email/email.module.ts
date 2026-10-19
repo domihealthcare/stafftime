@@ -15,8 +15,8 @@ import { ResendEmailSender } from './resend-email.sender';
 
 /// Which provider sends the mail. Chosen once, here.
 ///
-/// Global because several features notify people — time off, password resets,
-/// checklists — and none of them should have to import a module to say so.
+/// Global because several features notify people - time off, password resets,
+/// checklists - and none of them should have to import a module to say so.
 @Global()
 @Module({
   providers: [

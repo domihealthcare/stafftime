@@ -4,7 +4,7 @@ import type { CoverFit, CoverOption, CoverOptions } from '../lib/types';
 
 /// Who could work a shift, ranked by the server: free, not off, not past
 /// what they said they can do, furthest from overtime. Null while loading,
-/// or if it could not be had — the pop-up then falls back to its plain list.
+/// or if it could not be had - the pop-up then falls back to its plain list.
 export function useCoverOptions(shiftId: string): CoverOptions | null {
   const [cover, setCover] = useState<CoverOptions | null>(null);
   useEffect(() => {
@@ -22,12 +22,12 @@ export function useCoverOptions(shiftId: string): CoverOptions | null {
 }
 
 export const COVER_GROUPS: { fit: CoverFit; label: string }[] = [
-  { fit: 'good', label: 'Free — best first' },
+  { fit: 'good', label: 'Free - best first' },
   { fit: 'catch', label: 'Could, but check first' },
   { fit: 'cannot', label: 'Already on, or off that day' },
 ];
 
-/// Already working at the time — the one thing that cannot be done.
+/// Already working at the time - the one thing that cannot be done.
 export const clashes = (option: CoverOption) =>
   !option.current && option.reasons.some((reason) => reason.kind === 'shift');
 
@@ -41,7 +41,7 @@ export function coverLabel(option: CoverOption): string {
 }
 
 /**
- * "Who can cover this?" — the top few to ask, as buttons that pick them.
+ * "Who can cover this?" - the top few to ask, as buttons that pick them.
  *
  * Good fits first; with none, the ones with a catch, each saying what it is.
  * Nobody is left out of the full list below it, and nothing is refused: a
@@ -74,14 +74,14 @@ export function CoverSuggestions({
       </p>
       {top.length === 0 ? (
         <p className="mt-1 text-xs text-slate-600">
-          Nobody here is free then — everyone is already on or off that day.
+          Nobody here is free then - everyone is already on or off that day.
         </p>
       ) : (
         <>
           <p className="text-xs text-slate-500">
             {good.length > 0
               ? 'Free then, not off, and furthest from overtime first.'
-              : 'Nobody is completely free — these come closest.'}
+              : 'Nobody is completely free - these come closest.'}
           </p>
           <ul className="mt-1.5 space-y-1">
             {top.map((option) => {

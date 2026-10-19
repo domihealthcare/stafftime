@@ -55,7 +55,7 @@ describe('findClashes', () => {
       ['Bea', false],
     ]);
     expect(describeClash(clash)).toBe(
-      'North Bergen, Tue, Dec 22: 2 of 3 in Medical Assistant off — Ana, Bea (asked, not decided)',
+      'North Bergen, Tue, Dec 22: 2 of 3 in Medical Assistant off - Ana, Bea (asked, not decided)',
     );
   });
 
@@ -65,7 +65,7 @@ describe('findClashes', () => {
     const [clash] = findClashes([withMinimum], [off('ana', '2026-12-22')], weekdays);
     expect(clash).toMatchObject({ total: 3, minimum: 3 });
     expect(describeClash(clash)).toBe(
-      'North Bergen, Tue, Dec 22: 1 of 3 in Medical Assistant off (minimum 3) — Ana',
+      'North Bergen, Tue, Dec 22: 1 of 3 in Medical Assistant off (minimum 3) - Ana',
     );
     // Minimum 1: two of three off still leaves one.
     const lenient = { ...mas, minimum: 1 };
@@ -103,10 +103,10 @@ describe('findClashes', () => {
 
   it('a role of one is all of them off, and says so', () => {
     const [clash] = findClashes([mas, provider], [off('dr', '2026-12-23')], weekdays);
-    expect(describeClash(clash)).toBe('North Bergen, Wed, Dec 23: all 1 in Provider off — Dr');
+    expect(describeClash(clash)).toBe('North Bergen, Wed, Dec 23: all 1 in Provider off - Dr');
   });
 
-  it('only counts the days given for the office — no shifts on a Saturday, no clash', () => {
+  it('only counts the days given for the office - no shifts on a Saturday, no clash', () => {
     expect(
       findClashes([mas], [off('ana', '2026-12-26'), off('bea', '2026-12-26')], weekdays),
     ).toEqual([]);
@@ -151,7 +151,7 @@ describe('loadTimeOffClashes', () => {
 
   it('builds teams from who holds which role at which office', async () => {
     const clashes = await loadTimeOffClashes(build() as never, '2026-12-21', '2026-12-25');
-    // MA: Ana and Bea, both off. FD: Ana and Cy, one off — half is not more than half.
+    // MA: Ana and Bea, both off. FD: Ana and Cy, one off - half is not more than half.
     expect(clashes.map((c) => `${c.jobRoleName} ${c.off.length}/${c.total}`)).toEqual(['MA 2/2']);
   });
 
@@ -161,7 +161,7 @@ describe('loadTimeOffClashes', () => {
       '2026-12-21',
       '2026-12-25',
     );
-    // FD: Ana and Cy, minimum 2 — Ana off leaves one.
+    // FD: Ana and Cy, minimum 2 - Ana off leaves one.
     expect(clashes.map((c) => `${c.jobRoleName} ${c.off.length}/${c.total}`)).toEqual([
       'MA 2/2',
       'FD 1/2',

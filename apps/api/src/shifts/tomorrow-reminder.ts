@@ -1,14 +1,14 @@
 import { PRACTICE_ZONE } from '../common/util/zoned-time.util';
 
 /**
- * "You're on tomorrow" (October 2026, Dominguez — a "smarter" idea, with
+ * "You're on tomorrow" (October 2026, Dominguez - a "smarter" idea, with
  * "should be able to turn off as a user"). The evening before each day
  * somebody works, one note on the bell and one email listing that day's
  * published shifts: hours, place, job role and any note on the shift. The
  * words, kept apart from the sending so they can be tested on their own.
  */
 
-/// From when, on the practice's clock, the evening reminder goes out — the
+/// From when, on the practice's clock, the evening reminder goes out - the
 /// same hour as the rep lunch notice.
 export const TOMORROW_REMINDER_FROM = '18:00';
 

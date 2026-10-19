@@ -19,7 +19,7 @@ const step = async (name, fn) => {
 };
 
 /**
- * Moving holidays, copied right (Dominguez, October 2026 — making the app
+ * Moving holidays, copied right (Dominguez, October 2026 - making the app
  * smarter): "Copy these into next year" puts Thanksgiving and the other
  * holidays that move on their own day next year, and says which moved and
  * which fixed ones land on a weekend. Done in 2031, which nothing else uses;
@@ -77,12 +77,12 @@ await step('copying into 2032 moves the moving ones to their day, and says so', 
   if (
     JSON.stringify(moved) !==
     JSON.stringify([
-      'Memorial Day — Mon, May 26, 2031 → Mon, May 31, 2032',
-      'Thanksgiving — Thu, Nov 27, 2031 → Thu, Nov 25, 2032',
+      'Memorial Day - Mon, May 26, 2031 → Mon, May 31, 2032',
+      'Thanksgiving - Thu, Nov 27, 2031 → Thu, Nov 25, 2032',
     ])
   )
     throw new Error(`moved: ${JSON.stringify(moved)}`);
-  if (JSON.stringify(onWeekend) !== JSON.stringify(['Christmas Day — Sat, Dec 25, 2032 is a Saturday']))
+  if (JSON.stringify(onWeekend) !== JSON.stringify(['Christmas Day - Sat, Dec 25, 2032 is a Saturday']))
     throw new Error(`weekend: ${JSON.stringify(onWeekend)}`);
 });
 

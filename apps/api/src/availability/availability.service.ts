@@ -115,7 +115,7 @@ export class AvailabilityService {
     });
     this.logger.log(`Unavailability ${row.id} (${row.kind}) added by ${actor.id}`);
 
-    // Saved either way — availability needs no approval — but a clash with
+    // Saved either way - availability needs no approval - but a clash with
     // one of their regular shifts is the managers' to sort out, so they hear.
     const clashes = (await loadRegularShiftClashes(this.prisma, now, actor.id)).filter(
       (clash) => clash.rule.id === row.id,
@@ -166,7 +166,7 @@ export class AvailabilityService {
    *
    * "Published" is per location, the way managers publish: the last week with
    * a published shift at any of the person's locations is fixed, whoever those
-   * shifts are for — somebody not on this week's rota may still be about to be
+   * shifts are for - somebody not on this week's rota may still be about to be
    * added to it.
    */
   async window(employeeId: string, now = new Date()) {
@@ -233,7 +233,7 @@ function present(row: Unavailability, firstOpenDate: string) {
     note: row.note,
     description: describe(rule),
     /// Whether it can still be taken away without touching a published week.
-    /// A weekly rule always can — it just ends at the first open week.
+    /// A weekly rule always can - it just ends at the first open week.
     locked: rule.kind === UnavailabilityKind.ONE_OFF && rule.effectiveFrom < firstOpenDate,
   };
 }
@@ -254,7 +254,7 @@ function checkHours(start?: string, end?: string) {
 function lockedError(date: string, firstOpenDate: string) {
   return new BadRequestException(
     `The schedule for ${label(date)} is already published, so it can’t be changed here. ` +
-      `Changes can start from ${label(firstOpenDate)} — for anything sooner, talk to a manager.`,
+      `Changes can start from ${label(firstOpenDate)} - for anything sooner, talk to a manager.`,
   );
 }
 

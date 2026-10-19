@@ -25,8 +25,8 @@ const OUTLINE_BUTTON =
 
 /**
  * Everything about one person on the Staff screen, in one place: their
- * details, how they sign in, and — last, behind a second step and a
- * confirmation — marking them as having left.
+ * details, how they sign in, and - last, behind a second step and a
+ * confirmation - marking them as having left.
  *
  * It used to be spread along each card, with "No longer employed" one tap
  * from "Edit details"; that was too easy to press by mistake. Nothing is lost
@@ -44,7 +44,7 @@ export function StaffEditor({
 }: {
   person: Employee;
   locations: Location[];
-  /// Every job role, with its members — which of them this person is in.
+  /// Every job role, with its members - which of them this person is in.
   jobRoles: JobRole[];
   isMe: boolean;
   onClose: () => void;
@@ -274,7 +274,7 @@ export function StaffEditor({
                 <Field
                   id="edit-post-nominals"
                   label="Letters after their name"
-                  hint="Optional — MD, DO, APN-C, PA-C. Printed beside their name on the clinical forms."
+                  hint="Optional - MD, DO, APN-C, PA-C. Printed beside their name on the clinical forms."
                 >
                   <input
                     id="edit-post-nominals"
@@ -321,7 +321,7 @@ export function StaffEditor({
                   </Field>
                   {emailChanged && person.hasPassword && (
                     <p className="mt-1 text-xs text-amber-800">
-                      From now on they sign in with the new address, not the old one — let them
+                      From now on they sign in with the new address, not the old one - let them
                       know. Their password stays the same.
                     </p>
                   )}
@@ -330,7 +330,7 @@ export function StaffEditor({
               <p className="mt-3 text-xs text-slate-500">
                 Their pronouns and &ldquo;about you&rdquo; line are theirs to set, on Your profile
                 {isAdmin && !isMe && !terminated
-                  ? ' — and their photo, though you can put one up for them under Photo, below.'
+                  ? ' - and their photo, though you can put one up for them under Photo, below.'
                   : ', and so is their photo.'}
               </p>
             </Section>
@@ -392,7 +392,7 @@ export function StaffEditor({
               <fieldset className="mt-4">
                 <legend className="text-sm font-medium text-slate-700">Job roles</legend>
                 <p className="text-xs text-slate-500">
-                  What they do at the practice — tick all that apply. Decides their resources and
+                  What they do at the practice - tick all that apply. Decides their resources and
                   closing checklist, not what they can do in the app.
                 </p>
                 <div className="mt-1 grid gap-1 sm:grid-cols-2">
@@ -461,7 +461,7 @@ export function StaffEditor({
                 <Field
                   id="edit-hired"
                   label="Hire date"
-                  hint="Optional — used for first-year time off. Without it they get the whole year’s."
+                  hint="Optional - used for first-year time off. Without it they get the whole year’s."
                 >
                   <input
                     id="edit-hired"
@@ -503,7 +503,7 @@ export function StaffEditor({
                   >
                     {birthdayHalf
                       ? 'Give both the month and the day, or neither.'
-                      : 'Month and day only — colleagues see it that week.'}
+                      : 'Month and day only - colleagues see it that week.'}
                   </p>
                 </fieldset>
                 <Field
@@ -588,7 +588,7 @@ export function StaffEditor({
             ) : isMe ? (
               <Section title="Leaving the practice">
                 <p className="text-sm text-slate-600">
-                  You cannot mark yourself as having left — it would lock you out. Another admin
+                  You cannot mark yourself as having left - it would lock you out. Another admin
                   can.
                 </p>
               </Section>
@@ -603,7 +603,7 @@ export function StaffEditor({
 }
 
 /**
- * The licenses their job roles ask for, and what is on file — read-only here;
+ * The licenses their job roles ask for, and what is on file - read-only here;
  * they are recorded and renewed on the Licenses screen. Shown only when a job
  * role of theirs asks for something.
  */
@@ -704,7 +704,7 @@ function shortDate(iso: string): string {
 /// the temporary password, once.
 /**
  * Their profile photo, put up or taken down by an admin (Dominguez, October
- * 2026: "i should be able to upload pictures for staff avatars") — the one
+ * 2026: "i should be able to upload pictures for staff avatars") - the one
  * widening of "a photo of yourself". The same browser fitting as anybody's
  * own: cropped square, shrunk to 256 px and re-encoded as a JPEG, so the
  * camera's details, location included, never leave this screen. They are told
@@ -1142,7 +1142,7 @@ function Leaving({ person, onLeft }: { person: Employee; onLeft: () => void }) {
   );
 }
 
-/// Undoing "no longer employed" — after a mistake, or when somebody returns.
+/// Undoing "no longer employed" - after a mistake, or when somebody returns.
 function BringBack({ person, onChanged }: { person: Employee; onChanged: () => void }) {
   const confirm = useConfirm();
   const [busy, setBusy] = useState(false);
@@ -1175,7 +1175,7 @@ function BringBack({ person, onChanged }: { person: Employee; onChanged: () => v
         <p className="text-sm text-slate-600">
           Marked as no longer employed
           {person.terminationDate
-            ? ` — last day ${new Date(person.terminationDate).toLocaleDateString('en-US', {
+            ? ` - last day ${new Date(person.terminationDate).toLocaleDateString('en-US', {
                 month: 'long',
                 day: 'numeric',
                 year: 'numeric',
@@ -1220,7 +1220,7 @@ const WORDS = [
 ];
 
 /// A temporary password the admin can read aloud over the phone: two words and
-/// a number, e.g. "copper-meadow-42" — which meets the 8-characters-and-a-number
+/// a number, e.g. "copper-meadow-42" - which meets the 8-characters-and-a-number
 /// rule with room to spare.
 function suggestPassword(): string {
   const picked: string[] = [];

@@ -148,7 +148,7 @@ export function ChecklistsPage() {
       )}
       {personId && isManager && others.length === 0 && (
         <p className="mb-4 text-sm text-slate-600" data-testid="no-checklist">
-          No checklist for them yet — start one above.
+          No checklist for them yet - start one above.
         </p>
       )}
 
@@ -217,7 +217,7 @@ export function ChecklistsPage() {
             Templates
           </h2>
           <p className="mb-3 text-sm text-slate-600">
-            Starting points, not gospel — edit them to match how the practice actually works.
+            Starting points, not gospel - edit them to match how the practice actually works.
             Changing a template never alters a checklist already under way, so what somebody signed
             stays what they signed.
           </p>

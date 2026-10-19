@@ -21,10 +21,10 @@ const step = async (name, fn) => {
 };
 
 /**
- * Before you export (Dominguez, October 2026 — making the app smarter):
- * pressing Download first shows what is worth a look about the period —
+ * Before you export (Dominguez, October 2026 - making the app smarter):
+ * pressing Download first shows what is worth a look about the period - 
  * waiting on a correction, still clocked in, not approved, entered by hand,
- * overtime — and exports anyway when asked. A clean period downloads at once.
+ * overtime - and exports anyway when asked. A clean period downloads at once.
  *
  * A week in April 2025, which no other suite uses, written straight into the
  * database and tagged `export-check-suite` (in `editReason`, with no edit
@@ -90,7 +90,7 @@ await step('set-up: a week with something in every section', async () => {
   // Five days of one overtime week, whatever weekday the pay period starts on.
   const startsOn = settings.payPeriodStart ? isoWeekday(settings.payPeriodStart.slice(0, 10)) : 1;
   start = addDays('2025-04-06', (startsOn % 7));
-  // Frankie: 5 × 9 hours = 45 — two not yet approved, one entered by hand.
+  // Frankie: 5 × 9 hours = 45 - two not yet approved, one entered by hand.
   punch('frontdesk@domihealthcare.com', addDays(start, 0), { status: 'COMPLETED' });
   punch('frontdesk@domihealthcare.com', addDays(start, 1), { status: 'COMPLETED' });
   punch('frontdesk@domihealthcare.com', addDays(start, 2), { hand: true });
@@ -129,14 +129,14 @@ await step('Download first shows what is worth a look, most serious first', asyn
     const text = await dialog.getByTestId(`export-check-${key}`).innerText();
     if (!text.includes(needle)) throw new Error(`${key} read "${text}", wanted "${needle}"`);
   };
-  await has('review', 'Waiting on a correction — left out of this file');
-  await has('review', 'Max Assistant — clocked in');
+  await has('review', 'Waiting on a correction - left out of this file');
+  await has('review', 'Max Assistant - clocked in');
   await has('review', 'clocked out by the app at midnight');
-  await has('open', 'Max Assistant — clocked in');
-  await has('unapproved', 'Not approved yet — going out anyway');
-  await has('unapproved', 'Frankie Front-Desk — 2 entries, 18.00 hours');
-  await has('handEntries', 'Frankie Front-Desk —');
-  await has('overtime', 'Frankie Front-Desk — 5.00 hours of overtime');
+  await has('open', 'Max Assistant - clocked in');
+  await has('unapproved', 'Not approved yet - going out anyway');
+  await has('unapproved', 'Frankie Front-Desk - 2 entries, 18.00 hours');
+  await has('handEntries', 'Frankie Front-Desk - ');
+  await has('overtime', 'Frankie Front-Desk - 5.00 hours of overtime');
 });
 await mgr.screenshot({ path: `${OUT}/export-check.png` });
 

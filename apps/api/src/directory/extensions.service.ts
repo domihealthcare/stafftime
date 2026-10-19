@@ -4,7 +4,7 @@ import { PrismaService } from '../prisma/prisma.service';
 import { ExtensionLineInput } from './dto/extension.dto';
 
 /**
- * The office extensions list (October 2026, Dominguez — from the practice's
+ * The office extensions list (October 2026, Dominguez - from the practice's
  * "Office Extensions" sheet). Everybody signed in reads it in the Directory;
  * managers and admins keep it.
  *

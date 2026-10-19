@@ -131,7 +131,7 @@ export function PtoPolicyEditor({
                 className={number}
               />
               <p className="mt-1 text-xs text-slate-500">
-                Tracked separately from PTO, and given in full — never cut down for starting
+                Tracked separately from PTO, and given in full - never cut down for starting
                 part-way through the year (except hourly staff earning them, below).
               </p>
             </div>
@@ -231,8 +231,8 @@ export function PtoPolicyEditor({
             />
             <p className="mt-1 text-xs text-slate-500">
               An hour of sick time for every 30 hours worked (NJ earned sick leave), up to the sick
-              days a year. Everybody else — salaried staff, and hourly staff who started before this
-              day — is given the year&rsquo;s sick days in full. Empty: nobody earns them.
+              days a year. Everybody else - salaried staff, and hourly staff who started before this
+              day - is given the year&rsquo;s sick days in full. Empty: nobody earns them.
             </p>
           </div>
 

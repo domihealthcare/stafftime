@@ -19,7 +19,7 @@ const DATE_ONLY = /^\d{4}-\d{2}-\d{2}$/;
 /**
  * Who reviews which provider's patient schedule (October 2026, Dominguez).
  * The rules are in `schedule-reviews.ts`; this reads and writes them.
- * Everybody signed in reads it — the point is that others know whose
+ * Everybody signed in reads it - the point is that others know whose
  * schedule is being reviewed; managers and admins change it. Anybody still
  * here can be a reviewer (admins, managers or staff); the schedules are those
  * of people in a provider job role, as for on call.
@@ -104,7 +104,7 @@ export class ScheduleReviewsService {
   }
 
   /// One provider's schedule on one date: somebody else, or nobody. Today
-  /// or later — who reviewed before stays as it was.
+  /// or later - who reviewed before stays as it was.
   async setDay(
     date: string,
     providerId: string,
@@ -141,7 +141,7 @@ export class ScheduleReviewsService {
     if (!DATE_ONLY.test(date)) throw new BadRequestException('Give the day as a date.');
     if (date < localDateIn(now, PRACTICE_ZONE)) {
       throw new BadRequestException(
-        'Change today or a later day — who reviewed before stays as it was.',
+        'Change today or a later day - who reviewed before stays as it was.',
       );
     }
   }

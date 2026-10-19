@@ -15,7 +15,7 @@ import { useIsAdmin, useIsManager, useSession } from '../lib/session';
 import { Spinner } from './ui';
 
 /// On a phone each link grows to share out its row, so the text is centred and
-/// the padding is small — the row, not the padding, sets the width. From `sm`
+/// the padding is small - the row, not the padding, sets the width. From `sm`
 /// up they are ordinary inline pills again.
 const linkClasses = ({ isActive }: { isActive: boolean }) =>
   `inline-flex min-h-11 flex-auto items-center justify-center gap-1.5 whitespace-nowrap rounded-lg px-1 py-2 text-center text-sm font-medium transition focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-600 sm:min-h-0 sm:flex-none sm:justify-start sm:px-3 sm:text-left ${
@@ -65,7 +65,7 @@ export function Layout() {
   const isManager = useIsManager();
   const isAdmin = useIsAdmin();
   const { employee } = useSession();
-  // What Manage holds — on a laptop in the header, on a phone under More —
+  // What Manage holds - on a laptop in the header, on a phone under More -
   // grouped under five headings, each opening a screen with tabs to the rest
   // (October 2026, Dominguez: "lets cut down the manage options"). Somebody's
   // own licenses, onboarding and productivity are in the account menu, with
@@ -86,7 +86,7 @@ export function Layout() {
 
   // A badge on the tab, so a manager does not have to go looking for requests.
   // Fetched on every screen change, when the app comes back into view, and
-  // straight after a request is made, decided or cancelled — once at sign-in
+  // straight after a request is made, decided or cancelled - once at sign-in
   // was not enough: it went on showing requests already dealt with.
   const { pathname } = useLocation();
   const [ptoGeneration, setPtoGeneration] = useState(0);
@@ -131,12 +131,12 @@ export function Layout() {
             On a phone this is a two-column grid: brand and account share the
             top row, and the nav spans the full width beneath them. Letting the
             links free-wrap next to the account instead gave three ragged rows
-            two pixels apart, ending at x=260, x=299 and then a lone "Export" —
+            two pixels apart, ending at x=260, x=299 and then a lone "Export" - 
             163px of header, a fifth of the screen, on the app people open
             standing at the front desk.
 
-            From `sm` up it is a single flex row again — brand, nav, then the
-            account pushed right — which already fitted on one line. */}
+            From `sm` up it is a single flex row again - brand, nav, then the
+            account pushed right - which already fitted on one line. */}
         <div className="mx-auto grid max-w-6xl grid-cols-[1fr_auto] items-center gap-x-2 gap-y-2 px-4 py-3 sm:flex sm:justify-start sm:gap-3">
           <Link
             to="/"
@@ -154,10 +154,10 @@ export function Layout() {
           </div>
 
           {/* The everyday screens are links of their own, each with its icon
-              (October 2026, Dominguez — option B of three renderings): Home
+              (October 2026, Dominguez - option B of three renderings): Home
               first, so a punch is never behind a menu, then Schedule (which
               carries time off and its badge), Timesheet, Directory,
-              Phone book (used many times a day, so a link of its own — October
+              Phone book (used many times a day, so a link of its own - October
               2026, Dominguez) and Resources. News is on Home. What only managers need sits under
               Manage. On a phone the bottom bar takes over (PhoneTabBar).
 

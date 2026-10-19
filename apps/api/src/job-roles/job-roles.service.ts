@@ -43,7 +43,7 @@ type JobRoleRow = Prisma.JobRoleGetPayload<{ select: typeof JOB_ROLE_SELECT }>;
 /**
  * What people do at the practice, and who does it.
  *
- * Managers keep this list. It decides which resources somebody sees — and
+ * Managers keep this list. It decides which resources somebody sees - and
  * nothing about what they may do in the app, which is `Employee.role` and
  * stays an admin's decision. See the JobRole model for why the two are apart.
  */
@@ -120,8 +120,8 @@ export class JobRolesService {
     return present(row);
   }
 
-  /// Removing a role takes its members with it — they simply stop being in
-  /// it — but not its resources: those were written for somebody, and deleting
+  /// Removing a role takes its members with it - they simply stop being in
+  /// it - but not its resources: those were written for somebody, and deleting
   /// a role should not silently throw that work away.
   async remove(id: string, actor: AuthUser) {
     const role = await this.findOne(id);
@@ -191,7 +191,7 @@ export class JobRolesService {
     return this.findOne(id);
   }
 
-  /// The job roles somebody holds — what decides which resources they see.
+  /// The job roles somebody holds - what decides which resources they see.
   async idsFor(employeeId: string): Promise<string[]> {
     const rows = await this.prisma.employeeJobRole.findMany({
       where: { employeeId },

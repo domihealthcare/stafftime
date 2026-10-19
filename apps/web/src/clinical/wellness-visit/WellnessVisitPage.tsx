@@ -38,7 +38,7 @@ import { HistorySection, PatientSection, ServicesSection, SpmsqSection } from '.
 import { SECTIONS, validate } from './validate';
 
 /**
- * The Annual Wellness Visit form (October 2026, Dominguez) — the practice's
+ * The Annual Wellness Visit form (October 2026, Dominguez) - the practice's
  * "Annual Wellness Supplement Form", in two pages filled in separately:
  *
  * - page 1, the questionnaire (social history, functional ability and the
@@ -183,14 +183,14 @@ function WellnessScreen({ employee }: { employee: Employee }) {
       setMade({ page, snapshot });
     } catch {
       setFailure(
-        'The PDF could not be made. Nothing was sent anywhere and the form is as you left it — try again, and tell the office if it keeps happening.',
+        'The PDF could not be made. Nothing was sent anywhere and the form is as you left it - try again, and tell the office if it keeps happening.',
       );
     } finally {
       setMaking(false);
     }
   }
 
-  /// Clears the page just downloaded — and the patient too, unless the other
+  /// Clears the page just downloaded - and the patient too, unless the other
   /// page still has answers on it.
   function clearPage() {
     const other: Page = page === 1 ? 2 : 1;
@@ -253,7 +253,7 @@ function WellnessScreen({ employee }: { employee: Employee }) {
       <div className="mx-auto max-w-4xl" translate="no" data-testid="wellness-visit">
         <PageHeading
           title="Annual Wellness Visit"
-          subtitle="The Annual Wellness Supplement Form, a page at a time. Stays on this device — nothing is sent or saved. Download each page for eCW Documents."
+          subtitle="The Annual Wellness Supplement Form, a page at a time. Stays on this device - nothing is sent or saved. Download each page for eCW Documents."
         />
 
         <div
@@ -358,7 +358,7 @@ function WellnessScreen({ employee }: { employee: Employee }) {
         >
           <Card className="p-4 sm:p-5">
             <h2 className="text-lg font-semibold text-slate-900">
-              {page === 1 ? 'Page 1 — the questionnaire' : 'Page 2 — preventive services'}
+              {page === 1 ? 'Page 1 - the questionnaire' : 'Page 2 - preventive services'}
             </h2>
             <PendingList sections={sections} pending={problems} onJump={focusField} />
 
@@ -384,7 +384,7 @@ function WellnessScreen({ employee }: { employee: Employee }) {
             <div className="mt-4 max-w-sm">
               <DownloadButton
                 label={page === 1 ? 'Download page 1' : 'Download page 2'}
-                detail={`For eCW Documents — ${
+                detail={`For eCW Documents - ${
                   page === 1 && form.pdfLanguage === 'both' ? 'English and Spanish' : 'English'
                 }, signed electronically in your name.`}
                 making={making}
@@ -408,7 +408,7 @@ function WellnessScreen({ employee }: { employee: Employee }) {
                   onClick={clearPage}
                   className="mt-3 min-h-[44px] rounded-lg bg-brand-600 px-4 text-sm font-semibold text-white hover:bg-brand-700"
                 >
-                  Yes, it downloaded — clear page {page}
+                  Yes, it downloaded - clear page {page}
                 </button>
               </div>
             )}

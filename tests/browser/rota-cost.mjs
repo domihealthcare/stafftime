@@ -21,7 +21,7 @@ const step = async (name, fn) => {
 /**
  * The rota's cost (Dominguez, October 2026: "only for certain individuals",
  * hourly and salaried). An admin chooses who sees it in Practice settings;
- * they see it above the rota — totals by office and day, overtime at time
+ * they see it above the rota - totals by office and day, overtime at time
  * and a half, salaries a year ÷ 52 a week. Nobody else can read it.
  *
  * The shifts are in March 2027, which run-all.sh clears; pay goes in
@@ -64,7 +64,7 @@ await step('nobody sees it until an admin chooses them', async () => {
   }
 });
 
-await step('set-up: pay on file — the front desk $20 an hour, the MA $52,000 a year', async () => {
+await step('set-up: pay on file - the front desk $20 an hour, the MA $52,000 a year', async () => {
   staff = (await call(admin, '/employees')).body;
   const byEmail = (email) => staff.find((person) => person.email === email);
   for (const [email, payRate, payUnit] of [
@@ -77,7 +77,7 @@ await step('set-up: pay on file — the front desk $20 an hour, the MA $52,000 a
     });
     if (saved.status !== 201) throw new Error(`pay for ${email} answered ${saved.status}`);
   }
-  // The front desk: Monday to Friday, nine hours a day — 45, so 5 over.
+  // The front desk: Monday to Friday, nine hours a day - 45, so 5 over.
   const locations = (await call(manager, '/locations')).body;
   const northBergen = locations.find((l) => l.name === 'North Bergen');
   for (const day of ['08', '09', '10', '11', '12']) {

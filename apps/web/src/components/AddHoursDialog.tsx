@@ -14,7 +14,7 @@ const field =
  * 2026). Correcting a punch that exists is the Edit button; this is for
  * when there is nothing to correct.
  *
- * Every one of these is listed — Timesheet banner and nightly email — until
+ * Every one of these is listed - Timesheet banner and nightly email - until
  * somebody other than the manager who entered it has looked into why it was
  * needed, so the form asks for the reason up front and says so.
  */

@@ -37,14 +37,14 @@ const REQUEST_SELECT = {
 } as const;
 
 /**
- * "Ask for a correction" (October 2026, Dominguez — a "smarter" idea).
+ * "Ask for a correction" (October 2026, Dominguez - a "smarter" idea).
  * Somebody asks, from their own Timesheet, for the times on one of their
- * entries to be fixed — forgot to clock out, the phone died — saying why. The
+ * entries to be fixed - forgot to clock out, the phone died - saying why. The
  * managers down for hours are told on the bell (and it is on the Timesheet
- * banner and in the nightly email). A manager approves it — which makes it an
+ * banner and in the nightly email). A manager approves it - which makes it an
  * ordinary edit, with "Asked for by …" and the reason, through the same
  * `edit` as Edit, so hours already sent to payroll still need a deliberate
- * yes — or declines it with a reason. Either way the person is told. One
+ * yes - or declines it with a reason. Either way the person is told. One
  * waiting at a time per entry; never decided by the person who asked.
  */
 @Injectable()
@@ -88,7 +88,7 @@ export class CorrectionRequestsService {
     });
     await this.notifications.correctionAsked(actor.id, {
       title: `${nameOf(request.employee)} asked for a correction`,
-      body: `${askedWords(asked)} — “${request.reason}”`,
+      body: `${askedWords(asked)} - “${request.reason}”`,
     });
     this.logger.log(`Correction ${request.id} asked for entry ${timeEntryId}`);
     return request;
@@ -142,7 +142,7 @@ export class CorrectionRequestsService {
     await this.decide(id, CorrectionStatus.DECLINED, actor, now, words.slice(0, 500));
     await this.notifications.personal([request.employee.id], NotificationKind.CORRECTION, {
       title: 'Your correction was not made',
-      body: `${askedWords(request)} — “${words}”`,
+      body: `${askedWords(request)} - “${words}”`,
       link: '/timesheet',
     });
     return { declined: true };

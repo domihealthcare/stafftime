@@ -77,7 +77,7 @@ describe('LunchNoticesService', () => {
     expect(notice).toMatchObject({
       kind: NotificationKind.EVENT,
       title: 'Rep lunch tomorrow at North Bergen',
-      body: '12:30 PM — Jane Smith (Novo Nordisk), bringing catering',
+      body: '12:30 PM - Jane Smith (Novo Nordisk), bringing catering',
     });
   });
 

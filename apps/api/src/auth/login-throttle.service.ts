@@ -11,17 +11,17 @@ import { PrismaService } from '../prisma/prisma.service';
  * password tried against every address in turn, which never reaches any one
  * account's limit.
  *
- * The obvious fix — "N failures per IP" — is wrong here, because both offices
+ * The obvious fix - "N failures per IP" - is wrong here, because both offices
  * sit behind one address each. Twenty people fumbling their passwords on a
  * Monday morning are one IP with a lot of failures, and locking the whole
  * front desk out of the clock is a worse outage than the attack it prevents.
  *
  * So the rule counts **how many different accounts** an address has failed
  * against. Spraying means many accounts, few attempts each. A bad Monday means
- * few accounts, many attempts each — which account lockout already handles. A
+ * few accounts, many attempts each - which account lockout already handles. A
  * high raw ceiling sits behind it for the degenerate cases.
  *
- * The default — ten different accounts inside ten minutes — is set above what a
+ * The default - ten different accounts inside ten minutes - is set above what a
  * practice of twenty could plausibly fumble and below what working through a
  * staff list looks like. Raise it if Domi grows and mornings get noisy. Note
  * that a throttled address does not stop the front desk: the kiosk clocks people

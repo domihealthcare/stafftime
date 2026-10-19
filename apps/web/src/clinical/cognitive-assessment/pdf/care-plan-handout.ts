@@ -36,13 +36,13 @@ import { PdfWriter } from '../../common/pdf-writer';
  * Laid out after BrainCheck's cognitive care plan, which the practice
  * already uses (September 2026): who it is for and from, then each area with
  * a line of explanation, the goals and "things to try", planning ahead as a
- * checklist, referrals, safety tips and the next visit — marked confidential
+ * checklist, referrals, safety tips and the next visit - marked confidential
  * on every page. Nothing clinical: no scores, stages or MRN. Chosen lines
  * come from config.ts in English or translations.es.ts in Spanish; anything
  * the provider typed is printed as they typed it.
  */
 
-/// "09-29-2026 Your Memory Care Plan.pdf", by the date of service — the
+/// "09-29-2026 Your Memory Care Plan.pdf", by the date of service - the
 /// patient's own copy, named for them (Dominguez, October 2026).
 export function carePlanFilename(form: AssessmentForm): string {
   return pdfFilename(form.visit.dos, 'Your Memory Care Plan');
@@ -53,8 +53,8 @@ const has = (text: string) => text.trim() !== '';
 const SIZE = 11.5;
 
 /// In English, or in English and then Spanish on fresh pages (Dominguez,
-/// October 2026: only those two). Signed electronically by the provider —
-/// the person signed in — when it is made; each language's half carries the
+/// October 2026: only those two). Signed electronically by the provider -
+/// the person signed in - when it is made; each language's half carries the
 /// signature in its own words.
 export async function carePlanPdf(
   form: AssessmentForm,
@@ -76,7 +76,7 @@ export async function carePlanPdf(
   const name = visit.patientName.trim();
   const confidential = both ? `${en.confidential} / ${es.confidential}` : en.confidential;
   return pdf.finish({
-    title: `${en.footer} — ${confidential}`,
+    title: `${en.footer} - ${confidential}`,
     lines: [en.header(name, longDate(visit.dob, 'en'), longDate(visit.dos, 'en'))],
     footer: `${confidential}. ${en.questions(PRACTICE_PHONE)}`,
   });

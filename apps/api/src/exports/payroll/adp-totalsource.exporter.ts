@@ -15,7 +15,7 @@ import {
 /// Both offices are in New Jersey.
 
 /**
- * ADP TotalSource — the payroll import file, built the way ADP's instructions
+ * ADP TotalSource - the payroll import file, built the way ADP's instructions
  * ("Importing Payroll into ADP TotalSource") describe:
  *
  *  - a CSV that starts from a worksheet exported from the practice's own
@@ -24,7 +24,7 @@ import {
  *  - named PRcccEPI, where ccc is the company code.
  *
  * Which columns take the hours comes from that worksheet, chosen once by an
- * admin — so nothing about Domi's paydata grid is guessed. The layout is in
+ * admin - so nothing about Domi's paydata grid is guessed. The layout is in
  * `adp-worksheet.ts`; this class decides what goes in it.
  *
  * Overtime is always split for ADP, per week (starting on the pay period's
@@ -47,7 +47,7 @@ export class AdpTotalSourceExporter implements PayrollExporter {
       ? { available: true }
       : {
           available: false,
-          reason: `Not set up yet — an admin does this in Practice settings. ${missing.join(' ')}`,
+          reason: `Not set up yet - an admin does this in Practice settings. ${missing.join(' ')}`,
         };
   }
 
@@ -72,7 +72,7 @@ export class AdpTotalSourceExporter implements PayrollExporter {
     const batchId = (options.batchId?.trim() || defaultBatchId(lastDay)).toUpperCase();
     if (!/^[A-Z0-9]+$/.test(batchId) || batchId.length > BATCH_ID_MAX) {
       throw new BadRequestException(
-        `The Batch ID is letters and numbers only, ${BATCH_ID_MAX} at most — for example the pay date, 07312023.`,
+        `The Batch ID is letters and numbers only, ${BATCH_ID_MAX} at most - for example the pay date, 07312023.`,
       );
     }
 

@@ -12,7 +12,7 @@ import { PrismaService } from '../prisma/prisma.service';
 import { onPattern, RepeatPattern } from './repeat-pattern';
 
 /**
- * Smarter starting hours on a new shift (October 2026, Dominguez — making the
+ * Smarter starting hours on a new shift (October 2026, Dominguez - making the
  * app smarter). Every shift form started on 9 to 5, so a person who always
  * works 7 to 3 at West New York meant retyping three things for every shift.
  * The form now starts on **their usual** for that day:
@@ -21,7 +21,7 @@ import { onPattern, RepeatPattern } from './repeat-pattern';
  * 2. the hours and place they have worked **most often on that weekday** in
  *    the last eight weeks (at least twice), the latest winning a tie; else
  * 3. the same over **any day** of those eight weeks (at least three times);
- * 4. otherwise nothing — the form keeps 9 to 5.
+ * 4. otherwise nothing - the form keeps 9 to 5.
  *
  * Only ever a starting point: the manager changes anything, and nothing is
  * stored. Pure: `loadUsualShift` reads.

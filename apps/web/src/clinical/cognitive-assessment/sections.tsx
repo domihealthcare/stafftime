@@ -451,7 +451,7 @@ function ElementD({ form, update, required }: ElementProps) {
     <div className="space-y-3">
       <fieldset id={idFor('D.fastStage')}>
         <legend className="mb-1 text-sm font-medium text-slate-800">
-          FAST — pick the highest stage that fits
+          FAST - pick the highest stage that fits
           {required && (
             <span className="ml-0.5 text-rose-600" aria-hidden="true">
               *
@@ -475,7 +475,7 @@ function ElementD({ form, update, required }: ElementProps) {
                 className="mt-0.5 border-slate-300 text-brand-600 focus:ring-brand-600"
               />
               <span>
-                <span className="font-semibold">{stage.label}</span> — {stage.description}
+                <span className="font-semibold">{stage.label}</span> - {stage.description}
               </span>
             </label>
           ))}
@@ -1073,7 +1073,7 @@ function CarePlanAreaBlock({
         <TextField
           path={`J.plan.${area}.extra`}
           label={`${title}: anything else (optional)`}
-          hint="Printed as typed on the note and the handout — write it in Spanish for a Spanish handout."
+          hint="Printed as typed on the note and the handout - write it in Spanish for a Spanish handout."
           value={entry.extra}
           onChange={(extra) => onChange({ extra })}
         />

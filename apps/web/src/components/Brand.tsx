@@ -5,10 +5,10 @@ export function BrandMark({ className = 'h-6 w-auto' }: { className?: string }) 
 }
 
 export const SLOGAN_TEXT = 'Your Health. Your Family. Your Home.';
-const SLOGAN = `Domi Healthcare — ${SLOGAN_TEXT}`;
+const SLOGAN = `Domi Healthcare - ${SLOGAN_TEXT}`;
 
 /// The full logo with the practice's slogan, as Dominguez asked for it
-/// (September 2026) — on every screen seen before signing in.
+/// (September 2026) - on every screen seen before signing in.
 export function BrandLogo({ className = 'mx-auto h-24 w-auto' }: { className?: string }) {
   return <img src="/brand/domi-healthcare-slogan.png" alt={SLOGAN} className={className} />;
 }

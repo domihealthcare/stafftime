@@ -36,7 +36,7 @@ export class EventRepliesController {
     return this.times.find(dto);
   }
 
-  /// Who is going — for the people it is for, and managers.
+  /// Who is going - for the people it is for, and managers.
   @Get(':id/replies')
   list(@Param('id', ParseUUIDPipe) id: string, @CurrentUser() user: AuthUser) {
     return this.replies.replies(id, user);

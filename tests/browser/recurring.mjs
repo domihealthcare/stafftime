@@ -71,12 +71,12 @@ const feedOf = (page) =>
     const { token } = await fetch('/api/calendar/link', { method: 'POST' }).then((r) => r.json());
     return fetch(`/api/calendar/${token}/domi.ics`, { cache: 'no-store' }).then((r) => r.text());
   });
-/// The hour on New Jersey's clock — what stays the same across the clocks
+/// The hour on New Jersey's clock - what stays the same across the clocks
 /// changing on 1 November, when 9am goes from 13:00 to 14:00 UTC.
 const njHour = (iso) =>
   Number(new Intl.DateTimeFormat('en-US', { timeZone: 'America/New_York', hour: 'numeric', hourCycle: 'h23' }).format(new Date(iso)));
 /// "HH:MM" on this browser's clock for an hour on New Jersey's clock that
-/// day — the form takes the browser's time. Whether 10am is 14:00 or 15:00
+/// day - the form takes the browser's time. Whether 10am is 14:00 or 15:00
 /// UTC depends on the date: the suite's dates move with today, and fell after
 /// the clocks went back on 1 November from 12 October 2026 on.
 const atNj = (day, hour) => {

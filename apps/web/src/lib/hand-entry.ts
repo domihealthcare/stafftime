@@ -8,7 +8,7 @@ export const HAND_ENTRY_REASONS: { value: HandEntryReason; label: string; hint?:
   {
     value: 'APP_REFUSED',
     label: 'The app would not let them clock in',
-    hint: 'Write down what it said — this one may be a problem with the app.',
+    hint: 'Write down what it said - this one may be a problem with the app.',
   },
   {
     value: 'NO_LOCATION_SHARING',

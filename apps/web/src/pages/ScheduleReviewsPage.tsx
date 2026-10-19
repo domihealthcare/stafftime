@@ -225,7 +225,7 @@ function ReviewLine({
   return (
     <span className="block text-sm" data-testid="review-line">
       <span className="font-medium text-slate-900">{provider?.name ?? t('A provider')}</span>
-      <span className="text-slate-500"> — </span>
+      <span className="text-slate-500"> - </span>
       {review.reviewer ? (
         <span className={mine ? 'font-semibold text-brand-800' : 'text-slate-800'}>
           {mine ? t('You') : review.reviewer.name}
@@ -326,7 +326,7 @@ function DayDialog({
             </select>
           )}
         </Field>
-        <Field label="Note" hint="Optional, and everybody can read it — “Kayla is off”.">
+        <Field label="Note" hint="Optional, and everybody can read it - “Kayla is off”.">
           {(props) => (
             <input
               {...props}
@@ -440,7 +440,7 @@ function PatternCard({
               return (
                 <li key={provider.id}>
                   <span className="font-medium text-slate-900">{provider.name}</span>
-                  <span className="text-slate-500"> — </span>
+                  <span className="text-slate-500"> - </span>
                   {days.length === 0 ? (
                     <span className="text-slate-500">nobody</span>
                   ) : (

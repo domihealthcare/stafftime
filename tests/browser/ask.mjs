@@ -19,7 +19,7 @@ const step = async (name, fn) => {
 };
 
 /**
- * "Ask Domi Staff" (Dominguez, October 2026 — the AI half of making the app
+ * "Ask Domi Staff" (Dominguez, October 2026 - the AI half of making the app
  * smarter). It needs an Anthropic API key, which neither CI nor a test
  * deployment has, so these checks are about it being properly off: nothing
  * offered, nothing sent, and the screen pointing to where the answers are.

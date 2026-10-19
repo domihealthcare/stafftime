@@ -5,7 +5,7 @@ import { SERVICES, SOCIAL_HISTORY, YES, type FollowUp, type Question } from './c
 import { ticksOf, type Page, type WellnessForm } from './form';
 
 /**
- * What still stands between a page and its PDF — one list per page, used for
+ * What still stands between a page and its PDF - one list per page, used for
  * the checklist beside the button, the ticks in the progress bar and the
  * button itself, as on the other clinical forms.
  */
@@ -33,7 +33,7 @@ export function followUpsFor(question: Question, answer: string): FollowUp[] {
 export const followUpPath = (question: Question, followUp: FollowUp) =>
   `${question.key}.${followUp.key}`;
 
-/// "03/14/2025", "03/2025" or "2025" — what the MA knows of when it was done —
+/// "03/14/2025", "03/2025" or "2025" - what the MA knows of when it was done -
 /// as the earliest day it could mean, YYYY-MM-DD; null if it is none of them.
 export function serviceDay(typed: string): string | null {
   const text = typed.trim();
@@ -104,7 +104,7 @@ export function validate(form: WellnessForm, page: Page, today: string): Pending
             ticksOf(form, at).length > 0,
             'history',
             `ticks.${at}`,
-            `${label} — tick at least one.`,
+            `${label} - tick at least one.`,
           );
           continue;
         }
@@ -115,12 +115,12 @@ export function validate(form: WellnessForm, page: Page, today: string): Pending
             /^\d+$/.test(value.trim()) && number >= followUp.min && number <= followUp.max,
             'history',
             `answers.${at}`,
-            `${label} — a whole number from ${followUp.min} to ${followUp.max}.`,
+            `${label} - a whole number from ${followUp.min} to ${followUp.max}.`,
           );
         } else if (followUp.kind === 'choice') {
-          need(!blank(value), 'history', `answers.${at}`, `${label} — choose an answer.`);
+          need(!blank(value), 'history', `answers.${at}`, `${label} - choose an answer.`);
         } else {
-          need(!blank(value), 'history', `answers.${at}`, `${label} — write it in.`);
+          need(!blank(value), 'history', `answers.${at}`, `${label} - write it in.`);
           typed.push(['history', `answers.${at}`, value]);
         }
       }
@@ -139,7 +139,7 @@ export function validate(form: WellnessForm, page: Page, today: string): Pending
       !blank(form.education),
       'spmsq',
       'education',
-      'Choose the education level — it changes the score.',
+      'Choose the education level - it changes the score.',
     );
   } else {
     // ------------------------------------------------- preventive services
@@ -150,7 +150,7 @@ export function validate(form: WellnessForm, page: Page, today: string): Pending
         !blank(answer.completed),
         'services',
         `${path}.completed`,
-        `${service.name}: completed — Yes, No or Offered/Refused.`,
+        `${service.name}: completed - Yes, No or Offered/Refused.`,
       );
       if (answer.completed === YES) {
         const day = serviceDay(answer.date);
@@ -158,7 +158,7 @@ export function validate(form: WellnessForm, page: Page, today: string): Pending
           day !== null,
           'services',
           `${path}.date`,
-          `${service.name}: enter the date completed — MM/DD/YYYY, or MM/YYYY or YYYY if that is all that is known.`,
+          `${service.name}: enter the date completed - MM/DD/YYYY, or MM/YYYY or YYYY if that is all that is known.`,
         );
         if (day !== null && visit !== null) {
           need(

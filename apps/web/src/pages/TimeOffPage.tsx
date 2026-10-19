@@ -320,7 +320,7 @@ function RequestCard({
               data-testid="past-balance-flag"
               className="mt-2 rounded bg-amber-50 px-2 py-1 text-xs font-medium text-amber-900 ring-1 ring-inset ring-amber-200"
             >
-              {t('Past the balance — asked knowing the extra days may be unpaid.')}
+              {t('Past the balance - asked knowing the extra days may be unpaid.')}
             </p>
           )}
           {request.notes && (
@@ -416,7 +416,7 @@ function RequestCard({
               </li>
             ))}
           </ul>
-          <p className="mt-1 text-xs">Approving does not remove them — reassign the cover.</p>
+          <p className="mt-1 text-xs">Approving does not remove them - reassign the cover.</p>
         </div>
       )}
 
@@ -435,9 +435,9 @@ function RequestForm({
 }: {
   staff: Employee[];
   balance: PtoBalance | null;
-  /// Who it starts for — a staff profile's "Request time off for …" (`?for=`).
+  /// Who it starts for - a staff profile's "Request time off for …" (`?for=`).
   forId?: string;
-  /// The day it starts on — a right-click on the Schedule (`?date=`).
+  /// The day it starts on - a right-click on the Schedule (`?date=`).
   startOn?: string;
   onCreated: () => void;
 }) {
@@ -456,7 +456,7 @@ function RequestForm({
   const [problem, setProblem] = useState<string | null>(null);
 
   // Their shifts in those days, said before they ask (October 2026,
-  // Dominguez — making the app smarter): staff see their own published ones,
+  // Dominguez - making the app smarter): staff see their own published ones,
   // a manager filing for somebody that person's.
   const { employee: me } = useSession();
   const whoseId = employeeId || me?.id || '';
@@ -506,7 +506,7 @@ function RequestForm({
   const effectiveEnd = endDate || startDate;
   const singleDay = Boolean(startDate) && effectiveEnd === startDate;
 
-  // What it takes and leaves, from the server — weekdays only, not the days
+  // What it takes and leaves, from the server - weekdays only, not the days
   // the office is shut (October 2026, Dominguez: "please do not include
   // weekends"). For a manager filing for somebody, theirs.
   const [preview, setPreview] = useState<TimeOffPreview | null>(null);
@@ -713,14 +713,14 @@ function RequestForm({
             <p className="mt-1 text-xs">
               {forName
                 ? 'When it is approved you can take them off the rota or leave them as open shifts.'
-                : t('Your manager will sort those out when they decide — you’ll be told.')}
+                : t('Your manager will sort those out when they decide - you’ll be told.')}
             </p>
           </div>
         )}
 
         {preview && preview.days === 0 && (
           <p className="text-sm text-slate-600" data-testid="time-off-days">
-            {t('Nothing to take off — those days are a weekend or the office is closed.')}
+            {t('Nothing to take off - those days are a weekend or the office is closed.')}
           </p>
         )}
 
@@ -771,8 +771,8 @@ function RequestForm({
               {forName
                 ? t(
                     bucket === 'sick'
-                      ? '{name} has {left} sick days left — this asks for {days}.'
-                      : '{name} has {left} PTO days left — this asks for {days}.',
+                      ? '{name} has {left} sick days left - this asks for {days}.'
+                      : '{name} has {left} PTO days left - this asks for {days}.',
                     {
                       name: forName,
                       left: Math.max(0, preview.remaining ?? 0),
@@ -781,8 +781,8 @@ function RequestForm({
                   )
                 : t(
                     bucket === 'sick'
-                      ? 'You have {left} sick days left — this asks for {days}.'
-                      : 'You have {left} PTO days left — this asks for {days}.',
+                      ? 'You have {left} sick days left - this asks for {days}.'
+                      : 'You have {left} PTO days left - this asks for {days}.',
                     {
                       left: Math.max(0, preview.remaining ?? 0),
                       days: plural(preview.days, '{n} day', '{n} days'),
@@ -791,7 +791,7 @@ function RequestForm({
             </p>
             <p>
               {t(
-                'The {over} past it may be unpaid. You can still ask — a manager decides, and sees that you knew.',
+                'The {over} past it may be unpaid. You can still ask - a manager decides, and sees that you knew.',
                 { over: plural(Math.abs(remainingAfter), '{n} day', '{n} days') },
               )}
             </p>

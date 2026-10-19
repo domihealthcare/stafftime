@@ -20,10 +20,10 @@ const step = async (name, fn) => {
 };
 
 /**
- * Time off that lands on shifts (Dominguez, October 2026 — making the app
+ * Time off that lands on shifts (Dominguez, October 2026 - making the app
  * smarter): the request form tells the person which of their shifts the dates
- * cover, and approving asks what to do with them — leave them as open shifts,
- * take them off the rota, or leave them — in one go, telling the person once.
+ * cover, and approving asks what to do with them - leave them as open shifts,
+ * take them off the rota, or leave them - in one go, telling the person once.
  *
  * Frankie gets a published shift on a Tuesday and a draft on the Wednesday
  * three weeks on (a draft is never shown to staff); written straight into the
@@ -87,7 +87,7 @@ await step('set-up: Frankie on a Tuesday (published) and the Wednesday (draft)',
 
 const frankie = await signIn('frontdesk@domihealthcare.com');
 
-await step('asking for those days, Frankie is told the shift it covers — not the draft', async () => {
+await step('asking for those days, Frankie is told the shift it covers - not the draft', async () => {
   await frankie.goto(`${BASE}/time-off?request=1`, { waitUntil: 'networkidle' });
   await frankie.getByLabel('First day').fill(TUESDAY);
   await frankie.getByLabel('Last day').fill(WEDNESDAY);

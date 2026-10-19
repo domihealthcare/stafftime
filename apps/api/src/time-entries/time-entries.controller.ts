@@ -30,7 +30,7 @@ export class TimeEntriesController {
   clockIn(@Body() dto: ClockInDto, @CurrentUser() user: AuthUser, @Ip() ip: string) {
     // A kiosk punch skips the location check, because the time clock is bound
     // to its office. It must therefore only ever come from the time clock
-    // itself (KioskPunchService calls the service directly) — never from this
+    // itself (KioskPunchService calls the service directly) - never from this
     // route, where anybody signed in could claim to be one, from anywhere and
     // on anybody's behalf. Found in the September 2026 review.
     if (dto.method === ClockMethod.KIOSK) {
@@ -50,7 +50,7 @@ export class TimeEntriesController {
   }
 
   /// A manager entering a day with no punch at all. Listed for somebody to
-  /// look into until they have — see `TimeEntriesService.addByHand`.
+  /// look into until they have - see `TimeEntriesService.addByHand`.
   @Post()
   @Roles(Role.MANAGER)
   addByHand(@Body() dto: AddHoursDto, @CurrentUser() user: AuthUser) {
@@ -91,7 +91,7 @@ export class TimeEntriesController {
   }
 
   /// Where a punch was made from. The only route that returns coordinates, and
-  /// the read is written to the log — see `TimeEntriesService.locationTrail`.
+  /// the read is written to the log - see `TimeEntriesService.locationTrail`.
   @Get(':id/location')
   @Roles(Role.ADMIN)
   locationTrail(@Param('id', ParseUUIDPipe) id: string, @CurrentUser() user: AuthUser) {

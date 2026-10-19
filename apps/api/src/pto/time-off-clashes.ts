@@ -10,20 +10,20 @@ import {
 import { PrismaService } from '../prisma/prisma.service';
 
 /**
- * Time-off clashes, seen early (Dominguez, October 2026 — making the app
+ * Time-off clashes, seen early (Dominguez, October 2026 - making the app
  * smarter, with the defaults proposed and agreed): too many people from one
  * job role off on the same day at one office.
  *
  * - **Too many** is more than half of the people at that office who hold that
- *   job role — which, for a role of one or two, is all of them.
+ *   job role - which, for a role of one or two, is all of them.
  * - **Off** is approved time off and requests still waiting on a manager: the
  *   point is to see it before the second request is approved, not after.
- * - **A day** is a weekday, or a weekend day with shifts at that office —
+ * - **A day** is a weekday, or a weekend day with shifts at that office -
  *   nobody is short-staffed on a Sunday the office is shut.
  *
  * Somebody in two job roles, or at two offices, counts in each. Shown on the
  * request while a manager decides it, on the Dashboard for the next 8 weeks,
- * and in the nightly email for the next 2. **It warns, never refuses** — like
+ * and in the nightly email for the next 2. **It warns, never refuses** - like
  * the rest of the Schedule.
  */
 export const DASHBOARD_WEEKS = 8;
@@ -153,8 +153,8 @@ export function findClashes(
   );
 }
 
-/// "North Bergen, Mon Dec 22 – Fri Dec 26: 2 of 3 in Medical Assistant off —
-/// Ana L, Bea M (asked)" — for the email.
+/// "North Bergen, Mon Dec 22 – Fri Dec 26: 2 of 3 in Medical Assistant off -
+/// Ana L, Bea M (asked)" - for the email.
 export function describeClash(clash: TimeOffClash): string {
   const when =
     clash.from === clash.to
@@ -171,7 +171,7 @@ export function describeClash(clash: TimeOffClash): string {
       ? `all ${clash.total} in ${clash.jobRoleName} off`
       : `${clash.off.length} of ${clash.total} in ${clash.jobRoleName} off`;
   const minimum = clash.minimum !== null ? ` (minimum ${clash.minimum})` : '';
-  return `${clash.locationName}, ${when}: ${count}${minimum} — ${who}`;
+  return `${clash.locationName}, ${when}: ${count}${minimum} - ${who}`;
 }
 
 export function shortDate(date: string): string {
@@ -185,7 +185,7 @@ export function shortDate(date: string): string {
 
 /// Reads who works where, who is off and which days count, from `from` to
 /// `to` (plain dates, both included), and finds the clashes. With
-/// `employeeId`, only the clashes that person is part of — for a request being
+/// `employeeId`, only the clashes that person is part of - for a request being
 /// decided.
 export async function loadTimeOffClashes(
   prisma: PrismaService,

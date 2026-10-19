@@ -25,7 +25,7 @@ import type { OnCallDay, OnCallPerson, OnCallRota, OnCallSchedule, OnCallSwap } 
 /**
  * The provider on-call schedule (October 2026, Dominguez: "provider on call
  * schedule will def be needed"). Who takes the after-hours calls, a day at a
- * time — noon to noon, the answering service's day. A usual pattern by
+ * time - noon to noon, the answering service's day. A usual pattern by
  * weekday with exceptions ("every weekend except the 4th"), changed for one
  * day by a manager, or swapped between providers: one asks, the other says
  * yes. Providers, managers and admins only. Never hours or pay.
@@ -178,7 +178,7 @@ function SwapList({
       await api.answerOnCallSwap(swap.id, how);
       onChanged(
         how === 'accept'
-          ? `Done — you are on call ${day(swap.giveDate)}.`
+          ? `Done - you are on call ${day(swap.giveDate)}.`
           : how === 'decline'
             ? 'Said no. They have been told.'
             : 'Taken back.',
@@ -206,7 +206,7 @@ function SwapList({
                   {swap.takeDate && (
                     <>
                       {' '}
-                      — and {fromMe ? 'you take' : 'takes'} <strong>{day(swap.takeDate)}</strong>{' '}
+                      - and {fromMe ? 'you take' : 'takes'} <strong>{day(swap.takeDate)}</strong>{' '}
                       back
                     </>
                   )}
@@ -291,7 +291,7 @@ function MonthView({
             : Number(entry.date.slice(8, 10))}
         </span>
         <span className="text-sm font-medium text-slate-900">
-          {entry.employee ? shortName(entry.employee) : '—'}
+          {entry.employee ? shortName(entry.employee) : '-'}
         </span>
         {entry.source === 'SWAPPED' && <span className="text-xs text-amber-700">↔ swapped</span>}
         {entry.source === 'CHANGED' && <span className="text-xs text-amber-700">✎ changed</span>}
@@ -465,7 +465,7 @@ function DayDialog({
             )}
           </Field>
           {partner && (
-            <Field label="And you take one of theirs" hint="Optional — or they simply cover.">
+            <Field label="And you take one of theirs" hint="Optional - or they simply cover.">
               {(props) => (
                 <select
                   {...props}
@@ -537,7 +537,7 @@ function DayDialog({
               </select>
             )}
           </Field>
-          <Field label="Note" hint="Optional — “covering Dr. D’s vacation”.">
+          <Field label="Note" hint="Optional - “covering Dr. D’s vacation”.">
             {(props) => (
               <input
                 {...props}
@@ -694,7 +694,7 @@ function PatternWords({ rota }: { rota: OnCallRota }) {
           return (
             <li key={weekday}>
               <span className="inline-block w-24 text-slate-500">{WEEKDAYS[weekday]}</span>
-              {entry ? entry.employee.name : '—'}
+              {entry ? entry.employee.name : '-'}
             </li>
           );
         })}
@@ -809,7 +809,7 @@ function PatternEditor({
       <div>
         <h3 className="text-sm font-semibold text-slate-900">Except</h3>
         <p className="text-xs text-slate-500">
-          A week of the month that goes to somebody else — the 4th Saturday and Sunday, say.
+          A week of the month that goes to somebody else - the 4th Saturday and Sunday, say.
           Weekends are counted by their Saturday.
         </p>
         <ul className="mt-2 space-y-2">
@@ -951,7 +951,7 @@ function day(date: string): string {
   return formatCalendarDate(date, { year: false });
 }
 
-/// "Dr. Dominguez" — short enough for a calendar square.
+/// "Dr. Dominguez" - short enough for a calendar square.
 function shortName(person: OnCallPerson): string {
   return person.name.startsWith('Dr. ')
     ? `Dr. ${person.lastName}`

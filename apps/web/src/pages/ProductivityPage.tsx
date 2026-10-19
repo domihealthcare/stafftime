@@ -19,7 +19,7 @@ const INPUT = 'w-full rounded-lg border border-slate-300 px-2 py-1.5 text-sm';
  * Replaces the Patients & Providers sheet: for each provider, the patients
  * expected and seen in each interval of a period, a multiplier on the
  * difference, and what was paid. A statement stays a private draft until it is
- * published, and then that provider — and only that provider — can read it
+ * published, and then that provider - and only that provider - can read it
  * under Your productivity (account menu).
  *
  * Every provider's model is a little different, so nothing is compulsory: a
@@ -87,7 +87,7 @@ function ManagerProductivity() {
     <div>
       <PageHeading
         title="Provider productivity"
-        subtitle="Patients expected and seen in each interval, and what the difference is worth. A statement is private to managers until you publish it — then only that provider can read it."
+        subtitle="Patients expected and seen in each interval, and what the difference is worth. A statement is private to managers until you publish it - then only that provider can read it."
       />
 
       {error && (
@@ -165,7 +165,7 @@ function ManagerProductivity() {
   );
 }
 
-/** How this provider is counted — defaults only, all of it optional. */
+/** How this provider is counted - defaults only, all of it optional. */
 function PlanForm({
   employeeId,
   plan,
@@ -263,7 +263,7 @@ function PlanForm({
     <Card className="p-4">
       <p className="mb-3 text-sm text-slate-600">
         Every provider’s model is a little different, so all of this is optional. It only sets the
-        starting point for each new statement — change any of it on the statement itself.
+        starting point for each new statement - change any of it on the statement itself.
       </p>
       {error && (
         <div className="mb-3">

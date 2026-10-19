@@ -99,7 +99,7 @@ export class PtoService {
     return (await this.decorateAll([request]))[0];
   }
 
-  /// What a request would take and leave, before it is sent — the form's
+  /// What a request would take and leave, before it is sent - the form's
   /// "6 days · 4 left afterwards", and its warning past the balance.
   async preview(dto: PreviewPtoRequestDto, actor: AuthUser) {
     const employeeId = this.resolveEmployeeId(dto, actor);
@@ -109,7 +109,7 @@ export class PtoService {
   }
 
   /**
-   * Time off somebody has already taken, written down by an admin — the
+   * Time off somebody has already taken, written down by an admin - the
    * back-log from before Domi Staff, or a sick day nobody asked for in the
    * app (October 2026, Dominguez). Approved from the start, so it comes off
    * their balance like any other; nobody is notified, because nothing is
@@ -175,7 +175,7 @@ export class PtoService {
     }
     if (entry.recordedById === null) {
       throw new BadRequestException(
-        'Only time off recorded after the fact can be removed. A request stays on file — cancel it instead.',
+        'Only time off recorded after the fact can be removed. A request stays on file - cancel it instead.',
       );
     }
     await this.prisma.ptoRequest.delete({ where: { id } });
@@ -272,7 +272,7 @@ export class PtoService {
     this.logger.log(`PTO request ${id} ${dto.decision.toLowerCase()} by ${actor.id}`);
 
     // Their shifts inside the dates, when the manager chose to deal with them
-    // in the same step (October 2026, Dominguez — making the app smarter).
+    // in the same step (October 2026, Dominguez - making the app smarter).
     const shiftsHandled =
       dto.decision === PtoStatus.APPROVED && dto.shifts && dto.shifts !== 'KEEP'
         ? await this.handleShifts(updated, dto.shifts)
@@ -286,7 +286,7 @@ export class PtoService {
   /**
    * The shifts an approved request lands on, still to come: taken off the
    * rota (a draft deleted, a published shift cancelled) or left as open
-   * shifts for somebody else to cover — same office, hours, job role and
+   * shifts for somebody else to cover - same office, hours, job role and
    * note, no longer theirs, and no longer part of their regular shift. A
    * half-day request keeps its shifts: half of one is still worked. The
    * person is told once, in the "time off approved" notice. Returns how many.
@@ -401,7 +401,7 @@ export class PtoService {
     return { pending };
   }
 
-  /// Who else from the same job role and office is off on the same days —
+  /// Who else from the same job role and office is off on the same days -
   /// the clashes this request is part of.
   async clashes(id: string) {
     const request = await this.prisma.ptoRequest.findUnique({
@@ -496,7 +496,7 @@ export class PtoService {
   }
 
   /// Adds the derived facts every screen wants, so neither has to work them
-  /// out: the dates as plain days, and the days it takes — weekdays only, not
+  /// out: the dates as plain days, and the days it takes - weekdays only, not
   /// the days the person's office is shut (`counted-days.ts`).
   private async decorateAll<
     T extends { employeeId: string; startDate: Date; endDate: Date; isHalfDay: boolean },
@@ -518,7 +518,7 @@ function article(word: string): string {
   return /^[aeiou]/i.test(word) ? 'an' : 'a';
 }
 
-/// The instant a date-only value's day begins at the practice — not UTC
+/// The instant a date-only value's day begins at the practice - not UTC
 /// midnight, which is the evening before in New Jersey.
 function startOfDay(date: Date): Date {
   return zonedTimeToUtc(isoDate(date), '00:00', PRACTICE_ZONE);

@@ -6,8 +6,8 @@ import { Badge, Card } from './ui';
 
 /// One period's numbers, read-only: what a manager sees in their list and what
 /// a provider sees of their own. Only the figures a statement actually has are
-/// shown — with no target there is no "expected" or "difference", with no
-/// multiplier no money — because the models differ from provider to provider.
+/// shown - with no target there is no "expected" or "difference", with no
+/// multiplier no money - because the models differ from provider to provider.
 export function ProductivityStatementView({
   statement,
   showStatus = false,
@@ -128,7 +128,7 @@ export function ProductivityStatementView({
                 </td>
                 {hasTarget && (
                   <td className="px-3 py-1.5 text-right tabular-nums">
-                    {interval.expected ?? '—'}
+                    {interval.expected ?? '-'}
                   </td>
                 )}
                 {labels.map((label) => (

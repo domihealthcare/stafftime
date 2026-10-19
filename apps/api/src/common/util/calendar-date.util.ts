@@ -1,6 +1,6 @@
 import { BadRequestException } from '@nestjs/common';
 
-/// Helpers for values that are a calendar day rather than an instant — a hire
+/// Helpers for values that are a calendar day rather than an instant - a hire
 /// date, the first day of a holiday, a task's due date.
 ///
 /// These are all anchored at UTC midnight. A `@db.Date` column round-trips

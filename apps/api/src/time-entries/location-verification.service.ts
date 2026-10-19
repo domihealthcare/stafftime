@@ -42,7 +42,7 @@ export type VerificationOutcome =
  * Order of proof for a web/mobile punch:
  *   1. browser geolocation inside the location's geofence  -> GEOFENCE
  *   2. request IP on the location's allow-list (fallback)  -> IP_ALLOWLIST
- * A kiosk punch needs neither — the device itself is bound to the location.
+ * A kiosk punch needs neither - the device itself is bound to the location.
  */
 @Injectable()
 export class LocationVerificationService {
@@ -51,7 +51,7 @@ export class LocationVerificationService {
    * geofence cannot meaningfully prove presence, so it is not trusted and we fall
    * through to the IP check.
    *
-   * TODO: tune once we have real readings from both offices — indoor fixes are
+   * TODO: tune once we have real readings from both offices - indoor fixes are
    * often poor, and too strict a value here means staff cannot clock in at their desk.
    */
   private static readonly ACCURACY_TOLERANCE_MULTIPLIER = 2;

@@ -7,7 +7,7 @@ import { isValidStorageKey, newStorageKey } from './storage-key';
 /// Keeps the bytes in Postgres, in `stored_files`.
 ///
 /// This is the default, and for a practice this size it is the right default.
-/// The documents are a handful of PDFs per employee — an I-9, a W-4, a signed
+/// The documents are a handful of PDFs per employee - an I-9, a W-4, a signed
 /// handbook, a receipt for a returned laptop. Tens of megabytes in total, for
 /// twenty-odd staff.
 ///
@@ -15,7 +15,7 @@ import { isValidStorageKey, newStorageKey } from './storage-key';
 /// control and its encryption at rest; there is no second account to set up, no
 /// bucket policy to get wrong, and no public URL anywhere. A file cannot
 /// outlive the employee row that references it, and a database restore restores
-/// the documents with it — which matters, because these are records the
+/// the documents with it - which matters, because these are records the
 /// practice is legally required to keep.
 ///
 /// What it costs: this stops being sensible somewhere around a few gigabytes,
@@ -32,9 +32,7 @@ export class DatabaseFileStorage implements FileStorage {
     const checksum = createHash('sha256').update(bytes).digest('hex');
 
     await this.prisma.storedFile.create({ data: { storageKey, bytes } });
-    this.logger.log(
-      `Stored ${bytes.byteLength} bytes (${meta.contentType}) as ${storageKey}`,
-    );
+    this.logger.log(`Stored ${bytes.byteLength} bytes (${meta.contentType}) as ${storageKey}`);
 
     return { storageKey, sizeBytes: bytes.byteLength, checksum };
   }

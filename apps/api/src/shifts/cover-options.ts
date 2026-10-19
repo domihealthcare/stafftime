@@ -4,7 +4,7 @@ import { overtimeLevel, OvertimeLevel } from './overtime.service';
 
 /// How well somebody fits a shift that needs covering:
 /// - `good`: free, not off, not past what they said they can do, and not
-///   pushed near overtime — say yes without a second thought;
+///   pushed near overtime - say yes without a second thought;
 /// - `catch`: could do it, but there is something to weigh first;
 /// - `cannot`: already working then, or on approved time off.
 export type CoverFit = 'good' | 'catch' | 'cannot';
@@ -14,16 +14,16 @@ export interface CoverOption {
   name: string;
   fit: CoverFit;
   /// The week's scheduled hours (every office, drafts included) without this
-  /// shift, and with it — the week the overtime rules count.
+  /// shift, and with it - the week the overtime rules count.
   hoursBefore: number;
   hoursAfter: number;
   /// Overtime is an hourly question, as everywhere else.
   hourly: boolean;
   overtime: OvertimeLevel;
-  /// What stands in the way, or is worth knowing, in the manager's words —
+  /// What stands in the way, or is worth knowing, in the manager's words -
   /// most serious first. Empty for a good fit.
   reasons: CoverReason[];
-  /// Other shifts that day that do not clash — "Also on 7:00 AM–12:00 PM".
+  /// Other shifts that day that do not clash - "Also on 7:00 AM–12:00 PM".
   sameDay: string[];
   /// Already on this shift (when changing who works it).
   current: boolean;
@@ -83,14 +83,14 @@ const FIT_ORDER: Record<CoverFit, number> = { good: 0, catch: 1, cannot: 2 };
 /**
  * Who could cover a shift, best first.
  *
- * Good fits first, then the ones with a catch (the lighter catch first —
+ * Good fits first, then the ones with a catch (the lighter catch first -
  * near overtime before past it, one worry before two), then those who cannot.
  * Within each, whoever has fewest hours that week comes first: it spreads the
  * work, and it is the person furthest from overtime. Then by name, so the
  * list does not shuffle between two looks.
  *
  * Never a refusal: a manager can still pick anybody the list shows as
- * "cannot" from the full list, and the usual warnings follow — this only
+ * "cannot" from the full list, and the usual warnings follow - this only
  * says who to ask first, and why.
  */
 export function rankCoverOptions(
@@ -233,7 +233,7 @@ export interface PlanPerson extends Omit<CoverCandidate, 'shifts' | 'timeOff'> {
 
 export interface CoverProposal {
   shiftId: string;
-  /// Null when nobody is free then — the pop-up's own list says who could,
+  /// Null when nobody is free then - the pop-up's own list says who could,
   /// with a catch.
   employeeId: string | null;
   name: string | null;
@@ -245,7 +245,7 @@ export interface CoverProposal {
  * A first draft for a week's open shifts (Dominguez, October 2026): somebody
  * free for each, by the same ranking as "Who can cover this?".
  *
- * Only good fits are suggested — never somebody with a catch. Each pick is
+ * Only good fits are suggested - never somebody with a catch. Each pick is
  * booked before the next is chosen, so one person is not suggested for two
  * shifts at once and the hours spread: the fewest hours that week come
  * first. The shifts with fewest good fits are filled first, so the easy ones

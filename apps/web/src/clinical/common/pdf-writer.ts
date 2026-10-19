@@ -6,7 +6,7 @@ import { printable } from './printable';
  * break, and a header and footer stamped on every page once the number of
  * pages is known ("Page 2 of 5").
  *
- * Everything is drawn as real text in Helvetica — never a picture of a page —
+ * Everything is drawn as real text in Helvetica - never a picture of a page -
  * so the PDF's words can be selected, searched and read by eCW.
  */
 
@@ -29,7 +29,7 @@ const BRAND = rgb(0x3a / 255, 0x68 / 255, 0x88 / 255);
 export interface PageStamp {
   /// Bold, top left of every page.
   title: string;
-  /// Beneath it — the patient's line.
+  /// Beneath it - the patient's line.
   lines: string[];
   /// Bottom of every page.
   footer: string;
@@ -138,13 +138,13 @@ export class PdfWriter {
     this.y -= points;
   }
 
-  /// Starts a new page unless `points` more fit on this one — to keep a short
+  /// Starts a new page unless `points` more fit on this one - to keep a short
   /// block, like the attestation and its signature line, in one piece.
   keep(points: number) {
     this.ensure(points);
   }
 
-  /// Starts the next part on a fresh page — the Spanish half of a care plan
+  /// Starts the next part on a fresh page - the Spanish half of a care plan
   /// printed in both languages.
   pageBreak() {
     if (this.y < TOP) this.newPage();

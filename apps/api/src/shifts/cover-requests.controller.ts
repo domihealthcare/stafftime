@@ -31,7 +31,7 @@ export class CoverAnswerDto {
 }
 
 /// "Ask who can cover" (October 2026): managers ask about an open shift;
-/// the people asked — and only they — see it and answer.
+/// the people asked - and only they - see it and answer.
 @Controller()
 export class CoverRequestsController {
   constructor(private readonly cover: CoverRequestsService) {}

@@ -1,6 +1,6 @@
 /**
- * A screen with work that exists nowhere else — the clinical form, which is
- * never saved — says so here, so that signing out can ask first. Leaving by a
+ * A screen with work that exists nowhere else - the clinical form, which is
+ * never saved - says so here, so that signing out can ask first. Leaving by a
  * link, the Back button or closing the tab is caught on the screen itself;
  * signing out is not a navigation, so it needs telling.
  */

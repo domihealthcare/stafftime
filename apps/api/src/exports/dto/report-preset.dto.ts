@@ -5,7 +5,7 @@ import { ExportTimesheetDto } from './export-timesheet.dto';
 /// The saved half of an export: everything except the period, which is almost
 /// always "the last pay period" rather than fixed dates.
 export class PresetOptionsDto extends ExportTimesheetDto {
-  /// Overridden to optional — a preset stores the shape of a report, not a
+  /// Overridden to optional - a preset stores the shape of a report, not a
   /// specific fortnight.
   @IsOptional()
   @IsString()

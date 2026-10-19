@@ -3,8 +3,8 @@ import type { RepeatInput } from '../lib/types';
 import { WEEK_ORDER } from '../lib/format';
 
 /**
- * How an event repeats (September 2026): every week, every 2 weeks, monthly —
- * on the same date or on "the first Friday" — or a custom mix such as every 2
+ * How an event repeats (September 2026): every week, every 2 weeks, monthly -
+ * on the same date or on "the first Friday" - or a custom mix such as every 2
  * weeks on Monday and Friday. Always until a date, at most a year on.
  *
  * The dates themselves are worked out by the server from the event's first

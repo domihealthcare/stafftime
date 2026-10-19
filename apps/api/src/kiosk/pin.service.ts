@@ -5,7 +5,7 @@ export type PinCheck = { ok: true } | { ok: false; reason: string };
 
 /// The handful of PINs anyone would try first on a four-digit keypad: repeated
 /// pairs, keypad shapes, and the few years that top every list of common PINs.
-/// Kept short on purpose — see `check`.
+/// Kept short on purpose - see `check`.
 const BANNED_PINS = new Set([
   '0000',
   '1111',
@@ -47,7 +47,7 @@ const BANNED_PINS = new Set([
 /**
  * PIN rules.
  *
- * A PIN has almost no entropy — four digits is ten thousand possibilities, and
+ * A PIN has almost no entropy - four digits is ten thousand possibilities, and
  * a keypad invites the obvious ones. The defence is three-layered: reject the
  * most predictable PINs here, hash what is left with argon2, and lock the
  * account after a handful of wrong attempts (see KioskService). A PIN also
@@ -56,7 +56,7 @@ const BANNED_PINS = new Set([
  * Deliberately light since October 2026 (Dominguez: "please don't make it too
  * strict on the PIN"): every year from 1900 on and every repeated pattern
  * (3636) used to be refused too, which turned away PINs people chose and
- * remember — 1911 among them. What is left refuses only the same digit
+ * remember - 1911 among them. What is left refuses only the same digit
  * repeated, a straight run, and the short list above; the lockouts carry the
  * rest.
  */

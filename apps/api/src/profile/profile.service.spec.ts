@@ -5,7 +5,7 @@ import { PasswordService } from '../auth/password.service';
 import { PinService } from '../kiosk/pin.service';
 import { ProfileService } from './profile.service';
 
-/// A 256 × 256 baseline JPEG header — all the photo checks look at.
+/// A 256 × 256 baseline JPEG header - all the photo checks look at.
 function fakeJpeg(): Buffer {
   const sof = Buffer.alloc(11);
   sof.writeUInt16BE(0xffc0, 0);

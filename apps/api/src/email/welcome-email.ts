@@ -1,6 +1,6 @@
 /**
  * The welcome email: the one message every new starter gets, with the link to
- * choose a first password and — asked for by Dominguez, September 2026 — the
+ * choose a first password and - asked for by Dominguez, September 2026 - the
  * things people otherwise ask on day one: how to put the app on their phone,
  * how clocking in works, where the schedule is.
  *
@@ -32,7 +32,7 @@ interface Section {
 const FAQS: [string, string][] = [
   [
     'How do I clock in?',
-    'On your phone: open Domi Staff and press the big Clock in button. At the office you can also use the front-desk time clock — pick your name and type your PIN.',
+    'On your phone: open Domi Staff and press the big Clock in button. At the office you can also use the front-desk time clock - pick your name and type your PIN.',
   ],
   [
     'Why does it ask for my location?',
@@ -40,7 +40,7 @@ const FAQS: [string, string][] = [
   ],
   [
     'When am I working?',
-    'Schedule shows your shifts — Month shows the weeks ahead. You can add them to your phone’s calendar from the same screen.',
+    'Schedule shows your shifts - Month shows the weeks ahead. You can add them to your phone’s calendar from the same screen.',
   ],
   [
     'I forgot to clock in or out.',
@@ -52,7 +52,7 @@ const FAQS: [string, string][] = [
   ],
   [
     'What is the checklist when I clock out?',
-    'Front Desk and Medical Assistants get their end-of-day checklist. Tick what you did — you can always clock out, even with something left.',
+    'Front Desk and Medical Assistants get their end-of-day checklist. Tick what you did - you can always clock out, even with something left.',
   ],
   [
     'Where is everything else?',
@@ -73,7 +73,7 @@ function sections(details: WelcomeDetails): Section[] {
     {
       title: '2. Put Domi Staff on your phone',
       lines: [
-        `It sits on your home screen like an app — nothing to download from an app store. Open ${details.appUrl}, then:`,
+        `It sits on your home screen like an app - nothing to download from an app store. Open ${details.appUrl}, then:`,
         'iPhone, in Safari: tap Share (the square with an arrow, at the bottom), then Add to Home Screen.',
         'iPhone, in Chrome: tap Share in the address bar at the top, then Add to Home Screen.',
         'Android, in Chrome: tap ⋮ at the top right, then Add to Home screen or Install app.',
@@ -89,7 +89,7 @@ function sections(details: WelcomeDetails): Section[] {
 }
 
 export function welcomeEmail(details: WelcomeDetails): WelcomeEmail {
-  const subject = 'Welcome to Domi Staff — choose your password';
+  const subject = 'Welcome to Domi Staff - choose your password';
   const intro = [
     `Hello ${details.firstName},`,
     'Domi Healthcare now uses Domi Staff to clock in and out, check your schedule, ask for time off and keep up with the team.',
@@ -120,7 +120,7 @@ function html(details: WelcomeDetails, intro: string[]): string {
 
   const [password, phone, pin] = sections(details);
   const body = [
-    `<img src="${escape(details.appUrl)}/brand/domi-healthcare-slogan.png" alt="Domi Healthcare — Your Health. Your Family. Your Home." width="220" style="display:block;margin:0 0 20px;border:0;height:auto">`,
+    `<img src="${escape(details.appUrl)}/brand/domi-healthcare-slogan.png" alt="Domi Healthcare - Your Health. Your Family. Your Home." width="220" style="display:block;margin:0 0 20px;border:0;height:auto">`,
     ...intro.map((line) => p(escape(line))),
     `<h2 style="margin:24px 0 8px;font-size:17px;color:${ink}">${escape(password.title)}</h2>`,
     p(escape(password.lines[0])),

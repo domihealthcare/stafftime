@@ -23,7 +23,7 @@ interface Open {
 }
 
 /**
- * The menu that opens when you right-click a staff member — on the rota, in the
+ * The menu that opens when you right-click a staff member - on the rota, in the
  * month, in the Directory. `open` goes on an element's `onContextMenu`; render
  * `menu` once on the page.
  *

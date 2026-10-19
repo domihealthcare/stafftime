@@ -11,8 +11,8 @@ export function formatTime(iso: string): string {
 }
 
 /// The shortest honest way to say a time: "9am", "1:30pm". For places where a
-/// full "9:00 AM" would not fit — a month grid column is about fifty pixels on
-/// a phone — and where the minutes are usually zero anyway.
+/// full "9:00 AM" would not fit - a month grid column is about fifty pixels on
+/// a phone - and where the minutes are usually zero anyway.
 export function formatTimeCompact(iso: string): string {
   const date = new Date(iso);
   const full = date.toLocaleTimeString(locale(), { hour: 'numeric', minute: '2-digit' });
@@ -29,7 +29,7 @@ export function formatDate(iso: string): string {
 }
 
 /**
- * A calendar day — a hire date, a due date, the first day of a holiday.
+ * A calendar day - a hire date, a due date, the first day of a holiday.
  *
  * Rendered in UTC on purpose. The API sends these as midnight UTC, so letting
  * the viewer's timezone apply would show "Mar 1" as "Feb 28" to everybody in
@@ -52,7 +52,7 @@ export function formatDateTime(iso: string): string {
   return `${formatDate(iso)}, ${formatTime(iso)}`;
 }
 
-/// "7h 32m" — how long a punch lasted, or has lasted so far.
+/// "7h 32m" - how long a punch lasted, or has lasted so far.
 export function formatDuration(fromIso: string, toIso: string | null): string {
   const from = new Date(fromIso).getTime();
   const to = toIso ? new Date(toIso).getTime() : Date.now();
@@ -74,7 +74,7 @@ export function durationHours(fromIso: string, toIso: string | null): number {
 /// <input type="datetime-local"> wants local wall-clock time, not UTC.
 ///
 /// Seconds are included (and the input given step="1") so that opening an edit
-/// dialog and saving an untouched field cannot silently shift the timestamp —
+/// dialog and saving an untouched field cannot silently shift the timestamp -
 /// which, on a short punch, would round clock-out back onto clock-in.
 export function toLocalInputValue(date: Date): string {
   const pad = (n: number) => String(n).padStart(2, '0');
@@ -125,7 +125,7 @@ export function startOfMonth(date: Date): Date {
 
 /// The month a week belongs to, for switching between Week and Month: the
 /// month today is in when the week holds today, otherwise the month holding
-/// most of it (its Wednesday). Not the month the week starts in — on Thursday
+/// most of it (its Wednesday). Not the month the week starts in - on Thursday
 /// 1 October that week starts on Sunday 27 September, and Month opened on
 /// September.
 export function monthOfWeek(weekStart: Date, today: Date = new Date()): Date {
@@ -137,7 +137,7 @@ export function monthOfWeek(weekStart: Date, today: Date = new Date()): Date {
 /// Steps whole months from the first of a month.
 ///
 /// Always call it on a date that is already the first. `setMonth` on the 31st
-/// rolls into the next month — 31 January plus one month is 3 March — and a
+/// rolls into the next month - 31 January plus one month is 3 March - and a
 /// schedule that skips February is a memorable bug.
 export function addMonths(date: Date, months: number): Date {
   const result = startOfMonth(date);
@@ -173,7 +173,7 @@ export function localDate(date: Date): string {
   return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`;
 }
 
-/// "2026-10-14" as that day at local midnight, not UTC — a week that starts
+/// "2026-10-14" as that day at local midnight, not UTC - a week that starts
 /// on Sunday must not show as Saturday west of Greenwich. Null for anything else.
 export function parseDay(value: string | null): Date | null {
   const match = value?.match(/^(\d{4})-(\d{2})-(\d{2})$/);

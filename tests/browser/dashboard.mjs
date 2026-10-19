@@ -113,7 +113,7 @@ await step('filtering to one location keeps its line and its colour', async () =
   );
   const stroke = await lines.first().getAttribute('stroke');
   if (stroke === blueBefore) throw new Error('West New York took North Bergen’s colour when filtered');
-  await mgr.getByTestId('tile-Overtime').getByText('Both locations — overtime is per person').waitFor({ timeout: 5000 });
+  await mgr.getByTestId('tile-Overtime').getByText('Both locations - overtime is per person').waitFor({ timeout: 5000 });
   await mgr.getByLabel('Location').selectOption({ label: 'Both locations' });
 });
 

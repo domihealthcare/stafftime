@@ -34,7 +34,7 @@ export class AppConfigController {
       // stale browser tab from what is live. Null where the host does not say.
       version: this.config.get<string>('VERCEL_GIT_COMMIT_SHA')?.slice(0, 7) ?? null,
       // Whether the event form may offer "Create a Google Meet link". Says
-      // only that it is set up — never which account or key.
+      // only that it is set up - never which account or key.
       googleMeet: this.meet.available,
       // Whether shifts and events arrive as calendar invites, so the
       // calendar card can say the feed now carries only closures and time off.

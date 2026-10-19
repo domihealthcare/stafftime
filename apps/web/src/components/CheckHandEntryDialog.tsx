@@ -71,7 +71,7 @@ export function CheckHandEntryDialog({
               id="check-finding"
               type="text"
               maxLength={500}
-              placeholder="e.g. Location was off for Safari — showed her how to turn it on"
+              placeholder="e.g. Location was off for Safari - showed her how to turn it on"
               value={finding}
               onChange={(event) => setFinding(event.target.value)}
               className="mt-1 w-full rounded-lg border-slate-300 text-sm shadow-sm focus:border-brand-600 focus:ring-brand-600"

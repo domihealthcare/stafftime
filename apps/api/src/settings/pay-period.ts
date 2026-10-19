@@ -26,7 +26,7 @@ export function payPeriodContaining(date: string, anchor: string): DateRange {
   return { from, to: addDaysTo(from, PAY_PERIOD_DAYS - 1) };
 }
 
-/// This pay period and the one before it — what the date shortcuts offer.
+/// This pay period and the one before it - what the date shortcuts offer.
 export function payPeriods(today: string, anchor: string | null) {
   if (!anchor) return { current: null, previous: null };
   const current = payPeriodContaining(today, anchor);
@@ -45,7 +45,6 @@ export function payPeriods(today: string, anchor: string | null) {
  */
 export function workweekStartsOn(payPeriodStart: Date | string | null): number {
   if (!payPeriodStart) return 1;
-  const date =
-    typeof payPeriodStart === 'string' ? payPeriodStart : payPeriodStart.toISOString();
+  const date = typeof payPeriodStart === 'string' ? payPeriodStart : payPeriodStart.toISOString();
   return isoWeekdayOf(date.slice(0, 10));
 }

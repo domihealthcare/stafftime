@@ -30,7 +30,7 @@ const EXAMPLE = [
 ];
 
 /**
- * Several people at once, pasted from a spreadsheet — for the first day, when
+ * Several people at once, pasted from a spreadsheet - for the first day, when
  * the whole practice needs adding. Everything is checked and shown before
  * anything is saved, and it is all or nothing, so a half-loaded list never
  * needs untangling. Nothing pasted is kept beyond the people it adds.
@@ -94,12 +94,12 @@ export function ImportStaff({
           </p>
           <p>
             <strong>Optional:</strong> Hire date (7/2026 means the 1st of July), Phone, Job role
-            (several separated by commas), Access (Employee, Manager or Admin — Employee if left
+            (several separated by commas), Access (Employee, Manager or Admin - Employee if left
             blank), Pay type (Hourly or Salaried), Goes by, ADP File #, Birthday (only the month and
-            day are kept — the year is dropped).
+            day are kept - the year is dropped).
           </p>
           <p>
-            Any other column is ignored and not kept — leave social security numbers and pay rates
+            Any other column is ignored and not kept - leave social security numbers and pay rates
             out of it anyway.
           </p>
           <div className="overflow-x-auto">
@@ -146,7 +146,7 @@ export function ImportStaff({
           {preview.ignored.length > 0 && (
             <span className="text-amber-800">
               {' '}
-              Ignoring {preview.ignored.map((heading) => `“${heading}”`).join(', ')} — not brought
+              Ignoring {preview.ignored.map((heading) => `“${heading}”`).join(', ')} - not brought
               in.
             </span>
           )}
@@ -184,7 +184,7 @@ export function ImportStaff({
                         </span>
                       </>
                     ) : (
-                      <span className="text-slate-500">—</span>
+                      <span className="text-slate-500">-</span>
                     )}
                   </td>
                   <td className="py-1.5 pr-3 align-top text-slate-700">{row.offices.join(', ')}</td>
@@ -228,7 +228,7 @@ export function ImportStaff({
           {blocked.length > 0 && (
             <span className="text-sm text-red-700" data-testid="import-blocked">
               Fix {blocked.length === 1 ? 'the line' : `the ${blocked.length} lines`} marked in red
-              in your spreadsheet and paste again — nobody is added until every line is ready.
+              in your spreadsheet and paste again - nobody is added until every line is ready.
             </span>
           )}
         </div>

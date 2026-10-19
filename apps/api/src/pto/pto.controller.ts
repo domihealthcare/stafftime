@@ -49,7 +49,7 @@ export class PtoController {
     private readonly reminder: BalanceReminderService,
   ) {}
 
-  /// The rules. Readable by everyone — staff should be able to see what they
+  /// The rules. Readable by everyone - staff should be able to see what they
   /// are entitled to without asking.
   @Get('policy')
   getPolicy() {
@@ -99,7 +99,7 @@ export class PtoController {
   }
 
   /// What a request would take and leave, before it is sent. Your own, or
-  /// — for a manager filing for somebody — theirs.
+  /// - for a manager filing for somebody - theirs.
   @Get('preview')
   preview(@Query() query: PreviewPtoRequestDto, @CurrentUser() user: AuthUser) {
     return this.pto.preview(query, user);
@@ -151,8 +151,8 @@ export class PtoController {
     return this.pto.pendingCount(user);
   }
 
-  /// Which waiting requests are clean — enough left, nobody too thin, no
-  /// shifts — for "Approve the clean ones" (`clean-time-off.ts`).
+  /// Which waiting requests are clean - enough left, nobody too thin, no
+  /// shifts - for "Approve the clean ones" (`clean-time-off.ts`).
   @Get('clean')
   @Roles(Role.MANAGER)
   clean(@CurrentUser() user: AuthUser) {
@@ -179,7 +179,7 @@ export class PtoController {
     return this.pto.conflictingShifts(id);
   }
 
-  /// Too many from one job role off at once, with this request counted —
+  /// Too many from one job role off at once, with this request counted -
   /// shown while a manager decides it. See `time-off-clashes.ts`.
   @Get(':id/clashes')
   @Roles(Role.MANAGER)

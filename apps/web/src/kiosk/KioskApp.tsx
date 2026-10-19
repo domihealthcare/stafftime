@@ -23,7 +23,7 @@ const CONFIRMATION_MS = 4000;
 /// someone else's name and half a PIN on it.
 const IDLE_RESET_MS = 30_000;
 /// A closing checklist takes longer than a PIN, but one walked away from still
-/// clears itself — nobody should find somebody else's half-ticked list.
+/// clears itself - nobody should find somebody else's half-ticked list.
 const CHECKLIST_IDLE_RESET_MS = 5 * 60_000;
 /// How long "you have no PIN yet" stays up before the staff list comes back.
 const NO_PIN_MS = 20_000;
@@ -109,7 +109,7 @@ export function KioskApp() {
 
   // Every ten minutes, fetch the staff list again: somebody added today shows
   // up without anybody reloading the page, and the server hears the time
-  // clock is still open — which is what "gone quiet" is judged by.
+  // clock is still open - which is what "gone quiet" is judged by.
   useEffect(() => {
     if (!session) return;
     const timer = window.setInterval(() => {
@@ -139,7 +139,7 @@ export function KioskApp() {
     setScreen({ name: 'staff' });
   }, []);
 
-  // Clear an abandoned PIN screen — but never while a PIN is being checked, or
+  // Clear an abandoned PIN screen - but never while a PIN is being checked, or
   // the answer would land on whoever is next.
   useEffect(() => {
     window.clearTimeout(idleTimer.current);
@@ -186,7 +186,7 @@ export function KioskApp() {
       }
       setScreen({ name: 'done', result });
     } catch (err) {
-      // The PIN is cleared on any failure — never left on screen to retry blind.
+      // The PIN is cleared on any failure - never left on screen to retry blind.
       setPin('');
       if (isKioskUnpaired(err)) {
         setScreen({ name: 'pairing' });

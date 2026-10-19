@@ -12,7 +12,7 @@ import {
   ValidateIf,
 } from 'class-validator';
 
-/// One cell of the board. No answer clears it ("not known yet — ask").
+/// One cell of the board. No answer clears it ("not known yet - ask").
 export class DiagnosticAnswerInput {
   @IsUUID()
   testId!: string;

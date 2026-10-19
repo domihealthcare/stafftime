@@ -2,7 +2,7 @@ import { ChecklistReminderStage } from '@prisma/client';
 
 /**
  * Reminders to a new hire about their own onboarding tasks (October 2026,
- * Dominguez — making the app smarter). The checklist told them when it
+ * Dominguez - making the app smarter). The checklist told them when it
  * started how many tasks were theirs; after that only managers were chased,
  * by the nightly email, once a task was already overdue. Now the person is
  * told themselves, in time to do it.
@@ -10,7 +10,7 @@ import { ChecklistReminderStage } from '@prisma/client';
  * Only tasks **theirs to do** (`TaskOwner.EMPLOYEE`), still to do, with a due
  * date, on an **onboarding** checklist still open. Two moments, each said
  * once for a given due date: **due soon** (today, tomorrow or the day after)
- * and **overdue** (for two weeks after — then it is the managers' list's
+ * and **overdue** (for two weeks after - then it is the managers' list's
  * business, which already carries it). Only the most pressing that applies.
  * Nothing on the day the checklist starts: "your checklist has started" has
  * just said it.
@@ -79,7 +79,7 @@ export function taskReminderWording(reminders: DueTaskReminder[]): {
   }
   const lines = sorted.map(
     ({ task, stage, daysLeft }) =>
-      `“${task.title}” — ${
+      `“${task.title}” - ${
         stage === ChecklistReminderStage.OVERDUE
           ? `was due ${day(task.dueOn)}`
           : `due ${when(daysLeft)}`

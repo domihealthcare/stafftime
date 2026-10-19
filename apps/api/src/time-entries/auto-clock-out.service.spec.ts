@@ -64,7 +64,7 @@ describe('AutoClockOutService', () => {
     });
   });
 
-  it('can look at one person only — when they open Home, clock in or use the time clock', async () => {
+  it('can look at one person only - when they open Home, clock in or use the time clock', async () => {
     const { service, prisma } = build();
     await service.closeForgotten({ employeeId: 'emp-frankie', now });
 

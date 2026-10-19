@@ -1,6 +1,6 @@
 // Mirrors the API's Prisma enums and response shapes.
 // TODO: generate these from the API instead of hand-maintaining them once the
-// contract settles — a drift here is a runtime bug the compiler cannot catch.
+// contract settles - a drift here is a runtime bug the compiler cannot catch.
 
 export type Role = 'EMPLOYEE' | 'MANAGER' | 'ADMIN';
 export type EmploymentStatus = 'PENDING' | 'ACTIVE' | 'ON_LEAVE' | 'TERMINATED';
@@ -88,7 +88,7 @@ export interface Employee extends EmployeeSummary {
   /// When their profile photo last changed; null for none.
   photoUpdatedAt?: string | null;
   externalId?: string | null;
-  /// ADP TotalSource's File # — needed before their hours can go in the ADP
+  /// ADP TotalSource's File # - needed before their hours can go in the ADP
   /// import file.
   adpFileNumber?: string | null;
   /// True while an admin-set temporary password is still in force.
@@ -117,7 +117,7 @@ export interface Employee extends EmployeeSummary {
   /// them, so "Your productivity" appears in the account menu.
   hasProductivity?: boolean;
   /// Signed-in person only: their offices with a working time clock while they
-  /// have no tablet PIN — Home reminds them. Empty once they have one.
+  /// have no tablet PIN - Home reminds them. Empty once they have one.
   tabletPinOffices?: string[];
   /// Signed-in person only: an admin has given them provider productivity to
   /// work out and publish, whatever their access level.
@@ -169,8 +169,8 @@ export interface TimeEntry {
   isEarlyDeparture: boolean;
   isManuallyEdited: boolean;
   isMissingPunch: boolean;
-  /// Clocked in somewhere other than their shift — another office, or from
-  /// home with no work-from-home shift — with the reason they gave, if any.
+  /// Clocked in somewhere other than their shift - another office, or from
+  /// home with no work-from-home shift - with the reason they gave, if any.
   isOtherPlace?: boolean;
   otherPlaceReason?: string | null;
   /// Still clocked in at midnight, so the app clocked them out then (October
@@ -178,7 +178,7 @@ export interface TimeEntry {
   /// in the real time, and it cannot be approved.
   autoClockedOutAt?: string | null;
   editReason: string | null;
-  /// Set when a manager entered the whole day by hand — there was no punch.
+  /// Set when a manager entered the whole day by hand - there was no punch.
   enteredByHandAt?: string | null;
   enteredBy?: { id: string; firstName: string; lastName: string } | null;
   handEntryReason?: HandEntryReason | null;
@@ -219,7 +219,7 @@ export interface PtoRequest {
   employeeId: string;
   type: PtoType;
   status: PtoStatus;
-  /// Plain calendar dates, "2026-11-03" — not timestamps.
+  /// Plain calendar dates, "2026-11-03" - not timestamps.
   startDate: string;
   endDate: string;
   isHalfDay: boolean;
@@ -346,7 +346,7 @@ export interface PlanResult {
   regular?: boolean;
 }
 
-/// A regular shift with no end date — "Rosa, every Monday, 8 to 4". Its
+/// A regular shift with no end date - "Rosa, every Monday, 8 to 4". Its
 /// shifts are written out eight weeks ahead and topped up every night.
 export interface StandingShift {
   id: string;
@@ -401,7 +401,7 @@ export interface CoverageShift {
   startsAt: string;
   endsAt: string;
   status: ShiftStatus;
-  /// Scheduled while on approved leave — nearly always a mistake.
+  /// Scheduled while on approved leave - nearly always a mistake.
   conflictsWithLeave: boolean;
   /// Scheduled when they said they cannot work, described ("Not available
   /// Tuesdays, 5:00 PM–9:00 PM"). A warning, not a refusal.
@@ -420,7 +420,7 @@ export interface CoverageDay {
 }
 
 /// Somebody the rota puts over forty hours in a week. Scheduled hours, not
-/// worked ones, and counted across every location — see the server for why.
+/// worked ones, and counted across every location - see the server for why.
 export interface OvertimeWarning {
   employeeId: string;
   employeeName: string;
@@ -445,7 +445,7 @@ export interface OvertimeCheck {
   level: OvertimeLevel;
 }
 
-/// "Who can cover this?" — somebody who could work a shift, ranked by the
+/// "Who can cover this?" - somebody who could work a shift, ranked by the
 /// server (`GET /shifts/:id/cover-options`).
 export type CoverFit = 'good' | 'catch' | 'cannot';
 
@@ -558,7 +558,7 @@ export interface Coverage {
   overtimeThresholdHours: number;
 }
 
-/// What the app knows needs a look, in the same words the nightly email uses —
+/// What the app knows needs a look, in the same words the nightly email uses -
 /// it is the same list, read twice, so the screen and the email cannot
 /// disagree. Each field is a set of ready-to-read lines.
 export interface Attention {
@@ -583,16 +583,16 @@ export interface Attention {
   closingGaps: string[];
   suppliesNeeded: string[];
   newSuggestions: string[];
-  /// Dashboard and email only — never on a banner.
+  /// Dashboard and email only - never on a banner.
   punchPatterns: string[];
-  /// Dashboard and email only — never on a banner.
+  /// Dashboard and email only - never on a banner.
   timeOffClashes: string[];
-  /// Dashboard and email only — never on a banner.
+  /// Dashboard and email only - never on a banner.
   overtimeHeading: string[];
 }
 
 // ---------------------------------------------------------------------------
-// Closing checklists — what Front Desk and MAs confirm at clock-out
+// Closing checklists - what Front Desk and MAs confirm at clock-out
 // ---------------------------------------------------------------------------
 
 export type ClosingItemKind = 'TASK' | 'REMINDER' | 'COUNT' | 'SUPPLY';
@@ -613,7 +613,7 @@ export interface ApplicableSection {
   items: ClosingItem[];
 }
 
-/// What gets sent with a clock-out. Ids and numbers only — nowhere to type.
+/// What gets sent with a clock-out. Ids and numbers only - nowhere to type.
 export interface ClosingSubmission {
   skipped?: boolean;
   positions?: string[];
@@ -834,7 +834,7 @@ export interface Credential {
 }
 
 /// A license or certificate the practice asks for, and which job roles need
-/// it — required, or optional.
+/// it - required, or optional.
 export interface CredentialType {
   id: string;
   name: string;
@@ -883,7 +883,7 @@ export interface Announcement {
   editedAt: string | null;
   createdAt: string;
   author: PersonName | null;
-  /// Everybody who liked it, by name — likes are named on purpose.
+  /// Everybody who liked it, by name - likes are named on purpose.
   likes: PersonName[];
   likedByMe: boolean;
   /// Oldest first, like a conversation.
@@ -907,7 +907,7 @@ export interface AnnouncementPoll {
   /// Set while voting is closed.
   closedAt: string | null;
   options: { id: string; label: string; voters: PersonName[] }[];
-  /// People who have voted at all — on a tick-box poll, fewer than the votes.
+  /// People who have voted at all - on a tick-box poll, fewer than the votes.
   voterCount: number;
   /// The reader's own picks.
   myChoices: string[];
@@ -927,7 +927,7 @@ export interface PersonName {
   preferredName: string | null;
 }
 
-/// What somebody does at the practice. Decides which resources they see —
+/// What somebody does at the practice. Decides which resources they see -
 /// never what they may do in the app, which is `Employee.role`.
 export interface JobRole {
   id: string;
@@ -1076,7 +1076,7 @@ export interface UnavailabilityRule {
 }
 
 export interface MyAvailability {
-  /// The first day a change can touch — the weeks before it are published.
+  /// The first day a change can touch - the weeks before it are published.
   firstOpenDate: string;
   rules: UnavailabilityRule[];
 }
@@ -1087,7 +1087,7 @@ export interface TeamAvailability extends PersonName {
 
 export type SurveyAudience = 'EVERYONE' | 'JOB_ROLE' | 'LOCATION';
 
-/// Who a practice event is for — the same three choices as a survey. A
+/// Who a practice event is for - the same three choices as a survey. A
 /// closure is for both offices (EVERYONE) or one (LOCATION).
 export type EventAudience = 'EVERYONE' | 'JOB_ROLE' | 'LOCATION' | 'CHOSEN';
 
@@ -1203,7 +1203,7 @@ export interface PracticeEvent {
   myReply?: ReplyAnswer | null;
 }
 
-/// Going, can't go or maybe — to a meeting (October 2026).
+/// Going, can't go or maybe - to a meeting (October 2026).
 export type ReplyAnswer = 'GOING' | 'NOT_GOING' | 'MAYBE';
 
 export interface ReplyPerson {
@@ -1543,7 +1543,7 @@ export interface ProductivityBalance {
 }
 
 // ---------------------------------------------------------------------------
-// Staff profiles — the admins-only record (October 2026)
+// Staff profiles - the admins-only record (October 2026)
 // ---------------------------------------------------------------------------
 
 export interface PersonalRecordFields {
@@ -1620,7 +1620,7 @@ export interface DigestReader {
   mutedDigestTopics: DigestTopic[];
 }
 
-/// "Before you publish" — see `shifts/publish-check.ts` in the API.
+/// "Before you publish" - see `shifts/publish-check.ts` in the API.
 export interface PublishCheckSection {
   key:
     | 'licenses'
@@ -1640,7 +1640,7 @@ export interface PublishCheck {
   sections: PublishCheckSection[];
 }
 
-/// "Before you export" — see `exports/export-check.ts` in the API.
+/// "Before you export" - see `exports/export-check.ts` in the API.
 export interface ExportCheck {
   sections: {
     key: 'adp' | 'review' | 'open' | 'unapproved' | 'handEntries' | 'corrected' | 'overtime';
@@ -1789,7 +1789,7 @@ export interface RequirementInput {
   targets?: { employeeIds: string[]; jobRoleIds: string[]; locationIds: string[] };
 }
 
-/// What the rota on screen costs — only for the people an admin has chosen.
+/// What the rota on screen costs - only for the people an admin has chosen.
 export interface RotaCost {
   from: string;
   to: string;
@@ -1820,7 +1820,7 @@ export interface OnCallDay {
   date: string;
   employeeId: string | null;
   employee: OnCallPerson | null;
-  /// The usual pattern, a manager's change, a swap — or nobody set.
+  /// The usual pattern, a manager's change, a swap - or nobody set.
   source: 'USUAL' | 'CHANGED' | 'SWAPPED' | 'NONE';
   /// "HH:MM": the turn runs from this on its date to this the next day.
   changesAt: string;

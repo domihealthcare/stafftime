@@ -4,7 +4,7 @@ type Db = PrismaClient | Prisma.TransactionClient;
 
 /**
  * Somebody's main job role (October 2026, Dominguez): one of the roles they
- * hold, marked `isPrimary`. Whoever holds any role has exactly one — the
+ * hold, marked `isPrimary`. Whoever holds any role has exactly one - the
  * migration's partial unique index stops a second, and this stops none, by
  * handing the flag to their first role in the practice's order whenever they
  * are left without one (their first role added, their main one taken away,

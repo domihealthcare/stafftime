@@ -1,6 +1,6 @@
 import type { DigestTopic } from './types';
 
-/// The parts of the nightly round-up, as Email settings offers them — the
+/// The parts of the nightly round-up, as Email settings offers them - the
 /// server's `email/digest-topics.ts` decides which sections each one is.
 /// What each covers is spelled out: "leave out Hours" is a much easier choice
 /// to regret when nobody said what it would stop telling you.
@@ -29,10 +29,10 @@ export const DIGEST_TOPICS: {
     label: 'Hours and timesheets',
     short: 'Hours',
     covers: [
-      'Clock-outs to correct — still clocked in at midnight, so the app clocked them out',
+      'Clock-outs to correct - still clocked in at midnight, so the app clocked them out',
       'Hours nobody has approved yet',
       'Hours entered by hand that nobody has looked into yet',
-      'Patterns in clocking in and out — late again and again, forgetting to clock out',
+      'Patterns in clocking in and out - late again and again, forgetting to clock out',
     ],
   },
   {
@@ -77,7 +77,7 @@ export const DIGEST_TOPICS: {
     topic: 'SUGGESTIONS',
     label: 'The suggestion box',
     short: 'Suggestions',
-    covers: ['Notes in the suggestion box nobody has dealt with — how many, never the words'],
+    covers: ['Notes in the suggestion box nobody has dealt with - how many, never the words'],
   },
 ];
 

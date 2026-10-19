@@ -5,7 +5,7 @@ import type { CarePlanForm } from './form';
 import { WORDS, carePlanText } from './text';
 
 /**
- * The care plan as a PDF, made in the browser — for eCW Documents and for
+ * The care plan as a PDF, made in the browser - for eCW Documents and for
  * the patient, in English, or English and Spanish (English first, then
  * Spanish on a fresh page, as the practice's own care plans were laid out).
  *
@@ -21,7 +21,7 @@ export interface Preparer {
 export const preparerName = (preparer: Preparer) =>
   preparer.credentials ? `${preparer.name}, ${preparer.credentials}` : preparer.name;
 
-/// "Jonathan Dominguez, MD" — who reviews and signs every care plan, and
+/// "Jonathan Dominguez, MD" - who reviews and signs every care plan, and
 /// whose electronic signature it carries, whoever prepared it.
 export const reviewingProviderName = () =>
   preparerName({
@@ -34,7 +34,7 @@ export const isReviewingProvider = (person: { firstName: string; lastName: strin
   person.firstName.trim().toLowerCase() === REVIEWING_PROVIDER.firstName.toLowerCase() &&
   person.lastName.trim().toLowerCase() === REVIEWING_PROVIDER.lastName.toLowerCase();
 
-/// "10-01-2026 Care Plan.pdf", by the date it was done — just "Care Plan",
+/// "10-01-2026 Care Plan.pdf", by the date it was done - just "Care Plan",
 /// since the practice uses it for APCM as well as CCM (Dominguez).
 export function carePlanFilename(form: CarePlanForm): string {
   return pdfFilename(form.patient.conductedOn, 'Care Plan');
@@ -60,7 +60,7 @@ export async function carePlanPdf(
       ? `${WORDS.en.confidential} / ${WORDS.es.confidential}`
       : WORDS.en.confidential;
   return pdf.finish({
-    title: `${LETTERHEAD.name} — ${titleFor(form.pdfLanguage)}`,
+    title: `${LETTERHEAD.name} - ${titleFor(form.pdfLanguage)}`,
     lines: [
       LETTERHEAD.offices.join('  |  '),
       `Tel: ${LETTERHEAD.phone}  |  Fax: ${LETTERHEAD.fax}`,
@@ -113,7 +113,7 @@ function write(
   }
 
   // Prepared by the person signed in, and electronically signed by Dr.
-  // Dominguez, whoever prepared it (Dominguez, October 2026) — in each
+  // Dominguez, whoever prepared it (Dominguez, October 2026) - in each
   // language's half.
   pdf.keep(80);
   pdf.gap(12);

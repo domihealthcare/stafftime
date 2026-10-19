@@ -38,17 +38,17 @@ function range(request: PtoRequest): string {
 }
 
 /**
- * Time off on a staff profile: a compact summary — what is left, what is
- * coming up, what is waiting — with everything else a tap away (October 2026,
+ * Time off on a staff profile: a compact summary - what is left, what is
+ * coming up, what is waiting - with everything else a tap away (October 2026,
  * Dominguez: "condense the time off list on their profile … maybe just a pop
  * up to further dive into it"):
  *
- * - **See all** — every request on file, in a pop-up; recorded ones can be
+ * - **See all** - every request on file, in a pop-up; recorded ones can be
  *   removed there.
- * - **Record past time off** — writing down time off already taken (October
+ * - **Record past time off** - writing down time off already taken (October
  *   2026): the back-log from before Domi Staff, or a sick day nobody asked
  *   for in the app. Approved from the start, it comes off the balance.
- * - **Adjust** — the same form as Time off → Staff balances (the days taken
+ * - **Adjust** - the same form as Time off → Staff balances (the days taken
  *   before Domi Staff, rollover, their own yearly amount or none), so it can
  *   be done from where the person is.
  */
@@ -105,7 +105,7 @@ export function StaffTimeOffCard({
           <AllowanceLine label="PTO" allowance={balance.vacation} />
           <span className="text-slate-400"> · </span>
           <AllowanceLine label="Sick" allowance={balance.sick} />
-          <span className="text-xs text-slate-500"> — {balance.policyYear} policy year</span>
+          <span className="text-xs text-slate-500"> - {balance.policyYear} policy year</span>
         </p>
       )}
 
@@ -367,7 +367,7 @@ function RecordForm({
       aria-label="Record time off already taken"
     >
       <p className="text-sm text-slate-700">
-        For days already taken — before Domi Staff, or a day nobody asked for in the app. It is
+        For days already taken - before Domi Staff, or a day nobody asked for in the app. It is
         recorded as approved and Sick or PTO comes off their balance (Unpaid comes off neither).
         Nobody is notified.
       </p>
@@ -375,7 +375,7 @@ function RecordForm({
         <Alert tone="warning">
           {totalsBefore} day{totalsBefore === 1 ? ' is' : 's are'} already entered as a total under
           Time off → Staff balances → Adjust (“taken before Domi Staff”). Recording the same days
-          here as well counts them twice — take them out of that total if you list them here.
+          here as well counts them twice - take them out of that total if you list them here.
         </Alert>
       )}
       <div className="grid gap-3 sm:grid-cols-3">

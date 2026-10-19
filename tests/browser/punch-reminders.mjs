@@ -3,7 +3,7 @@ import { mkdirSync, readFileSync } from 'node:fs';
 
 // Reminders to the person themselves (October 2026, Dominguez): "You haven't
 // clocked in yet" 15 minutes into a published shift with no punch, and
-// "You're still clocked in" 15 minutes after it ends — under the bell and by
+// "You're still clocked in" 15 minutes after it ends - under the bell and by
 // email, once each. Run by an outside timer calling the API with its own
 // secret, which is what this suite does too.
 const OUT = process.argv[2] || new URL('./shots/', import.meta.url).pathname;
@@ -59,7 +59,7 @@ const morgan = await ctx.newPage();
 morgan.on('pageerror', (e) => errors.push(`pageerror: ${e.message}`));
 await signIn(morgan, 'manager@domihealthcare.com');
 
-// The admin, to correct Morgan's punch — nobody can change their own.
+// The admin, to correct Morgan's punch - nobody can change their own.
 const adminCtx = await browser.newContext({ viewport: { width: 1280, height: 900 } });
 const admin = await adminCtx.newPage();
 await signIn(admin, 'admin@domihealthcare.com');
@@ -153,7 +153,7 @@ await step('15 minutes after the shift ends, still clocked in, the person is tol
   await runReminders();
   await runReminders();
   // Run in the first hour after midnight in New Jersey, the punch began
-  // yesterday — so it has been clocked out at midnight instead (see
+  // yesterday - so it has been clocked out at midnight instead (see
   // auto-clock-out.mjs), and that is what Morgan is told.
   const njDay = (iso) =>
     new Intl.DateTimeFormat('en-CA', { timeZone: 'America/New_York' }).format(new Date(iso));

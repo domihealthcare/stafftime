@@ -6,7 +6,7 @@ import { join } from 'node:path';
  *
  * This is a timekeeping app. It records that somebody worked, and that a
  * licence runs out on the 13th so the practice can be chased about it. It does
- * not hold social security numbers, licence numbers, or scans of anything —
+ * not hold social security numbers, licence numbers, or scans of anything -
  * those belong in the personnel file, wherever the practice keeps it, and a
  * clock-in app is the wrong place for a breach to happen.
  *
@@ -49,7 +49,7 @@ describe('what this app deliberately does not store', () => {
   /// Staff profiles (October 2026, Dominguez) are the one deliberate step back
   /// from "not an HR system": an admin may keep somebody's home address, an
   /// emergency contact, and their pay and position over time. Decided out
-  /// loud — and pinned here, so neither table grows a column without the
+  /// loud - and pinned here, so neither table grows a column without the
   /// same conversation, and none of it moves onto Employee, whose row goes
   /// out with rotas, timesheets and the Directory.
   /// Who reviews which provider's patient schedule (October 2026): the
@@ -145,7 +145,7 @@ describe('what this app deliberately does not store', () => {
 
   /// The referral phone book (October 2026, Dominguez): the places patients
   /// are sent and the numbers for it, kept by all staff. About places, never a
-  /// patient — so exactly these fields, and a "patient" or "referred" column
+  /// patient - so exactly these fields, and a "patient" or "referred" column
   /// has to be decided out loud.
   it('keeps the phone book to places and how to reach them', () => {
     const fieldsOf = (name: string) =>
@@ -176,7 +176,7 @@ describe('what this app deliberately does not store', () => {
   });
 
   /// The diagnostics and reimbursements boards (October 2026, Dominguez):
-  /// which insurance covers which test, and what it pays per code — about
+  /// which insurance covers which test, and what it pays per code - about
   /// insurances and tests, never a patient. Exactly these fields, so a
   /// "patient" or "booked for" column has to be decided out loud.
   it('keeps the diagnostics and reimbursements boards to insurances, tests and codes', () => {
@@ -279,7 +279,7 @@ describe('what this app deliberately does not store', () => {
     }
   });
 
-  /// Birthdays arrived in September 2026 so colleagues can celebrate them —
+  /// Birthdays arrived in September 2026 so colleagues can celebrate them -
   /// as a month and a day, deliberately never a year or a whole date of birth.
   it('keeps a birthday to the month and day, never the year', () => {
     const fields = model('Employee')
@@ -303,7 +303,7 @@ describe('what this app deliberately does not store', () => {
 
   it('files resources as links and written pages, never uploads', () => {
     // Uploads for resources may come one day, but as a decision made out loud
-    // — see docs/open-questions.md — not as a column that slipped in.
+    // - see docs/open-questions.md - not as a column that slipped in.
     const body = model('Resource');
     for (const field of ['storageKey', 'fileId', 'mimeType', 'StoredFile', 'bytes']) {
       expect(body).not.toContain(field);
@@ -311,7 +311,7 @@ describe('what this app deliberately does not store', () => {
   });
 
   /// The one upload the app takes (September 2026): a small photo of
-  /// yourself. It must stay just that — the picture and when it changed —
+  /// yourself. It must stay just that - the picture and when it changed -
   /// and never grow a caption, a file name or anything read from the camera.
   it('keeps a profile photo to the picture and nothing else', () => {
     const fields = model('EmployeePhoto')
@@ -323,8 +323,8 @@ describe('what this app deliberately does not store', () => {
   });
 
   /// Closing checklists are filled in at the front desk at the end of a day
-  /// with patients. What somebody records is ticks and numbers — the wording
-  /// is copied from the template, never typed — so a "notes" column here is
+  /// with patients. What somebody records is ticks and numbers - the wording
+  /// is copied from the template, never typed - so a "notes" column here is
   /// exactly where a patient's name would end up.
   it('keeps a closing checklist to ticks and numbers, with nowhere to type', () => {
     const fieldsOf = (name: string) =>

@@ -14,11 +14,11 @@ import { Alert, buttonClass } from './ui';
 
 /**
  * Time off on the Schedule, now that it has no tab of its own (October 2026,
- * Dominguez — option B). Staff see their days left and what they have asked
+ * Dominguez - option B). Staff see their days left and what they have asked
  * for, beside a button to ask; managers also get the requests waiting on them,
  * to approve or decline on the spot. The full list of requests is the Time
- * off screen (/time-off) — "All requests" for a manager, "All your time off"
- * for staff — reached from here and from Home. Since October 2026
+ * off screen (/time-off) - "All requests" for a manager, "All your time off"
+ * for staff - reached from here and from Home. Since October 2026
  * (Dominguez) it has no Manage entry of its own: everybody's balances are on
  * the Dashboard and the rules in Practice settings.
  */
@@ -147,7 +147,7 @@ export function RequestsToDecide({ onDecided }: { onDecided: () => void }) {
               {request.pastBalance && (
                 <span
                   data-testid="past-balance-flag"
-                  title="More than was left — they said they understand it may be unpaid"
+                  title="More than was left - they said they understand it may be unpaid"
                   className="rounded bg-amber-100 px-1.5 text-xs font-medium text-amber-900"
                 >
                   past their balance · may be unpaid
@@ -189,7 +189,7 @@ export function RequestsToDecide({ onDecided }: { onDecided: () => void }) {
 }
 
 /// One line about somebody's own time off: days left, and what is coming up
-/// or waiting. For everybody, managers included — their own.
+/// or waiting. For everybody, managers included - their own.
 export function YourTimeOff({ refreshKey }: { refreshKey: number }) {
   const t = useT();
   const isManager = useIsManager();
@@ -253,7 +253,7 @@ export function YourTimeOff({ refreshKey }: { refreshKey: number }) {
         <ul className="mt-1 space-y-0.5 text-slate-600">
           {mine.map((request) => (
             <li key={request.id}>
-              {range(request)} — {ptoTypeLabel(request.type)}
+              {range(request)} - {ptoTypeLabel(request.type)}
               {request.status === 'PENDING' ? (
                 <span className="text-amber-800"> · {t('waiting for a manager')}</span>
               ) : (

@@ -53,7 +53,7 @@ export function ExportPage() {
   const [loading, setLoading] = useState(true);
 
   // Opens on last week, then on the last pay period as soon as the server says
-  // which fortnight that is — unless somebody has already picked a period.
+  // which fortnight that is - unless somebody has already picked a period.
   const [range, setRange] = useState<DayRange>(() => presetRanges(new Date(), null)[1].range!);
   const [rangeTouched, setRangeTouched] = useState(false);
   const lastPayPeriod = usePresetRange('last-pay-period', 'last-week');
@@ -247,7 +247,7 @@ export function ExportPage() {
   }
 
   /// "Before you export": anything worth a look about this period goes up
-  /// in one pop-up first — unapproved hours, a midnight clock-out, a missing
+  /// in one pop-up first - unapproved hours, a midnight clock-out, a missing
   /// ADP File #… A check that fails never stands in the way of the file.
   async function startDownload() {
     setError(null);
@@ -415,7 +415,7 @@ export function ExportPage() {
               Share with other managers
             </label>
             <p className="mt-1 text-xs text-slate-500">
-              Saves the columns, filters and format — not the dates.
+              Saves the columns, filters and format - not the dates.
             </p>
             <button
               type="button"
@@ -596,7 +596,7 @@ export function ExportPage() {
         </div>
         {format === 'csv' && (
           <p className="mt-2 text-xs text-slate-500">
-            CSV has no summary sheet — it is a single table of entries.
+            CSV has no summary sheet - it is a single table of entries.
           </p>
         )}
       </Card>
@@ -624,7 +624,7 @@ export function ExportPage() {
             </p>
             {preview.flaggedCount > 0 && (
               <p className="mt-1 text-sm text-amber-700">
-                {preview.flaggedCount} flagged {preview.flaggedCount === 1 ? 'entry' : 'entries'} —
+                {preview.flaggedCount} flagged {preview.flaggedCount === 1 ? 'entry' : 'entries'} -
                 worth reviewing before this goes to payroll.
               </p>
             )}
@@ -636,14 +636,14 @@ export function ExportPage() {
             {preview.correctedSinceExportCount > 0 && (
               <p className="mt-1 text-sm text-amber-700">
                 {preview.correctedSinceExportCount === 1
-                  ? '1 entry has been corrected since it last went to payroll — that correction has not reached payroll yet.'
-                  : `${preview.correctedSinceExportCount} entries have been corrected since they last went to payroll — those corrections have not reached payroll yet.`}
+                  ? '1 entry has been corrected since it last went to payroll - that correction has not reached payroll yet.'
+                  : `${preview.correctedSinceExportCount} entries have been corrected since they last went to payroll - those corrections have not reached payroll yet.`}
               </p>
             )}
             {preview.alreadyExportedCount > 0 &&
               preview.alreadyExportedCount === preview.entryCount && (
                 <p className="mt-1 text-sm text-slate-600">
-                  All of these hours have been exported before. Running it again is fine — every run
+                  All of these hours have been exported before. Running it again is fine - every run
                   is recorded below.
                 </p>
               )}
@@ -721,7 +721,7 @@ export function ExportPage() {
               </label>
             </div>
             <p className="mt-2 text-xs text-slate-500">
-              Up to 8 letters or numbers — the pay date is usual. Left empty, it is the last day of
+              Up to 8 letters or numbers - the pay date is usual. Left empty, it is the last day of
               the period ({defaultBatchId(to)}). The file has one row per person, regular and
               overtime hours split by week; the columns and file type above do not apply. Upload it
               in TotalSource under Process → Payroll Dashboard → Manage Payroll → Worksheets →
@@ -760,7 +760,7 @@ export function ExportPage() {
             preview?.employeeCount === 1 ? 'person' : 'people'
           }, about to go to payroll. Worth a look first:`}
           sections={exportCheck.sections}
-          footnote="Nothing here stops the export. Fix any on the Timesheet first, or export anyway — every run is recorded below and can be voided."
+          footnote="Nothing here stops the export. Fix any on the Timesheet first, or export anyway - every run is recorded below and can be voided."
           confirmLabel="Export anyway"
           onConfirm={() => {
             setExportCheck(null);
@@ -775,7 +775,7 @@ export function ExportPage() {
           Past exports
         </h2>
         <p className="mb-3 text-sm text-slate-600">
-          Every run is kept, with the file exactly as it went out — so a disagreement with payroll
+          Every run is kept, with the file exactly as it went out - so a disagreement with payroll
           can be settled by looking rather than by guessing.
         </p>
         <ExportHistory

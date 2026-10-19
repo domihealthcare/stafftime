@@ -21,7 +21,7 @@ const EMPLOYEE_INCLUDE = {
 
 /// Never return credential columns to a client.
 /// Never sent to a browser. The calendar token is the private calendar link's
-/// credential — anybody holding it can read that person's shifts and time off —
+/// credential - anybody holding it can read that person's shifts and time off -
 /// and the lockout counters are nobody's business but the server's.
 const HIDDEN_FIELDS = [
   'pinHash',
@@ -39,7 +39,7 @@ function normaliseEmail(email: string): string {
   return email.trim().toLowerCase();
 }
 
-/// YYYY-MM-DD, and a real day — "2026-02-30" is not one.
+/// YYYY-MM-DD, and a real day - "2026-02-30" is not one.
 function isCalendarDate(value: string): boolean {
   if (!/^\d{4}-\d{2}-\d{2}$/.test(value)) return false;
   const date = new Date(`${value}T00:00:00Z`);
@@ -92,7 +92,7 @@ export class EmployeesService {
   }
 
   /**
-   * A whole staff list at once — the first day's set-up, pasted from a
+   * A whole staff list at once - the first day's set-up, pasted from a
    * spreadsheet. All or nothing: a list half-loaded is harder to finish than
    * one refused with the reason, so one bad row stops the lot and says which.
    */
@@ -255,7 +255,7 @@ export class EmployeesService {
     }
   }
 
-  /// Employees are never hard-deleted — timesheets must stay attributable.
+  /// Employees are never hard-deleted - timesheets must stay attributable.
   async terminate(id: string, terminationDate?: string) {
     if (terminationDate !== undefined && !isCalendarDate(terminationDate)) {
       throw new BadRequestException('Their last day is a date, like 2026-09-30.');
@@ -310,7 +310,7 @@ export class EmployeesService {
     const copy = {
       ...employee,
       hasKioskPin: employee.pinHash !== null,
-      // Whether they have chosen a password yet — i.e. whether a welcome email
+      // Whether they have chosen a password yet - i.e. whether a welcome email
       // is still worth sending. The hash itself never leaves.
       hasPassword: employee.passwordHash !== null && employee.passwordHash !== undefined,
     };

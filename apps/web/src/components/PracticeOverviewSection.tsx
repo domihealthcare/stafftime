@@ -88,7 +88,7 @@ export function PracticeOverviewSection() {
           <Lines
             items={timeOffClashes.clashes.map(
               (clash) =>
-                `${clash.locationName}, ${clashDays(clash)} — ${
+                `${clash.locationName}, ${clashDays(clash)} - ${
                   clash.off.length === clash.total
                     ? `all ${clash.total}`
                     : `${clash.off.length} of ${clash.total}`
@@ -110,14 +110,14 @@ export function PracticeOverviewSection() {
             items={[
               ...licenses.expired.map(
                 (row) =>
-                  `${row.employeeName} — ${row.name}, lapsed ${formatCalendarDate(row.expiresOn)}`,
+                  `${row.employeeName} - ${row.name}, lapsed ${formatCalendarDate(row.expiresOn)}`,
               ),
               ...licenses.missingRequired.map(
-                (row) => `${row.employeeName} — ${row.name}, not on file`,
+                (row) => `${row.employeeName} - ${row.name}, not on file`,
               ),
               ...licenses.dueSoon.map(
                 (row) =>
-                  `${row.employeeName} — ${row.name}, ${
+                  `${row.employeeName} - ${row.name}, ${
                     row.daysUntilExpiry === 0 ? 'expires today' : `${row.daysUntilExpiry} days left`
                   }`,
               ),
@@ -155,7 +155,7 @@ export function PracticeOverviewSection() {
               : `${surveys.suggestionsLast30Days} suggestion${
                   surveys.suggestionsLast30Days === 1 ? '' : 's'
                 } in the last 30 days.`}{' '}
-            Answers stay anonymous — only counts are shown here.
+            Answers stay anonymous - only counts are shown here.
           </p>
         </Card>
 
@@ -167,7 +167,7 @@ export function PracticeOverviewSection() {
             <ul className="mt-2 space-y-1.5 text-sm text-slate-700">
               {checklists.slice(0, SHOWN).map((checklist) => (
                 <li key={checklist.id}>
-                  <span className="font-medium text-slate-900">{checklist.employeeName}</span> —{' '}
+                  <span className="font-medium text-slate-900">{checklist.employeeName}</span> -{' '}
                   {checklist.kind === 'ONBOARDING' ? 'onboarding' : 'offboarding'}: {checklist.done}{' '}
                   of {checklist.total} done
                   {checklist.overdue > 0 && (
@@ -194,7 +194,7 @@ export function PracticeOverviewSection() {
           ) : (
             <p className="mt-2 text-sm text-slate-700">
               Last {closing.days} days: {closing.total} clock-out{closing.total === 1 ? '' : 's'}{' '}
-              with a checklist — <Count n={closing.complete} tone="success" /> complete,{' '}
+              with a checklist - <Count n={closing.complete} tone="success" /> complete,{' '}
               <Count n={closing.withGaps} tone="warning" /> with something missed,{' '}
               <Count n={closing.skipped} tone="danger" /> skipped.
             </p>
@@ -213,7 +213,7 @@ export function PracticeOverviewSection() {
 }
 
 /// Heading for overtime this week (October 2026): hours worked so far plus
-/// what the rota still has them down for, past the line — in time to trim a
+/// what the rota still has them down for, past the line - in time to trim a
 /// shift. The rota's own warning covers the schedule; this catches the early
 /// starts and late finishes. Managers only.
 function OvertimeForecastCard({ forecast }: { forecast: PracticeOverview['overtimeForecast'] }) {
@@ -237,7 +237,7 @@ function OvertimeForecastCard({ forecast }: { forecast: PracticeOverview['overti
         <ul className="mt-2 space-y-1.5 text-sm text-slate-700">
           {people.slice(0, SHOWN).map((person) => (
             <li key={person.employeeId} data-testid="overtime-heading">
-              <span className="font-medium text-slate-900">{person.employeeName}</span> —{' '}
+              <span className="font-medium text-slate-900">{person.employeeName}</span> -{' '}
               <span className="font-semibold text-amber-800">{person.projected} hrs</span>
               <span className="text-slate-600">
                 {' '}
@@ -260,7 +260,7 @@ function OvertimeForecastCard({ forecast }: { forecast: PracticeOverview['overti
 
 /// The same thing again and again (October 2026): late three times in four
 /// weeks, forgetting to clock out or leaving early twice. Managers only, and
-/// the person is not told — a reason to ask, not a verdict.
+/// the person is not told - a reason to ask, not a verdict.
 function PatternsCard({ patterns }: { patterns: PunchPattern[] }) {
   const [open, setOpen] = useState<string | null>(null);
   return (
@@ -268,7 +268,7 @@ function PatternsCard({ patterns }: { patterns: PunchPattern[] }) {
       <CardHeading title="Patterns worth a word" to="/timesheet" />
       <p className="mt-1 text-xs text-slate-500">
         The last 4 weeks: late 3 times or more, or forgot to clock out or left early twice. Only
-        managers see this, and nobody is told — it is a reason to ask, not a verdict.
+        managers see this, and nobody is told - it is a reason to ask, not a verdict.
       </p>
       {patterns.length === 0 ? (
         <p className="mt-2 text-sm text-slate-600">Nothing repeating.</p>
@@ -278,7 +278,7 @@ function PatternsCard({ patterns }: { patterns: PunchPattern[] }) {
             const key = `${pattern.employeeId}-${pattern.kind}`;
             return (
               <li key={key} data-testid="punch-pattern">
-                <span className="font-medium text-slate-900">{pattern.employeeName}</span> —{' '}
+                <span className="font-medium text-slate-900">{pattern.employeeName}</span> -{' '}
                 {pattern.summary}{' '}
                 <button
                   type="button"
@@ -344,7 +344,7 @@ function CardHeading({ title, to }: { title: string; to: string }) {
   );
 }
 
-/// A number that is only coloured when it is not zero — a red 0 reads as a problem.
+/// A number that is only coloured when it is not zero - a red 0 reads as a problem.
 function Count({ n, tone }: { n: number; tone: 'success' | 'warning' | 'danger' }) {
   const colour =
     n === 0

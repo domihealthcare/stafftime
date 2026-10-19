@@ -40,7 +40,7 @@ export class ClockInDto {
   accuracyMeters?: number;
 
   /// Working from home, chosen on the phone (October 2026): true even with no
-  /// work-from-home shift — then it is flagged as somewhere other than the
+  /// work-from-home shift - then it is flagged as somewhere other than the
   /// shift. Left out (an older page), a work-from-home shift on now still
   /// makes the punch from home, as before.
   @IsOptional()

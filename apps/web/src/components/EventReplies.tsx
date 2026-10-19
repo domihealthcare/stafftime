@@ -10,12 +10,12 @@ import type {
 import { Alert } from './ui';
 
 /**
- * Going, can't go or maybe — in a meeting's pop-up (October 2026, Dominguez).
+ * Going, can't go or maybe - in a meeting's pop-up (October 2026, Dominguez).
  *
  * The people it is for answer here; everybody it is for (and managers) sees
  * who is going, who can't, who might and who has not said yet, like a
  * calendar invite. Each date of a series is answered on its own; a new time
- * clears the answers. Only meetings — never closures, holidays, diagnostics
+ * clears the answers. Only meetings - never closures, holidays, diagnostics
  * or rep lunches.
  */
 export function EventReplies({

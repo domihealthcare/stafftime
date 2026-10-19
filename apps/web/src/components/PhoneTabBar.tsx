@@ -11,9 +11,9 @@ const tabClass = ({ isActive }: { isActive: boolean }) =>
 
 /**
  * The phone's navigation: Home, Schedule, Directory and Resources along the
- * bottom, where a thumb reaches, and everything else under **More** —
+ * bottom, where a thumb reaches, and everything else under **More** -
  * Timesheet, News, Surveys and Manage (October 2026, Dominguez: option B). From `sm` up the
- * header carries the navigation instead — the two are never both on the page,
+ * header carries the navigation instead - the two are never both on the page,
  * so every link is on the page once.
  */
 export function PhoneTabBar({

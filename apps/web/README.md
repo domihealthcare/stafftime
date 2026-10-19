@@ -1,6 +1,6 @@
 # Web app
 
-React + Vite + Tailwind — the screens staff and managers use.
+React + Vite + Tailwind - the screens staff and managers use.
 
 Run it from the repository root with `npm run dev` (starts the API too), or
 `npm run dev:web` on its own, then open http://localhost:5173.

@@ -48,14 +48,14 @@ describe('before you export', () => {
       }),
     ];
     const out = section(exportWarnings(input({ entries })), 'unapproved')!;
-    expect(out.title).toBe('Not approved yet — going out anyway');
+    expect(out.title).toBe('Not approved yet - going out anyway');
     expect(out.lines).toEqual([
-      'Frankie Front-Desk — 2 entries, 15.50 hours, from Mon, Oct 5',
-      'Max Assistant — 1 entry, 8.00 hours, from Wed, Oct 7',
+      'Frankie Front-Desk - 2 entries, 15.50 hours, from Mon, Oct 5',
+      'Max Assistant - 1 entry, 8.00 hours, from Wed, Oct 7',
     ]);
     const approvedOnly = exportWarnings(input({ entries, statuses: [TimeEntryStatus.APPROVED] }));
     expect(section(approvedOnly, 'unapproved')!.title).toBe(
-      'Not approved yet — left out of this file',
+      'Not approved yet - left out of this file',
     );
   });
 
@@ -74,9 +74,9 @@ describe('before you export', () => {
     );
     expect(section(check, 'review')).toEqual({
       key: 'review',
-      title: 'Waiting on a correction — left out of this file',
+      title: 'Waiting on a correction - left out of this file',
       lines: [
-        'Frankie Front-Desk — clocked in Mon, Oct 5 at 9:00 AM: clocked out by the app at midnight, so the real time is needed',
+        'Frankie Front-Desk - clocked in Mon, Oct 5 at 9:00 AM: clocked out by the app at midnight, so the real time is needed',
       ],
     });
   });
@@ -86,7 +86,7 @@ describe('before you export', () => {
       input({ entries: [entry({ status: TimeEntryStatus.OPEN, clockedOut: false, hours: 0 })] }),
     );
     expect(section(check, 'open')!.lines).toEqual([
-      'Frankie Front-Desk — clocked in Mon, Oct 5 at 9:00 AM, not out yet',
+      'Frankie Front-Desk - clocked in Mon, Oct 5 at 9:00 AM, not out yet',
     ]);
   });
 
@@ -103,10 +103,10 @@ describe('before you export', () => {
       }),
     );
     expect(section(check, 'handEntries')!.lines).toEqual([
-      'Frankie Front-Desk — Mon, Oct 5, 8.00 hours',
+      'Frankie Front-Desk - Mon, Oct 5, 8.00 hours',
     ]);
     expect(section(check, 'corrected')!.lines).toEqual([
-      'Frankie Front-Desk — Wed, Oct 7, first sent Fri, Oct 2; this file carries the corrected hours',
+      'Frankie Front-Desk - Wed, Oct 7, first sent Fri, Oct 2; this file carries the corrected hours',
     ]);
   });
 
@@ -123,10 +123,10 @@ describe('before you export', () => {
     );
     expect(check.sections.map((s) => s.key)).toEqual(['adp', 'unapproved', 'overtime']);
     expect(section(check, 'adp')!.lines).toEqual([
-      'Max Assistant — an admin adds it under Edit on the Staff screen',
+      'Max Assistant - an admin adds it under Edit on the Staff screen',
     ]);
     expect(section(check, 'overtime')!.lines).toEqual([
-      'Frankie Front-Desk — 2.25 hours of overtime',
+      'Frankie Front-Desk - 2.25 hours of overtime',
     ]);
   });
 });

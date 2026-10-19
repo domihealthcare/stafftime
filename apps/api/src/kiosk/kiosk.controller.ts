@@ -79,7 +79,7 @@ export class KioskController {
     };
   }
 
-  /// Staff this kiosk may sign in — scoped to its own location, so a tablet
+  /// Staff this kiosk may sign in - scoped to its own location, so a tablet
   /// cannot be used to read the whole practice roster.
   @Get('employees')
   @Public()
@@ -105,7 +105,7 @@ export class KioskController {
     return this.punches.punch(request.kiosk!, dto.employeeId, dto.pin, dto.closing);
   }
 
-  /// Unpairs this tablet — for a device being retired or handed on.
+  /// Unpairs this tablet - for a device being retired or handed on.
   @Post('unpair')
   @Public()
   @UseGuards(KioskDeviceGuard)

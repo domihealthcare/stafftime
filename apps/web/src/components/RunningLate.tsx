@@ -3,13 +3,13 @@ import { ApiError, api } from '../lib/api';
 import { useT } from '../lib/i18n';
 import type { Shift } from '../lib/types';
 
-/// The choices, in minutes — the same as the server's.
+/// The choices, in minutes - the same as the server's.
 const CHOICES = [10, 20, 30, 45, 60];
 /// From this long before a shift starts until it ends.
 const FROM_MINUTES_BEFORE = 180;
 
 /**
- * "Running late?" on Home (October 2026, Dominguez — a "smarter" idea): for
+ * "Running late?" on Home (October 2026, Dominguez - a "smarter" idea): for
  * today's shift, from three hours before it until it ends, while not clocked
  * in. One tap tells the managers of that office on the bell, and the
  * timesheet shows it beside the late flag. Saying it again changes the time.

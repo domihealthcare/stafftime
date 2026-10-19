@@ -22,7 +22,7 @@ const hoursPhrase = (hours: number) => plural(round1(hours), '{n} hour', '{n} ho
 
 /**
  * Where somebody's week would land with this shift in it, asked while the
- * manager is still filling the form in — so the warning is there before Save
+ * manager is still filling the form in - so the warning is there before Save
  * is pressed, not after. Null while there is nothing to ask or no answer yet;
  * a failed check shows nothing rather than an error, since the save itself
  * checks again.
@@ -66,7 +66,7 @@ export function OvertimePreview({ check, name }: { check: OvertimeCheck | null; 
       >
         <p className="font-semibold">⚠ This puts {name} into overtime</p>
         <p className="mt-0.5">
-          {hoursWord(check.hoursAfter)} in the week of {week} —{' '}
+          {hoursWord(check.hoursAfter)} in the week of {week} -{' '}
           {hoursWord(check.hoursAfter - check.thresholdHours)} past the {check.thresholdHours}
           -hour line.
         </p>
@@ -94,7 +94,7 @@ export function OvertimePreview({ check, name }: { check: OvertimeCheck | null; 
 
 /**
  * Asked at the moment of saving, from a fresh check rather than whatever the
- * form last showed: "this puts them into overtime — schedule it anyway?"
+ * form last showed: "this puts them into overtime - schedule it anyway?"
  *
  * A warning with a way through, never a refusal. The rota is the manager's;
  * what the app must not do is let overtime go in without anyone noticing.
@@ -112,7 +112,7 @@ export async function confirmOvertime(
       <>
         <p>
           This makes {hoursWord(check.hoursAfter)} in the week of{' '}
-          {formatCalendarDate(check.weekStart, { year: false })} —{' '}
+          {formatCalendarDate(check.weekStart, { year: false })} -{' '}
           {hoursWord(check.hoursAfter - check.thresholdHours)} past the {check.thresholdHours}-hour
           overtime line.
         </p>
@@ -126,7 +126,7 @@ export async function confirmOvertime(
 
 /**
  * Your own coming weeks that your published rota puts past the overtime line
- * — on the home screen and the schedule, so nobody finds out from their
+ * - on the home screen and the schedule, so nobody finds out from their
  * payslip. Only past it: "close" is the manager's warning while scheduling,
  * not something to carry once the rota is agreed.
  */
@@ -161,7 +161,7 @@ export function MyOvertimeNotice({ weeks: given }: { weeks?: OwnOvertimeWeek[] }
         {weeks.map((week) => (
           <li key={week.weekStart}>
             {t('Week of {date}:', { date: formatCalendarDate(week.weekStart, { year: false }) })}{' '}
-            <span className="font-semibold">{hoursPhrase(week.scheduledHours)}</span> —{' '}
+            <span className="font-semibold">{hoursPhrase(week.scheduledHours)}</span> -{' '}
             {t('{hours} past the {threshold}-hour line.', {
               hours: hoursPhrase(week.overtimeHours),
               threshold: week.thresholdHours,

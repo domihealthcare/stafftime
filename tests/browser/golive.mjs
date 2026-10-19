@@ -19,7 +19,7 @@ const step = async (name, fn) => {
 /**
  * Going from a test deployment to real use, the way an admin does it in a
  * browser: clear the test data, add the staff list in one paste, and send the
- * welcome emails — then a new starter follows the link and signs in.
+ * welcome emails - then a new starter follows the link and signs in.
  *
  * The imported people all have addresses at example.com starting "imp-", so
  * run-all's reset can take them out again.
@@ -187,7 +187,7 @@ await step('the corrected list is read the way it was meant, and added in one go
 });
 
 await step('imported people are active: in the Directory, on the scheduler, and able to clock in', async () => {
-  // They were once left "pending" by default, which nothing ever changed —
+  // They were once left "pending" by default, which nothing ever changed - 
   // and pending staff could not clock in, be scheduled or be found.
   const found = await admin.evaluate(async () => {
     const staff = await fetch('/api/employees').then((r) => r.json());

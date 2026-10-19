@@ -113,7 +113,7 @@ export function CalendarLinkCard() {
       window.setTimeout(() => setCopied(null), 2500);
     } catch {
       // Clipboard access can be refused; the URL is on screen to copy by hand.
-      setError(t('Could not copy automatically — select the address and copy it.'));
+      setError(t('Could not copy automatically - select the address and copy it.'));
     }
   }
 
@@ -132,7 +132,7 @@ export function CalendarLinkCard() {
                 {t(
                   'Your shifts (two weeks ahead) and practice events arrive as calendar invites to',
                 )}{' '}
-                <strong>{employee?.email}</strong> {t('— accept them if your calendar asks.')}
+                <strong>{employee?.email}</strong> {t(' - accept them if your calendar asks.')}
               </p>
               <p className="mt-1 text-sm text-slate-600">
                 {hasLink
@@ -303,7 +303,7 @@ export function CalendarLinkCard() {
 
           <p className="mt-4 rounded-lg bg-amber-50 px-3 py-2 text-xs text-amber-900 ring-1 ring-inset ring-amber-200">
             {t(
-              'Keep these addresses to yourself. Anyone who has one can see your schedule without signing in — that is how calendar subscriptions work. If one gets out, regenerate below: every address changes at once.',
+              'Keep these addresses to yourself. Anyone who has one can see your schedule without signing in - that is how calendar subscriptions work. If one gets out, regenerate below: every address changes at once.',
             )}
           </p>
 

@@ -20,10 +20,10 @@ const step = async (name, fn) => {
 };
 
 /**
- * Before you publish (Dominguez, October 2026 — making the app smarter):
+ * Before you publish (Dominguez, October 2026 - making the app smarter):
  * pressing Publish shows, in one pop-up, what is worth a look about the drafts
- * — a lapsed required license, time off, a closure, availability, overtime,
- * open shifts — and publishes anyway when asked. Drafts with nothing to say
+ * - a lapsed required license, time off, a closure, availability, overtime,
+ * open shifts - and publishes anyway when asked. Drafts with nothing to say
  * get the plain question as before.
  *
  * The week of Sunday 6 June 2027, which no other suite uses. Time off,
@@ -166,11 +166,11 @@ await step('Publish all shows what is worth a look, most serious first', async (
     const got = await text(key);
     if (!got.includes(needle)) throw new Error(`${key} read "${got}", wanted "${needle}"`);
   };
-  await expect('licenses', `Max Assistant — Publish-check license expired ${shortDate(addDays(start, -10))}, before 2 shifts from ${shortDate(addDays(start, 1))}`);
-  await expect('leave', `Frankie Front-Desk — ${shortDate(addDays(start, 1))}: on approved PTO`);
-  await expect('closures', `Max Assistant at West New York, ${shortDate(addDays(start, 3))} — Publish-check closure`);
-  await expect('availability', `Max Assistant — ${shortDate(addDays(start, 3))}, 9:00 AM–5:00 PM: Not available`);
-  await expect('overtime', 'Frankie Front-Desk — 42 hrs the week of');
+  await expect('licenses', `Max Assistant - Publish-check license expired ${shortDate(addDays(start, -10))}, before 2 shifts from ${shortDate(addDays(start, 1))}`);
+  await expect('leave', `Frankie Front-Desk - ${shortDate(addDays(start, 1))}: on approved PTO`);
+  await expect('closures', `Max Assistant at West New York, ${shortDate(addDays(start, 3))} - Publish-check closure`);
+  await expect('availability', `Max Assistant - ${shortDate(addDays(start, 3))}, 9:00 AM–5:00 PM: Not available`);
+  await expect('overtime', 'Frankie Front-Desk - 42 hrs the week of');
   await expect('open', `${shortDate(addDays(start, 2))} · North Bergen`);
   // Frankie is a Medical Assistant too, with no license on file: that is the
   // Licenses screen's to chase, not a line on every publish.

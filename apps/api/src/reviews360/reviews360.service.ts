@@ -71,7 +71,7 @@ export interface MeetingInput {
 /**
  * 360 feedback (October 2026, Dominguez: "a survey on all employees by all
  * employees, completely anonymous though produces a report for the employee
- * that we — as admin/managers — are able to set up a time to meet with the
+ * that we - as admin/managers - are able to set up a time to meet with the
  * employee and discuss").
  *
  * The choices, Dominguez's: **managers only** see the reports (never the
@@ -86,7 +86,7 @@ export interface MeetingInput {
  *   words.
  * - **That somebody rated somebody is kept apart** (`Review360Rated`), only to
  *   stop a second go and to show the rater their own progress. Nobody else is
- *   ever shown it — not even a count per rater.
+ *   ever shown it - not even a count per rater.
  * - **A report shows once the 360 is closed and at least three colleagues
  *   rated the person**, written answers in a random order. Never the person's
  *   own, even to a manager: theirs is for somebody else to go through with
@@ -157,7 +157,7 @@ export class Reviews360Service {
       {
         kind: NotificationKind.SURVEY_OPEN,
         title: `360 feedback: ${review.title}`,
-        body: `Say how your colleagues are doing, and how you are — anonymously.${
+        body: `Say how your colleagues are doing, and how you are - anonymously.${
           closesOn ? ` Open until ${dayWords(closesOn)}.` : ''
         }`,
         link: `/surveys/360/${review.id}`,
@@ -199,7 +199,7 @@ export class Reviews360Service {
   }
 
   /// One 360 as somebody taking part sees it: the questions, and everybody to
-  /// rate — themselves first — with what they have done.
+  /// rate - themselves first - with what they have done.
   async findOne(id: string, actor: AuthUser) {
     await this.closeOverdue();
     const review = await this.prisma.review360.findUnique({
@@ -267,7 +267,7 @@ export class Reviews360Service {
     };
   }
 
-  /// One person's answers about one person — or passing them over. Once only,
+  /// One person's answers about one person - or passing them over. Once only,
   /// and never editable: nothing links the answers back to who gave them.
   async answer(id: string, dto: Review360AnswerInput, actor: AuthUser) {
     await this.closeOverdue();
@@ -401,7 +401,7 @@ export class Reviews360Service {
     };
   }
 
-  /// One person's report, for a manager other than them — once it is safe.
+  /// One person's report, for a manager other than them - once it is safe.
   async report(id: string, subjectId: string, viewer: AuthUser) {
     if (subjectId === viewer.id) {
       throw new ForbiddenException(
@@ -554,7 +554,7 @@ export class Reviews360Service {
   }
 
   /// The person picks a time. It becomes a practice event for the two of them
-  /// — so it is on the bell, in email and on their calendars — with a Google
+  /// - so it is on the bell, in email and on their calendars - with a Google
   /// Meet link if the manager asked for one.
   async choose(meetingId: string, slotId: string, actor: AuthUser, now = new Date()) {
     const meeting = await this.prisma.review360Meeting.findUnique({
@@ -618,7 +618,7 @@ export class Reviews360Service {
     return this.meeting(meetingId, actor);
   }
 
-  /// A manager withdraws an offer, or cancels the time agreed — the calendar
+  /// A manager withdraws an offer, or cancels the time agreed - the calendar
   /// event goes with it, and the person is told.
   async cancelMeeting(meetingId: string, actor: AuthUser, now = new Date()) {
     const meeting = await this.prisma.review360Meeting.findUnique({

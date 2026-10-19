@@ -50,8 +50,8 @@ export class ResendEmailSender implements EmailSender {
       });
 
       if (!response.ok) {
-        // The body often says exactly what is wrong — an unverified sending
-        // domain, usually — and that is worth having in the log.
+        // The body often says exactly what is wrong - an unverified sending
+        // domain, usually - and that is worth having in the log.
         const detail = await response.text().catch(() => '');
         const reason = `${response.status} ${detail.slice(0, 300)}`.trim();
         this.logger.error(`Could not email ${message.to}: ${reason}`);

@@ -201,7 +201,7 @@ describe('GoogleDriveClient', () => {
       expect(url.searchParams.get('mimeType')).toBe('application/pdf');
     });
 
-    it('never shows a page or a script at the app’s address — it is saved instead', async () => {
+    it('never shows a page or a script at the app’s address - it is saved instead', async () => {
       const { drive } = build();
       await expect(drive.open('pageHtml01')).resolves.toMatchObject({
         contentType: 'application/octet-stream',

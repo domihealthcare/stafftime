@@ -9,7 +9,7 @@ import { Modal } from './Modal';
 import { Alert, Card, buttonClass, inputClass } from './ui';
 
 /**
- * "Ask for a correction" (October 2026, Dominguez — a "smarter" idea): on
+ * "Ask for a correction" (October 2026, Dominguez - a "smarter" idea): on
  * their own Timesheet, somebody asks for an entry's times to be fixed, saying
  * why; a manager approves it (an ordinary edit, with the reason) or declines
  * it. Also the note an entry carries when they said they were running late.
@@ -34,7 +34,7 @@ export function EntryNotes({ entry, mine }: { entry: TimeEntry; mine: boolean })
       {waiting && (
         <p className="text-xs text-amber-800" data-testid="correction-waiting">
           <span className="font-medium">{t('Correction asked for:')}</span>{' '}
-          {t('in {start}, out {end} — waiting for a manager', {
+          {t('in {start}, out {end} - waiting for a manager', {
             start: formatTime(waiting.clockInAt),
             end: formatTime(waiting.clockOutAt),
           })}{' '}
@@ -105,7 +105,7 @@ export function AskCorrectionDialog({
           {formatDate(entry.clockInAt)} ·{' '}
           {t('now in {start}, out {end}', {
             start: formatTime(entry.clockInAt),
-            end: entry.clockOutAt ? formatTime(entry.clockOutAt) : '—',
+            end: entry.clockOutAt ? formatTime(entry.clockOutAt) : '-',
           })}
         </p>
         <div className="flex flex-wrap gap-3">
@@ -139,7 +139,7 @@ export function AskCorrectionDialog({
             rows={2}
             value={reason}
             onChange={(event) => setReason(event.target.value)}
-            placeholder={t('Forgot to clock out — left at 5:00 pm')}
+            placeholder={t('Forgot to clock out - left at 5:00 pm')}
             className={`mt-1 ${inputClass}`}
           />
         </label>
@@ -255,7 +255,7 @@ export function CorrectionsToDecide({
               </p>
               <p className="text-slate-700">
                 Now {formatTime(request.timeEntry.clockInAt)} –{' '}
-                {request.timeEntry.clockOutAt ? formatTime(request.timeEntry.clockOutAt) : '—'}
+                {request.timeEntry.clockOutAt ? formatTime(request.timeEntry.clockOutAt) : '-'}
                 {request.timeEntry.autoClockedOutAt ? ' (clocked out at midnight)' : ''} → asked for{' '}
                 <strong>
                   {formatTime(request.clockInAt)} – {formatTime(request.clockOutAt)}
@@ -263,7 +263,7 @@ export function CorrectionsToDecide({
               </p>
               <p className="text-slate-600">“{request.reason}”</p>
               {own ? (
-                <p className="mt-1 text-xs text-slate-500">Yours — another manager decides it.</p>
+                <p className="mt-1 text-xs text-slate-500">Yours - another manager decides it.</p>
               ) : declining === request.id ? (
                 <div className="mt-2 flex flex-wrap items-center gap-2">
                   <input

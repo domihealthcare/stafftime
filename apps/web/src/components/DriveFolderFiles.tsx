@@ -11,7 +11,7 @@ export const isDriveFolder = (url: string | null) => Boolean(url && DRIVE_FOLDER
 
 /**
  * What is in a Drive folder, under its Resources link (Dominguez, September
- * 2026). Since October 2026 each file opens through the app, in a new tab —
+ * 2026). Since October 2026 each file opens through the app, in a new tab -
  * the folder is shared with the app alone, so nobody needs a Google account
  * or access of their own. A folder inside opens in place, here. Fetched when
  * shown, not with the page, so Resources stays quick.
@@ -24,7 +24,7 @@ export function DriveFolderFiles({
   resourceId: string;
   /// A folder inside the link's folder; left out for the folder itself.
   folderId?: string;
-  /// The folder in Drive, offered only when the app cannot list it — a
+  /// The folder in Drive, offered only when the app cannot list it - a
   /// folder still shared "Anyone with the link" opens there.
   fallbackUrl?: string;
 }) {
@@ -135,7 +135,7 @@ export function DriveFolderFiles({
               {' '}
               In Drive, share the folder with{' '}
               <strong className="break-all">{listing.shareWith}</strong> as a Viewer. Staff do not
-              need access themselves — they open the files here.
+              need access themselves - they open the files here.
             </>
           ) : (
             ' A manager can fix that.'

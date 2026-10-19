@@ -19,7 +19,7 @@ const step = async (name, fn) => {
 };
 
 /**
- * "Someone called out: ask who can cover" (Dominguez, October 2026 — a
+ * "Someone called out: ask who can cover" (Dominguez, October 2026 - a
  * "smarter" idea). In an open shift's pop-up the manager asks the people who
  * are free, by bell and email; the first to say yes gets it, published to
  * them; the manager is told, and so is everybody else asked. Only the people
@@ -98,7 +98,7 @@ await step('the pop-up offers to ask the free people, ticked, and asks them', as
     if ((await input.isChecked()) !== want) await input.click();
   }
   await ask.getByRole('button', { name: 'Ask 2 people' }).click();
-  await ask.getByTestId('cover-asked').getByText('Frankie Front-Desk — not answered yet').waitFor({ timeout: 10000 });
+  await ask.getByTestId('cover-asked').getByText('Frankie Front-Desk - not answered yet').waitFor({ timeout: 10000 });
   await mgr.screenshot({ path: `${OUT}/ask-cover.png` });
 });
 

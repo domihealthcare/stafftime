@@ -3,8 +3,8 @@ import { twelveHour } from '../availability/availability.rules';
 import { shortDate } from '../pto/time-off-clashes';
 
 /**
- * "Before you export" (October 2026, Dominguez — making the app smarter):
- * what is worth a look about a pay period before its hours go to payroll —
+ * "Before you export" (October 2026, Dominguez - making the app smarter):
+ * what is worth a look about a pay period before its hours go to payroll -
  * the moment a mistake costs the most. Warns, never refuses: the export works
  * as before (only ADP itself refuses a person with no File #, and says so).
  *
@@ -43,7 +43,7 @@ export interface CheckEntry {
 
 export interface ExportCheckInput {
   /// Every entry in the period, office and people asked for, whatever its
-  /// status — so the ones the file leaves out can be named.
+  /// status - so the ones the file leaves out can be named.
   entries: CheckEntry[];
   /// The statuses the file takes, and whether it takes open entries.
   statuses: TimeEntryStatus[];
@@ -79,20 +79,20 @@ export function exportWarnings(input: ExportCheckInput): ExportCheck {
 
   const sections: Record<ExportCheckKey, { title: string; lines: string[] }> = {
     adp: {
-      title: 'No ADP File # — the ADP file can’t be made without one',
+      title: 'No ADP File # - the ADP file can’t be made without one',
       lines: input.missingFileNumbers.map(
-        (name) => `${name} — an admin adds it under Edit on the Staff screen`,
+        (name) => `${name} - an admin adds it under Edit on the Staff screen`,
       ),
     },
     review: {
       title: input.statuses.includes(TimeEntryStatus.NEEDS_REVIEW)
-        ? 'Waiting on a correction — going out as they are'
-        : 'Waiting on a correction — left out of this file',
+        ? 'Waiting on a correction - going out as they are'
+        : 'Waiting on a correction - left out of this file',
       lines: entries
         .filter((entry) => entry.status === TimeEntryStatus.NEEDS_REVIEW)
         .map(
           (entry) =>
-            `${entry.employeeName} — clocked in ${when(entry)}: ${
+            `${entry.employeeName} - clocked in ${when(entry)}: ${
               entry.autoClockedOut && entry.missingPunch
                 ? 'clocked out by the app at midnight, so the real time is needed'
                 : entry.missingPunch
@@ -103,19 +103,19 @@ export function exportWarnings(input: ExportCheckInput): ExportCheck {
     },
     open: {
       title: input.includeOpen
-        ? 'Still clocked in — counted as no hours'
-        : 'Still clocked in — left out of this file',
+        ? 'Still clocked in - counted as no hours'
+        : 'Still clocked in - left out of this file',
       lines: entries
         .filter((entry) => !entry.clockedOut && entry.status !== TimeEntryStatus.NEEDS_REVIEW)
-        .map((entry) => `${entry.employeeName} — clocked in ${when(entry)}, not out yet`),
+        .map((entry) => `${entry.employeeName} - clocked in ${when(entry)}, not out yet`),
     },
     unapproved: {
       title: unapprovedGoesOut
-        ? 'Not approved yet — going out anyway'
-        : 'Not approved yet — left out of this file',
+        ? 'Not approved yet - going out anyway'
+        : 'Not approved yet - left out of this file',
       lines: perPerson(unapproved).map(
         ({ name, list }) =>
-          `${name} — ${list.length} ${list.length === 1 ? 'entry' : 'entries'}, ${hoursText(
+          `${name} - ${list.length} ${list.length === 1 ? 'entry' : 'entries'}, ${hoursText(
             list.reduce((sum, entry) => sum + entry.hours, 0),
           )}, from ${shortDate(list[0].date)}`,
       ),
@@ -125,7 +125,7 @@ export function exportWarnings(input: ExportCheckInput): ExportCheck {
       lines: entries
         .filter((entry) => entry.enteredByHand && !entry.handEntryLookedInto && inFile(entry))
         .map(
-          (entry) => `${entry.employeeName} — ${shortDate(entry.date)}, ${hoursText(entry.hours)}`,
+          (entry) => `${entry.employeeName} - ${shortDate(entry.date)}, ${hoursText(entry.hours)}`,
         ),
     },
     corrected: {
@@ -134,7 +134,7 @@ export function exportWarnings(input: ExportCheckInput): ExportCheck {
         .filter((entry) => entry.correctedSinceExport && inFile(entry))
         .map(
           (entry) =>
-            `${entry.employeeName} — ${shortDate(entry.date)}, first sent ${shortDate(
+            `${entry.employeeName} - ${shortDate(entry.date)}, first sent ${shortDate(
               entry.correctedSinceExport!,
             )}; this file carries the corrected hours`,
         ),
@@ -144,7 +144,7 @@ export function exportWarnings(input: ExportCheckInput): ExportCheck {
       lines: input.overtime
         .filter((person) => person.overtimeHours > 0)
         .sort((a, b) => b.overtimeHours - a.overtimeHours)
-        .map((person) => `${person.employeeName} — ${hoursText(person.overtimeHours)} of overtime`),
+        .map((person) => `${person.employeeName} - ${hoursText(person.overtimeHours)} of overtime`),
     },
   };
 

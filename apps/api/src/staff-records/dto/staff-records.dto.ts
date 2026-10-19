@@ -10,7 +10,7 @@ import {
   Min,
 } from 'class-validator';
 
-/// Address and emergency contact, all optional — whatever is to hand. Blank
+/// Address and emergency contact, all optional - whatever is to hand. Blank
 /// clears a line.
 export class PersonalRecordDto {
   @IsOptional()

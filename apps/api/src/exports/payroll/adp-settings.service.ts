@@ -27,7 +27,7 @@ export interface AdpStatus {
   overtimeColumn: string | null;
   /// Plain sentences, in the order they are best done. Empty when ready.
   missing: string[];
-  /// Active staff with no ADP File #. Does not block an export on its own —
+  /// Active staff with no ADP File #. Does not block an export on its own -
   /// only if one of them has hours in it.
   staffWithoutFileNumber: string[];
   updatedAt: Date | null;
@@ -92,8 +92,8 @@ export class AdpSettingsService {
 
   /**
    * Saves what was sent. A pasted worksheet replaces the stored header and
-   * footer rows — its employee rows are dropped here, before anything is
-   * written — and, where the chosen columns no longer exist in it, the
+   * footer rows - its employee rows are dropped here, before anything is
+   * written - and, where the chosen columns no longer exist in it, the
    * choice is cleared or re-suggested rather than left pointing at nothing.
    */
   async update(dto: UpdateAdpSettingsDto, actorId: string) {
@@ -149,7 +149,7 @@ export class AdpSettingsService {
 
     await this.prisma.adpSettings.update({ where: { singleton: SINGLETON }, data });
     this.logger.log(
-      `ADP settings updated by ${actorId}${employeeRowsDropped === undefined ? '' : ` — worksheet replaced, ${employeeRowsDropped} employee rows dropped`}`,
+      `ADP settings updated by ${actorId}${employeeRowsDropped === undefined ? '' : ` - worksheet replaced, ${employeeRowsDropped} employee rows dropped`}`,
     );
     return { ...(await this.status()), employeeRowsDropped };
   }

@@ -14,10 +14,10 @@ export const HOURS_PER_SICK_DAY = 8;
 /**
  * Which requests draw down which allowance.
  *
- * Bereavement, unpaid and "other" are recorded but not deducted — they are not
+ * Bereavement, unpaid and "other" are recorded but not deducted - they are not
  * what the PTO and sick allowances are for.
  *
- * Since September 2026 a new request is only SICK or VACATION ("PTO") —
+ * Since September 2026 a new request is only SICK or VACATION ("PTO") -
  * Dominguez; the others stay for requests made before then.
  */
 export const TYPE_BUCKET: Record<PtoType, 'vacation' | 'sick' | null> = {
@@ -35,7 +35,7 @@ export interface AllowanceBalance {
   /// entitled + carriedOver.
   available: number;
   used: number;
-  /// Booked but not yet decided — shown so nobody spends the same day twice.
+  /// Booked but not yet decided - shown so nobody spends the same day twice.
   pending: number;
   remaining: number;
   /// Of `used`, days taken before Domi Staff, as a manager entered them.
@@ -104,8 +104,8 @@ export class PtoPolicyService {
   /// The first read is frequently two reads: the Time off screen asks for the
   /// policy and for a balance at the same moment, and a balance needs the
   /// policy too. A plain read-then-create meant both found nothing and both
-  /// inserted — twenty concurrent first reads produced eighteen policies in
-  /// testing — after which edits landed on one row and reads came back from
+  /// inserted - twenty concurrent first reads produced eighteen policies in
+  /// testing - after which edits landed on one row and reads came back from
   /// another.
   ///
   /// So the row is a database-enforced singleton, and the loser of the race
@@ -153,20 +153,20 @@ export class PtoPolicyService {
    * What an employee has left this policy year.
    *
    * Carry-over is worked out by walking back through previous years: last
-   * year's unused days, capped by the policy, become this year's carry-over —
+   * year's unused days, capped by the policy, become this year's carry-over -
    * and last year's own carry-over is worked out the same way. The walk starts
    * at the later of the hire date and the day they were added to the app: a
    * year before Domi Staff has no record of what was taken, so it is not
-   * counted as untouched (October 2026 — that gave everybody the full five
+   * counted as untouched (October 2026 - that gave everybody the full five
    * days). What really rolled over into that first year is the manager's to
    * enter.
    *
    * Two things a manager can add (the switch-over, September 2026): the
    * person's own yearly allowance, when it is not the practice's, and a
-   * starting point for a year — days already taken before Domi Staff, and
+   * starting point for a year - days already taken before Domi Staff, and
    * optionally what really carried into it. Both feed the walk as well.
    */
-  /// The balance for the policy year a day falls in — for a request's
+  /// The balance for the policy year a day falls in - for a request's
   /// first day, which may be next year's.
   async balanceOn(employeeId: string, day: Date): Promise<PtoBalance> {
     const policy = await this.get();
@@ -179,7 +179,7 @@ export class PtoPolicyService {
   }
 
   /// The balance, with the allowance and starting points it was worked out from
-  /// — the staff list shows those too, so it need not read them again.
+  /// - the staff list shows those too, so it need not read them again.
   private async balanceWithTerms(
     employeeId: string,
     policy: PtoPolicy,
@@ -210,7 +210,7 @@ export class PtoPolicyService {
     const { start, end } = this.yearBounds(policyYear, policy);
 
     // Carry-over is counted from when they were added to the app, or their
-    // hire date if that is later — nothing before was booked here.
+    // hire date if that is later - nothing before was booked here.
     const since =
       employee.hireDate && employee.hireDate > employee.createdAt
         ? employee.hireDate
@@ -357,7 +357,7 @@ export class PtoPolicyService {
 
   /**
    * Everybody still working here, with their balance this policy year and
-   * what a manager has set for them — the Time off screen's staff list.
+   * what a manager has set for them - the Time off screen's staff list.
    */
   async staffBalances(): Promise<StaffBalance[]> {
     const staff = await this.prisma.employee.findMany({
@@ -375,7 +375,7 @@ export class PtoPolicyService {
     return rows;
   }
 
-  /// One person's row of the above — for Adjust on their staff profile.
+  /// One person's row of the above - for Adjust on their staff profile.
   async staffBalanceFor(employeeId: string): Promise<StaffBalance> {
     const person = await this.prisma.employee.findUnique({
       where: { id: employeeId },
@@ -477,7 +477,7 @@ export class PtoPolicyService {
    * nothing to prorate from, so the whole year's allowance.
    *
    * Sick days (October 2026, Dominguez): never cut down for starting part-way
-   * — everybody is given the year's days — except hourly staff who started on
+   * - everybody is given the year's days - except hourly staff who started on
    * or after the practice's date for it, who **earn** them as they work: an
    * hour for every 30 hours worked, up to the year's days.
    */
@@ -586,7 +586,7 @@ export function earnedSickHours(hoursWorked: number): number {
 /**
  * Whether somebody earns sick time as they work rather than being given the
  * year's days: hourly, and started (hired, or added to the app when there is
- * no hire date) on or after the practice's date for it — "going forward, any
+ * no hire date) on or after the practice's date for it - "going forward, any
  * new staff that is hourly would get the accumulation" (Dominguez, October
  * 2026). No date set: nobody does.
  */
@@ -612,7 +612,7 @@ interface PersonalTerms {
   startingPoints: Map<number, StartingPointTerms>;
   /// Earns sick time as they work (see `accruesSick`).
   accruesSick: boolean;
-  /// Hours worked in each policy year — only read for somebody who accrues.
+  /// Hours worked in each policy year - only read for somebody who accrues.
   hoursByYear: Map<number, number>;
 }
 

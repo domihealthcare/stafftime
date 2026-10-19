@@ -16,7 +16,7 @@ const step = async (name, fn) => {
 };
 
 /**
- * Vendor payments (October 2026, Dominguez — in place of the "Payments to
+ * Vendor payments (October 2026, Dominguez - in place of the "Payments to
  * vendors" spreadsheet): admins add each vendor and every payment to them,
  * and move it from to pay, to sent, to completed. Managers and staff have
  * none of it.

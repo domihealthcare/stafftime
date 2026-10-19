@@ -45,13 +45,13 @@ const PERSON = {
 
 /**
  * Required reading and tasks (October 2026, Dominguez): a manager or admin
- * asks a set of people to confirm they have read something — a News post, a
- * Resources page, a few lines — or to do something and say so. The person is
+ * asks a set of people to confirm they have read something - a News post, a
+ * Resources page, a few lines - or to do something and say so. The person is
  * told when it is set and reminded (see `nudges.ts`) until they confirm; a
  * card on Home shows what is waiting. A nag, never a gate: nothing stops
  * anybody clocking in.
  *
- * What is kept is *that* somebody confirmed, and when — no document, no
+ * What is kept is *that* somebody confirmed, and when - no document, no
  * signature.
  */
 @Injectable()
@@ -75,17 +75,19 @@ export class RequirementsService {
       select: { ...SELECT, done: { where: { employeeId: actor.id }, select: { doneAt: true } } },
       orderBy: { createdAt: 'desc' },
     });
-    return rows
-      // Who else was asked is the managers' business, not shown here.
-      .map(({ done, ...row }) => ({
-        ...view({ ...row, targets: undefined }),
-        doneAt: done[0]?.doneAt ?? null,
-      }))
-      .sort(
-        (a, b) =>
-          Number(a.doneAt !== null) - Number(b.doneAt !== null) ||
-          (a.dueOn ?? '9999').localeCompare(b.dueOn ?? '9999'),
-      );
+    return (
+      rows
+        // Who else was asked is the managers' business, not shown here.
+        .map(({ done, ...row }) => ({
+          ...view({ ...row, targets: undefined }),
+          doneAt: done[0]?.doneAt ?? null,
+        }))
+        .sort(
+          (a, b) =>
+            Number(a.doneAt !== null) - Number(b.doneAt !== null) ||
+            (a.dueOn ?? '9999').localeCompare(b.dueOn ?? '9999'),
+        )
+    );
   }
 
   /// "I've read it" / "Done". Once; saying it again changes nothing.
@@ -107,7 +109,7 @@ export class RequirementsService {
     return { done: true };
   }
 
-  /// How many are still waiting on this person — for the Home card's badge.
+  /// How many are still waiting on this person - for the Home card's badge.
   async waitingCount(employeeId: string): Promise<number> {
     const where = await this.whereFor(employeeId);
     if (!where) return 0;
@@ -156,7 +158,7 @@ export class RequirementsService {
     );
   }
 
-  /// Who has confirmed, and when, and who is still to — for one requirement.
+  /// Who has confirmed, and when, and who is still to - for one requirement.
   async progress(id: string) {
     const row = await this.require(id);
     const people = await this.prisma.employee.findMany({
@@ -241,7 +243,7 @@ export class RequirementsService {
     return view(updated);
   }
 
-  /// Stop asking — or ask again. What was confirmed stays.
+  /// Stop asking - or ask again. What was confirmed stays.
   async setClosed(id: string, closed: boolean, actor: AuthUser) {
     await this.require(id);
     await this.prisma.requirement.update({

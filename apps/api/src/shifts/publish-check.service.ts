@@ -51,7 +51,7 @@ const SHIFT_SELECT = {
 } as const;
 
 /**
- * Reads what bears on a set of drafts before they are published — see
+ * Reads what bears on a set of drafts before they are published - see
  * `publish-check.ts` for what is said and why. Only reads; nothing is stored
  * and nobody is told.
  */

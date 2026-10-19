@@ -2,12 +2,12 @@ import { CredentialReminderStage } from '@prisma/client';
 
 /**
  * Reminders to the person whose license or certificate runs out (October 2026,
- * Dominguez — making the app smarter). Managers were already told, in the
+ * Dominguez - making the app smarter). Managers were already told, in the
  * nightly email and on the Licenses banner; now the holder is too, so they can
  * renew before anybody has to chase them.
  *
  * Three moments, each said once for a given expiry date: **60 days** to go,
- * **30 days** to go, and **lapsed** (up to 30 days after — a card that ran out
+ * **30 days** to go, and **lapsed** (up to 30 days after - a card that ran out
  * long ago and was never archived is the managers' list's business, not a
  * surprise message). Only the most pressing stage that applies is sent: a
  * license first seen 10 days out gets the 30-day reminder, not both.
@@ -60,7 +60,7 @@ export function stageFor(daysLeft: number): CredentialReminderStage | null {
 
 /// A renewal recorded beside the old card: the same person, the same kind of
 /// license, running longer. The old one is not
-/// worth a reminder — the same rule the Licenses screen uses for standing.
+/// worth a reminder - the same rule the Licenses screen uses for standing.
 function supersededBy(credential: ReminderCredential, all: ReminderCredential[]): boolean {
   const key = sameKindKey(credential);
   return all.some(

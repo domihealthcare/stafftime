@@ -35,7 +35,7 @@ let page = await newPage();
 
 await step('an unauthenticated visit shows the sign-in screen, not the app', async () => {
   await page.getByRole('button', { name: 'Sign in' }).waitFor({ timeout: 10000 });
-  // Check for the app's own chrome, not loose text — the sign-in subtitle
+  // Check for the app's own chrome, not loose text - the sign-in subtitle
   // legitimately contains the words "clock in".
   for (const name of ['Timesheet', 'Schedule']) {
     if (await page.getByRole('link', { name }).count() > 0)
@@ -171,7 +171,7 @@ await step('an address working through a list of accounts gets throttled', async
   const spray = await fresh.newPage();
   await spray.goto(`${BASE}/`, { waitUntil: 'networkidle' });
 
-  // Ten different addresses, one guess each — far fewer attempts than the
+  // Ten different addresses, one guess each - far fewer attempts than the
   // per-account lockout allows, and a shape account lockout cannot see.
   for (let i = 1; i <= 10; i += 1) {
     await spray.getByLabel('Email').fill(`person${i}@domihealthcare.com`);

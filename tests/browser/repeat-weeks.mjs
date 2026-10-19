@@ -23,7 +23,7 @@ const step = async (name, fn) => {
 /**
  * Which weeks a repeating shift is on (Dominguez, October 2026: "repeat
  * shifts on like 1st Saturday of the month"): every week, every 2–4 weeks,
- * or certain weeks of the month — from Repeating shifts, the ＋ on the rota,
+ * or certain weeks of the month - from Repeating shifts, the ＋ on the rota,
  * and a regular shift's Edit.
  */
 async function signIn(email, viewport = { width: 1280, height: 1100 }) {
@@ -163,7 +163,7 @@ await step('editing it to the last Saturday rewrites the shifts', async () => {
 await step('their usual week leaves it alone: Saturday is not one of their days', async () => {
   const card = page.getByTestId('standing-shifts-card');
   await card.getByRole('button', { name: 'Their week…' }).click();
-  // Saturday is off: "Saturday — off".
+  // Saturday is off: "Saturday - off".
   const saturday = page.getByTestId('week-day-6').getByRole('checkbox');
   await saturday.waitFor({ timeout: 10000 });
   if (await saturday.isChecked()) throw new Error('Saturday shows as a usual-week day');

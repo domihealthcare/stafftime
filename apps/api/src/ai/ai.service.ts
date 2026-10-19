@@ -13,9 +13,9 @@ import { PrismaService } from '../prisma/prisma.service';
 /**
  * The one door to Claude (Anthropic) for the whole app (October 2026,
  * Dominguez: staff names and schedules may go to an outside AI service,
- * patient details never). Ask Domi Staff and the writing helpers — a News
+ * patient details never). Ask Domi Staff and the writing helpers - a News
  * post drafted from notes, a post in Spanish, a booking read from a pasted
- * message, wording for declining time off — all go through here, so there is
+ * message, wording for declining time off - all go through here, so there is
  * one key, one model and one daily allowance.
  *
  * - **Off until `ANTHROPIC_API_KEY` is set** (docs/ask-domi-staff-setup.md).
@@ -31,7 +31,7 @@ export const DAILY_AI_USES = 40;
 export const REQUEST_DEFAULTS = {
   model: MODEL,
   // Thinking stays on (it cannot be turned off on this model); effort keeps
-  // it light — these are short, everyday jobs.
+  // it light - these are short, everyday jobs.
   output_config: { effort: 'low' as const },
   // If a safety classifier declines, the API retries on a model that does
   // not, inside the same call.
@@ -101,7 +101,7 @@ export class AiService {
         ...REQUEST_DEFAULTS.output_config,
         format: { type: 'json_schema', schema: request.schema },
       },
-      system: request.system,
+      system: `${request.system}\n\n${NO_EM_DASHES}`,
       messages: [{ role: 'user', content: request.prompt }],
     });
     if (response.stop_reason === 'refusal') return null;
@@ -109,7 +109,7 @@ export class AiService {
       .flatMap((block) => (block.type === 'text' ? [block.text] : []))
       .join('');
     try {
-      return JSON.parse(text) as T;
+      return JSON.parse(plainDashes(text)) as T;
     } catch {
       // Cut short (max_tokens) or otherwise not the promised shape.
       this.logger.warn(`A writing request came back unreadable (${response.stop_reason})`);
@@ -118,7 +118,7 @@ export class AiService {
   }
 }
 
-/// A JSON schema object of required string fields — what every helper asks
+/// A JSON schema object of required string fields - what every helper asks
 /// for. Structured outputs want every property listed and nothing else.
 export function stringFields(
   fields: Record<string, string>,
@@ -135,4 +135,12 @@ export function stringFields(
     required: Object.keys(properties),
     additionalProperties: false,
   };
+}
+
+/// The portal does not use em dashes (October 2026, Dominguez), so Claude is
+/// told not to, and anything it still writes with one gets a plain dash.
+export const NO_EM_DASHES = 'Never use em dashes. Use a plain hyphen, a comma or a new sentence.';
+
+export function plainDashes(text: string): string {
+  return text.replace(/[ \t]*\u2014[ \t]*/g, ' - ');
 }

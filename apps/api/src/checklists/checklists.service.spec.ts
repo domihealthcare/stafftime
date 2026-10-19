@@ -12,7 +12,7 @@ const day = (value: string) => new Date(`${value}T00:00:00.000Z`);
 const TEMPLATE = {
   id: 'tpl-1',
   kind: ChecklistKind.ONBOARDING,
-  name: 'New hire — Domi Healthcare',
+  name: 'New hire - Domi Healthcare',
   archivedAt: null,
   tasks: [
     {
@@ -130,7 +130,7 @@ function build(
   };
 }
 
-describe('ChecklistsService — starting one', () => {
+describe('ChecklistsService - starting one', () => {
   it('copies the template tasks rather than pointing at them', async () => {
     const { service, created } = build();
     await service.start({ employeeId: 'emp-1', kind: ChecklistKind.ONBOARDING }, admin);
@@ -142,7 +142,7 @@ describe('ChecklistsService — starting one', () => {
       title: 'Form I-9 completed and verified',
     });
     // The name is copied too, so a renamed template does not rename history.
-    expect(created[0].name).toBe('New hire — Domi Healthcare');
+    expect(created[0].name).toBe('New hire - Domi Healthcare');
     expect(created[0].templateId).toBe('tpl-1');
   });
 
@@ -262,7 +262,7 @@ describe('ChecklistsService — starting one', () => {
   });
 });
 
-describe('ChecklistsService — ticking things off', () => {
+describe('ChecklistsService - ticking things off', () => {
   it('ticks a task off, recording who did it and when', async () => {
     const { service, prisma } = build({
       task: {
@@ -359,7 +359,7 @@ describe('ChecklistsService — ticking things off', () => {
   });
 });
 
-describe('ChecklistsService — who may do what', () => {
+describe('ChecklistsService - who may do what', () => {
   const ownEmployeeTask = {
     id: 'task-1',
     checklistId: 'chk-1',
@@ -430,7 +430,7 @@ describe('ChecklistsService — who may do what', () => {
   });
 });
 
-describe('ChecklistsService — deleting one', () => {
+describe('ChecklistsService - deleting one', () => {
   it('deletes the checklist', async () => {
     const { service, prisma } = build({ checklist: { id: 'chk-1' } });
 
@@ -444,7 +444,7 @@ describe('ChecklistsService — deleting one', () => {
   });
 });
 
-describe('ChecklistsService — what the screens get told', () => {
+describe('ChecklistsService - what the screens get told', () => {
   function checklistWith(tasks: Record<string, unknown>[]) {
     return {
       id: 'chk-1',

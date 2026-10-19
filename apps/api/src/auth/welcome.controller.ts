@@ -7,8 +7,8 @@ import { PasswordResetService } from './password-reset.service';
 
 /**
  * Welcome emails, sent from the Staff screen. They live beside password
- * resets because they are the same thing underneath — a one-time link to
- * choose a password — only longer-lived and with the day-one help attached.
+ * resets because they are the same thing underneath - a one-time link to
+ * choose a password - only longer-lived and with the day-one help attached.
  */
 @Controller('employees')
 export class WelcomeController {

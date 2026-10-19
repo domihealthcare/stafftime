@@ -5,11 +5,11 @@ import { PRACTICE_ZONE } from '../common/util/zoned-time.util';
  * The nightly round-up, as an email somebody wants to open (Dominguez, October
  * 2026: "it's very bland").
  *
- * What goes in it is still `AttentionService`'s — this is only how it reads:
+ * What goes in it is still `AttentionService`'s - this is only how it reads:
  *
  * - **A subject that says what is in it**, most urgent first ("2 licenses have
  *   lapsed, next week isn't published and 3 more"), so the inbox alone says
- *   whether it can wait — the same "What needs a look today" every morning was
+ *   whether it can wait - the same "What needs a look today" every morning was
  *   easy to stop seeing.
  * - **Sorted by how soon**: *Sort out today* (broken now, or a deadline that
  *   has arrived), *Coming up* (a date ahead), *When you have a minute*
@@ -34,7 +34,7 @@ export interface DigestDetails {
   firstName: string;
   contents: DigestContents;
   appUrl: string;
-  /// When it is being sent — for the date and "Good morning". Practice time.
+  /// When it is being sent - for the date and "Good morning". Practice time.
   now?: Date;
   /// A test deployment says so in the subject; this is only for the heading.
   isTest?: boolean;
@@ -72,7 +72,7 @@ const SECTIONS: SectionSpec[] = [
     heading: 'Payroll is due',
     path: '/timesheet',
     screen: 'Timesheet',
-    subject: () => 'Payroll is due — hours to sort out',
+    subject: () => 'Payroll is due - hours to sort out',
   },
   {
     key: 'correctionsAsked',
@@ -239,7 +239,7 @@ const SECTIONS: SectionSpec[] = [
   {
     key: 'handEntries',
     tier: 'later',
-    heading: 'Hours entered by hand — find out why',
+    heading: 'Hours entered by hand - find out why',
     path: '/timesheet',
     screen: 'Timesheet',
     subject: (n) => `${n} hand ${plural(n, 'entry', 'entries')} to look into`,
@@ -328,7 +328,7 @@ function subjectFor(filled: Filled[], counts: number[]): string {
   return `${counts[index]} ${lead}: ${named.join(', ')}`;
 }
 
-/// "Good morning" at 5am, when the job runs — but it can be run by hand.
+/// "Good morning" at 5am, when the job runs - but it can be run by hand.
 function greeting(now: Date): string {
   const hour = Number(
     new Intl.DateTimeFormat('en-US', {
@@ -351,7 +351,7 @@ function dateLine(now: Date): string {
   });
 }
 
-/// "3 to sort out today · 5 coming up" — the tiers with something in them.
+/// "3 to sort out today · 5 coming up" - the tiers with something in them.
 function summary(counts: number[]): string {
   const parts = TIERS.flatMap(({ lead }, index) =>
     counts[index] > 0 ? [`${counts[index]} ${lead}`] : [],
@@ -391,7 +391,7 @@ function text(
   body.push(
     '',
     '',
-    '—',
+    '-',
     'Domi Staff',
     appUrl,
     '',
@@ -404,11 +404,11 @@ function text(
 const escape = (value: string) =>
   value.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 
-/// Every line is "Who — what"; the who is set in bold so a list can be scanned.
+/// Every line is "Who - what"; the who is set in bold so a list can be scanned.
 function lineHtml(line: string): string {
-  const split = line.indexOf(' — ');
+  const split = line.indexOf(' - ');
   if (split < 0) return escape(line);
-  return `<strong>${escape(line.slice(0, split))}</strong> — ${escape(line.slice(split + 3))}`;
+  return `<strong>${escape(line.slice(0, split))}</strong> - ${escape(line.slice(split + 3))}`;
 }
 
 const FONT = "-apple-system,'Segoe UI',Helvetica,Arial,sans-serif";

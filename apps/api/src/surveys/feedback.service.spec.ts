@@ -9,7 +9,7 @@ describe('FeedbackService', () => {
   // 11:40pm in New Jersey is already tomorrow in UTC.
   const lateEvening = new Date('2026-10-02T03:40:00Z');
 
-  it('keeps the message, the kind picked and the day — nothing else', async () => {
+  it('keeps the message, the kind picked and the day - nothing else', async () => {
     const { service, prisma } = build();
     await service.post('  A shout-out for Maria at the front desk  ', 'SHOUT_OUT', lateEvening);
 

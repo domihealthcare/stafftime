@@ -16,7 +16,7 @@ const step = async (name, fn) => {
 
 /**
  * The practice calendar (October 2026, Dominguez: "a calendar that staff can
- * reference for multiple things — events, diagnostic schedule,
+ * reference for multiple things - events, diagnostic schedule,
  * holidays/office closures"), under Schedule → Calendar.
  *
  * Diagnostics are at an office and for everyone; a holiday names a day and
@@ -26,14 +26,14 @@ const step = async (name, fn) => {
  *
  * Rep lunches (October 2026) pick their rep from Manage → Reps: staff see the
  * rep, company, medication and food; the phone, status and notes stay with
- * managers — but the front desk sees the cell (a job role setting). A rep
+ * managers - but the front desk sees the cell (a job role setting). A rep
  * lunch is told to the staff of its office only. A rep marked "Don't book"
  * is warned about, never refused.
  *
  * Seeded people: Frankie is Front Desk and MA at North Bergen, Max an MA at
  * West New York.
  *
- * Built in March 2027 — far enough ahead to be the future, near enough to be
+ * Built in March 2027 - far enough ahead to be the future, near enough to be
  * inside the feed's year.
  */
 async function signIn(email, viewport = { width: 1280, height: 1000 }) {
@@ -214,7 +214,7 @@ await step('a rep lunch picks its rep, warns about a "Don’t book", and is name
   await manager.getByRole('menuitem', { name: 'Rep lunch' }).click();
   const form = manager.getByRole('form', { name: 'New rep lunch' });
   if (await form.getByLabel('What is it?').count()) throw new Error('a rep lunch asks for a title');
-  await form.getByLabel('Which rep?').selectOption({ label: 'Jane Smith — Novo Nordisk (don’t book)' });
+  await form.getByLabel('Which rep?').selectOption({ label: 'Jane Smith - Novo Nordisk (don’t book)' });
   await form.getByTestId('chosen-rep').getByText('Late twice').waitFor();
   await form.getByLabel('Which office?').selectOption({ label: 'North Bergen' });
   await form.getByLabel('Starts').fill('2027-03-09T12:30');
@@ -233,7 +233,7 @@ await step('a rep lunch picks its rep, warns about a "Don’t book", and is name
   await manager.getByRole('button', { name: '+ Add', exact: true }).click();
   await manager.getByRole('menuitem', { name: 'Rep lunch' }).click();
   const second = manager.getByRole('form', { name: 'New rep lunch' });
-  await second.getByLabel('Which rep?').selectOption({ label: 'Pat Lee — Pfizer' });
+  await second.getByLabel('Which rep?').selectOption({ label: 'Pat Lee - Pfizer' });
   await second.getByLabel('Which office?').selectOption({ label: 'West New York' });
   await second.getByLabel('Starts').fill('2027-03-23T12:00');
   await second.getByLabel('Ends').fill('2027-03-23T13:00');
@@ -257,7 +257,7 @@ await step('staff see all of it, and cannot add', async () => {
   await dialog.getByRole('button', { name: 'Close' }).click();
 });
 
-await step('the front desk sees a rep lunch’s rep, food and cell — not the status or notes', async () => {
+await step('the front desk sees a rep lunch’s rep, food and cell - not the status or notes', async () => {
   await day(frankie, '2027-03-09').getByTestId('rep_lunch-chip').click();
   const dialog = frankie.getByRole('dialog', { name: 'Rep lunch: Jane Smith' });
   await dialog.waitFor({ timeout: 10000 });
@@ -308,7 +308,7 @@ await step('the cell is a job role setting, on for Front Desk alone', async () =
   if (on.join() !== 'Front Desk') throw new Error(`sees the cell: ${on.join(', ')}`);
 });
 
-await step('Show: All, one kind, several, and All again — and an office narrows', async () => {
+await step('Show: All, one kind, several, and All again - and an office narrows', async () => {
   const show = frankie.getByRole('group', { name: 'Show on the calendar' });
   const pressed = async (name) => (await show.getByRole('button', { name }).getAttribute('aria-pressed')) === 'true';
   if (!(await pressed(/^All/))) throw new Error('does not start on All');
@@ -357,11 +357,11 @@ await step('it all reaches the phone through the calendar feed', async () => {
     })
   ).replace(/\r\n /g, '');
   for (const expected of [
-    'SUMMARY:US + ECHO — West New York',
-    'SUMMARY:US + ECHO — North Bergen',
+    'SUMMARY:US + ECHO - West New York',
+    'SUMMARY:US + ECHO - North Bergen',
     'SUMMARY:St Patrick’s Day',
     'UID:payday-2027-03-12@staff.domihealthcare.com',
-    'SUMMARY:Rep lunch: Jane Smith (Novo Nordisk) — North Bergen',
+    'SUMMARY:Rep lunch: Jane Smith (Novo Nordisk) - North Bergen',
     'Medication: Ozempic',
   ]) {
     if (!feed.includes(expected)) throw new Error(`the feed has no "${expected}"`);
@@ -417,7 +417,7 @@ await step('separate calendars: one address per kind, each carrying only its own
   }, address);
   const unfold = (text) => text.replace(/\r\n /g, '');
   const summaries = (text) => [...unfold(text).matchAll(/^SUMMARY:(.*)$/gm)].map((m) => m[1].trim());
-  if (!unfold(feeds.lunches).includes('X-WR-CALNAME:Rep lunches — Domi Staff')) throw new Error('the rep lunches calendar is not named');
+  if (!unfold(feeds.lunches).includes('X-WR-CALNAME:Rep lunches - Domi Staff')) throw new Error('the rep lunches calendar is not named');
   if (!summaries(feeds.lunches).every((s) => s.startsWith('Rep lunch:')) || summaries(feeds.lunches).length !== 2) throw new Error(`rep lunches feed: ${summaries(feeds.lunches).join(' | ')}`);
   if (!summaries(feeds.diagnostics).every((s) => s.startsWith('US + ECHO'))) throw new Error(`diagnostics feed: ${summaries(feeds.diagnostics).join(' | ')}`);
   if (!summaries(feeds.pay).length || !summaries(feeds.pay).every((s) => s === 'Pay day')) throw new Error('pay days feed');

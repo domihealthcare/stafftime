@@ -15,7 +15,7 @@ interface Open {
 }
 
 /**
- * A right-click menu for a place on the page — a day on the rota or in the
+ * A right-click menu for a place on the page - a day on the rota or in the
  * month (October 2026, Dominguez: "is there a way a right click mechanism can
  * be used for adding shifts / time off / events"). `open` goes on an
  * element's `onContextMenu`; render `menu` once on the page. Escape, a click
@@ -52,7 +52,7 @@ export function useContextMenu(): {
       if (!ref.current?.contains(event.target as Node)) close();
     };
     // A scroll in the first moment is the page settling (a notice going, the
-    // rota reloading), not the person moving on — it used to close the menu
+    // rota reloading), not the person moving on - it used to close the menu
     // as it opened.
     const openedAt = Date.now();
     const onScroll = () => Date.now() - openedAt > 300 && close();

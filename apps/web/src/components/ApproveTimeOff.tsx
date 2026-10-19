@@ -7,7 +7,7 @@ import { Modal } from './Modal';
 import { buttonClass } from './ui';
 
 /**
- * Approving time off that lands on shifts (October 2026, Dominguez — making
+ * Approving time off that lands on shifts (October 2026, Dominguez - making
  * the app smarter). Approving used to leave the person's shifts on the rota
  * for somebody to notice. Now, when the request covers shifts still to come,
  * Approve asks what to do with them, in one go: take them off the rota, leave

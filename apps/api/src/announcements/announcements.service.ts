@@ -78,7 +78,7 @@ function nameOf(person: Pick<Person, 'firstName' | 'lastName' | 'preferredName'>
 
 /// A post as the screen wants it, for one reader: who liked it and whether
 /// they did, its comments, and its poll with everybody's picks by name (votes
-/// are named on purpose — Dominguez, October 2026) and the reader's own.
+/// are named on purpose - Dominguez, October 2026) and the reader's own.
 function present(row: AnnouncementRow, viewerId: string) {
   // Tolerant of a bare row: tests and older callers may leave these out.
   const { likes = [], comments = [], poll = null } = row;
@@ -119,7 +119,7 @@ function present(row: AnnouncementRow, viewerId: string) {
 }
 
 /// What was typed, tidied: trimmed, blanks dropped, and two choices at least,
-/// none repeated — "Friday" twice would split the vote for nothing.
+/// none repeated - "Friday" twice would split the vote for nothing.
 function cleanPoll(dto: PollDto) {
   const options = dto.options.map((option) => option.trim()).filter((option) => option !== '');
   const seen = new Set(options.map((option) => option.toLowerCase()));
@@ -145,7 +145,7 @@ function cleanPoll(dto: PollDto) {
  * the flag from post to post and never simply clearing it.
  *
  * Around the posts (October 2026, Dominguez): anybody signed in can like one,
- * comment under it, and vote in its poll if it has one — all under their own
+ * comment under it, and vote in its poll if it has one - all under their own
  * name, shown to everybody. Only admins write posts and polls.
  */
 @Injectable()
@@ -158,11 +158,11 @@ export class AnnouncementsService {
     private readonly ai: AiService,
   ) {}
 
-  /// Newest first, the primary among them where it falls — the News page reads
+  /// Newest first, the primary among them where it falls - the News page reads
   /// like a blog, and the home screen shows the primary separately.
   ///
   /// With `latest`, only that many of the newest, plus the primary wherever it
-  /// falls — all the home screen shows. Every post carries its likes, comments
+  /// falls - all the home screen shows. Every post carries its likes, comments
   /// and votes, so reading the whole history to show four would get slower with
   /// every post ever written.
   async findAll(viewer: AuthUser, latest?: number) {
@@ -358,7 +358,7 @@ export class AnnouncementsService {
           ...(dto.showOnTimeClock !== undefined ? { showOnTimeClock: dto.showOnTimeClock } : {}),
           ...(wordsChanged ? { editedAt: new Date() } : {}),
           // The Spanish as the editor sent it; or, when the English changed
-          // and the Spanish was not redone with it, none — it would say the
+          // and the Spanish was not redone with it, none - it would say the
           // old thing. It is translated again the next time it is asked for.
           ...(dto.titleEs !== undefined
             ? spanishFrom(dto)
@@ -465,7 +465,7 @@ export class AnnouncementsService {
   // ------------------------------------------------------------- comments
 
   /// Whoever wrote the post and everybody who has commented on it before are
-  /// told on the bell (Dominguez, October 2026) — not the commenter.
+  /// told on the bell (Dominguez, October 2026) - not the commenter.
   async addComment(id: string, text: string, actor: AuthUser) {
     const post = await this.findRow(id);
     const body = this.commentText(text);
@@ -504,7 +504,7 @@ export class AnnouncementsService {
     return this.findOne(id, actor);
   }
 
-  /// Only the writer changes a comment's words — nobody else may put words
+  /// Only the writer changes a comment's words - nobody else may put words
   /// under their name.
   async editComment(id: string, commentId: string, text: string, actor: AuthUser) {
     const comment = await this.findComment(id, commentId);
@@ -609,7 +609,7 @@ export class AnnouncementsService {
 }
 
 /// Posting, editing and deleting take turns over which post is primary. Two
-/// admins at once could otherwise each read the old state — and leave no
+/// admins at once could otherwise each read the old state - and leave no
 /// primary at all, or both try to be it. Held until the transaction ends.
 async function lockPrimary(tx: Prisma.TransactionClient): Promise<void> {
   await tx.$executeRaw`SELECT pg_advisory_xact_lock(${PRIMARY_LOCK}::bigint)`;

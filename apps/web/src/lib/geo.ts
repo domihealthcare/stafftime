@@ -8,7 +8,7 @@ export interface Coordinates {
 const toRadians = (degrees: number) => (degrees * Math.PI) / 180;
 
 /// Great-circle distance in metres. Used only to show an admin how far a newly
-/// captured position is from the saved one — the authoritative check is the
+/// captured position is from the saved one - the authoritative check is the
 /// server's.
 export function distanceInMeters(from: Coordinates, to: Coordinates): number {
   if (!Number.isFinite(from.latitude) || !Number.isFinite(from.longitude)) {

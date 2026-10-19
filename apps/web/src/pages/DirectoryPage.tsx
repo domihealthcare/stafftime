@@ -134,7 +134,7 @@ export function DirectoryPage() {
 
       <section aria-label={t('In now')} className="mb-6 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
         {locations.map((place) => {
-          // At the office — somebody on a work-from-home shift is listed apart.
+          // At the office - somebody on a work-from-home shift is listed apart.
           const here = people.filter(
             (person) => person.onNow?.location.id === place.id && !person.onNow.remote,
           );

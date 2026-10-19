@@ -33,8 +33,8 @@ import {
 /// Reading needs a session and nothing more; writing posts is admin only.
 /// Liking, commenting and voting are for anybody signed in, under their own
 /// name. The one exception is `public`: the posts an admin ticked to show
-/// publicly, title and words only, for the sign-in page — which anyone on the
-/// internet can open — and the front-desk time clock.
+/// publicly, title and words only, for the sign-in page - which anyone on the
+/// internet can open - and the front-desk time clock.
 @Controller('announcements')
 export class AnnouncementsController {
   constructor(
@@ -93,7 +93,7 @@ export class AnnouncementsController {
     return this.announcements.translate({ title: dto.title, body: dto.body }, user);
   }
 
-  /// A post in Spanish, for anybody who switched News to Español —
+  /// A post in Spanish, for anybody who switched News to Español -
   /// translated the first time it is asked for, then kept.
   @Get(':id/spanish')
   async spanish(@Param('id', ParseUUIDPipe) id: string, @CurrentUser() user: AuthUser) {
@@ -135,7 +135,7 @@ export class AnnouncementsController {
     return this.announcements.addComment(id, dto.body, user);
   }
 
-  /// Your own comments only — checked in the service.
+  /// Your own comments only - checked in the service.
   @Patch(':id/comments/:commentId')
   editComment(
     @Param('id', ParseUUIDPipe) id: string,
@@ -146,7 +146,7 @@ export class AnnouncementsController {
     return this.announcements.editComment(id, commentId, dto.body, user);
   }
 
-  /// Your own, or anybody's for a manager or admin — checked in the service.
+  /// Your own, or anybody's for a manager or admin - checked in the service.
   @Delete(':id/comments/:commentId')
   removeComment(
     @Param('id', ParseUUIDPipe) id: string,

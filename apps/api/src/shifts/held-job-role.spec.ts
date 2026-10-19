@@ -1,6 +1,6 @@
 import { heldJobRole } from './held-job-role';
 
-describe('heldJobRole — somebody’s shift is for one of their own job roles', () => {
+describe('heldJobRole - somebody’s shift is for one of their own job roles', () => {
   const FRONT_DESK = { id: 'fd', name: 'Front Desk' };
   const MA = { id: 'ma', name: 'Medical Assistant' };
   const PROVIDER = { id: 'pr', name: 'Provider' };
@@ -42,7 +42,7 @@ describe('heldJobRole — somebody’s shift is for one of their own job roles',
     await expect(heldJobRole(prisma([FRONT_DESK]), 'emp', undefined)).resolves.toBe('fd');
   });
 
-  it('with none asked for and several held, uses their main one — never "any"', async () => {
+  it('with none asked for and several held, uses their main one - never "any"', async () => {
     const db = prisma([FRONT_DESK, MA]);
     await expect(heldJobRole(db, 'emp', null)).resolves.toBe('fd');
     // Main first, then the practice's order: the database puts it at the top.

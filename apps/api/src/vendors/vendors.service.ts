@@ -24,10 +24,10 @@ const PAYMENT_SELECT = {
 type PaymentRow = Prisma.VendorPaymentGetPayload<{ select: typeof PAYMENT_SELECT }>;
 
 /**
- * Vendor payments (October 2026, Dominguez — in place of the "Payments to
+ * Vendor payments (October 2026, Dominguez - in place of the "Payments to
  * vendors" spreadsheet): each vendor or contractor, and every invoice, check
  * or cash payment to them, with whether it has gone out and cleared. Admins
- * only. Money and paperwork only — never a patient's name.
+ * only. Money and paperwork only - never a patient's name.
  */
 @Injectable()
 export class VendorsService {
@@ -130,7 +130,7 @@ export function paymentFields(dto: VendorPaymentInput) {
   const sentOn = dto.sentOn ? new Date(`${dto.sentOn}T00:00:00.000Z`) : null;
   const completedOn = dto.completedOn ? new Date(`${dto.completedOn}T00:00:00.000Z`) : null;
   if (dto.status === VendorPaymentStatus.COMPLETED && !completedOn) {
-    throw new BadRequestException('Say the day it was completed — received and deposited.');
+    throw new BadRequestException('Say the day it was completed - received and deposited.');
   }
   if (sentOn && completedOn && completedOn < sentOn) {
     throw new BadRequestException('It cannot be completed before it was sent.');

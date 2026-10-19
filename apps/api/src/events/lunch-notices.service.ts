@@ -27,11 +27,11 @@ export const LUNCH_NOTICE_FROM = '18:00';
  * lunch, so staff knows to bring their own lunch").
  *
  * Every evening, for each office open tomorrow, everybody on the rota there
- * tomorrow hears either "Rep lunch tomorrow" — who, when, catering or not — or
- * "No rep lunch tomorrow — bring your own lunch". On the bell. Only people
+ * tomorrow hears either "Rep lunch tomorrow" - who, when, catering or not - or
+ * "No rep lunch tomorrow - bring your own lunch". On the bell. Only people
  * with a published shift at that office that day, not from home (October
  * 2026, Dominguez: "why am I being notified of lunches of locations i am not
- * scheduled for?") — it used to go to everybody whose offices included it.
+ * scheduled for?") - it used to go to everybody whose offices included it.
  *
  * "Open tomorrow" is the rota's word: at least one published shift there that
  * is not from home, and the office not closed all day. So nobody is told to
@@ -156,7 +156,7 @@ export function workingThere(locationId: string, from: Date, to: Date): Prisma.S
   };
 }
 
-/// "12:30 PM — Jane Smith (Novo Nordisk), bringing catering".
+/// "12:30 PM - Jane Smith (Novo Nordisk), bringing catering".
 function lunchLine(lunch: {
   startsAt: Date;
   title: string;
@@ -176,5 +176,5 @@ function lunchLine(lunch: {
       : lunch.rep?.food === 'SELF_ORDER'
         ? ', the office orders'
         : '';
-  return `${time} — ${who}${food}`;
+  return `${time} - ${who}${food}`;
 }

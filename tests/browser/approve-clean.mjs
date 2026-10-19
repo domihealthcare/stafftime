@@ -20,7 +20,7 @@ const step = async (name, fn) => {
 };
 
 /**
- * Approve the clean hours (Dominguez, October 2026 — making the app smarter):
+ * Approve the clean hours (Dominguez, October 2026 - making the app smarter):
  * one button on the Timesheet approves every entry on screen with nothing
  * flagged, after asking; the flagged ones stay for a look one by one.
  *
@@ -62,7 +62,7 @@ function punch(date, { status = 'COMPLETED', late = false, midnight = false } = 
 }
 
 let lateId = '';
-await step('set-up: a week of Max’s — three clean days, one late, one midnight, one approved', async () => {
+await step('set-up: a week of Max’s - three clean days, one late, one midnight, one approved', async () => {
   sql(`delete from time_entries where "handEntryNote" = 'approve-clean-suite'`);
   for (const date of ['2025-03-03', '2025-03-04', '2025-03-05']) punch(date);
   lateId = punch('2025-03-06', { late: true });

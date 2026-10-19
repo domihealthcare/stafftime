@@ -179,7 +179,7 @@ describe('NotificationsService', () => {
     expect(inbox.notify).toHaveBeenCalledWith(['emp-frankie'], {
       kind: 'TIME_OFF_DECIDED',
       title: 'Your time off is approved',
-      body: 'Time off, Tue, Nov 3, 2026 to Sat, Nov 7, 2026 — Morgan Manager',
+      body: 'Time off, Tue, Nov 3, 2026 to Sat, Nov 7, 2026 - Morgan Manager',
       link: '/time-off',
     });
 
@@ -324,12 +324,12 @@ describe('NotificationsService', () => {
           'overtimeHeading',
         ].map((key) => [key, []]),
       ),
-      undecidedTimeOff: ['Frankie Front — Nov 3, 2026'],
+      undecidedTimeOff: ['Frankie Front - Nov 3, 2026'],
     } as never);
 
     const message = sent[0] as { subject: string; text: string; html?: string };
     expect(message.subject).toBe('[Test] 1 coming up: 1 time-off request to decide');
-    expect(message.text).toContain('Frankie Front — Nov 3, 2026');
+    expect(message.text).toContain('Frankie Front - Nov 3, 2026');
     expect(message.html).toContain('https://staff.domihealthcare.com/time-off');
   });
 

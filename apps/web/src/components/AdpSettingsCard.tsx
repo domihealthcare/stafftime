@@ -130,7 +130,7 @@ export function AdpSettingsCard({ isAdmin }: { isAdmin: boolean }) {
             className={`mt-1 w-28 uppercase ${input}`}
           />
           <p className="mt-1 text-xs text-slate-500">
-            ADP&rsquo;s code for the practice — the &ldquo;Co Code&rdquo; on every row of an ADP
+            ADP&rsquo;s code for the practice - the &ldquo;Co Code&rdquo; on every row of an ADP
             worksheet.
           </p>
         </div>

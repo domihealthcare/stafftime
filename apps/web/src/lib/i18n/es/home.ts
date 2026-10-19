@@ -1,4 +1,4 @@
-/// Spanish for the home screens — see ../index.ts and the glossary in ./common.ts.
+/// Spanish for the home screens - see ../index.ts and the glossary in ./common.ts.
 export const HOME: Record<string, string> = {
   // Home: the clock card
   'Good morning, {name}': 'Buenos días, {name}',
@@ -32,10 +32,10 @@ export const HOME: Record<string, string> = {
   'e.g. Covering at this office': 'p. ej., Estoy cubriendo en esta oficina',
   'Clock in from home?': '¿Marcar entrada desde casa?',
   'Clock in at {place}?': '¿Marcar entrada en {place}?',
-  'You can still clock in here — it will show on your timesheet, with your reason, so your manager can see why.':
-    'Aun así puedes marcar entrada aquí — se verá en tu hoja de horas, con tu motivo, para que tu gerente sepa por qué.',
-  'You can still clock in here — it will show on your timesheet, so your manager can see why.':
-    'Aun así puedes marcar entrada aquí — se verá en tu hoja de horas, para que tu gerente sepa por qué.',
+  'You can still clock in here - it will show on your timesheet, with your reason, so your manager can see why.':
+    'Aun así puedes marcar entrada aquí - se verá en tu hoja de horas, con tu motivo, para que tu gerente sepa por qué.',
+  'You can still clock in here - it will show on your timesheet, so your manager can see why.':
+    'Aun así puedes marcar entrada aquí - se verá en tu hoja de horas, para que tu gerente sepa por qué.',
   'Clock in from home': 'Marcar entrada desde casa',
   'Clock in at {place}': 'Marcar entrada en {place}',
   'Go back': 'Volver',
@@ -47,7 +47,7 @@ export const HOME: Record<string, string> = {
   // Home: the button and the line under it
   'Clock in': 'Marcar entrada',
   'Clock out': 'Marcar salida',
-  'Clock in — working from home': 'Marcar entrada — trabajo desde casa',
+  'Clock in - working from home': 'Marcar entrada - trabajo desde casa',
   'Checking your location…': 'Revisando tu ubicación…',
   'Working from home: no location is asked for or recorded.':
     'Trabajo desde casa: no se pide ni se guarda tu ubicación.',
@@ -127,12 +127,12 @@ export const HOME: Record<string, string> = {
   '✓ You marked it done {date}': '✓ Lo marcaste como hecho el {date}',
   '✓ You confirmed you read this {date}': '✓ Confirmaste que leíste esto el {date}',
   'Please confirm you have read this.': 'Por favor confirma que leíste esto.',
-  'Please confirm you have read this — {due}.': 'Por favor confirma que leíste esto — {due}.',
+  'Please confirm you have read this - {due}.': 'Por favor confirma que leíste esto - {due}.',
 
   // Closing checklist
   'Before you clock out': 'Antes de marcar salida',
-  '{roles} closing checklist. Anything you leave unticked goes to a manager — you can always clock out.':
-    'Lista de cierre de {roles}. Lo que dejes sin marcar se le pasa a un gerente — siempre puedes marcar salida.',
+  '{roles} closing checklist. Anything you leave unticked goes to a manager - you can always clock out.':
+    'Lista de cierre de {roles}. Lo que dejes sin marcar se le pasa a un gerente - siempre puedes marcar salida.',
   and: 'y',
   'Which desk did you work today?': '¿En qué escritorio trabajaste hoy?',
   Remember: 'Recuerda',
@@ -155,24 +155,24 @@ export const HOME: Record<string, string> = {
   'What keeps going wrong, and where?': '¿Qué sigue fallando, y dónde?',
   'Who went above and beyond, and what did they do?': '¿Quién se esforzó de más, y qué hizo?',
   'What have you been wondering about?': '¿Qué te has estado preguntando?',
-  'Truly anonymous — how?': 'De verdad anónimo — ¿cómo?',
+  'Truly anonymous - how?': 'De verdad anónimo - ¿cómo?',
   '{n} waiting to be read →': '{n} sin leer →',
-  'Anonymous — no name and no time are kept, only the day it arrives.':
-    'Anónimo — no se guarda ningún nombre ni hora, solo el día en que llega.',
+  'Anonymous - no name and no time are kept, only the day it arrives.':
+    'Anónimo - no se guarda ningún nombre ni hora, solo el día en que llega.',
   'Your name is not saved with it.': 'Tu nombre no se guarda con la nota.',
   'The note is not linked to you or your account in any way.':
     'La nota no está vinculada a ti ni a tu cuenta de ninguna manera.',
   'No time is kept': 'No se guarda la hora',
-  '— only the day it arrived, so nobody can match it to who was on a break or at the desk.':
-    '— solo el día en que llegó, así que nadie puede relacionarla con quién estaba en su descanso o en el escritorio.',
+  ' - only the day it arrived, so nobody can match it to who was on a break or at the desk.':
+    ' - solo el día en que llegó, así que nadie puede relacionarla con quién estaba en su descanso o en el escritorio.',
   'Nobody can find out who wrote it': 'Nadie puede saber quién la escribió',
-  '— not managers, not admins. There is no screen, report or export that could show it, because the app never kept it.':
-    '— ni los gerentes ni los administradores. No hay pantalla, informe ni exportación que pueda mostrarlo, porque la app nunca lo guardó.',
+  ' - not managers, not admins. There is no screen, report or export that could show it, because the app never kept it.':
+    ' - ni los gerentes ni los administradores. No hay pantalla, informe ni exportación que pueda mostrarlo, porque la app nunca lo guardó.',
   'The managers’ morning email only says': 'El correo de la mañana a los gerentes solo dice',
   that: 'que',
   'something is waiting, never what it says.': 'hay algo esperando, nunca lo que dice.',
-  'You have to be signed in to send one, so the box is not open to the whole internet — but who you are is dropped as soon as the note is in.':
-    'Tienes que haber iniciado sesión para enviar una, para que el buzón no esté abierto a todo internet — pero quién eres se descarta en cuanto la nota entra.',
+  'You have to be signed in to send one, so the box is not open to the whole internet - but who you are is dropped as soon as the note is in.':
+    'Tienes que haber iniciado sesión para enviar una, para que el buzón no esté abierto a todo internet - pero quién eres se descarta en cuanto la nota entra.',
   'The one thing the app cannot hide is what you write: a very specific detail can still give you away.':
     'Lo único que la app no puede ocultar es lo que escribes: un detalle muy específico todavía podría delatarte.',
   'Could not send that.': 'No se pudo enviar.',

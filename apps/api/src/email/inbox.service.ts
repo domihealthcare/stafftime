@@ -23,14 +23,14 @@ export interface NewNotification {
 /**
  * The bell in the header: things the app wants one person to know.
  *
- * Written alongside the emails the app already sends — the same moments, the
- * same words — plus a few that are worth seeing in the app but not worth an
+ * Written alongside the emails the app already sends - the same moments, the
+ * same words - plus a few that are worth seeing in the app but not worth an
  * email (a new post, a survey to answer). Unlike the email, this works whether
  * or not an email provider is configured.
  *
  * Like the email, nothing fails because of it: a time-off approval that
  * errored because a notification row could not be written would be the worse
- * bug. It is awaited all the same — see `notify`.
+ * bug. It is awaited all the same - see `notify`.
  */
 @Injectable()
 export class InboxService {

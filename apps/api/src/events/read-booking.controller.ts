@@ -16,7 +16,7 @@ export class ReadBookingDto {
 }
 
 /// "Fill this in from a message": a pasted booking read into the calendar's
-/// form (AI). Saves nothing — so it sits apart from the events controller,
+/// form (AI). Saves nothing - so it sits apart from the events controller,
 /// whose saves set off a round of calendar invites.
 @Controller('events/read-booking')
 export class ReadBookingController {

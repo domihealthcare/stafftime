@@ -9,7 +9,7 @@ class RunningLateDto {
   minutes!: number;
 }
 
-/// "Running late" — somebody's own shift, from Home.
+/// "Running late" - somebody's own shift, from Home.
 @Controller('shifts')
 export class RunningLateController {
   constructor(private readonly late: RunningLateService) {}

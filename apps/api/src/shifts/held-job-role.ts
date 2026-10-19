@@ -3,14 +3,14 @@ import { PrismaService } from '../prisma/prisma.service';
 
 /**
  * The job role a shift for somebody is for: always one they hold (Dominguez,
- * September 2026 — "I shouldn't have the option to be 'any job role', only the
+ * September 2026 - "I shouldn't have the option to be 'any job role', only the
  * job roles assigned to me"). Open shifts are not held by anybody and keep
  * any role, or none.
  *
  * - A role they hold is used as asked.
  * - A role they do not hold is refused, by name, so the manager knows to add
  *   them to it on Staff first.
- * - No role at all: their main one (then the practice's order) — the screens
+ * - No role at all: their main one (then the practice's order) - the screens
  *   always send one, so this is for anything else that makes a shift; with
  *   none yet, the shift has none.
  */

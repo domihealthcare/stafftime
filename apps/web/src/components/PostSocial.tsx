@@ -14,7 +14,7 @@ import { Alert, buttonClass, inputClass } from './ui';
  *
  * All three are named on purpose: a like says who, a comment is under the
  * writer's name, and a poll shows who picked what. That is the difference
- * from a pulse survey, which is truly anonymous — so the poll says so in
+ * from a pulse survey, which is truly anonymous - so the poll says so in
  * plain words where people vote.
  *
  * Every change comes back from the server as the whole post, for this reader,
@@ -23,7 +23,7 @@ import { Alert, buttonClass, inputClass } from './ui';
 
 const MAX_COMMENT = 2_000;
 
-/// "Angelica Diaz, Maria Ruiz and 3 others" — the others in a note on the
+/// "Angelica Diaz, Maria Ruiz and 3 others" - the others in a note on the
 /// words, so a long list does not crowd the line.
 function Names({ people, testId }: { people: PersonName[]; testId?: string }) {
   const t = useT();
@@ -102,7 +102,7 @@ export function LikedBy({ post }: { post: Announcement }) {
 // ------------------------------------------------------------------- polls
 
 /// The poll, its choices and everybody's picks by name. A tap on a choice is
-/// the vote — there is no separate button to forget — and a tap on another
+/// the vote - there is no separate button to forget - and a tap on another
 /// changes it.
 export function PollView({
   post,
@@ -118,7 +118,7 @@ export function PollView({
   const [error, setError] = useState<string | null>(null);
   /// The picks just tapped, shown at once while the server saves them, so a
   /// choice looks chosen the moment it is tapped. Cleared when the answer
-  /// comes back — with the saved picks, or as they were if it failed.
+  /// comes back - with the saved picks, or as they were if it failed.
   const [pending, setPending] = useState<string[] | null>(null);
   const poll = post.poll;
   if (!poll) return null;
@@ -216,7 +216,7 @@ export function PollView({
           ? t('Nobody has voted yet.')
           : plural(poll.voterCount, '{n} person has voted.', '{n} people have voted.')}{' '}
         <strong className="font-medium">{t('Votes are not anonymous')}</strong>
-        {t(' — everybody can see who picked what.')}
+        {t(' - everybody can see who picked what.')}
       </p>
 
       {error && (
@@ -481,7 +481,7 @@ function CommentBox({
   );
 }
 
-/// "Oct 3, 2:15 PM" — with the year only when it is not this one.
+/// "Oct 3, 2:15 PM" - with the year only when it is not this one.
 function formatWhen(iso: string): string {
   const date = new Date(iso);
   const thisYear = date.getFullYear() === new Date().getFullYear();
@@ -496,7 +496,7 @@ function formatWhen(iso: string): string {
 
 // ---------------------------------------------------------- the action row
 
-/// Like, Comment, and who liked it — under a post on News and on Home.
+/// Like, Comment, and who liked it - under a post on News and on Home.
 export function PostActions({
   post,
   onChange,

@@ -43,7 +43,7 @@ const PROFILE_SELECT = {
  * Your own profile: how colleagues see you in the Directory.
  *
  * Legal name, email, access level, job roles, offices and birthday are shown
- * but are an admin's or manager's to change — payroll and sign-in depend on them. The
+ * but are an admin's or manager's to change - payroll and sign-in depend on them. The
  * rest is yours.
  */
 @Injectable()
@@ -98,7 +98,7 @@ export class ProfileService {
     const { jobRoles, locations, pinHash, ...rest } = row;
     return {
       ...rest,
-      // Whether a PIN is set, and when — never the PIN, which is only ever
+      // Whether a PIN is set, and when - never the PIN, which is only ever
       // stored hashed and so cannot be shown to anybody.
       hasPin: pinHash !== null,
       // Their main job role first.
@@ -125,7 +125,7 @@ export class ProfileService {
     return this.get(employeeId);
   }
 
-  /// Your own, or — for an admin — anybody's, who is then told.
+  /// Your own, or - for an admin - anybody's, who is then told.
   async setPhoto(employeeId: string, image: string, setBy: string = employeeId) {
     const byAdmin = setBy !== employeeId;
     if (byAdmin) {
@@ -160,7 +160,7 @@ export class ProfileService {
     return this.get(employeeId);
   }
 
-  /// Your own, or — for an admin — anybody's, say one that should not be there.
+  /// Your own, or - for an admin - anybody's, say one that should not be there.
   async removePhoto(employeeId: string, removedBy: string) {
     await this.prisma.$transaction([
       this.prisma.employeePhoto.deleteMany({ where: { employeeId } }),

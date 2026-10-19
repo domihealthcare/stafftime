@@ -1,7 +1,14 @@
 import Anthropic from '@anthropic-ai/sdk';
 import { BadRequestException, Injectable, Logger } from '@nestjs/common';
 import { PtoStatus, Role, ShiftStatus } from '@prisma/client';
-import { AiService, DAILY_AI_USES, MODEL, REQUEST_DEFAULTS } from '../ai/ai.service';
+import {
+  AiService,
+  DAILY_AI_USES,
+  MODEL,
+  NO_EM_DASHES,
+  REQUEST_DEFAULTS,
+  plainDashes,
+} from '../ai/ai.service';
 import { AuthUser } from '../common/auth/auth-user';
 import { localDateIn, PRACTICE_ZONE } from '../common/util/zoned-time.util';
 import { CalendarService } from '../calendar/calendar.service';
@@ -15,11 +22,11 @@ import { ShiftsService } from '../shifts/shifts.service';
 import { AssistantSources, managesStaff, runTool, toolsFor } from './assistant-tools';
 
 /**
- * "Ask Domi Staff" (October 2026, Dominguez — the AI half of making the app
+ * "Ask Domi Staff" (October 2026, Dominguez - the AI half of making the app
  * smarter; Dominguez agreed that staff names and schedules, never patient
- * details, may go to an outside AI service). A question in plain words —
+ * details, may go to an outside AI service). A question in plain words -
  * "when am I off next?", "who is in at West New York?", "what needs my
- * attention today?" — answered by Claude (Anthropic) from what the asker can
+ * attention today?" - answered by Claude (Anthropic) from what the asker can
  * already see in the app, through the tools in `assistant-tools.ts`.
  *
  * - **Off until `ANTHROPIC_API_KEY` is set** (see docs/ask-domi-staff-setup.md).
@@ -28,7 +35,7 @@ import { AssistantSources, managesStaff, runTool, toolsFor } from './assistant-t
  *   (`AiService`).
  * - Anthropic receives the question, the last few turns of the conversation
  *   on screen, what the tools return for it, and the few Help topics the
- *   screen picked as likely to answer it ("how do I…?" — October 2026).
+ *   screen picked as likely to answer it ("how do I…?" - October 2026).
  */
 
 export { MODEL };
@@ -54,7 +61,7 @@ export interface HelpTopic {
   answer: string;
 }
 
-const RULES = `You are "Ask Domi Staff", the assistant inside Domi Staff — the timekeeping and staff app of Domi Healthcare, a primary care practice with two offices in New Jersey: North Bergen and West New York.
+const RULES = `You are "Ask Domi Staff", the assistant inside Domi Staff - the timekeeping and staff app of Domi Healthcare, a primary care practice with two offices in New Jersey: North Bergen and West New York.
 
 How to answer:
 - Answer only from what the tools return. If the tools cannot show it, say plainly that you cannot see that here, and where in the app it is if you know.
@@ -153,7 +160,7 @@ export class AssistantService {
         ...REQUEST_DEFAULTS,
         max_tokens: 4000,
         system: [
-          { type: 'text', text: RULES },
+          { type: 'text', text: `${RULES}\n\n${NO_EM_DASHES}` },
           { type: 'text', text: about },
         ],
         tools: toolsFor(actor),
@@ -161,7 +168,7 @@ export class AssistantService {
       });
 
       if (response.stop_reason === 'refusal') {
-        return { answer: 'Sorry — I can’t help with that one.', left };
+        return { answer: 'Sorry - I can’t help with that one.', left };
       }
       if (response.stop_reason !== 'tool_use') {
         const answer = response.content
@@ -169,7 +176,7 @@ export class AssistantService {
           .join('\n')
           .trim();
         return {
-          answer: answer || 'Sorry — I could not find an answer to that.',
+          answer: plainDashes(answer) || 'Sorry - I could not find an answer to that.',
           left,
         };
       }
@@ -192,7 +199,7 @@ export class AssistantService {
 
     this.logger.warn('A question ran out of time or rounds');
     return {
-      answer: 'Sorry — that took too long to look up. Try asking something narrower.',
+      answer: 'Sorry - that took too long to look up. Try asking something narrower.',
       left,
     };
   }
@@ -228,7 +235,7 @@ export class AssistantService {
   }
 }
 
-/// The question, with the Help topics the screen picked for it ahead of it —
+/// The question, with the Help topics the screen picked for it ahead of it -
 /// marked as the guide's words, not the person's.
 export function withHelp(question: string, help: HelpTopic[]): string {
   const topics = help.slice(0, MAX_HELP_TOPICS).filter((topic) => topic.question.trim());
@@ -240,7 +247,7 @@ export function withHelp(question: string, help: HelpTopic[]): string {
     )
     .join('\n');
   return (
-    `From the app's Help guide — these may or may not answer the question:\n<help>\n${guide}\n</help>\n\n` +
+    `From the app's Help guide - these may or may not answer the question:\n<help>\n${guide}\n</help>\n\n` +
     `Question: ${question}`
   );
 }

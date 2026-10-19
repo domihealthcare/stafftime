@@ -19,7 +19,7 @@ const step = async (name, fn) => {
 };
 
 /**
- * Half of this app is used on a phone — clocking in at the desk, a manager
+ * Half of this app is used on a phone - clocking in at the desk, a manager
  * approving hours between patients, an admin setting a geofence while standing
  * at the front door. 390px wide is about the narrowest phone anyone at the
  * practice is likely to have; anything that works here works on everything

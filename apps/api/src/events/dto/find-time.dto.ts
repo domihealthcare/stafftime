@@ -15,7 +15,7 @@ import { InviteesInput } from './event.dto';
 
 /// "Find a time": who it would be for, how long it lasts, and from when to look.
 export class FindTimeInput {
-  /// Everyone, or a chosen list — what the event form offers.
+  /// Everyone, or a chosen list - what the event form offers.
   @IsIn([EventAudience.EVERYONE, EventAudience.CHOSEN])
   audience!: EventAudience;
 

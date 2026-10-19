@@ -9,12 +9,12 @@ import { PrismaService } from '../prisma/prisma.service';
 import { shortDate } from '../pto/time-off-clashes';
 
 /**
- * A minimum per office per job role (October 2026, Dominguez — making the app
+ * A minimum per office per job role (October 2026, Dominguez - making the app
  * smarter): "North Bergen needs at least 2 Front Desk". Optional, set by
  * managers on Job roles (`StaffingMinimum`). Where one is set:
  *
- * - **Too many off at once** goes by it — a clash is time off that leaves
- *   fewer than the minimum — instead of "more than half" (`time-off-clashes.ts`).
+ * - **Too many off at once** goes by it - a clash is time off that leaves
+ *   fewer than the minimum - instead of "more than half" (`time-off-clashes.ts`).
  * - **Short days on the rota**: a day the office is open (it has a shift on
  *   the rota, and is not closed at noon) with fewer people on in that job role
  *   than the minimum. A person counts once, under the job role of their shift

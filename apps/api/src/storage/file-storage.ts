@@ -2,7 +2,7 @@
 /// Deliberately narrow: put, get, delete, and nothing about URLs.
 ///
 /// One caller: the payroll exporter. This app deliberately holds no personnel
-/// documents — no I-9, no W-4, no licence scans — so a generated timesheet is
+/// documents - no I-9, no W-4, no licence scans - so a generated timesheet is
 /// the only file it ever stores.
 ///
 /// No URL, because a timesheet still names everybody who works here and what
@@ -20,7 +20,7 @@ export interface FileStorage {
   /// filename is used to build it.
   put(bytes: Buffer, meta: PutOptions): Promise<StoredFileRef>;
 
-  /// Reads the bytes back. Throws if the key is unknown — a metadata row whose
+  /// Reads the bytes back. Throws if the key is unknown - a metadata row whose
   /// bytes have gone is a bug worth hearing about, not an empty download.
   get(storageKey: string): Promise<Buffer>;
 
@@ -40,7 +40,7 @@ export interface StoredFileRef {
   storageKey: string;
   sizeBytes: number;
   /// SHA-256 of the bytes, hex. Lets a download be checked against what was
-  /// stored — "is this the file we sent to payroll?" has an answer.
+  /// stored - "is this the file we sent to payroll?" has an answer.
   checksum: string;
 }
 

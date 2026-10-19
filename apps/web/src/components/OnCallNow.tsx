@@ -10,7 +10,7 @@ import { Avatar } from './Avatar';
 import { Card } from './ui';
 
 /**
- * Who is on call now, on Home — for providers, managers and admins (October
+ * Who is on call now, on Home - for providers, managers and admins (October
  * 2026). Fails quietly, like every Home card.
  */
 export function OnCallNow() {

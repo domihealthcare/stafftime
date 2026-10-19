@@ -8,7 +8,7 @@
  * Payroll → Payroll Dashboard → Manage Payroll → Add Worksheet → Export to
  * File). That export carries:
  *
- *  - **header rows** — the first three, marked with `!`, which include the
+ *  - **header rows** - the first three, marked with `!`, which include the
  *    row of field names;
  *  - one row per employee;
  *  - **footer rows**, starting at the next row marked with `!`.
@@ -19,11 +19,11 @@
  * them. Nothing about the layout is guessed: the columns are whatever ADP set
  * up for Domi's paydata grid.
  *
- * The employee rows of the pasted worksheet are thrown away, never stored —
+ * The employee rows of the pasted worksheet are thrown away, never stored -
  * they are ADP's copy of the staff list and may carry pay details this app
  * has no business holding.
  *
- * The field-name row must begin Co Code, Batch ID, File # — ADP's three
+ * The field-name row must begin Co Code, Batch ID, File # - ADP's three
  * required fields.
  */
 
@@ -39,7 +39,7 @@ export interface ParsedWorksheet {
   footerRows: string[];
   /// The field names, from the header row that starts Co Code, Batch ID, File #.
   columns: string[];
-  /// How many employee rows were left out — reported back so the admin can see
+  /// How many employee rows were left out - reported back so the admin can see
   /// the paste was understood, not stored.
   employeeRowsDropped: number;
 }
@@ -92,7 +92,7 @@ const isMarked = (line: string) => line.includes('!');
 /**
  * Reads a worksheet as exported from TotalSource.
  *
- * The header is the first three rows, as ADP describes it — or, should the
+ * The header is the first three rows, as ADP describes it - or, should the
  * row of field names sit lower than that, everything down to it. The footer is
  * the first row after the header marked with `!`, and everything below it.
  */
@@ -186,7 +186,7 @@ export function adpFilename(companyCode: string): string {
 }
 
 /// A column that looks like the one for regular or overtime hours, to start the
-/// admin off. Only a suggestion — they confirm it.
+/// admin off. Only a suggestion - they confirm it.
 export function suggestColumn(columns: string[], kind: 'regular' | 'overtime'): string | null {
   const pattern =
     kind === 'regular' ? /^reg(ular)?\.?\s*(hours|hrs)$/i : /^(o\/?t|overtime)\.?\s*(hours|hrs)$/i;
@@ -195,7 +195,7 @@ export function suggestColumn(columns: string[], kind: 'regular' | 'overtime'): 
   );
 }
 
-/// The default Batch ID: the last day of the period as MMDDYYYY — eight
+/// The default Batch ID: the last day of the period as MMDDYYYY - eight
 /// characters, the shape ADP's own example ("07312023") uses.
 export function defaultBatchId(lastDay: string): string {
   const [year, month, day] = lastDay.split('-');

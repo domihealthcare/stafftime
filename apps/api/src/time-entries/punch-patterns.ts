@@ -9,11 +9,11 @@ import {
 import { PrismaService } from '../prisma/prisma.service';
 
 /**
- * Patterns in somebody's punches (Dominguez, October 2026 — making the app
+ * Patterns in somebody's punches (Dominguez, October 2026 - making the app
  * smarter, with the defaults proposed and agreed): not one late clock-in,
  * which the timesheet already flags, but the same thing again and again.
  *
- * - **Late** 3 or more times in the last 4 weeks — and if 3 of them fall on
+ * - **Late** 3 or more times in the last 4 weeks - and if 3 of them fall on
  *   the same weekday in a row ("3 Mondays running"), it says so, because that
  *   usually has a reason worth finding (a bus, a school run, a shift that
  *   starts too early).
@@ -22,7 +22,7 @@ import { PrismaService } from '../prisma/prisma.service';
  * - **Leaving early** 2 or more times.
  *
  * Managers only, on the Dashboard and in the nightly email's "when you have
- * a minute" — never a banner, and the person is not told: it is a quiet
+ * a minute" - never a banner, and the person is not told: it is a quiet
  * heads-up to have a word, not a verdict. Read from the flags the timesheet
  * already sets (with its grace minutes), so the two always agree. Hours
  * entered by hand are not punches and are left out.

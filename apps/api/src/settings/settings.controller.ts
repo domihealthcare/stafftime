@@ -10,8 +10,8 @@ import { PracticeSettingsService } from './practice-settings.service';
 export class SettingsController {
   constructor(private readonly settings: PracticeSettingsService) {}
 
-  /// Managers read them — the numbers explain what the screens are telling
-  /// them — but only an admin changes them.
+  /// Managers read them - the numbers explain what the screens are telling
+  /// them - but only an admin changes them.
   @Get()
   @Roles(Role.MANAGER)
   get() {

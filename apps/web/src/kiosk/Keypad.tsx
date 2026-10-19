@@ -14,7 +14,7 @@ const DIGITS = ['1', '2', '3', '4', '5', '6', '7', '8', '9'];
  * A touch keypad sized for a tablet at arm's length on a busy front desk.
  *
  * Buttons are large and spaced so a hurried tap does not land on a neighbour,
- * and entered digits are shown only as dots — someone standing behind you can
+ * and entered digits are shown only as dots - someone standing behind you can
  * see the screen.
  */
 export function Keypad({

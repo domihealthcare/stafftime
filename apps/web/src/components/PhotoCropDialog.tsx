@@ -14,7 +14,7 @@ const VIEW = 280;
 const MAX_ZOOM = 4;
 
 /// Reads a picture file into something the browser can draw. A data: URL
-/// rather than a blob: one — the deployed CSP allows images from 'self' and
+/// rather than a blob: one - the deployed CSP allows images from 'self' and
 /// data: only, and loosening it for this is not worth it.
 export async function readPicture(file: File): Promise<{ url: string; image: HTMLImageElement }> {
   const url = await new Promise<string>((resolve, reject) => {
@@ -42,7 +42,7 @@ interface Framing {
 
 const clamp = (value: number, low: number, high: number) => Math.min(high, Math.max(low, value));
 
-/// The picture can be moved anywhere that still covers the whole frame — never
+/// The picture can be moved anywhere that still covers the whole frame - never
 /// off an edge, so there is no blank corner to send.
 function keepCovering(framing: Framing, scale: number, width: number, height: number): Framing {
   return {
@@ -54,8 +54,8 @@ function keepCovering(framing: Framing, scale: number, width: number, height: nu
 
 /**
  * Draws what is in the frame to a 256 px JPEG, in the browser. Re-encoding
- * also drops everything a phone camera attaches to a photo — where it was taken
- * included — before it leaves the device.
+ * also drops everything a phone camera attaches to a photo - where it was taken
+ * included - before it leaves the device.
  */
 function frameToJpeg(image: HTMLImageElement, framing: Framing): string {
   const scale = (VIEW / Math.min(image.naturalWidth, image.naturalHeight)) * framing.zoom;

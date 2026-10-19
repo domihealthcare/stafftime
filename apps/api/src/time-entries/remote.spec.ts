@@ -12,7 +12,7 @@ const REMOTE_SHIFT = {
 };
 
 /// Working from home: a published remote shift covering now lets somebody
-/// clock in without the office check — and nothing about where they are is
+/// clock in without the office check - and nothing about where they are is
 /// kept.
 function build(remoteShift: unknown) {
   const created: Record<string, unknown>[] = [];
@@ -99,7 +99,7 @@ describe('clocking in from home', () => {
     expect(where.endsAt.gt).toBeInstanceOf(Date);
   });
 
-  it('without one, it is an ordinary office punch — and the office check still applies', async () => {
+  it('without one, it is an ordinary office punch - and the office check still applies', async () => {
     const { service, verification } = build(null);
     await expect(service.clockIn(punch, employee, undefined)).rejects.toThrow(/not at the office/);
     expect(verification.verify).toHaveBeenCalled();

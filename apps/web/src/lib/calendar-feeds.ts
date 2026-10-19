@@ -1,6 +1,6 @@
 import type { CalendarKind } from './calendar-kinds';
 
-/// The separate calendars somebody can subscribe to, one kind each — the
+/// The separate calendars somebody can subscribe to, one kind each - the
 /// same list as `FEEDS` in the API's `calendar/feeds.ts`. `domi` is all of
 /// them in one.
 export const SEPARATE_FEEDS: {

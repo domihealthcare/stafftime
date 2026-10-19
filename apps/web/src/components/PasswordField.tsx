@@ -10,8 +10,8 @@ import { useT } from '../lib/i18n';
  * **You can show it.** Typing twelve characters blind, twice, on a phone
  * keyboard, is how people end up choosing something short and memorable instead
  * of something good. Hiding the characters protects against somebody reading
- * over your shoulder — a real risk at a front desk, which is why it still starts
- * hidden — but it should be the person's choice, not ours.
+ * over your shoulder - a real risk at a front desk, which is why it still starts
+ * hidden - but it should be the person's choice, not ours.
  *
  * **It says what it wants.** A requirement that only appears as a disabled
  * button is not a requirement anybody can meet on purpose. Where a rule applies,

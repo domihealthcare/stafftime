@@ -24,8 +24,8 @@ const personOf = (person: { id: string; name: string; photoUpdatedAt: string | n
 
 /**
  * 360 feedback, the managers' side (October 2026, Dominguez: reports for
- * managers and admins only, never the person). The list of everybody — but
- * yourself — with how many colleagues rated them; a report once there are
+ * managers and admins only, never the person). The list of everybody - but
+ * yourself - with how many colleagues rated them; a report once there are
  * enough to show without pointing at anybody; and the offer of times to talk
  * it through, which the person picks from.
  */
@@ -54,7 +54,7 @@ function AllReports({ id }: { id: string }) {
     <div className="max-w-3xl">
       <PageHeading
         title={`${reports.title}: reports`}
-        subtitle="For managers and admins only — never shown to the person. Yours is not here: somebody else goes through it with you."
+        subtitle="For managers and admins only - never shown to the person. Yours is not here: somebody else goes through it with you."
       />
       <p className="mb-3 text-sm text-slate-600">
         A report shows when at least {reports.minRaters} colleagues rated the person, so it cannot
@@ -212,7 +212,7 @@ function Bar({
         )}
       </span>
       <span className="w-20 shrink-0 text-right text-xs tabular-nums text-slate-700">
-        {value === null ? '—' : value.toFixed(1)}
+        {value === null ? '-' : value.toFixed(1)}
         {detail ? ` · ${detail}` : ''}
       </span>
     </div>
@@ -259,11 +259,11 @@ function MeetingCard({ report, onChanged }: { report: Review360Report; onChanged
               .map((slot) => formatPracticeDateTime(slot.startsAt))
               .join(', ')}
           </strong>
-          {meeting.place ? ` · ${meeting.place}` : ''} — on both your calendars.
+          {meeting.place ? ` · ${meeting.place}` : ''} - on both your calendars.
         </p>
       ) : meeting ? (
         <div className="mt-1 text-sm text-slate-800">
-          <p>Times offered — waiting for {report.person.name.split(' ')[0]} to pick one:</p>
+          <p>Times offered - waiting for {report.person.name.split(' ')[0]} to pick one:</p>
           <ul className="mt-1 list-disc pl-5">
             {meeting.slots.map((slot) => (
               <li key={slot.id}>{formatPracticeDateTime(slot.startsAt)}</li>

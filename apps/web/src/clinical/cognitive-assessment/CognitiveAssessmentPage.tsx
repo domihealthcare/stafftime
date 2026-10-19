@@ -32,7 +32,7 @@ import { NEEDS_NATIVE_SPEAKER_REVIEW } from './translations.es';
 import { SECTIONS, validate, type SectionKey } from './validate';
 
 /**
- * The BrainCheck Care Plan — CPT 99483, cognitive assessment and care plan
+ * The BrainCheck Care Plan - CPT 99483, cognitive assessment and care plan
  * (September 2026, Dominguez; shown as "BrainCheck Care Plan" since October
  * 2026, while the clinical note keeps the CPT name).
  *
@@ -142,7 +142,7 @@ function AssessmentScreen({ employee }: { employee: Employee }) {
       });
     } catch {
       setFailure(
-        'The PDF could not be made. Nothing was sent anywhere and the form is as you left it — try again, and tell the office if it keeps happening.',
+        'The PDF could not be made. Nothing was sent anywhere and the form is as you left it - try again, and tell the office if it keeps happening.',
       );
     } finally {
       setMaking(null);
@@ -199,7 +199,7 @@ function AssessmentScreen({ employee }: { employee: Employee }) {
       <div className="mx-auto max-w-4xl" translate="no" data-testid="cognitive-assessment">
         <PageHeading
           title="BrainCheck Care Plan"
-          subtitle="Cognitive assessment and care plan (CPT 99483). Stays on this device — nothing is sent or saved. Download both PDFs at the end: the note for eCW, the care plan for the patient."
+          subtitle="Cognitive assessment and care plan (CPT 99483). Stays on this device - nothing is sent or saved. Download both PDFs at the end: the note for eCW, the care plan for the patient."
         />
 
         {cleared && (
@@ -348,7 +348,7 @@ function AssessmentScreen({ employee }: { employee: Employee }) {
             <div className="mt-4 grid grid-cols-2 gap-3">
               <DownloadButton
                 label="Download the note"
-                detail="Clinical note, for eCW Documents — signed electronically in your name"
+                detail="Clinical note, for eCW Documents - signed electronically in your name"
                 making={making === 'note'}
                 disabled={making !== null}
                 done={current?.note ?? false}
@@ -358,7 +358,7 @@ function AssessmentScreen({ employee }: { employee: Employee }) {
                 label="Download the handout"
                 detail={`Care plan for the patient, in ${
                   form.handoutLanguage === 'both' ? 'English and Spanish' : 'English'
-                } — signed electronically in your name`}
+                } - signed electronically in your name`}
                 making={making === 'handout'}
                 disabled={making !== null}
                 done={current?.handout === form.handoutLanguage}
@@ -380,7 +380,7 @@ function AssessmentScreen({ employee }: { employee: Employee }) {
                   onClick={clearForm}
                   className="mt-3 min-h-[44px] rounded-lg bg-brand-600 px-4 text-sm font-semibold text-white hover:bg-brand-700"
                 >
-                  Yes, both downloaded — clear the form
+                  Yes, both downloaded - clear the form
                 </button>
               </div>
             )}

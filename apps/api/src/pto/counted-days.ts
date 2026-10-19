@@ -16,8 +16,8 @@ import { PrismaService } from '../prisma/prisma.service';
  * weekday the office is **closed all day** (Christmas). Ivanna's Wednesday
  * 21 to Wednesday 28 October is 6 days, not 8.
  *
- * One rule for every place a request is counted — balances, the request
- * lists, the form before it is sent, "Approve the clean time off" — so the
+ * One rule for every place a request is counted - balances, the request
+ * lists, the form before it is sent, "Approve the clean time off" - so the
  * numbers can never disagree. Pure, apart from `loadClosedDays`.
  */
 
@@ -49,7 +49,7 @@ export function isWeekday(date: string): boolean {
 }
 
 /**
- * The days of a request that count, within [start, end) — a request across
+ * The days of a request that count, within [start, end) - a request across
  * New Year counts against each policy year for its part. A half day counts
  * 0.5 when its day counts at all.
  */
@@ -88,7 +88,7 @@ export function skippedDays(
  * Every whole day a closure covers between two dates, inclusive. A closure
  * that is all day covers its days; a timed one covers a day only if it runs
  * from that day's midnight to the next (a 1pm early close takes nothing off
- * anybody's time off — they worked the morning).
+ * anybody's time off - they worked the morning).
  */
 export async function loadClosedDays(
   prisma: PrismaService,

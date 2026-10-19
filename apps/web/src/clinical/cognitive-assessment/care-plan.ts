@@ -258,8 +258,8 @@ export function suggestions(form: AssessmentForm): { goals: Set<string>; actions
   return { goals, actions };
 }
 
-/// The FAST stage with its description: "Stage 4 — Needs help with…".
+/// The FAST stage with its description: "Stage 4 - Needs help with…".
 export function fastLabel(stage: string): string {
   const found = FAST_STAGES.find((s) => s.value === stage);
-  return found ? `${found.label} — ${found.description}` : stage;
+  return found ? `${found.label} - ${found.description}` : stage;
 }
