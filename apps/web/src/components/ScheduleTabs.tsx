@@ -13,13 +13,13 @@ export function ScheduleTabs() {
   const t = useT();
   const { employee } = useSession();
   const tab = ({ isActive }: { isActive: boolean }) =>
-    `rounded-md px-4 py-1 text-sm font-medium max-sm:flex-1 max-sm:py-2.5 max-sm:text-center ${
+    `rounded-md px-4 py-1 text-sm font-medium max-sm:flex-1 max-sm:px-2 max-sm:py-2.5 max-sm:text-center ${
       isActive ? 'bg-brand-50 text-brand-800' : 'text-slate-600 hover:text-slate-900'
     }`;
   return (
     <nav
       aria-label={t('Schedule or calendar')}
-      className="mb-4 flex w-fit rounded-lg border border-slate-300 bg-white p-0.5 max-sm:w-full"
+      className="mb-4 flex w-fit rounded-lg border border-slate-300 bg-white p-0.5 max-sm:w-full max-sm:flex-wrap"
     >
       <NavLink to="/schedule" end className={tab}>
         {t('Shifts')}
