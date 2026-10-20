@@ -71,6 +71,7 @@ import type {
   GuideSlug,
   Invoice,
   InvoiceInput,
+  ToolSetting,
   ReimbursementsBoard,
   ReferralContact,
   ReferralContactInput,
@@ -1652,6 +1653,11 @@ export const api = {
     }),
   deleteGuideSection: (id: string) =>
     request<Guide>(`/guides/sections/${id}`, { method: 'DELETE' }),
+
+  // ---------------------------------------------------------------- tool access
+  toolAccess: () => request<ToolSetting[]>('/tool-access'),
+  saveToolAccess: (key: string, body: { everyone: boolean; jobRoleIds: string[] }) =>
+    request<ToolSetting[]>(`/tool-access/${key}`, { method: 'PUT', body: JSON.stringify(body) }),
 
   // ---------------------------------------------------------------- invoices
   invoices: () => request<{ invoices: Invoice[]; nextNumber: number }>('/invoices'),

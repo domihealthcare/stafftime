@@ -1,6 +1,8 @@
 import { useEffect, useRef, useState } from 'react';
 import { NavLink, useLocation } from 'react-router-dom';
+import { canUseTool } from '../lib/clinical-access';
 import { useT } from '../lib/i18n';
+import { useSession } from '../lib/session';
 import { NavIcon } from './NavIcons';
 import { itemIsActive, type NavMenuItem } from './NavMenu';
 
@@ -24,6 +26,9 @@ export function PhoneTabBar({
   manageItems: NavMenuItem[];
 }) {
   const t = useT();
+  const { employee } = useSession();
+  // The Phone book tab, for whoever a manager has it set up for (everyone at first).
+  const phoneBook = employee !== null && canUseTool(employee, 'phone-book');
   const [open, setOpen] = useState(false);
   const [group, setGroup] = useState<'Manage' | null>(null);
   const container = useRef<HTMLDivElement>(null);
@@ -148,10 +153,12 @@ export function PhoneTabBar({
           <NavIcon name="directory" size="md" />
           {t('Directory')}
         </NavLink>
-        <NavLink to="/phone-book" className={tabClass}>
-          <NavIcon name="phoneBook" size="md" />
-          {t('Phone book')}
-        </NavLink>
+        {phoneBook && (
+          <NavLink to="/phone-book" className={tabClass}>
+            <NavIcon name="phoneBook" size="md" />
+            {t('Phone book')}
+          </NavLink>
+        )}
         <NavLink to="/resources" className={tabClass}>
           <NavIcon name="resources" size="md" />
           {t('Resources')}

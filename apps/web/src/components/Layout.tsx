@@ -11,6 +11,7 @@ import { visibleSections } from '../lib/manage-sections';
 import { PhoneTabBar } from './PhoneTabBar';
 import { useIsPhone } from '../lib/use-is-phone';
 import { NotificationBell } from './NotificationBell';
+import { canUseTool } from '../lib/clinical-access';
 import { useIsAdmin, useIsManager, useSession } from '../lib/session';
 import { Spinner } from './ui';
 
@@ -65,6 +66,8 @@ export function Layout() {
   const isManager = useIsManager();
   const isAdmin = useIsAdmin();
   const { employee } = useSession();
+  // The Phone book tab, for whoever a manager has it set up for (everyone at first).
+  const phoneBook = employee !== null && canUseTool(employee, 'phone-book');
   // What Manage holds - on a laptop in the header, on a phone under More -
   // grouped under five headings, each opening a screen with tabs to the rest
   // (October 2026, Dominguez: "lets cut down the manage options"). Somebody's
@@ -200,10 +203,12 @@ export function Layout() {
                 <NavIcon name="directory" />
                 {t('Directory')}
               </NavLink>
-              <NavLink to="/phone-book" className={linkClasses}>
-                <NavIcon name="phoneBook" />
-                {t('Phone book')}
-              </NavLink>
+              {phoneBook && (
+                <NavLink to="/phone-book" className={linkClasses}>
+                  <NavIcon name="phoneBook" />
+                  {t('Phone book')}
+                </NavLink>
+              )}
               <NavLink to="/resources" className={linkClasses}>
                 <NavIcon name="resources" />
                 {t('Resources')}

@@ -1,14 +1,8 @@
 import { GuideKey, Role } from '@prisma/client';
 
 /**
- * Which guide is which, and who reads it (October 2026, Dominguez). Pure, so
- * the rule is tested on its own.
- *
- * The front desk guide is for everybody signed in: it holds the practice's
- * booking rules, scripts and abbreviations, nothing private. The results
- * playbook and the inpatient note templates are the providers' (a job role
- * with the clinical forms), and managers' and admins'. Managers and admins
- * keep all three.
+ * Which guide is which (October 2026, Dominguez). Who reads each is set on
+ * Resources by managers (`tool-access/`); managers and admins keep all three.
  */
 
 export const GUIDE_SLUGS: Record<string, GuideKey> = {
@@ -17,11 +11,10 @@ export const GUIDE_SLUGS: Record<string, GuideKey> = {
   'inpatient-notes': GuideKey.INPATIENT_NOTES,
 };
 
-export const PROVIDER_GUIDES: GuideKey[] = [GuideKey.RESULTS_PLAYBOOK, GuideKey.INPATIENT_NOTES];
-
-export function canReadGuide(key: GuideKey, role: Role, isProvider: boolean): boolean {
-  if (!PROVIDER_GUIDES.includes(key)) return true;
-  return role === Role.MANAGER || role === Role.ADMIN || isProvider;
-}
+export const GUIDE_LABELS: Record<string, string> = {
+  'front-desk': 'Front desk guide',
+  'results-playbook': 'Results playbook',
+  'inpatient-notes': 'Inpatient notes',
+};
 
 export const canEditGuide = (role: Role) => role === Role.MANAGER || role === Role.ADMIN;

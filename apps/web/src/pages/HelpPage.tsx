@@ -720,8 +720,10 @@ const STAFF: Section[] = [
         answer: (
           <p>
             <Screen>Resources</Screen>. You see the resources for everyone, plus those for each of
-            your job roles. A Google Drive folder (📁) opens in place: tap a file and it opens in a
-            new tab - no Google account needed.
+            your job roles. The forms and guides built into the app (the phone book, the front desk
+            guide, the care plans and the rest) are listed in the sections of the job roles that use
+            them; a manager chooses which. A Google Drive folder (📁) opens in place: tap a file and
+            it opens in a new tab - no Google account needed.
           </p>
         ),
       },
@@ -963,7 +965,7 @@ const STAFF: Section[] = [
   },
 ];
 
-/// For anybody who can make a care plan (CCM and APCM): providers, managers and admins.
+/// For anybody who can make a care plan (CCM and APCM): the job roles managers chose, and managers and admins.
 const CARE_PLAN: Section[] = [
   {
     title: 'APCM Care Plan (also for CCM)',
@@ -973,8 +975,10 @@ const CARE_PLAN: Section[] = [
         answer: (
           <>
             <p>
-              <Screen>Resources</Screen>, in the <Screen>Provider</Screen> section →{' '}
-              <strong>APCM Care Plan</strong>. Providers, managers and admins have it.
+              <Screen>Resources</Screen>, in the <Screen>Medical Assistant</Screen> or{' '}
+              <Screen>Provider</Screen> section → <strong>APCM Care Plan</strong>. It starts with
+              medical assistants and providers (and managers and admins), in their sections of
+              Resources; managers can change who has it.
             </p>
             <ul>
               <li>
@@ -2216,6 +2220,27 @@ const MANAGERS: Section[] = [
               they are shown under it - unless the shift they clocked in to is for another role,
               when they are shown under that one. Without a choice it is their first role in this
               list.
+            </p>
+          </>
+        ),
+      },
+      {
+        question: 'Choosing who uses each form and guide',
+        answer: (
+          <>
+            <p>
+              On <Screen>Resources</Screen>, each built-in form and guide (phone book, diagnostics,
+              front desk guide, BrainCheck Care Plan, APCM Care Plan, Annual Wellness Visit, results
+              playbook, inpatient notes) shows who it is for. Press <strong>Change</strong> beside
+              it and tick <strong>Everyone</strong>, or one or more job roles, then{' '}
+              <strong>Save</strong>. It moves to those job roles&rsquo; sections, and anybody not in
+              them loses the link and the page at once.
+            </p>
+            <p>
+              Managers and admins can always open them, except the BrainCheck Care Plan, which is
+              signed as the provider who fills it in, so it goes only to the job roles chosen. The
+              Annual Wellness Visit opens on page 1 in the Provider section and page 2 everywhere
+              else.
             </p>
           </>
         ),

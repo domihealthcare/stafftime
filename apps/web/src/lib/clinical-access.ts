@@ -1,25 +1,32 @@
 import type { Employee } from './types';
 
-/// The 99483 cognitive assessment: providers only - people whose job role
-/// uses the clinical forms. Access level brings nothing.
+/**
+ * Who may open each built-in form or guide. Managers choose, on Resources, for
+ * everyone or for one or more job roles (October 2026, Dominguez); the server
+ * works it out and sends the signed-in person's list as `tools` (see the API's
+ * `tool-access/`). These read that list.
+ */
+export function canUseTool(employee: Employee, key: string): boolean {
+  return employee.tools?.includes(key) === true;
+}
+
+/// The BrainCheck Care Plan (CPT 99483): the job roles chosen, which start as
+/// the providers'. Unlike the rest, managers and admins do not get it by their
+/// access level: its note is signed by whoever fills it in as the provider.
 export function canUseCognitiveAssessment(employee: Employee): boolean {
-  return employee.usesClinicalForms === true;
+  return canUseTool(employee, 'braincheck');
 }
 
-/// The care plan (CCM and APCM): providers, and managers and admins too (Dominguez,
-/// October 2026).
+/// The APCM (and CCM) Care Plan: the job roles chosen, starting with medical
+/// assistants and providers, and managers and admins.
 export function canUseCarePlan(employee: Employee): boolean {
-  return (
-    employee.usesClinicalForms === true || employee.role === 'MANAGER' || employee.role === 'ADMIN'
-  );
+  return canUseTool(employee, 'apcm');
 }
 
-/// The Annual Wellness Visit form: people whose job role has it (Providers and
-/// Medical Assistants), and managers and admins, like the care plan (October 2026).
+/// The Annual Wellness Visit form: the job roles chosen, starting with
+/// providers and medical assistants, and managers and admins.
 export function canUseWellnessForm(employee: Employee): boolean {
-  return (
-    employee.usesWellnessForm === true || employee.role === 'MANAGER' || employee.role === 'ADMIN'
-  );
+  return canUseTool(employee, 'wellness');
 }
 
 /// Which page of the wellness form somebody starts on: a provider (a job role

@@ -87,7 +87,7 @@ await step('somebody who is not a Provider sees no link to it, and the page says
   await page.getByTestId('tool-wellness').getByRole('link', { name: /^Annual Wellness Visit/ }).waitFor({ timeout: 10000 });
   if ((await page.getByTestId('tool-braincheck').count()) > 0) throw new Error('the link is on Resources');
   await page.goto(`${BASE}/clinical/99483`, { waitUntil: 'networkidle' });
-  await page.getByText('This form is for providers.').waitFor({ timeout: 10000 });
+  await page.getByText(/This form is not set up for your job role/).waitFor({ timeout: 10000 });
   if ((await page.getByLabel(/Patient name/).count()) > 0) throw new Error('the form is shown');
 });
 

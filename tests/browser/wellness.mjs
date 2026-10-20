@@ -122,7 +122,7 @@ await step(
         throw new Error('the form is on Resources');
       await page.goto(`${BASE}/clinical/wellness`, { waitUntil: 'networkidle' });
       await page
-        .getByText(/This form is for providers, medical assistants/)
+        .getByText(/This form is not set up for your job role/)
         .waitFor({ timeout: 10000 });
       if ((await page.getByLabel(/First name/).count()) > 0) throw new Error('the form is shown');
     } finally {

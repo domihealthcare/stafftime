@@ -163,7 +163,7 @@ await step('the results playbook and inpatient notes are not for staff', async (
     if (tried.status !== 403) throw new Error(`${slug} answered ${tried.status}`);
   }
   await staff.goto(`${BASE}/results-playbook`, { waitUntil: 'networkidle' });
-  await staff.getByText(/for providers, managers and admins/).first().waitFor({ timeout: 10000 });
+  await staff.getByText(/not set up for your job role/).first().waitFor({ timeout: 10000 });
   if ((await staff.getByTestId('guide-section').count()) > 0) throw new Error('sections shown');
 });
 
@@ -222,6 +222,53 @@ await step('a manager adds, edits, moves and removes a section', async () => {
   await changed.getByRole('button', { name: 'Remove' }).click();
   await manager.getByRole('alertdialog').getByRole('button', { name: 'Yes, remove' }).click();
   await changed.waitFor({ state: 'detached', timeout: 10000 });
+});
+
+await step('a manager chooses who uses a guide on Resources, and it takes effect', async () => {
+  await manager.goto(`${BASE}/resources`, { waitUntil: 'networkidle' });
+  const card = manager.getByTestId('section-Front Desk').getByTestId('tool-front-desk');
+  await card.getByText('For: Front Desk').waitFor({ timeout: 10000 });
+  // Narrowed to Provider: the front desk lose it.
+  await card.getByRole('button', { name: /Who can use Front desk guide/ }).click();
+  let dialog = manager.getByTestId('tool-access-editor');
+  await dialog.getByLabel('Front Desk', { exact: true }).uncheck();
+  await dialog.getByLabel('Provider', { exact: true }).check();
+  await dialog.getByRole('button', { name: 'Save' }).click();
+  await manager
+    .getByTestId('section-Provider')
+    .getByTestId('tool-front-desk')
+    .getByText('For: Provider')
+    .waitFor({ timeout: 10000 });
+  const refused = await call(staff, '/guides/front-desk');
+  if (refused.status !== 403) throw new Error(`the front desk still read it: ${refused.status}`);
+  await staff.goto(`${BASE}/`, { waitUntil: 'networkidle' });
+  if (await staff.getByTestId('quick-actions').getByRole('link', { name: 'Front desk guide' }).count())
+    throw new Error('still on Home');
+  // Several job roles at once, then back as it was.
+  const moved = manager.getByTestId('section-Provider').getByTestId('tool-front-desk');
+  await moved.getByRole('button', { name: /Who can use Front desk guide/ }).click();
+  dialog = manager.getByTestId('tool-access-editor');
+  await dialog.getByLabel('Front Desk', { exact: true }).check();
+  await dialog.getByLabel('Medical Assistant', { exact: true }).check();
+  await dialog.getByRole('button', { name: 'Save' }).click();
+  await manager.getByTestId('section-Medical Assistant').getByTestId('tool-front-desk').waitFor({ timeout: 10000 });
+  await manager.getByTestId('section-Front Desk').getByTestId('tool-front-desk').waitFor({ timeout: 10000 });
+  const back = await call(manager, '/tool-access/front-desk', {
+    method: 'PUT',
+    body: JSON.stringify({
+      everyone: false,
+      jobRoleIds: (await call(manager, '/resources')).body.sections
+        .filter((s) => s.jobRole?.name === 'Front Desk')
+        .map((s) => s.jobRole.id),
+    }),
+  });
+  if (back.status >= 300) throw new Error(`putting it back answered ${back.status}`);
+  if ((await call(staff, '/guides/front-desk')).status !== 200) throw new Error('the front desk did not get it back');
+  const tried = await call(staff, '/tool-access/front-desk', {
+    method: 'PUT',
+    body: JSON.stringify({ everyone: true, jobRoleIds: [] }),
+  });
+  if (tried.status !== 403) throw new Error(`staff changed it: ${tried.status}`);
 });
 
 // ------------------------------------------------------------- invoices

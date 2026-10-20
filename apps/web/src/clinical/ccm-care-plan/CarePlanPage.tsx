@@ -59,7 +59,8 @@ export function CarePlanPage() {
       <div className="mx-auto max-w-2xl">
         <PageHeading title="APCM Care Plan" />
         <Card className="p-5 text-sm text-slate-700">
-          This form is for providers, managers and admins. If you should have it, ask a manager.
+          This form is not set up for your job role. If you should have it, ask a manager: they
+          choose who uses each form on Resources.
         </Card>
       </div>
     );

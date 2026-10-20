@@ -2,6 +2,7 @@ import { JobRoleDot } from '../components/JobRoleTag';
 import { createContext, useCallback, useContext, useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useConfirm } from '../components/ConfirmDialog';
+import { Modal } from '../components/Modal';
 import { DriveFolderFiles, isDriveFolder } from '../components/DriveFolderFiles';
 import {
   Alert,
@@ -13,10 +14,10 @@ import {
   buttonClass,
 } from '../components/ui';
 import { ApiError, api } from '../lib/api';
-import { toolsBySection, type ResourceTool } from '../lib/resource-tools';
+import { toolsBySection, type PlacedTool } from '../lib/resource-tools';
 import { t as translate, useT } from '../lib/i18n';
 import { useIsManager, useSession } from '../lib/session';
-import type { Resource, ResourceKind, ResourceSection } from '../lib/types';
+import type { Resource, ResourceKind, ResourceSection, ToolSetting } from '../lib/types';
 
 /**
  * Links and short how-to pages, filed by job role.
@@ -35,14 +36,16 @@ export function ResourcesPage() {
   const isManager = useIsManager();
   const { employee } = useSession();
   const [sections, setSections] = useState<ResourceSection[]>([]);
+  const [toolSettings, setToolSettings] = useState<ToolSetting[]>([]);
   const [driveShareWith, setDriveShareWith] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   const load = useCallback(async () => {
     try {
-      const found = await api.resources();
+      const [found, access] = await Promise.all([api.resources(), api.toolAccess()]);
       setSections(found.sections);
+      setToolSettings(access);
       setDriveShareWith(found.driveShareWith);
       setError(null);
     } catch (cause) {
@@ -58,7 +61,8 @@ export function ResourcesPage() {
 
   if (loading) return <Spinner label={t('Loading resources')} />;
 
-  const tools = toolsBySection(sections, employee);
+  const tools = toolsBySection(sections, toolSettings, employee);
+  const jobRoles = sections.flatMap((section) => (section.jobRole ? [section.jobRole] : []));
   const roleSections = sections.filter((section) => section.jobRole !== null);
 
   return (
@@ -98,6 +102,8 @@ export function ResourcesPage() {
               section={section}
               sections={sections}
               tools={tools.get(section.jobRole?.id ?? 'everyone') ?? []}
+              jobRoles={jobRoles}
+              onToolsChanged={setToolSettings}
               canManage={isManager}
               onChanged={() => void load()}
               onError={setError}
@@ -127,6 +133,8 @@ function SectionBlock({
   section,
   sections,
   tools,
+  jobRoles,
+  onToolsChanged,
   canManage,
   onChanged,
   onError,
@@ -134,7 +142,10 @@ function SectionBlock({
   section: ResourceSection;
   sections: ResourceSection[];
   /// The built-in forms and guides that belong in this section.
-  tools: ResourceTool[];
+  tools: PlacedTool[];
+  /// Every job role, for "Who can use it".
+  jobRoles: JobRoleChoice[];
+  onToolsChanged: (settings: ToolSetting[]) => void;
   canManage: boolean;
   onChanged: () => void;
   onError: (message: string) => void;
@@ -180,7 +191,15 @@ function SectionBlock({
         </div>
       )}
 
-      {tools.length > 0 && <ToolsCard name={name} tools={tools} />}
+      {tools.length > 0 && (
+        <ToolsCard
+          name={name}
+          tools={tools}
+          jobRoles={jobRoles}
+          canManage={canManage}
+          onChanged={onToolsChanged}
+        />
+      )}
 
       {section.resources.length === 0 ? (
         tools.length === 0 && <EmptyState>{t('Nothing here yet.')}</EmptyState>
@@ -551,10 +570,35 @@ function hostOf(url: string): string {
   }
 }
 
+type JobRoleChoice = NonNullable<ResourceSection['jobRole']>;
+
 /// The forms and guides built into Domi Staff that belong in a section
-/// (`lib/resource-tools.ts` says which go where).
-function ToolsCard({ name, tools }: { name: string; tools: ResourceTool[] }) {
+/// (`lib/resource-tools.ts` says which go where). Managers and admins set who
+/// can use each from here.
+function ToolsCard({
+  name,
+  tools,
+  jobRoles,
+  canManage,
+  onChanged,
+}: {
+  name: string;
+  tools: PlacedTool[];
+  jobRoles: JobRoleChoice[];
+  canManage: boolean;
+  onChanged: (settings: ToolSetting[]) => void;
+}) {
   const t = useT();
+  const [editing, setEditing] = useState<PlacedTool | null>(null);
+  const whoFor = (tool: PlacedTool) =>
+    !tool.setting
+      ? 'Managers and admins'
+      : tool.setting.everyone
+        ? 'Everyone'
+        : jobRoles
+            .filter((role) => tool.setting?.jobRoleIds.includes(role.id))
+            .map((role) => role.name)
+            .join(', ') || 'Managers and admins only';
   return (
     <Card
       className="mb-2 divide-y divide-brand-100 border-brand-200 bg-brand-50"
@@ -563,17 +607,135 @@ function ToolsCard({ name, tools }: { name: string; tools: ResourceTool[] }) {
       {tools.map((tool) => (
         <div key={tool.key} className="p-3" data-testid={`tool-${tool.key}`}>
           <div className="flex flex-wrap items-center gap-2">
-            <Link
-              to={tool.to}
-              className="text-sm font-semibold text-brand-800 hover:text-brand-900"
-            >
-              {t(tool.title)} →
-            </Link>
-            {tool.badge && <Badge>{tool.badge}</Badge>}
+            {tool.usable ? (
+              <Link
+                to={tool.href}
+                className="text-sm font-semibold text-brand-800 hover:text-brand-900"
+              >
+                {t(tool.title)} →
+              </Link>
+            ) : (
+              <span className="text-sm font-semibold text-slate-700">{t(tool.title)}</span>
+            )}
+            {canManage && !tool.setting && (
+              <span className="ml-auto text-xs text-slate-500">For: {whoFor(tool)}</span>
+            )}
+            {canManage && tool.setting && (
+              <button
+                type="button"
+                onClick={() => setEditing(tool)}
+                className="ml-auto text-xs font-medium text-brand-700 hover:text-brand-900"
+                aria-label={`Who can use ${tool.title}`}
+              >
+                For: {whoFor(tool)} · Change
+              </button>
+            )}
           </div>
           <p className="mt-0.5 text-xs text-slate-600">{t(tool.description)}</p>
+          {canManage && tool.setting && !tool.usable && (
+            <p className="mt-0.5 text-xs text-slate-500">
+              Only the job roles chosen use this one, not managers and admins by their access.
+            </p>
+          )}
         </div>
       ))}
+      {editing && (
+        <ToolAccessEditor
+          tool={editing}
+          jobRoles={jobRoles}
+          onClose={() => setEditing(null)}
+          onSaved={(settings) => {
+            onChanged(settings);
+            setEditing(null);
+          }}
+        />
+      )}
     </Card>
+  );
+}
+
+/// "Who can use it": everyone, or one or more job roles (Dominguez, October
+/// 2026). Managers and admins open the tools anyway, except the BrainCheck
+/// Care Plan.
+function ToolAccessEditor({
+  tool,
+  jobRoles,
+  onClose,
+  onSaved,
+}: {
+  tool: PlacedTool;
+  jobRoles: JobRoleChoice[];
+  onClose: () => void;
+  onSaved: (settings: ToolSetting[]) => void;
+}) {
+  const [everyone, setEveryone] = useState(tool.setting?.everyone ?? false);
+  const [chosen, setChosen] = useState<string[]>(tool.setting?.jobRoleIds ?? []);
+  const [busy, setBusy] = useState(false);
+  const [problem, setProblem] = useState<string | null>(null);
+  const toggle = (id: string, on: boolean) =>
+    setChosen(on ? [...chosen.filter((x) => x !== id), id] : chosen.filter((x) => x !== id));
+  const save = async () => {
+    setBusy(true);
+    setProblem(null);
+    try {
+      onSaved(await api.saveToolAccess(tool.key, { everyone, jobRoleIds: everyone ? [] : chosen }));
+    } catch (err) {
+      setProblem(err instanceof ApiError ? err.message : 'That did not save. Try again.');
+      setBusy(false);
+    }
+  };
+  return (
+    <Modal title={`Who can use the ${tool.title}?`} onClose={onClose} testId="tool-access-editor">
+      <div className="space-y-3 text-sm">
+        <label className="flex items-center gap-2 font-medium text-slate-800">
+          <input
+            type="checkbox"
+            checked={everyone}
+            onChange={(event) => setEveryone(event.target.checked)}
+            className="rounded border-slate-300 text-brand-600"
+          />
+          Everyone
+        </label>
+        {!everyone && (
+          <fieldset>
+            <legend className="mb-1 text-slate-700">Or these job roles (one or more):</legend>
+            <div className="grid gap-1.5 sm:grid-cols-2">
+              {jobRoles.map((role) => (
+                <label key={role.id} className="flex items-center gap-2">
+                  <input
+                    type="checkbox"
+                    checked={chosen.includes(role.id)}
+                    onChange={(event) => toggle(role.id, event.target.checked)}
+                    className="rounded border-slate-300 text-brand-600"
+                  />
+                  <JobRoleDot colour={role.colour} />
+                  {role.name}
+                </label>
+              ))}
+            </div>
+          </fieldset>
+        )}
+        <p className="text-xs text-slate-600">
+          It is listed under each job role chosen (or Everyone), and only those people can open it.
+          {tool.key === 'braincheck'
+            ? ' Managers and admins do not get this one by their access: its note is signed by whoever fills it in as the provider.'
+            : ' Managers and admins can always open it.'}
+        </p>
+        {problem && <Alert>{problem}</Alert>}
+        <div className="flex justify-end gap-2">
+          <button type="button" className={buttonClass('secondary')} onClick={onClose}>
+            Cancel
+          </button>
+          <button
+            type="button"
+            className={buttonClass('primary')}
+            disabled={busy || (!everyone && chosen.length === 0 && tool.key === 'braincheck')}
+            onClick={() => void save()}
+          >
+            {busy ? 'Saving...' : 'Save'}
+          </button>
+        </div>
+      </div>
+    </Modal>
   );
 }

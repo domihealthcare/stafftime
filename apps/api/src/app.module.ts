@@ -24,6 +24,7 @@ import { ReimbursementsModule } from './reimbursements/reimbursements.module';
 import { PhoneBookModule } from './phone-book/phone-book.module';
 import { VendorsModule } from './vendors/vendors.module';
 import { GuidesModule } from './guides/guides.module';
+import { ToolAccessModule } from './tool-access/tool-access.module';
 import { InvoicesModule } from './invoices/invoices.module';
 import { RequirementsModule } from './requirements/requirements.module';
 import { OnCallModule } from './on-call/on-call.module';
@@ -68,6 +69,7 @@ import { TimeEntriesModule } from './time-entries/time-entries.module';
     ReimbursementsModule,
     VendorsModule,
     GuidesModule,
+    ToolAccessModule,
     InvoicesModule,
     PhoneBookModule,
     RequirementsModule,

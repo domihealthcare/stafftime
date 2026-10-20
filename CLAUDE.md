@@ -1227,6 +1227,33 @@ Beyond the phases, the parts worth knowing about before picking up work:
   they cannot see falls back to Everyone. Same day: the Directory card lost
   **Set a new tablet PIN** (see *Tablet PINs*), and Home lost "The Directory
   shows you there while your shift is on." for staff who do not clock in.
+- **Managers choose who uses each form and guide** (20 October 2026,
+  Dominguez: "there should be an option for managers ... to make the form
+  available for either one group or multiple groups of job roles"; and "APCM
+  Care Plan should be Medical Assistant and AWV has to be for both"): on
+  Resources each built-in tool (phone book, diagnostics, front desk guide,
+  BrainCheck Care Plan, APCM Care Plan, Annual Wellness Visit, results
+  playbook, inpatient notes) says who it is for, and a manager or admin
+  presses **Change** to pick **Everyone** or any job roles. It is then
+  listed in those roles' sections, and the server refuses everybody else
+  (`ToolAccess`, `ToolAccessRole`, `src/tool-access/`, `GET /tool-access`,
+  `PUT /tool-access/:key`; the session's profile carries `tools`, read by
+  `canUseTool` in `lib/clinical-access.ts`). **With no row saved, the
+  defaults are worked out in code** (`tool-access/tools.ts`), so nothing
+  changed on the live site until somebody saves: phone book and diagnostics
+  for everyone, the front desk guide for Front Desk, the BrainCheck Care
+  Plan, results playbook and inpatient notes for providers (*uses clinical
+  forms*), and the APCM Care Plan and the Annual Wellness Visit for the roles
+  with *uses the wellness form* (Medical Assistant and Provider). Managers
+  and admins can always open them, **except the BrainCheck Care Plan** (its
+  note is signed as the provider). The **AWV stays one form** (not split):
+  in the Provider section it opens on page 1, in any other on page 2
+  (`?page=`). The Job roles screen's *uses the wellness form* tick is gone
+  (the setting now lives on Resources; the column stays for the defaults),
+  and *uses clinical forms* reads "People in this role are providers" (it
+  still decides on call, schedule reviews, productivity and the AWV page).
+  Reimbursements is back on Resources, in the Manager section, fixed to
+  managers and admins. `tests/browser/care-plan.mjs`, `guides.mjs`.
 - **Turned down: "PTO about to be lost"** (9 October 2026, Dominguez): a
   reminder to use PTO before it fails to carry over was proposed and refused —
   not in the practice's interest. Do not propose it again.

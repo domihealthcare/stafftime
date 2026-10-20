@@ -22,6 +22,7 @@ import { AuthUser } from '../common/auth/auth-user';
 import { CurrentUser } from '../common/auth/current-user.decorator';
 import { Public } from '../common/auth/public.decorator';
 import { Roles } from '../common/auth/roles.decorator';
+import { ToolAccessService } from '../tool-access/tool-access.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { AuthService } from './auth.service';
 import { SESSION_COOKIE, clearSessionCookie, sessionCookieOptions } from './cookie';
@@ -42,6 +43,7 @@ export class AuthController {
     private readonly sessions: SessionService,
     private readonly resets: PasswordResetService,
     private readonly prisma: PrismaService,
+    private readonly toolAccess: ToolAccessService,
     config: ConfigService,
   ) {
     this.isProduction = config.get<string>('NODE_ENV') === 'production';
@@ -276,6 +278,9 @@ export class AuthController {
       /// Whether the Annual Wellness Visit form is under Resources → Forms - Providers and
       /// Medical Assistants by job role; managers and admins have it anyway.
       usesWellnessForm: jobRoles.some((membership) => membership.jobRole.usesWellnessForm),
+      /// The built-in forms and guides they may open, as managers set them on
+      /// Resources (`tool-access/`).
+      tools: await this.toolAccess.toolsFor(employeeId, employee.role),
     };
   }
 }
