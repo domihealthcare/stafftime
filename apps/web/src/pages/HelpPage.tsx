@@ -788,6 +788,34 @@ const STAFF: Section[] = [
         ),
       },
       {
+        question: 'The front desk guide (booking rules, scripts, abbreviations)',
+        answer: (
+          <>
+            <p>
+              <Screen>Front desk guide</Screen> - on Home under Quick, and under Resources. It is
+              the Front Desk Cheat Sheet: booking rules for each visit type, what to do with Action
+              needed, Appt needed and normal results, when to send a patient to the ED, payments,
+              which eCW tab a document goes in, pharmacy calls and the abbreviations. Type in the
+              search box (any words, in any order), or press a heading to see just that part.
+            </p>
+            <p>
+              The <strong>message scripts</strong> have a box for each blank. Fill them in and press{' '}
+              <strong>Copy</strong>, then paste the message into eCW. What you type there is not
+              saved or sent anywhere, and anything left blank shows as ____ so you can spot it. The
+              guide also works out <strong>how many to dispense</strong> for a medication, and
+              whether a patient is a <strong>new patient or a follow up</strong> from their last
+              visit.
+            </p>
+            <p>
+              Providers also have the <strong>Results playbook</strong> (what to do with each
+              result) and <strong>Inpatient notes</strong> (hospital note templates to copy, and the
+              hospital codes by time), under Resources. Managers and admins keep all three up to
+              date.
+            </p>
+          </>
+        ),
+      },
+      {
         question: 'Are surveys really anonymous?',
         answer: (
           <>
@@ -1280,7 +1308,8 @@ const MANAGERS: Section[] = [
                 <strong>Surveys &amp; reading</strong> - Surveys and Required reading.
               </li>
               <li>
-                <strong>Money</strong> - Export, Reimbursements and Vendor payments (admins).
+                <strong>Money</strong> - Export, Reimbursements, Invoices and Vendor payments
+                (admins).
               </li>
             </ul>
             <p className="mt-2">
@@ -2314,6 +2343,44 @@ const MANAGERS: Section[] = [
               admin can change anybody&rsquo;s there. A part nobody has chosen still goes to
               everybody, so nothing is missed. Time off also decides who is told as each request
               comes in. The banners always show everything.
+            </p>
+          </>
+        ),
+      },
+      {
+        question: 'Keeping the guides up to date',
+        answer: (
+          <>
+            <p>
+              The Front desk guide, the Results playbook and the Inpatient notes each have{' '}
+              <strong>+ Add a section</strong>, and every section has <strong>Edit</strong>, the
+              arrows to move it and <strong>Remove</strong>. A section sits under a heading; type a
+              new heading to start one. <strong>Preview</strong> shows it as staff will see it, and{' '}
+              <strong>How to format it</strong> lists the marks: <strong>**bold**</strong>,
+              ==amber== for action needed, [[Blank]] for a blank to fill in, and :::copy on a line
+              of its own (and ::: to end it) around a script to copy. Rules and wording only: never
+              a patient&rsquo;s details.
+            </p>
+          </>
+        ),
+      },
+      {
+        question: 'Invoices',
+        answer: (
+          <>
+            <p>
+              <Screen>Manage → Money → Invoices</Screen> takes the place of the Invoice Template
+              sheet. <strong>+ New invoice</strong>: who it is to, the dates, a line for each thing
+              (earlier lines are offered as you type), whether it is paid, and an optional note.
+              Numbers follow on by themselves (#001, #002). <strong>Save and download PDF</strong>{' '}
+              gives the invoice laid out like the template; every invoice stays on the list, to
+              download again, mark paid or search for.
+            </p>
+            <p>
+              <strong>To a patient:</strong> tick <strong>A patient</strong>. Their name, date of
+              birth and address go on the PDF you download there and then, and are never saved: the
+              copy kept in Domi Staff has them blanked out. Keep that PDF where the practice keeps
+              patient records, and leave the patient&rsquo;s name out of the lines.
             </p>
           </>
         ),

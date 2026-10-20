@@ -204,6 +204,16 @@ export function QuickActions() {
         <Link to="/phone-book" className={button}>
           {t('Phone book')}
         </Link>
+        <Link to="/front-desk" className={button}>
+          {t('Front desk guide')}
+        </Link>
+        {(employee?.usesClinicalForms ||
+          employee?.role === 'MANAGER' ||
+          employee?.role === 'ADMIN') && (
+          <Link to="/results-playbook" className={button}>
+            Results playbook
+          </Link>
+        )}
         {forms && (
           <Link to="/resources" className={button}>
             {t('Forms')}

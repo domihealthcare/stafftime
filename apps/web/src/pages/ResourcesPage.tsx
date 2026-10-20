@@ -562,6 +562,9 @@ function hostOf(url: string): string {
 function ReferenceSection() {
   const t = useT();
   const isManager = useIsManager();
+  const { employee } = useSession();
+  // The playbook and inpatient notes: providers, managers and admins.
+  const providerGuides = isManager || Boolean(employee?.usesClinicalForms);
   return (
     <section aria-label={t('Reference')} data-testid="reference-section">
       <h2 className="mb-2 text-sm font-semibold uppercase tracking-wide text-slate-600">
@@ -594,6 +597,45 @@ function ReferenceSection() {
             )}
           </p>
         </div>
+        <div className="p-3">
+          <Link
+            to="/front-desk"
+            className="block text-sm font-semibold text-brand-800 hover:text-brand-900"
+          >
+            {t('Front desk guide')} →
+          </Link>
+          <p className="mt-0.5 text-xs text-slate-600">
+            {t(
+              'Booking rules, results calls, message scripts to copy, payments, uploading and medications.',
+            )}
+          </p>
+        </div>
+        {providerGuides && (
+          <>
+            <div className="p-3">
+              <Link
+                to="/results-playbook"
+                className="block text-sm font-semibold text-brand-800 hover:text-brand-900"
+              >
+                Results playbook →
+              </Link>
+              <p className="mt-0.5 text-xs text-slate-600">
+                What to do with each result, and when action is needed.
+              </p>
+            </div>
+            <div className="p-3">
+              <Link
+                to="/inpatient-notes"
+                className="block text-sm font-semibold text-brand-800 hover:text-brand-900"
+              >
+                Inpatient notes →
+              </Link>
+              <p className="mt-0.5 text-xs text-slate-600">
+                Hospital note templates to copy, and the hospital care codes by time.
+              </p>
+            </div>
+          </>
+        )}
         {isManager && (
           <div className="p-3">
             <div className="flex flex-wrap items-center gap-2">

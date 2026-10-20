@@ -116,6 +116,7 @@ export const SECTION_OF = {
   Export: 'Money',
   Reimbursements: 'Money',
   'Vendor payments': 'Money',
+  Invoices: 'Money',
 };
 
 /// Opens one of Manage's screens the way a person does: Manage, its heading,

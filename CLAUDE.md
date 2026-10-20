@@ -122,6 +122,12 @@ Since October 2026 (Dominguez: "i should be able to upload pictures for staff
 avatars") an **admin may also put one up for somebody**, from Edit on the
 Staff screen, fitted and shrunk the same way; the person is told under the
 bell and can change or remove it. Still only a profile photo of the person.
+**Invoices** (October 2026, Dominguez) are kept, as he needs copies, but one
+made out to a **patient** keeps no name, date of birth or address: they are
+typed in the browser, printed on the PDF downloaded there and then, and never
+sent, so the saved copy shows them blanked out (a database constraint and the
+schema guard hold it).
+
 Apart from that, the only files the app stores are the payroll export
 spreadsheets it generates itself. The practice's own spreadsheets brought onto
 the portal in October 2026 — the diagnostics guide and the reimbursements
@@ -1181,6 +1187,33 @@ Beyond the phases, the parts worth knowing about before picking up work:
   Providers, and the resources NB BW, NB Nurse, WNY BW, WNY Nurse (migration
   `20261019050000_review_resources` splits the old groups, keeping each one's
   reviewer, and touches only groups still under their starting names).
+- **Guides and invoices from the staff's own documents** (20 October 2026,
+  Dominguez: "these 4 documents are things the staff use / update ... lets
+  create easy ways for staff to utilize these"; his choices: managers and
+  admins edit, the playbook for providers, managers and admins). Three
+  **guides** (`GuideSection`, `GuideKey`; `src/guides/`), each a list of
+  sections under headings in a light markup (`lib/guide-markup.ts`: bullets,
+  tables, `**bold**`, `==action==` amber, `!!` red warnings, `[[Blank]]`,
+  `:::copy` blocks, `::tool:` helpers), searchable by any words, a heading at a
+  time, loaded by migration `20261020010000_guides_and_invoices` from the
+  documents (typos mended, the scripts' examples turned into blanks, the
+  duplicate Omega 3 and the half-copied Tylenol entry left out, the playbook's
+  empty table dropped). **Front desk guide** (`/front-desk`, everybody; Home's
+  Quick card and Resources): the Front Desk Cheat Sheet, with message scripts
+  filled in and copied in the browser (never sent), a **how many to dispense**
+  helper and **new patient or follow up** (3 years to the day). **Results
+  playbook** (`/results-playbook`) and **Inpatient notes**
+  (`/inpatient-notes`, templates to copy and a **which code for the time**
+  helper from 99221-99233), for providers, managers and admins (server-side,
+  `guides/guides.ts`). The playbook's "CI, JD, JB" are read as Dr.
+  Iparraguirre, Dr. Dominguez and Dr. Badia: **check**. **Invoices**
+  (Manage, Money, managers and admins; `Invoice`, `InvoiceLine`,
+  `src/invoices/`, `pages/InvoicesPage.tsx`, `lib/invoice-pdf.ts`): numbered
+  #001 on, laid out like the Invoice Template, kept to download again, marked
+  paid, searched; **to a patient** the details go on that PDF only (see *Data
+  this app does not hold*). Also fixed: the phone book's and guides' sticky
+  search bar covered the header's menus. `tests/browser/guides.mjs`. The
+  guides and invoices are worth carrying to the EMR module.
 - **Turned down: "PTO about to be lost"** (9 October 2026, Dominguez): a
   reminder to use PTO before it fails to carry over was proposed and refused —
   not in the practice's interest. Do not propose it again.

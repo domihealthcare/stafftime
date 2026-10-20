@@ -55,6 +55,7 @@ export const MANAGE_SECTIONS: ManageSection[] = [
     tabs: [
       { to: '/export', label: 'Export', need: 'manager' },
       { to: '/reimbursements', label: 'Reimbursements', need: 'manager' },
+      { to: '/invoices', label: 'Invoices', need: 'manager' },
       { to: '/vendors', label: 'Vendor payments', need: 'admin' },
     ],
   },
