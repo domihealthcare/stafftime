@@ -1205,8 +1205,8 @@ Beyond the phases, the parts worth knowing about before picking up work:
   playbook** (`/results-playbook`) and **Inpatient notes**
   (`/inpatient-notes`, templates to copy and a **which code for the time**
   helper from 99221-99233), for providers, managers and admins (server-side,
-  `guides/guides.ts`). The playbook's "CI, JD, JB" are read as Dr.
-  Iparraguirre, Dr. Dominguez and Dr. Badia: **check**. **Invoices**
+  `guides/guides.ts`). The playbook's "CI, JD, JB" are Dr.
+  Iparraguirre, Dr. Dominguez and Dr. Badia (confirmed by Dominguez). **Invoices**
   (Manage, Money, managers and admins; `Invoice`, `InvoiceLine`,
   `src/invoices/`, `pages/InvoicesPage.tsx`, `lib/invoice-pdf.ts`): numbered
   #001 on, laid out like the Invoice Template, kept to download again, marked
