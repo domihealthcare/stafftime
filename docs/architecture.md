@@ -4761,7 +4761,7 @@ shorter and harder to get wrong):
   already in the chart, and copying it invites errors); an independent
   historian took part (who: one line); no 99483 in 180 days; no conflicting
   same-day service (the codes behind an "i" that shows them on hover or tap).
-- **Patient and visit**: name, DOB, MRN, date of service, **office or
+- **Patient and visit**: name, DOB, date of service, **office or
   telehealth** (no location — the claim carries it), time and MDM.
   Telehealth shows a **modifier 95** reminder, worded in `config.ts` (payers
   differ on 95 and place of service, so it reminds rather than rules). No
@@ -4769,16 +4769,31 @@ shorter and harder to get wrong):
 - **A–J**: each "Today" or "Prior visit". Prior visit is a **statement the
   provider ticks** ("completed at a prior visit; reviewed today and still
   valid or updated"), not a date and a name; its answers fold away and are
-  optional. **A starts as prior visit** (`DEFAULT_PRIOR`), unticked.
-  Driving (G) and the care plan (J) are required either way. The cognitive
+  optional. Every element starts as Today (`DEFAULT_PRIOR` is empty since
+  October 2026; A started as prior until then). Driving (G), the care plan
+  (J) and K are required either way. The cognitive
   test starts on **BrainCheck Assess**, which the practice uses; its result
   is entered as reported. I records **planning ahead** — financial power of
   attorney, health care proxy, life-support wishes — each done or not yet.
-- **D, dementia staging, is done on screen with FAST** — pick the highest
-  stage whose description fits. Staging is one of 99483's required elements.
-  FAST 1 is left out (no "no impairment" anywhere); another instrument (CDR,
-  GDS) can be named with its score instead. The descriptions paraphrase
-  Reisberg's FAST: a provider to check them.
+- **D, dementia staging, is done on screen** with FAST, the Global
+  Deterioration Scale or the CDR global score - pick the stage whose
+  description fits. Staging is one of 99483's required elements. FAST 1,
+  GDS 1 and CDR 0 are left out (no "no impairment" anywhere); another
+  instrument can be named with its score instead. The descriptions
+  paraphrase the published scales: a provider to check them.
+- **Tools done on the form** (October 2026, Dominguez: "if a certain tool is
+  chosen, should be able to use that tool in the section"): choosing Katz,
+  Lawton or the FAQ in B, or the PHQ-9, PHQ-2, GDS-15 or Cornell in F, shows
+  its questions; the total and its band are worked out in `instruments.ts`
+  and read once through `results.ts`, so the screen, the note and the
+  suggestions agree. Katz and Lawton keep the ADL and IADL lists in step.
+  A positive PHQ-9 item 9 or Cornell suicide item warns and suggests the 988
+  line. **Enter the total only** keeps the old typed score for a tool done on
+  paper. All public-domain instruments; wording shortened only to fit.
+- **A's history and exam are tick lists** (`COLLATERAL_HISTORY`,
+  `EXAM_FINDINGS`) with an Other box, not free text. **The MRN was taken
+  out** (Dominguez: hard to find and type); names are given capitals when
+  the box is left (`capitalizeName`, "de la" kept small).
 - **J, the care plan, is built from the answers** (`care-plan.ts`): each
   area's problem is written from sections A–I (editable), and its goals and
   actions are pick-lists with the ones the answers point to marked
@@ -4787,7 +4802,18 @@ shorter and harder to get wrong):
   both) or **Tick all the suggested ones** at the top of J (Dominguez,
   October 2026). An area with nothing suggested says so. G's
   safety plan is J's Safety area. Each area needs a goal and an action (or a
-  line of its own).
+  line of its own). October 2026 added many more goals and actions and
+  smarter suggestions (sudden or focal findings, hearing and vision, stage,
+  each ADL and IADL, mood and safety, caregiver needs).
+- **K, referrals and follow-up**, a section of its own since October 2026:
+  referrals with the suggested ones marked, who the plan was shared with,
+  education, and **Follow-up in** as a click (2 weeks to 12 months, no date).
+  Every note and handout carries `BRAINCHECK_RECHECK`: repeat BrainCheck in 6
+  to 12 months. Validated as section K in `validate.ts`.
+- **The first tap in a section is kept** (`useActivity` in
+  `common/layout.tsx`, all three forms): a section is counted as reached once
+  a tap has finished, not on the press, because turning the sections above it
+  amber pushed the box from under the finger.
 
 **The rules** are in `validate.ts`, one list used three ways: the checklist
 of what is missing, the tick on each section in the progress bar, and the
@@ -4802,7 +4828,7 @@ blocks; jsPDF ships an HTML-to-picture path we must not use). Helvetica
 covers English and Spanish; `printable.ts` composes accents and swaps a few
 look-alikes (≥ → >=), and anything else is listed as a problem to retype.
 
-- **The note** — `MM-DD-YYYY BrainCheck Note.pdf` (by the date of service): patient, DOB, MRN, DOS and
+- **The note** — `MM-DD-YYYY BrainCheck Note.pdf` (by the date of service): patient, DOB, DOS and
   "Page X of Y" on every page; the requirements confirmed; each element and
   how it was completed; the care plan; the attestation with the minutes
   entered, the provider, a time stamp and the provider's **electronic
@@ -4818,12 +4844,13 @@ look-alikes (≥ → >=), and anything else is listed as a problem to retype.
   checklist; referrals, the Alzheimer's Association helpline, general safety
   tips, the next visit and the practice's number (201-528-3664);
   "Confidential" on every page. Plain words, larger print, nothing clinical
-  (no scores, stages or MRN). Dates are spelled out ("29 de
+  (no scores or stages). Dates are spelled out ("29 de
   septiembre de 2026") so nobody guesses which number is the month. Chosen
   lines are translated; anything typed is printed as typed. **All Spanish is
   in `translations.es.ts`**, read and approved by a native speaker (October
-  2026). `NEEDS_NATIVE_SPEAKER_REVIEW` is now false; set it back to true
-  while new Spanish waits for the same read, and the form says so beside the
+  2026). `NEEDS_NATIVE_SPEAKER_REVIEW` was set back to **true** in October
+  2026 for the new goals, actions, referrals and the BrainCheck line, while
+  they wait for the same read, and the form says so beside the
   language choice (never on the handout). A fake-patient PDF of each form
   was tried in eCW before real use (October 2026).
 

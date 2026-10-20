@@ -1,7 +1,6 @@
 import {
   CARE_PLAN_AREAS,
   COGNITIVE_TESTS,
-  DEPRESSION_SCREENS,
   ELEMENTS,
   REQUIREMENTS,
   type ElementKey,
@@ -9,6 +8,7 @@ import {
 import { dayNumber } from '../common/dates';
 import { isPrior, type AssessmentForm } from './form';
 import { unprintableCharacters } from '../common/printable';
+import { depressionResult, functionalResult } from './results';
 
 /**
  * What still stands between the form and the PDFs.
@@ -18,12 +18,17 @@ import { unprintableCharacters } from '../common/printable';
  * themselves - a PDF is only made when the list is empty.
  */
 
-export type SectionKey = 'requirements' | 'visit' | ElementKey;
+/// K is not one of 99483's elements: it holds the referrals, what was shared
+/// and the follow-up, split off the care plan (October 2026, Dominguez).
+export type SectionKey = 'requirements' | 'visit' | ElementKey | 'K';
+
+export const FOLLOW_UP_TITLE = 'Referrals and follow-up';
 
 export const SECTIONS: { key: SectionKey; label: string; title: string }[] = [
   { key: 'requirements', label: 'R', title: 'Requirements' },
   { key: 'visit', label: '0', title: 'Patient and visit' },
   ...ELEMENTS.map((element) => ({ key: element.key, label: element.key, title: element.title })),
+  { key: 'K', label: 'K', title: FOLLOW_UP_TITLE },
 ];
 
 export interface Problem {
@@ -73,7 +78,6 @@ export function validate(form: AssessmentForm, today: string): Problem[] {
 
   // ------------------------------------------------------- patient and visit
   need(!blank(visit.patientName), 'visit', 'visit.patientName', 'Enter the patient’s name.');
-  need(!blank(visit.mrn), 'visit', 'visit.mrn', 'Enter the MRN.');
   const dos = dayNumber(visit.dos);
   const todayDay = dayNumber(today);
   need(dos !== null, 'visit', 'visit.dos', 'Enter the date of service.');
@@ -121,9 +125,15 @@ export function validate(form: AssessmentForm, today: string): Problem[] {
   const { A, B, C, D, E, F, G, H, I, J } = form;
 
   if (today_('A')) {
-    need(!blank(A.collateralHistory), 'A', 'A.collateralHistory', 'Enter the collateral history.');
-    need(!blank(A.examFindings), 'A', 'A.examFindings', 'Enter the focused exam findings.');
+    need(A.collateral.length > 0, 'A', 'A.collateral', 'Tick the collateral history.');
+    need(A.exam.length > 0, 'A', 'A.exam', 'Tick the focused exam findings.');
     need(!blank(A.test), 'A', 'A.test', 'Choose the cognitive test.');
+  }
+  if (A.collateral.includes('other')) {
+    need(!blank(A.collateralOther), 'A', 'A.collateralOther', 'Describe the other history.');
+  }
+  if (A.exam.includes('other')) {
+    need(!blank(A.examOther), 'A', 'A.examOther', 'Describe the other exam finding.');
   }
   if (A.test === 'other') need(!blank(A.testOther), 'A', 'A.testOther', 'Name the cognitive test.');
   if (today_('A') || !blank(A.score)) {
@@ -137,6 +147,15 @@ export function validate(form: AssessmentForm, today: string): Problem[] {
     need(B.iadl.length > 0, 'B', 'B.iadl', 'Tick the IADL impairments, or None.');
   }
   if (B.tool === 'other') need(!blank(B.toolOther), 'B', 'B.toolOther', 'Name the tool used.');
+  const tool = functionalResult(B);
+  if (tool && B.tool !== 'other' && today_('B')) {
+    need(
+      tool.complete,
+      'B',
+      B.toolScoreOnly ? 'B.toolScore' : 'B.toolAnswers',
+      B.toolScoreOnly ? 'Enter the tool’s total.' : `Answer every ${tool.name} question.`,
+    );
+  }
 
   if (today_('C')) {
     need(!blank(C.capacity), 'C', 'C.capacity', 'Choose the decision-making capacity.');
@@ -148,6 +167,10 @@ export function validate(form: AssessmentForm, today: string): Problem[] {
   if (today_('D')) {
     if (D.instrument === 'fast') {
       need(!blank(D.fastStage), 'D', 'D.fastStage', 'Choose the FAST stage.');
+    } else if (D.instrument === 'gds') {
+      need(!blank(D.gdsStage), 'D', 'D.gdsStage', 'Choose the Global Deterioration Scale stage.');
+    } else if (D.instrument === 'cdr') {
+      need(!blank(D.cdrScore), 'D', 'D.cdrScore', 'Choose the CDR global score.');
     } else {
       need(!blank(D.otherName), 'D', 'D.otherName', 'Name the staging instrument.');
       need(!blank(D.otherScore), 'D', 'D.otherScore', 'Enter the stage or score.');
@@ -179,10 +202,14 @@ export function validate(form: AssessmentForm, today: string): Problem[] {
       'Name the depression screen.',
     );
   }
-  if (today_('F') || !blank(F.depressionScore)) {
-    const screen = DEPRESSION_SCREENS.find((s) => s.value === F.depressionScreen);
-    const problem = scoreProblem(F.depressionScore, screen?.max ?? null);
+  const mood = depressionResult(F);
+  const typedScore = F.depressionScreen === 'other' || F.screenScoreOnly;
+  if (mood && typedScore && (today_('F') || !blank(F.depressionScore))) {
+    const problem = scoreProblem(F.depressionScore, mood.max);
     if (problem) problems.push({ section: 'F', field: 'F.depressionScore', message: problem });
+  }
+  if (mood && !typedScore && today_('F')) {
+    need(mood.complete, 'F', 'F.screenAnswers', `Answer every ${mood.name} question.`);
   }
   if (!blank(F.otherInstrument) || !blank(F.otherScore)) {
     need(!blank(F.otherInstrument), 'F', 'F.otherInstrument', 'Name the other instrument.');
@@ -228,20 +255,15 @@ export function validate(form: AssessmentForm, today: string): Problem[] {
       `${area.label}: tick what will be done, or write it.`,
     );
   }
-  need(!blank(J.sharedWith), 'J', 'J.sharedWith', 'Choose who the plan was shared with.');
-  need(J.education.length > 0, 'J', 'J.education', 'Tick the education and support provided.');
-  if (J.education.includes('other')) {
-    need(!blank(J.educationOther), 'J', 'J.educationOther', 'Describe the other education.');
+
+  // ------------------------------------------------ referrals and follow-up
+  const { K } = form;
+  need(!blank(K.sharedWith), 'K', 'K.sharedWith', 'Choose who the plan was shared with.');
+  need(K.education.length > 0, 'K', 'K.education', 'Tick the education and support provided.');
+  if (K.education.includes('other')) {
+    need(!blank(K.educationOther), 'K', 'K.educationOther', 'Describe the other education.');
   }
-  if (!blank(J.followUpDate)) {
-    const followUp = dayNumber(J.followUpDate);
-    need(
-      followUp !== null && (dos === null || followUp > dos),
-      'J',
-      'J.followUpDate',
-      'The follow-up date must be after the date of service.',
-    );
-  }
+  need(!blank(K.followUpInterval), 'K', 'K.followUpInterval', 'Choose when to follow up.');
 
   // ------------------------------------------------ characters it can print
   for (const [path, text] of strings(form)) {
@@ -268,6 +290,7 @@ function sectionOf(path: string): SectionKey {
   if (head === 'requirements' || head === 'visit') return head;
   if (head === 'completion' || head === 'priorConfirmed') return path.split('.')[1] as ElementKey;
   if (head === 'handoutLanguage') return 'visit';
+  if (head === 'K') return 'K';
   return head as ElementKey;
 }
 

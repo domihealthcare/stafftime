@@ -1,4 +1,4 @@
-import { useCallback, useState, type ReactNode } from 'react';
+import { useCallback, useRef, useState, type ReactNode } from 'react';
 import { Card } from '../../components/ui';
 
 /**
@@ -63,6 +63,30 @@ export function useMovedOn(sections: SectionInfo[], showAll: boolean) {
   };
 }
 
+/// Handlers that report somebody working in a part of the form: when the
+/// keyboard moves into it, or once a tap or click has finished. Not on the
+/// press itself: a section turning amber grows the ones above it, and on a
+/// tablet that moved the box from under the finger, so the first tap in a
+/// section was lost (found October 2026).
+export function useActivity(onActivity?: () => void) {
+  const pressing = useRef(false);
+  return {
+    onPointerDown: () => {
+      pressing.current = true;
+    },
+    onPointerCancel: () => {
+      pressing.current = false;
+    },
+    onFocus: () => {
+      if (!pressing.current) onActivity?.();
+    },
+    onClick: () => {
+      pressing.current = false;
+      onActivity?.();
+    },
+  };
+}
+
 /// One numbered card of a clinical form, findable from its progress bar.
 export function FormSection({
   prefix,
@@ -94,6 +118,7 @@ export function FormSection({
   const headingId = `${prefix}-heading-${sectionKey}`;
   const complete = pending.length === 0;
   const amber = !complete && flagged;
+  const activity = useActivity(onActivity);
   return (
     <section
       id={`${prefix}-section-${sectionKey}`}
@@ -102,8 +127,7 @@ export function FormSection({
       data-testid={`section-${sectionKey}`}
       data-complete={complete}
       data-flagged={amber}
-      onFocus={onActivity}
-      onPointerDown={onActivity}
+      {...activity}
     >
       <Card
         className={`border-l-4 p-4 sm:p-5 ${

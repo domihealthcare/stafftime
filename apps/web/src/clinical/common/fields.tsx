@@ -92,12 +92,15 @@ export function TextField({
   placeholder,
   disabled,
   suffix,
+  onBlur,
 }: {
   path: string;
   /// A question in two languages is a node: the patient's, then the English.
   label: ReactNode;
   value: string;
   onChange: (value: string) => void;
+  /// When the box is left: tidying what was typed, such as capitals in a name.
+  onBlur?: () => void;
   required?: boolean;
   hint?: ReactNode;
   type?: 'text' | 'date';
@@ -124,6 +127,7 @@ export function TextField({
           placeholder={placeholder}
           disabled={disabled}
           onChange={(event) => onChange(event.target.value)}
+          onBlur={onBlur}
           aria-invalid={problem ? true : undefined}
           className={INPUT}
           {...PRIVATE}

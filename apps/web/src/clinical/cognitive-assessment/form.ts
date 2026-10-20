@@ -8,6 +8,7 @@ import {
   type RequirementKey,
 } from './config';
 import type { PrintLanguage } from '../common/layout';
+import type { Answers } from './instruments';
 
 export { hasConcern, toggleChoice } from '../common/choices';
 
@@ -46,7 +47,6 @@ export interface AssessmentForm {
   visit: {
     patientName: string;
     dob: string;
-    mrn: string;
     dos: string;
     visitType: string;
     totalMinutes: string;
@@ -57,19 +57,36 @@ export interface AssessmentForm {
   /// at a prior visit (Dominguez, September 2026).
   priorConfirmed: Record<ElementKey, boolean>;
   A: {
-    collateralHistory: string;
-    examFindings: string;
+    /// Ticked from COLLATERAL_HISTORY and EXAM_FINDINGS, with "other" in
+    /// words (October 2026; free text before).
+    collateral: string[];
+    collateralOther: string;
+    exam: string[];
+    examOther: string;
     domains: string[];
     test: string;
     testOther: string;
     score: string;
   };
-  B: { adl: string[]; iadl: string[]; details: string; tool: string; toolOther: string };
+  B: {
+    adl: string[];
+    iadl: string[];
+    details: string;
+    tool: string;
+    toolOther: string;
+    /// The chosen tool's answers, done on screen: { item: answer }.
+    toolAnswers: Answers;
+    /// Done elsewhere: only the total is entered (and for "other").
+    toolScoreOnly: boolean;
+    toolScore: string;
+  };
   C: { capacity: string; comment: string };
   D: {
-    /// "fast" (done on screen) or "other".
+    /// "fast", "gds" or "cdr" (all done on screen), or "other".
     instrument: string;
     fastStage: string;
+    gdsStage: string;
+    cdrScore: string;
     otherName: string;
     otherScore: string;
   };
@@ -85,6 +102,11 @@ export interface AssessmentForm {
     symptomDetails: string;
     depressionScreen: string;
     depressionScreenOther: string;
+    /// The screen's answers, done on screen: { item: answer }.
+    screenAnswers: Answers;
+    /// Done elsewhere: only the total is entered in depressionScore (and
+    /// always for "other").
+    screenScoreOnly: boolean;
     depressionScore: string;
     otherInstrument: string;
     otherScore: string;
@@ -102,15 +124,16 @@ export interface AssessmentForm {
     socialSupports: string;
   };
   I: { status: string; goalsOfCare: string } & Record<PlanningItem, string>;
-  J: {
-    plan: Record<CarePlanArea, CarePlanEntry>;
+  J: { plan: Record<CarePlanArea, CarePlanEntry> };
+  /// Referrals and follow-up, a section of their own after the care plan
+  /// (October 2026, Dominguez). Follow-up is an interval only, no date.
+  K: {
     referrals: string[];
     referralsOther: string;
     sharedWith: string;
     education: string[];
     educationOther: string;
     followUpInterval: string;
-    followUpDate: string;
     followUpPlan: string;
   };
   /// The handout: English, or English and Spanish.
@@ -129,7 +152,6 @@ export function emptyForm(dos: string): AssessmentForm {
     visit: {
       patientName: '',
       dob: '',
-      mrn: '',
       dos,
       visitType: '',
       totalMinutes: '',
@@ -144,16 +166,34 @@ export function emptyForm(dos: string): AssessmentForm {
     >,
     // BrainCheck Assess is what the practice tests with.
     A: {
-      collateralHistory: '',
-      examFindings: '',
+      collateral: [],
+      collateralOther: '',
+      exam: [],
+      examOther: '',
       domains: [],
       test: 'braincheck',
       testOther: '',
       score: '',
     },
-    B: { adl: [], iadl: [], details: '', tool: '', toolOther: '' },
+    B: {
+      adl: [],
+      iadl: [],
+      details: '',
+      tool: '',
+      toolOther: '',
+      toolAnswers: {},
+      toolScoreOnly: false,
+      toolScore: '',
+    },
     C: { capacity: '', comment: '' },
-    D: { instrument: 'fast', fastStage: '', otherName: '', otherScore: '' },
+    D: {
+      instrument: 'fast',
+      fastStage: '',
+      gdsStage: '',
+      cdrScore: '',
+      otherName: '',
+      otherScore: '',
+    },
     E: {
       reconciled: false,
       highRiskReviewed: false,
@@ -166,6 +206,8 @@ export function emptyForm(dos: string): AssessmentForm {
       symptomDetails: '',
       depressionScreen: '',
       depressionScreenOther: '',
+      screenAnswers: {},
+      screenScoreOnly: false,
       depressionScore: '',
       otherInstrument: '',
       otherScore: '',
@@ -189,13 +231,14 @@ export function emptyForm(dos: string): AssessmentForm {
           { problem: null, goals: [], actions: [], extra: '' },
         ]),
       ) as unknown as Record<CarePlanArea, CarePlanEntry>,
+    },
+    K: {
       referrals: [],
       referralsOther: '',
       sharedWith: '',
       education: [],
       educationOther: '',
       followUpInterval: '',
-      followUpDate: '',
       followUpPlan: '',
     },
     handoutLanguage: 'en',
@@ -204,4 +247,50 @@ export function emptyForm(dos: string): AssessmentForm {
 
 export function isPrior(form: AssessmentForm, key: ElementKey): boolean {
   return form.completion[key] === 'prior';
+}
+
+/// Little words that stay small inside a name: "Maria de la Cruz".
+const PARTICLES = new Set([
+  'de',
+  'del',
+  'la',
+  'las',
+  'los',
+  'y',
+  'da',
+  'di',
+  'do',
+  'dos',
+  'du',
+  'van',
+  'von',
+  'der',
+]);
+
+/// A name with each word's first letter in capitals (October 2026,
+/// Dominguez: "can the patient name auto capitalize? as well as the caregiver
+/// name"). Done when the box is left, so a name can be typed at speed. Only
+/// first letters change, so "McDonald" typed with care stays as typed,
+/// "o'brien" becomes "O'Brien" and "maria de la cruz" "Maria de la Cruz".
+export function capitalizeName(text: string): string {
+  return text
+    .split(/(\s+)/)
+    .map((word, index) => {
+      if (/^\s*$/.test(word)) return word;
+      if (index > 0 && PARTICLES.has(word)) return word;
+      return word.replace(
+        /(^|[-'’.])(\p{Ll})/gu,
+        (_, before: string, letter: string) => before + letter.toUpperCase(),
+      );
+    })
+    .join('');
+}
+
+/// The historian is typed as "name, relationship": only the name part is
+/// capitalized ("maria lopez, daughter" becomes "Maria Lopez, daughter").
+export function capitalizeHistorian(text: string): string {
+  const comma = text.indexOf(',');
+  return comma === -1
+    ? capitalizeName(text)
+    : capitalizeName(text.slice(0, comma)) + text.slice(comma);
 }

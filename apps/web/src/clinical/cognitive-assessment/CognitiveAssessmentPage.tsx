@@ -13,6 +13,7 @@ import {
   ProgressBar,
   type Pending,
   type PrintLanguage,
+  useActivity,
   useMovedOn,
 } from '../common/layout';
 import { savePdf, useLeaveGuard } from '../common/leave-guard';
@@ -23,13 +24,14 @@ import {
   CarePlanSection,
   CompletionSwitch,
   ELEMENT_BODIES,
+  FollowUpSection,
   PRIOR_STATEMENT,
   RequirementsSection,
   VisitSection,
   type Update,
 } from './sections';
 import { NEEDS_NATIVE_SPEAKER_REVIEW } from './translations.es';
-import { SECTIONS, validate, type SectionKey } from './validate';
+import { FOLLOW_UP_TITLE, SECTIONS, validate, type SectionKey } from './validate';
 
 /**
  * The BrainCheck Care Plan - CPT 99483, cognitive assessment and care plan
@@ -92,6 +94,7 @@ function AssessmentScreen({ employee }: { employee: Employee }) {
   const [showProblems, setShowProblems] = useState(false);
   // Amber only for a section the provider has moved on past (see useMovedOn).
   const movedOn = useMovedOn(SECTIONS, showProblems);
+  const endActivity = useActivity(movedOn.enterEnd);
   const problemFor = useCallback(
     (path: string) =>
       showProblems ? problems.find((problem) => problem.field === path)?.message : undefined,
@@ -175,7 +178,7 @@ function AssessmentScreen({ employee }: { employee: Employee }) {
   const focusField = (item: Pending) => {
     const path = item.field;
     const section = item.section as SectionKey;
-    if (section !== 'requirements' && section !== 'visit') {
+    if (section !== 'requirements' && section !== 'visit' && section !== 'K') {
       setOpened((open) => new Set(open).add(section));
     }
     // After the section has opened.
@@ -312,15 +315,22 @@ function AssessmentScreen({ employee }: { employee: Employee }) {
               </FormSection>
             );
           })}
+          <FormSection
+            prefix={prefix}
+            sectionKey="K"
+            label="K"
+            title={FOLLOW_UP_TITLE}
+            pending={pendingIn('K')}
+            flagged={movedOn.flagged('K')}
+            onActivity={() => movedOn.enter('K')}
+            onJump={focusField}
+          >
+            <FollowUpSection form={form} update={update} />
+          </FormSection>
         </div>
 
         {/* What is missing, the handout's language, and the downloads. */}
-        <div
-          ref={checklist}
-          className="mt-6 scroll-mt-32"
-          onFocus={movedOn.enterEnd}
-          onPointerDown={movedOn.enterEnd}
-        >
+        <div ref={checklist} className="mt-6 scroll-mt-32" {...endActivity}>
           <Card className="p-4 sm:p-5">
             <h2 className="text-lg font-semibold text-slate-900">PDFs</h2>
             <PendingList sections={SECTIONS} pending={problems} onJump={focusField} />

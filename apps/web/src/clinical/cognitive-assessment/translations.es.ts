@@ -10,7 +10,9 @@
  * in English, so adding one to config.ts means adding its Spanish here too.
  */
 
-export const NEEDS_NATIVE_SPEAKER_REVIEW = false;
+// Back to true in October 2026: new goals, actions, referrals and the
+// BrainCheck line were added and still need that read.
+export const NEEDS_NATIVE_SPEAKER_REVIEW = true;
 
 export type HandoutLanguage = 'en' | 'es';
 
@@ -32,7 +34,7 @@ export const HANDOUT_STRINGS = {
     safetyTips: 'Safety tips',
     nextVisit: 'Your next visit',
     inInterval: (interval: string) => `In ${interval}`,
-    onDate: (date: string) => `on ${date}`,
+    brainCheckRecheck: 'We recommend repeating the BrainCheck memory assessment in 6 to 12 months.',
     questions: (phone: string) => `Questions? Call Domi Healthcare at ${phone}.`,
     signature: 'Signature',
     signedBy: (who: string, when: string) => `Electronically signed by ${who} on ${when}.`,
@@ -67,7 +69,8 @@ export const HANDOUT_STRINGS = {
     safetyTips: 'Consejos de seguridad',
     nextVisit: 'Su próxima visita',
     inInterval: (interval: string) => `En ${interval}`,
-    onDate: (date: string) => `el ${date}`,
+    brainCheckRecheck:
+      'Le recomendamos repetir la evaluación de memoria BrainCheck en 6 a 12 meses.',
     questions: (phone: string) => `¿Preguntas? Llame a Domi Healthcare al ${phone}.`,
     signature: 'Firma',
     signedBy: (who: string, when: string) => `Firmado electrónicamente por ${who} el ${when}.`,
@@ -142,6 +145,14 @@ export const ES_GOALS: Record<string, string> = {
   'caregiver:plan-help': 'Asegurar que haya ayuda disponible',
   'caregiver:plan-ahead':
     'Planificar con anticipación las decisiones legales, económicas y de salud',
+  'cognition:brain-health':
+    'Proteger la salud del cerebro: el corazón, el sueño, la audición y la vista',
+  'cognition:track': 'Dar seguimiento a los cambios con revisiones regulares',
+  'function:at-home': 'Vivir de forma segura en casa el mayor tiempo posible',
+  'behavior:mood': 'Sentirse mejor de ánimo y disfrutar el día',
+  'medications:simple': 'Mantener sencilla la rutina de los medicamentos',
+  'safety:emergency': 'Saber qué hacer en una emergencia',
+  'caregiver:learn': 'Ayudar a quien cuida a saber qué esperar y cómo ayudar',
 };
 
 /// Care plan actions, keyed "area:value".
@@ -189,6 +200,49 @@ export const ES_ACTIONS: Record<string, string> = {
   'caregiver:home-care': 'Servicios de cuidado en el hogar',
   'caregiver:legal': 'Planificar un poder notarial y un representante para decisiones de salud',
   'caregiver:social-work': 'Trabajo social para ayudar a encontrar apoyo',
+  'cognition:heart': 'Mantener bajo control la presión, el azúcar en la sangre y el colesterol',
+  'cognition:diet': 'Comer de forma saludable para el corazón, como la dieta mediterránea',
+  'cognition:alcohol': 'Limitar el alcohol y no fumar',
+  'cognition:labs':
+    'Análisis de sangre para buscar causas tratables de la pérdida de memoria, según se indique',
+  'cognition:imaging': 'Imagen del cerebro (resonancia o tomografía), según se indique',
+  'cognition:memory-medicine':
+    'Empezar o continuar un medicamento para la memoria, según se recete',
+  'function:simplify': 'Dividir las tareas en pasos sencillos; dejar lista la ropa del día',
+  'function:meals': 'Entrega de comidas, o ayuda para hacer las compras y cocinar',
+  'function:phone':
+    'Guardar los números importantes en el teléfono; un teléfono de botones grandes si hace falta',
+  'function:housework': 'Ayuda con las tareas de la casa y la ropa',
+  'function:continence': 'Un horario regular para ir al baño y artículos para la incontinencia',
+  'function:eating': 'Ayuda o supervisión en las comidas; vigilar el peso',
+  'behavior:activities': 'Planear actividades agradables y tiempo al aire libre todos los días',
+  'behavior:redirect':
+    'Cuando esté molesto: mantener la calma, tranquilizar y cambiar de tema; no discutir',
+  'behavior:counseling': 'Consejería o una visita de salud mental',
+  'behavior:report-changes':
+    'Llamarnos si hay confusión repentina, alucinaciones nuevas o una caída',
+  'behavior:crisis':
+    'Si hay pensamientos de hacerse daño, llame o envíe un mensaje de texto al 988 a cualquier hora',
+  'behavior:eat-well': 'Comidas pequeñas y frecuentes con meriendas; vigilar el peso',
+  'medications:taper':
+    'Reducir poco a poco o suspender los medicamentos que pueden afectar la memoria, según se indique',
+  'medications:one-pharmacy': 'Usar una sola farmacia; preguntar por los blísteres de dosis',
+  'medications:reminders':
+    'Alarmas en el teléfono o un dispensador automático de pastillas para las dosis',
+  'medications:bring-bottles':
+    'Traer todos los frascos, vitaminas y suplementos a la próxima visita',
+  'safety:bathroom': 'Silla para la ducha, asiento de inodoro elevado y barras de apoyo en el baño',
+  'safety:balance': 'Ejercicios de equilibrio y fuerza para prevenir caídas',
+  'safety:door-alarms': 'Alarmas en las puertas o cerraduras fuera de la vista',
+  'safety:medical-alert':
+    'Un botón de alerta médica; los contactos de emergencia a la vista en casa',
+  'safety:bank-alerts': 'Alertas en la cuenta bancaria y una persona de confianza en el banco',
+  'caregiver:self-care': 'Que quien cuida también atienda su propia salud, descanso y revisiones',
+  'caregiver:behavior-training':
+    'Capacitación para quien cuida sobre cómo manejar los comportamientos difíciles',
+  'caregiver:backup': 'Nombrar a otra persona que cuide en caso de emergencia',
+  'caregiver:benefits':
+    'Informarse sobre programas y beneficios (Medicaid, la Oficina del Condado para Personas Mayores)',
 };
 
 export const ES_REFERRALS: Record<string, string> = {
@@ -201,6 +255,14 @@ export const ES_REFERRALS: Record<string, string> = {
   neurology: 'Neurología',
   neuropsych: 'Pruebas neuropsicológicas',
   'alz-association': 'Asociación de Alzheimer',
+  'behavioral-health': 'Salud mental / consejería',
+  audiology: 'Examen de audición (audiología)',
+  eye: 'Examen de la vista',
+  'driving-rehab': 'Evaluación de manejo',
+  meals: 'Entrega de comidas (Meals on Wheels)',
+  'office-aging': 'Oficina del Condado para Personas Mayores',
+  'elder-law': 'Abogado especializado en personas mayores',
+  geriatrics: 'Geriatría',
 };
 
 export const ES_SAFETY_TIPS: Record<string, string> = {
@@ -216,4 +278,5 @@ export const ES_FOLLOW_UP: Record<string, string> = {
   '6-weeks': '6 semanas',
   '3-months': '3 meses',
   '6-months': '6 meses',
+  '12-months': '12 meses',
 };
