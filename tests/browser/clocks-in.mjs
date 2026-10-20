@@ -104,7 +104,7 @@ await step('Home shows the shift, with no Clock in button or location to choose'
   const card = max.getByTestId('home-clock');
   await card.getByTestId('clock-status').getByText('No need to clock in').waitFor({ timeout: 15000 });
   await card.getByText('West New York').first().waitFor();
-  await card.getByText('The Directory shows you there while your shift is on.').waitFor();
+  if (await card.getByText(/The Directory shows you there/).count()) throw new Error('the Directory line is back');
   if (await card.getByRole('button', { name: /^Clock in/ }).count()) throw new Error('a Clock in button');
   if (await max.locator('#location').count()) throw new Error('a location to choose');
   await max.screenshot({ path: `${OUT}/clocks-in-home.png`, fullPage: true });

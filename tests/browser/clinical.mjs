@@ -83,10 +83,9 @@ await step('somebody who is not a Provider sees no link to it, and the page says
   const nav = await page.getByRole('navigation').getByRole('link').allInnerTexts();
   if (nav.some((t) => /cognitive|braincheck/i.test(t))) throw new Error(`navigation: ${nav.join(', ')}`);
   await page.goto(`${BASE}/resources`, { waitUntil: 'networkidle' });
-  // Frankie is a Medical Assistant too, so Forms holds the wellness form - and only that.
-  const forms = page.getByTestId('clinical-tools');
-  await forms.getByRole('link', { name: /^Annual Wellness Visit/ }).waitFor({ timeout: 10000 });
-  if ((await forms.getByRole('link', { name: /BrainCheck/ }).count()) > 0) throw new Error('the link is on Resources');
+  // Frankie is a Medical Assistant too, so their section holds the wellness form - and no BrainCheck.
+  await page.getByTestId('tool-wellness').getByRole('link', { name: /^Annual Wellness Visit/ }).waitFor({ timeout: 10000 });
+  if ((await page.getByTestId('tool-braincheck').count()) > 0) throw new Error('the link is on Resources');
   await page.goto(`${BASE}/clinical/99483`, { waitUntil: 'networkidle' });
   await page.getByText('This form is for providers.').waitFor({ timeout: 10000 });
   if ((await page.getByLabel(/Patient name/).count()) > 0) throw new Error('the form is shown');
@@ -98,7 +97,7 @@ await step('Provider starts with the clinical forms switched on, and nobody else
   if (on.join() !== 'Provider') throw new Error(`on for: ${on.join(', ')}`);
 });
 
-await step('in the Provider job role, it is under Resources → Forms as the BrainCheck care plan', async () => {
+await step('in the Provider job role, it is in Resources under Provider as the BrainCheck care plan', async () => {
   const added = await call(admin, `/job-roles/${provider.id}/members`, {
     method: 'POST',
     body: JSON.stringify({ employeeId: me.id }),
@@ -113,7 +112,8 @@ await step('in the Provider job role, it is under Resources → Forms as the Bra
   const nav = await page.getByRole('navigation').getByRole('link').allInnerTexts();
   if (nav.some((t) => /cognitive|braincheck/i.test(t))) throw new Error(`in the navigation: ${nav.join(', ')}`);
   await page.goto(`${BASE}/resources`, { waitUntil: 'networkidle' });
-  const tools = page.getByTestId('forms-section').getByTestId('clinical-tools');
+  const tools = page.getByTestId('section-Provider').getByTestId('tools-Provider');
+  await tools.getByTestId('tool-inpatient-notes').waitFor({ timeout: 10000 });
   await tools.getByRole('link', { name: /^BrainCheck Care Plan/ }).click();
   await page.getByTestId('cognitive-assessment').waitFor({ timeout: 15000 });
 });

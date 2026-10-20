@@ -1016,6 +1016,8 @@ export interface ResourceSection {
     colour: string;
     /// Its section carries the clinical forms (Provider).
     usesClinicalForms?: boolean;
+    /// Its section carries the Annual Wellness Visit form (Medical Assistant).
+    usesWellnessForm?: boolean;
   } | null;
   /// Whether the viewer is in this role.
   yours: boolean;

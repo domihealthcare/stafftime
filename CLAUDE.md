@@ -1214,6 +1214,19 @@ Beyond the phases, the parts worth knowing about before picking up work:
   this app does not hold*). Also fixed: the phone book's and guides' sticky
   search bar covered the header's menus. `tests/browser/guides.mjs`. The
   guides and invoices are worth carrying to the EMR module.
+- **Forms and guides in their own Resources sections** (20 October 2026,
+  Dominguez: "the forms/references should go in the subsections that they
+  are supposed to"): the Forms and Reference blocks at the top of Resources
+  are gone; each built-in tool is a tinted card at the top of the section it
+  belongs to (`lib/resource-tools.ts`): Phone book and Diagnostics under
+  Everyone; the BrainCheck Care Plan, APCM Care Plan, Results playbook and
+  Inpatient notes under the job role with *uses clinical forms* (Provider);
+  the Annual Wellness Visit under each role with *uses the wellness form*;
+  the Front desk guide under a role named Front Desk; Reimbursements under
+  Manager. Only tools the person may open are shown, and one whose section
+  they cannot see falls back to Everyone. Same day: the Directory card lost
+  **Set a new tablet PIN** (see *Tablet PINs*), and Home lost "The Directory
+  shows you there while your shift is on." for staff who do not clock in.
 - **Turned down: "PTO about to be lost"** (9 October 2026, Dominguez): a
   reminder to use PTO before it fails to carry over was proposed and refused —
   not in the practice's interest. Do not propose it again.
@@ -1277,8 +1290,10 @@ Beyond the phases, the parts worth knowing about before picking up work:
   `lib/practice-time.ts`; live as `fead07e`.
 - **Tablet PINs are chosen by staff** on their profile (confirmed with their
   password); the profile shows only that one is set and since when, never the
-  PIN. Managers and admins can set a replacement from the Directory, never
-  read one (decided September 2026). **The PIN rules are light** since
+  PIN. An admin sets a replacement from the Staff editor (Signing in), never
+  reads one (decided September 2026; on the Directory card until 20 October
+  2026, when Dominguez moved it to the Staff screen to make the cards
+  shorter, so managers who are not admins no longer have the button). **The PIN rules are light** since
   October 2026 (Dominguez: "please don't make it too strict"): only one digit
   repeated, a straight run and a short list of the commonest PINs are
   refused; years (1911) and patterns (3636) are allowed. The lockouts do the

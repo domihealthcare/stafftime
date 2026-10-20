@@ -75,8 +75,8 @@ await step('the front desk guide is on Home and Resources, loaded from the cheat
   for (const title of ['New patients', 'Action needed', 'Go straight to the ED', 'Controlled medications', 'Which tab a document goes in'])
     if (!titles.includes(title)) throw new Error(`no "${title}" section`);
   await staff.goto(`${BASE}/resources`, { waitUntil: 'networkidle' });
-  await staff.getByTestId('reference-section').getByRole('link', { name: /Front desk guide/ }).waitFor({ timeout: 10000 });
-  if ((await staff.getByTestId('reference-section').getByRole('link', { name: /Results playbook/ }).count()) > 0)
+  await staff.getByTestId('section-Front Desk').getByTestId('tool-front-desk').waitFor({ timeout: 10000 });
+  if ((await staff.getByTestId('tool-results-playbook').count()) > 0)
     throw new Error('staff see the results playbook');
 });
 

@@ -792,11 +792,11 @@ const STAFF: Section[] = [
         answer: (
           <>
             <p>
-              <Screen>Front desk guide</Screen> - on Home under Quick, and under Resources. It is
-              the Front Desk Cheat Sheet: booking rules for each visit type, what to do with Action
-              needed, Appt needed and normal results, when to send a patient to the ED, payments,
-              which eCW tab a document goes in, pharmacy calls and the abbreviations. Type in the
-              search box (any words, in any order), or press a heading to see just that part.
+              <Screen>Front desk guide</Screen> - on Home under Quick, and in Resources under Front
+              Desk. It is the Front Desk Cheat Sheet: booking rules for each visit type, what to do
+              with Action needed, Appt needed and normal results, when to send a patient to the ED,
+              payments, which eCW tab a document goes in, pharmacy calls and the abbreviations. Type
+              in the search box (any words, in any order), or press a heading to see just that part.
             </p>
             <p>
               The <strong>message scripts</strong> have a box for each blank. Fill them in and press{' '}
@@ -809,8 +809,8 @@ const STAFF: Section[] = [
             <p>
               Providers also have the <strong>Results playbook</strong> (what to do with each
               result) and <strong>Inpatient notes</strong> (hospital note templates to copy, and the
-              hospital codes by time), under Resources. Managers and admins keep all three up to
-              date.
+              hospital codes by time), in Resources under Provider. Managers and admins keep all
+              three up to date.
             </p>
           </>
         ),
@@ -973,7 +973,7 @@ const CARE_PLAN: Section[] = [
         answer: (
           <>
             <p>
-              <Screen>Resources</Screen> → <Screen>Forms</Screen>, at the top →{' '}
+              <Screen>Resources</Screen>, in the <Screen>Provider</Screen> section →{' '}
               <strong>APCM Care Plan</strong>. Providers, managers and admins have it.
             </p>
             <ul>
@@ -1051,9 +1051,9 @@ const WELLNESS: Section[] = [
         answer: (
           <>
             <p>
-              <Screen>Resources</Screen> → <Screen>Forms</Screen> →{' '}
-              <strong>Annual Wellness Visit</strong> - the practice&rsquo;s Annual Wellness
-              Supplement Form, one page at a time.
+              <Screen>Resources</Screen>, in the <Screen>Provider</Screen> or{' '}
+              <Screen>Medical Assistant</Screen> section → <strong>Annual Wellness Visit</strong> -
+              the practice&rsquo;s Annual Wellness Supplement Form, one page at a time.
             </p>
             <ul>
               <li>
@@ -1140,7 +1140,7 @@ const PROVIDERS: Section[] = [
         answer: (
           <>
             <p>
-              <Screen>Resources</Screen> → <Screen>Forms</Screen>, at the top →{' '}
+              <Screen>Resources</Screen>, in the <Screen>Provider</Screen> section →{' '}
               <strong>BrainCheck Care Plan</strong> - the cognitive assessment and care plan, billed
               as CPT 99483.
             </p>
@@ -1851,10 +1851,10 @@ const MANAGERS: Section[] = [
         question: 'Somebody has forgotten their tablet PIN',
         answer: (
           <p>
-            In <Screen>Directory</Screen>, under their name, choose{' '}
-            <strong>Set a new tablet PIN</strong> and tell them it in person. They can change it to
-            one of their own on their profile. Nobody can see a PIN once it is set - you can only
-            replace it.
+            An admin, in <Screen>Manage → People → Staff</Screen>, presses <strong>Edit</strong> on
+            them and, under Signing in, <strong>Set a tablet PIN</strong>, then tells them it in
+            person. They can change it to one of their own on their profile. Nobody can see a PIN
+            once it is set - you can only replace it.
           </p>
         ),
       },

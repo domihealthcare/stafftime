@@ -13,11 +13,7 @@ import {
   buttonClass,
 } from '../components/ui';
 import { ApiError, api } from '../lib/api';
-import {
-  canUseCarePlan,
-  canUseCognitiveAssessment,
-  canUseWellnessForm,
-} from '../lib/clinical-access';
+import { toolsBySection, type ResourceTool } from '../lib/resource-tools';
 import { t as translate, useT } from '../lib/i18n';
 import { useIsManager, useSession } from '../lib/session';
 import type { Resource, ResourceKind, ResourceSection } from '../lib/types';
@@ -37,6 +33,7 @@ const DriveShareWith = createContext<string | null>(null);
 export function ResourcesPage() {
   const t = useT();
   const isManager = useIsManager();
+  const { employee } = useSession();
   const [sections, setSections] = useState<ResourceSection[]>([]);
   const [driveShareWith, setDriveShareWith] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
@@ -61,6 +58,7 @@ export function ResourcesPage() {
 
   if (loading) return <Spinner label={t('Loading resources')} />;
 
+  const tools = toolsBySection(sections, employee);
   const roleSections = sections.filter((section) => section.jobRole !== null);
 
   return (
@@ -94,13 +92,12 @@ export function ResourcesPage() {
         )}
 
         <div className="space-y-6">
-          <FormsSection />
-          <ReferenceSection />
           {sections.map((section) => (
             <SectionBlock
               key={section.jobRole?.id ?? 'everyone'}
               section={section}
               sections={sections}
+              tools={tools.get(section.jobRole?.id ?? 'everyone') ?? []}
               canManage={isManager}
               onChanged={() => void load()}
               onError={setError}
@@ -129,12 +126,15 @@ function sectionName(section: ResourceSection): string {
 function SectionBlock({
   section,
   sections,
+  tools,
   canManage,
   onChanged,
   onError,
 }: {
   section: ResourceSection;
   sections: ResourceSection[];
+  /// The built-in forms and guides that belong in this section.
+  tools: ResourceTool[];
   canManage: boolean;
   onChanged: () => void;
   onError: (message: string) => void;
@@ -180,8 +180,10 @@ function SectionBlock({
         </div>
       )}
 
+      {tools.length > 0 && <ToolsCard name={name} tools={tools} />}
+
       {section.resources.length === 0 ? (
-        <EmptyState>{t('Nothing here yet.')}</EmptyState>
+        tools.length === 0 && <EmptyState>{t('Nothing here yet.')}</EmptyState>
       ) : (
         <div className="space-y-2">
           {section.resources.map((resource) => (
@@ -549,178 +551,29 @@ function hostOf(url: string): string {
   }
 }
 
-/**
- * Forms, first on the page (October 2026, Dominguez: "a Forms section of
- * the resources") - the clinical forms, filled in and made into PDFs in the
- * browser. The BrainCheck Care Plan (CPT 99483) is only for people whose job role
- * uses the clinical forms; the care plan (CCM and APCM) also for managers and admins.
- * Anybody with neither sees no section at all.
- */
-/// The practice's reference boards (October 2026, Dominguez - made from its
-/// spreadsheets): the diagnostics board and the referral phone book for
-/// everybody, the reimbursements for managers and admins.
-function ReferenceSection() {
+/// The forms and guides built into Domi Staff that belong in a section
+/// (`lib/resource-tools.ts` says which go where).
+function ToolsCard({ name, tools }: { name: string; tools: ResourceTool[] }) {
   const t = useT();
-  const isManager = useIsManager();
-  const { employee } = useSession();
-  // The playbook and inpatient notes: providers, managers and admins.
-  const providerGuides = isManager || Boolean(employee?.usesClinicalForms);
   return (
-    <section aria-label={t('Reference')} data-testid="reference-section">
-      <h2 className="mb-2 text-sm font-semibold uppercase tracking-wide text-slate-600">
-        {t('Reference')}
-      </h2>
-      <Card className="divide-y divide-slate-100">
-        <div className="p-3">
-          <Link
-            to="/diagnostics"
-            className="block text-sm font-semibold text-brand-800 hover:text-brand-900"
-          >
-            {t('Diagnostics')} →
-          </Link>
-          <p className="mt-0.5 text-xs text-slate-600">
-            {t(
-              'Which insurance covers which ultrasound or test, how long it takes, the prep and the self-pay price.',
-            )}
-          </p>
-        </div>
-        <div className="p-3">
-          <Link
-            to="/phone-book"
-            className="block text-sm font-semibold text-brand-800 hover:text-brand-900"
-          >
-            {t('Phone book')} →
-          </Link>
-          <p className="mt-0.5 text-xs text-slate-600">
-            {t(
-              'Labs, hospitals, imaging, home care, equipment and specialists we refer to - searchable, and yours to keep up to date.',
-            )}
-          </p>
-        </div>
-        <div className="p-3">
-          <Link
-            to="/front-desk"
-            className="block text-sm font-semibold text-brand-800 hover:text-brand-900"
-          >
-            {t('Front desk guide')} →
-          </Link>
-          <p className="mt-0.5 text-xs text-slate-600">
-            {t(
-              'Booking rules, results calls, message scripts to copy, payments, uploading and medications.',
-            )}
-          </p>
-        </div>
-        {providerGuides && (
-          <>
-            <div className="p-3">
-              <Link
-                to="/results-playbook"
-                className="block text-sm font-semibold text-brand-800 hover:text-brand-900"
-              >
-                Results playbook →
-              </Link>
-              <p className="mt-0.5 text-xs text-slate-600">
-                What to do with each result, and when action is needed.
-              </p>
-            </div>
-            <div className="p-3">
-              <Link
-                to="/inpatient-notes"
-                className="block text-sm font-semibold text-brand-800 hover:text-brand-900"
-              >
-                Inpatient notes →
-              </Link>
-              <p className="mt-0.5 text-xs text-slate-600">
-                Hospital note templates to copy, and the hospital care codes by time.
-              </p>
-            </div>
-          </>
-        )}
-        {isManager && (
-          <div className="p-3">
-            <div className="flex flex-wrap items-center gap-2">
-              <Link
-                to="/reimbursements"
-                className="text-sm font-semibold text-brand-800 hover:text-brand-900"
-              >
-                Reimbursements →
-              </Link>
-              <Badge>Managers and admins</Badge>
-            </div>
-            <p className="mt-0.5 text-xs text-slate-600">
-              What each insurance pays for each code, searchable.
-            </p>
-          </div>
-        )}
-      </Card>
-    </section>
-  );
-}
-
-function FormsSection() {
-  const t = useT();
-  const { employee } = useSession();
-  const cognitive = employee ? canUseCognitiveAssessment(employee) : false;
-  const carePlan = employee ? canUseCarePlan(employee) : false;
-  const wellness = employee ? canUseWellnessForm(employee) : false;
-  if (!cognitive && !carePlan && !wellness) return null;
-  return (
-    <section aria-label={t('Forms')} data-testid="forms-section">
-      <h2 className="mb-2 text-sm font-semibold uppercase tracking-wide text-slate-600">
-        {t('Forms')}
-      </h2>
-      <Card className="space-y-3 border-brand-200 bg-brand-50 p-3" testId="clinical-tools">
-        {cognitive && (
-          <div>
+    <Card
+      className="mb-2 divide-y divide-brand-100 border-brand-200 bg-brand-50"
+      testId={`tools-${name}`}
+    >
+      {tools.map((tool) => (
+        <div key={tool.key} className="p-3" data-testid={`tool-${tool.key}`}>
+          <div className="flex flex-wrap items-center gap-2">
             <Link
-              to="/clinical/99483"
-              className="block text-sm font-semibold text-brand-800 hover:text-brand-900"
+              to={tool.to}
+              className="text-sm font-semibold text-brand-800 hover:text-brand-900"
             >
-              BrainCheck Care Plan →
+              {t(tool.title)} →
             </Link>
-            <p className="mt-0.5 text-xs text-slate-600">
-              {t(
-                'Cognitive assessment and care plan (CPT 99483). Fill it in during the visit; download the note for eCW and the care plan for the patient. Nothing is saved.',
-              )}
-            </p>
+            {tool.badge && <Badge>{tool.badge}</Badge>}
           </div>
-        )}
-        {carePlan && (
-          <div>
-            <Link
-              to="/clinical/care-plan"
-              className="block text-sm font-semibold text-brand-800 hover:text-brand-900"
-            >
-              APCM Care Plan →
-            </Link>
-            <p className="mt-0.5 text-xs text-slate-600">
-              {t(
-                'For CCM and APCM: the general care plan and two or more chronic conditions, as one PDF in English, or English and Spanish. Nothing is saved.',
-              )}
-            </p>
-          </div>
-        )}
-        {wellness && (
-          <div>
-            <Link
-              to="/clinical/wellness"
-              className="block text-sm font-semibold text-brand-800 hover:text-brand-900"
-            >
-              Annual Wellness Visit →
-            </Link>
-            <p className="mt-0.5 text-xs text-slate-600">
-              {t(
-                'The Annual Wellness Supplement Form: the medical assistant does page 2 (preventive services), the provider page 1 in the patient’s language. Each page downloads for eCW. Nothing is saved.',
-              )}
-            </p>
-          </div>
-        )}
-        {!cognitive && (
-          <p className="text-xs text-slate-500">
-            {t('Providers also have the BrainCheck Care Plan here.')}
-          </p>
-        )}
-      </Card>
-    </section>
+          <p className="mt-0.5 text-xs text-slate-600">{t(tool.description)}</p>
+        </div>
+      ))}
+    </Card>
   );
 }

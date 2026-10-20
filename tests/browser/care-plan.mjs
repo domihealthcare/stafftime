@@ -66,10 +66,9 @@ await step('somebody who is not a provider, manager or admin has no link, and th
   const desk = await ctx.newPage();
   await signIn(desk, 'frontdesk@domihealthcare.com');
   await desk.goto(`${BASE}/resources`, { waitUntil: 'networkidle' });
-  // Frankie is a Medical Assistant too, so Forms holds the wellness form - but no care plan.
-  const forms = desk.getByTestId('clinical-tools');
-  await forms.getByRole('link', { name: /^Annual Wellness Visit/ }).waitFor({ timeout: 10000 });
-  if ((await forms.getByRole('link', { name: /^APCM Care Plan/ }).count()) > 0) throw new Error('the link is on Resources');
+  // Frankie is a Medical Assistant too, so their section holds the wellness form - but no care plan.
+  await desk.getByTestId('tool-wellness').getByRole('link', { name: /^Annual Wellness Visit/ }).waitFor({ timeout: 10000 });
+  if ((await desk.getByTestId('tool-apcm').count()) > 0) throw new Error('the link is on Resources');
   await desk.goto(`${BASE}/clinical/care-plan`, { waitUntil: 'networkidle' });
   await desk.getByText('This form is for providers, managers and admins.').waitFor({ timeout: 10000 });
   if ((await desk.getByLabel(/First name/).count()) > 0) throw new Error('the form is shown');
@@ -80,13 +79,12 @@ await step('somebody who is not a provider, manager or admin has no link, and th
 
 await signIn(page, 'manager@domihealthcare.com');
 
-await step('a manager finds it under Resources → Forms, without the BrainCheck care plan', async () => {
+await step('a manager finds it in Resources under Provider, without the BrainCheck care plan', async () => {
   await page.goto(`${BASE}/resources`, { waitUntil: 'networkidle' });
-  const tools = page.getByTestId('forms-section').getByTestId('clinical-tools');
-  if ((await tools.getByRole('link', { name: /BrainCheck/ }).count()) > 0)
+  const tools = page.getByTestId('section-Provider').getByTestId('tools-Provider');
+  if ((await page.getByTestId('tool-braincheck').count()) > 0)
     throw new Error('a manager who is not a provider is offered the BrainCheck care plan');
-  if ((await page.getByTestId('section-Provider').getByTestId('clinical-tools').count()) > 0)
-    throw new Error('the forms are still in the Provider section');
+  await tools.getByTestId('tool-results-playbook').waitFor({ timeout: 10000 });
   await tools.getByRole('link', { name: /^APCM Care Plan/ }).click();
   await page.getByTestId('ccm-care-plan').waitFor({ timeout: 15000 });
 });

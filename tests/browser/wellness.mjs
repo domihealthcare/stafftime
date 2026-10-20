@@ -117,8 +117,9 @@ await step(
     if (off.status >= 300) throw new Error(`switching off answered ${off.status}`);
     try {
       await page.goto(`${BASE}/resources`, { waitUntil: 'networkidle' });
-      if ((await page.getByTestId('clinical-tools').count()) > 0)
-        throw new Error('Forms is on Resources');
+      await page.getByTestId('tools-Everyone').waitFor({ timeout: 10000 });
+      if ((await page.getByTestId('tool-wellness').count()) > 0)
+        throw new Error('the form is on Resources');
       await page.goto(`${BASE}/clinical/wellness`, { waitUntil: 'networkidle' });
       await page
         .getByText(/This form is for providers, medical assistants/)
@@ -133,9 +134,9 @@ await step(
   },
 );
 
-await step('an MA finds it under Resources → Forms, and it opens on page 2', async () => {
+await step('an MA finds it in Resources under Medical Assistant, and it opens on page 2', async () => {
   await page.goto(`${BASE}/resources`, { waitUntil: 'networkidle' });
-  const tools = page.getByTestId('forms-section').getByTestId('clinical-tools');
+  const tools = page.getByTestId('section-Medical Assistant').getByTestId('tools-Medical Assistant');
   await tools.getByRole('link', { name: /^Annual Wellness Visit/ }).click();
   await page.getByTestId('wellness-visit').waitFor({ timeout: 15000 });
   const pages = page.getByTestId('awv-pages');
