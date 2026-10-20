@@ -221,14 +221,20 @@ await step('the Directory shows the name, pronouns, photo, line and phone', asyn
 });
 await mgr.screenshot({ path: `${OUT}/101-directory-profile.png`, fullPage: true });
 
-await step('a manager can give somebody a new PIN from the Directory, but not read one', async () => {
+await step('the Directory card has no tablet PIN control (it is on the Staff screen), and never carries a PIN', async () => {
   const card = mgr.getByTestId('person-Frankie J Front-Desk');
-  await card.getByRole('button', { name: 'Set a new tablet PIN' }).click();
-  await card.getByLabel('New tablet PIN for Frankie').fill('7391');
-  const saved = mgr.waitForResponse((r) => r.url().includes('/api/kiosk/employees/') && r.request().method() === 'PUT');
-  await card.getByRole('button', { name: 'Set PIN', exact: true }).click();
-  if (!(await saved).ok()) throw new Error('the manager could not set the PIN');
-  await card.getByText(/New PIN set\. Tell Frankie J in person/).waitFor({ timeout: 5000 });
+  if (await card.getByRole('button', { name: /tablet PIN/ }).count()) throw new Error('a PIN control on the Directory card');
+  const set = await mgr.evaluate(async () => {
+    const people = await fetch('/api/directory').then((r) => r.json());
+    const frankie = people.find((p) => p.lastName === 'Front-Desk');
+    const response = await fetch(`/api/kiosk/employees/${frankie.id}/pin`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ pin: '7391' }),
+    });
+    return response.status;
+  });
+  if (set >= 300) throw new Error(`setting the PIN answered ${set}`);
   const people = await mgr.evaluate(() => fetch('/api/directory').then((r) => r.text()));
   // Look for the PIN as a value, not as four characters anywhere: the
   // response is full of random ids, and "7391" turns up inside one now and

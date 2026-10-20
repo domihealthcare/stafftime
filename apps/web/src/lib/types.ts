@@ -113,6 +113,9 @@ export interface Employee extends EmployeeSummary {
   /// Signed-in person only: their job role gives them the Annual Wellness
   /// Visit form (Providers and Medical Assistants).
   usesWellnessForm?: boolean;
+  /// Signed-in person only: the built-in forms and guides they may open
+  /// ('phone-book', 'braincheck', ...), as managers set them on Resources.
+  tools?: string[];
   /// Signed-in person only: a manager has published productivity numbers for
   /// them, so "Your productivity" appears in the account menu.
   hasProductivity?: boolean;
@@ -1016,6 +1019,8 @@ export interface ResourceSection {
     colour: string;
     /// Its section carries the clinical forms (Provider).
     usesClinicalForms?: boolean;
+    /// Its section carries the Annual Wellness Visit form (Medical Assistant).
+    usesWellnessForm?: boolean;
   } | null;
   /// Whether the viewer is in this role.
   yours: boolean;
@@ -2289,4 +2294,13 @@ export interface InvoiceInput {
   paidOn: string | null;
   note?: string;
   lines: { description: string; amountCents: number }[];
+}
+
+// ------------------------------------------------------------ tool access
+
+/// Who may use one built-in form or guide: everyone, or these job roles.
+export interface ToolSetting {
+  key: string;
+  everyone: boolean;
+  jobRoleIds: string[];
 }

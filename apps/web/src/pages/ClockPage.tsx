@@ -377,11 +377,6 @@ export function ClockPage() {
               ) : (
                 <p className="mt-1 text-sm text-slate-500">{t('No shift scheduled today.')}</p>
               )}
-              {noClock && todaysShift && (
-                <p className="mt-1 text-xs text-slate-500">
-                  {t('The Directory shows you there while your shift is on.')}
-                </p>
-              )}
               {todaysShift && <RunningLate key={todaysShift.id} shift={todaysShift} />}
             </>
           )}

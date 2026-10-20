@@ -1,4 +1,5 @@
 import { useCallback, useMemo, useRef, useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { Alert, Card, PageHeading } from '../../components/ui';
 import { canUseWellnessForm, wellnessStartPage } from '../../lib/clinical-access';
 import { localDate } from '../../lib/format';
@@ -64,8 +65,8 @@ export function WellnessVisitPage() {
       <div className="mx-auto max-w-2xl">
         <PageHeading title="Annual Wellness Visit" />
         <Card className="p-5 text-sm text-slate-700">
-          This form is for providers, medical assistants, managers and admins. If you should have
-          it, ask a manager.
+          This form is not set up for your job role. If you should have it, ask a manager: they
+          choose who uses each form on Resources.
         </Card>
       </div>
     );
@@ -93,7 +94,13 @@ function WellnessScreen({ employee }: { employee: Employee }) {
     [employee.firstName, employee.lastName, employee.postNominals],
   );
 
-  const [page, setPage] = useState<Page>(() => wellnessStartPage(employee));
+  // Resources links each section to its own page (?page=1 for providers,
+  // ?page=2 for medical assistants); otherwise it goes by the job role.
+  const [params] = useSearchParams();
+  const [page, setPage] = useState<Page>(() => {
+    const asked = params.get('page');
+    return asked === '1' ? 1 : asked === '2' ? 2 : wellnessStartPage(employee);
+  });
   const [form, setForm] = useState<WellnessForm>(() => emptyForm(localDate(new Date())));
   const [untouched, setUntouched] = useState(() => JSON.stringify(form));
   // Until somebody picks the print language, page 1 asked in Spanish is

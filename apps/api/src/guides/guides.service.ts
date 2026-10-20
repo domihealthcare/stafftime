@@ -1,10 +1,11 @@
-import { ForbiddenException, Injectable, Logger, NotFoundException } from '@nestjs/common';
+import { Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { GuideKey } from '@prisma/client';
 import { AuthUser } from '../common/auth/auth-user';
 import { moveInOrder } from '../common/util/move-in-order';
 import { PrismaService } from '../prisma/prisma.service';
 import { GuideSectionInput } from './dto/guides.dto';
-import { GUIDE_SLUGS, canEditGuide, canReadGuide } from './guides';
+import { ToolAccessService } from '../tool-access/tool-access.service';
+import { GUIDE_LABELS, GUIDE_SLUGS, canEditGuide } from './guides';
 
 /**
  * The practice's guides (October 2026, Dominguez): the Front Desk Cheat
@@ -17,7 +18,10 @@ import { GUIDE_SLUGS, canEditGuide, canReadGuide } from './guides';
 export class GuidesService {
   private readonly logger = new Logger(GuidesService.name);
 
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly toolAccess: ToolAccessService,
+  ) {}
 
   keyOf(slug: string): GuideKey {
     const key = GUIDE_SLUGS[slug];
@@ -25,22 +29,10 @@ export class GuidesService {
     return key;
   }
 
-  private async isProvider(employeeId: string) {
-    const count = await this.prisma.employeeJobRole.count({
-      where: { employeeId, jobRole: { usesClinicalForms: true } },
-    });
-    return count > 0;
-  }
-
-  private async checkRead(key: GuideKey, user: AuthUser) {
-    if (!canReadGuide(key, user.role, await this.isProvider(user.id))) {
-      throw new ForbiddenException('This guide is for providers, managers and admins.');
-    }
-  }
-
+  /// Read by whoever the guide is set up for (Resources, "Who can use it").
   async guide(slug: string, user: AuthUser) {
     const key = this.keyOf(slug);
-    await this.checkRead(key, user);
+    await this.toolAccess.assertCanUse(user, slug, GUIDE_LABELS[slug]);
     return this.read(key, user);
   }
 

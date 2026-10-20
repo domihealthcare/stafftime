@@ -3,6 +3,7 @@ import { Role } from '@prisma/client';
 import { AuthUser } from '../common/auth/auth-user';
 import { CurrentUser } from '../common/auth/current-user.decorator';
 import { Roles } from '../common/auth/roles.decorator';
+import { ToolAccessService } from '../tool-access/tool-access.service';
 import { DiagnosticsService } from './diagnostics.service';
 import {
   DiagnosticAnswerInput,
@@ -16,10 +17,15 @@ import {
 /// admins. Every change answers with the whole board, as it now stands.
 @Controller('diagnostics')
 export class DiagnosticsController {
-  constructor(private readonly diagnostics: DiagnosticsService) {}
+  constructor(
+    private readonly diagnostics: DiagnosticsService,
+    private readonly toolAccess: ToolAccessService,
+  ) {}
 
+  /// Read by whoever it is set up for (everyone, unless a manager narrows it).
   @Get()
-  board() {
+  async board(@CurrentUser() user: AuthUser) {
+    await this.toolAccess.assertCanUse(user, 'diagnostics', 'Diagnostics board');
     return this.diagnostics.board();
   }
 

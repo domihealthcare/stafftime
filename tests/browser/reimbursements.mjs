@@ -133,8 +133,8 @@ await step('staff have no reimbursements', async () => {
   const link = await navLink(page, 'Reimbursements');
   if (await link.isVisible().catch(() => false)) throw new Error('offered in the menu');
   await goTo(page, 'Resources');
-  await page.getByTestId('reference-section').getByRole('link', { name: /Diagnostics/ }).waitFor({ timeout: 10000 });
-  if (await page.getByTestId('reference-section').getByText('Reimbursements').count()) throw new Error('on Resources');
+  await page.getByTestId('tools-Everyone').getByRole('link', { name: /Diagnostics/ }).waitFor({ timeout: 10000 });
+  if (await page.getByTestId('tool-reimbursements').count()) throw new Error('on Resources');
   const status = await page.evaluate(async () => (await fetch('/api/reimbursements')).status);
   if (status !== 403) throw new Error(`read it: ${status}`);
   await page.context().close();

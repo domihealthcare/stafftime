@@ -5265,3 +5265,31 @@ too, and a copy downloaded later says "A patient's details are not kept in
 Domi Staff." in their place. This is the "PHI present, then censor it" that
 Dominguez asked for, done by never holding it. The lines are kept, so the
 editor asks that no name goes in them.
+
+## Who uses each form and guide (October 2026)
+
+Dominguez asked for managers to make a form "available for either one group
+or multiple groups of job roles". Each built-in tool on Resources has a key
+(`tool-access/tools.ts`): `phone-book`, `diagnostics`, `front-desk`,
+`braincheck`, `apcm`, `wellness`, `results-playbook`, `inpatient-notes`. A
+`ToolAccess` row says Everyone or lists job roles (`ToolAccessRole`).
+
+Why defaults live in code: the seed makes job roles after the migrations run,
+and the live site had working access already, so a migration filling rows in
+would have had to guess role ids. With no row, `defaultSetting` works it out
+from the roles' own flags and names, exactly as before. The first save writes
+a row and from then on the row is the truth.
+
+Who may open a tool (`mayUse`): everyone if ticked; otherwise somebody holding
+one of the roles; and managers and admins by their access, except for
+`braincheck` (`managersAlways: false`), whose note is signed as the provider.
+The server checks on every read (`ToolAccessService.assertCanUse`, in the
+guides, phone book and diagnostics controllers); the clinical forms send
+nothing to the server, so for them the gate is the profile's `tools` list in
+the browser, which is all there was before too.
+
+Where a tool is listed (`toolsBySection` in the web): under Everyone if for
+everyone, else in each chosen role's section the person can see, else under
+Everyone so it is never lost. Managers see every tool, to set it. The Annual
+Wellness Visit is one form in two sections: the Provider section links page 1,
+any other page 2.

@@ -310,7 +310,7 @@ function RoleForm({
   );
   const [seesOwn, setSeesOwn] = useState(role?.seesOwnPersonnelTabs ?? false);
   const [clinical, setClinical] = useState(role?.usesClinicalForms ?? false);
-  const [wellness, setWellness] = useState(role?.usesWellnessForm ?? false);
+  const wellness = role?.usesWellnessForm ?? false;
   const [repCell, setRepCell] = useState(role?.seesRepCell ?? false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -418,26 +418,11 @@ function RoleForm({
           className="mt-0.5 rounded border-slate-300"
         />
         <span>
-          People in this role get the clinical forms, under Resources → Forms
+          People in this role are providers
           <span className="block text-xs text-slate-500">
-            On for Provider: the BrainCheck Care Plan (CPT 99483). The forms run on the
-            provider&rsquo;s own device and keep nothing, so this gives no access to anything.
-          </span>
-        </span>
-      </label>
-
-      <label className="mt-2 flex items-start gap-2 text-sm text-slate-700">
-        <input
-          type="checkbox"
-          checked={wellness}
-          onChange={(event) => setWellness(event.target.checked)}
-          className="mt-0.5 rounded border-slate-300"
-        />
-        <span>
-          People in this role get the Annual Wellness Visit form, under Resources → Forms
-          <span className="block text-xs text-slate-500">
-            On for Provider and Medical Assistant: the MA does the preventive services page, the
-            provider the questionnaire. Managers and admins have it anyway. It keeps nothing either.
+            On for Provider: on call, schedule reviews, productivity and the provider&rsquo;s page
+            of the Annual Wellness Visit. Which forms and guides a job role gets is set on
+            Resources, with <strong>Change</strong> beside each one.
           </span>
         </span>
       </label>

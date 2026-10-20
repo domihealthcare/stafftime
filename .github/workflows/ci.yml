@@ -42,24 +42,6 @@ jobs:
     runs-on: ubuntu-latest
     # These need a real database, a real API and a real browser, so they are
     # slower and kept in their own job rather than blocking the fast feedback.
-    services:
-      postgres:
-        # The official image from Amazon's public mirror rather than Docker
-        # Hub, whose limit on anonymous downloads kept stopping this job
-        # before any test ran (October 2026).
-        image: public.ecr.aws/docker/library/postgres:16
-        env:
-          POSTGRES_USER: postgres
-          POSTGRES_PASSWORD: postgres
-          POSTGRES_DB: stafftime
-        ports:
-          - 5432:5432
-        options: >-
-          --health-cmd "pg_isready -U postgres"
-          --health-interval 5s
-          --health-timeout 5s
-          --health-retries 10
-
     env:
       DATABASE_URL: postgresql://postgres:postgres@127.0.0.1:5432/stafftime?schema=public
       DIRECT_DATABASE_URL: postgresql://postgres:postgres@127.0.0.1:5432/stafftime?schema=public
@@ -87,6 +69,16 @@ jobs:
 
       - run: npm ci
       - run: npm run prisma:generate --workspace @stafftime/api
+
+      # Postgres is already installed on GitHub's Ubuntu runners, so the job
+      # starts that one instead of downloading an image: both Docker Hub and
+      # Amazon's mirror kept refusing the download (October 2026).
+      - name: Start the runner's own Postgres
+        run: |
+          sudo systemctl start postgresql
+          for i in $(seq 1 20); do pg_isready -h 127.0.0.1 -p 5432 && break; sleep 1; done
+          sudo -u postgres psql -c "ALTER USER postgres PASSWORD 'postgres';"
+          sudo -u postgres createdb stafftime
 
       - name: Create the schema
         run: npm run prisma:deploy --workspace @stafftime/api

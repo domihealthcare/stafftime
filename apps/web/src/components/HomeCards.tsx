@@ -4,6 +4,7 @@ import { useAiOn } from '../lib/ai';
 import { api } from '../lib/api';
 import {
   canUseCarePlan,
+  canUseTool,
   canUseCognitiveAssessment,
   canUseWellnessForm,
 } from '../lib/clinical-access';
@@ -169,6 +170,7 @@ function HeadlineWords({ post }: { post: Announcement }) {
 export function QuickActions() {
   const t = useT();
   const { employee } = useSession();
+  const can = (key: string) => employee !== null && canUseTool(employee, key);
   const forms =
     employee !== null &&
     (canUseCarePlan(employee) ||
@@ -198,18 +200,23 @@ export function QuickActions() {
         <Link to="/availability" className={button}>
           {t('Your availability')}
         </Link>
-        <Link to="/diagnostics" className={button}>
-          {t('Diagnostics')}
-        </Link>
-        <Link to="/phone-book" className={button}>
-          {t('Phone book')}
-        </Link>
-        <Link to="/front-desk" className={button}>
-          {t('Front desk guide')}
-        </Link>
-        {(employee?.usesClinicalForms ||
-          employee?.role === 'MANAGER' ||
-          employee?.role === 'ADMIN') && (
+        {/* Each only for the people a manager set it up for (Resources). */}
+        {can('diagnostics') && (
+          <Link to="/diagnostics" className={button}>
+            {t('Diagnostics')}
+          </Link>
+        )}
+        {can('phone-book') && (
+          <Link to="/phone-book" className={button}>
+            {t('Phone book')}
+          </Link>
+        )}
+        {can('front-desk') && (
+          <Link to="/front-desk" className={button}>
+            {t('Front desk guide')}
+          </Link>
+        )}
+        {can('results-playbook') && (
           <Link to="/results-playbook" className={button}>
             Results playbook
           </Link>

@@ -2,6 +2,7 @@ import { JobRoleDot } from '../components/JobRoleTag';
 import { createContext, useCallback, useContext, useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useConfirm } from '../components/ConfirmDialog';
+import { Modal } from '../components/Modal';
 import { DriveFolderFiles, isDriveFolder } from '../components/DriveFolderFiles';
 import {
   Alert,
@@ -13,14 +14,10 @@ import {
   buttonClass,
 } from '../components/ui';
 import { ApiError, api } from '../lib/api';
-import {
-  canUseCarePlan,
-  canUseCognitiveAssessment,
-  canUseWellnessForm,
-} from '../lib/clinical-access';
+import { toolsBySection, type PlacedTool } from '../lib/resource-tools';
 import { t as translate, useT } from '../lib/i18n';
 import { useIsManager, useSession } from '../lib/session';
-import type { Resource, ResourceKind, ResourceSection } from '../lib/types';
+import type { Resource, ResourceKind, ResourceSection, ToolSetting } from '../lib/types';
 
 /**
  * Links and short how-to pages, filed by job role.
@@ -37,15 +34,18 @@ const DriveShareWith = createContext<string | null>(null);
 export function ResourcesPage() {
   const t = useT();
   const isManager = useIsManager();
+  const { employee } = useSession();
   const [sections, setSections] = useState<ResourceSection[]>([]);
+  const [toolSettings, setToolSettings] = useState<ToolSetting[]>([]);
   const [driveShareWith, setDriveShareWith] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   const load = useCallback(async () => {
     try {
-      const found = await api.resources();
+      const [found, access] = await Promise.all([api.resources(), api.toolAccess()]);
       setSections(found.sections);
+      setToolSettings(access);
       setDriveShareWith(found.driveShareWith);
       setError(null);
     } catch (cause) {
@@ -61,6 +61,8 @@ export function ResourcesPage() {
 
   if (loading) return <Spinner label={t('Loading resources')} />;
 
+  const tools = toolsBySection(sections, toolSettings, employee);
+  const jobRoles = sections.flatMap((section) => (section.jobRole ? [section.jobRole] : []));
   const roleSections = sections.filter((section) => section.jobRole !== null);
 
   return (
@@ -94,13 +96,14 @@ export function ResourcesPage() {
         )}
 
         <div className="space-y-6">
-          <FormsSection />
-          <ReferenceSection />
           {sections.map((section) => (
             <SectionBlock
               key={section.jobRole?.id ?? 'everyone'}
               section={section}
               sections={sections}
+              tools={tools.get(section.jobRole?.id ?? 'everyone') ?? []}
+              jobRoles={jobRoles}
+              onToolsChanged={setToolSettings}
               canManage={isManager}
               onChanged={() => void load()}
               onError={setError}
@@ -129,12 +132,20 @@ function sectionName(section: ResourceSection): string {
 function SectionBlock({
   section,
   sections,
+  tools,
+  jobRoles,
+  onToolsChanged,
   canManage,
   onChanged,
   onError,
 }: {
   section: ResourceSection;
   sections: ResourceSection[];
+  /// The built-in forms and guides that belong in this section.
+  tools: PlacedTool[];
+  /// Every job role, for "Who can use it".
+  jobRoles: JobRoleChoice[];
+  onToolsChanged: (settings: ToolSetting[]) => void;
   canManage: boolean;
   onChanged: () => void;
   onError: (message: string) => void;
@@ -180,8 +191,18 @@ function SectionBlock({
         </div>
       )}
 
+      {tools.length > 0 && (
+        <ToolsCard
+          name={name}
+          tools={tools}
+          jobRoles={jobRoles}
+          canManage={canManage}
+          onChanged={onToolsChanged}
+        />
+      )}
+
       {section.resources.length === 0 ? (
-        <EmptyState>{t('Nothing here yet.')}</EmptyState>
+        tools.length === 0 && <EmptyState>{t('Nothing here yet.')}</EmptyState>
       ) : (
         <div className="space-y-2">
           {section.resources.map((resource) => (
@@ -549,178 +570,172 @@ function hostOf(url: string): string {
   }
 }
 
-/**
- * Forms, first on the page (October 2026, Dominguez: "a Forms section of
- * the resources") - the clinical forms, filled in and made into PDFs in the
- * browser. The BrainCheck Care Plan (CPT 99483) is only for people whose job role
- * uses the clinical forms; the care plan (CCM and APCM) also for managers and admins.
- * Anybody with neither sees no section at all.
- */
-/// The practice's reference boards (October 2026, Dominguez - made from its
-/// spreadsheets): the diagnostics board and the referral phone book for
-/// everybody, the reimbursements for managers and admins.
-function ReferenceSection() {
+type JobRoleChoice = NonNullable<ResourceSection['jobRole']>;
+
+/// The forms and guides built into Domi Staff that belong in a section
+/// (`lib/resource-tools.ts` says which go where). Managers and admins set who
+/// can use each from here.
+function ToolsCard({
+  name,
+  tools,
+  jobRoles,
+  canManage,
+  onChanged,
+}: {
+  name: string;
+  tools: PlacedTool[];
+  jobRoles: JobRoleChoice[];
+  canManage: boolean;
+  onChanged: (settings: ToolSetting[]) => void;
+}) {
   const t = useT();
-  const isManager = useIsManager();
-  const { employee } = useSession();
-  // The playbook and inpatient notes: providers, managers and admins.
-  const providerGuides = isManager || Boolean(employee?.usesClinicalForms);
+  const [editing, setEditing] = useState<PlacedTool | null>(null);
+  const whoFor = (tool: PlacedTool) =>
+    !tool.setting
+      ? 'Managers and admins'
+      : tool.setting.everyone
+        ? 'Everyone'
+        : jobRoles
+            .filter((role) => tool.setting?.jobRoleIds.includes(role.id))
+            .map((role) => role.name)
+            .join(', ') || 'Managers and admins only';
   return (
-    <section aria-label={t('Reference')} data-testid="reference-section">
-      <h2 className="mb-2 text-sm font-semibold uppercase tracking-wide text-slate-600">
-        {t('Reference')}
-      </h2>
-      <Card className="divide-y divide-slate-100">
-        <div className="p-3">
-          <Link
-            to="/diagnostics"
-            className="block text-sm font-semibold text-brand-800 hover:text-brand-900"
-          >
-            {t('Diagnostics')} →
-          </Link>
-          <p className="mt-0.5 text-xs text-slate-600">
-            {t(
-              'Which insurance covers which ultrasound or test, how long it takes, the prep and the self-pay price.',
-            )}
-          </p>
-        </div>
-        <div className="p-3">
-          <Link
-            to="/phone-book"
-            className="block text-sm font-semibold text-brand-800 hover:text-brand-900"
-          >
-            {t('Phone book')} →
-          </Link>
-          <p className="mt-0.5 text-xs text-slate-600">
-            {t(
-              'Labs, hospitals, imaging, home care, equipment and specialists we refer to - searchable, and yours to keep up to date.',
-            )}
-          </p>
-        </div>
-        <div className="p-3">
-          <Link
-            to="/front-desk"
-            className="block text-sm font-semibold text-brand-800 hover:text-brand-900"
-          >
-            {t('Front desk guide')} →
-          </Link>
-          <p className="mt-0.5 text-xs text-slate-600">
-            {t(
-              'Booking rules, results calls, message scripts to copy, payments, uploading and medications.',
-            )}
-          </p>
-        </div>
-        {providerGuides && (
-          <>
-            <div className="p-3">
+    <Card
+      className="mb-2 divide-y divide-brand-100 border-brand-200 bg-brand-50"
+      testId={`tools-${name}`}
+    >
+      {tools.map((tool) => (
+        <div key={tool.key} className="p-3" data-testid={`tool-${tool.key}`}>
+          <div className="flex flex-wrap items-center gap-2">
+            {tool.usable ? (
               <Link
-                to="/results-playbook"
-                className="block text-sm font-semibold text-brand-800 hover:text-brand-900"
-              >
-                Results playbook →
-              </Link>
-              <p className="mt-0.5 text-xs text-slate-600">
-                What to do with each result, and when action is needed.
-              </p>
-            </div>
-            <div className="p-3">
-              <Link
-                to="/inpatient-notes"
-                className="block text-sm font-semibold text-brand-800 hover:text-brand-900"
-              >
-                Inpatient notes →
-              </Link>
-              <p className="mt-0.5 text-xs text-slate-600">
-                Hospital note templates to copy, and the hospital care codes by time.
-              </p>
-            </div>
-          </>
-        )}
-        {isManager && (
-          <div className="p-3">
-            <div className="flex flex-wrap items-center gap-2">
-              <Link
-                to="/reimbursements"
+                to={tool.href}
                 className="text-sm font-semibold text-brand-800 hover:text-brand-900"
               >
-                Reimbursements →
+                {t(tool.title)} →
               </Link>
-              <Badge>Managers and admins</Badge>
-            </div>
-            <p className="mt-0.5 text-xs text-slate-600">
-              What each insurance pays for each code, searchable.
-            </p>
+            ) : (
+              <span className="text-sm font-semibold text-slate-700">{t(tool.title)}</span>
+            )}
+            {canManage && !tool.setting && (
+              <span className="ml-auto text-xs text-slate-500">For: {whoFor(tool)}</span>
+            )}
+            {canManage && tool.setting && (
+              <button
+                type="button"
+                onClick={() => setEditing(tool)}
+                className="ml-auto text-xs font-medium text-brand-700 hover:text-brand-900"
+                aria-label={`Who can use ${tool.title}`}
+              >
+                For: {whoFor(tool)} · Change
+              </button>
+            )}
           </div>
-        )}
-      </Card>
-    </section>
+          <p className="mt-0.5 text-xs text-slate-600">{t(tool.description)}</p>
+          {canManage && tool.setting && !tool.usable && (
+            <p className="mt-0.5 text-xs text-slate-500">
+              Only the job roles chosen use this one, not managers and admins by their access.
+            </p>
+          )}
+        </div>
+      ))}
+      {editing && (
+        <ToolAccessEditor
+          tool={editing}
+          jobRoles={jobRoles}
+          onClose={() => setEditing(null)}
+          onSaved={(settings) => {
+            onChanged(settings);
+            setEditing(null);
+          }}
+        />
+      )}
+    </Card>
   );
 }
 
-function FormsSection() {
-  const t = useT();
-  const { employee } = useSession();
-  const cognitive = employee ? canUseCognitiveAssessment(employee) : false;
-  const carePlan = employee ? canUseCarePlan(employee) : false;
-  const wellness = employee ? canUseWellnessForm(employee) : false;
-  if (!cognitive && !carePlan && !wellness) return null;
+/// "Who can use it": everyone, or one or more job roles (Dominguez, October
+/// 2026). Managers and admins open the tools anyway, except the BrainCheck
+/// Care Plan.
+function ToolAccessEditor({
+  tool,
+  jobRoles,
+  onClose,
+  onSaved,
+}: {
+  tool: PlacedTool;
+  jobRoles: JobRoleChoice[];
+  onClose: () => void;
+  onSaved: (settings: ToolSetting[]) => void;
+}) {
+  const [everyone, setEveryone] = useState(tool.setting?.everyone ?? false);
+  const [chosen, setChosen] = useState<string[]>(tool.setting?.jobRoleIds ?? []);
+  const [busy, setBusy] = useState(false);
+  const [problem, setProblem] = useState<string | null>(null);
+  const toggle = (id: string, on: boolean) =>
+    setChosen(on ? [...chosen.filter((x) => x !== id), id] : chosen.filter((x) => x !== id));
+  const save = async () => {
+    setBusy(true);
+    setProblem(null);
+    try {
+      onSaved(await api.saveToolAccess(tool.key, { everyone, jobRoleIds: everyone ? [] : chosen }));
+    } catch (err) {
+      setProblem(err instanceof ApiError ? err.message : 'That did not save. Try again.');
+      setBusy(false);
+    }
+  };
   return (
-    <section aria-label={t('Forms')} data-testid="forms-section">
-      <h2 className="mb-2 text-sm font-semibold uppercase tracking-wide text-slate-600">
-        {t('Forms')}
-      </h2>
-      <Card className="space-y-3 border-brand-200 bg-brand-50 p-3" testId="clinical-tools">
-        {cognitive && (
-          <div>
-            <Link
-              to="/clinical/99483"
-              className="block text-sm font-semibold text-brand-800 hover:text-brand-900"
-            >
-              BrainCheck Care Plan →
-            </Link>
-            <p className="mt-0.5 text-xs text-slate-600">
-              {t(
-                'Cognitive assessment and care plan (CPT 99483). Fill it in during the visit; download the note for eCW and the care plan for the patient. Nothing is saved.',
-              )}
-            </p>
-          </div>
+    <Modal title={`Who can use the ${tool.title}?`} onClose={onClose} testId="tool-access-editor">
+      <div className="space-y-3 text-sm">
+        <label className="flex items-center gap-2 font-medium text-slate-800">
+          <input
+            type="checkbox"
+            checked={everyone}
+            onChange={(event) => setEveryone(event.target.checked)}
+            className="rounded border-slate-300 text-brand-600"
+          />
+          Everyone
+        </label>
+        {!everyone && (
+          <fieldset>
+            <legend className="mb-1 text-slate-700">Or these job roles (one or more):</legend>
+            <div className="grid gap-1.5 sm:grid-cols-2">
+              {jobRoles.map((role) => (
+                <label key={role.id} className="flex items-center gap-2">
+                  <input
+                    type="checkbox"
+                    checked={chosen.includes(role.id)}
+                    onChange={(event) => toggle(role.id, event.target.checked)}
+                    className="rounded border-slate-300 text-brand-600"
+                  />
+                  <JobRoleDot colour={role.colour} />
+                  {role.name}
+                </label>
+              ))}
+            </div>
+          </fieldset>
         )}
-        {carePlan && (
-          <div>
-            <Link
-              to="/clinical/care-plan"
-              className="block text-sm font-semibold text-brand-800 hover:text-brand-900"
-            >
-              APCM Care Plan →
-            </Link>
-            <p className="mt-0.5 text-xs text-slate-600">
-              {t(
-                'For CCM and APCM: the general care plan and two or more chronic conditions, as one PDF in English, or English and Spanish. Nothing is saved.',
-              )}
-            </p>
-          </div>
-        )}
-        {wellness && (
-          <div>
-            <Link
-              to="/clinical/wellness"
-              className="block text-sm font-semibold text-brand-800 hover:text-brand-900"
-            >
-              Annual Wellness Visit →
-            </Link>
-            <p className="mt-0.5 text-xs text-slate-600">
-              {t(
-                'The Annual Wellness Supplement Form: the medical assistant does page 2 (preventive services), the provider page 1 in the patient’s language. Each page downloads for eCW. Nothing is saved.',
-              )}
-            </p>
-          </div>
-        )}
-        {!cognitive && (
-          <p className="text-xs text-slate-500">
-            {t('Providers also have the BrainCheck Care Plan here.')}
-          </p>
-        )}
-      </Card>
-    </section>
+        <p className="text-xs text-slate-600">
+          It is listed under each job role chosen (or Everyone), and only those people can open it.
+          {tool.key === 'braincheck'
+            ? ' Managers and admins do not get this one by their access: its note is signed by whoever fills it in as the provider.'
+            : ' Managers and admins can always open it.'}
+        </p>
+        {problem && <Alert>{problem}</Alert>}
+        <div className="flex justify-end gap-2">
+          <button type="button" className={buttonClass('secondary')} onClick={onClose}>
+            Cancel
+          </button>
+          <button
+            type="button"
+            className={buttonClass('primary')}
+            disabled={busy || (!everyone && chosen.length === 0 && tool.key === 'braincheck')}
+            onClick={() => void save()}
+          >
+            {busy ? 'Saving...' : 'Save'}
+          </button>
+        </div>
+      </div>
+    </Modal>
   );
 }

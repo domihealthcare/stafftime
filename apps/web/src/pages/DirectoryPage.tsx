@@ -11,7 +11,7 @@ import { useTodaysScheduleReviews } from '../lib/schedule-reviews';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { usePersonMenu } from '../components/PersonMenu';
-import { Alert, Card, EmptyState, PageHeading, Spinner, buttonClass } from '../components/ui';
+import { Alert, Card, EmptyState, PageHeading, Spinner } from '../components/ui';
 import { ApiError, api } from '../lib/api';
 import { displayName } from '../lib/format';
 import { t as translate, useT } from '../lib/i18n';
@@ -242,7 +242,6 @@ export function DirectoryPage() {
                 personMenu.open(event, { id: person.id, name: displayName(person) })
               }
               isYou={person.id === employee?.id}
-              canResetPin={isManager && person.id !== employee?.id}
               extension={extensionOf(extensions, person.id)}
               review={reviews.get(person.id)}
             />
@@ -257,7 +256,6 @@ export function DirectoryPage() {
 function PersonCard({
   person,
   isYou,
-  canResetPin,
   extension,
   review,
   onContextMenu,
@@ -267,7 +265,6 @@ function PersonCard({
   /// Who reviews their patient schedule today, for a provider.
   review?: ScheduleReview;
   isYou: boolean;
-  canResetPin: boolean;
   extension: OfficeExtension | null;
 }) {
   const t = useT();
@@ -310,7 +307,6 @@ function PersonCard({
           />
         </div>
       </div>
-      {canResetPin && <PinReset person={person} />}
     </Card>
   );
 }
@@ -390,90 +386,6 @@ function uniqueById<T extends { id: string; name: string }>(items: T[]): T[] {
   const seen = new Map<string, T>();
   for (const item of items) if (!seen.has(item.id)) seen.set(item.id, item);
   return [...seen.values()].sort((a, b) => a.name.localeCompare(b.name));
-}
-
-/// For a manager: give somebody who has forgotten their tablet PIN a new one
-/// to use until they choose their own. A manager can set a PIN, never read one.
-function PinReset({ person }: { person: DirectoryEntry }) {
-  const [open, setOpen] = useState(false);
-  const [pin, setPin] = useState('');
-  const [busy, setBusy] = useState(false);
-  const [message, setMessage] = useState<{ ok: boolean; text: string } | null>(null);
-
-  async function save() {
-    setBusy(true);
-    setMessage(null);
-    try {
-      await api.setKioskPin(person.id, pin);
-      setMessage({
-        ok: true,
-        text: `New PIN set. Tell ${person.preferredName ?? person.firstName} in person; they can change it on their profile.`,
-      });
-      setPin('');
-      setOpen(false);
-    } catch (err) {
-      setMessage({
-        ok: false,
-        text: err instanceof ApiError ? err.message : 'Could not set that PIN.',
-      });
-    } finally {
-      setBusy(false);
-    }
-  }
-
-  return (
-    <div className="mt-2 border-t border-slate-100 pt-2 text-sm">
-      {open ? (
-        <div className="flex flex-wrap items-center gap-2">
-          <label htmlFor={`pin-${person.id}`} className="sr-only">
-            New tablet PIN for {person.firstName}
-          </label>
-          <input
-            id={`pin-${person.id}`}
-            type="password"
-            inputMode="numeric"
-            autoComplete="off"
-            maxLength={8}
-            placeholder="New PIN"
-            value={pin}
-            onChange={(event) => setPin(event.target.value.replace(/\D/g, ''))}
-            className="w-28 rounded-lg border border-slate-300 px-2 py-1 text-sm"
-          />
-          <button
-            type="button"
-            disabled={busy || pin.length < 4}
-            onClick={() => void save()}
-            className={buttonClass('primary', 'sm')}
-          >
-            {busy ? 'Saving…' : 'Set PIN'}
-          </button>
-          <button
-            type="button"
-            onClick={() => setOpen(false)}
-            className="text-sm text-slate-500 hover:text-slate-800"
-          >
-            Cancel
-          </button>
-        </div>
-      ) : (
-        <button
-          type="button"
-          onClick={() => setOpen(true)}
-          className="tap text-sm font-medium text-slate-500 hover:text-slate-800"
-        >
-          Set a new tablet PIN
-        </button>
-      )}
-      {message && (
-        <p
-          role="status"
-          className={`mt-1 text-xs ${message.ok ? 'text-emerald-700' : 'text-rose-700'}`}
-        >
-          {message.text}
-        </p>
-      )}
-    </div>
-  );
 }
 
 /**

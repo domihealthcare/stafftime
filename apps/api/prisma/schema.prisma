@@ -1701,6 +1701,8 @@ model JobRole {
   /// 2026, Dominguez: "front desk can see the cell"). Starts true for Front
   /// Desk. The rest of the rep list stays with managers and admins.
   seesRepCell            Boolean                 @default(false)
+  /// The built-in forms and guides this role is given (see ToolAccess).
+  toolAccess             ToolAccessRole[]
 
   @@map("job_roles")
 }
@@ -3618,4 +3620,33 @@ model InvoiceLine {
   invoice     Invoice @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
 
   @@map("invoice_lines")
+}
+
+// ------------------------------------------------------------ tool access
+
+/// Who may use each form and guide built into Domi Staff (October 2026,
+/// Dominguez: "there should be an option for managers ... to make the form
+/// available for either one group or multiple groups of job roles"):
+/// everyone, or the job roles in ToolAccessRole. Managers and admins keep it,
+/// from Resources. `tool` is a key from `resource-tools/tools.ts`. It decides
+/// who can open the tool and which Resources sections list it; the clinical
+/// forms still store nothing.
+model ToolAccess {
+  tool        String           @id
+  everyone    Boolean          @default(false)
+  updatedById String?          @db.Uuid
+  updatedAt   DateTime         @updatedAt
+  roles       ToolAccessRole[]
+
+  @@map("tool_access")
+}
+
+model ToolAccessRole {
+  tool      String
+  jobRoleId String     @db.Uuid
+  access    ToolAccess @relation(fields: [tool], references: [tool], onDelete: Cascade)
+  jobRole   JobRole    @relation(fields: [jobRoleId], references: [id], onDelete: Cascade)
+
+  @@id([tool, jobRoleId])
+  @@map("tool_access_roles")
 }

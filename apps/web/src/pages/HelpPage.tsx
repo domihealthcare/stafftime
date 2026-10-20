@@ -720,8 +720,10 @@ const STAFF: Section[] = [
         answer: (
           <p>
             <Screen>Resources</Screen>. You see the resources for everyone, plus those for each of
-            your job roles. A Google Drive folder (📁) opens in place: tap a file and it opens in a
-            new tab - no Google account needed.
+            your job roles. The forms and guides built into the app (the phone book, the front desk
+            guide, the care plans and the rest) are listed in the sections of the job roles that use
+            them; a manager chooses which. A Google Drive folder (📁) opens in place: tap a file and
+            it opens in a new tab - no Google account needed.
           </p>
         ),
       },
@@ -792,11 +794,11 @@ const STAFF: Section[] = [
         answer: (
           <>
             <p>
-              <Screen>Front desk guide</Screen> - on Home under Quick, and under Resources. It is
-              the Front Desk Cheat Sheet: booking rules for each visit type, what to do with Action
-              needed, Appt needed and normal results, when to send a patient to the ED, payments,
-              which eCW tab a document goes in, pharmacy calls and the abbreviations. Type in the
-              search box (any words, in any order), or press a heading to see just that part.
+              <Screen>Front desk guide</Screen> - on Home under Quick, and in Resources under Front
+              Desk. It is the Front Desk Cheat Sheet: booking rules for each visit type, what to do
+              with Action needed, Appt needed and normal results, when to send a patient to the ED,
+              payments, which eCW tab a document goes in, pharmacy calls and the abbreviations. Type
+              in the search box (any words, in any order), or press a heading to see just that part.
             </p>
             <p>
               The <strong>message scripts</strong> have a box for each blank. Fill them in and press{' '}
@@ -809,8 +811,8 @@ const STAFF: Section[] = [
             <p>
               Providers also have the <strong>Results playbook</strong> (what to do with each
               result) and <strong>Inpatient notes</strong> (hospital note templates to copy, and the
-              hospital codes by time), under Resources. Managers and admins keep all three up to
-              date.
+              hospital codes by time), in Resources under Provider. Managers and admins keep all
+              three up to date.
             </p>
           </>
         ),
@@ -963,7 +965,7 @@ const STAFF: Section[] = [
   },
 ];
 
-/// For anybody who can make a care plan (CCM and APCM): providers, managers and admins.
+/// For anybody who can make a care plan (CCM and APCM): the job roles managers chose, and managers and admins.
 const CARE_PLAN: Section[] = [
   {
     title: 'APCM Care Plan (also for CCM)',
@@ -973,8 +975,10 @@ const CARE_PLAN: Section[] = [
         answer: (
           <>
             <p>
-              <Screen>Resources</Screen> → <Screen>Forms</Screen>, at the top →{' '}
-              <strong>APCM Care Plan</strong>. Providers, managers and admins have it.
+              <Screen>Resources</Screen>, in the <Screen>Medical Assistant</Screen> or{' '}
+              <Screen>Provider</Screen> section → <strong>APCM Care Plan</strong>. It starts with
+              medical assistants and providers (and managers and admins), in their sections of
+              Resources; managers can change who has it.
             </p>
             <ul>
               <li>
@@ -1051,9 +1055,9 @@ const WELLNESS: Section[] = [
         answer: (
           <>
             <p>
-              <Screen>Resources</Screen> → <Screen>Forms</Screen> →{' '}
-              <strong>Annual Wellness Visit</strong> - the practice&rsquo;s Annual Wellness
-              Supplement Form, one page at a time.
+              <Screen>Resources</Screen>, in the <Screen>Provider</Screen> or{' '}
+              <Screen>Medical Assistant</Screen> section → <strong>Annual Wellness Visit</strong> -
+              the practice&rsquo;s Annual Wellness Supplement Form, one page at a time.
             </p>
             <ul>
               <li>
@@ -1140,7 +1144,7 @@ const PROVIDERS: Section[] = [
         answer: (
           <>
             <p>
-              <Screen>Resources</Screen> → <Screen>Forms</Screen>, at the top →{' '}
+              <Screen>Resources</Screen>, in the <Screen>Provider</Screen> section →{' '}
               <strong>BrainCheck Care Plan</strong> - the cognitive assessment and care plan, billed
               as CPT 99483.
             </p>
@@ -1851,10 +1855,10 @@ const MANAGERS: Section[] = [
         question: 'Somebody has forgotten their tablet PIN',
         answer: (
           <p>
-            In <Screen>Directory</Screen>, under their name, choose{' '}
-            <strong>Set a new tablet PIN</strong> and tell them it in person. They can change it to
-            one of their own on their profile. Nobody can see a PIN once it is set - you can only
-            replace it.
+            An admin, in <Screen>Manage → People → Staff</Screen>, presses <strong>Edit</strong> on
+            them and, under Signing in, <strong>Set a tablet PIN</strong>, then tells them it in
+            person. They can change it to one of their own on their profile. Nobody can see a PIN
+            once it is set - you can only replace it.
           </p>
         ),
       },
@@ -2216,6 +2220,27 @@ const MANAGERS: Section[] = [
               they are shown under it - unless the shift they clocked in to is for another role,
               when they are shown under that one. Without a choice it is their first role in this
               list.
+            </p>
+          </>
+        ),
+      },
+      {
+        question: 'Choosing who uses each form and guide',
+        answer: (
+          <>
+            <p>
+              On <Screen>Resources</Screen>, each built-in form and guide (phone book, diagnostics,
+              front desk guide, BrainCheck Care Plan, APCM Care Plan, Annual Wellness Visit, results
+              playbook, inpatient notes) shows who it is for. Press <strong>Change</strong> beside
+              it and tick <strong>Everyone</strong>, or one or more job roles, then{' '}
+              <strong>Save</strong>. It moves to those job roles&rsquo; sections, and anybody not in
+              them loses the link and the page at once.
+            </p>
+            <p>
+              Managers and admins can always open them, except the BrainCheck Care Plan, which is
+              signed as the provider who fills it in, so it goes only to the job roles chosen. The
+              Annual Wellness Visit opens on page 1 in the Provider section and page 2 everywhere
+              else.
             </p>
           </>
         ),

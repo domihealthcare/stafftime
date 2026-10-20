@@ -311,7 +311,7 @@ await step('it is also on Home’s Quick card and Resources', async () => {
   await staff.goto(`${BASE}/`, { waitUntil: 'networkidle' });
   await staff.getByTestId('quick-actions').getByRole('link', { name: 'Phone book' }).waitFor({ timeout: 10000 });
   await staff.goto(`${BASE}/resources`, { waitUntil: 'networkidle' });
-  await staff.getByTestId('reference-section').getByRole('link', { name: /Phone book/ }).waitFor({ timeout: 10000 });
+  await staff.getByTestId('section-Everyone').getByTestId('tool-phone-book').waitFor({ timeout: 10000 });
 });
 
 await step('on a phone it is a tab on the bottom bar and fits without scrolling sideways', async () => {

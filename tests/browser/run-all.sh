@@ -87,6 +87,7 @@ reset_state() {
     -c "delete from practice_events where title = 'Time-off suite closure';" \
     -c "delete from vendors;" \
     -c "delete from invoices;" \
+    -c "delete from tool_access;" \
     -c "delete from guide_sections where title like 'Test section%';" \
     -c "delete from shifts where notes = 'minimums-suite';" \
     -c "delete from shifts where notes = 'extensions-suite';" \

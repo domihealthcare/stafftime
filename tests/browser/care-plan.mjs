@@ -62,31 +62,75 @@ const group = (scope, name) => scope.getByRole('group', { name });
 const pick = (scope, question, answer) =>
   group(scope, question).getByLabel(answer, { exact: true }).check();
 
-await step('somebody who is not a provider, manager or admin has no link, and the page says so', async () => {
-  const desk = await ctx.newPage();
+await step('a medical assistant has it under Medical Assistant; taken off their role, no link and the page says so', async () => {
+  const deskCtx = await browser.newContext({ timezoneId: 'America/New_York' });
+  const desk = await deskCtx.newPage();
   await signIn(desk, 'frontdesk@domihealthcare.com');
   await desk.goto(`${BASE}/resources`, { waitUntil: 'networkidle' });
-  // Frankie is a Medical Assistant too, so Forms holds the wellness form - but no care plan.
-  const forms = desk.getByTestId('clinical-tools');
-  await forms.getByRole('link', { name: /^Annual Wellness Visit/ }).waitFor({ timeout: 10000 });
-  if ((await forms.getByRole('link', { name: /^APCM Care Plan/ }).count()) > 0) throw new Error('the link is on Resources');
-  await desk.goto(`${BASE}/clinical/care-plan`, { waitUntil: 'networkidle' });
-  await desk.getByText('This form is for providers, managers and admins.').waitFor({ timeout: 10000 });
-  if ((await desk.getByLabel(/First name/).count()) > 0) throw new Error('the form is shown');
+  // Frankie is a Medical Assistant too, and the APCM Care Plan starts with the MAs (Dominguez).
+  await desk
+    .getByTestId('tools-Medical Assistant')
+    .getByTestId('tool-apcm')
+    .getByRole('link', { name: /^APCM Care Plan/ })
+    .waitFor({ timeout: 10000 });
+  const fetchJson = (path, init = {}) =>
+    desk.evaluate(
+      async ([path, init]) => {
+        const response = await fetch(`/api${path}`, {
+          headers: { 'Content-Type': 'application/json' },
+          ...init,
+        });
+        return { status: response.status, body: await response.json().catch(() => null) };
+      },
+      [path, init],
+    );
+  const before = (await fetchJson('/tool-access')).body.find((t) => t.key === 'apcm');
+  // A manager narrows it to Provider only.
+  const managerCtx = await browser.newContext({ timezoneId: 'America/New_York' });
+  const managerPage = await managerCtx.newPage();
+  await signIn(managerPage, 'manager@domihealthcare.com');
+  // Only a manager sees every job role's section, so read the Provider id as them.
+  const providerId = await managerPage.evaluate(async () =>
+    (await (await fetch('/api/resources')).json()).sections.find((s) => s.jobRole?.name === 'Provider')?.jobRole.id,
+  );
+  const put = (body) =>
+    managerPage.evaluate(
+      async ([body]) =>
+        (
+          await fetch('/api/tool-access/apcm', {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(body),
+          })
+        ).status,
+      [body],
+    );
+  try {
+    if ((await put({ everyone: false, jobRoleIds: [providerId] })) >= 300) throw new Error('could not narrow it');
+    await desk.goto(`${BASE}/resources`, { waitUntil: 'networkidle' });
+    await desk.getByTestId('tools-Everyone').waitFor({ timeout: 10000 });
+    if ((await desk.getByTestId('tool-apcm').count()) > 0) throw new Error('the link is still on Resources');
+    await desk.goto(`${BASE}/clinical/care-plan`, { waitUntil: 'networkidle' });
+    await desk.getByText(/This form is not set up for your job role/).waitFor({ timeout: 10000 });
+    if ((await desk.getByLabel(/First name/).count()) > 0) throw new Error('the form is shown');
+  } finally {
+    await put({ everyone: before.everyone, jobRoleIds: before.jobRoleIds });
+    await managerCtx.close();
+  }
   await desk.getByRole('button', { name: /^Your account/ }).click();
   await desk.getByRole('menuitem', { name: 'Sign out' }).click();
-  await desk.close();
+  await deskCtx.close();
 });
 
 await signIn(page, 'manager@domihealthcare.com');
 
-await step('a manager finds it under Resources → Forms, without the BrainCheck care plan', async () => {
+await step('a manager finds it in Resources under Provider, without the BrainCheck care plan', async () => {
   await page.goto(`${BASE}/resources`, { waitUntil: 'networkidle' });
-  const tools = page.getByTestId('forms-section').getByTestId('clinical-tools');
-  if ((await tools.getByRole('link', { name: /BrainCheck/ }).count()) > 0)
+  const tools = page.getByTestId('section-Provider').getByTestId('tools-Provider');
+  // A manager sees it, to set who uses it, but cannot open it.
+  if ((await page.getByTestId('tool-braincheck').first().getByRole('link').count()) > 0)
     throw new Error('a manager who is not a provider is offered the BrainCheck care plan');
-  if ((await page.getByTestId('section-Provider').getByTestId('clinical-tools').count()) > 0)
-    throw new Error('the forms are still in the Provider section');
+  await tools.getByTestId('tool-results-playbook').waitFor({ timeout: 10000 });
   await tools.getByRole('link', { name: /^APCM Care Plan/ }).click();
   await page.getByTestId('ccm-care-plan').waitFor({ timeout: 15000 });
 });

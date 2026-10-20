@@ -1,20 +1,11 @@
 import { GuideKey, Role } from '@prisma/client';
-import { GUIDE_SLUGS, canEditGuide, canReadGuide } from './guides';
+import { GUIDE_LABELS, GUIDE_SLUGS, canEditGuide } from './guides';
 
 describe('who reads and keeps the guides', () => {
-  it('lets everybody read the front desk guide', () => {
-    expect(canReadGuide(GuideKey.FRONT_DESK, Role.EMPLOYEE, false)).toBe(true);
+  it('names each guide, for its access message', () => {
+    for (const slug of Object.keys(GUIDE_SLUGS)) expect(GUIDE_LABELS[slug]).toBeTruthy();
+    expect(GUIDE_SLUGS['front-desk']).toBe(GuideKey.FRONT_DESK);
   });
-
-  it.each([GuideKey.RESULTS_PLAYBOOK, GuideKey.INPATIENT_NOTES])(
-    'keeps %s to providers, managers and admins',
-    (key) => {
-      expect(canReadGuide(key, Role.EMPLOYEE, false)).toBe(false);
-      expect(canReadGuide(key, Role.EMPLOYEE, true)).toBe(true);
-      expect(canReadGuide(key, Role.MANAGER, false)).toBe(true);
-      expect(canReadGuide(key, Role.ADMIN, false)).toBe(true);
-    },
-  );
 
   it('lets only managers and admins change them', () => {
     expect(canEditGuide(Role.EMPLOYEE)).toBe(false);
