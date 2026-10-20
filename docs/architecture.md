@@ -5225,3 +5225,43 @@ Timesheet is no longer a header link on a laptop; it is a tab on the Schedule's
 strip (`ScheduleTabs`), and Schedule stays lit on `/timesheet`. The phone's
 More list is unchanged. `tests/browser/nav.mjs` `navLink` goes through Schedule
 for Timesheet.
+
+
+## Guides and invoices
+
+October 2026, Dominguez: four documents the staff used and kept up to date
+by hand - the Front Desk Cheat Sheet, the Domi Playbook, the inpatient note
+templates and the Invoice Template sheet - brought into the app.
+
+**The guides** are one table, `GuideSection` (which guide, a heading, a title,
+a body, an order), read whole by `GET /guides/:slug` and changed a section at
+a time by managers and admins. `guides/guides.ts` says who reads which: the
+front desk guide everybody, the results playbook and inpatient notes
+providers (a job role with the clinical forms), managers and admins.
+
+A body is written in a light markup (`web/src/lib/guide-markup.ts`), chosen
+over rich text so a manager can type it in a text box and so nothing typed is
+ever drawn as HTML: one thing per line (`##` subheading, `-` bullets with two
+spaces a level, `1.` steps, `| a | b |` tables, `!!` a red warning), and in a
+line `**bold**`, `==action==` in amber, `[[Blank]]` and `[text](/path)` links
+(in-app or https only). A `:::copy` block is a script or template: a box for
+each blank, the result as it will be pasted, and **Copy**. What is typed into
+the blanks stays in the page and goes only to the clipboard; a message script
+can carry a patient's symptoms, so it is never sent (`guides.mjs` checks). A
+`::tool:name` line puts in one of the helpers in `components/GuideTools.tsx`,
+whose sums are pure in `lib/guide-tools.ts`: how many to dispense (a weekly
+dose counted four weeks to a month, as the cheat sheet did), new patient or
+follow up (seen within 3 years to the day), and the hospital care code for
+the time.
+
+**Invoices** (`Invoice`, `InvoiceLine`) are numbered 1, 2, 3 (printed #001;
+a clash between two saved at once takes the next) and drawn as a PDF in the
+browser with pdf-lib (`lib/invoice-pdf.ts`), laid out like the template.
+Every invoice is kept, so a copy can be downloaded again. **To a patient**
+(`billTo` PATIENT), the name, date of birth and address are typed in the
+editor, printed on the PDF downloaded at that moment, and never sent: the
+server refuses them (`invoice-rules.ts`), a database constraint refuses them
+too, and a copy downloaded later says "A patient's details are not kept in
+Domi Staff." in their place. This is the "PHI present, then censor it" that
+Dominguez asked for, done by never holding it. The lines are kept, so the
+editor asks that no name goes in them.

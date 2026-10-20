@@ -38,6 +38,18 @@ const ReimbursementsPage = lazy(() =>
 const PhoneBookPage = lazy(() =>
   import('./pages/PhoneBookPage').then((m) => ({ default: m.PhoneBookPage })),
 );
+const FrontDeskGuidePage = lazy(() =>
+  import('./pages/Guides').then((m) => ({ default: m.FrontDeskGuidePage })),
+);
+const ResultsPlaybookPage = lazy(() =>
+  import('./pages/Guides').then((m) => ({ default: m.ResultsPlaybookPage })),
+);
+const InpatientNotesPage = lazy(() =>
+  import('./pages/Guides').then((m) => ({ default: m.InpatientNotesPage })),
+);
+const InvoicesPage = lazy(() =>
+  import('./pages/InvoicesPage').then((m) => ({ default: m.InvoicesPage })),
+);
 const PhoneBookPrintPage = lazy(() =>
   import('./pages/PhoneBookPrintPage').then((m) => ({ default: m.PhoneBookPrintPage })),
 );
@@ -231,6 +243,10 @@ function Routed() {
           <Route path="reps" element={<RepsPage />} />
           <Route path="diagnostics" element={<DiagnosticsPage />} />
           <Route path="phone-book" element={<PhoneBookPage />} />
+          <Route path="front-desk" element={<FrontDeskGuidePage />} />
+          <Route path="results-playbook" element={<ResultsPlaybookPage />} />
+          <Route path="inpatient-notes" element={<InpatientNotesPage />} />
+          <Route path="invoices" element={<InvoicesPage />} />
           <Route path="reimbursements" element={<ReimbursementsPage />} />
           <Route path="vendors" element={<VendorsPage />} />
           <Route path="required" element={<RequiredPage />} />

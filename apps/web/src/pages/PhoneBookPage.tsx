@@ -530,7 +530,7 @@ export function PhoneBookPage() {
       )}
       {/* Stays in view while the list scrolls, so the next search is never a
           scroll back up. */}
-      <div className="sticky top-0 z-20 -mx-4 mb-3 border-b border-slate-200 bg-slate-100/95 px-4 py-2 backdrop-blur">
+      <div className="sticky top-0 z-10 -mx-4 mb-3 border-b border-slate-200 bg-slate-100/95 px-4 py-2 backdrop-blur">
         <div className="flex flex-wrap items-end gap-2">
           <div className="min-w-[12rem] flex-1">
             <label htmlFor="phone-book-search" className="block text-sm font-medium text-slate-700">

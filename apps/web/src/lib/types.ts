@@ -2224,3 +2224,69 @@ export interface VendorPaymentInput {
   completedOn?: string | null;
   note?: string;
 }
+
+// ------------------------------------------------------------------ guides
+
+export type GuideSlug = 'front-desk' | 'results-playbook' | 'inpatient-notes';
+
+export interface GuideSection {
+  id: string;
+  group: string;
+  title: string;
+  /// In the guides' markup (`lib/guide-markup.ts`).
+  body: string;
+  updatedAt: string;
+}
+
+export interface Guide {
+  sections: GuideSection[];
+  updatedAt: string | null;
+  canEdit: boolean;
+}
+
+export interface GuideSectionInput {
+  group: string;
+  title: string;
+  body: string;
+}
+
+// ---------------------------------------------------------------- invoices
+
+export type InvoiceBillTo = 'VENDOR' | 'PATIENT';
+export type InvoiceStatus = 'DUE' | 'PAID';
+
+export interface InvoiceLine {
+  id?: string;
+  description: string;
+  amountCents: number;
+}
+
+export interface Invoice {
+  id: string;
+  number: number;
+  issuedOn: string;
+  dueOn: string | null;
+  billTo: InvoiceBillTo;
+  /// Empty for a patient: their details are on the PDF only.
+  billToName: string | null;
+  billToAddress: string | null;
+  status: InvoiceStatus;
+  paidOn: string | null;
+  note: string | null;
+  lines: InvoiceLine[];
+  totalCents: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface InvoiceInput {
+  issuedOn: string;
+  dueOn: string | null;
+  billTo: InvoiceBillTo;
+  billToName?: string;
+  billToAddress?: string;
+  status: InvoiceStatus;
+  paidOn: string | null;
+  note?: string;
+  lines: { description: string; amountCents: number }[];
+}

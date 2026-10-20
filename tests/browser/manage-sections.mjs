@@ -73,11 +73,11 @@ await step('Locations and Kiosks share Offices, with Closing checklists and Reps
   if (offices.join('|') !== 'Locations|Kiosks|Closing checklists|Reps') throw new Error(offices.join('|'));
 });
 
-await step('Surveys and Required reading share a heading; Export, Reimbursements and Vendor payments are Money', async () => {
+await step('Surveys and Required reading share a heading; Export, Reimbursements, Invoices and Vendor payments are Money', async () => {
   await goToManage(admin, 'Required reading');
   if ((await tabs(admin, 'Surveys & reading')).join('|') !== 'Surveys|Required reading') throw new Error('surveys');
   await goToManage(admin, 'Vendor payments');
-  if ((await tabs(admin, 'Money')).join('|') !== 'Export|Reimbursements|Vendor payments') throw new Error('money');
+  if ((await tabs(admin, 'Money')).join('|') !== 'Export|Reimbursements|Invoices|Vendor payments') throw new Error('money');
 });
 
 await step('the heading stays lit on every one of its screens', async () => {
@@ -100,7 +100,7 @@ await step('a manager sees the same headings with only the tabs they may open', 
   await goToManage(manager, 'Closing checklists');
   if ((await tabs(manager, 'Offices')).join('|') !== 'Closing checklists|Reps') throw new Error('offices');
   await goToManage(manager, 'Export');
-  if ((await tabs(manager, 'Money')).join('|') !== 'Export|Reimbursements') throw new Error('money');
+  if ((await tabs(manager, 'Money')).join('|') !== 'Export|Reimbursements|Invoices') throw new Error('money');
   // What they may not open is refused as before.
   const status = await manager.evaluate(async () => (await fetch('/api/vendors')).status);
   if (status !== 403) throw new Error(`a manager read vendor payments: ${status}`);

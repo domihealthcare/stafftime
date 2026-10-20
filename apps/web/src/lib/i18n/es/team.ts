@@ -228,6 +228,9 @@ export const TEAM: Record<string, string> = {
   'Which insurance covers which ultrasound or test, how long it takes, the prep and the self-pay price.':
     'Qué seguro cubre cada ultrasonido o prueba, cuánto tarda, la preparación y el precio de pago propio.',
   'Phone book': 'Guía telefónica',
+  'Front desk guide': 'Guía de recepción',
+  'Booking rules, results calls, message scripts to copy, payments, uploading and medications.':
+    'Reglas para citas, llamadas de resultados, mensajes para copiar, pagos, documentos y medicamentos.',
   'Labs, hospitals, imaging, home care, equipment and specialists we refer to - searchable, and yours to keep up to date.':
     'Laboratorios, hospitales, imágenes, cuidado en el hogar, equipos y especialistas a los que referimos: se puede buscar y a ti te toca mantenerla al día.',
   'Could not load the diagnostics.': 'No se pudieron cargar los diagnósticos.',

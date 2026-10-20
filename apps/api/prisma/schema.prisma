@@ -3533,3 +3533,89 @@ model ScheduleReviewDay {
   @@id([date, providerId])
   @@map("schedule_review_days")
 }
+
+// ------------------------------------------------------------------ guides
+
+/// The practice's own guides, brought into the app from the documents staff
+/// kept (October 2026, Dominguez): the Front Desk Cheat Sheet, the Domi
+/// Playbook (what to do with each result) and the inpatient note templates.
+enum GuideKey {
+  FRONT_DESK
+  RESULTS_PLAYBOOK
+  INPATIENT_NOTES
+}
+
+/// One section of a guide, written in the guides' light markup (see
+/// `guides/guide-markup.ts` in the web app). Rules and wording only, never a
+/// patient: a fill-in blank in a script is filled in the browser and copied
+/// from there, never sent back. Managers and admins keep them.
+model GuideSection {
+  id          String   @id @default(uuid()) @db.Uuid
+  guide       GuideKey
+  /// The heading it sits under on the page: "Booking", "Results calls".
+  group       String
+  title       String
+  body        String
+  sortOrder   Int      @default(0)
+  updatedById String?  @db.Uuid
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([guide, sortOrder])
+  @@map("guide_sections")
+}
+
+// ---------------------------------------------------------------- invoices
+
+/// Who an invoice is to. Mostly vendors and businesses; now and then a
+/// patient (an I-693 physical paid in parts), whose details are never kept.
+enum InvoiceBillTo {
+  VENDOR
+  PATIENT
+}
+
+enum InvoiceStatus {
+  DUE
+  PAID
+}
+
+/// An invoice the practice sends (October 2026, Dominguez: the Invoice
+/// Template sheet). Managers and admins make them; every one is kept so it can
+/// be downloaded again. For a patient (`billTo` PATIENT) the name, date of
+/// birth and address are typed in the browser and printed on the PDF only:
+/// they are never sent, so `billToName` and `billToAddress` stay empty and a
+/// copy downloaded later shows them blanked out.
+model Invoice {
+  id            String        @id @default(uuid()) @db.Uuid
+  /// 1, 2, 3...; printed as "#001".
+  number        Int           @unique
+  issuedOn      DateTime      @db.Date
+  dueOn         DateTime?     @db.Date
+  billTo        InvoiceBillTo @default(VENDOR)
+  billToName    String?
+  /// Several lines; the email may be one of them.
+  billToAddress String?
+  status        InvoiceStatus @default(DUE)
+  paidOn        DateTime?     @db.Date
+  /// Printed under the lines.
+  note          String?
+  createdById   String?       @db.Uuid
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+
+  lines InvoiceLine[]
+
+  @@map("invoices")
+}
+
+model InvoiceLine {
+  id          String  @id @default(uuid()) @db.Uuid
+  invoiceId   String  @db.Uuid
+  description String
+  /// In cents, so $450.00 is 45000.
+  amountCents Int
+  sortOrder   Int     @default(0)
+  invoice     Invoice @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
+
+  @@map("invoice_lines")
+}

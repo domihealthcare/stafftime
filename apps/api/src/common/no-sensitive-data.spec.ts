@@ -146,6 +146,54 @@ describe('what this app deliberately does not store', () => {
     );
   });
 
+  /// Invoices (October 2026, Dominguez): mostly to vendors. One to a patient
+  /// keeps no name, date of birth or address (they are on the PDF only, and a
+  /// database constraint refuses them), so exactly these fields.
+  it('keeps invoices to who, what and how much, never a patient', () => {
+    const fieldsOf = (name: string) =>
+      model(name)
+        .split('\n')
+        .map((line) => line.trim())
+        .filter((line) => line && !line.startsWith('//') && !line.startsWith('@@'))
+        .map((line) => line.split(/\s+/)[0])
+        .sort();
+    expect(fieldsOf('Invoice')).toEqual(
+      [
+        'billTo',
+        'billToAddress',
+        'billToName',
+        'createdAt',
+        'createdById',
+        'dueOn',
+        'id',
+        'issuedOn',
+        'lines',
+        'note',
+        'number',
+        'paidOn',
+        'status',
+        'updatedAt',
+      ].sort(),
+    );
+    expect(fieldsOf('InvoiceLine')).toEqual(
+      ['amountCents', 'description', 'id', 'invoice', 'invoiceId', 'sortOrder'].sort(),
+    );
+    // The practice's guides: rules and wording, never a patient.
+    expect(fieldsOf('GuideSection')).toEqual(
+      [
+        'body',
+        'createdAt',
+        'group',
+        'guide',
+        'id',
+        'sortOrder',
+        'title',
+        'updatedAt',
+        'updatedById',
+      ].sort(),
+    );
+  });
+
   /// The referral phone book (October 2026, Dominguez): the places patients
   /// are sent and the numbers for it, kept by all staff. About places, never a
   /// patient - so exactly these fields, and a "patient" or "referred" column

@@ -66,6 +66,11 @@ import type {
   DiagnosticSection,
   DiagnosticsBoard,
   DiagnosticTestInput,
+  Guide,
+  GuideSectionInput,
+  GuideSlug,
+  Invoice,
+  InvoiceInput,
   ReimbursementsBoard,
   ReferralContact,
   ReferralContactInput,
@@ -1633,6 +1638,30 @@ export const api = {
     }),
   deleteDiagnosticPlan: (id: string) =>
     request<DiagnosticsBoard>(`/diagnostics/plans/${id}`, { method: 'DELETE' }),
+
+  // ---------------------------------------------------------------- guides
+  guide: (slug: GuideSlug) => request<Guide>(`/guides/${slug}`),
+  addGuideSection: (slug: GuideSlug, body: GuideSectionInput) =>
+    request<Guide>(`/guides/${slug}/sections`, { method: 'POST', body: JSON.stringify(body) }),
+  saveGuideSection: (id: string, body: GuideSectionInput) =>
+    request<Guide>(`/guides/sections/${id}`, { method: 'PUT', body: JSON.stringify(body) }),
+  moveGuideSection: (id: string, by: -1 | 1) =>
+    request<Guide>(`/guides/sections/${id}/move`, {
+      method: 'POST',
+      body: JSON.stringify({ by }),
+    }),
+  deleteGuideSection: (id: string) =>
+    request<Guide>(`/guides/sections/${id}`, { method: 'DELETE' }),
+
+  // ---------------------------------------------------------------- invoices
+  invoices: () => request<{ invoices: Invoice[]; nextNumber: number }>('/invoices'),
+  saveInvoice: (id: string | null, body: InvoiceInput) =>
+    request<Invoice>(id ? `/invoices/${id}` : '/invoices', {
+      method: id ? 'PUT' : 'POST',
+      body: JSON.stringify(body),
+    }),
+  deleteInvoice: (id: string) =>
+    request<{ removed: true }>(`/invoices/${id}`, { method: 'DELETE' }),
 
   // ---------------------------------------------------------------- reimbursements
   reimbursements: () => request<ReimbursementsBoard>('/reimbursements'),
