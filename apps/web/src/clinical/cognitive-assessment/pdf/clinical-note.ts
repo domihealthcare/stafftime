@@ -7,17 +7,18 @@ import {
   CAREGIVER_WILLINGNESS,
   CARE_PLAN_ACTIONS,
   CARE_PLAN_AREAS,
+  BRAINCHECK_RECHECK,
   CARE_PLAN_GOALS,
   COGNITIVE_DOMAINS,
+  COLLATERAL_HISTORY,
   COGNITIVE_TESTS,
   CONFLICTING_SAME_DAY_CODES,
-  DEPRESSION_SCREENS,
   DRIVING_STATUS,
   EDUCATION_TOPICS,
   ELEMENTS,
+  EXAM_FINDINGS,
   FIREARMS,
   FOLLOW_UP_INTERVALS,
-  FUNCTIONAL_TOOLS,
   G2212_THRESHOLD_MINUTES,
   HIGH_RISK_MEDICATION_CLASSES,
   HOME_SAFETY_CONCERNS,
@@ -34,7 +35,20 @@ import {
   type Choice,
   type ElementKey,
 } from '../config';
-import { caregiverName, fastLabel, problemFor } from '../care-plan';
+import { caregiverName, problemFor } from '../care-plan';
+import {
+  FAQ_ITEMS,
+  FAQ_OPTIONS,
+  KATZ_ITEMS,
+  KATZ_OPTIONS,
+  LAWTON_ITEMS,
+  SCREENS,
+  answerLabel,
+  type Answers,
+  type Item,
+  type Option,
+} from '../instruments';
+import { depressionResult, functionalResult, stagingResult } from '../results';
 import { pdfFilename, practiceTimestamp, usDate } from '../../common/dates';
 import type { AssessmentForm } from '../form';
 import { PdfWriter } from '../../common/pdf-writer';
@@ -62,7 +76,7 @@ export function noteFilename(form: AssessmentForm): string {
 /// The patient's line at the top of every page.
 export function patientLine(form: AssessmentForm): string {
   const { visit } = form;
-  return `Patient: ${visit.patientName.trim()}  |  DOB: ${usDate(visit.dob)}  |  MRN: ${visit.mrn.trim()}  |  DOS: ${usDate(visit.dos)}`;
+  return `Patient: ${visit.patientName.trim()}  |  DOB: ${usDate(visit.dob)}  |  DOS: ${usDate(visit.dos)}`;
 }
 
 export function providerName(provider: Provider): string {
@@ -89,7 +103,6 @@ export async function clinicalNotePdf(
   pdf.heading('Patient and visit');
   pdf.field('Patient', visit.patientName);
   pdf.field('Date of birth', usDate(visit.dob));
-  pdf.field('MRN', visit.mrn);
   pdf.field('Date of service', usDate(visit.dos));
   pdf.field('Visit', labelOf(VISIT_TYPES, visit.visitType));
   pdf.field('Provider', providerName(provider));
@@ -125,8 +138,12 @@ export async function clinicalNotePdf(
   }
 
   pdf.keep(250);
+  pdf.heading(`K. ${FOLLOW_UP_HEADING}`);
+  writeFollowUp(pdf, form);
+
+  pdf.keep(250);
   pdf.heading('Attestation');
-  const shared = labelOf(PLAN_SHARED_WITH, form.J.sharedWith).toLowerCase();
+  const shared = labelOf(PLAN_SHARED_WITH, form.K.sharedWith).toLowerCase();
   pdf.paragraph(
     `I performed or personally reviewed each required element of this cognitive assessment and care planning service (elements A to J above). Any element completed at a prior visit was reviewed today and is still valid or has been updated. A written care plan was created and shared with the ${shared}. Total time on the date of service (${usDate(
       visit.dos,
@@ -153,10 +170,43 @@ const optional = (pdf: PdfWriter, label: string, value: string) => {
   if (has(value)) pdf.field(label, value);
 };
 
+/// A ticked list with its "Other" spelled out.
+const withOther = (list: readonly Choice[], values: string[], other: string) =>
+  values
+    .map((v) => (v === 'other' ? (has(other) ? `Other: ${other.trim()}` : '') : labelOf(list, v)))
+    .filter(has)
+    .join('; ');
+
+/// Each question of a tool done on screen, with its answer:
+/// "Bathing: Independent; Dressing: Needs help".
+const itemAnswers = (items: Item[], options: (item: string) => Option[], answers: Answers) =>
+  items
+    .filter((item) => has(answers[item.value] ?? ''))
+    .map((item) => `${item.label}: ${answerLabel(options(item.value), answers[item.value])}`)
+    .join('; ');
+
+const FOLLOW_UP_HEADING = 'Referrals and follow-up';
+
+function writeFollowUp(pdf: PdfWriter, { K }: AssessmentForm) {
+  const referrals = [listOf(REFERRALS, K.referrals), K.referralsOther.trim()].filter(has);
+  pdf.field('Referrals', referrals.length ? referrals.join('; ') : 'None.');
+  pdf.field('Plan shared with', labelOf(PLAN_SHARED_WITH, K.sharedWith));
+  pdf.field('Education and support', withOther(EDUCATION_TOPICS, K.education, K.educationOther));
+  const followUp = K.followUpInterval
+    ? `In ${labelOf(FOLLOW_UP_INTERVALS, K.followUpInterval)}.`
+    : '';
+  optional(pdf, 'Follow-up', [followUp, K.followUpPlan.trim()].filter(has).join(' '));
+  pdf.field('BrainCheck', BRAINCHECK_RECHECK);
+}
+
 const ELEMENT_WRITERS: Record<ElementKey, ElementWriter> = {
   A(pdf, { A }) {
-    optional(pdf, 'Collateral history', A.collateralHistory);
-    optional(pdf, 'Focused exam', A.examFindings);
+    optional(
+      pdf,
+      'Collateral history',
+      withOther(COLLATERAL_HISTORY, A.collateral, A.collateralOther),
+    );
+    optional(pdf, 'Focused exam', withOther(EXAM_FINDINGS, A.exam, A.examOther));
     optional(pdf, 'Domains impaired', listOf(COGNITIVE_DOMAINS, A.domains));
     if (has(A.test)) {
       const test = COGNITIVE_TESTS.find((t) => t.value === A.test);
@@ -172,16 +222,32 @@ const ELEMENT_WRITERS: Record<ElementKey, ElementWriter> = {
 
   B(pdf, form) {
     const { B } = form;
+    // "No tool used" is an answer today; from a prior visit, a blank is not.
+    const tool = functionalResult(B);
+    if (tool) {
+      const score = has(tool.score) ? `: ${tool.score}${tool.band ? `, ${tool.band}` : ''}` : '';
+      pdf.field('Tool used', `${tool.name}${score}`);
+      if (!B.toolScoreOnly) {
+        const answers =
+          B.tool === 'katz'
+            ? itemAnswers(KATZ_ITEMS, () => KATZ_OPTIONS, B.toolAnswers)
+            : B.tool === 'lawton'
+              ? itemAnswers(
+                  LAWTON_ITEMS,
+                  (item) => LAWTON_ITEMS.find((i) => i.value === item)?.options ?? [],
+                  B.toolAnswers,
+                )
+              : B.tool === 'faq'
+                ? itemAnswers(FAQ_ITEMS, () => FAQ_OPTIONS, B.toolAnswers)
+                : '';
+        optional(pdf, 'Answers', answers);
+      }
+    } else if (form.completion.B === 'today') {
+      pdf.field('Tool used', 'No tool used');
+    }
     optional(pdf, 'ADL impairments', listOf(ADL_IMPAIRMENTS, B.adl));
     optional(pdf, 'IADL impairments', listOf(IADL_IMPAIRMENTS, B.iadl));
     optional(pdf, 'Details', B.details);
-    // "No tool used" is an answer today; from a prior visit, a blank is not.
-    if (has(B.tool) || form.completion.B === 'today') {
-      pdf.field(
-        'Tool used',
-        B.tool === 'other' ? B.toolOther.trim() : labelOf(FUNCTIONAL_TOOLS, B.tool),
-      );
-    }
   },
 
   C(pdf, { C }) {
@@ -190,12 +256,10 @@ const ELEMENT_WRITERS: Record<ElementKey, ElementWriter> = {
   },
 
   D(pdf, { D }) {
-    if (D.instrument === 'fast' && D.fastStage) {
-      pdf.field('Instrument', 'FAST (Functional Assessment Staging)');
-      pdf.field('Stage', fastLabel(D.fastStage));
-    } else if (D.instrument === 'other' && has(D.otherName)) {
-      pdf.field('Instrument', D.otherName);
-      optional(pdf, 'Stage / score', D.otherScore);
+    const stage = stagingResult(D);
+    if (stage) {
+      pdf.field('Instrument', stage.instrument);
+      optional(pdf, 'Stage / score', stage.full);
     }
   },
 
@@ -216,18 +280,21 @@ const ELEMENT_WRITERS: Record<ElementKey, ElementWriter> = {
   F(pdf, { F }) {
     optional(pdf, 'Symptoms', listOf(NEUROPSYCHIATRIC_SYMPTOMS, F.symptoms));
     optional(pdf, 'Details', F.symptomDetails);
-    if (has(F.depressionScreen)) {
-      const screen = DEPRESSION_SCREENS.find((s) => s.value === F.depressionScreen);
-      const name =
-        F.depressionScreen === 'other'
-          ? F.depressionScreenOther.trim()
-          : labelOf(DEPRESSION_SCREENS, F.depressionScreen);
-      const score = has(F.depressionScore)
-        ? screen?.max
-          ? ` ${F.depressionScore.trim()}/${screen.max}`
-          : `: ${F.depressionScore.trim()}`
+    const mood = depressionResult(F);
+    if (mood) {
+      const score = has(mood.score)
+        ? mood.max
+          ? ` ${mood.score}/${mood.max}`
+          : `: ${mood.score}`
         : '';
-      pdf.field('Depression screen', `${name}${score}`);
+      pdf.field('Depression screen', `${mood.name}${score}${mood.band ? `, ${mood.band}` : ''}`);
+      const screen = SCREENS[F.depressionScreen];
+      if (screen && !F.screenScoreOnly) {
+        optional(pdf, 'Answers', itemAnswers(screen.items, screen.options, F.screenAnswers));
+      }
+      if (mood.safety) {
+        pdf.field('Safety', 'Positive answer on the self-harm item; safety assessed today.');
+      }
     }
     if (has(F.otherInstrument)) {
       pdf.field('Other instrument', `${F.otherInstrument.trim()}: ${F.otherScore.trim()}`);
@@ -280,26 +347,5 @@ const ELEMENT_WRITERS: Record<ElementKey, ElementWriter> = {
       pdf.subheading(area.label);
       for (const [label, value] of rows) optional(pdf, label, value);
     }
-    pdf.gap(4);
-    const referrals = [listOf(REFERRALS, J.referrals), J.referralsOther.trim()].filter(has);
-    pdf.field('Referrals', referrals.length ? referrals.join('; ') : 'None.');
-    pdf.field('Plan shared with', labelOf(PLAN_SHARED_WITH, J.sharedWith));
-    const education = J.education.map((e) =>
-      e === 'other' && has(J.educationOther)
-        ? `Other: ${J.educationOther.trim()}`
-        : labelOf(EDUCATION_TOPICS, e),
-    );
-    pdf.field('Education and support', education.join('; '));
-    const followUp = [
-      J.followUpInterval ? `In ${labelOf(FOLLOW_UP_INTERVALS, J.followUpInterval)}` : '',
-      has(J.followUpDate) ? `on ${usDate(J.followUpDate)}` : '',
-    ]
-      .filter(has)
-      .join(', ');
-    optional(
-      pdf,
-      'Follow-up',
-      [followUp && `${followUp}.`, J.followUpPlan.trim()].filter(has).join(' '),
-    );
   },
 };

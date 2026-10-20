@@ -13,6 +13,7 @@ import {
   ProgressBar,
   type Pending,
   type SectionInfo,
+  useActivity,
   useMovedOn,
 } from '../common/layout';
 import { savePdf, useLeaveGuard } from '../common/leave-guard';
@@ -147,6 +148,7 @@ function CarePlanScreen({ employee }: { employee: Employee }) {
   const pendingIn = (key: string) => problems.filter((problem) => problem.section === key);
   // Amber only for a section somebody has moved on past (see useMovedOn).
   const movedOn = useMovedOn(sections, showProblems);
+  const endActivity = useActivity(movedOn.enterEnd);
 
   // ---------------------------------------------------- the PDF, and after
   const [made, setMade] = useState<string | null>(null);
@@ -293,12 +295,7 @@ function CarePlanScreen({ employee }: { employee: Employee }) {
         </div>
 
         {/* What is missing, the language, and the download. */}
-        <div
-          ref={checklist}
-          className="mt-6 scroll-mt-32"
-          onFocus={movedOn.enterEnd}
-          onPointerDown={movedOn.enterEnd}
-        >
+        <div ref={checklist} className="mt-6 scroll-mt-32" {...endActivity}>
           <Card className="p-4 sm:p-5">
             <h2 className="text-lg font-semibold text-slate-900">The care plan</h2>
             <PendingList sections={sections} pending={problems} onJump={focusField} />

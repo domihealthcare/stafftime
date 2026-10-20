@@ -7,15 +7,18 @@ import {
   CAREGIVER_KNOWLEDGE,
   CAREGIVER_NEEDS,
   CAREGIVER_WILLINGNESS,
+  BRAINCHECK_RECHECK,
   CARE_PLAN_ACTIONS,
   CARE_PLAN_AREAS,
   CARE_PLAN_GOALS,
   COGNITIVE_DOMAINS,
   COGNITIVE_TESTS,
+  COLLATERAL_HISTORY,
   CONFLICTING_SAME_DAY_CODES,
   DEPRESSION_SCREENS,
   DRIVING_STATUS,
   EDUCATION_TOPICS,
+  EXAM_FINDINGS,
   FAST_STAGES,
   FIREARMS,
   FOLLOW_UP_INTERVALS,
@@ -32,6 +35,7 @@ import {
   REFERRALS,
   RELATIONSHIPS,
   REQUIREMENTS,
+  STAGING_TOOLS,
   TELEHEALTH_REMINDER,
   TYPICAL_MINUTES,
   VISIT_TYPES,
@@ -49,7 +53,29 @@ import {
   TextArea,
   TextField,
 } from '../common/fields';
-import { hasConcern, type AssessmentForm, type CarePlanEntry, type Completion } from './form';
+import {
+  capitalizeHistorian,
+  capitalizeName,
+  hasConcern,
+  type AssessmentForm,
+  type CarePlanEntry,
+  type Completion,
+} from './form';
+import { NONE } from '../common/choices';
+import {
+  CDR_SCORES,
+  FAQ_ITEMS,
+  FAQ_OPTIONS,
+  GDS_STAGES,
+  KATZ_ITEMS,
+  KATZ_OPTIONS,
+  LAWTON_ITEMS,
+  SCREENS,
+  type Answers,
+  type Item,
+  type Option,
+} from './instruments';
+import { depressionResult, functionalResult } from './results';
 
 /// The parts of the form that are groups of answers (everything but the
 /// handout's language, which is set on its own).
@@ -103,6 +129,7 @@ export function RequirementsSection({ form, update }: SectionProps) {
                 placeholder="Maria, daughter"
                 value={requirements.historian}
                 onChange={(historian) => set({ historian })}
+                onBlur={() => set({ historian: capitalizeHistorian(requirements.historian) })}
               />
             </div>
           )}
@@ -133,14 +160,7 @@ export function VisitSection({
           required
           value={visit.patientName}
           onChange={(patientName) => set({ patientName })}
-        />
-        <TextField
-          path="visit.mrn"
-          label="MRN"
-          required
-          maxLength={40}
-          value={visit.mrn}
-          onChange={(mrn) => set({ mrn })}
+          onBlur={() => set({ patientName: capitalizeName(visit.patientName) })}
         />
         <TextField
           path="visit.dob"
@@ -274,22 +294,49 @@ function ElementA({ form, update, required }: ElementProps) {
   const test = COGNITIVE_TESTS.find((t) => t.value === A.test);
   return (
     <div className="space-y-4">
-      <TextArea
-        path="A.collateralHistory"
+      <CheckGroup
+        path="A.collateral"
         label="Collateral history from the historian"
         required={required}
-        rows={2}
-        value={A.collateralHistory}
-        onChange={(collateralHistory) => set({ collateralHistory })}
+        wide
+        options={COLLATERAL_HISTORY}
+        values={A.collateral}
+        onChange={(collateral) =>
+          set({
+            collateral,
+            collateralOther: collateral.includes('other') ? A.collateralOther : '',
+          })
+        }
       />
-      <TextArea
-        path="A.examFindings"
+      {A.collateral.includes('other') && (
+        <TextArea
+          path="A.collateralOther"
+          label="Other history"
+          required
+          rows={2}
+          value={A.collateralOther}
+          onChange={(collateralOther) => set({ collateralOther })}
+        />
+      )}
+      <CheckGroup
+        path="A.exam"
         label="Focused exam findings"
         required={required}
-        rows={2}
-        value={A.examFindings}
-        onChange={(examFindings) => set({ examFindings })}
+        wide
+        options={EXAM_FINDINGS}
+        values={A.exam}
+        onChange={(exam) => set({ exam, examOther: exam.includes('other') ? A.examOther : '' })}
       />
+      {A.exam.includes('other') && (
+        <TextArea
+          path="A.examOther"
+          label="Other exam finding"
+          required
+          rows={2}
+          value={A.examOther}
+          onChange={(examOther) => set({ examOther })}
+        />
+      )}
       <CheckGroup
         path="A.domains"
         label="Cognitive domains impaired"
@@ -332,11 +379,231 @@ function ElementA({ form, update, required }: ElementProps) {
   );
 }
 
+/// A questionnaire done on screen: each question with its answers as
+/// buttons, and how many are answered. The whole block is one field for the
+/// "still needed" list, which jumps to it.
+function Questionnaire({
+  path,
+  intro,
+  items,
+  options,
+  answers,
+  onChange,
+}: {
+  path: string;
+  intro?: string;
+  items: (Item & { hint?: string })[];
+  options: (item: string) => Option[];
+  answers: Answers;
+  onChange: (answers: Answers) => void;
+}) {
+  const { idFor, problemFor } = useContext(FieldContext);
+  const problem = problemFor(path);
+  const done = items.filter((item) => (answers[item.value] ?? '') !== '').length;
+  return (
+    <div
+      id={idFor(path)}
+      className="rounded-lg border border-slate-200 bg-slate-50/60 p-3"
+      data-testid={`questionnaire-${path}`}
+    >
+      <div className="mb-2 flex flex-wrap items-baseline justify-between gap-2">
+        {intro && <p className="text-sm font-medium text-slate-700">{intro}</p>}
+        <span className="text-xs text-slate-500">
+          {done} of {items.length} answered
+        </span>
+      </div>
+      <ol className="space-y-2">
+        {items.map((item, index) => (
+          <li key={item.value}>
+            <fieldset>
+              <legend className="mb-1 text-sm text-slate-800">
+                <span className="mr-1 text-slate-500">{index + 1}.</span>
+                {item.label}
+                {item.hint && <span className="block text-xs text-slate-500">{item.hint}</span>}
+              </legend>
+              <div className="flex flex-wrap gap-1.5">
+                {options(item.value).map((option) => {
+                  const checked = answers[item.value] === option.value;
+                  return (
+                    <label
+                      key={option.value}
+                      className={`flex min-h-[36px] cursor-pointer items-center gap-1.5 rounded-lg border px-2.5 py-1 text-sm leading-tight ${
+                        checked
+                          ? 'border-brand-600 bg-brand-50 font-medium text-brand-900'
+                          : 'border-slate-300 bg-white text-slate-700 hover:bg-slate-50'
+                      }`}
+                    >
+                      <input
+                        type="radio"
+                        name={`${path}.${item.value}`}
+                        checked={checked}
+                        onChange={() => onChange({ ...answers, [item.value]: option.value })}
+                        className="border-slate-300 text-brand-600 focus:ring-brand-600"
+                      />
+                      {option.label}
+                    </label>
+                  );
+                })}
+              </div>
+            </fieldset>
+          </li>
+        ))}
+      </ol>
+      {problem && <p className="mt-2 text-xs font-medium text-rose-700">{problem}</p>}
+    </div>
+  );
+}
+
+/// "Score 4/6 - moderate impairment", under a tool done on screen.
+function ScoreLine({ label, score, band }: { label: string; score: string; band: string }) {
+  return (
+    <p className="text-sm text-slate-700" data-testid="tool-score">
+      <span className="font-medium">{label}:</span> {score}
+      {band && <span className="text-slate-600"> - {band}</span>}
+    </p>
+  );
+}
+
+function ScoreOnlySwitch({ scoreOnly, onChange }: { scoreOnly: boolean; onChange: () => void }) {
+  return (
+    <button
+      type="button"
+      onClick={onChange}
+      className="text-sm font-medium text-brand-700 hover:text-brand-900"
+    >
+      {scoreOnly ? 'Answer the questions here instead' : 'Done on paper? Enter the total only'}
+    </button>
+  );
+}
+
+/// The list with the answered items put in or taken out by the answers, and
+/// "None" ticked once everything is answered with nothing impaired.
+function followAnswers(
+  current: string[],
+  answered: { value: string; impaired: boolean }[],
+  complete: boolean,
+): string[] {
+  let list = current.filter((value) => value !== NONE);
+  for (const item of answered) {
+    list = list.filter((value) => value !== item.value);
+    if (item.impaired) list.push(item.value);
+  }
+  if (list.length === 0 && complete) return [NONE];
+  return list;
+}
+
 function ElementB({ form, update, required }: ElementProps) {
   const { B } = form;
   const set = (patch: Partial<AssessmentForm['B']>) => update('B', patch);
+  const onScreen =
+    (B.tool === 'katz' || B.tool === 'lawton' || B.tool === 'faq') && !B.toolScoreOnly;
+  const result = functionalResult(B);
+
+  const answer = (toolAnswers: Answers) => {
+    if (B.tool === 'katz') {
+      const answered = KATZ_ITEMS.filter((item) => toolAnswers[item.value]).map((item) => ({
+        value: item.value,
+        impaired: toolAnswers[item.value] === 'dependent',
+      }));
+      const complete = answered.length === KATZ_ITEMS.length;
+      set({ toolAnswers, adl: followAnswers(B.adl, answered, complete) });
+    } else if (B.tool === 'lawton') {
+      const answered = LAWTON_ITEMS.filter((item) => toolAnswers[item.value]).map((item) => ({
+        value: item.value,
+        impaired: toolAnswers[item.value] !== item.options[0].value,
+      }));
+      const complete = answered.length === LAWTON_ITEMS.length;
+      set({ toolAnswers, iadl: followAnswers(B.iadl, answered, complete) });
+    } else {
+      set({ toolAnswers });
+    }
+  };
+
   return (
     <div className="space-y-4">
+      <Grid>
+        <Select
+          path="B.tool"
+          label="Tool used, if any"
+          placeholder={null}
+          options={FUNCTIONAL_TOOLS}
+          value={B.tool}
+          onChange={(tool) =>
+            set({
+              tool,
+              toolOther: tool === 'other' ? B.toolOther : '',
+              toolAnswers: {},
+              toolScoreOnly: false,
+              toolScore: '',
+            })
+          }
+        />
+        {B.tool === 'other' && (
+          <TextField
+            path="B.toolOther"
+            label="Which tool"
+            required
+            value={B.toolOther}
+            onChange={(toolOther) => set({ toolOther })}
+          />
+        )}
+      </Grid>
+      {onScreen && (
+        <>
+          {B.tool === 'katz' && (
+            <Questionnaire
+              path="B.toolAnswers"
+              intro="Katz: does the patient do each without help?"
+              items={KATZ_ITEMS.map((item) => ({ ...item, hint: item.independent }))}
+              options={() => KATZ_OPTIONS}
+              answers={B.toolAnswers}
+              onChange={answer}
+            />
+          )}
+          {B.tool === 'lawton' && (
+            <Questionnaire
+              path="B.toolAnswers"
+              intro="Lawton: pick what fits best for each."
+              items={LAWTON_ITEMS}
+              options={(item) => LAWTON_ITEMS.find((i) => i.value === item)?.options ?? []}
+              answers={B.toolAnswers}
+              onChange={answer}
+            />
+          )}
+          {B.tool === 'faq' && (
+            <Questionnaire
+              path="B.toolAnswers"
+              intro="FAQ: in the past 4 weeks, from the historian."
+              items={FAQ_ITEMS}
+              options={() => FAQ_OPTIONS}
+              answers={B.toolAnswers}
+              onChange={answer}
+            />
+          )}
+          {result && <ScoreLine label={result.name} score={result.score} band={result.band} />}
+          {(B.tool === 'katz' || B.tool === 'lawton') && (
+            <p className="text-xs text-slate-500">
+              The {B.tool === 'katz' ? 'ADL' : 'IADL'} list below follows your answers.
+            </p>
+          )}
+        </>
+      )}
+      {B.tool !== '' && (B.tool === 'other' || B.toolScoreOnly) && (
+        <TextField
+          path="B.toolScore"
+          label="Total"
+          required={B.tool !== 'other' && required}
+          maxLength={20}
+          value={B.toolScore}
+          onChange={(toolScore) => set({ toolScore })}
+        />
+      )}
+      {B.tool !== '' && B.tool !== 'other' && (
+        <ScoreOnlySwitch
+          scoreOnly={B.toolScoreOnly}
+          onChange={() => set({ toolScoreOnly: !B.toolScoreOnly, toolAnswers: {}, toolScore: '' })}
+        />
+      )}
       <CheckGroup
         path="B.adl"
         label="ADL impairments"
@@ -362,25 +629,6 @@ function ElementB({ form, update, required }: ElementProps) {
           onChange={(details) => set({ details })}
         />
       )}
-      <Grid>
-        <Select
-          path="B.tool"
-          label="Tool used, if any"
-          placeholder={null}
-          options={FUNCTIONAL_TOOLS}
-          value={B.tool}
-          onChange={(tool) => set({ tool, toolOther: tool === 'other' ? B.toolOther : '' })}
-        />
-        {B.tool === 'other' && (
-          <TextField
-            path="B.toolOther"
-            label="Which tool"
-            required
-            value={B.toolOther}
-            onChange={(toolOther) => set({ toolOther })}
-          />
-        )}
-      </Grid>
     </div>
   );
 }
@@ -410,20 +658,120 @@ function ElementC({ form, update, required }: ElementProps) {
   );
 }
 
-/// FAST, done right here: the provider picks the highest stage that fits.
+/// One stage from a list of stages, as large buttons with their meaning.
+function StagePicker({
+  path,
+  legend,
+  stages,
+  value,
+  onChange,
+  required,
+}: {
+  path: string;
+  legend: string;
+  stages: (Item & { description: string })[];
+  value: string;
+  onChange: (value: string) => void;
+  required: boolean;
+}) {
+  const { idFor, problemFor } = useContext(FieldContext);
+  const problem = problemFor(path);
+  return (
+    <fieldset id={idFor(path)}>
+      <legend className="mb-1 text-sm font-medium text-slate-800">
+        {legend}
+        {required && (
+          <span className="ml-0.5 text-rose-600" aria-hidden="true">
+            *
+          </span>
+        )}
+      </legend>
+      <div className="grid gap-1.5 sm:grid-cols-2">
+        {stages.map((stage) => (
+          <label
+            key={stage.value}
+            className={`flex min-h-[38px] cursor-pointer items-start gap-2 rounded-lg border px-2.5 py-1.5 text-sm leading-snug ${
+              value === stage.value
+                ? 'border-brand-600 bg-brand-50 text-brand-900'
+                : 'border-slate-300 bg-white text-slate-700 hover:bg-slate-50'
+            }`}
+          >
+            <input
+              type="radio"
+              checked={value === stage.value}
+              onChange={() => onChange(stage.value)}
+              className="mt-0.5 border-slate-300 text-brand-600 focus:ring-brand-600"
+            />
+            <span>
+              <span className="font-semibold">{stage.label}</span> - {stage.description}
+            </span>
+          </label>
+        ))}
+      </div>
+      {problem && <p className="mt-1 text-xs font-medium text-rose-700">{problem}</p>}
+    </fieldset>
+  );
+}
+
+/// The stage, done right here with FAST, the GDS or the CDR global score, or
+/// another instrument typed in.
 function ElementD({ form, update, required }: ElementProps) {
   const { D } = form;
   const set = (patch: Partial<AssessmentForm['D']>) => update('D', patch);
-  const { idFor, problemFor } = useContext(FieldContext);
-  if (D.instrument === 'other') {
-    return (
-      <div className="space-y-4">
+  return (
+    <div className="space-y-4">
+      <RadioGroup
+        path="D.instrument"
+        label="Staging instrument"
+        options={STAGING_TOOLS}
+        value={D.instrument}
+        onChange={(instrument) =>
+          set({
+            instrument,
+            fastStage: '',
+            gdsStage: '',
+            cdrScore: '',
+            otherName: '',
+            otherScore: '',
+          })
+        }
+      />
+      {D.instrument === 'fast' && (
+        <StagePicker
+          path="D.fastStage"
+          legend="FAST - pick the highest stage that fits"
+          stages={FAST_STAGES}
+          value={D.fastStage}
+          onChange={(fastStage) => set({ fastStage })}
+          required={required}
+        />
+      )}
+      {D.instrument === 'gds' && (
+        <StagePicker
+          path="D.gdsStage"
+          legend="Global Deterioration Scale - pick the stage that fits"
+          stages={GDS_STAGES}
+          value={D.gdsStage}
+          onChange={(gdsStage) => set({ gdsStage })}
+          required={required}
+        />
+      )}
+      {D.instrument === 'cdr' && (
+        <StagePicker
+          path="D.cdrScore"
+          legend="CDR global score, from the CDR interview"
+          stages={CDR_SCORES}
+          value={D.cdrScore}
+          onChange={(cdrScore) => set({ cdrScore })}
+          required={required}
+        />
+      )}
+      {D.instrument === 'other' && (
         <Grid>
           <TextField
             path="D.otherName"
             label="Staging instrument"
             required={required}
-            placeholder="CDR"
             value={D.otherName}
             onChange={(otherName) => set({ otherName })}
           />
@@ -436,59 +784,7 @@ function ElementD({ form, update, required }: ElementProps) {
             onChange={(otherScore) => set({ otherScore })}
           />
         </Grid>
-        <button
-          type="button"
-          onClick={() => set({ instrument: 'fast', otherName: '', otherScore: '' })}
-          className="text-sm font-medium text-brand-700 hover:text-brand-900"
-        >
-          Stage with FAST here instead
-        </button>
-      </div>
-    );
-  }
-  const problem = problemFor('D.fastStage');
-  return (
-    <div className="space-y-3">
-      <fieldset id={idFor('D.fastStage')}>
-        <legend className="mb-1 text-sm font-medium text-slate-800">
-          FAST - pick the highest stage that fits
-          {required && (
-            <span className="ml-0.5 text-rose-600" aria-hidden="true">
-              *
-            </span>
-          )}
-        </legend>
-        <div className="grid gap-1.5 sm:grid-cols-2">
-          {FAST_STAGES.map((stage) => (
-            <label
-              key={stage.value}
-              className={`flex min-h-[38px] cursor-pointer items-start gap-2 rounded-lg border px-2.5 py-1.5 text-sm leading-snug ${
-                D.fastStage === stage.value
-                  ? 'border-brand-600 bg-brand-50 text-brand-900'
-                  : 'border-slate-300 bg-white text-slate-700 hover:bg-slate-50'
-              }`}
-            >
-              <input
-                type="radio"
-                checked={D.fastStage === stage.value}
-                onChange={() => set({ fastStage: stage.value })}
-                className="mt-0.5 border-slate-300 text-brand-600 focus:ring-brand-600"
-              />
-              <span>
-                <span className="font-semibold">{stage.label}</span> - {stage.description}
-              </span>
-            </label>
-          ))}
-        </div>
-        {problem && <p className="mt-1 text-xs font-medium text-rose-700">{problem}</p>}
-      </fieldset>
-      <button
-        type="button"
-        onClick={() => set({ instrument: 'other', fastStage: '' })}
-        className="text-sm font-medium text-brand-700 hover:text-brand-900"
-      >
-        Used another instrument (CDR, GDS…)
-      </button>
+      )}
     </div>
   );
 }
@@ -544,7 +840,10 @@ function ElementE({ form, update, required }: ElementProps) {
 function ElementF({ form, update, required }: ElementProps) {
   const { F } = form;
   const set = (patch: Partial<AssessmentForm['F']>) => update('F', patch);
-  const screen = DEPRESSION_SCREENS.find((s) => s.value === F.depressionScreen);
+  const listed = DEPRESSION_SCREENS.find((s) => s.value === F.depressionScreen);
+  const screen = SCREENS[F.depressionScreen];
+  const onScreen = !!screen && !F.screenScoreOnly;
+  const mood = depressionResult(F);
   return (
     <div className="space-y-4">
       <CheckGroup
@@ -575,18 +874,11 @@ function ElementF({ form, update, required }: ElementProps) {
             set({
               depressionScreen: value,
               depressionScreenOther: value === 'other' ? F.depressionScreenOther : '',
+              screenAnswers: {},
+              screenScoreOnly: false,
+              depressionScore: '',
             })
           }
-        />
-        <TextField
-          path="F.depressionScore"
-          label="Score"
-          required={required}
-          inputMode={screen?.max ? 'numeric' : 'text'}
-          maxLength={20}
-          suffix={screen?.max ? `/ ${screen.max}` : undefined}
-          value={F.depressionScore}
-          onChange={(depressionScore) => set({ depressionScore })}
         />
         {F.depressionScreen === 'other' && (
           <TextField
@@ -597,6 +889,47 @@ function ElementF({ form, update, required }: ElementProps) {
             onChange={(depressionScreenOther) => set({ depressionScreenOther })}
           />
         )}
+        {F.depressionScreen !== '' && !onScreen && (
+          <TextField
+            path="F.depressionScore"
+            label="Score"
+            required={required}
+            inputMode={listed?.max ? 'numeric' : 'text'}
+            maxLength={20}
+            suffix={listed?.max ? `/ ${listed.max}` : undefined}
+            value={F.depressionScore}
+            onChange={(depressionScore) => set({ depressionScore })}
+          />
+        )}
+      </Grid>
+      {onScreen && screen && (
+        <Questionnaire
+          path="F.screenAnswers"
+          intro={screen.intro}
+          items={screen.items}
+          options={screen.options}
+          answers={F.screenAnswers}
+          onChange={(screenAnswers) => set({ screenAnswers })}
+        />
+      )}
+      {mood && mood.score !== '' && screen && (
+        <ScoreLine label={mood.name} score={`${mood.score} / ${mood.max ?? ''}`} band={mood.band} />
+      )}
+      {mood?.safety && (
+        <Alert tone="danger">
+          A positive answer on the self-harm question: ask about safety today and document it. The
+          988 Suicide and Crisis Lifeline is suggested in the care plan.
+        </Alert>
+      )}
+      {screen && (
+        <ScoreOnlySwitch
+          scoreOnly={F.screenScoreOnly}
+          onChange={() =>
+            set({ screenScoreOnly: !F.screenScoreOnly, screenAnswers: {}, depressionScore: '' })
+          }
+        />
+      )}
+      <Grid>
         <TextField
           path="F.otherInstrument"
           label="Other behavioral instrument, if used"
@@ -681,6 +1014,7 @@ function ElementH({ form, update, required }: ElementProps) {
             required
             value={H.caregiverName}
             onChange={(caregiverName) => set({ caregiverName })}
+            onBlur={() => set({ caregiverName: capitalizeName(H.caregiverName) })}
           />
           <Select
             path="H.caregiverRelationship"
@@ -844,68 +1178,115 @@ export function CarePlanSection({ form, update }: SectionProps) {
           onChange={(patch) => setArea(area.value, patch)}
         />
       ))}
-      <CheckGroup
-        path="J.referrals"
-        label="Community resource referrals"
-        options={REFERRALS}
-        values={J.referrals}
-        onChange={(referrals) => set({ referrals })}
-      />
+    </div>
+  );
+}
+
+// ------------------------------------------- K. referrals and follow-up
+
+/// Referrals, who the plan was shared with, education and when to come back
+/// (October 2026, Dominguez: a section of its own, "i should just click
+/// follow up in (no date is needed) and for all patients we recommend
+/// braincheck in 6-12 months").
+export function FollowUpSection({ form, update }: SectionProps) {
+  const { K } = form;
+  const set = (patch: Partial<AssessmentForm['K']>) => update('K', patch);
+  const suggested = suggestions(form).referrals;
+  const referrals = [...REFERRALS].sort(
+    (a, b) => Number(suggested.has(b.value)) - Number(suggested.has(a.value)),
+  );
+  const unticked = referrals.filter(
+    (r) => suggested.has(r.value) && !K.referrals.includes(r.value),
+  );
+  const toggle = (value: string, on: boolean) =>
+    set({
+      referrals: on
+        ? [...K.referrals.filter((v) => v !== value), value]
+        : K.referrals.filter((v) => v !== value),
+    });
+  return (
+    <div className="space-y-4">
+      <fieldset data-testid="referrals">
+        <div className="mb-1 flex flex-wrap items-baseline justify-between gap-2">
+          <legend className="text-sm font-medium text-slate-800">
+            Community resource referrals
+          </legend>
+          {unticked.length > 0 && (
+            <button
+              type="button"
+              onClick={() => set({ referrals: [...K.referrals, ...unticked.map((r) => r.value)] })}
+              className="text-xs font-medium text-brand-700 hover:text-brand-900"
+            >
+              Tick the suggested ones
+            </button>
+          )}
+        </div>
+        <div className="grid gap-1.5 sm:grid-cols-2 lg:grid-cols-3">
+          {referrals.map((referral) => (
+            <PlanTick
+              key={referral.value}
+              label={referral.label}
+              suggested={suggested.has(referral.value)}
+              checked={K.referrals.includes(referral.value)}
+              onChange={(on) => toggle(referral.value, on)}
+            />
+          ))}
+        </div>
+      </fieldset>
       <TextField
-        path="J.referralsOther"
+        path="K.referralsOther"
         label="Other referrals"
-        value={J.referralsOther}
+        value={K.referralsOther}
         onChange={(referralsOther) => set({ referralsOther })}
       />
-      <Grid>
-        <RadioGroup
-          path="J.sharedWith"
-          label="Plan shared with"
-          required
-          options={PLAN_SHARED_WITH}
-          value={J.sharedWith}
-          onChange={(sharedWith) => set({ sharedWith })}
-        />
-        <div className="grid grid-cols-2 gap-3">
-          <Select
-            path="J.followUpInterval"
-            label="Follow-up in"
-            options={FOLLOW_UP_INTERVALS}
-            value={J.followUpInterval}
-            onChange={(followUpInterval) => set({ followUpInterval })}
-          />
-          <TextField
-            path="J.followUpDate"
-            label="Follow-up date"
-            type="date"
-            value={J.followUpDate}
-            onChange={(followUpDate) => set({ followUpDate })}
-          />
-        </div>
-      </Grid>
+      <RadioGroup
+        path="K.sharedWith"
+        label="Plan shared with"
+        required
+        options={PLAN_SHARED_WITH}
+        value={K.sharedWith}
+        onChange={(sharedWith) => set({ sharedWith })}
+      />
       <CheckGroup
-        path="J.education"
+        path="K.education"
         label="Education and support provided"
         required
+        wide
         options={EDUCATION_TOPICS}
-        values={J.education}
-        onChange={(education) => set({ education })}
+        values={K.education}
+        onChange={(education) =>
+          set({ education, educationOther: education.includes('other') ? K.educationOther : '' })
+        }
       />
-      {J.education.includes('other') && (
+      {K.education.includes('other') && (
         <TextField
-          path="J.educationOther"
+          path="K.educationOther"
           label="Other education or support"
           required
-          value={J.educationOther}
+          value={K.educationOther}
           onChange={(educationOther) => set({ educationOther })}
         />
       )}
+      <RadioGroup
+        path="K.followUpInterval"
+        label="Follow-up in"
+        required
+        options={FOLLOW_UP_INTERVALS}
+        value={K.followUpInterval}
+        onChange={(followUpInterval) => set({ followUpInterval })}
+      />
       <TextField
-        path="J.followUpPlan"
-        label="Follow-up plan"
-        value={J.followUpPlan}
+        path="K.followUpPlan"
+        label="Follow-up plan (optional)"
+        value={K.followUpPlan}
         onChange={(followUpPlan) => set({ followUpPlan })}
       />
+      <p
+        className="rounded-lg bg-brand-50 px-3 py-2 text-sm text-brand-900"
+        data-testid="braincheck-recheck"
+      >
+        For every patient: {BRAINCHECK_RECHECK} It is on the note and the handout.
+      </p>
     </div>
   );
 }

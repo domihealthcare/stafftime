@@ -54,9 +54,8 @@ async function pdfPages(path) {
 
 // The fake patient. Nothing about them may ever appear in a request.
 const PATIENT = 'Jane Testpatient';
-const MRN = 'TEST-0001';
 const HISTORIAN = 'John Testhistorian, son';
-const SECRETS = [PATIENT, 'Testpatient', MRN, 'Testhistorian', 'oxybutynin-fake'];
+const SECRETS = [PATIENT, 'Testpatient', 'testpatient', 'Testhistorian', 'testhistorian', 'oxybutynin-fake'];
 
 // New Jersey's day, as the provider's device has it.
 const today = new Intl.DateTimeFormat('en-CA', { timeZone: 'America/New_York' }).format(new Date());
@@ -187,38 +186,97 @@ await step('an empty form makes no PDF, and lists what is missing', async () => 
 });
 
 await step('a missing item jumps to its field', async () => {
-  await page.getByTestId('missing-checklist').getByRole('button', { name: /Enter the MRN\./ }).click();
+  await page.getByTestId('missing-checklist').getByRole('button', { name: /Enter the patient’s name\./ }).click();
   await page.waitForTimeout(300);
   const focused = await page.evaluate(() => document.activeElement?.id ?? '');
-  if (!focused.endsWith('visit-mrn')) throw new Error(`focus went to "${focused}"`);
+  if (!focused.endsWith('visit-patientName')) throw new Error(`focus went to "${focused}"`);
 });
 
-await step('the history and exam start as done at a prior visit, with a tick to confirm it', async () => {
+await step('there is no MRN, and names are given capitals when the box is left', async () => {
+  const v = section('visit');
+  if ((await v.getByLabel(/MRN/).count()) > 0) throw new Error('the MRN is still asked for');
+  await v.getByLabel(/Patient name/).fill('jane testpatient');
+  await v.getByLabel(/Date of birth/).click();
+  const name = await v.getByLabel(/Patient name/).inputValue();
+  if (name !== PATIENT) throw new Error(`patient name became "${name}"`);
+  await v.getByLabel(/Patient name/).fill('maria de la cruz-lopez');
+  await v.getByLabel(/Date of birth/).click();
+  const particles = await v.getByLabel(/Patient name/).inputValue();
+  if (particles !== 'Maria de la Cruz-Lopez') throw new Error(`became "${particles}"`);
+  await v.getByLabel(/Patient name/).fill('');
+});
+
+await step('the history and exam start as today, with tick boxes and an Other box', async () => {
   const a = section('A');
-  const tick = a.getByLabel(/Completed at a prior visit; reviewed today and still valid or updated/);
-  if (await tick.isChecked()) throw new Error('ticked for the provider');
-  await page
-    .getByTestId('missing-checklist')
-    .getByText('Tick to confirm it was completed at a prior visit and reviewed today.')
-    .waitFor({ timeout: 5000 });
-  await tick.check();
-  if ((await a.getByLabel(/Collateral history/).count()) > 0) throw new Error('details shown without asking');
-  if ((await a.getByLabel(/Prior visit date|Performed by/).count()) > 0) throw new Error('asks for a date or a name');
-  await a.getByRole('button', { name: 'Add details' }).click();
-  await a.getByLabel(/Collateral history/).waitFor({ timeout: 5000 });
-  if ((await page.getByTestId('missing-checklist').getByText('Enter the collateral history.').count()) > 0)
-    throw new Error('prior-visit history still required');
+  const prior = a.getByLabel(/Completed at a prior visit; reviewed today and still valid or updated/);
+  if ((await prior.count()) > 0) throw new Error('A starts as a prior visit');
+  const history = a.getByRole('group', { name: /^Collateral history/ });
+  await history.getByLabel('Repeats questions or stories').check();
+  if ((await a.getByLabel(/^Other history/).count()) > 0) throw new Error('the Other box shows before Other is ticked');
+  await history.getByLabel('Other', { exact: true }).check();
+  await a.getByLabel(/^Other history/).waitFor({ timeout: 5000 });
+  await page.getByTestId('missing-checklist').getByText('Describe the other history.').waitFor({ timeout: 5000 });
+  await a.getByLabel(/^Other history/).fill('Leaves the stove on');
+  await a.getByRole('group', { name: /^Focused exam findings/ }).getByLabel('Alert and oriented').check();
+  await a.getByLabel(/^Score/).fill('72');
 });
 
-await step('FAST is done on screen, with no “no impairment” stage', async () => {
+await step('Katz is answered on screen, scores itself and ticks the ADL list', async () => {
+  const b = section('B');
+  await b.getByLabel(/Tool used/).selectOption({ label: 'Katz ADL' });
+  const katz = b.getByTestId('questionnaire-B.toolAnswers');
+  for (const item of ['Bathing', 'Dressing', 'Toileting', 'Transferring', 'Continence', 'Feeding']) {
+    await katz.getByRole('group', { name: new RegExp(item) }).getByLabel(item === 'Bathing' ? 'Needs help' : 'Independent').check();
+  }
+  const score = await b.getByTestId('tool-score').innerText();
+  if (!/5\/6/.test(score) || !/moderate impairment/.test(score)) throw new Error(`score: "${score}"`);
+  const adl = b.getByRole('group', { name: /^ADL impairments/ });
+  if (!(await adl.getByLabel('Bathing').isChecked())) throw new Error('bathing not ticked from the answers');
+  await katz.getByRole('group', { name: /Bathing/ }).getByLabel('Independent').check();
+  if (!(await adl.getByLabel('None', { exact: true }).isChecked())) throw new Error('None not ticked with everything independent');
+  // Done on paper: just the total.
+  await b.getByRole('button', { name: /Enter the total only/ }).click();
+  await b.getByLabel(/^Total/).waitFor({ timeout: 5000 });
+  await b.getByRole('button', { name: /Answer the questions here instead/ }).click();
+  for (const item of ['Bathing', 'Dressing', 'Toileting', 'Transferring', 'Continence', 'Feeding']) {
+    await katz.getByRole('group', { name: new RegExp(item) }).getByLabel('Independent').check();
+  }
+});
+
+await step('the depression screen is answered on screen, and the self-harm question warns', async () => {
+  const f = section('F');
+  await f.getByLabel(/Depression screen/).selectOption({ label: 'PHQ-9' });
+  const phq = f.getByTestId('questionnaire-F.screenAnswers');
+  const groups = phq.getByRole('group');
+  const count = await groups.count();
+  if (count !== 9) throw new Error(`${count} PHQ-9 questions`);
+  for (let i = 0; i < 9; i++) {
+    await groups.nth(i).getByLabel(i < 6 ? 'Several days' : 'Not at all').check();
+  }
+  const score = await f.getByTestId('tool-score').innerText();
+  if (!/6 \/ 27/.test(score) || !/mild/.test(score)) throw new Error(`score: "${score}"`);
+  await groups.nth(8).getByLabel('Several days').check();
+  await f.getByText(/positive answer on the self-harm question/).waitFor({ timeout: 5000 });
+  const crisis = page.getByTestId('care-plan-behavior').getByLabel(/call or text 988/);
+  if (!/Suggested/.test(await crisis.evaluate((el) => el.closest('label')?.textContent ?? '')))
+    throw new Error('988 not suggested');
+  await groups.nth(8).getByLabel('Not at all').check();
+  if ((await f.getByText(/positive answer on the self-harm question/).count()) > 0) throw new Error('the warning stays');
+});
+
+await step('FAST, the GDS or the CDR is done on screen, with no “no impairment” stage', async () => {
   const d = section('D');
   await d.getByText(/Needs help with complex tasks/).waitFor({ timeout: 5000 });
   const stages = await d.getByRole('radio').count();
-  if (stages !== 2 + 15) throw new Error(`${stages} radios`); // Today/Prior + FAST 2–7f
+  if (stages !== 2 + 4 + 15) throw new Error(`${stages} radios`); // Today/Prior + instruments + FAST 2-7f
   if ((await d.getByText(/^Stage 1\b/).count()) > 0) throw new Error('FAST 1 offered');
-  await d.getByRole('button', { name: /Used another instrument/ }).click();
-  await d.getByLabel(/Staging instrument/).waitFor({ timeout: 5000 });
-  await d.getByRole('button', { name: /Stage with FAST here instead/ }).click();
+  await d.getByRole('radio', { name: 'Global Deterioration Scale', exact: true }).check();
+  await d.getByText(/Moderate decline: trouble with finances/).waitFor({ timeout: 5000 });
+  await d.getByRole('radio', { name: 'CDR global score', exact: true }).check();
+  await d.getByText('Mild dementia.').waitFor({ timeout: 5000 });
+  await d.getByRole('radio', { name: 'Other', exact: true }).check();
+  await d.getByLabel(/^Staging instrument/).last().waitFor({ timeout: 5000 });
+  await d.getByRole('radio', { name: 'FAST', exact: true }).check();
   await d.getByLabel(/Stage 4/).check();
 });
 
@@ -296,14 +354,12 @@ await step('the whole form, filled in with a fake patient, makes the note', asyn
 
   const v = section('visit');
   await v.getByLabel(/Patient name/).fill(PATIENT);
-  await v.getByLabel(/MRN/).fill(MRN);
   await v.getByLabel(/Date of birth/).fill('1940-01-01');
   await v.getByLabel(/Total time today/).fill('65');
   await v.getByLabel('High', { exact: true }).check();
 
   const b = section('B');
-  await b.getByRole('group', { name: /^ADL impairments/ }).getByLabel('None', { exact: true }).check();
-  await b.getByLabel('Managing finances').check();
+  await b.getByRole('group', { name: /^IADL impairments/ }).getByLabel('Managing finances').check();
   await section('C').getByLabel('Intact').check();
   const e = section('E');
   await e.getByLabel(/Medication reconciliation completed/).check();
@@ -311,8 +367,6 @@ await step('the whole form, filled in with a fake patient, makes the note', asyn
   await e.getByLabel(/Changes made/).fill('Stopped oxybutynin-fake.');
   const f = section('F');
   await f.getByLabel('Anxiety').check();
-  await f.getByLabel(/Depression screen/).selectOption({ label: 'PHQ-9' });
-  await f.getByLabel(/^Score/).fill('6');
   const g = section('G');
   await g.getByLabel('Driving evaluation recommended').check();
   await section('H').getByLabel(/Willingness/).selectOption({ label: 'Willing and able' });
@@ -334,13 +388,20 @@ await step('the whole form, filled in with a fake patient, makes the note', asyn
     await box.getByLabel(new RegExp(goal)).check();
     await box.getByLabel(new RegExp(action)).check();
   }
-  const j = section('J');
-  await j.getByRole('group', { name: /^Community resource referrals/ }).getByLabel('Support group', { exact: true }).check();
-  await j.getByLabel('Patient and caregiver').check();
-  await j.getByRole('group', { name: /^Education and support provided/ }).getByLabel('The diagnosis and what to expect').check();
-  await j.getByLabel(/Follow-up in/).selectOption({ label: '3 months' });
+  const k = section('K');
+  await k.getByTestId('referrals').getByLabel(/^Support group/).check();
+  await k.getByLabel('Patient and caregiver').check();
+  await k.getByRole('group', { name: /^Education and support provided/ }).getByLabel('The diagnosis and what to expect').check();
+  if ((await k.getByLabel(/Follow-up date/).count()) > 0) throw new Error('a follow-up date is still asked for');
+  await k.getByRole('group', { name: /^Follow-up in/ }).getByLabel('3 months').check();
+  await k.getByTestId('braincheck-recheck').getByText(/6 to 12 months/).waitFor({ timeout: 5000 });
 
-  await page.getByText('Everything required is filled in.').waitFor({ timeout: 5000 });
+  await page
+    .getByText('Everything required is filled in.')
+    .waitFor({ timeout: 5000 })
+    .catch(async () => {
+      throw new Error(`still needed: ${await page.getByTestId('missing-checklist').innerText()}`);
+    });
   await page.screenshot({ path: `${OUT}/clinical-filled.png`, fullPage: false });
 
   const [download] = await Promise.all([
@@ -358,7 +419,6 @@ await step('the whole form, filled in with a fake patient, makes the note', asyn
     for (const piece of [
       `Patient: ${PATIENT}`,
       'DOB: 01/01/1940',
-      `MRN: ${MRN}`,
       `DOS: ${usDate(today)}`,
       `Page ${i + 1} of ${pages.length}`,
       'upload to eCW Documents and reference in the DOS progress note',
@@ -373,8 +433,17 @@ await step('the whole form, filled in with a fake patient, makes the note', asyn
     'Visit Telehealth',
     'Requirements confirmed',
     'Historian: John Testhistorian, son',
-    'At a prior visit; reviewed today and still valid or updated.',
+    'Completed Today.',
+    'Repeats questions or stories; Other: Leaves the stove on',
+    'Alert and oriented',
+    'Cognitive test BrainCheck Assess: 72',
+    'Katz ADL: 6/6, full function',
+    'Bathing: Independent',
+    'PHQ-9 6/27, mild',
     'Stage 4 - Needs help with complex tasks',
+    'K. Referrals and follow-up',
+    'Follow-up In 3 months.',
+    'Repeat the BrainCheck memory assessment in 6 to 12 months.',
     'Home: fall risk',
     'Remove tripping hazards',
     'Financial power of attorney Not yet',
@@ -397,10 +466,10 @@ await step('the handout is in plain English, with the plan and nothing clinical'
   await download.saveAs(path);
   const pages = await pdfPages(path);
   const all = pages.join(' ');
-  for (const piece of ['Your memory care plan', 'Prepared by', 'Care partner John Testhistorian, son', 'Our goals', 'Things to try', 'Small changes at home make a big difference', 'Remove tripping hazards', 'Planning ahead', 'Financial power of attorney Not yet', 'Support group', '1-800-272-3900', 'Safety tips', 'Your next visit', 'In 3 months', 'Confidential', '201-528-3664', 'Signature', 'Electronically signed by Frankie', 'APN-C on']) {
+  for (const piece of ['Your memory care plan', 'Prepared by', 'Care partner John Testhistorian, son', 'Our goals', 'Things to try', 'Small changes at home make a big difference', 'Remove tripping hazards', 'Planning ahead', 'Financial power of attorney Not yet', 'Support group', '1-800-272-3900', 'Safety tips', 'Your next visit', 'In 3 months', 'We recommend repeating the BrainCheck memory assessment in 6 to 12 months', 'Confidential', '201-528-3664', 'Signature', 'Electronically signed by Frankie', 'APN-C on']) {
     if (!all.includes(piece)) throw new Error(`the handout lacks "${piece}"`);
   }
-  for (const clinical of ['FAST', 'PHQ-9', 'MRN', 'modifier', 'Stage 4']) {
+  for (const clinical of ['FAST', 'PHQ-9', 'Katz', 'MRN', 'modifier', 'Stage 4']) {
     if (all.includes(clinical)) throw new Error(`the handout shows "${clinical}"`);
   }
   pages.forEach((text, i) => {
@@ -409,14 +478,14 @@ await step('the handout is in plain English, with the plan and nothing clinical'
   });
 });
 
-await step('and in English and Spanish, with no "not yet checked" note now the Spanish is approved', async () => {
+await step('and in English and Spanish, with a "not yet checked" note on the form (never the handout)', async () => {
   // Only two choices: English, or English and Spanish.
   const choices = await page.getByRole('radiogroup', { name: 'Language' }).getByRole('radio').count();
   if (choices !== 2) throw new Error(`${choices} language choices`);
   await page.getByRole('radiogroup', { name: 'Language' }).getByLabel('English and Spanish').check();
   await page.getByText(/English first, then the same in Spanish/).waitFor({ timeout: 5000 });
-  if ((await page.getByText(/not yet been checked by a native speaker/).count()) > 0)
-    throw new Error('the review note is still shown');
+  // New Spanish (October 2026) still waits for a native speaker's read.
+  await page.getByText(/not yet been checked by a native speaker/).waitFor({ timeout: 5000 });
   const [download] = await Promise.all([
     page.waitForEvent('download', { timeout: 20000 }),
     page.getByRole('button', { name: 'Download the handout' }).click(),
@@ -429,7 +498,7 @@ await step('and in English and Spanish, with no "not yet checked" note now the S
   // English first, then the Spanish starting on a page of its own.
   const spanishStarts = pages.findIndex((text) => text.includes('Su plan de cuidado de la memoria'));
   if (spanishStarts < 1 || !pages[0].includes('Your memory care plan')) throw new Error(`Spanish starts on page ${spanishStarts + 1}`);
-  for (const piece of ['Your memory care plan', 'Our goals', 'Su plan de cuidado de la memoria', 'Preparado por', 'Nuestras metas', 'Qué puede hacer', 'Planificar con anticipación', 'Consejos de seguridad', 'En 3 meses', 'Confidencial', 'al 201-528-3664', 'Electronically signed by Frankie', 'Firmado electrónicamente por Frankie']) {
+  for (const piece of ['Your memory care plan', 'Our goals', 'Su plan de cuidado de la memoria', 'Preparado por', 'Nuestras metas', 'Qué puede hacer', 'Planificar con anticipación', 'Consejos de seguridad', 'En 3 meses', 'Le recomendamos repetir la evaluación de memoria BrainCheck', 'Confidencial', 'al 201-528-3664', 'Electronically signed by Frankie', 'Firmado electrónicamente por Frankie']) {
     if (!all.includes(piece)) throw new Error(`the Spanish handout lacks "${piece}"`);
   }
   if (all.includes('native speaker') || all.includes('not yet been checked')) throw new Error('the review note is on the handout');
@@ -520,6 +589,14 @@ await step('there is no file input on the form', async () => {
   await page.goto(`${BASE}/clinical/99483`, { waitUntil: 'networkidle' });
   await page.getByTestId('cognitive-assessment').waitFor({ timeout: 10000 });
   if ((await page.locator('input[type=file]').count()) > 0) throw new Error('a file input appeared');
+});
+
+await step('the first tap in a section sticks, though the sections above it turn amber', async () => {
+  const box = section('A').getByLabel('Repeats questions or stories');
+  await box.click();
+  await page.waitForTimeout(300);
+  if (!(await box.isChecked())) throw new Error('the first tap was lost');
+  await page.locator('[data-testid="section-requirements"][data-flagged="true"]').waitFor({ timeout: 5000 });
 });
 
 await step('Help has a section for providers', async () => {

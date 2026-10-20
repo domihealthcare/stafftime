@@ -1852,6 +1852,24 @@ Beyond the phases, the parts worth knowing about before picking up work:
   are signed electronically** by the person signed in ("Electronically signed
   by … on 10/01/2026 3:09 PM ET"; Spanish halves "Firmado electrónicamente
   por …") — no blank signature line.
+- **The BrainCheck Care Plan, smarter** (20 October 2026, Dominguez): the
+  patient's and caregiver's names (and the historian's) get their capitals
+  when the box is left ("de la" kept small); **the MRN is gone** ("difficult
+  to put in or find"); **A starts as Today**, its history and exam are tick
+  lists with an **Other** box; **the chosen tool is done on the form** - Katz,
+  Lawton or the FAQ in B (Katz and Lawton tick the ADL and IADL lists), FAST,
+  the GDS or the CDR in D, the PHQ-9, PHQ-2, GDS-15 or Cornell in F, scored
+  for the provider (`instruments.ts`, read once through `results.ts`), with
+  **Enter the total only** for one done on paper, and a warning plus the 988
+  line suggested on a positive self-harm answer; **J has many more goals and
+  actions** and smarter suggestions; and **K, Referrals and follow-up**, is a
+  section of its own: suggested referrals, **Follow-up in** as a click (no
+  date), and on every note and handout "repeat BrainCheck in 6 to 12 months"
+  (`BRAINCHECK_RECHECK`). The new Spanish **needs a native speaker's read**
+  (`NEEDS_NATIVE_SPEAKER_REVIEW` back to true). Also fixed on all three
+  clinical forms: the first tap in a section was lost when the sections above
+  it turned amber (`useActivity`). `tests/browser/clinical.mjs`. Worth
+  carrying to the EMR module's clinical side.
 - **"CCM care plan" is now "APCM Care Plan"** (October 2026, Dominguez — the
   practice uses it for **APCM** as well as CCM; first renamed "Care plan",
   then "APCM Care Plan" the same week): on Resources → Forms, the page

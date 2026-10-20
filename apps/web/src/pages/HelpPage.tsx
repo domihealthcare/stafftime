@@ -1123,8 +1123,8 @@ const PROVIDERS: Section[] = [
                 your staff record.
               </li>
               <li>
-                Work down A to J. Each section says what it still needs, and the bar at the top
-                ticks it off once it is complete.
+                Work down A to K. Each section says what it still needs, and the bar at the top
+                ticks it off once it is complete. Names get their capitals when you leave the box.
               </li>
               <li>
                 Anything missing is listed at the bottom; tap an item to jump to it. The PDFs can
@@ -1160,8 +1160,35 @@ const PROVIDERS: Section[] = [
           <p>
             Switch an element to <strong>Prior visit</strong> and tick the statement that it was
             reviewed today and is still valid or updated. Its details become optional - open{' '}
-            <strong>Add details</strong> to record anything new. The history and exam (A) start as a
-            prior visit. Driving (G) and the care plan (J) are needed either way.
+            <strong>Add details</strong> to record anything new. Every element starts as{' '}
+            <strong>Today</strong>. Driving (G), the care plan (J) and referrals and follow-up (K)
+            are needed either way.
+          </p>
+        ),
+      },
+      {
+        question: 'Doing a tool on the form (Katz, Lawton, FAQ, GDS, CDR, PHQ-9 and more)',
+        answer: (
+          <>
+            <p>
+              Choose a tool in B (function), D (staging) or F (depression) and its questions appear
+              right there: tap an answer for each and the score is worked out for you. Katz and
+              Lawton also tick the ADL and IADL lists as you go. In F, a positive answer on the
+              self-harm question shows a warning and suggests the 988 crisis line in the care plan.
+            </p>
+            <p>
+              Done on paper? Press <strong>Enter the total only</strong> and type the score instead.
+            </p>
+          </>
+        ),
+      },
+      {
+        question: 'Referrals and follow-up (K)',
+        answer: (
+          <p>
+            Referrals that fit your answers are marked <strong>Suggested</strong>; nothing is ticked
+            for you. Pick when to follow up (no date needed). Every handout also recommends
+            repeating BrainCheck in 6 to 12 months.
           </p>
         ),
       },

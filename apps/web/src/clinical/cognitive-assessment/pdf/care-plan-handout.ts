@@ -37,7 +37,7 @@ import { PdfWriter } from '../../common/pdf-writer';
  * already uses (September 2026): who it is for and from, then each area with
  * a line of explanation, the goals and "things to try", planning ahead as a
  * checklist, referrals, safety tips and the next visit - marked confidential
- * on every page. Nothing clinical: no scores, stages or MRN. Chosen lines
+ * on every page. Nothing clinical: no scores or stages. Chosen lines
  * come from config.ts in English or translations.es.ts in Spanish; anything
  * the provider typed is printed as they typed it.
  */
@@ -91,7 +91,7 @@ function writeHandout(
 ) {
   const words = HANDOUT_STRINGS[language];
   const es = language === 'es';
-  const { visit, J, I } = form;
+  const { visit, J, I, K } = form;
   const name = visit.patientName.trim();
   const partner = form.H.caregiver === 'none' ? '' : caregiverName(form);
 
@@ -154,10 +154,10 @@ function writeHandout(
   }
 
   const referrals = [
-    ...J.referrals.map((referral) =>
+    ...K.referrals.map((referral) =>
       es ? (ES_REFERRALS[referral] ?? labelOf(REFERRALS, referral)) : labelOf(REFERRALS, referral),
     ),
-    ...(has(J.referralsOther) ? [J.referralsOther.trim()] : []),
+    ...(has(K.referralsOther) ? [K.referralsOther.trim()] : []),
   ];
   // Always there: whatever was referred, the helpline is worth having.
   pdf.heading(words.referrals);
@@ -171,23 +171,19 @@ function writeHandout(
     SIZE,
   );
 
-  const when = [
-    J.followUpInterval
-      ? words.inInterval(
-          es
-            ? (ES_FOLLOW_UP[J.followUpInterval] ?? labelOf(FOLLOW_UP_INTERVALS, J.followUpInterval))
-            : labelOf(FOLLOW_UP_INTERVALS, J.followUpInterval),
-        )
-      : '',
-    has(J.followUpDate) ? words.onDate(longDate(J.followUpDate, language)) : '',
-  ]
-    .filter(has)
-    .join(', ');
-  if (when || has(J.followUpPlan)) {
-    pdf.heading(words.nextVisit);
-    if (when) pdf.paragraph(`${when.charAt(0).toUpperCase()}${when.slice(1)}.`, { size: SIZE });
-    if (has(J.followUpPlan)) pdf.paragraph(J.followUpPlan.trim(), { size: SIZE });
+  // Always there: every patient is asked back for BrainCheck in 6 to 12
+  // months (Dominguez, October 2026), whatever the next visit is.
+  pdf.heading(words.nextVisit);
+  if (K.followUpInterval) {
+    const when = words.inInterval(
+      es
+        ? (ES_FOLLOW_UP[K.followUpInterval] ?? labelOf(FOLLOW_UP_INTERVALS, K.followUpInterval))
+        : labelOf(FOLLOW_UP_INTERVALS, K.followUpInterval),
+    );
+    pdf.paragraph(`${when.charAt(0).toUpperCase()}${when.slice(1)}.`, { size: SIZE });
   }
+  if (has(K.followUpPlan)) pdf.paragraph(K.followUpPlan.trim(), { size: SIZE });
+  pdf.paragraph(words.brainCheckRecheck, { size: SIZE });
 
   pdf.gap(6);
   pdf.paragraph(words.questions(PRACTICE_PHONE), { size: SIZE });
