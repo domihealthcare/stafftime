@@ -29,6 +29,8 @@ import { InvoicesModule } from './invoices/invoices.module';
 import { RequirementsModule } from './requirements/requirements.module';
 import { OnCallModule } from './on-call/on-call.module';
 import { ScheduleReviewsModule } from './schedule-reviews/schedule-reviews.module';
+import { OfficeAdminsModule } from './office-admins/office-admins.module';
+import { CmeModule } from './cme/cme.module';
 import { InvitesModule } from './invites/invites.module';
 import { ExportsModule } from './exports/exports.module';
 import { JobRolesModule } from './job-roles/job-roles.module';
@@ -75,6 +77,8 @@ import { TimeEntriesModule } from './time-entries/time-entries.module';
     RequirementsModule,
     OnCallModule,
     ScheduleReviewsModule,
+    OfficeAdminsModule,
+    CmeModule,
     InvitesModule,
     TimeEntriesModule,
     ClosingModule,

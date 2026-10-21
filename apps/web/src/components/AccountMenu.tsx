@@ -122,6 +122,12 @@ export function AccountMenu() {
                 </NavLink>
               </>
             )}
+            {/* CME requests: providers, whatever their access (October 2026). */}
+            {employee?.usesClinicalForms && (
+              <NavLink to="/cme" role="menuitem" className={item} onClick={() => setOpen(false)}>
+                {t('Your CME')}
+              </NavLink>
+            )}
             {employee?.hasProductivity && (
               <NavLink
                 to="/my-productivity"

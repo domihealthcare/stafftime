@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Modal } from '../components/Modal';
+import { OfficeAdminsCard } from '../components/OfficeAdminsCard';
 import { ScheduleReviewAreasCard } from '../components/ScheduleReviewAreasCard';
 import { ScheduleTabs } from '../components/ScheduleTabs';
 import {
@@ -170,6 +171,8 @@ export function ScheduleReviewsPage() {
           {formatCalendarDate(week, { year: false })} –{' '}
           {formatCalendarDate(addDays(week, 6), { year: false })}
         </h2>
+
+        <OfficeAdminsCard week={week} />
 
         {!found ? (
           error ? null : (

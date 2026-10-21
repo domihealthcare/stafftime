@@ -111,6 +111,67 @@ describe('what this app deliberately does not store', () => {
     );
   });
 
+  /// Who is the admin in each office (October 2026): who and where, nothing
+  /// more. CME requests (October 2026): an activity, its dates and costs, and
+  /// the decision - no receipts, certificates or licence numbers.
+  it('keeps office admins to who and where, and CME to the activity and its cost', () => {
+    const fieldsOf = (name: string) =>
+      model(name)
+        .split('\n')
+        .map((line) => line.trim())
+        .filter((line) => line && !line.startsWith('//') && !line.startsWith('@@'))
+        .map((line) => line.split(/\s+/)[0])
+        .sort();
+    expect(fieldsOf('OfficeAdmin')).toEqual(
+      ['employee', 'employeeId', 'location', 'locationId', 'updatedAt', 'weekday'].sort(),
+    );
+    expect(fieldsOf('OfficeAdminDay')).toEqual(
+      [
+        'date',
+        'employee',
+        'employeeId',
+        'location',
+        'locationId',
+        'note',
+        'setBy',
+        'setById',
+        'updatedAt',
+      ].sort(),
+    );
+    expect(fieldsOf('CmeRequest')).toEqual(
+      [
+        'approvedCents',
+        'createdAt',
+        'credits',
+        'decidedAt',
+        'decidedBy',
+        'decidedById',
+        'decisionNote',
+        'employee',
+        'employeeId',
+        'endsOn',
+        'format',
+        'id',
+        'lodgingCents',
+        'organizer',
+        'otherCents',
+        'place',
+        'reason',
+        'registrationCents',
+        'reimbursedCents',
+        'reimbursedOn',
+        'startsOn',
+        'status',
+        'title',
+        'travelCents',
+        'updatedAt',
+      ].sort(),
+    );
+    expect(fieldsOf('CmeAllowance')).toEqual(
+      ['amountCents', 'employee', 'employeeId', 'updatedAt', 'updatedById'].sort(),
+    );
+  });
+
   /// Vendor payments (October 2026, Dominguez): money and paperwork only. The
   /// spreadsheet they replace had patients' names in its notes; nothing here
   /// is for a patient, and a new column has to be decided out loud.

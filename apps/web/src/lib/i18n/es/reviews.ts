@@ -39,4 +39,12 @@ export const REVIEWS: Record<string, string> = {
   'None of these work? Tell {name}, and they can offer others.':
     '¿Ninguna te sirve? Díselo a {name} y te ofrecerá otras.',
   'Pick a time to talk about your 360 feedback': 'Elige una hora para hablar de tu evaluación 360',
+  // Who is the admin in the office (October 2026).
+  'Admin in the office': 'Administrador en la oficina',
+  'Who is the admin in each office, day by day.':
+    'Quién es el administrador en cada oficina, día por día.',
+  'Admin at {office}': 'Administrador en {office}',
+  'Changed for this day': 'Cambiado para este día',
+  'You are the office admin': 'Eres el administrador de la oficina',
+  'See the week →': 'Ver la semana →',
 };

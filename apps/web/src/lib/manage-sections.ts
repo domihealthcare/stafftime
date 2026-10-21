@@ -30,6 +30,7 @@ export const MANAGE_SECTIONS: ManageSection[] = [
       { to: '/staff', label: 'Staff', need: 'admin' },
       { to: '/job-roles', label: 'Job roles', need: 'manager' },
       { to: '/credentials', label: 'Licenses', need: 'manager' },
+      { to: '/cme', label: 'CME', need: 'manager' },
       { to: '/checklists', label: 'Onboarding & Offboarding', need: 'manager' },
       { to: '/productivity', label: 'Provider productivity', need: 'productivity' },
     ],

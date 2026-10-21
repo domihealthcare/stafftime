@@ -105,6 +105,7 @@ export const SECTION_OF = {
   Staff: 'People',
   'Job roles': 'People',
   Licenses: 'People',
+  CME: 'People',
   'Onboarding & Offboarding': 'People',
   'Provider productivity': 'People',
   Locations: 'Offices',

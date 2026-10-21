@@ -1,5 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import {
+  CmeStatus,
   CorrectionStatus,
   ChecklistTaskStatus,
   EmploymentStatus,
@@ -25,6 +26,8 @@ import { loadPunchPatterns } from '../time-entries/punch-patterns';
 import { describeMissedShift, loadMissedShifts } from '../time-entries/missed-shifts';
 import { loadPayrollDue } from '../time-entries/payroll-due';
 import { askedWords } from '../time-entries/correction-requests';
+import { askedCents, datesWords, money } from '../cme/cme';
+import { isoDate } from '../common/util/calendar-date.util';
 import { describeShortDay, loadShortDays, SHORT_DAYS_AHEAD } from '../staffing/minimums';
 import {
   describeRegularShiftClash,
@@ -91,6 +94,9 @@ export interface DigestContents {
   /// Corrections staff asked for, waiting for a manager: see
   /// `time-entries/correction-requests.service.ts`.
   correctionsAsked: string[];
+  /// CME activities providers asked to have approved, still waiting: see
+  /// `cme/cme.service.ts`.
+  cmeWaiting: string[];
   /// Regular shifts somebody's availability now rules out, in the next eight
   /// weeks: see `availability/regular-shift-clashes.ts`.
   regularShiftClashes: string[];
@@ -183,6 +189,7 @@ export class AttentionService {
       shortDays,
       payrollDue,
       corrections,
+      cme,
     ] = await Promise.all([
       this.prisma.employeeCredential.findMany({
         where: {
@@ -282,6 +289,21 @@ export class AttentionService {
         },
         orderBy: { createdAt: 'asc' },
       }),
+      this.prisma.cmeRequest.findMany({
+        where: { status: CmeStatus.PENDING },
+        select: {
+          title: true,
+          startsOn: true,
+          endsOn: true,
+          registrationCents: true,
+          travelCents: true,
+          lodgingCents: true,
+          otherCents: true,
+          employee: { select: { firstName: true, lastName: true } },
+        },
+        orderBy: { startsOn: 'asc' },
+        take: 20,
+      }),
     ]);
 
     /// "8:52 AM", on the practice's clock.
@@ -317,6 +339,10 @@ export class AttentionService {
       payrollDue,
       correctionsAsked: corrections.map(
         (row) => `${who(row.employee)} - ${askedWords(row)} - “${row.reason}”`,
+      ),
+      cmeWaiting: cme.map(
+        (row) =>
+          `${who(row.employee)} - ${row.title}, ${datesWords(isoDate(row.startsOn), isoDate(row.endsOn))}, ${money(askedCents(row))}`,
       ),
       regularShiftClashes: regularClashes.map(describeRegularShiftClash),
       belowMinimum: shortDays.map(describeShortDay),

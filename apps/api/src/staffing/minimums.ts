@@ -7,6 +7,9 @@ import {
 } from '../common/util/zoned-time.util';
 import { PrismaService } from '../prisma/prisma.service';
 import { shortDate } from '../pto/time-off-clashes';
+import { appliesOn } from './weekdays';
+
+export { appliesOn } from './weekdays';
 
 /**
  * A minimum per office per job role (October 2026, Dominguez - making the app
@@ -23,6 +26,10 @@ import { shortDate } from '../pto/time-off-clashes';
  *   Drafts count, as on the rota. On the Schedule banner and in the nightly
  *   email for the next two weeks, and in Before you publish.
  *
+ * A minimum can apply on chosen weekdays only (October 2026, Dominguez: "an
+ * admin in WNY daily except Friday"): `weekdays`, 1 = Monday ... 7 = Sunday,
+ * empty for every day.
+ *
  * Warns, never refuses. Pure: `loadShortDays` reads.
  */
 
@@ -35,6 +42,8 @@ export interface Minimum {
   jobRoleName: string;
   jobRoleOrder: number;
   minimum: number;
+  /// The weekdays it applies, 1 = Monday ... 7 = Sunday; empty: every day.
+  weekdays: number[];
 }
 
 export interface OnDuty {
@@ -65,6 +74,7 @@ export function findShortDays(
   const out: ShortDay[] = [];
   for (const rule of minimums) {
     for (const date of openDays(rule.locationId)) {
+      if (!appliesOn(rule.weekdays, date)) continue;
       const people = new Set(
         onDuty
           .filter(
@@ -109,6 +119,7 @@ export async function loadMinimums(prisma: PrismaService): Promise<Minimum[]> {
       locationId: true,
       jobRoleId: true,
       minimum: true,
+      weekdays: true,
       location: { select: { name: true } },
       jobRole: { select: { name: true, sortOrder: true } },
     },
@@ -120,6 +131,7 @@ export async function loadMinimums(prisma: PrismaService): Promise<Minimum[]> {
     jobRoleName: row.jobRole.name,
     jobRoleOrder: row.jobRole.sortOrder,
     minimum: row.minimum,
+    weekdays: row.weekdays,
   }));
 }
 

@@ -14,7 +14,7 @@ export class StaffingController {
   @Roles(Role.MANAGER)
   list() {
     return this.prisma.staffingMinimum.findMany({
-      select: { locationId: true, jobRoleId: true, minimum: true },
+      select: { locationId: true, jobRoleId: true, minimum: true, weekdays: true },
     });
   }
 
@@ -28,7 +28,13 @@ export class StaffingController {
     try {
       await this.prisma.$transaction([
         this.prisma.staffingMinimum.deleteMany({}),
-        this.prisma.staffingMinimum.createMany({ data: dto.minimums }),
+        this.prisma.staffingMinimum.createMany({
+          // Each weekday once, in order; all seven is the same as every day.
+          data: dto.minimums.map((row) => {
+            const weekdays = [...new Set(row.weekdays ?? [])].sort((a, b) => a - b);
+            return { ...row, weekdays: weekdays.length === 7 ? [] : weekdays };
+          }),
+        }),
       ]);
     } catch (error) {
       if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2003') {

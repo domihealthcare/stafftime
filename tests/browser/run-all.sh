@@ -44,6 +44,9 @@ reset_state() {
     -c "delete from requirements;" \
     -c "delete from on_call_swaps; delete from on_call_days; delete from on_call_rotas;" \
     -c "delete from schedule_review_days; delete from schedule_reviewers;" \
+    -c "delete from office_admin_days; delete from office_admins;" \
+    -c "delete from shifts where notes = 'office-admins-suite';" \
+    -c "delete from cme_requests; delete from cme_allowances;" \
     -c "delete from push_subscriptions; delete from push_keys;" \
     -c "delete from announcements;" \
     -c "delete from resources;" \
@@ -144,7 +147,7 @@ reset_state() {
 
 # The scheduler suite builds its rotas in February 2027 so that clearing them
 # cannot touch the shift the seed puts on today's date.
-SUITES="${SUITES:-drive refusals correct auth kiosk export locations pto pto-policy presets calendar scheduler checklists phone reset payroll credentials privacy race attention announcements resources directory availability surveys dashboard date-ranges help adp profile rota wfh overtime bell rota-print closing install golive staff staff-profile birthdays events closures recurring standing usual-week own-roles hand-entry removed-shift quick-add credential-types clinical care-plan wellness productivity schedule-phone clock-place extensions shift-notes shift-hours repeat-weeks news-social punch-reminders main-job-role auto-clock-out digest-topics practice-calendar cover patterns clashes approve-clean publish-check export-check license-reminders overtime-forecast onboarding-reminders missed-shifts availability-clash usual-hours minimums ask moving-holidays time-off-shifts ai-helpers ask-cover payroll-due not-signed-in tomorrow auto-onboarding review360 running-late corrections clean-time-off weekly required rota-cost on-call push spanish clocks-in event-replies time-off-feedback vendors diagnostics reimbursements schedule-reviews phone-book manage-sections everyone-schedule time-off-type provider-calendar guides}"
+SUITES="${SUITES:-drive refusals correct auth kiosk export locations pto pto-policy presets calendar scheduler checklists phone reset payroll credentials privacy race attention announcements resources directory availability surveys dashboard date-ranges help adp profile rota wfh overtime bell rota-print closing install golive staff staff-profile birthdays events closures recurring standing usual-week own-roles hand-entry removed-shift quick-add credential-types clinical care-plan wellness productivity schedule-phone clock-place extensions shift-notes shift-hours repeat-weeks news-social punch-reminders main-job-role auto-clock-out digest-topics practice-calendar cover patterns clashes approve-clean publish-check export-check license-reminders overtime-forecast onboarding-reminders missed-shifts availability-clash usual-hours minimums ask moving-holidays time-off-shifts ai-helpers ask-cover payroll-due not-signed-in tomorrow auto-onboarding review360 running-late corrections clean-time-off weekly required rota-cost on-call push spanish clocks-in event-replies time-off-feedback vendors diagnostics reimbursements schedule-reviews phone-book manage-sections everyone-schedule time-off-type provider-calendar guides cme office-admins}"
 
 # Full output per suite goes to a file, and only the step lines are printed, so
 # a failure's detail is still there to read rather than truncated away.

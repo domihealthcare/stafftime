@@ -602,6 +602,7 @@ export interface Attention {
   missedShifts: string[];
   payrollDue: string[];
   correctionsAsked: string[];
+  cmeWaiting: string[];
   regularShiftClashes: string[];
   belowMinimum: string[];
   undecidedTimeOff: string[];
@@ -1701,6 +1702,8 @@ export interface StaffingMinimum {
   locationId: string;
   jobRoleId: string;
   minimum: number;
+  /// The weekdays it applies, 1 = Monday ... 7 = Sunday; empty: every day.
+  weekdays: number[];
 }
 
 /// A pasted booking read for the calendar's form (AI, October 2026). Empty or
@@ -2303,4 +2306,104 @@ export interface ToolSetting {
   key: string;
   everyone: boolean;
   jobRoleIds: string[];
+}
+
+// ---------------------------------------------------------- office admins
+
+export type OfficeAdminConcern = 'OFF' | 'HALF_DAY_OFF' | 'NOT_ON_ROTA' | 'NOBODY';
+
+/// One office's admin on one day.
+export interface OfficeAdminOnDay {
+  locationId: string;
+  person: OnCallPerson | null;
+  source: 'USUAL' | 'CHANGED' | 'NONE';
+  note: string | null;
+  /// Whether the usual pattern wants somebody that weekday.
+  usualDay: boolean;
+  /// Managers only: worth a look.
+  concerns?: OfficeAdminConcern[];
+}
+
+export interface OfficeAdminDays {
+  offices: { id: string; name: string }[];
+  days: { date: string; admins: OfficeAdminOnDay[] }[];
+}
+
+export interface OfficeAdminPattern {
+  offices: { id: string; name: string }[];
+  /// 1 = Monday ... 7 = Sunday.
+  entries: { locationId: string; weekday: number; employeeId: string }[];
+  people: OnCallPerson[];
+}
+
+// -------------------------------------------------------------------- CME
+
+export type CmeStatus = 'PENDING' | 'APPROVED' | 'DECLINED' | 'WITHDRAWN';
+export type CmeFormat = 'IN_PERSON' | 'ONLINE';
+
+export interface CmeRequest {
+  id: string;
+  employeeId: string;
+  title: string;
+  organizer: string | null;
+  format: CmeFormat;
+  place: string | null;
+  startsOn: string;
+  endsOn: string;
+  credits: number | null;
+  registrationCents: number;
+  travelCents: number;
+  lodgingCents: number;
+  otherCents: number;
+  askedCents: number;
+  reason: string | null;
+  status: CmeStatus;
+  approvedCents: number | null;
+  decidedAt: string | null;
+  decisionNote: string | null;
+  reimbursedOn: string | null;
+  reimbursedCents: number | null;
+  createdAt: string;
+  provider: OnCallPerson;
+  decidedBy: OnCallPerson | null;
+}
+
+export interface CmeYear {
+  year: number;
+  allowanceCents: number | null;
+  usedCents: number;
+  waitingCents: number;
+  leftCents: number | null;
+}
+
+export interface CmeMine {
+  isProvider: boolean;
+  allowanceCents: number | null;
+  years: CmeYear[];
+  requests: CmeRequest[];
+}
+
+export interface CmeOverview {
+  year: number;
+  requests: CmeRequest[];
+  providers: (OnCallPerson & {
+    allowanceCents: number | null;
+    thisYear: CmeYear;
+    nextYear: CmeYear;
+  })[];
+}
+
+export interface CmeRequestInput {
+  title: string;
+  organizer?: string;
+  format: CmeFormat;
+  place?: string;
+  startsOn: string;
+  endsOn: string;
+  credits?: number | null;
+  registrationCents: number;
+  travelCents: number;
+  lodgingCents: number;
+  otherCents: number;
+  reason?: string;
 }

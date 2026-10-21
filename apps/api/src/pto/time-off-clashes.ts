@@ -8,6 +8,7 @@ import {
   zonedTimeToUtc,
 } from '../common/util/zoned-time.util';
 import { PrismaService } from '../prisma/prisma.service';
+import { appliesOn } from '../staffing/weekdays';
 
 /**
  * Time-off clashes, seen early (Dominguez, October 2026 - making the app
@@ -40,6 +41,9 @@ export interface Team {
   /// The practice's minimum for this office and role, when it has set one
   /// (`StaffingMinimum`): then a clash is leaving fewer than that on.
   minimum?: number | null;
+  /// The weekdays that minimum applies (1 = Monday ... 7 = Sunday; empty or
+  /// missing: every day). On other days it is "more than half" again.
+  minimumWeekdays?: number[];
 }
 
 /// One request, approved or waiting, as plain dates.
@@ -108,7 +112,8 @@ export function findClashes(
         .sort((a, b) => a.name.localeCompare(b.name));
       const people = new Set(off.map((person) => person.employeeId));
       // By the practice's minimum where it has set one, else more than half.
-      const minimum = team.minimum ?? null;
+      const minimum =
+        team.minimum != null && appliesOn(team.minimumWeekdays, date) ? team.minimum : null;
       const clashing =
         minimum !== null
           ? people.size > 0 && members.size - people.size < minimum
@@ -234,12 +239,10 @@ export async function loadTimeOffClashes(
       select: { locationId: true, startsAt: true, location: { select: { timezone: true } } },
     }),
     prisma.staffingMinimum.findMany({
-      select: { locationId: true, jobRoleId: true, minimum: true },
+      select: { locationId: true, jobRoleId: true, minimum: true, weekdays: true },
     }),
   ]);
-  const minimumOf = new Map(
-    minimums.map((row) => [`${row.locationId}:${row.jobRoleId}`, row.minimum]),
-  );
+  const minimumOf = new Map(minimums.map((row) => [`${row.locationId}:${row.jobRoleId}`, row]));
 
   const teamsByKey = new Map<string, Team>();
   for (const person of people) {
@@ -253,7 +256,8 @@ export async function loadTimeOffClashes(
           jobRoleName: jobRole.name,
           jobRoleOrder: jobRole.sortOrder,
           memberIds: [],
-          minimum: minimumOf.get(key) ?? null,
+          minimum: minimumOf.get(key)?.minimum ?? null,
+          minimumWeekdays: minimumOf.get(key)?.weekdays ?? [],
         };
         team.memberIds.push(person.id);
         teamsByKey.set(key, team);

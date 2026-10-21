@@ -59,7 +59,7 @@ await step('Staff and Job roles share People, with Licenses and Onboarding', asy
   await goToManage(admin, 'Job roles');
   await admin.getByRole('heading', { name: 'Job roles', level: 1 }).waitFor({ timeout: 10000 });
   const people = await tabs(admin, 'People');
-  if (people.join('|') !== 'Staff|Job roles|Licenses|Onboarding & Offboarding|Provider productivity')
+  if (people.join('|') !== 'Staff|Job roles|Licenses|CME|Onboarding & Offboarding|Provider productivity')
     throw new Error(people.join('|'));
   await admin.getByRole('navigation', { name: 'People screens' }).getByRole('link', { name: 'Staff' }).click();
   await admin.getByRole('heading', { name: 'Staff', level: 1 }).waitFor({ timeout: 10000 });
@@ -95,7 +95,7 @@ await step('a manager sees the same headings with only the tabs they may open', 
   for (const name of ['Dashboard', 'People', 'Offices', 'Surveys & reading', 'Money'])
     if (!links.includes(name)) throw new Error(`manager lacks ${name}: ${links.join(', ')}`);
   await goToManage(manager, 'Job roles');
-  if ((await tabs(manager, 'People')).join('|') !== 'Job roles|Licenses|Onboarding & Offboarding')
+  if ((await tabs(manager, 'People')).join('|') !== 'Job roles|Licenses|CME|Onboarding & Offboarding')
     throw new Error(`people: ${(await tabs(manager, 'People')).join('|')}`);
   await goToManage(manager, 'Closing checklists');
   if ((await tabs(manager, 'Offices')).join('|') !== 'Closing checklists|Reps') throw new Error('offices');
