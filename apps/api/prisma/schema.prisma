@@ -3623,6 +3623,15 @@ model Invoice {
   paidOn        DateTime?     @db.Date
   /// Printed under the lines.
   note          String?
+  /// Who it is paid to, as it went out (October 2026, Dominguez: "some
+  /// invoices go directly to the provider"). All three empty is the practice;
+  /// otherwise a copy of a saved InvoicePayee, so changing that later does
+  /// not change an invoice already sent.
+  payToName     String?
+  /// Address, email and phone, one per line.
+  payToLines    String?
+  /// "Make all checks payable to".
+  payableTo     String?
   createdById   String?       @db.Uuid
   createdAt     DateTime      @default(now())
   updatedAt     DateTime      @updatedAt
@@ -3630,6 +3639,44 @@ model Invoice {
   lines InvoiceLine[]
 
   @@map("invoices")
+}
+
+/// A saved "Pay to" for invoices (October 2026, Dominguez: "the default
+/// should be the practice but should be able to create options that you can
+/// save and change the pay to info"), such as a provider who is paid
+/// directly. Managers and admins keep the list. Business details only: a
+/// name, where payment goes and who checks are payable to, never a tax ID or
+/// any identity number.
+model InvoicePayee {
+  id          String   @id @default(uuid()) @db.Uuid
+  /// Printed at the top of the invoice, e.g. "Jonathan Dominguez, MD".
+  name        String
+  /// Address, email and phone, one per line.
+  lines       String?
+  /// "Make all checks payable to".
+  payableTo   String
+  createdById String?  @db.Uuid
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@map("invoice_payees")
+}
+
+/// A saved vendor or business to bill (October 2026, Dominguez: "have a way
+/// to save the vendor information"): picked in the invoice editor to fill
+/// in who it is to. Businesses only, never a patient. Each invoice keeps its
+/// own copy (`billToName`, `billToAddress`), so changing one here leaves
+/// invoices already sent alone.
+model InvoiceVendor {
+  id          String   @id @default(uuid()) @db.Uuid
+  name        String
+  /// Address and email, one per line.
+  address     String?
+  createdById String?  @db.Uuid
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@map("invoice_vendors")
 }
 
 model InvoiceLine {

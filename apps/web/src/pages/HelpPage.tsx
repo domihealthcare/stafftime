@@ -1341,8 +1341,8 @@ const MANAGERS: Section[] = [
                 <strong>Surveys &amp; reading</strong> - Surveys and Required reading.
               </li>
               <li>
-                <strong>Money</strong> - Export, Reimbursements, Invoices and Vendor payments
-                (admins).
+                <strong>Money</strong> - Export, Reimbursements, Invoices (Manager access only, not
+                admins) and Vendor payments (admins).
               </li>
             </ul>
             <p className="mt-2">
@@ -2459,11 +2459,26 @@ const MANAGERS: Section[] = [
           <>
             <p>
               <Screen>Manage → Money → Invoices</Screen> takes the place of the Invoice Template
-              sheet. <strong>+ New invoice</strong>: who it is to, the dates, a line for each thing
+              sheet. It is for people with Manager access only, not admins.{' '}
+              <strong>+ New invoice</strong>: who it is to, the dates, a line for each thing
               (earlier lines are offered as you type), whether it is paid, and an optional note.
               Numbers follow on by themselves (#001, #002). <strong>Save and download PDF</strong>{' '}
               gives the invoice laid out like the template; every invoice stays on the list, to
               download again, mark paid or search for.
+            </p>
+            <p>
+              <strong>Pay to:</strong> invoices are paid to Domi Healthcare unless you pick another.{' '}
+              <strong>+ New pay-to</strong> in the invoice (or <strong>Pay-to options</strong> on
+              the list) saves one, such as a provider who is paid directly: the name on the invoice,
+              where payment goes and who checks are payable to. Pick it from <strong>Pay to</strong>{' '}
+              next time. Changing an option later leaves invoices already made as they went out.
+            </p>
+            <p>
+              <strong>Saved vendors:</strong> after typing a vendor, press{' '}
+              <strong>Save this vendor for next time</strong>; on the next invoice pick them from{' '}
+              <strong>Saved vendor</strong> and their name and address are filled in.{' '}
+              <strong>Saved vendors</strong> on the list changes or removes them. Businesses only,
+              never a patient.
             </p>
             <p>
               <strong>To a patient:</strong> tick <strong>A patient</strong>. Their name, date of

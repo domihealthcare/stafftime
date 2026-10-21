@@ -73,11 +73,11 @@ await step('Locations and Kiosks share Offices, with Closing checklists and Reps
   if (offices.join('|') !== 'Locations|Kiosks|Closing checklists|Reps') throw new Error(offices.join('|'));
 });
 
-await step('Surveys and Required reading share a heading; Export, Reimbursements, Invoices and Vendor payments are Money', async () => {
+await step('Surveys and Required reading share a heading; Export, Reimbursements and Vendor payments are Money for an admin (Invoices are Manager access only)', async () => {
   await goToManage(admin, 'Required reading');
   if ((await tabs(admin, 'Surveys & reading')).join('|') !== 'Surveys|Required reading') throw new Error('surveys');
   await goToManage(admin, 'Vendor payments');
-  if ((await tabs(admin, 'Money')).join('|') !== 'Export|Reimbursements|Invoices|Vendor payments') throw new Error('money');
+  if ((await tabs(admin, 'Money')).join('|') !== 'Export|Reimbursements|Vendor payments') throw new Error('money');
 });
 
 await step('the heading stays lit on every one of its screens', async () => {
