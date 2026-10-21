@@ -25,7 +25,7 @@ import {
   type PayTo,
 } from '../lib/invoice-pdf';
 import { practiceDate } from '../lib/practice-time';
-import { useIsManager } from '../lib/session';
+import { useSession } from '../lib/session';
 import type {
   Invoice,
   InvoiceBillTo,
@@ -54,7 +54,8 @@ import type {
  * Vendors billed often are saved too, and picked to fill in who it is to.
  */
 export function InvoicesPage() {
-  const isManager = useIsManager();
+  // Manager access only, admins not (Dominguez, October 2026).
+  const isManager = useSession().employee?.role === 'MANAGER';
   const [invoices, setInvoices] = useState<Invoice[] | null>(null);
   const [nextNumber, setNextNumber] = useState(1);
   const [error, setError] = useState<string | null>(null);
@@ -107,7 +108,8 @@ export function InvoicesPage() {
     return [...seen].slice(0, 50);
   }, [invoices]);
 
-  if (!isManager) return <Alert tone="info">Invoices are for managers and admins.</Alert>;
+  if (!isManager)
+    return <Alert tone="info">Invoices are for people with Manager access only.</Alert>;
   if (!invoices) return error ? <Alert>{error}</Alert> : <Spinner label="Loading the invoices" />;
 
   const needle = search.trim().toLowerCase();

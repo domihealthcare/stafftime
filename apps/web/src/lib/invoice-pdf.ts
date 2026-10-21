@@ -34,12 +34,12 @@ export const PRACTICE = {
   lines: [
     '7919 John F. Kennedy Blvd',
     'North Bergen, NJ 07047',
-    'info@domihealthcare.com',
+    'angelica@domihealthcare.com',
     '201-528-3664',
   ],
   payableTo: 'DOMI HEALTHCARE LLC',
   questions:
-    'If you have any questions or concerns regarding this invoice, please contact our office via phone 201-528-3664 or via email office@domihealthcare.com.',
+    'If you have any questions or concerns regarding this invoice, please contact our office via phone 201-528-3664 or via email angelica@domihealthcare.com.',
 };
 
 /// Who an invoice is paid to: the practice, or a saved option such as a

@@ -273,9 +273,17 @@ await step('a manager chooses who uses a guide on Resources, and it takes effect
 
 // ------------------------------------------------------------- invoices
 
-await step('invoices are for managers and admins, under Manage, Money', async () => {
+await step('invoices are for Manager access only (not staff, not admins), under Manage, Money', async () => {
   const tried = await call(staff, '/invoices');
   if (tried.status !== 403) throw new Error(`staff answered ${tried.status}`);
+  const admin = await signIn('admin@domihealthcare.com');
+  for (const path of ['/invoices', '/invoices/payees', '/invoices/vendors']) {
+    const asAdmin = await call(admin, path);
+    if (asAdmin.status !== 403) throw new Error(`an admin read ${path}: ${asAdmin.status}`);
+  }
+  await admin.goto(`${BASE}/invoices`, { waitUntil: 'networkidle' });
+  await admin.getByText('Invoices are for people with Manager access only.').waitFor({ timeout: 10000 });
+  await admin.context().close();
   await goToManage(manager, 'Invoices');
   await manager.getByRole('heading', { name: 'Invoices' }).waitFor({ timeout: 10000 });
 });

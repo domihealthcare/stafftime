@@ -1341,8 +1341,8 @@ const MANAGERS: Section[] = [
                 <strong>Surveys &amp; reading</strong> - Surveys and Required reading.
               </li>
               <li>
-                <strong>Money</strong> - Export, Reimbursements, Invoices and Vendor payments
-                (admins).
+                <strong>Money</strong> - Export, Reimbursements, Invoices (Manager access only, not
+                admins) and Vendor payments (admins).
               </li>
             </ul>
             <p className="mt-2">
@@ -2459,7 +2459,8 @@ const MANAGERS: Section[] = [
           <>
             <p>
               <Screen>Manage → Money → Invoices</Screen> takes the place of the Invoice Template
-              sheet. <strong>+ New invoice</strong>: who it is to, the dates, a line for each thing
+              sheet. It is for people with Manager access only, not admins.{' '}
+              <strong>+ New invoice</strong>: who it is to, the dates, a line for each thing
               (earlier lines are offered as you type), whether it is paid, and an optional note.
               Numbers follow on by themselves (#001, #002). <strong>Save and download PDF</strong>{' '}
               gives the invoice laid out like the template; every invoice stays on the list, to

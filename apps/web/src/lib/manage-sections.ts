@@ -7,9 +7,10 @@
  * person may open are unchanged - only where they are reached from.
  */
 
-/// Who may open a screen: managers and admins, admins only, or the people an
-/// admin has chosen for provider productivity (and admins).
-export type ManageNeed = 'manager' | 'admin' | 'productivity';
+/// Who may open a screen: managers and admins, admins only, the people an
+/// admin has chosen for provider productivity (and admins), or Manager access
+/// only, admins not (invoices, October 2026).
+export type ManageNeed = 'manager' | 'admin' | 'productivity' | 'managerAccessOnly';
 
 export interface ManageTab {
   to: string;
@@ -56,7 +57,7 @@ export const MANAGE_SECTIONS: ManageSection[] = [
     tabs: [
       { to: '/export', label: 'Export', need: 'manager' },
       { to: '/reimbursements', label: 'Reimbursements', need: 'manager' },
-      { to: '/invoices', label: 'Invoices', need: 'manager' },
+      { to: '/invoices', label: 'Invoices', need: 'managerAccessOnly' },
       { to: '/vendors', label: 'Vendor payments', need: 'admin' },
     ],
   },
@@ -73,7 +74,9 @@ const allowed = (need: ManageNeed, access: ManageAccess) =>
     ? access.isManager
     : need === 'admin'
       ? access.isAdmin
-      : access.canManageProductivity || access.isAdmin;
+      : need === 'managerAccessOnly'
+        ? access.isManager && !access.isAdmin
+        : access.canManageProductivity || access.isAdmin;
 
 /// The sections this person can open, each with only the tabs they may use;
 /// a section with nothing for them is left out.

@@ -5291,6 +5291,15 @@ making a second. The invoice still keeps its own `billToName` /
 `billToAddress`, so changing a saved vendor leaves sent invoices alone.
 Businesses only: a patient's invoice never shows it.
 
+**Manager access only** (21 October 2026, Dominguez: "managers only should be
+able to access invoices"). A provider paid directly may need their home
+address on a pay-to, so the whole Invoices screen and `/invoices/*` are for
+people with Manager access, not admins. `@Roles` always lets an admin
+through, so the controller adds `ManagerAccessOnlyGuard`
+(`common/auth/manager-access-only.guard.ts`); the web hides the tab with
+`managerAccessOnly` in `lib/manage-sections.ts`. The practice's logo and
+office details stay on every invoice; its email is angelica@domihealthcare.com.
+
 ## Who uses each form and guide (October 2026)
 
 Dominguez asked for managers to make a form "available for either one group

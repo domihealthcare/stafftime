@@ -1,14 +1,28 @@
-import { Body, Controller, Delete, Get, Param, ParseUUIDPipe, Post, Put } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Delete,
+  Get,
+  Param,
+  ParseUUIDPipe,
+  Post,
+  Put,
+  UseGuards,
+} from '@nestjs/common';
 import { Role } from '@prisma/client';
 import { AuthUser } from '../common/auth/auth-user';
 import { CurrentUser } from '../common/auth/current-user.decorator';
+import { ManagerAccessOnlyGuard } from '../common/auth/manager-access-only.guard';
 import { Roles } from '../common/auth/roles.decorator';
 import { InvoiceInput, PayeeInput, VendorInput } from './dto/invoices.dto';
 import { InvoicesService } from './invoices.service';
 
-/// Invoices: managers and admins only (Dominguez, October 2026).
+/// Invoices: people with Manager access only, not admins (Dominguez, October
+/// 2026: "managers only should be able to access invoices"), since a provider
+/// paid directly may need their home address on one.
 @Controller('invoices')
 @Roles(Role.MANAGER)
+@UseGuards(ManagerAccessOnlyGuard)
 export class InvoicesController {
   constructor(private readonly invoices: InvoicesService) {}
 
