@@ -71,6 +71,8 @@ import type {
   GuideSlug,
   Invoice,
   InvoiceInput,
+  InvoicePayee,
+  PayeeInput,
   ToolSetting,
   ReimbursementsBoard,
   ReferralContact,
@@ -1721,6 +1723,14 @@ export const api = {
     }),
   deleteInvoice: (id: string) =>
     request<{ removed: true }>(`/invoices/${id}`, { method: 'DELETE' }),
+  invoicePayees: () => request<InvoicePayee[]>('/invoices/payees'),
+  saveInvoicePayee: (id: string | null, body: PayeeInput) =>
+    request<InvoicePayee>(id ? `/invoices/payees/${id}` : '/invoices/payees', {
+      method: id ? 'PUT' : 'POST',
+      body: JSON.stringify(body),
+    }),
+  deleteInvoicePayee: (id: string) =>
+    request<{ removed: true }>(`/invoices/payees/${id}`, { method: 'DELETE' }),
 
   // ---------------------------------------------------------------- reimbursements
   reimbursements: () => request<ReimbursementsBoard>('/reimbursements'),

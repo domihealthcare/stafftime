@@ -5266,6 +5266,21 @@ Domi Staff." in their place. This is the "PHI present, then censor it" that
 Dominguez asked for, done by never holding it. The lines are kept, so the
 editor asks that no name goes in them.
 
+**Pay to** (21 October 2026, Dominguez: "some invoices go directly to the
+provider - therefore - the default should be the practice but should be able
+to create options that you can save and change the pay to info"). The
+practice (`PRACTICE` in `lib/invoice-pdf.ts`) is the default and is not
+stored. Other options are `InvoicePayee` rows (a name for the top of the
+invoice, address / email / phone lines, and who checks are payable to), kept
+by managers and admins under `/invoices/payees`. An invoice keeps a **copy**
+of the pay-to it went out with (`payToName`, `payToLines`, `payableTo`; all
+empty is the practice, a database constraint keeps the three together), so
+editing or removing an option never changes an invoice already sent. Opening
+such an invoice shows "(as on this invoice)" when its details no longer match
+a saved option. The logo and the office's contact line at the foot stay the
+practice's. Business details only: the form says no tax ID or social
+security number, and the schema guard pins the fields.
+
 ## Who uses each form and guide (October 2026)
 
 Dominguez asked for managers to make a form "available for either one group

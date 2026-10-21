@@ -15,16 +15,25 @@ import {
 import { ApiError, api } from '../lib/api';
 import { formatCalendarDate } from '../lib/format';
 import {
+  PRACTICE_PAY_TO,
   WITHHELD,
   dollars,
   invoiceFilename,
   invoiceNumberLabel,
   invoicePdf,
   type InvoiceForPdf,
+  type PayTo,
 } from '../lib/invoice-pdf';
 import { practiceDate } from '../lib/practice-time';
 import { useIsManager } from '../lib/session';
-import type { Invoice, InvoiceBillTo, InvoiceInput, InvoiceStatus } from '../lib/types';
+import type {
+  Invoice,
+  InvoiceBillTo,
+  InvoiceInput,
+  InvoicePayee,
+  InvoiceStatus,
+  PayeeInput,
+} from '../lib/types';
 
 /**
  * Invoices (October 2026, Dominguez: the Invoice Template sheet, "for the
@@ -36,6 +45,11 @@ import type { Invoice, InvoiceBillTo, InvoiceInput, InvoiceStatus } from '../lib
  * utilize some sort of censorship"): their name, date of birth and address are
  * typed here, printed on the PDF downloaded there and then, and never sent, so
  * a copy downloaded later has them blanked out.
+ *
+ * Paid to the practice unless another "Pay to" is chosen (October 2026,
+ * Dominguez: "some invoices go directly to the provider"): saved options,
+ * kept by managers and admins, and each invoice keeps a copy of the one it
+ * went out with, so changing an option later leaves sent invoices alone.
  */
 export function InvoicesPage() {
   const isManager = useIsManager();
@@ -44,7 +58,16 @@ export function InvoicesPage() {
   const [error, setError] = useState<string | null>(null);
   const [editing, setEditing] = useState<Invoice | 'new' | null>(null);
   const [search, setSearch] = useState('');
+  const [payees, setPayees] = useState<InvoicePayee[]>([]);
+  const [managingPayees, setManagingPayees] = useState(false);
   const confirm = useConfirm();
+
+  const loadPayees = useCallback(() => {
+    api
+      .invoicePayees()
+      .then(setPayees)
+      .catch(() => setError('Could not load the pay-to options.'));
+  }, []);
 
   const load = useCallback(() => {
     api
@@ -58,8 +81,11 @@ export function InvoicesPage() {
       );
   }, []);
   useEffect(() => {
-    if (isManager) load();
-  }, [isManager, load]);
+    if (isManager) {
+      load();
+      loadPayees();
+    }
+  }, [isManager, load, loadPayees]);
 
   // Earlier lines, offered as you type a new one.
   const usedLines = useMemo(() => {
@@ -79,6 +105,7 @@ export function InvoicesPage() {
       [
         invoiceNumberLabel(invoice.number),
         invoice.billToName ?? 'patient',
+        invoice.payToName ?? '',
         invoice.note ?? '',
         ...invoice.lines.map((line) => line.description),
       ].some((text) => text.toLowerCase().includes(needle)),
@@ -123,6 +150,13 @@ export function InvoicesPage() {
         <button type="button" className={buttonClass('primary')} onClick={() => setEditing('new')}>
           + New invoice
         </button>
+        <button
+          type="button"
+          className={buttonClass('secondary')}
+          onClick={() => setManagingPayees(true)}
+        >
+          Pay-to options
+        </button>
         <input
           type="search"
           aria-label="Search the invoices"
@@ -163,6 +197,11 @@ export function InvoicesPage() {
                   </span>
                 </p>
                 <p className="text-xs text-slate-600">
+                  {invoice.payToName && (
+                    <span className="font-medium text-slate-700" data-testid="invoice-pay-to">
+                      Pay to {invoice.payToName} ·{' '}
+                    </span>
+                  )}
                   {formatCalendarDate(invoice.issuedOn)} ·{' '}
                   {invoice.lines.map((line) => line.description).join('; ')}
                 </p>
@@ -206,6 +245,8 @@ export function InvoicesPage() {
           invoice={editing === 'new' ? null : editing}
           nextNumber={nextNumber}
           usedLines={usedLines}
+          payees={payees}
+          onPayeeSaved={loadPayees}
           onClose={() => setEditing(null)}
           onSaved={() => {
             setEditing(null);
@@ -213,7 +254,261 @@ export function InvoicesPage() {
           }}
         />
       )}
+      {managingPayees && (
+        <PayeesManager
+          payees={payees}
+          onChanged={loadPayees}
+          onClose={() => setManagingPayees(false)}
+        />
+      )}
     </div>
+  );
+}
+
+/// What is printed for a kept invoice's pay-to; null for the practice.
+function payToOf(invoice: Invoice): PayTo | null {
+  if (!invoice.payToName) return null;
+  return {
+    name: invoice.payToName,
+    lines: splitLines(invoice.payToLines),
+    payableTo: invoice.payableTo ?? invoice.payToName,
+  };
+}
+
+function payToOfPayee(payee: InvoicePayee): PayTo {
+  return { name: payee.name, lines: splitLines(payee.lines), payableTo: payee.payableTo };
+}
+
+const splitLines = (text: string | null) =>
+  (text ?? '')
+    .split('\n')
+    .map((line) => line.trim())
+    .filter(Boolean);
+
+const samePayTo = (a: PayTo, b: PayTo) =>
+  a.name === b.name && a.payableTo === b.payableTo && a.lines.join('\n') === b.lines.join('\n');
+
+/// The details of one pay-to, as they will print.
+function PayToPreview({ payTo }: { payTo: PayTo }) {
+  return (
+    <div className="text-sm text-slate-700" data-testid="pay-to-preview">
+      <p className="font-semibold text-slate-900">{payTo.name}</p>
+      {payTo.lines.map((line, index) => (
+        <p key={index}>{line}</p>
+      ))}
+      <p className="mt-1 text-xs text-slate-600">
+        Checks payable to <strong>{payTo.payableTo}</strong>
+      </p>
+    </div>
+  );
+}
+
+/// A saved pay-to, new or changed.
+function PayeeForm({
+  payee,
+  onSaved,
+  onCancel,
+}: {
+  payee: InvoicePayee | null;
+  onSaved: (saved: InvoicePayee) => void;
+  onCancel: () => void;
+}) {
+  const [name, setName] = useState(payee?.name ?? '');
+  const [lines, setLines] = useState(payee?.lines ?? '');
+  const [payableTo, setPayableTo] = useState(payee?.payableTo ?? '');
+  const [problem, setProblem] = useState<string | null>(null);
+  const [saving, setSaving] = useState(false);
+
+  const save = async () => {
+    if (!name.trim()) {
+      setProblem('Who is paid? Give a name.');
+      return;
+    }
+    setSaving(true);
+    setProblem(null);
+    const body: PayeeInput = {
+      name,
+      lines,
+      // Left blank, checks are payable to the name, in capitals as the template had it.
+      payableTo: payableTo.trim() || name.trim().toUpperCase(),
+    };
+    try {
+      onSaved(await api.saveInvoicePayee(payee?.id ?? null, body));
+    } catch (err) {
+      setProblem(err instanceof ApiError ? err.message : 'That did not save. Try again.');
+      setSaving(false);
+    }
+  };
+
+  return (
+    <div
+      className="space-y-3 rounded-lg bg-slate-50 p-3 ring-1 ring-inset ring-slate-200"
+      data-testid="payee-form"
+    >
+      <Field label="Name on the invoice" hint="For a provider paid directly, e.g. Jane Smith, MD.">
+        {(props) => (
+          <input
+            {...props}
+            className={inputClass}
+            maxLength={160}
+            value={name}
+            onChange={(event) => setName(event.target.value)}
+          />
+        )}
+      </Field>
+      <Field
+        label="Address, email and phone"
+        hint="One per line: where payment goes. No tax ID or social security number."
+      >
+        {(props) => (
+          <textarea
+            {...props}
+            rows={3}
+            className={inputClass}
+            maxLength={500}
+            value={lines}
+            onChange={(event) => setLines(event.target.value)}
+          />
+        )}
+      </Field>
+      <Field label="Make checks payable to" hint="Left blank, the name above in capitals.">
+        {(props) => (
+          <input
+            {...props}
+            className={inputClass}
+            maxLength={160}
+            placeholder={name.trim().toUpperCase()}
+            value={payableTo}
+            onChange={(event) => setPayableTo(event.target.value)}
+          />
+        )}
+      </Field>
+      {problem && <Alert>{problem}</Alert>}
+      <div className="flex flex-wrap justify-end gap-2">
+        <button type="button" className={buttonClass('secondary', 'sm')} onClick={onCancel}>
+          Cancel
+        </button>
+        <button
+          type="button"
+          className={buttonClass('primary', 'sm')}
+          disabled={saving}
+          onClick={() => void save()}
+        >
+          {saving ? 'Saving...' : payee ? 'Save changes' : 'Save this pay-to'}
+        </button>
+      </div>
+    </div>
+  );
+}
+
+/// The saved pay-to options: added, changed and removed. The practice is
+/// always there and is not one of them.
+function PayeesManager({
+  payees,
+  onChanged,
+  onClose,
+}: {
+  payees: InvoicePayee[];
+  onChanged: () => void;
+  onClose: () => void;
+}) {
+  const [editing, setEditing] = useState<InvoicePayee | 'new' | null>(null);
+  const [problem, setProblem] = useState<string | null>(null);
+  const confirm = useConfirm();
+
+  const remove = async (payee: InvoicePayee) => {
+    const sure = await confirm({
+      title: `Remove ${payee.name} from the pay-to options?`,
+      body: 'Invoices already made keep the details they went out with.',
+      confirmLabel: 'Yes, remove it',
+    });
+    if (!sure) return;
+    try {
+      await api.deleteInvoicePayee(payee.id);
+      onChanged();
+    } catch (err) {
+      setProblem(err instanceof ApiError ? err.message : 'Could not remove that option.');
+    }
+  };
+
+  return (
+    <Modal title="Pay-to options" onClose={onClose} wide testId="payees-manager">
+      <div className="space-y-3">
+        <p className="text-sm text-slate-600">
+          Who an invoice is paid to. Domi Healthcare is the default; save others here, such as a
+          provider who is paid directly, and pick one on the invoice. Changing an option leaves
+          invoices already made as they went out.
+        </p>
+        {problem && <Alert>{problem}</Alert>}
+        <div className="divide-y divide-slate-100 rounded-lg ring-1 ring-slate-200">
+          <div className="flex items-start justify-between gap-3 p-3">
+            <PayToPreview payTo={PRACTICE_PAY_TO} />
+            <Badge tone="info">Default</Badge>
+          </div>
+          {payees.map((payee) =>
+            editing !== 'new' && editing?.id === payee.id ? (
+              <div key={payee.id} className="p-3">
+                <PayeeForm
+                  payee={payee}
+                  onCancel={() => setEditing(null)}
+                  onSaved={() => {
+                    setEditing(null);
+                    onChanged();
+                  }}
+                />
+              </div>
+            ) : (
+              <div
+                key={payee.id}
+                className="flex flex-wrap items-start justify-between gap-3 p-3"
+                data-testid="payee-row"
+              >
+                <PayToPreview payTo={payToOfPayee(payee)} />
+                <div className="flex gap-1">
+                  <button
+                    type="button"
+                    className={buttonClass('secondary', 'sm')}
+                    onClick={() => setEditing(payee)}
+                  >
+                    Edit
+                  </button>
+                  <button
+                    type="button"
+                    className={buttonClass('secondary', 'sm')}
+                    onClick={() => void remove(payee)}
+                  >
+                    Remove
+                  </button>
+                </div>
+              </div>
+            ),
+          )}
+        </div>
+        {editing === 'new' ? (
+          <PayeeForm
+            payee={null}
+            onCancel={() => setEditing(null)}
+            onSaved={() => {
+              setEditing(null);
+              onChanged();
+            }}
+          />
+        ) : (
+          <button
+            type="button"
+            className="text-sm font-medium text-brand-700 hover:text-brand-900"
+            onClick={() => setEditing('new')}
+          >
+            + Add a pay-to option
+          </button>
+        )}
+        <div className="flex justify-end">
+          <button type="button" className={buttonClass('secondary')} onClick={onClose}>
+            Done
+          </button>
+        </div>
+      </div>
+    </Modal>
   );
 }
 
@@ -234,6 +529,7 @@ function forPdf(invoice: Invoice, patient: PatientDetails | null): InvoiceForPdf
     paidOn: invoice.paidOn,
     note: invoice.note,
     lines: invoice.lines,
+    payTo: payToOf(invoice),
     billTo:
       invoice.billTo === 'VENDOR'
         ? { kind: 'VENDOR', name: invoice.billToName ?? '', address: invoice.billToAddress ?? '' }
@@ -242,6 +538,9 @@ function forPdf(invoice: Invoice, patient: PatientDetails | null): InvoiceForPdf
           : { kind: 'PATIENT_WITHHELD' },
   };
 }
+
+const PRACTICE_CHOICE = 'practice';
+const KEPT_CHOICE = 'kept';
 
 interface LineDraft {
   description: string;
@@ -258,12 +557,16 @@ function InvoiceEditor({
   invoice,
   nextNumber,
   usedLines,
+  payees,
+  onPayeeSaved,
   onClose,
   onSaved,
 }: {
   invoice: Invoice | null;
   nextNumber: number;
   usedLines: string[];
+  payees: InvoicePayee[];
+  onPayeeSaved: () => void;
   onClose: () => void;
   onSaved: () => void;
 }) {
@@ -286,6 +589,27 @@ function InvoiceEditor({
   );
   const [problem, setProblem] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
+  // Who it is paid to: the practice, a saved option, or (an invoice whose
+  // option has since changed or gone) the details it went out with.
+  const kept = invoice ? payToOf(invoice) : null;
+  const [payChoice, setPayChoice] = useState<string>(() => {
+    if (!kept) return PRACTICE_CHOICE;
+    const match = payees.find((payee) => samePayTo(payToOfPayee(payee), kept));
+    return match ? match.id : KEPT_CHOICE;
+  });
+  const [payeeForm, setPayeeForm] = useState<InvoicePayee | 'new' | null>(null);
+  // A pay-to saved in this pop-up, until the list catches up.
+  const [justSaved, setJustSaved] = useState<InvoicePayee | null>(null);
+  const options =
+    justSaved && !payees.some((payee) => payee.id === justSaved.id)
+      ? [...payees, justSaved]
+      : payees.map((payee) => (payee.id === justSaved?.id ? justSaved : payee));
+  const chosenPayee = options.find((payee) => payee.id === payChoice) ?? null;
+  const payTo: PayTo | null = chosenPayee
+    ? payToOfPayee(chosenPayee)
+    : payChoice === KEPT_CHOICE
+      ? kept
+      : null;
 
   const cents = lines.map((line) => toCents(line.amount));
   const total = cents.reduce<number>((sum, value) => sum + (value ?? 0), 0);
@@ -317,6 +641,9 @@ function InvoiceEditor({
       status,
       paidOn: status === 'PAID' ? paidOn || null : null,
       note,
+      payTo: payTo
+        ? { name: payTo.name, lines: payTo.lines.join('\n'), payableTo: payTo.payableTo }
+        : null,
       lines: lines.map((line, index) => ({
         description: line.description,
         amountCents: cents[index] ?? 0,
@@ -455,6 +782,69 @@ function InvoiceEditor({
             </Field>
           </div>
         )}
+
+        <div className="space-y-2">
+          <Field
+            label="Pay to"
+            hint="Who is paid: the practice, or a saved option such as a provider."
+          >
+            {(props) => (
+              <select
+                {...props}
+                className={inputClass}
+                value={payChoice}
+                onChange={(event) => {
+                  setPayChoice(event.target.value);
+                  setPayeeForm(null);
+                }}
+              >
+                <option value={PRACTICE_CHOICE}>{PRACTICE_PAY_TO.name} (the practice)</option>
+                {kept && payChoice === KEPT_CHOICE && (
+                  <option value={KEPT_CHOICE}>{kept.name} (as on this invoice)</option>
+                )}
+                {options.map((payee) => (
+                  <option key={payee.id} value={payee.id}>
+                    {payee.name}
+                  </option>
+                ))}
+              </select>
+            )}
+          </Field>
+          {payeeForm ? (
+            <PayeeForm
+              payee={payeeForm === 'new' ? null : payeeForm}
+              onCancel={() => setPayeeForm(null)}
+              onSaved={(saved) => {
+                setJustSaved(saved);
+                setPayChoice(saved.id);
+                setPayeeForm(null);
+                onPayeeSaved();
+              }}
+            />
+          ) : (
+            <div className="flex flex-wrap items-start justify-between gap-2 rounded-lg bg-slate-50 p-3">
+              <PayToPreview payTo={payTo ?? PRACTICE_PAY_TO} />
+              <div className="flex flex-wrap gap-3 text-sm">
+                {chosenPayee && (
+                  <button
+                    type="button"
+                    className="font-medium text-brand-700 hover:text-brand-900"
+                    onClick={() => setPayeeForm(chosenPayee)}
+                  >
+                    Change these details
+                  </button>
+                )}
+                <button
+                  type="button"
+                  className="font-medium text-brand-700 hover:text-brand-900"
+                  onClick={() => setPayeeForm('new')}
+                >
+                  + New pay-to
+                </button>
+              </div>
+            </div>
+          )}
+        </div>
 
         <div className="grid gap-3 sm:grid-cols-2">
           <Field label="Invoice date">

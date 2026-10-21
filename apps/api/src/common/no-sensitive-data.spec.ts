@@ -232,9 +232,17 @@ describe('what this app deliberately does not store', () => {
         'note',
         'number',
         'paidOn',
+        'payToLines',
+        'payToName',
+        'payableTo',
         'status',
         'updatedAt',
       ].sort(),
+    );
+    // Saved "Pay to" options: a name, where payment goes and who checks are
+    // payable to. Never a tax ID or any identity number.
+    expect(fieldsOf('InvoicePayee')).toEqual(
+      ['createdAt', 'createdById', 'id', 'lines', 'name', 'payableTo', 'updatedAt'].sort(),
     );
     expect(fieldsOf('InvoiceLine')).toEqual(
       ['amountCents', 'description', 'id', 'invoice', 'invoiceId', 'sortOrder'].sort(),

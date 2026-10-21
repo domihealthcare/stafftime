@@ -33,3 +33,10 @@ export function invoiceProblem(input: {
 
 /// "#001", "#042", "#1234".
 export const invoiceNumberLabel = (number: number) => `#${String(number).padStart(3, '0')}`;
+
+/// A saved "Pay to", or one copied onto an invoice. Pure, tested on its own.
+export function payeeProblem(input: { name?: string; payableTo?: string }): string | null {
+  if ((input.name ?? '').trim() === '') return 'Who is paid? Give a name.';
+  if ((input.payableTo ?? '').trim() === '') return 'Who are checks payable to?';
+  return null;
+}

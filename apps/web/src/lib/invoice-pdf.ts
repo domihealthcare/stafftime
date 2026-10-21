@@ -21,6 +21,8 @@ export interface InvoiceForPdf {
   paidOn: string | null;
   note: string | null;
   lines: { description: string; amountCents: number }[];
+  /// Who it is paid to; null for the practice.
+  payTo: PayTo | null;
   billTo:
     | { kind: 'VENDOR'; name: string; address: string }
     | { kind: 'PATIENT'; name: string; dob: string; address: string }
@@ -38,6 +40,21 @@ export const PRACTICE = {
   payableTo: 'DOMI HEALTHCARE LLC',
   questions:
     'If you have any questions or concerns regarding this invoice, please contact our office via phone 201-528-3664 or via email office@domihealthcare.com.',
+};
+
+/// Who an invoice is paid to: the practice, or a saved option such as a
+/// provider paid directly (October 2026, Dominguez).
+export interface PayTo {
+  name: string;
+  /// Address, email and phone, one per line.
+  lines: string[];
+  payableTo: string;
+}
+
+export const PRACTICE_PAY_TO: PayTo = {
+  name: PRACTICE.name,
+  lines: PRACTICE.lines,
+  payableTo: PRACTICE.payableTo,
 };
 
 export const WITHHELD = "A patient's details are not kept in Domi Staff.";
@@ -129,9 +146,12 @@ export async function invoicePdf(invoice: InvoiceForPdf): Promise<Uint8Array> {
   }
   text(page, 'INVOICE', RIGHT, HEIGHT - 80, { font: bold, size: 26, color: BRAND, right: true });
 
+  // Who it is from and paid to: the practice unless another was chosen.
+  const payTo = invoice.payTo ?? PRACTICE_PAY_TO;
   let y = top - 4;
-  text(page, PRACTICE.name, LEFT, y, { font: bold, size: 11 });
-  for (const line of PRACTICE.lines) {
+  text(page, payTo.name, LEFT, y, { font: bold, size: 11 });
+  for (const line of payTo.lines.flatMap((one) => wrap(one, regular, 10, 300))) {
+    if (!line) continue;
     y -= 14;
     text(page, line, LEFT, y, { color: MUTED });
   }
@@ -233,7 +253,7 @@ export async function invoicePdf(invoice: InvoiceForPdf): Promise<Uint8Array> {
   text(page, 'Terms & Instructions', LEFT, foot, { font: bold, size: 10, color: BRAND });
   foot -= 16;
   text(page, 'Make all checks payable to:', LEFT, foot);
-  text(page, PRACTICE.payableTo, LEFT + 140, foot, { font: bold });
+  text(page, payTo.payableTo, LEFT + 140, foot, { font: bold });
   foot -= 22;
   for (const line of wrap(PRACTICE.questions, regular, 9.5, RIGHT - LEFT)) {
     text(page, line, LEFT, foot, { size: 9.5, color: MUTED });

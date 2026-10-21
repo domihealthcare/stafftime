@@ -2281,6 +2281,10 @@ export interface Invoice {
   status: InvoiceStatus;
   paidOn: string | null;
   note: string | null;
+  /// Who it is paid to, as it went out; all null is the practice.
+  payToName: string | null;
+  payToLines: string | null;
+  payableTo: string | null;
   lines: InvoiceLine[];
   totalCents: number;
   createdAt: string;
@@ -2296,7 +2300,24 @@ export interface InvoiceInput {
   status: InvoiceStatus;
   paidOn: string | null;
   note?: string;
+  /// Null for the practice.
+  payTo: PayeeInput | null;
   lines: { description: string; amountCents: number }[];
+}
+
+/// A saved "Pay to" for invoices, such as a provider paid directly.
+export interface InvoicePayee {
+  id: string;
+  name: string;
+  /// Address, email and phone, one per line.
+  lines: string | null;
+  payableTo: string;
+}
+
+export interface PayeeInput {
+  name: string;
+  lines: string;
+  payableTo: string;
 }
 
 // ------------------------------------------------------------ tool access

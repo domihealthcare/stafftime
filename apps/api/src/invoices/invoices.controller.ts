@@ -3,7 +3,7 @@ import { Role } from '@prisma/client';
 import { AuthUser } from '../common/auth/auth-user';
 import { CurrentUser } from '../common/auth/current-user.decorator';
 import { Roles } from '../common/auth/roles.decorator';
-import { InvoiceInput } from './dto/invoices.dto';
+import { InvoiceInput, PayeeInput } from './dto/invoices.dto';
 import { InvoicesService } from './invoices.service';
 
 /// Invoices: managers and admins only (Dominguez, October 2026).
@@ -15,6 +15,31 @@ export class InvoicesController {
   @Get()
   list() {
     return this.invoices.list();
+  }
+
+  /// Saved "Pay to" options. Declared before ':id' so they are not read as one.
+  @Get('payees')
+  payees() {
+    return this.invoices.payees();
+  }
+
+  @Post('payees')
+  createPayee(@Body() dto: PayeeInput, @CurrentUser() user: AuthUser) {
+    return this.invoices.createPayee(dto, user);
+  }
+
+  @Put('payees/:id')
+  updatePayee(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Body() dto: PayeeInput,
+    @CurrentUser() user: AuthUser,
+  ) {
+    return this.invoices.updatePayee(id, dto, user);
+  }
+
+  @Delete('payees/:id')
+  removePayee(@Param('id', ParseUUIDPipe) id: string, @CurrentUser() user: AuthUser) {
+    return this.invoices.removePayee(id, user);
   }
 
   @Post()

@@ -362,6 +362,65 @@ await step("the server refuses a patient's name, and a vendor invoice with no na
   if (tried.status !== 400) throw new Error(`no vendor answered ${tried.status}`);
 });
 
+await step('a pay-to option is saved, picked, printed, and kept on the invoice when changed', async () => {
+  await manager.getByRole('button', { name: '+ New invoice' }).click();
+  const dialog = manager.getByTestId('invoice-editor');
+  // The practice is the default.
+  if (!/Domi Healthcare LLC/.test(await dialog.getByTestId('pay-to-preview').innerText()))
+    throw new Error('the practice is not the default pay-to');
+  await dialog.getByRole('button', { name: '+ New pay-to' }).click();
+  const form = dialog.getByTestId('payee-form');
+  await form.getByLabel('Name on the invoice').fill('Testprovider Paydirect, MD');
+  await form.getByLabel('Address, email and phone').fill('5 Testprovider Way\nHoboken, NJ 07030');
+  await form.getByRole('button', { name: 'Save this pay-to' }).click();
+  await form.waitFor({ state: 'detached', timeout: 10000 });
+  if (!/Testprovider Paydirect/.test(await dialog.getByLabel('Pay to').locator('option:checked').innerText()))
+    throw new Error('the new pay-to was not picked');
+  await dialog.getByLabel('Name', { exact: true }).fill('Payto Testhospital');
+  await dialog.getByLabel('Line 1: description').fill('Inpatient consults, October');
+  await dialog.getByLabel('Line 1: amount').fill('800');
+  const [download] = await Promise.all([
+    manager.waitForEvent('download', { timeout: 20000 }),
+    dialog.getByRole('button', { name: 'Save and download PDF' }).click(),
+  ]);
+  const path = `${OUT}/payto-${download.suggestedFilename()}`;
+  await download.saveAs(path);
+  const text = await pdfText(path);
+  for (const piece of ['Testprovider Paydirect, MD', '5 Testprovider Way', 'TESTPROVIDER PAYDIRECT, MD', 'Payto Testhospital'])
+    if (!text.includes(piece)) throw new Error(`the PDF lacks "${piece}"`);
+  if (text.includes('DOMI HEALTHCARE LLC')) throw new Error('checks still payable to the practice');
+  const row = manager.getByTestId('invoice-row').filter({ hasText: 'Payto Testhospital' });
+  await row.getByTestId('invoice-pay-to').waitFor({ timeout: 10000 });
+
+  // Changing the option leaves the invoice as it went out.
+  await manager.getByRole('button', { name: 'Pay-to options' }).click();
+  const options = manager.getByTestId('payees-manager');
+  const saved = options.getByTestId('payee-row').filter({ hasText: 'Testprovider Paydirect' });
+  await saved.getByRole('button', { name: 'Edit' }).click();
+  await options.getByLabel('Address, email and phone').fill('9 Moved Testprovider Rd');
+  await options.getByRole('button', { name: 'Save changes' }).click();
+  await options.getByText('9 Moved Testprovider Rd').waitFor({ timeout: 10000 });
+  await options.getByRole('button', { name: 'Done' }).click();
+  const [again] = await Promise.all([
+    manager.waitForEvent('download', { timeout: 20000 }),
+    row.getByRole('button', { name: 'Download' }).click(),
+  ]);
+  const copy = `${OUT}/payto-copy-${again.suggestedFilename()}`;
+  await again.saveAs(copy);
+  const copyText = await pdfText(copy);
+  if (!copyText.includes('5 Testprovider Way') || copyText.includes('Moved'))
+    throw new Error('the copy changed with the option');
+
+  // Tidy.
+  const list = (await call(manager, '/invoices')).body.invoices;
+  for (const invoice of list.filter((i) => i.billToName === 'Payto Testhospital'))
+    await call(manager, `/invoices/${invoice.id}`, { method: 'DELETE' });
+  for (const payee of (await call(manager, '/invoices/payees')).body.filter((p) => p.name.startsWith('Testprovider')))
+    await call(manager, `/invoices/payees/${payee.id}`, { method: 'DELETE' });
+  const tried = await call(staff, '/invoices/payees');
+  if (tried.status !== 403) throw new Error(`staff read the pay-to options: ${tried.status}`);
+});
+
 await step('an invoice is marked paid, found by search, and removed', async () => {
   const row = manager.getByTestId('invoice-row').filter({ hasText: 'Acme Testlabs' });
   await row.getByRole('button', { name: 'Edit' }).click();

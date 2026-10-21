@@ -3,8 +3,8 @@ import { InvoiceBillTo, InvoiceStatus, Prisma } from '@prisma/client';
 import { AuthUser } from '../common/auth/auth-user';
 import { isoDate } from '../common/util/calendar-date.util';
 import { PrismaService } from '../prisma/prisma.service';
-import { InvoiceInput } from './dto/invoices.dto';
-import { invoiceProblem } from './invoice-rules';
+import { InvoiceInput, PayeeInput } from './dto/invoices.dto';
+import { invoiceProblem, payeeProblem } from './invoice-rules';
 
 const SELECT = {
   id: true,
@@ -17,6 +17,9 @@ const SELECT = {
   status: true,
   paidOn: true,
   note: true,
+  payToName: true,
+  payToLines: true,
+  payableTo: true,
   createdAt: true,
   updatedAt: true,
   lines: {
@@ -26,6 +29,8 @@ const SELECT = {
 } satisfies Prisma.InvoiceSelect;
 
 type Row = Prisma.InvoiceGetPayload<{ select: typeof SELECT }>;
+
+const PAYEE = { id: true, name: true, lines: true, payableTo: true } as const;
 
 const day = (text: string) => new Date(`${text}T00:00:00.000Z`);
 
@@ -47,6 +52,45 @@ export class InvoicesService {
       this.prisma.invoice.aggregate({ _max: { number: true } }),
     ]);
     return { invoices: rows.map(present), nextNumber: (last._max.number ?? 0) + 1 };
+  }
+
+  /// The saved "Pay to" options; the practice itself is not one of them.
+  payees() {
+    return this.prisma.invoicePayee.findMany({ orderBy: { name: 'asc' }, select: PAYEE });
+  }
+
+  async createPayee(dto: PayeeInput, actor: AuthUser) {
+    const row = await this.prisma.invoicePayee.create({
+      data: { ...payeeData(dto), createdById: actor.id },
+      select: PAYEE,
+    });
+    this.logger.log(`Invoice pay-to ${row.id} saved by ${actor.id}`);
+    return row;
+  }
+
+  /// Invoices already made keep the details they went out with.
+  async updatePayee(id: string, dto: PayeeInput, actor: AuthUser) {
+    await this.findPayee(id);
+    const row = await this.prisma.invoicePayee.update({
+      where: { id },
+      data: payeeData(dto),
+      select: PAYEE,
+    });
+    this.logger.log(`Invoice pay-to ${id} changed by ${actor.id}`);
+    return row;
+  }
+
+  async removePayee(id: string, actor: AuthUser) {
+    await this.findPayee(id);
+    await this.prisma.invoicePayee.delete({ where: { id } });
+    this.logger.log(`Invoice pay-to ${id} removed by ${actor.id}`);
+    return { removed: true };
+  }
+
+  private async findPayee(id: string) {
+    const row = await this.prisma.invoicePayee.findUnique({ where: { id }, select: { id: true } });
+    if (!row) throw new NotFoundException('That pay-to option is no longer there.');
+    return row;
   }
 
   async create(dto: InvoiceInput, actor: AuthUser) {
@@ -110,6 +154,7 @@ export class InvoicesService {
     if (problem) throw new BadRequestException(problem);
     const vendor = dto.billTo === InvoiceBillTo.VENDOR;
     const paid = dto.status === InvoiceStatus.PAID;
+    const payTo = dto.payTo ? payeeData(dto.payTo) : null;
     return {
       issuedOn: day(dto.issuedOn),
       dueOn: dto.dueOn ? day(dto.dueOn) : null,
@@ -119,6 +164,9 @@ export class InvoicesService {
       status: dto.status,
       paidOn: paid && dto.paidOn ? day(dto.paidOn) : null,
       note: (dto.note ?? '').trim() || null,
+      payToName: payTo?.name ?? null,
+      payToLines: payTo?.lines ?? null,
+      payableTo: payTo?.payableTo ?? null,
     };
   }
 
@@ -129,6 +177,16 @@ export class InvoicesService {
       sortOrder: index,
     }));
   }
+}
+
+function payeeData(dto: PayeeInput) {
+  const problem = payeeProblem(dto);
+  if (problem) throw new BadRequestException(problem);
+  return {
+    name: dto.name.trim(),
+    lines: (dto.lines ?? '').trim() || null,
+    payableTo: dto.payableTo.trim(),
+  };
 }
 
 function present(row: Row) {

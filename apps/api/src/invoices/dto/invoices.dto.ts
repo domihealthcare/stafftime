@@ -19,6 +19,22 @@ import {
 
 const DATE_ONLY = /^\d{4}-\d{2}-\d{2}$/;
 
+/// A saved "Pay to", or the one an invoice goes out with.
+export class PayeeInput {
+  @IsString()
+  @MaxLength(160)
+  name!: string;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(500)
+  lines?: string;
+
+  @IsString()
+  @MaxLength(160)
+  payableTo!: string;
+}
+
 export class InvoiceLineInput {
   @IsString()
   @MinLength(1)
@@ -69,6 +85,13 @@ export class InvoiceInput {
   @IsString()
   @MaxLength(1000)
   note?: string;
+
+  /// Who it is paid to; left out or null for the practice.
+  @IsOptional()
+  @ValidateIf((_, value) => value !== null)
+  @ValidateNested()
+  @Type(() => PayeeInput)
+  payTo?: PayeeInput | null;
 
   @IsArray()
   @ArrayMinSize(1)

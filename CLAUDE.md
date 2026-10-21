@@ -1216,6 +1216,20 @@ Beyond the phases, the parts worth knowing about before picking up work:
   this app does not hold*). Also fixed: the phone book's and guides' sticky
   search bar covered the header's menus. `tests/browser/guides.mjs`. The
   guides and invoices are worth carrying to the EMR module.
+- **Invoices: who it is paid to** (21 October 2026, Dominguez: "some
+  invoices go directly to the provider - therefore - the default should be
+  the practice but should be able to create options that you can save and
+  change the pay to info"): the invoice editor has **Pay to**, starting on
+  Domi Healthcare; **+ New pay-to** there, or **Pay-to options** on the list,
+  saves others (`InvoicePayee`: the name at the top of the invoice, address /
+  email / phone lines, who checks are payable to), which managers and admins
+  change or remove. The PDF prints the chosen one at the top and on "Make all
+  checks payable to"; the logo and the office's contact line at the foot stay
+  the practice's. Each invoice keeps a **copy** of its pay-to
+  (`Invoice.payToName` / `payToLines` / `payableTo`, all empty for the
+  practice), so changing an option never changes one already sent. Business
+  details only, no tax ID (the form says so, the schema guard pins it).
+  Migration `20261021020000_invoice_pay_to`; `tests/browser/guides.mjs`.
 - **Forms and guides in their own Resources sections** (20 October 2026,
   Dominguez: "the forms/references should go in the subsections that they
   are supposed to"): the Forms and Reference blocks at the top of Resources

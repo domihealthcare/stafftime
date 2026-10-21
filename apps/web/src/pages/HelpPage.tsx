@@ -2466,6 +2466,13 @@ const MANAGERS: Section[] = [
               download again, mark paid or search for.
             </p>
             <p>
+              <strong>Pay to:</strong> invoices are paid to Domi Healthcare unless you pick another.{' '}
+              <strong>+ New pay-to</strong> in the invoice (or <strong>Pay-to options</strong> on
+              the list) saves one, such as a provider who is paid directly: the name on the invoice,
+              where payment goes and who checks are payable to. Pick it from <strong>Pay to</strong>{' '}
+              next time. Changing an option later leaves invoices already made as they went out.
+            </p>
+            <p>
               <strong>To a patient:</strong> tick <strong>A patient</strong>. Their name, date of
               birth and address go on the PDF you download there and then, and are never saved: the
               copy kept in Domi Staff has them blanked out. Keep that PDF where the practice keeps
