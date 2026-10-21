@@ -1258,6 +1258,35 @@ const PROVIDERS: Section[] = [
   },
 ];
 
+const CME: Section[] = [
+  {
+    title: 'CME',
+    topics: [
+      {
+        question: 'How do I get a CME activity approved?',
+        answer: (
+          <>
+            <p>
+              <Screen>Your CME</Screen>, in the account menu →{' '}
+              <strong>+ Ask for a CME activity</strong>: the course, conference or program, who runs
+              it, in person or online, the days, the credits if you know them, and what it will cost
+              - registration, travel, lodging and anything else. The form adds it up and says how it
+              sits with your allowance for that year. Going past it is allowed: a manager decides.
+            </p>
+            <p>
+              The managers are told at once. You hear back under the bell and by email when it is
+              approved (perhaps at another amount) or not, with their note, and again once it is
+              paid back. While it is still waiting you can <strong>Withdraw</strong> it and ask
+              again. Keep the receipts and certificate yourself: they are not kept in the app. Days
+              away from the office are time off, asked for as usual.
+            </p>
+          </>
+        ),
+      },
+    ],
+  },
+];
+
 const PRODUCTIVITY: Section[] = [
   {
     title: 'Your productivity',
@@ -1301,7 +1330,7 @@ const MANAGERS: Section[] = [
                 <strong>Dashboard</strong> - the week at a glance, and what is waiting on you.
               </li>
               <li>
-                <strong>People</strong> - Staff (admins), Job roles, Licenses, Onboarding &amp;
+                <strong>People</strong> - Staff (admins), Job roles, Licenses, CME, Onboarding &amp;
                 Offboarding and Provider productivity.
               </li>
               <li>
@@ -1598,7 +1627,9 @@ const MANAGERS: Section[] = [
             counted; working from home and open shifts not) are listed on the Schedule banner and in
             the nightly email for the next two weeks, and in <strong>Before you publish</strong>. A
             day counts once anything is on the rota at that office, so an unbuilt week is left to
-            the &ldquo;not published yet&rdquo; reminder. It never stops anything.
+            the &ldquo;not published yet&rdquo; reminder. Press the days under a number to have it
+            apply on some days of the week only - an admin at West New York Monday to Thursday, say.
+            It never stops anything.
           </p>
         ),
       },
@@ -2137,6 +2168,39 @@ const MANAGERS: Section[] = [
             <strong> Back to the usual</strong> undoes it. Both providers are told. Swaps the
             providers agree between themselves happen on their own, and you are told. On call is
             never hours or pay.
+          </p>
+        ),
+      },
+      {
+        question: 'CME requests and allowances',
+        answer: (
+          <p>
+            <Screen>Manage → People → CME</Screen>. A provider&rsquo;s request is under{' '}
+            <strong>Waiting for a decision</strong>, with what it will cost and how it sits with
+            their allowance; you are told under the bell, by email and in the nightly email (the
+            Licenses part). <strong>Approve</strong> takes the amount asked or another, with an
+            optional note; <strong>Decline</strong> needs a reason they will read. Once the practice
+            has paid it back, <strong>Mark paid back</strong> with the day and the amount. Under{' '}
+            <strong>Allowances</strong>, give each provider their CME dollars a calendar year (blank
+            is none); approved requests count against it, at what was paid back once they have been.
+            Going past it warns, never refuses. Never your own: another manager decides those. No
+            receipts or certificates are kept.
+          </p>
+        ),
+      },
+      {
+        question: 'An admin in the office each day',
+        answer: (
+          <p>
+            <Screen>Schedule</Screen> → <strong>Reviews</strong> →{' '}
+            <strong>Admin in the office</strong> → <strong>Change the usual admins</strong>: who is
+            the admin in each office on each day of the week - at West New York, Tatiyana on Monday,
+            Celeste on Tuesday, Kayla on Wednesday and Angelica on Thursday, nobody on Friday. For
+            one day only, press it in the week and choose somebody else or nobody, with a note;{' '}
+            <strong>Back to the usual</strong> undoes it. Everybody sees the week, and the admin
+            sees it on <Screen>Home</Screen>. You also see when they are off or not on the rota at
+            that office that day. That the rota really has somebody in Administrative there is the
+            minimum on <Screen>Manage → People → Job roles</Screen>, set to Monday to Thursday.
           </p>
         ),
       },
@@ -2707,6 +2771,7 @@ function staffGuide(employee: Reader): Section[] {
   return [
     ...STAFF,
     ...(employee?.usesClinicalForms ? PROVIDERS : []),
+    ...(employee?.usesClinicalForms ? CME : []),
     ...(employee && canUseCarePlan(employee) ? CARE_PLAN : []),
     ...(employee && canUseWellnessForm(employee) ? WELLNESS : []),
     ...(employee?.hasProductivity ? PRODUCTIVITY : []),
@@ -2714,7 +2779,7 @@ function staffGuide(employee: Reader): Section[] {
 }
 
 function managersGuide(): Section[] {
-  return [...MANAGERS, ...CARE_PLAN, ...WELLNESS];
+  return [...MANAGERS, ...CARE_PLAN, ...WELLNESS, ...CME];
 }
 
 /// Every Help topic this person can read, as plain text - what Ask Domi Staff

@@ -207,6 +207,35 @@ export class NotificationsService {
     );
   }
 
+  /// A provider asked for a CME activity to be approved: on the bell and by
+  /// email to the managers down for licenses in the round-up (Email
+  /// settings), or all of them when nobody is. The CME screen's banner and
+  /// the nightly email list it too.
+  async cmeAsked(employeeId: string, words: { title: string; body: string }): Promise<void> {
+    const managers = await this.prisma.employee.findMany({
+      where: {
+        role: { in: [Role.MANAGER, Role.ADMIN] },
+        employmentStatus: EmploymentStatus.ACTIVE,
+        id: { not: employeeId },
+      },
+      select: { id: true, email: true, firstName: true, mutedDigestTopics: true },
+    });
+    const deciders = readersOf(DigestTopic.LICENSES, managers);
+    await this.inbox.notify(
+      deciders.map((manager) => manager.id),
+      { kind: NotificationKind.CME, ...words, link: '/cme' },
+    );
+    for (const decider of deciders) {
+      await this.dispatch(decider.email, words.title, [
+        `Hello ${decider.firstName},`,
+        '',
+        words.body,
+        '',
+        `Approve or decline it here: ${this.appUrl}/cme`,
+      ]);
+    }
+  }
+
   /// Managers are not told anything today unless they go and look, which is how
   /// a request sits for a week.
   ///

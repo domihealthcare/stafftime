@@ -10,6 +10,7 @@ const empty = (): DigestContents => ({
   missedShifts: [],
   payrollDue: [],
   correctionsAsked: [],
+  cmeWaiting: [],
   regularShiftClashes: [],
   belowMinimum: [],
   undecidedTimeOff: [],

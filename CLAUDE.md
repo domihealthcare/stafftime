@@ -57,6 +57,8 @@ app does not hold*, its own database) are unchanged by this.
   step was done and by whom — see *Data this app does not hold*, below
 - **EmployeeCredential** — licences and certifications, tracked by expiry date so
   nothing lapses unnoticed. Dates only
+- **CmeRequest** / **CmeAllowance** (October 2026) - a provider's CME activity
+  sent for approval with its costs, and their yearly allowance. No receipts
 - **PayrollExport** — export batch record: date range, target system, status,
   generated file reference (for audit trail / re-export)
 
@@ -1254,6 +1256,49 @@ Beyond the phases, the parts worth knowing about before picking up work:
   still decides on call, schedule reviews, productivity and the AWV page).
   Reimbursements is back on Resources, in the Manager section, fixed to
   managers and admins. `tests/browser/care-plan.mjs`, `guides.mjs`.
+- **CME requests** (21 October 2026, Dominguez: "a CME reimbursement
+  submission form for providers for managers to approve"; "it's not for
+  receipts - it's to approve a cme activity/event"; a **yearly allowance per
+  provider**): `/cme` - **Your CME** in the account menu for providers (a
+  job role with *uses clinical forms*) and **Manage → People → CME** for
+  managers and admins. A provider asks with the activity, who runs it, in
+  person or online and where, the days, credits and four costs (registration,
+  travel, lodging, other); the form adds them up against that year's
+  allowance. Managers **Approve** (that amount or another, optional note),
+  **Decline** (a reason, which they read) and later **Mark paid back** (day
+  and amount); never their own, each decided once. Allowances per provider a
+  calendar year (blank is none), counted from approved requests at what was
+  paid back once it has been; going past it **warns, never refuses**. Told on
+  the bell and by email both ways (managers down for the Licenses part), and
+  in the nightly email under *coming up* while waiting (`cmeWaiting`). **No
+  receipts or certificates kept** - the form says so; the schema guard pins
+  `CmeRequest` and `CmeAllowance`. Not in the payroll export. `src/cme/`
+  (`cme.ts` rules, pure), `pages/CmePage.tsx`, `lib/cme.ts`, migration
+  `20261021010000_cme_and_office_admins` (notification kind `CME`);
+  `tests/browser/cme.mjs`. See *CME requests* in `docs/architecture.md`.
+  Worth carrying to the EMR module.
+- **An admin in the office, and minimums on chosen weekdays** (21 October
+  2026, Dominguez: "we need to have an admin in WNY location daily except
+  Friday - right now the schedule is that Kayla is Wednesday, Tatiyanna is
+  Monday and Celeste is Tuesday and Angelica Notario Thursday"; chosen: a rule
+  plus a list everybody sees). A **staffing minimum can apply on chosen
+  weekdays** (`StaffingMinimum.weekdays`, empty is every day; the days under
+  a number on Job roles), and the migration sets **Administrative at West New
+  York, 1, Monday to Thursday** - so a short day is on the Schedule banner, in
+  the nightly email and in Before you publish, and Too many off at once uses
+  it on those days. It counts shifts **in the Administrative job role**, so
+  **check on the live site that the four have it and their WNY shifts carry
+  it**. **Admin in the office** on Schedule → Reviews (`OfficeAdmin`,
+  `OfficeAdminDay`; like schedule reviews): who per office per weekday, one
+  day changed by a manager with a note, everybody reads it, the admin sees it
+  on **Home**; managers also see when that person is off or not on the rota
+  there. No notifications. The migration loads Tatiyana R Monday, Celeste
+  Tuesday, Kayla B Wednesday, Angelica Notario Thursday, each only when
+  exactly one current person fits: **check it on the live site**.
+  `src/office-admins/`, `staffing/weekdays.ts`,
+  `components/OfficeAdminsCard.tsx`, `components/MyOfficeAdminDays.tsx`;
+  `tests/browser/office-admins.mjs`. See *The admin in the office* in
+  `docs/architecture.md`.
 - **Turned down: "PTO about to be lost"** (9 October 2026, Dominguez): a
   reminder to use PTO before it fails to carry over was proposed and refused —
   not in the practice's interest. Do not propose it again.

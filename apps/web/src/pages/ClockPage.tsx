@@ -27,6 +27,7 @@ import { HomeRequired } from '../components/RequiredItems';
 import { MonthBalancePopup } from '../components/MonthBalancePopup';
 import { OnCallNow } from '../components/OnCallNow';
 import { MyScheduleReviews } from '../components/MyScheduleReviews';
+import { MyOfficeAdminDays } from '../components/MyOfficeAdminDays';
 import { SuggestionBoxCard } from '../components/SuggestionBox';
 import { MyOvertimeNotice } from '../components/OvertimeAlerts';
 import { Alert, Badge, Card, Spinner } from '../components/ui';
@@ -537,6 +538,7 @@ export function ClockPage() {
       >
         <TabletPinReminder />
         <QuickActions />
+        <MyOfficeAdminDays />
         <MyScheduleReviews />
         <OnCallNow />
         <BirthdaysThisWeek />

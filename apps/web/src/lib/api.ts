@@ -137,6 +137,12 @@ import type {
   EmploymentChangeInput,
   PersonalRecordFields,
   SupplyRequest,
+  CmeMine,
+  CmeOverview,
+  CmeRequest,
+  CmeRequestInput,
+  OfficeAdminDays,
+  OfficeAdminPattern,
 } from './types';
 
 /**
@@ -1435,6 +1441,53 @@ export const api = {
   clearScheduleReviewDay: (date: string, providerId: string) =>
     request<ScheduleReviewDays>(`/schedule-reviews/days/${date}/${providerId}`, {
       method: 'DELETE',
+    }),
+  /// Who is the admin in each office, day by day: everybody reads it.
+  officeAdmins: (from: string, to: string) =>
+    request<OfficeAdminDays>(`/office-admins${toQuery({ from, to })}`),
+  officeAdminPattern: () => request<OfficeAdminPattern>('/office-admins/pattern'),
+  saveOfficeAdminPattern: (entries: OfficeAdminPattern['entries']) =>
+    request<OfficeAdminPattern>('/office-admins/pattern', {
+      method: 'PUT',
+      body: JSON.stringify({ entries }),
+    }),
+  setOfficeAdminDay: (
+    date: string,
+    locationId: string,
+    body: { employeeId: string | null; note?: string },
+  ) =>
+    request<OfficeAdminDays>(`/office-admins/days/${date}/${locationId}`, {
+      method: 'PUT',
+      body: JSON.stringify(body),
+    }),
+  clearOfficeAdminDay: (date: string, locationId: string) =>
+    request<OfficeAdminDays>(`/office-admins/days/${date}/${locationId}`, { method: 'DELETE' }),
+  /// CME: providers ask, managers and admins decide.
+  myCme: () => request<CmeMine>('/cme/mine'),
+  askForCme: (body: CmeRequestInput) =>
+    request<CmeRequest>('/cme', { method: 'POST', body: JSON.stringify(body) }),
+  withdrawCme: (id: string) =>
+    request<{ withdrawn: boolean }>(`/cme/${id}/withdraw`, { method: 'POST' }),
+  cmeOverview: () => request<CmeOverview>('/cme'),
+  approveCme: (id: string, body: { approvedCents?: number; note?: string }) =>
+    request<{ approved: boolean }>(`/cme/${id}/approve`, {
+      method: 'POST',
+      body: JSON.stringify(body),
+    }),
+  declineCme: (id: string, reason: string) =>
+    request<{ declined: boolean }>(`/cme/${id}/decline`, {
+      method: 'POST',
+      body: JSON.stringify({ reason }),
+    }),
+  cmeReimbursed: (id: string, body: { reimbursedOn: string; reimbursedCents: number }) =>
+    request<{ reimbursed: boolean }>(`/cme/${id}/reimbursed`, {
+      method: 'POST',
+      body: JSON.stringify(body),
+    }),
+  setCmeAllowance: (employeeId: string, amountCents: number | null) =>
+    request<{ amountCents: number | null }>(`/cme/allowances/${employeeId}`, {
+      method: 'PUT',
+      body: JSON.stringify({ amountCents }),
     }),
   /// The provider on-call schedule: providers, managers and admins.
   onCall: (from: string, to: string) => request<OnCallSchedule>(`/on-call${toQuery({ from, to })}`),

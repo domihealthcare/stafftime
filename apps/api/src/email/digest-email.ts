@@ -136,6 +136,15 @@ const SECTIONS: SectionSpec[] = [
     subject: (n) => `${n} ${plural(n, 'shift', 'shifts')} with no clock-in`,
   },
   {
+    key: 'cmeWaiting',
+    tier: 'soon',
+    // Providers asked for a CME activity to be approved: see cme/cme.service.ts.
+    heading: 'CME requests to decide',
+    path: '/cme',
+    screen: 'CME',
+    subject: (n) => `${n} CME ${plural(n, 'request', 'requests')} to decide`,
+  },
+  {
     key: 'belowMinimum',
     tier: 'soon',
     // The practice's own minimum per office and role: see staffing/minimums.ts.

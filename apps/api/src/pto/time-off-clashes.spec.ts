@@ -76,6 +76,20 @@ describe('findClashes', () => {
     expect(findClashes([{ ...mas, minimum: 5 }], [], weekdays)).toEqual([]);
   });
 
+  it('uses a minimum only on its weekdays, and more than half on the others', () => {
+    // Minimum 3 on Tuesdays only: Ana off on Tuesday is short; on Wednesday,
+    // one of three off is not more than half.
+    const tuesdays = { ...mas, minimum: 3, minimumWeekdays: [2] };
+    const clashes = findClashes(
+      [tuesdays],
+      [off('ana', '2026-12-22'), off('ana', '2026-12-23')],
+      weekdays,
+    );
+    expect(clashes.map((clash) => [clash.from, clash.to, clash.minimum])).toEqual([
+      ['2026-12-22', '2026-12-22', 3],
+    ]);
+  });
+
   it('tells a run of days with the same people off as one, across a weekend it skips', () => {
     const clashes = findClashes(
       [mas],

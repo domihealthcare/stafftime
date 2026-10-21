@@ -39,7 +39,7 @@ export const DIGEST_TOPICS: Record<DigestTopic, (keyof DigestContents)[]> = {
     'punchPatterns',
     'overtimeHeading',
   ],
-  LICENSES: ['expiredCredentials', 'expiringCredentials', 'missingCredentials'],
+  LICENSES: ['expiredCredentials', 'expiringCredentials', 'missingCredentials', 'cmeWaiting'],
   CHECKLISTS: ['overdueTasks'],
   CLOSING: ['closingGaps', 'suppliesNeeded'],
   TIME_CLOCK: ['silentKiosks'],

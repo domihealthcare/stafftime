@@ -53,6 +53,7 @@ const InvoicesPage = lazy(() =>
 const PhoneBookPrintPage = lazy(() =>
   import('./pages/PhoneBookPrintPage').then((m) => ({ default: m.PhoneBookPrintPage })),
 );
+const CmePage = lazy(() => import('./pages/CmePage').then((m) => ({ default: m.CmePage })));
 const VendorsPage = lazy(() =>
   import('./pages/VendorsPage').then((m) => ({ default: m.VendorsPage })),
 );
@@ -249,6 +250,7 @@ function Routed() {
           <Route path="invoices" element={<InvoicesPage />} />
           <Route path="reimbursements" element={<ReimbursementsPage />} />
           <Route path="vendors" element={<VendorsPage />} />
+          <Route path="cme" element={<CmePage />} />
           <Route path="required" element={<RequiredPage />} />
           <Route path="on-call" element={<OnCallPage />} />
           <Route path="schedule-reviews" element={<ScheduleReviewsPage />} />

@@ -5293,3 +5293,74 @@ everyone, else in each chosen role's section the person can see, else under
 Everyone so it is never lost. Managers see every tool, to set it. The Annual
 Wellness Visit is one form in two sections: the Provider section links page 1,
 any other page 2.
+
+## CME requests (October 2026)
+
+Dominguez asked for "a CME reimbursement submission form for providers for
+managers to approve", and then made it plain it is approval of the activity
+itself: "it's not for receipts - it's to approve a cme activity/event". He
+chose a yearly allowance per provider.
+
+- **Who**: a provider is a job role with *uses clinical forms* (`PROVIDER` in
+  `on-call.service.ts`, as for on call and schedule reviews). Only they can ask
+  (`POST /cme`); managers and admins decide (`Role.MANAGER` on the routes),
+  never their own, and settle each request only while it is still `PENDING`
+  (an `updateMany` on the status), so two managers cannot both decide it.
+- **What is kept** (`CmeRequest`): the activity, who runs it, in person or
+  online and where, the days, credits, four cost lines in cents, the
+  provider's reason, the decision (amount approved, who, when, note) and once
+  paid back the day and amount. No receipts, certificates or licence numbers:
+  they stay outside the app, as the form says. The schema guard pins the
+  fields.
+- **The allowance** (`CmeAllowance`): one amount a calendar year per provider,
+  set by managers; no row is no allowance. The year is the year the activity
+  starts. An approved request counts at what was paid back once it has been,
+  else at what was approved; one waiting is shown beside it and never counted.
+  Going past it **warns, never refuses** - on the provider's form, on the
+  waiting request and in the approve pop-up. The rules are in `cme/cme.ts`
+  (pure, unit-tested); the screen's copy of the wording is `web/lib/cme.ts`.
+- **Who is told**: a new request goes on the bell and by email to the managers
+  down for the **Licenses** part of the round-up (or all of them when nobody
+  is), and is in the nightly email under *coming up* (`cmeWaiting`) until it
+  is decided. The provider is told on the bell and by email when it is
+  approved (saying so when the amount differs) or declined (with the reason),
+  and the first time it is recorded paid back. `NotificationKind.CME`.
+- **Where**: `/cme` - "Your CME" in the account menu for providers, and
+  Manage → People → CME for managers (one page, showing each what is theirs).
+- Not in the payroll export: paying it back is the practice's own step.
+
+Worth carrying to the EMR module if it takes the Staff module's provider side.
+
+## The admin in the office, and minimums on chosen weekdays (October 2026)
+
+Dominguez: "we need to have an admin in WNY location daily except Friday -
+right now the schedule is that Kayla is Wednesday, Tatiyanna is Monday and
+Celeste is Tuesday and Angelica Notario Thursday". He chose a rule plus a
+list everybody sees. Two pieces, deliberately separate:
+
+- **The rule**: a `StaffingMinimum` may now apply on chosen weekdays only
+  (`weekdays`, 1 = Monday ... 7 = Sunday; empty is every day, and all seven are
+  saved as empty). `findShortDays` skips other weekdays, and Too many off at
+  once uses the minimum only on its weekdays, falling back to "more than half"
+  on the rest (`appliesOn`, in `staffing/weekdays.ts` so neither file imports
+  the other). On Job roles, the days under a number open the weekday
+  buttons. The migration sets **Administrative at West New York, 1, Monday to
+  Thursday**, so a day the rota there has nobody in Administrative is on the
+  Schedule banner, in the nightly email and in Before you publish. It counts
+  shifts in the Administrative job role: someone covering it under another
+  role does not count.
+- **The list** (`OfficeAdmin`, `OfficeAdminDay`; `office-admins/`): who the
+  admin is in each office on each weekday, with one day changed by a manager
+  (somebody else or nobody, with a note), today or later only, the same shape
+  as schedule reviews. Somebody who has left counts as nobody. Shown on
+  **Schedule → Reviews** as *Admin in the office* for the week on screen, to
+  everybody once any office has a pattern, and on the admin's **Home** (today
+  and the next days, three at most). Managers also see, per day, whether that
+  person is **off** (approved time off) or **not on the rota at that office**
+  (drafts count, working from home does not), and a day the pattern wants
+  somebody with nobody. No notifications. The migration loads West New York:
+  Tatiyana R Monday, Celeste Tuesday, Kayla B Wednesday, Angelica Notario
+  Thursday, each only when exactly one current person fits the name.
+
+The list says who; the rota is still where they are put, and the minimum is
+what checks it.

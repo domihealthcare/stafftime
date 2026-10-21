@@ -1,4 +1,4 @@
-import { describeShortDay, findShortDays, Minimum, OnDuty } from './minimums';
+import { appliesOn, describeShortDay, findShortDays, Minimum, OnDuty } from './minimums';
 
 const frontDesk: Minimum = {
   locationId: 'nb',
@@ -7,6 +7,7 @@ const frontDesk: Minimum = {
   jobRoleName: 'Front Desk',
   jobRoleOrder: 1,
   minimum: 2,
+  weekdays: [],
 };
 const duty = (employeeId: string, date: string, overrides: Partial<OnDuty> = {}): OnDuty => ({
   employeeId,
@@ -50,5 +51,16 @@ describe('days below the minimum', () => {
       'North Bergen, Tue, Oct 13: nobody in Front Desk on the rota, minimum 2',
     );
     expect(findShortDays([frontDesk], [], () => [])).toEqual([]);
+  });
+
+  it('applies on its weekdays only, and every day when none are chosen', () => {
+    // Mon 12 to Fri 16 October 2026; an admin wanted Monday to Thursday.
+    const week = () => ['2026-10-12', '2026-10-13', '2026-10-14', '2026-10-15', '2026-10-16'];
+    const monToThu = { ...frontDesk, minimum: 1, weekdays: [1, 2, 3, 4] };
+    expect(findShortDays([monToThu], [duty('ana', '2026-10-13')], week).map((d) => d.date)).toEqual(
+      ['2026-10-12', '2026-10-14', '2026-10-15'],
+    );
+    expect(appliesOn([], '2026-10-16')).toBe(true);
+    expect(appliesOn([1, 2, 3, 4], '2026-10-16')).toBe(false);
   });
 });
