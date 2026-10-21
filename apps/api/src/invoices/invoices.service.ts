@@ -3,8 +3,8 @@ import { InvoiceBillTo, InvoiceStatus, Prisma } from '@prisma/client';
 import { AuthUser } from '../common/auth/auth-user';
 import { isoDate } from '../common/util/calendar-date.util';
 import { PrismaService } from '../prisma/prisma.service';
-import { InvoiceInput, PayeeInput } from './dto/invoices.dto';
-import { invoiceProblem, payeeProblem } from './invoice-rules';
+import { InvoiceInput, PayeeInput, VendorInput } from './dto/invoices.dto';
+import { invoiceProblem, payeeProblem, vendorProblem } from './invoice-rules';
 
 const SELECT = {
   id: true,
@@ -31,6 +31,7 @@ const SELECT = {
 type Row = Prisma.InvoiceGetPayload<{ select: typeof SELECT }>;
 
 const PAYEE = { id: true, name: true, lines: true, payableTo: true } as const;
+const VENDOR = { id: true, name: true, address: true } as const;
 
 const day = (text: string) => new Date(`${text}T00:00:00.000Z`);
 
@@ -52,6 +53,45 @@ export class InvoicesService {
       this.prisma.invoice.aggregate({ _max: { number: true } }),
     ]);
     return { invoices: rows.map(present), nextNumber: (last._max.number ?? 0) + 1 };
+  }
+
+  /// Saved vendors to bill, picked in the editor to fill in who it is to.
+  vendors() {
+    return this.prisma.invoiceVendor.findMany({ orderBy: { name: 'asc' }, select: VENDOR });
+  }
+
+  async createVendor(dto: VendorInput, actor: AuthUser) {
+    const row = await this.prisma.invoiceVendor.create({
+      data: { ...vendorData(dto), createdById: actor.id },
+      select: VENDOR,
+    });
+    this.logger.log(`Invoice vendor ${row.id} saved by ${actor.id}`);
+    return row;
+  }
+
+  /// Invoices already made keep who they were to.
+  async updateVendor(id: string, dto: VendorInput, actor: AuthUser) {
+    await this.findVendor(id);
+    const row = await this.prisma.invoiceVendor.update({
+      where: { id },
+      data: vendorData(dto),
+      select: VENDOR,
+    });
+    this.logger.log(`Invoice vendor ${id} changed by ${actor.id}`);
+    return row;
+  }
+
+  async removeVendor(id: string, actor: AuthUser) {
+    await this.findVendor(id);
+    await this.prisma.invoiceVendor.delete({ where: { id } });
+    this.logger.log(`Invoice vendor ${id} removed by ${actor.id}`);
+    return { removed: true };
+  }
+
+  private async findVendor(id: string) {
+    const row = await this.prisma.invoiceVendor.findUnique({ where: { id }, select: { id: true } });
+    if (!row) throw new NotFoundException('That saved vendor is no longer there.');
+    return row;
   }
 
   /// The saved "Pay to" options; the practice itself is not one of them.
@@ -177,6 +217,12 @@ export class InvoicesService {
       sortOrder: index,
     }));
   }
+}
+
+function vendorData(dto: VendorInput) {
+  const problem = vendorProblem(dto);
+  if (problem) throw new BadRequestException(problem);
+  return { name: dto.name.trim(), address: (dto.address ?? '').trim() || null };
 }
 
 function payeeData(dto: PayeeInput) {

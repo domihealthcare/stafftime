@@ -1,5 +1,5 @@
 import { InvoiceBillTo } from '@prisma/client';
-import { invoiceNumberLabel, invoiceProblem, payeeProblem } from './invoice-rules';
+import { invoiceNumberLabel, invoiceProblem, payeeProblem, vendorProblem } from './invoice-rules';
 
 describe('invoice rules', () => {
   const base = { issuedOn: '2026-10-05' };
@@ -36,6 +36,11 @@ describe('invoice rules', () => {
     expect(invoiceNumberLabel(1)).toBe('#001');
     expect(invoiceNumberLabel(42)).toBe('#042');
     expect(invoiceNumberLabel(1234)).toBe('#1234');
+  });
+
+  it('needs a name for a saved vendor', () => {
+    expect(vendorProblem({ name: ' ' })).toMatch(/name/);
+    expect(vendorProblem({ name: 'Acme Labs' })).toBeNull();
   });
 
   it('needs a name and who checks are payable to for a pay-to', () => {

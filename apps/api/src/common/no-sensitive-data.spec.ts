@@ -244,6 +244,10 @@ describe('what this app deliberately does not store', () => {
     expect(fieldsOf('InvoicePayee')).toEqual(
       ['createdAt', 'createdById', 'id', 'lines', 'name', 'payableTo', 'updatedAt'].sort(),
     );
+    // Saved vendors to bill: businesses only, never a patient.
+    expect(fieldsOf('InvoiceVendor')).toEqual(
+      ['address', 'createdAt', 'createdById', 'id', 'name', 'updatedAt'].sort(),
+    );
     expect(fieldsOf('InvoiceLine')).toEqual(
       ['amountCents', 'description', 'id', 'invoice', 'invoiceId', 'sortOrder'].sort(),
     );

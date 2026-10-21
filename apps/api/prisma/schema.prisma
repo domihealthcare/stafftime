@@ -3662,6 +3662,23 @@ model InvoicePayee {
   @@map("invoice_payees")
 }
 
+/// A saved vendor or business to bill (October 2026, Dominguez: "have a way
+/// to save the vendor information"): picked in the invoice editor to fill
+/// in who it is to. Businesses only, never a patient. Each invoice keeps its
+/// own copy (`billToName`, `billToAddress`), so changing one here leaves
+/// invoices already sent alone.
+model InvoiceVendor {
+  id          String   @id @default(uuid()) @db.Uuid
+  name        String
+  /// Address and email, one per line.
+  address     String?
+  createdById String?  @db.Uuid
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@map("invoice_vendors")
+}
+
 model InvoiceLine {
   id          String  @id @default(uuid()) @db.Uuid
   invoiceId   String  @db.Uuid

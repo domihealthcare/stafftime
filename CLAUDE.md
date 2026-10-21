@@ -1229,7 +1229,13 @@ Beyond the phases, the parts worth knowing about before picking up work:
   (`Invoice.payToName` / `payToLines` / `payableTo`, all empty for the
   practice), so changing an option never changes one already sent. Business
   details only, no tax ID (the form says so, the schema guard pins it).
-  Migration `20261021020000_invoice_pay_to`; `tests/browser/guides.mjs`.
+  Migration `20261021020000_invoice_pay_to`. **Saved vendors** the same day
+  (Dominguez: "also have a way to save the vendor information"):
+  **Saved vendor** in the editor fills in who it is to, **Save this vendor
+  for next time** saves what was typed (or updates the saved one of that
+  name), and **Saved vendors** on the list changes or removes them
+  (`InvoiceVendor`, migration `20261021030000_invoice_saved_vendors`);
+  invoices keep their own copy. `tests/browser/guides.mjs`.
 - **Forms and guides in their own Resources sections** (20 October 2026,
   Dominguez: "the forms/references should go in the subsections that they
   are supposed to"): the Forms and Reference blocks at the top of Resources

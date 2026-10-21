@@ -421,6 +421,44 @@ await step('a pay-to option is saved, picked, printed, and kept on the invoice w
   if (tried.status !== 403) throw new Error(`staff read the pay-to options: ${tried.status}`);
 });
 
+await step('a vendor is saved from the editor, picked next time, changed and removed', async () => {
+  await manager.getByRole('button', { name: '+ New invoice' }).click();
+  let dialog = manager.getByTestId('invoice-editor');
+  await dialog.getByLabel('Name', { exact: true }).fill('Savedvendor Testco');
+  await dialog.getByLabel('Address and email').fill('12 Vendor Rd\nbilling@testco.example');
+  await dialog.getByRole('button', { name: 'Save this vendor for next time' }).click();
+  await dialog.getByText('Saved for next time.').waitFor({ timeout: 10000 });
+  await dialog.getByRole('button', { name: 'Save this vendor for next time' }).waitFor({ state: 'detached', timeout: 10000 });
+  await dialog.getByRole('button', { name: 'Cancel' }).click();
+
+  await manager.getByRole('button', { name: '+ New invoice' }).click();
+  dialog = manager.getByTestId('invoice-editor');
+  await dialog.getByLabel('Saved vendor').selectOption({ label: 'Savedvendor Testco' });
+  if ((await dialog.getByLabel('Name', { exact: true }).inputValue()) !== 'Savedvendor Testco') throw new Error('name not filled');
+  if (!(await dialog.getByLabel('Address and email').inputValue()).includes('billing@testco.example')) throw new Error('address not filled');
+  // A changed address offers to update the saved one, not make a second.
+  await dialog.getByLabel('Address and email').fill('14 Vendor Rd');
+  await dialog.getByRole('button', { name: /Update the saved Savedvendor Testco/ }).waitFor();
+  await dialog.getByRole('button', { name: 'Cancel' }).click();
+
+  await manager.getByRole('button', { name: 'Saved vendors' }).click();
+  const list = manager.getByTestId('vendors-manager');
+  const row = list.getByTestId('vendor-row').filter({ hasText: 'Savedvendor Testco' });
+  await row.getByRole('button', { name: 'Edit' }).click();
+  await list.getByLabel('Vendor address and email').fill('20 Moved Vendor Ave');
+  await list.getByRole('button', { name: 'Save changes' }).click();
+  await list.getByText('20 Moved Vendor Ave').waitFor({ timeout: 10000 });
+  await row.getByRole('button', { name: 'Remove' }).click();
+  await manager.getByRole('alertdialog').getByRole('button', { name: 'Yes, remove it' }).click();
+  await row.waitFor({ state: 'detached', timeout: 10000 });
+  await list.getByRole('button', { name: 'Done' }).click();
+
+  const tried = await call(staff, '/invoices/vendors');
+  if (tried.status !== 403) throw new Error(`staff read the saved vendors: ${tried.status}`);
+  const empty = await call(manager, '/invoices/vendors', { method: 'POST', body: JSON.stringify({ name: ' ' }) });
+  if (empty.status !== 400) throw new Error(`a nameless vendor answered ${empty.status}`);
+});
+
 await step('an invoice is marked paid, found by search, and removed', async () => {
   const row = manager.getByTestId('invoice-row').filter({ hasText: 'Acme Testlabs' });
   await row.getByRole('button', { name: 'Edit' }).click();

@@ -2305,6 +2305,14 @@ export interface InvoiceInput {
   lines: { description: string; amountCents: number }[];
 }
 
+/// A saved vendor or business to bill. Never a patient.
+export interface InvoiceVendor {
+  id: string;
+  name: string;
+  /// Address and email, one per line.
+  address: string | null;
+}
+
 /// A saved "Pay to" for invoices, such as a provider paid directly.
 export interface InvoicePayee {
   id: string;

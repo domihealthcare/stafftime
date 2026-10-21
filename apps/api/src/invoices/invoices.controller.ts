@@ -3,7 +3,7 @@ import { Role } from '@prisma/client';
 import { AuthUser } from '../common/auth/auth-user';
 import { CurrentUser } from '../common/auth/current-user.decorator';
 import { Roles } from '../common/auth/roles.decorator';
-import { InvoiceInput, PayeeInput } from './dto/invoices.dto';
+import { InvoiceInput, PayeeInput, VendorInput } from './dto/invoices.dto';
 import { InvoicesService } from './invoices.service';
 
 /// Invoices: managers and admins only (Dominguez, October 2026).
@@ -15,6 +15,31 @@ export class InvoicesController {
   @Get()
   list() {
     return this.invoices.list();
+  }
+
+  /// Saved vendors to bill.
+  @Get('vendors')
+  vendors() {
+    return this.invoices.vendors();
+  }
+
+  @Post('vendors')
+  createVendor(@Body() dto: VendorInput, @CurrentUser() user: AuthUser) {
+    return this.invoices.createVendor(dto, user);
+  }
+
+  @Put('vendors/:id')
+  updateVendor(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Body() dto: VendorInput,
+    @CurrentUser() user: AuthUser,
+  ) {
+    return this.invoices.updateVendor(id, dto, user);
+  }
+
+  @Delete('vendors/:id')
+  removeVendor(@Param('id', ParseUUIDPipe) id: string, @CurrentUser() user: AuthUser) {
+    return this.invoices.removeVendor(id, user);
   }
 
   /// Saved "Pay to" options. Declared before ':id' so they are not read as one.

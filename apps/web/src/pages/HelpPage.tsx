@@ -2473,6 +2473,13 @@ const MANAGERS: Section[] = [
               next time. Changing an option later leaves invoices already made as they went out.
             </p>
             <p>
+              <strong>Saved vendors:</strong> after typing a vendor, press{' '}
+              <strong>Save this vendor for next time</strong>; on the next invoice pick them from{' '}
+              <strong>Saved vendor</strong> and their name and address are filled in.{' '}
+              <strong>Saved vendors</strong> on the list changes or removes them. Businesses only,
+              never a patient.
+            </p>
+            <p>
               <strong>To a patient:</strong> tick <strong>A patient</strong>. Their name, date of
               birth and address go on the PDF you download there and then, and are never saved: the
               copy kept in Domi Staff has them blanked out. Keep that PDF where the practice keeps

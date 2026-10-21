@@ -5281,6 +5281,16 @@ a saved option. The logo and the office's contact line at the foot stay the
 practice's. Business details only: the form says no tax ID or social
 security number, and the schema guard pins the fields.
 
+**Saved vendors** (21 October 2026, Dominguez: "also have a way to save the
+vendor information"): `InvoiceVendor` (name, address and email lines), under
+`/invoices/vendors`, managers and admins. In the editor, **Saved vendor**
+fills in the name and address; it shows whichever saved one matches what is
+typed, so it follows hand edits. **Save this vendor for next time** saves
+what is typed, or, when a saved vendor has that name, updates it instead of
+making a second. The invoice still keeps its own `billToName` /
+`billToAddress`, so changing a saved vendor leaves sent invoices alone.
+Businesses only: a patient's invoice never shows it.
+
 ## Who uses each form and guide (October 2026)
 
 Dominguez asked for managers to make a form "available for either one group

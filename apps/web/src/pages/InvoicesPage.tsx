@@ -32,6 +32,7 @@ import type {
   InvoiceInput,
   InvoicePayee,
   InvoiceStatus,
+  InvoiceVendor,
   PayeeInput,
 } from '../lib/types';
 
@@ -50,6 +51,7 @@ import type {
  * Dominguez: "some invoices go directly to the provider"): saved options,
  * kept by managers and admins, and each invoice keeps a copy of the one it
  * went out with, so changing an option later leaves sent invoices alone.
+ * Vendors billed often are saved too, and picked to fill in who it is to.
  */
 export function InvoicesPage() {
   const isManager = useIsManager();
@@ -60,7 +62,16 @@ export function InvoicesPage() {
   const [search, setSearch] = useState('');
   const [payees, setPayees] = useState<InvoicePayee[]>([]);
   const [managingPayees, setManagingPayees] = useState(false);
+  const [vendors, setVendors] = useState<InvoiceVendor[]>([]);
+  const [managingVendors, setManagingVendors] = useState(false);
   const confirm = useConfirm();
+
+  const loadVendors = useCallback(() => {
+    api
+      .invoiceVendors()
+      .then(setVendors)
+      .catch(() => setError('Could not load the saved vendors.'));
+  }, []);
 
   const loadPayees = useCallback(() => {
     api
@@ -84,8 +95,9 @@ export function InvoicesPage() {
     if (isManager) {
       load();
       loadPayees();
+      loadVendors();
     }
-  }, [isManager, load, loadPayees]);
+  }, [isManager, load, loadPayees, loadVendors]);
 
   // Earlier lines, offered as you type a new one.
   const usedLines = useMemo(() => {
@@ -156,6 +168,13 @@ export function InvoicesPage() {
           onClick={() => setManagingPayees(true)}
         >
           Pay-to options
+        </button>
+        <button
+          type="button"
+          className={buttonClass('secondary')}
+          onClick={() => setManagingVendors(true)}
+        >
+          Saved vendors
         </button>
         <input
           type="search"
@@ -247,6 +266,8 @@ export function InvoicesPage() {
           usedLines={usedLines}
           payees={payees}
           onPayeeSaved={loadPayees}
+          vendors={vendors}
+          onVendorSaved={loadVendors}
           onClose={() => setEditing(null)}
           onSaved={() => {
             setEditing(null);
@@ -259,6 +280,13 @@ export function InvoicesPage() {
           payees={payees}
           onChanged={loadPayees}
           onClose={() => setManagingPayees(false)}
+        />
+      )}
+      {managingVendors && (
+        <VendorsManager
+          vendors={vendors}
+          onChanged={loadVendors}
+          onClose={() => setManagingVendors(false)}
         />
       )}
     </div>
@@ -512,6 +540,205 @@ function PayeesManager({
   );
 }
 
+/// A saved vendor, new or changed.
+function VendorForm({
+  vendor,
+  onSaved,
+  onCancel,
+}: {
+  vendor: InvoiceVendor | null;
+  onSaved: () => void;
+  onCancel: () => void;
+}) {
+  const [name, setName] = useState(vendor?.name ?? '');
+  const [address, setAddress] = useState(vendor?.address ?? '');
+  const [problem, setProblem] = useState<string | null>(null);
+  const [saving, setSaving] = useState(false);
+
+  const save = async () => {
+    if (!name.trim()) {
+      setProblem('Give the vendor a name.');
+      return;
+    }
+    setSaving(true);
+    setProblem(null);
+    try {
+      await api.saveInvoiceVendor(vendor?.id ?? null, { name, address });
+      onSaved();
+    } catch (err) {
+      setProblem(err instanceof ApiError ? err.message : 'That did not save. Try again.');
+      setSaving(false);
+    }
+  };
+
+  return (
+    <div
+      className="space-y-3 rounded-lg bg-slate-50 p-3 ring-1 ring-inset ring-slate-200"
+      data-testid="vendor-form"
+    >
+      <Field label="Vendor name">
+        {(props) => (
+          <input
+            {...props}
+            className={inputClass}
+            maxLength={160}
+            value={name}
+            onChange={(event) => setName(event.target.value)}
+          />
+        )}
+      </Field>
+      <Field
+        label="Vendor address and email"
+        hint="One per line. Businesses only, never a patient."
+      >
+        {(props) => (
+          <textarea
+            {...props}
+            rows={3}
+            className={inputClass}
+            maxLength={500}
+            value={address}
+            onChange={(event) => setAddress(event.target.value)}
+          />
+        )}
+      </Field>
+      {problem && <Alert>{problem}</Alert>}
+      <div className="flex flex-wrap justify-end gap-2">
+        <button type="button" className={buttonClass('secondary', 'sm')} onClick={onCancel}>
+          Cancel
+        </button>
+        <button
+          type="button"
+          className={buttonClass('primary', 'sm')}
+          disabled={saving}
+          onClick={() => void save()}
+        >
+          {saving ? 'Saving...' : vendor ? 'Save changes' : 'Save this vendor'}
+        </button>
+      </div>
+    </div>
+  );
+}
+
+/// The saved vendors: added, changed and removed.
+function VendorsManager({
+  vendors,
+  onChanged,
+  onClose,
+}: {
+  vendors: InvoiceVendor[];
+  onChanged: () => void;
+  onClose: () => void;
+}) {
+  const [editing, setEditing] = useState<InvoiceVendor | 'new' | null>(null);
+  const [problem, setProblem] = useState<string | null>(null);
+  const confirm = useConfirm();
+
+  const remove = async (vendor: InvoiceVendor) => {
+    const sure = await confirm({
+      title: `Remove ${vendor.name} from the saved vendors?`,
+      body: 'Invoices already made to them stay as they are.',
+      confirmLabel: 'Yes, remove it',
+    });
+    if (!sure) return;
+    try {
+      await api.deleteInvoiceVendor(vendor.id);
+      onChanged();
+    } catch (err) {
+      setProblem(err instanceof ApiError ? err.message : 'Could not remove that vendor.');
+    }
+  };
+
+  return (
+    <Modal title="Saved vendors" onClose={onClose} wide testId="vendors-manager">
+      <div className="space-y-3">
+        <p className="text-sm text-slate-600">
+          Vendors and businesses you bill, to pick on a new invoice instead of typing them again.
+          Changing one leaves invoices already made as they went out.
+        </p>
+        {problem && <Alert>{problem}</Alert>}
+        {vendors.length === 0 && editing !== 'new' && (
+          <p className="text-sm text-slate-600">None saved yet.</p>
+        )}
+        {vendors.length > 0 && (
+          <div className="divide-y divide-slate-100 rounded-lg ring-1 ring-slate-200">
+            {vendors.map((vendor) =>
+              editing !== 'new' && editing?.id === vendor.id ? (
+                <div key={vendor.id} className="p-3">
+                  <VendorForm
+                    vendor={vendor}
+                    onCancel={() => setEditing(null)}
+                    onSaved={() => {
+                      setEditing(null);
+                      onChanged();
+                    }}
+                  />
+                </div>
+              ) : (
+                <div
+                  key={vendor.id}
+                  className="flex flex-wrap items-start justify-between gap-3 p-3"
+                  data-testid="vendor-row"
+                >
+                  <div className="text-sm text-slate-700">
+                    <p className="font-semibold text-slate-900">{vendor.name}</p>
+                    {splitLines(vendor.address).map((line, index) => (
+                      <p key={index}>{line}</p>
+                    ))}
+                  </div>
+                  <div className="flex gap-1">
+                    <button
+                      type="button"
+                      className={buttonClass('secondary', 'sm')}
+                      onClick={() => setEditing(vendor)}
+                    >
+                      Edit
+                    </button>
+                    <button
+                      type="button"
+                      className={buttonClass('secondary', 'sm')}
+                      onClick={() => void remove(vendor)}
+                    >
+                      Remove
+                    </button>
+                  </div>
+                </div>
+              ),
+            )}
+          </div>
+        )}
+        {editing === 'new' ? (
+          <VendorForm
+            vendor={null}
+            onCancel={() => setEditing(null)}
+            onSaved={() => {
+              setEditing(null);
+              onChanged();
+            }}
+          />
+        ) : (
+          <button
+            type="button"
+            className="text-sm font-medium text-brand-700 hover:text-brand-900"
+            onClick={() => setEditing('new')}
+          >
+            + Add a vendor
+          </button>
+        )}
+        <div className="flex justify-end">
+          <button type="button" className={buttonClass('secondary')} onClick={onClose}>
+            Done
+          </button>
+        </div>
+      </div>
+    </Modal>
+  );
+}
+
+/// Name and address as typed, the same either way round in spacing.
+const sameVendor = (vendor: InvoiceVendor, name: string, address: string) =>
+  vendor.name.trim() === name.trim() && (vendor.address ?? '').trim() === address.trim();
+
 interface PatientDetails {
   name: string;
   dob: string;
@@ -559,6 +786,8 @@ function InvoiceEditor({
   usedLines,
   payees,
   onPayeeSaved,
+  vendors,
+  onVendorSaved,
   onClose,
   onSaved,
 }: {
@@ -567,6 +796,8 @@ function InvoiceEditor({
   usedLines: string[];
   payees: InvoicePayee[];
   onPayeeSaved: () => void;
+  vendors: InvoiceVendor[];
+  onVendorSaved: () => void;
   onClose: () => void;
   onSaved: () => void;
 }) {
@@ -610,6 +841,28 @@ function InvoiceEditor({
     : payChoice === KEPT_CHOICE
       ? kept
       : null;
+
+  // Saved vendors: the one matching what is typed, and one of the same name
+  // (saving then updates it rather than making a second).
+  const matchedVendor = vendors.find((vendor) => sameVendor(vendor, name, address)) ?? null;
+  const sameNameVendor =
+    vendors.find((vendor) => vendor.name.trim().toLowerCase() === name.trim().toLowerCase()) ??
+    null;
+  const [vendorNote, setVendorNote] = useState<string | null>(null);
+  const [savingVendor, setSavingVendor] = useState(false);
+
+  const saveVendor = async () => {
+    setSavingVendor(true);
+    setVendorNote(null);
+    try {
+      await api.saveInvoiceVendor(sameNameVendor?.id ?? null, { name, address });
+      onVendorSaved();
+      setVendorNote(sameNameVendor ? 'Saved vendor updated.' : 'Saved for next time.');
+    } catch (err) {
+      setVendorNote(err instanceof ApiError ? err.message : 'That did not save. Try again.');
+    }
+    setSavingVendor(false);
+  };
 
   const cents = lines.map((line) => toCents(line.amount));
   const total = cents.reduce<number>((sum, value) => sum + (value ?? 0), 0);
@@ -756,30 +1009,73 @@ function InvoiceEditor({
             </Field>
           </div>
         ) : (
-          <div className="grid gap-3 sm:grid-cols-2">
-            <Field label="Name">
-              {(props) => (
-                <input
-                  {...props}
-                  className={inputClass}
-                  maxLength={160}
-                  value={name}
-                  onChange={(event) => setName(event.target.value)}
-                />
-              )}
-            </Field>
-            <Field label="Address and email" hint="One per line.">
-              {(props) => (
-                <textarea
-                  {...props}
-                  rows={3}
-                  className={inputClass}
-                  maxLength={500}
-                  value={address}
-                  onChange={(event) => setAddress(event.target.value)}
-                />
-              )}
-            </Field>
+          <div className="space-y-3">
+            {vendors.length > 0 && (
+              <Field label="Saved vendor">
+                {(props) => (
+                  <select
+                    {...props}
+                    className={inputClass}
+                    value={matchedVendor?.id ?? ''}
+                    onChange={(event) => {
+                      const picked = vendors.find((vendor) => vendor.id === event.target.value);
+                      setName(picked?.name ?? '');
+                      setAddress(picked?.address ?? '');
+                      setVendorNote(null);
+                    }}
+                  >
+                    <option value="">Type a new one</option>
+                    {vendors.map((vendor) => (
+                      <option key={vendor.id} value={vendor.id}>
+                        {vendor.name}
+                      </option>
+                    ))}
+                  </select>
+                )}
+              </Field>
+            )}
+            <div className="grid gap-3 sm:grid-cols-2">
+              <Field label="Name">
+                {(props) => (
+                  <input
+                    {...props}
+                    className={inputClass}
+                    maxLength={160}
+                    value={name}
+                    onChange={(event) => setName(event.target.value)}
+                  />
+                )}
+              </Field>
+              <Field label="Address and email" hint="One per line.">
+                {(props) => (
+                  <textarea
+                    {...props}
+                    rows={3}
+                    className={inputClass}
+                    maxLength={500}
+                    value={address}
+                    onChange={(event) => setAddress(event.target.value)}
+                  />
+                )}
+              </Field>
+            </div>
+            {name.trim() && !matchedVendor && (
+              <button
+                type="button"
+                className="text-sm font-medium text-brand-700 hover:text-brand-900"
+                disabled={savingVendor}
+                onClick={() => void saveVendor()}
+              >
+                {sameNameVendor
+                  ? `Update the saved ${sameNameVendor.name} with these details`
+                  : 'Save this vendor for next time'}
+              </button>
+            )}
+            {vendorNote && (
+              <p className="text-sm text-slate-600" role="status">
+                {vendorNote}
+              </p>
+            )}
           </div>
         )}
 

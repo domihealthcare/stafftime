@@ -19,6 +19,18 @@ import {
 
 const DATE_ONLY = /^\d{4}-\d{2}-\d{2}$/;
 
+/// A saved vendor to bill.
+export class VendorInput {
+  @IsString()
+  @MaxLength(160)
+  name!: string;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(500)
+  address?: string;
+}
+
 /// A saved "Pay to", or the one an invoice goes out with.
 export class PayeeInput {
   @IsString()

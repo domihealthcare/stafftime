@@ -72,6 +72,7 @@ import type {
   Invoice,
   InvoiceInput,
   InvoicePayee,
+  InvoiceVendor,
   PayeeInput,
   ToolSetting,
   ReimbursementsBoard,
@@ -1723,6 +1724,14 @@ export const api = {
     }),
   deleteInvoice: (id: string) =>
     request<{ removed: true }>(`/invoices/${id}`, { method: 'DELETE' }),
+  invoiceVendors: () => request<InvoiceVendor[]>('/invoices/vendors'),
+  saveInvoiceVendor: (id: string | null, body: { name: string; address: string }) =>
+    request<InvoiceVendor>(id ? `/invoices/vendors/${id}` : '/invoices/vendors', {
+      method: id ? 'PUT' : 'POST',
+      body: JSON.stringify(body),
+    }),
+  deleteInvoiceVendor: (id: string) =>
+    request<{ removed: true }>(`/invoices/vendors/${id}`, { method: 'DELETE' }),
   invoicePayees: () => request<InvoicePayee[]>('/invoices/payees'),
   saveInvoicePayee: (id: string | null, body: PayeeInput) =>
     request<InvoicePayee>(id ? `/invoices/payees/${id}` : '/invoices/payees', {
