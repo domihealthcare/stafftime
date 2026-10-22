@@ -41,8 +41,9 @@ import {
  * the same screen - a row of roles above the list narrows it to the people in
  * one, and the roles themselves are kept at the bottom. Managers, who keep the
  * job roles, now open this screen too: they see the cards and the job roles,
- * and none of the admin's tools (adding people, Edit, welcome emails, sign-in
- * details), which the server refuses them anyway.
+ * and none of the admin's tools (adding people, Profile, welcome emails,
+ * sign-in details), which the server refuses them anyway; Edit opens the
+ * editor for them as it always did (read, no photo, no save).
  */
 export function StaffPage() {
   const { employee: me } = useSession();
@@ -473,8 +474,8 @@ function StaffCard({
   isMe: boolean;
   /// Admins only: the name opens their staff profile (address, pay, time off).
   canOpenProfile: boolean;
-  /// Admins only: Edit, and the sign-in and ADP details under the line. A
-  /// manager's card is the Directory's, plus access and job roles.
+  /// Admins only: the sign-in and ADP details under the line. A manager's
+  /// card is the Directory's, plus access and job roles, and Edit.
   canEdit: boolean;
   onEdit: () => void;
 }) {
@@ -570,16 +571,17 @@ function StaffCard({
                 Profile
               </Link>
             )}
-            {canEdit && (
-              <button
-                type="button"
-                onClick={onEdit}
-                aria-label={`Edit ${person.firstName} ${person.lastName}`}
-                className={buttonClass('secondary', 'sm')}
-              >
-                Edit
-              </button>
-            )}
+            {/* A manager's Edit opens the editor as it always did: it shows
+                them the person (licenses included) and hides the photo and
+                sign-in tools; the server refuses them a save. */}
+            <button
+              type="button"
+              onClick={onEdit}
+              aria-label={`Edit ${person.firstName} ${person.lastName}`}
+              className={buttonClass('secondary', 'sm')}
+            >
+              Edit
+            </button>
           </span>
         </div>
       </div>

@@ -4711,10 +4711,13 @@ screen has loaded.
 **Who opens it.** The Staff screen had been the admins' (8 October 2026:
 only an admin can save there). Managers keep the job roles, so the merged
 screen is open to managers as well, and the admin's tools are simply not
-rendered for them: adding people (one or several), **Edit**, **Profile**,
-the welcome emails and the who-never-signed-in card, and on each card the
-ADP File #, password and PIN status. What a manager sees on a card is what
-the Directory already shows them, plus the access badge and the job roles.
+rendered for them: adding people (one or several), **Profile**, the welcome
+emails and the who-never-signed-in card, and on each card the ADP File #,
+password and PIN status. What a manager sees on a card is what the Directory
+already shows them, plus the access badge, the job roles and **Edit** - which
+a manager at `/staff` always had: the editor shows them the person and their
+licenses, hides the photo and the sign-in tools, and the server refuses them
+a save (`PATCH /employees/:id` is admins').
 The server-side permissions did not change: `GET /employees` and
 `GET /locations` were already managers', and everything a manager cannot
 see is refused on the API. The right-click **Open in Staff** stays admins'

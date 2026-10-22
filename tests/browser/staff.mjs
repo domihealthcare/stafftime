@@ -165,8 +165,14 @@ await step('a manager opens Staff too - the cards and the job roles, none of the
   await manager.getByRole('button', { name: '+ New job role' }).waitFor();
   for (const name of ['+ Add someone', 'Add several people', 'Send welcome emails'])
     if (await manager.getByRole('button', { name }).count()) throw new Error(`a manager is offered ${name}`);
-  if (await manager.getByRole('button', { name: /^Edit [A-Z]/ }).count()) throw new Error('a manager can Edit a person');
   if (await manager.getByRole('link', { name: /^Profile of/ }).count()) throw new Error('a manager is offered a staff profile');
+  // Edit opens the editor as it always did for a manager: no photo, nothing to upload.
+  await manager.getByTestId('staff-imp-sasha@example.com').getByRole('button', { name: /^Edit / }).click();
+  const editorForManager = manager.getByTestId('staff-editor');
+  await editorForManager.waitFor({ timeout: 10000 });
+  if (await editorForManager.getByRole('heading', { name: 'Photo' }).count()) throw new Error('a manager was offered the Photo section');
+  if (await editorForManager.locator('input[type=file]').count()) throw new Error('a file input appeared');
+  await editorForManager.getByRole('button', { name: 'Close' }).click();
   if (await manager.getByTestId('not-signed-in').count()) throw new Error('a manager sees who never signed in');
   const text = await manager.locator('main').innerText();
   if (/ADP File #|chosen a password/.test(text)) throw new Error('sign-in or ADP details shown to a manager');

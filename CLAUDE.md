@@ -1182,9 +1182,12 @@ Beyond the phases, the parts worth knowing about before picking up work:
   that the Staff screen stays the admins': they keep the job roles, so the
   merged screen has to be theirs too. A manager sees the cards (as the
   Directory shows people, plus access and job roles) and the job roles, and
-  none of the admin's tools - Add, Add several, Edit, Profile, welcome emails,
-  who never signed in, ADP File #, password and PIN status (`isAdmin` in
-  `StaffPage`; the server refused them already). The right-click menu's
+  none of the admin's tools - Add, Add several, Profile, welcome emails, who
+  never signed in, ADP File #, password and PIN status (`isAdmin` in
+  `StaffPage`; the server refused them already). **Edit stays for managers**
+  as it always was at `/staff` (the suites `staff-profile`, `credential-types`
+  and `main-job-role` rely on it): the editor shows them the person and their
+  licenses, hides the photo and sign-in tools, and the server refuses a save. The right-click menu's
   **Open in Staff** stays admins' only. The People strip has no Job roles
   tab; `goToManage(page, 'Job roles')` in the suites opens Staff and waits
   for the section (`TAB_OF` in `tests/browser/nav.mjs`). Help's "Manage →
