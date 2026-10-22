@@ -88,6 +88,7 @@ function build(
     practiceSettings: { findFirst: jest.fn().mockResolvedValue(null) },
     practiceEvent: { findMany: jest.fn().mockResolvedValue(data.closures ?? []) },
     closingRecord: { findMany: jest.fn().mockResolvedValue(data.closingRecords ?? []) },
+    topicAssignee: { findMany: jest.fn().mockResolvedValue([]) },
     supplyRequest: { findMany: jest.fn().mockResolvedValue(data.supplies ?? []) },
     correctionRequest: { findMany: jest.fn().mockResolvedValue([]) },
     cmeRequest: { findMany: jest.fn().mockResolvedValue([]) },

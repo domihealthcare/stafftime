@@ -4638,6 +4638,58 @@ never a patient — the form says so and the schema guard pins both tables.
 `tests/browser/phone-book.mjs` (the runner puts the book back from the v2 data
 migration between suites).
 
+## Who looks after what (October 2026)
+
+Dominguez, 22 October 2026: "assign staff (i.e. specific managers/admin) to
+being notified and clearing/approving checklists", and the same day "same
+thing with PTO requests, i don't want to always be notified of PTO requests,
+that should be a setting to who it notifies".
+
+Until then, who heard of something was decided only by **unticking** on Email
+settings (`Employee.mutedDigestTopics`, `readersOf` in `email/digest-topics.ts`):
+leave out the parts somebody else looks after, and a part nobody is down for
+goes to everyone. That is a quiet rule to live under - Dominguez was told of
+every request because he had never unticked Time off - so beside it there is
+now a **positive** one: `TopicAssignee` (`topic_assignees`: a `DigestTopic`
+and an employee) names the people chosen for a part. `chosenOrReaders(topic,
+people, chosenIds)` is the one rule, used by both the bell notes as things
+happen (`NotificationsService.deciders`: a new time-off request, a CME
+request, a correction asked for, an availability clash) and the nightly
+round-up (`DigestService`): the chosen people among those in question, else
+whoever has not unticked it, else everyone. So a part with anybody chosen goes
+to them alone, whatever the ticks say, and a part with nobody chosen is
+exactly as before.
+
+Set by managers on the screen the part belongs to, all through one component
+(`components/TopicAssignees.tsx`, `GET /digest-settings/assignees`, `PUT
+/digest-settings/assignees/:topic`, managers and admins still here only):
+**Who is told of new requests**, folded on Time off requests, and **Who looks
+after them**, a tab on Closing checklists. Email settings lists who is chosen
+for what under *Who gets what*, so the two rules can be read together. Other
+parts (hours, licenses, the rota) have no screen of their own for it yet; the
+endpoint takes any topic, so adding one is a card.
+
+**Closing checklists** are the part with a step beyond hearing: the chosen
+people **clear** a clock-out once it is dealt with (`ClosingRecord.clearedAt`
+/ `clearedById`, `POST /closing/records/:id/clear`), which takes it off the
+banner and the round-up (`gatherClosing` reads `clearedAt: null`); the card
+then says who cleared it and when, and the Dashboard's tallies are unchanged.
+While nobody is chosen any manager may clear; once somebody is, only they can
+(`canClear` on each record, refused server-side otherwise). They are also
+rung at once when a clock-out comes in with something missed or without the
+checklist (`NotificationKind.CLOSING`, the count and the office, never the
+lines), from `ClosingService.record` after the record is written - still never
+failing the clock-out.
+
+**The main job role only.** The same day: "make sure it only goes to the
+people whose primary/main role is that (i.e. Celeste should not be getting
+checklists)". `applicableFor` used to take every section of every job role the
+person held, so an admin who also covered the front desk was asked for the
+Front Desk list at every clock-out. It now takes the sections of the person's
+main job role (`EmployeeJobRole.isPrimary`), falling back to the first role
+they hold when none is marked; the phone, the time clock and the record all go
+through it, so nothing else changed.
+
 ## Staff and job roles on one screen (October 2026)
 
 Dominguez, 22 October 2026: "can we merge the Staff and Job Roles? I should

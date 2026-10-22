@@ -14,6 +14,7 @@ import type {
 } from '../lib/types';
 import { useConfirm } from '../components/ConfirmDialog';
 import { NeedsAttention } from '../components/NeedsAttention';
+import { TopicAssignees } from '../components/TopicAssignees';
 import {
   Alert,
   Badge,
@@ -24,7 +25,7 @@ import {
   buttonClass,
 } from '../components/ui';
 
-type Tab = 'records' | 'supplies' | 'edit';
+type Tab = 'records' | 'supplies' | 'edit' | 'reviewers';
 
 const WEEKDAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
 const KIND_LABELS: Record<ClosingItemKind, string> = {
@@ -36,8 +37,9 @@ const KIND_LABELS: Record<ClosingItemKind, string> = {
 
 /**
  * Manage → Offices → Closing checklists: what Front Desk and MAs confirmed when they
- * clocked out, the restock list their supply ticks built, and the lists
- * themselves.
+ * clocked out, the restock list their supply ticks built, the lists
+ * themselves, and - since October 2026 (Dominguez: "assign staff ... to being
+ * notified and clearing/approving checklists") - who looks after them.
  */
 export function ClosingPage() {
   const isManager = useIsManager();
@@ -69,6 +71,7 @@ export function ClosingPage() {
             ['records', 'Clock-outs'],
             ['supplies', 'Restock'],
             ['edit', 'Edit lists'],
+            ['reviewers', 'Who looks after them'],
           ] as const
         ).map(([value, label]) => (
           <button
@@ -88,7 +91,31 @@ export function ClosingPage() {
       {tab === 'records' && <Records />}
       {tab === 'supplies' && <Supplies />}
       {tab === 'edit' && <EditLists />}
+      {tab === 'reviewers' && <Reviewers />}
     </div>
+  );
+}
+
+// ------------------------------------------------------------ who looks after them
+
+/// The managers and admins down for closing checklists: told on the bell the
+/// moment a clock-out comes in with something missed, sent the Closing part of
+/// the nightly round-up instead of every manager, and the ones who clear one.
+function Reviewers() {
+  return (
+    <TopicAssignees
+      topic="CLOSING"
+      title="Who looks after closing checklists"
+      intro={
+        <p>
+          The people ticked are told under the bell the moment somebody clocks out with something
+          missed or without the checklist, get the <strong>Closing</strong> part of the nightly
+          email instead of every manager, and are the ones who press <strong>Clear</strong> on a
+          clock-out once it is dealt with. With nobody ticked, every manager is emailed and any
+          manager can clear.
+        </p>
+      }
+    />
   );
 }
 
@@ -166,11 +193,32 @@ function Records() {
   );
 }
 
-function RecordCard({ record }: { record: ClosingRecord }) {
+function RecordCard({ record: initial }: { record: ClosingRecord }) {
+  const [record, setRecord] = useState(initial);
   const [open, setOpen] = useState(record.gaps > 0 || !record.submitted);
+  const [clearing, setClearing] = useState(false);
+  const [problem, setProblem] = useState<string | null>(null);
   const name = `${record.employee.preferredName ?? record.employee.firstName} ${record.employee.lastName}`;
   const sections = [...new Set(record.answers.map((answer) => answer.section))];
   const needed = record.answers.filter((answer) => answer.kind === 'SUPPLY' && answer.needed);
+  const needsALook = !record.submitted || record.gaps > 0;
+
+  async function clear() {
+    setClearing(true);
+    setProblem(null);
+    try {
+      const result = await api.clearClosingRecord(record.id);
+      setRecord((current) => ({
+        ...current,
+        clearedAt: result.clearedAt,
+        clearedBy: result.clearedBy,
+      }));
+    } catch (err) {
+      setProblem(err instanceof ApiError ? err.message : 'Could not clear that.');
+    } finally {
+      setClearing(false);
+    }
+  }
 
   return (
     <Card className="p-4" testId={`closing-record-${name}`}>
@@ -188,14 +236,41 @@ function RecordCard({ record }: { record: ClosingRecord }) {
             {record.positions.length > 0 ? ` · ${record.positions.join(' and ')}` : ''}
           </span>
         </span>
-        {!record.submitted ? (
-          <Badge tone="danger">Not filled in</Badge>
-        ) : record.gaps > 0 ? (
-          <Badge tone="warning">{record.gaps} missed</Badge>
-        ) : (
-          <Badge tone="success">All done</Badge>
-        )}
+        <span className="flex items-center gap-2">
+          {!record.submitted ? (
+            <Badge tone="danger">Not filled in</Badge>
+          ) : record.gaps > 0 ? (
+            <Badge tone="warning">{record.gaps} missed</Badge>
+          ) : (
+            <Badge tone="success">All done</Badge>
+          )}
+          {record.clearedAt && <Badge tone="success">Cleared</Badge>}
+        </span>
       </button>
+      {needsALook && (
+        <div className="mt-2 flex flex-wrap items-center gap-2 text-sm">
+          {record.clearedAt ? (
+            <span className="text-slate-600" data-testid="closing-cleared">
+              Cleared by {record.clearedBy ?? 'a manager'} at {formatTime(record.clearedAt)}.
+            </span>
+          ) : record.canClear ? (
+            <button
+              type="button"
+              disabled={clearing}
+              onClick={() => void clear()}
+              aria-label={`Clear ${name}’s checklist`}
+              className={buttonClass('secondary', 'sm')}
+            >
+              {clearing ? 'Clearing…' : 'Clear'}
+            </button>
+          ) : (
+            <span className="text-slate-500">
+              Cleared by one of the people who look after closing checklists.
+            </span>
+          )}
+          {problem && <span className="text-rose-700">{problem}</span>}
+        </div>
+      )}
 
       {open && (
         <div className="mt-3 space-y-3 border-t border-slate-100 pt-3 text-sm">

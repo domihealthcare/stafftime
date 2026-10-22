@@ -229,6 +229,7 @@ export function NotificationsPage() {
           onSave={(person, preferences) => void saveFor(person, preferences)}
         />
       )}
+      {isManager && team && <ChosenFor people={team.people} />}
     </div>
   );
 }
@@ -409,4 +410,48 @@ function listOf(items: string[]): string {
   const lower = items.map((item) => item.charAt(0).toLowerCase() + item.slice(1));
   if (lower.length <= 1) return lower.join('');
   return `${lower.slice(0, -1).join(', ')} and ${lower[lower.length - 1]}`;
+}
+
+/// The parts somebody was chosen to look after (October 2026), which go to
+/// those people alone whatever the ticks above say. Set on each part's own
+/// screen - Time off requests, Closing checklists.
+function ChosenFor({ people }: { people: DigestReader[] }) {
+  const [chosen, setChosen] = useState<Partial<Record<DigestTopic, string[]>> | null>(null);
+  useEffect(() => {
+    api
+      .topicAssignees()
+      .then(setChosen)
+      .catch(() => setChosen({}));
+  }, []);
+  if (!chosen) return null;
+  const name = (id: string) => {
+    const person = people.find((entry) => entry.id === id);
+    return person ? `${person.firstName} ${person.lastName}` : null;
+  };
+  const lines = DIGEST_TOPICS.map(({ topic, label }) => ({
+    label,
+    names: (chosen[topic] ?? []).map(name).filter((entry): entry is string => Boolean(entry)),
+  })).filter((line) => line.names.length > 0);
+  return (
+    <Card className="mt-4 p-4" testId="chosen-for">
+      <h2 className="text-sm font-semibold text-slate-900">Chosen to look after a part</h2>
+      <p className="mt-1 text-sm text-slate-600">
+        A part with people chosen for it goes to them alone - the bell notes as things happen and
+        that part of the round-up - whatever is ticked above. Chosen on the part&rsquo;s own screen:{' '}
+        <strong>Who is told of new requests</strong> on Time off requests, and{' '}
+        <strong>Who looks after them</strong> on Closing checklists.
+      </p>
+      {lines.length === 0 ? (
+        <p className="mt-2 text-sm text-slate-500">Nobody is chosen for any part yet.</p>
+      ) : (
+        <ul className="mt-2 space-y-1 text-sm text-slate-800">
+          {lines.map((line) => (
+            <li key={line.label}>
+              <strong>{line.label}:</strong> {line.names.join(', ')}
+            </li>
+          ))}
+        </ul>
+      )}
+    </Card>
+  );
 }

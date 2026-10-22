@@ -461,6 +461,9 @@ describe('what this app deliberately does not store', () => {
     expect(fieldsOf('ClosingRecord')).toEqual(
       [
         'answers',
+        'clearedAt',
+        'clearedBy',
+        'clearedById',
         'createdAt',
         'day',
         'employee',

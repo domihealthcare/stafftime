@@ -1,5 +1,18 @@
-import { BadRequestException, Injectable, Logger, NotFoundException } from '@nestjs/common';
-import { ClosingItemKind, Prisma } from '@prisma/client';
+import {
+  BadRequestException,
+  ForbiddenException,
+  Injectable,
+  Logger,
+  NotFoundException,
+} from '@nestjs/common';
+import {
+  ClosingItemKind,
+  DigestTopic,
+  EmploymentStatus,
+  NotificationKind,
+  Prisma,
+} from '@prisma/client';
+import { NotificationsService } from '../email/notifications.service';
 import { toUtcDate } from '../common/util/calendar-date.util';
 import { isoWeekdayOf, localDateIn, PRACTICE_ZONE } from '../common/util/zoned-time.util';
 import { PrismaService } from '../prisma/prisma.service';
@@ -62,15 +75,21 @@ const TEMPLATE_INCLUDE = {
 export class ClosingService {
   private readonly logger = new Logger(ClosingService.name);
 
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly notifications: NotificationsService,
+  ) {}
 
   // ---------------------------------------------------------------- at clock-out
 
   /**
    * The checklist this person gets when closing a punch at this office on this
-   * day: every section of every job role they hold, with items for other days
-   * of the week or other offices left out. Empty for anybody whose roles have
-   * no checklist - they clock out as before.
+   * day: the sections of their **main** job role only (October 2026,
+   * Dominguez: "Celeste should not be getting checklists" - she is
+   * Administrative first and Front Desk second), with items for other days of
+   * the week or other offices left out. Somebody with no main role marked gets
+   * their first role's. Empty for anybody whose role has no checklist - they
+   * clock out as before.
    */
   async applicableFor(
     employeeId: string,
@@ -82,13 +101,17 @@ export class ClosingService {
       this.prisma.jobRole.findMany({
         where: { members: { some: { employeeId } } },
         orderBy: [{ sortOrder: 'asc' }, { name: 'asc' }],
-        include: TEMPLATE_INCLUDE,
+        include: {
+          ...TEMPLATE_INCLUDE,
+          members: { where: { employeeId }, select: { isPrimary: true } },
+        },
       }),
     ]);
     const weekday = isoWeekdayOf(localDateIn(at, location?.timezone ?? PRACTICE_ZONE));
+    const main = roles.find((role) => role.members?.some((member) => member.isPrimary)) ?? roles[0];
 
     const sections: ApplicableSection[] = [];
-    for (const role of roles) {
+    for (const role of main ? [main] : []) {
       for (const section of role.closingSections) {
         const items = section.items
           .filter((item) => item.weekdays.length === 0 || item.weekdays.includes(weekday))
@@ -211,6 +234,40 @@ export class ClosingService {
     this.logger.log(
       `Closing checklist for punch ${entry.id}: ${submitted ? `${gaps} gap(s)` : 'not filled in'}, ${supplies.length} supply request(s)`,
     );
+    if (!submitted || gaps > 0) await this.tellReviewers(entry, submitted, gaps);
+  }
+
+  /// The people who look after closing checklists hear at once, on the bell,
+  /// of a clock-out with something missed - never with the lines themselves,
+  /// which are on the screen. Nobody chosen: nobody rung (the round-up and the
+  /// banner still carry it, as before).
+  private async tellReviewers(entry: ClosingEntry, submitted: boolean, gaps: number) {
+    const reviewers = await this.reviewerIds();
+    if (reviewers.length === 0) return;
+    const [person, office] = await Promise.all([
+      this.prisma.employee.findUnique({
+        where: { id: entry.employeeId },
+        select: { firstName: true, preferredName: true, lastName: true },
+      }),
+      this.prisma.location.findUnique({
+        where: { id: entry.locationId },
+        select: { name: true },
+      }),
+    ]);
+    const name = person
+      ? `${person.preferredName ?? person.firstName} ${person.lastName}`
+      : 'Somebody';
+    await this.notifications.bell(
+      reviewers.filter((id) => id !== entry.employeeId),
+      NotificationKind.CLOSING,
+      {
+        title: submitted
+          ? `${name} clocked out with ${gaps} ${gaps === 1 ? 'line' : 'lines'} missed`
+          : `${name} clocked out without the closing checklist`,
+        body: `${office?.name ?? 'The office'}. Look it over on Closing checklists and clear it once it is dealt with.`,
+        link: '/closing',
+      },
+    );
   }
 
   /// One open line per supply per office: asking again counts, it does not
@@ -234,20 +291,25 @@ export class ClosingService {
 
   // ---------------------------------------------------------------- managers
 
-  /// Every clock-out checklist on one working day, fullest problems first.
-  async day(date: string, locationId?: string) {
+  /// Every clock-out checklist on one working day, fullest problems first,
+  /// each saying whether the person asking may clear it.
+  async day(date: string, locationId: string | undefined, viewerId: string) {
     if (!/^\d{4}-\d{2}-\d{2}$/.test(date))
       throw new BadRequestException('Give a date as YYYY-MM-DD.');
-    const records = await this.prisma.closingRecord.findMany({
-      where: { day: toUtcDate(date), locationId },
-      orderBy: [{ createdAt: 'asc' }],
-      include: {
-        employee: { select: { id: true, firstName: true, preferredName: true, lastName: true } },
-        location: { select: { id: true, name: true } },
-        timeEntry: { select: { clockInAt: true, clockOutAt: true } },
-        answers: { orderBy: { sortOrder: 'asc' } },
-      },
-    });
+    const [records, canClear] = await Promise.all([
+      this.prisma.closingRecord.findMany({
+        where: { day: toUtcDate(date), locationId },
+        orderBy: [{ createdAt: 'asc' }],
+        include: {
+          employee: { select: { id: true, firstName: true, preferredName: true, lastName: true } },
+          location: { select: { id: true, name: true } },
+          timeEntry: { select: { clockInAt: true, clockOutAt: true } },
+          clearedBy: { select: { firstName: true, preferredName: true, lastName: true } },
+          answers: { orderBy: { sortOrder: 'asc' } },
+        },
+      }),
+      this.mayClear(viewerId),
+    ]);
     return records.map((record) => ({
       id: record.id,
       day: record.day.toISOString().slice(0, 10),
@@ -258,6 +320,11 @@ export class ClosingService {
       positions: record.positions,
       submitted: record.submitted,
       gaps: record.gaps,
+      clearedAt: record.clearedAt,
+      clearedBy: record.clearedBy
+        ? `${record.clearedBy.preferredName ?? record.clearedBy.firstName} ${record.clearedBy.lastName}`
+        : null,
+      canClear,
       answers: record.answers.map((answer) => ({
         id: answer.id,
         section: answer.section,
@@ -269,6 +336,57 @@ export class ClosingService {
         needed: answer.needed,
       })),
     }));
+  }
+
+  // ---------------------------------------------------------- who looks after them
+
+  /// The managers and admins chosen for closing checklists (`TopicAssignee`,
+  /// topic CLOSING, set on the Closing checklists screen), still here.
+  private async reviewerIds(): Promise<string[]> {
+    const rows = await this.prisma.topicAssignee.findMany({
+      where: {
+        topic: DigestTopic.CLOSING,
+        employee: { employmentStatus: EmploymentStatus.ACTIVE },
+      },
+      select: { employeeId: true },
+    });
+    return rows.map((row) => row.employeeId);
+  }
+
+  /// Whether this manager may clear a checklist: one of the people chosen, or
+  /// anybody while nobody is.
+  private async mayClear(employeeId: string): Promise<boolean> {
+    const reviewers = await this.reviewerIds();
+    return reviewers.length === 0 || reviewers.includes(employeeId);
+  }
+
+  /// Looked into and dealt with: off the banner and the round-up from now.
+  async clear(id: string, managerId: string) {
+    const record = await this.prisma.closingRecord.findUnique({
+      where: { id },
+      select: { id: true, clearedAt: true },
+    });
+    if (!record) throw new NotFoundException('That clock-out was not found.');
+    if (!(await this.mayClear(managerId)))
+      throw new ForbiddenException(
+        'Only the people chosen to look after closing checklists can clear one.',
+      );
+    const manager = await this.prisma.employee.findUniqueOrThrow({
+      where: { id: managerId },
+      select: { firstName: true, preferredName: true, lastName: true },
+    });
+    const clearedAt = record.clearedAt ?? new Date();
+    if (!record.clearedAt) {
+      await this.prisma.closingRecord.update({
+        where: { id },
+        data: { clearedAt, clearedById: managerId },
+      });
+    }
+    return {
+      cleared: true,
+      clearedAt,
+      clearedBy: `${manager.preferredName ?? manager.firstName} ${manager.lastName}`,
+    };
   }
 
   /// The restock list: what is still to order, per office, and what was

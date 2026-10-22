@@ -2,7 +2,7 @@ import { Injectable, Logger } from '@nestjs/common';
 import { DigestTopic, EmploymentStatus, Role } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { AttentionService, type DigestContents } from './attention.service';
-import { ALL_DIGEST_TOPICS, DIGEST_TOPICS, contentsFor, readersOf } from './digest-topics';
+import { ALL_DIGEST_TOPICS, DIGEST_TOPICS, chosenOrReaders, contentsFor } from './digest-topics';
 import { NotificationsService } from './notifications.service';
 
 export type { DigestContents };
@@ -50,7 +50,7 @@ export class DigestService {
         // belongs to, so opting out loses the nudge, not the information.
         wantsDailyDigest: true,
       },
-      select: { email: true, firstName: true, mutedDigestTopics: true },
+      select: { id: true, email: true, firstName: true, mutedDigestTopics: true },
     });
 
     if (recipients.length === 0) {
@@ -61,9 +61,17 @@ export class DigestService {
     // Who reads which part tonight. Only parts with something in them count:
     // an empty part with nobody down for it is no reason to email anybody.
     const topicsFor = new Map(recipients.map((recipient) => [recipient, new Set<DigestTopic>()]));
+    // A part somebody was chosen to look after (October 2026) goes to them
+    // alone, when any of them get the round-up at all; otherwise to whoever
+    // is down for it on Email settings.
+    const assignees = await this.prisma.topicAssignee.findMany({
+      select: { topic: true, employeeId: true },
+    });
     for (const topic of ALL_DIGEST_TOPICS) {
       if (DIGEST_TOPICS[topic].every((key) => contents[key].length === 0)) continue;
-      for (const reader of readersOf(topic, recipients)) topicsFor.get(reader)!.add(topic);
+      const chosen = assignees.filter((row) => row.topic === topic).map((row) => row.employeeId);
+      for (const reader of chosenOrReaders(topic, recipients, chosen))
+        topicsFor.get(reader)!.add(topic);
     }
 
     let sent = 0;

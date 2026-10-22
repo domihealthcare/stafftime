@@ -119,7 +119,7 @@ const UNDER_MORE = new Set([
   // Time off left Manage in October 2026: requests are on the Schedule,
   // balances on the Dashboard, the rules in Practice settings.
   // Manage's fifteen screens are five headings now (October 2026).
-  'Timesheet', 'News', 'Dashboard', 'People', 'Offices', 'Surveys & reading', 'Money',
+  'Timesheet', 'News', 'Dashboard', 'Staff', 'Offices', 'Surveys & reading', 'Finances',
 ]);
 
 await step('the bottom bar reads Home, Schedule, Directory, Phone book, Resources, More', async () => {

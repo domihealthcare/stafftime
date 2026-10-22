@@ -1130,6 +1130,46 @@ Beyond the phases, the parts worth knowing about before picking up work:
   name), with a specialty in brackets after the last one shown once as the
   group's note (`doctorsOf` in `lib/phone-book.ts`); the whole name is still
   what is searched, so any one doctor finds the group. Cardiology is two pages.
+- **Manage's headings renamed** (22 October 2026, Dominguez): **People is
+  Staff** and **Money is Finances**, and **Provider productivity moved to
+  Finances** (Export, Reimbursements, Invoices, Vendor payments, Provider
+  productivity). `lib/manage-sections.ts`; Help, the screens and the suites'
+  `SECTION_OF` follow. Older entries in this file still say "Manage → People
+  → X" and "Manage → Money → X": read them as Staff and Finances.
+- **Closing checklists go by the main job role** (22 October 2026, Dominguez:
+  "make sure it only goes to the people whose primary/main role is that (i.e.
+  Celeste should not be getting checklists)"): `ClosingService.applicableFor`
+  takes the sections of the person's **main** job role only (`isPrimary`; the
+  first role they hold when none is marked), not every role they hold, on the
+  phone and at the time clock alike. Somebody Administrative first and Front
+  Desk second gets no list. `tests/browser/closing.mjs` switches Frankie's
+  main role to check it.
+- **Who looks after what** (22 October 2026, Dominguez: "assign staff (i.e.
+  specific managers/admin) to being notified and clearing/approving
+  checklists ... in the offices -> closing checklists"; "same thing with PTO
+  requests, i don't want to always be notified of PTO requests, that should be
+  a setting to who it notifies"): a part of the round-up can now have people
+  **chosen** for it (`TopicAssignee`: topic, employee; `GET
+  /digest-settings/assignees`, `PUT /digest-settings/assignees/:topic`,
+  managers), beside the per-manager unticking on Email settings. A part with
+  anybody chosen goes to them alone: its bell notes as things happen (a new
+  time-off request, a CME request, a correction asked, an availability clash,
+  a clock-out with something missed) and its section of the nightly email
+  (`chosenOrReaders` in `email/digest-topics.ts`, one rule for
+  `NotificationsService` and `DigestService`); with nobody chosen it goes by
+  the ticks as before, and to everyone when nobody has it. Set on the screen
+  the part belongs to, with one component (`components/TopicAssignees.tsx`):
+  **Who is told of new requests** (folded) on Time off requests, and **Who
+  looks after them**, a fourth tab on Closing checklists; Email settings lists
+  **Chosen to look after a part** under Who gets what. **Closing checklists
+  are also cleared**: `ClosingRecord.clearedAt` / `clearedById`, **Clear** on
+  a clock-out with something missed (`POST /closing/records/:id/clear`; only
+  the people chosen for Closing, or any manager while nobody is), which takes
+  it off the banner and the nightly email ("Cleared by ... at ..."); the
+  chosen people are rung at once (`NotificationKind.CLOSING`, no lines in
+  it). Migration `20261022010000_topic_assignees_closing_cleared`;
+  `tests/browser/who-looks-after.mjs`, `closing.mjs`. Worth carrying to the
+  EMR module.
 - **Staff and Job roles are one screen** (22 October 2026, Dominguez: "can we
   merge the Staff and Job Roles? I should be able to search staff by job
   roles"): **Manage → People → Staff** has a **row of job roles above the

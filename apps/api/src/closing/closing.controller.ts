@@ -39,8 +39,15 @@ export class ClosingController {
 
   @Get('records')
   @Roles(Role.MANAGER)
-  records(@Query() query: ClosingDayQueryDto) {
-    return this.closing.day(query.date, query.locationId);
+  records(@Query() query: ClosingDayQueryDto, @CurrentUser() user: AuthUser) {
+    return this.closing.day(query.date, query.locationId, user.id);
+  }
+
+  @Post('records/:id/clear')
+  @Roles(Role.MANAGER)
+  @HttpCode(HttpStatus.OK)
+  clear(@Param('id', ParseUUIDPipe) id: string, @CurrentUser() user: AuthUser) {
+    return this.closing.clear(id, user.id);
   }
 
   @Get('supplies')

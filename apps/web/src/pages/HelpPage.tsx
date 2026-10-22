@@ -175,9 +175,10 @@ const STAFF: Section[] = [
           <>
             <p>
               Front Desk and Medical Assistants get their closing checklist when they press{' '}
-              <strong>Clock out</strong> - on your phone or at the front-desk tablet. Front Desk
-              first picks which desk they worked (Check In, Outdesk, or both). Tick what you did,
-              enter the call counts, and tick any supplies we need more of; then clock out.
+              <strong>Clock out</strong> - on your phone or at the front-desk tablet. It is the list
+              of your <strong>main</strong> job role; somebody in two roles gets one list, not both.
+              Front Desk first picks which desk they worked (Check In, Outdesk, or both). Tick what
+              you did, enter the call counts, and tick any supplies we need more of; then clock out.
             </p>
             <p>
               You can always clock out, even with lines unticked - anything left is passed to a
@@ -1336,9 +1337,9 @@ const MANAGERS: Section[] = [
                 <strong>Dashboard</strong> - the week at a glance, and what is waiting on you.
               </li>
               <li>
-                <strong>People</strong> - Staff (with the job roles at the bottom of the screen;
-                managers see the list, admins also change it), Licenses, CME, Onboarding &amp;
-                Offboarding and Provider productivity.
+                <strong>Staff</strong> - Staff (with the job roles at the bottom of the screen;
+                managers see the list, admins also change it), Licenses, CME and Onboarding &amp;
+                Offboarding.
               </li>
               <li>
                 <strong>Offices</strong> - Locations and Kiosks (admins), Closing checklists and
@@ -1348,8 +1349,9 @@ const MANAGERS: Section[] = [
                 <strong>Surveys &amp; reading</strong> - Surveys and Required reading.
               </li>
               <li>
-                <strong>Money</strong> - Export, Reimbursements, Invoices (Manager access only, not
-                admins) and Vendor payments (admins).
+                <strong>Finances</strong> - Export, Reimbursements, Invoices (Manager access only,
+                not admins) and Vendor payments (admins), and Provider productivity (for the people
+                chosen for it).
               </li>
             </ul>
             <p className="mt-2">
@@ -1455,7 +1457,7 @@ const MANAGERS: Section[] = [
         answer: (
           <>
             <p>
-              <Screen>Manage → Money → Export</Screen> opens on the last pay period. Check the
+              <Screen>Manage → Finances → Export</Screen> opens on the last pay period. Check the
               summary - it says how many entries are flagged - then download the Excel file and
               upload it to payroll. Save the columns you use as a report so next time is one tap.
             </p>
@@ -1563,7 +1565,7 @@ const MANAGERS: Section[] = [
               role&rsquo;s colour; the key above the rota says which is which. Work from home is
               violet, open shifts amber, drafts a dashed outline. Two job roles that should look the
               same (Administrative and Manager, say) can be given the same colour under Manage
-              &rarr; People &rarr; Staff, under <strong>Job roles</strong>.
+              &rarr; Staff &rarr; Staff, under <strong>Job roles</strong>.
             </li>
             <li>
               <strong>Right-click</strong> somebody&rsquo;s name or shift - on the week, in the
@@ -1627,7 +1629,7 @@ const MANAGERS: Section[] = [
         question: 'A minimum per office and job role',
         answer: (
           <p>
-            <Screen>Manage → People → Staff</Screen> → <strong>Job roles</strong> →{' '}
+            <Screen>Manage → Staff → Staff</Screen> → <strong>Job roles</strong> →{' '}
             <strong>Minimum on each day</strong>: the fewest people you want on in a job role at an
             office on a day it is open - say 2 Front Desk at North Bergen. Blank means none. Where
             there is one, Too many off at once warns when time off would leave fewer than that, and
@@ -1793,7 +1795,7 @@ const MANAGERS: Section[] = [
               <strong>Don&rsquo;t book</strong> asks you to confirm first, and a rep with
               restrictions shows their notes as you pick them. Everyone sees the lunch with the rep,
               company, medication and food; the front desk also sees the rep&rsquo;s cell phone (a
-              job role setting, under Manage → People → Staff → Job roles); the status and notes are
+              job role setting, under Manage → Staff → Staff → Job roles); the status and notes are
               for managers only. Staff at that office are told when a lunch is added, moved or
               cancelled, and <strong>every evening at 6pm</strong> hear whether there is a rep lunch
               there the next day - or that there is none, so they bring their own. That evening
@@ -1893,7 +1895,7 @@ const MANAGERS: Section[] = [
         question: 'Somebody has forgotten their tablet PIN',
         answer: (
           <p>
-            An admin, in <Screen>Manage → People → Staff</Screen>, presses <strong>Edit</strong> on
+            An admin, in <Screen>Manage → Staff → Staff</Screen>, presses <strong>Edit</strong> on
             them and, under Signing in, <strong>Set a tablet PIN</strong>, then tells them it in
             person. They can change it to one of their own on their profile. Nobody can see a PIN
             once it is set - you can only replace it.
@@ -2017,11 +2019,11 @@ const MANAGERS: Section[] = [
         question: 'Shortcuts for one person (admins)',
         answer: (
           <p>
-            On somebody&rsquo;s profile (<Screen>Manage → People → Staff</Screen>, press their
-            name), <strong>For …</strong> opens their Schedule, Timesheet, Licenses, Onboarding
-            &amp; offboarding or Availability showing them only - <strong>Show everyone</strong>{' '}
-            goes back to the whole list - and <strong>+ Request time off for …</strong> opens the
-            request form already for them.
+            On somebody&rsquo;s profile (<Screen>Manage → Staff → Staff</Screen>, press their name),{' '}
+            <strong>For …</strong> opens their Schedule, Timesheet, Licenses, Onboarding &amp;
+            offboarding or Availability showing them only - <strong>Show everyone</strong> goes back
+            to the whole list - and <strong>+ Request time off for …</strong> opens the request form
+            already for them.
           </p>
         ),
       },
@@ -2029,9 +2031,9 @@ const MANAGERS: Section[] = [
         question: 'Writing down time off day by day (admins)',
         answer: (
           <p>
-            On somebody&rsquo;s profile (<Screen>Manage → People → Staff</Screen>, press their
-            name), press <strong>+ Record past time off</strong>: Sick, PTO or Unpaid, the days, and
-            a comment if you like. It counts as approved and Sick or PTO comes off their balance;
+            On somebody&rsquo;s profile (<Screen>Manage → Staff → Staff</Screen>, press their name),
+            press <strong>+ Record past time off</strong>: Sick, PTO or Unpaid, the days, and a
+            comment if you like. It counts as approved and Sick or PTO comes off their balance;
             nobody is notified. The profile shows only what is left and what is coming up;{' '}
             <strong>See all</strong> opens everything on file, where a recorded day can be removed.
             Use it or the total under <strong>Adjust</strong> for the same days, not both - both
@@ -2043,7 +2045,7 @@ const MANAGERS: Section[] = [
         question: 'Starting or leaving',
         answer: (
           <p>
-            <Screen>Manage → People → Onboarding &amp; Offboarding</Screen> tracks each step for a
+            <Screen>Manage → Staff → Onboarding &amp; Offboarding</Screen> tracks each step for a
             new hire or a leaver - who did it and when. The paperwork itself stays in the personnel
             file; nothing is uploaded here. Providers see theirs in the account menu (Your
             onboarding). Front Desk and MA staff have it in no menu, so you can tick their tasks for
@@ -2071,7 +2073,17 @@ const MANAGERS: Section[] = [
             <li>
               <strong>Edit lists</strong>: add, reword, reorder or remove lines; limit a line to
               certain days or one office; make a section a desk that only shows when somebody worked
-              it. Any job role can have a list - somebody in two roles gets both.
+              it. Any job role can have a list; somebody in two job roles gets the list of their{' '}
+              <strong>main</strong> one only (set under Edit on the Staff screen), so an admin who
+              also covers the front desk is not asked for the front desk list.
+            </li>
+            <li>
+              <strong>Who looks after them</strong>: tick the managers or admins who look after
+              closing checklists. They are told under the bell the moment a clock-out comes in with
+              something missed or without the checklist, they get the Closing part of the nightly
+              email instead of every manager, and they are the ones who press <strong>Clear</strong>{' '}
+              on a clock-out once it is dealt with - which takes it off the banner and the nightly
+              email. With nobody ticked, every manager is emailed and any manager can clear.
             </li>
           </ul>
         ),
@@ -2080,7 +2092,7 @@ const MANAGERS: Section[] = [
         question: 'License renewals',
         answer: (
           <p>
-            <Screen>Manage → People → Licenses</Screen> opens on what lapses in the next 60 days.
+            <Screen>Manage → Staff → Licenses</Screen> opens on what lapses in the next 60 days.
             Record the expiry date only; press <strong>Renew</strong> to put in the new date. The
             person whose license it is hears about it too - under the bell and by email, at 60 days,
             at 30 days and once it lapses - so they can renew before you have to chase them. An old
@@ -2093,7 +2105,7 @@ const MANAGERS: Section[] = [
         answer: (
           <>
             <p>
-              <Screen>Manage → People → Licenses → License types</Screen> is the practice&rsquo;s
+              <Screen>Manage → Staff → Licenses → License types</Screen> is the practice&rsquo;s
               list: a name, how often it is renewed, and for each job role whether it is{' '}
               <strong>required</strong>, <strong>optional</strong> or not needed. Add one with{' '}
               <strong>+ New license type</strong>; <strong>Edit</strong> changes it, and{' '}
@@ -2115,7 +2127,7 @@ const MANAGERS: Section[] = [
         answer: (
           <>
             <p>
-              <Screen>Manage → People → Provider productivity</Screen> replaces the Patients &amp;
+              <Screen>Manage → Finances → Provider productivity</Screen> replaces the Patients &amp;
               Providers sheet. Choose a provider (anybody in the Provider job role) then{' '}
               <strong>+ New statement</strong>. For each interval (two weeks on the sheet) fill in
               the patients <em>expected</em> and the patients <em>seen</em>; the difference and what
@@ -2182,7 +2194,7 @@ const MANAGERS: Section[] = [
         question: 'CME requests and allowances',
         answer: (
           <p>
-            <Screen>Manage → People → CME</Screen>. A provider&rsquo;s request is under{' '}
+            <Screen>Manage → Staff → CME</Screen>. A provider&rsquo;s request is under{' '}
             <strong>Waiting for a decision</strong>, with what it will cost and how it sits with
             their allowance; you are told under the bell, by email and in the nightly email (the
             Licenses part). <strong>Approve</strong> takes the amount asked or another, with an
@@ -2207,7 +2219,7 @@ const MANAGERS: Section[] = [
             <strong>Back to the usual</strong> undoes it. Everybody sees the week, and the admin
             sees it on <Screen>Home</Screen>. You also see when they are off or not on the rota at
             that office that day. That the rota really has somebody in Administrative there is the
-            minimum on <Screen>Manage → People → Staff</Screen> → <strong>Job roles</strong>, set to
+            minimum on <Screen>Manage → Staff → Staff</Screen> → <strong>Job roles</strong>, set to
             Monday to Thursday.
           </p>
         ),
@@ -2274,7 +2286,7 @@ const MANAGERS: Section[] = [
         answer: (
           <>
             <p>
-              <Screen>Manage → People → Staff</Screen>, under <strong>Job roles</strong> at the
+              <Screen>Manage → Staff → Staff</Screen>, under <strong>Job roles</strong> at the
               bottom of the screen. Add, rename or remove roles, choose each one's colour, and put
               people in them - somebody can be in several. A job role decides which resources
               somebody sees, and nothing else: being in "Manager" gives no extra power in the app.
@@ -2292,7 +2304,7 @@ const MANAGERS: Section[] = [
             </p>
             <p className="mt-2">
               Somebody in several roles has a <strong>main job role</strong>, chosen by an admin
-              under <strong>Edit</strong> on <Screen>Manage → People → Staff</Screen>. It is listed
+              under <strong>Edit</strong> on <Screen>Manage → Staff → Staff</Screen>. It is listed
               first, shift forms start on it, and in the Directory&rsquo;s <strong>In now</strong>{' '}
               they are shown under it - unless the shift they clocked in to is for another role,
               when they are shown under that one. Without a choice it is their first role in this
@@ -2342,8 +2354,8 @@ const MANAGERS: Section[] = [
             <p>
               Both were loaded from the practice&rsquo;s spreadsheets and are kept here now.{' '}
               <Screen>Diagnostics</Screen> is for everyone;{' '}
-              <Screen>Manage → Money → Reimbursements</Screen> (also on Resources) is for managers
-              and admins only.
+              <Screen>Manage → Finances → Reimbursements</Screen> (also on Resources) is for
+              managers and admins only.
             </p>
             <p>
               On either, press <strong>Edit the board</strong>. On Diagnostics, click a cell to
@@ -2446,6 +2458,14 @@ const MANAGERS: Section[] = [
               everybody, so nothing is missed. Time off also decides who is told as each request
               comes in. The banners always show everything.
             </p>
+            <p>
+              Some parts can have people <strong>chosen</strong> for them, which goes further than
+              unticking: <strong>Who is told of new requests</strong> on Time off requests, and{' '}
+              <strong>Who looks after them</strong> on Closing checklists. A part with anybody
+              chosen goes to those people alone - the bell notes as things happen and that part of
+              the nightly email - whatever anyone has ticked. Email settings lists who is chosen for
+              what.
+            </p>
           </>
         ),
       },
@@ -2471,7 +2491,7 @@ const MANAGERS: Section[] = [
         answer: (
           <>
             <p>
-              <Screen>Manage → Money → Invoices</Screen> takes the place of the Invoice Template
+              <Screen>Manage → Finances → Invoices</Screen> takes the place of the Invoice Template
               sheet. It is for people with Manager access only, not admins.{' '}
               <strong>+ New invoice</strong>: who it is to, the dates, a line for each thing
               (earlier lines are offered as you type), whether it is paid, and an optional note.
@@ -2511,7 +2531,7 @@ const MANAGERS: Section[] = [
         question: 'Vendor payments (admins)',
         answer: (
           <p>
-            <Screen>Manage → Money → Vendor payments</Screen> takes the place of the payments
+            <Screen>Manage → Finances → Vendor payments</Screen> takes the place of the payments
             spreadsheet. Add each vendor or contractor once - what they are paid for and where
             checks go - then each payment under them: what it is for, the amount, the invoice and
             check numbers, and where it is: <strong>To pay</strong>, <strong>Sent</strong> (with the
@@ -2527,9 +2547,9 @@ const MANAGERS: Section[] = [
         answer: (
           <ul>
             <li>
-              <Screen>Manage → People → Staff</Screen> - add people one at a time or several at
-              once. Press a <strong>job role</strong> above the list to see only the people in it,
-              or search by name, email or job role. Press <strong>Edit</strong> on somebody&rsquo;s
+              <Screen>Manage → Staff → Staff</Screen> - add people one at a time or several at once.
+              Press a <strong>job role</strong> above the list to see only the people in it, or
+              search by name, email or job role. Press <strong>Edit</strong> on somebody&rsquo;s
               card to change their email, phone, access (Employee, Manager or Admin), job roles and
               their main one, offices and ADP File #, send their welcome email, or give them a
               temporary password or tablet PIN.
@@ -2589,7 +2609,7 @@ const MANAGERS: Section[] = [
         answer: (
           <>
             <p>
-              <Screen>Manage → People → Staff → Add several people</Screen>. In Excel or Google
+              <Screen>Manage → Staff → Staff → Add several people</Screen>. In Excel or Google
               Sheets, select the list <strong>with its row of column names</strong>, copy, and paste
               it into the box. It needs a name, email, office (North Bergen, West New York or Both)
               and hire date; phone, job roles, access, birthday and ADP File # are optional. From a

@@ -699,6 +699,13 @@ export interface ClosingRecord {
   submitted: boolean;
   gaps: number;
   answers: ClosingAnswer[];
+  /// Looked into and dealt with by one of the people who look after closing
+  /// checklists; off the banner and the round-up from then.
+  clearedAt: string | null;
+  clearedBy: string | null;
+  /// Whether the person asking may clear it: one of the people chosen, or
+  /// anybody while nobody is.
+  canClear: boolean;
 }
 
 export interface SupplyRequest {

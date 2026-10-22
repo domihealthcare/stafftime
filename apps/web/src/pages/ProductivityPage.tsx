@@ -119,8 +119,8 @@ function ManagerProductivity() {
 
       {providers.length === 0 ? (
         <EmptyState>
-          Nobody is in a provider job role yet. Add people to Provider under Manage → People → Job
-          roles and they will be listed here.
+          Nobody is in a provider job role yet. Add people to Provider under Manage → Staff → Staff
+          → Job roles and they will be listed here.
         </EmptyState>
       ) : !personId ? (
         <EmptyState>Choose a provider to see or start their statements.</EmptyState>

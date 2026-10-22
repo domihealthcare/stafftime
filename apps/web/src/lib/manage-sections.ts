@@ -5,6 +5,9 @@
  * sit under five headings and each heading opens one of its screens with a
  * strip of tabs to the rest. The screens, their addresses and what each
  * person may open are unchanged - only where they are reached from.
+ *
+ * Renamed on 22 October 2026 (Dominguez): People is **Staff**, Money is
+ * **Finances**, and Provider productivity sits under Finances.
  */
 
 /// Who may open a screen: managers and admins, admins only, the people an
@@ -26,7 +29,7 @@ export interface ManageSection {
 export const MANAGE_SECTIONS: ManageSection[] = [
   { label: 'Dashboard', tabs: [{ to: '/dashboard', label: 'Dashboard', need: 'manager' }] },
   {
-    label: 'People',
+    label: 'Staff',
     tabs: [
       // Staff and the job roles are one screen (October 2026, Dominguez: "can
       // we merge the Staff and Job Roles?"): managers, who keep the job roles,
@@ -35,7 +38,6 @@ export const MANAGE_SECTIONS: ManageSection[] = [
       { to: '/credentials', label: 'Licenses', need: 'manager' },
       { to: '/cme', label: 'CME', need: 'manager' },
       { to: '/checklists', label: 'Onboarding & Offboarding', need: 'manager' },
-      { to: '/productivity', label: 'Provider productivity', need: 'productivity' },
     ],
   },
   {
@@ -55,12 +57,13 @@ export const MANAGE_SECTIONS: ManageSection[] = [
     ],
   },
   {
-    label: 'Money',
+    label: 'Finances',
     tabs: [
       { to: '/export', label: 'Export', need: 'manager' },
       { to: '/reimbursements', label: 'Reimbursements', need: 'manager' },
       { to: '/invoices', label: 'Invoices', need: 'managerAccessOnly' },
       { to: '/vendors', label: 'Vendor payments', need: 'admin' },
+      { to: '/productivity', label: 'Provider productivity', need: 'productivity' },
     ],
   },
 ];
