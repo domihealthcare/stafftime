@@ -233,7 +233,7 @@ await step('a heading prints as a patient-ready list of everybody in it, starred
   await staff.goto(`${BASE}/phone-book?category=Cardiology`, { waitUntil: 'networkidle' });
   await staff.getByTestId('phone-book-entry').first().waitFor({ timeout: 10000 });
   const onScreen = await staff.getByTestId('phone-book-entry').count();
-  await staff.getByRole('link', { name: 'Print' }).click();
+  await staff.getByRole('link', { name: 'Print', exact: true }).click();
   await staff.getByTestId('print-title').waitFor({ timeout: 10000 });
   if (!/Cardiology/.test(await staff.getByTestId('print-title').innerText())) throw new Error('title');
   const printed = await staff.getByTestId('print-entry').count();
@@ -253,7 +253,7 @@ await step('a heading prints as a patient-ready list of everybody in it, starred
   if (!(blocks[0].length > 0 && blocks[0].every(Boolean) && blocks.slice(1).every((b) => b.every((x) => !x))))
     throw new Error(`starred are not a block at the top: ${JSON.stringify(blocks)}`);
   await staff.goto(`${BASE}/phone-book?category=Cardiology`, { waitUntil: 'networkidle' });
-  await staff.getByRole('link', { name: 'Print' }).click();
+  await staff.getByRole('link', { name: 'Print', exact: true }).click();
   await staff.getByTestId('print-title').waitFor({ timeout: 10000 });
   // Handed to patients: names, addresses and phone numbers, with nothing of the staff's.
   await staff.getByTestId('print-patient-copy').waitFor();
@@ -283,6 +283,45 @@ await step('a heading prints as a patient-ready list of everybody in it, starred
   await staff.getByRole('link', { name: /Back to the phone book/ }).click();
   await staff.getByLabel('Listed under').first().waitFor();
   if ((await staff.getByLabel('Listed under').first().inputValue()) !== 'Cardiology') throw new Error('back lost the heading');
+});
+
+await step('the printer on a card prints that one entry alone, large, and opens the print window by itself', async () => {
+  // A headless browser has no print window: count the asks instead.
+  await staff.context().addInitScript(() => {
+    window.__printed = 0;
+    window.print = () => { window.__printed += 1; };
+  });
+  await staff.goto(`${BASE}/phone-book?category=Cardiology`, { waitUntil: 'networkidle' });
+  const first = staff.getByTestId('phone-book-entry').first();
+  await first.waitFor({ timeout: 10000 });
+  const name = (await first.getByTestId('phone-book-name').innerText()).split('\n').filter((l) => l && l !== '★')[0].replace(/^★\s*/, '').trim();
+  const [tab] = await Promise.all([
+    staff.context().waitForEvent('page'),
+    first.getByRole('link', { name: /^Print / }).click(),
+  ]);
+  tab.on('pageerror', (e) => errors.push(`pageerror: ${e.message}`));
+  await tab.getByTestId('print-entry').waitFor({ timeout: 10000 });
+  if ((await tab.getByTestId('print-entry').count()) !== 1) throw new Error('more than one entry printed');
+  if (!(await tab.getByTestId('print-title').innerText()).includes(name)) throw new Error(`the title is not ${name}`);
+  if (await tab.getByTestId('print-category').locator('h2').count()) throw new Error('a heading over one entry');
+  if (!/Cardiology/.test(await tab.getByTestId('print-patient-copy').innerText())) throw new Error('the heading it is listed under is missing');
+  const size = await tab.getByTestId('print-entry').locator('h3').evaluate((h) => getComputedStyle(h).fontSize);
+  if (Number.parseFloat(size) < 22) throw new Error(`one entry prints its name at ${size}`);
+  await tab.waitForFunction(() => window.__printed === 1, null, { timeout: 5000 });
+  await tab.waitForTimeout(500);
+  if ((await tab.evaluate(() => window.__printed)) !== 1) throw new Error('the print window was asked for more than once');
+  // Nothing runs past the paper's edge, on screen or on paper.
+  await tab.emulateMedia({ media: 'print' });
+  const over = await tab.evaluate(() => document.documentElement.scrollWidth > document.documentElement.clientWidth + 1);
+  if (over) throw new Error('the printout is wider than the page');
+  await tab.emulateMedia({ media: 'screen' });
+  await tab.getByTestId('print-hint').waitFor();
+  await tab.getByRole('link', { name: /Back to the phone book/ }).click();
+  await tab.getByLabel('Listed under').first().waitFor();
+  if ((await tab.getByLabel('Listed under').first().inputValue()) !== 'Cardiology') throw new Error('back lost the heading');
+  await tab.close();
+  // The book itself is still where it was.
+  if (!/Cardiology/.test(await staff.getByLabel('Listed under').first().inputValue())) throw new Error('the search was lost');
 });
 
 await step('printing everything is a short run of pages, headings running on; the starred alone prints together', async () => {
