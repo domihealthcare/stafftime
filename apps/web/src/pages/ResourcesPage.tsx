@@ -114,8 +114,8 @@ export function ResourcesPage() {
         {isManager && (
           <p className="mt-6 text-xs text-slate-500">
             To add a job role or change who is in one, go to{' '}
-            <Link to="/job-roles" className="font-medium text-brand-700 underline">
-              Job roles
+            <Link to="/staff#job-roles" className="font-medium text-brand-700 underline">
+              Staff → Job roles
             </Link>
             .
           </p>

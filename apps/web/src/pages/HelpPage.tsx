@@ -1336,7 +1336,8 @@ const MANAGERS: Section[] = [
                 <strong>Dashboard</strong> - the week at a glance, and what is waiting on you.
               </li>
               <li>
-                <strong>People</strong> - Staff (admins), Job roles, Licenses, CME, Onboarding &amp;
+                <strong>People</strong> - Staff (with the job roles at the bottom of the screen;
+                managers see the list, admins also change it), Licenses, CME, Onboarding &amp;
                 Offboarding and Provider productivity.
               </li>
               <li>
@@ -1562,7 +1563,7 @@ const MANAGERS: Section[] = [
               role&rsquo;s colour; the key above the rota says which is which. Work from home is
               violet, open shifts amber, drafts a dashed outline. Two job roles that should look the
               same (Administrative and Manager, say) can be given the same colour under Manage
-              &rarr; People &rarr; Job roles.
+              &rarr; People &rarr; Staff, under <strong>Job roles</strong>.
             </li>
             <li>
               <strong>Right-click</strong> somebody&rsquo;s name or shift - on the week, in the
@@ -1626,16 +1627,16 @@ const MANAGERS: Section[] = [
         question: 'A minimum per office and job role',
         answer: (
           <p>
-            <Screen>Manage → People → Job roles</Screen> → <strong>Minimum on each day</strong>: the
-            fewest people you want on in a job role at an office on a day it is open - say 2 Front
-            Desk at North Bergen. Blank means none. Where there is one, Too many off at once warns
-            when time off would leave fewer than that, and days the rota leaves short (drafts
-            counted; working from home and open shifts not) are listed on the Schedule banner and in
-            the nightly email for the next two weeks, and in <strong>Before you publish</strong>. A
-            day counts once anything is on the rota at that office, so an unbuilt week is left to
-            the &ldquo;not published yet&rdquo; reminder. Press the days under a number to have it
-            apply on some days of the week only - an admin at West New York Monday to Thursday, say.
-            It never stops anything.
+            <Screen>Manage → People → Staff</Screen> → <strong>Job roles</strong> →{' '}
+            <strong>Minimum on each day</strong>: the fewest people you want on in a job role at an
+            office on a day it is open - say 2 Front Desk at North Bergen. Blank means none. Where
+            there is one, Too many off at once warns when time off would leave fewer than that, and
+            days the rota leaves short (drafts counted; working from home and open shifts not) are
+            listed on the Schedule banner and in the nightly email for the next two weeks, and in{' '}
+            <strong>Before you publish</strong>. A day counts once anything is on the rota at that
+            office, so an unbuilt week is left to the &ldquo;not published yet&rdquo; reminder.
+            Press the days under a number to have it apply on some days of the week only - an admin
+            at West New York Monday to Thursday, say. It never stops anything.
           </p>
         ),
       },
@@ -1792,8 +1793,8 @@ const MANAGERS: Section[] = [
               <strong>Don&rsquo;t book</strong> asks you to confirm first, and a rep with
               restrictions shows their notes as you pick them. Everyone sees the lunch with the rep,
               company, medication and food; the front desk also sees the rep&rsquo;s cell phone (a
-              job role setting, under Manage → People → Job roles); the status and notes are for
-              managers only. Staff at that office are told when a lunch is added, moved or
+              job role setting, under Manage → People → Staff → Job roles); the status and notes are
+              for managers only. Staff at that office are told when a lunch is added, moved or
               cancelled, and <strong>every evening at 6pm</strong> hear whether there is a rep lunch
               there the next day - or that there is none, so they bring their own. That evening
               notice goes only for days somebody is scheduled at the office and it is not closed.
@@ -2206,7 +2207,8 @@ const MANAGERS: Section[] = [
             <strong>Back to the usual</strong> undoes it. Everybody sees the week, and the admin
             sees it on <Screen>Home</Screen>. You also see when they are off or not on the rota at
             that office that day. That the rota really has somebody in Administrative there is the
-            minimum on <Screen>Manage → People → Job roles</Screen>, set to Monday to Thursday.
+            minimum on <Screen>Manage → People → Staff</Screen> → <strong>Job roles</strong>, set to
+            Monday to Thursday.
           </p>
         ),
       },
@@ -2272,10 +2274,15 @@ const MANAGERS: Section[] = [
         answer: (
           <>
             <p>
-              <Screen>Manage → People → Job roles</Screen>. Add, rename or remove roles, choose each
-              one's colour, and put people in them - somebody can be in several. A job role decides
-              which resources somebody sees, and nothing else: being in "Manager" gives no extra
-              power in the app.
+              <Screen>Manage → People → Staff</Screen>, under <strong>Job roles</strong> at the
+              bottom of the screen. Add, rename or remove roles, choose each one's colour, and put
+              people in them - somebody can be in several. A job role decides which resources
+              somebody sees, and nothing else: being in "Manager" gives no extra power in the app.
+            </p>
+            <p className="mt-2">
+              To see <strong>who is in a job role</strong>, press it in the row above the staff list
+              - the list narrows to those people, with a count on each role. Typing a role&rsquo;s
+              name in the search box does the same.
             </p>
             <p className="mt-2">
               A shift for somebody is always for one of <em>their</em> job roles: the Job role list
@@ -2521,9 +2528,11 @@ const MANAGERS: Section[] = [
           <ul>
             <li>
               <Screen>Manage → People → Staff</Screen> - add people one at a time or several at
-              once. Press <strong>Edit</strong> on somebody&rsquo;s card to change their email,
-              phone, access (Employee, Manager or Admin), job roles and their main one, offices and
-              ADP File #, send their welcome email, or give them a temporary password or tablet PIN.
+              once. Press a <strong>job role</strong> above the list to see only the people in it,
+              or search by name, email or job role. Press <strong>Edit</strong> on somebody&rsquo;s
+              card to change their email, phone, access (Employee, Manager or Admin), job roles and
+              their main one, offices and ADP File #, send their welcome email, or give them a
+              temporary password or tablet PIN.
             </li>
             <li>
               Untick <strong>Clocks in</strong> for somebody who does not clock in - the providers.
@@ -2658,9 +2667,9 @@ const MANAGERS: Section[] = [
         question: 'Giving a provider the BrainCheck Care Plan',
         answer: (
           <p>
-            Add them to the <strong>Provider</strong> job role (<Screen>Job roles</Screen>) - the
-            role has &ldquo;clinical forms&rdquo; switched on. Then, in <Screen>Staff</Screen> →{' '}
-            <strong>Edit</strong>, fill in <strong>Letters after their name</strong> (MD, APN…) so
+            Add them to the <strong>Provider</strong> job role (<Screen>Staff</Screen> → Job roles)
+            - the role has &ldquo;clinical forms&rdquo; switched on. Then, in <Screen>Staff</Screen>{' '}
+            → <strong>Edit</strong>, fill in <strong>Letters after their name</strong> (MD, APN…) so
             the note shows their credentials.
           </p>
         ),

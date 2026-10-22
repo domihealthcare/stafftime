@@ -1,5 +1,5 @@
 import { Suspense, lazy, useEffect, useState } from 'react';
-import { Route, RouterProvider, Routes, createBrowserRouter } from 'react-router-dom';
+import { Navigate, Route, RouterProvider, Routes, createBrowserRouter } from 'react-router-dom';
 import { api } from './lib/api';
 import { ConfirmProvider } from './components/ConfirmDialog';
 import { EnvironmentBanner } from './components/EnvironmentBanner';
@@ -65,9 +65,6 @@ const OnCallPage = lazy(() =>
 );
 const RequiredPage = lazy(() =>
   import('./pages/RequiredPage').then((m) => ({ default: m.RequiredPage })),
-);
-const JobRolesPage = lazy(() =>
-  import('./pages/JobRolesPage').then((m) => ({ default: m.JobRolesPage })),
 );
 const ProductivityPage = lazy(() =>
   import('./pages/ProductivityPage').then((m) => ({ default: m.ProductivityPage })),
@@ -240,7 +237,8 @@ function Routed() {
           <Route path="resources" element={<ResourcesPage />} />
           <Route path="resources/:id" element={<ResourcePage />} />
           <Route path="dashboard" element={<DashboardPage />} />
-          <Route path="job-roles" element={<JobRolesPage />} />
+          {/* Job roles are on the Staff screen since October 2026. */}
+          <Route path="job-roles" element={<Navigate to="/staff#job-roles" replace />} />
           <Route path="reps" element={<RepsPage />} />
           <Route path="diagnostics" element={<DiagnosticsPage />} />
           <Route path="phone-book" element={<PhoneBookPage />} />

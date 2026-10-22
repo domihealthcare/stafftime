@@ -1130,6 +1130,26 @@ Beyond the phases, the parts worth knowing about before picking up work:
   name), with a specialty in brackets after the last one shown once as the
   group's note (`doctorsOf` in `lib/phone-book.ts`); the whole name is still
   what is searched, so any one doctor finds the group. Cardiology is two pages.
+- **Staff and Job roles are one screen** (22 October 2026, Dominguez: "can we
+  merge the Staff and Job Roles? I should be able to search staff by job
+  roles"): **Manage → People → Staff** has a **row of job roles above the
+  list** (Everyone, then each role with a count; one press shows only the
+  people in it, `?role=<id>` opens it so), the search box also matches a job
+  role's name, and the **job roles themselves are the bottom of the screen**
+  (`components/JobRolesSection.tsx`: the same cards, + New job role, the
+  minimums; `/job-roles` redirects to `/staff#job-roles`, which scrolls
+  there). **Managers open Staff now** - this revises the 8 October decision
+  that the Staff screen stays the admins': they keep the job roles, so the
+  merged screen has to be theirs too. A manager sees the cards (as the
+  Directory shows people, plus access and job roles) and the job roles, and
+  none of the admin's tools - Add, Add several, Edit, Profile, welcome emails,
+  who never signed in, ADP File #, password and PIN status (`isAdmin` in
+  `StaffPage`; the server refused them already). The right-click menu's
+  **Open in Staff** stays admins' only. The People strip has no Job roles
+  tab; `goToManage(page, 'Job roles')` in the suites opens Staff and waits
+  for the section (`TAB_OF` in `tests/browser/nav.mjs`). Help's "Manage →
+  People → Job roles" now reads "Manage → People → Staff → Job roles".
+  `tests/browser/staff.mjs`, `manage-sections.mjs`.
 - **Phone book: print one entry, and nothing cut off** (22 October 2026,
   Dominguez: a computer "is cutting off the edges", and "print just that
   contact card ... click an icon of a printer"): a **printer icon** on every

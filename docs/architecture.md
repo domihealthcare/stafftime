@@ -4638,6 +4638,38 @@ never a patient — the form says so and the schema guard pins both tables.
 `tests/browser/phone-book.mjs` (the runner puts the book back from the v2 data
 migration between suites).
 
+## Staff and job roles on one screen (October 2026)
+
+Dominguez, 22 October 2026: "can we merge the Staff and Job Roles? I should
+be able to search staff by job roles". The Job roles screen (`/job-roles`,
+managers and admins) became the bottom of the Staff screen (`/staff`), as
+`components/JobRolesSection.tsx` - the same role cards (name, colour, the
+provider and rep-cell switches, members in and out), **+ New job role** and
+the staffing minimums card - and the Staff screen gained a **row of job
+roles** above the list: Everyone with a count, then each role with how many
+of the people listed are in it; pressing one narrows the list to them,
+pressing it again (or Everyone) clears it. The search box matches a role's
+name as well as names and emails, so "front" finds the Front Desk, and the
+two combine. A member put in or taken out of a role on a card below swaps
+that one role into the screen's state, so the tags on the cards above follow
+without a reload; a role made or deleted reloads the screen. The old address
+redirects to `/staff#job-roles`, and the hash scrolls to the section once the
+screen has loaded.
+
+**Who opens it.** The Staff screen had been the admins' (8 October 2026:
+only an admin can save there). Managers keep the job roles, so the merged
+screen is open to managers as well, and the admin's tools are simply not
+rendered for them: adding people (one or several), **Edit**, **Profile**,
+the welcome emails and the who-never-signed-in card, and on each card the
+ADP File #, password and PIN status. What a manager sees on a card is what
+the Directory already shows them, plus the access badge and the job roles.
+The server-side permissions did not change: `GET /employees` and
+`GET /locations` were already managers', and everything a manager cannot
+see is refused on the API. The right-click **Open in Staff** stays admins'
+only, as decided. `lib/manage-sections.ts` lists Staff with `need:
+'manager'` and no Job roles tab; the browser suites' `goToManage(page, 'Job
+roles')` opens Staff and waits for the section's heading.
+
 ## Manage in five headings (October 2026)
 
 Manage used to list up to fifteen screens (Dashboard, Surveys, Required reading,
@@ -4649,7 +4681,7 @@ manage options". They are grouped in `lib/manage-sections.ts`:
 | Heading | Tabs |
 | --- | --- |
 | Dashboard | Dashboard |
-| People | Staff (admin), Job roles, Licenses, Onboarding & Offboarding, Provider productivity (chosen) |
+| People | Staff (with the job roles on it since 22 October 2026), Licenses, Onboarding & Offboarding, Provider productivity (chosen) |
 | Offices | Locations (admin), Kiosks (admin), Closing checklists, Reps |
 | Surveys & reading | Surveys, Required reading |
 | Money | Export, Reimbursements, Vendor payments (admin) |

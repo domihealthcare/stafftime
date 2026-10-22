@@ -161,7 +161,6 @@ for (const [label, screen] of [
   ['Surveys', 'Surveys'],
   ['Required reading', 'Required reading'],
   ['Dashboard', 'Dashboard'],
-  ['Job roles', 'Job roles'],
   ['Export', 'Export'],
   ['Staff', 'Staff'],
   ['Kiosks', 'Kiosks'],

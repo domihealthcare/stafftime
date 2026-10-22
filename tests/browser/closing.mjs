@@ -97,9 +97,9 @@ await step('managers find them under Manage, with Closing checklists, not on the
     (await mgr.getByRole('navigation', { name: `${section} screens` }).getByRole('link').allInnerTexts()).map((t) => t.trim());
   await goToManage(mgr, 'Licenses');
   const people = await tabs('People');
-  for (const name of ['Onboarding & Offboarding', 'Licenses', 'Job roles'])
+  // Staff carries the job roles, so a manager has it too (October 2026).
+  for (const name of ['Onboarding & Offboarding', 'Licenses', 'Staff'])
     if (!people.includes(name)) throw new Error(`People lacks ${name}: ${people.join(', ')}`);
-  if (people.includes('Staff')) throw new Error('a manager is offered Staff');
   await goToManage(mgr, 'Closing checklists');
   const offices = await tabs('Offices');
   if (!offices.includes('Closing checklists')) throw new Error(`Offices lacks Closing checklists: ${offices.join(', ')}`);

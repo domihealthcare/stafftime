@@ -28,8 +28,10 @@ export const MANAGE_SECTIONS: ManageSection[] = [
   {
     label: 'People',
     tabs: [
-      { to: '/staff', label: 'Staff', need: 'admin' },
-      { to: '/job-roles', label: 'Job roles', need: 'manager' },
+      // Staff and the job roles are one screen (October 2026, Dominguez: "can
+      // we merge the Staff and Job Roles?"): managers, who keep the job roles,
+      // open it too and see the cards without the admin's tools.
+      { to: '/staff', label: 'Staff', need: 'manager' },
       { to: '/credentials', label: 'Licenses', need: 'manager' },
       { to: '/cme', label: 'CME', need: 'manager' },
       { to: '/checklists', label: 'Onboarding & Offboarding', need: 'manager' },

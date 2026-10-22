@@ -127,6 +127,52 @@ await step('the search box narrows the list, and says so when nobody matches', a
   await admin.getByTestId('staff-imp-sasha@example.com').waitFor({ timeout: 5000 });
 });
 
+await step('a job role above the list shows only the people in it, and the job roles are kept at the bottom', async () => {
+  const cards = admin.locator('[data-testid^="staff-"]').filter({ hasText: '@' });
+  const all = await cards.count();
+  const chips = admin.getByTestId('staff-role-filter');
+  await chips.getByRole('button', { name: /^Front Desk \(\d+\)$/ }).click();
+  await admin.waitForTimeout(200);
+  const some = await cards.count();
+  if (!(some >= 1 && some < all)) throw new Error(`Front Desk left ${some} of ${all} cards`);
+  const tags = await cards.locator('[data-testid=staff-job-roles]').allInnerTexts();
+  if (tags.length !== some || !tags.every((t) => /Front Desk/.test(t))) throw new Error(`not all in Front Desk: ${tags.join(' | ')}`);
+  // Typing a role's name does the same; the two combine.
+  await chips.getByRole('button', { name: /^Everyone \(\d+\)$/ }).click();
+  await admin.getByLabel('Search staff').fill('medical assistant');
+  await admin.waitForTimeout(200);
+  const typed = await cards.locator('[data-testid=staff-job-roles]').allInnerTexts();
+  if (!(typed.length >= 1 && typed.every((t) => /Medical Assistant/.test(t)))) throw new Error(`typing a role found: ${typed.join(' | ')}`);
+  await admin.getByLabel('Search staff').fill('');
+  await admin.getByTestId('staff-imp-sasha@example.com').waitFor({ timeout: 5000 });
+  // The job roles themselves, with their minimums, are the bottom of the screen; /job-roles lands there.
+  await admin.getByRole('heading', { name: 'Job roles', level: 2 }).waitFor();
+  await admin.getByTestId('job-role-Front Desk').waitFor();
+  await admin.getByTestId('staffing-minimums').waitFor();
+  await admin.goto(`${BASE}/job-roles`, { waitUntil: 'networkidle' });
+  await admin.getByRole('heading', { name: 'Staff', level: 1 }).waitFor({ timeout: 10000 });
+  if (!/#job-roles$/.test(admin.url())) throw new Error(`the old address went to ${admin.url()}`);
+  await admin.goto(`${BASE}/staff`, { waitUntil: 'networkidle' });
+  await admin.getByTestId('staff-imp-sasha@example.com').waitFor({ timeout: 10000 });
+});
+
+await step('a manager opens Staff too - the cards and the job roles, none of the admin’s tools', async () => {
+  const manager = await signIn('manager@domihealthcare.com');
+  await manager.goto(`${BASE}/staff`, { waitUntil: 'networkidle' });
+  await manager.getByRole('heading', { name: 'Staff', level: 1 }).waitFor({ timeout: 10000 });
+  await manager.getByTestId('staff-imp-sasha@example.com').waitFor({ timeout: 10000 });
+  await manager.getByRole('heading', { name: 'Job roles', level: 2 }).waitFor();
+  await manager.getByRole('button', { name: '+ New job role' }).waitFor();
+  for (const name of ['+ Add someone', 'Add several people', 'Send welcome emails'])
+    if (await manager.getByRole('button', { name }).count()) throw new Error(`a manager is offered ${name}`);
+  if (await manager.getByRole('button', { name: /^Edit [A-Z]/ }).count()) throw new Error('a manager can Edit a person');
+  if (await manager.getByRole('link', { name: /^Profile of/ }).count()) throw new Error('a manager is offered a staff profile');
+  if (await manager.getByTestId('not-signed-in').count()) throw new Error('a manager sees who never signed in');
+  const text = await manager.locator('main').innerText();
+  if (/ADP File #|chosen a password/.test(text)) throw new Error('sign-in or ADP details shown to a manager');
+  await manager.context().close();
+});
+
 await step('an admin fills in somebody’s email, phone and the name they go by', async () => {
   await admin.getByRole('button', { name: 'Edit Sasha Staffsuite' }).click();
   await editor.getByRole('heading', { name: 'Sasha Staffsuite' }).waitFor({ timeout: 10000 });
