@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { BrandLogoForPrint } from '../components/Brand';
 import { Alert, Spinner, buttonClass } from '../components/ui';
@@ -74,8 +74,11 @@ export function PhoneBookPrintPage() {
   const category = params.get('category') ?? '';
   const preferredOnly = params.get('starred') === '1';
   const staffCopy = params.get('staff') === '1';
+  // One entry alone, from the printer on its card.
+  const entryId = params.get('entry');
   const [contacts, setContacts] = useState<ReferralContact[] | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const printedOnce = useRef(false);
 
   useEffect(() => {
     api
@@ -86,29 +89,49 @@ export function PhoneBookPrintPage() {
       );
   }, []);
 
+  const single = entryId ? (contacts ?? []).find((contact) => contact.id === entryId) : undefined;
   const groups = useMemo(
-    () => groupByCategory(searchContacts(contacts ?? [], { query, category, preferredOnly })),
-    [contacts, query, category, preferredOnly],
+    () =>
+      entryId
+        ? groupByCategory(single ? [single] : [])
+        : groupByCategory(searchContacts(contacts ?? [], { query, category, preferredOnly })),
+    [contacts, entryId, single, query, category, preferredOnly],
   );
   const total = groups.reduce((sum, group) => sum + group.contacts.length, 0);
   const anyStarred = groups.some((group) => group.contacts.some((contact) => contact.preferred));
 
   // What was searched for is how the list was made, not what it is called, so
-  // it is left off the paper.
-  const title = [category || 'Referral list', preferredOnly ? 'preferred' : '']
-    .filter(Boolean)
-    .join(' - ');
+  // it is left off the paper. One entry is headed with its own name.
+  const title = single
+    ? doctorsOf(single.name).doctors.join(', ')
+    : [category || 'Referral list', preferredOnly ? 'preferred' : ''].filter(Boolean).join(' - ');
   // The tab title becomes the file name when somebody saves it as a PDF.
   useEffect(() => {
     const previous = document.title;
-    document.title = `${category || 'Referral list'}${staffCopy ? ' (staff copy)' : ''}`;
+    document.title = `${single ? single.name : category || 'Referral list'}${staffCopy ? ' (staff copy)' : ''}`;
     return () => {
       document.title = previous;
     };
-  }, [category, staffCopy]);
+  }, [single, category, staffCopy]);
+
+  // The printer on a card means "print this one", so the print window opens by
+  // itself once the entry is on the page - once; the Print button is still
+  // there for another copy or after ticking Staff copy. Marked done when it
+  // fires, not when it is set: a development build runs effects twice, and the
+  // first run's timer is cleared.
+  useEffect(() => {
+    if (!single || printedOnce.current) return;
+    const timer = window.setTimeout(() => {
+      printedOnce.current = true;
+      window.print();
+    }, 300);
+    return () => window.clearTimeout(timer);
+  }, [single]);
 
   const back = new URLSearchParams(params);
   back.delete('staff');
+  back.delete('entry');
+  if (single) back.set('category', single.category);
   const printedAt = new Date().toLocaleDateString(undefined, {
     month: 'long',
     day: 'numeric',
@@ -149,6 +172,13 @@ export function PhoneBookPrintPage() {
             Print
           </button>
         </div>
+        {/* The page keeps half an inch clear all round, but a print window set
+            to "None" margins or a scale above 100% can still run past what the
+            printer reaches - the one thing the app cannot set from here. */}
+        <p className="mx-auto max-w-4xl px-4 pb-2 text-xs text-slate-600" data-testid="print-hint">
+          Edges cut off? In the print window set <strong>Paper size</strong> to Letter,{' '}
+          <strong>Margins</strong> to Default and <strong>Scale</strong> to 100% (or Fit to page).
+        </p>
       </div>
 
       <div className="mx-auto max-w-4xl p-4 print:max-w-none print:p-0">
@@ -159,7 +189,7 @@ export function PhoneBookPrintPage() {
           </div>
         ) : (
           <div
-            className={`rounded-xl bg-white p-6 shadow-sm print:rounded-none print:p-0 print:shadow-none ${staffCopy ? 'staff-copy' : 'patient-copy'}`}
+            className={`printed rounded-xl bg-white p-6 shadow-sm print:rounded-none print:p-0 print:shadow-none ${staffCopy ? 'staff-copy' : 'patient-copy'} ${single ? 'single-entry' : ''}`}
             data-testid={staffCopy ? 'print-staff-copy' : 'print-patient-copy'}
           >
             <header className="mb-2 flex items-end justify-between gap-4 border-b-2 border-slate-700 pb-2">
@@ -168,6 +198,7 @@ export function PhoneBookPrintPage() {
                   {title}
                 </h1>
                 <p className="mt-1 text-sm text-slate-700">
+                  {single ? `${single.category} · ` : ''}
                   {staffCopy
                     ? `Staff copy - not for patients · ${total} ${total === 1 ? 'entry' : 'entries'} · printed ${printedAt}`
                     : `Referrals from Domi Healthcare · printed ${printedAt}`}
@@ -188,10 +219,14 @@ export function PhoneBookPrintPage() {
                 )}
               </div>
             )}
-            {groups.length === 0 && <p className="text-base text-slate-700">Nothing to print.</p>}
+            {groups.length === 0 && (
+              <p className="text-base text-slate-700">
+                {entryId ? 'That entry is no longer in the phone book.' : 'Nothing to print.'}
+              </p>
+            )}
             {groups.map((group) => (
               <section key={group.category} className="category" data-testid="print-category">
-                {(groups.length > 1 || !category) && (
+                {!single && (groups.length > 1 || !category) && (
                   <h2 className="mb-1 mt-3 border-b border-slate-500 text-lg font-bold uppercase tracking-wide text-slate-900">
                     {group.category}
                   </h2>
@@ -227,6 +262,13 @@ export function PhoneBookPrintPage() {
 const PRINT_CSS = `
 @page { size: letter portrait; margin: 0.5in; }
 .entry { break-inside: avoid; }
+/* Nothing may run past the paper's edge: a long web address, an email or an
+   address with no spaces wraps inside its column instead of being clipped, and
+   the page is never wider than the printable width. */
+.printed { width: 100%; max-width: 100%; min-width: 0; overflow: visible; box-sizing: border-box; }
+.printed * { min-width: 0; box-sizing: border-box; }
+.entry, .entry-name, .entry-line { overflow-wrap: anywhere; word-break: break-word; }
+.printed img { max-width: 100%; }
 .patient-copy .entries { column-count: 2; column-gap: 0.3in; }
 .patient-copy .entry { margin-bottom: 0.1in; padding-bottom: 0.06in; border-bottom: 1px solid #cbd5e1; }
 .patient-copy .entry-name { font-size: 13pt; line-height: 1.2; margin-bottom: 0.02in; }
@@ -235,8 +277,17 @@ const PRINT_CSS = `
 .staff-copy .entry { margin-bottom: 0.09in; padding-bottom: 0.05in; border-bottom: 1px dotted #94a3b8; }
 .staff-copy .entry-name { font-size: 11pt; line-height: 1.2; }
 .staff-copy .entry-line { font-size: 10pt; line-height: 1.3; }
+/* One entry alone (the printer on its card): one column, a size up, so a card
+   handed over reads from across a desk. */
+.single-entry .entries { column-count: 1 !important; max-width: 5.5in; }
+.single-entry .entry { border-bottom: none; }
+.single-entry.patient-copy .entry-name { font-size: 18pt; }
+.single-entry.patient-copy .entry-line { font-size: 14pt; line-height: 1.4; }
+.single-entry.staff-copy .entry-name { font-size: 15pt; }
+.single-entry.staff-copy .entry-line { font-size: 12pt; line-height: 1.4; }
 @media screen { .entries { column-count: 1 !important; } @media (min-width: 768px) { .entries { column-count: 2 !important; } } }
 @media print {
+  html, body { width: auto !important; margin: 0 !important; padding: 0 !important; overflow: visible !important; }
   .category h2 { break-after: avoid; }
   body { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
 }

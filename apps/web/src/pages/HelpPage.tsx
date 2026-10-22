@@ -776,7 +776,13 @@ const STAFF: Section[] = [
               is the one to hand to a patient: large print, names, addresses and phone numbers, with
               no fax numbers and none of our notes. Tick <strong>Staff copy</strong> for the fax
               numbers and notes - that one is not for patients. A heading such as Cardiology is a
-              page or two; with no heading picked it prints the whole book.
+              page or two; with no heading picked it prints the whole book. To print{' '}
+              <strong>one place alone</strong> - to hand a patient on the way out - press the small{' '}
+              <strong>printer</strong> on its card: it opens in a new tab, one entry in large print,
+              and the print window comes up by itself. If the edges come out cut off, look in the
+              print window: paper size <strong>Letter</strong>, margins <strong>Default</strong> and
+              scale <strong>100%</strong> (or Fit to page). The page itself keeps half an inch clear
+              all round.
             </p>
             <p>
               The book is kept by all of us. Press <strong>Edit</strong> on an entry to fix a number

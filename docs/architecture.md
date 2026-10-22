@@ -4601,6 +4601,23 @@ run on with no page break between them, so Cardiology is one page and the
 whole book about 22; the browser suite fails a Cardiology printout over two
 pages or a whole book over 30. Its tab title becomes the PDF's file name.
 
+**One entry alone** (22 October 2026, Dominguez: "print just that contact
+card"): the printer icon on a card opens `/phone-book/print?entry=<id>` in a
+new tab, so the search behind it is kept. The page then shows that one place
+in one column a size up (`.single-entry`), headed with its own name and the
+heading it is listed under, patient copy by default and Staff copy as a tick,
+and asks the browser to print by itself once the entry has rendered, once
+(a timer, marked done when it fires, so a development build's double-run of
+effects does not swallow it). The Print button stays for another copy.
+
+**Cut-off edges** (same day, from an office computer): the page keeps a
+half-inch `@page` margin, every entry wraps long words (`overflow-wrap:
+anywhere`, so a web address or an email never runs out of its column), and the
+printed block is never wider than the printable width. The rest is the print
+window's own doing - margins set to None, a scale above 100%, or a paper size
+other than Letter - which the app cannot set, so a line under the toolbar and
+the Help guide say what to pick there.
+
 **The stars** are the document's yellow-highlighted entries (white and
 paragraph shading in it are not highlights); the list went to Dominguez to
 confirm. Categories are free text, so a new one is made by typing it in.

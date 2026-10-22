@@ -1130,6 +1130,21 @@ Beyond the phases, the parts worth knowing about before picking up work:
   name), with a specialty in brackets after the last one shown once as the
   group's note (`doctorsOf` in `lib/phone-book.ts`); the whole name is still
   what is searched, so any one doctor finds the group. Cardiology is two pages.
+- **Phone book: print one entry, and nothing cut off** (22 October 2026,
+  Dominguez: a computer "is cutting off the edges", and "print just that
+  contact card ... click an icon of a printer"): a **printer icon** on every
+  card opens `/phone-book/print?entry=<id>` in a new tab - that one place
+  alone, one column, a size up (18-point name on the patient copy), headed
+  with its name and the heading it is listed under, Staff copy still a tick -
+  and **the print window opens by itself** once the entry is on the page
+  (once; a dev build runs effects twice, so the mark is set when the timer
+  fires). The cut edges: the printout now wraps any long web address, email
+  or address inside its column (`overflow-wrap: anywhere`), is never wider
+  than the printable width, and keeps its half-inch margins; what the app
+  cannot set is the print window itself, so a line under the toolbar and Help
+  say: paper size Letter, margins Default, scale 100% (or Fit to page). The
+  toolbar's own Print link is matched `exact` in the suite now that the cards
+  have "Print <name>" links. `tests/browser/phone-book.mjs`.
 - **News and the whole rota for staff an admin chooses** (19 October 2026,
   Dominguez: Administrative access "needs to post notifications (about
   schedule etc) and view everyone's schedule"; named: Angelica Notario;

@@ -95,6 +95,26 @@ function OfficeBlock({ office, several }: { office: ReferralOffice; several: boo
   );
 }
 
+/// A small line drawing of a printer, drawn here like the navigation's icons.
+function PrinterIcon() {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      className="h-[18px] w-[18px]"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.8"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+    >
+      <path d="M7 9V4h10v5" />
+      <rect x="4" y="9" width="16" height="8" rx="1.5" />
+      <path d="M7 14h10v6H7z" />
+    </svg>
+  );
+}
+
 function ContactCard({ contact, onEdit }: { contact: ReferralContact; onEdit: () => void }) {
   const several = contact.offices.length > 1;
   const { doctors, note } = doctorsOf(contact.name);
@@ -127,14 +147,28 @@ function ContactCard({ contact, onEdit }: { contact: ReferralContact; onEdit: ()
             </>
           )}
         </h3>
-        <button
-          type="button"
-          onClick={onEdit}
-          aria-label={`Edit ${contact.name}`}
-          className="tap shrink-0 rounded px-2 text-xs font-medium text-brand-800 hover:bg-brand-50"
-        >
-          Edit
-        </button>
+        <div className="flex shrink-0 items-center">
+          {/* Prints this one entry alone, in a new tab so the search is kept. */}
+          <Link
+            to={`/phone-book/print?entry=${encodeURIComponent(contact.id)}`}
+            target="_blank"
+            rel="noopener"
+            aria-label={`Print ${contact.name}`}
+            title="Print this entry"
+            className="tap flex items-center rounded px-1.5 text-brand-800 hover:bg-brand-50"
+            data-testid="phone-book-print-one"
+          >
+            <PrinterIcon />
+          </Link>
+          <button
+            type="button"
+            onClick={onEdit}
+            aria-label={`Edit ${contact.name}`}
+            className="tap rounded px-2 text-xs font-medium text-brand-800 hover:bg-brand-50"
+          >
+            Edit
+          </button>
+        </div>
       </div>
       <div className="mt-2 space-y-2">
         {contact.offices.map((office) => (
