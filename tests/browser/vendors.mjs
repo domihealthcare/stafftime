@@ -109,10 +109,10 @@ await step('a completed payment with no day it was done is refused, in words', a
 await step('managers and staff have no vendor payments', async () => {
   for (const email of ['manager@domihealthcare.com', 'frontdesk@domihealthcare.com']) {
     const page = await signIn(email);
-    // A manager has the Money section but not this tab; staff have no Manage.
+    // A manager has the Finances section but not this tab; staff have no Manage.
     if (email.startsWith('manager')) {
       await goToManage(page, 'Export');
-      const tab = page.getByRole('navigation', { name: 'Money screens' }).getByRole('link', { name: 'Vendor payments' });
+      const tab = page.getByRole('navigation', { name: 'Finances screens' }).getByRole('link', { name: 'Vendor payments' });
       if (await tab.count()) throw new Error(`${email} is offered it`);
     } else if (await (await navLink(page, 'Vendor payments')).isVisible().catch(() => false)) {
       throw new Error(`${email} is offered it`);

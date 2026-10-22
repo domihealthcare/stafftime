@@ -102,32 +102,38 @@ export async function pressDownload(page, name) {
 /// a strip of tabs to the rest.
 export const SECTION_OF = {
   Dashboard: 'Dashboard',
-  Staff: 'People',
-  'Job roles': 'People',
-  Licenses: 'People',
-  CME: 'People',
-  'Onboarding & Offboarding': 'People',
-  'Provider productivity': 'People',
+  Staff: 'Staff',
+  'Job roles': 'Staff',
+  Licenses: 'Staff',
+  CME: 'Staff',
+  'Onboarding & Offboarding': 'Staff',
+  'Provider productivity': 'Finances',
   Locations: 'Offices',
   Kiosks: 'Offices',
   'Closing checklists': 'Offices',
   Reps: 'Offices',
   Surveys: 'Surveys & reading',
   'Required reading': 'Surveys & reading',
-  Export: 'Money',
-  Reimbursements: 'Money',
-  'Vendor payments': 'Money',
-  Invoices: 'Money',
+  Export: 'Finances',
+  Reimbursements: 'Finances',
+  'Vendor payments': 'Finances',
+  Invoices: 'Finances',
 };
 
 /// Opens one of Manage's screens the way a person does: Manage, its heading,
 /// then the tab (on a phone, Manage is inside More).
+/// Screens that live on another screen's tab: the job roles are the bottom
+/// of the Staff screen (October 2026).
+const TAB_OF = { 'Job roles': 'Staff' };
+
 export async function goToManage(page, label) {
   const section = SECTION_OF[label];
   if (!section) throw new Error(`${label} is not a Manage screen`);
+  const tab = TAB_OF[label] ?? label;
   await openMenu(page, 'Manage');
   await page.getByRole('navigation').getByRole('link', { name: section, exact: true }).first().click();
-  if (section !== label) {
-    await page.getByRole('navigation', { name: `${section} screens` }).getByRole('link', { name: label, exact: true }).click();
+  if (section !== tab) {
+    await page.getByRole('navigation', { name: `${section} screens` }).getByRole('link', { name: tab, exact: true }).click();
   }
+  if (label === 'Job roles') await page.getByRole('heading', { name: 'Job roles', level: 2 }).waitFor({ timeout: 15000 });
 }

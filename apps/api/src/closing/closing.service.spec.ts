@@ -75,8 +75,16 @@ function build(options: { openSupply?: boolean; roles?: unknown[] } = {}) {
       update: jest.fn().mockResolvedValue({}),
       create: jest.fn().mockResolvedValue({}),
     },
+    topicAssignee: { findMany: jest.fn().mockResolvedValue([]) },
+    employee: { findUnique: jest.fn().mockResolvedValue(null) },
   };
-  return { service: new ClosingService(prisma as never), prisma, created };
+  const notifications = { bell: jest.fn().mockResolvedValue(undefined) };
+  return {
+    service: new ClosingService(prisma as never, notifications as never),
+    prisma,
+    created,
+    notifications,
+  };
 }
 
 const entry = (locationId = NB) => ({

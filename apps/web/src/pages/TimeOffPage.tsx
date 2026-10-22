@@ -22,6 +22,7 @@ import { PtoPolicyEditor } from '../components/PtoPolicyEditor';
 import { useConfirm } from '../components/ConfirmDialog';
 import { atPracticeTime, practiceClockOf } from '../lib/practice-time';
 import { useApproveTimeOff } from '../components/ApproveTimeOff';
+import { TopicAssignees } from '../components/TopicAssignees';
 import { ApproveCleanTimeOff } from '../components/ApproveCleanTimeOff';
 import { useDeclineTimeOff } from '../components/DeclineTimeOff';
 import {
@@ -135,6 +136,31 @@ export function TimeOffPage() {
             {pendingForMe} request{pendingForMe === 1 ? '' : 's'} waiting on a decision.
           </Alert>
         </div>
+      )}
+
+      {/* Who hears of a new request (October 2026, Dominguez: "I don't want to
+          always be notified of PTO requests"). Folded: set once in a while. */}
+      {isManager && (
+        <details className="mb-4" data-testid="time-off-assignees">
+          <summary className="cursor-pointer text-sm font-medium text-brand-800">
+            Who is told of new requests
+          </summary>
+          <div className="mt-2">
+            <TopicAssignees
+              topic="TIME_OFF"
+              title="Who looks after time off"
+              intro={
+                <p>
+                  The people ticked are the ones told - under the bell and by email - as each
+                  request comes in, and the ones sent the <strong>Time off</strong> part of the
+                  nightly email. With nobody ticked it goes by Email settings: everyone who has not
+                  unticked Time off there. Anybody with Manager or Admin access can still decide a
+                  request.
+                </p>
+              }
+            />
+          </div>
+        </details>
       )}
 
       {error && (

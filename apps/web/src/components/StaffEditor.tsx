@@ -693,7 +693,7 @@ function LicensesSummary({ person }: { person: Employee }) {
           })}
         </ul>
         <p className="mt-2 text-xs text-slate-500">
-          Recorded and renewed under Manage → People → Licenses.
+          Recorded and renewed under Manage → Staff → Licenses.
         </p>
       </Section>
     </div>

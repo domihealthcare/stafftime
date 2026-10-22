@@ -1,7 +1,7 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { useConfirm } from '../components/ConfirmDialog';
-import { Alert, Card, EmptyState, PageHeading, Spinner, buttonClass } from '../components/ui';
+import { useConfirm } from './ConfirmDialog';
+import { Alert, Card, EmptyState, buttonClass } from './ui';
 import { ApiError, api } from '../lib/api';
 import { displayName } from '../lib/format';
 import {
@@ -9,55 +9,49 @@ import {
   JOB_ROLE_COLOUR_KEYS,
   jobRoleHex as jobRoleHexFor,
 } from '../lib/job-role-colours';
-import { JobRoleDot } from '../components/JobRoleTag';
-import { StaffingMinimumsCard } from '../components/StaffingMinimumsCard';
+import { JobRoleDot } from './JobRoleTag';
+import { StaffingMinimumsCard } from './StaffingMinimumsCard';
 import type { Employee, JobRole } from '../lib/types';
 
 /**
- * What people do at the practice, and who does it.
+ * What people do at the practice, and who does it - the lower half of the
+ * Staff screen since October 2026 (Dominguez: "can we merge the Staff and Job
+ * Roles?"; it had been a screen of its own).
  *
  * Managers keep this. Somebody can be in several - a front desk colleague who
  * also rooms patients is in Front Desk and Medical Assistant - and it decides
  * which resources they see. It does not change what they may do in the app:
- * that is their access level on the Staff screen.
+ * that is their access level, on the cards above.
  */
-export function JobRolesPage() {
-  const [roles, setRoles] = useState<JobRole[]>([]);
-  const [staff, setStaff] = useState<Employee[]>([]);
+export function JobRolesSection({
+  roles,
+  staff,
+  onChanged,
+  onReload,
+}: {
+  roles: JobRole[];
+  /// Everybody still here, offered when adding somebody to a role.
+  staff: Employee[];
+  /// One role changed (a member in or out, a rename): swap it in, so the
+  /// cards above show the new tags without the whole screen reloading.
+  onChanged: (role: JobRole) => void;
+  /// A role made or deleted: load everything again.
+  onReload: () => void;
+}) {
   const [adding, setAdding] = useState(false);
-  const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-
-  const load = useCallback(async () => {
-    try {
-      const [rows, people] = await Promise.all([api.jobRoles(), api.listEmployees()]);
-      setRoles(rows);
-      setStaff(people.filter((person) => person.employmentStatus !== 'TERMINATED'));
-      setError(null);
-    } catch (cause) {
-      setError(cause instanceof ApiError ? cause.message : 'Could not load the job roles.');
-    } finally {
-      setLoading(false);
-    }
-  }, []);
-
-  useEffect(() => {
-    void load();
-  }, [load]);
-
-  /// A single role changed - swap it in rather than reloading everything, so
-  /// adding five people to Front Desk does not flicker the page five times.
-  const replace = (updated: JobRole) =>
-    setRoles((current) => current.map((role) => (role.id === updated.id ? updated : role)));
-
-  if (loading) return <Spinner label="Loading job roles" />;
+  const here = staff.filter((person) => person.employmentStatus !== 'TERMINATED');
 
   return (
-    <div className="max-w-4xl">
-      <PageHeading
-        title="Job roles"
-        subtitle="What people do here. Someone can be in more than one, and each role has its own resources."
-      />
+    <section id="job-roles" className="mt-10 scroll-mt-4" aria-labelledby="job-roles-heading">
+      <div className="mb-3 border-t border-slate-200 pt-6">
+        <h2 id="job-roles-heading" className="text-xl font-semibold text-slate-900">
+          Job roles
+        </h2>
+        <p className="mt-1 text-sm text-slate-600">
+          What people do here. Someone can be in more than one, and each role has its own resources.
+        </p>
+      </div>
 
       <div className="mb-4">
         <Alert tone="info">
@@ -67,7 +61,7 @@ export function JobRolesPage() {
           </Link>{' '}
           someone sees - nothing else. Being in <em>Administrative</em> or <em>Manager</em> here
           does not let anyone approve hours or change settings; that is their access level, set by
-          an admin on the Staff screen.
+          an admin with <strong>Edit</strong> on their card above.
         </Alert>
       </div>
 
@@ -83,7 +77,7 @@ export function JobRolesPage() {
             used={roles.map((role) => role.colour)}
             onSaved={() => {
               setAdding(false);
-              void load();
+              onReload();
             }}
             onCancel={() => setAdding(false)}
           />
@@ -106,9 +100,9 @@ export function JobRolesPage() {
             <RoleCard
               key={role.id}
               role={role}
-              staff={staff}
-              onChanged={replace}
-              onDeleted={() => void load()}
+              staff={here}
+              onChanged={onChanged}
+              onDeleted={onReload}
               onError={setError}
             />
           ))}
@@ -116,7 +110,7 @@ export function JobRolesPage() {
       )}
 
       <StaffingMinimumsCard roles={roles} />
-    </div>
+    </section>
   );
 }
 

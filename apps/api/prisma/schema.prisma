@@ -413,9 +413,12 @@ model Employee {
   setScheduleReviewDays    ScheduleReviewDay[]  @relation("ScheduleReviewDaySetBy")
 
   /// The admin in the office on a weekday, and days changed (October 2026).
-  officeAdminWeekdays OfficeAdmin[]    @relation("OfficeAdminPerson")
-  officeAdminDays     OfficeAdminDay[] @relation("OfficeAdminDayPerson")
-  setOfficeAdminDays  OfficeAdminDay[] @relation("OfficeAdminDaySetBy")
+  officeAdminWeekdays   OfficeAdmin[]    @relation("OfficeAdminPerson")
+  /// The parts of the practice this manager or admin was chosen to look after.
+  topicAssignments      TopicAssignee[]  @relation("TopicAssigneePerson")
+  closingRecordsCleared ClosingRecord[]  @relation("ClosingRecordClearedBy")
+  officeAdminDays       OfficeAdminDay[] @relation("OfficeAdminDayPerson")
+  setOfficeAdminDays    OfficeAdminDay[] @relation("OfficeAdminDaySetBy")
 
   /// CME activities a provider asks to have approved, and their allowance
   /// (October 2026).
@@ -2461,6 +2464,9 @@ enum NotificationKind {
   /// A CME activity asked for (to managers), or decided or reimbursed (to the
   /// provider).
   CME
+  /// To the people who look after closing checklists: a clock-out came in
+  /// with something missed, or without the checklist.
+  CLOSING
 }
 
 /// Something the app wants one person to know, shown under the bell in the
@@ -2557,25 +2563,30 @@ model ClosingItem {
 /// One clock-out's checklist. Written even when nothing was filled in - a
 /// clock-out that skipped the checklist is itself worth a manager knowing.
 model ClosingRecord {
-  id          String   @id @default(uuid()) @db.Uuid
-  timeEntryId String   @unique @db.Uuid
-  employeeId  String   @db.Uuid
-  locationId  String   @db.Uuid
+  id          String    @id @default(uuid()) @db.Uuid
+  timeEntryId String    @unique @db.Uuid
+  employeeId  String    @db.Uuid
+  locationId  String    @db.Uuid
   /// The working day, in the office's time zone.
-  day         DateTime @db.Date
+  day         DateTime  @db.Date
   /// Position sections they said they worked, by title as it was then.
-  positions   String[] @default([])
+  positions   String[]  @default([])
   /// False when they clocked out without filling it in (a manager clocking
   /// them out, an old browser, a tablet that lost its connection).
-  submitted   Boolean  @default(true)
+  submitted   Boolean   @default(true)
   /// How many ticked tasks were missed and counts fell short - kept so the
   /// round-up does not have to reread every answer.
-  gaps        Int      @default(0)
-  createdAt   DateTime @default(now())
+  gaps        Int       @default(0)
+  createdAt   DateTime  @default(now())
+  /// Looked into and dealt with by somebody who looks after closing
+  /// checklists (October 2026): off the banner and the round-up from then.
+  clearedAt   DateTime?
+  clearedById String?   @db.Uuid
 
   timeEntry TimeEntry       @relation(fields: [timeEntryId], references: [id], onDelete: Cascade)
   employee  Employee        @relation(fields: [employeeId], references: [id], onDelete: Cascade)
   location  Location        @relation(fields: [locationId], references: [id], onDelete: Restrict)
+  clearedBy Employee?       @relation("ClosingRecordClearedBy", fields: [clearedById], references: [id], onDelete: SetNull)
   answers   ClosingAnswer[]
 
   @@index([day])
@@ -2622,6 +2633,27 @@ model SupplyRequest {
 
   @@index([locationId, orderedAt])
   @@map("supply_requests")
+}
+
+/// The managers and admins chosen to look after one part of the practice
+/// (October 2026, Dominguez: "assign staff ... to being notified and
+/// clearing/approving checklists"; "I don't want to always be notified of PTO
+/// requests, that should be a setting to who it notifies"). A part with
+/// anybody chosen goes to them alone: its bell notes as things happen (a new
+/// time-off request, a clock-out with something missed) and its section of
+/// the nightly round-up; for closing checklists they are also the ones who
+/// clear one. A part with nobody chosen goes by Email settings as before: to
+/// whoever has not unticked it, else everyone.
+model TopicAssignee {
+  topic      DigestTopic
+  employeeId String      @db.Uuid
+  updatedAt  DateTime    @updatedAt
+
+  employee Employee @relation("TopicAssigneePerson", fields: [employeeId], references: [id], onDelete: Cascade)
+
+  @@id([topic, employeeId])
+  @@index([employeeId])
+  @@map("topic_assignees")
 }
 
 // ---------------------------------------------------------------------------

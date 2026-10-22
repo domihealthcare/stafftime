@@ -501,6 +501,7 @@ export interface AppNotification {
     | 'COVER_REQUEST'
     | 'REQUIRED'
     | 'ON_CALL'
+    | 'CLOSING'
     | 'SHIFT_TOMORROW';
   title: string;
   body: string | null;
@@ -1021,6 +1022,14 @@ export const api = {
     }),
   digestSettings: () =>
     request<{ people: DigestReader[]; uncovered: DigestTopic[] }>('/digest-settings'),
+  /// Who is chosen to look after each part (October 2026): a part with
+  /// anybody chosen goes to them alone, bell and round-up.
+  topicAssignees: () => request<Record<DigestTopic, string[]>>('/digest-settings/assignees'),
+  saveTopicAssignees: (topic: DigestTopic, employeeIds: string[]) =>
+    request<{ topic: DigestTopic; employeeIds: string[] }>(`/digest-settings/assignees/${topic}`, {
+      method: 'PUT',
+      body: JSON.stringify({ employeeIds }),
+    }),
   /// Admins only: somebody else's round-up.
   updateDigestSettings: (employeeId: string, preferences: DigestPreferences) =>
     request<DigestReader>(`/digest-settings/${employeeId}`, {
@@ -1069,6 +1078,11 @@ export const api = {
   closingMine: () => request<{ sections: ApplicableSection[] }>('/closing/mine'),
   closingRecords: (date: string, locationId?: string) =>
     request<ClosingRecord[]>(`/closing/records${toQuery({ date, locationId })}`),
+  clearClosingRecord: (id: string) =>
+    request<{ cleared: boolean; clearedAt: string; clearedBy: string }>(
+      `/closing/records/${id}/clear`,
+      { method: 'POST' },
+    ),
   supplies: () => request<SupplyRequest[]>('/closing/supplies'),
   markSupplyOrdered: (id: string) =>
     request<{ ordered: boolean }>(`/closing/supplies/${id}/ordered`, { method: 'POST' }),

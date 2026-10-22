@@ -1,4 +1,5 @@
 import {
+  BadRequestException,
   Body,
   Controller,
   Get,
@@ -6,8 +7,10 @@ import {
   Param,
   ParseUUIDPipe,
   Patch,
+  Put,
 } from '@nestjs/common';
-import { EmploymentStatus, Role } from '@prisma/client';
+import { DigestTopic, EmploymentStatus, Role } from '@prisma/client';
+import { ArrayMaxSize, IsArray, IsUUID } from 'class-validator';
 import { UpdatePreferencesDto } from '../auth/dto/preferences.dto';
 import { Roles } from '../common/auth/roles.decorator';
 import { PrismaService } from '../prisma/prisma.service';
@@ -17,6 +20,14 @@ const MANAGERS = {
   role: { in: [Role.MANAGER, Role.ADMIN] },
   employmentStatus: EmploymentStatus.ACTIVE,
 };
+
+/// The people chosen to look after one part, saved whole.
+export class TopicAssigneesDto {
+  @IsArray()
+  @ArrayMaxSize(50)
+  @IsUUID('4', { each: true })
+  employeeIds!: string[];
+}
 
 const SELECT = {
   id: true,
@@ -35,6 +46,12 @@ const SELECT = {
  * Managers read it, so they can see who else looks after something before
  * leaving it out. Admins change it for anybody; everybody else changes only
  * their own, through `PATCH /auth/preferences`.
+ *
+ * **Who looks after what** (October 2026): beside the unticking, a part can
+ * have people *chosen* for it (`TopicAssignee`) - set by managers on the
+ * screen the part belongs to (Time off requests, Closing checklists). A part
+ * with anybody chosen goes to them alone, bell and round-up; with nobody, the
+ * ticks decide as before.
  */
 @Controller('digest-settings')
 export class DigestSettingsController {
@@ -52,6 +69,47 @@ export class DigestSettingsController {
     // is not covering anything, whatever they have ticked.
     const uncovered = uncoveredTopics(people.filter((person) => person.wantsDailyDigest));
     return { people, uncovered };
+  }
+
+  /// Who is chosen for each part: `{ TIME_OFF: [ids], CLOSING: [ids], ... }`.
+  @Get('assignees')
+  @Roles(Role.MANAGER)
+  async assignees() {
+    const rows = await this.prisma.topicAssignee.findMany({
+      where: { employee: MANAGERS },
+      select: { topic: true, employeeId: true },
+    });
+    const byTopic: Record<string, string[]> = {};
+    for (const topic of Object.values(DigestTopic)) byTopic[topic] = [];
+    for (const row of rows) byTopic[row.topic].push(row.employeeId);
+    return byTopic;
+  }
+
+  /// Replaces who is chosen for one part. Only managers and admins still here
+  /// can be chosen; anybody else sent is left off.
+  @Put('assignees/:topic')
+  @Roles(Role.MANAGER)
+  async setAssignees(@Param('topic') topicName: string, @Body() dto: TopicAssigneesDto) {
+    const topic = (Object.values(DigestTopic) as string[]).includes(topicName)
+      ? (topicName as DigestTopic)
+      : null;
+    if (!topic) throw new BadRequestException('That is not a part of the round-up.');
+    const people = await this.prisma.employee.findMany({
+      where: { id: { in: [...new Set(dto.employeeIds)] }, ...MANAGERS },
+      select: { id: true },
+    });
+    const ids = people.map((person) => person.id);
+    await this.prisma.$transaction([
+      this.prisma.topicAssignee.deleteMany({ where: { topic, employeeId: { notIn: ids } } }),
+      ...ids.map((employeeId) =>
+        this.prisma.topicAssignee.upsert({
+          where: { topic_employeeId: { topic, employeeId } },
+          create: { topic, employeeId },
+          update: {},
+        }),
+      ),
+    ]);
+    return { topic, employeeIds: ids };
   }
 
   @Patch(':id')

@@ -18,10 +18,11 @@ const step = async (name, fn) => {
 /**
  * Manage in five headings (October 2026, Dominguez: "lets cut down the manage
  * options - job roles can be with staff, locations and kiosks together, etc."):
- * Dashboard, People (Staff, Job roles, Licenses, Onboarding & Offboarding,
- * Provider productivity), Offices (Locations, Kiosks, Closing checklists,
- * Reps), Surveys & reading, and Money (Export, Reimbursements, Vendor
- * payments). Each heading opens a screen with a strip of tabs to the rest.
+ * Dashboard, Staff (Staff with the job roles, Licenses, CME, Onboarding &
+ * Offboarding), Offices (Locations, Kiosks, Closing checklists, Reps),
+ * Surveys & reading, and Finances (Export, Reimbursements, Invoices, Vendor
+ * payments, Provider productivity). Each heading opens a screen with a strip
+ * of tabs to the rest. People and Money were renamed on 22 October 2026.
  */
 async function signIn(email, viewport = { width: 1280, height: 1000 }) {
   const ctx = await browser.newContext({ viewport });
@@ -49,20 +50,19 @@ const manager = await signIn('manager@domihealthcare.com');
 
 await step('Manage is five entries, not fifteen', async () => {
   const links = await menuLinks(admin);
-  for (const name of ['Dashboard', 'People', 'Offices', 'Surveys & reading', 'Money'])
+  for (const name of ['Dashboard', 'Staff', 'Offices', 'Surveys & reading', 'Finances'])
     if (!links.includes(name)) throw new Error(`Manage lacks ${name}: ${links.join(', ')}`);
-  for (const old of ['Staff', 'Job roles', 'Kiosks', 'Locations', 'Reps', 'Export', 'Vendor payments', 'Reimbursements', 'Licenses'])
+  for (const old of ['People', 'Money', 'Job roles', 'Kiosks', 'Locations', 'Reps', 'Export', 'Vendor payments', 'Reimbursements', 'Licenses'])
     if (links.includes(old)) throw new Error(`${old} is still a menu entry of its own`);
 });
 
-await step('Staff and Job roles share People, with Licenses and Onboarding', async () => {
+await step('Staff (with the job roles on it) heads the Staff section, with Licenses, CME and Onboarding', async () => {
   await goToManage(admin, 'Job roles');
-  await admin.getByRole('heading', { name: 'Job roles', level: 1 }).waitFor({ timeout: 10000 });
-  const people = await tabs(admin, 'People');
-  if (people.join('|') !== 'Staff|Job roles|Licenses|CME|Onboarding & Offboarding|Provider productivity')
-    throw new Error(people.join('|'));
-  await admin.getByRole('navigation', { name: 'People screens' }).getByRole('link', { name: 'Staff' }).click();
   await admin.getByRole('heading', { name: 'Staff', level: 1 }).waitFor({ timeout: 10000 });
+  await admin.getByRole('heading', { name: 'Job roles', level: 2 }).waitFor({ timeout: 10000 });
+  const people = await tabs(admin, 'Staff');
+  if (people.join('|') !== 'Staff|Licenses|CME|Onboarding & Offboarding')
+    throw new Error(people.join('|'));
   await admin.screenshot({ path: `${OUT}/manage-people.png` });
 });
 
@@ -73,18 +73,18 @@ await step('Locations and Kiosks share Offices, with Closing checklists and Reps
   if (offices.join('|') !== 'Locations|Kiosks|Closing checklists|Reps') throw new Error(offices.join('|'));
 });
 
-await step('Surveys and Required reading share a heading; Export, Reimbursements and Vendor payments are Money for an admin (Invoices are Manager access only)', async () => {
+await step('Surveys and Required reading share a heading; Export, Reimbursements, Vendor payments and Provider productivity are Finances for an admin (Invoices are Manager access only)', async () => {
   await goToManage(admin, 'Required reading');
   if ((await tabs(admin, 'Surveys & reading')).join('|') !== 'Surveys|Required reading') throw new Error('surveys');
   await goToManage(admin, 'Vendor payments');
-  if ((await tabs(admin, 'Money')).join('|') !== 'Export|Reimbursements|Vendor payments') throw new Error('money');
+  if ((await tabs(admin, 'Finances')).join('|') !== 'Export|Reimbursements|Vendor payments|Provider productivity') throw new Error(`finances: ${(await tabs(admin, 'Finances')).join('|')}`);
 });
 
 await step('the heading stays lit on every one of its screens', async () => {
   await goToManage(admin, 'Licenses');
   await openMenu(admin, 'Manage');
-  const lit = await admin.getByRole('navigation').getByRole('link', { name: 'People', exact: true }).evaluate((a) => a.className);
-  if (!/brand-50/.test(lit)) throw new Error('People is not lit on Licenses');
+  const lit = await admin.getByRole('navigation').getByRole('link', { name: 'Staff', exact: true }).first().evaluate((a) => a.className);
+  if (!/brand-50/.test(lit)) throw new Error('Staff is not lit on Licenses');
   await admin.keyboard.press('Escape');
   const header = await admin.getByRole('button', { name: 'Manage', exact: true }).evaluate((b) => b.className);
   if (!/brand-50/.test(header)) throw new Error('Manage is not lit');
@@ -92,15 +92,15 @@ await step('the heading stays lit on every one of its screens', async () => {
 
 await step('a manager sees the same headings with only the tabs they may open', async () => {
   const links = await menuLinks(manager);
-  for (const name of ['Dashboard', 'People', 'Offices', 'Surveys & reading', 'Money'])
+  for (const name of ['Dashboard', 'Staff', 'Offices', 'Surveys & reading', 'Finances'])
     if (!links.includes(name)) throw new Error(`manager lacks ${name}: ${links.join(', ')}`);
   await goToManage(manager, 'Job roles');
-  if ((await tabs(manager, 'People')).join('|') !== 'Job roles|Licenses|CME|Onboarding & Offboarding')
-    throw new Error(`people: ${(await tabs(manager, 'People')).join('|')}`);
+  if ((await tabs(manager, 'Staff')).join('|') !== 'Staff|Licenses|CME|Onboarding & Offboarding')
+    throw new Error(`staff: ${(await tabs(manager, 'Staff')).join('|')}`);
   await goToManage(manager, 'Closing checklists');
   if ((await tabs(manager, 'Offices')).join('|') !== 'Closing checklists|Reps') throw new Error('offices');
   await goToManage(manager, 'Export');
-  if ((await tabs(manager, 'Money')).join('|') !== 'Export|Reimbursements|Invoices') throw new Error('money');
+  if ((await tabs(manager, 'Finances')).join('|') !== 'Export|Reimbursements|Invoices') throw new Error('finances');
   // What they may not open is refused as before.
   const status = await manager.evaluate(async () => (await fetch('/api/vendors')).status);
   if (status !== 403) throw new Error(`a manager read vendor payments: ${status}`);
@@ -131,7 +131,7 @@ await step('on a phone it is five entries under More → Manage, and the tabs fi
   const phone = await signIn('admin@domihealthcare.com', { width: 390, height: 844 });
   await openMenu(phone, 'Manage');
   const links = (await phone.getByRole('navigation').getByRole('link').allInnerTexts()).map((t) => t.trim());
-  for (const name of ['People', 'Offices', 'Money']) if (!links.includes(name)) throw new Error(`phone lacks ${name}`);
+  for (const name of ['Staff', 'Offices', 'Finances']) if (!links.includes(name)) throw new Error(`phone lacks ${name}`);
   await phone.keyboard.press('Escape');
   await goToManage(phone, 'Reps');
   const strip = phone.getByRole('navigation', { name: 'Offices screens' });

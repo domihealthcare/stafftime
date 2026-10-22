@@ -59,6 +59,19 @@ export function readersOf<T extends TopicReader>(topic: DigestTopic, people: T[]
   return chosen.length > 0 ? chosen : people;
 }
 
+/// The people **chosen** to look after `topic` (`TopicAssignee`, October 2026)
+/// among `people`, when any are; otherwise whoever is down for it as above.
+/// One rule for the bell notes as things happen and for the round-up.
+export function chosenOrReaders<T extends TopicReader & { id: string }>(
+  topic: DigestTopic,
+  people: T[],
+  chosenIds: Iterable<string>,
+): T[] {
+  const ids = new Set(chosenIds);
+  const chosen = people.filter((person) => ids.has(person.id));
+  return chosen.length > 0 ? chosen : readersOf(topic, people);
+}
+
 /// The topics with nobody down for them, among `people`.
 export function uncoveredTopics(people: TopicReader[]): DigestTopic[] {
   return ALL_DIGEST_TOPICS.filter((topic) =>

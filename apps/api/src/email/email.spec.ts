@@ -76,6 +76,7 @@ describe('NotificationsService', () => {
     const prisma = {
       ptoRequest: { findUnique: jest.fn() },
       employee: { findMany: jest.fn().mockResolvedValue([]), findUnique: jest.fn() },
+      topicAssignee: { findMany: jest.fn().mockResolvedValue([]) },
     };
     const config = new ConfigService({
       APP_URL: 'https://staff.domihealthcare.com',

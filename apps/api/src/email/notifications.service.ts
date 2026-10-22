@@ -12,7 +12,7 @@ import { PrismaService } from '../prisma/prisma.service';
 import { PRACTICE_ZONE } from '../common/util/zoned-time.util';
 import type { DigestContents } from './digest.service';
 import { digestEmail } from './digest-email';
-import { readersOf } from './digest-topics';
+import { chosenOrReaders } from './digest-topics';
 import { EMAIL_SENDER, EmailResult, EmailSender } from './email-sender';
 import { InboxService } from './inbox.service';
 import { type WelcomeDetails, welcomeEmail } from './welcome-email';
@@ -129,13 +129,32 @@ export class NotificationsService {
     });
     const who = `${person.preferredName ?? person.firstName} ${person.lastName}`;
     await this.inbox.notify(
-      readersOf(DigestTopic.SCHEDULE, managers).map((manager) => manager.id),
+      (await this.deciders(DigestTopic.SCHEDULE, managers)).map((manager) => manager.id),
       {
         kind: NotificationKind.AVAILABILITY_CLASH,
         title: `${who}'s new availability clashes with a regular shift`,
         body: lines.join('; '),
         link: '/schedule',
       },
+    );
+  }
+
+  /// Who is told of something as it happens, for the part of the practice it
+  /// belongs to: the people chosen to look after that part (October 2026,
+  /// Dominguez: "that should be a setting to who it notifies"), else whoever
+  /// has not unticked it on Email settings, else everyone.
+  private async deciders<T extends { id: string; mutedDigestTopics: DigestTopic[] }>(
+    topic: DigestTopic,
+    managers: T[],
+  ): Promise<T[]> {
+    const chosen = await this.prisma.topicAssignee.findMany({
+      where: { topic },
+      select: { employeeId: true },
+    });
+    return chosenOrReaders(
+      topic,
+      managers,
+      chosen.map((row) => row.employeeId),
     );
   }
 
@@ -202,7 +221,7 @@ export class NotificationsService {
       select: { id: true, mutedDigestTopics: true },
     });
     await this.inbox.notify(
-      readersOf(DigestTopic.HOURS, managers).map((manager) => manager.id),
+      (await this.deciders(DigestTopic.HOURS, managers)).map((manager) => manager.id),
       { kind: NotificationKind.CORRECTION, ...words, link: '/timesheet' },
     );
   }
@@ -220,7 +239,7 @@ export class NotificationsService {
       },
       select: { id: true, email: true, firstName: true, mutedDigestTopics: true },
     });
-    const deciders = readersOf(DigestTopic.LICENSES, managers);
+    const deciders = await this.deciders(DigestTopic.LICENSES, managers);
     await this.inbox.notify(
       deciders.map((manager) => manager.id),
       { kind: NotificationKind.CME, ...words, link: '/cme' },
@@ -239,8 +258,9 @@ export class NotificationsService {
   /// Managers are not told anything today unless they go and look, which is how
   /// a request sits for a week.
   ///
-  /// Told to the managers down for time off in the round-up (Email settings),
-  /// or to all of them when nobody is.
+  /// Told to the people chosen to look after time off (October 2026,
+  /// Dominguez: not every manager wants to hear of every request), else the
+  /// managers down for it in the round-up (Email settings), else all of them.
   async ptoRequested(requestId: string): Promise<void> {
     const request = await this.prisma.ptoRequest.findUnique({
       where: { id: requestId },
@@ -257,7 +277,7 @@ export class NotificationsService {
       },
       select: { id: true, email: true, firstName: true, mutedDigestTopics: true },
     });
-    const deciders = readersOf(DigestTopic.TIME_OFF, managers);
+    const deciders = await this.deciders(DigestTopic.TIME_OFF, managers);
 
     const who = `${request.employee.firstName} ${request.employee.lastName}`;
     await this.inbox.notify(

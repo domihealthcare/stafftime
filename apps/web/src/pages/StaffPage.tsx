@@ -1,6 +1,8 @@
 import { NotSignedInCard } from '../components/NotSignedInCard';
 import { useCallback, useEffect, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useLocation } from 'react-router-dom';
+import { JobRolesSection } from '../components/JobRolesSection';
+import { JobRoleDot } from '../components/JobRoleTag';
 import { localDate } from '../lib/format';
 import { ApiError, api } from '../lib/api';
 import { useSession } from '../lib/session';
@@ -32,10 +34,21 @@ import {
   buttonClass,
 } from '../components/ui';
 
-/// Admin screen for adding staff and giving them a way in. Without this the
-/// only route to a second account is the API by hand.
+/**
+ * Who works here, what they do and how they sign in. Admins add staff and give
+ * them a way in; since October 2026 (Dominguez: "can we merge the Staff and Job
+ * Roles? I should be able to search staff by job roles") the job roles live on
+ * the same screen - a row of roles above the list narrows it to the people in
+ * one, and the roles themselves are kept at the bottom. Managers, who keep the
+ * job roles, now open this screen too: they see the cards and the job roles,
+ * and none of the admin's tools (adding people, Profile, welcome emails,
+ * sign-in details), which the server refuses them anyway; Edit opens the
+ * editor for them as it always did (read, no photo, no save).
+ */
 export function StaffPage() {
   const { employee: me } = useSession();
+  const isAdmin = me?.role === 'ADMIN';
+  const location = useLocation();
   const [staff, setStaff] = useState<Employee[]>([]);
   const [locations, setLocations] = useState<Location[]>([]);
   const [jobRoles, setJobRoles] = useState<JobRole[]>([]);
@@ -60,6 +73,10 @@ export function StaffPage() {
     () => new URLSearchParams(window.location.search).get('q') ?? '',
   );
   const [showTerminated, setShowTerminated] = useState(false);
+  /// Only the people in this job role, or everybody.
+  const [roleFilter, setRoleFilter] = useState<string>(
+    () => new URLSearchParams(window.location.search).get('role') ?? '',
+  );
   /// Whose details are open in the editor.
   const [editingId, setEditingId] = useState<string | null>(null);
   const [left, setLeft] = useState<string | null>(null);
@@ -92,6 +109,12 @@ export function StaffPage() {
   useEffect(() => {
     void load();
   }, [load]);
+
+  // /job-roles, the old address, lands here with #job-roles: scroll to them.
+  useEffect(() => {
+    if (loading || location.hash !== '#job-roles') return;
+    document.getElementById('job-roles')?.scrollIntoView({ block: 'start' });
+  }, [loading, location.hash]);
 
   const waiting = staff.filter(
     (person) =>
@@ -132,22 +155,40 @@ export function StaffPage() {
   }
 
   const needle = search.trim().toLowerCase();
-  const visible = staff.filter(
+  const listed = staff.filter(
+    (person) => showTerminated || person.employmentStatus !== 'TERMINATED',
+  );
+  const inRole = (person: Employee, roleId: string) =>
+    jobRoles.some((role) => role.id === roleId && role.members.some((m) => m.id === person.id));
+  // The words typed match a job role's name too ("front" finds Front Desk).
+  const visible = listed.filter(
     (person) =>
-      (showTerminated || person.employmentStatus !== 'TERMINATED') &&
+      (roleFilter === '' || inRole(person, roleFilter)) &&
       (needle === '' ||
-        [person.firstName, person.lastName, person.preferredName, person.email]
+        [
+          person.firstName,
+          person.lastName,
+          person.preferredName,
+          person.email,
+          ...rolesHeldBy(person.id, jobRoles).map((role) => role.name),
+        ]
           .filter(Boolean)
           .join(' ')
           .toLowerCase()
           .includes(needle)),
   );
+  const countIn = (roleId: string) => listed.filter((person) => inRole(person, roleId)).length;
+  const filterRole = jobRoles.find((role) => role.id === roleFilter);
 
   return (
     <div className="max-w-6xl">
       <PageHeading
         title="Staff"
-        subtitle="Who works here, what they can see, and how they sign in."
+        subtitle={
+          isAdmin
+            ? 'Who works here, what they do, what they can see, and how they sign in. The job roles are at the bottom.'
+            : 'Who works here and what they do. The job roles are at the bottom.'
+        }
       />
 
       {error && (
@@ -161,9 +202,52 @@ export function StaffPage() {
         type="search"
         value={search}
         onChange={(event) => setSearch(event.target.value)}
-        placeholder="Search by name or email"
+        placeholder="Search by name, email or job role"
         className="mb-3 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm"
       />
+
+      {/* One press shows only the people in a job role; the count is of the
+          people listed (former staff only when shown). */}
+      {jobRoles.length > 0 && (
+        <div
+          className="mb-3 flex flex-wrap items-center gap-2"
+          role="group"
+          aria-label="Job role"
+          data-testid="staff-role-filter"
+        >
+          <button
+            type="button"
+            aria-pressed={roleFilter === ''}
+            onClick={() => setRoleFilter('')}
+            className={`rounded-full px-3 py-1 text-sm font-medium ring-1 ring-inset ${
+              roleFilter === ''
+                ? 'bg-slate-900 text-white ring-slate-900'
+                : 'bg-white text-slate-700 ring-slate-300 hover:bg-slate-50'
+            }`}
+          >
+            Everyone ({listed.length})
+          </button>
+          {jobRoles.map((role) => {
+            const on = roleFilter === role.id;
+            return (
+              <button
+                key={role.id}
+                type="button"
+                aria-pressed={on}
+                onClick={() => setRoleFilter(on ? '' : role.id)}
+                className={`flex items-center gap-1.5 rounded-full px-3 py-1 text-sm font-medium ring-1 ring-inset ${
+                  on
+                    ? 'bg-slate-900 text-white ring-slate-900'
+                    : 'bg-white text-slate-700 ring-slate-300 hover:bg-slate-50'
+                }`}
+              >
+                <JobRoleDot colour={role.colour} />
+                {role.name} ({countIn(role.id)})
+              </button>
+            );
+          })}
+        </div>
+      )}
 
       <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
         <label className="flex items-center gap-2 text-sm text-slate-600">
@@ -175,28 +259,30 @@ export function StaffPage() {
           />
           Show former staff
         </label>
-        <div className="flex flex-wrap gap-2">
-          <button
-            type="button"
-            onClick={() => {
-              setImporting((open) => !open);
-              setAdding(false);
-            }}
-            className={buttonClass('secondary', 'md')}
-          >
-            {importing ? 'Cancel' : 'Add several people'}
-          </button>
-          <button
-            type="button"
-            onClick={() => {
-              setAdding((open) => !open);
-              setImporting(false);
-            }}
-            className={buttonClass('primary', 'md')}
-          >
-            {adding ? 'Cancel' : '+ Add someone'}
-          </button>
-        </div>
+        {isAdmin && (
+          <div className="flex flex-wrap gap-2">
+            <button
+              type="button"
+              onClick={() => {
+                setImporting((open) => !open);
+                setAdding(false);
+              }}
+              className={buttonClass('secondary', 'md')}
+            >
+              {importing ? 'Cancel' : 'Add several people'}
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                setAdding((open) => !open);
+                setImporting(false);
+              }}
+              className={buttonClass('primary', 'md')}
+            >
+              {adding ? 'Cancel' : '+ Add someone'}
+            </button>
+          </div>
+        )}
       </div>
 
       {left && (
@@ -224,9 +310,11 @@ export function StaffPage() {
         </div>
       )}
 
-      {!loading && <NotSignedInCard refreshKey={staff.length + (welcomeReport?.sent ?? 0)} />}
+      {!loading && isAdmin && (
+        <NotSignedInCard refreshKey={staff.length + (welcomeReport?.sent ?? 0)} />
+      )}
 
-      {waiting.length > 0 && !loading && (
+      {isAdmin && waiting.length > 0 && !loading && (
         <Card
           className="mb-4 flex flex-wrap items-center justify-between gap-3 p-4"
           testId="welcome-everyone"
@@ -303,8 +391,10 @@ export function StaffPage() {
       ) : visible.length === 0 ? (
         <EmptyState>
           {needle
-            ? `Nobody matches “${search.trim()}”.`
-            : 'Nobody here yet. Add your managers to get started.'}
+            ? `Nobody matches “${search.trim()}”${filterRole ? ` in ${filterRole.name}` : ''}.`
+            : filterRole
+              ? `Nobody is in ${filterRole.name}.`
+              : 'Nobody here yet. Add your managers to get started.'}
         </EmptyState>
       ) : (
         <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
@@ -317,7 +407,8 @@ export function StaffPage() {
               review={reviews.get(person.id)}
               jobRoles={jobRoles}
               isMe={person.id === me?.id}
-              canOpenProfile={me?.role === 'ADMIN'}
+              canOpenProfile={isAdmin}
+              canEdit={isAdmin}
               onEdit={() => {
                 setLeft(null);
                 setEditingId(person.id);
@@ -325,6 +416,19 @@ export function StaffPage() {
             />
           ))}
         </div>
+      )}
+
+      {!loading && (
+        <JobRolesSection
+          roles={jobRoles}
+          staff={staff}
+          onChanged={(updated) =>
+            setJobRoles((current) =>
+              current.map((role) => (role.id === updated.id ? updated : role)),
+            )
+          }
+          onReload={() => void load()}
+        />
       )}
 
       {editing && (
@@ -355,6 +459,7 @@ function StaffCard({
   jobRoles,
   isMe,
   canOpenProfile,
+  canEdit,
   onEdit,
 }: {
   person: Employee;
@@ -369,6 +474,9 @@ function StaffCard({
   isMe: boolean;
   /// Admins only: the name opens their staff profile (address, pay, time off).
   canOpenProfile: boolean;
+  /// Admins only: the sign-in and ADP details under the line. A manager's
+  /// card is the Directory's, plus access and job roles, and Edit.
+  canEdit: boolean;
   onEdit: () => void;
 }) {
   // Their main job role first.
@@ -430,12 +538,12 @@ function StaffCard({
       </div>
 
       <div className="mt-3 border-t border-slate-100 pt-3 sm:mt-auto">
-        {!terminated && (
+        {canEdit && !terminated && (
           <p className="text-xs text-slate-500">
             {person.adpFileNumber ? `ADP File # ${person.adpFileNumber}` : 'No ADP File # yet'}
           </p>
         )}
-        {!terminated && person.hasPassword === false && (
+        {canEdit && !terminated && person.hasPassword === false && (
           <p className="mt-1 text-xs text-amber-800">
             Has not chosen a password yet
             {person.welcomeSentAt
@@ -451,7 +559,7 @@ function StaffCard({
             {ROLE_LABELS[person.role]} access
           </Badge>
           {terminated && <Badge tone="danger">Former</Badge>}
-          {person.hasKioskPin && <Badge tone="success">PIN</Badge>}
+          {canEdit && person.hasKioskPin && <Badge tone="success">PIN</Badge>}
           {person.clocksIn === false && <Badge tone="neutral">Doesn&rsquo;t clock in</Badge>}
           <span className="ml-auto flex gap-2">
             {canOpenProfile && (
@@ -463,6 +571,9 @@ function StaffCard({
                 Profile
               </Link>
             )}
+            {/* A manager's Edit opens the editor as it always did: it shows
+                them the person (licenses included) and hides the photo and
+                sign-in tools; the server refuses them a save. */}
             <button
               type="button"
               onClick={onEdit}

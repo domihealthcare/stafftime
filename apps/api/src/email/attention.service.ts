@@ -661,8 +661,9 @@ export class AttentionService {
    * task left unticked, a count short of its target, or no checklist at all -
    * and the supplies still waiting to be ordered, one line per office.
    *
-   * Two days rather than "since a manager last looked": there is no "seen"
-   * mark to keep, and a missed lock-up step is worth hearing about the next
+   * Two days, and never one somebody has **cleared** (October 2026: the
+   * people who look after closing checklists press Clear once a clock-out is
+   * dealt with). A missed lock-up step is worth hearing about the next
    * morning, not a fortnight of mornings.
    */
   private async gatherClosing(today: Date, day: (date: Date) => string) {
@@ -670,6 +671,7 @@ export class AttentionService {
       this.prisma.closingRecord.findMany({
         where: {
           day: { gte: addUtcDays(today, -1) },
+          clearedAt: null,
           OR: [{ gaps: { gt: 0 } }, { submitted: false }],
         },
         orderBy: [{ day: 'asc' }, { createdAt: 'asc' }],
