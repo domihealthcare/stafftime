@@ -391,7 +391,13 @@ function RatesTable({
                     title={entry.note ? `${entry.name} (${entry.note})` : entry.name}
                   >
                     {entry.name}
-                    {entry.note && <span aria-hidden="true"> †</span>}
+                    {entry.note && (
+                      <>
+                        <span aria-hidden="true"> †</span>
+                        {/* Read out with the name, as it shows on hover. */}
+                        <span className="sr-only"> {entry.note}</span>
+                      </>
+                    )}
                   </span>
                 ) : editing ? (
                   <button
