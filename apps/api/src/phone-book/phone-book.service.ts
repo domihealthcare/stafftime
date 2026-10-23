@@ -80,6 +80,7 @@ export function contactFields(dto: ContactInput) {
   return {
     category: dto.category.trim(),
     name: dto.name.trim(),
+    practice: tidy(dto.practice),
     preferred: dto.preferred ?? false,
     email: tidy(dto.email),
     website: tidy(dto.website),

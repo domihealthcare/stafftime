@@ -152,6 +152,14 @@ function ContactCard({ contact, onEdit }: { contact: ReferralContact; onEdit: ()
               {contact.name}
             </>
           )}
+          {contact.practice && (
+            <span
+              className="mt-0.5 block text-xs font-medium text-slate-600"
+              data-testid="phone-book-practice"
+            >
+              {contact.practice}
+            </span>
+          )}
         </h3>
         <div className="flex shrink-0 items-center">
           {/* Prints this one entry alone, in a new tab so the search is kept. */}
@@ -224,6 +232,7 @@ function ContactForm({
   const confirm = useConfirm();
   const isManager = useIsManager();
   const [name, setName] = useState(contact?.name ?? '');
+  const [practice, setPractice] = useState(contact?.practice ?? '');
   const [category, setCategory] = useState(contact?.category ?? startCategory);
   const [preferred, setPreferred] = useState(contact?.preferred ?? false);
   const [email, setEmail] = useState(contact?.email ?? '');
@@ -241,6 +250,8 @@ function ContactForm({
   );
   const [busy, setBusy] = useState(false);
   const [problem, setProblem] = useState<string | null>(null);
+  /// Addresses somebody pressed "+ Name this location" on.
+  const [namingOffice, setNamingOffice] = useState<Set<string | number>>(new Set());
 
   const setOffice = (index: number, field: keyof OfficeDraft, value: string) =>
     setOffices((rows) => rows.map((row, i) => (i === index ? { ...row, [field]: value } : row)));
@@ -251,6 +262,7 @@ function ContactForm({
     setProblem(null);
     const body: ReferralContactInput = {
       name,
+      practice,
       category,
       preferred,
       email,
@@ -328,6 +340,19 @@ function ContactForm({
             </datalist>
           </div>
         </div>
+        <div>
+          <label htmlFor={`${id}-practice`} className={label}>
+            Practice name <span className="font-normal text-slate-600">(optional)</span>
+          </label>
+          <input
+            id={`${id}-practice`}
+            maxLength={200}
+            value={practice}
+            onChange={(event) => setPractice(event.target.value)}
+            placeholder="Holy Name - Mulkay Cardiology Consultants…"
+            className={inputClass}
+          />
+        </div>
         <label className="flex items-center gap-2 text-sm text-slate-800">
           <input
             type="checkbox"
@@ -345,9 +370,9 @@ function ContactForm({
 
         <fieldset className="space-y-2">
           <legend className={label}>
-            Offices{' '}
+            Addresses{' '}
             <span className="font-normal text-slate-600">
-              (an address with its phone and fax - add one for each place; several numbers can go in
+              (each with its phone and fax - add one for each location; several numbers can go in
               one box)
             </span>
           </legend>
@@ -358,20 +383,25 @@ function ContactForm({
               data-testid="phone-book-office-form"
             >
               <div className="grid gap-2 sm:grid-cols-2">
-                <div>
-                  <label htmlFor={`${id}-o${index}-label`} className="text-xs text-slate-600">
-                    Office name (optional)
-                  </label>
-                  <input
-                    id={`${id}-o${index}-label`}
-                    maxLength={120}
-                    value={office.label}
-                    onChange={(event) => setOffice(index, 'label', event.target.value)}
-                    placeholder="Hoboken, main office…"
-                    className={inputClass}
-                  />
-                </div>
-                <div>
+                {/* A name for one location is rarely needed - the practice
+                    name is the card's (October 2026, Dominguez) - so it only
+                    shows when one is set, or asked for. */}
+                {office.label !== '' || namingOffice.has(index) ? (
+                  <div className="sm:col-span-2">
+                    <label htmlFor={`${id}-o${index}-label`} className="text-xs text-slate-600">
+                      Location name (optional)
+                    </label>
+                    <input
+                      id={`${id}-o${index}-label`}
+                      maxLength={120}
+                      value={office.label}
+                      onChange={(event) => setOffice(index, 'label', event.target.value)}
+                      placeholder="Hoboken, main office…"
+                      className={inputClass}
+                    />
+                  </div>
+                ) : null}
+                <div className="sm:col-span-2">
                   <label htmlFor={`${id}-o${index}-address`} className="text-xs text-slate-600">
                     Address
                   </label>
@@ -408,15 +438,26 @@ function ContactForm({
                   />
                 </div>
               </div>
-              {offices.length > 1 && (
-                <button
-                  type="button"
-                  onClick={() => setOffices((rows) => rows.filter((_, i) => i !== index))}
-                  className="text-xs font-medium text-red-700 hover:underline"
-                >
-                  Remove this office
-                </button>
-              )}
+              <div className="flex flex-wrap gap-3">
+                {office.label === '' && !namingOffice.has(index) && (
+                  <button
+                    type="button"
+                    onClick={() => setNamingOffice((current) => new Set(current).add(index))}
+                    className="text-xs font-medium text-brand-800 hover:underline"
+                  >
+                    + Name this location
+                  </button>
+                )}
+                {offices.length > 1 && (
+                  <button
+                    type="button"
+                    onClick={() => setOffices((rows) => rows.filter((_, i) => i !== index))}
+                    className="text-xs font-medium text-red-700 hover:underline"
+                  >
+                    Remove this address
+                  </button>
+                )}
+              </div>
             </div>
           ))}
           <button

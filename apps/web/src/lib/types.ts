@@ -2170,6 +2170,8 @@ export interface ReferralContact {
   id: string;
   category: string;
   name: string;
+  /// The practice, for the whole entry (October 2026).
+  practice?: string | null;
   /// Starred: one of the practice's preferred places.
   preferred: boolean;
   email: string | null;
@@ -2189,6 +2191,7 @@ export interface ReferralOfficeInput {
 export interface ReferralContactInput {
   category: string;
   name: string;
+  practice?: string | null;
   preferred?: boolean;
   email?: string | null;
   website?: string | null;

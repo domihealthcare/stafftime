@@ -47,6 +47,12 @@ export class ContactInput {
   @MaxLength(200)
   name!: string;
 
+  /// The practice, for the whole entry (October 2026).
+  @IsOptional()
+  @IsString()
+  @MaxLength(200)
+  practice?: string | null;
+
   @IsOptional()
   @IsBoolean()
   preferred?: boolean;

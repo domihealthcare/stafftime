@@ -214,7 +214,9 @@ await step('a rep lunch picks its rep, warns about a "Don’t book", and is name
   await manager.getByRole('menuitem', { name: 'Rep lunch' }).click();
   const form = manager.getByRole('form', { name: 'New rep lunch' });
   if (await form.getByLabel('What is it?').count()) throw new Error('a rep lunch asks for a title');
-  await form.getByLabel('Which rep?').selectOption({ label: 'Jane Smith - Novo Nordisk (don’t book)' });
+  // The rep is typed into and picked (October 2026).
+  await form.getByRole('combobox', { name: 'Which rep?' }).fill('novo');
+  await form.getByRole('option', { name: 'Jane Smith - Novo Nordisk (don’t book)' }).click();
   await form.getByTestId('chosen-rep').getByText('Late twice').waitFor();
   await form.getByLabel('Which office?').selectOption({ label: 'North Bergen' });
   await form.getByLabel('Starts').fill('2027-03-09T12:30');
@@ -233,13 +235,32 @@ await step('a rep lunch picks its rep, warns about a "Don’t book", and is name
   await manager.getByRole('button', { name: '+ Add', exact: true }).click();
   await manager.getByRole('menuitem', { name: 'Rep lunch' }).click();
   const second = manager.getByRole('form', { name: 'New rep lunch' });
-  await second.getByLabel('Which rep?').selectOption({ label: 'Pat Lee - Pfizer' });
+  await second.getByRole('combobox', { name: 'Which rep?' }).fill('Pat');
+  await second.getByRole('option', { name: 'Pat Lee - Pfizer' }).click();
   await second.getByLabel('Which office?').selectOption({ label: 'West New York' });
   await second.getByLabel('Starts').fill('2027-03-23T12:00');
   await second.getByLabel('Ends').fill('2027-03-23T13:00');
   await second.getByRole('button', { name: 'Add rep lunch' }).click();
   await day(manager, '2027-03-23').getByTestId('rep_lunch-chip').getByText('Pat Lee').waitFor({ timeout: 10000 });
   await manager.screenshot({ path: `${OUT}/practice-calendar-reps.png`, fullPage: true });
+});
+
+await step('a rep not on the list is added from the rep lunch form and chosen there', async () => {
+  await calendar(manager);
+  await manager.getByRole('button', { name: '+ Add', exact: true }).click();
+  await manager.getByRole('menuitem', { name: 'Rep lunch' }).click();
+  const form = manager.getByRole('form', { name: 'New rep lunch' });
+  await form.getByRole('combobox', { name: 'Which rep?' }).fill('Robin Calendar-Suite');
+  await form.getByRole('button', { name: '+ Add a new rep' }).click();
+  const quick = form.getByTestId('quick-add-rep');
+  if ((await quick.getByLabel('Name').inputValue()) !== 'Robin Calendar-Suite') throw new Error('the typed name was not carried over');
+  await quick.getByLabel('Company').fill('Lilly');
+  await quick.getByRole('button', { name: 'Add rep' }).click();
+  await quick.waitFor({ state: 'detached', timeout: 10000 });
+  if ((await form.getByRole('combobox', { name: 'Which rep?' }).inputValue()) !== 'Robin Calendar-Suite - Lilly') throw new Error('the new rep was not chosen');
+  await form.getByRole('button', { name: 'Cancel' }).click();
+  const reps = await manager.evaluate(() => fetch('/api/reps').then((r) => r.json()));
+  if (!reps.some((rep) => rep.name === 'Robin Calendar-Suite' && rep.company === 'Lilly')) throw new Error('the rep was not saved to the list');
 });
 
 const frankie = await signIn('frontdesk@domihealthcare.com');

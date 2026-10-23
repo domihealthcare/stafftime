@@ -1,12 +1,18 @@
-import { useEffect, useId, useRef, useState } from 'react';
+import { useEffect, useId, useRef, useState, type ReactNode } from 'react';
 import { inputClass } from './ui';
+
+export interface SelectOption {
+  value: string;
+  label: string;
+}
 
 /**
  * A dropdown you can type into (October 2026, Dominguez: the phone book's
- * specialties - "be able to search within that drop down"): the list opens
- * under the box, narrows as you type, and a pick fills the box. Clearing the
- * box, or picking the first entry, means "any". Arrow keys and Enter work;
- * Escape closes. Plain HTML, so it works on a phone and with a screen reader.
+ * specialties, then the rep on a rep lunch - "be able to search within that
+ * drop down"): the list opens under the box, narrows as you type, and a pick
+ * fills the box. With `anyLabel`, its first entry (and an emptied box) means
+ * "any". Arrow keys and Enter work; Escape closes. `footer` goes at the
+ * bottom of the open list - "+ Add a new rep".
  */
 export function SearchableSelect({
   label,
@@ -14,37 +20,48 @@ export function SearchableSelect({
   value,
   options,
   anyLabel,
+  placeholder,
   onChange,
+  footer,
   className = '',
 }: {
   label: string;
   id?: string;
-  /// The chosen option, or '' for any.
+  /// The chosen option's value, or '' for none.
   value: string;
-  options: string[];
-  /// What the "any" entry is called: "Every specialty".
-  anyLabel: string;
+  options: SelectOption[] | string[];
+  /// What the "any" entry is called ("Every specialty"); none for a choice
+  /// that has to be made.
+  anyLabel?: string;
+  placeholder?: string;
   onChange: (value: string) => void;
+  footer?: (close: () => void, typed: string) => ReactNode;
   className?: string;
 }) {
   const generated = useId();
   const id = givenId ?? generated;
-  const [typed, setTyped] = useState(value);
+  const list: SelectOption[] = options.map((option) =>
+    typeof option === 'string' ? { value: option, label: option } : option,
+  );
+  const labelOf = (wanted: string) => list.find((option) => option.value === wanted)?.label ?? '';
+  const [typed, setTyped] = useState(labelOf(value));
   const [open, setOpen] = useState(false);
   const [active, setActive] = useState(0);
   const root = useRef<HTMLDivElement>(null);
 
-  // The box shows what was chosen, until typing starts.
+  // The box shows what was chosen, until typing starts (and once the options
+  // arrive, for a value set before they did).
+  const shown = labelOf(value);
   useEffect(() => {
-    setTyped(value);
-  }, [value]);
+    setTyped(shown);
+  }, [shown]);
 
   useEffect(() => {
     if (!open) return;
     const close = (event: MouseEvent | TouchEvent) => {
       if (!root.current?.contains(event.target as Node)) {
         setOpen(false);
-        setTyped(value);
+        setTyped(shown);
       }
     };
     document.addEventListener('mousedown', close);
@@ -53,21 +70,26 @@ export function SearchableSelect({
       document.removeEventListener('mousedown', close);
       document.removeEventListener('touchstart', close);
     };
-  }, [open, value]);
+  }, [open, shown]);
 
   const needle = typed.trim().toLowerCase();
   const matching =
-    needle === '' || needle === value.toLowerCase()
-      ? options
-      : options.filter((option) => option.toLowerCase().includes(needle));
-  const entries = [anyLabel, ...matching];
+    needle === '' || needle === shown.toLowerCase()
+      ? list
+      : list.filter((option) => option.label.toLowerCase().includes(needle));
+  const ANY = '\u0000any';
+  const entries: SelectOption[] = [
+    ...(anyLabel ? [{ value: ANY, label: anyLabel }] : []),
+    ...matching,
+  ];
 
-  const pick = (entry: string) => {
-    const next = entry === anyLabel ? '' : entry;
+  const pick = (entry: SelectOption) => {
+    const next = entry.value === ANY ? '' : entry.value;
     onChange(next);
-    setTyped(next);
+    setTyped(entry.value === ANY ? '' : entry.label);
     setOpen(false);
   };
+  const close = () => setOpen(false);
 
   return (
     <div ref={root} className={`relative ${className}`}>
@@ -82,13 +104,13 @@ export function SearchableSelect({
         aria-autocomplete="list"
         autoComplete="off"
         value={typed}
-        placeholder={anyLabel}
+        placeholder={placeholder ?? anyLabel}
         onFocus={() => setOpen(true)}
         onChange={(event) => {
           setTyped(event.target.value);
           setOpen(true);
           setActive(0);
-          // Emptying the box means any, straight away.
+          // Emptying the box means any (or nothing chosen), straight away.
           if (event.target.value.trim() === '' && value !== '') onChange('');
         }}
         onKeyDown={(event) => {
@@ -102,46 +124,53 @@ export function SearchableSelect({
           } else if (event.key === 'Enter') {
             if (!open) return;
             event.preventDefault();
-            // Typed exactly one specialty: that one; else the highlighted entry.
-            const exact = options.find((option) => option.toLowerCase() === needle);
-            pick(exact ?? entries[active] ?? anyLabel);
+            // Typed exactly one option: that one; else the highlighted entry.
+            const exact = list.find((option) => option.label.toLowerCase() === needle);
+            const entry = exact ?? entries[active];
+            if (entry) pick(entry);
           } else if (event.key === 'Escape') {
             setOpen(false);
-            setTyped(value);
+            setTyped(shown);
           }
         }}
         className={inputClass}
       />
       {open && (
-        <ul
-          id={`${id}-list`}
-          role="listbox"
-          className="absolute z-20 mt-1 max-h-72 w-full min-w-[14rem] overflow-y-auto rounded-lg border border-slate-200 bg-white py-1 text-sm shadow-lg"
-        >
-          {entries.map((entry, index) => {
-            const chosen = entry === anyLabel ? value === '' : entry === value;
-            return (
-              <li
-                key={entry}
-                role="option"
-                aria-selected={chosen}
-                onMouseDown={(event) => {
-                  event.preventDefault();
-                  pick(entry);
-                }}
-                onMouseEnter={() => setActive(index)}
-                className={`cursor-pointer px-3 py-1.5 ${
-                  index === active ? 'bg-brand-50 text-brand-900' : 'text-slate-800'
-                } ${chosen ? 'font-semibold' : ''} ${entry === anyLabel ? 'italic text-slate-600' : ''}`}
-              >
-                {entry}
-              </li>
-            );
-          })}
-          {matching.length === 0 && (
-            <li className="px-3 py-1.5 text-slate-500">No specialty matches that.</li>
+        <div className="absolute z-30 mt-1 w-full min-w-[14rem] rounded-lg border border-slate-200 bg-white text-sm shadow-lg">
+          <ul id={`${id}-list`} role="listbox" className="max-h-72 overflow-y-auto py-1">
+            {entries.map((entry, index) => {
+              const chosen = entry.value === ANY ? value === '' : entry.value === value;
+              return (
+                <li
+                  key={entry.value}
+                  role="option"
+                  aria-selected={chosen}
+                  onMouseDown={(event) => {
+                    event.preventDefault();
+                    pick(entry);
+                  }}
+                  onMouseEnter={() => setActive(index)}
+                  className={`cursor-pointer px-3 py-1.5 ${
+                    index === active ? 'bg-brand-50 text-brand-900' : 'text-slate-800'
+                  } ${chosen ? 'font-semibold' : ''} ${entry.value === ANY ? 'italic text-slate-600' : ''}`}
+                >
+                  {entry.label}
+                </li>
+              );
+            })}
+            {matching.length === 0 && (
+              <li className="px-3 py-1.5 text-slate-500">Nothing matches that.</li>
+            )}
+          </ul>
+          {footer && (
+            <div
+              className="border-t border-slate-100 p-1"
+              onMouseDown={(event) => event.preventDefault()}
+            >
+              {footer(close, typed)}
+            </div>
           )}
-        </ul>
+        </div>
       )}
     </div>
   );

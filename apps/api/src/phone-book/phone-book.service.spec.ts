@@ -6,6 +6,7 @@ describe('contactFields', () => {
       contactFields({
         category: ' Labs ',
         name: ' Quest Diagnostic Lab ',
+        practice: ' Quest Diagnostics ',
         preferred: true,
         email: ' x@example.com ',
         notes: ' Specimen pick-up 1-800-223-0570 ',
@@ -13,6 +14,7 @@ describe('contactFields', () => {
     ).toEqual({
       category: 'Labs',
       name: 'Quest Diagnostic Lab',
+      practice: 'Quest Diagnostics',
       preferred: true,
       email: 'x@example.com',
       website: null,
@@ -23,7 +25,7 @@ describe('contactFields', () => {
   it('is not starred unless it says so, and keeps an emptied box as nothing', () => {
     expect(
       contactFields({ category: 'Labs', name: 'Quest', email: '   ', website: '', notes: null }),
-    ).toMatchObject({ preferred: false, email: null, website: null, notes: null });
+    ).toMatchObject({ preferred: false, practice: null, email: null, website: null, notes: null });
   });
 });
 

@@ -95,6 +95,7 @@ await step('a manager sees the same headings with only the tabs they may open', 
   for (const name of ['Dashboard', 'Staff', 'Offices', 'Surveys & reading', 'Finances'])
     if (!links.includes(name)) throw new Error(`manager lacks ${name}: ${links.join(', ')}`);
   await goToManage(manager, 'Job roles');
+  await manager.getByRole('dialog', { name: 'Job roles' }).getByRole('button', { name: 'Close' }).click();
   if ((await tabs(manager, 'Staff')).join('|') !== 'Staff|Licenses|CME|Onboarding & Offboarding')
     throw new Error(`staff: ${(await tabs(manager, 'Staff')).join('|')}`);
   await goToManage(manager, 'Closing checklists');

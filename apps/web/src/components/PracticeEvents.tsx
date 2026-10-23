@@ -7,6 +7,7 @@ import { t, useT } from '../lib/i18n';
 import { Link } from 'react-router-dom';
 import { CALENDAR_KINDS, KIND_STYLE, officeShort } from '../lib/calendar-kinds';
 import { FOOD_LABEL, STATUS_LABEL } from '../lib/reps';
+import { SearchableSelect } from './SearchableSelect';
 import { jobRoleHex } from '../lib/job-role-colours';
 import type {
   Employee,
@@ -19,6 +20,8 @@ import type {
   PracticeEvent,
   ReadBooking,
   Rep,
+  RepFood,
+  RepStatus,
   RepeatInput,
   ReplyAnswer,
 } from '../lib/types';
@@ -532,6 +535,8 @@ export function EventForm({
       .catch(() => setReps([]));
   }, [repLunch, reps]);
   const chosenRep = reps?.find((rep) => rep.id === repId) ?? null;
+  /// "+ Add a new rep": the name typed so far, or null while not adding.
+  const [addingRep, setAddingRep] = useState<string | null>(null);
   // A holiday is the whole day; a meeting usually is not.
   const [allDay, setAllDay] = useState(
     source?.allDay ?? (initialKind === 'CLOSURE' || initialKind === 'HOLIDAY'),
@@ -874,10 +879,14 @@ export function EventForm({
             {readNote.newRep && (
               <p className="mt-0.5">
                 {readNote.newRep} is not on the reps list yet -{' '}
-                <Link to="/reps" className="font-medium text-brand-700 underline">
-                  add them under Manage → Offices → Reps
-                </Link>
-                , then choose them here.
+                <button
+                  type="button"
+                  onClick={() => setAddingRep(readNote.newRep ?? '')}
+                  className="font-medium text-brand-700 underline"
+                >
+                  add them here
+                </button>
+                .
               </p>
             )}
           </div>
@@ -910,32 +919,63 @@ export function EventForm({
 
         {repLunch ? (
           <div className="sm:col-span-2">
-            <label htmlFor={`${id}-rep`} className={label}>
-              Which rep?
-            </label>
-            <select
+            {/* Typed into to find a rep, and a new rep is added right here
+                (October 2026, Dominguez: "should be able to search in the
+                dropdown and also be able to add a rep right there"). */}
+            <SearchableSelect
               id={`${id}-rep`}
-              required
+              label="Which rep?"
               value={repId}
-              onChange={(change) => setRepId(change.target.value)}
-              className={field}
-            >
-              <option value="">{reps === null ? 'Loading…' : 'Choose a rep…'}</option>
-              {(reps ?? []).map((rep) => (
-                <option key={rep.id} value={rep.id}>
-                  {rep.name}
-                  {rep.company ? ` - ${rep.company}` : ''}
-                  {rep.status === 'DO_NOT_BOOK' ? ' (don’t book)' : ''}
-                </option>
-              ))}
-            </select>
-            <p className="mt-1 text-xs text-slate-500">
-              Not on the list?{' '}
-              <Link to="/reps" className="font-medium text-brand-700 underline">
-                Add them under Manage → Offices → Reps
-              </Link>
-              .
-            </p>
+              placeholder={reps === null ? 'Loading…' : 'Type a name or company…'}
+              options={(reps ?? []).map((rep) => ({
+                value: rep.id,
+                label: `${rep.name}${rep.company ? ` - ${rep.company}` : ''}${
+                  rep.status === 'DO_NOT_BOOK' ? ' (don’t book)' : ''
+                }`,
+              }))}
+              onChange={setRepId}
+              footer={(close, typed) => (
+                <button
+                  type="button"
+                  onClick={() => {
+                    close();
+                    setAddingRep(typed.trim() || ' ');
+                  }}
+                  className="w-full rounded-md px-3 py-1.5 text-left text-sm font-medium text-brand-800 hover:bg-brand-50"
+                >
+                  + Add a new rep
+                </button>
+              )}
+            />
+            {addingRep !== null ? (
+              <QuickAddRep
+                startName={addingRep.trim()}
+                onCancel={() => setAddingRep(null)}
+                onAdded={(rep) => {
+                  setReps((current) =>
+                    [...(current ?? []), rep].sort((a, b) => a.name.localeCompare(b.name)),
+                  );
+                  setRepId(rep.id);
+                  setAddingRep(null);
+                }}
+              />
+            ) : (
+              <p className="mt-1 text-xs text-slate-500">
+                Not on the list?{' '}
+                <button
+                  type="button"
+                  onClick={() => setAddingRep('')}
+                  className="font-medium text-brand-700 underline"
+                >
+                  Add a new rep
+                </button>{' '}
+                here, or keep the list under{' '}
+                <Link to="/reps" className="font-medium text-brand-700 underline">
+                  Manage → Offices → Reps
+                </Link>
+                .
+              </p>
+            )}
             {chosenRep && (
               <div
                 data-testid="chosen-rep"
@@ -1683,5 +1723,152 @@ function Wrap({
     <Card className="p-4" testId={testId}>
       {children}
     </Card>
+  );
+}
+
+/**
+ * A new rep, added from the rep lunch form (October 2026, Dominguez: "be able
+ * to add a rep right there, without having to go Manage → Offices → Reps").
+ * The same rep as the Reps screen makes - name, company, medication, cell,
+ * food and status - and chosen for the lunch once saved; notes stay on the
+ * Reps screen.
+ */
+function QuickAddRep({
+  startName,
+  onAdded,
+  onCancel,
+}: {
+  startName: string;
+  onAdded: (rep: Rep) => void;
+  onCancel: () => void;
+}) {
+  const id = useId();
+  const [name, setName] = useState(startName);
+  const [company, setCompany] = useState('');
+  const [medication, setMedication] = useState('');
+  const [cellPhone, setCellPhone] = useState('');
+  const [food, setFood] = useState<RepFood | ''>('');
+  const [status, setStatus] = useState<RepStatus>('OK');
+  const [busy, setBusy] = useState(false);
+  const [problem, setProblem] = useState<string | null>(null);
+  const box = 'mt-1 w-full rounded-lg border border-slate-300 px-2 py-1.5 text-sm';
+
+  async function save() {
+    if (name.trim().length < 2) {
+      setProblem('Give the rep’s name.');
+      return;
+    }
+    setBusy(true);
+    setProblem(null);
+    try {
+      const rep = await api.createRep({
+        name: name.trim(),
+        company: company.trim() || undefined,
+        medication: medication.trim() || undefined,
+        cellPhone: cellPhone.trim() || undefined,
+        food: food || null,
+        status,
+      });
+      onAdded(rep);
+    } catch (err) {
+      setProblem(err instanceof ApiError ? err.message : 'Could not add that rep.');
+      setBusy(false);
+    }
+  }
+
+  return (
+    <div
+      className="mt-2 rounded-lg border border-brand-200 bg-brand-50/40 p-3"
+      data-testid="quick-add-rep"
+    >
+      <p className="text-sm font-medium text-slate-900">New rep</p>
+      <div className="mt-2 grid gap-2 sm:grid-cols-2">
+        <label className="text-xs text-slate-600" htmlFor={`${id}-name`}>
+          Name
+          <input
+            id={`${id}-name`}
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            maxLength={120}
+            className={box}
+          />
+        </label>
+        <label className="text-xs text-slate-600" htmlFor={`${id}-company`}>
+          Company
+          <input
+            id={`${id}-company`}
+            value={company}
+            onChange={(e) => setCompany(e.target.value)}
+            maxLength={120}
+            className={box}
+          />
+        </label>
+        <label className="text-xs text-slate-600" htmlFor={`${id}-medication`}>
+          Medication
+          <input
+            id={`${id}-medication`}
+            value={medication}
+            onChange={(e) => setMedication(e.target.value)}
+            maxLength={200}
+            className={box}
+          />
+        </label>
+        <label className="text-xs text-slate-600" htmlFor={`${id}-cell`}>
+          Cell phone
+          <input
+            id={`${id}-cell`}
+            value={cellPhone}
+            onChange={(e) => setCellPhone(e.target.value)}
+            maxLength={40}
+            className={box}
+          />
+        </label>
+        <label className="text-xs text-slate-600" htmlFor={`${id}-food`}>
+          Food
+          <select
+            id={`${id}-food`}
+            value={food}
+            onChange={(e) => setFood(e.target.value as RepFood | '')}
+            className={`${box} bg-white`}
+          >
+            <option value="">Not said</option>
+            {(Object.keys(FOOD_LABEL) as RepFood[]).map((key) => (
+              <option key={key} value={key}>
+                {FOOD_LABEL[key]}
+              </option>
+            ))}
+          </select>
+        </label>
+        <label className="text-xs text-slate-600" htmlFor={`${id}-status`}>
+          Status
+          <select
+            id={`${id}-status`}
+            value={status}
+            onChange={(e) => setStatus(e.target.value as RepStatus)}
+            className={`${box} bg-white`}
+          >
+            {(Object.keys(STATUS_LABEL) as RepStatus[]).map((key) => (
+              <option key={key} value={key}>
+                {STATUS_LABEL[key].text}
+              </option>
+            ))}
+          </select>
+        </label>
+      </div>
+      {problem && <p className="mt-2 text-sm text-rose-700">{problem}</p>}
+      <div className="mt-2 flex gap-2">
+        <button
+          type="button"
+          disabled={busy}
+          onClick={() => void save()}
+          className={buttonClass('primary', 'sm')}
+        >
+          {busy ? 'Adding…' : 'Add rep'}
+        </button>
+        <button type="button" onClick={onCancel} className={buttonClass('secondary', 'sm')}>
+          Cancel
+        </button>
+      </div>
+    </div>
   );
 }

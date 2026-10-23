@@ -27,6 +27,9 @@ function PrintEntry({ contact, staffCopy }: { contact: ReferralContact; staffCop
           </span>
         ))}
         {note && <span className="block text-[0.85em] font-normal italic">{note}</span>}
+        {contact.practice && (
+          <span className="block text-[0.85em] font-semibold">{contact.practice}</span>
+        )}
       </h3>
       {printedOffices(contact.offices).map((line, officeIndex) =>
         staffCopy ? (

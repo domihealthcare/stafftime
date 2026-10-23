@@ -20,6 +20,7 @@ function haystack(contact: ReferralContact) {
   const words = [
     contact.category,
     contact.name,
+    contact.practice,
     contact.email,
     contact.website,
     contact.notes,

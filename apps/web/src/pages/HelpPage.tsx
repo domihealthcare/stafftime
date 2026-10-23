@@ -788,8 +788,9 @@ const STAFF: Section[] = [
             </p>
             <p>
               The book is kept by all of us. Press <strong>Edit</strong> on an entry to fix a number
-              or add a note, tick <strong>Preferred</strong> to star it, or press{' '}
-              <strong>+ Add another address</strong> for another office.{' '}
+              or add a note, tick <strong>Preferred</strong> to star it, give the whole entry a{' '}
+              <strong>Practice name</strong>, or press <strong>+ Add another address</strong> for
+              another location (<strong>+ Name this location</strong> if one needs its own name).{' '}
               <strong>+ Add an entry</strong> puts in a new place; only a manager can{' '}
               <strong>Remove</strong> one (inside Edit). Please write about the place only - never a
               patient&rsquo;s name or details.

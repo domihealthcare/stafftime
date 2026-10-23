@@ -200,8 +200,12 @@ await step('anybody adds an entry with two offices and a star, and fixes it', as
   await dialog.getByLabel('Name', { exact: true }).fill('Phone-book suite sleep lab');
   await dialog.getByLabel('Specialty').fill('Sleep studies');
   await dialog.getByLabel(/Preferred/).check();
+  // The practice is the card's; a location gets its own name only when asked for.
+  await dialog.getByLabel(/Practice name/).fill('Suite Sleep Associates');
   const first = dialog.getByTestId('phone-book-office-form').nth(0);
-  await first.getByLabel('Office name').fill('Hoboken');
+  if (await first.getByLabel('Location name').count()) throw new Error('every address asks for a name');
+  await first.getByRole('button', { name: '+ Name this location' }).click();
+  await first.getByLabel('Location name').fill('Hoboken');
   await first.getByLabel('Address').fill('1 Main St, Hoboken, NJ');
   await first.getByLabel('Phone').fill('(201) 555-0142, (201) 555-0143');
   await first.getByLabel('Fax').fill('(201) 555-0144');
@@ -213,6 +217,11 @@ await step('anybody adds an entry with two offices and a star, and fixes it', as
   await dialog.getByRole('button', { name: 'Add entry' }).click();
   await search(staff, 'phone-book suite');
   let entry = card(staff, /Phone-book suite sleep lab/);
+  await entry.getByTestId('phone-book-practice').getByText('Suite Sleep Associates').waitFor({ timeout: 10000 });
+  await search(staff, 'suite sleep associates');
+  await card(staff, /Phone-book suite sleep lab/).waitFor({ timeout: 5000 });
+  await search(staff, 'phone-book suite');
+  entry = card(staff, /Phone-book suite sleep lab/);
   await entry.getByText('Fax the order first.').waitFor({ timeout: 10000 });
   if ((await entry.getByTestId('phone-book-office').count()) !== 2) throw new Error('not two offices');
   await entry.getByText('Preferred', { exact: true }).waitFor();
@@ -221,7 +230,7 @@ await step('anybody adds an entry with two offices and a star, and fixes it', as
 
   await entry.getByRole('button', { name: /^Edit/ }).click();
   dialog = staff.getByRole('dialog', { name: /Change Phone-book suite sleep lab/ });
-  await dialog.getByTestId('phone-book-office-form').nth(1).getByRole('button', { name: 'Remove this office' }).click();
+  await dialog.getByTestId('phone-book-office-form').nth(1).getByRole('button', { name: 'Remove this address' }).click();
   await dialog.getByRole('button', { name: 'Save changes' }).click();
   entry = card(staff, /Phone-book suite sleep lab/);
   await staff.waitForFunction(() => document.querySelectorAll('[data-testid=phone-book-office]').length === 1);

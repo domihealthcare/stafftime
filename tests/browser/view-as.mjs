@@ -35,6 +35,13 @@ async function signIn(email) {
 }
 const status = (page, path, headers = {}) =>
   page.evaluate(async ({ path, headers }) => (await fetch(`/api${path}`, { headers })).status, { path, headers });
+/// The headers the app itself sends while viewing as somebody (`lib/view-as.ts`).
+const appHeaders = (page) =>
+  page.evaluate(() => {
+    const value = JSON.parse(sessionStorage.getItem('domi-staff.view-as') ?? 'null');
+    if (!value) return {};
+    return { 'x-view-as': value.role, ...(value.jobRoleIds.length ? { 'x-view-as-job-roles': value.jobRoleIds.join(',') } : {}) };
+  });
 const me = (page, headers = {}) =>
   page.evaluate(async (headers) => fetch('/api/auth/me', { headers }).then((r) => r.json()), headers);
 
@@ -49,16 +56,17 @@ await step('an admin picks Employee and Front Desk under View as…', async () =
   await dialog.getByLabel(/Employee/).check();
   await dialog.getByLabel('Front Desk').check();
   await dialog.getByRole('button', { name: 'View as this' }).click();
-  await admin.getByTestId('view-as-banner').waitFor({ timeout: 10000 });
-  const banner = await admin.getByTestId('view-as-banner').innerText();
-  if (!/Viewing as an employee in Front Desk/.test(banner)) throw new Error(banner);
+  // The role's name follows the banner by a moment.
+  await admin.getByTestId('view-as-banner').filter({ hasText: /Viewing as an employee in Front Desk/ }).waitFor({ timeout: 10000 });
   await admin.screenshot({ path: `${OUT}/view-as-employee.png` });
 });
 
 await step('the app now shows and answers as that person: no Manage, staff list refused, Front Desk resources', async () => {
   if (await admin.getByRole('button', { name: 'Manage', exact: true }).count()) throw new Error('Manage is still offered');
-  if ((await status(admin, '/employees')) !== 403) throw new Error('the staff list still opens');
-  const profile = await me(admin);
+  const headers = await appHeaders(admin);
+  if (headers['x-view-as'] !== 'EMPLOYEE') throw new Error(`the app is not sending the view: ${JSON.stringify(headers)}`);
+  if ((await status(admin, '/employees', headers)) !== 403) throw new Error('the staff list still opens');
+  const profile = await me(admin, headers);
   if (profile.role !== 'EMPLOYEE' || profile.viewingAs?.actualRole !== 'ADMIN') throw new Error(JSON.stringify(profile.viewingAs));
   await admin.goto(`${BASE}/resources`, { waitUntil: 'networkidle' });
   await admin.getByTestId('section-Front Desk').waitFor({ timeout: 10000 });
@@ -73,6 +81,7 @@ await step('Back to yourself restores the admin', async () => {
   await admin.getByTestId('view-as-banner').getByRole('button', { name: 'Back to yourself' }).click();
   await admin.getByTestId('view-as-banner').waitFor({ state: 'detached', timeout: 10000 });
   await admin.getByRole('button', { name: 'Manage', exact: true }).waitFor({ timeout: 10000 });
+  if (Object.keys(await appHeaders(admin)).length) throw new Error('the view is still being sent');
   if ((await status(admin, '/employees')) !== 200) throw new Error('the staff list is still refused');
 });
 

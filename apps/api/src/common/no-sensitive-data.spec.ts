@@ -288,6 +288,7 @@ describe('what this app deliberately does not store', () => {
         'name',
         'notes',
         'offices',
+        'practice',
         'preferred',
         'updatedAt',
         'updatedById',

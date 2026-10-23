@@ -1130,6 +1130,30 @@ Beyond the phases, the parts worth knowing about before picking up work:
   name), with a specialty in brackets after the last one shown once as the
   group's note (`doctorsOf` in `lib/phone-book.ts`); the whole name is still
   what is searched, so any one doctor finds the group. Cardiology is two pages.
+- **Phone book: a practice name for the card** (23 October 2026, Dominguez:
+  "not each address needs an office name, if anything the whole card needs a
+  practice name"): `ReferralContact.practice` (optional, migration
+  `20261023010000_phone_book_practice`, schema guard updated), a **Practice
+  name** field in the form, shown under the name on the card and the
+  printout, and searched. The per-address name is now **Location name**,
+  shown in the form only when one is set or **+ Name this location** is
+  pressed; existing ones are kept.
+- **Rep lunch: search the reps, add one there** (23 October 2026, Dominguez:
+  "should be able to search in the dropdown and also be able to add a rep
+  right there"): **Which rep?** is a dropdown you type into (name or
+  company; `SearchableSelect`, now with value/label options and a footer),
+  and **+ Add a new rep** (in the list, under it, or from the AI helper's
+  "not on the list yet") opens a small form in place - name, company,
+  medication, cell, food, status; notes stay on the Reps screen - which saves
+  through `POST /reps` and chooses the new rep. `QuickAddRep` in
+  `components/PracticeEvents.tsx`; `tests/browser/practice-calendar.mjs`.
+- **A mini calendar on the rota** (23 October 2026, Dominguez: "should
+  include a mini calendar to skip to certain weeks without having to go week
+  by week"): **📅 Go to a week** (Go to a month in Month) beside Previous ·
+  This week · Next opens a small month calendar: a month or a year at a time
+  with the arrows, the week or month on screen shaded, today ringed; pressing
+  a day goes to its week or month. `components/JumpToDate.tsx`;
+  `tests/browser/jump-to-date.mjs`.
 - **View as** (23 October 2026, Dominguez: "me (as the super admin) should
   have a way to see the views that other staff have - i.e. something like view
   as another role, i can click one (or multiple) roles ... both to make sure
