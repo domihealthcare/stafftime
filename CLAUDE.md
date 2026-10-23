@@ -1215,6 +1215,42 @@ Beyond the phases, the parts worth knowing about before picking up work:
   query, and `assertAPerson`); `tests/browser/shared-account.mjs`. Anybody
   who reads office@ can reset its password, so it should stay Employee
   access. **Not created on the live site yet**: an admin adds it on Staff.
+- **Shortcuts, the key, Time off in Schedule, and more** (23 October 2026,
+  Dominguez, version 1.22.0):
+  - Home's **Quick** card is now **Shortcuts** (Spanish was already "Accesos
+    rápidos"), in his order: Phone book, Diagnostics, Rep lunches, the guides
+    and forms, Ask Domi Staff, then **Request time off** and Help last.
+  - The rota's **Key** is two rows: the fill (offices, from home, open
+    shift, draft, time off) with 🍽️ at the far right, then the outline (job
+    roles) with 🥪 at the far right.
+  - **Time off** (`/time-off`) carries the Schedule's tabs, and Schedule
+    stays lit in the header and phone bar on Time off, Reviews and On call,
+    so going to the requests no longer seems to leave the Schedule.
+  - **Who is told** (`TopicAssignee`) can now be anybody in the
+    **Administrative** or **Manager** job role, whatever their access
+    (`ASSIGNABLE` in `email/digest-settings.controller.ts`, `choosable` in
+    `components/TopicAssignees.tsx`, labelled "Administrative, told only").
+    They get the part's bell notes and its section of the nightly email (the
+    round-up now also reads people chosen for a part, and nobody else's part
+    reaches them); emails to them say a manager decides it. Deciding still
+    needs Manager access, and a chosen person without it never stops managers
+    clearing closing checklists (`ClosingService.mayClear`).
+  - **Staff cards**: "Doesn't clock in" and "Shared account" sit beside the
+    offices, not on the bottom row, so Profile and Edit stay level.
+  - **Provider productivity**: a statement published, or a published one
+    changed, now reaches the provider **by email** as well as the bell
+    (`NotificationsService.personal`). **Printing**: Print on a statement,
+    Select to print and **Print selected**, or **Print all**, each opening
+    `/productivity/print?employee=&ids=` in a new tab (outside the layout,
+    behind the pay PIN, print window opens by itself;
+    `pages/ProductivityPrintPage.tsx`).
+  - **Diagnostics and Reimbursements fit a laptop**: both screens take the
+    whole width (`WIDE_SCREENS` in `Layout.tsx`); Diagnostics' columns share
+    it (`table-fixed`, smaller type, names break after a slash);
+    Reimbursements reads insurance names upwards and shows amounts **to the
+    dollar** on the grid, with the cents on hover, read out, in the list a
+    code opens and while editing (`formatRateShort`). The Big board is as
+    it was. No sideways scroll from 1280 px wide.
 - **View as** (23 October 2026, Dominguez: "me (as the super admin) should
   have a way to see the views that other staff have - i.e. something like view
   as another role, i can click one (or multiple) roles ... both to make sure

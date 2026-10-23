@@ -580,9 +580,17 @@ await step('staff see the phlebotomist, and Show narrows to it alone', async () 
   await frankie.getByRole('group', { name: 'Show on the calendar' }).getByRole('button', { name: /^All/ }).click();
 });
 
-await step('Home’s Quick card opens the calendar on rep lunches, and no longer has availability', async () => {
+await step('Home’s Shortcuts card, in order, opens the calendar on rep lunches, and no longer has availability', async () => {
   await frankie.goto(`${BASE}/`, { waitUntil: 'networkidle' });
   const quick = frankie.getByTestId('quick-actions');
+  // Named Shortcuts, in Dominguez's order (October 2026): the phone book,
+  // diagnostics and rep lunches first, time off last before Help.
+  await quick.getByRole('heading', { name: 'Shortcuts' }).waitFor({ timeout: 10000 });
+  const order = await quick.getByRole('link').allInnerTexts();
+  const at = (name) => order.indexOf(name);
+  if (!(at('Phone book') === 0 && at('Diagnostics') === 1 && at('Rep lunches') === 2))
+    throw new Error(`Shortcuts start: ${order.join(', ')}`);
+  if (order.slice(-2).join() !== 'Request time off,Help') throw new Error(`Shortcuts end: ${order.join(', ')}`);
   await quick.getByRole('link', { name: 'Rep lunches' }).click();
   await frankie.getByRole('heading', { name: 'Calendar', level: 1 }).waitFor({ timeout: 10000 });
   const picked = await frankie.getByRole('group', { name: 'Show on the calendar' }).getByRole('button', { name: /Rep lunches/ }).getAttribute('aria-pressed');

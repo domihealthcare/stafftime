@@ -7,7 +7,7 @@ import {
 } from '@nestjs/common';
 import { NotificationKind, Prisma } from '@prisma/client';
 import { AuthUser } from '../common/auth/auth-user';
-import { InboxService } from '../email/inbox.service';
+import { NotificationsService } from '../email/notifications.service';
 import { PrismaService } from '../prisma/prisma.service';
 import {
   IntervalDto,
@@ -101,7 +101,7 @@ export function presentStatement(row: StatementRow) {
 export class ProductivityService {
   constructor(
     private readonly prisma: PrismaService,
-    private readonly inbox: InboxService,
+    private readonly notifications: NotificationsService,
   ) {}
 
   // ---- Who may use it -----------------------------------------------------
@@ -521,10 +521,11 @@ export class ProductivityService {
     }
   }
 
-  /// A bell entry with no numbers in it - the same care as every notification.
+  /// On the bell and by email (October 2026, Dominguez: published, or edited
+  /// and published again, "it should send a notification to the provider"),
+  /// with no numbers in it - the same care as every notification.
   private async tell(employeeId: string, what: 'ready' | 'updated', start: string, end: string) {
-    await this.inbox.notify([employeeId], {
-      kind: NotificationKind.PRODUCTIVITY,
+    await this.notifications.personal([employeeId], NotificationKind.PRODUCTIVITY, {
       title:
         what === 'ready'
           ? 'Your productivity statement is ready'

@@ -557,8 +557,18 @@ function StaffCard({
               ))}
             </p>
           )}
-          <p className="text-xs text-slate-500">
-            {person.locations.map((l) => l.location.name).join(', ') || 'No location assigned'}
+          {/* What kind of account it is sits with the offices (October 2026,
+              Dominguez: on the bottom row it pushed Profile and Edit onto a
+              line of their own). */}
+          <p className="mt-0.5 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-slate-500">
+            <span>
+              {person.locations.map((l) => l.location.name).join(', ') || 'No location assigned'}
+            </span>
+            {person.isSharedAccount ? (
+              <Badge tone="info">Shared account</Badge>
+            ) : (
+              person.clocksIn === false && <Badge tone="neutral">Doesn&rsquo;t clock in</Badge>
+            )}
           </p>
           {entry?.about && <p className="mt-1 text-sm text-slate-700">{entry.about}</p>}
           <ScheduleReviewLine review={review} />
@@ -593,11 +603,6 @@ function StaffCard({
           </Badge>
           {terminated && <Badge tone="danger">Former</Badge>}
           {canEdit && person.hasKioskPin && <Badge tone="success">PIN</Badge>}
-          {person.isSharedAccount ? (
-            <Badge tone="info">Shared account</Badge>
-          ) : (
-            person.clocksIn === false && <Badge tone="neutral">Doesn&rsquo;t clock in</Badge>
-          )}
           <span className="ml-auto flex gap-2">
             {canOpenProfile && (
               <Link

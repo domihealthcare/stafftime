@@ -75,7 +75,7 @@ function build(options: { existing?: unknown; clash?: unknown; plan?: unknown } 
     productivityInterval: { deleteMany: jest.fn().mockResolvedValue({ count: 2 }) },
     $transaction: jest.fn(async (fn: (tx: unknown) => unknown): Promise<unknown> => fn(prisma)),
   };
-  const inbox = { notify: jest.fn().mockResolvedValue(undefined) };
+  const inbox = { personal: jest.fn().mockResolvedValue(undefined) };
   return { service: new ProductivityService(prisma as never, inbox as never), prisma, inbox };
 }
 
@@ -238,11 +238,11 @@ describe('ProductivityService.save', () => {
   it('tells the provider when a published statement changes, and not when a draft does', async () => {
     const draft = build();
     await draft.service.save('st-1', { intervals: [interval('2026-06-01', '2026-06-14')] });
-    expect(draft.inbox.notify).not.toHaveBeenCalled();
+    expect(draft.inbox.personal).not.toHaveBeenCalled();
 
     const live = build({ existing: statementRow({ publishedAt: new Date() }) });
     await live.service.save('st-1', { intervals: [interval('2026-06-01', '2026-06-14')] });
-    expect(live.inbox.notify).toHaveBeenCalledTimes(1);
+    expect(live.inbox.personal).toHaveBeenCalledTimes(1);
   });
 
   it('says so plainly when the statement does not exist', async () => {
@@ -260,8 +260,8 @@ describe('publishing', () => {
     expect(prisma.productivityStatement.update.mock.calls[0][0].data).toMatchObject({
       publishedById: 'mgr-1',
     });
-    expect(inbox.notify).toHaveBeenCalledTimes(1);
-    const [ids, note] = inbox.notify.mock.calls[0];
+    expect(inbox.personal).toHaveBeenCalledTimes(1);
+    const [ids, , note] = inbox.personal.mock.calls[0];
     expect(ids).toEqual(['doc-1']);
     expect(JSON.stringify(note)).not.toMatch(/\$|1,?150|323/);
   });
@@ -272,7 +272,7 @@ describe('publishing', () => {
     });
     await service.publish('st-1', manager);
     expect(prisma.productivityStatement.update).not.toHaveBeenCalled();
-    expect(inbox.notify).not.toHaveBeenCalled();
+    expect(inbox.personal).not.toHaveBeenCalled();
   });
 
   it('unpublishing clears both marks', async () => {

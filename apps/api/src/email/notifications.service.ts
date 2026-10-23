@@ -121,7 +121,12 @@ export class NotificationsService {
 
     const managers = await this.prisma.employee.findMany({
       where: {
-        role: { in: [Role.MANAGER, Role.ADMIN] },
+        // Managers and admins, and anybody chosen for this part (an
+        // Administrative member of staff may be, October 2026).
+        OR: [
+          { role: { in: [Role.MANAGER, Role.ADMIN] } },
+          { topicAssignments: { some: { topic: DigestTopic.SCHEDULE } } },
+        ],
         employmentStatus: EmploymentStatus.ACTIVE,
         id: { not: employeeId },
       },
@@ -214,7 +219,12 @@ export class NotificationsService {
   async correctionAsked(employeeId: string, words: { title: string; body: string }): Promise<void> {
     const managers = await this.prisma.employee.findMany({
       where: {
-        role: { in: [Role.MANAGER, Role.ADMIN] },
+        // Managers and admins, and anybody chosen for this part (an
+        // Administrative member of staff may be, October 2026).
+        OR: [
+          { role: { in: [Role.MANAGER, Role.ADMIN] } },
+          { topicAssignments: { some: { topic: DigestTopic.HOURS } } },
+        ],
         employmentStatus: EmploymentStatus.ACTIVE,
         id: { not: employeeId },
       },
@@ -233,11 +243,16 @@ export class NotificationsService {
   async cmeAsked(employeeId: string, words: { title: string; body: string }): Promise<void> {
     const managers = await this.prisma.employee.findMany({
       where: {
-        role: { in: [Role.MANAGER, Role.ADMIN] },
+        // Managers and admins, and anybody chosen for this part (an
+        // Administrative member of staff may be, October 2026).
+        OR: [
+          { role: { in: [Role.MANAGER, Role.ADMIN] } },
+          { topicAssignments: { some: { topic: DigestTopic.LICENSES } } },
+        ],
         employmentStatus: EmploymentStatus.ACTIVE,
         id: { not: employeeId },
       },
-      select: { id: true, email: true, firstName: true, mutedDigestTopics: true },
+      select: { id: true, email: true, firstName: true, role: true, mutedDigestTopics: true },
     });
     const deciders = await this.deciders(DigestTopic.LICENSES, managers);
     await this.inbox.notify(
@@ -250,7 +265,9 @@ export class NotificationsService {
         '',
         words.body,
         '',
-        `Approve or decline it here: ${this.appUrl}/cme`,
+        decidesIt(decider.role)
+          ? `Approve or decline it here: ${this.appUrl}/cme`
+          : 'A manager approves or declines it in Domi Staff.',
       ]);
     }
   }
@@ -270,12 +287,17 @@ export class NotificationsService {
 
     const managers = await this.prisma.employee.findMany({
       where: {
-        role: { in: [Role.MANAGER, Role.ADMIN] },
+        // Managers and admins, and anybody chosen for this part (an
+        // Administrative member of staff may be, October 2026).
+        OR: [
+          { role: { in: [Role.MANAGER, Role.ADMIN] } },
+          { topicAssignments: { some: { topic: DigestTopic.TIME_OFF } } },
+        ],
         employmentStatus: EmploymentStatus.ACTIVE,
         // Nobody needs an email about their own request.
         id: { not: request.employeeId },
       },
-      select: { id: true, email: true, firstName: true, mutedDigestTopics: true },
+      select: { id: true, email: true, firstName: true, role: true, mutedDigestTopics: true },
     });
     const deciders = await this.deciders(DigestTopic.TIME_OFF, managers);
 
@@ -296,7 +318,9 @@ export class NotificationsService {
         `${who} has asked for ${describeType(request.type)} for ${describeRange(request.startDate, request.endDate, request.isHalfDay)}.`,
         ...(request.notes ? ['', `They said: “${request.notes}”`] : []),
         '',
-        `Approve or deny it here: ${this.appUrl}/time-off`,
+        decidesIt(decider.role)
+          ? `Approve or deny it here: ${this.appUrl}/time-off`
+          : 'A manager approves or denies it in Domi Staff.',
       ]);
     }
   }
@@ -744,4 +768,11 @@ function practiceDay(at: Date): string {
     month: 'short',
     day: 'numeric',
   });
+}
+
+/// Somebody chosen to be told of a part who is not a manager (an
+/// Administrative member of staff, October 2026) hears of it but does not
+/// decide it, so their email does not send them to approve.
+function decidesIt(role: Role): boolean {
+  return role === Role.MANAGER || role === Role.ADMIN;
 }

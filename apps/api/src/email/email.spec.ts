@@ -229,8 +229,13 @@ describe('NotificationsService', () => {
       employee: { id: 'emp-1', firstName: 'Frankie', lastName: 'Front-Desk' },
     });
     prisma.employee.findMany.mockResolvedValue([
-      { email: 'morgan@domihealthcare.com', firstName: 'Morgan', mutedDigestTopics: [] },
-      { email: 'ada@domihealthcare.com', firstName: 'Ada', mutedDigestTopics: [] },
+      {
+        email: 'morgan@domihealthcare.com',
+        firstName: 'Morgan',
+        role: 'MANAGER',
+        mutedDigestTopics: [],
+      },
+      { email: 'ada@domihealthcare.com', firstName: 'Ada', role: 'MANAGER', mutedDigestTopics: [] },
     ]);
 
     await service.ptoRequested('pto-1');

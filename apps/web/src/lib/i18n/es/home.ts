@@ -17,7 +17,7 @@ export const HOME: Record<string, string> = {
   'This account does not clock in. Clock in with your own account.':
     'Esta cuenta no marca entrada. Marca tu entrada con tu propia cuenta.',
   'Note on today’s shift:': 'Nota sobre el turno de hoy:',
-  'Quick and coming up': 'Accesos rápidos y próximamente',
+  'Shortcuts and coming up': 'Accesos rápidos y próximamente',
 
   // Home: where you clock in
   Location: 'Lugar',
@@ -71,8 +71,8 @@ export const HOME: Record<string, string> = {
   '{n} comment': '{n} comentario',
   '{n} comments': '{n} comentarios',
 
-  // Quick
-  Quick: 'Accesos rápidos',
+  // Shortcuts
+  Shortcuts: 'Accesos rápidos',
   'Request time off': 'Pedir tiempo libre',
   'Your availability': 'Tu disponibilidad',
   Forms: 'Formularios',

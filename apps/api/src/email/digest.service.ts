@@ -44,14 +44,27 @@ export class DigestService {
 
     const recipients = await this.prisma.employee.findMany({
       where: {
-        role: { in: [Role.MANAGER, Role.ADMIN] },
+        // Managers and admins, and anybody chosen to look after a part (an
+        // Administrative member of staff may be, October 2026) - who reads
+        // that part alone, below.
+        OR: [{ role: { in: [Role.MANAGER, Role.ADMIN] } }, { topicAssignments: { some: {} } }],
         employmentStatus: EmploymentStatus.ACTIVE,
         // Theirs to turn off. Everything in the digest is also on the screen it
         // belongs to, so opting out loses the nudge, not the information.
         wantsDailyDigest: true,
       },
-      select: { id: true, email: true, firstName: true, mutedDigestTopics: true },
+      select: {
+        id: true,
+        email: true,
+        firstName: true,
+        role: true,
+        mutedDigestTopics: true,
+      },
     });
+    // A part nobody was chosen for goes by Email settings, to managers only.
+    const managers = recipients.filter(
+      (recipient) => recipient.role === Role.MANAGER || recipient.role === Role.ADMIN,
+    );
 
     if (recipients.length === 0) {
       this.logger.log(`${itemCount} item(s) to chase, but nobody is subscribed to the digest`);
@@ -69,9 +82,13 @@ export class DigestService {
     });
     for (const topic of ALL_DIGEST_TOPICS) {
       if (DIGEST_TOPICS[topic].every((key) => contents[key].length === 0)) continue;
-      const chosen = assignees.filter((row) => row.topic === topic).map((row) => row.employeeId);
-      for (const reader of chosenOrReaders(topic, recipients, chosen))
-        topicsFor.get(reader)!.add(topic);
+      const chosen = new Set(
+        assignees.filter((row) => row.topic === topic).map((row) => row.employeeId),
+      );
+      const readers = recipients.some((recipient) => chosen.has(recipient.id))
+        ? recipients.filter((recipient) => chosen.has(recipient.id))
+        : chosenOrReaders(topic, managers, []);
+      for (const reader of readers) topicsFor.get(reader)!.add(topic);
     }
 
     let sent = 0;

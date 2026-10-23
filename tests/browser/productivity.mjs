@@ -293,6 +293,28 @@ await step('two statements may not cover the same days', async () => {
   await mgr.getByRole('button', { name: 'Cancel' }).click();
 });
 
+await step('statements print one at a time, the ones ticked, or all of them', async () => {
+  // October 2026, Dominguez: "there should be a way to print either multiple
+  // or all or one". Each opens a page of its own (a new tab), behind the PIN.
+  const bar = mgr.getByTestId('productivity-print-bar');
+  await bar.waitFor({ timeout: 10000 });
+  const all = await bar.getByRole('link', { name: /^Print all 3$/ }).getAttribute('href');
+  if (!/^\/productivity\/print\?employee=[0-9a-f-]+$/.test(all)) throw new Error(`Print all goes to ${all}`);
+  const one = await mgr.getByTestId('productivity-2026-08-02').getByRole('link', { name: 'Print', exact: true }).getAttribute('href');
+  await mgr.getByTestId('productivity-2026-06-07').getByLabel('Select to print').check();
+  await mgr.getByTestId('productivity-2026-08-02').getByLabel('Select to print').check();
+  const two = await bar.getByRole('link', { name: 'Print selected (2)' }).getAttribute('href');
+  const tab = await mgr.context().newPage();
+  for (const [href, count] of [[one, 1], [two, 2], [all, 3]]) {
+    await tab.goto(`${BASE}${href}`, { waitUntil: 'networkidle' });
+    await tab.getByTestId('print-title').getByText(/^Productivity: Frankie/).waitFor({ timeout: 10000 });
+    const printed = await tab.getByTestId('print-statement').count();
+    if (printed !== count) throw new Error(`${href} printed ${printed}, not ${count}`);
+  }
+  await tab.screenshot({ path: `${OUT}/productivity-print.png`, fullPage: true });
+  await tab.close();
+});
+
 await step('the provider reads only their own, with this year’s total', async () => {
   await doc.reload({ waitUntil: 'networkidle' });
   const mine = (await call(doc, '/productivity/mine')).body;

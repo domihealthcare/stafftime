@@ -179,6 +179,18 @@ await step('there is nowhere to upload a file', async () => {
   if (await manager.locator('input[type=file]').count()) throw new Error('a file input');
 });
 
+await step('on a laptop the whole board fits: no scrolling sideways', async () => {
+  // October 2026, Dominguez: "is there anyway ... to make it so there is no
+  // horizontal scroll". The board takes the screen's whole width.
+  await staff.goto(`${BASE}/diagnostics`, { waitUntil: 'networkidle' });
+  const board = staff.getByTestId('diagnostics-board');
+  await board.locator('table').waitFor({ timeout: 10000 });
+  const sideways = await board.evaluate((el) => el.scrollWidth - el.clientWidth);
+  if (sideways > 1) throw new Error(`the board scrolls ${sideways}px sideways at 1280 wide`);
+  const page = await staff.evaluate(() => document.documentElement.scrollWidth > window.innerWidth);
+  if (page) throw new Error('the page scrolls sideways');
+});
+
 await browser.close();
 if (errors.length) {
   console.log('\nPROBLEMS');

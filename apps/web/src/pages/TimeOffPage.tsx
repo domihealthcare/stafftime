@@ -24,6 +24,7 @@ import { atPracticeTime, practiceClockOf } from '../lib/practice-time';
 import { useApproveTimeOff } from '../components/ApproveTimeOff';
 import { TopicAssignees } from '../components/TopicAssignees';
 import { ApproveCleanTimeOff } from '../components/ApproveCleanTimeOff';
+import { ScheduleTabs } from '../components/ScheduleTabs';
 import { useDeclineTimeOff } from '../components/DeclineTimeOff';
 import {
   Alert,
@@ -124,148 +125,152 @@ export function TimeOffPage() {
   );
 
   return (
-    <div className="max-w-3xl">
+    // A tab under Schedule, with the Schedule's tabs on it, so going to the
+    // requests never seems to leave the Schedule (October 2026, Dominguez).
+    <div className="mx-auto max-w-6xl">
       <PageHeading
         title={isManager ? 'Time off requests' : t('Time off')}
         subtitle={isManager ? 'Everybody’s requests, and your own.' : t('Your time off requests.')}
       />
+      <ScheduleTabs />
+      <div className="max-w-3xl">
+        {!isManager && summary}
 
-      {!isManager && summary}
+        {isManager && pendingForMe > 0 && (
+          <div className="mb-4">
+            <Alert tone="warning">
+              {pendingForMe} request{pendingForMe === 1 ? '' : 's'} waiting on a decision.
+            </Alert>
+          </div>
+        )}
 
-      {isManager && pendingForMe > 0 && (
-        <div className="mb-4">
-          <Alert tone="warning">
-            {pendingForMe} request{pendingForMe === 1 ? '' : 's'} waiting on a decision.
-          </Alert>
-        </div>
-      )}
-
-      {/* Who hears of a new request (October 2026, Dominguez: "I don't want to
+        {/* Who hears of a new request (October 2026, Dominguez: "I don't want to
           always be notified of PTO requests"). Folded: set once in a while. */}
-      {isManager && (
-        <details className="mb-4" data-testid="time-off-assignees">
-          <summary className="cursor-pointer text-sm font-medium text-brand-800">
-            Who is told of new requests
-          </summary>
-          <div className="mt-2">
-            <TopicAssignees
-              topic="TIME_OFF"
-              title="Who looks after time off"
-              intro={
-                <p>
-                  The people ticked are the ones told - under the bell and by email - as each
-                  request comes in, and the ones sent the <strong>Time off</strong> part of the
-                  nightly email. With nobody ticked it goes by Email settings: everyone who has not
-                  unticked Time off there. Anybody with Manager or Admin access can still decide a
-                  request.
-                </p>
-              }
+        {isManager && (
+          <details className="mb-4" data-testid="time-off-assignees">
+            <summary className="cursor-pointer text-sm font-medium text-brand-800">
+              Who is told of new requests
+            </summary>
+            <div className="mt-2">
+              <TopicAssignees
+                topic="TIME_OFF"
+                title="Who looks after time off"
+                intro={
+                  <p>
+                    The people ticked are the ones told - under the bell and by email - as each
+                    request comes in, and the ones sent the <strong>Time off</strong> part of the
+                    nightly email. With nobody ticked it goes by Email settings: everyone who has
+                    not unticked Time off there. Anybody with Manager or Admin access can still
+                    decide a request.
+                  </p>
+                }
+              />
+            </div>
+          </details>
+        )}
+
+        {error && (
+          <div className="mb-4">
+            <Alert>{error}</Alert>
+          </div>
+        )}
+
+        <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
+          <div className="flex flex-wrap gap-1">
+            {(['PENDING', 'APPROVED', 'DENIED', 'ALL'] as const).map((choice) => (
+              <button
+                key={choice}
+                type="button"
+                onClick={() => setFilter(choice)}
+                className={`rounded-lg px-3 py-1.5 text-sm font-medium ${
+                  filter === choice
+                    ? 'bg-brand-50 text-brand-800'
+                    : 'text-slate-600 hover:bg-slate-100'
+                }`}
+              >
+                {t(choice === 'ALL' ? 'All' : choice.charAt(0) + choice.slice(1).toLowerCase())}
+              </button>
+            ))}
+          </div>
+
+          <button
+            type="button"
+            onClick={() => setShowForm((open) => !open)}
+            className={buttonClass('primary', 'md')}
+          >
+            {showForm ? t('Cancel') : t('+ Request time off')}
+          </button>
+        </div>
+
+        {showForm && (
+          <div className="mb-4">
+            <RequestForm
+              staff={isManager ? staff : []}
+              balance={balance}
+              forId={isManager ? (searchParams.get('for') ?? '') : ''}
+              startOn={searchParams.get('date') ?? ''}
+              onCreated={() => {
+                setShowForm(false);
+                void load();
+              }}
             />
           </div>
-        </details>
-      )}
+        )}
 
-      {error && (
-        <div className="mb-4">
-          <Alert>{error}</Alert>
-        </div>
-      )}
-
-      <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
-        <div className="flex flex-wrap gap-1">
-          {(['PENDING', 'APPROVED', 'DENIED', 'ALL'] as const).map((choice) => (
-            <button
-              key={choice}
-              type="button"
-              onClick={() => setFilter(choice)}
-              className={`rounded-lg px-3 py-1.5 text-sm font-medium ${
-                filter === choice
-                  ? 'bg-brand-50 text-brand-800'
-                  : 'text-slate-600 hover:bg-slate-100'
-              }`}
-            >
-              {t(choice === 'ALL' ? 'All' : choice.charAt(0) + choice.slice(1).toLowerCase())}
-            </button>
-          ))}
-        </div>
-
-        <button
-          type="button"
-          onClick={() => setShowForm((open) => !open)}
-          className={buttonClass('primary', 'md')}
-        >
-          {showForm ? t('Cancel') : t('+ Request time off')}
-        </button>
-      </div>
-
-      {showForm && (
-        <div className="mb-4">
-          <RequestForm
-            staff={isManager ? staff : []}
-            balance={balance}
-            forId={isManager ? (searchParams.get('for') ?? '') : ''}
-            startOn={searchParams.get('date') ?? ''}
-            onCreated={() => {
-              setShowForm(false);
-              void load();
-            }}
-          />
-        </div>
-      )}
-
-      {isManager && pendingForMe > 0 && (
-        <div className="mb-3">
-          <ApproveCleanTimeOff
-            refreshKey={requests
-              .filter((request) => request.status === 'PENDING')
-              .map((request) => request.id)
-              .join()}
-            onDone={() => void load()}
-          />
-        </div>
-      )}
-
-      {loading ? (
-        <Card className="p-6">
-          <Spinner label={t('Loading requests')} />
-        </Card>
-      ) : visible.length === 0 ? (
-        <EmptyState>
-          {filter === 'PENDING' ? t('Nothing waiting on a decision.') : t('No requests to show.')}
-        </EmptyState>
-      ) : (
-        <div className="space-y-3">
-          {visible.map((request) => (
-            <RequestCard
-              key={request.id}
-              request={request}
-              isManager={isManager}
-              isMine={request.employeeId === employee?.id}
-              onChanged={() => void load()}
-              onError={setError}
+        {isManager && pendingForMe > 0 && (
+          <div className="mb-3">
+            <ApproveCleanTimeOff
+              refreshKey={requests
+                .filter((request) => request.status === 'PENDING')
+                .map((request) => request.id)
+                .join()}
+              onDone={() => void load()}
             />
-          ))}
-        </div>
-      )}
+          </div>
+        )}
 
-      {/* Everybody's balances moved to the Dashboard and the rules to Practice
+        {loading ? (
+          <Card className="p-6">
+            <Spinner label={t('Loading requests')} />
+          </Card>
+        ) : visible.length === 0 ? (
+          <EmptyState>
+            {filter === 'PENDING' ? t('Nothing waiting on a decision.') : t('No requests to show.')}
+          </EmptyState>
+        ) : (
+          <div className="space-y-3">
+            {visible.map((request) => (
+              <RequestCard
+                key={request.id}
+                request={request}
+                isManager={isManager}
+                isMine={request.employeeId === employee?.id}
+                onChanged={() => void load()}
+                onError={setError}
+              />
+            ))}
+          </div>
+        )}
+
+        {/* Everybody's balances moved to the Dashboard and the rules to Practice
           settings (October 2026, Dominguez); a manager's own balance stays. */}
-      {isManager && (
-        <div className="mt-8">
-          {balance && <PtoBalanceCard balance={balance} />}
-          <p className="mt-3 text-sm text-slate-600" data-testid="time-off-moved">
-            Everybody&rsquo;s balances, with Adjust, are on the{' '}
-            <Link to="/dashboard" className="font-medium text-brand-700 hover:text-brand-900">
-              Dashboard
-            </Link>
-            ; the time off rules are in{' '}
-            <Link to="/settings" className="font-medium text-brand-700 hover:text-brand-900">
-              Practice settings
-            </Link>
-            .
-          </p>
-        </div>
-      )}
+        {isManager && (
+          <div className="mt-8">
+            {balance && <PtoBalanceCard balance={balance} />}
+            <p className="mt-3 text-sm text-slate-600" data-testid="time-off-moved">
+              Everybody&rsquo;s balances, with Adjust, are on the{' '}
+              <Link to="/dashboard" className="font-medium text-brand-700 hover:text-brand-900">
+                Dashboard
+              </Link>
+              ; the time off rules are in{' '}
+              <Link to="/settings" className="font-medium text-brand-700 hover:text-brand-900">
+                Practice settings
+              </Link>
+              .
+            </p>
+          </div>
+        )}
+      </div>
     </div>
   );
 }

@@ -518,8 +518,8 @@ const STAFF: Section[] = [
             tests, the hours, and the office - WNY or NB), when the <strong>phlebotomist</strong> 💉
             is at each office, <strong>rep lunches</strong> 🍽️ (the rep, their company, the
             medication, and whether they bring catering or the office orders - the bell tells you
-            the evening before whether there is one at your office; Home&rsquo;s Quick card has a{' '}
-            <strong>Rep lunches</strong> button that opens the calendar on just them),{' '}
+            the evening before whether there is one at your office; Home&rsquo;s Shortcuts card has
+            a <strong>Rep lunches</strong> button that opens the calendar on just them),{' '}
             <strong>holidays</strong> ⭐ (the offices are open unless there is also a closure),{' '}
             <strong>closures</strong> 🔒, meetings and events 📅, and <strong>pay days</strong> 💵 -
             the Friday after each pay period ends. Under <strong>Show</strong>, keep{' '}
@@ -735,7 +735,7 @@ const STAFF: Section[] = [
         answer: (
           <>
             <p>
-              <Screen>Diagnostics</Screen> - on Home under Quick, or on Resources. Pick{' '}
+              <Screen>Diagnostics</Screen> - on Home under Shortcuts, or on Resources. Pick{' '}
               <strong>Ultrasounds</strong> or <strong>Testing</strong>, then type the insurance in{' '}
               <strong>Find an insurance</strong>: its answer for every test comes up in large boxes,
               with the time and prep. <strong>YES</strong> (green) is covered, <strong>NO</strong>{' '}
@@ -805,11 +805,12 @@ const STAFF: Section[] = [
         answer: (
           <>
             <p>
-              <Screen>Front desk guide</Screen> - on Home under Quick, and in Resources under Front
-              Desk. It is the Front Desk Cheat Sheet: booking rules for each visit type, what to do
-              with Action needed, Appt needed and normal results, when to send a patient to the ED,
-              payments, which eCW tab a document goes in, pharmacy calls and the abbreviations. Type
-              in the search box (any words, in any order), or press a heading to see just that part.
+              <Screen>Front desk guide</Screen> - on Home under Shortcuts, and in Resources under
+              Front Desk. It is the Front Desk Cheat Sheet: booking rules for each visit type, what
+              to do with Action needed, Appt needed and normal results, when to send a patient to
+              the ED, payments, which eCW tab a document goes in, pharmacy calls and the
+              abbreviations. Type in the search box (any words, in any order), or press a heading to
+              see just that part.
             </p>
             <p>
               The <strong>message scripts</strong> have a box for each blank. Fill them in and press{' '}
@@ -897,14 +898,14 @@ const STAFF: Section[] = [
         question: 'Ask Domi Staff',
         answer: (
           <p>
-            When it is switched on, <strong>Ask Domi Staff</strong> is on Home&rsquo;s Quick card:
-            ask in your own words - &ldquo;When am I next on?&rdquo;, &ldquo;How much PTO do I have
-            left?&rdquo;, &ldquo;Who is in at North Bergen?&rdquo;, &ldquo;How do I put the app on
-            my phone?&rdquo; - and it answers from what you can already see in the app and from this
-            Help guide. Answers come from Claude, an AI service run by Anthropic, so your question
-            and what it looks up for you are sent to it; nothing is kept in Domi Staff, and leaving
-            the page ends the conversation. It only looks things up - it cannot change anything -
-            and you can ask 40 questions a day. Never type patient details into it.
+            When it is switched on, <strong>Ask Domi Staff</strong> is on Home&rsquo;s Shortcuts
+            card: ask in your own words - &ldquo;When am I next on?&rdquo;, &ldquo;How much PTO do I
+            have left?&rdquo;, &ldquo;Who is in at North Bergen?&rdquo;, &ldquo;How do I put the app
+            on my phone?&rdquo; - and it answers from what you can already see in the app and from
+            this Help guide. Answers come from Claude, an AI service run by Anthropic, so your
+            question and what it looks up for you are sent to it; nothing is kept in Domi Staff, and
+            leaving the page ends the conversation. It only looks things up - it cannot change
+            anything - and you can ask 40 questions a day. Never type patient details into it.
           </p>
         ),
       },
@@ -2190,10 +2191,14 @@ const MANAGERS: Section[] = [
               Only the people an admin has chosen see this screen; admins choose them at the bottom
               of it. A statement is a private <strong>draft</strong> until you press{' '}
               <strong>Publish</strong>. Then that provider, and nobody else, can read it under{' '}
-              <Screen>Your productivity</Screen> (account menu) and is told it is ready.{' '}
-              <strong>Unpublish</strong> takes it back. Add a <strong>Paid on</strong> date or a
-              short note (&ldquo;Paid with 08.15.25&rdquo;) - the provider reads the note, so never
-              put a patient&rsquo;s name or details in it. Only counts are kept, never patients.
+              <Screen>Your productivity</Screen> (account menu) and is told it is ready, on the bell
+              and by email (and again if a published one is changed). <strong>Unpublish</strong>{' '}
+              takes it back. To print, press <strong>Print</strong> on one statement, tick{' '}
+              <strong>Select to print</strong> on several and press <strong>Print selected</strong>,
+              or press <strong>Print all</strong>; each opens a printable page in a new tab. Add a{' '}
+              <strong>Paid on</strong> date or a short note (&ldquo;Paid with 08.15.25&rdquo;) - the
+              provider reads the note, so never put a patient&rsquo;s name or details in it. Only
+              counts are kept, never patients.
             </p>
           </>
         ),
@@ -2553,7 +2558,8 @@ const MANAGERS: Section[] = [
               <strong>Who looks after them</strong> on Closing checklists. A part with anybody
               chosen goes to those people alone - the bell notes as things happen and that part of
               the nightly email - whatever anyone has ticked. Email settings lists who is chosen for
-              what.
+              what. Besides managers and admins, anybody in the <strong>Administrative</strong> job
+              role can be chosen: they are told, but deciding still needs Manager access.
             </p>
           </>
         ),

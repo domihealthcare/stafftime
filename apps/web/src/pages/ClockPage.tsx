@@ -541,7 +541,7 @@ export function ClockPage() {
       </div>
 
       <aside
-        aria-label={t('Quick and coming up')}
+        aria-label={t('Shortcuts and coming up')}
         className="space-y-4 lg:col-start-3 lg:row-span-2 lg:row-start-1"
       >
         <TabletPinReminder />

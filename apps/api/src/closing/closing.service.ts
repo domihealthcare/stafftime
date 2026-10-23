@@ -11,6 +11,7 @@ import {
   EmploymentStatus,
   NotificationKind,
   Prisma,
+  Role,
 } from '@prisma/client';
 import { NotificationsService } from '../email/notifications.service';
 import { toUtcDate } from '../common/util/calendar-date.util';
@@ -365,10 +366,22 @@ export class ClosingService {
     return rows.map((row) => row.employeeId);
   }
 
-  /// Whether this manager may clear a checklist: one of the people chosen, or
-  /// anybody while nobody is.
+  /// Whether this manager may clear a checklist: one of the managers chosen,
+  /// or any manager while no manager is. Somebody on the admin team chosen
+  /// without Manager access (October 2026) is told, but clears nothing, so
+  /// they never lock the managers out.
   private async mayClear(employeeId: string): Promise<boolean> {
-    const reviewers = await this.reviewerIds();
+    const rows = await this.prisma.topicAssignee.findMany({
+      where: {
+        topic: DigestTopic.CLOSING,
+        employee: {
+          employmentStatus: EmploymentStatus.ACTIVE,
+          role: { in: [Role.MANAGER, Role.ADMIN] },
+        },
+      },
+      select: { employeeId: true },
+    });
+    const reviewers = rows.map((row) => row.employeeId);
     return reviewers.length === 0 || reviewers.includes(employeeId);
   }
 

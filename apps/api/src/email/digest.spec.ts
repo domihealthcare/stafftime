@@ -39,10 +39,13 @@ function build(
     shiftsMissed?: number;
   } = {},
 ) {
-  const managers = data.managers ?? [
-    { email: 'morgan@domihealthcare.com', firstName: 'Morgan', mutedDigestTopics: [] },
-    { email: 'ada@domihealthcare.com', firstName: 'Ada', mutedDigestTopics: [] },
-  ];
+  // Managers, as the query reads them (with their access level).
+  const managers = (
+    data.managers ?? [
+      { email: 'morgan@domihealthcare.com', firstName: 'Morgan', mutedDigestTopics: [] },
+      { email: 'ada@domihealthcare.com', firstName: 'Ada', mutedDigestTopics: [] },
+    ]
+  ).map((manager) => ({ role: 'MANAGER', ...(manager as object) }));
 
   const prisma = {
     employeeCredential: { findMany: jest.fn().mockResolvedValue(data.credentials ?? []) },
@@ -251,9 +254,14 @@ describe('DigestService', () => {
     // The call that asks who to email, not the one reading license standing.
     const where = prisma.employee.findMany.mock.calls.find(
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      ([args]: any[]) => args?.where?.role,
+      ([args]: any[]) => args?.where?.OR,
     )?.[0].where;
-    expect(where.role.in).toEqual(['MANAGER', 'ADMIN']);
+    // Managers and admins, and anybody chosen to look after a part (October
+    // 2026), who reads only that part.
+    expect(where.OR).toEqual([
+      { role: { in: ['MANAGER', 'ADMIN'] } },
+      { topicAssignments: { some: {} } },
+    ]);
     expect(where.employmentStatus).toBe('ACTIVE');
   });
 });
@@ -275,7 +283,7 @@ describe('DigestService - who gets it', () => {
     // The call that asks who to email, not the one reading license standing.
     const where = prisma.employee.findMany.mock.calls.find(
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      ([args]: any[]) => args?.where?.role,
+      ([args]: any[]) => args?.where?.OR,
     )?.[0].where;
     expect(where.wantsDailyDigest).toBe(true);
   });

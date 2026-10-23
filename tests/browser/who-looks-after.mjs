@@ -90,6 +90,15 @@ await step('Time off is a tab under Schedule, for everybody', async () => {
   await manager.goto(`${BASE}/schedule`, { waitUntil: 'networkidle' });
   await manager.getByRole('navigation', { name: /Schedule or calendar/ }).getByRole('link', { name: 'Time off', exact: true }).click();
   await manager.getByRole('heading', { name: 'Time off requests', level: 1 }).waitFor({ timeout: 10000 });
+  // It stays in the Schedule: its tabs are still there, Time off lit among them,
+  // and Schedule stays lit in the header (October 2026, Dominguez: "it takes me
+  // away from the page, it shouldnt").
+  const tabs = manager.getByRole('navigation', { name: /Schedule or calendar/ });
+  if ((await tabs.getByRole('link', { name: 'Time off', exact: true }).getAttribute('aria-current')) !== 'page')
+    throw new Error('Time off is not the lit tab on its own page');
+  await tabs.getByRole('link', { name: 'Shifts', exact: true }).waitFor();
+  const lit = await manager.getByRole('navigation', { name: 'Main' }).getByRole('link', { name: /Schedule/ }).getAttribute('class');
+  if (!/bg-brand-50/.test(lit ?? '')) throw new Error(`Schedule is not lit in the header: ${lit}`);
   await desk.goto(`${BASE}/schedule`, { waitUntil: 'networkidle' });
   await desk.getByRole('navigation', { name: /Schedule or calendar/ }).getByRole('link', { name: 'Time off', exact: true }).click();
   await desk.getByRole('heading', { name: 'Time off', level: 1 }).waitFor({ timeout: 10000 });
@@ -107,6 +116,63 @@ await step('Email settings lists who is chosen for what; a part with nobody chos
   }
   const bad = await call(manager, '/digest-settings/assignees/NOT_A_PART', { method: 'PUT', body: JSON.stringify({ employeeIds: [] }) });
   if (bad.status !== 400) throw new Error(`an unknown part answered ${bad.status}`);
+});
+
+await step('somebody in the Administrative job role can be chosen, is told, and still cannot decide', async () => {
+  // October 2026, Dominguez: "administrative roles should be an option to chose
+  // so they can possibly be notified".
+  const staff = (await call(manager, '/employees')).body;
+  const max = staff.find((p) => p.email === 'ma@domihealthcare.com');
+  const role = (await call(manager, '/job-roles')).body.find((r) => r.name === 'Administrative');
+  const added = await call(manager, `/job-roles/${role.id}/members`, {
+    method: 'POST',
+    body: JSON.stringify({ employeeId: max.id }),
+  });
+  if (added.status >= 300) throw new Error(`adding Max to Administrative answered ${added.status}`);
+  await manager.goto(`${BASE}/time-off`, { waitUntil: 'networkidle' });
+  await manager.getByText('Who is told of new requests').click();
+  const card = manager.getByTestId('topic-assignees-TIME_OFF');
+  const box = card.getByLabel(/Max Assistant.*Administrative, told only/);
+  await box.waitFor({ timeout: 10000 });
+  // Somebody with Employee access and no admin job role is not offered.
+  if (await card.getByLabel(/Frankie Front-Desk/).count()) throw new Error('Front Desk staff are offered');
+  await box.check();
+  await card.getByRole('button', { name: 'Save' }).click();
+  await card.getByText('Saved.', { exact: true }).waitFor({ timeout: 10000 });
+  const chosen = (await call(manager, '/digest-settings/assignees')).body;
+  if (!chosen.TIME_OFF.includes(max.id)) throw new Error(`TIME_OFF: ${JSON.stringify(chosen.TIME_OFF)}`);
+
+  const made = await call(desk, '/pto', {
+    method: 'POST',
+    body: JSON.stringify({ type: 'VACATION', startDate: '2027-05-17', endDate: '2027-05-17' }),
+  });
+  if (made.status !== 201) throw new Error(`asking answered ${made.status}`);
+
+  // Max signs in (a temporary password on the seed) and has heard of it.
+  const ctx = await browser.newContext({ viewport: { width: 1280, height: 1000 } });
+  const page = await ctx.newPage();
+  await page.goto(`${BASE}/`, { waitUntil: 'networkidle' });
+  await page.getByLabel('Email').fill('ma@domihealthcare.com');
+  await page.getByLabel('Password', { exact: true }).fill('shift-change-2026');
+  await page.getByRole('button', { name: 'Sign in' }).click();
+  const home = page.getByText('Not clocked in');
+  const mustChange = page.getByText('Choose a new password');
+  await home.or(mustChange).first().waitFor({ timeout: 20000 });
+  if (await mustChange.isVisible()) {
+    await page.getByLabel('Temporary password').fill('shift-change-2026');
+    await page.getByLabel('New password', { exact: true }).fill('harbour lantern 7');
+    await page.getByLabel('Confirm new password').fill('harbour lantern 7');
+    await page.getByRole('button', { name: 'Change password' }).click();
+    await home.waitFor({ timeout: 15000 });
+  }
+  if (!(await bellTitles(page)).some((t) => /Frankie Front-Desk has asked for time off/.test(t)))
+    throw new Error('Max was not told');
+  const decided = await call(page, `/pto/${made.body.id}/review`, {
+    method: 'PATCH',
+    body: JSON.stringify({ status: 'APPROVED' }),
+  });
+  if (decided.status !== 403) throw new Error(`Max deciding answered ${decided.status}`);
+  await ctx.close();
 });
 
 await browser.close();

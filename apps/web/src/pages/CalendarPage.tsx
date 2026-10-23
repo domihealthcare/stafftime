@@ -98,7 +98,7 @@ export function CalendarPage() {
   /// "all, diagnostics, rep lunches, etc … choose multiple or choose one, or
   /// all").
   const [chosen, setChosen] = useState<CalendarKind[]>(() => {
-    // `?show=REP_LUNCH` (Home's Quick card) opens on those kinds, and they
+    // `?show=REP_LUNCH` (Home's Shortcuts card) opens on those kinds, and they
     // are remembered as if picked here.
     const asked = (searchParams.get('show') ?? '')
       .split(',')
