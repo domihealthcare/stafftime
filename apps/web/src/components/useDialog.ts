@@ -35,16 +35,18 @@ export function useDialog(onClose: () => void) {
     return () => previous?.focus?.({ preventScroll: true });
   }, []);
 
-  // Escape still closes it when focus has fallen out of every pop-up - as it
-  // does when a Save button is disabled while it saves, and the browser drops
-  // focus to the page (October 2026). Only the top-most pop-up answers, and
+  // When focus has fallen out of every pop-up - as it does when a Save button
+  // is disabled while it saves, and the browser drops focus to the page
+  // (October 2026) - Escape still closes it, and Tab goes back inside it
+  // rather than to the header behind. Only the top-most pop-up answers, and
   // never while a confirmation is open, which answers its own keys.
   useEffect(() => {
     const panel = ref.current;
     if (!panel) return;
     OPEN.push(panel);
     function onDocumentKeyDown(event: globalThis.KeyboardEvent) {
-      if (event.key !== 'Escape' || event.defaultPrevented) return;
+      if (event.key !== 'Escape' && event.key !== 'Tab') return;
+      if (event.defaultPrevented || !panel) return;
       if (OPEN[OPEN.length - 1] !== panel) return;
       const target = event.target;
       if (target instanceof Element && target.closest('[role="dialog"], [role="alertdialog"]')) {
@@ -52,7 +54,13 @@ export function useDialog(onClose: () => void) {
       }
       if (document.querySelector('[role="alertdialog"]')) return;
       event.preventDefault();
-      close.current();
+      if (event.key === 'Escape') {
+        close.current();
+        return;
+      }
+      const items = [...panel.querySelectorAll<HTMLElement>(FOCUSABLE)];
+      const next = event.shiftKey ? items[items.length - 1] : items[0];
+      (next ?? panel).focus({ preventScroll: true });
     }
     document.addEventListener('keydown', onDocumentKeyDown);
     return () => {

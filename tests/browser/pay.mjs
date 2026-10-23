@@ -193,6 +193,13 @@ await step('approving it from a day to come puts it in the history as coming up'
     .filter({ hasText: '$22.50 an hour' })
     .getByText('Coming up')
     .waitFor();
+  // A confirmation opened from inside the pop-up takes Escape for itself:
+  // it closes, and the pop-up under it stays.
+  await dialog().getByRole('button', { name: /^Remove the / }).first().click();
+  await admin.getByRole('alertdialog').waitFor();
+  await admin.keyboard.press('Escape');
+  await admin.getByRole('alertdialog').waitFor({ state: 'detached' });
+  if (!(await dialog().isVisible())) throw new Error('Escape on the confirmation closed the pop-up too');
   await dialog().getByRole('button', { name: 'Close' }).click();
   await admin
     .getByTestId('pay-row')
@@ -223,7 +230,18 @@ await step('somebody who left has their leaving details and exit checklist', asy
   await dialog().getByLabel('Last paycheck').fill(addDays(today(), 7));
   await dialog().getByRole('button', { name: 'Save leaving details' }).click();
   await dialog().getByText('Saved.').waitFor();
-  // Escape closes it even after the save button has taken focus away (October 2026).
+  // The save button took the focus away with it (October 2026). Tab and
+  // Shift+Tab go back inside the pop-up, not to the header behind it...
+  const focusInside = () =>
+    admin.evaluate(() => !!document.activeElement?.closest('[data-testid="pay-person"]'));
+  await admin.evaluate(() => (document.activeElement instanceof HTMLElement) && document.activeElement.blur());
+  await admin.keyboard.press('Tab');
+  if (!(await focusInside())) throw new Error('Tab from the page left the pop-up');
+  await admin.evaluate(() => (document.activeElement instanceof HTMLElement) && document.activeElement.blur());
+  await admin.keyboard.press('Shift+Tab');
+  if (!(await focusInside())) throw new Error('Shift+Tab from the page left the pop-up');
+  // ...and Escape still closes it.
+  await admin.evaluate(() => (document.activeElement instanceof HTMLElement) && document.activeElement.blur());
   await admin.keyboard.press('Escape');
   await dialog().waitFor({ state: 'detached' });
   await card.getByText('Resigned: Moving away').waitFor();
