@@ -158,7 +158,7 @@ function Managing() {
   useEffect(() => {
     load();
     Promise.all([
-      api.listEmployees(),
+      api.listEmployees().then((people) => people.filter((person) => !person.isSharedAccount)),
       api.jobRoles(),
       api.listLocations(),
       api.announcements(),

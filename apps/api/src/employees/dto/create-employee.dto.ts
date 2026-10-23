@@ -70,6 +70,11 @@ export class CreateEmployeeDto {
   @IsBoolean()
   clocksIn?: boolean;
 
+  /// A shared account, not a person (October 2026): see `common/people.ts`.
+  @IsOptional()
+  @IsBoolean()
+  isSharedAccount?: boolean;
+
   /// Posts News without being an admin (October 2026, Dominguez).
   @IsOptional()
   @IsBoolean()

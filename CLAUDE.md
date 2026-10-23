@@ -1197,6 +1197,24 @@ Beyond the phases, the parts worth knowing about before picking up work:
   separated, and is remembered like a pick under Show), for everybody.
   **Your availability** left Quick; it is still on the Schedule, under the
   calendar link card.
+- **Shared accounts** (23 October 2026, Dominguez: a general
+  office@domihealthcare.com account with front desk access, kept out of what
+  counts people): **Shared account, not a person** in the Staff editor
+  (`Employee.isSharedAccount`, admins; a "Shared account" badge on the Staff
+  card; migration `20261023050000_shared_accounts`). It signs in and sees what
+  its access and job roles give it, but **never clocks in** (forced off and
+  refused by `clockIn`, phone and time clock), is **never put on a shift**,
+  given hand-entered hours or **time off** (refused by the server, left out
+  of the rota, its print and the pickers), and Home shows "Shared account"
+  instead of the clock, with no time off, monthly balance pop-up or
+  availability. It is **left out of** the Directory and birthdays, 360
+  feedback, pulse surveys, required reading, "never signed in", who can
+  cover and the suggestions, too many off at once, find a time, licenses by
+  person, time off balances, Pay & raises and auto-onboarding.
+  `common/people.ts` (`A_PERSON`, spread into any "people who work here"
+  query, and `assertAPerson`); `tests/browser/shared-account.mjs`. Anybody
+  who reads office@ can reset its password, so it should stay Employee
+  access. **Not created on the live site yet**: an admin adds it on Staff.
 - **View as** (23 October 2026, Dominguez: "me (as the super admin) should
   have a way to see the views that other staff have - i.e. something like view
   as another role, i can click one (or multiple) roles ... both to make sure

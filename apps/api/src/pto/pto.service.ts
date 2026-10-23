@@ -50,13 +50,19 @@ export class PtoService {
 
     const employee = await this.prisma.employee.findUnique({
       where: { id: employeeId },
-      select: { id: true, employmentStatus: true, firstName: true },
+      select: { id: true, employmentStatus: true, firstName: true, isSharedAccount: true },
     });
     if (!employee) {
       throw new NotFoundException(`Employee ${employeeId} not found`);
     }
     if (employee.employmentStatus === EmploymentStatus.TERMINATED) {
       throw new ForbiddenException('That employee is no longer active.');
+    }
+    // A shared account is not a person, so it takes no time off (`common/people.ts`).
+    if (employee.isSharedAccount) {
+      throw new ForbiddenException(
+        'This is a shared account, so it does not take time off. Ask with your own account.',
+      );
     }
 
     await this.assertNoOverlap(employeeId, startDate, endDate);

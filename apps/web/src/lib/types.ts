@@ -83,6 +83,9 @@ export interface Employee extends EmployeeSummary {
   /// Home shows their shift instead of a Clock in button, and the Directory
   /// shows them where their shift is while it runs. Set by an admin.
   clocksIn?: boolean;
+  /// A shared account, not a person (October 2026): never clocks in, takes
+  /// no time off, and is left out of the Directory, surveys and the rest.
+  isSharedAccount?: boolean;
   /// Their last day, once they have left (or been given one).
   terminationDate?: string | null;
   /// When their profile photo last changed; null for none.

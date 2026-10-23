@@ -34,6 +34,7 @@ import {
 } from './pay';
 import { NOT_A_PROVIDER } from './rota-cost.service';
 import { changeDataOf, currentOf, viewOf } from './staff-records.service';
+import { A_PERSON } from '../common/people';
 
 const PERSON_NAME = { select: { firstName: true, lastName: true } } as const;
 
@@ -104,6 +105,7 @@ export class PayService {
     const people = await this.prisma.employee.findMany({
       where: {
         ...NOT_A_PROVIDER,
+        ...A_PERSON,
         // Demo staff are left out; a plain NOT would drop everybody with no
         // external id too, as SQL reads NOT (NULL LIKE ...) as unknown.
         OR: [{ externalId: null }, { NOT: { externalId: { startsWith: 'demo:' } } }],

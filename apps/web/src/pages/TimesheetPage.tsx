@@ -149,7 +149,8 @@ export function TimesheetPage() {
 
   async function openAddHours() {
     try {
-      setAdding(await api.listEmployees());
+      // A shared account has no hours to add.
+      setAdding((await api.listEmployees()).filter((person) => !person.isSharedAccount));
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Could not load the staff list.');
     }

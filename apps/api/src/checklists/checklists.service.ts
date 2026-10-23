@@ -77,10 +77,13 @@ export class ChecklistsService {
         hireDate: true,
         terminationDate: true,
         externalId: true,
+        isSharedAccount: true,
         _count: { select: { checklists: { where: { kind: ChecklistKind.ONBOARDING } } } },
       },
     });
     if (!employee?.hireDate || employee.terminationDate) return false;
+    // A shared account is nobody new to set up (`common/people.ts`).
+    if (employee.isSharedAccount) return false;
     // Demo staff come with their own made-up history.
     if (employee.externalId?.startsWith('demo:')) return false;
     if (employee._count.checklists > 0) return false;

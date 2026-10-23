@@ -65,6 +65,8 @@ export class EmployeesService {
       const created = await this.prisma.employee.create({
         data: {
           ...employee,
+          // A shared account never clocks in (`common/people.ts`).
+          ...(employee.isSharedAccount ? { clocksIn: false } : {}),
           email: normaliseEmail(employee.email),
           preferredName: optionalText(employee.preferredName),
           postNominals: optionalText(employee.postNominals),
@@ -206,7 +208,9 @@ export class EmployeesService {
   }
 
   async update(id: string, dto: UpdateEmployeeDto) {
-    await this.findOne(id);
+    const existing = await this.findOne(id);
+    // A shared account never clocks in (`common/people.ts`).
+    const shared = dto.isSharedAccount ?? existing.isSharedAccount;
     const { locationIds, primaryLocationId, adpFileNumber, ...employee } = dto;
     this.assertPrimaryIsAssigned(locationIds, primaryLocationId);
     assertBirthday(dto.birthdayMonth, dto.birthdayDay);
@@ -216,6 +220,7 @@ export class EmployeesService {
         where: { id },
         data: {
           ...employee,
+          ...(shared ? { clocksIn: false } : {}),
           firstName: employee.firstName?.trim(),
           lastName: employee.lastName?.trim(),
           email: employee.email === undefined ? undefined : normaliseEmail(employee.email),

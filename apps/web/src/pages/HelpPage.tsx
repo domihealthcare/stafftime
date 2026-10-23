@@ -2650,6 +2650,15 @@ const MANAGERS: Section[] = [
               shift&rsquo;s office while it runs.
             </li>
             <li>
+              Tick <strong>Shared account, not a person</strong> for an account several people sign
+              in to, like office@domihealthcare.com. Give it Employee access and the job role whose
+              screens it needs (Front Desk), and no hire date. It sees what those give it, but never
+              clocks in, is never put on a shift and takes no time off, and it is left out of the
+              Directory, birthdays, 360 feedback, surveys, required reading, cover suggestions,
+              staffing counts, licenses and pay. Anybody who reads that inbox can reset its
+              password, so give it nothing more than it needs.
+            </li>
+            <li>
               Adding somebody new with a hire date - one at a time or several - starts their{' '}
               <strong>onboarding checklist</strong> (the default template) by itself, counting from
               that date; so does giving a hire date later. Not for somebody hired more than 30 days

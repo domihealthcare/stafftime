@@ -210,6 +210,9 @@ export class AuthController {
         role: true,
         employmentStatus: true,
         clocksIn: true,
+        /// A shared account (`common/people.ts`): Home leaves out the clock,
+        /// time off and availability.
+        isSharedAccount: true,
         mustChangePassword: true,
         wantsDailyDigest: true,
         wantsShiftReminders: true,

@@ -354,7 +354,8 @@ export function SchedulePage() {
           }),
         ]);
         if (stale()) return;
-        setEmployees(staff);
+        // A shared account is never on the rota (`common/people.ts`).
+        setEmployees(staff.filter((person) => !person.isSharedAccount));
         setCoverage(weekCoverage);
       } else {
         const weeks = await api.myOvertime().catch(() => []);
@@ -573,7 +574,8 @@ export function SchedulePage() {
           void load();
         }}
       />
-      <YourTimeOff refreshKey={timeOffKey} />
+      {/* A shared account takes no time off. */}
+      {!me?.isSharedAccount && <YourTimeOff refreshKey={timeOffKey} />}
 
       {!isManager && ownWeeks && ownWeeks.length > 0 && (
         <div className="mb-4">
@@ -632,7 +634,7 @@ export function SchedulePage() {
         {/* Switching keeps you where you were: a week in March goes to March,
             and picking a day in March goes back to that week - not to today. */}
         <div className="flex w-full items-center gap-2 sm:ml-auto sm:w-auto">
-          <RequestTimeOffButton />
+          {!me?.isSharedAccount && <RequestTimeOffButton />}
           <div className="flex flex-1 rounded-lg border border-slate-300 bg-white p-0.5 sm:flex-none">
             {(['week', 'month'] as const).map((option) => (
               <button
@@ -1207,9 +1209,11 @@ export function SchedulePage() {
 
       <div className="mt-3 grid gap-3 sm:grid-cols-[1fr_auto] sm:items-start">
         <CalendarLinkCard />
-        <Link to="/availability" className={`inline-block ${buttonClass('secondary', 'md')}`}>
-          {isManager ? 'Availability - yours and the team’s' : t('When you can’t work')}
-        </Link>
+        {!me?.isSharedAccount && (
+          <Link to="/availability" className={`inline-block ${buttonClass('secondary', 'md')}`}>
+            {isManager ? 'Availability - yours and the team’s' : t('When you can’t work')}
+          </Link>
+        )}
       </div>
       {personMenu.menu}
       {monthMenu.menu}

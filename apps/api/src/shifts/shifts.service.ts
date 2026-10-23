@@ -3,6 +3,7 @@ import { Prisma, ShiftStatus } from '@prisma/client';
 import { PRACTICE_ZONE, weekStartIn } from '../common/util/zoned-time.util';
 import { InboxService } from '../email/inbox.service';
 import { PrismaService } from '../prisma/prisma.service';
+import { assertAPerson } from '../common/people';
 import { CreateShiftDto } from './dto/create-shift.dto';
 import { heldJobRole } from './held-job-role';
 import { QueryShiftsDto } from './dto/query-shifts.dto';
@@ -51,6 +52,11 @@ export class ShiftsService {
     const { startsAt, endsAt } = this.parseWindow(dto.startsAt, dto.endsAt);
     const employeeId = dto.employeeId ?? null;
     if (employeeId) {
+      await assertAPerson(
+        this.prisma,
+        employeeId,
+        'That is a shared account, not a person, so it is never put on a shift.',
+      );
       await this.assertEmployeeWorksAtLocation(employeeId, dto.locationId);
       await this.assertNoOverlap(employeeId, startsAt, endsAt);
     }
@@ -117,6 +123,12 @@ export class ShiftsService {
     // absent leaves whoever is on it.
     const employeeId = dto.employeeId === undefined ? existing.employeeId : dto.employeeId;
     const locationId = dto.locationId ?? existing.locationId;
+    if (dto.employeeId)
+      await assertAPerson(
+        this.prisma,
+        dto.employeeId,
+        'That is a shared account, not a person, so it is never put on a shift.',
+      );
     if (employeeId) {
       if (dto.employeeId || dto.locationId) {
         await this.assertEmployeeWorksAtLocation(employeeId, locationId);

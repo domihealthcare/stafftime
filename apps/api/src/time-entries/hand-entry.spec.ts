@@ -32,6 +32,8 @@ function build(
   };
   const prisma = {
     employee: {
+      // Not a shared account (`common/people.ts`).
+      count: jest.fn().mockResolvedValue(0),
       findUnique: jest.fn().mockResolvedValue({ id: 'emp-1', firstName: 'Frankie' }),
     },
     location: {

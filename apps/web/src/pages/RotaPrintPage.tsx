@@ -61,7 +61,7 @@ export function RotaPrintPage() {
         from: weekStart.toISOString(),
         to: addDays(weekStart, 7).toISOString(),
       }),
-      api.listEmployees(),
+      api.listEmployees().then((people) => people.filter((person) => !person.isSharedAccount)),
       api.listLocations(),
       api.jobRoles(),
       api.listPto({

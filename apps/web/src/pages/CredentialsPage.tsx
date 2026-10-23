@@ -76,7 +76,9 @@ export function CredentialsPage() {
     try {
       const [rows, people, lines, kinds, roles] = await Promise.all([
         api.listCredentials(horizon === 'all' ? {} : { withinDays: horizon }),
-        isManager ? api.listEmployees() : Promise.resolve([]),
+        isManager
+          ? api.listEmployees().then((people) => people.filter((person) => !person.isSharedAccount))
+          : Promise.resolve([]),
         api.credentialStanding(),
         api.credentialTypes(),
         isManager ? api.jobRoles() : Promise.resolve([]),

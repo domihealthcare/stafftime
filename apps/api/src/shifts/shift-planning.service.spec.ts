@@ -38,6 +38,8 @@ describe('ShiftPlanningService', () => {
           .mockResolvedValue((options.heldRoles ?? []).map((jobRole) => ({ jobRole }))),
       },
       employee: {
+        // Nobody here is a shared account (`common/people.ts`).
+        count: jest.fn().mockResolvedValue(0),
         findUnique: jest
           .fn()
           .mockResolvedValue(

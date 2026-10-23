@@ -371,11 +371,15 @@ export class RequirementsService {
       where: { id: employeeId },
       select: {
         employmentStatus: true,
+        isSharedAccount: true,
         jobRoles: { select: { jobRoleId: true } },
         locations: { select: { locationId: true } },
       },
     });
-    if (!person || !WORKING.in.includes(person.employmentStatus)) return null;
+    // A shared account confirms nothing for anybody (`common/people.ts`).
+    if (!person || person.isSharedAccount || !WORKING.in.includes(person.employmentStatus)) {
+      return null;
+    }
     return forPersonWhere(
       employeeId,
       person.jobRoles.map((row) => row.jobRoleId),

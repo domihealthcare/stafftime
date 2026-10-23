@@ -20,6 +20,7 @@ import { AuthUser } from '../common/auth/auth-user';
 import { InboxService } from '../email/inbox.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { AnswerInput, ResponseInput, SurveyInput } from './dto/survey.dto';
+import { A_PERSON } from '../common/people';
 
 /// Fewer answers than this and a result can point at a person. Confirmed at 3
 /// by Dominguez, September 2026.
@@ -406,15 +407,20 @@ export class SurveysService {
 
   private audienceWhere(row: Pick<SurveyRow, 'audience' | 'jobRole' | 'location'>) {
     if (row.audience === SurveyAudience.JOB_ROLE) {
-      return { employmentStatus: ACTIVE, jobRoles: { some: { jobRoleId: row.jobRole?.id ?? '' } } };
+      return {
+        employmentStatus: ACTIVE,
+        ...A_PERSON,
+        jobRoles: { some: { jobRoleId: row.jobRole?.id ?? '' } },
+      };
     }
     if (row.audience === SurveyAudience.LOCATION) {
       return {
         employmentStatus: ACTIVE,
+        ...A_PERSON,
         locations: { some: { locationId: row.location?.id ?? '' } },
       };
     }
-    return { employmentStatus: ACTIVE };
+    return { employmentStatus: ACTIVE, ...A_PERSON };
   }
 
   private async eligible(row: SurveyRow, employeeId: string) {
@@ -430,13 +436,14 @@ export class SurveysService {
       where: { id: employeeId },
       select: {
         employmentStatus: true,
+        isSharedAccount: true,
         jobRoles: { select: { jobRoleId: true } },
         locations: { select: { locationId: true } },
       },
     });
     // The same people the audience counts are made of, so nobody is shown a
     // survey the results would not count them in.
-    if (!person || !ACTIVE.in.includes(person.employmentStatus)) {
+    if (!person || person.isSharedAccount || !ACTIVE.in.includes(person.employmentStatus)) {
       return { id: { in: [] } };
     }
     return {

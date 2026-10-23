@@ -194,9 +194,12 @@ export function QuickActions() {
     <Card className="p-4" testId="quick-actions">
       <h2 className="text-sm font-semibold text-slate-900">{t('Quick')}</h2>
       <div className="mt-2 flex flex-wrap gap-2">
-        <Link to="/time-off?request=1" className={button}>
-          {t('Request time off')}
-        </Link>
+        {/* A shared account takes no time off. */}
+        {!employee?.isSharedAccount && (
+          <Link to="/time-off?request=1" className={button}>
+            {t('Request time off')}
+          </Link>
+        )}
         {/* The calendar opened on rep lunches alone (October 2026, Dominguez:
             "all users should be able to see the rep calendar"). Availability
             stays on the Schedule. */}

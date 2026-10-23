@@ -593,7 +593,11 @@ function StaffCard({
           </Badge>
           {terminated && <Badge tone="danger">Former</Badge>}
           {canEdit && person.hasKioskPin && <Badge tone="success">PIN</Badge>}
-          {person.clocksIn === false && <Badge tone="neutral">Doesn&rsquo;t clock in</Badge>}
+          {person.isSharedAccount ? (
+            <Badge tone="info">Shared account</Badge>
+          ) : (
+            person.clocksIn === false && <Badge tone="neutral">Doesn&rsquo;t clock in</Badge>
+          )}
           <span className="ml-auto flex gap-2">
             {canOpenProfile && (
               <Link

@@ -66,7 +66,9 @@ export function TimeOffPage() {
     try {
       const [requestData, staffData, balanceData, policyData] = await Promise.all([
         api.listPto(),
-        isManager ? api.listEmployees() : Promise.resolve([]),
+        isManager
+          ? api.listEmployees().then((people) => people.filter((person) => !person.isSharedAccount))
+          : Promise.resolve([]),
         api.ptoBalance(),
         api.ptoPolicy(),
       ]);
