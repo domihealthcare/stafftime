@@ -96,6 +96,14 @@ and never added to `Employee`, and the schema guard pins their fields. Still no
 identity numbers, documents, licence numbers or date of birth. The one other
 reader (October 2026, Dominguez) is the **rota's cost** for the people an
 admin chooses — totals by office and day only, never by person.
+Those same people (`Employee.canSeeRotaCost`, whatever their access level)
+also keep **Pay & raises** (23 October 2026, Dominguez: "i want to stop having
+to use this excel workflow"): everybody's pay, each raise's steps
+(`PayRaise`) and why somebody left (`LeavingRecord`), in `src/staff-records/`
+and pinned by the schema guard. Providers are left out for now. **Anything
+that shows pay asks for the person's PIN first** (or their password), even
+for those allowed to see it (`pay-lock/`). The census spreadsheet Dominguez
+shared was not imported, and its social security numbers were never read.
 
 **An outside AI service** (October 2026, Dominguez: staff names and schedules
 may go to one; patient details never): **Ask Domi Staff** sends a question,
@@ -1175,6 +1183,75 @@ Beyond the phases, the parts worth knowing about before picking up work:
   *Seeing the app as somebody else sees it*; `tests/browser/view-as.mjs`.
   Not reflected while viewing: the per-person switches (rota cost,
   productivity, News posting) stay the admin's own.
+- **Pay behind the PIN** (23 October 2026, Dominguez: "anything that shows
+  pay ... even if the certain user has access to view it, should prompt them
+  to insert pin to view - sometimes a log in is left open"): Pay & raises,
+  the rota's cost, staff profiles, provider productivity (and a provider's
+  own), Export, Reimbursements, Invoices and Vendor payments ask for the
+  person's **tablet PIN**, or their password (**Use your password instead**;
+  the only way for somebody with no PIN). The unlock is per sign-in session
+  (`Session.payUnlockedUntil`, migration `20261023020000_pay_lock`), lasts
+  **10 minutes** and slides while pay is being used; the page also locks it
+  after 10 minutes with no touch or key, and **Lock pay now** locks it at
+  once. Wrong PINs count against the same lockout as the time clock; wrong
+  passwords against the sign-in lockout. The server refuses with 403
+  `PIN_REQUIRED` (`PayLockGuard`, added with `@UseGuards` to each pay
+  controller; the rota cost's access list is not behind it), and the web's
+  `request()` then sends every `PinGate` on the page back to its prompt.
+  `src/pay-lock/`, `components/PinGate.tsx` (wrapping each route in
+  `App.tsx`, and the rota cost on the Schedule as a folded line). The suites
+  unlock with `unlockPay(page)` in `tests/browser/nav.mjs`, which
+  `goToManage` calls for anything under Finances. Worth carrying to the EMR
+  module, which will hold pay too.
+- **Pay & raises** (23 October 2026, Dominguez: "this excel shows our current
+  way of monitoring employees pay, when there was a raise, how much, when it
+  became/becomes effective ... this should be what determines the rota pay
+  ... exclude the providers"; then "i want to stop having to use this excel
+  workflow and have a workflow within the staff portal ... This is not for a
+  upload of an excel"; his choices: **the rota-cost people** see it, **the
+  full steps** with the meeting made in the portal, **full leaving details**
+  for the same people only): **Manage → Finances → Pay & raises** (`/pay`,
+  `need: 'rotaCost'` in `lib/manage-sections.ts`, so an Employee-level person
+  on the list sees Finances with that one tab). **Current staff**: pay now and
+  since when, a change still to come ("Coming up"), any raise open. A name
+  opens the person: the **Raise** card and the same **Pay and position**
+  history as the staff profile (`EmploymentHistoryCard` now takes its routes
+  as `calls`). A raise is **asked for** (day, amount optional), then **Set a
+  meeting** (a practice event for the person and whoever set it, titled
+  "Check-in: Casey and Morgan", never what it is about; moved or taken off,
+  which tells them through the calendar), **Make an offer** (the pay, a new
+  title optional), then **Approve** / **Accepted: approve it** (the pay and
+  the **day it starts, past or still to come**), **Decline** / **Turned
+  down**, or **They withdrew it**. Approving writes a PAY_CHANGE (PROMOTION
+  with a new title) into `EmploymentChange` on that day, which is what the
+  rota's cost reads from then. ADP is not changed. **Former staff**: last day,
+  last position and pay, **how they left** (resigned, let go, laid off,
+  retired, end of contract, other), a short reason, the **last paycheck**,
+  and the **exit checklist**'s progress (a link for managers, or **Start the
+  exit checklist**). Pay that is not the practice's (providers: a job role
+  with *uses clinical forms*) is left out here and from the **rota's cost**
+  (`NOT_A_PROVIDER` in `staff-records/rota-cost.service.ts`). Demo staff are
+  left out. `PayRaise`, `LeavingRecord`, migration
+  `20261023030000_pay_raises_leaving`; `staff-records/pay.ts` (rules, pure),
+  `pay.service.ts`, `pay.controller.ts`; `pages/PayPage.tsx`;
+  `tests/browser/pay.mjs`. Every read is logged, as the profiles'. **Pay is
+  not entered on the live site yet**: the rota-cost people type each
+  person's current pay in once (from the spreadsheet, by hand), then raises
+  go through the screen.
+- **The exit checklist** (23 October 2026, Dominguez: "an exit employee
+  checklist for terminated employees (i.e. keys, emr access, staff portal
+  access, whatsapp, etc.)"): it is the default **offboarding** template,
+  which already starts by itself when somebody is marked as left. Migration
+  `20261023030000_pay_raises_leaving` adds to it each exit step it lacks
+  (matched by a word in the title, after its own tasks, so nothing a manager
+  wrote changes): keys and door / alarm codes, EMR (eCW), Domi Staff,
+  **WhatsApp groups**, work email, phone extension or softphone, Google
+  Drive, BrainCheck and outside portals, shared passwords (Wi-Fi, the iPad),
+  equipment. With no default template it makes "Exit checklist - Domi
+  Healthcare". `prisma/seed.ts` has the same steps. Managers tick it off and
+  change its steps under Manage → Staff → Onboarding & Offboarding; Pay &
+  raises shows its progress beside the leaving details. **Check the
+  template on the live site** and add or remove steps there.
 - **Time off is a tab under Schedule** (23 October 2026, Dominguez: "how do i
   even get to time off requests?"): Shifts · Calendar · **Time off** · Reviews
   · On call · Timesheet - everybody's requests for a manager, your own for

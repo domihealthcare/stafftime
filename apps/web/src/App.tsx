@@ -3,6 +3,7 @@ import { Navigate, Route, RouterProvider, Routes, createBrowserRouter } from 're
 import { api } from './lib/api';
 import { ConfirmProvider } from './components/ConfirmDialog';
 import { EnvironmentBanner } from './components/EnvironmentBanner';
+import { PinGate } from './components/PinGate';
 import { Layout } from './components/Layout';
 import { Spinner } from './components/ui';
 import { SessionProvider, useSession } from './lib/session';
@@ -117,6 +118,7 @@ const RotaPrintPage = lazy(() =>
   import('./pages/RotaPrintPage').then((m) => ({ default: m.RotaPrintPage })),
 );
 const StaffPage = lazy(() => import('./pages/StaffPage').then((m) => ({ default: m.StaffPage })));
+const PayPage = lazy(() => import('./pages/PayPage').then((m) => ({ default: m.PayPage })));
 const StaffProfilePage = lazy(() =>
   import('./pages/StaffProfilePage').then((m) => ({ default: m.StaffProfilePage })),
 );
@@ -245,9 +247,30 @@ function Routed() {
           <Route path="front-desk" element={<FrontDeskGuidePage />} />
           <Route path="results-playbook" element={<ResultsPlaybookPage />} />
           <Route path="inpatient-notes" element={<InpatientNotesPage />} />
-          <Route path="invoices" element={<InvoicesPage />} />
-          <Route path="reimbursements" element={<ReimbursementsPage />} />
-          <Route path="vendors" element={<VendorsPage />} />
+          <Route
+            path="invoices"
+            element={
+              <PinGate what="invoices">
+                <InvoicesPage />
+              </PinGate>
+            }
+          />
+          <Route
+            path="reimbursements"
+            element={
+              <PinGate what="reimbursements">
+                <ReimbursementsPage />
+              </PinGate>
+            }
+          />
+          <Route
+            path="vendors"
+            element={
+              <PinGate what="vendor payments">
+                <VendorsPage />
+              </PinGate>
+            }
+          />
           <Route path="cme" element={<CmePage />} />
           <Route path="required" element={<RequiredPage />} />
           <Route path="on-call" element={<OnCallPage />} />
@@ -264,11 +287,47 @@ function Routed() {
           <Route path="checklists" element={<ChecklistsPage />} />
           <Route path="closing" element={<ClosingPage />} />
           <Route path="credentials" element={<CredentialsPage />} />
-          <Route path="productivity" element={<ProductivityPage />} />
-          <Route path="my-productivity" element={<MyProductivityPage />} />
-          <Route path="export" element={<ExportPage />} />
+          <Route
+            path="productivity"
+            element={
+              <PinGate what="provider productivity">
+                <ProductivityPage />
+              </PinGate>
+            }
+          />
+          <Route
+            path="my-productivity"
+            element={
+              <PinGate what="your productivity">
+                <MyProductivityPage />
+              </PinGate>
+            }
+          />
+          <Route
+            path="export"
+            element={
+              <PinGate what="the payroll export">
+                <ExportPage />
+              </PinGate>
+            }
+          />
           <Route path="staff" element={<StaffPage />} />
-          <Route path="staff/:id" element={<StaffProfilePage />} />
+          <Route
+            path="pay"
+            element={
+              <PinGate>
+                <PayPage />
+              </PinGate>
+            }
+          />
+          <Route
+            path="staff/:id"
+            element={
+              <PinGate what="this staff profile">
+                <StaffProfilePage />
+              </PinGate>
+            }
+          />
           <Route path="kiosks" element={<KiosksPage />} />
           <Route path="locations" element={<LocationsPage />} />
           <Route path="clinical/99483" element={<CognitiveAssessmentPage />} />

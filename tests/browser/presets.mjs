@@ -1,7 +1,7 @@
 import { chromium } from 'playwright';
 import { readFileSync } from 'node:fs';
 import { mkdirSync } from 'node:fs';
-import { openMenu, pressDownload, goToManage } from './nav.mjs';
+import { openMenu, pressDownload, goToManage, unlockPay } from './nav.mjs';
 // Screenshots go wherever the caller says, or into ./shots (gitignored).
 const OUT = process.argv[2] || new URL('./shots/', import.meta.url).pathname;
 mkdirSync(OUT, { recursive: true });
@@ -31,6 +31,7 @@ const signIn = async (page, email) => {
   await page.getByLabel('Password', { exact: true }).fill('shift-change-2026');
   await page.getByRole('button', { name: 'Sign in' }).click();
   await page.getByText('Not clocked in').waitFor({ timeout: 15000 });
+  await unlockPay(page);
 };
 
 const box = (page, label) => page.getByRole('checkbox', { name: new RegExp(`^${label}`) }).first();

@@ -2,7 +2,7 @@ import { chromium } from 'playwright';
 import { clockOut as clockOutOnScreen } from './clock-out.mjs';
 import { mkdirSync, readFileSync } from 'node:fs';
 import { pickFromAccountMenu } from './account-menu.mjs';
-import { pressDownload } from './nav.mjs';
+import { pressDownload, unlockPay } from './nav.mjs';
 
 // The ADP TotalSource payroll import file, set up and produced the way an
 // admin and a manager actually would: paste the worksheet exported from ADP,
@@ -30,6 +30,7 @@ async function signIn(page, email) {
   await page.getByLabel('Password', { exact: true }).fill('shift-change-2026');
   await page.getByRole('button', { name: 'Sign in' }).click();
   await page.getByText('Not clocked in').waitFor({ timeout: 20000 });
+  await unlockPay(page);
 }
 
 // Shaped as ADP describes an exported worksheet: three header rows marked "!",

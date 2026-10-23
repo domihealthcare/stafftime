@@ -1,6 +1,6 @@
 import { chromium } from 'playwright';
 import { mkdirSync } from 'node:fs';
-import { goTo, goToManage, navLink, openMenu } from './nav.mjs';
+import { goTo, goToManage, navLink, openMenu, unlockPay } from './nav.mjs';
 
 const OUT = process.argv[2] || new URL('./shots/', import.meta.url).pathname;
 mkdirSync(OUT, { recursive: true });
@@ -33,6 +33,7 @@ async function signIn(email, viewport = { width: 1280, height: 1000 }) {
   await page.getByLabel('Password', { exact: true }).fill('shift-change-2026');
   await page.getByRole('button', { name: 'Sign in' }).click();
   await page.getByText('Not clocked in').waitFor({ timeout: 20000 });
+  await unlockPay(page);
   return page;
 }
 

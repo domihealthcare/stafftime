@@ -9,16 +9,20 @@ import {
   ParseUUIDPipe,
   Post,
   Put,
+  UseGuards,
 } from '@nestjs/common';
 import { Role } from '@prisma/client';
 import { AuthUser } from '../common/auth/auth-user';
 import { CurrentUser } from '../common/auth/current-user.decorator';
+import { PayLockGuard } from '../pay-lock/pay-lock.guard';
 import { Roles } from '../common/auth/roles.decorator';
 import { EmploymentChangeDto, PersonalRecordDto } from './dto/staff-records.dto';
 import { StaffRecordsService } from './staff-records.service';
 
 /// A staff profile's private side. Admins only, every route: not managers,
 /// and never the person themselves (October 2026, Dominguez).
+/// Shows pay: only after the PIN (October 2026, `pay-lock/`).
+@UseGuards(PayLockGuard)
 @Controller('staff-records')
 @Roles(Role.ADMIN)
 export class StaffRecordsController {

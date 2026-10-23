@@ -2,6 +2,7 @@ import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { APP_GUARD } from '@nestjs/core';
 import { AnnouncementsModule } from './announcements/announcements.module';
+import { PayLockModule } from './pay-lock/pay-lock.module';
 import { AppController } from './app.controller';
 import { RolesGuard } from './common/auth/roles.guard';
 import { AppConfigModule } from './app-config/app-config.module';
@@ -54,6 +55,7 @@ import { TimeEntriesModule } from './time-entries/time-entries.module';
 
 @Module({
   imports: [
+    PayLockModule,
     ConfigModule.forRoot({ isGlobal: true, validate: validateEnv }),
     PrismaModule,
     EmailModule,

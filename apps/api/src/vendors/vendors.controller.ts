@@ -1,12 +1,25 @@
-import { Body, Controller, Delete, Get, Param, ParseUUIDPipe, Post, Put } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Delete,
+  Get,
+  Param,
+  ParseUUIDPipe,
+  Post,
+  Put,
+  UseGuards,
+} from '@nestjs/common';
 import { Role } from '@prisma/client';
 import { AuthUser } from '../common/auth/auth-user';
 import { CurrentUser } from '../common/auth/current-user.decorator';
+import { PayLockGuard } from '../pay-lock/pay-lock.guard';
 import { Roles } from '../common/auth/roles.decorator';
 import { VendorInput, VendorPaymentInput } from './dto/vendor.dto';
 import { VendorsService } from './vendors.service';
 
 /// Vendor payments: admins only, reading and writing.
+/// Shows pay: only after the PIN (October 2026, `pay-lock/`).
+@UseGuards(PayLockGuard)
 @Controller('vendors')
 @Roles(Role.ADMIN)
 export class VendorsController {

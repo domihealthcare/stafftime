@@ -17,6 +17,13 @@ import { workweekStartsOn } from '../settings/pay-period';
 import { PracticeSettingsService } from '../settings/practice-settings.service';
 import { overtimeSpan, rotaCost, type CostPerson } from './rota-cost';
 
+/// Providers are left out of the rota's cost for now (October 2026,
+/// Dominguez: "the only caveat here would be to exclude the providers from
+/// this for now"): somebody holding a job role whose people are providers.
+export const NOT_A_PROVIDER = {
+  jobRoles: { none: { jobRole: { usesClinicalForms: true } } },
+} as const;
+
 /// The most a screen asks for at once: a month, with the days around it.
 const MAX_DAYS = 62;
 
@@ -53,6 +60,7 @@ export class RotaCostService {
       this.prisma.shift.findMany({
         where: {
           employeeId: { not: null },
+          employee: NOT_A_PROVIDER,
           status: { in: [ShiftStatus.DRAFT, ShiftStatus.PUBLISHED] },
           startsAt: {
             gte: zonedTimeToUtc(span.from, '00:00', PRACTICE_ZONE),
@@ -63,6 +71,7 @@ export class RotaCostService {
       }),
       this.prisma.employee.findMany({
         where: {
+          ...NOT_A_PROVIDER,
           OR: [
             { employmentStatus: { not: EmploymentStatus.TERMINATED } },
             { terminationDate: { gte: toUtcDate(from) } },
@@ -150,7 +159,7 @@ export class RotaCostService {
     return this.accessList();
   }
 
-  private async assertAllowed(employeeId: string) {
+  async assertAllowed(employeeId: string) {
     const person = await this.prisma.employee.findUnique({
       where: { id: employeeId },
       select: { canSeeRotaCost: true },

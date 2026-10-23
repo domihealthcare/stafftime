@@ -5541,3 +5541,83 @@ list everybody sees. Two pieces, deliberately separate:
 
 The list says who; the rota is still where they are put, and the minimum is
 what checks it.
+
+## Pay behind the PIN (October 2026)
+
+Dominguez: "anything that shows pay ... even if the certain user has access to
+view it, should prompt them to insert pin to view - sometimes a log in is left
+open and we dont want that accessible to just anyone".
+
+**The unlock belongs to the sign-in session**, not the person or the browser
+tab: `Session.payUnlockedUntil`. `POST /pay-lock/unlock` takes the tablet PIN
+(the same PIN as the time clock, counted against the same lockout) or the
+password (counted against the sign-in lockout, through `PasswordGuessService`)
+and sets it 10 minutes ahead. `PayLockGuard`, added with `@UseGuards` beside
+each pay controller's own access checks, lets a request through while it is in
+the future and slides it forward (written at most once a minute), and otherwise
+answers 403 with `code: PIN_REQUIRED`. Signing out, or the session ending,
+takes the unlock with it.
+
+**The page's half.** `components/PinGate.tsx` wraps each pay route in
+`App.tsx` and the rota's cost on the Schedule: nothing inside is mounted, so
+nothing is fetched, until `GET /pay-lock` says unlocked. While it is open, a
+touch, key or scroll is noted; every 30 seconds the gate either keeps the
+server's window open (`POST /pay-lock/touch`, at most once a minute, only after
+activity) or, after 10 minutes with none, locks it (`POST /pay-lock/lock`).
+`request()` in `lib/api.ts` turns any `PIN_REQUIRED` answer into a
+`PAY_LOCKED` window event, so every gate on the page goes back to its prompt
+at once; an unlock sends `PAY_UNLOCKED` so the others follow. A wrong PIN or
+password at `/pay-lock/unlock` is not taken as the session ending.
+
+**Why the PIN and not the password alone**: it is quick on a phone and already
+chosen by most staff for the time clock. The password is always offered too,
+since admins and managers may have no PIN.
+
+## Pay & raises (October 2026)
+
+Dominguez kept pay in a spreadsheet: each person's pay, every raise, when it
+took effect and notes. He asked for the spreadsheet's job to move into the
+portal ("This is not for a upload of an excel"), for the people who see the
+rota's cost (`canSeeRotaCost`), and for the rota's cost to come from it, with
+providers left out for now.
+
+**Pay over time stays in `EmploymentChange`**, the staff profile's history, so
+there is one record of pay and the rota's cost reads it unchanged. A change
+dated ahead is "coming up" until its day (`currentOf`, `upcomingOf`).
+
+**A raise (`PayRaise`) is the steps around a change**: asked for, a meeting,
+an offer, then approved, declined or withdrawn. Every step after the ask is
+optional. Only one is open per person. Deciding is claimed by status in one
+`updateMany`, so two people pressing Approve cannot both write a pay change.
+Approving writes the `EmploymentChange` (PAY_CHANGE, or PROMOTION with a new
+title) in the same transaction and keeps its id; removing that change later
+leaves the raise saying so rather than undoing it.
+
+**The meeting is an ordinary practice event** (`EventsService.create`,
+audience CHOSEN: the person and whoever set it), so it reaches calendars, the
+bell and the invites like any other, and moving or cancelling it tells them the
+same way. Its title is "Check-in: Casey and Morgan": managers see every event,
+so it never says what it is about. Stored as plain ids (`meetingEventId`),
+not a relation, since an event can be removed from the calendar.
+
+**Leaving details (`LeavingRecord`)**: how they left, a short reason, the last
+paycheck. The last day is `Employee.terminationDate` and the last position and
+pay come from the history. Read with the exit checklist's progress (the latest
+offboarding checklist).
+
+**Providers** (anybody holding a job role with *uses clinical forms*) are left
+out of both the screen and the rota's cost by one filter, `NOT_A_PROVIDER`.
+Their pay models differ (provider productivity) and Dominguez left them for
+later.
+
+## The exit checklist (October 2026)
+
+Dominguez asked for "an exit employee checklist for terminated employees (i.e.
+keys, emr access, staff portal access, whatsapp, etc.)". The default
+offboarding template already did that job and already starts by itself when
+somebody is marked as left (`startOffboardingIfLeaving`), so no new kind of
+checklist was made. Templates are edited in the app and may differ on the live
+site from the seed, so the migration only **adds** each missing exit step,
+matched loosely by a word in the title (`%whatsapp%`, `%emr%`, `%key%` ...),
+after the template's own tasks. Checklists already started are copies and are
+not touched.

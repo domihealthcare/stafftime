@@ -49,7 +49,9 @@ export interface StaffRecord {
 
 const PERSON_NAME = { select: { firstName: true, lastName: true } } as const;
 
-type ChangeRow = EmploymentChange & { recordedBy: { firstName: string; lastName: string } | null };
+export type ChangeRow = EmploymentChange & {
+  recordedBy: { firstName: string; lastName: string } | null;
+};
 
 /**
  * The admins-only side of a staff profile (October 2026, Dominguez): home
@@ -115,7 +117,7 @@ export class StaffRecordsService {
   async addChange(employeeId: string, dto: EmploymentChangeDto, actorId: string) {
     await this.assertEmployee(employeeId);
     await this.prisma.employmentChange.create({
-      data: { employeeId, ...this.changeData(dto), recordedById: actorId },
+      data: { employeeId, ...changeDataOf(dto), recordedById: actorId },
     });
     this.logger.log(`Pay / position change added for ${employeeId} by ${actorId}`);
     return this.get(employeeId, actorId);
@@ -125,7 +127,7 @@ export class StaffRecordsService {
     const existing = await this.findChange(id);
     await this.prisma.employmentChange.update({
       where: { id },
-      data: { ...this.changeData(dto), recordedById: actorId },
+      data: { ...changeDataOf(dto), recordedById: actorId },
     });
     this.logger.log(`Pay / position change ${id} edited by ${actorId}`);
     return this.get(existing.employeeId, actorId);
@@ -139,33 +141,6 @@ export class StaffRecordsService {
   }
 
   // -------------------------------------------------------------------------
-
-  /// What gets written for a change, checked: a rate needs its unit, and a
-  /// row has to say something.
-  private changeData(dto: EmploymentChangeDto) {
-    const position = dto.position?.trim() || null;
-    const note = dto.note?.trim() || null;
-    const payRate = dto.payRate ?? null;
-    const payUnit = dto.payUnit ?? null;
-    if ((payRate === null) !== (payUnit === null)) {
-      throw new BadRequestException(
-        payRate === null
-          ? 'Give the pay amount as well as per hour or per year.'
-          : 'Say whether the pay is per hour or per year.',
-      );
-    }
-    if (position === null && payRate === null && note === null) {
-      throw new BadRequestException('Give the new position, the new pay or a note.');
-    }
-    return {
-      effectiveOn: toUtcDate(dto.effectiveOn),
-      kind: dto.kind,
-      position,
-      payRate: payRate === null ? null : new Prisma.Decimal(payRate),
-      payUnit,
-      note,
-    };
-  }
 
   private changesOf(employeeId: string): Promise<ChangeRow[]> {
     return this.prisma.employmentChange.findMany({
@@ -193,11 +168,38 @@ export class StaffRecordsService {
   }
 }
 
+/// What gets written for a change, checked: a rate needs its unit, and a
+/// row has to say something.
+export function changeDataOf(dto: EmploymentChangeDto) {
+  const position = dto.position?.trim() || null;
+  const note = dto.note?.trim() || null;
+  const payRate = dto.payRate ?? null;
+  const payUnit = dto.payUnit ?? null;
+  if ((payRate === null) !== (payUnit === null)) {
+    throw new BadRequestException(
+      payRate === null
+        ? 'Give the pay amount as well as per hour or per year.'
+        : 'Say whether the pay is per hour or per year.',
+    );
+  }
+  if (position === null && payRate === null && note === null) {
+    throw new BadRequestException('Give the new position, the new pay or a note.');
+  }
+  return {
+    effectiveOn: toUtcDate(dto.effectiveOn),
+    kind: dto.kind,
+    position,
+    payRate: payRate === null ? null : new Prisma.Decimal(payRate),
+    payUnit,
+    note,
+  };
+}
+
 function fullName(person: { firstName: string; lastName: string }): string {
   return `${person.firstName} ${person.lastName}`;
 }
 
-function viewOf(row: ChangeRow): EmploymentChangeView {
+export function viewOf(row: ChangeRow): EmploymentChangeView {
   return {
     id: row.id,
     effectiveOn: isoDate(row.effectiveOn),

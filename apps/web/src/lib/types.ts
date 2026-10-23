@@ -2450,3 +2450,118 @@ export interface CmeRequestInput {
   otherCents: number;
   reason?: string;
 }
+
+/// Pay behind the PIN (October 2026): whether this session may see pay now.
+export interface PayLockStatus {
+  unlocked: boolean;
+  /// When it locks again, unless something is done before then.
+  until: string | null;
+  hasPin: boolean;
+  /// How long it stays open without use.
+  minutes: number;
+}
+
+/// Pay and raises (October 2026): for the rota-cost people, behind the PIN.
+export type PayRaiseStatus =
+  'REQUESTED' | 'MEETING_SET' | 'OFFERED' | 'APPROVED' | 'DECLINED' | 'WITHDRAWN';
+
+export type LeavingKind =
+  'RESIGNED' | 'LET_GO' | 'LAID_OFF' | 'RETIRED' | 'END_OF_CONTRACT' | 'OTHER';
+
+export interface PayPersonBasics {
+  id: string;
+  name: string;
+  payType: 'HOURLY' | 'SALARY';
+  hireDate: string | null;
+  terminationDate: string | null;
+  jobRoles: string[];
+}
+
+export interface PayUpcoming {
+  rate: number;
+  unit: PayRateUnit;
+  effectiveOn: string;
+  position: string | null;
+}
+
+export interface LeavingDetails {
+  kind: LeavingKind | null;
+  reason: string | null;
+  lastPaycheckOn: string | null;
+}
+
+export interface ExitChecklistProgress {
+  id: string;
+  done: number;
+  total: number;
+  completed: boolean;
+}
+
+export interface PayOverview {
+  current: (PayPersonBasics &
+    StaffRecord['current'] & {
+      upcoming: PayUpcoming | null;
+      openRaise: {
+        id: string;
+        status: PayRaiseStatus;
+        requestedOn: string;
+        meetingAt: string | null;
+      } | null;
+    })[];
+  former: (PayPersonBasics & {
+    lastPosition: StaffRecord['current']['position'];
+    lastPay: StaffRecord['current']['pay'];
+    leaving: LeavingDetails;
+    exitChecklist: ExitChecklistProgress | null;
+  })[];
+}
+
+export interface PayRaise {
+  id: string;
+  status: PayRaiseStatus;
+  requestedOn: string;
+  askedRate: number | null;
+  askedUnit: PayRateUnit | null;
+  meeting: { eventId: string; startsAt: string } | null;
+  decidedOn: string | null;
+  newRate: number | null;
+  newUnit: PayRateUnit | null;
+  newPosition: string | null;
+  effectiveOn: string | null;
+  payChangeKept: boolean;
+  note: string | null;
+  recordedBy: string | null;
+  updatedAt: string;
+}
+
+export interface PayPerson extends PayPersonBasics {
+  changes: EmploymentChange[];
+  current: StaffRecord['current'];
+  upcoming: PayUpcoming | null;
+  raises: PayRaise[];
+  leaving: LeavingDetails & { updatedBy: string | null; updatedAt: string | null };
+  exitChecklist: ExitChecklistProgress | null;
+}
+
+export interface RaiseRequestInput {
+  requestedOn: string;
+  askedRate: number | null;
+  askedUnit: PayRateUnit | null;
+  note: string | null;
+}
+
+export interface RaiseMeetingInput {
+  startsAt: string;
+  endsAt: string;
+  place: string | null;
+  createMeetLink: boolean;
+}
+
+export interface RaiseDecisionInput {
+  outcome: 'OFFERED' | 'APPROVED' | 'DECLINED';
+  newRate: number | null;
+  newUnit: PayRateUnit | null;
+  newPosition: string | null;
+  effectiveOn: string | null;
+  note: string | null;
+}

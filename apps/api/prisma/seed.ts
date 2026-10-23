@@ -522,6 +522,31 @@ const OFFBOARDING_TASKS: TemplateTaskSeed[] = [
     dueOffsetDays: -1,
   },
   {
+    title: 'Removed from the practice WhatsApp groups',
+    owner: TaskOwner.MANAGER,
+    dueOffsetDays: 0,
+  },
+  {
+    title: "Phone extension or softphone taken back, and the Directory's extensions updated",
+    owner: TaskOwner.ADMIN,
+    dueOffsetDays: 0,
+  },
+  {
+    title: 'Google Drive and shared folders access removed',
+    owner: TaskOwner.ADMIN,
+    dueOffsetDays: 0,
+  },
+  {
+    title: 'BrainCheck, lab and other outside portal accounts closed',
+    owner: TaskOwner.ADMIN,
+    dueOffsetDays: 0,
+  },
+  {
+    title: 'Shared passwords they knew changed (Wi-Fi, the iPad, shared logins)',
+    owner: TaskOwner.ADMIN,
+    dueOffsetDays: 0,
+  },
+  {
     title: 'Personnel file closed, with records retained as required',
     description:
       'The I-9 has its own retention rule: three years after the hire date, or one year after the last day, whichever is later.',

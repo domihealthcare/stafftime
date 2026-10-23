@@ -20,6 +20,7 @@ import { SessionService } from './session.service';
   ],
   exports: [
     AuthService,
+    PasswordGuessService,
     PasswordService,
     PasswordResetService,
     SessionService,

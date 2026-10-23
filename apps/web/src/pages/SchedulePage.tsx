@@ -79,6 +79,7 @@ import {
   OvertimePreview,
   useOvertimeCheck,
 } from '../components/OvertimeAlerts';
+import { PinGate } from '../components/PinGate';
 import { RotaCostCard } from '../components/RotaCost';
 
 /// Where the week/month choice is remembered. Per browser, per person on that
@@ -676,17 +677,19 @@ export function SchedulePage() {
           before the week is published, so it is the first thing on screen. */}
       {me?.canSeeRotaCost && (
         <div className="mb-3">
-          <RotaCostCard
-            from={localDate(rangeStart)}
-            to={localDate(days[days.length - 1])}
-            period={period}
-            refreshKey={shifts
-              .map(
-                (shift) =>
-                  `${shift.id}${shift.startsAt}${shift.endsAt}${shift.status}${shift.employeeId}`,
-              )
-              .join('|')}
-          />
+          <PinGate compact what="the rota’s cost">
+            <RotaCostCard
+              from={localDate(rangeStart)}
+              to={localDate(days[days.length - 1])}
+              period={period}
+              refreshKey={shifts
+                .map(
+                  (shift) =>
+                    `${shift.id}${shift.startsAt}${shift.endsAt}${shift.status}${shift.employeeId}`,
+                )
+                .join('|')}
+            />
+          </PinGate>
         </div>
       )}
 

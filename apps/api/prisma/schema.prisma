@@ -382,6 +382,12 @@ model Employee {
   updatedPersonalRecords    EmployeePersonalRecord[] @relation("PersonalRecordUpdatedBy")
   employmentChanges         EmploymentChange[]       @relation("EmploymentChangeSubject")
   recordedEmploymentChanges EmploymentChange[]       @relation("EmploymentChangeRecordedBy")
+  /// Raises asked for and decided, and the leaving details (October 2026),
+  /// read only by the rota-cost people behind their PIN.
+  payRaises                 PayRaise[]               @relation("PayRaiseSubject")
+  recordedPayRaises         PayRaise[]               @relation("PayRaiseRecordedBy")
+  leavingRecord             LeavingRecord?           @relation("LeavingRecordSubject")
+  updatedLeavingRecords     LeavingRecord[]          @relation("LeavingRecordUpdatedBy")
   recordedPtoRequests       PtoRequest[]             @relation("PtoRecordedBy")
   /// Their line on the office extensions list, if they have one.
   officeExtensions          OfficeExtension[]
@@ -762,17 +768,23 @@ model KioskDevice {
 /// for a token to expire. Only the SHA-256 of the token is stored: a leaked
 /// database row cannot be replayed as a login.
 model Session {
-  id         String    @id @default(uuid()) @db.Uuid
-  employeeId String    @db.Uuid
+  id               String    @id @default(uuid()) @db.Uuid
+  employeeId       String    @db.Uuid
   /// SHA-256 of the opaque session token. The token itself is never stored.
-  tokenHash  String    @unique
-  expiresAt  DateTime
-  lastUsedAt DateTime  @default(now())
-  revokedAt  DateTime?
+  tokenHash        String    @unique
+  expiresAt        DateTime
+  lastUsedAt       DateTime  @default(now())
+  revokedAt        DateTime?
+  /// Pay may be shown on this session until then (October 2026, Dominguez:
+  /// "anything that shows pay ... should prompt them to insert pin to view -
+  /// sometimes a log in is left open"). Set by the person's tablet PIN (or
+  /// password), moved on while they keep using a pay screen, gone after ten
+  /// minutes without. See `pay-lock/`.
+  payUnlockedUntil DateTime?
   /// Recorded so a user can recognise their own sessions, and for incident review.
-  userAgent  String?
-  ipAddress  String?
-  createdAt  DateTime  @default(now())
+  userAgent        String?
+  ipAddress        String?
+  createdAt        DateTime  @default(now())
 
   employee Employee @relation(fields: [employeeId], references: [id], onDelete: Cascade)
 
@@ -2909,6 +2921,92 @@ model EmploymentChange {
 
   @@index([employeeId, effectiveOn])
   @@map("employment_changes")
+}
+
+/// Where a raise has got to (October 2026, Dominguez: "full steps"): asked
+/// for, a meeting set, then offered, approved or declined. Withdrawn when the
+/// person no longer wants it.
+enum PayRaiseStatus {
+  REQUESTED
+  MEETING_SET
+  OFFERED
+  APPROVED
+  DECLINED
+  WITHDRAWN
+}
+
+/// A raise, from the ask to the decision (October 2026, Dominguez: "stop
+/// having to use this excel workflow"). Kept by the rota-cost people
+/// (`Employee.canSeeRotaCost`) behind their PIN; the person it is about does
+/// not see it. Approving writes a PAY_CHANGE row in EmploymentChange on the
+/// day it takes effect (past or future), which is what the rota cost reads.
+///
+/// `meetingEventId` and `payChangeId` are plain ids, not relations: the
+/// meeting is an ordinary practice event that may be cancelled from the
+/// calendar, and the pay change may be removed from the history, and either
+/// simply reads as gone.
+model PayRaise {
+  id         String         @id @default(uuid()) @db.Uuid
+  employeeId String         @db.Uuid
+  status     PayRaiseStatus @default(REQUESTED)
+
+  /// The day it was asked for, and what was asked (both or neither).
+  requestedOn DateTime     @db.Date
+  askedRate   Decimal?     @db.Decimal(10, 2)
+  askedUnit   PayRateUnit?
+
+  meetingEventId String?   @db.Uuid
+  meetingAt      DateTime?
+
+  /// The answer: the rate offered or approved, a new title if it comes with
+  /// one, and the day it takes effect.
+  decidedOn   DateTime?    @db.Date
+  newRate     Decimal?     @db.Decimal(10, 2)
+  newUnit     PayRateUnit?
+  newPosition String?
+  effectiveOn DateTime?    @db.Date
+  payChangeId String?      @db.Uuid
+
+  note String?
+
+  recordedById String?  @db.Uuid
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  employee   Employee  @relation("PayRaiseSubject", fields: [employeeId], references: [id], onDelete: Cascade)
+  recordedBy Employee? @relation("PayRaiseRecordedBy", fields: [recordedById], references: [id], onDelete: SetNull)
+
+  @@index([employeeId, requestedOn])
+  @@index([status])
+  @@map("pay_raises")
+}
+
+/// Why somebody left (October 2026, Dominguez: "full leaving details but only
+/// for rota cost people to see"): the kind of leaving, a short reason and the
+/// day of their last paycheck. The last day is `Employee.terminationDate`;
+/// the last position and pay come from EmploymentChange.
+enum LeavingKind {
+  RESIGNED
+  LET_GO
+  LAID_OFF
+  RETIRED
+  END_OF_CONTRACT
+  OTHER
+}
+
+model LeavingRecord {
+  employeeId     String       @id @db.Uuid
+  kind           LeavingKind?
+  reason         String?
+  lastPaycheckOn DateTime?    @db.Date
+
+  updatedById String?  @db.Uuid
+  updatedAt   DateTime @updatedAt
+
+  employee  Employee  @relation("LeavingRecordSubject", fields: [employeeId], references: [id], onDelete: Cascade)
+  updatedBy Employee? @relation("LeavingRecordUpdatedBy", fields: [updatedById], references: [id], onDelete: SetNull)
+
+  @@map("leaving_records")
 }
 
 /// The practice's phone extensions, as on its "Office Extensions" sheet

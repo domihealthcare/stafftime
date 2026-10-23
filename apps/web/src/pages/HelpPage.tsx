@@ -1375,9 +1375,10 @@ const MANAGERS: Section[] = [
                 <strong>Surveys &amp; reading</strong> - Surveys and Required reading.
               </li>
               <li>
-                <strong>Finances</strong> - Export, Reimbursements, Invoices (Manager access only,
-                not admins) and Vendor payments (admins), and Provider productivity (for the people
-                chosen for it).
+                <strong>Finances</strong> - Pay &amp; raises (for the people chosen to see the
+                rota&rsquo;s cost), Export, Reimbursements, Invoices (Manager access only, not
+                admins) and Vendor payments (admins), and Provider productivity (for the people
+                chosen for it). Each asks for your PIN first.
               </li>
             </ul>
             <p className="mt-2">
@@ -2277,8 +2278,52 @@ const MANAGERS: Section[] = [
             hourly rate, hours past the overtime line at time and a half, and a salary as a year ÷
             52 a week - so it is what the rota would cost, not what was worked, and leaves out taxes
             and benefits. Anybody on the rota with no pay on file is named, so a total is never
-            quietly short. Never by person.
+            quietly short. Never by person. Providers are left out for now. It asks for your PIN
+            first, like everything that shows pay.
           </p>
+        ),
+      },
+      {
+        question: 'Why does it ask for my PIN to see pay?',
+        answer: (
+          <p>
+            Anything that shows pay - <Screen>Pay & raises</Screen>, the rota&rsquo;s cost, staff
+            profiles, provider productivity and everything under <Screen>Manage → Finances</Screen>{' '}
+            - asks for your tablet PIN first, even if you are allowed to see it, in case a computer
+            is left signed in. Your password works too (<strong>Use your password instead</strong>
+            ). It stays open while you use it and locks again after about 10 minutes without a
+            touch, or at once with <strong>Lock pay now</strong>.
+          </p>
+        ),
+      },
+      {
+        question: 'How do I record a raise?',
+        answer: (
+          <>
+            <p>
+              <Screen>Manage → Finances → Pay & raises</Screen>, for the people an admin has chosen
+              to see the rota&rsquo;s cost. It replaces the pay spreadsheet: everybody&rsquo;s pay
+              now and since when, and any change still to come. Press a name, then{' '}
+              <strong>+ Raise asked for</strong> (the day, and the amount if they named one).
+            </p>
+            <p>
+              <strong>Set a meeting</strong> puts a check-in on the calendar for the two of you (it
+              never says what it is about). <strong>Make an offer</strong> records the pay offered;
+              <strong> Approve</strong> (or <strong>Accepted: approve it</strong>) records the new
+              pay and the day it starts, past or still to come, and from that day the rota&rsquo;s
+              cost uses it. <strong>Decline</strong>, <strong>Turned down</strong> and{' '}
+              <strong>They withdrew it</strong> close it. ADP is not changed: enter the new pay
+              there too. Providers are left out for now.
+            </p>
+            <p>
+              <strong>Former staff</strong> lists everybody who has left, with their last day, last
+              position and pay, why they left, their last paycheck and how far their exit checklist
+              has got. The exit checklist (keys, EMR, Domi Staff, WhatsApp, email, phone extension,
+              Drive and the rest) starts by itself when somebody is marked as left; managers tick it
+              off under <Screen>Manage → Staff → Onboarding & Offboarding</Screen> and can change
+              its steps there.
+            </p>
+          </>
         ),
       },
       {
