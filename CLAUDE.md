@@ -1887,7 +1887,8 @@ Beyond the phases, the parts worth knowing about before picking up work:
   Since 23 October 2026 Escape also works when focus has fallen out of the
   pop-up (a Save button disabled while it saves drops focus to the page): a
   page-wide listener closes the top-most one, never while a confirmation is
-  open.
+  open. Since version 1.20.1 Tab from there goes back inside it too, not to
+  the header behind.
   Part two: `buttonClass('primary' | 'secondary', 'sm' | 'md')`, `inputClass` and a `Field`
   (label, hint, error wired for screen readers) in `components/ui.tsx`; about 110
   buttons use the helper, and input focus is the brand blue everywhere (`index.css`).
