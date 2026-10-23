@@ -1130,6 +1130,47 @@ Beyond the phases, the parts worth knowing about before picking up work:
   name), with a specialty in brackets after the last one shown once as the
   group's note (`doctorsOf` in `lib/phone-book.ts`); the whole name is still
   what is searched, so any one doctor finds the group. Cardiology is two pages.
+- **View as** (23 October 2026, Dominguez: "me (as the super admin) should
+  have a way to see the views that other staff have - i.e. something like view
+  as another role, i can click one (or multiple) roles ... both to make sure
+  build is correct, and to show staff how to do certain tasks"): account menu
+  → **View as…** (admins): **Employee** or **Manager** access and any job
+  roles to stand in for their own. Kept per browser tab (`lib/view-as.ts`,
+  `sessionStorage`) and sent on every request as `x-view-as` and
+  `x-view-as-job-roles`, which `SessionAuthGuard` honours **only for an admin
+  and only downwards**: `AuthUser.role` becomes the chosen level with
+  `actualRole: ADMIN` and `viewAsJobRoleIds`, so the guards, `/auth/me`
+  (`role`, `viewingAs`, the job-role flags and `tools`), Resources
+  (`JobRolesService.idsHeldBy`), tool access and the closing checklist preview
+  all answer as that person is answered; the person's own data (shifts,
+  hours, name) is still theirs. **Invoices stay shut** to an admin viewing as
+  a manager (`ManagerAccessOnlyGuard` reads `actualRole`). An amber banner
+  (`components/ViewAsBanner.tsx`) says whose view it is, with **Change** and
+  **Back to yourself**; `useIsActualAdmin` is the one thing that stays the
+  admin's. Signing out clears it. `components/ViewAsDialog.tsx`; Help has
+  *Seeing the app as somebody else sees it*; `tests/browser/view-as.mjs`.
+  Not reflected while viewing: the per-person switches (rota cost,
+  productivity, News posting) stay the admin's own.
+- **Time off is a tab under Schedule** (23 October 2026, Dominguez: "how do i
+  even get to time off requests?"): Shifts · Calendar · **Time off** · Reviews
+  · On call · Timesheet - everybody's requests for a manager, your own for
+  staff (`/time-off`, unchanged), beside "All requests →" on the Shifts tab.
+- **Job roles are a pop-up on Staff** (23 October 2026, Dominguez: "is the
+  Job roles section actually needed since we are already grouping them at the
+  top? ... can't that be integrated?"): the section at the bottom of the Staff
+  screen is gone; **Job roles…** at the end of the row of job roles above the
+  list opens the same thing (`JobRolesSection` inside a `Modal`: add, rename,
+  colour, members, minimums). `/job-roles` lands on Staff with it open.
+  `goToManage(page, 'Job roles')` in the suites opens the pop-up.
+- **Phone book: Specialty, searchable; addresses on two lines** (23 October
+  2026, Dominguez): "Listed under" is **Specialty** on the page, the form and
+  Help, and the filter is a dropdown you type into
+  (`components/SearchableSelect.tsx`: a combobox with the list narrowing as
+  you type, arrow keys, Enter, Escape; clearing it means every specialty).
+  An address shows as the street on one line and the town, state and zip on
+  the next (`addressLines` in `lib/phone-book.ts`, on the cards and the
+  printout; only when the end reads like "Union City, NJ 07087", else one
+  line; the stored text is untouched). `tests/browser/phone-book.mjs`.
 - **Manage's headings renamed** (22 October 2026, Dominguez): **People is
   Staff** and **Money is Finances**, and **Provider productivity moved to
   Finances** (Export, Reimbursements, Invoices, Vendor payments, Provider

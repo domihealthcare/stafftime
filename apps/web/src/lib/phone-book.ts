@@ -87,6 +87,16 @@ function isFaxNumber(before: string) {
   return Boolean(fax) && !/phone|\bph\b|call|\btel\b|cell/i.test(fax?.[1] ?? '');
 }
 
+/// An address on two lines (October 2026, Dominguez: "the Address on 1 line
+/// and then the town, state zip on the 2nd line"): the street, then the town
+/// with its state and zip. Only when the end looks like "Town, NJ 07087" (or
+/// "Town, NJ"); anything else stays one line. The stored text is untouched.
+export function addressLines(address: string): string[] {
+  const match = /^(.+?),\s*([^,]+,\s*[A-Z]{2}(?:\s+\d{5}(?:-\d{4})?)?)\s*$/.exec(address.trim());
+  if (!match) return [address.trim()];
+  return [match[1].trim(), match[2].trim()];
+}
+
 /// Offices as they are printed: neighbours with no name of their own and the
 /// same phone and fax (eight addresses of one practice, one number) are one
 /// line of addresses with the numbers once, instead of eight copies.

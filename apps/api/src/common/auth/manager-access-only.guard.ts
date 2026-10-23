@@ -13,7 +13,8 @@ import type { Request } from 'express';
 export class ManagerAccessOnlyGuard implements CanActivate {
   canActivate(context: ExecutionContext): boolean {
     const user = context.switchToHttp().getRequest<Request>().user;
-    if (user?.role === Role.MANAGER) return true;
+    // An admin viewing as a manager (October 2026) is still the admin.
+    if (user?.role === Role.MANAGER && user.actualRole !== Role.ADMIN) return true;
     throw new ForbiddenException('This is for people with Manager access only.');
   }
 }

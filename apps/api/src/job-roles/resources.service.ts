@@ -58,7 +58,7 @@ export class ResourcesService {
    */
   async sections(actor: AuthUser) {
     const isManager = actor.role !== Role.EMPLOYEE;
-    const mine = await this.jobRoles.idsFor(actor.id);
+    const mine = await this.jobRoles.idsHeldBy(actor);
 
     const roles = await this.prisma.jobRole.findMany({
       where: isManager ? {} : { id: { in: mine } },

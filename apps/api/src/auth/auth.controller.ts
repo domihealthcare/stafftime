@@ -111,7 +111,7 @@ export class AuthController {
   /// Who am I? The web app calls this on load to restore the session.
   @Get('me')
   async me(@CurrentUser() user: AuthUser) {
-    return this.describeCurrentUser(user.id);
+    return this.describeCurrentUser(user.id, user);
   }
 
   @Post('change-password')
@@ -155,7 +155,7 @@ export class AuthController {
         mutedDigestTopics: dto.mutedDigestTopics,
       },
     });
-    return this.describeCurrentUser(user.id);
+    return this.describeCurrentUser(user.id, user);
   }
 
   /// The browsers currently signed in as you, so you can spot one you do not
@@ -190,8 +190,12 @@ export class AuthController {
     return owner.id;
   }
 
-  private async describeCurrentUser(employeeId: string) {
-    const { jobRoles, ...employee } = await this.prisma.employee.findUniqueOrThrow({
+  /// Who the signed-in person is, as the app should treat them: while an admin
+  /// is viewing as somebody (October 2026), with the access level and job
+  /// roles they chose, and `viewingAs` saying so.
+  private async describeCurrentUser(employeeId: string, viewer?: AuthUser) {
+    const viewing = viewer?.actualRole === Role.ADMIN ? viewer : null;
+    const { jobRoles: ownJobRoles, ...employee } = await this.prisma.employee.findUniqueOrThrow({
       where: { id: employeeId },
       select: {
         id: true,
@@ -263,8 +267,28 @@ export class AuthController {
           })
         ).map((location) => location.name)
       : [];
+    // The job roles the app goes by: the ones chosen while viewing as somebody,
+    // else their own.
+    const jobRoles = viewing?.viewAsJobRoleIds
+      ? (
+          await this.prisma.jobRole.findMany({
+            where: { id: { in: viewing.viewAsJobRoleIds } },
+            select: { seesOwnPersonnelTabs: true, usesClinicalForms: true, usesWellnessForm: true },
+          })
+        ).map((jobRole) => ({ jobRole }))
+      : ownJobRoles;
     return {
       ...employee,
+      role: viewing ? viewing.role : employee.role,
+      /// Set while an admin views the app as somebody else (October 2026):
+      /// their real access level, and what they chose.
+      viewingAs: viewing
+        ? {
+            actualRole: viewing.actualRole,
+            role: viewing.role,
+            jobRoleIds: viewing.viewAsJobRoleIds ?? null,
+          }
+        : null,
       hasProductivity,
       /// Their offices with a paired time clock, while they have no PIN for it;
       /// empty once they have one.
@@ -280,7 +304,11 @@ export class AuthController {
       usesWellnessForm: jobRoles.some((membership) => membership.jobRole.usesWellnessForm),
       /// The built-in forms and guides they may open, as managers set them on
       /// Resources (`tool-access/`).
-      tools: await this.toolAccess.toolsFor(employeeId, employee.role),
+      tools: await this.toolAccess.toolsFor(
+        employeeId,
+        viewing ? viewing.role : employee.role,
+        viewing?.viewAsJobRoleIds,
+      ),
     };
   }
 }

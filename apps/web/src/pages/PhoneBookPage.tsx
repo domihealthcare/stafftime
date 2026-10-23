@@ -2,12 +2,14 @@ import { useCallback, useEffect, useId, useMemo, useRef, useState } from 'react'
 import { Link, useSearchParams } from 'react-router-dom';
 import { ApiError, api } from '../lib/api';
 import {
+  addressLines,
   categoriesOf,
   doctorsOf,
   groupByCategory,
   linkify,
   searchContacts,
 } from '../lib/phone-book';
+import { SearchableSelect } from '../components/SearchableSelect';
 import { useIsPhone } from '../lib/use-is-phone';
 import { useIsManager } from '../lib/session';
 import type { ReferralContact, ReferralContactInput, ReferralOffice } from '../lib/types';
@@ -86,7 +88,11 @@ function OfficeBlock({ office, several }: { office: ReferralOffice; several: boo
               rel="noopener noreferrer"
               className="text-brand-800 underline decoration-brand-300 hover:text-brand-900"
             >
-              {office.address}
+              {addressLines(office.address).map((line, index) => (
+                <span key={index} className="block">
+                  {line}
+                </span>
+              ))}
             </a>
           </Line>
         )}
@@ -304,7 +310,7 @@ function ContactForm({
           </div>
           <div>
             <label htmlFor={`${id}-category`} className={label}>
-              Listed under
+              Specialty
             </label>
             <input
               id={`${id}-category`}
@@ -581,27 +587,15 @@ export function PhoneBookPage() {
               autoComplete="off"
             />
           </div>
-          <div>
-            <label
-              htmlFor="phone-book-category"
-              className="block text-sm font-medium text-slate-700"
-            >
-              Listed under
-            </label>
-            <select
-              id="phone-book-category"
-              value={category}
-              onChange={(event) => change({ category: event.target.value })}
-              className={inputClass}
-            >
-              <option value="">Everything</option>
-              {categories.map((name) => (
-                <option key={name} value={name}>
-                  {name}
-                </option>
-              ))}
-            </select>
-          </div>
+          <SearchableSelect
+            id="phone-book-category"
+            label="Specialty"
+            value={category}
+            options={categories}
+            anyLabel="Every specialty"
+            onChange={(next) => change({ category: next })}
+            className="min-w-[12rem]"
+          />
           <button
             type="button"
             aria-pressed={preferredOnly}

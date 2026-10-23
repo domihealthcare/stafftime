@@ -45,11 +45,17 @@ export class ToolAccessService {
     });
   }
 
-  /// The tools somebody may open.
-  async toolsFor(employeeId: string, role: Role): Promise<string[]> {
+  /// The tools somebody may open - by the job roles they hold, or the ones
+  /// an admin chose while viewing as somebody (`jobRoleIds`).
+  async toolsFor(employeeId: string, role: Role, jobRoleIds?: string[]): Promise<string[]> {
     const [settings, held] = await Promise.all([
       this.settings(),
-      this.prisma.employeeJobRole.findMany({ where: { employeeId }, select: { jobRoleId: true } }),
+      jobRoleIds
+        ? Promise.resolve(jobRoleIds.map((jobRoleId) => ({ jobRoleId })))
+        : this.prisma.employeeJobRole.findMany({
+            where: { employeeId },
+            select: { jobRoleId: true },
+          }),
     ]);
     const heldIds = held.map((row) => row.jobRoleId);
     return TOOLS.filter((tool) =>
@@ -63,7 +69,7 @@ export class ToolAccessService {
   }
 
   async assertCanUse(user: AuthUser, key: string, label: string) {
-    const tools = await this.toolsFor(user.id, user.role);
+    const tools = await this.toolsFor(user.id, user.role, user.viewAsJobRoleIds);
     if (!tools.includes(key)) {
       throw new ForbiddenException(`The ${label} is not set up for your job role.`);
     }

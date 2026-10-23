@@ -116,6 +116,10 @@ export interface Employee extends EmployeeSummary {
   /// Signed-in person only: the built-in forms and guides they may open
   /// ('phone-book', 'braincheck', ...), as managers set them on Resources.
   tools?: string[];
+  /// Signed-in person only: set while an admin is viewing the app as somebody
+  /// else (October 2026) - their real access level and what they chose.
+  /// `role` above is then the chosen one.
+  viewingAs?: { actualRole: Role; role: Role; jobRoleIds: string[] | null } | null;
   /// Signed-in person only: a manager has published productivity numbers for
   /// them, so "Your productivity" appears in the account menu.
   hasProductivity?: boolean;

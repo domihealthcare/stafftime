@@ -3,6 +3,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { JobRolesSection } from '../components/JobRolesSection';
 import { JobRoleDot } from '../components/JobRoleTag';
+import { Modal } from '../components/Modal';
 import { localDate } from '../lib/format';
 import { ApiError, api } from '../lib/api';
 import { useSession } from '../lib/session';
@@ -110,11 +111,15 @@ export function StaffPage() {
     void load();
   }, [load]);
 
-  // /job-roles, the old address, lands here with #job-roles: scroll to them.
+  /// The job roles themselves - add, rename, colour, who is in each, the
+  /// minimums - in a pop-up from the filter row (October 2026, Dominguez:
+  /// "is the Job roles section actually needed since we are already grouping
+  /// them at the top? ... can't that be integrated?"). /job-roles, the old
+  /// address, lands here with #job-roles and opens it.
+  const [rolesOpen, setRolesOpen] = useState(() => window.location.hash === '#job-roles');
   useEffect(() => {
-    if (loading || location.hash !== '#job-roles') return;
-    document.getElementById('job-roles')?.scrollIntoView({ block: 'start' });
-  }, [loading, location.hash]);
+    if (location.hash === '#job-roles') setRolesOpen(true);
+  }, [location.hash]);
 
   const waiting = staff.filter(
     (person) =>
@@ -186,8 +191,8 @@ export function StaffPage() {
         title="Staff"
         subtitle={
           isAdmin
-            ? 'Who works here, what they do, what they can see, and how they sign in. The job roles are at the bottom.'
-            : 'Who works here and what they do. The job roles are at the bottom.'
+            ? 'Who works here, what they do, what they can see, and how they sign in.'
+            : 'Who works here and what they do.'
         }
       />
 
@@ -246,6 +251,24 @@ export function StaffPage() {
               </button>
             );
           })}
+          <button
+            type="button"
+            onClick={() => setRolesOpen(true)}
+            className="rounded-full px-3 py-1 text-sm font-medium text-brand-800 ring-1 ring-inset ring-brand-200 hover:bg-brand-50"
+          >
+            Job roles…
+          </button>
+        </div>
+      )}
+      {!loading && jobRoles.length === 0 && (
+        <div className="mb-3">
+          <button
+            type="button"
+            onClick={() => setRolesOpen(true)}
+            className={buttonClass('secondary', 'sm')}
+          >
+            Job roles…
+          </button>
         </div>
       )}
 
@@ -418,17 +441,27 @@ export function StaffPage() {
         </div>
       )}
 
-      {!loading && (
-        <JobRolesSection
-          roles={jobRoles}
-          staff={staff}
-          onChanged={(updated) =>
-            setJobRoles((current) =>
-              current.map((role) => (role.id === updated.id ? updated : role)),
-            )
-          }
-          onReload={() => void load()}
-        />
+      {rolesOpen && (
+        <Modal
+          title="Job roles"
+          onClose={() => {
+            setRolesOpen(false);
+            if (location.hash === '#job-roles') window.history.replaceState(null, '', '/staff');
+          }}
+          wide
+          testId="job-roles-dialog"
+        >
+          <JobRolesSection
+            roles={jobRoles}
+            staff={staff}
+            onChanged={(updated) =>
+              setJobRoles((current) =>
+                current.map((role) => (role.id === updated.id ? updated : role)),
+              )
+            }
+            onReload={() => void load()}
+          />
+        </Modal>
       )}
 
       {editing && (

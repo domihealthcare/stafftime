@@ -34,7 +34,7 @@ export class ClosingController {
 
   @Get('mine')
   mine(@CurrentUser() user: AuthUser) {
-    return this.closing.forOpenPunch(user.id);
+    return this.closing.forOpenPunch(user.id, user.viewAsJobRoleIds);
   }
 
   @Get('records')

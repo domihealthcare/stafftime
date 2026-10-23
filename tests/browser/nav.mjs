@@ -135,5 +135,10 @@ export async function goToManage(page, label) {
   if (section !== tab) {
     await page.getByRole('navigation', { name: `${section} screens` }).getByRole('link', { name: tab, exact: true }).click();
   }
-  if (label === 'Job roles') await page.getByRole('heading', { name: 'Job roles', level: 2 }).waitFor({ timeout: 15000 });
+  if (label === 'Job roles') {
+    // The job roles are a pop-up from the row of job roles above the staff list (October 2026).
+    await page.getByRole('button', { name: 'Job roles…' }).waitFor({ timeout: 15000 });
+    await page.getByRole('button', { name: 'Job roles…' }).click();
+    await page.getByRole('dialog', { name: 'Job roles' }).waitFor({ timeout: 15000 });
+  }
 }

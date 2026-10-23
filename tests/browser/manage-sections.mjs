@@ -59,7 +59,7 @@ await step('Manage is five entries, not fifteen', async () => {
 await step('Staff (with the job roles on it) heads the Staff section, with Licenses, CME and Onboarding', async () => {
   await goToManage(admin, 'Job roles');
   await admin.getByRole('heading', { name: 'Staff', level: 1 }).waitFor({ timeout: 10000 });
-  await admin.getByRole('heading', { name: 'Job roles', level: 2 }).waitFor({ timeout: 10000 });
+  await admin.getByRole('dialog', { name: 'Job roles' }).getByRole('button', { name: 'Close' }).click();
   const people = await tabs(admin, 'Staff');
   if (people.join('|') !== 'Staff|Licenses|CME|Onboarding & Offboarding')
     throw new Error(people.join('|'));

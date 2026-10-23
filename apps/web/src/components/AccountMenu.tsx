@@ -1,7 +1,8 @@
 import { useEffect, useRef, useState } from 'react';
 import { Avatar } from './Avatar';
 import { NavLink } from 'react-router-dom';
-import { useIsManager, useSession } from '../lib/session';
+import { useIsActualAdmin, useIsManager, useSession } from '../lib/session';
+import { ViewAsDialog } from './ViewAsDialog';
 import { unsavedWork } from '../lib/unsaved-work';
 import { useConfirm } from './ConfirmDialog';
 import { useT } from '../lib/i18n';
@@ -18,8 +19,10 @@ export function AccountMenu() {
   const t = useT();
   const { employee, signOut } = useSession();
   const isManager = useIsManager();
+  const isActualAdmin = useIsActualAdmin();
   const confirm = useConfirm();
   const [open, setOpen] = useState(false);
+  const [viewAsOpen, setViewAsOpen] = useState(false);
   const [signingOut, setSigningOut] = useState(false);
   const menu = useRef<HTMLDivElement>(null);
 
@@ -158,6 +161,21 @@ export function AccountMenu() {
                 </NavLink>
               </>
             )}
+            {/* An admin sees the app as somebody else (October 2026). While
+                viewing, the banner at the top has Change and the way back. */}
+            {isActualAdmin && !employee?.viewingAs && (
+              <button
+                type="button"
+                role="menuitem"
+                className={item}
+                onClick={() => {
+                  setOpen(false);
+                  setViewAsOpen(true);
+                }}
+              >
+                View as…
+              </button>
+            )}
             <NavLink to="/password" role="menuitem" className={item} onClick={() => setOpen(false)}>
               {t('Change password')}
             </NavLink>
@@ -202,6 +220,7 @@ export function AccountMenu() {
           </div>
         </div>
       )}
+      {viewAsOpen && <ViewAsDialog onClose={() => setViewAsOpen(false)} />}
     </div>
   );
 }

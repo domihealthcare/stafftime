@@ -1,5 +1,6 @@
 import { t } from './i18n';
 import type { ImportedPerson } from './staff-import';
+import { viewAsHeaders, writeViewAs } from './view-as';
 import type {
   CleanTimeOffCheck,
   CorrectionRequest,
@@ -183,6 +184,9 @@ async function request<T>(path: string, init: RequestInit = {}): Promise<T> {
       ...init,
       headers: {
         'Content-Type': 'application/json',
+        // While an admin views as somebody (October 2026), every request
+        // says so, and the server answers as that person is answered.
+        ...viewAsHeaders(),
         ...init.headers,
       },
     });
@@ -990,7 +994,10 @@ export const api = {
       method: 'POST',
       body: JSON.stringify({ email, password }),
     }),
-  logout: () => request<{ signedOut: boolean }>('/auth/logout', { method: 'POST' }),
+  logout: () => {
+    writeViewAs(null);
+    return request<{ signedOut: boolean }>('/auth/logout', { method: 'POST' });
+  },
   me: () => request<Employee>('/auth/me'),
   changePassword: (currentPassword: string, newPassword: string) =>
     request<{ changed: boolean; otherSessionsSignedOut: number }>('/auth/change-password', {

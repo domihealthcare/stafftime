@@ -4638,6 +4638,45 @@ never a patient — the form says so and the schema guard pins both tables.
 `tests/browser/phone-book.mjs` (the runner puts the book back from the v2 data
 migration between suites).
 
+## View as (October 2026)
+
+Dominguez, 23 October 2026: "me (as the super admin) should have a way to see
+the views that other staff have - i.e. something like view as another role, i
+can click one (or multiple) roles and be able to see the views that others are
+having - this is both to make sure build is correct, and to show staff how to
+do certain tasks".
+
+**What it is.** An admin chooses, under the account menu's **View as…**, an
+access level - Employee or Manager - and optionally job roles to stand in for
+their own. The choice lives in the browser tab (`sessionStorage`, so closing
+the tab ends it, and two tabs can differ), and every request from then on
+carries two headers, `x-view-as` and `x-view-as-job-roles`. The session guard
+reads them **only when the signed-in person is an admin**, and only to lower:
+`AuthUser.role` becomes the chosen level, `actualRole` records the truth, and
+`viewAsJobRoleIds` the chosen roles. Nothing else in the API knows about
+headers; it all goes by `AuthUser`, so the roles guard, every `@Roles` route,
+and the screens behave exactly as for such a person, and what the server
+refuses them it refuses the admin. An employee or manager sending the headers
+is ignored; a header naming ADMIN is ignored.
+
+**What follows the chosen job roles.** The signed-in person's job roles are
+read in a handful of places, and each takes the chosen ones instead:
+`/auth/me` (the `seesOwnPersonnelTabs`, `usesClinicalForms` and
+`usesWellnessForm` flags, and `tools` through `ToolAccessService.toolsFor`),
+Resources (`JobRolesService.idsHeldBy`), the guides, phone book and
+diagnostics (`assertCanUse`) and the closing checklist for an open punch
+(`ClosingService.applicableFor`, the first chosen role as the main one). Their
+own data stays theirs: shifts, hours, time off, name on anything saved, and
+the per-person switches (rota cost, productivity, News posting). `/auth/me`
+also returns `viewingAs`, which the web reads for the banner
+(`components/ViewAsBanner.tsx`: whose view, Change, Back to yourself) and for
+`useIsActualAdmin`, the one thing that stays the admin's while viewing.
+
+**The one place it does not open.** Invoices are for Manager access only, and
+the reason (a provider's home address on a pay-to) does not change when an
+admin is merely looking: `ManagerAccessOnlyGuard` refuses when `actualRole`
+is ADMIN. Help says so.
+
 ## Who looks after what (October 2026)
 
 Dominguez, 22 October 2026: "assign staff (i.e. specific managers/admin) to
