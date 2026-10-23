@@ -397,7 +397,7 @@ await step('the form asks for places, not patients, and there is no file upload'
   await adder.getByRole('button', { name: 'Cancel' }).click();
 });
 
-await step('it is also on Home’s Quick card and Resources', async () => {
+await step('it is also on Home’s Shortcuts card and Resources', async () => {
   await staff.goto(`${BASE}/`, { waitUntil: 'networkidle' });
   await staff.getByTestId('quick-actions').getByRole('link', { name: 'Phone book' }).waitFor({ timeout: 10000 });
   await staff.goto(`${BASE}/resources`, { waitUntil: 'networkidle' });
