@@ -12,6 +12,7 @@ export const SEPARATE_FEEDS: {
 }[] = [
   { slug: 'shifts', label: 'My shifts & time off', kind: null },
   { slug: 'diagnostics', label: 'Diagnostics', kind: 'DIAGNOSTIC' },
+  { slug: 'phlebotomist', label: 'Phlebotomist', kind: 'PHLEBOTOMY' },
   { slug: 'rep-lunches', label: 'Rep lunches', kind: 'REP_LUNCH' },
   { slug: 'holidays', label: 'Holidays & closures', kind: 'HOLIDAY' },
   { slug: 'pay-days', label: 'Pay days', kind: 'PAY_DAY' },

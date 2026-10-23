@@ -359,6 +359,10 @@ function summaryOf(event: EventRow): string {
     const company = event.rep?.company ? ` (${event.rep.company})` : '';
     return `${event.title}${company}${event.atLocation ? ` - ${event.atLocation.name}` : ''}`;
   }
+  if (event.kind === PracticeEventKind.PHLEBOTOMY) {
+    const who = event.title === 'Phlebotomist' ? 'Phlebotomist' : `Phlebotomist: ${event.title}`;
+    return event.atLocation ? `${who} - ${event.atLocation.name}` : who;
+  }
   if (event.kind === PracticeEventKind.DIAGNOSTIC) {
     return event.atLocation ? `${event.title} - ${event.atLocation.name}` : event.title;
   }

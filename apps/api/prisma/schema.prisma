@@ -1884,6 +1884,11 @@ enum PracticeEventKind {
   DIAGNOSTIC
   /// A drug rep bringing lunch to an office, with the rep from the list.
   REP_LUNCH
+  /// When the phlebotomist is at an office to draw blood (23 October 2026,
+  /// Dominguez: "we need a phlebotomist schedule as part of the calendar").
+  /// Entered by managers, like diagnostics; for everyone. The title is who,
+  /// or just "Phlebotomist".
+  PHLEBOTOMY
 }
 
 /// Who an event is for. The same three choices as a survey.

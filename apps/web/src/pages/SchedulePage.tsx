@@ -272,6 +272,7 @@ export function SchedulePage() {
       { label: 'Add an event', run: () => addEventOn('EVENT', day) },
       { label: 'Add a rep lunch', run: () => addEventOn('REP_LUNCH', day) },
       { label: 'Add a diagnostics date', run: () => addEventOn('DIAGNOSTIC', day) },
+      { label: 'Add a phlebotomist date', run: () => addEventOn('PHLEBOTOMY', day) },
       { label: 'Add a holiday or closure', run: () => addEventOn('CLOSURE', day) },
     ]);
   };

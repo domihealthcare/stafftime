@@ -1162,6 +1162,41 @@ Beyond the phases, the parts worth knowing about before picking up work:
   with the arrows, the week or month on screen shaded, today ringed; pressing
   a day goes to its week or month. `components/JumpToDate.tsx`;
   `tests/browser/jump-to-date.mjs`.
+- **Phone book: providers, managers and admins add** (23 October 2026,
+  Dominguez: "the add entry for the phone book should be limited to only
+  providers, admin, managers"): **+ Add an entry** is shown only to them and
+  `POST /phone-book` refuses anybody else (`PhoneBookService.canAdd`; a
+  provider is a job role with *uses clinical forms*, and while viewing as
+  somebody the chosen job roles count). Everybody it is set up for still
+  reads and **fixes** entries; managers and admins still remove them.
+  `tests/browser/phone-book.mjs`.
+- **A published shift's job role change rings the bell** (23 October 2026,
+  Dominguez: "when a published shift changes the user should be notified"):
+  the bell already told the person of a published shift added, moved (hours,
+  office, from home), removed or its note changed, on every path (one shift,
+  "every later Wednesday", regular shifts, a usual week, publishing, copying,
+  cover, time off). The one gap, a change of **job role** on a published
+  shift, is now "Shift changed: … as Medical Assistant. Was … as Front
+  Desk." (`shifts/shift-notices.ts`). The same words reach phones once
+  **Phone notifications** are switched on in Practice settings, which they
+  are not yet on the live site.
+- **The phlebotomist on the calendar** (23 October 2026, Dominguez: "we
+  need a phlebotomist schedule as part of the calendar"; chosen: entered on
+  the calendar, not from the rota): a sixth kind of `PracticeEvent`,
+  `PHLEBOTOMY` (💉, orange), added by managers from Schedule → Calendar →
+  **+ Add → Phlebotomist date** or the rota's right-click day menu: an
+  office, the hours and an optional name (none is "Phlebotomist"); it can
+  repeat. For everyone, like diagnostics: on the calendar and its Show
+  filter, narrowed by office, printed, the bell when added, moved or
+  cancelled (no day-before reminder, not on Home's "coming up"), and a
+  calendar feed of its own (`phlebotomist.ics`). Migration
+  `20261023040000_phlebotomist_calendar`; `tests/browser/practice-calendar.mjs`.
+- **Home's Quick card: Rep lunches, not availability** (23 October 2026,
+  Dominguez): **Rep lunches** opens the calendar on rep lunches alone
+  (`/schedule/calendar?show=REP_LUNCH`; `?show=` takes any kinds, comma
+  separated, and is remembered like a pick under Show), for everybody.
+  **Your availability** left Quick; it is still on the Schedule, under the
+  calendar link card.
 - **View as** (23 October 2026, Dominguez: "me (as the super admin) should
   have a way to see the views that other staff have - i.e. something like view
   as another role, i can click one (or multiple) roles ... both to make sure

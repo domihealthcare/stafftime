@@ -7,9 +7,10 @@ import { ContactInput } from './dto/contact.dto';
 import { ToolAccessService } from '../tool-access/tool-access.service';
 import { PhoneBookService } from './phone-book.service';
 
-/// The referral phone book: read, added to and corrected by everybody it is
-/// set up for (everyone, unless a manager narrows it on Resources); only
-/// managers and admins remove an entry.
+/// The referral phone book: read and corrected by everybody it is set up for
+/// (everyone, unless a manager narrows it on Resources); added to only by
+/// providers, managers and admins (October 2026, Dominguez); removed only by
+/// managers and admins.
 @Controller('phone-book')
 export class PhoneBookController {
   constructor(
@@ -30,6 +31,7 @@ export class PhoneBookController {
   @Post()
   async create(@Body() dto: ContactInput, @CurrentUser() user: AuthUser) {
     await this.allowed(user);
+    await this.phoneBook.assertCanAdd(user);
     return this.phoneBook.create(dto, user);
   }
 

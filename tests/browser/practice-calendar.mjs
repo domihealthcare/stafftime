@@ -263,6 +263,36 @@ await step('a rep not on the list is added from the rep lunch form and chosen th
   if (!reps.some((rep) => rep.name === 'Robin Calendar-Suite' && rep.company === 'Lilly')) throw new Error('the rep was not saved to the list');
 });
 
+await step('a manager adds the phlebotomist at an office, with or without a name', async () => {
+  await calendar(manager);
+  await manager.getByRole('button', { name: '+ Add', exact: true }).click();
+  await manager.getByRole('menuitem', { name: 'Phlebotomist date' }).click();
+  let form = manager.getByRole('form', { name: 'New phlebotomist date' });
+  // For everyone, at an office: no "who", no place, no call; the name is optional.
+  if (await form.getByLabel('Who is it for?').count()) throw new Error('the phlebotomist asks who it is for');
+  await form.getByLabel('Which office?').selectOption({ label: 'North Bergen' });
+  await form.getByLabel('Starts').fill('2027-03-02T08:00');
+  await form.getByLabel('Ends').fill('2027-03-02T12:00');
+  await form.getByRole('button', { name: 'Add phlebotomist date' }).click();
+  let chip = day(manager, '2027-03-02').getByTestId('phlebotomy-chip');
+  await chip.waitFor({ timeout: 10000 });
+  let text = await chip.innerText();
+  if (!text.includes('Phlebotomist') || !text.includes('8am')) throw new Error(`the chip reads "${text}"`);
+
+  await manager.getByRole('button', { name: '+ Add', exact: true }).click();
+  await manager.getByRole('menuitem', { name: 'Phlebotomist date' }).click();
+  form = manager.getByRole('form', { name: 'New phlebotomist date' });
+  await form.getByLabel(/phlebotomist’s name/).fill('Maria (LabCorp)');
+  await form.getByLabel('Which office?').selectOption({ label: 'West New York' });
+  await form.getByLabel('Starts').fill('2027-03-04T09:00');
+  await form.getByLabel('Ends').fill('2027-03-04T13:00');
+  await form.getByRole('button', { name: 'Add phlebotomist date' }).click();
+  chip = day(manager, '2027-03-04').getByTestId('phlebotomy-chip');
+  await chip.waitFor({ timeout: 10000 });
+  text = await chip.innerText();
+  if (!text.includes('Maria (LabCorp)') || !text.includes('WNY')) throw new Error(`the chip reads "${text}"`);
+});
+
 const frankie = await signIn('frontdesk@domihealthcare.com');
 
 await step('staff see all of it, and cannot add', async () => {
@@ -428,19 +458,23 @@ await step('separate calendars: one address per kind, each carrying only its own
   const list = frankie.getByTestId('separate-calendars');
   const address = await list.getByLabel('Rep lunches', { exact: true }).inputValue();
   if (!/\/api\/calendar\/[A-Za-z0-9_-]+\/rep-lunches\.ics$/.test(address)) throw new Error(`rep lunches address: ${address}`);
-  for (const label of ['My shifts & time off', 'Diagnostics', 'Holidays & closures', 'Pay days', 'Meetings & events']) {
+  for (const label of ['My shifts & time off', 'Diagnostics', 'Phlebotomist', 'Holidays & closures', 'Pay days', 'Meetings & events']) {
     await list.getByLabel(label, { exact: true }).waitFor();
   }
   const feeds = await frankie.evaluate(async (url) => {
     const path = new URL(url).pathname;
     const get = (slug) => fetch(path.replace('rep-lunches.ics', `${slug}.ics`), { cache: 'no-store' }).then((r) => r.text());
-    return { lunches: await get('rep-lunches'), diagnostics: await get('diagnostics'), pay: await get('pay-days'), nope: (await fetch(path.replace('rep-lunches.ics', 'salaries.ics'))).status };
+    return { lunches: await get('rep-lunches'), diagnostics: await get('diagnostics'), phlebotomist: await get('phlebotomist'), pay: await get('pay-days'), nope: (await fetch(path.replace('rep-lunches.ics', 'salaries.ics'))).status };
   }, address);
   const unfold = (text) => text.replace(/\r\n /g, '');
   const summaries = (text) => [...unfold(text).matchAll(/^SUMMARY:(.*)$/gm)].map((m) => m[1].trim());
   if (!unfold(feeds.lunches).includes('X-WR-CALNAME:Rep lunches - Domi Staff')) throw new Error('the rep lunches calendar is not named');
   if (!summaries(feeds.lunches).every((s) => s.startsWith('Rep lunch:')) || summaries(feeds.lunches).length !== 2) throw new Error(`rep lunches feed: ${summaries(feeds.lunches).join(' | ')}`);
   if (!summaries(feeds.diagnostics).every((s) => s.startsWith('US + ECHO'))) throw new Error(`diagnostics feed: ${summaries(feeds.diagnostics).join(' | ')}`);
+  const drawn = summaries(feeds.phlebotomist);
+  if (!drawn.includes('Phlebotomist - North Bergen') || !drawn.includes('Phlebotomist: Maria (LabCorp) - West New York') || drawn.length !== 2) {
+    throw new Error(`phlebotomist feed: ${drawn.join(' | ')}`);
+  }
   if (!summaries(feeds.pay).length || !summaries(feeds.pay).every((s) => s === 'Pay day')) throw new Error('pay days feed');
   if (feeds.nope !== 404) throw new Error(`an unknown calendar answered ${feeds.nope}`);
 });
@@ -535,6 +569,27 @@ await step('My shifts: your own schedule for the month on the calendar, alone or
   // Back to All for whatever comes next.
   await calendar(frankie);
   await frankie.getByRole('group', { name: 'Show on the calendar' }).getByRole('button', { name: /^All/ }).click();
+});
+
+await step('staff see the phlebotomist, and Show narrows to it alone', async () => {
+  await calendar(frankie);
+  await day(frankie, '2027-03-02').getByTestId('phlebotomy-chip').waitFor({ timeout: 10000 });
+  await frankie.getByRole('group', { name: 'Show on the calendar' }).getByRole('button', { name: /Phlebotomist/ }).click();
+  await day(frankie, '2027-03-04').getByTestId('phlebotomy-chip').waitFor();
+  if (await day(frankie, '2027-03-07').getByTestId('diagnostic-chip').count()) throw new Error('diagnostics shown with only the phlebotomist picked');
+  await frankie.getByRole('group', { name: 'Show on the calendar' }).getByRole('button', { name: /^All/ }).click();
+});
+
+await step('Home’s Quick card opens the calendar on rep lunches, and no longer has availability', async () => {
+  await frankie.goto(`${BASE}/`, { waitUntil: 'networkidle' });
+  const quick = frankie.getByTestId('quick-actions');
+  await quick.getByRole('link', { name: 'Rep lunches' }).click();
+  await frankie.getByRole('heading', { name: 'Calendar', level: 1 }).waitFor({ timeout: 10000 });
+  const picked = await frankie.getByRole('group', { name: 'Show on the calendar' }).getByRole('button', { name: /Rep lunches/ }).getAttribute('aria-pressed');
+  if (picked !== 'true') throw new Error('Rep lunches is not the kind shown');
+  await frankie.getByRole('group', { name: 'Show on the calendar' }).getByRole('button', { name: /^All/ }).click();
+  await frankie.goto(`${BASE}/`, { waitUntil: 'networkidle' });
+  if (await quick.getByRole('link', { name: /availability/i }).count()) throw new Error('availability is still on Quick');
 });
 
 await step('Home says whether there is a rep lunch today', async () => {

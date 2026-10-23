@@ -1,4 +1,5 @@
-import { Injectable, Logger, NotFoundException } from '@nestjs/common';
+import { ForbiddenException, Injectable, Logger, NotFoundException } from '@nestjs/common';
+import { Role } from '@prisma/client';
 import { AuthUser } from '../common/auth/auth-user';
 import { PrismaService } from '../prisma/prisma.service';
 import { ContactInput, OfficeInput } from './dto/contact.dto';
@@ -8,7 +9,8 @@ import { ContactInput, OfficeInput } from './dto/contact.dto';
  * for referrals for staff to use and edit"): the labs, hospitals, imaging
  * centres, home care, equipment suppliers and specialists the practice sends
  * patients to, and the numbers for doing it. Everybody signed in reads it and
- * keeps it. About places - never a patient.
+ * keeps it; a new entry is added only by a provider, a manager or an admin
+ * (23 October 2026, Dominguez). About places - never a patient.
  */
 @Injectable()
 export class PhoneBookService {
@@ -23,6 +25,31 @@ export class PhoneBookService {
       orderBy: [{ category: 'asc' }, { name: 'asc' }],
       include: OFFICES,
     });
+  }
+
+  /// Providers (a job role with *uses clinical forms*), managers and admins
+  /// add entries. While an admin views as somebody, their chosen job roles
+  /// are the ones that count, as everywhere else.
+  async canAdd(actor: AuthUser): Promise<boolean> {
+    if (actor.role === Role.MANAGER || actor.role === Role.ADMIN) return true;
+    if (actor.viewAsJobRoleIds) {
+      const count = await this.prisma.jobRole.count({
+        where: { id: { in: actor.viewAsJobRoleIds }, usesClinicalForms: true },
+      });
+      return count > 0;
+    }
+    const count = await this.prisma.employeeJobRole.count({
+      where: { employeeId: actor.id, jobRole: { usesClinicalForms: true } },
+    });
+    return count > 0;
+  }
+
+  async assertCanAdd(actor: AuthUser) {
+    if (!(await this.canAdd(actor))) {
+      throw new ForbiddenException(
+        'Only providers, managers and admins add to the phone book. You can still fix an entry.',
+      );
+    }
   }
 
   async create(dto: ContactInput, actor: AuthUser) {

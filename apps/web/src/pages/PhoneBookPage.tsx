@@ -11,7 +11,7 @@ import {
 } from '../lib/phone-book';
 import { SearchableSelect } from '../components/SearchableSelect';
 import { useIsPhone } from '../lib/use-is-phone';
-import { useIsManager } from '../lib/session';
+import { useIsManager, useSession } from '../lib/session';
 import type { ReferralContact, ReferralContactInput, ReferralOffice } from '../lib/types';
 import { useConfirm } from '../components/ConfirmDialog';
 import { Modal } from '../components/Modal';
@@ -558,6 +558,13 @@ export function PhoneBookPage() {
   const [error, setError] = useState<string | null>(null);
   const [form, setForm] = useState<{ contact?: ReferralContact } | null>(null);
   const search = useRef<HTMLInputElement>(null);
+  // Providers, managers and admins add entries (October 2026, Dominguez);
+  // everybody can still fix one. The server checks it too.
+  const { employee } = useSession();
+  const canAdd =
+    employee?.role === 'MANAGER' ||
+    employee?.role === 'ADMIN' ||
+    employee?.usesClinicalForms === true;
 
   const change = (next: { q?: string; category?: string; starred?: boolean }) => {
     const merged = new URLSearchParams(params);
@@ -602,7 +609,7 @@ export function PhoneBookPage() {
     <div className="max-w-6xl">
       <PageHeading
         title="Phone book"
-        subtitle="Where patients are referred - labs, hospitals, imaging, home care, equipment and specialists - and the numbers to do it. Anybody can add or fix an entry."
+        subtitle="Where patients are referred - labs, hospitals, imaging, home care, equipment and specialists - and the numbers to do it. Anybody can fix an entry; providers, managers and admins add new ones."
       />
       {error && (
         <div className="mb-3">
@@ -654,13 +661,15 @@ export function PhoneBookPage() {
           >
             Print
           </Link>
-          <button
-            type="button"
-            onClick={() => setForm({})}
-            className={buttonClass('secondary', 'md')}
-          >
-            + Add an entry
-          </button>
+          {canAdd && (
+            <button
+              type="button"
+              onClick={() => setForm({})}
+              className={buttonClass('secondary', 'md')}
+            >
+              + Add an entry
+            </button>
+          )}
         </div>
         <p
           className="mt-1 text-sm text-slate-700"
@@ -675,8 +684,14 @@ export function PhoneBookPage() {
 
       {groups.length === 0 ? (
         <Card className="p-4 text-sm text-slate-700">
-          Nothing matches{query ? ` “${query}”` : ' that'}. Try fewer words, or press{' '}
-          <strong>+ Add an entry</strong> to put it in the book.
+          Nothing matches{query ? ` “${query}”` : ' that'}. Try fewer words
+          {canAdd ? (
+            <>
+              , or press <strong>+ Add an entry</strong> to put it in the book.
+            </>
+          ) : (
+            <>, or ask a provider or a manager to add it.</>
+          )}
         </Card>
       ) : (
         <div className="space-y-6">

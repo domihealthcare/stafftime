@@ -1170,8 +1170,9 @@ export interface EventSeries extends RepeatInput {
 }
 
 /// What an entry on the practice calendar is: a meeting or day out, an
-/// office shut, a named day that shuts nothing, or when a test is offered.
-export type EventKind = 'EVENT' | 'CLOSURE' | 'HOLIDAY' | 'DIAGNOSTIC' | 'REP_LUNCH';
+/// office shut, a named day that shuts nothing, when a test is offered, a
+/// rep lunch, or when the phlebotomist is at an office.
+export type EventKind = 'EVENT' | 'CLOSURE' | 'HOLIDAY' | 'DIAGNOSTIC' | 'REP_LUNCH' | 'PHLEBOTOMY';
 
 /// How a rep feeds the office: they bring catering, or the office orders.
 export type RepFood = 'CATERING' | 'SELF_ORDER';

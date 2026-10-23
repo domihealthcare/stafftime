@@ -47,11 +47,13 @@ import { Alert, Badge, Card, buttonClass } from './ui';
  */
 
 export const isClosure = (event: PracticeEvent) => event.kind === 'CLOSURE';
-/// Holidays, diagnostics and rep lunches are for everyone; nobody chooses who.
+/// Holidays, diagnostics, rep lunches and the phlebotomist are for everyone;
+/// nobody chooses who.
 const forEveryone = (kind: EventKind) =>
-  kind === 'HOLIDAY' || kind === 'DIAGNOSTIC' || kind === 'REP_LUNCH';
-/// Diagnostics and rep lunches happen at an office.
-const atAnOffice = (kind: EventKind) => kind === 'DIAGNOSTIC' || kind === 'REP_LUNCH';
+  kind === 'HOLIDAY' || kind === 'DIAGNOSTIC' || kind === 'REP_LUNCH' || kind === 'PHLEBOTOMY';
+/// Diagnostics, rep lunches and the phlebotomist happen at an office.
+export const atAnOffice = (kind: EventKind) =>
+  kind === 'DIAGNOSTIC' || kind === 'REP_LUNCH' || kind === 'PHLEBOTOMY';
 
 /// What a chip calls it: a rep lunch by its rep, the rest by their title.
 export function shortTitle(event: PracticeEvent): string {
@@ -521,6 +523,7 @@ export function EventForm({
   const holiday = kind === 'HOLIDAY';
   const diagnostic = kind === 'DIAGNOSTIC';
   const repLunch = kind === 'REP_LUNCH';
+  const phlebotomy = kind === 'PHLEBOTOMY';
   const atOffice = atAnOffice(kind);
   const confirm = useConfirm();
   const [title, setTitle] = useState(source?.title ?? '');
@@ -764,7 +767,9 @@ export function EventForm({
     const meeting = kind === 'EVENT';
     const body: EventInput = {
       kind,
-      title: repLunch ? undefined : title.trim(),
+      // The phlebotomist's name is optional; with none the server writes
+      // "Phlebotomist".
+      title: repLunch ? undefined : phlebotomy && !title.trim() ? undefined : title.trim(),
       repId: repLunch ? repId : undefined,
       description: description.trim() || undefined,
       place: meeting ? place.trim() || undefined : undefined,
@@ -845,6 +850,7 @@ export function EventForm({
               ['EVENT', '📅 An event or meeting'],
               ['DIAGNOSTIC', '🩺 Diagnostics'],
               ['REP_LUNCH', '🍽️ Rep lunch'],
+              ['PHLEBOTOMY', '💉 Phlebotomist'],
               ['HOLIDAY', '⭐ A holiday (open as usual)'],
               ['CLOSURE', '🔒 The office is closed'],
             ] as const
@@ -1005,11 +1011,14 @@ export function EventForm({
                   ? 'Which holiday?'
                   : diagnostic
                     ? 'Which tests?'
-                    : 'What is it?'}
+                    : phlebotomy
+                      ? 'The phlebotomist’s name'
+                      : 'What is it?'}
+              {phlebotomy && <span className="font-normal text-slate-500"> (optional)</span>}
             </label>
             <input
               id={`${id}-title`}
-              required
+              required={!phlebotomy}
               minLength={2}
               maxLength={120}
               value={title}
@@ -1021,7 +1030,9 @@ export function EventForm({
                     ? 'Election Day, Veterans Day, Black Friday…'
                     : diagnostic
                       ? 'US + ECHO, ANS + VNG…'
-                      : 'Office meeting, Provider meeting, Wellness day…'
+                      : phlebotomy
+                        ? 'Leave empty for just “Phlebotomist”'
+                        : 'Office meeting, Provider meeting, Wellness day…'
               }
               className={field}
             />
@@ -1319,9 +1330,11 @@ export function EventForm({
                 ? 'Book from 9am, the tech’s name, the vendor…'
                 : repLunch
                   ? 'How many to feed, where to set up…'
-                  : closed || holiday
-                    ? 'Anything staff should know…'
-                    : 'What to bring, what it is about…'
+                  : phlebotomy
+                    ? 'Which lab, book bloodwork every 20 minutes…'
+                    : closed || holiday
+                      ? 'Anything staff should know…'
+                      : 'What to bring, what it is about…'
             }
             className={field}
           />
@@ -1334,9 +1347,11 @@ export function EventForm({
               ? 'Everyone sees it on the calendar and on their phone if they sync it. It shuts nothing - nobody is notified and shifts are not flagged. If an office is shut, add a closure instead.'
               : diagnostic
                 ? 'Everyone sees it on the calendar and gets a notification when a date is added, moved or cancelled. Write when the tests are on - never a patient’s name or who is booked.'
-                : repLunch
-                  ? 'Everyone sees it on the calendar - the rep, company, medication and whether they bring catering. Staff at that office are told when it is added, moved or cancelled, and every evening hear whether there is a rep lunch the next day. The front desk sees the rep’s cell; the status and notes stay with managers.'
-                  : 'Everybody it is for sees it on their schedule and gets a notification; it reaches their phone if they sync their calendar. It does not count as work hours - anybody paid to be there clocks in as usual.'}
+                : phlebotomy
+                  ? 'Everyone sees it on the calendar, and gets a notification when a date is added, moved or cancelled. Set it to repeat for a regular day. Never a patient’s name or who is booked.'
+                  : repLunch
+                    ? 'Everyone sees it on the calendar - the rep, company, medication and whether they bring catering. Staff at that office are told when it is added, moved or cancelled, and every evening hear whether there is a rep lunch the next day. The front desk sees the rep’s cell; the status and notes stay with managers.'
+                    : 'Everybody it is for sees it on their schedule and gets a notification; it reaches their phone if they sync their calendar. It does not count as work hours - anybody paid to be there clocks in as usual.'}
         </p>
 
         {error && (

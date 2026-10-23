@@ -197,8 +197,11 @@ export function QuickActions() {
         <Link to="/time-off?request=1" className={button}>
           {t('Request time off')}
         </Link>
-        <Link to="/availability" className={button}>
-          {t('Your availability')}
+        {/* The calendar opened on rep lunches alone (October 2026, Dominguez:
+            "all users should be able to see the rep calendar"). Availability
+            stays on the Schedule. */}
+        <Link to="/schedule/calendar?show=REP_LUNCH" className={button}>
+          {t('Rep lunches')}
         </Link>
         {/* Each only for the people a manager set it up for (Resources). */}
         {can('diagnostics') && (
@@ -306,7 +309,7 @@ export function ComingUp() {
   }, []);
 
   const shown = events
-    .filter((event) => event.kind !== 'DIAGNOSTIC')
+    .filter((event) => event.kind !== 'DIAGNOSTIC' && event.kind !== 'PHLEBOTOMY')
     .sort((a, b) => a.startsAt.localeCompare(b.startsAt))
     .slice(0, 5);
   if (shown.length === 0 && !payDay) return null;

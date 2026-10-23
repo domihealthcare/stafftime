@@ -21,8 +21,9 @@ const step = async (name, fn) => {
  * printed", "the highlighted ones should be starred/preferred", "multiple
  * addresses/phone and fax numbers for the same person/group", and "used
  * multiple times on a daily basis for staff so should be easily accessible").
- * Everybody signed in searches it, presses a number to call and adds and fixes
- * entries; only managers remove one. Loaded from the practice's Word phone
+ * Everybody signed in searches it, presses a number to call and fixes entries;
+ * only providers, managers and admins add one (23 October 2026, Dominguez);
+ * only managers remove one. Loaded from the practice's Word phone
  * book by migration.
  */
 async function signIn(email, viewport = { width: 1280, height: 1000 }) {
@@ -193,10 +194,28 @@ await step('no em dashes anywhere on the phone book', async () => {
   if (/\u2014/.test(text)) throw new Error('an em dash is on the page');
 });
 
-await step('anybody adds an entry with two offices and a star, and fixes it', async () => {
+await step('front desk staff are not offered + Add an entry, and the server refuses them', async () => {
   await search(staff, '');
-  await staff.getByRole('button', { name: '+ Add an entry' }).click();
-  let dialog = staff.getByRole('dialog', { name: 'New phone book entry' });
+  await staff.getByTestId('phone-book-count').waitFor();
+  if (await staff.getByRole('button', { name: '+ Add an entry' }).count()) {
+    throw new Error('front desk staff are offered + Add an entry');
+  }
+  const status = await staff.evaluate(async () =>
+    (await fetch('/api/phone-book', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ category: 'Labs', name: 'Phone-book suite refused' }),
+    })).status,
+  );
+  if (status !== 403) throw new Error(`front desk staff added an entry: ${status}`);
+});
+
+const adder = await signIn('manager@domihealthcare.com');
+await adder.goto(`${BASE}/phone-book`, { waitUntil: 'networkidle' });
+
+await step('a manager adds an entry with two offices and a star, and staff fix it', async () => {
+  await adder.getByRole('button', { name: '+ Add an entry' }).click();
+  let dialog = adder.getByRole('dialog', { name: 'New phone book entry' });
   await dialog.getByLabel('Name', { exact: true }).fill('Phone-book suite sleep lab');
   await dialog.getByLabel('Specialty').fill('Sleep studies');
   await dialog.getByLabel(/Preferred/).check();
@@ -215,6 +234,8 @@ await step('anybody adds an entry with two offices and a star, and fixes it', as
   await second.getByLabel('Phone').fill('(973) 555-0100');
   await dialog.getByLabel('Notes').fill('Fax the order first.');
   await dialog.getByRole('button', { name: 'Add entry' }).click();
+  await dialog.waitFor({ state: 'detached', timeout: 10000 });
+  await staff.reload({ waitUntil: 'networkidle' });
   await search(staff, 'phone-book suite');
   let entry = card(staff, /Phone-book suite sleep lab/);
   await entry.getByTestId('phone-book-practice').getByText('Suite Sleep Associates').waitFor({ timeout: 10000 });
@@ -369,11 +390,11 @@ await step('printing everything is a short run of pages, headings running on; th
 });
 
 await step('the form asks for places, not patients, and there is no file upload', async () => {
-  await staff.goto(`${BASE}/phone-book`, { waitUntil: 'networkidle' });
-  await staff.getByRole('button', { name: '+ Add an entry' }).click();
-  await staff.getByText('About the place only - never a patient’s name or details.').waitFor();
-  if ((await staff.locator('input[type=file]').count()) !== 0) throw new Error('a file input is on the page');
-  await staff.getByRole('button', { name: 'Cancel' }).click();
+  await adder.goto(`${BASE}/phone-book`, { waitUntil: 'networkidle' });
+  await adder.getByRole('button', { name: '+ Add an entry' }).click();
+  await adder.getByText('About the place only - never a patient’s name or details.').waitFor();
+  if ((await adder.locator('input[type=file]').count()) !== 0) throw new Error('a file input is on the page');
+  await adder.getByRole('button', { name: 'Cancel' }).click();
 });
 
 await step('it is also on Home’s Quick card and Resources', async () => {
