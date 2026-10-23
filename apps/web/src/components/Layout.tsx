@@ -61,6 +61,8 @@ function useRouteAnnouncer(main: React.RefObject<HTMLElement>) {
   }, [pathname, main]);
 }
 
+/// Screens whose tables need the whole width of the screen.
+const WIDE_SCREENS = ['/diagnostics', '/reimbursements'];
 export function Layout() {
   const t = useT();
   const isPhone = useIsPhone();
@@ -183,7 +185,12 @@ export function Layout() {
                 to="/schedule"
                 className={(state) =>
                   linkClasses({
-                    isActive: state.isActive || pathname.startsWith('/timesheet'),
+                    // Every tab under Schedule keeps it lit.
+                    isActive:
+                      state.isActive ||
+                      ['/timesheet', '/time-off', '/schedule-reviews', '/on-call'].some((path) =>
+                        pathname.startsWith(path),
+                      ),
                   })
                 }
               >
@@ -232,7 +239,11 @@ export function Layout() {
         id="main"
         ref={mainRef}
         tabIndex={-1}
-        className="mx-auto max-w-6xl px-4 py-6 pb-24 focus:outline-none sm:pb-6"
+        // The two big boards take the whole width of the screen, so their
+        // tables fit without scrolling sideways (October 2026, Dominguez).
+        className={`mx-auto px-4 py-6 pb-24 focus:outline-none sm:pb-6 ${
+          WIDE_SCREENS.some((path) => pathname.startsWith(path)) ? 'max-w-[100rem]' : 'max-w-6xl'
+        }`}
       >
         <SectionTabs sections={sections} />
         {/* Screens load when first opened; the header stays while they do. */}

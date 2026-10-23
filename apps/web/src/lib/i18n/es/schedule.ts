@@ -112,7 +112,6 @@ export const SCHEDULE: Record<string, string> = {
   Key: 'Leyenda',
   'Fill, the office:': 'Relleno, la oficina:',
   'Outline, the job role:': 'Borde, el puesto:',
-  'Lunch:': 'Almuerzo:',
   'a rep is bringing lunch to that office': 'un representante trae el almuerzo a esa oficina',
   'no rep lunch, bring your own': 'no hay almuerzo de representante, trae el tuyo',
 

@@ -164,9 +164,10 @@ function HeadlineWords({ post }: { post: Announcement }) {
 
 // ------------------------------------------------------------------ quick
 
-/// The things people come to do besides clocking: ask for time off, set
-/// availability, look up the diagnostics and the referral phone book, and - for whoever has them - the
-/// clinical forms.
+/// Shortcuts (was "Quick" until October 2026): the things people come to do
+/// besides clocking - the referral phone book, the diagnostics, rep lunches,
+/// for whoever has them the guides and clinical forms, and asking for time
+/// off.
 export function QuickActions() {
   const t = useT();
   const { employee } = useSession();
@@ -192,31 +193,25 @@ export function QuickActions() {
   }, []);
   return (
     <Card className="p-4" testId="quick-actions">
-      <h2 className="text-sm font-semibold text-slate-900">{t('Quick')}</h2>
+      <h2 className="text-sm font-semibold text-slate-900">{t('Shortcuts')}</h2>
+      {/* In the order Dominguez asked for (October 2026): the phone book,
+          diagnostics and rep lunches first, time off last before Help. */}
       <div className="mt-2 flex flex-wrap gap-2">
-        {/* A shared account takes no time off. */}
-        {!employee?.isSharedAccount && (
-          <Link to="/time-off?request=1" className={button}>
-            {t('Request time off')}
-          </Link>
-        )}
-        {/* The calendar opened on rep lunches alone (October 2026, Dominguez:
-            "all users should be able to see the rep calendar"). Availability
-            stays on the Schedule. */}
-        <Link to="/schedule/calendar?show=REP_LUNCH" className={button}>
-          {t('Rep lunches')}
-        </Link>
-        {/* Each only for the people a manager set it up for (Resources). */}
-        {can('diagnostics') && (
-          <Link to="/diagnostics" className={button}>
-            {t('Diagnostics')}
-          </Link>
-        )}
+        {/* Each tool only for the people a manager set it up for (Resources). */}
         {can('phone-book') && (
           <Link to="/phone-book" className={button}>
             {t('Phone book')}
           </Link>
         )}
+        {can('diagnostics') && (
+          <Link to="/diagnostics" className={button}>
+            {t('Diagnostics')}
+          </Link>
+        )}
+        {/* The calendar opened on rep lunches alone. */}
+        <Link to="/schedule/calendar?show=REP_LUNCH" className={button}>
+          {t('Rep lunches')}
+        </Link>
         {can('front-desk') && (
           <Link to="/front-desk" className={button}>
             {t('Front desk guide')}
@@ -235,6 +230,12 @@ export function QuickActions() {
         {ask && (
           <Link to="/ask" className={button}>
             {t('Ask Domi Staff')}
+          </Link>
+        )}
+        {/* A shared account takes no time off. */}
+        {!employee?.isSharedAccount && (
+          <Link to="/time-off?request=1" className={button}>
+            {t('Request time off')}
           </Link>
         )}
         <Link to="/help" className={button}>

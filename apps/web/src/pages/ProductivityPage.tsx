@@ -387,6 +387,8 @@ function Statements({ employeeId, plan }: { employeeId: string; plan: Productivi
   const confirm = useConfirm();
   const [statements, setStatements] = useState<ProductivityStatement[]>([]);
   const [editing, setEditing] = useState<string | null>(null);
+  /// The statements ticked to print together.
+  const [printing, setPrinting] = useState<Set<string>>(new Set());
   const [starting, setStarting] = useState(false);
   const [start, setStart] = useState('');
   const [loading, setLoading] = useState(true);
@@ -485,6 +487,9 @@ function Statements({ employeeId, plan }: { employeeId: string; plan: Productivi
   if (loading) return <Spinner label="Loading statements" />;
 
   const first = statements.length === 0;
+  /// The print page for these statements of theirs; none listed is all.
+  const printHref = (ids: string[]) =>
+    `/productivity/print?employee=${employeeId}${ids.length > 0 ? `&ids=${ids.join(',')}` : ''}`;
   const button =
     'rounded-lg border border-slate-300 px-3 py-1.5 text-xs font-medium text-slate-700 hover:bg-slate-50';
 
@@ -547,6 +552,32 @@ function Statements({ employeeId, plan }: { employeeId: string; plan: Productivi
         </div>
       )}
 
+      {statements.length > 0 && (
+        // Print one, the ones ticked, or all of theirs (October 2026,
+        // Dominguez), on a page of its own in a new tab.
+        <div
+          className="mb-3 flex flex-wrap items-center gap-2 text-sm"
+          data-testid="productivity-print-bar"
+        >
+          <a
+            href={printHref([...printing])}
+            target="_blank"
+            rel="noreferrer"
+            aria-disabled={printing.size === 0}
+            onClick={(event) => printing.size === 0 && event.preventDefault()}
+            className={`${button} ${printing.size === 0 ? 'pointer-events-none opacity-50' : ''}`}
+          >
+            Print selected ({printing.size})
+          </a>
+          <a href={printHref([])} target="_blank" rel="noreferrer" className={button}>
+            Print all {statements.length}
+          </a>
+          <span className="text-xs text-slate-500">
+            Tick statements below to print several at once.
+          </span>
+        </div>
+      )}
+
       {statements.length === 0 ? (
         <EmptyState>No statements yet for them.</EmptyState>
       ) : (
@@ -569,6 +600,30 @@ function Statements({ employeeId, plan }: { employeeId: string; plan: Productivi
                 showStatus
                 actions={
                   <>
+                    <label className="inline-flex items-center gap-1.5 text-xs text-slate-700">
+                      <input
+                        type="checkbox"
+                        checked={printing.has(statement.id)}
+                        onChange={(event) =>
+                          setPrinting((current) => {
+                            const next = new Set(current);
+                            if (event.target.checked) next.add(statement.id);
+                            else next.delete(statement.id);
+                            return next;
+                          })
+                        }
+                        className="rounded border-slate-300 text-brand-600 focus:ring-brand-600"
+                      />
+                      Select to print
+                    </label>
+                    <a
+                      href={printHref([statement.id])}
+                      target="_blank"
+                      rel="noreferrer"
+                      className={button}
+                    >
+                      Print
+                    </a>
                     <button
                       type="button"
                       className={button}

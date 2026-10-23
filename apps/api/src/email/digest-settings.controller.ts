@@ -9,7 +9,7 @@ import {
   Patch,
   Put,
 } from '@nestjs/common';
-import { DigestTopic, EmploymentStatus, Role } from '@prisma/client';
+import { DigestTopic, EmploymentStatus, Prisma, Role } from '@prisma/client';
 import { ArrayMaxSize, IsArray, IsUUID } from 'class-validator';
 import { UpdatePreferencesDto } from '../auth/dto/preferences.dto';
 import { Roles } from '../common/auth/roles.decorator';
@@ -19,6 +19,27 @@ import { uncoveredTopics } from './digest-topics';
 const MANAGERS = {
   role: { in: [Role.MANAGER, Role.ADMIN] },
   employmentStatus: EmploymentStatus.ACTIVE,
+};
+
+/// The job roles whose people may be chosen to be told of a part, whatever
+/// their access (October 2026, Dominguez: "administrative roles should be an
+/// option to chose so they can possibly be notified"). Being told is all it
+/// gives them: deciding still needs Manager access.
+export const ADMIN_TEAM_ROLES = ['Administrative', 'Manager'];
+
+/// Who may be chosen to look after a part: managers and admins, and the
+/// admin team by job role. Never a shared account.
+export const ASSIGNABLE: Prisma.EmployeeWhereInput = {
+  employmentStatus: EmploymentStatus.ACTIVE,
+  isSharedAccount: false,
+  OR: [
+    { role: { in: [Role.MANAGER, Role.ADMIN] } },
+    {
+      jobRoles: {
+        some: { jobRole: { name: { in: ADMIN_TEAM_ROLES, mode: 'insensitive' } } },
+      },
+    },
+  ],
 };
 
 /// The people chosen to look after one part, saved whole.
@@ -76,7 +97,7 @@ export class DigestSettingsController {
   @Roles(Role.MANAGER)
   async assignees() {
     const rows = await this.prisma.topicAssignee.findMany({
-      where: { employee: MANAGERS },
+      where: { employee: ASSIGNABLE },
       select: { topic: true, employeeId: true },
     });
     const byTopic: Record<string, string[]> = {};
@@ -85,8 +106,9 @@ export class DigestSettingsController {
     return byTopic;
   }
 
-  /// Replaces who is chosen for one part. Only managers and admins still here
-  /// can be chosen; anybody else sent is left off.
+  /// Replaces who is chosen for one part. Only managers and admins still here,
+  /// and the admin team by job role, can be chosen; anybody else sent is left
+  /// off.
   @Put('assignees/:topic')
   @Roles(Role.MANAGER)
   async setAssignees(@Param('topic') topicName: string, @Body() dto: TopicAssigneesDto) {
@@ -95,7 +117,7 @@ export class DigestSettingsController {
       : null;
     if (!topic) throw new BadRequestException('That is not a part of the round-up.');
     const people = await this.prisma.employee.findMany({
-      where: { id: { in: [...new Set(dto.employeeIds)] }, ...MANAGERS },
+      where: { id: { in: [...new Set(dto.employeeIds)] }, ...ASSIGNABLE },
       select: { id: true },
     });
     const ids = people.map((person) => person.id);

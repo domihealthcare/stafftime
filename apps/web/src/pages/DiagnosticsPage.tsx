@@ -365,7 +365,7 @@ function PlanDetails({ plan, small = false }: { plan: DiagnosticPlan; small?: bo
     <div
       className={
         small
-          ? 'mt-0.5 text-[11px] font-normal leading-tight text-slate-500'
+          ? 'mt-0.5 text-[10px] font-normal leading-tight text-slate-500'
           : 'text-sm text-slate-600'
       }
     >
@@ -403,18 +403,32 @@ function DiagnosticsTable({
   const [test, setTest] = useState<DiagnosticTest | null>(null);
   const [plan, setPlan] = useState<DiagnosticPlan | null>(null);
 
-  const text = big ? 'text-base' : 'text-xs';
-  const pad = big ? 'px-3 py-2' : 'px-2 py-1.5';
+  // On the page the columns share the width of the screen, so the board fits
+  // a laptop without scrolling sideways (October 2026, Dominguez); the big
+  // board keeps its large type and scrolls if it must.
+  const text = big ? 'text-base' : 'text-[11px] leading-snug';
+  const pad = big ? 'px-3 py-2' : 'px-1 py-1';
   const corner = 'sticky left-0 z-[3] bg-slate-100 shadow-[1px_0_0_0_rgb(226_232_240)]';
-  const side =
-    'sticky left-0 z-[1] min-w-[11rem] max-w-[15rem] bg-white shadow-[1px_0_0_0_rgb(226_232_240)]';
+  const side = `sticky left-0 z-[1] ${
+    big ? 'min-w-[11rem] max-w-[15rem]' : ''
+  } bg-white shadow-[1px_0_0_0_rgb(226_232_240)]`;
 
   return (
     <>
       <table
-        className={`min-w-full border-separate border-spacing-0 ${text}`}
+        className={`border-separate border-spacing-0 ${
+          big ? 'min-w-full' : 'w-full min-w-[60rem] table-fixed'
+        } ${text}`}
         data-testid="diagnostics-table"
       >
+        {!big && (
+          <colgroup>
+            <col className="w-[8.5rem]" />
+            {tests.map((entry) => (
+              <col key={entry.id} />
+            ))}
+          </colgroup>
+        )}
         <thead className="sticky top-0 z-[2]">
           <tr>
             <th
@@ -427,7 +441,9 @@ function DiagnosticsTable({
               <th
                 key={entry.id}
                 scope="col"
-                className={`${pad} min-w-[6.5rem] border-b border-slate-200 bg-slate-100 text-left align-bottom font-semibold text-slate-900`}
+                className={`${pad} ${
+                  big ? 'min-w-[6.5rem]' : 'break-words'
+                } border-b border-slate-200 bg-slate-100 text-left align-bottom font-semibold text-slate-900`}
               >
                 {editing ? (
                   <button
@@ -437,11 +453,18 @@ function DiagnosticsTable({
                   >
                     {entry.name}
                   </button>
-                ) : (
+                ) : big ? (
                   entry.name
+                ) : (
+                  // A narrow column breaks after a slash, not inside a word.
+                  entry.name.replace(/\//g, '/\u200B')
                 )}
                 {entry.detail && (
-                  <span className="block text-[11px] font-normal leading-tight text-slate-600">
+                  <span
+                    className={`block font-normal leading-tight text-slate-600 ${
+                      big ? 'text-[11px]' : 'text-[10px]'
+                    }`}
+                  >
                     {entry.detail}
                   </span>
                 )}

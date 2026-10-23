@@ -417,15 +417,23 @@ function listOf(items: string[]): string {
 /// screen - Time off requests, Closing checklists.
 function ChosenFor({ people }: { people: DigestReader[] }) {
   const [chosen, setChosen] = useState<Partial<Record<DigestTopic, string[]>> | null>(null);
+  /// Everybody, for the names of administrative staff chosen (October 2026),
+  /// who are not in the managers' table above.
+  const [staff, setStaff] = useState<{ id: string; firstName: string; lastName: string }[]>([]);
   useEffect(() => {
     api
       .topicAssignees()
       .then(setChosen)
       .catch(() => setChosen({}));
+    api
+      .listEmployees()
+      .then(setStaff)
+      .catch(() => setStaff([]));
   }, []);
   if (!chosen) return null;
   const name = (id: string) => {
-    const person = people.find((entry) => entry.id === id);
+    const person =
+      people.find((entry) => entry.id === id) ?? staff.find((entry) => entry.id === id);
     return person ? `${person.firstName} ${person.lastName}` : null;
   };
   const lines = DIGEST_TOPICS.map(({ topic, label }) => ({

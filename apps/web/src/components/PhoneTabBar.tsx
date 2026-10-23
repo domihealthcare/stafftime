@@ -140,7 +140,19 @@ export function PhoneTabBar({
           <NavIcon name="home" size="md" />
           {t('Home')}
         </NavLink>
-        <NavLink to="/schedule" className={tabClass}>
+        {/* Its tabs keep it lit; Timesheet is under More on a phone. */}
+        <NavLink
+          to="/schedule"
+          className={(state) =>
+            tabClass({
+              isActive:
+                state.isActive ||
+                ['/time-off', '/schedule-reviews', '/on-call'].some((path) =>
+                  pathname.startsWith(path),
+                ),
+            })
+          }
+        >
           <NavIcon name="schedule" size="md" />
           {t('Schedule')}
           {pendingPto > 0 && (

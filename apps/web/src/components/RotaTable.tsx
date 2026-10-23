@@ -1062,62 +1062,70 @@ export function RotaLegend({
       <summary className="mb-1 cursor-pointer select-none py-1 font-medium text-slate-700 max-sm:py-2">
         {t('Key')}
       </summary>
-      <div className="flex flex-wrap items-center gap-x-4 gap-y-1">
-        <span className="basis-full sm:basis-auto">{t('Fill, the office:')}</span>
-        {locations
-          .filter((location) => location.isActive !== false)
-          .map((location) => (
-            <span key={location.id} className="inline-flex items-center gap-1.5">
-              {swatch(colourOf(location.id))}
-              {location.name}
-            </span>
-          ))}
-        <span className="inline-flex items-center gap-1.5">
-          {swatch(REMOTE_COLOUR)}
-          {t('Work from home')}
-        </span>
-        <span className="inline-flex items-center gap-1.5">
-          <span
-            aria-hidden="true"
-            className="inline-block h-3 w-5 rounded-sm bg-amber-100 ring-1 ring-inset ring-amber-300"
-          />
-          {t('Open shift')}
-        </span>
-        <span className="inline-flex items-center gap-1.5">
-          <span
-            aria-hidden="true"
-            className="inline-block h-3 w-5 rounded-sm border border-dashed border-slate-400 bg-white"
-          />
-          {t('Draft')}
-        </span>
-        <span className="inline-flex items-center gap-1.5">
-          <span
-            aria-hidden="true"
-            className="inline-block h-3 w-5 rounded-sm ring-1 ring-inset ring-slate-300"
-            style={OFF_HATCH}
-          />
-          {t('Time off')}
-        </span>
-        <span className="basis-full sm:basis-auto">{t('Outline, the job role:')}</span>
-        {jobRoles.map((role) => (
-          <span key={role.id} className="inline-flex items-center gap-1.5">
+      {/* Two rows (Dominguez, October 2026): the fill on the first, the
+          outline on the second, and a lunch icon at the far right of each. */}
+      <div className="space-y-1">
+        <div className="flex flex-wrap items-center gap-x-4 gap-y-1" data-testid="rota-legend-fill">
+          <span className="basis-full sm:basis-auto">{t('Fill, the office:')}</span>
+          {locations
+            .filter((location) => location.isActive !== false)
+            .map((location) => (
+              <span key={location.id} className="inline-flex items-center gap-1.5">
+                {swatch(colourOf(location.id))}
+                {location.name}
+              </span>
+            ))}
+          <span className="inline-flex items-center gap-1.5">
+            {swatch(REMOTE_COLOUR)}
+            {t('Work from home')}
+          </span>
+          <span className="inline-flex items-center gap-1.5">
             <span
               aria-hidden="true"
-              className="inline-block h-3 w-5 rounded-sm border-2 bg-white"
-              style={{ borderColor: jobRoleHex(role.colour) }}
+              className="inline-block h-3 w-5 rounded-sm bg-amber-100 ring-1 ring-inset ring-amber-300"
             />
-            {role.name}
+            {t('Open shift')}
           </span>
-        ))}
-        <span className="basis-full sm:basis-auto">{t('Lunch:')}</span>
-        <span className="inline-flex items-center gap-1.5">
-          <span aria-hidden="true">🍽️</span>
-          {t('a rep is bringing lunch to that office')}
-        </span>
-        <span className="inline-flex items-center gap-1.5">
-          <span aria-hidden="true">🥪</span>
-          {t('no rep lunch, bring your own')}
-        </span>
+          <span className="inline-flex items-center gap-1.5">
+            <span
+              aria-hidden="true"
+              className="inline-block h-3 w-5 rounded-sm border border-dashed border-slate-400 bg-white"
+            />
+            {t('Draft')}
+          </span>
+          <span className="inline-flex items-center gap-1.5">
+            <span
+              aria-hidden="true"
+              className="inline-block h-3 w-5 rounded-sm ring-1 ring-inset ring-slate-300"
+              style={OFF_HATCH}
+            />
+            {t('Time off')}
+          </span>
+          <span className="inline-flex items-center gap-1.5 sm:ml-auto">
+            <span aria-hidden="true">🍽️</span>
+            {t('a rep is bringing lunch to that office')}
+          </span>
+        </div>
+        <div
+          className="flex flex-wrap items-center gap-x-4 gap-y-1"
+          data-testid="rota-legend-outline"
+        >
+          <span className="basis-full sm:basis-auto">{t('Outline, the job role:')}</span>
+          {jobRoles.map((role) => (
+            <span key={role.id} className="inline-flex items-center gap-1.5">
+              <span
+                aria-hidden="true"
+                className="inline-block h-3 w-5 rounded-sm border-2 bg-white"
+                style={{ borderColor: jobRoleHex(role.colour) }}
+              />
+              {role.name}
+            </span>
+          ))}
+          <span className="inline-flex items-center gap-1.5 sm:ml-auto">
+            <span aria-hidden="true">🥪</span>
+            {t('no rep lunch, bring your own')}
+          </span>
+        </div>
       </div>
     </details>
   );

@@ -15,7 +15,7 @@ import {
 import { ApiError, api } from '../lib/api';
 import { matches } from '../lib/diagnostics';
 import { formatDate } from '../lib/format';
-import { formatRate, rateInput } from '../lib/reimbursements';
+import { formatRate, formatRateShort, rateInput } from '../lib/reimbursements';
 import type {
   ReimbursementCode,
   ReimbursementPayer,
@@ -200,7 +200,8 @@ export function ReimbursementsPage() {
 
       <p className="mb-2 text-xs text-slate-600">
         <span className="font-semibold text-emerald-800">Green</span> is the most any insurance
-        shown pays for that code. Press a code for every insurance’s amount, highest first.
+        shown pays for that code. Amounts are to the dollar here; hover for the cents, or press a
+        code for every insurance’s exact amount, highest first.
       </p>
 
       {big ? (
@@ -322,8 +323,12 @@ function RatesTable({
   const [payer, setPayer] = useState<ReimbursementPayer | null>(null);
   const [problem, setProblem] = useState<string | null>(null);
 
-  const text = big ? 'text-base' : 'text-xs';
-  const pad = big ? 'px-3 py-2' : 'px-2 py-1';
+  // On the page every insurance fits the width of the screen (October 2026,
+  // Dominguez: no scrolling sideways): names read upwards and amounts are to
+  // the dollar. The big board and changing amounts keep the full layout.
+  const compact = !big && !editing;
+  const text = big ? 'text-base' : compact ? 'text-[11px] leading-snug' : 'text-xs';
+  const pad = big ? 'px-3 py-2' : compact ? 'px-0.5 py-1' : 'px-2 py-1';
   const corner = 'sticky left-0 z-[3] bg-slate-100 shadow-[1px_0_0_0_rgb(226_232_240)]';
 
   async function save(codeId: string, payerId: string, value: string) {
@@ -346,14 +351,26 @@ function RatesTable({
         </div>
       )}
       <table
-        className={`min-w-full border-separate border-spacing-0 ${text}`}
+        className={`border-separate border-spacing-0 ${
+          compact ? 'w-full min-w-[60rem] table-fixed' : 'min-w-full'
+        } ${text}`}
         data-testid="reimbursements-table"
       >
+        {compact && (
+          <colgroup>
+            <col className="w-[6.5rem]" />
+            {payers.map((entry) => (
+              <col key={entry.id} />
+            ))}
+          </colgroup>
+        )}
         <thead className="sticky top-0 z-[2]">
           <tr>
             <th
               scope="col"
-              className={`${corner} ${pad} min-w-[11rem] border-b border-slate-200 text-left align-bottom font-semibold text-slate-800`}
+              className={`${corner} ${pad} ${
+                compact ? 'pl-2' : 'min-w-[11rem]'
+              } border-b border-slate-200 text-left align-bottom font-semibold text-slate-800`}
             >
               Code
             </th>
@@ -361,9 +378,28 @@ function RatesTable({
               <th
                 key={entry.id}
                 scope="col"
-                className={`${pad} min-w-[5.5rem] border-b border-slate-200 bg-slate-100 text-right align-bottom font-semibold text-slate-900`}
+                className={`${pad} ${
+                  compact ? 'align-bottom' : 'min-w-[5.5rem] text-right align-bottom'
+                } border-b border-slate-200 bg-slate-100 font-semibold text-slate-900`}
               >
-                {editing ? (
+                {compact ? (
+                  // Upwards, bottom to top, so a long name takes height, not
+                  // width. A note ("Billed by Domi Healthcare") is on hover,
+                  // marked with a dagger.
+                  <span
+                    className="mx-auto block max-h-56 max-w-full rotate-180 overflow-hidden text-left [writing-mode:vertical-rl]"
+                    title={entry.note ? `${entry.name} (${entry.note})` : entry.name}
+                  >
+                    {entry.name}
+                    {entry.note && (
+                      <>
+                        <span aria-hidden="true"> †</span>
+                        {/* Read out with the name, as it shows on hover. */}
+                        <span className="sr-only"> {entry.note}</span>
+                      </>
+                    )}
+                  </span>
+                ) : editing ? (
                   <button
                     type="button"
                     onClick={() => setPayer(entry)}
@@ -374,7 +410,7 @@ function RatesTable({
                 ) : (
                   entry.name
                 )}
-                {entry.note && (
+                {!compact && entry.note && (
                   <span className="block text-[11px] font-normal leading-tight text-slate-600">
                     {entry.note}
                   </span>
@@ -416,9 +452,13 @@ function RatesTable({
                   return (
                     <td
                       key={entry.id}
-                      className={`${pad} border-b border-slate-100 text-right align-top tabular-nums ${
-                        top ? 'font-semibold text-emerald-800' : 'text-slate-800'
-                      }`}
+                      className={`${pad} border-b border-slate-100 align-top tabular-nums ${
+                        compact ? 'break-words text-center' : 'text-right'
+                      } ${top ? 'font-semibold text-emerald-800' : 'text-slate-800'}`}
+                      // The exact amount, read out and on hover, when the cell
+                      // shows it to the dollar.
+                      aria-label={compact && rate ? formatRate(rate) : undefined}
+                      title={compact && rate ? formatRate(rate) : undefined}
                     >
                       {editing && active === key ? (
                         <input
@@ -442,7 +482,11 @@ function RatesTable({
                           {rate ? formatRate(rate) : '-'}
                         </button>
                       ) : rate ? (
-                        formatRate(rate)
+                        compact ? (
+                          formatRateShort(rate)
+                        ) : (
+                          formatRate(rate)
+                        )
                       ) : (
                         ''
                       )}
