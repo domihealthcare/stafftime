@@ -256,7 +256,7 @@ await step('the groups: everybody reads who reviews each, a manager edits them',
   });
 });
 
-await step('on a phone all five Schedule tabs fit without scrolling sideways', async () => {
+await step('on a phone all six Schedule tabs fit without scrolling sideways', async () => {
   // A manager has On call as well: the most tabs anybody gets.
   const phone = await signIn('manager@domihealthcare.com', { width: 390, height: 844 });
   await phone.goto(`${BASE}/schedule-reviews`, { waitUntil: 'networkidle' });
@@ -269,7 +269,7 @@ await step('on a phone all five Schedule tabs fit without scrolling sideways', a
   const overflow = await tabs.evaluate((nav) =>
     [...nav.querySelectorAll('a')].some((a) => a.scrollWidth > a.clientWidth + 1),
   );
-  if ((await tabs.getByRole('link').count()) !== 5) throw new Error('expected five tabs');
+  if ((await tabs.getByRole('link').count()) !== 6) throw new Error('expected six tabs (Time off joined in October 2026)');
   if (overflow) throw new Error('a tab’s name does not fit');
   await phone.screenshot({ path: `${OUT}/schedule-reviews-phone.png`, fullPage: true });
 });
