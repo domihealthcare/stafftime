@@ -25,10 +25,12 @@ export function JumpToDate({
   const [shown, setShown] = useState(() => startOfMonth(current));
   const root = useRef<HTMLDivElement>(null);
 
-  // Opening starts on the month being looked at.
-  useEffect(() => {
-    if (open) setShown(startOfMonth(view === 'week' ? addDays(current, 3) : current));
-  }, [open, current, view]);
+  // Opening starts on the month being looked at, set in the same press so the
+  // month it showed last time never flashes up first.
+  const toggle = () => {
+    if (!open) setShown(startOfMonth(view === 'week' ? addDays(current, 3) : current));
+    setOpen(!open);
+  };
 
   useEffect(() => {
     if (!open) return;
@@ -65,7 +67,7 @@ export function JumpToDate({
         type="button"
         aria-expanded={open}
         aria-haspopup="dialog"
-        onClick={() => setOpen((was) => !was)}
+        onClick={toggle}
         className={`${buttonClass('secondary', 'sm')} w-full`}
       >
         <span aria-hidden="true">📅 </span>
