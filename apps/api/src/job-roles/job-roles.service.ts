@@ -200,6 +200,12 @@ export class JobRolesService {
     return rows.map((row) => row.jobRoleId);
   }
 
+  /// The job roles the signed-in person is taken to hold: the ones chosen
+  /// while an admin views as somebody (October 2026), else their own.
+  async idsHeldBy(user: AuthUser): Promise<string[]> {
+    return user.viewAsJobRoleIds ?? this.idsFor(user.id);
+  }
+
   private async assertNameFree(name: string, exceptId?: string) {
     const clash = await this.prisma.jobRole.findFirst({
       where: {

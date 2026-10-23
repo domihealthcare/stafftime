@@ -36,15 +36,19 @@ describe('what this app deliberately does not store', () => {
     'passportNumber',
   ];
 
-  it.each(['Employee', 'EmployeeCredential', 'EmployeePersonalRecord', 'EmploymentChange'])(
-    'has no identity numbers on %s',
-    (name) => {
-      const body = model(name).toLowerCase();
-      for (const field of forbidden) {
-        expect(body).not.toContain(field.toLowerCase());
-      }
-    },
-  );
+  it.each([
+    'Employee',
+    'EmployeeCredential',
+    'EmployeePersonalRecord',
+    'EmploymentChange',
+    'PayRaise',
+    'LeavingRecord',
+  ])('has no identity numbers on %s', (name) => {
+    const body = model(name).toLowerCase();
+    for (const field of forbidden) {
+      expect(body).not.toContain(field.toLowerCase());
+    }
+  });
 
   /// Staff profiles (October 2026, Dominguez) are the one deliberate step back
   /// from "not an HR system": an admin may keep somebody's home address, an
@@ -288,6 +292,7 @@ describe('what this app deliberately does not store', () => {
         'name',
         'notes',
         'offices',
+        'practice',
         'preferred',
         'updatedAt',
         'updatedById',
@@ -395,6 +400,44 @@ describe('what this app deliberately does not store', () => {
         'recordedBy',
         'recordedById',
         'updatedAt',
+      ].sort(),
+    );
+    // Raises and leaving details (October 2026): the steps and the answer,
+    // and why somebody left - nothing more, and no documents.
+    expect(fieldsOf('PayRaise')).toEqual(
+      [
+        'askedRate',
+        'askedUnit',
+        'createdAt',
+        'decidedOn',
+        'effectiveOn',
+        'employee',
+        'employeeId',
+        'id',
+        'meetingAt',
+        'meetingEventId',
+        'newPosition',
+        'newRate',
+        'newUnit',
+        'note',
+        'payChangeId',
+        'recordedBy',
+        'recordedById',
+        'requestedOn',
+        'status',
+        'updatedAt',
+      ].sort(),
+    );
+    expect(fieldsOf('LeavingRecord')).toEqual(
+      [
+        'employee',
+        'employeeId',
+        'kind',
+        'lastPaycheckOn',
+        'reason',
+        'updatedAt',
+        'updatedBy',
+        'updatedById',
       ].sort(),
     );
     const employeeFields = fieldsOf('Employee');

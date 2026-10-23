@@ -13,6 +13,7 @@ import { Role } from '@prisma/client';
 import { AuthUser } from '../common/auth/auth-user';
 import { CurrentUser } from '../common/auth/current-user.decorator';
 import { ManagerAccessOnlyGuard } from '../common/auth/manager-access-only.guard';
+import { PayLockGuard } from '../pay-lock/pay-lock.guard';
 import { Roles } from '../common/auth/roles.decorator';
 import { InvoiceInput, PayeeInput, VendorInput } from './dto/invoices.dto';
 import { InvoicesService } from './invoices.service';
@@ -22,7 +23,7 @@ import { InvoicesService } from './invoices.service';
 /// paid directly may need their home address on one.
 @Controller('invoices')
 @Roles(Role.MANAGER)
-@UseGuards(ManagerAccessOnlyGuard)
+@UseGuards(ManagerAccessOnlyGuard, PayLockGuard)
 export class InvoicesController {
   constructor(private readonly invoices: InvoicesService) {}
 

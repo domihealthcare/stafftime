@@ -3,6 +3,7 @@ import type { ReactNode } from 'react';
 import { ApiError, SESSION_ENDED, api } from './api';
 import { setLanguage } from './i18n';
 import type { Employee } from './types';
+import { type ViewAs, writeViewAs } from './view-as';
 
 interface SessionValue {
   employee: Employee | null;
@@ -13,6 +14,9 @@ interface SessionValue {
   signIn: (email: string, password: string) => Promise<void>;
   signOut: () => Promise<void>;
   refresh: () => Promise<void>;
+  /// An admin starts or ends viewing the app as somebody else (October
+  /// 2026); the profile is read again as that person would get it.
+  setViewAs: (value: ViewAs | null) => Promise<void>;
 }
 
 const SessionContext = createContext<SessionValue | null>(null);
@@ -69,6 +73,14 @@ export function SessionProvider({ children }: { children: ReactNode }) {
     }
   }, []);
 
+  const setViewAs = useCallback(
+    async (next: ViewAs | null) => {
+      writeViewAs(next);
+      await refresh();
+    },
+    [refresh],
+  );
+
   const value = useMemo(
     () => ({
       employee,
@@ -77,8 +89,9 @@ export function SessionProvider({ children }: { children: ReactNode }) {
       signIn,
       signOut,
       refresh,
+      setViewAs,
     }),
-    [employee, loading, signIn, signOut, refresh],
+    [employee, loading, signIn, signOut, refresh, setViewAs],
   );
 
   return <SessionContext.Provider value={value}>{children}</SessionContext.Provider>;
@@ -101,4 +114,11 @@ export function useIsManager(): boolean {
 export function useIsAdmin(): boolean {
   const { employee } = useSession();
   return employee?.role === 'ADMIN';
+}
+
+/// Really an admin, whatever they are viewing as right now: the one thing
+/// that stays theirs while viewing is the way back.
+export function useIsActualAdmin(): boolean {
+  const { employee } = useSession();
+  return employee?.role === 'ADMIN' || employee?.viewingAs?.actualRole === 'ADMIN';
 }

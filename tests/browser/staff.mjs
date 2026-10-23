@@ -145,12 +145,17 @@ await step('a job role above the list shows only the people in it, and the job r
   if (!(typed.length >= 1 && typed.every((t) => /Medical Assistant/.test(t)))) throw new Error(`typing a role found: ${typed.join(' | ')}`);
   await admin.getByLabel('Search staff').fill('');
   await admin.getByTestId('staff-imp-sasha@example.com').waitFor({ timeout: 5000 });
-  // The job roles themselves, with their minimums, are the bottom of the screen; /job-roles lands there.
-  await admin.getByRole('heading', { name: 'Job roles', level: 2 }).waitFor();
-  await admin.getByTestId('job-role-Front Desk').waitFor();
-  await admin.getByTestId('staffing-minimums').waitFor();
+  // The job roles themselves, with their minimums, are a pop-up from the row above the list;
+  // /job-roles lands there with it open.
+  await admin.getByRole('button', { name: 'Job roles…' }).click();
+  const rolesDialog = admin.getByRole('dialog', { name: 'Job roles' });
+  await rolesDialog.waitFor({ timeout: 10000 });
+  await rolesDialog.getByTestId('job-role-Front Desk').waitFor();
+  await rolesDialog.getByTestId('staffing-minimums').waitFor();
+  await rolesDialog.getByRole('button', { name: 'Close' }).click();
   await admin.goto(`${BASE}/job-roles`, { waitUntil: 'networkidle' });
   await admin.getByRole('heading', { name: 'Staff', level: 1 }).waitFor({ timeout: 10000 });
+  await admin.getByRole('dialog', { name: 'Job roles' }).waitFor({ timeout: 10000 });
   if (!/#job-roles$/.test(admin.url())) throw new Error(`the old address went to ${admin.url()}`);
   await admin.goto(`${BASE}/staff`, { waitUntil: 'networkidle' });
   await admin.getByTestId('staff-imp-sasha@example.com').waitFor({ timeout: 10000 });
@@ -161,8 +166,10 @@ await step('a manager opens Staff too - the cards and the job roles, none of the
   await manager.goto(`${BASE}/staff`, { waitUntil: 'networkidle' });
   await manager.getByRole('heading', { name: 'Staff', level: 1 }).waitFor({ timeout: 10000 });
   await manager.getByTestId('staff-imp-sasha@example.com').waitFor({ timeout: 10000 });
-  await manager.getByRole('heading', { name: 'Job roles', level: 2 }).waitFor();
-  await manager.getByRole('button', { name: '+ New job role' }).waitFor();
+  await manager.getByRole('button', { name: 'Job roles…' }).click();
+  const managerRoles = manager.getByRole('dialog', { name: 'Job roles' });
+  await managerRoles.getByRole('button', { name: '+ New job role' }).waitFor({ timeout: 10000 });
+  await managerRoles.getByRole('button', { name: 'Close' }).click();
   for (const name of ['+ Add someone', 'Add several people', 'Send welcome emails'])
     if (await manager.getByRole('button', { name }).count()) throw new Error(`a manager is offered ${name}`);
   if (await manager.getByRole('link', { name: /^Profile of/ }).count()) throw new Error('a manager is offered a staff profile');

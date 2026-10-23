@@ -1,4 +1,5 @@
 import { chromium } from 'playwright';
+import { unlockPay } from './nav.mjs';
 import { mkdirSync } from 'node:fs';
 import { openAccountMenu } from './account-menu.mjs';
 
@@ -29,13 +30,17 @@ const signIn = async (page, email, password = 'shift-change-2026') => {
   const unlocked = page.getByRole('navigation').getByRole('link', { name: /^Schedule/ });
   const mustChange = page.getByText('Choose a new password');
   await unlocked.or(mustChange).first().waitFor({ timeout: 20000 });
+  let current = password;
   if (await mustChange.isVisible()) {
+    current = 'harbour lantern 7';
     await page.getByLabel('Temporary password').fill('shift-change-2026');
     await page.getByLabel('New password', { exact: true }).fill('harbour lantern 7');
     await page.getByLabel('Confirm new password').fill('harbour lantern 7');
     await page.getByRole('button', { name: 'Change password' }).click();
     await unlocked.waitFor({ timeout: 15000 });
   }
+  // Pay is behind the PIN (October 2026); Max's password was just changed.
+  await unlockPay(page, current);
 };
 const call = (page, path, init = {}) =>
   page.evaluate(

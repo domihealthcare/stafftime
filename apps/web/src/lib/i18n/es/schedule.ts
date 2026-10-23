@@ -93,6 +93,12 @@ export const SCHEDULE: Record<string, string> = {
   'Asked for time off ({kind}){half}, not decided yet':
     'Pidió tiempo libre ({kind}){half}, todavía sin decidir',
   'Time off': 'Tiempo libre',
+  'Go to a week': 'Ir a una semana',
+  'Go to a month': 'Ir a un mes',
+  'A year back': 'Un año antes',
+  'A month back': 'Un mes antes',
+  'A month on': 'Un mes después',
+  'A year on': 'Un año después',
   'Asked off': 'Pidió libre',
   'Open shift': 'Turno abierto',
   '{name}’s shift': 'Turno de {name}',

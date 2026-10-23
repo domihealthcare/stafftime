@@ -10,10 +10,12 @@ import {
   Post,
   Put,
   Query,
+  UseGuards,
 } from '@nestjs/common';
 import { Role } from '@prisma/client';
 import { AuthUser } from '../common/auth/auth-user';
 import { CurrentUser } from '../common/auth/current-user.decorator';
+import { PayLockGuard } from '../pay-lock/pay-lock.guard';
 import { Roles } from '../common/auth/roles.decorator';
 import { NewStatementDto, SavePlanDto, SaveStatementDto } from './dto/productivity.dto';
 import { ProductivityService } from './productivity.service';
@@ -22,6 +24,8 @@ import { ProductivityService } from './productivity.service';
 /// (`canManageProductivity`), checked on every route below; a provider reads
 /// only their own, and only once it is published - `mine` takes the person from
 /// the session, never from the request.
+/// Shows pay: only after the PIN (October 2026, `pay-lock/`).
+@UseGuards(PayLockGuard)
 @Controller('productivity')
 export class ProductivityController {
   constructor(private readonly productivity: ProductivityService) {}

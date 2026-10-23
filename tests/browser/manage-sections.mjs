@@ -1,6 +1,6 @@
 import { chromium } from 'playwright';
 import { mkdirSync } from 'node:fs';
-import { goTo, goToManage, navLink, openMenu } from './nav.mjs';
+import { goTo, goToManage, navLink, openMenu, unlockPay } from './nav.mjs';
 
 const OUT = process.argv[2] || new URL('./shots/', import.meta.url).pathname;
 mkdirSync(OUT, { recursive: true });
@@ -33,6 +33,7 @@ async function signIn(email, viewport = { width: 1280, height: 1000 }) {
   await page.getByLabel('Password', { exact: true }).fill('shift-change-2026');
   await page.getByRole('button', { name: 'Sign in' }).click();
   await page.getByText('Not clocked in').waitFor({ timeout: 20000 });
+  await unlockPay(page);
   return page;
 }
 
@@ -59,7 +60,7 @@ await step('Manage is five entries, not fifteen', async () => {
 await step('Staff (with the job roles on it) heads the Staff section, with Licenses, CME and Onboarding', async () => {
   await goToManage(admin, 'Job roles');
   await admin.getByRole('heading', { name: 'Staff', level: 1 }).waitFor({ timeout: 10000 });
-  await admin.getByRole('heading', { name: 'Job roles', level: 2 }).waitFor({ timeout: 10000 });
+  await admin.getByRole('dialog', { name: 'Job roles' }).getByRole('button', { name: 'Close' }).click();
   const people = await tabs(admin, 'Staff');
   if (people.join('|') !== 'Staff|Licenses|CME|Onboarding & Offboarding')
     throw new Error(people.join('|'));
@@ -95,6 +96,7 @@ await step('a manager sees the same headings with only the tabs they may open', 
   for (const name of ['Dashboard', 'Staff', 'Offices', 'Surveys & reading', 'Finances'])
     if (!links.includes(name)) throw new Error(`manager lacks ${name}: ${links.join(', ')}`);
   await goToManage(manager, 'Job roles');
+  await manager.getByRole('dialog', { name: 'Job roles' }).getByRole('button', { name: 'Close' }).click();
   if ((await tabs(manager, 'Staff')).join('|') !== 'Staff|Licenses|CME|Onboarding & Offboarding')
     throw new Error(`staff: ${(await tabs(manager, 'Staff')).join('|')}`);
   await goToManage(manager, 'Closing checklists');

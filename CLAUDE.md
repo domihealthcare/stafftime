@@ -96,6 +96,14 @@ and never added to `Employee`, and the schema guard pins their fields. Still no
 identity numbers, documents, licence numbers or date of birth. The one other
 reader (October 2026, Dominguez) is the **rota's cost** for the people an
 admin chooses — totals by office and day only, never by person.
+Those same people (`Employee.canSeeRotaCost`, whatever their access level)
+also keep **Pay & raises** (23 October 2026, Dominguez: "i want to stop having
+to use this excel workflow"): everybody's pay, each raise's steps
+(`PayRaise`) and why somebody left (`LeavingRecord`), in `src/staff-records/`
+and pinned by the schema guard. Providers are left out for now. **Anything
+that shows pay asks for the person's PIN first** (or their password), even
+for those allowed to see it (`pay-lock/`). The census spreadsheet Dominguez
+shared was not imported, and its social security numbers were never read.
 
 **An outside AI service** (October 2026, Dominguez: staff names and schedules
 may go to one; patient details never): **Ask Domi Staff** sends a question,
@@ -1130,6 +1138,140 @@ Beyond the phases, the parts worth knowing about before picking up work:
   name), with a specialty in brackets after the last one shown once as the
   group's note (`doctorsOf` in `lib/phone-book.ts`); the whole name is still
   what is searched, so any one doctor finds the group. Cardiology is two pages.
+- **Phone book: a practice name for the card** (23 October 2026, Dominguez:
+  "not each address needs an office name, if anything the whole card needs a
+  practice name"): `ReferralContact.practice` (optional, migration
+  `20261023010000_phone_book_practice`, schema guard updated), a **Practice
+  name** field in the form, shown under the name on the card and the
+  printout, and searched. The per-address name is now **Location name**,
+  shown in the form only when one is set or **+ Name this location** is
+  pressed; existing ones are kept.
+- **Rep lunch: search the reps, add one there** (23 October 2026, Dominguez:
+  "should be able to search in the dropdown and also be able to add a rep
+  right there"): **Which rep?** is a dropdown you type into (name or
+  company; `SearchableSelect`, now with value/label options and a footer),
+  and **+ Add a new rep** (in the list, under it, or from the AI helper's
+  "not on the list yet") opens a small form in place - name, company,
+  medication, cell, food, status; notes stay on the Reps screen - which saves
+  through `POST /reps` and chooses the new rep. `QuickAddRep` in
+  `components/PracticeEvents.tsx`; `tests/browser/practice-calendar.mjs`.
+- **A mini calendar on the rota** (23 October 2026, Dominguez: "should
+  include a mini calendar to skip to certain weeks without having to go week
+  by week"): **📅 Go to a week** (Go to a month in Month) beside Previous ·
+  This week · Next opens a small month calendar: a month or a year at a time
+  with the arrows, the week or month on screen shaded, today ringed; pressing
+  a day goes to its week or month. `components/JumpToDate.tsx`;
+  `tests/browser/jump-to-date.mjs`.
+- **View as** (23 October 2026, Dominguez: "me (as the super admin) should
+  have a way to see the views that other staff have - i.e. something like view
+  as another role, i can click one (or multiple) roles ... both to make sure
+  build is correct, and to show staff how to do certain tasks"): account menu
+  → **View as…** (admins): **Employee** or **Manager** access and any job
+  roles to stand in for their own. Kept per browser tab (`lib/view-as.ts`,
+  `sessionStorage`) and sent on every request as `x-view-as` and
+  `x-view-as-job-roles`, which `SessionAuthGuard` honours **only for an admin
+  and only downwards**: `AuthUser.role` becomes the chosen level with
+  `actualRole: ADMIN` and `viewAsJobRoleIds`, so the guards, `/auth/me`
+  (`role`, `viewingAs`, the job-role flags and `tools`), Resources
+  (`JobRolesService.idsHeldBy`), tool access and the closing checklist preview
+  all answer as that person is answered; the person's own data (shifts,
+  hours, name) is still theirs. **Invoices stay shut** to an admin viewing as
+  a manager (`ManagerAccessOnlyGuard` reads `actualRole`). An amber banner
+  (`components/ViewAsBanner.tsx`) says whose view it is, with **Change** and
+  **Back to yourself**; `useIsActualAdmin` is the one thing that stays the
+  admin's. Signing out clears it. `components/ViewAsDialog.tsx`; Help has
+  *Seeing the app as somebody else sees it*; `tests/browser/view-as.mjs`.
+  Not reflected while viewing: the per-person switches (rota cost,
+  productivity, News posting) stay the admin's own.
+- **Pay behind the PIN** (23 October 2026, Dominguez: "anything that shows
+  pay ... even if the certain user has access to view it, should prompt them
+  to insert pin to view - sometimes a log in is left open"): Pay & raises,
+  the rota's cost, staff profiles, provider productivity (and a provider's
+  own), Export, Reimbursements, Invoices and Vendor payments ask for the
+  person's **tablet PIN**, or their password (**Use your password instead**;
+  the only way for somebody with no PIN). The unlock is per sign-in session
+  (`Session.payUnlockedUntil`, migration `20261023020000_pay_lock`), lasts
+  **10 minutes** and slides while pay is being used; the page also locks it
+  after 10 minutes with no touch or key, and **Lock pay now** locks it at
+  once. Wrong PINs count against the same lockout as the time clock; wrong
+  passwords against the sign-in lockout. The server refuses with 403
+  `PIN_REQUIRED` (`PayLockGuard`, added with `@UseGuards` to each pay
+  controller; the rota cost's access list is not behind it), and the web's
+  `request()` then sends every `PinGate` on the page back to its prompt.
+  `src/pay-lock/`, `components/PinGate.tsx` (wrapping each route in
+  `App.tsx`, and the rota cost on the Schedule as a folded line). The suites
+  unlock with `unlockPay(page)` in `tests/browser/nav.mjs`, which
+  `goToManage` calls for anything under Finances. Worth carrying to the EMR
+  module, which will hold pay too.
+- **Pay & raises** (23 October 2026, Dominguez: "this excel shows our current
+  way of monitoring employees pay, when there was a raise, how much, when it
+  became/becomes effective ... this should be what determines the rota pay
+  ... exclude the providers"; then "i want to stop having to use this excel
+  workflow and have a workflow within the staff portal ... This is not for a
+  upload of an excel"; his choices: **the rota-cost people** see it, **the
+  full steps** with the meeting made in the portal, **full leaving details**
+  for the same people only): **Manage → Finances → Pay & raises** (`/pay`,
+  `need: 'rotaCost'` in `lib/manage-sections.ts`, so an Employee-level person
+  on the list sees Finances with that one tab). **Current staff**: pay now and
+  since when, a change still to come ("Coming up"), any raise open. A name
+  opens the person: the **Raise** card and the same **Pay and position**
+  history as the staff profile (`EmploymentHistoryCard` now takes its routes
+  as `calls`). A raise is **asked for** (day, amount optional), then **Set a
+  meeting** (a practice event for the person and whoever set it, titled
+  "Check-in: Casey and Morgan", never what it is about; moved or taken off,
+  which tells them through the calendar), **Make an offer** (the pay, a new
+  title optional), then **Approve** / **Accepted: approve it** (the pay and
+  the **day it starts, past or still to come**), **Decline** / **Turned
+  down**, or **They withdrew it**. Approving writes a PAY_CHANGE (PROMOTION
+  with a new title) into `EmploymentChange` on that day, which is what the
+  rota's cost reads from then. ADP is not changed. **Former staff**: last day,
+  last position and pay, **how they left** (resigned, let go, laid off,
+  retired, end of contract, other), a short reason, the **last paycheck**,
+  and the **exit checklist**'s progress (a link for managers, or **Start the
+  exit checklist**). Pay that is not the practice's (providers: a job role
+  with *uses clinical forms*) is left out here and from the **rota's cost**
+  (`NOT_A_PROVIDER` in `staff-records/rota-cost.service.ts`). Demo staff are
+  left out. `PayRaise`, `LeavingRecord`, migration
+  `20261023030000_pay_raises_leaving`; `staff-records/pay.ts` (rules, pure),
+  `pay.service.ts`, `pay.controller.ts`; `pages/PayPage.tsx`;
+  `tests/browser/pay.mjs`. Every read is logged, as the profiles'. **Pay is
+  not entered on the live site yet**: the rota-cost people type each
+  person's current pay in once (from the spreadsheet, by hand), then raises
+  go through the screen.
+- **The exit checklist** (23 October 2026, Dominguez: "an exit employee
+  checklist for terminated employees (i.e. keys, emr access, staff portal
+  access, whatsapp, etc.)"): it is the default **offboarding** template,
+  which already starts by itself when somebody is marked as left. Migration
+  `20261023030000_pay_raises_leaving` adds to it each exit step it lacks
+  (matched by a word in the title, after its own tasks, so nothing a manager
+  wrote changes): keys and door / alarm codes, EMR (eCW), Domi Staff,
+  **WhatsApp groups**, work email, phone extension or softphone, Google
+  Drive, BrainCheck and outside portals, shared passwords (Wi-Fi, the iPad),
+  equipment. With no default template it makes "Exit checklist - Domi
+  Healthcare". `prisma/seed.ts` has the same steps. Managers tick it off and
+  change its steps under Manage → Staff → Onboarding & Offboarding; Pay &
+  raises shows its progress beside the leaving details. **Check the
+  template on the live site** and add or remove steps there.
+- **Time off is a tab under Schedule** (23 October 2026, Dominguez: "how do i
+  even get to time off requests?"): Shifts · Calendar · **Time off** · Reviews
+  · On call · Timesheet - everybody's requests for a manager, your own for
+  staff (`/time-off`, unchanged), beside "All requests →" on the Shifts tab.
+- **Job roles are a pop-up on Staff** (23 October 2026, Dominguez: "is the
+  Job roles section actually needed since we are already grouping them at the
+  top? ... can't that be integrated?"): the section at the bottom of the Staff
+  screen is gone; **Job roles…** at the end of the row of job roles above the
+  list opens the same thing (`JobRolesSection` inside a `Modal`: add, rename,
+  colour, members, minimums). `/job-roles` lands on Staff with it open.
+  `goToManage(page, 'Job roles')` in the suites opens the pop-up.
+- **Phone book: Specialty, searchable; addresses on two lines** (23 October
+  2026, Dominguez): "Listed under" is **Specialty** on the page, the form and
+  Help, and the filter is a dropdown you type into
+  (`components/SearchableSelect.tsx`: a combobox with the list narrowing as
+  you type, arrow keys, Enter, Escape; clearing it means every specialty).
+  An address shows as the street on one line and the town, state and zip on
+  the next (`addressLines` in `lib/phone-book.ts`, on the cards and the
+  printout; only when the end reads like "Union City, NJ 07087", else one
+  line; the stored text is untouched). `tests/browser/phone-book.mjs`.
 - **Manage's headings renamed** (22 October 2026, Dominguez): **People is
   Staff** and **Money is Finances**, and **Provider productivity moved to
   Finances** (Export, Reimbursements, Invoices, Vendor payments, Provider
@@ -1742,6 +1884,10 @@ Beyond the phases, the parts worth knowing about before picking up work:
   has a search box. Batch C, part one: `components/useDialog.ts` gives a pop-up focus on
   open, a Tab that stays inside, Escape to close and focus handed back; the shift,
   event, correct-entry, add-hours and hand-entry dialogs use it (new pop-ups should).
+  Since 23 October 2026 Escape also works when focus has fallen out of the
+  pop-up (a Save button disabled while it saves drops focus to the page): a
+  page-wide listener closes the top-most one, never while a confirmation is
+  open.
   Part two: `buttonClass('primary' | 'secondary', 'sm' | 'md')`, `inputClass` and a `Field`
   (label, hint, error wired for screen readers) in `components/ui.tsx`; about 110
   buttons use the helper, and input focus is the brand blue everywhere (`index.css`).

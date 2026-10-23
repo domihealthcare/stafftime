@@ -38,6 +38,7 @@ import type {
 import { CalendarLinkCard } from '../components/CalendarLinkCard';
 import { KIND_STYLE } from '../lib/calendar-kinds';
 import { ScheduleTabs } from '../components/ScheduleTabs';
+import { JumpToDate } from '../components/JumpToDate';
 import { LunchIcon } from '../components/LunchIcon';
 import {
   ClosuresCard,
@@ -78,6 +79,7 @@ import {
   OvertimePreview,
   useOvertimeCheck,
 } from '../components/OvertimeAlerts';
+import { PinGate } from '../components/PinGate';
 import { RotaCostCard } from '../components/RotaCost';
 
 /// Where the week/month choice is remembered. Per browser, per person on that
@@ -582,7 +584,7 @@ export function SchedulePage() {
           time-off button and Week / Month the next - each row the full width,
           rather than wrapping wherever they happen to run out of room. */}
       <div className="mb-4 flex flex-wrap items-center gap-2">
-        <div className="grid w-full grid-cols-3 gap-2 sm:flex sm:w-auto">
+        <div className="grid w-full grid-cols-4 gap-2 sm:flex sm:w-auto">
           <button
             type="button"
             onClick={() =>
@@ -615,6 +617,15 @@ export function SchedulePage() {
           >
             {t('Next →')}
           </button>
+          {/* Straight to any week or month (October 2026, Dominguez). */}
+          <JumpToDate
+            view={view}
+            current={view === 'week' ? weekStart : monthStart}
+            onPick={(day) => {
+              setWeekStart(startOfWeek(day));
+              setMonthStart(startOfMonth(day));
+            }}
+          />
         </div>
 
         {/* Switching keeps you where you were: a week in March goes to March,
@@ -666,17 +677,19 @@ export function SchedulePage() {
           before the week is published, so it is the first thing on screen. */}
       {me?.canSeeRotaCost && (
         <div className="mb-3">
-          <RotaCostCard
-            from={localDate(rangeStart)}
-            to={localDate(days[days.length - 1])}
-            period={period}
-            refreshKey={shifts
-              .map(
-                (shift) =>
-                  `${shift.id}${shift.startsAt}${shift.endsAt}${shift.status}${shift.employeeId}`,
-              )
-              .join('|')}
-          />
+          <PinGate compact what="the rota’s cost">
+            <RotaCostCard
+              from={localDate(rangeStart)}
+              to={localDate(days[days.length - 1])}
+              period={period}
+              refreshKey={shifts
+                .map(
+                  (shift) =>
+                    `${shift.id}${shift.startsAt}${shift.endsAt}${shift.status}${shift.employeeId}`,
+                )
+                .join('|')}
+            />
+          </PinGate>
         </div>
       )}
 

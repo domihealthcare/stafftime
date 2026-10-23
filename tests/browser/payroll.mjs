@@ -1,7 +1,7 @@
 import { chromium } from 'playwright';
 import { clockOut } from './clock-out.mjs';
 import { mkdirSync } from 'node:fs';
-import { goTo, openMenu, pressDownload, goToManage } from './nav.mjs';
+import { goTo, openMenu, pressDownload, goToManage, unlockPay } from './nav.mjs';
 // Screenshots go wherever the caller says, or into ./shots (gitignored).
 const OUT = process.argv[2] || new URL('./shots/', import.meta.url).pathname;
 mkdirSync(OUT, { recursive: true });
@@ -32,6 +32,7 @@ await page.getByLabel('Email').fill('manager@domihealthcare.com');
 await page.getByLabel('Password', { exact: true }).fill('shift-change-2026');
 await page.getByRole('button', { name: 'Sign in' }).click();
 await page.getByText('Not clocked in').waitFor({ timeout: 20000 });
+await unlockPay(page);
 
 // Something to export. The seeded database has no completed punches.
 await step('a punch to export', async () => {
@@ -175,6 +176,7 @@ await step('an employee is offered none of this', async () => {
   await emp.getByLabel('Password', { exact: true }).fill('shift-change-2026');
   await emp.getByRole('button', { name: 'Sign in' }).click();
   await emp.getByText('Not clocked in').waitFor({ timeout: 20000 });
+  await unlockPay(emp);
 
   if ((await emp.getByRole('button', { name: 'Manage', exact: true }).count()) > 0)
     throw new Error('an employee was offered the export screen');

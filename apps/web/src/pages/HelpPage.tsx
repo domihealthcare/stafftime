@@ -761,7 +761,8 @@ const STAFF: Section[] = [
               care, equipment suppliers and specialists we send patients to. Type in{' '}
               <strong>Search</strong> - a name, a specialty, an insurance (&ldquo;wellcare&rdquo;),
               a street or even part of a number - and the list narrows as you type. The search stays
-              at the top as you scroll. <strong>Listed under</strong> shows one heading at a time.
+              at the top as you scroll. <strong>Specialty</strong> shows one specialty at a time -
+              type in it to find one in the list.
             </p>
             <p>
               A <strong>★</strong> marks the practice&rsquo;s preferred places, and they come first
@@ -787,8 +788,9 @@ const STAFF: Section[] = [
             </p>
             <p>
               The book is kept by all of us. Press <strong>Edit</strong> on an entry to fix a number
-              or add a note, tick <strong>Preferred</strong> to star it, or press{' '}
-              <strong>+ Add another address</strong> for another office.{' '}
+              or add a note, tick <strong>Preferred</strong> to star it, give the whole entry a{' '}
+              <strong>Practice name</strong>, or press <strong>+ Add another address</strong> for
+              another location (<strong>+ Name this location</strong> if one needs its own name).{' '}
               <strong>+ Add an entry</strong> puts in a new place; only a manager can{' '}
               <strong>Remove</strong> one (inside Edit). Please write about the place only - never a
               patient&rsquo;s name or details.
@@ -1325,6 +1327,29 @@ const MANAGERS: Section[] = [
     title: 'Finding your way',
     topics: [
       {
+        question: 'Seeing the app as somebody else sees it (View as)',
+        answer: (
+          <>
+            <p>
+              An admin can see the app as staff or a manager see it - to check a screen, or to show
+              somebody how a thing is done. Under the menu → <strong>View as…</strong>: pick
+              <strong> Employee</strong> or <strong>Manager</strong>, and any job roles to stand in
+              for your own (they decide Resources, the forms and guides, the closing checklist at
+              clock-out, and whether Your licenses and Your onboarding are in the account menu).
+              Tick several job roles to see somebody in more than one.
+            </p>
+            <p>
+              A banner at the top says whose view it is, with <strong>Change</strong> and{' '}
+              <strong>Back to yourself</strong>. It lasts for this browser tab. You stay yourself
+              throughout: your own shifts, hours and time off, your own name on anything you save,
+              and the server treats you as that access level, so what it refuses them it refuses you
+              too. One exception stays: Invoices are for Manager access only, and an admin viewing
+              as a manager still cannot open them.
+            </p>
+          </>
+        ),
+      },
+      {
         question: 'Where is everything under Manage?',
         answer: (
           <>
@@ -1337,9 +1362,10 @@ const MANAGERS: Section[] = [
                 <strong>Dashboard</strong> - the week at a glance, and what is waiting on you.
               </li>
               <li>
-                <strong>Staff</strong> - Staff (with the job roles at the bottom of the screen;
-                managers see the list, admins also change it), Licenses, CME and Onboarding &amp;
-                Offboarding.
+                <strong>Staff</strong> - Staff (with the job roles behind{' '}
+                <strong>Job roles…</strong>
+                above the list; managers see the list, admins also change it), Licenses, CME and
+                Onboarding &amp; Offboarding.
               </li>
               <li>
                 <strong>Offices</strong> - Locations and Kiosks (admins), Closing checklists and
@@ -1349,9 +1375,10 @@ const MANAGERS: Section[] = [
                 <strong>Surveys &amp; reading</strong> - Surveys and Required reading.
               </li>
               <li>
-                <strong>Finances</strong> - Export, Reimbursements, Invoices (Manager access only,
-                not admins) and Vendor payments (admins), and Provider productivity (for the people
-                chosen for it).
+                <strong>Finances</strong> - Pay &amp; raises (for the people chosen to see the
+                rota&rsquo;s cost), Export, Reimbursements, Invoices (Manager access only, not
+                admins) and Vendor payments (admins), and Provider productivity (for the people
+                chosen for it). Each asks for your PIN first.
               </li>
             </ul>
             <p className="mt-2">
@@ -1956,14 +1983,14 @@ const MANAGERS: Section[] = [
         answer: (
           <p>
             The <Screen>Schedule</Screen> tab shows a count of what is waiting, and the requests are
-            at the top of the Schedule to approve or decline there. <strong>All requests</strong>{' '}
-            beside them lists everybody&rsquo;s, waiting, approved or declined, each with what is
-            already scheduled in those dates. When the request covers shifts still to come,{' '}
-            <strong>Approve</strong> asks what to do with them in the same step: leave them as{' '}
-            <strong>open shifts</strong> for somebody else to cover,{' '}
-            <strong>take them off the rota</strong>, or leave them as they are. The person is told
-            once, with the approval. A half day keeps its shift. <strong>Decline</strong> asks for
-            the reason the person will read; when the AI helpers are on,{' '}
+            at the top of the Schedule to approve or decline there. <strong>Time off</strong>, a tab
+            under Schedule (and <strong>All requests</strong> beside them), lists everybody&rsquo;s,
+            waiting, approved or declined, each with what is already scheduled in those dates. When
+            the request covers shifts still to come, <strong>Approve</strong> asks what to do with
+            them in the same step: leave them as <strong>open shifts</strong> for somebody else to
+            cover, <strong>take them off the rota</strong>, or leave them as they are. The person is
+            told once, with the approval. A half day keeps its shift. <strong>Decline</strong> asks
+            for the reason the person will read; when the AI helpers are on,{' '}
             <strong>✨ Help me word it</strong> turns a few words (or, with none, how many would be
             off - never who) into a kind reason for you to edit. To put in a request for somebody
             (one they made by phone), press <strong>+ Request time off</strong> and choose them
@@ -2251,8 +2278,52 @@ const MANAGERS: Section[] = [
             hourly rate, hours past the overtime line at time and a half, and a salary as a year ÷
             52 a week - so it is what the rota would cost, not what was worked, and leaves out taxes
             and benefits. Anybody on the rota with no pay on file is named, so a total is never
-            quietly short. Never by person.
+            quietly short. Never by person. Providers are left out for now. It asks for your PIN
+            first, like everything that shows pay.
           </p>
+        ),
+      },
+      {
+        question: 'Why does it ask for my PIN to see pay?',
+        answer: (
+          <p>
+            Anything that shows pay - <Screen>Pay & raises</Screen>, the rota&rsquo;s cost, staff
+            profiles, provider productivity and everything under <Screen>Manage → Finances</Screen>{' '}
+            - asks for your tablet PIN first, even if you are allowed to see it, in case a computer
+            is left signed in. Your password works too (<strong>Use your password instead</strong>
+            ). It stays open while you use it and locks again after about 10 minutes without a
+            touch, or at once with <strong>Lock pay now</strong>.
+          </p>
+        ),
+      },
+      {
+        question: 'How do I record a raise?',
+        answer: (
+          <>
+            <p>
+              <Screen>Manage → Finances → Pay & raises</Screen>, for the people an admin has chosen
+              to see the rota&rsquo;s cost. It replaces the pay spreadsheet: everybody&rsquo;s pay
+              now and since when, and any change still to come. Press a name, then{' '}
+              <strong>+ Raise asked for</strong> (the day, and the amount if they named one).
+            </p>
+            <p>
+              <strong>Set a meeting</strong> puts a check-in on the calendar for the two of you (it
+              never says what it is about). <strong>Make an offer</strong> records the pay offered;
+              <strong> Approve</strong> (or <strong>Accepted: approve it</strong>) records the new
+              pay and the day it starts, past or still to come, and from that day the rota&rsquo;s
+              cost uses it. <strong>Decline</strong>, <strong>Turned down</strong> and{' '}
+              <strong>They withdrew it</strong> close it. ADP is not changed: enter the new pay
+              there too. Providers are left out for now.
+            </p>
+            <p>
+              <strong>Former staff</strong> lists everybody who has left, with their last day, last
+              position and pay, why they left, their last paycheck and how far their exit checklist
+              has got. The exit checklist (keys, EMR, Domi Staff, WhatsApp, email, phone extension,
+              Drive and the rest) starts by itself when somebody is marked as left; managers tick it
+              off under <Screen>Manage → Staff → Onboarding & Offboarding</Screen> and can change
+              its steps there.
+            </p>
+          </>
         ),
       },
       {
@@ -2286,10 +2357,11 @@ const MANAGERS: Section[] = [
         answer: (
           <>
             <p>
-              <Screen>Manage → Staff → Staff</Screen>, under <strong>Job roles</strong> at the
-              bottom of the screen. Add, rename or remove roles, choose each one's colour, and put
-              people in them - somebody can be in several. A job role decides which resources
-              somebody sees, and nothing else: being in "Manager" gives no extra power in the app.
+              <Screen>Manage → Staff → Staff</Screen>, press <strong>Job roles…</strong> at the end
+              of the row of job roles above the list. Add, rename or remove roles, choose each one's
+              colour, and put people in them - somebody can be in several. A job role decides which
+              resources somebody sees, and nothing else: being in "Manager" gives no extra power in
+              the app.
             </p>
             <p className="mt-2">
               To see <strong>who is in a job role</strong>, press it in the row above the staff list

@@ -43,15 +43,11 @@ export function JobRolesSection({
   const here = staff.filter((person) => person.employmentStatus !== 'TERMINATED');
 
   return (
-    <section id="job-roles" className="mt-10 scroll-mt-4" aria-labelledby="job-roles-heading">
-      <div className="mb-3 border-t border-slate-200 pt-6">
-        <h2 id="job-roles-heading" className="text-xl font-semibold text-slate-900">
-          Job roles
-        </h2>
-        <p className="mt-1 text-sm text-slate-600">
-          What people do here. Someone can be in more than one, and each role has its own resources.
-        </p>
-      </div>
+    <section id="job-roles" aria-label="Job roles">
+      <p className="mb-3 text-sm text-slate-600">
+        What people do here. Someone can be in more than one, and each role has its own resources.
+        Press a job role above the staff list to see who is in it.
+      </p>
 
       <div className="mb-4">
         <Alert tone="info">

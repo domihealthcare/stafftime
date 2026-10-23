@@ -1,7 +1,15 @@
 import { t } from './i18n';
 import type { ImportedPerson } from './staff-import';
+import { viewAsHeaders, writeViewAs } from './view-as';
 import type {
   CleanTimeOffCheck,
+  LeavingDetails,
+  PayLockStatus,
+  PayOverview,
+  PayPerson,
+  RaiseDecisionInput,
+  RaiseMeetingInput,
+  RaiseRequestInput,
   CorrectionRequest,
   Review360Detail,
   Review360QuestionInput,
@@ -183,6 +191,9 @@ async function request<T>(path: string, init: RequestInit = {}): Promise<T> {
       ...init,
       headers: {
         'Content-Type': 'application/json',
+        // While an admin views as somebody (October 2026), every request
+        // says so, and the server answers as that person is answered.
+        ...viewAsHeaders(),
         ...init.headers,
       },
     });
@@ -213,7 +224,13 @@ async function request<T>(path: string, init: RequestInit = {}): Promise<T> {
     if (response.status === 401 && !NOT_A_SESSION_ANSWER.some((p) => path.startsWith(p))) {
       window.dispatchEvent(new Event(SESSION_ENDED));
     }
-    throw new ApiError(response.status, extractMessage(body, response.status), extractCode(body));
+    const code = extractCode(body);
+    // Pay asks for the PIN again (October 2026): the lock ran out, so every
+    // pay screen on the page goes back to its PIN prompt.
+    if (response.status === 403 && code === PIN_REQUIRED) {
+      window.dispatchEvent(new Event(PAY_LOCKED));
+    }
+    throw new ApiError(response.status, extractMessage(body, response.status), code);
   }
 
   return body as T;
@@ -221,8 +238,21 @@ async function request<T>(path: string, init: RequestInit = {}): Promise<T> {
 
 /// Fired when the server says the session is over.
 export const SESSION_ENDED = 'domi-staff:session-ended';
+
+/// Pay behind the PIN (October 2026): the server's answer when it is locked,
+/// and the events the PIN prompts listen for.
+export const PIN_REQUIRED = 'PIN_REQUIRED';
+export const PAY_LOCKED = 'domi-staff:pay-locked';
+export const PAY_UNLOCKED = 'domi-staff:pay-unlocked';
 /// Where a 401 is an answer about a password, not about the session.
-const NOT_A_SESSION_ANSWER = ['/auth/login', '/auth/change-password', '/auth/me', '/kiosk'];
+const NOT_A_SESSION_ANSWER = [
+  '/auth/login',
+  '/auth/change-password',
+  '/auth/me',
+  '/kiosk',
+  // A wrong PIN or password in front of pay is not the session ending.
+  '/pay-lock/unlock',
+];
 
 /**
  * Fetches a file and hands back a blob. There is no URL a browser could open
@@ -990,7 +1020,10 @@ export const api = {
       method: 'POST',
       body: JSON.stringify({ email, password }),
     }),
-  logout: () => request<{ signedOut: boolean }>('/auth/logout', { method: 'POST' }),
+  logout: () => {
+    writeViewAs(null);
+    return request<{ signedOut: boolean }>('/auth/logout', { method: 'POST' });
+  },
   me: () => request<Employee>('/auth/me'),
   changePassword: (currentPassword: string, newPassword: string) =>
     request<{ changed: boolean; otherSessionsSignedOut: number }>('/auth/change-password', {
@@ -1531,6 +1564,34 @@ export const api = {
   answerOnCallSwap: (id: string, answer: 'accept' | 'decline' | 'cancel') =>
     request<{ status: string }>(`/on-call/swaps/${id}/${answer}`, { method: 'POST' }),
   /// What the rota costs, from one day to another (inclusive) - chosen people only.
+  pay: () => request<PayOverview>('/pay'),
+  payPerson: (employeeId: string) => request<PayPerson>(`/pay/${employeeId}`),
+  addPayChange: (employeeId: string, body: EmploymentChangeInput) =>
+    request<PayPerson>(`/pay/${employeeId}/changes`, {
+      method: 'POST',
+      body: JSON.stringify(body),
+    }),
+  updatePayChange: (id: string, body: EmploymentChangeInput) =>
+    request<PayPerson>(`/pay/changes/${id}`, { method: 'PUT', body: JSON.stringify(body) }),
+  removePayChange: (id: string) => request<PayPerson>(`/pay/changes/${id}`, { method: 'DELETE' }),
+  requestRaise: (employeeId: string, body: RaiseRequestInput) =>
+    request<PayPerson>(`/pay/${employeeId}/raises`, { method: 'POST', body: JSON.stringify(body) }),
+  setRaiseMeeting: (id: string, body: RaiseMeetingInput) =>
+    request<PayPerson>(`/pay/raises/${id}/meeting`, { method: 'PUT', body: JSON.stringify(body) }),
+  cancelRaiseMeeting: (id: string) =>
+    request<PayPerson>(`/pay/raises/${id}/meeting`, { method: 'DELETE' }),
+  decideRaise: (id: string, body: RaiseDecisionInput) =>
+    request<PayPerson>(`/pay/raises/${id}/decide`, { method: 'POST', body: JSON.stringify(body) }),
+  withdrawRaise: (id: string) =>
+    request<PayPerson>(`/pay/raises/${id}/withdraw`, { method: 'POST' }),
+  removeRaise: (id: string) => request<PayPerson>(`/pay/raises/${id}`, { method: 'DELETE' }),
+  updateLeaving: (employeeId: string, body: Partial<LeavingDetails>) =>
+    request<PayPerson>(`/pay/${employeeId}/leaving`, { method: 'PUT', body: JSON.stringify(body) }),
+  payLock: () => request<PayLockStatus>('/pay-lock'),
+  unlockPay: (proof: { pin: string } | { password: string }) =>
+    request<PayLockStatus>('/pay-lock/unlock', { method: 'POST', body: JSON.stringify(proof) }),
+  touchPay: () => request<PayLockStatus>('/pay-lock/touch', { method: 'POST' }),
+  lockPay: () => request<{ locked: true }>('/pay-lock/lock', { method: 'POST' }),
   rotaCost: (from: string, to: string) => request<RotaCost>(`/rota-cost${toQuery({ from, to })}`),
   rotaCostAccess: () => request<PersonName[]>('/rota-cost/access'),
   grantRotaCostAccess: (employeeId: string) =>

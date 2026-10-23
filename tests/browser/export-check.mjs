@@ -1,7 +1,7 @@
 import { chromium } from 'playwright';
 import { execFileSync } from 'node:child_process';
 import { mkdirSync } from 'node:fs';
-import { openMenu, goToManage } from './nav.mjs';
+import { openMenu, goToManage, unlockPay } from './nav.mjs';
 
 const OUT = process.argv[2] || new URL('./shots/', import.meta.url).pathname;
 mkdirSync(OUT, { recursive: true });
@@ -82,6 +82,7 @@ await mgr.getByLabel('Email').fill('manager@domihealthcare.com');
 await mgr.getByLabel('Password', { exact: true }).fill('shift-change-2026');
 await mgr.getByRole('button', { name: 'Sign in' }).click();
 await mgr.getByText('Not clocked in').waitFor({ timeout: 20000 });
+await unlockPay(mgr);
 
 let start = '';
 await step('set-up: a week with something in every section', async () => {
@@ -175,6 +176,7 @@ await step('staff cannot run the check', async () => {
   await staff.getByLabel('Password', { exact: true }).fill('shift-change-2026');
   await staff.getByRole('button', { name: 'Sign in' }).click();
   await staff.getByText('Not clocked in').waitFor({ timeout: 20000 });
+  await unlockPay(staff);
   const status = await staff.evaluate(async () => {
     const res = await fetch('/api/exports/timesheet/check', {
       method: 'POST',

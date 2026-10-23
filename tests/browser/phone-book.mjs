@@ -41,6 +41,18 @@ const count = async (page) => (await page.getByTestId('phone-book-count').innerT
 const search = async (page, text) => {
   await page.getByLabel('Search', { exact: true }).fill(text);
 };
+/// The Specialty dropdown is typed into (October 2026): pick one, or clear it for every specialty.
+const pickSpecialty = async (page, name) => {
+  const box = page.getByRole('combobox', { name: 'Specialty' });
+  if (name === '') {
+    await box.fill('');
+    await page.keyboard.press('Escape');
+    return;
+  }
+  await box.fill(name);
+  await page.getByRole('option', { name, exact: true }).click();
+};
+const specialtyShown = (page) => page.getByRole('combobox', { name: 'Specialty' }).inputValue();
 const card = (page, name) =>
   page.getByTestId('phone-book-entry').filter({ has: page.getByRole('heading', { name }) });
 
@@ -100,13 +112,22 @@ await step('a phone number is a call link, a fax number is not', async () => {
   if (hrefs.includes('tel:+18552274491')) throw new Error('the fax number can be dialled');
 });
 
-await step('Listed under shows one heading at a time', async () => {
+await step('Specialty shows one heading at a time, found by typing in the dropdown', async () => {
   await search(staff, '');
-  await staff.getByLabel('Listed under').first().selectOption('Cardiology');
+  await pickSpecialty(staff, 'Cardiology');
   const headings = await staff.locator('main h2').allInnerTexts();
   const sections = headings.filter((h) => /\(\d+\)/.test(h));
   if (sections.length !== 1 || !/^Cardiology/i.test(sections[0])) throw new Error(JSON.stringify(sections));
-  await staff.getByLabel('Listed under').first().selectOption('');
+  await pickSpecialty(staff, '');
+});
+
+await step('an address is on two lines: the street, then the town, state and zip', async () => {
+  await search(staff, 'Kennedy Blvd');
+  const link = staff.getByTestId('phone-book-office').locator('a[href*="maps"]').filter({ hasText: 'Union City, NJ 07087' }).first();
+  await link.waitFor({ timeout: 5000 });
+  const lines = await link.locator('span').allInnerTexts();
+  if (lines.length !== 2 || !/Kennedy Blvd/.test(lines[0]) || lines[1] !== 'Union City, NJ 07087') throw new Error(`lines: ${JSON.stringify(lines)}`);
+  await search(staff, '');
 });
 
 await step('the practice’s highlighted entries are starred, and Preferred only shows just those', async () => {
@@ -126,12 +147,12 @@ await step('the practice’s highlighted entries are starred, and Preferred only
 });
 
 await step('within a heading the starred come first', async () => {
-  await staff.getByLabel('Listed under').first().selectOption('ENT');
+  await pickSpecialty(staff, 'ENT');
   const names = await staff.getByTestId('phone-book-entry').evaluateAll((cards) =>
     cards.map((c) => ({ name: c.querySelector('h3').innerText.replace(/Preferred/, '').trim(), starred: /Preferred/.test(c.querySelector('h3').textContent) })));
   const firstUnstarred = names.findIndex((n) => !n.starred);
   if (firstUnstarred !== -1 && names.slice(firstUnstarred).some((n) => n.starred)) throw new Error(JSON.stringify(names));
-  await staff.getByLabel('Listed under').first().selectOption('');
+  await pickSpecialty(staff, '');
 });
 
 await step('one entry can have several offices, each with its own phone and fax', async () => {
@@ -177,10 +198,14 @@ await step('anybody adds an entry with two offices and a star, and fixes it', as
   await staff.getByRole('button', { name: '+ Add an entry' }).click();
   let dialog = staff.getByRole('dialog', { name: 'New phone book entry' });
   await dialog.getByLabel('Name', { exact: true }).fill('Phone-book suite sleep lab');
-  await dialog.getByLabel('Listed under').fill('Sleep studies');
+  await dialog.getByLabel('Specialty').fill('Sleep studies');
   await dialog.getByLabel(/Preferred/).check();
+  // The practice is the card's; a location gets its own name only when asked for.
+  await dialog.getByLabel(/Practice name/).fill('Suite Sleep Associates');
   const first = dialog.getByTestId('phone-book-office-form').nth(0);
-  await first.getByLabel('Office name').fill('Hoboken');
+  if (await first.getByLabel('Location name').count()) throw new Error('every address asks for a name');
+  await first.getByRole('button', { name: '+ Name this location' }).click();
+  await first.getByLabel('Location name').fill('Hoboken');
   await first.getByLabel('Address').fill('1 Main St, Hoboken, NJ');
   await first.getByLabel('Phone').fill('(201) 555-0142, (201) 555-0143');
   await first.getByLabel('Fax').fill('(201) 555-0144');
@@ -192,6 +217,11 @@ await step('anybody adds an entry with two offices and a star, and fixes it', as
   await dialog.getByRole('button', { name: 'Add entry' }).click();
   await search(staff, 'phone-book suite');
   let entry = card(staff, /Phone-book suite sleep lab/);
+  await entry.getByTestId('phone-book-practice').getByText('Suite Sleep Associates').waitFor({ timeout: 10000 });
+  await search(staff, 'suite sleep associates');
+  await card(staff, /Phone-book suite sleep lab/).waitFor({ timeout: 5000 });
+  await search(staff, 'phone-book suite');
+  entry = card(staff, /Phone-book suite sleep lab/);
   await entry.getByText('Fax the order first.').waitFor({ timeout: 10000 });
   if ((await entry.getByTestId('phone-book-office').count()) !== 2) throw new Error('not two offices');
   await entry.getByText('Preferred', { exact: true }).waitFor();
@@ -200,7 +230,7 @@ await step('anybody adds an entry with two offices and a star, and fixes it', as
 
   await entry.getByRole('button', { name: /^Edit/ }).click();
   dialog = staff.getByRole('dialog', { name: /Change Phone-book suite sleep lab/ });
-  await dialog.getByTestId('phone-book-office-form').nth(1).getByRole('button', { name: 'Remove this office' }).click();
+  await dialog.getByTestId('phone-book-office-form').nth(1).getByRole('button', { name: 'Remove this address' }).click();
   await dialog.getByRole('button', { name: 'Save changes' }).click();
   entry = card(staff, /Phone-book suite sleep lab/);
   await staff.waitForFunction(() => document.querySelectorAll('[data-testid=phone-book-office]').length === 1);
@@ -281,8 +311,8 @@ await step('a heading prints as a patient-ready list of everybody in it, starred
   const pages = (pdf.toString('latin1').match(/\/Type\s*\/Page[^s]/g) ?? []).length;
   if (pages < 1 || pages > 2) throw new Error(`Cardiology prints on ${pages} pages`);
   await staff.getByRole('link', { name: /Back to the phone book/ }).click();
-  await staff.getByLabel('Listed under').first().waitFor();
-  if ((await staff.getByLabel('Listed under').first().inputValue()) !== 'Cardiology') throw new Error('back lost the heading');
+  await staff.getByRole('combobox', { name: 'Specialty' }).waitFor();
+  if ((await specialtyShown(staff)) !== 'Cardiology') throw new Error('back lost the heading');
 });
 
 await step('the printer on a card prints that one entry alone, large, and opens the print window by itself', async () => {
@@ -317,11 +347,11 @@ await step('the printer on a card prints that one entry alone, large, and opens 
   await tab.emulateMedia({ media: 'screen' });
   await tab.getByTestId('print-hint').waitFor();
   await tab.getByRole('link', { name: /Back to the phone book/ }).click();
-  await tab.getByLabel('Listed under').first().waitFor();
-  if ((await tab.getByLabel('Listed under').first().inputValue()) !== 'Cardiology') throw new Error('back lost the heading');
+  await tab.getByRole('combobox', { name: 'Specialty' }).waitFor();
+  if ((await specialtyShown(tab)) !== 'Cardiology') throw new Error('back lost the heading');
   await tab.close();
   // The book itself is still where it was.
-  if (!/Cardiology/.test(await staff.getByLabel('Listed under').first().inputValue())) throw new Error('the search was lost');
+  if (!/Cardiology/.test(await specialtyShown(staff))) throw new Error('the search was lost');
 });
 
 await step('printing everything is a short run of pages, headings running on; the starred alone prints together', async () => {

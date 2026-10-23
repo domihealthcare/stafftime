@@ -12,8 +12,9 @@
 
 /// Who may open a screen: managers and admins, admins only, the people an
 /// admin has chosen for provider productivity (and admins), or Manager access
-/// only, admins not (invoices, October 2026).
-export type ManageNeed = 'manager' | 'admin' | 'productivity' | 'managerAccessOnly';
+/// only, admins not (invoices, October 2026), or the people an admin chose to
+/// see the rota's cost, whatever their access level (pay, October 2026).
+export type ManageNeed = 'manager' | 'admin' | 'productivity' | 'managerAccessOnly' | 'rotaCost';
 
 export interface ManageTab {
   to: string;
@@ -59,6 +60,8 @@ export const MANAGE_SECTIONS: ManageSection[] = [
   {
     label: 'Finances',
     tabs: [
+      // Pay and raises, in place of the practice's spreadsheet (October 2026).
+      { to: '/pay', label: 'Pay & raises', need: 'rotaCost' },
       { to: '/export', label: 'Export', need: 'manager' },
       { to: '/reimbursements', label: 'Reimbursements', need: 'manager' },
       { to: '/invoices', label: 'Invoices', need: 'managerAccessOnly' },
@@ -72,6 +75,7 @@ export interface ManageAccess {
   isManager: boolean;
   isAdmin: boolean;
   canManageProductivity: boolean;
+  canSeeRotaCost?: boolean;
 }
 
 const allowed = (need: ManageNeed, access: ManageAccess) =>
@@ -81,7 +85,9 @@ const allowed = (need: ManageNeed, access: ManageAccess) =>
       ? access.isAdmin
       : need === 'managerAccessOnly'
         ? access.isManager && !access.isAdmin
-        : access.canManageProductivity || access.isAdmin;
+        : need === 'rotaCost'
+          ? access.canSeeRotaCost === true
+          : access.canManageProductivity || access.isAdmin;
 
 /// The sections this person can open, each with only the tabs they may use;
 /// a section with nothing for them is left out.

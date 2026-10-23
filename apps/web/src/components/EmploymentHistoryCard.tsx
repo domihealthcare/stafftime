@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { formatCalendarDate, localDate } from '../lib/format';
 import { ApiError, api } from '../lib/api';
+import { practiceDate } from '../lib/practice-time';
 import type {
   EmploymentChange,
   EmploymentChangeInput,
@@ -32,16 +33,35 @@ export function formatPay(rate: number, unit: PayRateUnit): string {
  * the rest of the profile. A record - ADP pays people, and the payroll export
  * never reads this.
  */
-export function EmploymentHistoryCard({
+/// Where the history is written. The staff profile writes through the
+/// admins' routes; Pay & raises (October 2026) through its own, for the
+/// rota-cost people.
+export interface HistoryCalls<T> {
+  add: (employeeId: string, input: EmploymentChangeInput) => Promise<T>;
+  update: (id: string, input: EmploymentChangeInput) => Promise<T>;
+  remove: (id: string) => Promise<T>;
+}
+
+const PROFILE_CALLS: HistoryCalls<StaffRecord> = {
+  add: (employeeId, input) => api.addEmploymentChange(employeeId, input),
+  update: (id, input) => api.updateEmploymentChange(id, input),
+  remove: (id) => api.removeEmploymentChange(id),
+};
+
+type History = Pick<StaffRecord, 'changes' | 'current'>;
+
+export function EmploymentHistoryCard<T extends History = StaffRecord>({
   employeeId,
   record,
   hireDate,
   onChanged,
+  calls = PROFILE_CALLS as unknown as HistoryCalls<T>,
 }: {
   employeeId: string;
-  record: StaffRecord;
+  record: History;
   hireDate: string | null;
-  onChanged: (record: StaffRecord) => void;
+  onChanged: (record: T) => void;
+  calls?: HistoryCalls<T>;
 }) {
   const confirm = useConfirm();
   const [adding, setAdding] = useState(false);
@@ -57,7 +77,7 @@ export function EmploymentHistoryCard({
     });
     if (!sure) return;
     try {
-      onChanged(await api.removeEmploymentChange(change.id));
+      onChanged(await calls.remove(change.id));
       setProblem(null);
     } catch (err) {
       setProblem(err instanceof ApiError ? err.message : 'Could not remove that.');
@@ -140,7 +160,7 @@ export function EmploymentHistoryCard({
             submitLabel="Add it"
             onCancel={() => setAdding(false)}
             onSave={async (input) => {
-              onChanged(await api.addEmploymentChange(employeeId, input));
+              onChanged(await calls.add(employeeId, input));
               setAdding(false);
             }}
           />
@@ -164,7 +184,7 @@ export function EmploymentHistoryCard({
                   submitLabel="Save"
                   onCancel={() => setEditingId(null)}
                   onSave={async (input) => {
-                    onChanged(await api.updateEmploymentChange(change.id, input));
+                    onChanged(await calls.update(change.id, input));
                     setEditingId(null);
                   }}
                 />
@@ -184,6 +204,9 @@ export function EmploymentHistoryCard({
                       <Badge tone={change.kind === 'PROMOTION' ? 'success' : 'neutral'}>
                         {CHANGE_KIND_LABELS[change.kind]}
                       </Badge>
+                      {change.effectiveOn > practiceDate() && (
+                        <Badge tone="warning">Coming up</Badge>
+                      )}
                     </p>
                     {(change.position || change.payRate !== null) && (
                       <p className="mt-1 text-sm text-slate-700">
@@ -300,7 +323,7 @@ function ChangeForm({
             </select>
           )}
         </Field>
-        <Field label="Took effect on">
+        <Field label="Took effect on" hint="A day still to come is fine: it counts from then.">
           {(props) => (
             <input
               {...props}
@@ -339,7 +362,7 @@ function ChangeForm({
             />
           )}
         </Field>
-        <Field label="Per">
+        <Field label="Per" hint="Salaried: the year's pay, per year. It sets the rota's cost.">
           {(props) => (
             <select
               {...props}

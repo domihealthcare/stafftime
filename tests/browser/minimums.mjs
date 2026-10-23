@@ -108,6 +108,8 @@ await step('a manager sets 3 Front Desk at North Bergen on Job roles', async () 
   await card.getByRole('status').getByText('Saved.').waitFor({ timeout: 5000 });
   await card.screenshot({ path: `${OUT}/staffing-minimums.png` });
   await mgr.reload({ waitUntil: 'networkidle' });
+  // The job roles are a pop-up on the Staff screen (October 2026): open it again.
+  await mgr.getByRole('button', { name: 'Job roles…' }).click();
   const value = await mgr.getByTestId('staffing-minimums').getByLabel('Minimum Front Desk at North Bergen').inputValue();
   if (value !== '3') throw new Error(`read back ${value}`);
 });

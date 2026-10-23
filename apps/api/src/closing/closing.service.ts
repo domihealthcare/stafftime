@@ -95,11 +95,14 @@ export class ClosingService {
     employeeId: string,
     locationId: string,
     at: Date = new Date(),
+    /// While an admin views as somebody (October 2026): these job roles
+    /// instead of the person's own, the first of them as the main one.
+    jobRoleIds?: string[],
   ): Promise<ApplicableSection[]> {
     const [location, roles] = await Promise.all([
       this.prisma.location.findUnique({ where: { id: locationId }, select: { timezone: true } }),
       this.prisma.jobRole.findMany({
-        where: { members: { some: { employeeId } } },
+        where: jobRoleIds ? { id: { in: jobRoleIds } } : { members: { some: { employeeId } } },
         orderBy: [{ sortOrder: 'asc' }, { name: 'asc' }],
         include: {
           ...TEMPLATE_INCLUDE,
@@ -108,7 +111,9 @@ export class ClosingService {
       }),
     ]);
     const weekday = isoWeekdayOf(localDateIn(at, location?.timezone ?? PRACTICE_ZONE));
-    const main = roles.find((role) => role.members?.some((member) => member.isPrimary)) ?? roles[0];
+    const main = jobRoleIds
+      ? roles[0]
+      : (roles.find((role) => role.members?.some((member) => member.isPrimary)) ?? roles[0]);
 
     const sections: ApplicableSection[] = [];
     for (const role of main ? [main] : []) {
@@ -133,12 +138,19 @@ export class ClosingService {
 
   /// The checklist for somebody's open punch, for the Clock screen to show
   /// before they clock out. Empty when they are not clocked in.
-  async forOpenPunch(employeeId: string): Promise<{ sections: ApplicableSection[] }> {
+  async forOpenPunch(
+    employeeId: string,
+    jobRoleIds?: string[],
+  ): Promise<{ sections: ApplicableSection[] }> {
     const open = await this.prisma.timeEntry.findFirst({
       where: { employeeId, clockOutAt: null },
       select: { locationId: true },
     });
-    return { sections: open ? await this.applicableFor(employeeId, open.locationId) : [] };
+    return {
+      sections: open
+        ? await this.applicableFor(employeeId, open.locationId, new Date(), jobRoleIds)
+        : [],
+    };
   }
 
   /**

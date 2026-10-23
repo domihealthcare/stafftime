@@ -9,8 +9,19 @@ export async function openMore(page) {
   }
 }
 
+/// A pop-up left open covers the navigation (the job roles are one on Staff,
+/// October 2026): close it with Escape, as a person would, before moving on.
+export async function closePopups(page) {
+  const open = page.getByRole('dialog');
+  if (await open.first().isVisible().catch(() => false)) {
+    await page.keyboard.press('Escape');
+    await open.first().waitFor({ state: 'detached', timeout: 10000 });
+  }
+}
+
 /// Opens the Manage menu (on a phone, inside More).
 export async function openMenu(page, name) {
+  await closePopups(page);
   await openMore(page);
   await page.getByRole('button', { name, exact: true }).click();
 }
@@ -55,6 +66,7 @@ export async function navLink(page, name) {
 
 /// Clicks through to a screen from the navigation.
 export async function goTo(page, name) {
+  await closePopups(page);
   await (await navLink(page, name)).click();
 }
 
@@ -108,6 +120,7 @@ export const SECTION_OF = {
   CME: 'Staff',
   'Onboarding & Offboarding': 'Staff',
   'Provider productivity': 'Finances',
+  'Pay & raises': 'Finances',
   Locations: 'Offices',
   Kiosks: 'Offices',
   'Closing checklists': 'Offices',
@@ -129,11 +142,35 @@ const TAB_OF = { 'Job roles': 'Staff' };
 export async function goToManage(page, label) {
   const section = SECTION_OF[label];
   if (!section) throw new Error(`${label} is not a Manage screen`);
+  // Everything under Finances shows money, so it asks for the PIN first
+  // (October 2026); the suites give the password instead, through the API.
+  if (section === 'Finances') await unlockPay(page);
   const tab = TAB_OF[label] ?? label;
   await openMenu(page, 'Manage');
   await page.getByRole('navigation').getByRole('link', { name: section, exact: true }).first().click();
   if (section !== tab) {
     await page.getByRole('navigation', { name: `${section} screens` }).getByRole('link', { name: tab, exact: true }).click();
   }
-  if (label === 'Job roles') await page.getByRole('heading', { name: 'Job roles', level: 2 }).waitFor({ timeout: 15000 });
+  if (label === 'Job roles') {
+    // The job roles are a pop-up from the row of job roles above the staff list (October 2026).
+    await page.getByRole('button', { name: 'Job roles…' }).waitFor({ timeout: 15000 });
+    await page.getByRole('button', { name: 'Job roles…' }).click();
+    await page.getByRole('dialog', { name: 'Job roles' }).waitFor({ timeout: 15000 });
+  }
+}
+
+/// Pay is behind the PIN (October 2026, Dominguez: "should prompt them to
+/// insert pin to view"). The suites unlock it the way the prompt's "Use your
+/// password instead" does, for the signed-in page's own session. Returns the
+/// answer's status rather than throwing, so a suite that signs in with
+/// another password simply stays locked.
+export async function unlockPay(page, password = 'shift-change-2026') {
+  return page.evaluate(async (password) => {
+    const response = await fetch('/api/pay-lock/unlock', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ password }),
+    });
+    return response.status;
+  }, password);
 }

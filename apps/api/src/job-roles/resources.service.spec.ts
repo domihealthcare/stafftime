@@ -60,6 +60,7 @@ function build(
   };
   const jobRoles = {
     idsFor: jest.fn().mockResolvedValue(options.mine ?? ['role-fd']),
+    idsHeldBy: jest.fn().mockResolvedValue(options.mine ?? ['role-fd']),
     findOne: jest.fn().mockResolvedValue({ id: 'role-fd' }),
   };
   const drive = {

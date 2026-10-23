@@ -4638,6 +4638,45 @@ never a patient — the form says so and the schema guard pins both tables.
 `tests/browser/phone-book.mjs` (the runner puts the book back from the v2 data
 migration between suites).
 
+## View as (October 2026)
+
+Dominguez, 23 October 2026: "me (as the super admin) should have a way to see
+the views that other staff have - i.e. something like view as another role, i
+can click one (or multiple) roles and be able to see the views that others are
+having - this is both to make sure build is correct, and to show staff how to
+do certain tasks".
+
+**What it is.** An admin chooses, under the account menu's **View as…**, an
+access level - Employee or Manager - and optionally job roles to stand in for
+their own. The choice lives in the browser tab (`sessionStorage`, so closing
+the tab ends it, and two tabs can differ), and every request from then on
+carries two headers, `x-view-as` and `x-view-as-job-roles`. The session guard
+reads them **only when the signed-in person is an admin**, and only to lower:
+`AuthUser.role` becomes the chosen level, `actualRole` records the truth, and
+`viewAsJobRoleIds` the chosen roles. Nothing else in the API knows about
+headers; it all goes by `AuthUser`, so the roles guard, every `@Roles` route,
+and the screens behave exactly as for such a person, and what the server
+refuses them it refuses the admin. An employee or manager sending the headers
+is ignored; a header naming ADMIN is ignored.
+
+**What follows the chosen job roles.** The signed-in person's job roles are
+read in a handful of places, and each takes the chosen ones instead:
+`/auth/me` (the `seesOwnPersonnelTabs`, `usesClinicalForms` and
+`usesWellnessForm` flags, and `tools` through `ToolAccessService.toolsFor`),
+Resources (`JobRolesService.idsHeldBy`), the guides, phone book and
+diagnostics (`assertCanUse`) and the closing checklist for an open punch
+(`ClosingService.applicableFor`, the first chosen role as the main one). Their
+own data stays theirs: shifts, hours, time off, name on anything saved, and
+the per-person switches (rota cost, productivity, News posting). `/auth/me`
+also returns `viewingAs`, which the web reads for the banner
+(`components/ViewAsBanner.tsx`: whose view, Change, Back to yourself) and for
+`useIsActualAdmin`, the one thing that stays the admin's while viewing.
+
+**The one place it does not open.** Invoices are for Manager access only, and
+the reason (a provider's home address on a pay-to) does not change when an
+admin is merely looking: `ManagerAccessOnlyGuard` refuses when `actualRole`
+is ADMIN. Help says so.
+
 ## Who looks after what (October 2026)
 
 Dominguez, 22 October 2026: "assign staff (i.e. specific managers/admin) to
@@ -5502,3 +5541,83 @@ list everybody sees. Two pieces, deliberately separate:
 
 The list says who; the rota is still where they are put, and the minimum is
 what checks it.
+
+## Pay behind the PIN (October 2026)
+
+Dominguez: "anything that shows pay ... even if the certain user has access to
+view it, should prompt them to insert pin to view - sometimes a log in is left
+open and we dont want that accessible to just anyone".
+
+**The unlock belongs to the sign-in session**, not the person or the browser
+tab: `Session.payUnlockedUntil`. `POST /pay-lock/unlock` takes the tablet PIN
+(the same PIN as the time clock, counted against the same lockout) or the
+password (counted against the sign-in lockout, through `PasswordGuessService`)
+and sets it 10 minutes ahead. `PayLockGuard`, added with `@UseGuards` beside
+each pay controller's own access checks, lets a request through while it is in
+the future and slides it forward (written at most once a minute), and otherwise
+answers 403 with `code: PIN_REQUIRED`. Signing out, or the session ending,
+takes the unlock with it.
+
+**The page's half.** `components/PinGate.tsx` wraps each pay route in
+`App.tsx` and the rota's cost on the Schedule: nothing inside is mounted, so
+nothing is fetched, until `GET /pay-lock` says unlocked. While it is open, a
+touch, key or scroll is noted; every 30 seconds the gate either keeps the
+server's window open (`POST /pay-lock/touch`, at most once a minute, only after
+activity) or, after 10 minutes with none, locks it (`POST /pay-lock/lock`).
+`request()` in `lib/api.ts` turns any `PIN_REQUIRED` answer into a
+`PAY_LOCKED` window event, so every gate on the page goes back to its prompt
+at once; an unlock sends `PAY_UNLOCKED` so the others follow. A wrong PIN or
+password at `/pay-lock/unlock` is not taken as the session ending.
+
+**Why the PIN and not the password alone**: it is quick on a phone and already
+chosen by most staff for the time clock. The password is always offered too,
+since admins and managers may have no PIN.
+
+## Pay & raises (October 2026)
+
+Dominguez kept pay in a spreadsheet: each person's pay, every raise, when it
+took effect and notes. He asked for the spreadsheet's job to move into the
+portal ("This is not for a upload of an excel"), for the people who see the
+rota's cost (`canSeeRotaCost`), and for the rota's cost to come from it, with
+providers left out for now.
+
+**Pay over time stays in `EmploymentChange`**, the staff profile's history, so
+there is one record of pay and the rota's cost reads it unchanged. A change
+dated ahead is "coming up" until its day (`currentOf`, `upcomingOf`).
+
+**A raise (`PayRaise`) is the steps around a change**: asked for, a meeting,
+an offer, then approved, declined or withdrawn. Every step after the ask is
+optional. Only one is open per person. Deciding is claimed by status in one
+`updateMany`, so two people pressing Approve cannot both write a pay change.
+Approving writes the `EmploymentChange` (PAY_CHANGE, or PROMOTION with a new
+title) in the same transaction and keeps its id; removing that change later
+leaves the raise saying so rather than undoing it.
+
+**The meeting is an ordinary practice event** (`EventsService.create`,
+audience CHOSEN: the person and whoever set it), so it reaches calendars, the
+bell and the invites like any other, and moving or cancelling it tells them the
+same way. Its title is "Check-in: Casey and Morgan": managers see every event,
+so it never says what it is about. Stored as plain ids (`meetingEventId`),
+not a relation, since an event can be removed from the calendar.
+
+**Leaving details (`LeavingRecord`)**: how they left, a short reason, the last
+paycheck. The last day is `Employee.terminationDate` and the last position and
+pay come from the history. Read with the exit checklist's progress (the latest
+offboarding checklist).
+
+**Providers** (anybody holding a job role with *uses clinical forms*) are left
+out of both the screen and the rota's cost by one filter, `NOT_A_PROVIDER`.
+Their pay models differ (provider productivity) and Dominguez left them for
+later.
+
+## The exit checklist (October 2026)
+
+Dominguez asked for "an exit employee checklist for terminated employees (i.e.
+keys, emr access, staff portal access, whatsapp, etc.)". The default
+offboarding template already did that job and already starts by itself when
+somebody is marked as left (`startOffboardingIfLeaving`), so no new kind of
+checklist was made. Templates are edited in the app and may differ on the live
+site from the seed, so the migration only **adds** each missing exit step,
+matched loosely by a word in the title (`%whatsapp%`, `%emr%`, `%key%` ...),
+after the template's own tasks. Checklists already started are copies and are
+not touched.

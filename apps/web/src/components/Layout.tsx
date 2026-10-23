@@ -3,6 +3,7 @@ import { Suspense, useEffect, useRef, useState } from 'react';
 import { Link, NavLink, Outlet, useLocation } from 'react-router-dom';
 import { TIME_OFF_CHANGED, api } from '../lib/api';
 import { AccountMenu } from './AccountMenu';
+import { ViewAsBanner } from './ViewAsBanner';
 import { SloganStrip, Wordmark } from './Brand';
 import { NavIcon } from './NavIcons';
 import { NavMenu, type NavMenuItem } from './NavMenu';
@@ -77,6 +78,7 @@ export function Layout() {
     isManager,
     isAdmin,
     canManageProductivity: Boolean(employee?.canManageProductivity),
+    canSeeRotaCost: Boolean(employee?.canSeeRotaCost),
   });
   const manageItems: NavMenuItem[] = sections.map((section) => ({
     to: section.tabs[0].to,
@@ -126,6 +128,7 @@ export function Layout() {
       >
         {t('Skip to content')}
       </a>
+      <ViewAsBanner />
       <header className="border-b border-slate-200 border-t-4 border-t-brand-600 bg-white">
         {/* One layout, two shapes, and every element appears exactly once so
             that a link or the account button is never ambiguous to a test or a

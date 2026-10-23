@@ -3,7 +3,13 @@ import { Link, useSearchParams } from 'react-router-dom';
 import { BrandLogoForPrint } from '../components/Brand';
 import { Alert, Spinner, buttonClass } from '../components/ui';
 import { api } from '../lib/api';
-import { doctorsOf, groupByCategory, printedOffices, searchContacts } from '../lib/phone-book';
+import {
+  addressLines,
+  doctorsOf,
+  groupByCategory,
+  printedOffices,
+  searchContacts,
+} from '../lib/phone-book';
 import type { ReferralContact } from '../lib/types';
 
 /// One place on paper: the doctors one to a line, then each office. For a patient
@@ -21,21 +27,38 @@ function PrintEntry({ contact, staffCopy }: { contact: ReferralContact; staffCop
           </span>
         ))}
         {note && <span className="block text-[0.85em] font-normal italic">{note}</span>}
+        {contact.practice && (
+          <span className="block text-[0.85em] font-semibold">{contact.practice}</span>
+        )}
       </h3>
       {printedOffices(contact.offices).map((line, officeIndex) =>
         staffCopy ? (
-          <p key={officeIndex} className="entry-line text-slate-900">
+          <div key={officeIndex} className="entry-line text-slate-900">
             {line.label && <strong>{line.label}: </strong>}
-            {line.addresses.length > 0 && <span>{line.addresses.join(' · ')} </span>}
+            {line.addresses.map((address) =>
+              addressLines(address).map((part, partIndex) => (
+                <span key={`${address}-${partIndex}`} className="block">
+                  {part}
+                </span>
+              )),
+            )}
             {line.phone && <span className="font-bold">Ph {line.phone}</span>}
             {line.fax && <span> · Fax {line.fax}</span>}
-          </p>
+          </div>
         ) : (
           // For a patient: the addresses together, the number to ring under
           // them in bold.
           <div key={officeIndex} className="entry-line mb-0.5 text-slate-900">
-            {line.label && <span className="font-semibold">{line.label}: </span>}
-            {line.addresses.length > 0 && <span>{line.addresses.join(' · ')}</span>}
+            {line.label && <span className="block font-semibold">{line.label}</span>}
+            {/* The street on one line, the town with its state and zip on the
+                next (October 2026, Dominguez). */}
+            {line.addresses.map((address) =>
+              addressLines(address).map((part, partIndex) => (
+                <span key={`${address}-${partIndex}`} className="block">
+                  {part}
+                </span>
+              )),
+            )}
             {line.phone && <p className="font-bold">Phone {line.phone}</p>}
           </div>
         ),

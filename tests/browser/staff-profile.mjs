@@ -1,4 +1,5 @@
 import { chromium } from 'playwright';
+import { unlockPay } from './nav.mjs';
 import { mkdirSync } from 'node:fs';
 
 const OUT = process.argv[2] || new URL('./shots/', import.meta.url).pathname;
@@ -30,6 +31,7 @@ async function signIn(email, viewport = { width: 1280, height: 1000 }) {
   await page.getByLabel('Password', { exact: true }).fill('shift-change-2026');
   await page.getByRole('button', { name: 'Sign in' }).click();
   await page.getByText('Not clocked in').waitFor({ timeout: 20000 });
+  await unlockPay(page);
   return page;
 }
 

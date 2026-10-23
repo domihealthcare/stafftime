@@ -86,6 +86,15 @@ await step('the next request rings the admin and not the manager', async () => {
   if (after !== before) throw new Error('the manager was told although not chosen');
 });
 
+await step('Time off is a tab under Schedule, for everybody', async () => {
+  await manager.goto(`${BASE}/schedule`, { waitUntil: 'networkidle' });
+  await manager.getByRole('navigation', { name: /Schedule or calendar/ }).getByRole('link', { name: 'Time off', exact: true }).click();
+  await manager.getByRole('heading', { name: 'Time off requests', level: 1 }).waitFor({ timeout: 10000 });
+  await desk.goto(`${BASE}/schedule`, { waitUntil: 'networkidle' });
+  await desk.getByRole('navigation', { name: /Schedule or calendar/ }).getByRole('link', { name: 'Time off', exact: true }).click();
+  await desk.getByRole('heading', { name: 'Time off', level: 1 }).waitFor({ timeout: 10000 });
+});
+
 await step('Email settings lists who is chosen for what; a part with nobody chosen goes by the ticks', async () => {
   await admin.goto(`${BASE}/notifications`, { waitUntil: 'networkidle' });
   const card = admin.getByTestId('chosen-for');

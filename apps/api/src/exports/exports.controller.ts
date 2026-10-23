@@ -10,11 +10,13 @@ import {
   Patch,
   Post,
   Res,
+  UseGuards,
 } from '@nestjs/common';
 import { Role } from '@prisma/client';
 import type { Response } from 'express';
 import { AuthUser } from '../common/auth/auth-user';
 import { CurrentUser } from '../common/auth/current-user.decorator';
+import { PayLockGuard } from '../pay-lock/pay-lock.guard';
 import { Roles } from '../common/auth/roles.decorator';
 import { attachmentHeader } from '../storage/download-headers';
 import { SaveReportPresetDto, UpdateReportPresetDto } from './dto/report-preset.dto';
@@ -27,6 +29,8 @@ import { PayrollExportsService } from './payroll/payroll-exports.service';
 import { ExportCheckService } from './export-check.service';
 import { TimesheetExportService } from './timesheet-export.service';
 
+/// Shows pay: only after the PIN (October 2026, `pay-lock/`).
+@UseGuards(PayLockGuard)
 @Controller('exports')
 @Roles(Role.MANAGER)
 export class ExportsController {

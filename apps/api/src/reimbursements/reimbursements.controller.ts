@@ -1,7 +1,18 @@
-import { Body, Controller, Delete, Get, Param, ParseUUIDPipe, Post, Put } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Delete,
+  Get,
+  Param,
+  ParseUUIDPipe,
+  Post,
+  Put,
+  UseGuards,
+} from '@nestjs/common';
 import { Role } from '@prisma/client';
 import { AuthUser } from '../common/auth/auth-user';
 import { CurrentUser } from '../common/auth/current-user.decorator';
+import { PayLockGuard } from '../pay-lock/pay-lock.guard';
 import { Roles } from '../common/auth/roles.decorator';
 import {
   MoveInput,
@@ -13,6 +24,8 @@ import { ReimbursementsService } from './reimbursements.service';
 
 /// The reimbursements board: managers and admins only, reading and keeping.
 /// Every change answers with the whole board, as it now stands.
+/// Shows pay: only after the PIN (October 2026, `pay-lock/`).
+@UseGuards(PayLockGuard)
 @Controller('reimbursements')
 @Roles(Role.MANAGER)
 export class ReimbursementsController {
