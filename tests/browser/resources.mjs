@@ -1,6 +1,6 @@
 import { chromium } from 'playwright';
 import { mkdirSync } from 'node:fs';
-import { goTo, openMenu, goToManage, SECTION_OF } from './nav.mjs';
+import { closePopups, goTo, openMenu, goToManage, SECTION_OF } from './nav.mjs';
 
 const OUT = process.argv[2] || new URL('./shots/', import.meta.url).pathname;
 mkdirSync(OUT, { recursive: true });
@@ -26,6 +26,8 @@ async function signIn(page, email) {
 }
 
 async function go(page, menu, link) {
+  // The job roles are a pop-up on Staff now (October 2026): close it first.
+  await closePopups(page);
   // Manage's screens are under five headings now (October 2026).
   if (menu === 'Manage' && SECTION_OF[link]) return goToManage(page, link);
   await openMenu(page, menu);

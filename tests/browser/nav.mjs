@@ -9,8 +9,19 @@ export async function openMore(page) {
   }
 }
 
+/// A pop-up left open covers the navigation (the job roles are one on Staff,
+/// October 2026): close it with Escape, as a person would, before moving on.
+export async function closePopups(page) {
+  const open = page.getByRole('dialog');
+  if (await open.first().isVisible().catch(() => false)) {
+    await page.keyboard.press('Escape');
+    await open.first().waitFor({ state: 'detached', timeout: 10000 });
+  }
+}
+
 /// Opens the Manage menu (on a phone, inside More).
 export async function openMenu(page, name) {
+  await closePopups(page);
   await openMore(page);
   await page.getByRole('button', { name, exact: true }).click();
 }
@@ -55,6 +66,7 @@ export async function navLink(page, name) {
 
 /// Clicks through to a screen from the navigation.
 export async function goTo(page, name) {
+  await closePopups(page);
   await (await navLink(page, name)).click();
 }
 

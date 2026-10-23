@@ -223,7 +223,9 @@ await step('somebody who left has their leaving details and exit checklist', asy
   await dialog().getByLabel('Last paycheck').fill(addDays(today(), 7));
   await dialog().getByRole('button', { name: 'Save leaving details' }).click();
   await dialog().getByText('Saved.').waitFor();
-  await dialog().getByRole('button', { name: 'Close' }).click();
+  // Escape closes it even after the save button has taken focus away (October 2026).
+  await admin.keyboard.press('Escape');
+  await dialog().waitFor({ state: 'detached' });
   await card.getByText('Resigned: Moving away').waitFor();
 });
 

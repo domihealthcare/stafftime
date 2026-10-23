@@ -3,6 +3,10 @@ import { useEffect, useRef, type KeyboardEvent } from 'react';
 const FOCUSABLE =
   'a[href], button:not([disabled]), input:not([disabled]):not([type=hidden]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])';
 
+/// The pop-ups open now, oldest first, so Escape from outside them all closes
+/// only the one on top.
+const OPEN: HTMLElement[] = [];
+
 /**
  * What a pop-up needs to behave like one, for a keyboard or a screen reader:
  * focus moves into it when it opens, Tab stays inside it, Escape closes it, and
@@ -31,9 +35,37 @@ export function useDialog(onClose: () => void) {
     return () => previous?.focus?.({ preventScroll: true });
   }, []);
 
+  // Escape still closes it when focus has fallen out of every pop-up - as it
+  // does when a Save button is disabled while it saves, and the browser drops
+  // focus to the page (October 2026). Only the top-most pop-up answers, and
+  // never while a confirmation is open, which answers its own keys.
+  useEffect(() => {
+    const panel = ref.current;
+    if (!panel) return;
+    OPEN.push(panel);
+    function onDocumentKeyDown(event: globalThis.KeyboardEvent) {
+      if (event.key !== 'Escape' || event.defaultPrevented) return;
+      if (OPEN[OPEN.length - 1] !== panel) return;
+      const target = event.target;
+      if (target instanceof Element && target.closest('[role="dialog"], [role="alertdialog"]')) {
+        return;
+      }
+      if (document.querySelector('[role="alertdialog"]')) return;
+      event.preventDefault();
+      close.current();
+    }
+    document.addEventListener('keydown', onDocumentKeyDown);
+    return () => {
+      document.removeEventListener('keydown', onDocumentKeyDown);
+      const at = OPEN.lastIndexOf(panel);
+      if (at >= 0) OPEN.splice(at, 1);
+    };
+  }, []);
+
   function onKeyDown(event: KeyboardEvent<HTMLElement>) {
     if (event.key === 'Escape') {
       event.stopPropagation();
+      event.preventDefault();
       close.current();
       return;
     }
