@@ -388,9 +388,9 @@ export function StaffEditor({
                 <span>
                   <span className="font-medium text-slate-700">Shared account, not a person</span>
                   <span className="block text-xs text-slate-500">
-                    For an account several people sign in to, like office@. It sees what its access
-                    and job roles give it, but never clocks in, is never put on a shift and takes no
-                    time off, and it is left out of the Directory, birthdays, 360 feedback, surveys,
+                    For an account several people sign in to, like office@. It sees the screens it
+                    is set up for, but never clocks in, is never put on a shift and takes no time
+                    off, and it is left out of the Directory, birthdays, 360 feedback, surveys,
                     required reading, cover suggestions, staffing counts, licenses and pay.
                   </span>
                 </span>
