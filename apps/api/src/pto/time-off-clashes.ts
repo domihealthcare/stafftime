@@ -9,6 +9,7 @@ import {
 } from '../common/util/zoned-time.util';
 import { PrismaService } from '../prisma/prisma.service';
 import { appliesOn } from '../staffing/weekdays';
+import { A_PERSON } from '../common/people';
 
 /**
  * Time-off clashes, seen early (Dominguez, October 2026 - making the app
@@ -203,7 +204,7 @@ export async function loadTimeOffClashes(
 
   const [people, requests, weekendShifts, minimums] = await Promise.all([
     prisma.employee.findMany({
-      where: { employmentStatus: EmploymentStatus.ACTIVE },
+      where: { employmentStatus: EmploymentStatus.ACTIVE, ...A_PERSON },
       select: {
         id: true,
         locations: { select: { location: { select: { id: true, name: true } } } },

@@ -1,5 +1,6 @@
 import { ClockMethod, EmploymentStatus } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
+import { A_PERSON } from '../common/people';
 
 /**
  * "Staff who never signed in" (October 2026, Dominguez - a "smarter" idea):
@@ -63,6 +64,7 @@ export async function loadNotSignedIn(
     where: {
       lastLoginAt: null,
       employmentStatus: { not: EmploymentStatus.TERMINATED },
+      ...A_PERSON,
       // Demo staff are not people to invite. Spelled out for real staff, whose
       // external id is empty: "not like demo:%" is unknown, not true, for null.
       OR: [{ externalId: null }, { NOT: { externalId: { startsWith: 'demo:' } } }],

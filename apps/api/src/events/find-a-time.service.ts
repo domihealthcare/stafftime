@@ -18,6 +18,7 @@ import { PrismaService } from '../prisma/prisma.service';
 import { FindTimeInput } from './dto/find-time.dto';
 import { chosenWhere, WORKING } from './events.service';
 import { findTimes, slotsToSearch, TimePerson } from './find-a-time';
+import { A_PERSON } from '../common/people';
 
 /// Two weeks unless asked otherwise.
 export const DEFAULT_SEARCH_DAYS = 14;
@@ -57,7 +58,8 @@ export class FindATimeService {
           })
         : { employmentStatus: WORKING };
     const people = await this.prisma.employee.findMany({
-      where,
+      // A shared account has no rota of its own to be free or busy by.
+      where: { AND: [where, A_PERSON] },
       select: {
         id: true,
         firstName: true,

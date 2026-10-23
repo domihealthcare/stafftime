@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { CalendarLinkCard } from '../components/CalendarLinkCard';
 import {
+  atAnOffice,
   ClosuresCard,
   EventChip,
   EventDialog,
@@ -97,6 +98,15 @@ export function CalendarPage() {
   /// "all, diagnostics, rep lunches, etc … choose multiple or choose one, or
   /// all").
   const [chosen, setChosen] = useState<CalendarKind[]>(() => {
+    // `?show=REP_LUNCH` (Home's Quick card) opens on those kinds, and they
+    // are remembered as if picked here.
+    const asked = (searchParams.get('show') ?? '')
+      .split(',')
+      .filter((kind): kind is CalendarKind => CALENDAR_KINDS.includes(kind as CalendarKind));
+    if (asked.length > 0) {
+      remember(CHOSEN_KEY, asked);
+      return asked;
+    }
     const saved = remembered<unknown>(CHOSEN_KEY, []);
     return Array.isArray(saved)
       ? saved.filter((kind): kind is CalendarKind => CALENDAR_KINDS.includes(kind))
@@ -226,7 +236,7 @@ export function CalendarPage() {
       events.filter((event) => {
         if (chosen.length > 0 && !chosen.includes(event.kind)) return false;
         if (!office) return true;
-        if (event.kind === 'DIAGNOSTIC' || event.kind === 'REP_LUNCH') {
+        if (atAnOffice(event.kind)) {
           return event.atLocation?.id === office;
         }
         if (event.kind === 'CLOSURE' && event.audience === 'LOCATION') {
@@ -362,6 +372,7 @@ export function CalendarPage() {
                   {(
                     [
                       ['DIAGNOSTIC', 'When a test is offered at an office'],
+                      ['PHLEBOTOMY', 'When the phlebotomist is at an office'],
                       ['REP_LUNCH', 'A rep bringing lunch to an office'],
                       ['EVENT', 'A meeting or something on the calendar'],
                       ['HOLIDAY', 'A named day - the offices stay open'],
@@ -550,8 +561,7 @@ export function CalendarPage() {
                           className={`block w-full truncate rounded px-0.5 text-left text-[10px] font-medium leading-4 ring-1 ring-inset ${KIND_STYLE[event.kind].chip}`}
                         >
                           <span aria-hidden="true">{KIND_STYLE[event.kind].emoji}</span>
-                          {(event.kind === 'DIAGNOSTIC' || event.kind === 'REP_LUNCH') &&
-                          event.atLocation
+                          {atAnOffice(event.kind) && event.atLocation
                             ? ` ${officeShort(event.atLocation.name)}`
                             : ''}
                         </button>

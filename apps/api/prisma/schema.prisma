@@ -231,6 +231,14 @@ model Employee {
   /// clock in or out, a shift with no punch is not chased, and the Directory
   /// shows them at their shift's office while it runs.
   clocksIn         Boolean          @default(true)
+  /// A shared account, not a person (23 October 2026, Dominguez: a general
+  /// office@ account with front desk access). Set by an admin. It signs in
+  /// and sees what its job roles and access give it, but never clocks in,
+  /// is never on a shift or asks for time off, and is left out of everything
+  /// that counts or lists people: the Directory, birthdays, 360s, surveys,
+  /// required reading, "never signed in", cover and staffing counts, licenses
+  /// by person and pay. `common/people.ts`.
+  isSharedAccount  Boolean          @default(false)
 
   /// Optional since September 2026 (Dominguez): not every start date was to
   /// hand on the first day. Without one, time off is not prorated and an
@@ -1884,6 +1892,11 @@ enum PracticeEventKind {
   DIAGNOSTIC
   /// A drug rep bringing lunch to an office, with the rep from the list.
   REP_LUNCH
+  /// When the phlebotomist is at an office to draw blood (23 October 2026,
+  /// Dominguez: "we need a phlebotomist schedule as part of the calendar").
+  /// Entered by managers, like diagnostics; for everyone. The title is who,
+  /// or just "Phlebotomist".
+  PHLEBOTOMY
 }
 
 /// Who an event is for. The same three choices as a survey.

@@ -515,15 +515,17 @@ const STAFF: Section[] = [
             Shifts). It shows the month with <strong>your own shifts</strong> 🕘 and approved days
             off 🌴 (under Show, <strong>My shifts</strong> - pick it alone to see just your schedule
             for the month; tap a shift to open its week), the <strong>diagnostics</strong> 🩺 (which
-            tests, the hours, and the office - WNY or NB), <strong>rep lunches</strong> 🍽️ (the rep,
-            their company, the medication, and whether they bring catering or the office orders -
-            the bell tells you the evening before whether there is one at your office),{' '}
+            tests, the hours, and the office - WNY or NB), when the <strong>phlebotomist</strong> 💉
+            is at each office, <strong>rep lunches</strong> 🍽️ (the rep, their company, the
+            medication, and whether they bring catering or the office orders - the bell tells you
+            the evening before whether there is one at your office; Home&rsquo;s Quick card has a{' '}
+            <strong>Rep lunches</strong> button that opens the calendar on just them),{' '}
             <strong>holidays</strong> ⭐ (the offices are open unless there is also a closure),{' '}
             <strong>closures</strong> 🔒, meetings and events 📅, and <strong>pay days</strong> 💵 -
             the Friday after each pay period ends. Under <strong>Show</strong>, keep{' '}
             <strong>All</strong>, or tap one kind to see only that, and more to add them; All puts
-            everything back. Pick an office to see only its diagnostics and rep lunches, and choose{' '}
-            <strong>List</strong> for a day-by-day list (a phone starts there).{' '}
+            everything back. Pick an office to see only its diagnostics, phlebotomist and rep
+            lunches, and choose <strong>List</strong> for a day-by-day list (a phone starts there).{' '}
             <strong>Print</strong> gives the month on one page, like the paper calendar, with what
             you have chosen to show. Everything on it reaches your phone&rsquo;s calendar through
             the calendar link at the bottom of the page: <strong>Everything in one calendar</strong>
@@ -791,9 +793,9 @@ const STAFF: Section[] = [
               or add a note, tick <strong>Preferred</strong> to star it, give the whole entry a{' '}
               <strong>Practice name</strong>, or press <strong>+ Add another address</strong> for
               another location (<strong>+ Name this location</strong> if one needs its own name).{' '}
-              <strong>+ Add an entry</strong> puts in a new place; only a manager can{' '}
-              <strong>Remove</strong> one (inside Edit). Please write about the place only - never a
-              patient&rsquo;s name or details.
+              <strong>+ Add an entry</strong> puts in a new place (providers, managers and admins);
+              only a manager can <strong>Remove</strong> one (inside Edit). Please write about the
+              place only - never a patient&rsquo;s name or details.
             </p>
           </>
         ),
@@ -1574,9 +1576,10 @@ const MANAGERS: Section[] = [
               publish it or remove it. <strong>Right-click</strong> a day - on the week or in the
               month - for <strong>Add a shift</strong>, <strong>Add time off</strong> (for that
               person, from that day), or an <strong>event</strong>, <strong>rep lunch</strong>,{' '}
-              <strong>diagnostics date</strong> or <strong>holiday or closure</strong> on it.
-              Removing a shift, or taking somebody off one, asks you to confirm first. Each
-              day&rsquo;s heading shows its hours and how many are on.
+              <strong>diagnostics date</strong>, <strong>phlebotomist date</strong> or{' '}
+              <strong>holiday or closure</strong> on it. Removing a shift, or taking somebody off
+              one, asks you to confirm first. Each day&rsquo;s heading shows its hours and how many
+              are on.
             </li>
             <li>
               Show it for <strong>everyone</strong>, <strong>by location</strong> or{' '}
@@ -1853,6 +1856,20 @@ const MANAGERS: Section[] = [
             and is told when one is added, moved or cancelled (no day-before reminder). Write when
             the tests are on and anything the front desk should know - never a patient&rsquo;s name
             or who is booked.
+          </p>
+        ),
+      },
+      {
+        question: 'The phlebotomist schedule',
+        answer: (
+          <p>
+            On <Screen>Schedule → Calendar</Screen>, choose{' '}
+            <strong>+ Add → Phlebotomist date</strong>: the office, the hours and, if you like, the
+            phlebotomist&rsquo;s name (left empty it just says &ldquo;Phlebotomist&rdquo;). A
+            regular day can be entered once with <strong>Repeat</strong>. Everyone sees it on the
+            calendar, can pick <strong>Phlebotomist</strong> under Show to see only those days, and
+            is told when one is added, moved or cancelled. Write when the phlebotomist is in and
+            anything the front desk should know - never a patient&rsquo;s name or who is booked.
           </p>
         ),
       },
@@ -2631,6 +2648,15 @@ const MANAGERS: Section[] = [
               Nobody reminds them or chases a shift with no punch, Home shows their shift instead of
               the Clock in button, and the Directory shows them <em>On shift</em> at their
               shift&rsquo;s office while it runs.
+            </li>
+            <li>
+              Tick <strong>Shared account, not a person</strong> for an account several people sign
+              in to, like office@domihealthcare.com. Give it Employee access and the job role whose
+              screens it needs (Front Desk), and no hire date. It sees what those give it, but never
+              clocks in, is never put on a shift and takes no time off, and it is left out of the
+              Directory, birthdays, 360 feedback, surveys, required reading, cover suggestions,
+              staffing counts, licenses and pay. Anybody who reads that inbox can reset its
+              password, so give it nothing more than it needs.
             </li>
             <li>
               Adding somebody new with a hire date - one at a time or several - starts their{' '}

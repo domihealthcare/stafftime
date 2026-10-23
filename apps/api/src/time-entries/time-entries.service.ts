@@ -25,6 +25,7 @@ import { toUtcDate } from '../common/util/calendar-date.util';
 import { normalizeIp } from '../common/util/ip.util';
 import { PRACTICE_ZONE, localDateIn } from '../common/util/zoned-time.util';
 import { PrismaService } from '../prisma/prisma.service';
+import { assertAPerson } from '../common/people';
 import { CLEAN_ENTRY_WHERE } from './clean-entry';
 import { isPastLocationRetention } from './location-retention';
 import { payrollStateOf, withPayroll } from './payroll-state';
@@ -147,10 +148,16 @@ export class TimeEntriesService {
     const employeeId = this.resolveEmployeeId(dto, actor);
     const employee = await this.prisma.employee.findUnique({
       where: { id: employeeId },
-      select: { id: true, employmentStatus: true },
+      select: { id: true, employmentStatus: true, isSharedAccount: true },
     });
     if (!employee) {
       throw new NotFoundException(`Employee ${employeeId} not found`);
+    }
+    // A shared account is not a person, so it has no hours (`common/people.ts`).
+    if (employee.isSharedAccount) {
+      throw new ForbiddenException(
+        'This is a shared account, so it does not clock in. Clock in with your own account.',
+      );
     }
     if (employee.employmentStatus !== EmploymentStatus.ACTIVE) {
       throw new ForbiddenException(
@@ -555,6 +562,11 @@ export class TimeEntriesService {
     if (clockOutAt.getTime() > Date.now() + 60_000) {
       throw new BadRequestException('Hours can only be added once they have been worked.');
     }
+    await assertAPerson(
+      this.prisma,
+      dto.employeeId,
+      'That is a shared account, not a person, so it has no hours.',
+    );
     if (dto.employeeId === actor.id) {
       throw new ForbiddenException('Ask another manager to add your own hours.');
     }

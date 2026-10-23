@@ -13,6 +13,9 @@ export const HOME: Record<string, string> = {
   'Today’s shift: {start} – {end}': 'Turno de hoy: {start} – {end}',
   'No shift scheduled today.': 'No tienes turno hoy.',
   'No need to clock in': 'No necesitas marcar entrada',
+  'Shared account': 'Cuenta compartida',
+  'This account does not clock in. Clock in with your own account.':
+    'Esta cuenta no marca entrada. Marca tu entrada con tu propia cuenta.',
   'Note on today’s shift:': 'Nota sobre el turno de hoy:',
   'Quick and coming up': 'Accesos rápidos y próximamente',
 

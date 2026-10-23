@@ -67,6 +67,7 @@ export function StaffEditor({
     role: person.role,
     payType: person.payType ?? 'HOURLY',
     clocksIn: person.clocksIn ?? true,
+    isSharedAccount: person.isSharedAccount ?? false,
     canPostNews: person.canPostNews ?? false,
     canSeeEveryonesSchedule: person.canSeeEveryonesSchedule ?? false,
     jobRoleIds: heldRoles.map((jobRole) => jobRole.id),
@@ -158,7 +159,8 @@ export function StaffEditor({
         phone: form.phone.trim() || null,
         role: form.role,
         payType: form.payType,
-        clocksIn: form.clocksIn,
+        clocksIn: form.isSharedAccount ? false : form.clocksIn,
+        isSharedAccount: form.isSharedAccount,
         canPostNews: form.canPostNews,
         canSeeEveryonesSchedule: form.canSeeEveryonesSchedule,
         locationIds: form.locationIds,
@@ -379,9 +381,28 @@ export function StaffEditor({
               <label className="mt-4 flex items-start gap-2 text-sm">
                 <input
                   type="checkbox"
-                  checked={form.clocksIn}
-                  onChange={(event) => set('clocksIn', event.target.checked)}
+                  checked={form.isSharedAccount}
+                  onChange={(event) => set('isSharedAccount', event.target.checked)}
                   className="mt-0.5 rounded border-slate-300 text-brand-600 focus:ring-brand-600"
+                />
+                <span>
+                  <span className="font-medium text-slate-700">Shared account, not a person</span>
+                  <span className="block text-xs text-slate-500">
+                    For an account several people sign in to, like office@. It sees the screens it
+                    is set up for, but never clocks in, is never put on a shift and takes no time
+                    off, and it is left out of the Directory, birthdays, 360 feedback, surveys,
+                    required reading, cover suggestions, staffing counts, licenses and pay.
+                  </span>
+                </span>
+              </label>
+
+              <label className="mt-4 flex items-start gap-2 text-sm">
+                <input
+                  type="checkbox"
+                  checked={form.isSharedAccount ? false : form.clocksIn}
+                  disabled={form.isSharedAccount}
+                  onChange={(event) => set('clocksIn', event.target.checked)}
+                  className="mt-0.5 rounded border-slate-300 text-brand-600 focus:ring-brand-600 disabled:opacity-50"
                 />
                 <span>
                   <span className="font-medium text-slate-700">Clocks in</span>

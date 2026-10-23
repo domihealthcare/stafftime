@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { BrandLogoForPrint } from '../components/Brand';
-import { eventsOnDay, eventTimeLabel, shortTitle } from '../components/PracticeEvents';
+import { atAnOffice, eventsOnDay, eventTimeLabel, shortTitle } from '../components/PracticeEvents';
 import { Alert, Spinner, buttonClass } from '../components/ui';
 import { api } from '../lib/api';
 import { CALENDAR_KINDS, KIND_STYLE, officeShort, type CalendarKind } from '../lib/calendar-kinds';
@@ -35,6 +35,7 @@ const PRINT_INK: Record<CalendarKind, string> = {
   PAY_DAY: 'text-emerald-800 font-semibold',
   DIAGNOSTIC: 'text-sky-800 font-semibold',
   REP_LUNCH: 'text-rose-800',
+  PHLEBOTOMY: 'text-orange-800',
   EVENT: 'text-indigo-800',
 };
 
@@ -138,7 +139,7 @@ export function CalendarPrintPage() {
   const shown = events.filter((event) => {
     if (!kinds.includes(event.kind)) return false;
     if (!office) return true;
-    if (event.kind === 'DIAGNOSTIC' || event.kind === 'REP_LUNCH') {
+    if (atAnOffice(event.kind)) {
       return event.atLocation?.id === office;
     }
     if (event.kind === 'CLOSURE' && event.audience === 'LOCATION') {
@@ -336,6 +337,10 @@ function printLine(event: PracticeEvent, day: string): string {
   switch (event.kind) {
     case 'DIAGNOSTIC':
       return `${event.title} ${time}`;
+    case 'PHLEBOTOMY':
+      return `💉 ${event.title} ${time}${
+        event.atLocation ? ` · ${officeShort(event.atLocation.name)}` : ''
+      }`;
     case 'REP_LUNCH':
       return `🍽 ${shortTitle(event)} ${time}${
         event.atLocation ? ` · ${officeShort(event.atLocation.name)}` : ''

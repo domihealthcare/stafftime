@@ -107,7 +107,7 @@ const cellOf = async (weekday) => {
   const button = frankie().getByRole('button', { name: new RegExp(`^Add a shift for Frankie Front-Desk on ${weekday}`) });
   return button.locator('xpath=ancestor::td[1]');
 };
-const MENU = ['Add a shift', 'Add time off', 'Add an event', 'Add a rep lunch', 'Add a diagnostics date', 'Add a holiday or closure'];
+const MENU = ['Add a shift', 'Add time off', 'Add an event', 'Add a rep lunch', 'Add a diagnostics date', 'Add a phlebotomist date', 'Add a holiday or closure'];
 
 await step('the cell takes no room of its own for adding: no ＋ strip under the shifts', async () => {
   const button = frankie().getByRole('button', { name: /^Add a shift for Frankie Front-Desk on Thursday/ });

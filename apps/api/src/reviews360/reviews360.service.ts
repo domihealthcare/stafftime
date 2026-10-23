@@ -30,6 +30,7 @@ import {
   STARTER_QUESTIONS,
   summarise,
 } from './review360';
+import { A_PERSON } from '../common/people';
 
 const ACTIVE: { in: EmploymentStatus[] } = {
   in: [EmploymentStatus.ACTIVE, EmploymentStatus.ON_LEAVE],
@@ -128,7 +129,7 @@ export class Reviews360Service {
     }
 
     const people = await this.prisma.employee.findMany({
-      where: { employmentStatus: ACTIVE },
+      where: { employmentStatus: ACTIVE, ...A_PERSON },
       select: { id: true },
     });
     if (people.length < MIN_RATERS + 1) {

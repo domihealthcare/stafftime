@@ -11,6 +11,9 @@ export interface NoticeShift {
   /// The manager's note on it ("7–12 upstairs, 12–3 downstairs").
   notes?: string | null;
   location: { name: string; timezone: string };
+  /// The job role it is worked in, when known: a change of role on a
+  /// published shift is told like a change of hours (October 2026).
+  jobRole?: { name: string } | null;
 }
 
 /// "Tue, Sep 30, 9:00 AM–5:00 PM", on the office's own clock.
@@ -79,16 +82,24 @@ export function shiftNotices(
       before!.endsAt.getTime() !== after!.endsAt.getTime() ||
       before!.location.name !== after!.location.name ||
       before!.isRemote !== after!.isRemote;
+    // Only when both sides say which role: a caller that does not load it
+    // leaves it out, and that is not a change.
+    const roleChanged =
+      before!.jobRole !== undefined &&
+      after!.jobRole !== undefined &&
+      (before!.jobRole?.name ?? null) !== (after!.jobRole?.name ?? null);
     const noteBefore = before!.notes ?? null;
     const noteAfter = after!.notes ?? null;
     const noteChanged = noteBefore !== noteAfter;
-    if (moved) {
+    if (moved || roleChanged) {
+      const as = (shift: NoticeShift) =>
+        roleChanged ? `, as ${shift.jobRole?.name ?? 'no set job role'}` : '';
       notices.push({
         employeeId: now,
         notice: {
           kind: NotificationKind.SCHEDULE_CHANGED,
           title: `Shift changed: ${describeShift(after!)}`,
-          body: `${where(after!)}. Was ${describeShift(before!)}, ${where(before!)}.${
+          body: `${where(after!)}${as(after!)}. Was ${describeShift(before!)}, ${where(before!)}${as(before!)}.${
             noteChanged ? ` ${noteLine(noteAfter)}` : ''
           }`,
           link: '/schedule',

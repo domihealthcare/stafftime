@@ -58,6 +58,27 @@ describe('shiftNotices', () => {
     );
   });
 
+  it('tells them when only the job role changes', () => {
+    const [notice] = shiftNotices(
+      shift({ jobRole: { name: 'Front Desk' } }),
+      shift({ jobRole: { name: 'Medical Assistant' } }),
+    );
+    expect(notice.notice.title).toBe('Shift changed: Wed, Sep 30, 9:00 AM–5:00 PM');
+    expect(notice.notice.body).toBe(
+      'North Bergen, as Medical Assistant. Was Wed, Sep 30, 9:00 AM–5:00 PM, North Bergen, as Front Desk.',
+    );
+  });
+
+  it('says nothing about the job role when it stayed, or was not loaded', () => {
+    expect(
+      shiftNotices(
+        shift({ jobRole: { name: 'Front Desk' } }),
+        shift({ jobRole: { name: 'Front Desk' } }),
+      ),
+    ).toEqual([]);
+    expect(shiftNotices(shift({ jobRole: { name: 'Front Desk' } }), shift())).toEqual([]);
+  });
+
   it('gives the note with a new shift', () => {
     const [notice] = shiftNotices(null, shift({ notes: '9–12 upstairs, 12–5 downstairs' }));
     expect(notice.notice.body).toBe('North Bergen. Note: 9–12 upstairs, 12–5 downstairs');

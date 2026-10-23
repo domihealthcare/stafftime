@@ -5,6 +5,7 @@ import { isoDate } from '../common/util/calendar-date.util';
 import { localDateIn, PRACTICE_ZONE, practiceToday } from '../common/util/zoned-time.util';
 import { closedFor, countedDays, loadClosedDays } from './counted-days';
 import { AdjustPtoBalanceDto, UpdatePtoPolicyDto } from './dto/pto.dto';
+import { A_PERSON } from '../common/people';
 
 /// NJ earned sick leave: an hour of sick time for every 30 hours worked.
 export const HOURS_WORKED_PER_SICK_HOUR = 30;
@@ -361,7 +362,7 @@ export class PtoPolicyService {
    */
   async staffBalances(): Promise<StaffBalance[]> {
     const staff = await this.prisma.employee.findMany({
-      where: { employmentStatus: { not: EmploymentStatus.TERMINATED } },
+      where: { employmentStatus: { not: EmploymentStatus.TERMINATED }, ...A_PERSON },
       orderBy: [{ firstName: 'asc' }, { lastName: 'asc' }],
       select: { id: true, firstName: true, lastName: true, preferredName: true, email: true },
     });

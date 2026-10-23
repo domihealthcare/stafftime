@@ -914,6 +914,7 @@ export const api = {
       role: string;
       payType: string;
       clocksIn: boolean;
+      isSharedAccount: boolean;
       canPostNews: boolean;
       canSeeEveryonesSchedule: boolean;
       /// ACTIVE brings back somebody marked as having left.

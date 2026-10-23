@@ -23,6 +23,7 @@ import { toRule } from '../availability/availability.service';
 import { InboxService } from '../email/inbox.service';
 import { heldJobRole } from './held-job-role';
 import { PrismaService } from '../prisma/prisma.service';
+import { assertAPerson } from '../common/people';
 import { workweekStartsOn } from '../settings/pay-period';
 import { PracticeSettingsService } from '../settings/practice-settings.service';
 import {
@@ -125,6 +126,13 @@ export class ShiftPlanningService {
         'The end time must be after the start time. An overnight shift needs to be added a day at a time for now.',
       );
     }
+
+    if (dto.employeeId)
+      await assertAPerson(
+        this.prisma,
+        dto.employeeId,
+        'That is a shared account, not a person, so it is never put on a shift.',
+      );
 
     // No last date: a standing shift, written out a few weeks ahead now and
     // topped up every night (`extendStandingShifts`).
@@ -587,12 +595,16 @@ export class ShiftPlanningService {
   ) {
     const employee = await this.prisma.employee.findUnique({
       where: { id: employeeId },
-      select: { id: true, employmentStatus: true },
+      select: { id: true, employmentStatus: true, isSharedAccount: true },
     });
     if (!employee) throw new NotFoundException('That member of staff does not exist.');
     if (employee.employmentStatus === EmploymentStatus.TERMINATED) {
       throw new BadRequestException('They have left the practice.');
     }
+    if (employee.isSharedAccount)
+      throw new BadRequestException(
+        'That is a shared account, not a person, so it is never put on a shift.',
+      );
 
     const seen = new Set<number>();
     for (const day of dto.days) {

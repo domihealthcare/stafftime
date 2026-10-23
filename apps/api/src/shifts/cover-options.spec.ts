@@ -212,6 +212,7 @@ describe('CoverOptionsService', () => {
     expect(prisma.employee.findMany.mock.calls[0][0].where.OR).toEqual([
       {
         employmentStatus: 'ACTIVE',
+        isSharedAccount: false,
         locations: { some: { locationId: 'loc-nb' } },
         jobRoles: { some: { jobRoleId: 'role-ma' } },
       },

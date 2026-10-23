@@ -2,6 +2,7 @@ import { EmploymentStatus } from '@prisma/client';
 import { practiceToday } from '../common/util/zoned-time.util';
 import { PrismaService } from '../prisma/prisma.service';
 import { StandingLine, standingFor } from './standing';
+import { A_PERSON } from '../common/people';
 
 export type { StandingLine };
 
@@ -14,7 +15,9 @@ export type { StandingLine };
 export async function loadStanding(prisma: PrismaService, only?: string) {
   const people = await prisma.employee.findMany({
     where: {
-      ...(only ? { id: only } : { employmentStatus: { not: EmploymentStatus.TERMINATED } }),
+      ...(only
+        ? { id: only }
+        : { employmentStatus: { not: EmploymentStatus.TERMINATED }, ...A_PERSON }),
     },
     select: {
       id: true,

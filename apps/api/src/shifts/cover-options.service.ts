@@ -14,6 +14,7 @@ import {
   PlanShift,
   rankCoverOptions,
 } from './cover-options';
+import { A_PERSON } from '../common/people';
 
 /**
  * "Who can cover this?" - everybody who could work a shift, best first, with
@@ -60,6 +61,7 @@ export class CoverOptionsService {
         OR: [
           {
             employmentStatus: EmploymentStatus.ACTIVE,
+            ...A_PERSON,
             locations: { some: { locationId: shift.locationId } },
             ...(shift.jobRoleId ? { jobRoles: { some: { jobRoleId: shift.jobRoleId } } } : {}),
           },
@@ -211,6 +213,7 @@ export class CoverOptionsService {
     const people = await this.prisma.employee.findMany({
       where: {
         employmentStatus: EmploymentStatus.ACTIVE,
+        ...A_PERSON,
         locations: { some: { locationId: { in: [...new Set(open.map((s) => s.locationId))] } } },
       },
       select: {

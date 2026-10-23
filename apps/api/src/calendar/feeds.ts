@@ -30,11 +30,13 @@ export const FEEDS: Record<string, Feed> = {
       PracticeEventKind.HOLIDAY,
       PracticeEventKind.DIAGNOSTIC,
       PracticeEventKind.REP_LUNCH,
+      PracticeEventKind.PHLEBOTOMY,
     ],
   },
   shifts: { name: 'My shifts & time off', parts: ['SHIFTS', 'TIME_OFF'] },
   diagnostics: { name: 'Diagnostics', parts: [PracticeEventKind.DIAGNOSTIC] },
   'rep-lunches': { name: 'Rep lunches', parts: [PracticeEventKind.REP_LUNCH] },
+  phlebotomist: { name: 'Phlebotomist', parts: [PracticeEventKind.PHLEBOTOMY] },
   holidays: {
     name: 'Holidays & closures',
     parts: [PracticeEventKind.HOLIDAY, PracticeEventKind.CLOSURE],

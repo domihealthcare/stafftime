@@ -10,6 +10,7 @@ import {
 } from '../common/util/zoned-time.util';
 import { mainFirst } from '../job-roles/main-job-role';
 import { PrismaService } from '../prisma/prisma.service';
+import { A_PERSON } from '../common/people';
 
 /// An open punch older than this is a forgotten clock-out, not somebody at
 /// work. The longest shift the practice runs is well under it, and it keeps
@@ -63,6 +64,7 @@ export class DirectoryService {
       where: {
         employmentStatus: { in: [EmploymentStatus.ACTIVE, EmploymentStatus.ON_LEAVE] },
         birthdayMonth: { not: null },
+        ...A_PERSON,
       },
       select: {
         id: true,
@@ -95,7 +97,10 @@ export class DirectoryService {
     );
 
     const people = await this.prisma.employee.findMany({
-      where: { employmentStatus: { in: [EmploymentStatus.ACTIVE, EmploymentStatus.ON_LEAVE] } },
+      where: {
+        employmentStatus: { in: [EmploymentStatus.ACTIVE, EmploymentStatus.ON_LEAVE] },
+        ...A_PERSON,
+      },
       select: {
         id: true,
         firstName: true,

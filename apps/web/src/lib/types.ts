@@ -83,6 +83,9 @@ export interface Employee extends EmployeeSummary {
   /// Home shows their shift instead of a Clock in button, and the Directory
   /// shows them where their shift is while it runs. Set by an admin.
   clocksIn?: boolean;
+  /// A shared account, not a person (October 2026): never clocks in, takes
+  /// no time off, and is left out of the Directory, surveys and the rest.
+  isSharedAccount?: boolean;
   /// Their last day, once they have left (or been given one).
   terminationDate?: string | null;
   /// When their profile photo last changed; null for none.
@@ -1170,8 +1173,9 @@ export interface EventSeries extends RepeatInput {
 }
 
 /// What an entry on the practice calendar is: a meeting or day out, an
-/// office shut, a named day that shuts nothing, or when a test is offered.
-export type EventKind = 'EVENT' | 'CLOSURE' | 'HOLIDAY' | 'DIAGNOSTIC' | 'REP_LUNCH';
+/// office shut, a named day that shuts nothing, when a test is offered, a
+/// rep lunch, or when the phlebotomist is at an office.
+export type EventKind = 'EVENT' | 'CLOSURE' | 'HOLIDAY' | 'DIAGNOSTIC' | 'REP_LUNCH' | 'PHLEBOTOMY';
 
 /// How a rep feeds the office: they bring catering, or the office orders.
 export type RepFood = 'CATERING' | 'SELF_ORDER';

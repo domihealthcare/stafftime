@@ -327,7 +327,7 @@ export function ClockPage() {
   return (
     <div className="grid items-start gap-4 lg:grid-cols-3 lg:grid-rows-[auto_1fr] lg:gap-6">
       <h1 className="sr-only">{t('Home')}</h1>
-      <MonthBalancePopup />
+      {!employee.isSharedAccount && <MonthBalancePopup />}
       <div className="space-y-4 lg:col-span-2 lg:row-start-1" data-testid="home-clock">
         <MyOvertimeNotice />
 
@@ -361,9 +361,17 @@ export function ClockPage() {
           ) : (
             <>
               <p className="mt-4 text-2xl font-semibold text-slate-900" data-testid="clock-status">
-                {noClock ? t('No need to clock in') : t('Not clocked in')}
+                {employee.isSharedAccount
+                  ? t('Shared account')
+                  : noClock
+                    ? t('No need to clock in')
+                    : t('Not clocked in')}
               </p>
-              {todaysShift ? (
+              {employee.isSharedAccount ? (
+                <p className="mt-1 text-sm text-slate-600" data-testid="shared-account-note">
+                  {t('This account does not clock in. Clock in with your own account.')}
+                </p>
+              ) : todaysShift ? (
                 <p className="mt-1 text-sm text-slate-600">
                   {t('Today’s shift: {start} – {end}', {
                     start: formatTime(todaysShift.startsAt),
