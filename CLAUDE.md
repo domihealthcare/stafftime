@@ -1355,6 +1355,16 @@ Beyond the phases, the parts worth knowing about before picking up work:
   not entered on the live site yet**: the rota-cost people type each
   person's current pay in once (from the spreadsheet, by hand), then raises
   go through the screen.
+- **Pay on file** (24 October 2026, Dominguez: "i need to be able to add
+  people pay rate (without it being a new rate at this time or anything like
+  that now)", version 1.24.0): a seventh kind of `EmploymentChange`,
+  `PAY_ON_FILE` ("Pay on file"), for what somebody is already paid when it
+  is first typed in. On Pay & raises a person with **No pay on file** opens on
+  **Enter their pay** (pay, per hour or year from their pay type, and *Paid
+  this since*, started on their hire date, empty meaning today); the staff
+  profile has the same button. It is not a raise and touches no raise; the
+  rota's cost reads it from that day like any pay. Refused without an amount.
+  Migration `20261024020000_pay_on_file`; `tests/browser/pay.mjs`.
 - **The exit checklist** (23 October 2026, Dominguez: "an exit employee
   checklist for terminated employees (i.e. keys, emr access, staff portal
   access, whatsapp, etc.)"): it is the default **offboarding** template,

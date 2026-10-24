@@ -1619,7 +1619,7 @@ export interface PersonalRecord extends PersonalRecordFields {
 }
 
 export type EmploymentChangeKind =
-  'HIRED' | 'PROMOTION' | 'PAY_CHANGE' | 'POSITION_CHANGE' | 'OTHER';
+  'HIRED' | 'PROMOTION' | 'PAY_CHANGE' | 'POSITION_CHANGE' | 'OTHER' | 'PAY_ON_FILE';
 export type PayRateUnit = 'HOURLY' | 'YEARLY';
 
 export interface EmploymentChangeInput {

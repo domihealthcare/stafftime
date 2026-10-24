@@ -152,6 +152,30 @@ describe('StaffRecordsService', () => {
     );
   });
 
+  it('keeps the pay on file, not as a raise, and wants the amount for it', async () => {
+    const { service, prisma } = build();
+    await service.addChange(
+      'emp-1',
+      {
+        effectiveOn: '2025-03-10',
+        kind: EmploymentChangeKind.PAY_ON_FILE,
+        payRate: 21,
+        payUnit: PayRateUnit.HOURLY,
+      },
+      'adm-1',
+    );
+    expect(prisma.employmentChange.create.mock.calls[0][0].data.kind).toBe(
+      EmploymentChangeKind.PAY_ON_FILE,
+    );
+    await expect(
+      service.addChange(
+        'emp-1',
+        { effectiveOn: '2025-03-10', kind: EmploymentChangeKind.PAY_ON_FILE, note: 'unknown' },
+        'adm-1',
+      ),
+    ).rejects.toThrow('Give the pay they are on.');
+  });
+
   it('refuses a change that says nothing', async () => {
     const { service } = build();
     await expect(

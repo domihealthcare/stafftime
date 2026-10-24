@@ -186,6 +186,7 @@ export function StaffProfilePage() {
         employeeId={person.id}
         record={record}
         hireDate={person.hireDate ?? null}
+        payType={person.payType}
         onChanged={(next) => setData((current) => current && { ...current, record: next })}
       />
 

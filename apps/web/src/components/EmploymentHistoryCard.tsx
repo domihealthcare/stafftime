@@ -18,6 +18,7 @@ export const CHANGE_KIND_LABELS: Record<EmploymentChangeKind, string> = {
   PAY_CHANGE: 'Pay change',
   POSITION_CHANGE: 'New position',
   OTHER: 'Other',
+  PAY_ON_FILE: 'Pay on file',
 };
 
 const DOLLARS = new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' });
@@ -54,17 +55,26 @@ export function EmploymentHistoryCard<T extends History = StaffRecord>({
   employeeId,
   record,
   hireDate,
+  payType,
+  openPayForm = false,
   onChanged,
   calls = PROFILE_CALLS as unknown as HistoryCalls<T>,
 }: {
   employeeId: string;
   record: History;
   hireDate: string | null;
+  /// Starts the pay form on per hour or per year.
+  payType?: 'HOURLY' | 'SALARY';
+  /// With no pay on file, the pay form starts open (Pay & raises).
+  openPayForm?: boolean;
   onChanged: (record: T) => void;
   calls?: HistoryCalls<T>;
 }) {
   const confirm = useConfirm();
   const [adding, setAdding] = useState(false);
+  /// "Enter their pay": what they are paid already, not a raise (October
+  /// 2026, Dominguez: "add people pay rate (without it being a new rate)").
+  const [enteringPay, setEnteringPay] = useState(openPayForm && !record.current.pay);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [problem, setProblem] = useState<string | null>(null);
 
@@ -88,17 +98,31 @@ export function EmploymentHistoryCard<T extends History = StaffRecord>({
     <Card className="p-4" testId="employment-history">
       <div className="flex flex-wrap items-center justify-between gap-2">
         <h2 className="text-base font-semibold text-slate-900">Pay and position</h2>
-        {!adding && (
-          <button
-            type="button"
-            onClick={() => {
-              setAdding(true);
-              setEditingId(null);
-            }}
-            className={buttonClass('secondary', 'sm')}
-          >
-            + Add a change
-          </button>
+        {!adding && !enteringPay && (
+          <div className="flex flex-wrap gap-2">
+            {!record.current.pay && (
+              <button
+                type="button"
+                onClick={() => {
+                  setEnteringPay(true);
+                  setEditingId(null);
+                }}
+                className={buttonClass('primary', 'sm')}
+              >
+                Enter their pay
+              </button>
+            )}
+            <button
+              type="button"
+              onClick={() => {
+                setAdding(true);
+                setEditingId(null);
+              }}
+              className={buttonClass('secondary', 'sm')}
+            >
+              + Add a change
+            </button>
+          </div>
         )}
       </div>
 
@@ -143,6 +167,20 @@ export function EmploymentHistoryCard<T extends History = StaffRecord>({
         </div>
       )}
 
+      {enteringPay && (
+        <div className="mt-4">
+          <PayOnFileForm
+            since={hireDate ? hireDate.slice(0, 10) : ''}
+            unit={payType === 'SALARY' ? 'YEARLY' : 'HOURLY'}
+            onCancel={() => setEnteringPay(false)}
+            onSave={async (input) => {
+              onChanged(await calls.add(employeeId, input));
+              setEnteringPay(false);
+            }}
+          />
+        </div>
+      )}
+
       {adding && (
         <div className="mt-4">
           <ChangeForm
@@ -168,10 +206,11 @@ export function EmploymentHistoryCard<T extends History = StaffRecord>({
       )}
 
       {record.changes.length === 0 ? (
-        !adding && (
+        !adding &&
+        !enteringPay && (
           <p className="mt-4 text-sm text-slate-600">
-            No history yet. Add where they started - their first position and pay - then each raise
-            or promotion with the day it took effect.
+            No history yet. Press Enter their pay to put down what they are paid now, or add where
+            they started, then each raise or promotion with the day it took effect.
           </p>
         )
       ) : (
@@ -392,6 +431,119 @@ function ChangeForm({
       <div className="flex flex-wrap gap-2">
         <button type="submit" disabled={busy} className={buttonClass('primary', 'sm')}>
           {busy ? 'Saving…' : submitLabel}
+        </button>
+        <button type="button" onClick={onCancel} className={buttonClass('secondary', 'sm')}>
+          Cancel
+        </button>
+      </div>
+    </form>
+  );
+}
+
+/**
+ * What somebody is paid already, put down once: the amount, per hour or per
+ * year, and since when if it is known. Kept as "Pay on file", never as a
+ * raise. With no day given it counts from today, so the rota's cost for
+ * earlier weeks still says nothing is on file.
+ */
+function PayOnFileForm({
+  since: startSince,
+  unit: startUnit,
+  onSave,
+  onCancel,
+}: {
+  since: string;
+  unit: PayRateUnit;
+  onSave: (input: EmploymentChangeInput) => Promise<void>;
+  onCancel: () => void;
+}) {
+  const [payRate, setPayRate] = useState('');
+  const [payUnit, setPayUnit] = useState<PayRateUnit>(startUnit);
+  const [since, setSince] = useState(startSince);
+  const [busy, setBusy] = useState(false);
+  const [problem, setProblem] = useState<string | null>(null);
+
+  async function submit(event: React.FormEvent) {
+    event.preventDefault();
+    const rate = Number(payRate.replace(/[$,\s]/g, ''));
+    if (payRate.trim() === '' || !Number.isFinite(rate) || rate <= 0) {
+      setProblem('Pay is an amount in dollars, like 24.50.');
+      return;
+    }
+    setBusy(true);
+    setProblem(null);
+    try {
+      await onSave({
+        effectiveOn: since || localDate(new Date()),
+        kind: 'PAY_ON_FILE',
+        position: null,
+        payRate: Math.round(rate * 100) / 100,
+        payUnit,
+        note: null,
+      });
+    } catch (err) {
+      setProblem(err instanceof ApiError ? err.message : 'Could not save that.');
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  return (
+    <form
+      onSubmit={(event) => void submit(event)}
+      className="space-y-3 rounded-lg border border-brand-200 bg-brand-50 p-3"
+      aria-label="Their pay"
+    >
+      <p className="text-sm text-slate-700">
+        What they are paid now. It is kept as their pay on file, not as a raise.
+      </p>
+      <div className="grid gap-3 sm:grid-cols-3">
+        <Field label="Pay">
+          {(props) => (
+            <input
+              {...props}
+              type="text"
+              inputMode="decimal"
+              required
+              placeholder="24.50"
+              value={payRate}
+              onChange={(event) => setPayRate(event.target.value)}
+              className={inputClass}
+            />
+          )}
+        </Field>
+        <Field label="Per">
+          {(props) => (
+            <select
+              {...props}
+              value={payUnit}
+              onChange={(event) => setPayUnit(event.target.value as PayRateUnit)}
+              className={inputClass}
+            >
+              <option value="HOURLY">Hour</option>
+              <option value="YEARLY">Year</option>
+            </select>
+          )}
+        </Field>
+        <Field
+          label="Paid this since (optional)"
+          hint="Their start date, if you are not sure. Empty is today."
+        >
+          {(props) => (
+            <input
+              {...props}
+              type="date"
+              value={since}
+              onChange={(event) => setSince(event.target.value)}
+              className={inputClass}
+            />
+          )}
+        </Field>
+      </div>
+      {problem && <Alert>{problem}</Alert>}
+      <div className="flex flex-wrap gap-2">
+        <button type="submit" disabled={busy} className={buttonClass('primary', 'sm')}>
+          {busy ? 'Saving…' : 'Save their pay'}
         </button>
         <button type="button" onClick={onCancel} className={buttonClass('secondary', 'sm')}>
           Cancel
