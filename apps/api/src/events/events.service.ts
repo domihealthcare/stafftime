@@ -25,6 +25,7 @@ import { EventInput } from './dto/event.dto';
 import { allDayDates, allDayRange, describeWhen } from './event-time';
 import { repLunchTitle } from '../reps/rep-lunch-title';
 import { workingThere } from './lunch-notices.service';
+import { PHLEBOTOMIST, PhlebotomistsService } from './phlebotomists.service';
 import { describeRule, occurrenceDates, RepeatRule, ruleProblem } from './recurrence';
 
 /// Long enough for a conference; short enough that a typo in the year is caught.
@@ -175,6 +176,7 @@ export class EventsService {
     private readonly prisma: PrismaService,
     private readonly inbox: InboxService,
     private readonly meet: GoogleMeetService,
+    private readonly phlebotomists: PhlebotomistsService,
   ) {}
 
   /// Events overlapping [from, to).
@@ -240,6 +242,7 @@ export class EventsService {
     const { first, last, count } = await this.prisma.$transaction((tx) =>
       this.write(tx, input, actor.id),
     );
+    await this.rememberName(input.data);
     this.logger.log(
       `Event ${first.id} added by ${actor.id} (${count} date${count === 1 ? '' : 's'})`,
     );
@@ -268,6 +271,7 @@ export class EventsService {
   async update(id: string, dto: EventInput, actor: AuthUser, scope: Scope = 'one') {
     const before = await this.require(id);
     const input = await this.checkInput(dto);
+    await this.rememberName(input.data);
     const following =
       (scope === 'following' && before.seriesId) || (!before.seriesId && input.repeat);
 
@@ -714,6 +718,11 @@ export class EventsService {
     };
   }
 
+  /// A phlebotomist's name is kept to pick next time.
+  private async rememberName(data: { kind: PracticeEventKind; title: string }) {
+    if (data.kind === PracticeEventKind.PHLEBOTOMY) await this.phlebotomists.remember(data.title);
+  }
+
   private async checkInput(dto: EventInput): Promise<Checked> {
     const kind = dto.kind ?? PracticeEventKind.EVENT;
     const closure = kind === PracticeEventKind.CLOSURE;
@@ -1111,9 +1120,6 @@ function present(
     ...(row.allDay ? allDayDates(row) : { startDate: null, endDate: null }),
   };
 }
-
-/// What a phlebotomist date is called with no name typed.
-export const PHLEBOTOMIST = 'Phlebotomist';
 
 /// "Phlebotomist: Maria" - or plain "Phlebotomist" when no name was given.
 function phlebotomyTitle(row: Pick<EventRow, 'title'>, lead: string): string {

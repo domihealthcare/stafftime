@@ -12,6 +12,8 @@ export const CALENDAR: Record<string, string> = {
   'Show as': 'Ver como',
   List: 'Lista',
   'Show office': 'Mostrar oficina',
+  'All locations': 'Todos los lugares',
+  Telemedicine: 'Telemedicina',
   Print: 'Imprimir',
   'Show on the calendar': 'Mostrar en el calendario',
   'Show:': 'Mostrar:',

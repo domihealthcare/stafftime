@@ -1,4 +1,4 @@
-import { officeShort, KIND_STYLE } from '../lib/calendar-kinds';
+import { officeShort, KIND_STYLE, TELEMEDICINE } from '../lib/calendar-kinds';
 import { formatTimeCompact, localDate } from '../lib/format';
 import { useT } from '../lib/i18n';
 import type { ProviderPlaces as Places } from '../lib/types';
@@ -17,12 +17,20 @@ export interface PlaceGroup {
 }
 
 /// A day's providers by place: each office in turn, then telemedicine. With an
-/// office chosen only that office (telemedicine is nobody's office, so stays).
+/// office chosen only that office, and with Telemedicine chosen only
+/// telemedicine (October 2026, Dominguez: North Bergen had shown telemedicine
+/// with it).
 export function placesOn(places: Places, day: string, office: string): PlaceGroup[] {
   const groups = new Map<string, PlaceGroup>();
   for (const shift of places.shifts) {
     if (localDate(new Date(shift.startsAt)) !== day) continue;
-    if (!shift.isRemote && office && shift.locationId !== office) continue;
+    if (
+      office === TELEMEDICINE
+        ? !shift.isRemote
+        : office && (shift.isRemote || shift.locationId !== office)
+    ) {
+      continue;
+    }
     const key = shift.isRemote ? 'TELE' : shift.locationId;
     const group = groups.get(key) ?? {
       key,

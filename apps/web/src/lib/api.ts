@@ -94,6 +94,7 @@ import type {
   EventReplies,
   ReplyAnswer,
   FoundTimes,
+  Phlebotomist,
   Rep,
   RepInput,
   PracticeSettings,
@@ -1696,6 +1697,11 @@ export const api = {
     request<{ reminded: number }>(`/requirements/${id}/remind`, { method: 'POST' }),
   deleteRequirement: (id: string) =>
     request<{ removed: boolean }>(`/requirements/${id}`, { method: 'DELETE' }),
+  /// The phlebotomists' saved names: managers and admins. A name is kept by
+  /// saving a phlebotomist date with it.
+  phlebotomists: () => request<Phlebotomist[]>('/phlebotomists'),
+  deletePhlebotomist: (id: string) =>
+    request<{ removed: boolean }>(`/phlebotomists/${id}`, { method: 'DELETE' }),
   /// The reps who book lunches: managers and admins only.
   reps: () => request<Rep[]>('/reps'),
   createRep: (body: RepInput) =>

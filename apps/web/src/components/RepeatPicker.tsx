@@ -1,6 +1,6 @@
-import { useEffect, useId, useState } from 'react';
+import { useEffect, useId, useRef, useState } from 'react';
 import type { RepeatInput } from '../lib/types';
-import { WEEK_ORDER } from '../lib/format';
+import { localDate, WEEK_ORDER } from '../lib/format';
 
 /**
  * How an event repeats (September 2026): every week, every 2 weeks, monthly -
@@ -32,6 +32,11 @@ export function weekdayOf(date: string): number {
 export function weekOfMonth(date: string): number {
   const week = Math.ceil(Number(date.slice(8, 10)) / 7);
   return week > 4 ? -1 : week;
+}
+
+/// A whole "YYYY-MM-DD" that is a real day.
+function isDay(date: string): boolean {
+  return /^\d{4}-\d{2}-\d{2}$/.test(date) && !Number.isNaN(Date.parse(`${date}T00:00:00Z`));
 }
 
 function addDays(date: string, days: number): string {
@@ -66,7 +71,7 @@ function modeOf(value: RepeatInput | null, startDate: string): Mode {
 }
 
 export function RepeatPicker({
-  startDate,
+  startDate: typedStart,
   value,
   onChange,
 }: {
@@ -76,6 +81,12 @@ export function RepeatPicker({
   onChange: (next: RepeatInput | null) => void;
 }) {
   const id = useId();
+  // While the first day is half typed or cleared the box holds no date (the
+  // browser gives an empty value): the menu keeps the last real day until a
+  // whole one is back, rather than failing over a day that is not there.
+  const lastDay = useRef(isDay(typedStart) ? typedStart : localDate(new Date()));
+  if (isDay(typedStart)) lastDay.current = typedStart;
+  const startDate = lastDay.current;
   const [mode, setMode] = useState<Mode>(() => modeOf(value, startDate));
   const weekday = weekdayOf(startDate);
   const until = value?.until ?? addDays(startDate, 91);

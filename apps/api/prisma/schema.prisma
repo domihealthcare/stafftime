@@ -2022,6 +2022,19 @@ model Rep {
   @@map("reps")
 }
 
+/// The phlebotomists' names, to pick from when a phlebotomist date goes on
+/// the calendar (October 2026, Dominguez: "put it so i can reuse the name in
+/// future scheduling (should be able to delete name as well)"). A name is kept
+/// when a date is saved with it; managers remove one from the form. Each date
+/// keeps the name as its own title, so removing one changes no date.
+model Phlebotomist {
+  id        String   @id @default(uuid()) @db.Uuid
+  name      String   @unique
+  createdAt DateTime @default(now())
+
+  @@map("phlebotomists")
+}
+
 /// The night-before rep lunch notice for one office and day - "Rep lunch
 /// tomorrow" or "No rep lunch tomorrow, bring your own" (October 2026,
 /// Dominguez). Claimed before it is sent, so the five-minute timer sends each

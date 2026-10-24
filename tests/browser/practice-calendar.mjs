@@ -293,6 +293,34 @@ await step('a manager adds the phlebotomist at an office, with or without a name
   if (!text.includes('Maria (LabCorp)') || !text.includes('WNY')) throw new Error(`the chip reads "${text}"`);
 });
 
+await step('a phlebotomist’s name is kept to pick next time, and can be removed', async () => {
+  await manager.getByRole('button', { name: '+ Add', exact: true }).click();
+  await manager.getByRole('menuitem', { name: 'Phlebotomist date' }).click();
+  const form = manager.getByRole('form', { name: 'New phlebotomist date' });
+  const names = form.getByTestId('phlebotomist-names');
+  await names.getByRole('button', { name: 'Maria (LabCorp)', exact: true }).click();
+  const field = form.getByLabel(/phlebotomist’s name/);
+  if ((await field.inputValue()) !== 'Maria (LabCorp)') throw new Error('pressing the name did not fill it in');
+  // The plain "Phlebotomist" from the first date is not a name.
+  if (await names.getByRole('button', { name: 'Phlebotomist', exact: true }).count()) throw new Error('"Phlebotomist" kept as a name');
+
+  // Clearing the start (as a half-typed date does) used to crash the form.
+  await form.getByLabel('Starts').fill('');
+  await form.getByLabel('Repeats').waitFor();
+  if (await manager.getByText('Unexpected Application Error').count()) throw new Error('the form crashed');
+  await form.getByLabel('Starts').fill('2027-03-09T08:00');
+  await form.getByLabel('Ends').fill('2027-03-09T12:00');
+
+  await names.getByRole('button', { name: 'Remove Maria (LabCorp) from the saved names' }).click();
+  await manager.getByRole('alertdialog').getByRole('button', { name: 'Remove', exact: true }).click();
+  await names.getByRole('button', { name: 'Maria (LabCorp)', exact: true }).waitFor({ state: 'detached', timeout: 10000 });
+  const saved = await manager.evaluate(() => fetch('/api/phlebotomists').then((r) => r.json()));
+  if (saved.some((entry) => entry.name === 'Maria (LabCorp)')) throw new Error('the name is still saved');
+  // The date already on the calendar keeps it.
+  await form.getByRole('button', { name: 'Cancel' }).click();
+  await day(manager, '2027-03-04').getByTestId('phlebotomy-chip').getByText(/Maria \(LabCorp\)/).waitFor({ timeout: 10000 });
+});
+
 const frankie = await signIn('frontdesk@domihealthcare.com');
 
 await step('staff see all of it, and cannot add', async () => {
@@ -301,6 +329,8 @@ await step('staff see all of it, and cannot add', async () => {
   await day(frankie, '2027-03-17').getByTestId('holiday-chip').waitFor();
   await day(frankie, '2027-03-12').getByTestId('payday-chip').waitFor();
   if (await frankie.getByRole('button', { name: '+ Add', exact: true }).count()) throw new Error('staff can add');
+  const names = await frankie.evaluate(() => fetch('/api/phlebotomists').then((r) => r.status));
+  if (names !== 403) throw new Error(`the phlebotomists' names answered staff ${names}`);
   await day(frankie, '2027-03-07').getByTestId('diagnostic-chip').click();
   const dialog = frankie.getByRole('dialog', { name: 'US + ECHO' });
   await dialog.waitFor();
@@ -388,7 +418,11 @@ await step('Show: All, one kind, several, and All again - and an office narrows'
   if (await day(frankie, '2027-03-23').getByTestId('rep_lunch-chip').count()) throw new Error('West New York’s rep lunch shown for North Bergen');
   // Practice-wide entries stay.
   await day(frankie, '2027-03-17').getByTestId('holiday-chip').waitFor();
-  await frankie.getByLabel('Show office').selectOption({ label: 'Both offices' });
+  // Telemedicine is no office: nothing at an office goes with it.
+  await frankie.getByLabel('Show office').selectOption({ label: 'Telemedicine' });
+  await day(frankie, '2027-03-17').getByTestId('holiday-chip').waitFor();
+  if (await day(frankie, '2027-03-14').getByTestId('diagnostic-chip').count()) throw new Error('an office’s diagnostics shown for Telemedicine');
+  await frankie.getByLabel('Show office').selectOption({ label: 'All locations' });
 });
 
 await step('the list shows the month day by day', async () => {

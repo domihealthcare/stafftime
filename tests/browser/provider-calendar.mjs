@@ -92,6 +92,24 @@ await step('everybody sees the office and telemedicine on the calendar, never a 
   if (texts.length !== 2) throw new Error(`${texts.length} chips; the draft should be left out`);
 });
 
+await step('Telemedicine is a place of its own: an office shows its own providers, Telemedicine only telemedicine', async () => {
+  const picker = desk.getByLabel('Show office');
+  const offered = await picker.locator('option').allInnerTexts();
+  if (offered[0] !== 'All locations' || offered[offered.length - 1] !== 'Telemedicine') {
+    throw new Error(`offered: ${offered.join(', ')}`);
+  }
+  await picker.selectOption(office);
+  await desk.getByTestId('provider-place').first().waitFor({ timeout: 10000 });
+  let texts = await desk.getByTestId('provider-place').allInnerTexts();
+  if (texts.length !== 1 || /Telemedicine/.test(texts[0])) throw new Error(`with the office chosen: ${texts}`);
+  await picker.selectOption({ label: 'Telemedicine' });
+  await desk.getByTestId('provider-place').first().waitFor({ timeout: 10000 });
+  texts = await desk.getByTestId('provider-place').allInnerTexts();
+  if (texts.length !== 1 || !/Telemedicine/.test(texts[0])) throw new Error(`with Telemedicine chosen: ${texts}`);
+  await picker.selectOption({ label: 'All locations' });
+  if ((await desk.getByTestId('provider-place').count()) !== 2) throw new Error('both not back');
+});
+
 await step('Providers is a kind of its own in Show', async () => {
   const show = desk.getByRole('group', { name: /Show/ });
   await show.getByRole('button', { name: /Providers/ }).click();
