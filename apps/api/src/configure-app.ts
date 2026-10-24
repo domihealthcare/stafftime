@@ -23,6 +23,10 @@ export function configureApp(app: NestExpressApplication): void {
   // latitude a page does. The deployed web app gets the equivalent headers from
   // vercel.json; these make sure the API responses carry them wherever it runs.
   app.use((_request: Request, response: Response, next: NextFunction) => {
+    // People use this on a shared front-desk tablet. Nothing the API says about
+    // a person should sit in a browser cache; the few routes that want caching
+    // (photos, the calendar feed) set their own header, which replaces this one.
+    response.setHeader('Cache-Control', 'no-store');
     response.setHeader('X-Content-Type-Options', 'nosniff');
     response.setHeader('X-Frame-Options', 'DENY');
     response.setHeader('Referrer-Policy', 'no-referrer');
