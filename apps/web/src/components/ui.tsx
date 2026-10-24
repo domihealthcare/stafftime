@@ -1,4 +1,5 @@
 import { useId, type CSSProperties, type ReactNode } from 'react';
+import { useT } from '../lib/i18n';
 
 export function Card({
   children,
@@ -170,4 +171,12 @@ export function Field({
       )}
     </div>
   );
+}
+
+/// The line under a box people type free text into. What is typed here goes
+/// into notifications, emails and calendars, and this app holds nothing about
+/// patients, so say so where it is typed.
+export function NoPatientInfo() {
+  const t = useT();
+  return <p className="mt-1 text-xs text-slate-600">{t('Never a patient’s name or details.')}</p>;
 }

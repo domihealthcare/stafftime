@@ -21,9 +21,10 @@ export class LogEmailSender implements EmailSender {
 
   async send(message: EmailMessage): Promise<EmailResult> {
     if (this.warnEachTime) {
-      this.logger.warn(
-        `No email provider is configured, so this was not sent to ${message.to}: "${message.subject}"`,
-      );
+      this.logger.warn(`No email provider is configured, so this was not sent to ${message.to}`);
+      // That is the live site with its email settings missing. The body would
+      // hold sign-in links and what staff wrote, and the log is not private.
+      return { delivered: false, reason: 'no email provider configured' };
     }
 
     this.logger.log(

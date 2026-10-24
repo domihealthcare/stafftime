@@ -1191,6 +1191,23 @@ Beyond the phases, the parts worth knowing about before picking up work:
   cancelled (no day-before reminder, not on Home's "coming up"), and a
   calendar feed of its own (`phlebotomist.ics`). Migration
   `20261023040000_phlebotomist_calendar`; `tests/browser/practice-calendar.mjs`.
+- **Audit and hardening pass** (24 October 2026, version 1.23.1): a
+  Prisma error no longer writes the failing call, and so what somebody typed,
+  into the server log (`prisma-exception.filter.ts` logs frames only and now
+  catches every Prisma error class); API responses default to
+  `Cache-Control: no-store` (the shared tablet); **only an admin may tick
+  Show publicly** on a News post, not everyone with `canPostNews` (it is
+  served to the sign-in page); **staff no longer receive an office's pin,
+  geofence or allowed addresses** (`forViewer` in `locations.controller.ts`);
+  the email log no longer prints a subject, and on the live site with no
+  email provider no longer prints the body (sign-in links). "Never a
+  patient's name or details" now sits under shift notes, time-off notes,
+  correction reasons, News messages and invoice lines and notes
+  (`NoPatientInfo`). Found and **left for Dominguez to decide**: a manager
+  can edit and approve their **own** time entries (other flows refuse
+  self-approval); `db:seed` has no production guard and resets accounts to
+  the password in `prisma/seed.ts`; dependency advisories that need major
+  upgrades (NestJS 12, exceljs). Worth carrying to the EMR module.
 - **Phlebotomist names saved, Telemedicine as a place, and a form crash
   fixed** (24 October 2026, Dominguez, version 1.23.0):
   - **Saved names** ("so i can reuse the name in future scheduling (should

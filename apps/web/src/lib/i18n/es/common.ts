@@ -86,4 +86,5 @@ export const COMMON: Record<string, string> = {
   Vacation: 'PTO',
   Draft: 'Borrador',
   Published: 'Publicado',
+  'Never a patient’s name or details.': 'Nunca el nombre ni los datos de un paciente.',
 };

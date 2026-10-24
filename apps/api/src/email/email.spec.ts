@@ -1,3 +1,4 @@
+import { Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { LogEmailSender } from './log-email.sender';
 import { NotificationsService } from './notifications.service';
@@ -10,6 +11,23 @@ describe('LogEmailSender', () => {
       delivered: false,
       reason: 'no email provider configured',
     });
+  });
+
+  it('on the live site does not copy the message into the log', async () => {
+    const lines: string[] = [];
+    const record = (line: unknown) => void lines.push(String(line));
+    jest.spyOn(Logger.prototype, 'log').mockImplementation(record);
+    jest.spyOn(Logger.prototype, 'warn').mockImplementation(record);
+
+    const result = await new LogEmailSender(true).send({
+      to: 'a@b.com',
+      subject: 'Reset',
+      text: 'https://example.test/reset?token=SECRET-LINK',
+    });
+
+    expect(result.delivered).toBe(false);
+    expect(lines.join('\n')).not.toContain('SECRET-LINK');
+    jest.restoreAllMocks();
   });
 });
 

@@ -20,7 +20,7 @@ export function ShiftNoteField({
   return (
     <Field
       label={label}
-      hint="For example: 7–12 upstairs, 12–3 downstairs. The person on the shift sees it; it is on the printed rota too."
+      hint="For example: 7–12 upstairs, 12–3 downstairs. The person on the shift sees it; it is on the printed rota too. Never a patient’s name or details."
     >
       {(props) => (
         <textarea

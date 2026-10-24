@@ -6,7 +6,7 @@ import { atPracticeTime, practiceClockOf } from '../lib/practice-time';
 import type { CorrectionRequest, TimeEntry } from '../lib/types';
 import { useConfirm } from './ConfirmDialog';
 import { Modal } from './Modal';
-import { Alert, Card, buttonClass, inputClass } from './ui';
+import { Alert, Card, NoPatientInfo, buttonClass, inputClass } from './ui';
 
 /**
  * "Ask for a correction" (October 2026, Dominguez - a "smarter" idea): on
@@ -143,6 +143,7 @@ export function AskCorrectionDialog({
             className={`mt-1 ${inputClass}`}
           />
         </label>
+        <NoPatientInfo />
         <p className="text-xs text-slate-600">
           {t('A manager looks at it and approves it or says why not. You are told either way.')}
         </p>

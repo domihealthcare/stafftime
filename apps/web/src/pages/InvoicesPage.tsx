@@ -11,6 +11,7 @@ import {
   Spinner,
   buttonClass,
   inputClass,
+  NoPatientInfo,
 } from '../components/ui';
 import { ApiError, api } from '../lib/api';
 import { formatCalendarDate } from '../lib/format';
@@ -1171,6 +1172,7 @@ function InvoiceEditor({
 
         <div>
           <p className="text-sm font-medium text-slate-800">What for</p>
+          <NoPatientInfo />
           <datalist id="invoice-lines">
             {usedLines.map((line) => (
               <option key={line} value={line} />
@@ -1188,7 +1190,7 @@ function InvoiceEditor({
                   className={`${inputClass} min-w-0 flex-1`}
                   list="invoice-lines"
                   maxLength={300}
-                  placeholder="Initial payment (USCIS I-693 physical), paid 08/28"
+                  placeholder="Monthly service fee, paid 08/28"
                   value={line.description}
                   onChange={(event) => setLine(index, { description: event.target.value })}
                 />
@@ -1273,7 +1275,7 @@ function InvoiceEditor({
           )}
         </div>
 
-        <Field label="Note on the invoice (optional)">
+        <Field label="Note on the invoice (optional)" hint="Never a patient’s name or details.">
           {(props) => (
             <textarea
               {...props}

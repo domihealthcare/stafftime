@@ -13,6 +13,7 @@ import {
   Spinner,
   buttonClass,
   inputClass,
+  NoPatientInfo,
 } from '../components/ui';
 import { AI_NOTE, useAiOn } from '../lib/ai';
 import { ApiError, api } from '../lib/api';
@@ -515,6 +516,7 @@ function PostForm({
             maxLength={10_000}
             className="w-full rounded-lg border border-slate-300 px-2 py-1.5"
           />
+          <NoPatientInfo />
         </label>
 
         <PollEditor poll={poll} votesIn={votesIn} onChange={setPoll} />

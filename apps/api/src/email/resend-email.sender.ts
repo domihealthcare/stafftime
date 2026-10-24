@@ -58,7 +58,8 @@ export class ResendEmailSender implements EmailSender {
         return { delivered: false, reason };
       }
 
-      this.logger.log(`Emailed ${message.to}: "${message.subject}"`);
+      // Not the subject: it can carry the words of a note somebody wrote.
+      this.logger.log(`Emailed ${message.to}`);
       return { delivered: true };
     } catch (error) {
       const reason =

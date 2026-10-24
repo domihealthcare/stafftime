@@ -227,7 +227,17 @@ export class AnnouncementsService {
     return row;
   }
 
+  /// A post ticked "Show publicly" is served to anybody who opens the sign-in
+  /// page or the time clock, signed in or not, so only an admin may publish
+  /// one - not everyone an admin has let write News.
+  private assertMayShowPublicly(showOnTimeClock: boolean | undefined, actor: AuthUser) {
+    if (showOnTimeClock === true && actor.role !== Role.ADMIN) {
+      throw new ForbiddenException('Only an admin can show a post publicly.');
+    }
+  }
+
   async create(dto: CreateAnnouncementDto, actor: AuthUser) {
+    this.assertMayShowPublicly(dto.showOnTimeClock, actor);
     const poll = dto.poll ? cleanPoll(dto.poll) : null;
     const body = dto.body.trim();
     if (body === '' && !poll) {
@@ -293,6 +303,7 @@ export class AnnouncementsService {
   }
 
   async update(id: string, dto: UpdateAnnouncementDto, actor: AuthUser) {
+    this.assertMayShowPublicly(dto.showOnTimeClock, actor);
     const existing = await this.findRow(id);
 
     if (dto.isPrimary === false && existing.isPrimary) {

@@ -35,6 +35,7 @@ import {
   Spinner,
   buttonClass,
   inputClass,
+  NoPatientInfo,
 } from '../components/ui';
 
 const TYPE_LABELS: Record<PtoType, string> = PTO_TYPE_LABELS;
@@ -751,6 +752,7 @@ function RequestForm({
             onChange={(event) => setNotes(event.target.value)}
             className={field}
           />
+          <NoPatientInfo />
         </div>
 
         {onRota.length > 0 && (
