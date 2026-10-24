@@ -8,6 +8,7 @@ import {
   EventDialog,
   EventForm,
   eventsOnDay,
+  shownAt,
 } from '../components/PracticeEvents';
 import { ScheduleTabs } from '../components/ScheduleTabs';
 import {
@@ -20,7 +21,13 @@ import {
 import { Alert, Card, PageHeading, Spinner, buttonClass } from '../components/ui';
 import { api } from '../lib/api';
 import { ProviderDayChips, placesOn } from '../components/ProviderPlaces';
-import { CALENDAR_KINDS, KIND_STYLE, officeShort, type CalendarKind } from '../lib/calendar-kinds';
+import {
+  CALENDAR_KINDS,
+  KIND_STYLE,
+  officeShort,
+  TELEMEDICINE,
+  type CalendarKind,
+} from '../lib/calendar-kinds';
 import {
   addDays,
   addMonths,
@@ -235,14 +242,7 @@ export function CalendarPage() {
     () =>
       events.filter((event) => {
         if (chosen.length > 0 && !chosen.includes(event.kind)) return false;
-        if (!office) return true;
-        if (atAnOffice(event.kind)) {
-          return event.atLocation?.id === office;
-        }
-        if (event.kind === 'CLOSURE' && event.audience === 'LOCATION') {
-          return event.location?.id === office;
-        }
-        return true;
+        return shownAt(event, office);
       }),
     [events, chosen, office],
   );
@@ -327,12 +327,13 @@ export function CalendarPage() {
           onChange={(change) => setOffice(change.target.value)}
           className="rounded-lg border border-slate-300 bg-white py-1.5 pl-2 pr-8 text-sm"
         >
-          <option value="">{t('Both offices')}</option>
+          <option value="">{t('All locations')}</option>
           {locations.map((location) => (
             <option key={location.id} value={location.id}>
               {location.name}
             </option>
           ))}
+          <option value={TELEMEDICINE}>{t('Telemedicine')}</option>
         </select>
         <span className="flex-1" />
         <Link

@@ -19,6 +19,7 @@ import type {
   EventRep,
   PracticeEvent,
   ReadBooking,
+  Phlebotomist,
   Rep,
   RepFood,
   RepStatus,
@@ -54,6 +55,18 @@ const forEveryone = (kind: EventKind) =>
 /// Diagnostics, rep lunches and the phlebotomist happen at an office.
 export const atAnOffice = (kind: EventKind) =>
   kind === 'DIAGNOSTIC' || kind === 'REP_LUNCH' || kind === 'PHLEBOTOMY';
+
+/// Whether the Calendar shows an event with a place chosen: what is at that
+/// office or shuts it, and everything practice-wide. Telemedicine is no
+/// office, so nothing at an office or shutting one goes with it.
+export function shownAt(event: PracticeEvent, place: string): boolean {
+  if (!place) return true;
+  if (atAnOffice(event.kind)) return event.atLocation?.id === place;
+  if (event.kind === 'CLOSURE' && event.audience === 'LOCATION') {
+    return event.location?.id === place;
+  }
+  return true;
+}
 
 /// What a chip calls it: a rep lunch by its rep, the rest by their title.
 export function shortTitle(event: PracticeEvent): string {
@@ -538,6 +551,29 @@ export function EventForm({
       .catch(() => setReps([]));
   }, [repLunch, reps]);
   const chosenRep = reps?.find((rep) => rep.id === repId) ?? null;
+  /// A phlebotomist date: the names saved from earlier ones, to pick again.
+  const [phlebotomists, setPhlebotomists] = useState<Phlebotomist[] | null>(null);
+  useEffect(() => {
+    if (!phlebotomy || phlebotomists) return;
+    api
+      .phlebotomists()
+      .then(setPhlebotomists)
+      .catch(() => setPhlebotomists([]));
+  }, [phlebotomy, phlebotomists]);
+  async function forgetName(name: Phlebotomist) {
+    const sure = await confirm({
+      title: `Remove ${name.name} from the saved names?`,
+      body: 'Dates already on the calendar keep the name. Saving a date with it again puts it back.',
+      confirmLabel: 'Remove',
+    });
+    if (!sure) return;
+    try {
+      await api.deletePhlebotomist(name.id);
+      setPhlebotomists((current) => (current ?? []).filter((entry) => entry.id !== name.id));
+    } catch (cause) {
+      setError(cause instanceof ApiError ? cause.message : 'Could not remove the name.');
+    }
+  }
   /// "+ Add a new rep": the name typed so far, or null while not adding.
   const [addingRep, setAddingRep] = useState<string | null>(null);
   // A holiday is the whole day; a meeting usually is not.
@@ -763,6 +799,13 @@ export function EventForm({
         tone: 'neutral',
       });
       if (!sure) return;
+    }
+    if (
+      !allDay &&
+      (Number.isNaN(new Date(startsAt).getTime()) || Number.isNaN(new Date(endsAt).getTime()))
+    ) {
+      setError('Enter the day and time it starts and ends.');
+      return;
     }
     const meeting = kind === 'EVENT';
     const body: EventInput = {
@@ -1034,8 +1077,63 @@ export function EventForm({
                         ? 'Leave empty for just “Phlebotomist”'
                         : 'Office meeting, Provider meeting, Wellness day…'
               }
+              list={phlebotomy ? `${id}-phlebotomists` : undefined}
+              autoComplete={phlebotomy ? 'off' : undefined}
               className={field}
             />
+            {phlebotomy && (
+              <>
+                <datalist id={`${id}-phlebotomists`}>
+                  {(phlebotomists ?? []).map((name) => (
+                    <option key={name.id} value={name.name} />
+                  ))}
+                </datalist>
+                {/* Names used before, to pick again (October 2026, Dominguez:
+                    "so i can reuse the name ... should be able to delete name
+                    as well"). */}
+                {phlebotomists && phlebotomists.length > 0 && (
+                  <div data-testid="phlebotomist-names" className="mt-2">
+                    <p className="text-xs text-slate-600">Saved names - press one to use it:</p>
+                    <ul className="mt-1 flex flex-wrap gap-1.5">
+                      {phlebotomists.map((name) => {
+                        const picked = title.trim().toLowerCase() === name.name.toLowerCase();
+                        return (
+                          <li
+                            key={name.id}
+                            className={`inline-flex items-center rounded-full ring-1 ring-inset ${
+                              picked
+                                ? 'bg-orange-100 text-orange-950 ring-orange-400'
+                                : 'bg-white text-slate-800 ring-slate-300'
+                            }`}
+                          >
+                            <button
+                              type="button"
+                              aria-pressed={picked}
+                              onClick={() => setTitle(name.name)}
+                              className="min-h-[2.25rem] rounded-l-full py-1 pl-3 pr-1.5 text-sm font-medium"
+                            >
+                              {name.name}
+                            </button>
+                            <button
+                              type="button"
+                              aria-label={`Remove ${name.name} from the saved names`}
+                              title="Remove from the saved names"
+                              onClick={() => void forgetName(name)}
+                              className="min-h-[2.25rem] rounded-r-full py-1 pl-1 pr-2.5 text-base leading-none text-slate-500 hover:text-rose-700"
+                            >
+                              ×
+                            </button>
+                          </li>
+                        );
+                      })}
+                    </ul>
+                  </div>
+                )}
+                <p className="mt-1 text-xs text-slate-500">
+                  A name you save a date with is kept here to pick next time.
+                </p>
+              </>
+            )}
           </div>
         )}
 

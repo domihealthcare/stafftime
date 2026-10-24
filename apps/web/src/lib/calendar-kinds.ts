@@ -130,3 +130,7 @@ export function officeShort(name: string): string {
     .join('');
   return initials.length >= 2 ? initials : name;
 }
+
+/// The Calendar's "Telemedicine" place (October 2026, Dominguez): the
+/// providers on telemedicine alone, apart from the offices.
+export const TELEMEDICINE = 'TELE';

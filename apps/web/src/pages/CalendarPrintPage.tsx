@@ -1,10 +1,16 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { BrandLogoForPrint } from '../components/Brand';
-import { atAnOffice, eventsOnDay, eventTimeLabel, shortTitle } from '../components/PracticeEvents';
+import { eventsOnDay, eventTimeLabel, shortTitle, shownAt } from '../components/PracticeEvents';
 import { Alert, Spinner, buttonClass } from '../components/ui';
 import { api } from '../lib/api';
-import { CALENDAR_KINDS, KIND_STYLE, officeShort, type CalendarKind } from '../lib/calendar-kinds';
+import {
+  CALENDAR_KINDS,
+  KIND_STYLE,
+  officeShort,
+  TELEMEDICINE,
+  type CalendarKind,
+} from '../lib/calendar-kinds';
 import {
   addDays,
   addMonths,
@@ -138,18 +144,14 @@ export function CalendarPrintPage() {
 
   const shown = events.filter((event) => {
     if (!kinds.includes(event.kind)) return false;
-    if (!office) return true;
-    if (atAnOffice(event.kind)) {
-      return event.atLocation?.id === office;
-    }
-    if (event.kind === 'CLOSURE' && event.audience === 'LOCATION') {
-      return event.location?.id === office;
-    }
-    return true;
+    return shownAt(event, office);
   });
   const paid = kinds.includes('PAY_DAY') ? payDays : [];
   const printMine = kinds.includes('MY_SHIFT') ? mine : NO_SCHEDULE;
-  const officeName = locations.find((location) => location.id === office)?.name;
+  const officeName =
+    office === TELEMEDICINE
+      ? 'Telemedicine'
+      : locations.find((location) => location.id === office)?.name;
 
   const goToMonth = (offset: number) => {
     const next = new URLSearchParams(params);
@@ -219,7 +221,7 @@ export function CalendarPrintPage() {
                 {monthName}
               </h1>
               <p className="text-right text-xs text-slate-500">
-                {officeName ?? 'Both offices'}
+                {officeName ?? 'All locations'}
                 <br />
                 Printed {printedAt}
                 {me ? ` by ${displayName(me)}` : ''}

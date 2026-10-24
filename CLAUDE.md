@@ -1191,6 +1191,34 @@ Beyond the phases, the parts worth knowing about before picking up work:
   cancelled (no day-before reminder, not on Home's "coming up"), and a
   calendar feed of its own (`phlebotomist.ics`). Migration
   `20261023040000_phlebotomist_calendar`; `tests/browser/practice-calendar.mjs`.
+- **Phlebotomist names saved, Telemedicine as a place, and a form crash
+  fixed** (24 October 2026, Dominguez, version 1.23.0):
+  - **Saved names** ("so i can reuse the name in future scheduling (should
+    be able to delete name as well)"): every name a phlebotomist date is
+    saved with is kept (`Phlebotomist`: id, name, created; once however it
+    is capitalised; never the plain "Phlebotomist"), listed under the name
+    box in the form to press and reuse, each with a × to remove it after a
+    confirmation. A date keeps the name as its own title, so removing one
+    changes no date. `GET /phlebotomists`, `DELETE /phlebotomists/:id`
+    (managers), `events/phlebotomists.service.ts`, kept from
+    `EventsService.create` / `update`. Migration
+    `20261024010000_phlebotomist_names` starts the list from the names
+    already on the calendar; the schema guard pins the table.
+  - **Telemedicine on the Calendar's place picker** ("in north bergen
+    location it should telemedicine together with this", read as: keep them
+    apart): **All locations · North Bergen · West New York · Telemedicine**.
+    An office now shows only its own providers, not telemedicine with it;
+    Telemedicine shows the providers on telemedicine and what is
+    practice-wide, nothing at an office (`TELEMEDICINE` in
+    `lib/calendar-kinds.ts`, `placesOn`, `shownAt` in `PracticeEvents.tsx`;
+    the printout too). `tests/browser/provider-calendar.mjs`.
+  - **The crash** ("Unexpected Application Error! Invalid time value"):
+    the event form's **Repeats** worked out a weekday from **Starts** on
+    every keystroke, and a half-typed or cleared date reads as empty, so it
+    threw. `RepeatPicker` now keeps the last whole date until a new one is
+    typed, and the form refuses to save without both times. It could happen
+    on any event, not only the phlebotomist. Checked in
+    `practice-calendar.mjs`, which fails on the old code.
 - **Home's Quick card: Rep lunches, not availability** (23 October 2026,
   Dominguez): **Rep lunches** opens the calendar on rep lunches alone
   (`/schedule/calendar?show=REP_LUNCH`; `?show=` takes any kinds, comma

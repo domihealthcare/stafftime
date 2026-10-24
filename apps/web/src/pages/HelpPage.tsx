@@ -524,8 +524,9 @@ const STAFF: Section[] = [
             <strong>closures</strong> 🔒, meetings and events 📅, and <strong>pay days</strong> 💵 -
             the Friday after each pay period ends. Under <strong>Show</strong>, keep{' '}
             <strong>All</strong>, or tap one kind to see only that, and more to add them; All puts
-            everything back. Pick an office to see only its diagnostics, phlebotomist and rep
-            lunches, and choose <strong>List</strong> for a day-by-day list (a phone starts there).{' '}
+            everything back. Pick an office to see only its diagnostics, phlebotomist, rep lunches
+            and providers, or <strong>Telemedicine</strong> for the providers on telemedicine alone,
+            and choose <strong>List</strong> for a day-by-day list (a phone starts there).{' '}
             <strong>Print</strong> gives the month on one page, like the paper calendar, with what
             you have chosen to show. Everything on it reaches your phone&rsquo;s calendar through
             the calendar link at the bottom of the page: <strong>Everything in one calendar</strong>
@@ -1866,10 +1867,12 @@ const MANAGERS: Section[] = [
           <p>
             On <Screen>Schedule → Calendar</Screen>, choose{' '}
             <strong>+ Add → Phlebotomist date</strong>: the office, the hours and, if you like, the
-            phlebotomist&rsquo;s name (left empty it just says &ldquo;Phlebotomist&rdquo;). A
-            regular day can be entered once with <strong>Repeat</strong>. Everyone sees it on the
-            calendar, can pick <strong>Phlebotomist</strong> under Show to see only those days, and
-            is told when one is added, moved or cancelled. Write when the phlebotomist is in and
+            phlebotomist&rsquo;s name (left empty it just says &ldquo;Phlebotomist&rdquo;). A name
+            you save a date with is kept under <strong>Saved names</strong> in the form: press it to
+            use it again, or press its × to take it off the list (dates already on the calendar keep
+            it). A regular day can be entered once with <strong>Repeat</strong>. Everyone sees it on
+            the calendar, can pick <strong>Phlebotomist</strong> under Show to see only those days,
+            and is told when one is added, moved or cancelled. Write when the phlebotomist is in and
             anything the front desk should know - never a patient&rsquo;s name or who is booked.
           </p>
         ),

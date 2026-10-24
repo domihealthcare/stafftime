@@ -115,6 +115,18 @@ describe('what this app deliberately does not store', () => {
     );
   });
 
+  /// The phlebotomists' saved names (October 2026): a name to pick, nothing
+  /// more.
+  it('keeps the phlebotomists to their names', () => {
+    const fields = model('Phlebotomist')
+      .split('\n')
+      .map((line) => line.trim())
+      .filter((line) => line && !line.startsWith('//') && !line.startsWith('@@'))
+      .map((line) => line.split(/\s+/)[0])
+      .sort();
+    expect(fields).toEqual(['createdAt', 'id', 'name']);
+  });
+
   /// Who is the admin in each office (October 2026): who and where, nothing
   /// more. CME requests (October 2026): an activity, its dates and costs, and
   /// the decision - no receipts, certificates or licence numbers.

@@ -55,6 +55,7 @@ reset_state() {
     -c "delete from practice_events;" \
     -c "delete from practice_event_series;" \
     -c "delete from reps;" \
+    -c "delete from phlebotomists;" \
     -c "delete from shifts where \"seriesId\" is not null;" \
     -c "delete from shift_series;" \
     -c "delete from feedback;" \

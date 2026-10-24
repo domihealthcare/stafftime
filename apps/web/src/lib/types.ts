@@ -1183,6 +1183,12 @@ export type RepFood = 'CATERING' | 'SELF_ORDER';
 export type RepStatus = 'PREFERRED' | 'OK' | 'RESTRICTED' | 'DO_NOT_BOOK';
 
 /// A rep who books lunches, from Manage → Offices → Reps (managers and admins).
+/// A phlebotomist's saved name, to pick for a phlebotomist date.
+export interface Phlebotomist {
+  id: string;
+  name: string;
+}
+
 export interface Rep {
   id: string;
   name: string;

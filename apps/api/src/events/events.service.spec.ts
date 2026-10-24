@@ -204,9 +204,16 @@ function build(
   };
   const inbox = { notify: jest.fn().mockResolvedValue(undefined) };
   const meet = { createLink: jest.fn().mockResolvedValue('https://meet.google.com/new-meet-abc') };
+  const phlebotomists = { remember: jest.fn().mockResolvedValue(undefined) };
   return {
     meet,
-    service: new EventsService(prisma as never, inbox as never, meet as never),
+    phlebotomists,
+    service: new EventsService(
+      prisma as never,
+      inbox as never,
+      meet as never,
+      phlebotomists as never,
+    ),
     prisma,
     practiceEvent,
     practiceEventInvitee,
@@ -760,6 +767,38 @@ describe('holidays', () => {
     await service.create(electionDay({ yearsAhead: 2 }), manager);
     expect(practiceEvent.create).toHaveBeenCalledTimes(2);
     expect(practiceEvent.create.mock.calls[0][0].data.kind).toBe(PracticeEventKind.HOLIDAY);
+  });
+});
+
+describe('the phlebotomist', () => {
+  const visit = (over: Partial<EventInput> = {}): EventInput => ({
+    kind: PracticeEventKind.PHLEBOTOMY,
+    title: 'Maria',
+    allDay: false,
+    startsAt: '2099-11-08T13:00:00.000Z',
+    endsAt: '2099-11-08T17:00:00.000Z',
+    audience: EventAudience.EVERYONE,
+    atLocationId: 'loc-nb',
+    ...over,
+  });
+
+  it('keeps the name to pick next time', async () => {
+    const { service, phlebotomists } = build();
+    await service.create(visit(), manager);
+    expect(phlebotomists.remember).toHaveBeenCalledWith('Maria');
+  });
+
+  it('is plain "Phlebotomist" with no name', async () => {
+    const { service, practiceEvent, phlebotomists } = build();
+    await service.create(visit({ title: '' }), manager);
+    expect(practiceEvent.createMany.mock.calls[0][0].data[0].title).toBe('Phlebotomist');
+    expect(phlebotomists.remember).toHaveBeenCalledWith('Phlebotomist');
+  });
+
+  it('keeps no name for any other kind', async () => {
+    const { service, phlebotomists } = build();
+    await service.create(input(), manager);
+    expect(phlebotomists.remember).not.toHaveBeenCalled();
   });
 });
 
