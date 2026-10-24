@@ -186,7 +186,10 @@ export function PayPage() {
                           </span>
                         </>
                       ) : (
-                        <span className="text-amber-800">No pay on file</span>
+                        <span className="text-amber-800">
+                          No pay on file
+                          <span className="block text-xs text-slate-600">Press to enter it</span>
+                        </span>
                       )}
                     </span>
                     <span className="text-sm">
@@ -419,6 +422,8 @@ function PayPersonDialog({
             employeeId={person.id}
             record={person}
             hireDate={person.hireDate}
+            payType={person.payType}
+            openPayForm
             onChanged={changed}
             calls={{
               add: (id, input) => api.addPayChange(id, input),

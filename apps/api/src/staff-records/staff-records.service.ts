@@ -182,6 +182,9 @@ export function changeDataOf(dto: EmploymentChangeDto) {
         : 'Say whether the pay is per hour or per year.',
     );
   }
+  if (dto.kind === EmploymentChangeKind.PAY_ON_FILE && payRate === null) {
+    throw new BadRequestException('Give the pay they are on.');
+  }
   if (position === null && payRate === null && note === null) {
     throw new BadRequestException('Give the new position, the new pay or a note.');
   }

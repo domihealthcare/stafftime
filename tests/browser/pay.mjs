@@ -147,13 +147,19 @@ await step('somebody not chosen is refused, PIN or not', async () => {
 
 const dialog = () => admin.getByTestId('pay-person');
 
-await step('pay is recorded from the screen', async () => {
-  await admin.getByTestId('pay-row').filter({ hasText: 'Casey Paysuite' }).click();
+await step('pay already earned is entered as the pay on file, not as a raise', async () => {
+  await admin.getByTestId('pay-row').filter({ hasText: 'Casey Paysuite' }).filter({ hasText: 'No pay on file' }).click();
   await dialog().getByText('No raises recorded.').waitFor();
-  await dialog().getByRole('button', { name: '+ Add a change' }).click();
-  await dialog().getByLabel('Pay', { exact: true }).fill('20');
-  await dialog().getByRole('button', { name: 'Add it' }).click();
+  // With nothing on file the form is open straight away.
+  const form = dialog().getByRole('form', { name: 'Their pay' });
+  await form.waitFor();
+  await form.getByLabel('Pay', { exact: true }).fill('20');
+  await form.getByRole('button', { name: 'Save their pay' }).click();
   await dialog().getByTestId('current-pay').filter({ hasText: '$20.00 an hour' }).waitFor();
+  const entry = dialog().getByTestId('employment-change');
+  await entry.getByText('Pay on file', { exact: true }).waitFor();
+  if (await entry.getByText(/Pay change|Started/).count()) throw new Error('kept as a change of pay');
+  if (await dialog().getByRole('button', { name: 'Enter their pay' }).count()) throw new Error('still offered once pay is on file');
 });
 
 await step('a raise goes from the ask to a meeting to an offer', async () => {

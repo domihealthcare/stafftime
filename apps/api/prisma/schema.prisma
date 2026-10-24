@@ -2901,6 +2901,10 @@ enum EmploymentChangeKind {
   /// A new position that is not a promotion - a move sideways.
   POSITION_CHANGE
   OTHER
+  /// What they were already paid when it was first entered in the portal
+  /// (October 2026, Dominguez: "add people pay rate (without it being a new
+  /// rate)"): not a raise, only the pay on file.
+  PAY_ON_FILE
 }
 
 /// The kinds of note the suggestion box offers.

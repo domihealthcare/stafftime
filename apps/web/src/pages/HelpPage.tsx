@@ -2332,6 +2332,13 @@ const MANAGERS: Section[] = [
               <strong>+ Raise asked for</strong> (the day, and the amount if they named one).
             </p>
             <p>
+              Somebody with <strong>No pay on file</strong> opens on{' '}
+              <strong>Enter their pay</strong>: what they are paid now, per hour or per year, and
+              since when if you know it (their start date is filled in). It is kept as their{' '}
+              <strong>pay on file</strong>, not as a raise, and the rota&rsquo;s cost uses it from
+              that day.
+            </p>
+            <p>
               <strong>Set a meeting</strong> puts a check-in on the calendar for the two of you (it
               never says what it is about). <strong>Make an offer</strong> records the pay offered;
               <strong> Approve</strong> (or <strong>Accepted: approve it</strong>) records the new
