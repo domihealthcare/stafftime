@@ -1,5 +1,6 @@
 import { Module } from '@nestjs/common';
 import { AuthModule } from '../auth/auth.module';
+import { DowntimeModule } from '../downtime/downtime.module';
 import { EmailModule } from '../email/email.module';
 import { EventsModule } from '../events/events.module';
 import { RequirementsModule } from '../requirements/requirements.module';
@@ -15,6 +16,7 @@ import { WeeklySummaryService } from './weekly-summary.service';
 @Module({
   imports: [
     AuthModule,
+    DowntimeModule,
     EmailModule,
     EventsModule,
     RequirementsModule,

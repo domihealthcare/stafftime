@@ -27,6 +27,7 @@ import { KioskDeviceGuard } from './kiosk.guard';
 import { KioskPunchService } from './kiosk-punch.service';
 import { KioskService } from './kiosk.service';
 import { PinService } from './pin.service';
+import { DowntimeService } from '../downtime/downtime.service';
 
 /**
  * Two audiences in one controller, kept apart by their guards:
@@ -43,6 +44,7 @@ export class KioskController {
     private readonly kiosks: KioskService,
     private readonly punches: KioskPunchService,
     private readonly pins: PinService,
+    private readonly downtimes: DowntimeService,
     config: ConfigService,
   ) {
     this.isProduction = config.get<string>('NODE_ENV') === 'production';
@@ -95,6 +97,15 @@ export class KioskController {
   @UseGuards(KioskDeviceGuard)
   posts() {
     return this.kiosks.timeClockPosts();
+  }
+
+  /// A downtime on now at this time clock's office (October 2026): shown on
+  /// its main screen, so staff arriving see it before they clock in.
+  @Get('downtime')
+  @Public()
+  @UseGuards(KioskDeviceGuard)
+  downtime(@Req() request: Request) {
+    return this.downtimes.activeAt(request.kiosk!.locationId);
   }
 
   @Post('punch')

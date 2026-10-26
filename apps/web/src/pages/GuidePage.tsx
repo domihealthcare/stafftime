@@ -31,16 +31,25 @@ export function GuidePage({
   slug,
   title,
   subtitle,
+  embedded = false,
+  initialGroup,
 }: {
   slug: GuideSlug;
   title: string;
   subtitle: string;
+  /// Inside another page (the Downtime page's "What to do"): no heading of
+  /// its own, and the search does not stick to the top.
+  embedded?: boolean;
+  /// The heading shown first when none is chosen yet (their own job's).
+  initialGroup?: string;
 }) {
   const [guide, setGuide] = useState<Guide | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [params, setParams] = useSearchParams();
   const query = params.get('q') ?? '';
-  const group = params.get('group') ?? '';
+  // "all" once somebody chooses All over the heading they started on.
+  const rawGroup = params.get('group');
+  const group = rawGroup === null ? (initialGroup ?? '') : rawGroup === 'all' ? '' : rawGroup;
   const [editing, setEditing] = useState<GuideSection | 'new' | null>(null);
   const [working, setWorking] = useState(false);
   const confirm = useConfirm();
@@ -64,12 +73,13 @@ export function GuidePage({
 
   // Ready to type on a laptop; not on a phone, where the keyboard would cover it.
   useEffect(() => {
-    if (guide && !isPhone) search.current?.focus();
-  }, [guide, isPhone]);
+    if (guide && !isPhone && !embedded) search.current?.focus();
+  }, [guide, isPhone, embedded]);
 
   const setParam = (key: 'q' | 'group', value: string) => {
     const next = new URLSearchParams(params);
     if (value) next.set(key, value);
+    else if (key === 'group' && initialGroup) next.set(key, 'all');
     else next.delete(key);
     setParams(next, { replace: true });
   };
@@ -128,9 +138,15 @@ export function GuidePage({
 
   return (
     <div className="mx-auto max-w-4xl" data-testid={`guide-${slug}`}>
-      <PageHeading title={title} subtitle={subtitle} />
+      {!embedded && <PageHeading title={title} subtitle={subtitle} />}
 
-      <div className="sticky top-0 z-10 -mx-4 mb-3 border-b border-slate-200 bg-slate-100/95 px-4 py-2 backdrop-blur">
+      <div
+        className={
+          embedded
+            ? 'mb-3'
+            : 'sticky top-0 z-10 -mx-4 mb-3 border-b border-slate-200 bg-slate-100/95 px-4 py-2 backdrop-blur'
+        }
+      >
         <label htmlFor="guide-search" className="sr-only">
           Search the guide
         </label>

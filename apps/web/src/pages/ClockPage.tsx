@@ -27,6 +27,7 @@ import { HomeRequired } from '../components/RequiredItems';
 import { MonthBalancePopup } from '../components/MonthBalancePopup';
 import { OnCallNow } from '../components/OnCallNow';
 import { MyScheduleReviews } from '../components/MyScheduleReviews';
+import { HomeDowntimeCheck } from '../components/DowntimeCheck';
 import { MyOfficeAdminDays } from '../components/MyOfficeAdminDays';
 import { SuggestionBoxCard } from '../components/SuggestionBox';
 import { MyOvertimeNotice } from '../components/OvertimeAlerts';
@@ -545,6 +546,7 @@ export function ClockPage() {
         className="space-y-4 lg:col-start-3 lg:row-span-2 lg:row-start-1"
       >
         <TabletPinReminder />
+        <HomeDowntimeCheck />
         <QuickActions />
         <MyOfficeAdminDays />
         <MyScheduleReviews />

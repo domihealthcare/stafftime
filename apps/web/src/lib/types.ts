@@ -629,6 +629,9 @@ export interface Attention {
   timeOffClashes: string[];
   /// Dashboard and email only - never on a banner.
   overtimeHeading: string[];
+  /// Downtime: one left open, a catch-up overdue, paper to shred, what the
+  /// monthly check found. On the Downtime page's log.
+  downtime: string[];
 }
 
 // ---------------------------------------------------------------------------
@@ -1657,7 +1660,8 @@ export type DigestTopic =
   | 'CHECKLISTS'
   | 'CLOSING'
   | 'TIME_CLOCK'
-  | 'SUGGESTIONS';
+  | 'SUGGESTIONS'
+  | 'DOWNTIME';
 
 export interface DigestPreferences {
   wantsDailyDigest?: boolean;
@@ -2259,7 +2263,7 @@ export interface VendorPaymentInput {
 
 // ------------------------------------------------------------------ guides
 
-export type GuideSlug = 'front-desk' | 'results-playbook' | 'inpatient-notes';
+export type GuideSlug = 'front-desk' | 'results-playbook' | 'inpatient-notes' | 'downtime';
 
 export interface GuideSection {
   id: string;
@@ -2574,4 +2578,123 @@ export interface RaiseDecisionInput {
   newPosition: string | null;
   effectiveOn: string | null;
   note: string | null;
+}
+
+// ---------------------------------------------------------------- downtime
+
+/// What is down (October 2026): eCW, the phones (Weave) or the internet.
+export type DowntimeSystem = 'ECW' | 'PHONES' | 'INTERNET';
+
+export type DowntimeCause =
+  'ECW_OUTAGE' | 'INTERNET_PROVIDER' | 'POWER' | 'WEAVE' | 'PLANNED_MAINTENANCE' | 'OTHER';
+
+export interface Downtime {
+  id: string;
+  status: 'PLANNED' | 'ACTIVE' | 'ENDED';
+  systems: DowntimeSystem[];
+  /// "eCW is down at North Bergen".
+  headline: string;
+  offices: { id: string; name: string }[];
+  note: string | null;
+  planned: boolean;
+  startsAt: string;
+  plannedEndsAt: string | null;
+  announcedAt: string | null;
+  endedAt: string | null;
+  /// How long, so far or in all.
+  minutes: number;
+  cause: DowntimeCause | null;
+  causeLabel: string | null;
+  causeNote: string | null;
+  catchUpPlan: string | null;
+  /// YYYY-MM-DD.
+  catchUpDueOn: string | null;
+  caughtUpAt: string | null;
+  shreddedAt: string | null;
+  /// YYYY-MM-DD: when its paper may be shredded, once caught up.
+  shredOn: string | null;
+  startedBy: string | null;
+  endedBy: string | null;
+  caughtUpBy: string | null;
+  shreddedBy: string | null;
+  updates: { id: string; body: string; createdAt: string; by: string | null }[];
+  /// Managers only.
+  contactsMade: { contactId: string | null; label: string; doneAt: string; by: string | null }[];
+  /// Managers only: how many were told it started.
+  toldCount: number | null;
+}
+
+export interface DowntimeContact {
+  id: string;
+  label: string;
+  name: string | null;
+  detail: string | null;
+  phone: string | null;
+  email: string | null;
+  systems: DowntimeSystem[];
+}
+
+export interface DowntimeCurrent {
+  active: Downtime[];
+  planned: Downtime[];
+  /// Managers and admins only.
+  contacts: DowntimeContact[];
+  /// Whose procedures they see first: "Front desk", "Provider"...
+  myGroup: string;
+}
+
+export interface DowntimeSummary {
+  count: number;
+  minutes: number;
+  byCause: { cause: DowntimeCause | null; label: string; count: number; minutes: number }[];
+  bySystem: { system: DowntimeSystem; label: string; count: number; minutes: number }[];
+  byOffice: { office: string; count: number; minutes: number }[];
+  longestMinutes: number;
+}
+
+export interface DowntimeLog {
+  year: number;
+  years: number[];
+  downtimes: Downtime[];
+  summary: DowntimeSummary;
+}
+
+export interface DowntimeKitItem {
+  id: string;
+  label: string;
+  quantity: number | null;
+}
+
+export interface DowntimePadProvider {
+  id: string;
+  name: string;
+  npi: string;
+}
+
+export interface MyDowntimeCheck {
+  /// YYYY-MM-01.
+  month: string;
+  /// Asked of them: admins and the admin team.
+  asked: boolean;
+  done: boolean;
+  items: DowntimeKitItem[];
+  offices: { id: string; name: string }[];
+}
+
+export interface DowntimeCheck {
+  id: string;
+  month: string;
+  lowItems: string[];
+  feedback: string | null;
+  readAt: string | null;
+  readBy: string | null;
+  createdAt: string;
+  office: { id: string; name: string } | null;
+  by: string | null;
+}
+
+export interface KioskDowntime {
+  id: string;
+  headline: string;
+  startsAt: string;
 }

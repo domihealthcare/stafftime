@@ -2,6 +2,7 @@ import type { DigestContents } from './attention.service';
 import { SHOWN_PER_SECTION, digestEmail } from './digest-email';
 
 const empty = (): DigestContents => ({
+  downtime: [],
   expiredCredentials: [],
   expiringCredentials: [],
   missingCredentials: [],

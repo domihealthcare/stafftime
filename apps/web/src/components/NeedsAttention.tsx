@@ -36,6 +36,7 @@ const HEADINGS: Record<keyof Attention, string> = {
   punchPatterns: 'Patterns in clocking in and out',
   timeOffClashes: 'Too many off at once',
   overtimeHeading: 'Heading for overtime this week',
+  downtime: 'Downtime',
 };
 
 /// How many lines a section shows before "Show N more". A dozen people with

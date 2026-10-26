@@ -238,6 +238,11 @@ export function QuickActions() {
             {t('Request time off')}
           </Link>
         )}
+        {/* What to do when eCW, the phones or the internet go down (October
+            2026), for everybody. */}
+        <Link to="/downtime" className={button}>
+          {t('Downtime')}
+        </Link>
         <Link to="/help" className={button}>
           {t('Help')}
         </Link>

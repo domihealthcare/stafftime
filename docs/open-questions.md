@@ -278,6 +278,23 @@ Built from the practice's Annual Wellness Supplement Form (02.2024); see
 - [ ] **Confirm the overtime rule itself** — over 40 hours per week is the
       federal baseline, but check nothing else applies to a NJ practice.
 
+## Downtime (built October 2026)
+
+- [ ] **The window sign's Spanish** needs a native speaker's read.
+- [ ] **The quiz** on the downtime procedures, sent to all staff through
+      Required reading: agreed as the next piece (by name, a pass mark,
+      retakes, managers see results).
+- [ ] **What to buy** for the offices, to discuss once the quiz is done (the
+      practice may have some already): backup internet at each office (a
+      cellular failover router or hotspot, set up with Miguel; first ask whether
+      eCW only accepts the office's own internet address), battery backup (UPS)
+      for the modem, router and switch, a lockable downtime box or binder per
+      front desk, clipboards, blank specimen labels, paper and toner, NJ
+      prescription blanks.
+- [ ] **One combined schedule from eCW each evening**, so the front desk knows
+      who is booked during a downtime: Dominguez to ask Stephanie.
+- [ ] **Drills** (a practice downtime marked as one): liked, to consider.
+
 ## Kiosk
 
 **No time clock for now** (Dominguez, 29 September 2026): staff clock in on
