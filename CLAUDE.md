@@ -1373,6 +1373,18 @@ Beyond the phases, the parts worth knowing about before picking up work:
   fits: check the list on the live site**. `invoices/invoice-access.service.ts`;
   `tests/browser/guides.mjs`. (Creating an invoice is here; **Vendor
   payments** is for paying the invoices vendors send.)
+- **Week stays put, and two calendar suites mended** (26 October 2026,
+  version 1.25.1): pressing **Week** on the Schedule while already on the
+  week view jumped to the first week of the month whenever the week shown ran
+  over two months (29 November to 5 December went to 1 to 7 November), so a
+  link to such a week, then Week, showed the wrong one. It now does nothing
+  when it is already on (`SchedulePage`), checked by a dated step in
+  `jump-to-date.mjs`. That was why `recurring.mjs` failed from 26 October:
+  its "next week" plus four landed on such a week and it edited the first
+  meeting. `closures.mjs` compared the copied Christmas Eve's hour on the
+  test browser's clock (UTC); the copy keeps New Jersey's wall-clock time, so
+  a year on across the clocks changing it moved by an hour there. It now
+  compares New Jersey hours. App behaviour for closures unchanged.
 - **Pay on file** (24 October 2026, Dominguez: "i need to be able to add
   people pay rate (without it being a new rate at this time or anything like
   that now)", version 1.24.0): a seventh kind of `EmploymentChange`,
