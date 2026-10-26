@@ -286,13 +286,17 @@ Built from the practice's Annual Wellness Supplement Form (02.2024); see
       reading → Quizzes → Try it, Edit) and press **Send it**. Its questions
       for the front desk, MAs and providers were loaded only where those job
       roles exist, so check they are there on the live site.
-- [ ] **What to buy** for the offices, to discuss once the quiz is done (the
-      practice may have some already): backup internet at each office (a
-      cellular failover router or hotspot, set up with Miguel; first ask whether
-      eCW only accepts the office's own internet address), battery backup (UPS)
-      for the modem, router and switch, a lockable downtime box or binder per
-      front desk, clipboards, blank specimen labels, paper and toner, NJ
-      prescription blanks.
+- [x] **What to buy** (settled 26 October 2026, Dominguez): no backup
+      internet ("it doesn't happen enough to have that cost"), so a phone's
+      hotspot on one front desk computer is the rule; battery backups already
+      there; a lockable downtime box per front desk with clipboards, pens and
+      specimen labels, and a separate locked box for the NJ prescription
+      blanks (Amazon links given in the session); no lights; card payments
+      stay on Weave's machine.
+- [ ] **Test the hotspot once**: put a front desk computer on a phone's
+      hotspot and open eCW. If eCW only accepts the office's own internet
+      address, it will refuse, and the rule needs Stephanie (eCW is hosted by
+      TMG) to allow it, or a different plan.
 - [ ] **One combined schedule from eCW each evening**, so the front desk knows
       who is booked during a downtime: Dominguez to ask Stephanie.
 - [ ] **Drills** (a practice downtime marked as one): liked, to consider.
