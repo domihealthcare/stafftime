@@ -774,4 +774,61 @@ describe('what this app deliberately does not store', () => {
       ['id', 'name', 'npi', 'sortOrder', 'updatedAt'].sort(),
     );
   });
+
+  // Quizzes (October 2026): questions about how the practice works, and each
+  // go's score and which questions were missed. Never a patient, and never
+  // the answers picked.
+  it('keeps quizzes to questions and scores', () => {
+    const fieldsOf = (name: string) =>
+      model(name)
+        .split('\n')
+        .map((line) => line.trim())
+        .filter((line) => line && !line.startsWith('//') && !line.startsWith('@@'))
+        .map((line) => line.split(/\s+/)[0])
+        .sort();
+    expect(fieldsOf('Quiz')).toEqual(
+      [
+        'attempts',
+        'createdAt',
+        'createdBy',
+        'createdById',
+        'id',
+        'intro',
+        'passPercent',
+        'questions',
+        'requirements',
+        'studyHref',
+        'title',
+        'updatedAt',
+      ].sort(),
+    );
+    expect(fieldsOf('QuizQuestion')).toEqual(
+      [
+        'choices',
+        'correct',
+        'explanation',
+        'forManagers',
+        'id',
+        'jobRoleIds',
+        'prompt',
+        'quiz',
+        'quizId',
+        'sortOrder',
+      ].sort(),
+    );
+    expect(fieldsOf('QuizAttempt')).toEqual(
+      [
+        'correct',
+        'employee',
+        'employeeId',
+        'id',
+        'missedIds',
+        'passed',
+        'quiz',
+        'quizId',
+        'takenAt',
+        'total',
+      ].sort(),
+    );
+  });
 });

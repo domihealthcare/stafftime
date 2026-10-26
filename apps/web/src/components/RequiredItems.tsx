@@ -69,6 +69,7 @@ export function MyRequirementItem({
   const [error, setError] = useState<string | null>(null);
   const due = dueLabel(item.dueOn);
   const read = item.kind === 'READ';
+  const quiz = item.kind === 'QUIZ' ? item.quiz : null;
 
   async function confirm() {
     setBusy(true);
@@ -85,7 +86,9 @@ export function MyRequirementItem({
   return (
     <div data-testid={`required-${item.title}`} className="space-y-1">
       <div className="flex flex-wrap items-center gap-2">
-        <Badge tone={read ? 'info' : 'neutral'}>{read ? t('Read and confirm') : t('To do')}</Badge>
+        <Badge tone={read || quiz ? 'info' : 'neutral'}>
+          {quiz ? t('Quiz') : read ? t('Read and confirm') : t('To do')}
+        </Badge>
         {due && !item.doneAt && <Badge tone={due.late ? 'danger' : 'warning'}>{due.text}</Badge>}
       </div>
       <p className="font-medium text-slate-900">{item.title}</p>
@@ -98,7 +101,22 @@ export function MyRequirementItem({
       )}
       <RequirementLinks item={item} />
       {error && <Alert>{error}</Alert>}
-      {item.doneAt ? (
+      {quiz ? (
+        item.doneAt ? (
+          <p className="text-sm text-emerald-700">
+            {t('✓ You passed it {date}', { date: formatDate(item.doneAt) })}
+          </p>
+        ) : (
+          <div className="pt-1">
+            <Link to={`/quizzes/${quiz.id}`} className={buttonClass('primary', 'sm')}>
+              {t('Take the quiz')}
+            </Link>
+            <span className="ml-2 text-xs text-slate-600">
+              {t('{percent}% to pass, as many goes as you need', { percent: quiz.passPercent })}
+            </span>
+          </div>
+        )
+      ) : item.doneAt ? (
         <p className="text-sm text-emerald-700">
           {read
             ? t('✓ You confirmed you read it {date}', { date: formatDate(item.doneAt) })

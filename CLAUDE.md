@@ -1760,6 +1760,31 @@ Beyond the phases, the parts worth knowing about before picking up work:
   `20261027010000_downtime_clinical_paper` adds them to the stack and a step
   for providers and MAs, leaving anything a manager changed alone.
   `components/DowntimeClinicalPaper.tsx`, `components/DowntimePaper.tsx`.
+- **Quizzes** (26 October 2026, Dominguez: "i want to send all staff a 'quiz'
+  to make sure they are uptodate on these procedures"; agreed: a general
+  feature **sent through Required reading**, **by name**, a **pass mark**,
+  **retakes**, **managers see scores**; version 1.28.0): **Manage → Surveys &
+  reading → Quizzes** (`/quizzes`, managers and admins) writes them: a pass mark
+  (80% to start), where to read up first, and per question two to six answers,
+  the right one, a "why" shown once answered, and who is asked it (everyone, any
+  job roles, or **managers and admins by access**). **Send it** opens Required
+  reading with a third kind, **A quiz** (`RequirementKind.QUIZ`,
+  `Requirement.quizId`), so the audience, bell, email, reminders, Home card and
+  "N of M" all work as for reading; **passing is the only way to confirm it**
+  ("I've read it" is refused). Staff take it at `/quizzes/:id` from Home: their
+  own questions, answers in a fresh order each go, marked at once with the right
+  answers and why, as many goes as needed. **Scores** (by name): passed and
+  when, best and last, goes, not started, and the questions missed most. Each go
+  keeps the score and **which questions were missed, never the answers**; the
+  schema guard pins `Quiz`, `QuizQuestion`, `QuizAttempt`. Migration
+  `20261027030000_quizzes` loads **Downtime procedures** (24 questions: 8 for
+  everyone, the rest for front desk, MAs, providers and managers; the job ones
+  only where the job role exists): **not sent yet**, Dominguez to read it over
+  and press Send it, and **check on the live site that the job questions
+  loaded**. Staff's parts in Spanish (the questions stay as written).
+  `src/quizzes/` (`quiz.ts` rules), `pages/QuizzesPage.tsx`, `QuizPage.tsx`,
+  `QuizResultsPage.tsx`; see *Quizzes* in `docs/architecture.md`;
+  `tests/browser/quiz.mjs`. Worth carrying to the EMR module.
 - **Turned down: "PTO about to be lost"** (9 October 2026, Dominguez): a
   reminder to use PTO before it fails to carry over was proposed and refused —
   not in the practice's interest. Do not propose it again.

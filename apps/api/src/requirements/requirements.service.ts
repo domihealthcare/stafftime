@@ -1,5 +1,5 @@
 import { BadRequestException, Injectable, Logger, NotFoundException } from '@nestjs/common';
-import { Prisma } from '@prisma/client';
+import { Prisma, RequirementKind } from '@prisma/client';
 import { AuthUser } from '../common/auth/auth-user';
 import { isoDate, toUtcDate } from '../common/util/calendar-date.util';
 import { localDateIn, PRACTICE_ZONE } from '../common/util/zoned-time.util';
@@ -22,6 +22,7 @@ const SELECT = {
   createdBy: { select: { id: true, firstName: true, lastName: true, preferredName: true } },
   announcement: { select: { id: true, title: true } },
   resource: { select: { id: true, title: true, kind: true } },
+  quiz: { select: { id: true, title: true, passPercent: true } },
   targets: {
     select: {
       employeeId: true,
@@ -96,11 +97,14 @@ export class RequirementsService {
     const row = where
       ? await this.prisma.requirement.findFirst({
           where: { AND: [where, { id }] },
-          select: { id: true, closedAt: true },
+          select: { id: true, closedAt: true, kind: true },
         })
       : null;
     if (!row) throw new NotFoundException('That is not something you have been asked for.');
     if (row.closedAt) throw new BadRequestException('That is no longer being asked for.');
+    if (row.kind === RequirementKind.QUIZ) {
+      throw new BadRequestException('A quiz is confirmed by passing it. Take the quiz.');
+    }
     await this.prisma.requirementDone.upsert({
       where: { requirementId_employeeId: { requirementId: id, employeeId: actor.id } },
       create: { requirementId: id, employeeId: actor.id },
@@ -297,6 +301,56 @@ export class RequirementsService {
     return { reminded: waiting.length };
   }
 
+  // -------------------------------------------------------------- quizzes
+
+  /// Passing a quiz confirms every open "take this quiz" asked of them.
+  /// Returns how many it confirmed.
+  async passedQuiz(quizId: string, employeeId: string): Promise<number> {
+    const where = await this.whereFor(employeeId);
+    if (!where) return 0;
+    const open = await this.prisma.requirement.findMany({
+      where: { AND: [where, { quizId, closedAt: null, done: { none: { employeeId } } }] },
+      select: { id: true },
+    });
+    for (const row of open) {
+      await this.prisma.requirementDone.upsert({
+        where: { requirementId_employeeId: { requirementId: row.id, employeeId } },
+        create: { requirementId: row.id, employeeId },
+        update: {},
+      });
+    }
+    return open.length;
+  }
+
+  /// Whether this person has been asked to take this quiz and not yet
+  /// passed it: the soonest due, or null.
+  async quizAskedOf(quizId: string, employeeId: string) {
+    const where = await this.whereFor(employeeId);
+    if (!where) return null;
+    const rows = await this.prisma.requirement.findMany({
+      where: { AND: [where, { quizId, closedAt: null, done: { none: { employeeId } } }] },
+      select: { id: true, dueOn: true },
+    });
+    if (rows.length === 0) return null;
+    const dates = rows.flatMap((row) => (row.dueOn ? [isoDate(row.dueOn)] : [])).sort();
+    return { dueOn: dates[0] ?? null };
+  }
+
+  /// Everybody asked to take this quiz by a request still open, as they are
+  /// today.
+  async quizAudience(quizId: string) {
+    const rows = await this.prisma.requirement.findMany({
+      where: { quizId, closedAt: null },
+      select: { everyone: true, targets: SELECT.targets },
+    });
+    if (rows.length === 0) return [];
+    return this.prisma.employee.findMany({
+      where: { OR: rows.map((row) => audienceWhere(row)) },
+      select: PERSON,
+      orderBy: [{ firstName: 'asc' }, { lastName: 'asc' }],
+    });
+  }
+
   // ------------------------------------------------------------ the timer
 
   /// The reminders due today, one message per person (see `nudges.ts`). Run
@@ -430,6 +484,11 @@ export class RequirementsService {
       const resource = await this.prisma.resource.count({ where: { id: dto.resourceId } });
       if (!resource) throw new BadRequestException('That resource is no longer there.');
     }
+    const quizId = dto.kind === RequirementKind.QUIZ ? dto.quizId || null : null;
+    if (dto.kind === RequirementKind.QUIZ) {
+      const quiz = quizId ? await this.prisma.quiz.count({ where: { id: quizId } }) : 0;
+      if (!quiz) throw new BadRequestException('Choose the quiz to take.');
+    }
     return {
       fields: {
         kind: dto.kind,
@@ -438,6 +497,7 @@ export class RequirementsService {
         url,
         announcementId: dto.announcementId || null,
         resourceId: dto.resourceId || null,
+        quizId,
         dueOn: dto.dueOn ? toUtcDate(dto.dueOn) : null,
         everyone: dto.everyone,
       },

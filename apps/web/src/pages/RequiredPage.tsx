@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
-import { useSearchParams } from 'react-router-dom';
+import { Link, useSearchParams } from 'react-router-dom';
 import { useConfirm } from '../components/ConfirmDialog';
 import { InviteePicker, NOBODY, type InviteeSelection } from '../components/InviteePicker';
 import { MyRequirementItem, RequirementLinks, dueLabel } from '../components/RequiredItems';
@@ -24,6 +24,7 @@ import type {
   JobRole,
   Location,
   MyRequirement,
+  QuizSummary,
   RequirementInput,
   RequirementKind,
   RequirementProgress,
@@ -131,6 +132,7 @@ interface Lists {
   locations: Location[];
   posts: Announcement[];
   resources: Resource[];
+  quizzes: QuizSummary[];
 }
 
 function Managing() {
@@ -144,6 +146,8 @@ function Managing() {
   const [editing, setEditing] = useState<RequirementSummary | 'new' | null>(null);
   const [opened, setOpened] = useState<string | null>(null);
   const fromPost = params.get('post');
+  /// "Send it" on a quiz opens the form with that quiz.
+  const fromQuiz = params.get('quiz');
 
   const load = useCallback(() => {
     api
@@ -163,14 +167,16 @@ function Managing() {
       api.listLocations(),
       api.announcements(),
       api.resources(),
+      api.quizzes(),
     ])
-      .then(([employees, jobRoles, locations, posts, resources]) =>
+      .then(([employees, jobRoles, locations, posts, resources, quizzes]) =>
         setLists({
           employees: employees.filter((person) => person.employmentStatus !== 'TERMINATED'),
           jobRoles,
           locations,
           posts,
           resources: resources.sections.flatMap((section) => section.resources),
+          quizzes,
         }),
       )
       .catch(() => setError('Could not load the staff, job roles and offices.'));
@@ -178,8 +184,8 @@ function Managing() {
 
   // "Require reading" on a News post opens the form with that post.
   useEffect(() => {
-    if (fromPost) setEditing('new');
-  }, [fromPost]);
+    if (fromPost || fromQuiz) setEditing('new');
+  }, [fromPost, fromQuiz]);
 
   async function act(action: () => Promise<unknown>, failure: string, done?: string) {
     setNotice(null);
@@ -204,7 +210,7 @@ function Managing() {
 
   const closeForm = () => {
     setEditing(null);
-    if (fromPost) setParams({}, { replace: true });
+    if (fromPost || fromQuiz) setParams({}, { replace: true });
   };
 
   return (
@@ -228,10 +234,11 @@ function Managing() {
 
       {editing && lists && (
         <RequirementForm
-          key={editing === 'new' ? `new-${fromPost ?? ''}` : editing.id}
+          key={editing === 'new' ? `new-${fromPost ?? ''}-${fromQuiz ?? ''}` : editing.id}
           item={editing === 'new' ? null : editing}
           lists={lists}
           postId={editing === 'new' ? fromPost : null}
+          quizId={editing === 'new' ? fromQuiz : null}
           onSaved={(message) => {
             closeForm();
             setNotice(message);
@@ -258,8 +265,12 @@ function Managing() {
               <li key={item.id}>
                 <Card className="p-4" testId={`asked-${item.title}`}>
                   <div className="flex flex-wrap items-center gap-2">
-                    <Badge tone={item.kind === 'READ' ? 'info' : 'neutral'}>
-                      {item.kind === 'READ' ? 'Read and confirm' : 'To do'}
+                    <Badge tone={item.kind === 'TASK' ? 'neutral' : 'info'}>
+                      {item.kind === 'QUIZ'
+                        ? 'Quiz'
+                        : item.kind === 'READ'
+                          ? 'Read and confirm'
+                          : 'To do'}
                     </Badge>
                     {item.closedAt ? (
                       <Badge>Stopped {formatDate(item.closedAt)}</Badge>
@@ -275,9 +286,19 @@ function Managing() {
                     <strong data-testid="asked-count">
                       {item.done} of {item.asked}
                     </strong>{' '}
-                    confirmed
+                    {item.kind === 'QUIZ' ? 'passed' : 'confirmed'}
                     {item.createdBy && ` · set by ${displayName(item.createdBy)}`}
                   </p>
+                  {item.quiz && (
+                    <p className="mt-1 text-sm">
+                      <Link
+                        to={`/quizzes/${item.quiz.id}/results`}
+                        className="font-medium text-brand-700 hover:text-brand-900"
+                      >
+                        Scores for “{item.quiz.title}” →
+                      </Link>
+                    </p>
+                  )}
                   {item.body && (
                     <p className="mt-1 whitespace-pre-line text-sm text-slate-700">{item.body}</p>
                   )}
@@ -402,6 +423,7 @@ function RequirementForm({
   item,
   lists,
   postId,
+  quizId: quizFrom,
   onSaved,
   onCancel,
 }: {
@@ -409,12 +431,16 @@ function RequirementForm({
   lists: Lists;
   /// From "Require reading" on a News post.
   postId: string | null;
+  /// From "Send it" on a quiz.
+  quizId: string | null;
   onSaved: (message: string) => void;
   onCancel: () => void;
 }) {
   const post = postId ? lists.posts.find((p) => p.id === postId) : undefined;
-  const [kind, setKind] = useState<RequirementKind>(item?.kind ?? 'READ');
-  const [title, setTitle] = useState(item?.title ?? post?.title ?? '');
+  const fromQuiz = quizFrom ? lists.quizzes.find((q) => q.id === quizFrom) : undefined;
+  const [kind, setKind] = useState<RequirementKind>(item?.kind ?? (fromQuiz ? 'QUIZ' : 'READ'));
+  const [title, setTitle] = useState(item?.title ?? post?.title ?? fromQuiz?.title ?? '');
+  const [quizId, setQuizId] = useState(item?.quiz?.id ?? fromQuiz?.id ?? '');
   const [body, setBody] = useState(item?.body ?? '');
   const [url, setUrl] = useState(item?.url ?? '');
   const [announcementId, setAnnouncementId] = useState(item?.announcement?.id ?? post?.id ?? '');
@@ -441,6 +467,10 @@ function RequirementForm({
       setError('Choose who it is for: Everyone, or some job roles, offices or people.');
       return;
     }
+    if (kind === 'QUIZ' && !quizId) {
+      setError('Choose the quiz to take.');
+      return;
+    }
     const input: RequirementInput = {
       kind,
       title: title.trim(),
@@ -448,6 +478,7 @@ function RequirementForm({
       url: url.trim() || undefined,
       announcementId: announcementId || null,
       resourceId: resourceId || null,
+      quizId: kind === 'QUIZ' ? quizId : null,
       dueOn: dueOn || null,
       everyone: who.everyone,
       targets: who.everyone
@@ -503,8 +534,45 @@ function RequirementForm({
               />
               Something to do - they press “Done”
             </label>
+            <label className="flex items-center gap-2">
+              <input
+                type="radio"
+                name="kind"
+                checked={kind === 'QUIZ'}
+                onChange={() => setKind('QUIZ')}
+              />
+              A quiz - passing it confirms it
+            </label>
           </div>
         </fieldset>
+
+        {kind === 'QUIZ' && (
+          <Field
+            label="Which quiz?"
+            hint="Each person answers the questions for their job, and is reminded until they pass."
+          >
+            {(props) => (
+              <select
+                {...props}
+                required
+                value={quizId}
+                onChange={(change) => {
+                  const picked = lists.quizzes.find((q) => q.id === change.target.value);
+                  setQuizId(change.target.value);
+                  if (picked && !title.trim()) setTitle(picked.title);
+                }}
+                className={inputClass}
+              >
+                <option value="">Choose a quiz</option>
+                {lists.quizzes.map((q) => (
+                  <option key={q.id} value={q.id}>
+                    {q.title} ({q.questionCount} questions, {q.passPercent}% to pass)
+                  </option>
+                ))}
+              </select>
+            )}
+          </Field>
+        )}
 
         <Field label="Title">
           {(props) => (

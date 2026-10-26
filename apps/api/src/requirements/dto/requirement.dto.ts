@@ -45,6 +45,11 @@ export class RequirementInput {
   @IsUUID()
   resourceId?: string | null;
 
+  /// The quiz to pass, for a QUIZ.
+  @IsOptional()
+  @IsUUID()
+  quizId?: string | null;
+
   /// "YYYY-MM-DD", or absent for no due date.
   @IsOptional()
   @Matches(DATE_ONLY, { message: 'Give the due date as a date.' })

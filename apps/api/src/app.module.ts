@@ -33,6 +33,7 @@ import { ScheduleReviewsModule } from './schedule-reviews/schedule-reviews.modul
 import { OfficeAdminsModule } from './office-admins/office-admins.module';
 import { CmeModule } from './cme/cme.module';
 import { DowntimeModule } from './downtime/downtime.module';
+import { QuizzesModule } from './quizzes/quizzes.module';
 import { InvitesModule } from './invites/invites.module';
 import { ExportsModule } from './exports/exports.module';
 import { JobRolesModule } from './job-roles/job-roles.module';
@@ -83,6 +84,7 @@ import { TimeEntriesModule } from './time-entries/time-entries.module';
     OfficeAdminsModule,
     CmeModule,
     DowntimeModule,
+    QuizzesModule,
     InvitesModule,
     TimeEntriesModule,
     ClosingModule,

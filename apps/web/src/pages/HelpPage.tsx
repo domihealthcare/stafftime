@@ -739,6 +739,26 @@ const STAFF: Section[] = [
         ),
       },
       {
+        question: 'Taking a quiz',
+        answer: (
+          <>
+            <p>
+              A quiz you have been asked to take is on Home under <strong>Waiting for you</strong>.
+              Press <strong>Take the quiz</strong>, pick an answer for each question and press{' '}
+              <strong>Send my answers</strong>. You only get the questions for your own job. If the
+              quiz says where to read up first, it is worth a look before you start.
+            </p>
+            <p>
+              You see your score straight away, with the right answer to each question and why. If
+              you did not reach the pass mark, look over the answers and press{' '}
+              <strong>Take it again</strong>: the answers come in a different order each time, and
+              you can have as many goes as you need. Passing marks it done, and the reminders stop.
+              Managers see your score.
+            </p>
+          </>
+        ),
+      },
+      {
         question: 'How do I find a colleague?',
         answer: (
           <p>
@@ -1422,7 +1442,7 @@ const MANAGERS: Section[] = [
                 Reps.
               </li>
               <li>
-                <strong>Surveys &amp; reading</strong> - Surveys and Required reading.
+                <strong>Surveys &amp; reading</strong> - Surveys, Required reading and Quizzes.
               </li>
               <li>
                 <strong>Finances</strong> - Pay &amp; raises (for the people chosen to see the
@@ -2426,6 +2446,30 @@ const MANAGERS: Section[] = [
               <strong>Stop asking</strong> takes it off everybody’s Home and keeps the record of who
               confirmed. It is a reminder, never a gate: nobody is stopped clocking in. The app
               records only that somebody confirmed, and when - no signature or document.
+            </p>
+          </>
+        ),
+      },
+      {
+        question: 'Quizzes: checking everybody knows a procedure',
+        answer: (
+          <>
+            <p>
+              <Screen>Manage → Surveys & reading → Quizzes</Screen>. The{' '}
+              <strong>Downtime procedures</strong> quiz is there ready: questions for everyone, and
+              some only for the front desk, medical assistants, providers, or managers and admins.
+              Press <strong>Try it</strong> to see it as staff will, and <strong>Edit</strong> to
+              change a question. <strong>+ New quiz</strong> writes another: a pass mark, where to
+              read up first, and for each question two to six answers, which one is right, a line
+              on why (shown once they answer), and who is asked it.
+            </p>
+            <p>
+              <strong>Send it</strong> opens Required reading with the quiz chosen: pick who it is
+              for and a due date if it has one. Each person is told on the bell and by email,
+              reminded like any required reading, and it is confirmed only when they pass. They can
+              try again as often as they need. <strong>Scores</strong> shows, by name, who has
+              passed and when, who is still trying (best and last score), who has not started, and
+              the questions missed most: worth going over at the next meeting.
             </p>
           </>
         ),

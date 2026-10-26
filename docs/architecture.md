@@ -5727,3 +5727,62 @@ appears on paper too. Unlike the other forms they run on over several pages
 The AWV's page 1 prints in English or Spanish (the English under each
 question, as on screen); page 2 is the MA's, in English. Only the blank
 lists are imported: nothing a patient answers is in this code.
+
+## Quizzes (October 2026)
+
+Dominguez: "once we complete this - i want to send all staff a 'quiz' to make
+sure they are uptodate on these procedures". Agreed before building: a general
+quiz feature rather than one for downtime, **sent through Required reading**,
+**by name**, a **pass mark** (80% to start) with **as many goes as it takes**,
+and **managers see the scores**.
+
+**Sent through Required reading, confirmed by passing.** A third kind of
+requirement, `QUIZ`, names a quiz (`Requirement.quizId`; a database check
+keeps the two together). Everything Required reading already does carries
+over: who it is for (everyone, job roles, offices, people, read as they are
+today), the bell and email when it is set, the reminders, the Home card, "N of
+M" and **Remind them now**. The one difference is how it is confirmed: "I've
+read it" is refused for a quiz (`RequirementsService.confirm`), and a pass
+writes the `RequirementDone` row instead (`passedQuiz`), for every open request
+for that quiz asked of the person. The wording says "take the quiz" and "to
+pass" (`nudges.ts`).
+
+**Questions for each job.** A question with no job roles and not
+`forManagers` is asked of everybody; one with job roles only of people holding
+one of them; one marked `forManagers` of Manager and Admin access (job roles
+grant no power, so "managers" is the access level). A person is marked on the
+questions asked of them (`quizzes/quiz.ts`, pure and unit-tested), every one
+answered, and passes at the pass mark or above, rounded down so 79.9% is not a
+pass at 80. While an admin is viewing as somebody, the chosen access and job
+roles decide the questions.
+
+**What is kept.** Each go (`QuizAttempt`): the score, whether it passed, and
+**which questions were missed**, never the answers picked. Enough for **Scores**
+(by name: passed and when, best and last score, how many goes; not started, from
+the open requests; the questions missed most). A question keeps its id when
+the quiz is changed, so what was missed still names it; scores already given
+stay as they were. A quiz sent through Required reading cannot be removed
+(remove the request first). The schema guard pins the three tables.
+
+**Taking it.** `/quizzes/:id`: the questions for that person without the right
+answers (the server sends none until it marks), the answers **in a fresh order
+each go**, then each question marked with the right answer and the "why" the
+manager wrote. Staff screens are in Spanish where the person chose it; the
+questions are the practice's own words and stay as written.
+
+**The downtime quiz.** Migration `20261027030000_quizzes` loads "Downtime
+procedures" (80%, reading up at `/downtime?tab=procedures`): 8 questions for
+everyone, 5 for the front desk, 3 for medical assistants, 4 for providers and 4
+for managers and admins, written from the procedures as they were on 26
+October 2026. The job questions are loaded only where the job role exists (Front
+Desk and Medical Assistant by name, providers by *uses clinical forms*), so a
+fresh database has the everyone and managers ones. It is **not sent**: a manager
+presses **Send it**. If the procedures change, the quiz is changed by hand under
+Manage → Surveys & reading → Quizzes: nothing ties a question to the guide's
+text.
+
+`src/quizzes/` (`quiz.ts` rules, `quizzes.service.ts`), `pages/QuizzesPage.tsx`
+(list and editor), `pages/QuizPage.tsx` (taking it),
+`pages/QuizResultsPage.tsx`; migrations `20261027020000_quiz_kind` (the enum
+value, on its own) and `20261027030000_quizzes`; `tests/browser/quiz.mjs`.
+

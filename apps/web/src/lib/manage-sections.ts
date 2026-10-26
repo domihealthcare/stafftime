@@ -56,6 +56,8 @@ export const MANAGE_SECTIONS: ManageSection[] = [
     tabs: [
       { to: '/surveys', label: 'Surveys', need: 'manager' },
       { to: '/required', label: 'Required reading', need: 'manager' },
+      // Sent through Required reading, confirmed by passing (October 2026).
+      { to: '/quizzes', label: 'Quizzes', need: 'manager' },
     ],
   },
   {
