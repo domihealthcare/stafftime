@@ -220,6 +220,7 @@ export class AuthController {
         mutedDigestTopics: true,
         canManageProductivity: true,
         canSeeRotaCost: true,
+        canSeeInvoices: true,
         canPostNews: true,
         canSeeEveryonesSchedule: true,
         lastLoginAt: true,

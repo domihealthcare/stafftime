@@ -13,7 +13,7 @@ import {
   inputClass,
 } from '../components/ui';
 import { ApiError, api } from '../lib/api';
-import { formatCalendarDate } from '../lib/format';
+import { displayName, formatCalendarDate } from '../lib/format';
 import {
   PRACTICE_PAY_TO,
   WITHHELD,
@@ -34,6 +34,7 @@ import type {
   InvoiceStatus,
   InvoiceVendor,
   PayeeInput,
+  PersonName,
 } from '../lib/types';
 
 /**
@@ -52,10 +53,14 @@ import type {
  * kept by managers and admins, and each invoice keeps a copy of the one it
  * went out with, so changing an option later leaves sent invoices alone.
  * Vendors billed often are saved too, and picked to fill in who it is to.
+ *
+ * Only for the people on the invoices list (26 October 2026, Dominguez:
+ * Jonathan Dominguez, Angelica Dominguez and Kayla Bermeo), whatever their
+ * access level; they keep the list here, under "Who sees invoices".
  */
 export function InvoicesPage() {
-  // Manager access only, admins not (Dominguez, October 2026).
-  const isManager = useSession().employee?.role === 'MANAGER';
+  // Only the people on the invoices list (Dominguez, 26 October 2026).
+  const allowed = useSession().employee?.canSeeInvoices === true;
   const [invoices, setInvoices] = useState<Invoice[] | null>(null);
   const [nextNumber, setNextNumber] = useState(1);
   const [error, setError] = useState<string | null>(null);
@@ -65,6 +70,7 @@ export function InvoicesPage() {
   const [managingPayees, setManagingPayees] = useState(false);
   const [vendors, setVendors] = useState<InvoiceVendor[]>([]);
   const [managingVendors, setManagingVendors] = useState(false);
+  const [managingAccess, setManagingAccess] = useState(false);
   const confirm = useConfirm();
 
   const loadVendors = useCallback(() => {
@@ -93,12 +99,12 @@ export function InvoicesPage() {
       );
   }, []);
   useEffect(() => {
-    if (isManager) {
+    if (allowed) {
       load();
       loadPayees();
       loadVendors();
     }
-  }, [isManager, load, loadPayees, loadVendors]);
+  }, [allowed, load, loadPayees, loadVendors]);
 
   // Earlier lines, offered as you type a new one.
   const usedLines = useMemo(() => {
@@ -108,8 +114,8 @@ export function InvoicesPage() {
     return [...seen].slice(0, 50);
   }, [invoices]);
 
-  if (!isManager)
-    return <Alert tone="info">Invoices are for people with Manager access only.</Alert>;
+  if (!allowed)
+    return <Alert tone="info">Invoices are only for the people chosen to see them.</Alert>;
   if (!invoices) return error ? <Alert>{error}</Alert> : <Spinner label="Loading the invoices" />;
 
   const needle = search.trim().toLowerCase();
@@ -177,6 +183,13 @@ export function InvoicesPage() {
           onClick={() => setManagingVendors(true)}
         >
           Saved vendors
+        </button>
+        <button
+          type="button"
+          className={buttonClass('secondary')}
+          onClick={() => setManagingAccess(true)}
+        >
+          Who sees invoices
         </button>
         <input
           type="search"
@@ -291,7 +304,120 @@ export function InvoicesPage() {
           onClose={() => setManagingVendors(false)}
         />
       )}
+      {managingAccess && <InvoiceAccess onClose={() => setManagingAccess(false)} />}
     </div>
+  );
+}
+
+/// Who sees invoices, kept by the people on the list. Nobody takes themselves
+/// off (the server refuses too), so the list is never left empty.
+function InvoiceAccess({ onClose }: { onClose: () => void }) {
+  const me = useSession().employee?.id;
+  const confirm = useConfirm();
+  const [list, setList] = useState<{ holders: PersonName[]; others: PersonName[] } | null>(null);
+  const [chosen, setChosen] = useState('');
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    api
+      .invoiceAccess()
+      .then(setList)
+      .catch((cause: unknown) =>
+        setError(cause instanceof ApiError ? cause.message : 'Could not load the list.'),
+      );
+  }, []);
+
+  async function add() {
+    if (!chosen) return;
+    try {
+      setList(await api.grantInvoiceAccess(chosen));
+      setChosen('');
+      setError(null);
+    } catch (cause) {
+      setError(cause instanceof ApiError ? cause.message : 'Could not add them.');
+    }
+  }
+
+  async function remove(person: PersonName) {
+    const ok = await confirm({
+      title: `Stop ${displayName(person)} seeing invoices?`,
+      body: 'Invoices go from their Manage menu. The invoices themselves are kept.',
+      confirmLabel: 'Yes, stop',
+      cancelLabel: 'Keep them',
+      tone: 'danger',
+    });
+    if (!ok) return;
+    try {
+      setList(await api.revokeInvoiceAccess(person.id));
+      setError(null);
+    } catch (cause) {
+      setError(cause instanceof ApiError ? cause.message : 'Could not take them off.');
+    }
+  }
+
+  return (
+    <Modal title="Who sees invoices" onClose={onClose} testId="invoice-access">
+      <p className="text-sm text-slate-600">
+        Only the people listed here see invoices, whatever their access level. Admins and managers
+        not on the list do not. You cannot take yourself off; somebody else on the list can.
+      </p>
+      {error && (
+        <div className="mt-3">
+          <Alert>{error}</Alert>
+        </div>
+      )}
+      {!list ? (
+        !error && <Spinner label="Loading the list" />
+      ) : (
+        <>
+          <ul className="mt-3 divide-y divide-slate-100">
+            {list.holders.map((person) => (
+              <li key={person.id} className="flex items-center justify-between py-2 text-sm">
+                <span>
+                  {displayName(person)}
+                  {person.id === me && <span className="text-slate-500"> (you)</span>}
+                </span>
+                {person.id !== me && (
+                  <button
+                    type="button"
+                    onClick={() => void remove(person)}
+                    aria-label={`Stop ${displayName(person)} seeing invoices`}
+                    className={buttonClass('secondary', 'sm')}
+                  >
+                    Remove
+                  </button>
+                )}
+              </li>
+            ))}
+          </ul>
+          <div className="mt-3 flex flex-wrap items-end gap-2">
+            <label className="text-sm">
+              <span className="mb-1 block font-medium text-slate-700">Add somebody</span>
+              <select
+                value={chosen}
+                onChange={(event) => setChosen(event.target.value)}
+                className={`${inputClass} w-64`}
+              >
+                <option value="">Choose somebody…</option>
+                {list.others.map((person) => (
+                  <option key={person.id} value={person.id}>
+                    {displayName(person)}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <button
+              type="button"
+              disabled={!chosen}
+              onClick={() => void add()}
+              className={buttonClass('primary', 'md')}
+            >
+              Add
+            </button>
+          </div>
+        </>
+      )}
+    </Modal>
   );
 }
 
