@@ -32,6 +32,7 @@ import { OnCallModule } from './on-call/on-call.module';
 import { ScheduleReviewsModule } from './schedule-reviews/schedule-reviews.module';
 import { OfficeAdminsModule } from './office-admins/office-admins.module';
 import { CmeModule } from './cme/cme.module';
+import { DowntimeModule } from './downtime/downtime.module';
 import { InvitesModule } from './invites/invites.module';
 import { ExportsModule } from './exports/exports.module';
 import { JobRolesModule } from './job-roles/job-roles.module';
@@ -81,6 +82,7 @@ import { TimeEntriesModule } from './time-entries/time-entries.module';
     ScheduleReviewsModule,
     OfficeAdminsModule,
     CmeModule,
+    DowntimeModule,
     InvitesModule,
     TimeEntriesModule,
     ClosingModule,

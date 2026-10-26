@@ -24,6 +24,7 @@ export const COMMON: Record<string, string> = {
   News: 'Noticias',
   Surveys: 'Encuestas',
   Help: 'Ayuda',
+  Downtime: 'Sistema caído',
   'Skip to content': 'Ir al contenido',
   'Your profile': 'Tu perfil',
   'Sign out': 'Cerrar sesión',

@@ -21,6 +21,7 @@ import {
 } from '../common/util/zoned-time.util';
 import { loadStanding } from '../credentials/standing-query';
 import { PrismaService } from '../prisma/prisma.service';
+import { loadDowntimeLines } from '../downtime/downtime-attention';
 import { PracticeSettingsService } from '../settings/practice-settings.service';
 import { loadPunchPatterns } from '../time-entries/punch-patterns';
 import { describeMissedShift, loadMissedShifts } from '../time-entries/missed-shifts';
@@ -124,6 +125,10 @@ export interface DigestContents {
   /// Too many from one job role off at once at one office, in the next two
   /// weeks. Dashboard and email, and on the request - never a banner.
   timeOffClashes: string[];
+  /// Downtime (October 2026): one left open, a catch-up past its day, paper
+  /// that can be shredded, and what the monthly check found. See
+  /// `downtime/downtime-attention.ts`.
+  downtime: string[];
 }
 
 /**
@@ -190,6 +195,7 @@ export class AttentionService {
       payrollDue,
       corrections,
       cme,
+      downtime,
     ] = await Promise.all([
       this.prisma.employeeCredential.findMany({
         where: {
@@ -304,6 +310,7 @@ export class AttentionService {
         orderBy: { startsOn: 'asc' },
         take: 20,
       }),
+      loadDowntimeLines(this.prisma),
     ]);
 
     /// "8:52 AM", on the practice's clock.
@@ -363,6 +370,7 @@ export class AttentionService {
       overtimeHeading: forecast.people.map((person) =>
         describeOvertimeHeading(person, forecast.thresholdHours),
       ),
+      downtime,
     };
   }
 

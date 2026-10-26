@@ -85,7 +85,12 @@ function build(
       ),
       count: jest.fn().mockResolvedValue(data.shiftsMissed ?? 1),
     },
-    location: { findMany: jest.fn().mockResolvedValue(data.locations ?? []) },
+    location: {
+      findMany: jest.fn().mockResolvedValue(data.locations ?? []),
+      count: jest.fn().mockResolvedValue(2),
+    },
+    downtime: { findMany: jest.fn().mockResolvedValue([]) },
+    downtimeCheck: { findMany: jest.fn().mockResolvedValue([]) },
     shiftSeries: { findMany: jest.fn().mockResolvedValue([]) },
     staffingMinimum: { findMany: jest.fn().mockResolvedValue([]) },
     practiceSettings: { findFirst: jest.fn().mockResolvedValue(null) },

@@ -148,6 +148,8 @@ model Location {
 
   employees      EmployeeLocation[]
   shifts         Shift[]
+  downtimes      DowntimeLocation[]
+  downtimeChecks DowntimeCheck[]
   shiftSeries    ShiftSeries[]
   timeEntries    TimeEntry[]
   kioskDevices   KioskDevice[]
@@ -366,6 +368,16 @@ model Employee {
   createdEvents             PracticeEvent[]          @relation("EventCreatedBy")
   eventInvites              PracticeEventInvitee[]   @relation("EventInvitee")
   eventReplies              PracticeEventReply[]
+  downtimesStarted          Downtime[]               @relation("DowntimeStartedBy")
+  downtimesEnded            Downtime[]               @relation("DowntimeEndedBy")
+  downtimesCaughtUp         Downtime[]               @relation("DowntimeCaughtUpBy")
+  downtimesShredded         Downtime[]               @relation("DowntimeShreddedBy")
+  downtimeUpdates           DowntimeUpdate[]
+  downtimeNotices           DowntimeRecipient[]
+  downtimeContactsMade      DowntimeContactMade[]
+  downtimeChecks            DowntimeCheck[]          @relation("DowntimeCheckBy")
+  downtimeChecksRead        DowntimeCheck[]          @relation("DowntimeCheckReadBy")
+  downtimeCheckNotices      DowntimeCheckNotice[]
   /// May work out and publish provider productivity. Chosen by an admin,
   /// separate from the access level: a manager has no say in it by default.
   canManageProductivity     Boolean                  @default(false)
@@ -2465,6 +2477,9 @@ enum DigestTopic {
   CLOSING
   TIME_CLOCK
   SUGGESTIONS
+  /// Downtime: one left open, catch-up overdue, paper to shred, the monthly
+  /// check (October 2026).
+  DOWNTIME
 }
 
 enum NotificationKind {
@@ -2511,6 +2526,9 @@ enum NotificationKind {
   /// To the people who look after closing checklists: a clock-out came in
   /// with something missed, or without the checklist.
   CLOSING
+  /// A downtime started, was updated, ended, is planned or was cancelled; the
+  /// monthly downtime check (October 2026).
+  DOWNTIME
 }
 
 /// Something the app wants one person to know, shown under the bell in the
@@ -3737,6 +3755,9 @@ enum GuideKey {
   FRONT_DESK
   RESULTS_PLAYBOOK
   INPATIENT_NOTES
+  /// What each job role does when eCW, the phones or the internet go down
+  /// (October 2026). For everybody; see `downtime/`.
+  DOWNTIME
 }
 
 /// One section of a guide, written in the guides' light markup (see
@@ -4004,4 +4025,240 @@ model CmeAllowance {
   employee Employee @relation("CmeAllowanceProvider", fields: [employeeId], references: [id], onDelete: Cascade)
 
   @@map("cme_allowances")
+}
+
+// ---------------------------------------------------------------- downtime
+
+/// What is down (October 2026, Dominguez): eCW, the phones (Weave: phones,
+/// fax, the card machine and its app) or the internet at an office.
+enum DowntimeSystem {
+  ECW
+  PHONES
+  INTERNET
+}
+
+/// What caused it, chosen by the manager who closes it, for the log.
+enum DowntimeCause {
+  ECW_OUTAGE
+  INTERNET_PROVIDER
+  POWER
+  WEAVE
+  PLANNED_MAINTENANCE
+  OTHER
+}
+
+/// Who was told what about a downtime, once each: ahead of a planned one, and
+/// when it started. Updates, the end and a cancellation go to the same people.
+enum DowntimeNoticeKind {
+  AHEAD
+  STARTED
+}
+
+/// A downtime (October 2026, Dominguez: "things that are needed or to do when
+/// downtime happens (i.e. no access to EMR) it should be activated by
+/// manager/admin and then closed by them as well"). Started by a manager or
+/// admin for one office or both, or entered ahead when planned; the people on
+/// shift there today are told, and told again of each update and when it is
+/// over. Kept as the log: how long, what caused it, when it was caught up and
+/// when the paper was shredded. **No patient details**: the paperwork during
+/// a downtime is paper only (the forms print from the Downtime page), and the
+/// schema guard pins these fields.
+model Downtime {
+  id            String           @id @default(uuid()) @db.Uuid
+  systems       DowntimeSystem[]
+  /// The manager's few words when starting it: "eCW down since 9:10".
+  note          String?
+  /// Entered ahead (an eCW upgrade in working hours): it starts by itself at
+  /// `startsAt`, and the people working then are told the evening before.
+  planned       Boolean          @default(false)
+  /// When it started, or for a planned one when it will.
+  startsAt      DateTime
+  /// A planned one's expected end. Never closes it by itself.
+  plannedEndsAt DateTime?
+  /// When the people on shift were told it had started. Empty while a
+  /// planned one has not begun.
+  announcedAt   DateTime?
+  endedAt       DateTime?
+  cause         DowntimeCause?
+  causeNote     String?
+  /// For a long one: what the manager decided about catching up.
+  catchUpPlan   String?
+  /// When the catch-up should be done by (worked out when it ends, or the
+  /// manager's date for a long one).
+  catchUpDueOn  DateTime?        @db.Date
+  caughtUpAt    DateTime?
+  /// The paper scanned in, kept two weeks, then shredded.
+  shreddedAt    DateTime?
+  startedById   String?          @db.Uuid
+  endedById     String?          @db.Uuid
+  caughtUpById  String?          @db.Uuid
+  shreddedById  String?          @db.Uuid
+  createdAt     DateTime         @default(now())
+  updatedAt     DateTime         @updatedAt
+
+  startedBy    Employee?             @relation("DowntimeStartedBy", fields: [startedById], references: [id], onDelete: SetNull)
+  endedBy      Employee?             @relation("DowntimeEndedBy", fields: [endedById], references: [id], onDelete: SetNull)
+  caughtUpBy   Employee?             @relation("DowntimeCaughtUpBy", fields: [caughtUpById], references: [id], onDelete: SetNull)
+  shreddedBy   Employee?             @relation("DowntimeShreddedBy", fields: [shreddedById], references: [id], onDelete: SetNull)
+  locations    DowntimeLocation[]
+  updates      DowntimeUpdate[]
+  recipients   DowntimeRecipient[]
+  contactsMade DowntimeContactMade[]
+
+  @@index([endedAt])
+  @@index([startsAt])
+  @@map("downtimes")
+}
+
+/// The offices a downtime is at.
+model DowntimeLocation {
+  downtimeId String @db.Uuid
+  locationId String @db.Uuid
+
+  downtime Downtime @relation(fields: [downtimeId], references: [id], onDelete: Cascade)
+  location Location @relation(fields: [locationId], references: [id], onDelete: Cascade)
+
+  @@id([downtimeId, locationId])
+  @@index([locationId])
+  @@map("downtime_locations")
+}
+
+/// An update posted while it is on: "support says another hour".
+model DowntimeUpdate {
+  id          String   @id @default(uuid()) @db.Uuid
+  downtimeId  String   @db.Uuid
+  body        String
+  createdById String?  @db.Uuid
+  createdAt   DateTime @default(now())
+
+  downtime  Downtime  @relation(fields: [downtimeId], references: [id], onDelete: Cascade)
+  createdBy Employee? @relation(fields: [createdById], references: [id], onDelete: SetNull)
+
+  @@index([downtimeId, createdAt])
+  @@map("downtime_updates")
+}
+
+/// Somebody told about a downtime: claimed before the message goes, so the
+/// five-minute timer and a manager's press cannot both send it.
+model DowntimeRecipient {
+  downtimeId String             @db.Uuid
+  employeeId String             @db.Uuid
+  kind       DowntimeNoticeKind
+  toldAt     DateTime           @default(now())
+
+  downtime Downtime @relation(fields: [downtimeId], references: [id], onDelete: Cascade)
+  employee Employee @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+
+  @@id([downtimeId, employeeId, kind])
+  @@index([employeeId])
+  @@map("downtime_recipients")
+}
+
+/// Who to contact when something goes down: eCW support, IT, Weave. Kept by
+/// managers and admins, and shown only to them. Business contacts only.
+model DowntimeContact {
+  id        String           @id @default(uuid()) @db.Uuid
+  /// What it is for: "eCW: email first", "Internet".
+  label     String
+  name      String?
+  /// Why or when: "eCW admin, she fixes it".
+  detail    String?
+  phone     String?
+  email     String?
+  /// The downtimes it is for; empty is all of them.
+  systems   DowntimeSystem[]
+  sortOrder Int              @default(0)
+  updatedAt DateTime         @updatedAt
+
+  made DowntimeContactMade[]
+
+  @@map("downtime_contacts")
+}
+
+/// A contact reached during a downtime, ticked by a manager for the log. It
+/// keeps the contact's name as it was, so the log still reads right after the
+/// contact is changed or removed.
+model DowntimeContactMade {
+  id         String   @id @default(uuid()) @db.Uuid
+  downtimeId String   @db.Uuid
+  contactId  String?  @db.Uuid
+  /// "eCW: Stephanie Parker", as it was when ticked.
+  label      String
+  doneById   String?  @db.Uuid
+  doneAt     DateTime @default(now())
+
+  downtime Downtime         @relation(fields: [downtimeId], references: [id], onDelete: Cascade)
+  contact  DowntimeContact? @relation(fields: [contactId], references: [id], onDelete: SetNull)
+  doneBy   Employee?        @relation(fields: [doneById], references: [id], onDelete: SetNull)
+
+  @@unique([downtimeId, contactId])
+  @@map("downtime_contacts_made")
+}
+
+/// What should be in the downtime stack at each front desk, checked monthly.
+model DowntimeKitItem {
+  id        String   @id @default(uuid()) @db.Uuid
+  label     String
+  /// How many to keep, where it is a count ("20 sign-in sheets").
+  quantity  Int?
+  sortOrder Int      @default(0)
+  updatedAt DateTime @updatedAt
+
+  @@map("downtime_kit_items")
+}
+
+/// The monthly downtime check (October 2026, Dominguez: "it can go easily
+/// missed - also should go to all the admin and they should be able to
+/// provide feedback if they see something has changed in the way we do stuff
+/// or maybe something new to include"): one person, one office, one month -
+/// what is running low in the stack, and anything to change in the
+/// procedures. About supplies and the way things are done; never a patient.
+model DowntimeCheck {
+  id         String    @id @default(uuid()) @db.Uuid
+  /// The first of the month it is for.
+  month      DateTime  @db.Date
+  locationId String?   @db.Uuid
+  employeeId String?   @db.Uuid
+  /// The kit items running low, by their label at the time.
+  lowItems   String[]  @default([])
+  /// What has changed, or should be added.
+  feedback   String?
+  readAt     DateTime?
+  readById   String?   @db.Uuid
+  createdAt  DateTime  @default(now())
+
+  location Location? @relation(fields: [locationId], references: [id], onDelete: SetNull)
+  employee Employee? @relation("DowntimeCheckBy", fields: [employeeId], references: [id], onDelete: SetNull)
+  readBy   Employee? @relation("DowntimeCheckReadBy", fields: [readById], references: [id], onDelete: SetNull)
+
+  @@index([month])
+  @@map("downtime_checks")
+}
+
+/// Somebody told about this month's check (round 1 on the 1st, round 2 a
+/// week on if still not done), claimed before it goes.
+model DowntimeCheckNotice {
+  month      DateTime @db.Date
+  employeeId String   @db.Uuid
+  round      Int
+  sentAt     DateTime @default(now())
+
+  employee Employee @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+
+  @@id([month, employeeId, round])
+  @@map("downtime_check_notices")
+}
+
+/// The providers printed on the downtime order pads, with their NPIs (October
+/// 2026, Dominguez: every slip lists all of them, so one stack serves
+/// everyone). The practice's business identifiers, kept by managers.
+model DowntimePadProvider {
+  id        String   @id @default(uuid()) @db.Uuid
+  /// As printed: "Jonathan M. Dominguez, M.D.".
+  name      String
+  npi       String
+  sortOrder Int      @default(0)
+  updatedAt DateTime @updatedAt
+
+  @@map("downtime_pad_providers")
 }

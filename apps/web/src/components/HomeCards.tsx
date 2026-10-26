@@ -227,6 +227,11 @@ export function QuickActions() {
             {t('Forms')}
           </Link>
         )}
+        {/* What to do when eCW, the phones or the internet go down (October
+            2026), for everybody: with the guides, before time off and Help. */}
+        <Link to="/downtime" className={button}>
+          {t('Downtime')}
+        </Link>
         {ask && (
           <Link to="/ask" className={button}>
             {t('Ask Domi Staff')}

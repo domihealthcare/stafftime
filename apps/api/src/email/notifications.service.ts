@@ -577,6 +577,43 @@ export class NotificationsService {
     }
   }
 
+  /// A downtime started, updated, over, planned or cancelled, and the monthly
+  /// downtime check (October 2026): the bell (and so phones) and an email to
+  /// each, a few at a time - a downtime can go to thirty people at once, and
+  /// they need it now, not after thirty round trips one after another.
+  async downtime(
+    employeeIds: string[],
+    words: { title: string; body: string; link: string },
+  ): Promise<void> {
+    const ids = [...new Set(employeeIds)];
+    if (ids.length === 0) return;
+    await this.inbox.notify(ids, {
+      kind: NotificationKind.DOWNTIME,
+      title: words.title,
+      body: words.body,
+      link: words.link,
+    });
+    const people = await this.prisma.employee.findMany({
+      where: { id: { in: ids }, employmentStatus: EmploymentStatus.ACTIVE },
+      select: { email: true, firstName: true, preferredName: true },
+    });
+    for (let start = 0; start < people.length; start += 5) {
+      await Promise.all(
+        people
+          .slice(start, start + 5)
+          .map((person) =>
+            this.dispatch(person.email, words.title, [
+              `Hello ${person.preferredName ?? person.firstName},`,
+              '',
+              words.body,
+              '',
+              `${this.appUrl}${words.link}`,
+            ]),
+          ),
+      );
+    }
+  }
+
   /// The on-call schedule: a swap asked or answered, a day or the pattern
   /// changed. The bell always; an email when it asks something of them or
   /// changes a day of theirs.

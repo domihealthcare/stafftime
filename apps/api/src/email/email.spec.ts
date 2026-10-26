@@ -329,6 +329,7 @@ describe('NotificationsService', () => {
           'punchPatterns',
           'timeOffClashes',
           'overtimeHeading',
+          'downtime',
         ].map((key) => [key, []]),
       ),
       undecidedTimeOff: ['Frankie Front - Nov 3, 2026'],

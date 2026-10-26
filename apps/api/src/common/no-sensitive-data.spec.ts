@@ -689,4 +689,89 @@ describe('what this app deliberately does not store', () => {
       ].sort(),
     );
   });
+
+  /// Downtime (October 2026, Dominguez): when eCW is down the paperwork is
+  /// paper - the forms print from the Downtime page and are filled in by
+  /// hand. These tables hold what was down, where, when, why and who did
+  /// what about it; the monthly check holds what is running low and a note
+  /// about the procedures. Pinned, so a patient's name or anything from a
+  /// downtime form never finds a place to go. The providers on the order pads
+  /// carry their NPI, the practice's business identifier, and nothing else.
+  it('keeps downtime to what was down, and never a patient', () => {
+    const fieldsOf = (name: string) =>
+      model(name)
+        .split('\n')
+        .map((line) => line.trim())
+        .filter((line) => line && !line.startsWith('//') && !line.startsWith('@@'))
+        .map((line) => line.split(/\s+/)[0])
+        .sort();
+    expect(fieldsOf('Downtime')).toEqual(
+      [
+        'announcedAt',
+        'catchUpDueOn',
+        'catchUpPlan',
+        'caughtUpAt',
+        'caughtUpBy',
+        'caughtUpById',
+        'cause',
+        'causeNote',
+        'contactsMade',
+        'createdAt',
+        'endedAt',
+        'endedBy',
+        'endedById',
+        'id',
+        'locations',
+        'note',
+        'planned',
+        'plannedEndsAt',
+        'recipients',
+        'shreddedAt',
+        'shreddedBy',
+        'shreddedById',
+        'startedBy',
+        'startedById',
+        'startsAt',
+        'systems',
+        'updatedAt',
+        'updates',
+      ].sort(),
+    );
+    expect(fieldsOf('DowntimeUpdate')).toEqual(
+      ['body', 'createdAt', 'createdBy', 'createdById', 'downtime', 'downtimeId', 'id'].sort(),
+    );
+    expect(fieldsOf('DowntimeCheck')).toEqual(
+      [
+        'createdAt',
+        'employee',
+        'employeeId',
+        'feedback',
+        'id',
+        'location',
+        'locationId',
+        'lowItems',
+        'month',
+        'readAt',
+        'readBy',
+        'readById',
+      ].sort(),
+    );
+    expect(fieldsOf('DowntimeContact')).toEqual(
+      [
+        'detail',
+        'email',
+        'id',
+        'label',
+        'made',
+        'name',
+        'phone',
+        'sortOrder',
+        'systems',
+        'updatedAt',
+      ].sort(),
+    );
+    expect(fieldsOf('DowntimePadProvider')).toEqual(
+      ['id', 'name', 'npi', 'sortOrder', 'updatedAt'].sort(),
+    );
+  });
 });

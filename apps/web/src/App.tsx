@@ -54,6 +54,12 @@ const InvoicesPage = lazy(() =>
 const ProductivityPrintPage = lazy(() =>
   import('./pages/ProductivityPrintPage').then((m) => ({ default: m.ProductivityPrintPage })),
 );
+const DowntimePage = lazy(() =>
+  import('./pages/DowntimePage').then((m) => ({ default: m.DowntimePage })),
+);
+const DowntimePrintPage = lazy(() =>
+  import('./pages/DowntimePrintPage').then((m) => ({ default: m.DowntimePrintPage })),
+);
 const PhoneBookPrintPage = lazy(() =>
   import('./pages/PhoneBookPrintPage').then((m) => ({ default: m.PhoneBookPrintPage })),
 );
@@ -226,6 +232,7 @@ function Routed() {
         <Route path="schedule/print" element={<RotaPrintPage />} />
         <Route path="schedule/calendar/print" element={<CalendarPrintPage />} />
         <Route path="phone-book/print" element={<PhoneBookPrintPage />} />
+        <Route path="downtime/print" element={<DowntimePrintPage />} />
         {/* Shows pay, so behind the same PIN as the screen. */}
         <Route
           path="productivity/print"
@@ -258,6 +265,7 @@ function Routed() {
           <Route path="reps" element={<RepsPage />} />
           <Route path="diagnostics" element={<DiagnosticsPage />} />
           <Route path="phone-book" element={<PhoneBookPage />} />
+          <Route path="downtime" element={<DowntimePage />} />
           <Route path="front-desk" element={<FrontDeskGuidePage />} />
           <Route path="results-playbook" element={<ResultsPlaybookPage />} />
           <Route path="inpatient-notes" element={<InpatientNotesPage />} />

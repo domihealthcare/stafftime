@@ -231,6 +231,52 @@ const STAFF: Section[] = [
     ],
   },
   {
+    title: 'When eCW, the phones or the internet go down',
+    topics: [
+      {
+        question: 'What do I do when eCW, the phones or the internet go down?',
+        answer: (
+          <>
+            <p>
+              Tell a manager straight away. They start a <strong>downtime</strong> in Domi Staff,
+              and everybody on shift at that office now or later today is told on the bell, by email
+              and on their phone. A red bar across the top of every screen says what is down while
+              it lasts.
+            </p>
+            <p>
+              <Screen>Downtime</Screen> (on Home&rsquo;s Shortcuts and on Resources) has{' '}
+              <strong>What to do</strong> for your job, starting with your own: the front desk, the
+              MAs, the providers and the managers each have their steps for eCW, the phones, the
+              internet and a power cut, and for when it is back. <strong>Forms</strong> prints the
+              paper forms: the sign-in sheet, running patient sheets, the checkout and call-back
+              lists, the progress note, the order pads and a sign for the window. A stack of them is
+              kept at each front desk, because nothing prints when the internet is down.
+            </p>
+            <p>
+              Domi Staff itself still works on your phone&rsquo;s data, so keep clocking in as
+              usual. Nothing about a patient goes into Domi Staff or on your phone: the forms are
+              filled in by hand and kept in the downtime folder.
+            </p>
+          </>
+        ),
+      },
+      {
+        question: 'The monthly downtime check (the admin team)',
+        answer: (
+          <>
+            <p>
+              On the 1st of each month the admin team and the admins are asked to look at the
+              downtime stack at their front desk: a card on Home, the bell and an email, and again a
+              week later if it is not done. <Screen>Downtime</Screen> →{' '}
+              <strong>Monthly check</strong>: tick anything running low, and write if anything in
+              the way we do things has changed or should be added. Managers see what you send.
+            </p>
+          </>
+        ),
+      },
+    ],
+  },
+  {
     // The North Bergen iPad (October 2026): the time clock, shared with BrainCheck
     // Assess for patients and the Google Home app for the thermostats. Never put
     // a passcode here - this guide is shown to everybody.
@@ -2625,6 +2671,60 @@ const MANAGERS: Section[] = [
               birth and address go on the PDF you download there and then, and are never saved: the
               copy kept in Domi Staff has them blanked out. Keep that PDF where the practice keeps
               patient records, and leave the patient&rsquo;s name out of the lines.
+            </p>
+          </>
+        ),
+      },
+    ],
+  },
+  {
+    title: 'Downtime',
+    topics: [
+      {
+        question: 'Starting, updating and closing a downtime',
+        answer: (
+          <>
+            <p>
+              <Screen>Downtime</Screen> → <strong>Start a downtime</strong>: tick what is down (eCW,
+              the phones, the internet), which office, and add a note. eCW starts on both offices,
+              as it is the same for both; the people working from home and on telemedicine are told
+              with them. Everybody on a published shift there today is told at once (bell, email,
+              phone), and anybody whose shift starts later is told two hours before it. Managers and
+              admins are told too.
+            </p>
+            <p>
+              While it is on, <strong>Who to contact</strong> lists the support numbers for what is
+              down (managers and admins only), with Call and Email buttons; tick each one once done,
+              and it goes in the log. <strong>Post an update</strong> sends what you hear to the
+              same people. When it is back, <strong>It&rsquo;s back: close the downtime</strong>:
+              pick what caused it. Under 4 hours, the catch-up is due the same day; up to a day, by
+              the end of the next working day; longer, you write the plan and the day.
+            </p>
+            <p>
+              <strong>Planned</strong> in the same form enters one ahead, such as an eCW upgrade in
+              working hours: it starts by itself, and the people working then are told the evening
+              before. <strong>Cancel it</strong> calls it off and tells them.
+            </p>
+          </>
+        ),
+      },
+      {
+        question: 'The log, the paper and the set-up',
+        answer: (
+          <>
+            <p>
+              <strong>Log</strong> adds up the year (how many, how long, by cause, by what was down
+              and by office) and lists each downtime with who was told, who was contacted, the
+              updates and the cause. Mark it <strong>caught up</strong> once everything is in eCW;
+              the scanned paper is kept two weeks, then <strong>Mark the paper shredded</strong>.
+              The nightly email&rsquo;s <strong>Downtime</strong> part reminds you of a catch-up
+              past its day, paper that can go, and one left open.
+            </p>
+            <p>
+              <strong>Set-up</strong> keeps the support contacts, the stack each front desk should
+              have (what the monthly check goes through) and the providers printed on the order
+              pads, with their NPIs (checked before saving). The steps under What to do are changed
+              there with <strong>Edit</strong>, like the other guides.
             </p>
           </>
         ),

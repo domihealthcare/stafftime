@@ -102,6 +102,16 @@ export interface PlacedTool extends ResourceTool {
   usable: boolean;
 }
 
+/// The downtime procedures are for everybody, always (October 2026): first
+/// in the Everyone section, never chosen by role.
+const DOWNTIME: ResourceTool = {
+  key: 'downtime',
+  to: '/downtime',
+  title: 'Downtime',
+  description:
+    'When eCW, the phones or the internet go down: what to do for your job, and the paper forms to print.',
+};
+
 /// Reimbursements is not for choosing: the contracted rates are the managers'
 /// and admins' alone (the server says so), so it sits in the Manager section.
 const REIMBURSEMENTS: ResourceTool = {
@@ -122,6 +132,7 @@ export function toolsBySection(
 ): Map<string, PlacedTool[]> {
   const placed = new Map<string, PlacedTool[]>();
   if (!employee) return placed;
+  placed.set('everyone', [{ ...DOWNTIME, href: DOWNTIME.to, usable: true }]);
   const put = (
     tool: ResourceTool,
     setting: ToolSetting | undefined,

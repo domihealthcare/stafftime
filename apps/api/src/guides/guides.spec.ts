@@ -13,9 +13,9 @@ describe('who reads and keeps the guides', () => {
     expect(canEditGuide(Role.ADMIN)).toBe(true);
   });
 
-  it('knows the three guides by their addresses', () => {
+  it('knows the guides by their addresses', () => {
     expect(Object.keys(GUIDE_SLUGS).sort()).toEqual(
-      ['front-desk', 'inpatient-notes', 'results-playbook'].sort(),
+      ['downtime', 'front-desk', 'inpatient-notes', 'results-playbook'].sort(),
     );
   });
 });

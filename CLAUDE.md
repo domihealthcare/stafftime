@@ -1704,6 +1704,62 @@ Beyond the phases, the parts worth knowing about before picking up work:
   `components/OfficeAdminsCard.tsx`, `components/MyOfficeAdminDays.tsx`;
   `tests/browser/office-admins.mjs`. See *The admin in the office* in
   `docs/architecture.md`.
+- **Downtime** (26 October 2026, Dominguez: "a downtime section - things that
+  are needed or to do when downtime happens (i.e. no access to EMR) it should
+  be activated by manager/admin and then closed by them as well - it should put
+  notifications for employees who have a shift now or upcoming today - it
+  should be clear and easy to use"; discussed first, the forms drawn as a mockup
+  and changed with him): `/downtime` (Home's Shortcuts, Resources), tabs **Now**,
+  **What to do**, **Forms**, **Monthly check** (admin team and managers),
+  **Log** and **Set-up** (managers). A manager or admin **starts** one: what is
+  down (eCW, phones (Weave: phones, fax, card machine), internet), which office
+  (eCW starts on both; the internet can be one), a note; or **Planned**, entered
+  ahead, starting by itself, those working then told at 6pm the evening before.
+  Everybody on a published shift there today is told (bell, email, phone), and
+  managers and admins; anybody coming on later, two hours before their shift (the
+  five-minute timer). A **red bar** on every screen and on the time clock while it
+  is on. Managers tick off **who they contacted** (support numbers, managers and
+  admins only: eCW email and Stephanie Parker, Kevin S. MacNiven of United MSO,
+  Miguel for the internet, Weave), **post updates** to the same people, and
+  **close** it with the **cause**; the catch-up is due the same day under 4
+  hours, the next working day up to a day, else a plan. The **log** adds up the
+  year (how many, how long, by cause, what was down, office) and keeps who was
+  told and contacted, the updates, **caught up** and **paper shredded** (two
+  weeks after). **What to do** is a guide (`GuideKey.DOWNTIME`) for everybody,
+  opening on their own job (Front desk, Medical assistant, Provider, Managers and
+  admins), managers edit it; telemedicine uses doxy.me then Doximity, urgent
+  calls Doximity, a power cut means the other office or rescheduling. **Forms**
+  print from the portal, nothing on Drive (Dominguez): sign-in sheet (17 rows),
+  running patient sheet (two a page), checkout list (follow-ups), call-back list,
+  progress note (two pages, his time statement without the EMR parts), order
+  pads (lab and referral, all five providers with NPIs under the signature;
+  **the old paper pads had Dr. Iparraguirre's NPI wrong**, 1700383942, now
+  1700383924), a "What to do" sheet per job and a window sign in English and
+  Spanish (**the Spanish needs a native speaker's read**). Blank, filled in by
+  hand: no patient detail reaches the app. The **monthly check** goes to admins
+  and the Administrative job role on the 1st (and the 8th if not done): what is
+  low in the stack and anything changed, to managers until read. The nightly
+  email has a **Downtime** part. Migrations `20261026030000_downtime_kinds`,
+  `20261026040000_downtime` (the procedures, contacts, stack and providers);
+  `src/downtime/`, `pages/DowntimePage.tsx`, `pages/DowntimePrintPage.tsx`; see
+  *Downtime* in `docs/architecture.md`; `tests/browser/downtime.mjs`. **Next**:
+  a quiz on the procedures, sent through Required reading; what to buy for the
+  offices (backup internet, battery backup, a lockable downtime box) is to be
+  discussed after. Worth carrying to the EMR module.
+  **The BrainCheck Care Plan and the AWV on paper too** (26 October 2026,
+  Dominguez: "in case of no internet and unable to access staff portal",
+  version 1.27.0): **Forms** prints both, drawn from the same lists as the
+  forms on screen (`clinical/*/config.ts`, so a choice changed there changes on
+  paper): the BrainCheck Care Plan's requirements and sections A to K with
+  every choice, the care plan's goals and actions by area, about five pages;
+  the AWV's page 1 (questionnaire and SPMSQ, provider; **in English or in
+  Spanish** with the English under each question) and page 2 (preventive
+  services, MA). Blank, filled in by hand, entered in Domi Staff once it is
+  back for the eCW note and handout, then scanned. Everybody can print them
+  (blank forms carry nothing). Migration
+  `20261027010000_downtime_clinical_paper` adds them to the stack and a step
+  for providers and MAs, leaving anything a manager changed alone.
+  `components/DowntimeClinicalPaper.tsx`, `components/DowntimePaper.tsx`.
 - **Turned down: "PTO about to be lost"** (9 October 2026, Dominguez): a
   reminder to use PTO before it fails to carry over was proposed and refused —
   not in the practice's interest. Do not propose it again.

@@ -79,6 +79,17 @@ export const DIGEST_TOPICS: {
     short: 'Suggestions',
     covers: ['Notes in the suggestion box nobody has dealt with - how many, never the words'],
   },
+  {
+    topic: 'DOWNTIME',
+    label: 'Downtime',
+    short: 'Downtime',
+    covers: [
+      'A downtime still open after 12 hours',
+      'Catching up after a downtime, past its day',
+      'Paper from a downtime that can now be shredded',
+      'What the monthly downtime check found: supplies running low, and notes about the procedures',
+    ],
+  },
 ];
 
 export const topicLabel = (topic: DigestTopic) =>

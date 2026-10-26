@@ -86,6 +86,8 @@ describe('PunchRemindersService', () => {
         { send: jest.fn().mockResolvedValue(0) } as never,
         { nudge: jest.fn().mockResolvedValue(0) } as never,
         { send: jest.fn().mockResolvedValue(0) } as never,
+        // Downtime has its own tests; here it reports nothing.
+        { run: jest.fn().mockResolvedValue(undefined) } as never,
       ),
       autoClockOut,
       prisma,

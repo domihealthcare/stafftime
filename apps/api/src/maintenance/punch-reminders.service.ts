@@ -15,6 +15,7 @@ import { LunchNoticesService } from '../events/lunch-notices.service';
 import { LicenseRemindersService } from './license-reminders.service';
 import { OnboardingRemindersService } from './onboarding-reminders.service';
 import { RequirementsService } from '../requirements/requirements.service';
+import { DowntimeService } from '../downtime/downtime.service';
 import { WeeklySummaryService } from './weekly-summary.service';
 import { PrismaService } from '../prisma/prisma.service';
 import {
@@ -48,6 +49,9 @@ const NEXT_SHIFT_MINUTES = 30;
 const OPEN_PUNCH_HOURS = 24;
 
 export interface PunchReminderReport {
+  /// Downtimes: a planned one starting, the evening before one, people
+  /// coming on shift during one, and the monthly check - see `downtime/`.
+  downtime?: { started: number; ahead: number; later: number; checks: number };
   /// People told they have not clocked in for a shift that has started.
   clockIn: number;
   /// People told they are still clocked in after their shift ended.
@@ -105,6 +109,7 @@ export class PunchRemindersService {
     private readonly onboardingReminders: OnboardingRemindersService,
     private readonly requirements: RequirementsService,
     private readonly weeklySummaries: WeeklySummaryService,
+    private readonly downtime: DowntimeService,
   ) {}
 
   async run(now: Date = new Date()): Promise<PunchReminderReport> {
@@ -127,6 +132,9 @@ export class PunchRemindersService {
       tomorrowReminders: await this.remindAboutTomorrow(now),
       // On Sunday evening: last week's hours and this week's shifts.
       weeklySummaries: await this.weeklySummaries.send(now),
+      // A downtime: planned ones starting, people coming on shift during one,
+      // and the monthly check.
+      downtime: await this.downtime.run(now),
     };
     if (report.clockIn || report.clockOut) {
       this.logger.log(`Reminded ${report.clockIn} to clock in and ${report.clockOut} to clock out`);

@@ -13,7 +13,7 @@ import { Keypad } from './Keypad';
 import { KioskPairing } from './KioskPairing';
 import { BrandMark } from '../components/Brand';
 import { ClosingChecklistForm } from '../components/ClosingChecklistForm';
-import type { ApplicableSection, ClosingSubmission } from '../lib/types';
+import type { ApplicableSection, ClosingSubmission, KioskDowntime } from '../lib/types';
 
 const MAX_PIN_LENGTH = 8;
 /// How long the confirmation stays up before returning to the staff list. Long
@@ -54,6 +54,7 @@ export function KioskApp() {
   const [screen, setScreen] = useState<Screen>({ name: 'loading' });
   const [staff, setStaff] = useState<KioskEmployee[]>([]);
   const [posts, setPosts] = useState<KioskPost[]>([]);
+  const [downtimes, setDowntimes] = useState<KioskDowntime[]>([]);
   const [query, setQuery] = useState('');
   const [pin, setPin] = useState('');
   const [error, setError] = useState<string | null>(null);
@@ -77,6 +78,7 @@ export function KioskApp() {
       setStaff(await kioskApi.employees());
       // The posts are a nicety: a time clock that cannot load them still clocks.
       setPosts(await kioskApi.posts().catch(() => []));
+      setDowntimes(await kioskApi.downtime().catch(() => []));
       if (settled) {
         setError(null);
         toStaff();
@@ -125,6 +127,18 @@ export function KioskApp() {
         .then(setPosts)
         .catch(() => undefined);
     }, 10 * 60_000);
+    return () => window.clearInterval(timer);
+  }, [session]);
+
+  // A downtime starting or ending shows within two minutes (October 2026).
+  useEffect(() => {
+    if (!session) return;
+    const timer = window.setInterval(() => {
+      kioskApi
+        .downtime()
+        .then(setDowntimes)
+        .catch(() => undefined);
+    }, 2 * 60_000);
     return () => window.clearInterval(timer);
   }, [session]);
 
@@ -226,6 +240,7 @@ export function KioskApp() {
         {screen.name === 'staff' && (
           <MainScreen
             posts={posts}
+            downtimes={downtimes}
             staff={staff}
             error={error}
             onClock={() => {
@@ -298,11 +313,13 @@ export function KioskApp() {
  */
 function MainScreen({
   posts,
+  downtimes,
   staff,
   error,
   onClock,
 }: {
   posts: KioskPost[];
+  downtimes: KioskDowntime[];
   staff: KioskEmployee[];
   error: string | null;
   onClock: () => void;
@@ -310,6 +327,21 @@ function MainScreen({
   return (
     <div className="flex flex-1 flex-col gap-6">
       {error && <Alert>{error}</Alert>}
+
+      {/* A downtime at this office (October 2026): before anything else. */}
+      {downtimes.map((downtime) => (
+        <section
+          key={downtime.id}
+          className="rounded-2xl bg-rose-700 p-6 text-white shadow-sm"
+          data-testid="kiosk-downtime"
+        >
+          <h2 className="text-2xl font-bold">{downtime.headline}</h2>
+          <p className="mt-2 text-lg">
+            Use the paper forms. Clock in and out here as usual. What to do for your job is on the
+            Downtime page in Domi Staff.
+          </p>
+        </section>
+      ))}
 
       {posts.length > 0 ? (
         <section aria-label="News" className="max-h-[55vh] space-y-4 overflow-y-auto">

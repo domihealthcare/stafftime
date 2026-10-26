@@ -2,6 +2,17 @@ import { t } from './i18n';
 import type { ImportedPerson } from './staff-import';
 import { viewAsHeaders, writeViewAs } from './view-as';
 import type {
+  Downtime,
+  DowntimeCause,
+  DowntimeCheck,
+  DowntimeContact,
+  DowntimeCurrent,
+  DowntimeKitItem,
+  DowntimeLog,
+  DowntimePadProvider,
+  DowntimeSystem,
+  KioskDowntime,
+  MyDowntimeCheck,
   CleanTimeOffCheck,
   LeavingDetails,
   PayLockStatus,
@@ -440,6 +451,8 @@ export const kioskApi = {
   session: () => request<KioskSession>('/kiosk/session'),
   /// News posts an admin ticked to show on the time clock, newest first.
   posts: () => request<KioskPost[]>('/kiosk/posts'),
+  /// A downtime on now at this time clock's office.
+  downtime: () => request<KioskDowntime[]>('/kiosk/downtime'),
   employees: () => request<KioskEmployee[]>('/kiosk/employees'),
   punch: (employeeId: string, pin: string, closing?: ClosingSubmission) =>
     request<KioskPunchResult>('/kiosk/punch', {
@@ -1791,6 +1804,76 @@ export const api = {
     }),
   deleteGuideSection: (id: string) =>
     request<Guide>(`/guides/sections/${id}`, { method: 'DELETE' }),
+
+  // ---------------------------------------------------------------- downtime
+  downtimeCurrent: () => request<DowntimeCurrent>('/downtime/current'),
+  downtimeLog: (year?: number) =>
+    request<DowntimeLog>(`/downtime/log${year ? `?year=${year}` : ''}`),
+  startDowntime: (body: {
+    systems: DowntimeSystem[];
+    locationIds: string[];
+    note?: string;
+    planned?: boolean;
+    startsAt?: string;
+    plannedEndsAt?: string;
+  }) => request<Downtime>('/downtime', { method: 'POST', body: JSON.stringify(body) }),
+  postDowntimeUpdate: (id: string, body: string) =>
+    request<Downtime>(`/downtime/${id}/updates`, {
+      method: 'POST',
+      body: JSON.stringify({ body }),
+    }),
+  tickDowntimeContact: (id: string, contactId: string, done: boolean) =>
+    request<Downtime>(`/downtime/${id}/contacts/${contactId}`, {
+      method: 'PUT',
+      body: JSON.stringify({ done }),
+    }),
+  endDowntime: (
+    id: string,
+    body: {
+      cause: DowntimeCause;
+      causeNote?: string;
+      catchUpPlan?: string;
+      catchUpDueOn?: string;
+    },
+  ) => request<Downtime>(`/downtime/${id}/end`, { method: 'POST', body: JSON.stringify(body) }),
+  cancelDowntime: (id: string) =>
+    request<{ cancelled: boolean }>(`/downtime/${id}`, { method: 'DELETE' }),
+  setDowntimeCatchUp: (id: string, body: { catchUpPlan?: string; catchUpDueOn?: string }) =>
+    request<Downtime>(`/downtime/${id}/catch-up`, { method: 'PUT', body: JSON.stringify(body) }),
+  markDowntimeCaughtUp: (id: string, done: boolean) =>
+    request<Downtime>(`/downtime/${id}/caught-up`, {
+      method: 'PUT',
+      body: JSON.stringify({ done }),
+    }),
+  markDowntimeShredded: (id: string, done: boolean) =>
+    request<Downtime>(`/downtime/${id}/shredded`, {
+      method: 'PUT',
+      body: JSON.stringify({ done }),
+    }),
+  downtimeContacts: () => request<DowntimeContact[]>('/downtime/setup/contacts'),
+  saveDowntimeContacts: (contacts: (Omit<DowntimeContact, 'id'> & { id?: string })[]) =>
+    request<DowntimeContact[]>('/downtime/setup/contacts', {
+      method: 'PUT',
+      body: JSON.stringify({ contacts }),
+    }),
+  downtimeKit: () => request<DowntimeKitItem[]>('/downtime/setup/kit'),
+  saveDowntimeKit: (items: { id?: string; label: string; quantity: number | null }[]) =>
+    request<DowntimeKitItem[]>('/downtime/setup/kit', {
+      method: 'PUT',
+      body: JSON.stringify({ items }),
+    }),
+  downtimePadProviders: () => request<DowntimePadProvider[]>('/downtime/setup/pad-providers'),
+  saveDowntimePadProviders: (providers: { id?: string; name: string; npi: string }[]) =>
+    request<DowntimePadProvider[]>('/downtime/setup/pad-providers', {
+      method: 'PUT',
+      body: JSON.stringify({ providers }),
+    }),
+  myDowntimeCheck: () => request<MyDowntimeCheck>('/downtime/check/mine'),
+  submitDowntimeCheck: (body: { locationId?: string; lowItems: string[]; feedback?: string }) =>
+    request<MyDowntimeCheck>('/downtime/check', { method: 'POST', body: JSON.stringify(body) }),
+  downtimeChecks: () => request<DowntimeCheck[]>('/downtime/checks'),
+  readDowntimeCheck: (id: string) =>
+    request<DowntimeCheck[]>(`/downtime/checks/${id}/read`, { method: 'PUT' }),
 
   // ---------------------------------------------------------------- tool access
   toolAccess: () => request<ToolSetting[]>('/tool-access'),

@@ -5635,3 +5635,95 @@ site from the seed, so the migration only **adds** each missing exit step,
 matched loosely by a word in the title (`%whatsapp%`, `%emr%`, `%key%` ...),
 after the template's own tasks. Checklists already started are copies and are
 not touched.
+
+## Downtime (October 2026)
+
+Dominguez asked for "a downtime section - things that are needed or to do when
+downtime happens (i.e. no access to EMR) it should be activated by
+manager/admin and then closed by them as well - it should put notifications for
+employees who have a shift now or upcoming today - it should be clear and easy
+to use". It was discussed before it was built, and the forms were drawn as a
+mockup and changed with him until he was happy with them.
+
+**One downtime, one row** (`Downtime`): what is down (`systems`: eCW, the
+phones, which at Domi means Weave, so fax and the card machine with them, or
+the internet), the offices (`DowntimeLocation`, one or both, since the internet
+can be down at one and not the other), a note, and later the cause, the
+catch-up and the shredding. `status` is worked out, not stored: PLANNED until
+`announcedAt`, ACTIVE until `endedAt`, then ENDED.
+
+**Who is told** (`downtime.ts`, `shouldTell`): when it starts, everybody on a
+published shift at its offices that has not ended today, plus the managers and
+admins, never whoever started it. eCW is the same for both offices, so the start
+form ticks both for eCW, and the people working from home and on telemedicine
+are told with them (a work-from-home shift counts under its office). Later, the
+five-minute timer tells anybody coming on shift during it two hours before
+their shift (a shift added since, or the next day of a long one) rather than at
+midnight. Each notice is claimed in `DowntimeRecipient` before it goes, so the
+timer and a manager's press never both send it. Updates, the end and a
+cancellation go to the same people. All of it by the bell (and so phones, once
+switched on) and by email, five at a time (`NotificationsService.downtime`).
+
+**Planned** ones (an eCW upgrade in working hours) are entered ahead; the timer
+starts them at `startsAt`. The people whose shifts the window touches are told
+at 6pm the evening before (`aheadNoticeDue`), as for "You're on tomorrow".
+
+**Closing** asks for the cause (`DowntimeCause`, for the log) and works out when
+the catch-up is due (`catchUpFor`, Dominguez: "an hour of downtime catching it
+up is different from 2 days"): under 4 hours the same day, up to a day the next
+working day, longer a plan and a day from the manager. The scanned paper is kept
+two weeks (`SHRED_AFTER_DAYS`). The nightly email's new **Downtime** part
+(`DigestTopic.DOWNTIME`, `downtime/downtime-attention.ts`) chases one left open
+over 12 hours, a catch-up past its day, paper that can go, and what the monthly
+check found.
+
+**The procedures are a guide** (`GuideKey.DOWNTIME`), so they are searched and
+edited like the Front desk guide, a heading per job (Front desk, Medical
+assistant, Provider, Managers and admins). Everybody signed in reads it, outside
+the tool-access choices (`GUIDES_FOR_EVERYONE`), and the page opens on the
+person's own job (`procedureGroupFor`, from their main job role). The "What to
+do" sheets print from the same sections, so paper and screen agree.
+
+**The forms print in the browser** (`pages/DowntimePrintPage.tsx`, outside the
+layout): blank, filled in by hand, so no patient detail ever reaches the app.
+Fixed letter pages except the "What to do" sheet, which is the managers' words
+and so flows onto a second page rather than being cut off. The order pads list
+every provider and their NPI under the signature (`DowntimePadProvider`, kept on
+Set-up, the NPI's check digit verified, `npiIsValid`; the old paper pads had Dr.
+Iparraguirre's wrong). The practice's addresses and numbers on the pads are
+`PAD_LETTERHEAD` in `lib/downtime.ts`.
+
+**Support contacts** (`DowntimeContact`) are for managers and admins only, shown
+while one is on for what is down, with Call and Email (the email written for
+them). Ticking one is kept in the log with its name at the time
+(`DowntimeContactMade.label`), so removing a contact later does not change a past
+downtime.
+
+**The monthly check** (Dominguez: "it can go easily missed - also should go to
+all the admin and they should be able to provide feedback"): on the 1st at 9am
+and the 8th for anybody not done, each for three days only (`checkRoundsDue`, so
+it does not fire when first deployed late in a month), to admins and anybody
+holding a job role starting "Admin" (`asksForCheck`). A card on Home until done.
+They tick what is low in the stack (`DowntimeKitItem`) and write anything that
+has changed; managers are told on the bell and read it on the Monthly check tab,
+and it stays in the round-up until marked read.
+
+**The red bar** (`components/DowntimeBanner.tsx`) is on every screen while one is
+on at the person's offices (all of them for managers), fetched on each screen
+change and every two minutes. The time clock shows it on its main screen
+(`GET /kiosk/downtime`).
+
+The schema guard pins `Downtime`, `DowntimeUpdate`, `DowntimeCheck`,
+`DowntimeContact` and `DowntimePadProvider`. `tests/browser/downtime.mjs`.
+
+**The clinical forms on paper** (26 October 2026, Dominguez: "in case of no
+internet and unable to access staff portal"): the BrainCheck Care Plan and
+the Annual Wellness Visit print from Forms as well
+(`components/DowntimeClinicalPaper.tsx`). They are drawn from the same lists
+the forms on screen use (`clinical/cognitive-assessment/config.ts`,
+`clinical/wellness-visit/config.ts`), not copied, so a choice added there
+appears on paper too. Unlike the other forms they run on over several pages
+(the print page's `FLOWING` list), with each section kept whole where it fits.
+The AWV's page 1 prints in English or Spanish (the English under each
+question, as on screen); page 2 is the MA's, in English. Only the blank
+lists are imported: nothing a patient answers is in this code.

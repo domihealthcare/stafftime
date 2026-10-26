@@ -238,6 +238,14 @@ const SECTIONS: SectionSpec[] = [
     subject: () => 'supplies to order',
   },
   {
+    key: 'downtime',
+    tier: 'soon',
+    heading: 'Downtime',
+    path: '/downtime?tab=log',
+    screen: 'Downtime',
+    subject: (n) => `${n} downtime ${plural(n, 'thing', 'things')} to see to`,
+  },
+  {
     key: 'newSuggestions',
     tier: 'soon',
     heading: 'In the suggestion box',

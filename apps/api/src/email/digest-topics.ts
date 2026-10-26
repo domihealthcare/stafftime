@@ -44,6 +44,7 @@ export const DIGEST_TOPICS: Record<DigestTopic, (keyof DigestContents)[]> = {
   CLOSING: ['closingGaps', 'suppliesNeeded'],
   TIME_CLOCK: ['silentKiosks'],
   SUGGESTIONS: ['newSuggestions'],
+  DOWNTIME: ['downtime'],
 };
 
 export const ALL_DIGEST_TOPICS = Object.keys(DIGEST_TOPICS) as DigestTopic[];
