@@ -134,6 +134,8 @@ export interface Employee extends EmployeeSummary {
   canManageProductivity?: boolean;
   /// Signed-in person only: an admin has chosen them to see the rota's cost.
   canSeeRotaCost?: boolean;
+  /// Signed-in person only: on the list of people who see invoices.
+  canSeeInvoices?: boolean;
   /// An admin has switched on News posting for them (admins always can).
   canPostNews?: boolean;
   /// An admin has switched on the read-only whole schedule for them.

@@ -221,6 +221,8 @@ async function main() {
         pinUpdatedAt: new Date(),
         pinFailedAttempts: 0,
         pinLockedUntil: null,
+        // The demo manager keeps invoices, so the screen can be tried.
+        canSeeInvoices: person.email === 'manager@domihealthcare.com',
       },
       create: {
         firstName: person.firstName,
@@ -236,6 +238,7 @@ async function main() {
         mustChangePassword: person.mustChangePassword,
         pinHash,
         pinUpdatedAt: new Date(),
+        canSeeInvoices: person.email === 'manager@domihealthcare.com',
       },
     });
 

@@ -74,7 +74,7 @@ await step('Locations and Kiosks share Offices, with Closing checklists and Reps
   if (offices.join('|') !== 'Locations|Kiosks|Closing checklists|Reps') throw new Error(offices.join('|'));
 });
 
-await step('Surveys and Required reading share a heading; Export, Reimbursements, Vendor payments and Provider productivity are Finances for an admin (Invoices are Manager access only)', async () => {
+await step('Surveys and Required reading share a heading; Export, Reimbursements, Vendor payments and Provider productivity are Finances for an admin (Invoices only for the people on its list)', async () => {
   await goToManage(admin, 'Required reading');
   if ((await tabs(admin, 'Surveys & reading')).join('|') !== 'Surveys|Required reading') throw new Error('surveys');
   await goToManage(admin, 'Vendor payments');

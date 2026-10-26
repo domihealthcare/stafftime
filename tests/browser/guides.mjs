@@ -274,7 +274,7 @@ await step('a manager chooses who uses a guide on Resources, and it takes effect
 
 // ------------------------------------------------------------- invoices
 
-await step('invoices are for Manager access only (not staff, not admins), under Manage, Money', async () => {
+await step('invoices are only for the people on its list (the demo manager; not staff, not an admin off it), under Manage, Finances', async () => {
   const tried = await call(staff, '/invoices');
   if (tried.status !== 403) throw new Error(`staff answered ${tried.status}`);
   const admin = await signIn('admin@domihealthcare.com');
@@ -283,10 +283,35 @@ await step('invoices are for Manager access only (not staff, not admins), under 
     if (asAdmin.status !== 403) throw new Error(`an admin read ${path}: ${asAdmin.status}`);
   }
   await admin.goto(`${BASE}/invoices`, { waitUntil: 'networkidle' });
-  await admin.getByText('Invoices are for people with Manager access only.').waitFor({ timeout: 10000 });
+  await admin.getByText('Invoices are only for the people chosen to see them.').waitFor({ timeout: 10000 });
   await admin.context().close();
   await goToManage(manager, 'Invoices');
   await manager.getByRole('heading', { name: 'Invoices' }).waitFor({ timeout: 10000 });
+});
+
+await step('the people on the list keep it: an admin added sees invoices, taken off does not, and nobody takes themselves off', async () => {
+  await manager.getByRole('button', { name: 'Who sees invoices' }).click();
+  const dialog = manager.getByTestId('invoice-access');
+  await dialog.getByText('(you)').waitFor({ timeout: 10000 });
+  if (await dialog.getByRole('button', { name: /Stop Morgan .* seeing invoices/ }).count())
+    throw new Error('the manager was offered taking themselves off');
+  const adminId = (await call(manager, '/invoices/access')).body.others.find((p) => p.firstName === 'Ada').id;
+  await dialog.getByLabel('Add somebody').selectOption(adminId);
+  await dialog.getByRole('button', { name: 'Add', exact: true }).click();
+  await dialog.getByRole('button', { name: /Stop Ada .* seeing invoices/ }).waitFor({ timeout: 10000 });
+  const admin = await signIn('admin@domihealthcare.com');
+  const asAdmin = await call(admin, '/invoices');
+  if (asAdmin.status !== 200) throw new Error(`the admin added could not read invoices: ${asAdmin.status}`);
+  const ownId = (await call(admin, '/invoices/access')).body.holders.find((p) => p.firstName === 'Ada').id;
+  const selfRemove = await call(admin, `/invoices/access/${ownId}`, { method: 'DELETE' });
+  if (selfRemove.status !== 400) throw new Error(`somebody took themselves off: ${selfRemove.status}`);
+  await dialog.getByRole('button', { name: /Stop Ada .* seeing invoices/ }).click();
+  await manager.getByRole('button', { name: 'Yes, stop' }).click();
+  await dialog.getByRole('button', { name: /Stop Ada .* seeing invoices/ }).waitFor({ state: 'detached', timeout: 10000 });
+  const after = await call(admin, '/invoices');
+  if (after.status !== 403) throw new Error(`the admin taken off still read invoices: ${after.status}`);
+  await admin.context().close();
+  await dialog.getByRole('button', { name: 'Close' }).click();
 });
 
 let vendorNumber;

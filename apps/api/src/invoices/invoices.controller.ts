@@ -9,27 +9,47 @@ import {
   Put,
   UseGuards,
 } from '@nestjs/common';
-import { Role } from '@prisma/client';
 import { AuthUser } from '../common/auth/auth-user';
 import { CurrentUser } from '../common/auth/current-user.decorator';
-import { ManagerAccessOnlyGuard } from '../common/auth/manager-access-only.guard';
 import { PayLockGuard } from '../pay-lock/pay-lock.guard';
-import { Roles } from '../common/auth/roles.decorator';
 import { InvoiceInput, PayeeInput, VendorInput } from './dto/invoices.dto';
+import { InvoiceAccessGuard, InvoiceAccessService } from './invoice-access.service';
 import { InvoicesService } from './invoices.service';
 
-/// Invoices: people with Manager access only, not admins (Dominguez, October
-/// 2026: "managers only should be able to access invoices"), since a provider
-/// paid directly may need their home address on one.
+/// Invoices: only the people on the invoices list, whatever their access level
+/// (26 October 2026, Dominguez: Jonathan Dominguez, Angelica Dominguez and
+/// Kayla Bermeo), since a provider paid directly may need their home address
+/// on one. `invoice-access.service.ts`.
 @Controller('invoices')
-@Roles(Role.MANAGER)
-@UseGuards(ManagerAccessOnlyGuard, PayLockGuard)
+@UseGuards(InvoiceAccessGuard, PayLockGuard)
 export class InvoicesController {
-  constructor(private readonly invoices: InvoicesService) {}
+  constructor(
+    private readonly invoices: InvoicesService,
+    private readonly access: InvoiceAccessService,
+  ) {}
 
   @Get()
   list() {
     return this.invoices.list();
+  }
+
+  /// Who sees invoices, kept by the people on the list. Declared before ':id'.
+  @Get('access')
+  accessList() {
+    return this.access.list();
+  }
+
+  @Put('access/:employeeId')
+  grantAccess(@Param('employeeId', ParseUUIDPipe) employeeId: string) {
+    return this.access.add(employeeId);
+  }
+
+  @Delete('access/:employeeId')
+  revokeAccess(
+    @Param('employeeId', ParseUUIDPipe) employeeId: string,
+    @CurrentUser() user: AuthUser,
+  ) {
+    return this.access.remove(employeeId, user.id);
   }
 
   /// Saved vendors to bill.

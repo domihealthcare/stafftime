@@ -85,7 +85,7 @@ await step('Back to yourself restores the admin', async () => {
   if ((await status(admin, '/employees')) !== 200) throw new Error('the staff list is still refused');
 });
 
-await step('viewing as a manager opens the manager screens but never invoices, which are Manager access only', async () => {
+await step('viewing as a manager opens the manager screens but not invoices, which go by the admin\'s own place on the invoices list', async () => {
   if ((await status(admin, '/employees', { 'x-view-as': 'MANAGER' })) !== 200) throw new Error('a manager view cannot read staff');
   if ((await status(admin, '/invoices', { 'x-view-as': 'MANAGER' })) !== 403) throw new Error('an admin viewing as a manager opened invoices');
   if ((await status(admin, '/vendors', { 'x-view-as': 'MANAGER' })) !== 403) throw new Error('a manager view still has the admin screens');
