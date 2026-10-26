@@ -1,6 +1,12 @@
 import { Fragment, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { GuideBody } from '../components/GuideBody';
+import { Blank, Box, Head, Line, Logo, Ticks } from '../components/DowntimePaper';
+import {
+  BrainCheckPaper,
+  CLINICAL_PAPER_CSS,
+  WellnessPaper,
+} from '../components/DowntimeClinicalPaper';
 import { Alert, Spinner, buttonClass } from '../components/ui';
 import { api } from '../lib/api';
 import {
@@ -21,6 +27,9 @@ import type { DowntimeContact, DowntimePadProvider, GuideSection, Location } fro
  * on this page is sent anywhere. Outside the layout, like the printed rota;
  * the print window opens by itself once it is drawn.
  */
+/// The forms that run on over pages rather than filling one exactly.
+const FLOWING: DowntimeFormKey[] = ['role', 'braincheck', 'awv', 'awv-es'];
+
 export function DowntimePrintPage() {
   const [params] = useSearchParams();
   const form = (params.get('form') ?? 'sign-in') as DowntimeFormKey;
@@ -97,6 +106,9 @@ export function DowntimePrintPage() {
       body = sheets(() => <ProgressNote offices={officeNames} providers={providers ?? []} />);
     else if (form === 'pads') body = sheets(() => <OrderPads providers={providers ?? []} />);
     else if (form === 'sign') body = sheets(() => <WindowSign />);
+    else if (form === 'braincheck') body = sheets(() => <BrainCheckPaper />);
+    else if (form === 'awv') body = sheets(() => <WellnessPaper language="en" />);
+    else if (form === 'awv-es') body = sheets(() => <WellnessPaper language="es" />);
     else if (form === 'role')
       body = sheets(() => (
         <RoleSheet
@@ -109,7 +121,7 @@ export function DowntimePrintPage() {
 
   return (
     <div className="min-h-screen bg-slate-200 print:bg-white">
-      <style>{PRINT_CSS(form === 'sign-in', form === 'role')}</style>
+      <style>{PRINT_CSS(form === 'sign-in', FLOWING.includes(form)) + CLINICAL_PAPER_CSS}</style>
       <div className="border-b border-slate-300 bg-white print:hidden">
         <div className="mx-auto flex max-w-5xl flex-wrap items-center gap-3 px-4 py-3">
           <Link to="/downtime?tab=forms" className={buttonClass('secondary', 'sm')}>
@@ -147,68 +159,6 @@ export function DowntimePrintPage() {
 }
 
 // ------------------------------------------------------------ the pieces
-
-const Box = () => <i className="dt-b" aria-hidden="true" />;
-const Line = ({ width }: { width?: number }) => (
-  <span className="dt-ln" style={width ? { flex: 'none', width } : undefined} />
-);
-function Blank({ label, width, grow = 1 }: { label: string; width?: number; grow?: number }) {
-  return (
-    <div className="dt-fl" style={width ? { flex: 'none', width } : { flex: grow }}>
-      <b>{label}</b>
-      <Line />
-    </div>
-  );
-}
-function Ticks({ label, options }: { label?: string; options: string[] }) {
-  return (
-    <div className="dt-opts">
-      {label && <b>{label}</b>}
-      {options.map((option) => (
-        <span key={option}>
-          <Box />
-          {option}
-        </span>
-      ))}
-    </div>
-  );
-}
-
-function Logo({ width = 132 }: { width?: number }) {
-  return (
-    <img
-      src="/brand/domi-healthcare-slogan-black.png"
-      alt="Domi Healthcare"
-      className="dt-logo"
-      style={{ width }}
-    />
-  );
-}
-
-function Head({
-  title,
-  sub,
-  right,
-  logo = 132,
-}: {
-  title: string;
-  sub?: ReactNode;
-  right?: ReactNode;
-  logo?: number;
-}) {
-  return (
-    <div className="dt-fhead">
-      <div className="dt-head-left">
-        <Logo width={logo} />
-        <div>
-          <div className="dt-ftitle">{title}</div>
-          {sub && <div className="dt-fsub">{sub}</div>}
-        </div>
-      </div>
-      {right}
-    </div>
-  );
-}
 
 function OfficeDatePage({ offices, page = true }: { offices: string[]; page?: boolean }) {
   return (

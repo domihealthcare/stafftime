@@ -5715,3 +5715,15 @@ change and every two minutes. The time clock shows it on its main screen
 
 The schema guard pins `Downtime`, `DowntimeUpdate`, `DowntimeCheck`,
 `DowntimeContact` and `DowntimePadProvider`. `tests/browser/downtime.mjs`.
+
+**The clinical forms on paper** (26 October 2026, Dominguez: "in case of no
+internet and unable to access staff portal"): the BrainCheck Care Plan and
+the Annual Wellness Visit print from Forms as well
+(`components/DowntimeClinicalPaper.tsx`). They are drawn from the same lists
+the forms on screen use (`clinical/cognitive-assessment/config.ts`,
+`clinical/wellness-visit/config.ts`), not copied, so a choice added there
+appears on paper too. Unlike the other forms they run on over several pages
+(the print page's `FLOWING` list), with each section kept whole where it fits.
+The AWV's page 1 prints in English or Spanish (the English under each
+question, as on screen); page 2 is the MA's, in English. Only the blank
+lists are imported: nothing a patient answers is in this code.

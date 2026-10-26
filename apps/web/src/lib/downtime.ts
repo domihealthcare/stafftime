@@ -104,7 +104,17 @@ export const downtimeChanged = () => window.dispatchEvent(new Event(DOWNTIME_CHA
 
 /// The forms that print from the Downtime page, in the order the stack goes.
 export type DowntimeFormKey =
-  'sign-in' | 'running' | 'checkout' | 'call-back' | 'note' | 'pads' | 'role' | 'sign';
+  | 'sign-in'
+  | 'running'
+  | 'checkout'
+  | 'call-back'
+  | 'note'
+  | 'pads'
+  | 'braincheck'
+  | 'awv'
+  | 'awv-es'
+  | 'role'
+  | 'sign';
 
 export const DOWNTIME_FORMS: {
   key: DowntimeFormKey;
@@ -152,6 +162,27 @@ export const DOWNTIME_FORMS: {
     description:
       'A lab order and a referral and imaging slip on one page, with every provider and their NPI under the signature.',
     unit: 'page',
+  },
+  {
+    key: 'braincheck',
+    title: 'BrainCheck Care Plan',
+    description:
+      'The 99483 assessment and care plan on paper, every section and choice as on screen. Entered in Domi Staff once it is back, for the note and the handout.',
+    unit: 'form',
+  },
+  {
+    key: 'awv',
+    title: 'Annual Wellness Visit',
+    description:
+      'Page 1, the questionnaire and SPMSQ (provider); page 2, preventive services (MA). Entered in Domi Staff once it is back.',
+    unit: 'form (2 pages)',
+  },
+  {
+    key: 'awv-es',
+    title: 'Annual Wellness Visit, in Spanish',
+    description:
+      'The same, with page 1 in Spanish (the English under each question) for a Spanish-speaking patient.',
+    unit: 'form (2 pages)',
   },
   {
     key: 'sign',

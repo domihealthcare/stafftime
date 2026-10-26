@@ -302,6 +302,29 @@ await step('the forms print: 17 sign-in rows, every provider on the pads, the Sp
   await sheet.close();
 });
 
+await step('the BrainCheck Care Plan and the AWV print on paper, the AWV in Spanish too', async () => {
+  const sheet = await frankie.context().newPage();
+  await sheet.addInitScript(() => {
+    window.print = () => {};
+  });
+  await sheet.goto(`${BASE}/downtime/print?form=braincheck&copies=1`, { waitUntil: 'networkidle' });
+  const bc = sheet.getByTestId('downtime-print-braincheck');
+  await bc.getByText('J. Written care plan').waitFor();
+  await bc.getByText('Repeat the BrainCheck memory assessment in 6 to 12 months.').waitFor();
+  await bc.getByText('Keep memory and thinking skills as strong as possible').waitFor();
+  await sheet.screenshot({ path: `${OUT}/downtime-print-braincheck.png` });
+  await sheet.goto(`${BASE}/downtime/print?form=awv-es&copies=1`, { waitUntil: 'networkidle' });
+  const awv = sheet.getByTestId('downtime-print-awv-es');
+  await awv.getByText('¿Vive solo o sola?').waitFor();
+  await awv.getByText('Abdominal aortic aneurysm screening').waitFor();
+  if (await sheet.locator('input').count()) throw new Error('a paper form has an input on it');
+  await sheet.close();
+  // On the Forms tab for everybody, front desk included, to print the stack.
+  await frankie.goto(`${BASE}/downtime?tab=forms`, { waitUntil: 'networkidle' });
+  await frankie.getByTestId('downtime-forms').getByRole('heading', { name: 'BrainCheck Care Plan' }).waitFor();
+  await frankie.getByTestId('downtime-forms').getByRole('heading', { name: 'Annual Wellness Visit, in Spanish' }).waitFor();
+});
+
 await step('staff do not get the managers’ sheet or the support numbers', async () => {
   await frankie.goto(`${BASE}/downtime?tab=forms`, { waitUntil: 'networkidle' });
   await frankie.getByTestId('downtime-forms').getByText('What to do: Front desk').waitFor();

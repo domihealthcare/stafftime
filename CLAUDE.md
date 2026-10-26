@@ -1746,6 +1746,20 @@ Beyond the phases, the parts worth knowing about before picking up work:
   a quiz on the procedures, sent through Required reading; what to buy for the
   offices (backup internet, battery backup, a lockable downtime box) is to be
   discussed after. Worth carrying to the EMR module.
+  **The BrainCheck Care Plan and the AWV on paper too** (26 October 2026,
+  Dominguez: "in case of no internet and unable to access staff portal",
+  version 1.27.0): **Forms** prints both, drawn from the same lists as the
+  forms on screen (`clinical/*/config.ts`, so a choice changed there changes on
+  paper): the BrainCheck Care Plan's requirements and sections A to K with
+  every choice, the care plan's goals and actions by area, about five pages;
+  the AWV's page 1 (questionnaire and SPMSQ, provider; **in English or in
+  Spanish** with the English under each question) and page 2 (preventive
+  services, MA). Blank, filled in by hand, entered in Domi Staff once it is
+  back for the eCW note and handout, then scanned. Everybody can print them
+  (blank forms carry nothing). Migration
+  `20261027010000_downtime_clinical_paper` adds them to the stack and a step
+  for providers and MAs, leaving anything a manager changed alone.
+  `components/DowntimeClinicalPaper.tsx`, `components/DowntimePaper.tsx`.
 - **Turned down: "PTO about to be lost"** (9 October 2026, Dominguez): a
   reminder to use PTO before it fails to carry over was proposed and refused —
   not in the practice's interest. Do not propose it again.
