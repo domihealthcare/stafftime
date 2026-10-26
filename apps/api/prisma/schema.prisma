@@ -385,6 +385,12 @@ model Employee {
   /// for certain individuals"). Chosen by an admin in Practice settings,
   /// separate from the access level: an admin does not see it unless chosen.
   canSeeRotaCost            Boolean                  @default(false)
+  /// Sees Manage -> Finances -> Invoices (26 October 2026, Dominguez: "the
+  /// only people who should be able to see these invoices should be me
+  /// (Jonathan Dominguez, Angelica Dominguez, and Kayla Bermeo)"). Kept on the
+  /// Invoices screen by the people already on it, whatever their access level;
+  /// an admin not on it does not see invoices.
+  canSeeInvoices            Boolean                  @default(false)
   /// October 2026, Dominguez: Administrative staff who are not admins post
   /// News (schedule and pay-period notices) and read everybody's published
   /// rota. Two switches an admin sets on the Staff editor, separate from the

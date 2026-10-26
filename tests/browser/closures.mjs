@@ -45,6 +45,9 @@ async function signIn(email) {
 }
 
 const pad = (n) => String(n).padStart(2, '0');
+/// The hour on New Jersey's clock.
+const njHour = (iso) =>
+  Number(new Intl.DateTimeFormat('en-US', { timeZone: 'America/New_York', hour: 'numeric', hourCycle: 'h23' }).format(new Date(iso)));
 const key = (d) => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
 const monday = (d) => {
   const m = new Date(d);
@@ -234,7 +237,11 @@ await step('copying the year puts both a year on, and a second copy adds nothing
   const expected = `${year + 1}-${key(friday).slice(5)}`;
   if (!christmas || christmas.startDate !== expected) throw new Error(`Christmas Day copied to ${christmas?.startDate}, not ${expected}`);
   const eve = copied.find((c) => c.title === 'Christmas Eve');
-  if (!eve || eve.audience !== 'LOCATION' || new Date(eve.startsAt).getHours() !== 13) {
+  // The copy keeps New Jersey's wall-clock time, so compare hours there: the
+  // 13:00 typed on this browser's clock is an hour in New Jersey, and a year
+  // on the same date can fall the other side of the clocks changing.
+  const typedHour = njHour(new Date(`${key(thursday)}T13:00`).toISOString());
+  if (!eve || eve.audience !== 'LOCATION' || njHour(eve.startsAt) !== typedHour) {
     throw new Error(`Christmas Eve copied as ${JSON.stringify(eve)}`);
   }
   await manager.screenshot({ path: `${OUT}/closures-copied.png`, fullPage: true });

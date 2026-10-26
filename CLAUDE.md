@@ -138,7 +138,8 @@ typed in the browser, printed on the PDF downloaded there and then, and never
 sent, so the saved copy shows them blanked out (a database constraint and the
 schema guard hold it). A provider paid directly may have their home address
 saved as an invoice **pay-to** (October 2026, Dominguez), which is why
-invoices are for **Manager access only**, not admins.
+invoices are for **three named people only** (Jonathan Dominguez, Angelica
+Dominguez, Kayla Bermeo, 26 October 2026), not every admin or manager.
 
 Apart from that, the only files the app stores are the payroll export
 spreadsheets it generates itself. The practice's own spreadsheets brought onto
@@ -1292,8 +1293,9 @@ Beyond the phases, the parts worth knowing about before picking up work:
   (`role`, `viewingAs`, the job-role flags and `tools`), Resources
   (`JobRolesService.idsHeldBy`), tool access and the closing checklist preview
   all answer as that person is answered; the person's own data (shifts,
-  hours, name) is still theirs. **Invoices stay shut** to an admin viewing as
-  a manager (`ManagerAccessOnlyGuard` reads `actualRole`). An amber banner
+  hours, name) is still theirs. Invoices go by the admin's own place on the
+  invoices list, whatever the view (since 26 October 2026; see *Invoices
+  for three people only*). An amber banner
   (`components/ViewAsBanner.tsx`) says whose view it is, with **Change** and
   **Back to yourself**; `useIsActualAdmin` is the one thing that stays the
   admin's. Signing out clears it. `components/ViewAsDialog.tsx`; Help has
@@ -1355,6 +1357,34 @@ Beyond the phases, the parts worth knowing about before picking up work:
   not entered on the live site yet**: the rota-cost people type each
   person's current pay in once (from the spreadsheet, by hand), then raises
   go through the screen.
+- **Invoices for three people only** (26 October 2026, Dominguez: "the only
+  people who should be able to see these invoices should be me (Jonathan
+  Dominguez, Angelica Dominguez, and Kayla Bermeo)", version 1.25.0):
+  Manage → Finances → Invoices and every `/invoices` route are for the
+  people on a list (`Employee.canSeeInvoices`), **whatever their access
+  level**; an admin or manager not on it is refused (`InvoiceAccessGuard`,
+  before the pay lock). This replaced "Manager access only", which had kept
+  Dominguez himself out as an admin. **The list is kept by the people on
+  it**, under **Who sees invoices** on the Invoices screen, not in Practice
+  settings, so no other admin can add themselves; nobody takes themselves
+  off, so it is never empty. View as does not change it. Migration
+  `20261026010000_invoice_access` puts Dominguez on by email and Angelica
+  Dominguez and Kayla Bermeo by name, **only if exactly one current person
+  fits: check the list on the live site**. `invoices/invoice-access.service.ts`;
+  `tests/browser/guides.mjs`. (Creating an invoice is here; **Vendor
+  payments** is for paying the invoices vendors send.)
+- **Week stays put, and two calendar suites mended** (26 October 2026,
+  version 1.25.1): pressing **Week** on the Schedule while already on the
+  week view jumped to the first week of the month whenever the week shown ran
+  over two months (29 November to 5 December went to 1 to 7 November), so a
+  link to such a week, then Week, showed the wrong one. It now does nothing
+  when it is already on (`SchedulePage`), checked by a dated step in
+  `jump-to-date.mjs`. That was why `recurring.mjs` failed from 26 October:
+  its "next week" plus four landed on such a week and it edited the first
+  meeting. `closures.mjs` compared the copied Christmas Eve's hour on the
+  test browser's clock (UTC); the copy keeps New Jersey's wall-clock time, so
+  a year on across the clocks changing it moved by an hour there. It now
+  compares New Jersey hours. App behaviour for closures unchanged.
 - **Pay on file** (24 October 2026, Dominguez: "i need to be able to add
   people pay rate (without it being a new rate at this time or anything like
   that now)", version 1.24.0): a seventh kind of `EmploymentChange`,
@@ -1584,12 +1614,11 @@ Beyond the phases, the parts worth knowing about before picking up work:
   for next time** saves what was typed (or updates the saved one of that
   name), and **Saved vendors** on the list changes or removes them
   (`InvoiceVendor`, migration `20261021030000_invoice_saved_vendors`);
-  invoices keep their own copy. **Invoices are for Manager access only**
+  invoices keep their own copy. **Invoices were for Manager access only**
   (Dominguez, same day: "managers only should be able to access invoices",
-  as a provider paid directly may need their **home address** on one):
-  admins do not see the screen or its routes (`ManagerAccessOnlyGuard`, the
-  one place an admin does not pass; `managerAccessOnly` in
-  `lib/manage-sections.ts`). The logo and office details stay on every
+  as a provider paid directly may need their **home address** on one);
+  since 26 October 2026 they are for three named people instead (see
+  *Invoices for three people only*). The logo and office details stay on every
   invoice, with **angelica@domihealthcare.com** as its email (`PRACTICE`
   in `lib/invoice-pdf.ts`). `tests/browser/guides.mjs`.
 - **Forms and guides in their own Resources sections** (20 October 2026,
@@ -1710,8 +1739,8 @@ Beyond the phases, the parts worth knowing about before picking up work:
   hand: no patient detail reaches the app. The **monthly check** goes to admins
   and the Administrative job role on the 1st (and the 8th if not done): what is
   low in the stack and anything changed, to managers until read. The nightly
-  email has a **Downtime** part. Migrations `20261026010000_downtime_kinds`,
-  `20261026020000_downtime` (the procedures, contacts, stack and providers);
+  email has a **Downtime** part. Migrations `20261026030000_downtime_kinds`,
+  `20261026040000_downtime` (the procedures, contacts, stack and providers);
   `src/downtime/`, `pages/DowntimePage.tsx`, `pages/DowntimePrintPage.tsx`; see
   *Downtime* in `docs/architecture.md`; `tests/browser/downtime.mjs`. **Next**:
   a quiz on the procedures, sent through Required reading; what to buy for the

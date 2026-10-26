@@ -1393,8 +1393,8 @@ const MANAGERS: Section[] = [
               <strong>Back to yourself</strong>. It lasts for this browser tab. You stay yourself
               throughout: your own shifts, hours and time off, your own name on anything you save,
               and the server treats you as that access level, so what it refuses them it refuses you
-              too. One exception stays: Invoices are for Manager access only, and an admin viewing
-              as a manager still cannot open them.
+              too. The per-person lists stay yours, whatever view you choose: the rota&rsquo;s cost,
+              provider productivity, News posting and Invoices.
             </p>
           </>
         ),
@@ -1426,9 +1426,9 @@ const MANAGERS: Section[] = [
               </li>
               <li>
                 <strong>Finances</strong> - Pay &amp; raises (for the people chosen to see the
-                rota&rsquo;s cost), Export, Reimbursements, Invoices (Manager access only, not
-                admins) and Vendor payments (admins), and Provider productivity (for the people
-                chosen for it). Each asks for your PIN first.
+                rota&rsquo;s cost), Export, Reimbursements, Invoices (only for the people on its
+                list) and Vendor payments (admins), and Provider productivity (for the people chosen
+                for it). Each asks for your PIN first.
               </li>
             </ul>
             <p className="mt-2">
@@ -2643,7 +2643,9 @@ const MANAGERS: Section[] = [
           <>
             <p>
               <Screen>Manage → Finances → Invoices</Screen> takes the place of the Invoice Template
-              sheet. It is for people with Manager access only, not admins.{' '}
+              sheet. Only the people on its list see it, whatever their access level; admins and
+              managers not on it do not. They keep the list there, under{' '}
+              <strong>Who sees invoices</strong> (nobody can take themselves off).{' '}
               <strong>+ New invoice</strong>: who it is to, the dates, a line for each thing
               (earlier lines are offered as you type), whether it is paid, and an optional note.
               Numbers follow on by themselves (#001, #002). <strong>Save and download PDF</strong>{' '}

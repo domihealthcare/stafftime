@@ -1889,6 +1889,16 @@ export const api = {
     }),
   deleteInvoice: (id: string) =>
     request<{ removed: true }>(`/invoices/${id}`, { method: 'DELETE' }),
+  invoiceAccess: () =>
+    request<{ holders: PersonName[]; others: PersonName[] }>('/invoices/access'),
+  grantInvoiceAccess: (employeeId: string) =>
+    request<{ holders: PersonName[]; others: PersonName[] }>(`/invoices/access/${employeeId}`, {
+      method: 'PUT',
+    }),
+  revokeInvoiceAccess: (employeeId: string) =>
+    request<{ holders: PersonName[]; others: PersonName[] }>(`/invoices/access/${employeeId}`, {
+      method: 'DELETE',
+    }),
   invoiceVendors: () => request<InvoiceVendor[]>('/invoices/vendors'),
   saveInvoiceVendor: (id: string | null, body: { name: string; address: string }) =>
     request<InvoiceVendor>(id ? `/invoices/vendors/${id}` : '/invoices/vendors', {

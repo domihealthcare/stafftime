@@ -4672,10 +4672,12 @@ also returns `viewingAs`, which the web reads for the banner
 (`components/ViewAsBanner.tsx`: whose view, Change, Back to yourself) and for
 `useIsActualAdmin`, the one thing that stays the admin's while viewing.
 
-**The one place it does not open.** Invoices are for Manager access only, and
-the reason (a provider's home address on a pay-to) does not change when an
-admin is merely looking: `ManagerAccessOnlyGuard` refuses when `actualRole`
-is ADMIN. Help says so.
+**Invoices go by the person.** Since 26 October 2026 Invoices are for the
+people on the invoices list (`Employee.canSeeInvoices`), like the other
+per-person switches, so viewing as somebody changes nothing there: the
+admin's own place on the list decides. (From 21 to 26 October it was Manager
+access only, and `ManagerAccessOnlyGuard` refused an admin viewing as a
+manager; that guard is gone.) Help says so.
 
 ## Who looks after what (October 2026)
 
@@ -5434,14 +5436,26 @@ making a second. The invoice still keeps its own `billToName` /
 `billToAddress`, so changing a saved vendor leaves sent invoices alone.
 Businesses only: a patient's invoice never shows it.
 
-**Manager access only** (21 October 2026, Dominguez: "managers only should be
-able to access invoices"). A provider paid directly may need their home
-address on a pay-to, so the whole Invoices screen and `/invoices/*` are for
-people with Manager access, not admins. `@Roles` always lets an admin
-through, so the controller adds `ManagerAccessOnlyGuard`
-(`common/auth/manager-access-only.guard.ts`); the web hides the tab with
-`managerAccessOnly` in `lib/manage-sections.ts`. The practice's logo and
-office details stay on every invoice; its email is angelica@domihealthcare.com.
+**Three people only** (26 October 2026, Dominguez: "the only people who
+should be able to see these invoices should be me (Jonathan Dominguez,
+Angelica Dominguez, and Kayla Bermeo)"). A provider paid directly may need
+their home address on a pay-to, so the whole Invoices screen and
+`/invoices/*` are for the people on a list, `Employee.canSeeInvoices`,
+whatever their access level: an admin or manager not on it is refused.
+`InvoiceAccessGuard` (`invoices/invoice-access.service.ts`) checks it on
+every route, before the pay lock, so somebody not on it is told so rather
+than asked for a PIN; the web shows the tab with `need: 'invoices'` in
+`lib/manage-sections.ts`. **The list is kept by the people on it**, from
+**Who sees invoices** on the Invoices screen (`GET /invoices/access`, `PUT`
+and `DELETE /invoices/access/:employeeId`), never from Practice settings, so
+no other admin can put themselves on it. Nobody takes themselves off (the
+server refuses), so it is never left empty; a shared account or somebody who
+has left cannot be added, and somebody who leaves loses it. Migration
+`20261026010000_invoice_access` puts Dominguez on it by email, and Angelica
+Dominguez and Kayla Bermeo by name, each only when exactly one current person
+fits. Before this (21 to 26 October) it was everybody with Manager access and
+no admin. The practice's logo and office details stay on every invoice; its
+email is angelica@domihealthcare.com.
 
 ## Who uses each form and guide (October 2026)
 
