@@ -427,6 +427,8 @@ model Employee {
   requirementTargets  RequirementTarget[] @relation("RequirementTargetEmployee")
   requirementsDone    RequirementDone[]
   requirementNudges   RequirementNudge[]
+  createdQuizzes      Quiz[]              @relation("QuizCreatedBy")
+  quizAttempts        QuizAttempt[]
 
   /// The provider on-call schedule (October 2026).
   onCallRotaEntries  OnCallRotaEntry[]
@@ -3185,6 +3187,8 @@ enum RequirementKind {
   READ
   /// "Please do this": Done.
   TASK
+  /// "Please take this quiz": confirmed by passing it (October 2026).
+  QUIZ
 }
 
 model Requirement {
@@ -3200,6 +3204,8 @@ model Requirement {
   /// What to read, when it is in the app. Either, both or neither.
   announcementId String? @db.Uuid
   resourceId     String? @db.Uuid
+  /// The quiz to pass, for a QUIZ. Passing it is what confirms it.
+  quizId         String? @db.Uuid
 
   /// Optional. Reminders come two days before and after it passes.
   dueOn DateTime? @db.Date
@@ -3218,6 +3224,7 @@ model Requirement {
 
   announcement Announcement? @relation(fields: [announcementId], references: [id], onDelete: SetNull)
   resource     Resource?     @relation(fields: [resourceId], references: [id], onDelete: SetNull)
+  quiz         Quiz?         @relation(fields: [quizId], references: [id], onDelete: Restrict)
   createdBy    Employee?     @relation("RequirementCreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
 
   targets RequirementTarget[]
@@ -3274,6 +3281,81 @@ model RequirementNudge {
 
   @@id([requirementId, employeeId])
   @@map("requirement_nudges")
+}
+
+// ---------------------------------------------------------------------------
+// Quizzes (October 2026, Dominguez: "once we complete this - i want to send
+// all staff a 'quiz' to make sure they are uptodate on these procedures").
+// A general feature, first used for the downtime procedures: managers write
+// one, send it through Required reading, and it is confirmed by passing it.
+// By name, with a pass mark and retakes; managers see the scores. Questions
+// about how the practice works only - never a patient (the schema guard pins
+// the fields).
+// ---------------------------------------------------------------------------
+
+model Quiz {
+  id          String  @id @default(uuid()) @db.Uuid
+  title       String
+  /// A line or two above the questions.
+  intro       String?
+  /// The share of questions to get right, 1 to 100.
+  passPercent Int     @default(80)
+  /// Where to read up first: a screen in the app ("/downtime?tab=procedures")
+  /// or an https link.
+  studyHref   String?
+
+  createdById String?  @db.Uuid
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  createdBy    Employee?      @relation("QuizCreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
+  questions    QuizQuestion[]
+  attempts     QuizAttempt[]
+  requirements Requirement[]
+
+  @@map("quizzes")
+}
+
+/// One question: one right answer among two to six.
+model QuizQuestion {
+  id          String   @id @default(uuid()) @db.Uuid
+  quizId      String   @db.Uuid
+  prompt      String
+  choices     String[]
+  /// The right one, by its place in `choices` (0 first).
+  correct     Int
+  /// Shown once answered, so a wrong answer teaches something.
+  explanation String?
+  /// Asked only of people holding one of these job roles, or with Manager or
+  /// Admin access when `forManagers`. Neither: asked of everybody.
+  jobRoleIds  String[] @db.Uuid
+  forManagers Boolean  @default(false)
+  sortOrder   Int      @default(0)
+
+  quiz Quiz @relation(fields: [quizId], references: [id], onDelete: Cascade)
+
+  @@index([quizId, sortOrder])
+  @@map("quiz_questions")
+}
+
+/// One go at a quiz. Kept by name (Dominguez chose named scores), as many as
+/// it takes to pass.
+model QuizAttempt {
+  id         String   @id @default(uuid()) @db.Uuid
+  quizId     String   @db.Uuid
+  employeeId String   @db.Uuid
+  correct    Int
+  total      Int
+  passed     Boolean
+  /// The questions answered wrong, so managers can see which trip people up.
+  missedIds  String[] @db.Uuid
+  takenAt    DateTime @default(now())
+
+  quiz     Quiz     @relation(fields: [quizId], references: [id], onDelete: Cascade)
+  employee Employee @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+
+  @@index([quizId, employeeId])
+  @@map("quiz_attempts")
 }
 
 // ---------------------------------------------------------------------------

@@ -38,6 +38,12 @@ import type {
   ScheduleReviewPattern,
   RotaCost,
   MyRequirement,
+  Quiz,
+  QuizInput,
+  QuizMarked,
+  QuizResults,
+  QuizSummary,
+  QuizToTake,
   RequirementInput,
   RequirementProgress,
   RequirementSummary,
@@ -1710,6 +1716,22 @@ export const api = {
     request<{ reminded: number }>(`/requirements/${id}/remind`, { method: 'POST' }),
   deleteRequirement: (id: string) =>
     request<{ removed: boolean }>(`/requirements/${id}`, { method: 'DELETE' }),
+
+  // Quizzes (October 2026).
+  quizzes: () => request<QuizSummary[]>('/quizzes'),
+  quiz: (id: string) => request<Quiz>(`/quizzes/${id}`),
+  createQuiz: (body: QuizInput) =>
+    request<Quiz>('/quizzes', { method: 'POST', body: JSON.stringify(body) }),
+  updateQuiz: (id: string, body: QuizInput) =>
+    request<Quiz>(`/quizzes/${id}`, { method: 'PUT', body: JSON.stringify(body) }),
+  deleteQuiz: (id: string) => request<{ removed: boolean }>(`/quizzes/${id}`, { method: 'DELETE' }),
+  quizToTake: (id: string) => request<QuizToTake>(`/quizzes/${id}/take`),
+  answerQuiz: (id: string, answers: Record<string, number>) =>
+    request<QuizMarked>(`/quizzes/${id}/answers`, {
+      method: 'POST',
+      body: JSON.stringify({ answers }),
+    }),
+  quizResults: (id: string) => request<QuizResults>(`/quizzes/${id}/results`),
   /// The phlebotomists' saved names: managers and admins. A name is kept by
   /// saving a phlebotomist date with it.
   phlebotomists: () => request<Phlebotomist[]>('/phlebotomists'),
@@ -1889,8 +1911,7 @@ export const api = {
     }),
   deleteInvoice: (id: string) =>
     request<{ removed: true }>(`/invoices/${id}`, { method: 'DELETE' }),
-  invoiceAccess: () =>
-    request<{ holders: PersonName[]; others: PersonName[] }>('/invoices/access'),
+  invoiceAccess: () => request<{ holders: PersonName[]; others: PersonName[] }>('/invoices/access'),
   grantInvoiceAccess: (employeeId: string) =>
     request<{ holders: PersonName[]; others: PersonName[] }>(`/invoices/access/${employeeId}`, {
       method: 'PUT',

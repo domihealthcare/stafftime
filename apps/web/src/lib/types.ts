@@ -1792,7 +1792,7 @@ export interface NotSignedIn {
 
 // ------------------------------------------------- required reading and tasks
 
-export type RequirementKind = 'READ' | 'TASK';
+export type RequirementKind = 'READ' | 'TASK' | 'QUIZ';
 
 interface NamedPerson {
   id: string;
@@ -1816,6 +1816,8 @@ export interface Requirement {
   createdBy: NamedPerson | null;
   announcement: { id: string; title: string } | null;
   resource: { id: string; title: string; kind: 'LINK' | 'PAGE' } | null;
+  /// The quiz to pass, for a QUIZ.
+  quiz: { id: string; title: string; passPercent: number } | null;
   targets?: {
     employees: NamedPerson[];
     jobRoles: { id: string; name: string }[];
@@ -1848,9 +1850,121 @@ export interface RequirementInput {
   url?: string;
   announcementId?: string | null;
   resourceId?: string | null;
+  quizId?: string | null;
   dueOn?: string | null;
   everyone: boolean;
   targets?: { employeeIds: string[]; jobRoleIds: string[]; locationIds: string[] };
+}
+
+// ------------------------------------------------------------------ quizzes
+
+export interface QuizQuestion {
+  /// Absent on a question not saved yet.
+  id?: string;
+  prompt: string;
+  choices: string[];
+  /// The right answer, by its place in `choices`.
+  correct: number;
+  explanation: string | null;
+  /// Asked only of these job roles, or of Manager and Admin access when
+  /// `forManagers`. Neither: everybody.
+  jobRoleIds: string[];
+  forManagers: boolean;
+}
+
+/// A quiz as its editor sees it, right answers included.
+export interface Quiz {
+  id: string;
+  title: string;
+  intro: string | null;
+  passPercent: number;
+  studyHref: string | null;
+  createdAt: string;
+  updatedAt: string;
+  createdBy: NamedPerson | null;
+  questions: (QuizQuestion & { id: string })[];
+}
+
+export interface QuizSummary {
+  id: string;
+  title: string;
+  passPercent: number;
+  createdAt: string;
+  updatedAt: string;
+  createdBy: NamedPerson | null;
+  questionCount: number;
+  /// People who have had a go, and who have passed.
+  tried: number;
+  passed: number;
+  /// Open Required reading requests for it.
+  sent: number;
+  everSent: boolean;
+}
+
+export interface QuizInput {
+  title: string;
+  intro?: string;
+  passPercent: number;
+  studyHref?: string;
+  questions: {
+    id?: string;
+    prompt: string;
+    choices: string[];
+    correct: number;
+    explanation?: string;
+    jobRoleIds: string[];
+    forManagers: boolean;
+  }[];
+}
+
+/// A quiz as the person taking it sees it: their questions, no answers.
+export interface QuizToTake {
+  quiz: {
+    id: string;
+    title: string;
+    intro: string | null;
+    passPercent: number;
+    studyHref: string | null;
+  };
+  questions: { id: string; prompt: string; choices: string[] }[];
+  needed: number;
+  mine: { attempts: number; bestPercent: number | null; passedAt: string | null };
+  /// Asked to take it and not passed yet, or null.
+  asked: { dueOn: string | null } | null;
+}
+
+export interface QuizMarked {
+  correct: number;
+  total: number;
+  percent: number;
+  passed: boolean;
+  needed: number;
+  passPercent: number;
+  /// Required reading requests a pass confirmed.
+  confirmed: number;
+  results: {
+    id: string;
+    picked: number;
+    correct: number;
+    right: boolean;
+    explanation: string | null;
+  }[];
+}
+
+export interface QuizResults {
+  quiz: { id: string; title: string; passPercent: number };
+  people: {
+    person: NamedPerson;
+    attempts: number;
+    bestPercent: number;
+    lastPercent: number;
+    passedAt: string | null;
+    lastAt: string;
+    asked: boolean;
+  }[];
+  notStarted: NamedPerson[];
+  missed: { id: string; prompt: string; missed: number }[];
+  attempts: number;
 }
 
 /// What the rota on screen costs - only for the people an admin has chosen.

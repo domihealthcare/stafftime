@@ -13,7 +13,12 @@ export async function openMore(page) {
 /// October 2026): close it with Escape, as a person would, before moving on.
 export async function closePopups(page) {
   const open = page.getByRole('dialog');
-  if (await open.first().isVisible().catch(() => false)) {
+  if (
+    await open
+      .first()
+      .isVisible()
+      .catch(() => false)
+  ) {
     await page.keyboard.press('Escape');
     await open.first().waitFor({ state: 'detached', timeout: 10000 });
   }
@@ -45,16 +50,35 @@ export async function navLink(page, name) {
       .waitFor({ timeout: 20000 })
       .catch(() => {});
   }
-  if (await find().isVisible().catch(() => false)) return find();
+  if (
+    await find()
+      .isVisible()
+      .catch(() => false)
+  )
+    return find();
   await openMore(page);
-  if (await find().isVisible().catch(() => false)) return find();
+  if (
+    await find()
+      .isVisible()
+      .catch(() => false)
+  )
+    return find();
   // Timesheet is a tab on the Schedule's strip on a laptop (October 2026).
   if (typeof name === 'string' && name === 'Timesheet') {
-    const schedule = page.getByRole('navigation', { name: 'Main' }).getByRole('link', { name: /^Schedule/ });
+    const schedule = page
+      .getByRole('navigation', { name: 'Main' })
+      .getByRole('link', { name: /^Schedule/ });
     if (await schedule.isVisible().catch(() => false)) {
       await schedule.click();
-      await page.getByRole('navigation', { name: 'Schedule or calendar' }).waitFor({ timeout: 15000 });
-      if (await find().isVisible().catch(() => false)) return find();
+      await page
+        .getByRole('navigation', { name: 'Schedule or calendar' })
+        .waitFor({ timeout: 15000 });
+      if (
+        await find()
+          .isVisible()
+          .catch(() => false)
+      )
+        return find();
     }
   }
   const manage = page.getByRole('button', { name: 'Manage', exact: true });
@@ -73,7 +97,10 @@ export async function goTo(page, name) {
 /// News has no tab on a laptop (October 2026): it is on Home, with All news.
 export async function openNews(page) {
   await goTo(page, 'Home');
-  await page.getByTestId('home-news').getByRole('link', { name: /All news/ }).click();
+  await page
+    .getByTestId('home-news')
+    .getByRole('link', { name: /All news/ })
+    .click();
   await page.getByRole('heading', { name: 'News', exact: true }).waitFor({ timeout: 15000 });
 }
 
@@ -81,7 +108,10 @@ export async function openNews(page) {
 /// off screen from the card on the Schedule.
 export async function openTimeOff(page) {
   await goTo(page, 'Schedule');
-  await page.getByTestId('your-time-off').getByRole('link', { name: /All your time off|All requests/ }).click();
+  await page
+    .getByTestId('your-time-off')
+    .getByRole('link', { name: /All your time off|All requests/ })
+    .click();
   await page.waitForURL(/\/time-off/, { timeout: 15000 });
 }
 
@@ -127,6 +157,7 @@ export const SECTION_OF = {
   Reps: 'Offices',
   Surveys: 'Surveys & reading',
   'Required reading': 'Surveys & reading',
+  Quizzes: 'Surveys & reading',
   Export: 'Finances',
   Reimbursements: 'Finances',
   'Vendor payments': 'Finances',
@@ -147,9 +178,16 @@ export async function goToManage(page, label) {
   if (section === 'Finances') await unlockPay(page);
   const tab = TAB_OF[label] ?? label;
   await openMenu(page, 'Manage');
-  await page.getByRole('navigation').getByRole('link', { name: section, exact: true }).first().click();
+  await page
+    .getByRole('navigation')
+    .getByRole('link', { name: section, exact: true })
+    .first()
+    .click();
   if (section !== tab) {
-    await page.getByRole('navigation', { name: `${section} screens` }).getByRole('link', { name: tab, exact: true }).click();
+    await page
+      .getByRole('navigation', { name: `${section} screens` })
+      .getByRole('link', { name: tab, exact: true })
+      .click();
   }
   if (label === 'Job roles') {
     // The job roles are a pop-up from the row of job roles above the staff list (October 2026).

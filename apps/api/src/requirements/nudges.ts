@@ -82,6 +82,12 @@ export function askedWording(item: {
   title: string;
   dueOn: string | null;
 }): { title: string; body: string } {
+  if (item.kind === RequirementKind.QUIZ) {
+    return {
+      title: `Please take the quiz: “${item.title}”`,
+      body: `${item.dueOn ? `By ${day(item.dueOn)}. ` : ''}Take it from Home. You see your score at once, and can try again until you pass.`,
+    };
+  }
   const read = item.kind === RequirementKind.READ;
   return {
     title: read ? `Please read and confirm: “${item.title}”` : `To do: “${item.title}”`,
@@ -99,10 +105,21 @@ export function nudgeWording(items: WaitingItem[]): { title: string; body: strin
     (a, b) =>
       (a.dueOn ?? '9999').localeCompare(b.dueOn ?? '9999') || a.title.localeCompare(b.title),
   );
-  const press = 'Press “I’ve read it” or “Done” on Home once you have.';
+  const quizzes = sorted.filter((item) => item.kind === RequirementKind.QUIZ).length;
+  const press =
+    quizzes === sorted.length
+      ? 'Take it from Home.'
+      : quizzes > 0
+        ? 'Press “I’ve read it” or “Done” on Home once you have, and take the quiz there.'
+        : 'Press “I’ve read it” or “Done” on Home once you have.';
   if (sorted.length === 1) {
     const [only] = sorted;
-    const what = only.kind === RequirementKind.READ ? 'to read' : 'to do';
+    const what =
+      only.kind === RequirementKind.READ
+        ? 'to read'
+        : only.kind === RequirementKind.QUIZ
+          ? 'to pass'
+          : 'to do';
     if (only.stage === 'DUE_SOON' && only.dueOn) {
       return {
         title: `Reminder: “${only.title}” is due ${day(only.dueOn)}`,

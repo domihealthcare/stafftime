@@ -281,9 +281,11 @@ Built from the practice's Annual Wellness Supplement Form (02.2024); see
 ## Downtime (built October 2026)
 
 - [ ] **The window sign's Spanish** needs a native speaker's read.
-- [ ] **The quiz** on the downtime procedures, sent to all staff through
-      Required reading: agreed as the next piece (by name, a pass mark,
-      retakes, managers see results).
+- [x] **The quiz** on the downtime procedures: built (version 1.28.0) and
+      loaded, **not sent yet**. Dominguez to read it over (Manage → Surveys &
+      reading → Quizzes → Try it, Edit) and press **Send it**. Its questions
+      for the front desk, MAs and providers were loaded only where those job
+      roles exist, so check they are there on the live site.
 - [ ] **What to buy** for the offices, to discuss once the quiz is done (the
       practice may have some already): backup internet at each office (a
       cellular failover router or hotspot, set up with Miguel; first ask whether

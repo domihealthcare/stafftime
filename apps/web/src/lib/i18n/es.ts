@@ -6,6 +6,7 @@ import { SHELL } from './es/shell';
 import { TEAM } from './es/team';
 import { REVIEWS } from './es/reviews';
 import { SMARTER } from './es/smarter';
+import { QUIZZES } from './es/quizzes';
 
 /**
  * Every Spanish phrase, keyed by its English. Split by screen so each stays
@@ -23,4 +24,5 @@ export const SPANISH: Record<string, string> = {
   ...CALENDAR,
   ...REVIEWS,
   ...SMARTER,
+  ...QUIZZES,
 };

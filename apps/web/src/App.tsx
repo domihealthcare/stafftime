@@ -73,6 +73,13 @@ const ScheduleReviewsPage = lazy(() =>
 const OnCallPage = lazy(() =>
   import('./pages/OnCallPage').then((m) => ({ default: m.OnCallPage })),
 );
+const QuizPage = lazy(() => import('./pages/QuizPage').then((m) => ({ default: m.QuizPage })));
+const QuizzesPage = lazy(() =>
+  import('./pages/QuizzesPage').then((m) => ({ default: m.QuizzesPage })),
+);
+const QuizResultsPage = lazy(() =>
+  import('./pages/QuizResultsPage').then((m) => ({ default: m.QuizResultsPage })),
+);
 const RequiredPage = lazy(() =>
   import('./pages/RequiredPage').then((m) => ({ default: m.RequiredPage })),
 );
@@ -295,6 +302,9 @@ function Routed() {
           />
           <Route path="cme" element={<CmePage />} />
           <Route path="required" element={<RequiredPage />} />
+          <Route path="quizzes" element={<QuizzesPage />} />
+          <Route path="quizzes/:id" element={<QuizPage />} />
+          <Route path="quizzes/:id/results" element={<QuizResultsPage />} />
           <Route path="on-call" element={<OnCallPage />} />
           <Route path="schedule-reviews" element={<ScheduleReviewsPage />} />
           <Route path="timesheet" element={<TimesheetPage />} />

@@ -75,3 +75,14 @@ describe('the words', () => {
     expect(words.body).toContain('was due Tue, Oct 20');
   });
 });
+
+describe('quiz wording', () => {
+  it('asks them to take it, and reminds them to', () => {
+    const item = { kind: RequirementKind.QUIZ, title: 'Downtime procedures', dueOn: null };
+    expect(askedWording(item).title).toBe('Please take the quiz: “Downtime procedures”');
+    expect(nudgeWording([{ ...item, stage: 'WAITING' }])).toEqual({
+      title: 'Still waiting: “Downtime procedures”',
+      body: 'Still to pass. Take it from Home.',
+    });
+  });
+});
