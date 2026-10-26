@@ -642,6 +642,10 @@ export function SchedulePage() {
                 type="button"
                 aria-pressed={view === option}
                 onClick={() => {
+                  // Already on it: nothing to do. Pressing Week on a week that
+                  // runs over two months (29 November to 5 December) used to
+                  // jump to the first week of the month it was opened in.
+                  if (option === view) return;
                   try {
                     window.localStorage.setItem(VIEW_KEY, option);
                   } catch {

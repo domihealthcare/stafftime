@@ -67,6 +67,16 @@ await step('This week in the calendar comes back to today', async () => {
   if (/2028/.test(text)) throw new Error(`still on ${text}`);
 });
 
+await step('pressing Week on a week over two months stays on that week', async () => {
+  // 29 December 2030 to 4 January 2031. Pressing Week while already on the
+  // week used to jump to the first week of December (October 2026).
+  await manager.goto(`${BASE}/schedule?week=2030-12-30`, { waitUntil: 'networkidle' });
+  await manager.getByRole('button', { name: 'Week', exact: true }).click();
+  await manager.getByRole('button', { name: 'Week', exact: true }).click();
+  const text = await period();
+  if (!/Dec 29.*Jan 4/.test(text)) throw new Error(`the week shown is ${text}`);
+});
+
 await browser.close();
 if (errors.length) {
   console.log('\nPROBLEMS');
