@@ -2230,6 +2230,8 @@ export interface DiagnosticTest {
   duration: string | null;
   prep: string | null;
   selfPay: string | null;
+  /// "76700", "95816, 95813".
+  cptCodes: string | null;
 }
 
 export interface DiagnosticPlan {

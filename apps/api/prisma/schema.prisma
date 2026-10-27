@@ -3541,6 +3541,9 @@ model DiagnosticTest {
   prep      String?
   /// What a patient with no insurance pays: "$200", "$220 / night".
   selfPay   String?
+  /// Its CPT code(s), "76700" or "95816, 95813", so it can be looked up by
+  /// code (October 2026). From the practice's reimbursements sheet.
+  cptCodes  String?
   sortOrder Int                  @default(0)
   answers   DiagnosticCoverage[]
   createdAt DateTime             @default(now())

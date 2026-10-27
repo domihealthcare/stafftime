@@ -1794,6 +1794,25 @@ Beyond the phases, the parts worth knowing about before picking up work:
   `src/quizzes/` (`quiz.ts` rules), `pages/QuizzesPage.tsx`, `QuizPage.tsx`,
   `QuizResultsPage.tsx`; see *Quizzes* in `docs/architecture.md`;
   `tests/browser/quiz.mjs`. Worth carrying to the EMR module.
+- **Diagnostics by CPT code, and Angelica Notario's access** (27 October
+  2026, staff feedback via Dominguez, version 1.29.0): the Diagnostics page
+  searches **Insurance / Test / CPT code**. Each test carries its CPT code(s)
+  (`DiagnosticTest.cptCodes`, free text such as "95816, 95813"), shown under
+  its name on the board and the tiles and changed under Edit the board. Typing
+  a code narrows the board to its test, and a code in the other half
+  (ultrasounds or testing) switches to it. The codes were loaded from the
+  practice's own reimbursements sheet, which names each test beside its code
+  (migrations `20261027050000_diagnostic_cpt_codes` and `..._data`); **Renal
+  and BrainCheck have no code there and are left empty**, for a manager to
+  fill in. Fibroscan is 76981, as on the sheet (confirmed by Dominguez). **Angelica Notario** still
+  could not post News or see everybody's schedule: the 19 October migration
+  needed her name written exactly, so `20261027070000_angelica_notario_access`
+  matches more loosely (a last name or email containing "notario" with a
+  first name starting "ang", or an `anotario@` email), still only when exactly
+  one person fits. Job roles still grant nothing: being in Administrative does
+  not give her either. **Check her Staff card on the live site**; if it did
+  not take, an admin ticks *Can post News* and *Can see everyone's schedule*
+  under Manage -> Staff -> Edit. `tests/browser/diagnostics.mjs`.
 - **Turned down: "PTO about to be lost"** (9 October 2026, Dominguez): a
   reminder to use PTO before it fails to carry over was proposed and refused —
   not in the practice's interest. Do not propose it again.

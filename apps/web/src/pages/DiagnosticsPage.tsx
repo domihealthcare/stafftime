@@ -47,8 +47,8 @@ const SECTIONS: { key: DiagnosticSection; label: string; all: string }[] = [
  * covered, not covered or needs a PA - with each test's time and prep above
  * and its self-pay price below, as on the sheet.
  *
- * Find an insurance and its answers come up as large tiles; pick a test and
- * the board narrows to it. **Big board** fills the screen. Managers and admins
+ * Find an insurance and its answers come up as large tiles; pick a test, or
+ * type a CPT code, and the board narrows to it. **Big board** fills the screen. Managers and admins
  * change it in place - a cell, a test, an insurance - from **Edit the board**.
  */
 export function DiagnosticsPage() {
@@ -59,6 +59,7 @@ export function DiagnosticsPage() {
   const [section, setSection] = useState<DiagnosticSection>('ULTRASOUND');
   const [planQuery, setPlanQuery] = useState('');
   const [testId, setTestId] = useState('');
+  const [cptQuery, setCptQuery] = useState('');
   const [big, setBig] = useState(false);
   const [editing, setEditing] = useState(false);
 
@@ -77,8 +78,11 @@ export function DiagnosticsPage() {
     [board, section],
   );
   const tests = useMemo(
-    () => (testId ? sectionTests.filter((test) => test.id === testId) : sectionTests),
-    [sectionTests, testId],
+    () =>
+      sectionTests.filter(
+        (test) => (!testId || test.id === testId) && hasCpt(test, cptQuery),
+      ),
+    [sectionTests, testId, cptQuery],
   );
   const plans = useMemo(
     () =>
@@ -103,6 +107,20 @@ export function DiagnosticsPage() {
 
   const reminders = board.reminders.filter((reminder) => reminder.section === section);
   const looked = planQuery.trim() && plans.length === 1 ? plans[0] : null;
+  const cptFoundNowhere =
+    cptQuery.trim() !== '' && !board.tests.some((test) => hasCpt(test, cptQuery));
+
+  // A code in the other half (ultrasounds or testing) switches to it, so
+  // whoever types it need not know which half the test is in.
+  const findCpt = (query: string) => {
+    setCptQuery(query);
+    if (!query.trim() || sectionTests.some((test) => hasCpt(test, query))) return;
+    const other = board.tests.find((test) => test.section !== section && hasCpt(test, query));
+    if (other) {
+      setSection(other.section);
+      setTestId('');
+    }
+  };
   const sectionLabel = t(SECTIONS.find((entry) => entry.key === section)!.label);
 
   const controls = (
@@ -161,7 +179,7 @@ export function DiagnosticsPage() {
         )}
       </div>
 
-      <div className="mb-3 grid gap-3 sm:grid-cols-2">
+      <div className="mb-3 grid gap-3 sm:grid-cols-3">
         <div>
           <label htmlFor="diagnostics-plan" className="block text-xs font-medium text-slate-600">
             {t('Find an insurance')}
@@ -192,6 +210,20 @@ export function DiagnosticsPage() {
               </option>
             ))}
           </select>
+        </div>
+        <div>
+          <label htmlFor="diagnostics-cpt" className="block text-xs font-medium text-slate-600">
+            {t('CPT code')}
+          </label>
+          <input
+            id="diagnostics-cpt"
+            type="search"
+            inputMode="search"
+            value={cptQuery}
+            onChange={(event) => findCpt(event.target.value)}
+            placeholder={t('76700, 93306…')}
+            className={inputClass}
+          />
         </div>
       </div>
 
@@ -226,6 +258,13 @@ export function DiagnosticsPage() {
         </Card>
       )}
 
+      {cptFoundNowhere && (
+        <p className="mt-2 text-sm text-slate-600">
+          {t('No test on the board has CPT code “{code}”. Ask a manager.', {
+            code: cptQuery.trim(),
+          })}
+        </p>
+      )}
       {plans.length === 0 && (
         <p className="mt-2 text-sm text-slate-600">
           {t('No insurance on the board matches “{query}”. Ask a manager.', {
@@ -240,6 +279,11 @@ export function DiagnosticsPage() {
       )}
     </div>
   );
+}
+
+/// Whether a test carries the code typed: "767" finds 76700, "g0398" G0398.
+function hasCpt(test: DiagnosticTest, query: string): boolean {
+  return !query.trim() || matches(test.cptCodes ?? '', query);
 }
 
 function SectionSwitch({
@@ -349,6 +393,7 @@ function PlanAnswers({
               {cell?.note && <p className="mt-1 text-sm font-medium">{cell.note}</p>}
               <p className="mt-1 text-xs opacity-80">{timeAndPrep(test, t('No prep'))}</p>
               {test.detail && <p className="text-xs opacity-80">{test.detail}</p>}
+              {test.cptCodes && <p className="text-xs opacity-80">CPT {test.cptCodes}</p>}
             </li>
           );
         })}
@@ -466,6 +511,15 @@ function DiagnosticsTable({
                     }`}
                   >
                     {entry.detail}
+                  </span>
+                )}
+                {entry.cptCodes && (
+                  <span
+                    className={`block font-normal leading-tight text-slate-600 ${
+                      big ? 'text-[11px]' : 'text-[10px]'
+                    }`}
+                  >
+                    CPT {entry.cptCodes}
                   </span>
                 )}
               </th>
@@ -788,6 +842,7 @@ function TestEditor({
     duration: test?.duration ?? '',
     prep: test?.prep ?? '',
     selfPay: test?.selfPay ?? '',
+    cptCodes: test?.cptCodes ?? '',
   });
   const { busy, problem, run } = useSaving(onClose, onBoard);
   const set = (key: keyof typeof form) => (value: string) =>
@@ -806,6 +861,7 @@ function TestEditor({
               duration: form.duration || null,
               prep: form.prep || null,
               selfPay: form.selfPay || null,
+              cptCodes: form.cptCodes || null,
             }),
           );
         }}
@@ -849,6 +905,12 @@ function TestEditor({
           />
         </div>
         <TextField label="Prep" hint="Empty is no prep" value={form.prep} onChange={set('prep')} />
+        <TextField
+          label="CPT code(s)"
+          hint="“76700”, or several: “95816, 95813”"
+          value={form.cptCodes}
+          onChange={set('cptCodes')}
+        />
         {problem && <Alert>{problem}</Alert>}
         <div className="flex flex-wrap items-center gap-2">
           {test && (

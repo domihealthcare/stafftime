@@ -148,7 +148,8 @@ reset_state() {
   psql -h "$PGHOST_LOCAL" -p "$PGPORT_LOCAL" -U "$PGUSER_LOCAL" -d "$PGDATABASE_LOCAL" -q \
     -c "delete from diagnostic_tests; delete from diagnostic_plans; delete from diagnostic_reminders;" \
     -c "delete from reimbursement_codes; delete from reimbursement_payers;" \
-    -f "$API_DIR/prisma/migrations/20261016020000_diagnostics_reimbursements_data/migration.sql"
+    -f "$API_DIR/prisma/migrations/20261016020000_diagnostics_reimbursements_data/migration.sql" \
+    -f "$API_DIR/prisma/migrations/20261027060000_diagnostic_cpt_codes_data/migration.sql"
   # And the same words without the em dashes the portal no longer uses.
   psql -h "$PGHOST_LOCAL" -p "$PGPORT_LOCAL" -U "$PGUSER_LOCAL" -d "$PGDATABASE_LOCAL" -q \
     -f "$API_DIR/prisma/migrations/20261019010000_no_em_dashes/migration.sql"

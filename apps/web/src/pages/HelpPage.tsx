@@ -812,7 +812,9 @@ const STAFF: Section[] = [
               point at it or tap it.
             </p>
             <p>
-              Pick a test in <strong>Test</strong> to see every insurance for that one test. The
+              Pick a test in <strong>Test</strong>, or type its code in <strong>CPT code</strong>{' '}
+              (76700, 93306), to see every insurance for that one test; a code for a test in the
+              other half switches to it. Each test&rsquo;s CPT code is under its name. The
               self-pay price is at the bottom of the board, and the reminders (what cannot be done
               the same day) at the top. <strong>Big board</strong> fills the screen; Escape or{' '}
               <strong>Exit big board</strong> puts it back.
