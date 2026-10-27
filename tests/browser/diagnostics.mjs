@@ -78,6 +78,30 @@ await step('picking a test narrows the board to it', async () => {
   await staff.getByLabel('Test', { exact: true }).selectOption({ label: 'All ultrasounds' });
 });
 
+await step('a CPT code narrows the board to its test, switching halves when it must', async () => {
+  await staff.getByLabel('CPT code').fill('93306');
+  await board.getByRole('columnheader', { name: /^ECHO.*CPT 93306/ }).waitFor({ timeout: 10000 });
+  if (await board.getByRole('columnheader', { name: /^THYROID/ }).count()) throw new Error('THYROID still shown');
+  // An EEG code is in Testing: the board goes there by itself.
+  await staff.getByLabel('CPT code').fill('95816');
+  await board.getByRole('columnheader', { name: /^EEG/ }).waitFor({ timeout: 10000 });
+  if ((await staff.getByRole('button', { name: 'Testing', exact: true }).getAttribute('aria-pressed')) !== 'true') {
+    throw new Error('did not switch to Testing');
+  }
+  if (await board.getByRole('columnheader', { name: /^VNG/ }).count()) throw new Error('VNG still shown');
+  // And with an insurance, the tiles are for that test alone.
+  await staff.getByLabel('Find an insurance').fill('aetna medicare');
+  const tiles = staff.getByTestId('diagnostics-plan-answers').getByTestId('diagnostics-answer');
+  await tiles.filter({ hasText: 'CPT 95816' }).waitFor({ timeout: 10000 });
+  if ((await tiles.count()) !== 1) throw new Error(`${await tiles.count()} tiles for one code`);
+  await staff.getByLabel('Find an insurance').fill('');
+  await staff.getByLabel('CPT code').fill('00000');
+  await staff.getByText('No test on the board has CPT code “00000”. Ask a manager.').waitFor();
+  await staff.getByLabel('CPT code').fill('');
+  await staff.getByRole('button', { name: 'Ultrasounds', exact: true }).click();
+  await board.getByRole('columnheader', { name: /^ECHO/ }).waitFor();
+});
+
 await step('Testing has its own tests, and a note on a cell', async () => {
   await staff.getByRole('button', { name: 'Testing', exact: true }).click();
   await board.getByRole('columnheader', { name: /^EEG/ }).waitFor({ timeout: 10000 });
@@ -151,8 +175,9 @@ await step('a manager adds a test, moves it and removes it', async () => {
   await dialog.getByLabel('Name', { exact: true }).fill('Breast');
   await dialog.getByLabel('Time', { exact: true }).fill('30 min');
   await dialog.getByLabel('Self-pay', { exact: true }).fill('$250');
+  await dialog.getByLabel('CPT code(s)').fill('76641');
   await dialog.getByRole('button', { name: 'Add test' }).click();
-  const header = mBoard.getByRole('columnheader', { name: /^Breast/ });
+  const header = mBoard.getByRole('columnheader', { name: /^Breast.*CPT 76641/ });
   await header.waitFor({ timeout: 10000 });
   await mBoard.getByRole('cell', { name: '30 min · No prep' }).waitFor();
 

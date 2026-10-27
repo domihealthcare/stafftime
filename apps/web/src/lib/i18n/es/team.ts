@@ -245,6 +245,9 @@ export const TEAM: Record<string, string> = {
   Test: 'Prueba',
   'All ultrasounds': 'Todos los ultrasonidos',
   'All tests': 'Todas las pruebas',
+  'CPT code': 'Código CPT',
+  'No test on the board has CPT code “{code}”. Ask a manager.':
+    'Ninguna prueba de la tabla tiene el código CPT “{code}”. Pregunta a un gerente.',
   'No insurance on the board matches “{query}”. Ask a manager.':
     'Ningún seguro de la tabla coincide con “{query}”. Pregunta a un gerente.',
   'Updated {date}.': 'Actualizado el {date}.',

@@ -331,6 +331,7 @@ describe('what this app deliberately does not store', () => {
     expect(fieldsOf('DiagnosticTest')).toEqual(
       [
         'answers',
+        'cptCodes',
         'createdAt',
         'detail',
         'duration',

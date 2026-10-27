@@ -59,6 +59,12 @@ export class DiagnosticTestInput {
   @IsString()
   @MaxLength(60)
   selfPay?: string;
+
+  /// "76700", "95816, 95813".
+  @IsOptional()
+  @IsString()
+  @MaxLength(120)
+  cptCodes?: string;
 }
 
 /// An insurance plan, made or changed; sent whole.

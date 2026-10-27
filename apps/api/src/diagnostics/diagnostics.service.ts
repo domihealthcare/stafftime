@@ -38,6 +38,7 @@ export class DiagnosticsService {
           duration: true,
           prep: true,
           selfPay: true,
+          cptCodes: true,
           updatedAt: true,
         },
       }),
@@ -256,6 +257,7 @@ function testFields(dto: DiagnosticTestInput) {
     duration: blankToNull(dto.duration),
     prep: blankToNull(dto.prep),
     selfPay: blankToNull(dto.selfPay),
+    cptCodes: blankToNull(dto.cptCodes),
   };
 }
 
