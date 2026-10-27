@@ -1760,6 +1760,15 @@ Beyond the phases, the parts worth knowing about before picking up work:
   `20261027010000_downtime_clinical_paper` adds them to the stack and a step
   for providers and MAs, leaving anything a manager changed alone.
   `components/DowntimeClinicalPaper.tsx`, `components/DowntimePaper.tsx`.
+  **What was bought** (26 October 2026, Dominguez, version 1.28.1): no backup
+  internet ("it doesn't happen enough to have that cost"); the rule instead is
+  **one front desk computer on a phone's hotspot**, eCW only, put on by a
+  manager (a section for managers and admins in What to do; **test once that
+  eCW accepts it**). Battery backups already there. A **lockable downtime box**
+  per front desk (clipboards, pens, specimen labels, now on the monthly check)
+  and the **NJ prescription blanks in a separate locked box**. Card payments
+  stay on Weave's machine. Migration `20261027040000_downtime_hotspot` (also
+  one quiz question on it).
 - **Quizzes** (26 October 2026, Dominguez: "i want to send all staff a 'quiz'
   to make sure they are uptodate on these procedures"; agreed: a general
   feature **sent through Required reading**, **by name**, a **pass mark**,

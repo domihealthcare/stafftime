@@ -5728,6 +5728,20 @@ The AWV's page 1 prints in English or Spanish (the English under each
 question, as on screen); page 2 is the MA's, in English. Only the blank
 lists are imported: nothing a patient answers is in this code.
 
+**What was bought, and the hotspot rule** (26 October 2026, Dominguez): no
+backup internet line, as outages are rare; instead, while the internet is down
+at an office, a manager puts **one front desk computer on a phone's hotspot**
+for eCW only (the phone only shares its connection, so nothing about a patient
+goes on it). Battery backups were already in place. Each front desk gets a
+lockable downtime box with clipboards, pens and specimen labels; the NJ
+prescription blanks sit in a separate locked box. Card payments stay on Weave's
+machine (marked Owed while it is down). Migration
+`20261027040000_downtime_hotspot` adds the hotspot to the procedures (a section
+of its own for managers and admins), the locked box to the providers' step, the
+new supplies to the monthly check and one question to the downtime quiz, each
+only where the text it touches is unchanged. Whether eCW accepts a hotspot's
+address is still to be tried once.
+
 ## Quizzes (October 2026)
 
 Dominguez: "once we complete this - i want to send all staff a 'quiz' to make
