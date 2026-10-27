@@ -1804,7 +1804,7 @@ Beyond the phases, the parts worth knowing about before picking up work:
   practice's own reimbursements sheet, which names each test beside its code
   (migrations `20261027050000_diagnostic_cpt_codes` and `..._data`); **Renal
   and BrainCheck have no code there and are left empty**, for a manager to
-  fill in. Fibroscan is 76981 as the sheet has it. **Angelica Notario** still
+  fill in. Fibroscan is 76981, as on the sheet (confirmed by Dominguez). **Angelica Notario** still
   could not post News or see everybody's schedule: the 19 October migration
   needed her name written exactly, so `20261027070000_angelica_notario_access`
   matches more loosely (a last name or email containing "notario" with a
