@@ -49,6 +49,7 @@ first argument.
 | `PGHOST_LOCAL` / `PGPORT_LOCAL` | `127.0.0.1` / `5433` | Where `run-all.sh` resets state between suites. |
 | `API_URL` | `http://127.0.0.1:3000/api` | `race.mjs` and `punch-reminders.mjs` use it - they talk to the API directly rather than through the web server's proxy. |
 | `PUNCH_REMINDER_SECRET` | none | Must match the API's: `punch-reminders.mjs` calls the reminders route the way the outside timer does. CI sets both. |
+| `SHARD_TOTAL` / `SHARD_INDEX` | `1` / `1` | Run one part of the suites: every `SHARD_TOTAL`-th one, starting at number `SHARD_INDEX`. CI runs four parts at once, each on its own machine and database. |
 
 ## Things worth knowing
 

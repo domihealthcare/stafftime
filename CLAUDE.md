@@ -1813,6 +1813,17 @@ Beyond the phases, the parts worth knowing about before picking up work:
   not give her either. **Check her Staff card on the live site**; if it did
   not take, an admin ticks *Can post News* and *Can see everyone's schedule*
   under Manage -> Staff -> Edit. `tests/browser/diagnostics.mjs`.
+- **Faster checks before going live** (28 October 2026, Dominguez: "whys it
+  take so much time to update to live site?"): the browser checks, about 22
+  minutes one after another, now run as **four parts at once**, each on its own
+  machine and database (`run-all.sh` takes every fourth suite by
+  `SHARD_INDEX` / `SHARD_TOTAL`), so a change can merge after about 8 minutes.
+  A last job keeps the one check named **Browser checks**, green only when all
+  four parts are. CI also runs on **push only**, no longer on `pull_request`
+  as well: a pull request shows the checks of its head commit, so each change
+  was being checked twice. Each part's screenshots and logs are kept as
+  `browser-evidence-1` to `-4`. Merging still publishes in about 3 to 5
+  minutes on Vercel, which does not wait for CI.
 - **Turned down: "PTO about to be lost"** (9 October 2026, Dominguez): a
   reminder to use PTO before it fails to carry over was proposed and refused —
   not in the practice's interest. Do not propose it again.

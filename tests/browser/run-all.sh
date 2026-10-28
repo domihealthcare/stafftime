@@ -159,6 +159,25 @@ reset_state() {
 # cannot touch the shift the seed puts on today's date.
 SUITES="${SUITES:-drive refusals correct auth kiosk export locations pto pto-policy presets calendar scheduler checklists phone reset payroll credentials privacy race attention announcements resources directory availability surveys dashboard date-ranges help adp profile rota wfh overtime bell rota-print closing install golive staff staff-profile birthdays events closures recurring standing usual-week own-roles hand-entry removed-shift quick-add credential-types clinical care-plan wellness productivity schedule-phone clock-place extensions shift-notes shift-hours repeat-weeks news-social punch-reminders main-job-role auto-clock-out digest-topics practice-calendar cover patterns clashes approve-clean publish-check export-check license-reminders overtime-forecast onboarding-reminders missed-shifts availability-clash usual-hours minimums ask moving-holidays time-off-shifts ai-helpers ask-cover payroll-due not-signed-in tomorrow auto-onboarding review360 running-late corrections clean-time-off weekly required rota-cost on-call push spanish clocks-in event-replies time-off-feedback vendors diagnostics reimbursements schedule-reviews phone-book manage-sections everyone-schedule time-off-type provider-calendar guides cme office-admins who-looks-after view-as jump-to-date pay shared-account downtime quiz}"
 
+# CI splits the suites across several machines at once (SHARD_TOTAL of them,
+# this one being SHARD_INDEX, counting from 1). Every SHARD_TOTAL-th suite in
+# the list above runs here, so a new suite joins a part by itself. Each part
+# has its own database, so the parts cannot disturb one another.
+SHARD_TOTAL="${SHARD_TOTAL:-1}"
+SHARD_INDEX="${SHARD_INDEX:-1}"
+if [ "$SHARD_TOTAL" -gt 1 ]; then
+  picked=""
+  i=0
+  for suite in ${SUITES}; do
+    if [ $((i % SHARD_TOTAL)) -eq $((SHARD_INDEX - 1)) ]; then
+      picked="$picked $suite"
+    fi
+    i=$((i + 1))
+  done
+  SUITES="$picked"
+  printf "Part %s of %s:%s\n" "$SHARD_INDEX" "$SHARD_TOTAL" "$SUITES"
+fi
+
 # Full output per suite goes to a file, and only the step lines are printed, so
 # a failure's detail is still there to read rather than truncated away.
 LOG_DIR="${LOG_DIR:-$HERE/logs}"
