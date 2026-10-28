@@ -426,6 +426,15 @@ export function SchedulePage() {
     return map;
   }, [shifts, personFilter, locationFilter, roleFilter, roleMembers]);
 
+  // The phlebotomist is not on the rota, so their dates have no job role.
+  // With a job role picked ("Front Desk only") they are left off the week
+  // and the month; the Calendar still shows them. Nothing else uses them
+  // here: closures and the lunch icons read other kinds.
+  const shownEvents = useMemo(
+    () => (roleFilter ? events.filter((event) => event.kind !== 'PHLEBOTOMY') : events),
+    [events, roleFilter],
+  );
+
   /// Who can be picked in the month: everybody still here, and anybody who
   /// has left but still has a shift on screen, so it can be found and moved -
   /// narrowed to the office and job role chosen beside it.
@@ -1064,7 +1073,7 @@ export function SchedulePage() {
             days={days}
             monthStart={monthStart}
             shiftsByDay={shiftsByDay}
-            events={events}
+            events={shownEvents}
             birthdays={birthdaysByDay(birthdays)}
             // One person picked: their times, as staff see their own month.
             showNames={isManager && !personFilter}
@@ -1110,7 +1119,7 @@ export function SchedulePage() {
             coverage={isManager ? (coverage?.days ?? null) : null}
             timeOff={timeOff}
             birthdays={birthdays}
-            events={events}
+            events={shownEvents}
             onOpenEvent={setOpenEvent}
             overtimeThresholdHours={coverage?.overtimeThresholdHours ?? 40}
             overtime={coverage?.overtime}

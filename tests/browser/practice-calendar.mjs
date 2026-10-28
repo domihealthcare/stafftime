@@ -323,6 +323,23 @@ await step('a phlebotomist’s name is kept to pick next time, and can be remove
 
 const frankie = await signIn('frontdesk@domihealthcare.com');
 
+await step('on the Schedule, picking a job role leaves the phlebotomist off', async () => {
+  // The phlebotomist is not on the rota, so "Front Desk only" should not show them.
+  await manager.goto(`${BASE}/schedule?week=2027-03-02`, { waitUntil: 'networkidle' });
+  await manager.getByRole('button', { name: 'Week', exact: true }).click();
+  const row = manager.getByTestId('rota-events-row');
+  await row.getByTestId('phlebotomy-chip').first().waitFor({ timeout: 10000 });
+  await manager.getByLabel('Show job role').selectOption({ label: 'Front Desk' });
+  await manager.waitForTimeout(300);
+  if (await manager.getByTestId('phlebotomy-chip').count()) throw new Error('the phlebotomist shown with Front Desk picked (week)');
+  await manager.getByRole('button', { name: 'Month', exact: true }).click();
+  await manager.getByTestId('month-grid').waitFor();
+  if (await manager.getByTestId('month-phlebotomy-2027-03-02').count()) throw new Error('the phlebotomist shown with Front Desk picked (month)');
+  await manager.getByLabel('Show job role').selectOption({ label: 'All job roles' });
+  await manager.getByTestId('month-phlebotomy-2027-03-02').waitFor({ timeout: 10000 });
+  await manager.getByRole('button', { name: 'Week', exact: true }).click();
+});
+
 await step('staff see all of it, and cannot add', async () => {
   await calendar(frankie);
   await day(frankie, '2027-03-07').getByTestId('diagnostic-chip').waitFor({ timeout: 10000 });

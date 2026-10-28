@@ -1813,6 +1813,13 @@ Beyond the phases, the parts worth knowing about before picking up work:
   not give her either. **Check her Staff card on the live site**; if it did
   not take, an admin ticks *Can post News* and *Can see everyone's schedule*
   under Manage -> Staff -> Edit. `tests/browser/diagnostics.mjs`.
+- **Phlebotomist off the rota's job role filter** (28 October 2026, staff
+  feedback via Dominguez: "I have it on FD only but it's showing me all the
+  phlebs too", version 1.29.1): with a job role picked on the Schedule (week
+  or month), phlebotomist dates are left off, since the phlebotomist is not
+  on the rota and has no job role. With All job roles they show as before,
+  and the Calendar is unchanged. `shownEvents` in `SchedulePage`; checked in
+  `practice-calendar.mjs`, which fails on the old code.
 - **Faster checks before going live** (28 October 2026, Dominguez: "whys it
   take so much time to update to live site?"): the browser checks, about 22
   minutes one after another, now run as **four parts at once**, each on its own
