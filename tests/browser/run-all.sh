@@ -126,6 +126,7 @@ reset_state() {
     -c "delete from time_entries where \"editReason\" = 'ADP suite: a full day';" \
     -c "delete from time_entries where \"editReason\" = 'patterns-suite';" \
     -c "delete from time_entries where \"handEntryNote\" = 'approve-clean-suite';" \
+    -c "delete from time_entries where \"handEntryNote\" in ('correct-suite', 'export-suite', 'presets-suite');" \
     -c "delete from shifts where \"startsAt\" >= '2027-06-05' and \"startsAt\" < '2027-06-15';" \
     -c "delete from pto_requests where notes = 'publish-check-suite';" \
     -c "delete from unavailability where note = 'publish-check-suite';" \

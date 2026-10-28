@@ -64,6 +64,12 @@ first argument.
   entry, a changed password, a paired kiosk or a rota behind on purpose. The
   runner re-seeds and clears that between suites instead of depending on which
   suite ran first.
+- **A suite makes its own data.** CI runs the suites in four parts, each
+  on its own database, so which suite ran before another changes whenever one
+  is added. A suite that needs a punch on screen calls `seedPunch(tag)` from
+  `seed-punch.mjs` (and its tag goes on the clean-up list in `run-all.sh`)
+  rather than counting on what `drive` left behind; `correct`, `export` and
+  `presets` used to, and failed the first time they ran without it.
 - **Two suites drive no browser at all.** `race.mjs` fires genuinely concurrent
   requests at the API, and `privacy.mjs` checks what the API does and does not
   hand back. They live here because this is the harness that has a real server
