@@ -1,6 +1,7 @@
 import { chromium } from 'playwright';
 import { goTo } from './nav.mjs';
 import { mkdirSync } from 'node:fs';
+import { seedPunch } from './seed-punch.mjs';
 // Screenshots go wherever the caller says, or into ./shots (gitignored).
 const OUT = process.argv[2] || new URL('./shots/', import.meta.url).pathname;
 mkdirSync(OUT, { recursive: true });
@@ -24,6 +25,10 @@ const step = async (name, fn) => {
   try { await fn(); console.log(`PASS  ${name}`); }
   catch (e) { console.log(`FAIL  ${name}: ${e.message}`); errors.push(`${name}: ${e.message}`); }
 };
+
+// One finished punch on this week's timesheet, made here rather than left
+// over from another suite (see seed-punch.mjs).
+seedPunch('correct-suite');
 
 const ctx = await browser.newContext({ viewport: { width: 1280, height: 900 } });
 const page = await ctx.newPage();

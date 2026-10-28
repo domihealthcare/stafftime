@@ -2,9 +2,12 @@ name: CI
 
 # Every push, every branch. A regression that only shows up when somebody
 # remembers to run the tests is a regression that ships.
+#
+# Push only, not pull_request as well: a pull request shows the checks of the
+# commit at its head, which the push already ran, so listening to both ran
+# everything twice for each change (October 2026).
 on:
   push:
-  pull_request:
   workflow_dispatch:
 
 # A second push to the same branch makes the first run pointless.
@@ -38,11 +41,22 @@ jobs:
       - run: npm run build
 
   browser:
-    name: Browser checks
+    name: Browser checks, part ${{ matrix.shard }} of 4
     runs-on: ubuntu-latest
     # These need a real database, a real API and a real browser, so they are
     # slower and kept in their own job rather than blocking the fast feedback.
+    #
+    # One after another they took over 20 minutes, so they are split across
+    # four machines at once, each with its own database (run-all.sh takes
+    # every fourth suite). All four run to the end even when one fails, so a
+    # failure in one part never hides another.
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: [1, 2, 3, 4]
     env:
+      SHARD_INDEX: ${{ matrix.shard }}
+      SHARD_TOTAL: '4'
       DATABASE_URL: postgresql://postgres:postgres@127.0.0.1:5432/stafftime?schema=public
       DIRECT_DATABASE_URL: postgresql://postgres:postgres@127.0.0.1:5432/stafftime?schema=public
       APP_ENVIRONMENT: test
@@ -140,9 +154,24 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: browser-evidence
+          name: browser-evidence-${{ matrix.shard }}
           path: |
             tests/browser/shots/
             tests/browser/logs/
           retention-days: 7
           if-no-files-found: ignore
+
+  # One check named "Browser checks", as before the split, so anything that
+  # waits on that name still does: green only when every part passed.
+  browser-result:
+    name: Browser checks
+    runs-on: ubuntu-latest
+    needs: browser
+    if: always()
+    steps:
+      - name: Every part passed
+        run: |
+          if [ "${{ needs.browser.result }}" != "success" ]; then
+            echo "A part of the browser checks did not pass: ${{ needs.browser.result }}"
+            exit 1
+          fi

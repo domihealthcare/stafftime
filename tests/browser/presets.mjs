@@ -1,4 +1,5 @@
 import { chromium } from 'playwright';
+import { seedPunch } from './seed-punch.mjs';
 import { readFileSync } from 'node:fs';
 import { mkdirSync } from 'node:fs';
 import { openMenu, pressDownload, goToManage, unlockPay } from './nav.mjs';
@@ -15,6 +16,9 @@ const BASE = process.env.BASE_URL || 'http://127.0.0.1:5173';
 const isoDay = (offset) => new Date(Date.now() + offset * 86_400_000).toISOString().slice(0, 10);
 const PERIOD_FROM = isoDay(-30);
 const PERIOD_TO = isoDay(1);
+// A punch inside the period, so there is something to download (see
+// seed-punch.mjs): two days ago.
+seedPunch('presets-suite', 2 * 24 * 60);
 const browser = await chromium.launch(
   // Fall back to whatever Playwright downloaded when CHROMIUM_PATH is unset.
   process.env.CHROMIUM_PATH ? { executablePath: process.env.CHROMIUM_PATH } : {},
