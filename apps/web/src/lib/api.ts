@@ -1044,7 +1044,9 @@ export const api = {
       body: JSON.stringify({ currentPassword, newPassword }),
     }),
   listSessions: () => request<AuthSession[]>('/auth/sessions'),
-  attention: () => request<Attention>('/attention'),
+  /// Only the sections a banner shows; the others come back empty.
+  attention: (sections: (keyof Attention)[]) =>
+    request<Attention>(`/attention?sections=${encodeURIComponent(sections.join(','))}`),
 
   loadDemoData: () => request<DemoSummary>('/demo/load', { method: 'POST' }),
   testData: () => request<TestDataPreview>('/demo/test-data'),

@@ -374,13 +374,12 @@ What is left:
       hours. Not started.
 - [ ] **Tune the GPS accuracy tolerance** (currently 2× the geofence radius)
       against real readings from both offices — indoor fixes are often poor.
-- [ ] **`/attention` is re-queried on every screen that shows a banner.** Three
-      manager screens each ask for all nine lists on mount, which is eight or so
-      queries a time. Measured at ~7ms against a seeded database, so it is not
-      worth caching for a practice of twenty — noted because it is the sort of
-      thing that stops being free at a different size, and because the obvious
-      fix (cache it in the session context) is a five-minute change if it ever
-      does.
+- [x] **`/attention` is re-queried on every screen that shows a banner.** It
+      had grown to some twenty loaders on seven screens. Done in the
+      maintenance pass of 29 October 2026: each banner sends
+      `?sections=` and only those loaders run (the nightly email still
+      gathers everything). Each banner still asks once per visit; caching it
+      was not needed.
 - [ ] **A partial-failure test.** Still missing: something that can kill an
       export between the storage write and the record landing, to prove the
       orphan sweep picks up the pieces. Harder than a race, because it needs to

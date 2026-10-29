@@ -67,17 +67,19 @@ export function NeedsAttention({
   const [attention, setAttention] = useState<Attention | null>(null);
   const [expanded, setExpanded] = useState<Set<string>>(new Set());
 
+  // Asks only for this screen's sections, so the server works out only those.
+  const wanted = sections.join(',');
   useEffect(() => {
     if (!isManager) return;
     let cancelled = false;
     api
-      .attention()
+      .attention(wanted.split(',') as (keyof Attention)[])
       .then((result) => !cancelled && setAttention(result))
       .catch(() => undefined);
     return () => {
       cancelled = true;
     };
-  }, [isManager]);
+  }, [isManager, wanted]);
 
   if (!attention) return null;
 
