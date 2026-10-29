@@ -4,6 +4,7 @@ import { dueLabel } from '../components/RequiredItems';
 import { Alert, Badge, Card, PageHeading, Spinner, buttonClass } from '../components/ui';
 import { ApiError, api } from '../lib/api';
 import { formatDate } from '../lib/format';
+import { safeHref } from '../lib/guide-markup';
 import { useT } from '../lib/i18n';
 import { useIsManager } from '../lib/session';
 import type { QuizMarked, QuizToTake } from '../lib/types';
@@ -110,7 +111,7 @@ export function QuizPage() {
             <Badge tone={due.late ? 'danger' : 'warning'}>{due.text}</Badge>
           )}
         </div>
-        {quiz.quiz.studyHref && (
+        {quiz.quiz.studyHref && safeHref(quiz.quiz.studyHref) && (
           <p className="text-sm">
             {quiz.quiz.studyHref.startsWith('/') ? (
               <Link

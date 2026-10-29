@@ -148,8 +148,10 @@ export function parseInline(text: string): Inline[] {
 }
 
 /// An address in the app ("/diagnostics") or an https link; nothing else.
+/// An app address never holds a backslash: browsers read "/\example.com"
+/// as "//example.com", another site.
 export function safeHref(href: string): boolean {
-  return /^\/(?!\/)/.test(href) || /^https:\/\/[^\s]+$/.test(href);
+  return (/^\/(?!\/)/.test(href) && !href.includes('\\')) || /^https:\/\/[^\s]+$/.test(href);
 }
 
 /// The blanks in a template, each once, in order: "Symptoms", "Onset date".

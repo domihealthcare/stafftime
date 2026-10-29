@@ -104,6 +104,7 @@ describe('where to read up first', () => {
   it('refuses anything else', () => {
     expect(checkStudyHref('http://example.com').error).toBeDefined();
     expect(checkStudyHref('//evil.example').error).toBeDefined();
+    expect(checkStudyHref('/\\evil.example').error).toBeDefined();
     expect(checkStudyHref('javascript:alert(1)').error).toBeDefined();
   });
 });
