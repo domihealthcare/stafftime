@@ -1,4 +1,4 @@
-import { Workbook } from 'exceljs';
+import type { Workbook } from 'exceljs';
 import { localDateIn, PRACTICE_ZONE } from '../common/util/zoned-time.util';
 import { TIMESHEET_COLUMNS, type TimesheetColumnKey } from './columns';
 import type { TimesheetData } from './timesheet-export.service';
@@ -14,7 +14,11 @@ const BORDER_COLOUR = 'FFE2E8F0';
  * sort, filter and total it without cleaning anything up first.
  */
 export async function buildTimesheetWorkbook(data: TimesheetData): Promise<Buffer> {
-  const workbook = new Workbook();
+  // Loaded here, not at the top: exceljs takes about 150 ms to load, and every
+  // cold start of the API paid it though only an export needs it
+  // (maintenance pass, October 2026).
+  const excel = await import('exceljs');
+  const workbook = new excel.Workbook();
   workbook.creator = 'Domi Staff';
   workbook.created = data.meta.generatedAt;
   // Without this, a formula written by a library sits blank until the viewer
