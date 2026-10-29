@@ -20,10 +20,15 @@ import {
   dollars,
   invoiceFilename,
   invoiceNumberLabel,
-  invoicePdf,
   type InvoiceForPdf,
   type PayTo,
-} from '../lib/invoice-pdf';
+} from '../lib/invoice-format';
+
+/// The PDF library is loaded only when an invoice is downloaded.
+async function invoicePdf(invoice: InvoiceForPdf): Promise<Uint8Array> {
+  const { invoicePdf: draw } = await import('../lib/invoice-pdf');
+  return draw(invoice);
+}
 import { practiceDate } from '../lib/practice-time';
 import { useSession } from '../lib/session';
 import type {
