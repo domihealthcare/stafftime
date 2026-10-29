@@ -125,7 +125,11 @@ export class DowntimeService {
       offices.map((office) => office.name),
       officeCount,
     );
-    const status = row.endedAt ? 'ENDED' : row.announcedAt ? 'ACTIVE' : 'PLANNED';
+    const status: 'ENDED' | 'ACTIVE' | 'PLANNED' = row.endedAt
+      ? 'ENDED'
+      : row.announcedAt
+        ? 'ACTIVE'
+        : 'PLANNED';
     const manager = user ? isManager(user) : false;
     return {
       id: row.id,

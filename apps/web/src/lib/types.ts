@@ -122,7 +122,7 @@ export interface Employee extends EmployeeSummary {
   /// Signed-in person only: set while an admin is viewing the app as somebody
   /// else (October 2026) - their real access level and what they chose.
   /// `role` above is then the chosen one.
-  viewingAs?: { actualRole: Role; role: Role; jobRoleIds: string[] | null } | null;
+  viewingAs?: { actualRole?: Role; role: Role; jobRoleIds: string[] | null } | null;
   /// Signed-in person only: a manager has published productivity numbers for
   /// them, so "Your productivity" appears in the account menu.
   hasProductivity?: boolean;
@@ -1054,7 +1054,6 @@ export interface DirectoryEntry {
   preferredName: string | null;
   pronouns: string | null;
   about: string | null;
-  language: 'en' | 'es';
   photoUpdatedAt: string | null;
   email: string;
   phone: string | null;
@@ -1170,7 +1169,9 @@ export interface RepeatInput {
 }
 
 /// The series a repeating event's date belongs to.
-export interface EventSeries extends RepeatInput {
+export interface EventSeries extends Omit<RepeatInput, 'monthlyMode' | 'monthlyWeek'> {
+  monthlyMode: MonthlyRepeat | null;
+  monthlyWeek: number | null;
   id: string;
   firstDate: string;
   /// "Every 2 weeks on Fri until Dec 31, 2026".
@@ -1512,7 +1513,7 @@ export interface Dashboard {
   locations: { id: string; name: string }[];
   weeks: DashboardWeek[];
   upcoming: {
-    clashes: { date: string; employeeName: string; locationName: string; reason: string }[];
+    clashes: { date: string; employeeName: string | null; locationName: string; reason: string }[];
     overtime: OvertimeWarning[];
   };
 }
@@ -2094,7 +2095,7 @@ export interface Review360Question extends Review360QuestionInput {
 export interface Review360Summary {
   id: string;
   title: string;
-  status: 'OPEN' | 'CLOSED';
+  status: 'DRAFT' | 'OPEN' | 'CLOSED';
   closesOn: string | null;
   closedAt: string | null;
   createdAt: string;
@@ -2117,7 +2118,7 @@ export interface Review360Detail {
   id: string;
   title: string;
   intro: string | null;
-  status: 'OPEN' | 'CLOSED';
+  status: 'DRAFT' | 'OPEN' | 'CLOSED';
   closesOn: string | null;
   closedAt: string | null;
   questions: Review360Question[];

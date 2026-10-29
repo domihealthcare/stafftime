@@ -100,7 +100,8 @@ export class DigestSettingsController {
       where: { employee: ASSIGNABLE },
       select: { topic: true, employeeId: true },
     });
-    const byTopic: Record<string, string[]> = {};
+    // Every part is filled in just below, so every key is there.
+    const byTopic = {} as Record<DigestTopic, string[]>;
     for (const topic of Object.values(DigestTopic)) byTopic[topic] = [];
     for (const row of rows) byTopic[row.topic].push(row.employeeId);
     return byTopic;

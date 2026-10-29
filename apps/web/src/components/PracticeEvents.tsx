@@ -45,6 +45,10 @@ import { FindATime } from './FindATime';
 import { RepeatPicker } from './RepeatPicker';
 import { Alert, Badge, Card, buttonClass } from './ui';
 
+/// A rep as the event form uses one: a rep just added has no lunches yet,
+/// and the form never shows them.
+type RepChoice = Omit<Rep, 'lastLunch' | 'nextLunch'>;
+
 /**
  * Practice events on the schedule: office meetings, provider meetings, a
  * wellness day - and closures: Christmas, Christmas Eve from 1pm, one office
@@ -458,7 +462,7 @@ export function EventForm({
   const [title, setTitle] = useState(source?.title ?? '');
   /// A rep lunch: the rep, from the managers' list.
   const [repId, setRepId] = useState(source?.rep?.id ?? '');
-  const [reps, setReps] = useState<Rep[] | null>(null);
+  const [reps, setReps] = useState<RepChoice[] | null>(null);
   useEffect(() => {
     if (!repLunch || reps) return;
     api
@@ -1780,7 +1784,7 @@ function QuickAddRep({
   onCancel,
 }: {
   startName: string;
-  onAdded: (rep: Rep) => void;
+  onAdded: (rep: RepChoice) => void;
   onCancel: () => void;
 }) {
   const id = useId();
