@@ -1879,8 +1879,12 @@ Beyond the phases, the parts worth knowing about before picking up work:
     new link asks first). Phones already subscribed keep working: migration
     `20261029010000_calendar_token_fingerprint` fingerprinted every existing
     code. The old `calendarToken` column is **emptied but not dropped**, as
-    the code still live while Vercel builds reads it; **drop it in a later
-    release**, fingerprinting any code left in it first.
+    the code still live while Vercel builds reads it. **Version 1.31.1** (29
+    October 2026, Dominguez: "go ahead with the first column release") took it
+    out of `schema.prisma`, so the app no longer reads it; it is still in the
+    database. **The next step is a migration that drops it**, fingerprinting
+    any code left in it first; until then `prisma migrate dev` offers to drop
+    it, which is only right in that release.
   All four were built at once by separate Claude agents, then combined and
   checked together.
 - **Turned down: "PTO about to be lost"** (9 October 2026, Dominguez): a
