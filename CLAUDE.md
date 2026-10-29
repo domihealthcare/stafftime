@@ -290,6 +290,8 @@ How the live site is set up, for reference:
   2026 — the phone's indoor fix was only good to ~315 ft). 500 ft stands; the
   far-corner test was waived (Dominguez). **Never run `npm run db:seed`
   against the live database** — it resets the pins to old placeholders.
+  Since 29 October 2026 the seed refuses any database not on the computer
+  running it (`common/seed-guard.ts`).
 - **IP allow-listing**: set aside (Dominguez, 25 September 2026). Built, but
   with no addresses entered it does nothing; location is the check.
 - **`SETUP_TOKEN`**: deleted (25 September 2026).
