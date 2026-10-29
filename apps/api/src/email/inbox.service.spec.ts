@@ -22,8 +22,7 @@ describe('InboxService', () => {
   it('writes one row per person, once each', async () => {
     const { service, prisma } = build();
 
-    service.notify(['a', 'b', 'a'], { kind: 'OVERTIME', title: 'Over', link: '/schedule' });
-    await flush();
+    await service.notify(['a', 'b', 'a'], { kind: 'OVERTIME', title: 'Over', link: '/schedule' });
 
     expect(prisma.notification.createMany).toHaveBeenCalledWith({
       data: [
@@ -52,8 +51,9 @@ describe('InboxService', () => {
     const { service, prisma } = build();
     prisma.notification.createMany.mockRejectedValue(new Error('database down'));
 
-    expect(() => service.notify(['a'], { kind: 'OVERTIME', title: 'Over' })).not.toThrow();
-    await flush();
+    await expect(
+      service.notify(['a'], { kind: 'OVERTIME', title: 'Over' }),
+    ).resolves.toBeUndefined();
   });
 
   it('tells everybody still working here, apart from the person who wrote it', async () => {
