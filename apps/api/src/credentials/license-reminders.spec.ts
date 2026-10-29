@@ -98,7 +98,9 @@ describe('when somebody is reminded about their own license', () => {
 });
 
 describe('sending them', () => {
-  function build(alreadySent = false) {
+  /// `alreadySent`: another run claimed it at the same moment (the insert is
+  /// refused). `sentBefore`: an earlier run sent it (found by the read).
+  function build(alreadySent = false, sentBefore: unknown[] = []) {
     const prisma = {
       employeeCredential: {
         findMany: jest.fn().mockResolvedValue([
@@ -113,6 +115,7 @@ describe('sending them', () => {
         ]),
       },
       credentialReminder: {
+        findMany: jest.fn().mockResolvedValue(sentBefore),
         create: alreadySent
           ? jest.fn().mockRejectedValue(
               new Prisma.PrismaClientKnownRequestError('unique', {
@@ -148,5 +151,22 @@ describe('sending them', () => {
     const { service, notifications } = build(true);
     await expect(service.send(new Date('2026-10-09T14:00:00Z'))).resolves.toBe(0);
     expect(notifications.licenseReminder).not.toHaveBeenCalled();
+  });
+
+  it('skips one an earlier run sent without trying to record it again', async () => {
+    const { service, prisma, notifications } = build(false, [
+      { credentialId: 'cred-1', stage: 'DAYS_30', expiresOn: new Date('2026-10-19T00:00:00Z') },
+    ]);
+    await expect(service.send(new Date('2026-10-09T14:00:00Z'))).resolves.toBe(0);
+    expect(prisma.credentialReminder.create).not.toHaveBeenCalled();
+    expect(notifications.licenseReminder).not.toHaveBeenCalled();
+  });
+
+  it('still sends a later stage for the same card', async () => {
+    const { service, notifications } = build(false, [
+      { credentialId: 'cred-1', stage: 'DAYS_60', expiresOn: new Date('2026-10-19T00:00:00Z') },
+    ]);
+    await expect(service.send(new Date('2026-10-09T14:00:00Z'))).resolves.toBe(1);
+    expect(notifications.licenseReminder).toHaveBeenCalled();
   });
 });

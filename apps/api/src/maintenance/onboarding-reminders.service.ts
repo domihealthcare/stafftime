@@ -76,8 +76,20 @@ export class OnboardingRemindersService {
       today,
     );
 
+    // Most of these were sent on an earlier run: one read finds them, rather
+    // than a refused insert for each, every five minutes (maintenance pass,
+    // October 2026). The claim below still guards against two runs at once.
+    const alreadySent = await this.prisma.checklistTaskReminder.findMany({
+      where: { taskId: { in: due.map((reminder) => reminder.task.id) } },
+      select: { taskId: true, stage: true, dueAt: true },
+    });
+    const sentKeys = new Set(
+      alreadySent.map((row) => `${row.taskId}|${row.stage}|${isoDate(row.dueAt)}`),
+    );
+
     const byPerson = new Map<string, DueTaskReminder[]>();
     for (const reminder of due) {
+      if (sentKeys.has(`${reminder.task.id}|${reminder.stage}|${reminder.task.dueOn}`)) continue;
       if (!(await this.claim(reminder.task.id, reminder.stage, reminder.task.dueOn))) continue;
       const theirs = byPerson.get(reminder.task.employeeId) ?? [];
       theirs.push(reminder);

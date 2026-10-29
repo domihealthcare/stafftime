@@ -72,7 +72,9 @@ describe('when a new hire is reminded about their own onboarding tasks', () => {
 });
 
 describe('sending them', () => {
-  function build(alreadySent: string[] = []) {
+  /// `alreadySent`: another run claimed them at the same moment (the insert
+  /// is refused). `sentBefore`: an earlier run sent them (found by the read).
+  function build(alreadySent: string[] = [], sentBefore: unknown[] = []) {
     const row = (id: string, title: string, dueAt: string) => ({
       id,
       title,
@@ -89,6 +91,7 @@ describe('sending them', () => {
           ]),
       },
       checklistTaskReminder: {
+        findMany: jest.fn().mockResolvedValue(sentBefore),
         create: jest.fn().mockImplementation(({ data }) =>
           alreadySent.includes(data.taskId)
             ? Promise.reject(
@@ -134,6 +137,19 @@ describe('sending them', () => {
     const all = build(['task-1', 'task-2']);
     await expect(all.service.send(new Date('2026-10-09T14:00:00Z'))).resolves.toBe(0);
     expect(all.notifications.onboardingReminder).not.toHaveBeenCalled();
+  });
+
+  it('skips what an earlier run sent without trying to record it again', async () => {
+    const earlier = build(
+      [],
+      [
+        { taskId: 'task-1', stage: 'DUE_SOON', dueAt: new Date('2026-10-10T00:00:00Z') },
+        { taskId: 'task-2', stage: 'OVERDUE', dueAt: new Date('2026-10-06T00:00:00Z') },
+      ],
+    );
+    await expect(earlier.service.send(new Date('2026-10-09T14:00:00Z'))).resolves.toBe(0);
+    expect(earlier.prisma.checklistTaskReminder.create).not.toHaveBeenCalled();
+    expect(earlier.notifications.onboardingReminder).not.toHaveBeenCalled();
   });
 
   it('asks only for tasks theirs to do, still to do, on an open onboarding checklist', async () => {
