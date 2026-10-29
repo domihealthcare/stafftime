@@ -6,6 +6,7 @@ import { Avatar } from '../components/Avatar';
 import { JobRoleTag } from '../components/JobRoleTag';
 import { useConfirm } from '../components/ConfirmDialog';
 import { PhotoCropDialog, readPicture } from '../components/PhotoCropDialog';
+import { SignedInDevicesCard } from '../components/SignedInDevicesCard';
 import { Alert, Card, PageHeading, Spinner, buttonClass } from '../components/ui';
 import { ApiError, api } from '../lib/api';
 import { useSession } from '../lib/session';
@@ -301,6 +302,8 @@ export function ProfilePage() {
           void refresh();
         }}
       />
+
+      <SignedInDevicesCard />
 
       <PhoneNotificationsCard />
 

@@ -2,7 +2,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { ApiError, api } from '../lib/api';
 import { KIND_STYLE } from '../lib/calendar-kinds';
 import { SEPARATE_FEEDS } from '../lib/calendar-feeds';
-import { t as translate, useT } from '../lib/i18n';
+import { locale, t as translate, useT } from '../lib/i18n';
 import { useSession } from '../lib/session';
 import { useConfirm } from './ConfirmDialog';
 import { Alert, Card, buttonClass } from './ui';
@@ -14,6 +14,10 @@ import { Alert, Card, buttonClass } from './ui';
  * so a shift added next month appears without anyone doing anything. Works the
  * same in Google Calendar, Apple Calendar and Outlook, which is why this is one
  * feature and not three integrations.
+ *
+ * The server keeps only a fingerprint of the link's secret (October 2026), so
+ * the address is shown once, right after it is made, and never again: later
+ * the card says syncing is on and since when, and offers a new link instead.
  */
 export function CalendarLinkCard() {
   const t = useT();
@@ -21,8 +25,11 @@ export function CalendarLinkCard() {
   // Once shifts and events go out as invites (September 2026), the link
   // carries only closures and approved time off.
   const [invites, setInvites] = useState(false);
+  /// Only ever set from the answer to making a link, and only for as long as
+  /// this page is open: the server cannot send it again.
   const [token, setToken] = useState<string | null>(null);
   const [hasLink, setHasLink] = useState(false);
+  const [setAt, setSetAt] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState(false);
   const confirm = useConfirm();
@@ -37,7 +44,7 @@ export function CalendarLinkCard() {
     try {
       const link = await api.calendarLink();
       setHasLink(link.hasLink);
-      setToken(link.token);
+      setSetAt(link.createdAt);
     } catch (err) {
       setError(
         err instanceof ApiError ? err.message : translate('Could not check your calendar link.'),
@@ -67,11 +74,26 @@ export function CalendarLinkCard() {
   const url = feedUrl('domi');
 
   async function issue() {
+    // A new link breaks the old one on every phone using it, and the old one
+    // cannot be shown again to put back, so it asks first.
+    if (hasLink) {
+      const sure = await confirm({
+        title: t('Make a new link?'),
+        body: t(
+          'The old address stops working at once, so any phone or calendar using it stops updating until you add the new one.',
+        ),
+        confirmLabel: t('Yes, make a new link'),
+        cancelLabel: t('Keep the old link'),
+        tone: 'danger',
+      });
+      if (!sure) return;
+    }
     setBusy(true);
     setError(null);
     try {
       const result = await api.issueCalendarLink();
       setToken(result.token);
+      setSetAt(result.createdAt);
       setHasLink(true);
       setOpen(true);
     } catch (err) {
@@ -93,6 +115,7 @@ export function CalendarLinkCard() {
     try {
       await api.revokeCalendarLink();
       setToken(null);
+      setSetAt(null);
       setHasLink(false);
       setOpen(false);
     } catch (err) {
@@ -159,7 +182,7 @@ export function CalendarLinkCard() {
             onClick={() => setOpen((current) => !current)}
             className="text-sm font-medium text-slate-600 hover:text-slate-900"
           >
-            {open ? t('Close') : t('Show link')}
+            {open ? t('Close') : token ? t('Show link') : t('Details')}
           </button>
         ) : (
           <button
@@ -179,139 +202,41 @@ export function CalendarLinkCard() {
         </div>
       )}
 
-      {open && url && (
+      {open && hasLink && (
         <div className="mt-4 border-t border-slate-100 pt-4">
-          <div
-            className="mb-3 flex w-fit rounded-lg border border-slate-300 bg-white p-0.5"
-            role="group"
-            aria-label={t('How many calendars')}
-          >
-            {(
-              [
-                [false, 'Everything in one calendar'],
-                [true, 'Separate calendars'],
-              ] as const
-            ).map(([option, text]) => (
-              <button
-                key={text}
-                type="button"
-                aria-pressed={separate === option}
-                onClick={() => setSeparate(option)}
-                className={`rounded-md px-3 py-1 text-sm font-medium max-sm:py-2 ${
-                  separate === option
-                    ? 'bg-brand-50 text-brand-800'
-                    : 'text-slate-600 hover:text-slate-900'
-                }`}
-              >
-                {t(text)}
-              </button>
-            ))}
-          </div>
-
-          {separate ? (
-            <div data-testid="separate-calendars">
-              <p className="text-sm text-slate-600">
-                {t(
-                  'Add only the ones you want. Each shows on your phone as its own calendar, with its own colour and its own on/off. Use these instead of the all-in-one address, not as well, or everything shows twice.',
-                )}
-              </p>
-              <ul className="mt-2 space-y-2">
-                {SEPARATE_FEEDS.filter(
-                  (feed) => !feed.providersOnly || employee?.usesClinicalForms,
-                ).map((feed) => (
-                  <li key={feed.slug}>
-                    <label
-                      htmlFor={`calendar-url-${feed.slug}`}
-                      className="flex items-center gap-1.5 text-sm font-medium text-slate-700"
-                    >
-                      <span
-                        aria-hidden="true"
-                        className={`h-2.5 w-2.5 rounded-full ${
-                          feed.kind ? KIND_STYLE[feed.kind].dot : 'bg-brand-600'
-                        }`}
-                      />
-                      {t(feed.label)}
-                    </label>
-                    <div className="mt-1 flex gap-2">
-                      <input
-                        id={`calendar-url-${feed.slug}`}
-                        type="text"
-                        readOnly
-                        value={feedUrl(feed.slug) ?? ''}
-                        onFocus={(event) => event.currentTarget.select()}
-                        className="w-full min-w-0 flex-1 rounded-lg border-slate-300 bg-slate-50 font-mono text-xs shadow-sm"
-                      />
-                      <button
-                        type="button"
-                        onClick={() => void copy(feed.slug)}
-                        aria-label={t('Copy the {calendar} address', { calendar: t(feed.label) })}
-                        className="rounded-lg bg-slate-800 px-3 py-2 text-sm font-medium text-white hover:bg-slate-900"
-                      >
-                        {copied === feed.slug ? t('Copied') : t('Copy')}
-                      </button>
-                    </div>
-                  </li>
-                ))}
-              </ul>
-            </div>
-          ) : (
+          {url ? (
             <>
-              <label htmlFor="calendar-url" className="block text-sm font-medium text-slate-700">
-                {t('Your private calendar address')}
-              </label>
-              <div className="mt-1 flex flex-wrap gap-2">
-                <input
-                  id="calendar-url"
-                  type="text"
-                  readOnly
-                  value={url}
-                  onFocus={(event) => event.currentTarget.select()}
-                  className="w-full min-w-0 flex-1 rounded-lg border-slate-300 bg-slate-50 font-mono text-xs shadow-sm"
-                />
-                <button
-                  type="button"
-                  onClick={() => void copy('domi')}
-                  className="rounded-lg bg-slate-800 px-4 py-2 text-sm font-medium text-white hover:bg-slate-900"
-                >
-                  {copied === 'domi' ? t('Copied') : t('Copy')}
-                </button>
-              </div>
-            </>
-          )}
-
-          <div className="mt-4 space-y-3 text-sm text-slate-700">
-            <div>
-              <p className="font-medium">Google Calendar</p>
-              <p className="text-slate-600">
-                {t('Other calendars →')} <strong>+</strong>{' '}
-                {t('→ From URL → paste → Add calendar.')}
-              </p>
-            </div>
-            <div>
-              <p className="font-medium">{t('iPhone or iPad')}</p>
-              <p className="text-slate-600">
+              <p
+                className="mb-3 rounded-lg bg-brand-50 px-3 py-2 text-sm font-medium text-brand-900 ring-1 ring-inset ring-brand-200"
+                data-testid="calendar-link-once"
+              >
                 {t(
-                  'Settings → Apps → Calendar → Accounts → Add Account → Other → Add Subscribed Calendar → paste.',
+                  'This is the only time your calendar addresses are shown. Copy the one you want now and add it to your calendar: for your privacy they are not kept, so they cannot be shown again. If you lose it, make a new link.',
+                )}
+              </p>
+              {linkDetails(url)}
+            </>
+          ) : (
+            <div className="space-y-2 text-sm text-slate-600" data-testid="calendar-link-set-up">
+              {setAt && (
+                <p className="font-medium text-slate-800">
+                  {t('Set up on {date}.', {
+                    date: new Date(setAt).toLocaleDateString(locale(), {
+                      month: 'long',
+                      day: 'numeric',
+                      year: 'numeric',
+                    }),
+                  })}
+                </p>
+              )}
+              <p>{t('Phones and calendars already subscribed keep updating.')}</p>
+              <p>
+                {t(
+                  'For your privacy the address is shown only once, when it is made, so it cannot be shown again. To add your calendar somewhere new, make a new link and add it again wherever you used the old one: the old one stops updating.',
                 )}
               </p>
             </div>
-            <div>
-              <p className="font-medium">Outlook</p>
-              <p className="text-slate-600">{t('Add calendar → Subscribe from web → paste.')}</p>
-            </div>
-          </div>
-
-          <p className="mt-4 rounded-lg bg-amber-50 px-3 py-2 text-xs text-amber-900 ring-1 ring-inset ring-amber-200">
-            {t(
-              'Keep these addresses to yourself. Anyone who has one can see your schedule without signing in - that is how calendar subscriptions work. If one gets out, regenerate below: every address changes at once.',
-            )}
-          </p>
-
-          <p className="mt-3 text-xs text-slate-500">
-            {t(
-              'Calendars usually check for changes every few hours, so a new shift may take a while to appear.',
-            )}
-          </p>
+          )}
 
           <div className="mt-3 flex flex-wrap gap-3">
             <button
@@ -320,7 +245,7 @@ export function CalendarLinkCard() {
               disabled={busy}
               className="text-sm font-medium text-slate-600 hover:text-slate-900 disabled:opacity-50"
             >
-              {t('Regenerate the link')}
+              {t('Make a new link')}
             </button>
             <button
               type="button"
@@ -335,4 +260,144 @@ export function CalendarLinkCard() {
       )}
     </Card>
   );
+
+  /// The addresses themselves and how to add them, shown only while the token
+  /// from making the link is in hand. Called, not rendered as a component, so
+  /// the inputs are not remade on every render.
+  function linkDetails(address: string) {
+    return (
+      <>
+        <div
+          className="mb-3 flex w-fit rounded-lg border border-slate-300 bg-white p-0.5"
+          role="group"
+          aria-label={t('How many calendars')}
+        >
+          {(
+            [
+              [false, 'Everything in one calendar'],
+              [true, 'Separate calendars'],
+            ] as const
+          ).map(([option, text]) => (
+            <button
+              key={text}
+              type="button"
+              aria-pressed={separate === option}
+              onClick={() => setSeparate(option)}
+              className={`rounded-md px-3 py-1 text-sm font-medium max-sm:py-2 ${
+                separate === option
+                  ? 'bg-brand-50 text-brand-800'
+                  : 'text-slate-600 hover:text-slate-900'
+              }`}
+            >
+              {t(text)}
+            </button>
+          ))}
+        </div>
+
+        {separate ? (
+          <div data-testid="separate-calendars">
+            <p className="text-sm text-slate-600">
+              {t(
+                'Add only the ones you want. Each shows on your phone as its own calendar, with its own colour and its own on/off. Use these instead of the all-in-one address, not as well, or everything shows twice.',
+              )}
+            </p>
+            <ul className="mt-2 space-y-2">
+              {SEPARATE_FEEDS.filter(
+                (feed) => !feed.providersOnly || employee?.usesClinicalForms,
+              ).map((feed) => (
+                <li key={feed.slug}>
+                  <label
+                    htmlFor={`calendar-url-${feed.slug}`}
+                    className="flex items-center gap-1.5 text-sm font-medium text-slate-700"
+                  >
+                    <span
+                      aria-hidden="true"
+                      className={`h-2.5 w-2.5 rounded-full ${
+                        feed.kind ? KIND_STYLE[feed.kind].dot : 'bg-brand-600'
+                      }`}
+                    />
+                    {t(feed.label)}
+                  </label>
+                  <div className="mt-1 flex gap-2">
+                    <input
+                      id={`calendar-url-${feed.slug}`}
+                      type="text"
+                      readOnly
+                      value={feedUrl(feed.slug) ?? ''}
+                      onFocus={(event) => event.currentTarget.select()}
+                      className="w-full min-w-0 flex-1 rounded-lg border-slate-300 bg-slate-50 font-mono text-xs shadow-sm"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => void copy(feed.slug)}
+                      aria-label={t('Copy the {calendar} address', { calendar: t(feed.label) })}
+                      className="rounded-lg bg-slate-800 px-3 py-2 text-sm font-medium text-white hover:bg-slate-900"
+                    >
+                      {copied === feed.slug ? t('Copied') : t('Copy')}
+                    </button>
+                  </div>
+                </li>
+              ))}
+            </ul>
+          </div>
+        ) : (
+          <>
+            <label htmlFor="calendar-url" className="block text-sm font-medium text-slate-700">
+              {t('Your private calendar address')}
+            </label>
+            <div className="mt-1 flex flex-wrap gap-2">
+              <input
+                id="calendar-url"
+                type="text"
+                readOnly
+                value={address}
+                onFocus={(event) => event.currentTarget.select()}
+                className="w-full min-w-0 flex-1 rounded-lg border-slate-300 bg-slate-50 font-mono text-xs shadow-sm"
+              />
+              <button
+                type="button"
+                onClick={() => void copy('domi')}
+                className="rounded-lg bg-slate-800 px-4 py-2 text-sm font-medium text-white hover:bg-slate-900"
+              >
+                {copied === 'domi' ? t('Copied') : t('Copy')}
+              </button>
+            </div>
+          </>
+        )}
+
+        <div className="mt-4 space-y-3 text-sm text-slate-700">
+          <div>
+            <p className="font-medium">Google Calendar</p>
+            <p className="text-slate-600">
+              {t('Other calendars →')} <strong>+</strong> {t('→ From URL → paste → Add calendar.')}
+            </p>
+          </div>
+          <div>
+            <p className="font-medium">{t('iPhone or iPad')}</p>
+            <p className="text-slate-600">
+              {t(
+                'Settings → Apps → Calendar → Accounts → Add Account → Other → Add Subscribed Calendar → paste.',
+              )}
+            </p>
+          </div>
+          <div>
+            <p className="font-medium">Outlook</p>
+            <p className="text-slate-600">{t('Add calendar → Subscribe from web → paste.')}</p>
+          </div>
+        </div>
+
+        <p className="mt-4 rounded-lg bg-amber-50 px-3 py-2 text-xs text-amber-900 ring-1 ring-inset ring-amber-200">
+          {t(
+            'Keep these addresses to yourself. Anyone who has one can see your schedule without signing in - that is how calendar subscriptions work. If one gets out, make a new link below: every address changes at once.',
+          )}
+        </p>
+
+        <p className="mt-3 text-xs text-slate-500">
+          {t(
+            'Calendars usually check for changes every few hours, so a new shift may take a while to appear.',
+          )}
+        </p>
+      </>
+    );
+  }
 }

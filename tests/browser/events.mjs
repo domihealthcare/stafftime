@@ -205,11 +205,21 @@ await step('it is in the month too', async () => {
   await frankie.getByRole('button', { name: 'Week', exact: true }).click();
 });
 
+// Frankie's calendar link, copied when it is made: the server keeps only a
+// fingerprint, so it cannot be read back later.
+let frankieToken;
+const frankieFeed = () =>
+  frankie.evaluate(
+    (token) => fetch(`/api/calendar/${token}/domi.ics`, { cache: 'no-store' }).then((r) => r.text()),
+    frankieToken,
+  );
+
 await step('it goes to the phone through the calendar feed - only the ones for them', async () => {
-  const feed = await frankie.evaluate(async () => {
-    const { token } = await fetch('/api/calendar/link', { method: 'POST' }).then((r) => r.json());
-    return fetch(`/api/calendar/${token}/domi.ics`, { cache: 'no-store' }).then((r) => r.text());
-  });
+  frankieToken = (
+    await frankie.evaluate(() => fetch('/api/calendar/link', { method: 'POST' }).then((r) => r.json()))
+  ).token;
+  if (!frankieToken) throw new Error('making a link gave no token');
+  const feed = await frankieFeed();
   if (!feed.includes('SUMMARY:Office meeting')) throw new Error('the meeting is not in the feed');
   if (!/UID:event-[0-9a-f-]+@staff\.domihealthcare\.com/.test(feed)) throw new Error('no stable UID');
   if (feed.includes('Wellness day') || feed.includes('Provider meeting')) {
@@ -272,10 +282,7 @@ await step('removing one asks first, then takes it off and says it is cancelled'
   await manager.getByTestId('rota-events-row').getByText('Office meeting').waitFor({ state: 'detached', timeout: 10000 });
   const titles = await bellTitles(frankie);
   if (!titles.includes('Cancelled: Office meeting')) throw new Error(`bell: ${titles.join(' | ')}`);
-  const feed = await frankie.evaluate(async () => {
-    const { token } = await fetch('/api/calendar/link').then((r) => r.json());
-    return fetch(`/api/calendar/${token}/domi.ics`, { cache: 'no-store' }).then((r) => r.text());
-  });
+  const feed = await frankieFeed();
   if (feed.includes('Office meeting')) throw new Error('still in the phone feed');
 });
 
@@ -331,12 +338,7 @@ await step('a video call link: refused unless it is a real link, then a Join but
     throw new Error('the Join link does not open safely in a new tab');
   }
   await frankie.screenshot({ path: `${OUT}/events-join.png` });
-  const feed = (
-    await frankie.evaluate(async () => {
-      const { token } = await fetch('/api/calendar/link').then((r) => r.json());
-      return fetch(`/api/calendar/${token}/domi.ics`, { cache: 'no-store' }).then((r) => r.text());
-    })
-  ).replace(/\r\n /g, '');
+  const feed = (await frankieFeed()).replace(/\r\n /g, '');
   if (!feed.includes('URL:https://meet.google.com/abc-defg-hij')) throw new Error('no link in the phone feed');
   if (!feed.includes('Join the video call: https://meet.google.com/abc-defg-hij')) throw new Error('the link is not in the notes');
 });

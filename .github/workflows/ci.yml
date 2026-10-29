@@ -16,9 +16,10 @@ concurrency:
   cancel-in-progress: true
 
 env:
-  # The same major as package.json's engines, which Vercel also follows.
-  # Node 20 reached end of life in April 2026.
-  NODE_VERSION: '22'
+  # The same major as package.json's engines, which Vercel also follows
+  # (engines wins over the Node.js Version in Vercel's project settings).
+  # Node 24 is the long-term support line until April 2028.
+  NODE_VERSION: '24'
 
 jobs:
   checks:

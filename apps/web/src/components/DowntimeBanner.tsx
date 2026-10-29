@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { api } from '../lib/api';
 import { DOWNTIME_CHANGED, practiceTimeWords } from '../lib/downtime';
@@ -18,17 +18,24 @@ export function DowntimeBanner() {
   const [active, setActive] = useState<Downtime[]>([]);
   const { pathname } = useLocation();
   const [generation, setGeneration] = useState(0);
+  /// Whether the next look is the timer's or the tab coming back, not the
+  /// person's: it then does not count as using the app (see `request`).
+  const byItself = useRef(false);
 
   useEffect(() => {
     const bump = () => setGeneration((n) => n + 1);
-    const onVisible = () => document.visibilityState === 'visible' && bump();
+    const look = () => {
+      byItself.current = true;
+      bump();
+    };
+    const onVisible = () => document.visibilityState === 'visible' && look();
     window.addEventListener(DOWNTIME_CHANGED, bump);
     document.addEventListener('visibilitychange', onVisible);
     // Only while the tab is in view: a hidden one asks again the moment it is
     // shown (above), so nothing is missed, and a background tab no longer
     // asks the server every two minutes all day (maintenance pass, October 2026).
     const timer = window.setInterval(
-      () => document.visibilityState === 'visible' && bump(),
+      () => document.visibilityState === 'visible' && look(),
       LOOK_EVERY_MS,
     );
     return () => {
@@ -40,8 +47,10 @@ export function DowntimeBanner() {
 
   useEffect(() => {
     let cancelled = false;
+    const background = byItself.current;
+    byItself.current = false;
     api
-      .downtimeCurrent()
+      .downtimeCurrent({ background })
       .then((current) => !cancelled && setActive(current.active))
       .catch(() => undefined);
     return () => {

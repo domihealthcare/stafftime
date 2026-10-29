@@ -129,6 +129,50 @@ describe('SessionService', () => {
     expect(prisma.session.update).toHaveBeenCalled();
   });
 
+  describe('without touching (the screen polling by itself)', () => {
+    const quiet = (minutesAgo: number) => ({
+      ...liveSession(),
+      lastUsedAt: new Date(Date.now() - minutesAgo * 60_000),
+    });
+
+    it('still resolves the owner but leaves lastUsedAt where it was', async () => {
+      const { service, prisma } = build(quiet(120));
+      await expect(service.resolve('token', { touch: false })).resolves.toMatchObject({
+        id: 'emp-1',
+      });
+      expect(prisma.session.update).not.toHaveBeenCalled();
+    });
+
+    it('touches by default, as every other caller expects', async () => {
+      const { service, prisma } = build(quiet(120));
+      await service.resolve('token', {});
+      expect(prisma.session.update).toHaveBeenCalledWith({
+        where: { id: 'sess-1' },
+        data: { lastUsedAt: expect.any(Date) },
+      });
+    });
+
+    it('is still refused once the session has been idle too long', async () => {
+      const { service } = build(quiet(8 * 60 + 1));
+      await expect(service.resolve('token', { touch: false })).resolves.toBeNull();
+    });
+
+    it('is still refused past the absolute expiry', async () => {
+      const { service } = build({ ...quiet(0), expiresAt: new Date(Date.now() - 1000) });
+      await expect(service.resolve('token', { touch: false })).resolves.toBeNull();
+    });
+
+    it('keeps the once-a-minute rule for a touching request', async () => {
+      const recent = build(quiet(0.5));
+      await recent.service.resolve('token', { touch: true });
+      expect(recent.prisma.session.update).not.toHaveBeenCalled();
+
+      const older = build(quiet(2));
+      await older.service.resolve('token', { touch: true });
+      expect(older.prisma.session.update).toHaveBeenCalledTimes(1);
+    });
+  });
+
   it('can sign out every other browser but the current one', async () => {
     const { service, prisma } = build(null);
     await service.revokeAllForEmployee('emp-1', 'keep-me');

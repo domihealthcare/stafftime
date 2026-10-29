@@ -247,10 +247,9 @@ error screen and the "could not check" messages.
 
 Ranked by urgency.
 
-1. **Check the Vercel Node.js setting before merging** (from `50bb0b1`). The
-   next deployment will run on Node 22. In Vercel: Project → Settings →
-   General → Node.js Version should say **22.x**. Everything here was tested
-   on Node 22.
+1. **Done in 1.31.0: Node 24.** Vercel's project setting already said 24.x,
+   but `package.json`'s `engines` wins over it and said 22, so 1.30.0 ran on
+   22. Both say 24 now, and CI too; everything was checked on Node 24.
 2. **Watch the first days after merging the NestJS 11 upgrade.** It is the
    biggest change in this branch. Every automated check passes, but if
    anything odd shows up (a screen that fails to save, an error in Vercel's
@@ -263,23 +262,16 @@ Ranked by urgency.
    A newer `exceljs` or a forced `uuid` bump would clear it. **Small**, but
    needs the export checked in Excel and ADP afterwards.
 5. **NestJS 12**, when convenient: the build tools' remaining "high" warnings
-   go with it. It needs Node 24.9+ for the unit tests, or moving them from
-   Jest to Vitest. **Large.**
-6. **Questions for you:**
-   - **Half-built "sign out other browsers".** The server side exists and the
-     README used to advertise it, but no screen has a button. Build it (it
-     helps with "a login is left open") or remove it?
-   - **Idle sign-out never happens on an open tab.** The bell checks the
-     server every minute while a tab is visible, and that counts as activity,
-     so the 8-hour idle sign-out never happens on, say, the front-desk
-     computer. Should those background checks stop counting as activity?
-   - **Hashing the calendar links?** Each person's private calendar link is
-     stored readable in the database. Hashing it is safer, but the link could
-     then be shown only once.
-   - **Blocking form posts from other `domihealthcare.com` pages?** A form on
-     another page of the domain (the Wix website, for example) could act as a
-     signed-in person. That needs somebody to control a page on the domain.
-     A small fix, if you want it.
+   go with it. It needs Node 24.9+ for the unit tests (now met, since
+   1.31.0 runs on Node 24) or moving them from Jest to Vitest. **Large.**
+6. **Questions for you: all four answered and done in 1.31.0** (29 October
+   2026): "Where you're signed in" on Your profile; the app's automatic checks
+   no longer count as use, so an open tab signs out after 8 idle hours;
+   calendar links kept only as a fingerprint; and requests from other
+   `domihealthcare.com` pages refused. See *Security round* in CLAUDE.md.
+   **One follow-up:** the old `calendarToken` column was emptied but not
+   dropped, so the code still live while Vercel builds keeps working. A later
+   release drops it (fingerprinting anything left in it first). **Small.**
 7. **Things to look at in your dashboards** (I can't see them):
    - Vercel's server region should match Neon's database region; every
      database call pays the distance.

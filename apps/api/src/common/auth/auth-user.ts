@@ -19,6 +19,10 @@ export interface AuthUser {
 export const VIEW_AS_HEADER = 'x-view-as';
 export const VIEW_AS_JOB_ROLES_HEADER = 'x-view-as-job-roles';
 
+/// Sent by the web's own polls (`request(..., { background: true })`), so the
+/// session guard does not count them as use. See `isBackground`.
+export const BACKGROUND_HEADER = 'x-background-request';
+
 /// A kiosk-authenticated request carries a device, not a person.
 export interface KioskDeviceContext {
   deviceId: string;

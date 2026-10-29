@@ -75,13 +75,13 @@ describe('editing somebody on the Staff screen', () => {
 });
 
 describe('what the Staff screen is sent', () => {
-  it('never includes the calendar link token or the lockout counters', async () => {
+  it('never includes the calendar link fingerprint or the lockout counters', async () => {
     const { service, prisma } = build();
     prisma.employee.update.mockResolvedValueOnce({
       id: ID,
       pinHash: 'p',
       passwordHash: 'x',
-      calendarToken: 'secret-feed-token',
+      calendarTokenHash: 'fingerprint-of-the-feed-token',
       failedLoginAttempts: 2,
       lockedUntil: null,
       pinFailedAttempts: 1,
@@ -92,7 +92,7 @@ describe('what the Staff screen is sent', () => {
     for (const field of [
       'pinHash',
       'passwordHash',
-      'calendarToken',
+      'calendarTokenHash',
       'failedLoginAttempts',
       'lockedUntil',
       'pinFailedAttempts',

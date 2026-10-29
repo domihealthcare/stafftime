@@ -294,8 +294,17 @@ model Employee {
 
   photo EmployeePhoto?
 
-  /// Secret used to build this employee's calendar subscription URL. Null until
-  /// they ask for one. Rotating it invalidates the old link everywhere.
+  /// The SHA-256 fingerprint (hex, as `hashToken` makes it) of the secret in
+  /// this employee's calendar subscription URL. Null until they ask for one.
+  /// Only the fingerprint is kept, like sessions and PINs, so a copy of the
+  /// database cannot be used to read anybody's calendar: the link itself is
+  /// shown once, when it is made. Making a new one invalidates the old link
+  /// everywhere.
+  calendarTokenHash  String?   @unique
+  /// Always empty since 29 October 2026: the old plain-text calendar token,
+  /// emptied by the migration that made calendarTokenHash and kept only so
+  /// the code still live during that deploy could read employees. Nothing
+  /// writes it. Drop it in a later release.
   calendarToken      String?   @unique
   calendarTokenSetAt DateTime?
 

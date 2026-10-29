@@ -7,6 +7,7 @@ import {
   ShiftStatus,
 } from '@prisma/client';
 import { randomBytes } from 'node:crypto';
+import { hashToken } from '../auth/session.service';
 import { allDayDates } from '../events/event-time';
 import { EventsService, type EventRow } from '../events/events.service';
 import { CalendarInvitesService } from '../invites/invites.service';
@@ -114,13 +115,14 @@ export class CalendarService {
     );
   }
 
-  /// The employee's existing token, or null if they have never asked for one.
-  async currentToken(employeeId: string): Promise<{ token: string | null; setAt: Date | null }> {
+  /// Whether the employee has a link, and since when. Never the link itself:
+  /// only its fingerprint is kept, so there is nothing to show again.
+  async currentLink(employeeId: string): Promise<{ hasLink: boolean; setAt: Date | null }> {
     const employee = await this.prisma.employee.findUniqueOrThrow({
       where: { id: employeeId },
-      select: { calendarToken: true, calendarTokenSetAt: true },
+      select: { calendarTokenHash: true, calendarTokenSetAt: true },
     });
-    return { token: employee.calendarToken, setAt: employee.calendarTokenSetAt };
+    return { hasLink: employee.calendarTokenHash !== null, setAt: employee.calendarTokenSetAt };
   }
 
   /**
@@ -128,21 +130,26 @@ export class CalendarService {
    *
    * Replacing is how someone un-shares a link they pasted somewhere they should
    * not have - the old URL stops working immediately.
+   *
+   * The plain token is handed back here, once, for the screen to show. Only its
+   * fingerprint is stored (`hashToken`, the same rule as sessions and reset
+   * links), so a copy of the database is no way into anybody's calendar.
    */
-  async issueToken(employeeId: string): Promise<{ token: string }> {
+  async issueToken(employeeId: string): Promise<{ token: string; setAt: Date }> {
     const token = randomBytes(TOKEN_BYTES).toString('base64url');
+    const setAt = new Date();
     await this.prisma.employee.update({
       where: { id: employeeId },
-      data: { calendarToken: token, calendarTokenSetAt: new Date() },
+      data: { calendarTokenHash: hashToken(token), calendarTokenSetAt: setAt },
     });
     this.logger.log(`Calendar link issued for employee ${employeeId}`);
-    return { token };
+    return { token, setAt };
   }
 
   async revokeToken(employeeId: string): Promise<void> {
     await this.prisma.employee.update({
       where: { id: employeeId },
-      data: { calendarToken: null, calendarTokenSetAt: null },
+      data: { calendarTokenHash: null, calendarTokenSetAt: null },
     });
     this.logger.log(`Calendar link revoked for employee ${employeeId}`);
   }
@@ -161,8 +168,9 @@ export class CalendarService {
     if (!Object.hasOwn(FEEDS, feed)) throw new NotFoundException();
     const chosen = FEEDS[feed];
     const wants = (part: FeedPart) => chosen.parts.includes(part);
+    // Looked up by its fingerprint: the token itself is never stored.
     const employee = await this.prisma.employee.findUnique({
-      where: { calendarToken: token },
+      where: { calendarTokenHash: hashToken(token) },
       select: {
         id: true,
         firstName: true,

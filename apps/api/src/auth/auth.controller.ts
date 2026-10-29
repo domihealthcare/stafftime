@@ -161,14 +161,27 @@ export class AuthController {
   /// The browsers currently signed in as you, so you can spot one you do not
   /// recognise.
   @Get('sessions')
-  listSessions(@CurrentUser() user: AuthUser) {
-    return this.sessions.listForEmployee(user.id);
+  listSessions(@CurrentUser() user: AuthUser, @Req() request: Request) {
+    return this.sessions.listForEmployee(user.id, request.sessionToken);
   }
 
   @Delete('sessions')
   @HttpCode(HttpStatus.OK)
   async revokeOtherSessions(@CurrentUser() user: AuthUser, @Req() request: Request) {
     const count = await this.sessions.revokeAllForEmployee(user.id, request.sessionToken);
+    return { signedOut: count };
+  }
+
+  /// One of your other browsers, from "Where you're signed in" on Your
+  /// profile. Not the one you are using (that is Sign out), and only yours.
+  @Delete('sessions/:id')
+  @HttpCode(HttpStatus.OK)
+  async revokeOneSession(
+    @Param('id', ParseUUIDPipe) id: string,
+    @CurrentUser() user: AuthUser,
+    @Req() request: Request,
+  ) {
+    const count = await this.sessions.revokeOneForEmployee(user.id, id, request.sessionToken);
     return { signedOut: count };
   }
 

@@ -1,8 +1,9 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { api, type AppNotification } from '../lib/api';
+import { api, type AppNotification, type Background } from '../lib/api';
 import { useIsManager } from '../lib/session';
-import { locale, t as translate, useT } from '../lib/i18n';
+import { useT } from '../lib/i18n';
+import { timeAgo } from '../lib/time-ago';
 
 /// How often the badge asks for a fresh count while the app is open.
 const POLL_MS = 60_000;
@@ -31,10 +32,12 @@ export function NotificationBell() {
   // which re-fetches the count, and whichever answer lands last used to win.
   const generation = useRef(0);
 
-  const refreshCount = useCallback(() => {
+  /// `background`: the timer or the tab coming back asked, not the person,
+  /// so it does not count as using the app (see `request`).
+  const refreshCount = useCallback(({ background }: Background = {}) => {
     const asked = generation.current;
     api
-      .unreadNotifications()
+      .unreadNotifications({ background })
       .then((result) => {
         if (asked === generation.current) setUnread(result.unread);
       })
@@ -50,10 +53,11 @@ export function NotificationBell() {
     // Not while the phone is locked or the tab is in the background - that is
     // data and battery for a badge nobody can see. Coming back refreshes it.
     const timer = window.setInterval(
-      () => document.visibilityState === 'visible' && refreshCount(),
+      () => document.visibilityState === 'visible' && refreshCount({ background: true }),
       POLL_MS,
     );
-    const onVisible = () => document.visibilityState === 'visible' && refreshCount();
+    const onVisible = () =>
+      document.visibilityState === 'visible' && refreshCount({ background: true });
     document.addEventListener('visibilitychange', onVisible);
     return () => {
       window.clearInterval(timer);
@@ -264,19 +268,4 @@ export function NotificationBell() {
       )}
     </div>
   );
-}
-
-/// "just now", "5 min ago", "3 h ago", "yesterday", then the date.
-function timeAgo(iso: string): string {
-  const minutes = Math.round((Date.now() - new Date(iso).getTime()) / 60_000);
-  if (minutes < 1) return translate('just now');
-  if (minutes < 60) return translate('{n} min ago', { n: minutes });
-  const hours = Math.round(minutes / 60);
-  if (hours < 24) return translate('{n} h ago', { n: hours });
-  if (hours < 48) return translate('yesterday');
-  return new Date(iso).toLocaleDateString(locale(), {
-    weekday: 'short',
-    month: 'short',
-    day: 'numeric',
-  });
 }

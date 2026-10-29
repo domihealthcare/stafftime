@@ -217,12 +217,53 @@ at the shared front-desk browser left open overnight.
 `lastUsedAt` is refreshed at most once a minute rather than on every request —
 otherwise every read would carry a write.
 
+Only use counts (October 2026). A tab in view asks the server things by
+itself: the bell's count every minute, the downtime bar every two, the
+Directory and the downtime page every minute, and the bell, the bar, Home and
+the time-off badge again when the tab comes back into view. Those requests
+send `X-Background-Request: 1` (`request(..., { background: true })` in the
+web's `lib/api.ts`), and on a GET or HEAD `SessionAuthGuard` then calls
+`resolve(token, { touch: false })`: the session is checked as usual, refused
+once expired or idle, but `lastUsedAt` is not moved. Before this a tab left
+open on the front-desk computer was never idle, and only the 12-hour limit
+signed it out. The header is ignored on anything that changes something, and
+the pay lock only slides on pay routes and `/pay-lock/touch`, which no poll
+reaches. `tests/browser/idle-signout.mjs`.
+
 ### The cookie
 
 `httpOnly` (a script on the page cannot read it, so an XSS bug cannot steal the
-session), `sameSite=lax` (not sent cross-site, which is what blocks CSRF —
-combined with same-origin hosting, no separate CSRF token is needed), and
-`secure` in production.
+session), `sameSite=lax` (not sent cross-site), and `secure` in production.
+
+### Forged requests (CSRF)
+
+`sameSite=lax` alone was thought to block forged requests, and does not
+quite (a security review, October 2026): a browser counts every
+`*.domihealthcare.com` address as the same "site", the practice's Wix website
+included, so a hidden form on any page there could post to
+`staff.domihealthcare.com/api/...` with the staff member's cookie attached. The
+API also read form-encoded bodies, and a form post to `/api/auth/logout` or
+`/api/pto` went through. So every POST, PUT, PATCH and DELETE now passes
+`refuseForgedRequest` (`common/request-origin.ts`, applied first in
+`configure-app.ts`, before the body is read):
+
+- **Where it came from.** If the browser sent `Sec-Fetch-Site`, only
+  `same-origin` and `none` pass; `same-site` (the website) and `cross-site` get
+  a 403. An older browser without it is judged by `Origin`, which must name the
+  host the request went to (`Host`, or `X-Forwarded-Host` behind a proxy that
+  rewrites it, as the Vite dev server does). A request with neither is not
+  from a browser page (curl, cron-job.org, Vercel's timer, the browser suites'
+  API calls) and passes: no page can make a browser leave both off a form post,
+  and the session cookie is still needed for anything that matters.
+- **What it carries.** A request with a body must be `application/json`
+  (charset allowed), else a 415. The app only ever sends JSON; an HTML form can
+  only send urlencoded, multipart or text/plain, and a page elsewhere could send
+  JSON only with fetch, which needs a CORS answer the API never gives.
+
+Reads (GET, HEAD, OPTIONS) are never refused by it; they change nothing. Each
+refusal is logged with the headers it went by. `tests/browser/forged-requests.mjs`
+checks both refusals, and that the app's own requests still work. With this
+and the single origin, no CSRF token is needed.
 
 ### What a failed sign-in reveals
 
@@ -915,8 +956,9 @@ built web app as static files and routes `/api/*` to the NestJS app running as
 one serverless function.
 
 One project, one origin. That is not incidental: the session cookie is
-`sameSite=lax`, which is what removes the need for CSRF tokens, and that only
-works if the browser sees the API and the app on the same host.
+`sameSite=lax`, and with the check on where a request came from (see *Forged
+requests (CSRF)*) that removes the need for CSRF tokens, which only works if
+the browser sees the API and the app on the same host.
 
 The Nest app is cached per warm instance — booting it and opening a database
 connection on every request would be slow and would exhaust Postgres
@@ -988,8 +1030,31 @@ added next month appears without anyone doing anything.
 A calendar app cannot send a cookie or an auth header, so the unguessable token
 in the path is what authenticates the request. That is how Google's own secret
 iCal addresses work, and it means the URL must be treated as a password. The
-screen says so plainly, and offers **Regenerate** — which rotates the token and
-breaks the old URL everywhere — and **Turn off**.
+screen says so plainly, and offers **Make a new link** (asked first), which
+rotates the token and breaks the old URL everywhere, and **Turn off**.
+
+**Only a fingerprint is kept** (29 October 2026, from a security review). The
+token used to sit in plain text in `Employee.calendarToken`, so a copy of the
+database would have let an outsider keep reading everybody's schedules until
+each person made a new link. Now the column is `calendarTokenHash`: the
+SHA-256 of the token as hex, made by the same `hashToken` as sessions and
+reset links, and the feed hashes the token in the path and looks that up.
+So the address can be shown only once: `POST /calendar/link` is the one answer
+that carries the token, and the card shows the addresses (all-in-one and
+Separate calendars) with a line saying this is the only time, to copy them
+then. `GET /calendar/link` says only whether there is a link and since when;
+on later visits the card says syncing is on since that day, that phones already
+subscribed keep updating, and offers a new link to add it anywhere else.
+Migration `20261029010000_calendar_token_fingerprint` filled the new column in
+SQL (`encode(sha256(convert_to("calendarToken", 'UTF8')), 'hex')`, the same
+value as `hashToken`) and emptied the old one, so every phone already
+subscribed kept working and no plain token was left. The empty `calendarToken`
+column stays until a later release drops it: Vercel runs migrations while it
+builds, a few minutes before the new code goes live, and the code still live
+then reads every employee with that column in it, so dropping it at once would
+have broken sign-in for those minutes. A token made by that old code in those
+minutes is plain again, so the release that drops the column fingerprints any
+left first.
 
 The feed is scoped to one employee, and stops working the moment they are
 terminated, like their sign-in.
@@ -1552,7 +1617,8 @@ Content-Security-Policy that allows scripts, styles and images only from the
 app's own origin.
 
 `no-referrer` is not the usual default and is deliberate: the app puts a
-calendar subscription URL on screen, and that URL is a credential. A referrer
+calendar subscription URL on screen (once, when it is made), and that URL is a
+credential. A referrer
 header is a quiet way for one to end up in somebody else's logs.
 
 The API sets its own equivalents in `configure-app.ts`, shared by `main.ts` and
@@ -4251,8 +4317,9 @@ calendar per kind — `shifts` (shifts and time off), `diagnostics`,
 "Diagnostics — Domi Staff" and so on, so a phone lists them as separate
 calendars with their own colours and switches. The calendar card offers
 **Everything in one calendar** or **Separate calendars** and warns against
-both at once (everything would show twice). Regenerating the link changes
-every address together. The same rules hold as for the all-in-one feed:
+both at once (everything would show twice). Making a new link changes
+every address together. Since 29 October 2026 the addresses are shown only
+once, when the link is made (see *The token is the credential*). The same rules hold as for the all-in-one feed:
 what the person may see, no rep phone or notes, and with invites on, no
 shifts or meetings.
 

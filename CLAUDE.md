@@ -1833,6 +1833,56 @@ Beyond the phases, the parts worth knowing about before picking up work:
   was being checked twice. Each part's screenshots and logs are kept as
   `browser-evidence-1` to `-4`. Merging still publishes in about 3 to 5
   minutes on Vercel, which does not wait for CI.
+- **Maintenance pass** (28 October 2026, version 1.30.0, Dominguez): a
+  clean-up with no new features, written up for a beginner in
+  `MAINTENANCE_REPORT.md` (what was done, what is left, how to check it):
+  formatting, the API's own type check, security updates to packages, NestJS
+  10 to 11, the seed refusing any database not on the computer running it
+  (`common/seed-guard.ts`), a plain error screen instead of React Router's
+  developer page (`components/RouteError.tsx`), faster time off balances and
+  banners, and smaller downloads for the first screen.
+- **Security round** (29 October 2026, version 1.31.0, Dominguez: the four
+  questions the maintenance report left open, "these are all approved"):
+  - **Node 24.** Vercel's project setting already said 24, but
+    `package.json`'s `engines` wins over it and said 22; both say 24 now, as
+    does CI. Node 24 is supported until April 2028.
+  - **Forged requests refused.** A browser counts every
+    `*.domihealthcare.com` address as the same site, so the session cookie
+    (`sameSite=lax`) went with a form posted from a page on the practice's
+    Wix website. Now a request that changes something (POST, PUT, PATCH,
+    DELETE) is refused (403) unless the browser says it came from Domi Staff
+    itself (`Sec-Fetch-Site`, else `Origin` against the host), and one with a
+    body must be JSON (else 415). Timers and scripts send neither header and
+    still pass. `common/request-origin.ts`, applied in `configure-app.ts`;
+    see *Forged requests* in `docs/architecture.md`;
+    `tests/browser/forged-requests.mjs`. Worth carrying to the EMR module.
+  - **A tab left open signs out.** The 8 idle hours never ran out on an open
+    tab, because the bell and the downtime bar asked every minute or two and
+    each ask counted as use. The app's own automatic checks (the bell, the
+    downtime bar and page, the Directory, Home and the time off badge when a
+    tab comes back into view) now send `X-Background-Request: 1`, and the
+    server checks the session without counting it (`resolve(token, { touch:
+    false })`, GET and HEAD only). Anything a person does still counts.
+    `tests/browser/idle-signout.mjs`.
+  - **Where you're signed in**, on Your profile: each browser signed in as
+    you ("Safari on iPhone", "Chrome on Windows"), last used when, **This
+    device** marked, **Sign out** on any other and **Sign out everywhere
+    else**. IP addresses are kept but no longer sent to the browser.
+    `DELETE /auth/sessions/:id` (only your own, never the one in use),
+    `components/SignedInDevicesCard.tsx`, `lib/user-agent.ts`; Help under Your
+    account; `tests/browser/signed-in-devices.mjs`.
+  - **Calendar links kept as a fingerprint.** The private calendar link's
+    code was stored as it is, so a copy of the database would have let
+    somebody read everybody's schedules. Now only its SHA-256
+    (`Employee.calendarTokenHash`, the same `hashToken` as sessions) is kept,
+    and the card shows the addresses **once**, when the link is made (Make a
+    new link asks first). Phones already subscribed keep working: migration
+    `20261029010000_calendar_token_fingerprint` fingerprinted every existing
+    code. The old `calendarToken` column is **emptied but not dropped**, as
+    the code still live while Vercel builds reads it; **drop it in a later
+    release**, fingerprinting any code left in it first.
+  All four were built at once by separate Claude agents, then combined and
+  checked together.
 - **Turned down: "PTO about to be lost"** (9 October 2026, Dominguez): a
   reminder to use PTO before it fails to carry over was proposed and refused —
   not in the practice's interest. Do not propose it again.
