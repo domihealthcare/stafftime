@@ -1,5 +1,5 @@
 import { BadRequestException, ForbiddenException } from '@nestjs/common';
-import { EmploymentStatus } from '@prisma/client';
+import { EmploymentStatus, Role } from '@prisma/client';
 import { InvoiceAccessGuard, InvoiceAccessService } from './invoice-access.service';
 
 const contextFor = (user: { id: string } | undefined) =>
@@ -35,6 +35,24 @@ describe('InvoiceAccessGuard', () => {
   it('refuses anybody not on it, somebody who has left, and nobody', async () => {
     for (const user of [{ id: 'notListed' }, { id: 'left' }, { id: 'unknown' }, undefined])
       await expect(guard.canActivate(contextFor(user))).rejects.toThrow(ForbiddenException);
+  });
+
+  it('goes by the list, never the access level: an admin not on it is refused', async () => {
+    const admin = { id: 'notListed', role: Role.ADMIN };
+    await expect(guard.canActivate(contextFor(admin))).rejects.toThrow(
+      'Invoices are only for the people chosen to see them.',
+    );
+  });
+
+  it('keeps its answer while an admin is viewing as somebody else', async () => {
+    // Viewing as an employee does not take invoices away from somebody on
+    // the list, nor give them to an admin who is not.
+    const listedViewing = { id: 'listed', role: Role.EMPLOYEE, actualRole: Role.ADMIN };
+    await expect(guard.canActivate(contextFor(listedViewing))).resolves.toBe(true);
+    const notListedViewing = { id: 'notListed', role: Role.MANAGER, actualRole: Role.ADMIN };
+    await expect(guard.canActivate(contextFor(notListedViewing))).rejects.toThrow(
+      ForbiddenException,
+    );
   });
 });
 
