@@ -70,7 +70,7 @@ See `.github/workflows/ci.yml`.
 
 ## Getting started
 
-You need [Node.js 20+](https://nodejs.org) and
+You need [Node.js 22](https://nodejs.org) and
 [Docker Desktop](https://www.docker.com/products/docker-desktop/) installed.
 
 ```bash
