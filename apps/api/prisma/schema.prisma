@@ -301,6 +301,11 @@ model Employee {
   /// shown once, when it is made. Making a new one invalidates the old link
   /// everywhere.
   calendarTokenHash  String?   @unique
+  /// Always empty since 29 October 2026: the old plain-text calendar token,
+  /// emptied by the migration that made calendarTokenHash and kept only so
+  /// the code still live during that deploy could read employees. Nothing
+  /// writes it. Drop it in a later release.
+  calendarToken      String?   @unique
   calendarTokenSetAt DateTime?
 
   /// Kiosk credentials. The PIN is only ever stored hashed.

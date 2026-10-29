@@ -1047,8 +1047,14 @@ on later visits the card says syncing is on since that day, that phones already
 subscribed keep updating, and offers a new link to add it anywhere else.
 Migration `20261029010000_calendar_token_fingerprint` filled the new column in
 SQL (`encode(sha256(convert_to("calendarToken", 'UTF8')), 'hex')`, the same
-value as `hashToken`) and dropped the old one, so every phone already
-subscribed kept working and no plain token was left.
+value as `hashToken`) and emptied the old one, so every phone already
+subscribed kept working and no plain token was left. The empty `calendarToken`
+column stays until a later release drops it: Vercel runs migrations while it
+builds, a few minutes before the new code goes live, and the code still live
+then reads every employee with that column in it, so dropping it at once would
+have broken sign-in for those minutes. A token made by that old code in those
+minutes is plain again, so the release that drops the column fingerprints any
+left first.
 
 The feed is scoped to one employee, and stops working the moment they are
 terminated, like their sign-in.

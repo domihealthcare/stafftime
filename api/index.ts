@@ -2,9 +2,10 @@
  * The API as a single Vercel serverless function.
  *
  * Vercel serves the built web app as static files and routes every /api/*
- * request here (see vercel.json). That keeps the browser on one origin, which
- * is what lets the session cookie stay `sameSite=lax` with no CSRF token
- * scheme — see docs/architecture.md.
+ * request here (see vercel.json). That keeps the browser on one origin, so
+ * the session cookie can stay `sameSite=lax`; forged requests from sister
+ * subdomains are refused by the origin check in configureApp (see "Forged
+ * requests" in docs/architecture.md).
  *
  * The Nest app is created once per warm instance and reused, because booting it
  * (and opening a database connection) on every request would be slow and would
