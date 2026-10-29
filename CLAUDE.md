@@ -1889,6 +1889,18 @@ Beyond the phases, the parts worth knowing about before picking up work:
     left of this.
   All four were built at once by separate Claude agents, then combined and
   checked together.
+- **The Practice settings browser check, steadied** (29 October 2026,
+  Dominguez: "fix the flaky settings test now", version 1.31.3): once in CI,
+  `attention.mjs` pressed Save on Practice settings and nothing was sent; the
+  press waited on a greyed-out button (Save wakes only once the number differs
+  from the stored one), and the save it awaited had been set up before the
+  press, so its time-out crashed the whole suite instead of failing the step.
+  It could not be made to happen again, even with the browser slowed twenty
+  times. `saveThreshold` in the suite now waits for the stored number before
+  typing, checks Save has woken (types once more if not, logging the field and
+  the top of the screen), and waits for the press and the save together with
+  a time limit, so any repeat fails as one step with what it saw. Test only;
+  the app is unchanged.
 - **Turned down: "PTO about to be lost"** (9 October 2026, Dominguez): a
   reminder to use PTO before it fails to carry over was proposed and refused —
   not in the practice's interest. Do not propose it again.
