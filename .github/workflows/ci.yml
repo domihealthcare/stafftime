@@ -49,6 +49,8 @@ jobs:
         run: npm run format:check
 
       - run: npm run typecheck
+
+      # Both apps' unit tests: the API's (Jest) and the web's (Vitest).
       - run: npm test
       - run: npm run build
 
