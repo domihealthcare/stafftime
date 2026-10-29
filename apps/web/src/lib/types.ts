@@ -2753,6 +2753,16 @@ export interface DowntimeContact {
   systems: DowntimeSystem[];
 }
 
+/// `GET /badges`: what the frame around every screen shows, in one answer.
+export interface Badges {
+  /// The bell's count.
+  unread: number;
+  /// The red bar: downtimes on now, as `DowntimeCurrent.active`.
+  downtime: Downtime[];
+  /// The Schedule tab's badge; always 0 for Employee access.
+  timeOffPending: number;
+}
+
 export interface DowntimeCurrent {
   active: Downtime[];
   planned: Downtime[];

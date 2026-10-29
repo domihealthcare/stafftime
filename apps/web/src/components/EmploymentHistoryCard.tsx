@@ -1,5 +1,6 @@
 import { useState } from 'react';
-import { formatCalendarDate, localDate } from '../lib/format';
+import { browserToday } from '../lib/dates';
+import { formatCalendarDate } from '../lib/format';
 import { ApiError, api } from '../lib/api';
 import { practiceDate } from '../lib/practice-time';
 import type {
@@ -186,9 +187,7 @@ export function EmploymentHistoryCard<T extends History = StaffRecord>({
           <ChangeForm
             initial={{
               effectiveOn:
-                record.changes.length === 0 && hireDate
-                  ? hireDate.slice(0, 10)
-                  : localDate(new Date()),
+                record.changes.length === 0 && hireDate ? hireDate.slice(0, 10) : browserToday(),
               kind: record.changes.length === 0 ? 'HIRED' : 'PAY_CHANGE',
               position: null,
               payRate: null,
@@ -474,7 +473,7 @@ function PayOnFileForm({
     setProblem(null);
     try {
       await onSave({
-        effectiveOn: since || localDate(new Date()),
+        effectiveOn: since || browserToday(),
         kind: 'PAY_ON_FILE',
         position: null,
         payRate: Math.round(rate * 100) / 100,

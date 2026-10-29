@@ -8,6 +8,7 @@ import {
   canUseCognitiveAssessment,
   canUseWellnessForm,
 } from '../lib/clinical-access';
+import { browserToday } from '../lib/dates';
 import { formatCalendarDate, formatDate, localDate } from '../lib/format';
 import { locale, plural, t as translate, useT } from '../lib/i18n';
 import { useIsManager, useSession } from '../lib/session';
@@ -364,8 +365,7 @@ function when(event: PracticeEvent): string {
       day: 'numeric',
     });
   if (event.allDay && event.startDate) {
-    const first =
-      event.startDate === localDate(new Date()) ? translate('Today') : day(event.startDate);
+    const first = event.startDate === browserToday() ? translate('Today') : day(event.startDate);
     return event.endDate && event.endDate !== event.startDate
       ? translate('{first} – {last} · All day', { first, last: day(event.endDate) })
       : translate('{day} · All day', { day: first });

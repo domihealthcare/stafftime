@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
+import { browserToday } from '../lib/dates';
 import { addDays, addMonths, localDate, monthGrid, startOfMonth, startOfWeek } from '../lib/format';
 import { locale, useT } from '../lib/i18n';
 import { buttonClass } from './ui';
@@ -49,7 +50,7 @@ export function JumpToDate({
   }, [open]);
 
   const days = monthGrid(shown);
-  const today = localDate(new Date());
+  const today = browserToday();
   const inView = (day: Date) =>
     view === 'week'
       ? startOfWeek(day).getTime() === startOfWeek(current).getTime()

@@ -3,7 +3,9 @@ import { REMOTE_COLOUR, locationColourFn, shiftChipStyle, tint } from '../lib/sh
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { birthdayName } from '../lib/birthday';
 import { ApiError, api } from '../lib/api';
+import { addCalendarDays, browserToday } from '../lib/dates';
 import {
+  addDays,
   formatCalendarDate,
   formatTime,
   formatTimeCompact,
@@ -99,13 +101,6 @@ const hoursOf = (shift: Shift) =>
   (new Date(shift.endsAt).getTime() - new Date(shift.startsAt).getTime()) / 3_600_000;
 
 const round1 = (value: number) => Math.round(value * 10) / 10;
-
-/// Whole days on from a "YYYY-MM-DD", in UTC so a clock change cannot move it.
-function addDayKey(day: string, days: number): string {
-  const date = new Date(`${day}T00:00:00Z`);
-  date.setUTCDate(date.getUTCDate() + days);
-  return date.toISOString().slice(0, 10);
-}
 
 /**
  * The week as a rota: one row per person, one column per day - and, above
@@ -239,7 +234,9 @@ export function RotaTable({
   /// the latest first, as it holds most of them.
   const overtimeWeeks = (weekStarts: string[]) =>
     [...new Set(weekStarts)]
-      .filter((start) => start <= dayKeys[dayKeys.length - 1] && addDayKey(start, 6) >= dayKeys[0])
+      .filter(
+        (start) => start <= dayKeys[dayKeys.length - 1] && addCalendarDays(start, 6) >= dayKeys[0],
+      )
       .sort()
       .reverse();
   const weekStanding = (personId: string) => {
@@ -534,7 +531,7 @@ export function RotaTable({
                   (event) => isClosure(event) && event.allDay && event.audience === 'EVERYONE',
                 );
                 const empty = cov && cov.peopleScheduled === 0 && !shut;
-                const isToday = localDate(new Date()) === dayKeys[index];
+                const isToday = browserToday() === dayKeys[index];
                 return (
                   <th
                     key={dayKeys[index]}
@@ -1912,11 +1909,7 @@ function QuickAddDialog({
   /// Every week unless changed; "certain weeks" starts on this day's week,
   /// so the ＋ on the first Saturday offers the first Saturday.
   const [repeatWeeks, setRepeatWeeks] = useState<RepeatWeeks>(EVERY_WEEK);
-  const [until, setUntil] = useState(() => {
-    const fourWeeks = new Date(day);
-    fourWeeks.setDate(fourWeeks.getDate() + 27);
-    return localDate(fourWeeks);
-  });
+  const [until, setUntil] = useState(() => localDate(addDays(day, 27)));
   const [noEnd, setNoEnd] = useState(false);
   const [busy, setBusy] = useState(false);
   const [problem, setProblem] = useState<string | null>(null);

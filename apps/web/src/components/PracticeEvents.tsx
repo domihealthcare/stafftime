@@ -2,6 +2,7 @@ import { useDialog } from './useDialog';
 import { useCallback, useEffect, useId, useState } from 'react';
 import { useAiOn } from '../lib/ai';
 import { ApiError, api } from '../lib/api';
+import { addCalendarDays } from '../lib/dates';
 import { formatCalendarDate, formatTimeCompact, localDate } from '../lib/format';
 import { t, useT } from '../lib/i18n';
 import { Link } from 'react-router-dom';
@@ -670,11 +671,7 @@ export function EventForm({
       (new Date(`${endDate}T00:00:00Z`).getTime() - new Date(`${startDate}T00:00:00Z`).getTime()) /
       86_400_000;
     setStartDate(value);
-    if (value && Number.isFinite(span)) {
-      const end = new Date(`${value}T00:00:00Z`);
-      end.setUTCDate(end.getUTCDate() + Math.max(0, span));
-      setEndDate(end.toISOString().slice(0, 10));
-    }
+    if (value && Number.isFinite(span)) setEndDate(addCalendarDays(value, Math.max(0, span)));
   }
 
   async function submit(form: React.FormEvent) {

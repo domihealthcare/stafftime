@@ -6,6 +6,7 @@ import type {
   DowntimeCause,
   DowntimeCheck,
   DowntimeContact,
+  Badges,
   DowntimeCurrent,
   DowntimeKitItem,
   DowntimeLog,
@@ -664,8 +665,9 @@ export const api = {
   // ---------------------------------------------------------- notifications
   /// The bell: your own notifications, newest first.
   notifications: () => request<NotificationList>('/notifications'),
-  unreadNotifications: (options?: Background) =>
-    request<{ unread: number }>('/notifications/unread-count', options),
+  /// The bell's count, the downtime bar and the time-off badge in one
+  /// request (`lib/badges.tsx`).
+  badges: (options?: Background) => request<Badges>('/badges', options),
   markNotificationRead: (id: string) =>
     request<{ unread: number }>(`/notifications/${id}/read`, { method: 'POST' }),
   markAllNotificationsRead: () =>
@@ -726,8 +728,6 @@ export const api = {
     request<EveryonesSchedule>(`/schedule-view${toQuery({ from, to })}`),
   listPto: (params: Record<string, string | undefined> = {}) =>
     request<PtoRequest[]>(`/pto${toQuery(params)}`),
-  ptoPendingCount: (options?: Background) =>
-    request<{ pending: number }>('/pto/pending-count', options),
   createPto: (body: {
     type: string;
     startDate: string;

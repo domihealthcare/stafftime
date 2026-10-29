@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { ApiError, api } from '../lib/api';
+import { addCalendarDays } from '../lib/dates';
 import { formatCalendarDate, formatTimeCompact, localDate } from '../lib/format';
 import type { FoundTimes, TimeSuggestion } from '../lib/types';
 import type { InviteeSelection } from './InviteePicker';
@@ -82,7 +83,7 @@ export function FindATime({
   }
 
   const canLook = invitees.everyone || chosen;
-  const nextFrom = found ? addDays(found.from, found.days) : null;
+  const nextFrom = found ? addCalendarDays(found.from, found.days) : null;
 
   return (
     <div className="sm:col-span-2" data-testid="find-a-time">
@@ -223,10 +224,4 @@ function SuggestionRow({
       ))}
     </li>
   );
-}
-
-function addDays(date: string, days: number): string {
-  const day = new Date(`${date}T00:00:00Z`);
-  day.setUTCDate(day.getUTCDate() + days);
-  return day.toISOString().slice(0, 10);
 }

@@ -1,6 +1,6 @@
 import { useCallback, useMemo, useRef, useState } from 'react';
 import { Alert, Card, PageHeading } from '../../components/ui';
-import { localDate } from '../../lib/format';
+import { browserToday } from '../../lib/dates';
 import { useSession } from '../../lib/session';
 import type { Employee } from '../../lib/types';
 import { ELEMENTS, type ElementKey } from './config';
@@ -81,7 +81,7 @@ function AssessmentScreen({ employee }: { employee: Employee }) {
     [employee.firstName, employee.lastName, employee.postNominals],
   );
 
-  const [form, setForm] = useState<AssessmentForm>(() => emptyForm(localDate(new Date())));
+  const [form, setForm] = useState<AssessmentForm>(() => emptyForm(browserToday()));
   const [untouched, setUntouched] = useState(() => JSON.stringify(form));
   const update = useCallback<Update>(
     (section, patch) =>
@@ -89,7 +89,7 @@ function AssessmentScreen({ employee }: { employee: Employee }) {
     [],
   );
 
-  const today = localDate(new Date());
+  const today = browserToday();
   const problems = useMemo(() => validate(form, today), [form, today]);
   const [showProblems, setShowProblems] = useState(false);
   // Amber only for a section the provider has moved on past (see useMovedOn).
@@ -153,7 +153,7 @@ function AssessmentScreen({ employee }: { employee: Employee }) {
   }
 
   function clearForm() {
-    const next = emptyForm(localDate(new Date()));
+    const next = emptyForm(browserToday());
     setForm(next);
     setUntouched(JSON.stringify(next));
     setMade(null);

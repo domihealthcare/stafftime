@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { api } from '../lib/api';
+import { browserToday } from '../lib/dates';
 import {
   addDays,
   displayName,
@@ -119,7 +120,7 @@ export function EveryonesSchedulePage() {
     view === 'week'
       ? `${first.toLocaleDateString(undefined, { month: 'short', day: 'numeric' })} to ${last.toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}`
       : first.toLocaleDateString(undefined, { month: 'long', year: 'numeric' });
-  const todayKey = localDate(new Date());
+  const todayKey = browserToday();
   const timeOf = (shift: Shift) =>
     `${formatTimeCompact(shift.startsAt)}-${formatTimeCompact(shift.endsAt)}`;
 

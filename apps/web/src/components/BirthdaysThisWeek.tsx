@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { api } from '../lib/api';
 import { birthdayName } from '../lib/birthday';
+import { browserToday } from '../lib/dates';
 import { localDate } from '../lib/format';
 import { locale, t as translate, useT } from '../lib/i18n';
 import type { BirthdayEntry } from '../lib/types';
@@ -8,7 +9,7 @@ import { Avatar } from './Avatar';
 import { Card } from './ui';
 
 function when(date: string): string {
-  const today = localDate(new Date());
+  const today = browserToday();
   const tomorrow = localDate(new Date(Date.now() + 86_400_000));
   if (date === today) return translate('Today');
   if (date === tomorrow) return translate('Tomorrow');
@@ -30,7 +31,7 @@ export function BirthdaysThisWeek() {
 
   useEffect(() => {
     let cancelled = false;
-    const from = localDate(new Date());
+    const from = browserToday();
     const to = localDate(new Date(Date.now() + 6 * 86_400_000));
     api
       .birthdays(from, to)
@@ -56,7 +57,7 @@ export function BirthdaysThisWeek() {
               <span className="font-medium text-slate-900">{birthdayName(entry)}</span>
               <span className="block text-xs text-slate-500">{when(entry.date)}</span>
             </span>
-            {entry.date === localDate(new Date()) && (
+            {entry.date === browserToday() && (
               <span className="rounded-full bg-amber-100 px-2 py-0.5 text-xs font-semibold text-amber-900">
                 {t('Happy birthday!')}
               </span>

@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
-import { formatCalendarDate, localDate } from '../lib/format';
+import { browserToday } from '../lib/dates';
+import { formatCalendarDate } from '../lib/format';
 import { MONTHS } from '../lib/birthday';
 import { ApiError, api } from '../lib/api';
 import type { CredentialStanding, Employee, JobRole, Location, Role } from '../lib/types';
@@ -1105,7 +1106,7 @@ function SigningIn({ person, onChanged }: { person: Employee; onChanged: () => v
 function Leaving({ person, onLeft }: { person: Employee; onLeft: () => void }) {
   const confirm = useConfirm();
   const [open, setOpen] = useState(false);
-  const [lastDay, setLastDay] = useState(() => localDate(new Date()));
+  const [lastDay, setLastDay] = useState(() => browserToday());
   const [busy, setBusy] = useState(false);
   const [problem, setProblem] = useState<string | null>(null);
 

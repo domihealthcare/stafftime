@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { ApiError, api } from '../lib/api';
+import { addCalendarDays } from '../lib/dates';
 import { formatCalendarDate } from '../lib/format';
 import {
   figures,
@@ -21,12 +22,6 @@ interface Row {
 
 const INPUT = 'w-full rounded-lg border border-slate-300 px-2 py-1.5 text-sm';
 const NUMBER = `${INPUT} text-right tabular-nums`;
-
-function addDays(iso: string, days: number): string {
-  const date = new Date(`${iso}T00:00:00Z`);
-  date.setUTCDate(date.getUTCDate() + days);
-  return date.toISOString().slice(0, 10);
-}
 
 /**
  * Fill in a period: for each interval the number expected and the patients
@@ -111,12 +106,12 @@ export function ProductivityStatementEditor({
         (Date.parse(`${last.endDate}T00:00:00Z`) - Date.parse(`${last.startDate}T00:00:00Z`)) /
           86_400_000 +
         1;
-      const start = addDays(last.endDate, 1);
+      const start = addCalendarDays(last.endDate, 1);
       return [
         ...current,
         {
           startDate: start,
-          endDate: addDays(start, length - 1),
+          endDate: addCalendarDays(start, length - 1),
           expected: last.expected,
           counts: last.counts.map((count) => ({ label: count.label, count: '0' })),
         },

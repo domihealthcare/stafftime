@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { ApiError, api } from '../lib/api';
+import { addCalendarDays } from '../lib/dates';
 import type { Employee, JobRole, Location, PlanResult } from '../lib/types';
 import {
   PlaceSelect,
@@ -73,11 +74,7 @@ export function RepeatShiftsForm({
 
   // Default to four weeks out: long enough to be useful, short enough to review.
   useEffect(() => {
-    if (!until && from) {
-      const end = new Date(`${from}T00:00:00Z`);
-      end.setUTCDate(end.getUTCDate() + 27);
-      setUntil(end.toISOString().slice(0, 10));
-    }
+    if (!until && from) setUntil(addCalendarDays(from, 27));
   }, [from, until]);
 
   async function submit(event: React.FormEvent) {

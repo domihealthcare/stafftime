@@ -1,6 +1,7 @@
 import { useEffect, useId, useRef, useState } from 'react';
 import type { RepeatInput } from '../lib/types';
-import { localDate, WEEK_ORDER } from '../lib/format';
+import { addCalendarDays, browserToday } from '../lib/dates';
+import { WEEK_ORDER } from '../lib/format';
 
 /**
  * How an event repeats (September 2026): every week, every 2 weeks, monthly -
@@ -37,12 +38,6 @@ export function weekOfMonth(date: string): number {
 /// A whole "YYYY-MM-DD" that is a real day.
 function isDay(date: string): boolean {
   return /^\d{4}-\d{2}-\d{2}$/.test(date) && !Number.isNaN(Date.parse(`${date}T00:00:00Z`));
-}
-
-function addDays(date: string, days: number): string {
-  const d = new Date(`${date}T00:00:00Z`);
-  d.setUTCDate(d.getUTCDate() + days);
-  return d.toISOString().slice(0, 10);
 }
 
 function ordinalDay(day: number): string {
@@ -84,17 +79,17 @@ export function RepeatPicker({
   // While the first day is half typed or cleared the box holds no date (the
   // browser gives an empty value): the menu keeps the last real day until a
   // whole one is back, rather than failing over a day that is not there.
-  const lastDay = useRef(isDay(typedStart) ? typedStart : localDate(new Date()));
+  const lastDay = useRef(isDay(typedStart) ? typedStart : browserToday());
   if (isDay(typedStart)) lastDay.current = typedStart;
   const startDate = lastDay.current;
   const [mode, setMode] = useState<Mode>(() => modeOf(value, startDate));
   const weekday = weekdayOf(startDate);
-  const until = value?.until ?? addDays(startDate, 91);
+  const until = value?.until ?? addCalendarDays(startDate, 91);
 
   /// The rule a menu choice stands for, on the event's own first day.
   const ruleFor = (next: Mode, current: RepeatInput | null): RepeatInput | null => {
     const end =
-      current?.until && current.until >= startDate ? current.until : addDays(startDate, 91);
+      current?.until && current.until >= startDate ? current.until : addCalendarDays(startDate, 91);
     switch (next) {
       case 'none':
         return null;
@@ -265,19 +260,20 @@ export function RepeatPicker({
                 />
                 On the {ORDINAL[weekOfMonth(startDate)]} {dayName}
               </label>
-              {weekOfMonth(startDate) === 4 && Number(addDays(startDate, 7).slice(8, 10)) < 8 && (
-                <label className="flex items-center gap-2">
-                  <input
-                    type="radio"
-                    name={`${id}-monthly`}
-                    checked={value.monthlyMode === 'WEEKDAY_OF_MONTH' && value.monthlyWeek === -1}
-                    onChange={() =>
-                      onChange({ ...value, monthlyMode: 'WEEKDAY_OF_MONTH', monthlyWeek: -1 })
-                    }
-                  />
-                  On the last {dayName}
-                </label>
-              )}
+              {weekOfMonth(startDate) === 4 &&
+                Number(addCalendarDays(startDate, 7).slice(8, 10)) < 8 && (
+                  <label className="flex items-center gap-2">
+                    <input
+                      type="radio"
+                      name={`${id}-monthly`}
+                      checked={value.monthlyMode === 'WEEKDAY_OF_MONTH' && value.monthlyWeek === -1}
+                      onChange={() =>
+                        onChange({ ...value, monthlyMode: 'WEEKDAY_OF_MONTH', monthlyWeek: -1 })
+                      }
+                    />
+                    On the last {dayName}
+                  </label>
+                )}
             </fieldset>
           )}
         </div>
@@ -293,7 +289,7 @@ export function RepeatPicker({
             type="date"
             required
             min={startDate}
-            max={addDays(startDate, 366)}
+            max={addCalendarDays(startDate, 366)}
             value={until}
             onChange={(change) => value && onChange({ ...value, until: change.target.value })}
             className={field}
