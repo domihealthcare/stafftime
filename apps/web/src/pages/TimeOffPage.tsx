@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { ApiError, api } from '../lib/api';
 import { ClashNote } from '../components/TimeOffClashes';
+import { addCalendarDays } from '../lib/dates';
 import { formatCalendarDate, formatClock } from '../lib/format';
 import { useIsAdmin, useIsManager, useSession } from '../lib/session';
 import type {
@@ -536,13 +537,11 @@ function RequestForm({
     const last = endDate || startDate;
     if (!whoseId || !/^\d{4}-\d{2}-\d{2}$/.test(startDate) || last < startDate) return;
     let cancelled = false;
-    const dayAfter = new Date(`${last}T12:00:00Z`);
-    dayAfter.setUTCDate(dayAfter.getUTCDate() + 1);
     api
       .listShifts({
         employeeId: whoseId,
         from: atPracticeTime(`${startDate}T12:00:00Z`, '00:00'),
-        to: atPracticeTime(dayAfter.toISOString(), '00:00'),
+        to: atPracticeTime(`${addCalendarDays(last, 1)}T12:00:00Z`, '00:00'),
       })
       .then(
         (rows) =>

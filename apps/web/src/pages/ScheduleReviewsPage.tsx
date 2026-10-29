@@ -19,7 +19,8 @@ import { REMOTE_COLOUR, locationColourFn, tint } from '../lib/shift-colours';
 import { officeShort } from '../lib/calendar-kinds';
 import { t as translate, useT } from '../lib/i18n';
 import { practiceDate } from '../lib/practice-time';
-import { WEEKDAY_NAMES, WEEK_ORDER, addDays, sundayOf } from '../lib/schedule-reviews';
+import { addCalendarDays } from '../lib/dates';
+import { WEEKDAY_NAMES, WEEK_ORDER, sundayOf } from '../lib/schedule-reviews';
 import { useIsManager, useSession } from '../lib/session';
 import type {
   Location,
@@ -64,7 +65,7 @@ export function ScheduleReviewsPage() {
   useEffect(() => {
     let cancelled = false;
     Promise.all([
-      api.scheduleReviews(week, addDays(week, 6)),
+      api.scheduleReviews(week, addCalendarDays(week, 6)),
       isManager ? api.scheduleReviewPattern() : Promise.resolve(null),
     ])
       .then(([days, usual]) => {
@@ -85,7 +86,7 @@ export function ScheduleReviewsPage() {
   useEffect(() => {
     let cancelled = false;
     Promise.all([
-      api.providerPlaces(week, addDays(week, 6)),
+      api.providerPlaces(week, addCalendarDays(week, 6)),
       api.listLocations(),
       api.scheduleReviewAreas(),
     ])
@@ -147,7 +148,7 @@ export function ScheduleReviewsPage() {
           <button
             type="button"
             className={buttonClass('secondary', 'sm')}
-            onClick={() => setWeek(addDays(week, -7))}
+            onClick={() => setWeek(addCalendarDays(week, -7))}
           >
             {t('← Previous week')}
           </button>
@@ -162,14 +163,14 @@ export function ScheduleReviewsPage() {
           <button
             type="button"
             className={buttonClass('secondary', 'sm')}
-            onClick={() => setWeek(addDays(week, 7))}
+            onClick={() => setWeek(addCalendarDays(week, 7))}
           >
             {t('Next week →')}
           </button>
         </div>
         <h2 className="text-xl font-semibold text-slate-900">
           {formatCalendarDate(week, { year: false })} –{' '}
-          {formatCalendarDate(addDays(week, 6), { year: false })}
+          {formatCalendarDate(addCalendarDays(week, 6), { year: false })}
         </h2>
 
         <OfficeAdminsCard week={week} />

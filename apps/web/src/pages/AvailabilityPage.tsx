@@ -12,7 +12,8 @@ import {
 } from '../components/ui';
 import { ApiError, api } from '../lib/api';
 import { OnePersonNote, useOnePerson } from '../components/OnePerson';
-import { displayName, formatCalendarDate, localDate, WEEK_ORDER } from '../lib/format';
+import { addCalendarDays, browserToday } from '../lib/dates';
+import { displayName, formatCalendarDate, WEEK_ORDER } from '../lib/format';
 import { useIsManager } from '../lib/session';
 import { t as tNow, useT } from '../lib/i18n';
 import type {
@@ -80,10 +81,10 @@ export function AvailabilityPage() {
       {mine && (
         <div className="mb-4">
           <Alert tone="info">
-            {mine.firstOpenDate > localDate(new Date()) ? (
+            {mine.firstOpenDate > browserToday() ? (
               <>
                 {t('The schedule is published up to')}{' '}
-                <strong>{formatCalendarDate(dayBefore(mine.firstOpenDate))}</strong>
+                <strong>{formatCalendarDate(addCalendarDays(mine.firstOpenDate, -1))}</strong>
                 {t(', so changes here count from')}{' '}
                 <strong>{formatCalendarDate(mine.firstOpenDate)}</strong>
                 {t('. For anything sooner, talk to a manager.')}
@@ -492,10 +493,4 @@ function TeamList({ team }: { team: TeamAvailability[] }) {
       )}
     </section>
   );
-}
-
-function dayBefore(date: string): string {
-  const value = new Date(`${date}T00:00:00Z`);
-  value.setUTCDate(value.getUTCDate() - 1);
-  return value.toISOString().slice(0, 10);
 }

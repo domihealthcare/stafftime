@@ -1,6 +1,6 @@
 import { useCallback, useMemo, useRef, useState } from 'react';
 import { Alert, Card, PageHeading } from '../../components/ui';
-import { localDate } from '../../lib/format';
+import { browserToday } from '../../lib/dates';
 import { canUseCarePlan } from '../../lib/clinical-access';
 import { useSession } from '../../lib/session';
 import type { Employee } from '../../lib/types';
@@ -87,7 +87,7 @@ function CarePlanScreen({ employee }: { employee: Employee }) {
     lastName: employee.lastName,
   });
 
-  const [form, setForm] = useState<CarePlanForm>(() => emptyForm(localDate(new Date())));
+  const [form, setForm] = useState<CarePlanForm>(() => emptyForm(browserToday()));
   const [untouched, setUntouched] = useState(() => JSON.stringify(form));
   // Until somebody picks the language, a Spanish speaker's care plan is
   // printed in English and Spanish, as the practice's were.
@@ -128,7 +128,7 @@ function CarePlanScreen({ employee }: { employee: Employee }) {
     [],
   );
 
-  const today = localDate(new Date());
+  const today = browserToday();
   const problems = useMemo(() => validate(form, today), [form, today]);
   const [showProblems, setShowProblems] = useState(false);
   const problemFor = useCallback(
@@ -184,7 +184,7 @@ function CarePlanScreen({ employee }: { employee: Employee }) {
   }
 
   function clearForm() {
-    const next = emptyForm(localDate(new Date()));
+    const next = emptyForm(browserToday());
     setForm(next);
     setUntouched(JSON.stringify(next));
     setLanguagePicked(false);

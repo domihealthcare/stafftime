@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { ApiError, api } from '../lib/api';
-import { displayName, formatCalendarDate, formatClock, localDate } from '../lib/format';
+import { browserToday } from '../lib/dates';
+import { displayName, formatCalendarDate, formatClock } from '../lib/format';
 import { describeRepeat, type RepeatWeeks } from '../lib/repeat-pattern';
 import type { Employee, JobRole, Location, StandingShift } from '../lib/types';
 import { useConfirm } from './ConfirmDialog';
@@ -54,8 +55,8 @@ export function StandingShiftsCard({
   const [place, setPlace] = useState('');
   const [jobRoleId, setJobRoleId] = useState('');
   const [openCount, setOpenCount] = useState(1);
-  const [fromDate, setFromDate] = useState(() => localDate(new Date()));
-  const [lastDate, setLastDate] = useState(() => localDate(new Date()));
+  const [fromDate, setFromDate] = useState(() => browserToday());
+  const [lastDate, setLastDate] = useState(() => browserToday());
   const [busy, setBusy] = useState(false);
   const [result, setResult] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -100,7 +101,7 @@ export function StandingShiftsCard({
     setPlace(item.isRemote ? WORK_FROM_HOME : item.locationId);
     setJobRoleId(item.jobRole?.id ?? '');
     setOpenCount(item.openCount);
-    setFromDate(localDate(new Date()));
+    setFromDate(browserToday());
   }
 
   async function saveEdit() {
@@ -315,7 +316,7 @@ export function StandingShiftsCard({
                         onClick={() => {
                           setStopping(item.id);
                           setEditing(null);
-                          setLastDate(localDate(new Date()));
+                          setLastDate(browserToday());
                           setResult(null);
                         }}
                         className={buttonClass('secondary', 'sm')}
@@ -415,7 +416,7 @@ export function StandingShiftsCard({
                         <span className="block text-xs font-medium">Change applies from</span>
                         <input
                           type="date"
-                          min={localDate(new Date())}
+                          min={browserToday()}
                           value={fromDate}
                           onChange={(event) => setFromDate(event.target.value)}
                           className="mt-0.5 rounded-lg border-slate-300 py-1.5 text-sm shadow-sm"

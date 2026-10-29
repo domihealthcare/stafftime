@@ -3,7 +3,8 @@ import { ApiError, api } from '../lib/api';
 import { formatCalendarDate } from '../lib/format';
 import { useT } from '../lib/i18n';
 import { practiceDate } from '../lib/practice-time';
-import { WEEKDAY_NAMES, WEEK_ORDER, addDays } from '../lib/schedule-reviews';
+import { addCalendarDays } from '../lib/dates';
+import { WEEKDAY_NAMES, WEEK_ORDER } from '../lib/schedule-reviews';
 import { useIsManager, useSession } from '../lib/session';
 import type {
   OfficeAdminConcern,
@@ -52,7 +53,7 @@ export function OfficeAdminsCard({ week }: { week: string }) {
   useEffect(() => {
     let cancelled = false;
     Promise.all([
-      api.officeAdmins(week, addDays(week, 6)),
+      api.officeAdmins(week, addCalendarDays(week, 6)),
       isManager ? api.officeAdminPattern() : Promise.resolve(null),
     ])
       .then(([days, usual]) => {

@@ -4,7 +4,7 @@ import { api } from '../lib/api';
 import { formatCalendarDate } from '../lib/format';
 import { useT } from '../lib/i18n';
 import { practiceDate } from '../lib/practice-time';
-import { addDays } from '../lib/schedule-reviews';
+import { addCalendarDays } from '../lib/dates';
 import { useSession } from '../lib/session';
 import type { OnCallPerson } from '../lib/types';
 import { Card } from './ui';
@@ -41,7 +41,7 @@ export function MyScheduleReviews() {
       })
       .catch(() => !cancelled && setGroups([]));
     api
-      .scheduleReviews(today, addDays(today, DAYS_AHEAD))
+      .scheduleReviews(today, addCalendarDays(today, DAYS_AHEAD))
       .then((found) => {
         if (cancelled) return;
         const byId = new Map(found.providers.map((provider) => [provider.id, provider]));
@@ -66,7 +66,7 @@ export function MyScheduleReviews() {
 
   if (days.length === 0 && groups.length === 0) return null;
   const today = practiceDate();
-  const tomorrow = addDays(today, 1);
+  const tomorrow = addCalendarDays(today, 1);
   const when = (date: string) =>
     date === today
       ? t('Today')

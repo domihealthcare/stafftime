@@ -4,7 +4,7 @@ import { Link, useLocation } from 'react-router-dom';
 import { JobRolesSection } from '../components/JobRolesSection';
 import { JobRoleDot } from '../components/JobRoleTag';
 import { Modal } from '../components/Modal';
-import { localDate } from '../lib/format';
+import { browserToday } from '../lib/dates';
 import { ApiError, api } from '../lib/api';
 import { useSession } from '../lib/session';
 import type {
@@ -643,7 +643,7 @@ function AddStaffForm({
   const [email, setEmail] = useState('');
   const [role, setRole] = useState<Role>('EMPLOYEE');
   const [payType, setPayType] = useState('HOURLY');
-  const [hireDate, setHireDate] = useState(() => localDate(new Date()));
+  const [hireDate, setHireDate] = useState(() => browserToday());
   const [assigned, setAssigned] = useState<string[]>([]);
   const [busy, setBusy] = useState(false);
   const [problem, setProblem] = useState<string | null>(null);

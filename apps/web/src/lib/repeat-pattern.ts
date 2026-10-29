@@ -1,3 +1,4 @@
+import { addCalendarDays } from './dates';
 import { WEEK_ORDER, WEEKDAY_NAMES } from './format';
 
 /**
@@ -36,12 +37,6 @@ function weekdayOf(date: string): number {
   return day === 0 ? 7 : day;
 }
 
-function addDays(date: string, days: number): string {
-  const next = new Date(`${date}T00:00:00Z`);
-  next.setUTCDate(next.getUTCDate() + days);
-  return next.toISOString().slice(0, 10);
-}
-
 /// The week of the month a date is in, as the toggles offer it: 1–4, or
 /// -1 for a fifth.
 export function weekOfMonth(date: string): number {
@@ -60,11 +55,11 @@ export function onPattern(
   if (!days.includes(weekdayOf(date))) return false;
   if (weeks.weeksOfMonth.length > 0) {
     const nth = Math.ceil(Number(date.slice(8, 10)) / 7);
-    const last = addDays(date, 7).slice(5, 7) !== date.slice(5, 7);
+    const last = addCalendarDays(date, 7).slice(5, 7) !== date.slice(5, 7);
     return weeks.weeksOfMonth.some((week) => (week === -1 ? last : week === nth));
   }
   if (weeks.everyWeeks <= 1) return true;
-  const sunday = (d: string) => addDays(d, -(weekdayOf(d) % 7));
+  const sunday = (d: string) => addCalendarDays(d, -(weekdayOf(d) % 7));
   const apart = Math.round(
     (Date.parse(`${sunday(date)}T00:00:00Z`) - Date.parse(`${sunday(cycleFrom)}T00:00:00Z`)) /
       (7 * 86_400_000),
@@ -87,7 +82,7 @@ export function firstDates(
   for (let date = from, i = 0; i < 400 && found.length < count; i += 1) {
     if (until && date > until) break;
     if (onPattern(date, days, weeks, cycleFrom)) found.push(date);
-    date = addDays(date, 1);
+    date = addCalendarDays(date, 1);
   }
   return found;
 }
