@@ -528,8 +528,11 @@ function RequestForm({
   const { employee: me } = useSession();
   const whoseId = employeeId || me?.id || '';
   const [onRota, setOnRota] = useState<Shift[]>([]);
+  // The look-up failed: say so, rather than look like "no shifts then".
+  const [rotaUnknown, setRotaUnknown] = useState(false);
   useEffect(() => {
     setOnRota([]);
+    setRotaUnknown(false);
     const last = endDate || startDate;
     if (!whoseId || !/^\d{4}-\d{2}-\d{2}$/.test(startDate) || last < startDate) return;
     let cancelled = false;
@@ -551,7 +554,7 @@ function RequestForm({
             ),
           ),
       )
-      .catch(() => undefined);
+      .catch(() => !cancelled && setRotaUnknown(true));
     return () => {
       cancelled = true;
     };
@@ -753,6 +756,11 @@ function RequestForm({
           />
         </div>
 
+        {rotaUnknown && (
+          <p role="note" className="text-sm text-slate-600" data-testid="time-off-rota-unknown">
+            {t('Could not check the rota for shifts in those days.')}
+          </p>
+        )}
         {onRota.length > 0 && (
           <div
             role="note"

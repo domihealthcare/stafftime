@@ -1513,7 +1513,19 @@ export async function confirmClosure(
   confirm: (options: ConfirmOptions) => Promise<boolean>,
   proposed: ProposedPlace,
 ): Promise<boolean> {
-  const closures = await fetchClosures(proposed).catch(() => []);
+  let closures: PracticeEvent[];
+  try {
+    closures = await fetchClosures(proposed);
+  } catch {
+    // Never a silent yes: the check did not run, so say so and let them choose.
+    return confirm({
+      title: 'Could not check for closures',
+      body: <p>The app could not check whether the office is closed then. Add the shift anyway?</p>,
+      confirmLabel: 'Yes, add it anyway',
+      cancelLabel: 'Go back',
+      tone: 'neutral',
+    });
+  }
   if (closures.length === 0) return true;
   return confirm({
     title: 'The office is closed then',

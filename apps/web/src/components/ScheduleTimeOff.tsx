@@ -196,10 +196,13 @@ export function YourTimeOff({ refreshKey }: { refreshKey: number }) {
   const { employee } = useSession();
   const [balance, setBalance] = useState<PtoBalance | null>(null);
   const [mine, setMine] = useState<PtoRequest[]>([]);
+  // The look-up failed: say so, rather than leave the card out silently.
+  const [failed, setFailed] = useState(false);
 
   useEffect(() => {
     if (!employee) return;
     let cancelled = false;
+    setFailed(false);
     const today = localDate(new Date());
     Promise.all([api.ptoBalance(), api.listPto({ employeeId: employee.id })])
       .then(([found, requests]) => {
@@ -216,12 +219,23 @@ export function YourTimeOff({ refreshKey }: { refreshKey: number }) {
             .slice(0, 3),
         );
       })
-      .catch(() => undefined);
+      .catch(() => !cancelled && setFailed(true));
     return () => {
       cancelled = true;
     };
   }, [employee, refreshKey]);
 
+  if (!balance && failed) {
+    return (
+      <p
+        role="note"
+        data-testid="your-time-off-failed"
+        className="mb-4 rounded-xl bg-white p-3 text-sm text-slate-600 ring-1 ring-inset ring-slate-200"
+      >
+        {t('Could not load your time off. Reload the page to try again.')}
+      </p>
+    );
+  }
   if (!balance) return null;
 
   return (
