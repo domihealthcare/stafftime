@@ -876,6 +876,10 @@ model Shift {
   @@index([locationId, startsAt])
   @@index([jobRoleId, startsAt])
   @@index([seriesId, startsAt])
+  /// The rota across the practice by date, with no one person or office:
+  /// the reminders' five-minute timer, the nightly round-up, overtime, the
+  /// rota's cost and everyone's schedule (October 2026).
+  @@index([startsAt])
   @@map("shifts")
 }
 
@@ -1051,6 +1055,10 @@ model TimeEntry {
 
   @@index([employeeId, clockInAt])
   @@index([locationId, clockInAt])
+  /// Everybody's punches by date: the timesheet and payroll export, payroll
+  /// due, the overtime forecast, patterns and the midnight clock-out
+  /// (October 2026).
+  @@index([clockInAt])
   @@index([shiftId])
   @@map("time_entries")
 }

@@ -94,6 +94,30 @@ const SHIFT_INCLUDE = {
   jobRole: { select: { id: true, name: true } },
 } satisfies Prisma.ShiftInclude;
 
+/// What every shift in a `createAll` batch shares.
+interface PlannedCommon {
+  employeeId: string | null;
+  jobRoleId: string | null;
+  isRemote: boolean;
+  /// Open shifts only: how many identical slots each day.
+  openCount: number;
+  locationId: string;
+  status: ShiftStatus;
+  notes?: string;
+  createdById: string | null;
+  timezone: string;
+  /// The standing shift these come from, if any.
+  seriesId?: string | null;
+}
+
+/// One shift to be made, if nothing stands in its way.
+interface PlannedShift extends PlannedCommon {
+  /// Its local date, for leave and for the result.
+  date: string;
+  startsAt: Date;
+  endsAt: Date;
+}
+
 /**
  * Building a schedule in bulk, rather than one shift at a time.
  *
@@ -928,13 +952,7 @@ export class ShiftPlanningService {
     const before =
       dto.status === ShiftStatus.PUBLISHED ? await this.overtime.snapshot(people, weeks) : null;
 
-    const skipped: PlannedSkip[] = [];
-    const dates: string[] = [];
-    let created = 0;
-    /// employeeId → the dates they got a shift on, for one notice each.
-    const madeFor = new Map<string, string[]>();
-
-    for (const shift of source) {
+    const planned: PlannedShift[] = source.map((shift) => {
       const zone = shift.location.timezone;
       // Read the original in its own local terms, then rebuild it a week later.
       const localDate = localDateIn(shift.startsAt, zone);
@@ -944,10 +962,10 @@ export class ShiftPlanningService {
       const endOffset = daysBetween(localDate, localDateIn(shift.endsAt, zone));
 
       const targetDate = addDaysTo(localDate, offsetDays);
-      const startsAt = zonedTimeToUtc(targetDate, localStart, zone);
-      const endsAt = zonedTimeToUtc(addDaysTo(targetDate, endOffset), localEnd, zone);
-
-      const result = await this.createAll([{ date: targetDate, startsAt, endsAt }], {
+      return {
+        date: targetDate,
+        startsAt: zonedTimeToUtc(targetDate, localStart, zone),
+        endsAt: zonedTimeToUtc(addDaysTo(targetDate, endOffset), localEnd, zone),
         // An open shift is copied open: the need is the same next week, the
         // person is not decided yet.
         employeeId: shift.employeeId,
@@ -959,15 +977,19 @@ export class ShiftPlanningService {
         notes: shift.notes ?? undefined,
         createdById,
         timezone: zone,
-      });
+      };
+    });
 
-      created += result.created;
-      skipped.push(...result.skipped);
-      dates.push(...result.dates);
-      if (shift.employeeId && result.created > 0) {
-        madeFor.set(shift.employeeId, [...(madeFor.get(shift.employeeId) ?? []), ...result.dates]);
+    // Checked and written together, in the order of the week copied: a later
+    // shift is checked against the ones copied before it, as one at a time.
+    const { created, skipped, dates, made } = await this.createPlanned(planned);
+    /// employeeId → the dates they got a shift on, for one notice each.
+    const madeFor = new Map<string, string[]>();
+    planned.forEach((shift, index) => {
+      if (shift.employeeId && made[index] > 0) {
+        madeFor.set(shift.employeeId, [...(madeFor.get(shift.employeeId) ?? []), shift.date]);
       }
-    }
+    });
 
     if (dto.status === ShiftStatus.PUBLISHED) {
       for (const [employeeId, theirDates] of madeFor) {
@@ -1322,106 +1344,144 @@ export class ShiftPlanningService {
    */
   private async createAll(
     candidates: { date: string; startsAt: Date; endsAt: Date }[],
-    common: {
-      employeeId: string | null;
-      jobRoleId: string | null;
-      isRemote: boolean;
-      /// Open shifts only: how many identical slots each day.
-      openCount: number;
-      locationId: string;
-      status: ShiftStatus;
-      notes?: string;
-      createdById: string | null;
-      timezone: string;
-      /// The standing shift these come from, if any.
-      seriesId?: string | null;
-    },
+    common: PlannedCommon,
   ): Promise<Omit<PlanResult, 'overtime'>> {
+    const { created, skipped, dates } = await this.createPlanned(
+      candidates.map((candidate) => ({ ...candidate, ...common })),
+    );
+    return { created, skipped, dates };
+  }
+
+  /**
+   * The work of `createAll`, for shifts that need not share anything (a
+   * copied week has a different person on each).
+   *
+   * Each is checked as if the ones before it in the list had already been
+   * written, which is how it used to be done, one database call at a time
+   * (about three per shift). Now it is one read of the shifts already there,
+   * one of the approved leave, and one write for the lot (maintenance pass,
+   * October 2026); `shift-planning-batch.spec.ts` holds the two ways equal.
+   * `made` says how many each one made, in the order given.
+   */
+  private async createPlanned(planned: PlannedShift[]): Promise<{
+    created: number;
+    skipped: PlannedSkip[];
+    dates: string[];
+    made: number[];
+  }> {
     const skipped: PlannedSkip[] = [];
     const dates: string[] = [];
+    const made: number[] = [];
+    const rows: Prisma.ShiftCreateManyInput[] = [];
     let created = 0;
 
-    for (const candidate of candidates) {
+    const assigned = planned.filter((shift) => shift.employeeId);
+    const people = [...new Set(assigned.map((shift) => shift.employeeId!))];
+    const [taken, leave] =
+      people.length === 0
+        ? [[], []]
+        : await Promise.all([
+            // Every live shift of theirs touching any of these: the same test
+            // as one at a time, over the whole span.
+            this.prisma.shift.findMany({
+              where: {
+                employeeId: { in: people },
+                status: { not: ShiftStatus.CANCELLED },
+                startsAt: { lt: latest(assigned.map((shift) => shift.endsAt)) },
+                endsAt: { gt: earliest(assigned.map((shift) => shift.startsAt)) },
+              },
+              select: { employeeId: true, startsAt: true, endsAt: true },
+            }),
+            this.prisma.ptoRequest.findMany({
+              where: {
+                employeeId: { in: people },
+                status: PtoStatus.APPROVED,
+                startDate: { lte: latest(assigned.map((shift) => dayOf(shift.date))) },
+                endDate: { gte: earliest(assigned.map((shift) => dayOf(shift.date))) },
+              },
+              select: { employeeId: true, type: true, startDate: true, endDate: true },
+            }),
+          ]);
+    /// The shifts there now, and the ones this batch has made so far.
+    const busy = taken.map((shift) => ({
+      employeeId: shift.employeeId,
+      startsAt: shift.startsAt,
+      endsAt: shift.endsAt,
+    }));
+
+    for (const shift of planned) {
+      const row = {
+        employeeId: shift.employeeId,
+        jobRoleId: shift.jobRoleId,
+        isRemote: shift.isRemote,
+        locationId: shift.locationId,
+        startsAt: shift.startsAt,
+        endsAt: shift.endsAt,
+        status: shift.status,
+        notes: shift.notes,
+        createdById: shift.createdById,
+        seriesId: shift.seriesId ?? null,
+      };
+
       // An open shift belongs to nobody yet, so nobody can clash with it or be
       // on leave for it.
-      if (!common.employeeId) {
-        await this.prisma.shift.createMany({
-          data: Array.from({ length: common.openCount }, () => ({
-            employeeId: null,
-            jobRoleId: common.jobRoleId,
-            isRemote: common.isRemote,
-            locationId: common.locationId,
-            startsAt: candidate.startsAt,
-            endsAt: candidate.endsAt,
-            status: common.status,
-            notes: common.notes,
-            createdById: common.createdById,
-            seriesId: common.seriesId ?? null,
-          })),
-        });
-        created += common.openCount;
-        dates.push(candidate.date);
+      if (!shift.employeeId) {
+        for (let slot = 0; slot < shift.openCount; slot += 1) rows.push({ ...row });
+        created += shift.openCount;
+        made.push(shift.openCount);
+        dates.push(shift.date);
         continue;
       }
 
-      const clash = await this.prisma.shift.findFirst({
-        where: {
-          employeeId: common.employeeId,
-          status: { not: ShiftStatus.CANCELLED },
-          startsAt: { lt: candidate.endsAt },
-          endsAt: { gt: candidate.startsAt },
-        },
-        select: { id: true },
-      });
-
+      const clash = busy.some(
+        (other) =>
+          other.employeeId === shift.employeeId &&
+          other.startsAt < shift.endsAt &&
+          other.endsAt > shift.startsAt,
+      );
       if (clash) {
         skipped.push({
-          date: candidate.date,
+          date: shift.date,
           reason: 'OVERLAPS_SHIFT',
           detail: 'Already has a shift at that time',
         });
+        made.push(0);
         continue;
       }
 
-      const onLeave = await this.prisma.ptoRequest.findFirst({
-        where: {
-          employeeId: common.employeeId,
-          status: PtoStatus.APPROVED,
-          startDate: { lte: new Date(`${candidate.date}T00:00:00.000Z`) },
-          endDate: { gte: new Date(`${candidate.date}T00:00:00.000Z`) },
-        },
-        select: { type: true },
-      });
-
+      const day = dayOf(shift.date);
+      const onLeave = leave.find(
+        (request) =>
+          request.employeeId === shift.employeeId &&
+          request.startDate <= day &&
+          request.endDate >= day,
+      );
       if (onLeave) {
         skipped.push({
-          date: candidate.date,
+          date: shift.date,
           reason: 'ON_APPROVED_LEAVE',
           detail: `On approved ${onLeave.type.toLowerCase()} leave`,
         });
+        made.push(0);
         continue;
       }
 
-      await this.prisma.shift.create({
-        data: {
-          employeeId: common.employeeId,
-          jobRoleId: common.jobRoleId,
-          isRemote: common.isRemote,
-          locationId: common.locationId,
-          startsAt: candidate.startsAt,
-          endsAt: candidate.endsAt,
-          status: common.status,
-          notes: common.notes,
-          createdById: common.createdById,
-          seriesId: common.seriesId ?? null,
-        },
-      });
-
+      rows.push(row);
+      // A cancelled shift never stood in the way of another.
+      if (shift.status !== ShiftStatus.CANCELLED) {
+        busy.push({
+          employeeId: shift.employeeId,
+          startsAt: shift.startsAt,
+          endsAt: shift.endsAt,
+        });
+      }
       created += 1;
-      dates.push(candidate.date);
+      made.push(1);
+      dates.push(shift.date);
     }
 
-    return { created, skipped, dates };
+    if (rows.length > 0) await this.prisma.shift.createMany({ data: rows });
+    return { created, skipped, dates, made };
   }
 
   private async requireLocation(locationId: string) {
@@ -1473,6 +1533,19 @@ function daysBetween(from: string, to: string): number {
   return Math.round(
     (new Date(`${to}T00:00:00Z`).getTime() - new Date(`${from}T00:00:00Z`).getTime()) / 86_400_000,
   );
+}
+
+/// A plain date at midnight UTC, as leave is stored and compared.
+function dayOf(date: string): Date {
+  return new Date(`${date}T00:00:00.000Z`);
+}
+
+function earliest(moments: Date[]): Date {
+  return moments.reduce((first, moment) => (moment < first ? moment : first));
+}
+
+function latest(moments: Date[]): Date {
+  return moments.reduce((last, moment) => (moment > last ? moment : last));
 }
 
 /// The last date a standing shift is written out to, counting from `date`.

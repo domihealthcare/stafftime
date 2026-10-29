@@ -199,8 +199,33 @@ export async function loadTimeOffClashes(
   to: string,
   only?: { employeeId: string },
 ): Promise<TimeOffClash[]> {
-  const fromDay = new Date(`${from}T00:00:00Z`);
-  const toDay = new Date(`${to}T00:00:00Z`);
+  return clashesIn(await readClashFacts(prisma, [{ from, to }]), from, to, only);
+}
+
+/// What `clashesIn` works from: read once for one stretch of days, or for
+/// several at once ("Approve the clean time off" asks about every waiting
+/// request together).
+export type ClashFacts = Awaited<ReturnType<typeof readClashFacts>>;
+
+/// Who works where, the time off and the shifts touching any of `ranges`
+/// (plain dates, both ends included), and the practice's minimums.
+export async function readClashFacts(
+  prisma: PrismaService,
+  ranges: { from: string; to: string }[],
+) {
+  const requestsIn = ranges.map(({ from, to }) => ({
+    startDate: { lte: new Date(`${to}T00:00:00Z`) },
+    endDate: { gte: new Date(`${from}T00:00:00Z`) },
+  }));
+  const shiftsIn = ranges.map(({ from, to }) => ({
+    startsAt: {
+      gte: zonedTimeToUtc(from, '00:00', PRACTICE_ZONE),
+      lt: zonedTimeToUtc(addDaysTo(to, 1), '00:00', PRACTICE_ZONE),
+    },
+  }));
+  // One stretch is asked for as it always was; several, as any of them.
+  const anyOf = <T extends object>(conditions: T[]) =>
+    conditions.length === 1 ? conditions[0] : { OR: conditions };
 
   const [people, requests, weekendShifts, minimums] = await Promise.all([
     prisma.employee.findMany({
@@ -214,8 +239,7 @@ export async function loadTimeOffClashes(
     prisma.ptoRequest.findMany({
       where: {
         status: { in: [PtoStatus.APPROVED, PtoStatus.PENDING] },
-        startDate: { lte: toDay },
-        endDate: { gte: fromDay },
+        ...anyOf(requestsIn),
         employee: { employmentStatus: EmploymentStatus.ACTIVE },
       },
       select: {
@@ -232,10 +256,7 @@ export async function loadTimeOffClashes(
     prisma.shift.findMany({
       where: {
         status: { not: ShiftStatus.CANCELLED },
-        startsAt: {
-          gte: zonedTimeToUtc(from, '00:00', PRACTICE_ZONE),
-          lt: zonedTimeToUtc(addDaysTo(to, 1), '00:00', PRACTICE_ZONE),
-        },
+        ...anyOf(shiftsIn),
       },
       select: { locationId: true, startsAt: true, location: { select: { timezone: true } } },
     }),
@@ -243,6 +264,29 @@ export async function loadTimeOffClashes(
       select: { locationId: true, jobRoleId: true, minimum: true, weekdays: true },
     }),
   ]);
+  return { people, requests, weekendShifts, minimums };
+}
+
+/// The clashes from `from` to `to`, from facts read for at least those days:
+/// anything read for other days is left out first, so the answer is what
+/// reading those days alone gives.
+export function clashesIn(
+  facts: ClashFacts,
+  from: string,
+  to: string,
+  only?: { employeeId: string },
+): TimeOffClash[] {
+  const fromDay = new Date(`${from}T00:00:00Z`);
+  const toDay = new Date(`${to}T00:00:00Z`);
+  const shiftsFrom = zonedTimeToUtc(from, '00:00', PRACTICE_ZONE);
+  const shiftsUntil = zonedTimeToUtc(addDaysTo(to, 1), '00:00', PRACTICE_ZONE);
+  const { people, minimums } = facts;
+  const requests = facts.requests.filter(
+    (request) => request.startDate <= toDay && request.endDate >= fromDay,
+  );
+  const weekendShifts = facts.weekendShifts.filter(
+    (shift) => shift.startsAt >= shiftsFrom && shift.startsAt < shiftsUntil,
+  );
   const minimumOf = new Map(minimums.map((row) => [`${row.locationId}:${row.jobRoleId}`, row]));
 
   const teamsByKey = new Map<string, Team>();

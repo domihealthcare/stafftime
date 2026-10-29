@@ -485,6 +485,43 @@ export class PtoService {
     });
   }
 
+  /// The same for several requests from one read: each request's own shifts,
+  /// as `conflictingShifts` gives them, in the order the requests are given.
+  async conflictingShiftsFor(requests: { employeeId: string; startDate: Date; endDate: Date }[]) {
+    if (requests.length === 0) return [];
+    const windows = requests.map((request) => ({
+      employeeId: request.employeeId,
+      startsAt: { lt: endOfDay(request.endDate) },
+      endsAt: { gt: startOfDay(request.startDate) },
+    }));
+    const shifts = await this.prisma.shift.findMany({
+      where: { status: { not: ShiftStatus.CANCELLED }, OR: windows },
+      select: {
+        id: true,
+        employeeId: true,
+        startsAt: true,
+        endsAt: true,
+        location: { select: { name: true } },
+      },
+      orderBy: { startsAt: 'asc' },
+    });
+    return windows.map((window) =>
+      shifts
+        .filter(
+          (shift) =>
+            shift.employeeId === window.employeeId &&
+            shift.startsAt < window.startsAt.lt &&
+            shift.endsAt > window.endsAt.gt,
+        )
+        .map((shift) => ({
+          id: shift.id,
+          startsAt: shift.startsAt,
+          endsAt: shift.endsAt,
+          location: shift.location,
+        })),
+    );
+  }
+
   // -------------------------------------------------------------------------
 
   private resolveEmployeeId(dto: { employeeId?: string }, actor: AuthUser): string {
