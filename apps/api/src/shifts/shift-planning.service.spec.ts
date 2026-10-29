@@ -13,6 +13,8 @@ function fakeOvertime() {
 }
 
 const NJ = 'America/New_York';
+const EARLIEST = new Date('2000-01-01T00:00:00Z');
+const LATEST = new Date('2100-01-01T00:00:00Z');
 
 describe('ShiftPlanningService', () => {
   function build(
@@ -67,8 +69,17 @@ describe('ShiftPlanningService', () => {
           .mockResolvedValue(options.assigned === false ? null : { employeeId: 'emp-1' }),
       },
       shift: {
-        findFirst: jest.fn().mockResolvedValue(options.clash ?? null),
-        findMany: jest.fn().mockResolvedValue(options.sourceShifts ?? []),
+        findMany: jest.fn().mockImplementation(({ where }) =>
+          // The clash read before shifts are written (it alone asks by
+          // `endsAt: { gt }`): with `clash`, every time is taken.
+          Promise.resolve(
+            where?.endsAt?.gt
+              ? options.clash
+                ? [{ employeeId: 'emp-1', startsAt: EARLIEST, endsAt: LATEST }]
+                : []
+              : (options.sourceShifts ?? []),
+          ),
+        ),
         create: jest.fn().mockImplementation(({ data }) => {
           created.push(data);
           return { id: `sh-${created.length}`, ...data };
@@ -83,8 +94,19 @@ describe('ShiftPlanningService', () => {
       },
       jobRole: { findUnique: jest.fn().mockResolvedValue({ id: 'fd' }) },
       ptoRequest: {
-        findFirst: jest.fn().mockResolvedValue(options.leave ?? null),
-        findMany: jest.fn().mockResolvedValue([]),
+        // With `leave`, emp-1 is away on every day asked about.
+        findMany: jest.fn().mockResolvedValue(
+          options.leave
+            ? [
+                {
+                  employeeId: 'emp-1',
+                  ...(options.leave as object),
+                  startDate: EARLIEST,
+                  endDate: LATEST,
+                },
+              ]
+            : [],
+        ),
       },
     };
     const overtime = fakeOvertime();
@@ -225,7 +247,7 @@ describe('ShiftPlanningService', () => {
     it('only counts approved leave as a reason to skip', async () => {
       const { service, prisma } = build();
       await service.repeat(repeat(), 'mgr-1');
-      expect(prisma.ptoRequest.findFirst.mock.calls[0][0].where.status).toBe(PtoStatus.APPROVED);
+      expect(prisma.ptoRequest.findMany.mock.calls[0][0].where.status).toBe(PtoStatus.APPROVED);
     });
 
     it('refuses an end time before the start', async () => {
@@ -932,7 +954,7 @@ describe('ShiftPlanningService', () => {
         NOW,
       );
       const cancelledAt = prisma.shift.updateMany.mock.invocationCallOrder[0];
-      const firstWrite = prisma.shift.create.mock.invocationCallOrder[0];
+      const firstWrite = prisma.shift.createMany.mock.invocationCallOrder[0];
       expect(cancelledAt).toBeLessThan(firstWrite);
     });
 
@@ -1056,7 +1078,8 @@ describe('ShiftPlanningService', () => {
       const { service, prisma } = build({ clash: { id: 'x' }, leave: { type: 'VACATION' } });
       const result = await service.repeat(open(), 'mgr-1');
       expect(result.skipped).toEqual([]);
-      expect(prisma.shift.findFirst).not.toHaveBeenCalled();
+      expect(prisma.shift.findMany).not.toHaveBeenCalled();
+      expect(prisma.ptoRequest.findMany).not.toHaveBeenCalled();
     });
 
     it('needs no one assigned to the location', async () => {
