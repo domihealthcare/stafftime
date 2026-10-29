@@ -509,7 +509,11 @@ export class PayService {
   /// Removing the event tells the people it was for. One already removed
   /// from the calendar is simply gone.
   private async removeEvent(eventId: string, actor: AuthUser) {
-    await this.events.remove(eventId, actor).catch(() => undefined);
+    await this.events.remove(eventId, actor).catch((cause: unknown) => {
+      if (!(cause instanceof NotFoundException)) {
+        this.logger.warn(`Could not remove meeting event ${eventId}: ${String(cause)}`);
+      }
+    });
   }
 }
 

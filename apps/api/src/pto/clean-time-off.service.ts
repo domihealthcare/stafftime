@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { HttpException, Injectable, Logger } from '@nestjs/common';
 import { PtoStatus, PtoType } from '@prisma/client';
 import { AuthUser } from '../common/auth/auth-user';
 import { PrismaService } from '../prisma/prisma.service';
@@ -16,6 +16,8 @@ import { PtoService } from './pto.service';
  */
 @Injectable()
 export class CleanTimeOffService {
+  private readonly logger = new Logger(CleanTimeOffService.name);
+
   constructor(
     private readonly prisma: PrismaService,
     private readonly pto: PtoService,
@@ -68,8 +70,12 @@ export class CleanTimeOffService {
       try {
         await this.pto.review(row.id, { decision: PtoStatus.APPROVED }, actor);
         approved += 1;
-      } catch {
-        // Decided by somebody else in the meantime.
+      } catch (cause) {
+        // Usually decided by somebody else in the meantime, which the review
+        // refuses with a 4xx. Anything else (the database, a bug) is logged.
+        if (!(cause instanceof HttpException)) {
+          this.logger.warn(`Could not approve time off ${row.id}: ${String(cause)}`);
+        }
         left.push(row.id);
       }
     }

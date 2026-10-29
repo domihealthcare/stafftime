@@ -634,7 +634,13 @@ export class Reviews360Service {
     });
     if (meeting.eventId) {
       // Removing the event tells them; otherwise say the offer is withdrawn.
-      await this.events.remove(meeting.eventId, actor).catch(() => undefined);
+      const eventId = meeting.eventId;
+      await this.events.remove(eventId, actor).catch((cause: unknown) => {
+        // One already removed from the calendar is simply gone.
+        if (!(cause instanceof NotFoundException)) {
+          this.logger.warn(`Could not remove meeting event ${eventId}: ${String(cause)}`);
+        }
+      });
     } else {
       await this.inbox.notify([meeting.subjectId], {
         kind: NotificationKind.EVENT,

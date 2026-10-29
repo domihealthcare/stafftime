@@ -288,7 +288,10 @@ export class AnnouncementsService {
         },
         actor.id,
       )
-      .catch(() => undefined);
+      // The post is saved either way; say so in the log rather than fail it.
+      .catch((cause: unknown) =>
+        this.logger.warn(`Could not notify staff of post ${row.id}: ${String(cause)}`),
+      );
     return present(row, actor.id);
   }
 
