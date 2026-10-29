@@ -189,9 +189,28 @@ export class DowntimeService {
     };
   }
 
-  /// What is going on now, for the red bar and the Downtime page: the
-  /// downtimes on now, and those planned. Managers also get who to contact.
+  /// What is going on now, for the Downtime page: the downtimes on now, and
+  /// those planned. Managers also get who to contact.
   async current(user: AuthUser, now = new Date()) {
+    const views = await this.notEnded(user, now);
+    return {
+      active: views.filter((view) => view.status === 'ACTIVE'),
+      planned: views.filter((view) => view.status === 'PLANNED'),
+      contacts: isManager(user) ? await this.contacts() : [],
+      myGroup: await this.groupOf(user),
+    };
+  }
+
+  /// The red bar's part of `current`: the downtimes on now, the same ones
+  /// `current` gives as `active`, without the contacts and procedures only
+  /// the Downtime page needs. Asked with the other badges (`badges/`).
+  async active(user: AuthUser, now = new Date()) {
+    const views = await this.notEnded(user, now);
+    return views.filter((view) => view.status === 'ACTIVE');
+  }
+
+  /// The downtimes somebody can see that have not ended: on now or planned.
+  private async notEnded(user: AuthUser, now: Date) {
     const visible = await this.visibleTo(user);
     const [rows, officeCount] = await Promise.all([
       this.prisma.downtime.findMany({
@@ -201,13 +220,7 @@ export class DowntimeService {
       }),
       this.officeCount(),
     ]);
-    const views = rows.map((row) => this.view(row, officeCount, user, now));
-    return {
-      active: views.filter((view) => view.status === 'ACTIVE'),
-      planned: views.filter((view) => view.status === 'PLANNED'),
-      contacts: isManager(user) ? await this.contacts() : [],
-      myGroup: await this.groupOf(user),
-    };
+    return rows.map((row) => this.view(row, officeCount, user, now));
   }
 
   /// Whose procedures they see first, by their main job role (or the ones an

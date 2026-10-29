@@ -148,19 +148,45 @@ await step('an ordinary read counts as use', async () => {
 
 await step("the app's own polls say they are background and move nothing", async () => {
   lastUsed('2 hours');
-  const asked = page.waitForRequest((r) => r.url().endsWith('/api/notifications/unread-count'), {
+  // The bell, the downtime bar and the time-off badge ask in one request
+  // (`GET /badges`, October 2026).
+  const asked = page.waitForRequest((r) => r.url().endsWith('/api/badges'), {
     timeout: 10000,
   });
   await comeBackIntoView();
   const request = await asked;
   if (request.headers()['x-background-request'] !== '1') {
     throw new Error(
-      `the bell's look carried no background header: ${JSON.stringify(request.headers())}`,
+      `the badges' look carried no background header: ${JSON.stringify(request.headers())}`,
     );
   }
   await page.waitForLoadState('networkidle');
   if (!stillTwoHoursAgo()) throw new Error('lastUsedAt moved');
   await page.getByText('Not clocked in').waitFor({ timeout: 5000 });
+});
+
+await step('a screen change asks for the badges once, as the person using the app', async () => {
+  const seen = [];
+  const watch = (r) => {
+    if (
+      /\/api\/(badges|notifications\/unread-count|downtime\/current|pto\/pending-count)$/.test(
+        r.url(),
+      )
+    )
+      seen.push(r);
+  };
+  page.on('request', watch);
+  await page
+    .getByRole('navigation')
+    .getByRole('link', { name: /^Schedule/ })
+    .click();
+  await page.waitForLoadState('networkidle');
+  page.off('request', watch);
+  const paths = seen.map((r) => new URL(r.url()).pathname);
+  if (paths.length !== 1 || paths[0] !== '/api/badges')
+    throw new Error(`a screen change asked: ${paths.join(', ') || 'nothing'}`);
+  if (seen[0].headers()['x-background-request'])
+    throw new Error('a screen change was sent as a background look');
 });
 
 await step('idle 8 hours: a background read is refused', async () => {
