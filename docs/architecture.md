@@ -1053,10 +1053,11 @@ column was dropped in two steps, so neither deploy breaks the code still live
 while Vercel builds (it runs migrations a few minutes before the new code takes
 over, and Prisma reads every column it knows of). Version 1.31.0 emptied it
 and kept it in the schema; 1.31.1 took it out of the schema, so the app no
-longer reads it, and left it in the database; a later release drops it with a
-migration, first fingerprinting any code the 1.31.0 deploy's old code made in
-its few minutes (overwriting that person's fingerprint, as the plain code is
-the newer).
+longer reads it, and left it in the database; 1.31.2's migration
+`20261029020000_drop_calendar_token` dropped it, first fingerprinting any code
+the 1.30.0 server made in the 1.31.0 deploy's few minutes, for somebody with
+no fingerprint yet. Where both were set, which is newer cannot be told, so the
+fingerprint the app had been using stays.
 
 The feed is scoped to one employee, and stops working the moment they are
 terminated, like their sign-in.
