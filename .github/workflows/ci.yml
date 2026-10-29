@@ -39,6 +39,15 @@ jobs:
       - run: npm run prisma:generate --workspace @stafftime/api
 
       - run: npm run lint
+
+      # The code under apps/ is kept in Prettier's style (npm run format).
+      # This fails when a file is not, so style drift is caught before merge
+      # rather than turning up as noise in somebody else's change. To fix it,
+      # run `npm run format` and commit what it changes. tests/browser and
+      # docs are not checked.
+      - name: Formatting
+        run: npm run format:check
+
       - run: npm run typecheck
       - run: npm test
       - run: npm run build

@@ -16,6 +16,7 @@
     "test:browser": "bash tests/browser/run-all.sh",
     "lint": "npm run lint --workspace @stafftime/api && npm run lint --workspace @stafftime/web",
     "format": "prettier --write \"apps/**/*.{ts,tsx,js,json,md}\"",
+    "format:check": "prettier --check \"apps/**/*.{ts,tsx,js,json,md}\"",
     "db:up": "docker compose up -d postgres",
     "db:down": "docker compose down",
     "db:migrate": "npm run prisma:migrate --workspace @stafftime/api",
