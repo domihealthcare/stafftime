@@ -175,6 +175,33 @@ export class PtoPolicyService {
       .balance;
   }
 
+  /// The same for many at once - each person's balance for the policy year
+  /// their day falls in, in the order asked - from a handful of reads per
+  /// policy year rather than about six each ("Approve the clean time off",
+  /// maintenance pass, October 2026). Each figure is what `balanceOn` gives.
+  async balancesOn(asked: { employeeId: string; day: Date }[]): Promise<PtoBalance[]> {
+    if (asked.length === 0) return [];
+    const policy = await this.get();
+    const yearOf = (day: Date) => this.policyYearOf(day, policy);
+    const byYear = new Map<number, Set<string>>();
+    for (const { employeeId, day } of asked) {
+      const year = yearOf(day);
+      byYear.set(year, (byYear.get(year) ?? new Set()).add(employeeId));
+    }
+    const found = new Map<string, PtoBalance>();
+    for (const [year, ids] of byYear) {
+      const worked = await this.balancesWithTerms([...ids], policy, year);
+      for (const [employeeId, { balance }] of worked) found.set(`${employeeId}:${year}`, balance);
+    }
+    // Anybody not found is asked alone, which says so as it always has.
+    return Promise.all(
+      asked.map(
+        ({ employeeId, day }) =>
+          found.get(`${employeeId}:${yearOf(day)}`) ?? this.balanceOn(employeeId, day),
+      ),
+    );
+  }
+
   async balanceFor(employeeId: string, year?: number): Promise<PtoBalance> {
     return (await this.balanceWithTerms(employeeId, await this.get(), year)).balance;
   }
@@ -227,11 +254,13 @@ export class PtoPolicyService {
    * 2026). Each person's figures are worked out by workOutBalance exactly as
    * for one person; each read covers everybody's years, and each person's
    * share is cut back to their own window first, so nothing outside it is
-   * seen. In the order of `ids`; anybody not found is left out.
+   * seen. In the order of `ids`; anybody not found is left out. For the
+   * policy year given, this one by default.
    */
   private async balancesWithTerms(
     ids: string[],
     policy: PtoPolicy,
+    year?: number,
   ): Promise<Map<string, { balance: PtoBalance; person: PersonalTerms }>> {
     const results = new Map<string, { balance: PtoBalance; person: PersonalTerms }>();
     if (ids.length === 0) return results;
@@ -242,10 +271,10 @@ export class PtoPolicyService {
     if (employees.length === 0) return results;
     const people = employees.map((employee) => ({
       employee,
-      window: this.balanceWindow(employee, policy),
+      window: this.balanceWindow(employee, policy, year),
       person: personalTerms(employee, policy),
     }));
-    // Everybody shares this year's end; the start goes back to the earliest.
+    // Everybody shares the year's end; the start goes back to the earliest.
     const end = people[0].window.end;
     const lastDay = people[0].window.lastDay;
     const earliest = new Date(Math.min(...people.map((one) => one.window.firstStart.getTime())));
