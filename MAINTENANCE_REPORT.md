@@ -11,6 +11,11 @@ the server framework, NestJS, from version 10 to 11. Nothing was deployed, no da
 migration was written or run, and no real data was touched. All testing
 used a throwaway database on the temporary machine this work ran on.
 
+**Follow-up, 29 October 2026 (versions 1.31.0 to 1.32.0).** Everything left
+in sections 2 and 3 has since been done, apart from NestJS 12 (held back on
+purpose, see section 3) and the checks only you can make in your dashboards.
+Sections 2 and 3 below say what happened to each item.
+
 ---
 
 ## 1. What was done
@@ -226,60 +231,78 @@ error screen and the "could not check" messages.
 
 ---
 
-## 2. What can be done (optional, later)
+## 2. What can be done (optional, later): all done in 1.32.0
 
-| Item | What it means | Effort | Impact |
-| --- | --- | --- | --- |
-| Copy week / repeating shifts in fewer steps | Copying a 150-shift week makes about 450 database calls one after another. Grouping them needs care, because new shifts must also be checked against each other. | Medium | Medium (copying a week gets faster) |
-| Database indexes on dates | Make date searches on shifts and time entries faster as those tables grow. Needs a **migration**, which reaches the live database as soon as its branch is pushed. | Small | Low today, grows over time |
-| "Approve the clean time off" in one go | Same idea as the balances fix, for the Schedule and Time off screens. | Small | Low to medium |
-| Formatting and "forgotten await" checks in CI | Stops style drift and the kind of bug fixed in `d8da680` from coming back. Could block a merge until fixed. | Small | Medium |
-| Unit tests for the web app | There are none; the web's pure logic (dates, repeat patterns, clinical scoring) is tested only through the browser suites. | Medium | Medium |
-| Unit tests for sign-in and permission guards, pay screens | Currently covered only by browser tests. | Medium | Medium |
-| Spanish phrases loaded only for Spanish readers | About 60 kB of the first download is Spanish text everybody gets. | Medium | Low |
-| One badge request instead of three per screen | The bell, downtime and time-off counts each ask the server on every screen change. | Small | Low |
-| Generate the web's data types from the server | `apps/web/src/lib/types.ts` (2,800 lines) is kept by hand; mismatches are caught only by tests. | Large | Medium |
-| Shared date helpers in the web | About 10 small copies of "add a day" and two ideas of "today" (the browser's vs New Jersey's). All correct now. | Small | Low |
+Six agents did these at the same time on 29 October 2026, each in its own
+copy of the code; the work was then combined and checked together (every
+unit test, the type checks and the whole browser suite).
+
+| Item | What happened |
+| --- | --- |
+| Copy week / repeating shifts in fewer steps | **Done.** A 150-shift week now takes 5 database calls instead of 431, with the same result (a test runs the old one-by-one way beside the new one and compares). |
+| Database indexes on dates | **Done.** Two indexes, on shifts' start time and punches' clock-in time (migration `20261030010000_date_indexes`). |
+| "Approve the clean time off" in one go | **Done.** 15 calls instead of 135 for 12 requests, same list (compared the same way). |
+| Formatting and "forgotten await" checks in CI | **Done.** CI fails on unformatted code under `apps/` and on a forgotten `await`. None was found in code that runs on the live site; six were fixed in tests. |
+| Unit tests for the web app | **Done.** 179 tests (Vitest 4.1.12): dates and New Jersey time, repeat patterns (checked against the server's), the phone book, guide markup, the clinical forms' scoring. |
+| Unit tests for sign-in and permission guards, pay screens | **Done.** 58 more server tests. |
+| Spanish phrases loaded only for Spanish readers | **Done.** The first download fell from 457 kB to 397 kB (before the router upgrade). |
+| One badge request instead of three per screen | **Done.** One request per screen change, every 60 seconds while the tab is open. |
+| Generate the web's data types from the server | **Done another way.** Instead of rewriting the web's types, `npm run typecheck` now checks 408 of the web's 411 server calls against what the server really sends, so a mismatch fails CI. It found 64 mismatches, all corrected in the type definitions only. |
+| Shared date helpers in the web | **Done.** About 30 small copies now use one shared module, with identical results. |
 
 ---
 
 ## 3. What needs to be done / still pending
 
-Ranked by urgency.
-
-1. **Done in 1.31.0: Node 24.** Vercel's project setting already said 24.x,
-   but `package.json`'s `engines` wins over it and said 22, so 1.30.0 ran on
-   22. Both say 24 now, and CI too; everything was checked on Node 24.
-2. **Watch the first days after merging the NestJS 11 upgrade.** It is the
-   biggest change in this branch. Every automated check passes, but if
-   anything odd shows up (a screen that fails to save, an error in Vercel's
-   logs), reverting `a4b5206` alone puts NestJS 10 back.
-3. **Upgrade React Router 6 to 7 and Vite 5 to 7 or later.** React Router is
-   2 of the 4 remaining live-site warnings (moderate, about link handling);
-   Vite's are developer-only. **Medium to large.**
-4. **The spreadsheet library (`exceljs`) uses an old `uuid`** (the other 2
-   live-site warnings, moderate). The export never uses the affected part.
-   A newer `exceljs` or a forced `uuid` bump would clear it. **Small**, but
-   needs the export checked in Excel and ADP afterwards.
-5. **NestJS 12**, when convenient: the build tools' remaining "high" warnings
-   go with it. It needs Node 24.9+ for the unit tests (now met, since
-   1.31.0 runs on Node 24) or moving them from Jest to Vitest. **Large.**
-6. **Questions for you: all four answered and done in 1.31.0** (29 October
-   2026): "Where you're signed in" on Your profile; the app's automatic checks
-   no longer count as use, so an open tab signs out after 8 idle hours;
-   calendar links kept only as a fingerprint; and requests from other
-   `domihealthcare.com` pages refused. See *Security round* in CLAUDE.md.
-   **Follow-up, done:** the old `calendarToken` column was emptied in
-   1.31.0, no longer read from 1.31.1 and dropped in 1.31.2, so no deploy
-   broke the code still live while Vercel built.
+1. **Done: Node 24** (1.31.0).
+2. **NestJS 11 upgrade:** live since 28 October with no errors in Vercel's
+   log. If anything odd shows up, reverting `a4b5206` alone puts NestJS 10
+   back.
+3. **Done: React Router 7 and Vite 7** (1.32.0). React Router is pinned to
+   7.18.4 (six weeks old) rather than the newest 7.18.5. One behaviour
+   difference had to be switched off (`useTransitions={false}`): with it on,
+   letters typed quickly into the phone book search were lost. A new browser
+   check, `address-search.mjs`, catches it. Older phones keep working
+   (`build.target` in `vite.config.ts`).
+4. **Done: the spreadsheet library's old `uuid`** (1.32.0, forced to 11.1.1).
+   Every export file came out identical. **The live site's dependencies now
+   have no security warnings at all.**
+5. **NestJS 12: held back on purpose.** Its packages can only be loaded in a
+   way that Vercel's live servers turn off by default, so every request to
+   the live API would fail, and no check before merging can catch it. The
+   upgrade itself was worked out and passes every check in a trial copy. To
+   do it later: (1) add `NODE_OPTIONS=--experimental-require-module` to
+   Vercel's Production settings while still on NestJS 11, (2) confirm it took
+   effect, (3) then upgrade. It gains little: the remaining "high" warnings
+   (4, all in development tools) come from `@vercel/node`, not NestJS, so the
+   earlier note that they "go with" NestJS 12 was wrong.
+6. **Questions for you: all answered and done** in 1.31.0, and the old
+   calendar column removed in 1.31.1 and 1.31.2.
 7. **Things to look at in your dashboards** (I can't see them):
-   - Vercel's server region should match Neon's database region; every
-     database call pays the distance.
-   - Resend's logs, Sunday around 6 pm: "Your week" and "You're on tomorrow"
-     go out together, and Resend's default limit is 2 emails a second.
-8. **Already on your list in CLAUDE.md** (unchanged by this pass): rotate the
-   Neon database password, and the ADP test import before anybody is paid
-   from it.
+   - **Neon:** Vercel runs the server in Washington, D.C. (`iad1`); the
+     database should be in **US East (N. Virginia)** to match.
+   - **Resend's logs, Sunday around 6 pm:** "Your week" and "You're on
+     tomorrow" go out together, and Resend's default limit is 2 emails a
+     second.
+8. **Already on your list in CLAUDE.md:** rotate the Neon database password,
+   and the ADP test import before anybody is paid from it.
+9. **Found while doing this, not fixed (small):**
+   - **Ask to fix your hours, on the night the clocks go forward:** for an
+     entry clocked in between 11 pm and midnight that night, an overnight
+     correction lands a day late (`components/Corrections.tsx` adds 24 hours
+     instead of one calendar day). Once a year, narrow.
+   - A few screens use the browser's own date where the server uses New
+     Jersey's (the time off cards, the Add hours date limit, the checklist
+     "overdue" mark, the Export end date). Only wrong on a computer set to
+     another time zone.
+   - `parseDay('2026-02-30')` gives 2 March instead of nothing, and one code
+     comment about the month grid is wrong. Neither shows on screen.
+   - **For a clinician:** the BrainCheck Care Plan reads a Cornell score of
+     exactly 10 as "probable major depression"; some published versions say
+     only above 10.
+   - **360 feedback:** the server would accept a third kind of question
+     ("choice") that the screens never send. Left as it is, since narrowing
+     it changes what the server accepts.
 
 **Secrets check:** no passwords, keys or database addresses are committed to
 the repo. The only password in the code is the demo accounts'

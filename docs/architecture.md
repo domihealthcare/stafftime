@@ -5870,3 +5870,41 @@ text.
 `pages/QuizResultsPage.tsx`; migrations `20261027020000_quiz_kind` (the enum
 value, on its own) and `20261027030000_quizzes`; `tests/browser/quiz.mjs`.
 
+
+## Maintenance, part two (29 October 2026, version 1.32.0)
+
+**One badge request.** The bell's unread count, the downtime bar and a
+manager's time-off badge used to ask the server separately, on every screen
+change and on their own timers. `GET /api/badges` (`src/badges/`) answers all
+three from the existing services, with the same rules (the time-off count is 0
+for Employee access, including an admin viewing as an employee; downtime is
+the person's offices, only what is on now). One poll, owned by `Layout` and
+shared through `lib/badges.tsx`, asks on every screen change (counted as use)
+and every 60 seconds while the tab is visible, and when the tab comes back
+into view (both sent as background requests, so they never hold off the idle
+sign-out). The three old routes are kept.
+
+**React Router 7 without transitions.** Version 7 wraps every navigation in a
+React transition. The phone book and guide searches keep what is typed in the
+address (`?q=`), so with transitions on, letters typed quickly were lost and
+the caret jumped. `<RouterProvider useTransitions={false}>` is the router's
+documented way back to version 6's behaviour, and `tests/browser/
+address-search.mjs` fails if it is taken away. Remove it only together with
+moving those searches' text out of the address.
+
+**The web's types checked against the server.** `apps/web/src/lib/types.ts` is
+still written by hand, but `tests/contract/generate.mjs` reads every call in
+`lib/api.ts`, finds the controller method that serves it, and writes one
+type-level check per call (`tests/contract/generated.ts`, not committed),
+which `npm run typecheck` compiles. `tests/contract/wire.ts` models what JSON
+does on the way (dates and Prisma decimals become strings, `undefined` becomes
+optional). The direction is "what the server sends fits what the web reads",
+so an extra field is fine but a missing one, an unexpected `null` or an
+unlisted enum value fails. Calls left out on purpose, with their reasons, are
+in `tests/contract/not-checked.mjs`.
+
+**NestJS 12 is held back.** Its packages are ESM-only. Our API is CommonJS and
+loads them through Node's `require(esm)`, which Vercel's Node 24 runtime turns
+off (`--no-experimental-require-module`), so the live API would fail on every
+request. Set `NODE_OPTIONS=--experimental-require-module` in Vercel first and
+confirm it took effect, then upgrade.
