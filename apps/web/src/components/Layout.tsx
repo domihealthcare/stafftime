@@ -99,10 +99,17 @@ export function Layout() {
   // was not enough: it went on showing requests already dealt with.
   const { pathname } = useLocation();
   const [ptoGeneration, setPtoGeneration] = useState(0);
+  /// The tab coming back into view is not somebody using the app, so that
+  /// look is a background one (see `request` in lib/api).
+  const ptoByItself = useRef(false);
   useEffect(() => {
     if (!isManager) return;
     const bump = () => setPtoGeneration((n) => n + 1);
-    const onVisible = () => document.visibilityState === 'visible' && bump();
+    const onVisible = () => {
+      if (document.visibilityState !== 'visible') return;
+      ptoByItself.current = true;
+      bump();
+    };
     window.addEventListener(TIME_OFF_CHANGED, bump);
     document.addEventListener('visibilitychange', onVisible);
     return () => {
@@ -115,8 +122,10 @@ export function Layout() {
       return;
     }
     let cancelled = false;
+    const background = ptoByItself.current;
+    ptoByItself.current = false;
     api
-      .ptoPendingCount()
+      .ptoPendingCount({ background })
       .then((result) => !cancelled && setPendingPto(result.pending))
       .catch(() => undefined);
     return () => {

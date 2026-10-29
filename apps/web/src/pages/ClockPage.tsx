@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { ApiError, api } from '../lib/api';
+import { ApiError, api, type Background } from '../lib/api';
 import { practiceToday } from '../lib/practice-time';
 import { formatDuration, formatTime, localDate } from '../lib/format';
 import { GeolocationRefused, detectClockMethod, getCurrentPosition } from '../lib/geolocation';
@@ -82,41 +82,49 @@ export function ClockPage() {
   // Memoised: a fresh [] each render would re-run the default-location effect forever.
   const assignedLocations = useMemo(() => employee?.locations ?? [], [employee]);
 
-  const load = useCallback(async () => {
-    setStatus('loading');
-    try {
-      const [current, shifts] = await Promise.all([
-        api.currentEntry(),
-        // Your own shifts: a manager's list would otherwise be everybody's.
-        api.listShifts({ from: startOfToday(), to: endOfToday(), employeeId: employee?.id }),
-      ]);
-      setEntry(current);
-      setChecklist(
-        current && !current.clockOutAt
-          ? await api
-              .closingMine()
-              .then((result) => result.sections)
-              .catch(() => [])
-          : [],
-      );
-      // A removed shift is kept as CANCELLED; it is not today's shift.
-      setTodaysShifts(
-        shifts
-          .filter((shift) => shift.status !== 'CANCELLED')
-          .sort((a, b) => a.startsAt.localeCompare(b.startsAt)),
-      );
-      // Not worth failing Home over.
-      api
-        .events(startOfToday(), endOfToday())
-        .then(setTodaysEvents)
-        .catch(() => setTodaysEvents([]));
-      setError(null);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : translate('Could not load your status.'));
-    } finally {
-      setStatus('ready');
-    }
-  }, [employee?.id]);
+  /// `background` when the tab coming back into view asked, not the person:
+  /// it does not count as using the app (see `request`).
+  const load = useCallback(
+    async ({ background }: Background = {}) => {
+      setStatus('loading');
+      try {
+        const [current, shifts] = await Promise.all([
+          api.currentEntry({ background }),
+          // Your own shifts: a manager's list would otherwise be everybody's.
+          api.listShifts(
+            { from: startOfToday(), to: endOfToday(), employeeId: employee?.id },
+            { background },
+          ),
+        ]);
+        setEntry(current);
+        setChecklist(
+          current && !current.clockOutAt
+            ? await api
+                .closingMine({ background })
+                .then((result) => result.sections)
+                .catch(() => [])
+            : [],
+        );
+        // A removed shift is kept as CANCELLED; it is not today's shift.
+        setTodaysShifts(
+          shifts
+            .filter((shift) => shift.status !== 'CANCELLED')
+            .sort((a, b) => a.startsAt.localeCompare(b.startsAt)),
+        );
+        // Not worth failing Home over.
+        api
+          .events(startOfToday(), endOfToday(), { background })
+          .then(setTodaysEvents)
+          .catch(() => setTodaysEvents([]));
+        setError(null);
+      } catch (err) {
+        setError(err instanceof Error ? err.message : translate('Could not load your status.'));
+      } finally {
+        setStatus('ready');
+      }
+    },
+    [employee?.id],
+  );
 
   useEffect(() => {
     void load();
@@ -127,7 +135,9 @@ export function ClockPage() {
   // what it knew this morning.
   useEffect(() => {
     const refresh = () => {
-      if (document.visibilityState === 'visible' && !punching.current) void load();
+      if (document.visibilityState === 'visible' && !punching.current) {
+        void load({ background: true });
+      }
     };
     document.addEventListener('visibilitychange', refresh);
     return () => document.removeEventListener('visibilitychange', refresh);

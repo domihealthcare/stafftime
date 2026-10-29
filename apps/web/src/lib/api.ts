@@ -198,7 +198,15 @@ export class ApiError extends Error {
 /// punch on a dead connection says so instead of spinning for minutes.
 const REQUEST_TIMEOUT_MS = 20_000;
 
-async function request<T>(path: string, init: RequestInit = {}): Promise<T> {
+/// What a screen polling by itself passes to the calls below. See `request`.
+export interface Background {
+  background?: boolean;
+}
+
+async function request<T>(
+  path: string,
+  { background, ...init }: RequestInit & Background = {},
+): Promise<T> {
   let response: Response;
   const abort = new AbortController();
   const timer = window.setTimeout(() => abort.abort(), REQUEST_TIMEOUT_MS);
@@ -212,6 +220,11 @@ async function request<T>(path: string, init: RequestInit = {}): Promise<T> {
         // While an admin views as somebody (October 2026), every request
         // says so, and the server answers as that person is answered.
         ...viewAsHeaders(),
+        // A poll the screen makes by itself (the bell every minute, say) is
+        // not somebody using the app, so it must not hold off the 8-hour
+        // idle sign-out (October 2026). Only for reads; the server ignores it
+        // on anything else.
+        ...(background ? { 'X-Background-Request': '1' } : {}),
         ...init.headers,
       },
     });
@@ -643,7 +656,8 @@ export const api = {
   // ---------------------------------------------------------- notifications
   /// The bell: your own notifications, newest first.
   notifications: () => request<NotificationList>('/notifications'),
-  unreadNotifications: () => request<{ unread: number }>('/notifications/unread-count'),
+  unreadNotifications: (options?: Background) =>
+    request<{ unread: number }>('/notifications/unread-count', options),
   markNotificationRead: (id: string) =>
     request<{ unread: number }>(`/notifications/${id}/read`, { method: 'POST' }),
   markAllNotificationsRead: () =>
@@ -698,7 +712,8 @@ export const api = {
     request<EveryonesSchedule>(`/schedule-view${toQuery({ from, to })}`),
   listPto: (params: Record<string, string | undefined> = {}) =>
     request<PtoRequest[]>(`/pto${toQuery(params)}`),
-  ptoPendingCount: () => request<{ pending: number }>('/pto/pending-count'),
+  ptoPendingCount: (options?: Background) =>
+    request<{ pending: number }>('/pto/pending-count', options),
   createPto: (body: {
     type: string;
     startDate: string;
@@ -1116,14 +1131,16 @@ export const api = {
   removeEmploymentChange: (id: string) =>
     request<StaffRecord>(`/staff-records/changes/${id}`, { method: 'DELETE' }),
 
-  currentEntry: () => request<TimeEntry | null>('/time-entries/current'),
+  currentEntry: (options?: Background) =>
+    request<TimeEntry | null>('/time-entries/current', options),
   clockIn: (payload: ClockInPayload) =>
     request<TimeEntry>('/time-entries/clock-in', {
       method: 'POST',
       body: JSON.stringify(payload),
     }),
   // ------------------------------------------------------------ closing checklists
-  closingMine: () => request<{ sections: ApplicableSection[] }>('/closing/mine'),
+  closingMine: (options?: Background) =>
+    request<{ sections: ApplicableSection[] }>('/closing/mine', options),
   closingRecords: (date: string, locationId?: string) =>
     request<ClosingRecord[]>(`/closing/records${toQuery({ date, locationId })}`),
   clearClosingRecord: (id: string) =>
@@ -1329,8 +1346,8 @@ export const api = {
   /// Your own coming weeks that are over, or close to, the overtime line.
   myOvertime: () => request<OwnOvertimeWeek[]>('/shifts/my-overtime'),
 
-  listShifts: (params: Record<string, string | undefined> = {}) =>
-    request<Shift[]>(`/shifts${toQuery(params)}`),
+  listShifts: (params: Record<string, string | undefined> = {}, options?: Background) =>
+    request<Shift[]>(`/shifts${toQuery(params)}`, options),
   createShift: (body: {
     /// Null for an open shift.
     employeeId: string | null;
@@ -1668,9 +1685,10 @@ export const api = {
     request<{ removed: boolean }>(`/productivity/statements/${id}`, { method: 'DELETE' }),
 
   /// Meetings and practice events overlapping [from, to), as ISO instants.
-  events: (from: string, to: string) =>
+  events: (from: string, to: string, options?: Background) =>
     request<PracticeEvent[]>(
       `/events?from=${encodeURIComponent(from)}&to=${encodeURIComponent(to)}`,
+      options,
     ),
   /// `created` is how many dates were written - more than one for a series.
   createEvent: (body: EventInput) =>
@@ -1818,7 +1836,7 @@ export const api = {
     request<Guide>(`/guides/sections/${id}`, { method: 'DELETE' }),
 
   // ---------------------------------------------------------------- downtime
-  downtimeCurrent: () => request<DowntimeCurrent>('/downtime/current'),
+  downtimeCurrent: (options?: Background) => request<DowntimeCurrent>('/downtime/current', options),
   downtimeLog: (year?: number) =>
     request<DowntimeLog>(`/downtime/log${year ? `?year=${year}` : ''}`),
   startDowntime: (body: {
@@ -2111,8 +2129,9 @@ export const api = {
   dashboard: (weeks: number) => request<Dashboard>(`/dashboard?weeks=${weeks}`),
   /// Surveys, licenses, checklists, closing and what is waiting on a manager.
   practiceOverview: () => request<PracticeOverview>('/dashboard/practice'),
-  directory: () => request<DirectoryEntry[]>('/directory'),
-  extensions: () => request<OfficeExtension[]>('/directory/extensions'),
+  directory: (options?: Background) => request<DirectoryEntry[]>('/directory', options),
+  extensions: (options?: Background) =>
+    request<OfficeExtension[]>('/directory/extensions', options),
   saveExtensions: (lines: OfficeExtensionInput[]) =>
     request<OfficeExtension[]>('/directory/extensions', {
       method: 'PUT',

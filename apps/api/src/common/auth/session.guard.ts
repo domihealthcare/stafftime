@@ -2,7 +2,7 @@ import { CanActivate, ExecutionContext, Injectable, UnauthorizedException } from
 import { Reflector } from '@nestjs/core';
 import { Role } from '@prisma/client';
 import type { Request } from 'express';
-import { VIEW_AS_HEADER, VIEW_AS_JOB_ROLES_HEADER } from './auth-user';
+import { BACKGROUND_HEADER, VIEW_AS_HEADER, VIEW_AS_JOB_ROLES_HEADER } from './auth-user';
 import { SESSION_COOKIE } from '../../auth/cookie';
 import { SessionService } from '../../auth/session.service';
 import { IS_PUBLIC_KEY } from './public.decorator';
@@ -37,7 +37,7 @@ export class SessionAuthGuard implements CanActivate {
       throw new UnauthorizedException('Please sign in.');
     }
 
-    const owner = await this.sessions.resolve(token);
+    const owner = await this.sessions.resolve(token, { touch: !isBackground(request) });
     if (!owner) {
       throw new UnauthorizedException('Your session has expired. Please sign in again.');
     }
@@ -62,6 +62,19 @@ export class SessionAuthGuard implements CanActivate {
     request.sessionToken = token;
     return true;
   }
+}
+
+/**
+ * A request the screen made by itself - the bell's count every minute, the
+ * downtime bar every two - rather than one the person caused. It is answered
+ * as usual but is not "use", so it does not hold off the idle sign-out
+ * (October 2026): before this, a tab left open on the front-desk computer was
+ * never idle, and only the 12-hour limit ever signed it out. Heard only on a
+ * read; anything that changes something is somebody doing something.
+ */
+export function isBackground(request: Pick<Request, 'method' | 'headers'>): boolean {
+  if (request.method !== 'GET' && request.method !== 'HEAD') return false;
+  return request.headers[BACKGROUND_HEADER] === '1';
 }
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;

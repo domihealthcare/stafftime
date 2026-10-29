@@ -217,6 +217,19 @@ at the shared front-desk browser left open overnight.
 `lastUsedAt` is refreshed at most once a minute rather than on every request —
 otherwise every read would carry a write.
 
+Only use counts (October 2026). A tab in view asks the server things by
+itself: the bell's count every minute, the downtime bar every two, the
+Directory and the downtime page every minute, and the bell, the bar, Home and
+the time-off badge again when the tab comes back into view. Those requests
+send `X-Background-Request: 1` (`request(..., { background: true })` in the
+web's `lib/api.ts`), and on a GET or HEAD `SessionAuthGuard` then calls
+`resolve(token, { touch: false })`: the session is checked as usual, refused
+once expired or idle, but `lastUsedAt` is not moved. Before this a tab left
+open on the front-desk computer was never idle, and only the 12-hour limit
+signed it out. The header is ignored on anything that changes something, and
+the pay lock only slides on pay routes and `/pay-lock/touch`, which no poll
+reaches. `tests/browser/idle-signout.mjs`.
+
 ### The cookie
 
 `httpOnly` (a script on the page cannot read it, so an XSS bug cannot steal the
