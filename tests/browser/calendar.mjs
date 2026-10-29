@@ -75,8 +75,13 @@ await step('turning it on shows the link once, to copy then', async () => {
   if (!expected.test(url))
     throw new Error(`unexpected calendar url: ${url}`);
 
-  await page.getByRole('button', { name: 'Copy' }).click();
-  await page.getByRole('button', { name: 'Copied' }).waitFor({ timeout: 5000 });
+  await page.getByRole('button', { name: 'Copy', exact: true }).click();
+  await page.getByRole('button', { name: 'Copied', exact: true }).waitFor({ timeout: 5000 });
+});
+
+await step('the Providers calendar is offered beside the all-in-one, as it is not in it', async () => {
+  const beside = await page.getByTestId('alongside-providers').getByRole('textbox').inputValue();
+  if (beside !== url.replace(/domi\.ics$/, 'providers.ics')) throw new Error(`providers address: ${beside}`);
 });
 await page.screenshot({ path: `${OUT}/36-calendar-link.png`, fullPage: true });
 

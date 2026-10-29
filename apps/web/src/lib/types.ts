@@ -2026,6 +2026,8 @@ export interface ProviderPlaces {
   shifts: {
     id: string;
     provider: OnCallPerson;
+    /// "Dr. Hernandez", or "Dr. J Dominguez" when two would read the same.
+    label: string;
     isRemote: boolean;
     locationId: string;
     locationName: string;

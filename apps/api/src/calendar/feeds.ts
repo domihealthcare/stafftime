@@ -1,7 +1,8 @@
 import { PracticeEventKind } from '@prisma/client';
 
 /// What can go in a calendar feed.
-export type FeedPart = 'SHIFTS' | 'TIME_OFF' | 'PAY_DAYS' | 'ON_CALL' | PracticeEventKind;
+export type FeedPart =
+  'SHIFTS' | 'TIME_OFF' | 'PAY_DAYS' | 'ON_CALL' | 'PROVIDERS' | PracticeEventKind;
 
 export interface Feed {
   /// The calendar's name on the phone, after the person's name.
@@ -45,4 +46,9 @@ export const FEEDS: Record<string, Feed> = {
   /// A provider's own on-call turns (October 2026). Empty for anybody else.
   'on-call': { name: 'My on call', parts: ['ON_CALL'] },
   events: { name: 'Meetings & events', parts: [PracticeEventKind.EVENT] },
+  /// Where the providers are (October 2026, Dominguez): every provider's
+  /// published shift, at its office or on telemedicine. Not in `domi`, so
+  /// nobody's all-in-one calendar fills with everybody's providers; it is
+  /// added on its own, beside either.
+  providers: { name: 'Providers', parts: ['PROVIDERS'] },
 };

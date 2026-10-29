@@ -31,6 +31,7 @@ export const CALENDAR: Record<string, string> = {
   Holidays: 'Feriados',
   Closures: 'Cierres',
   'Pay days': 'Días de pago',
+  Providers: 'Proveedores',
   'Your shift': 'Tu turno',
   Event: 'Evento',
   'Diagnostics date': 'Fecha de diagnósticos',
@@ -126,8 +127,10 @@ export const CALENDAR: Record<string, string> = {
   'How many calendars': 'Cuántos calendarios',
   'Everything in one calendar': 'Todo en un calendario',
   'Separate calendars': 'Calendarios separados',
-  'Add only the ones you want. Each shows on your phone as its own calendar, with its own colour and its own on/off. Use these instead of the all-in-one address, not as well, or everything shows twice.':
-    'Agrega solo los que quieras. Cada uno aparece en tu teléfono como un calendario aparte, con su propio color y su propio encendido/apagado. Úsalos en lugar de la dirección con todo, no además de ella, o todo aparecerá dos veces.',
+  'Add only the ones you want. Each shows on your phone as its own calendar, with its own colour and its own on/off. Use these instead of the all-in-one address, not as well, or everything shows twice (Providers is the one exception: it is not in the all-in-one).':
+    'Agrega solo los que quieras. Cada uno aparece en tu teléfono como un calendario aparte, con su propio color y su propio encendido/apagado. Úsalos en lugar de la dirección con todo, no además de ella, o todo aparecerá dos veces (Proveedores es la única excepción: no está en el calendario con todo).',
+  'Not in the calendar above. Add it as well if you want it.':
+    'No está en el calendario de arriba. Agrégalo también si lo quieres.',
   'Copy the {calendar} address': 'Copiar la dirección de {calendar}',
   Copy: 'Copiar',
   Copied: 'Copiado',

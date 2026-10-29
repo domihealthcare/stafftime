@@ -92,6 +92,15 @@ await step('everybody sees the office and telemedicine on the calendar, never a 
   if (texts.length !== 2) throw new Error(`${texts.length} chips; the draft should be left out`);
 });
 
+await step('the office is on a line of its own, then each provider on a line of their own', async () => {
+  const chip = desk.getByTestId('provider-place').filter({ hasNotText: 'Telemedicine' }).first();
+  const lines = (await chip.innerText()).split('\n').map((line) => line.trim()).filter(Boolean);
+  if (lines.length !== 2) throw new Error(`lines: ${JSON.stringify(lines)}`);
+  if (!/(^|\s)(NB|WNY):$/.test(lines[0])) throw new Error(`first line is not the office: ${lines[0]}`);
+  if (!/\d(am|pm)-\d+(:\d\d)?(am|pm)$/.test(lines[1])) throw new Error(`no hours on the provider line: ${lines[1]}`);
+  if ((await chip.getByTestId('provider-line').count()) !== 1) throw new Error('provider not on its own line');
+});
+
 await step('Telemedicine is a place of its own: an office shows its own providers, Telemedicine only telemedicine', async () => {
   const picker = desk.getByLabel('Show office');
   const offered = await picker.locator('option').allInnerTexts();
@@ -127,6 +136,25 @@ await step('the server gives names, offices and hours only', async () => {
   if (found.body.shifts.length !== 2) throw new Error(`${found.body.shifts.length} shifts`);
   const far = await call(desk, '/calendar/providers?from=2027-01-01&to=2027-12-31');
   if (far.status !== 400) throw new Error('a year at once was allowed');
+});
+
+await step('the Providers calendar link: each published provider shift, never the draft, not in the all-in-one', async () => {
+  const feeds = await desk.evaluate(async () => {
+    const { token } = await fetch('/api/calendar/link', { method: 'POST' }).then((r) => r.json());
+    const read = (feed) =>
+      fetch(`/api/calendar/${token}/${feed}.ics`, { cache: 'no-store' }).then((r) => r.text());
+    return { providers: await read('providers'), all: await read('domi') };
+  });
+  const entries = feeds.providers.match(/UID:provider-/g) ?? [];
+  if (entries.length !== 2) throw new Error(`${entries.length} provider entries`);
+  if (!/X-WR-CALNAME:Providers - Domi Staff/.test(feeds.providers)) throw new Error('not named Providers');
+  if (!/SUMMARY:.+ - Telemedicine/.test(feeds.providers)) throw new Error('no telemedicine entry');
+  if (/UID:provider-/.test(feeds.all)) throw new Error('providers in the all-in-one calendar');
+  const card = await call(desk, '/calendar/providers?from=2027-03-01&to=2027-03-31');
+  const label = card.body.shifts[0].label;
+  if (!label || !feeds.providers.includes(`SUMMARY:${label} - `)) {
+    throw new Error(`the feed does not use the Calendar's name (${label})`);
+  }
 });
 
 await browser.close();
