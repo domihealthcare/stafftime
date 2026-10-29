@@ -318,9 +318,8 @@ describe('NotificationsService', () => {
 
   it('marks a test deployment’s mail as such, in the subject line', async () => {
     const { service, sent } = build('test');
-    service.passwordReset('a@b.com', 'Frankie', 'https://example.com/x', 30);
+    await service.passwordReset('a@b.com', 'Frankie', 'https://example.com/x', 30);
 
-    await new Promise((resolve) => setImmediate(resolve));
     expect(sent[0].subject).toBe('[Test] Reset your Domi password');
   });
 
@@ -368,9 +367,8 @@ describe('NotificationsService', () => {
 
   it('does not mark production mail', async () => {
     const { service, sent } = build('production');
-    service.passwordReset('a@b.com', 'Frankie', 'https://example.com/x', 30);
+    await service.passwordReset('a@b.com', 'Frankie', 'https://example.com/x', 30);
 
-    await new Promise((resolve) => setImmediate(resolve));
     expect(sent[0].subject).toBe('Reset your Domi password');
     expect(sent[0].text).toContain('https://example.com/x');
     expect(sent[0].text).toContain('30 minutes');

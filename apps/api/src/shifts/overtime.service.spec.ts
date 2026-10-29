@@ -183,15 +183,16 @@ describe('OvertimeService', () => {
   });
 
   describe('telling somebody their rota has put them over', () => {
-    const flush = () => new Promise((resolve) => setImmediate(resolve));
-
     it('emails when a published change crosses the line', async () => {
       const { service, notifications } = build({
         shifts: ['2026-10-05', '2026-10-06', '2026-10-07', '2026-10-08'].map((d) => shiftOn(d, 11)),
       });
 
-      service.announceNewOvertime(new Map([['emp-1:2026-10-05', 33]]), ['emp-1'], ['2026-10-05']);
-      await flush();
+      await service.announceNewOvertime(
+        new Map([['emp-1:2026-10-05', 33]]),
+        ['emp-1'],
+        ['2026-10-05'],
+      );
 
       expect(notifications.scheduledIntoOvertime).toHaveBeenCalledWith(
         'emp-1',
@@ -206,8 +207,11 @@ describe('OvertimeService', () => {
         shifts: ['2026-10-05', '2026-10-06', '2026-10-07', '2026-10-08'].map((d) => shiftOn(d, 11)),
       });
 
-      service.announceNewOvertime(new Map([['emp-1:2026-10-05', 41]]), ['emp-1'], ['2026-10-05']);
-      await flush();
+      await service.announceNewOvertime(
+        new Map([['emp-1:2026-10-05', 41]]),
+        ['emp-1'],
+        ['2026-10-05'],
+      );
 
       expect(notifications.scheduledIntoOvertime).not.toHaveBeenCalled();
     });
@@ -215,8 +219,7 @@ describe('OvertimeService', () => {
     it('does not email for a week that stays under', async () => {
       const { service, notifications } = build({ shifts: [shiftOn('2026-10-05', 8)] });
 
-      service.announceNewOvertime(new Map(), ['emp-1'], ['2026-10-05']);
-      await flush();
+      await service.announceNewOvertime(new Map(), ['emp-1'], ['2026-10-05']);
 
       expect(notifications.scheduledIntoOvertime).not.toHaveBeenCalled();
     });
