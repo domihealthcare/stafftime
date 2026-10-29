@@ -148,10 +148,11 @@ function fakePrisma() {
     preferredName: null,
     email: `${person.id}@example.com`,
   });
-  const balanceRow = (person: (typeof PEOPLE)[number]) => {
-    const { firstName: _first, lastName: _last, ...row } = person;
-    return row;
-  };
+  /// The person as the balance reads them: everything but the names.
+  const balanceRow = (person: (typeof PEOPLE)[number]) =>
+    Object.fromEntries(
+      Object.entries(person).filter(([key]) => key !== 'firstName' && key !== 'lastName'),
+    );
   return {
     ptoPolicy: { findUnique: jest.fn().mockResolvedValue(POLICY) },
     employee: {
