@@ -2,7 +2,8 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { api, type AppNotification, type Background } from '../lib/api';
 import { useIsManager } from '../lib/session';
-import { locale, t as translate, useT } from '../lib/i18n';
+import { useT } from '../lib/i18n';
+import { timeAgo } from '../lib/time-ago';
 
 /// How often the badge asks for a fresh count while the app is open.
 const POLL_MS = 60_000;
@@ -267,19 +268,4 @@ export function NotificationBell() {
       )}
     </div>
   );
-}
-
-/// "just now", "5 min ago", "3 h ago", "yesterday", then the date.
-function timeAgo(iso: string): string {
-  const minutes = Math.round((Date.now() - new Date(iso).getTime()) / 60_000);
-  if (minutes < 1) return translate('just now');
-  if (minutes < 60) return translate('{n} min ago', { n: minutes });
-  const hours = Math.round(minutes / 60);
-  if (hours < 24) return translate('{n} h ago', { n: hours });
-  if (hours < 48) return translate('yesterday');
-  return new Date(iso).toLocaleDateString(locale(), {
-    weekday: 'short',
-    month: 'short',
-    day: 'numeric',
-  });
 }

@@ -1007,6 +1007,21 @@ const STAFF: Section[] = [
         ),
       },
       {
+        question: 'I signed in on another phone or computer and forgot to sign out.',
+        answer: (
+          <p>
+            Open <Screen>Your profile</Screen> → <strong>Where you&rsquo;re signed in</strong>. It
+            lists every phone and computer signed in as you - &ldquo;Safari on iPhone&rdquo;,
+            &ldquo;Chrome on Windows&rdquo; - with when each was signed in and last used, and{' '}
+            <strong>This device</strong> on the one in your hand. Press <strong>Sign out</strong>{' '}
+            beside the one you left open, or <strong>Sign out everywhere else</strong> to sign out
+            all but this one. Whoever has it open will need your password to get back in. Changing
+            your password signs the others out too, and a sign-in left unused ends by itself after
+            some hours.
+          </p>
+        ),
+      },
+      {
         question: 'What is the bell at the top?',
         answer: (
           <p>
