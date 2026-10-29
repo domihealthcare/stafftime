@@ -64,8 +64,15 @@ export class SessionService {
    * A session dies at its absolute expiry, when revoked, or after a stretch of
    * inactivity - a shared front-desk browser left open overnight should not
    * still be signed in come morning.
+   *
+   * `touch: false` checks the session without counting it as use: the
+   * screen's own polls (the bell, the downtime bar) ask that way, so a tab
+   * left open on its own still reaches the idle limit.
    */
-  async resolve(token: string): Promise<SessionOwner | null> {
+  async resolve(
+    token: string,
+    { touch = true }: { touch?: boolean } = {},
+  ): Promise<SessionOwner | null> {
     const session = await this.prisma.session.findUnique({
       where: { tokenHash: hashToken(token) },
       select: {
@@ -102,7 +109,7 @@ export class SessionService {
     }
 
     // Touch at most once a minute; every request would be a pointless write.
-    if (now - session.lastUsedAt.getTime() > 60_000) {
+    if (touch && now - session.lastUsedAt.getTime() > 60_000) {
       await this.prisma.session.update({
         where: { id: session.id },
         data: { lastUsedAt: new Date() },
