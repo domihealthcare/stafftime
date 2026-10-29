@@ -2013,9 +2013,9 @@ const MANAGERS: Section[] = [
           <p>
             An admin, in <Screen>Manage → Staff → Staff</Screen>, presses <strong>Edit</strong> on
             them and, under Signing in, <strong>Set a tablet PIN</strong>, then tells them it in
-            person. They are told under the bell that it was changed for them, and can change it
-            to one of their own on their profile. Nobody can see a PIN once it is set - you can
-            only replace it.
+            person. They are told under the bell that it was changed for them, and can change it to
+            one of their own on their profile. Nobody can see a PIN once it is set - you can only
+            replace it.
           </p>
         ),
       },
