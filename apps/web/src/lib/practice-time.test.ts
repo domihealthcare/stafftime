@@ -3,6 +3,7 @@ import { localDateIn, zonedTimeToUtc } from '../../../api/src/common/util/zoned-
 import {
   PRACTICE_ZONE,
   atPracticeTime,
+  atPracticeTimeNextDay,
   practiceClockOf,
   practiceDate,
   practiceToday,
@@ -166,5 +167,36 @@ describe('in a browser set to another time zone', () => {
     expect(new Date(2026, 0, 1).getTimezoneOffset()).toBe(-540);
     process.env.TZ = 'America/New_York';
     expect(new Date(2026, 0, 1).getTimezoneOffset()).toBe(300);
+  });
+});
+
+describe('atPracticeTimeNextDay', () => {
+  it('gives the next morning on an ordinary night', () => {
+    // 10pm EDT on 14 July, out at 6am on the 15th.
+    expect(atPracticeTimeNextDay('2026-07-15T02:00:00.000Z', '06:00')).toBe(
+      '2026-07-15T10:00:00.000Z',
+    );
+  });
+
+  it('gives the next morning on the night the clocks go forward', () => {
+    // 11:30pm EST on Saturday 7 March. The night is 23 hours long, so 24
+    // hours on is already Monday; the next morning is Sunday the 8th, 6am EDT.
+    expect(atPracticeTimeNextDay('2026-03-08T04:30:00.000Z', '06:00')).toBe(
+      '2026-03-08T10:00:00.000Z',
+    );
+  });
+
+  it('gives the next morning on the night the clocks go back', () => {
+    // 11:30pm EDT on Saturday 31 October, out at 6am EST on 1 November.
+    expect(atPracticeTimeNextDay('2026-11-01T03:30:00.000Z', '06:00')).toBe(
+      '2026-11-01T11:00:00.000Z',
+    );
+  });
+
+  it('goes by the day in New Jersey, not in UTC', () => {
+    // 9pm EST on 31 December is already 1 January in UTC.
+    expect(atPracticeTimeNextDay('2027-01-01T02:00:00.000Z', '05:00')).toBe(
+      '2027-01-01T10:00:00.000Z',
+    );
   });
 });

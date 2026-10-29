@@ -60,6 +60,16 @@ export function atPracticeTime(onDayOf: string, time: string): string {
   return instant.toISOString();
 }
 
+/// The instant `time` ("HH:MM") falls at on the practice's calendar day after
+/// `onDayOf`'s: a finish earlier than the start, read as the next morning. Not
+/// 24 hours on, which on the night the clocks go forward (23 hours long) lands
+/// on the day after next for anything after 11pm.
+export function atPracticeTimeNextDay(onDayOf: string, time: string): string {
+  const day = partsIn(new Date(onDayOf));
+  const noonNextDay = new Date(Date.UTC(day.year, day.month - 1, day.day + 1, 12)).toISOString();
+  return atPracticeTime(noonNextDay, time);
+}
+
 /// Today on the practice's calendar, as the first and last instants of the
 /// day - what Home asks the server for. Not the browser's day: the app's
 /// "today" is New Jersey's, and a browser in another zone (CI's, in UTC)

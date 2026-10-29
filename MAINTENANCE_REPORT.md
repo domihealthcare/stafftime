@@ -289,8 +289,9 @@ unit test, the type checks and the whole browser suite).
 9. **Found while doing this, not fixed (small):**
    - **Ask to fix your hours, on the night the clocks go forward:** for an
      entry clocked in between 11 pm and midnight that night, an overnight
-     correction lands a day late (`components/Corrections.tsx` adds 24 hours
-     instead of one calendar day). Once a year, narrow.
+     correction landed a day late (`components/Corrections.tsx` added 24
+     hours instead of one calendar day). **Fixed in 1.33.1**
+     (`atPracticeTimeNextDay` in `lib/practice-time.ts`).
    - A few screens use the browser's own date where the server uses New
      Jersey's (the time off cards, the Add hours date limit, the checklist
      "overdue" mark, the Export end date). Only wrong on a computer set to
