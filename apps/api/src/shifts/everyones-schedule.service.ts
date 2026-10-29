@@ -115,7 +115,8 @@ export class EveryonesScheduleService {
           .sort((a, b) => Number(b.isPrimary) - Number(a.isPrimary))
           .map((row) => ({ id: row.jobRole.id, name: row.jobRole.name })),
       })),
-      shifts,
+      // Asked for with `employeeId: { not: null }`, so nobody's is null.
+      shifts: shifts as ((typeof shifts)[number] & { employeeId: string })[],
       off: leave.map((row) => ({
         employeeId: row.employeeId,
         startDate: day(row.startDate),

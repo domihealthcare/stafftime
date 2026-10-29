@@ -83,7 +83,8 @@ export class KioskService {
       id: device.id,
       name: device.name,
       pairingCode: formatPairingCode(code),
-      pairingExpiresAt: device.pairingExpiresAt,
+      // Set just above, so never null.
+      pairingExpiresAt: device.pairingExpiresAt as Date,
       locationName: location.name,
     };
   }
@@ -119,7 +120,8 @@ export class KioskService {
       id: updated.id,
       name: updated.name,
       pairingCode: formatPairingCode(code),
-      pairingExpiresAt: updated.pairingExpiresAt,
+      // Set just above, so never null.
+      pairingExpiresAt: updated.pairingExpiresAt as Date,
       locationName: device.location.name,
     };
   }

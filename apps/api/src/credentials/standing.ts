@@ -6,6 +6,8 @@
  * out each line.
  */
 
+import type { CredentialKind } from '@prisma/client';
+
 /// How far ahead a license counts as "due soon" - the same 60 days as the
 /// Licenses screen and the nightly round-up.
 export const DUE_SOON_DAYS = 60;
@@ -16,7 +18,13 @@ export interface RequirementInput {
   credentialTypeId: string;
   required: boolean;
   jobRoleName: string;
-  type: { id: string; name: string; kind: string; renewalMonths: number | null; sortOrder: number };
+  type: {
+    id: string;
+    name: string;
+    kind: CredentialKind;
+    renewalMonths: number | null;
+    sortOrder: number;
+  };
 }
 
 export interface CredentialInput {
