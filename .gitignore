@@ -27,5 +27,8 @@ coverage/
 # local database volume
 .postgres-data/
 
+# FILE_STORAGE=disk writes payroll exports here (names and hours)
+apps/api/var/
+
 # local scratch harnesses
 *.local.ts
