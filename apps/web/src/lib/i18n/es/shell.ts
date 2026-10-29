@@ -146,4 +146,12 @@ export const SHELL: Record<string, string> = {
   'Confirm new password': 'Confirma la contraseña nueva',
   'At least 8 characters, including a number.': 'Al menos 8 caracteres, con un número.',
   'Those passwords do not match.': 'Esas contraseñas no coinciden.',
+
+  // When a screen crashes (components/RouteError.tsx)
+  'Something went wrong on this screen': 'Algo salió mal en esta pantalla',
+  'Reloading the page usually fixes it. If it keeps happening, tell a manager what you were doing when it happened.':
+    'Volver a cargar la página suele arreglarlo. Si sigue pasando, dile a un gerente qué estabas haciendo cuando ocurrió.',
+  Reload: 'Volver a cargar',
+  'Go to Home': 'Ir a Inicio',
+  'Back to the time clock': 'Volver al reloj',
 };

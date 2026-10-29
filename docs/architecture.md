@@ -4965,7 +4965,7 @@ of what is missing, the tick on each section in the progress bar, and the
 two download buttons, which only work when it is empty. Every choice, code
 list, threshold, requirement wording, goal and action is in `config.ts`.
 
-**The PDFs** (`pdf/writer.ts`, `pdf/clinical-note.ts`,
+**The PDFs** (`clinical/common/pdf-writer.ts`, `pdf/clinical-note.ts`,
 `pdf/care-plan-handout.ts`) are drawn with **pdf-lib** as real text in
 Helvetica — selectable, never a picture. pdf-lib runs under the deployed
 CSP as it is (pdfmake needs code-from-text, which `script-src 'self'`

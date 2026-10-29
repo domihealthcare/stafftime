@@ -1,4 +1,4 @@
-import { checkPhoto, jpegSize, MAX_PHOTO_BYTES, PhotoError } from './photo';
+import { checkPhoto, jpegSize, MAX_PHOTO_BYTES, PhotoError, stripMetadata } from './photo';
 
 /// The smallest thing that looks like a JPEG to these checks: SOI, one APP0
 /// segment, then a baseline start-of-frame giving the size.
@@ -45,5 +45,38 @@ describe('profile photos', () => {
   it('refuses dimensions outside what the browser would produce', () => {
     expect(() => checkPhoto(fakeJpeg(4000, 3000).toString('base64'))).toThrow(/unexpected size/);
     expect(() => checkPhoto(fakeJpeg(8, 8).toString('base64'))).toThrow(/unexpected size/);
+  });
+
+  it('drops the camera metadata (EXIF with GPS, IPTC, comments) and keeps the picture', () => {
+    const segment = (marker: number, text: string) => {
+      const data = Buffer.from(text, 'latin1');
+      const head = Buffer.alloc(4);
+      head.writeUInt16BE(0xff00 | marker, 0);
+      head.writeUInt16BE(data.length + 2, 2);
+      return Buffer.concat([head, data]);
+    };
+    const plain = fakeJpeg(256, 256);
+    const picture = Buffer.from([0xff, 0xda, 0x00, 0x02, 0x12, 0x34, 0xff, 0xd9]);
+    const withMetadata = Buffer.concat([
+      plain.subarray(0, 2),
+      segment(0xe1, 'Exif\0\0GPSLatitude 40.79'),
+      segment(0xed, 'Photoshop 3.0 IPTC City: North Bergen'),
+      segment(0xfe, 'taken at home'),
+      plain.subarray(2),
+      picture,
+    ]);
+
+    const stripped = checkPhoto(withMetadata.toString('base64'));
+    const text = stripped.toString('latin1');
+    expect(text).not.toContain('GPS');
+    expect(text).not.toContain('North Bergen');
+    expect(text).not.toContain('taken at home');
+    expect(stripped).toEqual(Buffer.concat([plain, picture]));
+    expect(jpegSize(stripped)).toEqual({ width: 256, height: 256 });
+  });
+
+  it('leaves a photo with no metadata exactly as it was', () => {
+    const plain = fakeJpeg(256, 256, 400);
+    expect(stripMetadata(plain)).toEqual(plain);
   });
 });

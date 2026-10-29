@@ -60,7 +60,7 @@ describe('payPeriods', () => {
 });
 
 describe('workweekStartsOn', () => {
-  it('is the pay period\'s own weekday', () => {
+  it("is the pay period's own weekday", () => {
     expect(workweekStartsOn(ANCHOR)).toBe(1);
     expect(workweekStartsOn('2026-09-13')).toBe(7); // a Sunday
     expect(workweekStartsOn(new Date('2026-09-25T00:00:00Z'))).toBe(5); // a Friday

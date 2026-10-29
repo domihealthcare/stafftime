@@ -1,7 +1,7 @@
 import { formatTimeCompact, localDate } from '../lib/format';
 import { t } from '../lib/i18n';
 import type { PracticeEvent, Shift } from '../lib/types';
-import { eventsOnDay, shortTitle } from './PracticeEvents';
+import { eventsOnDay, shortTitle } from '../lib/practice-events';
 
 /// The rep lunches at an office on a day.
 export function lunchesAt(events: PracticeEvent[], locationId: string, day: string) {

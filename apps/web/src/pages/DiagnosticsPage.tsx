@@ -78,10 +78,7 @@ export function DiagnosticsPage() {
     [board, section],
   );
   const tests = useMemo(
-    () =>
-      sectionTests.filter(
-        (test) => (!testId || test.id === testId) && hasCpt(test, cptQuery),
-      ),
+    () => sectionTests.filter((test) => (!testId || test.id === testId) && hasCpt(test, cptQuery)),
     [sectionTests, testId, cptQuery],
   );
   const plans = useMemo(

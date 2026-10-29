@@ -290,6 +290,8 @@ How the live site is set up, for reference:
   2026 — the phone's indoor fix was only good to ~315 ft). 500 ft stands; the
   far-corner test was waived (Dominguez). **Never run `npm run db:seed`
   against the live database** — it resets the pins to old placeholders.
+  Since 29 October 2026 the seed refuses any database not on the computer
+  running it (`common/seed-guard.ts`).
 - **IP allow-listing**: set aside (Dominguez, 25 September 2026). Built, but
   with no addresses entered it does nothing; location is the check.
 - **`SETUP_TOKEN`**: deleted (25 September 2026).
@@ -2576,7 +2578,7 @@ Beyond the phases, the parts worth knowing about before picking up work:
   Counts only — never a patient (the schema guard pins the fields; the note is
   the one free-text box and says so). **Not in the payroll export** (decided). See *Provider
   productivity* in `docs/architecture.md`.
-- **Tests**: ~1,470 unit tests, and ~515 end-to-end checks in `tests/browser`
+- **Tests**: ~1,800 unit tests, and ~1,270 end-to-end checks (121 suites) in `tests/browser`
   driven against a real API, a real Postgres and a real Chromium. Both run in CI
   on every push. The convention is to run the browser suites twice — once
   against the dev server, once against `vite preview`, which applies the

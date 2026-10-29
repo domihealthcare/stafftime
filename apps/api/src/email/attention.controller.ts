@@ -1,6 +1,7 @@
-import { Controller, Get } from '@nestjs/common';
+import { Controller, Get, Query } from '@nestjs/common';
 import { Role } from '@prisma/client';
 import { Roles } from '../common/auth/roles.decorator';
+import { parseSections } from './attention-sections';
 import { AttentionService } from './attention.service';
 
 /**
@@ -13,9 +14,11 @@ import { AttentionService } from './attention.service';
 export class AttentionController {
   constructor(private readonly attention: AttentionService) {}
 
+  /// `?sections=a,b`: only the sections a screen's banner shows, so it does
+  /// not work out the whole round-up. Without it, everything.
   @Get()
   @Roles(Role.MANAGER)
-  get() {
-    return this.attention.gather();
+  get(@Query('sections') sections?: string) {
+    return this.attention.gather(parseSections(sections));
   }
 }

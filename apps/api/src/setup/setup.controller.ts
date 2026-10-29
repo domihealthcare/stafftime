@@ -1,7 +1,7 @@
 import { Body, Controller, Get, HttpCode, HttpStatus, Ip, Post, Req, Res } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import type { Request, Response } from 'express';
-import { SESSION_COOKIE, sessionCookieOptions } from '../auth/cookie';
+import { SESSION_COOKIE, secureCookies, sessionCookieOptions } from '../auth/cookie';
 import { SessionService } from '../auth/session.service';
 import { Public } from '../common/auth/public.decorator';
 import { FirstRunSetupDto } from './setup.dto';
@@ -9,14 +9,14 @@ import { SetupService } from './setup.service';
 
 @Controller('setup')
 export class SetupController {
-  private readonly isProduction: boolean;
+  private readonly secureCookies: boolean;
 
   constructor(
     private readonly setup: SetupService,
     private readonly sessions: SessionService,
     config: ConfigService,
   ) {
-    this.isProduction = config.get<string>('NODE_ENV') === 'production';
+    this.secureCookies = secureCookies(config);
   }
 
   /// Public by necessity: nobody can be signed in on a database with no accounts.
@@ -46,7 +46,7 @@ export class SetupController {
     response.cookie(
       SESSION_COOKIE,
       session.token,
-      sessionCookieOptions(session.expiresAt, this.isProduction),
+      sessionCookieOptions(session.expiresAt, this.secureCookies),
     );
 
     return { created: true, email: result.email };

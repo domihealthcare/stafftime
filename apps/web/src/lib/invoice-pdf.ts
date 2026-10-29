@@ -1,5 +1,25 @@
 import { PDFDocument, StandardFonts, rgb, type PDFFont, type PDFPage } from 'pdf-lib';
 import { printable } from '../clinical/common/printable';
+import {
+  PRACTICE,
+  PRACTICE_PAY_TO,
+  WITHHELD,
+  dollars,
+  invoiceNumberLabel,
+  type InvoiceForPdf,
+} from './invoice-format';
+
+// The plain parts live in invoice-format.ts; re-exported for existing imports.
+export {
+  PRACTICE,
+  PRACTICE_PAY_TO,
+  WITHHELD,
+  dollars,
+  invoiceFilename,
+  invoiceNumberLabel,
+  type InvoiceForPdf,
+  type PayTo,
+} from './invoice-format';
 
 /**
  * An invoice as a PDF, laid out like the practice's Invoice Template sheet
@@ -13,52 +33,6 @@ import { printable } from '../clinical/common/printable';
  * kept: the blanked-out copy Dominguez asked for.
  */
 
-export interface InvoiceForPdf {
-  number: number;
-  issuedOn: string;
-  dueOn: string | null;
-  status: 'DUE' | 'PAID';
-  paidOn: string | null;
-  note: string | null;
-  lines: { description: string; amountCents: number }[];
-  /// Who it is paid to; null for the practice.
-  payTo: PayTo | null;
-  billTo:
-    | { kind: 'VENDOR'; name: string; address: string }
-    | { kind: 'PATIENT'; name: string; dob: string; address: string }
-    | { kind: 'PATIENT_WITHHELD' };
-}
-
-export const PRACTICE = {
-  name: 'Domi Healthcare LLC',
-  lines: [
-    '7919 John F. Kennedy Blvd',
-    'North Bergen, NJ 07047',
-    'angelica@domihealthcare.com',
-    '201-528-3664',
-  ],
-  payableTo: 'DOMI HEALTHCARE LLC',
-  questions:
-    'If you have any questions or concerns regarding this invoice, please contact our office via phone 201-528-3664 or via email angelica@domihealthcare.com.',
-};
-
-/// Who an invoice is paid to: the practice, or a saved option such as a
-/// provider paid directly (October 2026, Dominguez).
-export interface PayTo {
-  name: string;
-  /// Address, email and phone, one per line.
-  lines: string[];
-  payableTo: string;
-}
-
-export const PRACTICE_PAY_TO: PayTo = {
-  name: PRACTICE.name,
-  lines: PRACTICE.lines,
-  payableTo: PRACTICE.payableTo,
-};
-
-export const WITHHELD = "A patient's details are not kept in Domi Staff.";
-
 const WIDTH = 612;
 const HEIGHT = 792;
 const LEFT = 54;
@@ -69,15 +43,7 @@ const RULE = rgb(0.8, 0.83, 0.86);
 const BRAND = rgb(0x3a / 255, 0x68 / 255, 0x88 / 255);
 const SHADE = rgb(0.95, 0.96, 0.97);
 
-export const invoiceNumberLabel = (number: number) => `#${String(number).padStart(3, '0')}`;
-
-export const dollars = (cents: number) =>
-  `$${(cents / 100).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
-
 const usDate = (iso: string) => `${iso.slice(5, 7)}/${iso.slice(8, 10)}/${iso.slice(0, 4)}`;
-
-/// "Invoice 001.pdf": nothing about who it is to, a patient least of all.
-export const invoiceFilename = (number: number) => `Invoice ${String(number).padStart(3, '0')}.pdf`;
 
 export async function invoicePdf(invoice: InvoiceForPdf): Promise<Uint8Array> {
   const doc = await PDFDocument.create();

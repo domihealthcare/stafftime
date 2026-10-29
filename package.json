@@ -1,13 +1,13 @@
 {
   "name": "stafftime",
-  "version": "1.29.1",
+  "version": "1.30.0",
   "private": true,
-  "description": "Domi Time & Scheduling — staff clock-in, scheduling and timesheets",
+  "description": "Domi Staff: staff clock-in, scheduling and timesheets for Domi Healthcare",
   "workspaces": [
     "apps/*"
   ],
   "engines": {
-    "node": ">=20"
+    "node": "22.x"
   },
   "scripts": {
     "dev": "concurrently -n api,web -c cyan,magenta \"npm run dev:api\" \"npm run dev:web\"",
@@ -24,7 +24,7 @@
     "db:studio": "npm run prisma:studio --workspace @stafftime/api",
     "dev:api": "npm run start:dev --workspace @stafftime/api",
     "dev:web": "npm run dev --workspace @stafftime/web",
-    "typecheck": "npm run typecheck --workspace @stafftime/web",
+    "typecheck": "npm run typecheck --workspace @stafftime/web && npm run typecheck --workspace @stafftime/api && tsc -p tsconfig.json",
     "preview": "npm run build --workspace @stafftime/web && npm run preview --workspace @stafftime/web",
     "vercel-build": "npm run prisma:generate --workspace @stafftime/api && npm run prisma:deploy --workspace @stafftime/api && npm run build --workspace @stafftime/web"
   },
@@ -32,5 +32,8 @@
     "@vercel/node": "^5.10.2",
     "concurrently": "^9.0.1",
     "prettier": "^3.3.3"
+  },
+  "overrides": {
+    "multer": "2.5.0"
   }
 }

@@ -17,13 +17,23 @@ import type { Request, Response } from 'express';
 import { AppModule } from '../apps/api/src/app.module';
 import { configureApp } from '../apps/api/src/configure-app';
 
-let cached: NestExpressApplication | undefined;
+/// The app being started, or started. The promise, not the finished app, is
+/// kept, so two requests arriving during a cold start share one boot instead
+/// of each starting an app and a database pool (maintenance pass, October
+/// 2026). A boot that fails is forgotten, so the next request tries again.
+let starting: Promise<NestExpressApplication> | undefined;
 
-async function bootstrap(): Promise<NestExpressApplication> {
-  if (cached) {
-    return cached;
+function bootstrap(): Promise<NestExpressApplication> {
+  if (!starting) {
+    starting = boot().catch((error: unknown) => {
+      starting = undefined;
+      throw error;
+    });
   }
+  return starting;
+}
 
+async function boot(): Promise<NestExpressApplication> {
   const app = await NestFactory.create<NestExpressApplication>(AppModule, {
     // Vercel captures stdout; Nest's startup banner per cold start is noise.
     logger: ['error', 'warn', 'log'],
@@ -33,8 +43,6 @@ async function bootstrap(): Promise<NestExpressApplication> {
 
   await app.init();
   Logger.log('API initialised', 'Vercel');
-
-  cached = app;
   return app;
 }
 

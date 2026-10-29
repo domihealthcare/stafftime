@@ -222,9 +222,10 @@ at Wix (Settings → Domains → Manage DNS records): a TXT `resend._domainkey`
 and CNAMEs `send` and `rsend`, alongside — not replacing — Google
 Workspace's MX and SPF records. The steps below are for a new deployment.
 
-Until this is done, the app still works — but **nothing is emailed**. Password
-resets and time-off notifications get written to the server log instead, where
-only you can see them, and the log says so on every message.
+Until this is done, the app still works — but **nothing is emailed**. On the
+deployed site the server log names who each message was for and its subject,
+and says it was not sent; the words themselves (with their reset links) are
+written to the log only when running locally.
 
 It is two variables, and the fiddly part is DNS rather than code:
 
@@ -261,6 +262,24 @@ office@ — one more scope from the admin and `GOOGLE_CALENDAR_INVITES=on`.
 **Drive folders**: a Resources link to a Drive folder lists what is in it —
 the Drive API enabled, nothing else. Click-by-click steps are in
 [`docs/google-meet-setup.md`](docs/google-meet-setup.md).
+
+## The other optional parts
+
+Each is off until it is set up, and each has its own step-by-step guide:
+
+- **Reminders to clock in and out** (and everything else on the five-minute
+  timer): an outside timer such as cron-job.org calls
+  `/api/maintenance/punch-reminders` with its own `PUNCH_REMINDER_SECRET`,
+  because Vercel's free plan runs its own timer only once a day. See
+  [`docs/punch-reminders-setup.md`](docs/punch-reminders-setup.md).
+- **Ask Domi Staff and the AI helpers**: `ANTHROPIC_API_KEY` (Production
+  only). See [`docs/ask-domi-staff-setup.md`](docs/ask-domi-staff-setup.md).
+- **Phone notifications**: an admin presses **Switch on for the practice**
+  under Practice settings, which makes the app's own keys. Nothing to set in
+  Vercel. Optional: `VAPID_PUBLIC_KEY` / `VAPID_PRIVATE_KEY` to supply your
+  own key pair instead (they win if set), and `VAPID_SUBJECT`, the contact
+  address the push services are given (default
+  `mailto:office@domihealthcare.com`).
 
 ## Showing it to your managers
 

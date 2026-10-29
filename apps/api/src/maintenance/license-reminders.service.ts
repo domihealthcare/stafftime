@@ -54,8 +54,20 @@ export class LicenseRemindersService {
       today,
     );
 
+    // Most of these were sent on an earlier run: one read finds them, rather
+    // than a refused insert for each, every five minutes (maintenance pass,
+    // October 2026). The claim below still guards against two runs at once.
+    const alreadySent = await this.prisma.credentialReminder.findMany({
+      where: { credentialId: { in: due.map(({ credential }) => credential.id) } },
+      select: { credentialId: true, stage: true, expiresOn: true },
+    });
+    const sentKeys = new Set(
+      alreadySent.map((row) => `${row.credentialId}|${row.stage}|${isoDate(row.expiresOn)}`),
+    );
+
     let sent = 0;
     for (const { credential, stage, daysLeft } of due) {
+      if (sentKeys.has(`${credential.id}|${stage}|${credential.expiresOn}`)) continue;
       if (!(await this.claim(credential.id, stage, credential.expiresOn))) continue;
       await this.notifications.licenseReminder(
         credential.employeeId,

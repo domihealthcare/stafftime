@@ -11,7 +11,8 @@ const LOOK_EVERY_MS = 2 * 60_000;
  * The red bar across the top of every screen while a downtime is on at one of
  * the person's offices (October 2026, Dominguez: "it should be clear and easy
  * to use"): what is down, since when, and the way to the steps. Fetched on
- * every screen change and every two minutes; quiet if it cannot load.
+ * every screen change, every two minutes while the tab is in view, and when
+ * it comes back into view; quiet if it cannot load.
  */
 export function DowntimeBanner() {
   const [active, setActive] = useState<Downtime[]>([]);
@@ -23,7 +24,13 @@ export function DowntimeBanner() {
     const onVisible = () => document.visibilityState === 'visible' && bump();
     window.addEventListener(DOWNTIME_CHANGED, bump);
     document.addEventListener('visibilitychange', onVisible);
-    const timer = window.setInterval(bump, LOOK_EVERY_MS);
+    // Only while the tab is in view: a hidden one asks again the moment it is
+    // shown (above), so nothing is missed, and a background tab no longer
+    // asks the server every two minutes all day (maintenance pass, October 2026).
+    const timer = window.setInterval(
+      () => document.visibilityState === 'visible' && bump(),
+      LOOK_EVERY_MS,
+    );
     return () => {
       window.removeEventListener(DOWNTIME_CHANGED, bump);
       document.removeEventListener('visibilitychange', onVisible);

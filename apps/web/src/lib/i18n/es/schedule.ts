@@ -254,4 +254,10 @@ export const SCHEDULE: Record<string, string> = {
   'Their patient schedules, in eCW.': 'Sus agendas de pacientes, en eCW.',
   'Today’s schedule reviewed by {name}': 'La agenda de hoy la revisa {name}',
   'Nobody is reviewing today’s schedule': 'Nadie está revisando la agenda de hoy',
+
+  // When a look-up fails (maintenance pass, October 2026)
+  'Could not load your time off. Reload the page to try again.':
+    'No se pudo cargar tu tiempo libre. Vuelve a cargar la página para intentarlo de nuevo.',
+  'Could not check the rota for shifts in those days.':
+    'No se pudo revisar el horario para ver si tienes turnos esos días.',
 };

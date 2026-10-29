@@ -146,13 +146,7 @@ describe('datesBetween', () => {
   it('does not skip or repeat a day across a clock change', () => {
     // Spanning 1 November 2026.
     const dates = datesBetween('2026-10-30', '2026-11-03');
-    expect(dates).toEqual([
-      '2026-10-30',
-      '2026-10-31',
-      '2026-11-01',
-      '2026-11-02',
-      '2026-11-03',
-    ]);
+    expect(dates).toEqual(['2026-10-30', '2026-10-31', '2026-11-01', '2026-11-02', '2026-11-03']);
     expect(new Set(dates).size).toBe(dates.length);
   });
 
@@ -196,7 +190,7 @@ describe("the practice's today", () => {
   });
 });
 
-describe('overtime weeks, from the pay period\'s weekday', () => {
+describe("overtime weeks, from the pay period's weekday", () => {
   it('starts on Monday unless told otherwise', () => {
     expect(weekStartOf('2026-10-04')).toBe('2026-09-28'); // a Sunday
     expect(weekStartOf('2026-10-05')).toBe('2026-10-05');

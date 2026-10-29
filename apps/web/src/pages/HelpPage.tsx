@@ -814,9 +814,9 @@ const STAFF: Section[] = [
             <p>
               Pick a test in <strong>Test</strong>, or type its code in <strong>CPT code</strong>{' '}
               (76700, 93306), to see every insurance for that one test; a code for a test in the
-              other half switches to it. Each test&rsquo;s CPT code is under its name. The
-              self-pay price is at the bottom of the board, and the reminders (what cannot be done
-              the same day) at the top. <strong>Big board</strong> fills the screen; Escape or{' '}
+              other half switches to it. Each test&rsquo;s CPT code is under its name. The self-pay
+              price is at the bottom of the board, and the reminders (what cannot be done the same
+              day) at the top. <strong>Big board</strong> fills the screen; Escape or{' '}
               <strong>Exit big board</strong> puts it back.
             </p>
           </>
@@ -2013,8 +2013,9 @@ const MANAGERS: Section[] = [
           <p>
             An admin, in <Screen>Manage → Staff → Staff</Screen>, presses <strong>Edit</strong> on
             them and, under Signing in, <strong>Set a tablet PIN</strong>, then tells them it in
-            person. They can change it to one of their own on their profile. Nobody can see a PIN
-            once it is set - you can only replace it.
+            person. They are told under the bell that it was changed for them, and can change it to
+            one of their own on their profile. Nobody can see a PIN once it is set - you can only
+            replace it.
           </p>
         ),
       },
@@ -2462,8 +2463,8 @@ const MANAGERS: Section[] = [
               some only for the front desk, medical assistants, providers, or managers and admins.
               Press <strong>Try it</strong> to see it as staff will, and <strong>Edit</strong> to
               change a question. <strong>+ New quiz</strong> writes another: a pass mark, where to
-              read up first, and for each question two to six answers, which one is right, a line
-              on why (shown once they answer), and who is asked it.
+              read up first, and for each question two to six answers, which one is right, a line on
+              why (shown once they answer), and who is asked it.
             </p>
             <p>
               <strong>Send it</strong> opens Required reading with the quiz chosen: pick who it is

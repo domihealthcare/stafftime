@@ -204,8 +204,13 @@ await step('a manager ticks who they called and posts an update; the same people
 });
 
 await step('somebody coming on shift later is told by the five-minute timer', async () => {
-  // Max is moved to North Bergen, starting in an hour.
-  sql(`update shifts set "locationId" = '${nb.id}', "startsAt" = now() + interval '60 minutes',
+  // Max is moved to North Bergen, starting in an hour - or just before New
+  // Jersey's midnight if that comes first: only today's shifts are told, so
+  // "in an hour" failed this step whenever it ran between 11pm and midnight.
+  sql(`update shifts set "locationId" = '${nb.id}',
+       "startsAt" = least(now() + interval '60 minutes',
+         ((now() at time zone 'America/New_York')::date + 1)::timestamp
+           at time zone 'America/New_York' - interval '1 second'),
        "endsAt" = now() + interval '5 hours' where notes = '${TAG}'
        and "employeeId" = (select id from employees where email = 'ma@domihealthcare.com')`);
   const secret = process.env.PUNCH_REMINDER_SECRET;

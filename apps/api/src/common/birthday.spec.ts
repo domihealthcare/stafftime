@@ -14,7 +14,9 @@ describe('birthdays', () => {
       '2026-11-09',
       '2026-11-15',
     );
-    expect(found).toEqual([{ person: expect.objectContaining({ name: 'Tatiyana' }), date: '2026-11-09' }]);
+    expect(found).toEqual([
+      { person: expect.objectContaining({ name: 'Tatiyana' }), date: '2026-11-09' },
+    ]);
   });
 
   it('crosses the new year', () => {

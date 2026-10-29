@@ -38,7 +38,7 @@ import { ResendEmailSender } from './resend-email.sender';
         const isProduction = config.get<string>('NODE_ENV') === 'production';
         if (isProduction) {
           logger.warn(
-            'No email provider configured (RESEND_API_KEY and EMAIL_FROM). Password resets and notifications will be written to this log instead of being sent.',
+            'No email provider configured (RESEND_API_KEY and EMAIL_FROM). Password resets and notifications will not be sent; this log will name each one.',
           );
         } else {
           logger.log('Email: written to this log (no provider configured)');

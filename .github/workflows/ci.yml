@@ -16,7 +16,9 @@ concurrency:
   cancel-in-progress: true
 
 env:
-  NODE_VERSION: '20'
+  # The same major as package.json's engines, which Vercel also follows.
+  # Node 20 reached end of life in April 2026.
+  NODE_VERSION: '22'
 
 jobs:
   checks:

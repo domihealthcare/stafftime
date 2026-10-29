@@ -422,8 +422,20 @@ export class DowntimeService {
     employeeIds: string[],
     kind: DowntimeNoticeKind,
   ): Promise<string[]> {
+    // Those already told on an earlier run, in one read rather than a refused
+    // insert each, every five minutes (maintenance pass, October 2026). The
+    // insert below still guards against two runs at once.
+    const already = new Set(
+      (
+        await this.prisma.downtimeRecipient.findMany({
+          where: { downtimeId, kind, employeeId: { in: employeeIds } },
+          select: { employeeId: true },
+        })
+      ).map((row) => row.employeeId),
+    );
     const claimed: string[] = [];
     for (const employeeId of employeeIds) {
+      if (already.has(employeeId)) continue;
       try {
         await this.prisma.downtimeRecipient.create({ data: { downtimeId, employeeId, kind } });
         claimed.push(employeeId);
@@ -945,11 +957,22 @@ export class DowntimeService {
         })
       ).map((row) => row.employeeId),
     );
+    // Who was already asked in these rounds, in one read rather than a
+    // refused insert each, every five minutes (maintenance pass, October 2026).
+    const asked = new Set(
+      (
+        await this.prisma.downtimeCheckNotice.findMany({
+          where: { month: toUtcDate(month), round: { in: rounds } },
+          select: { employeeId: true, round: true },
+        })
+      ).map((row) => `${row.employeeId}|${row.round}`),
+    );
     let sent = 0;
     for (const round of rounds) {
       const toAsk: string[] = [];
       for (const person of people) {
         if (done.has(person.id)) continue;
+        if (asked.has(`${person.id}|${round}`)) continue;
         try {
           await this.prisma.downtimeCheckNotice.create({
             data: { month: toUtcDate(month), employeeId: person.id, round },

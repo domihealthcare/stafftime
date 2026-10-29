@@ -304,7 +304,10 @@ function ActiveDowntime({
   const relevant = contactsFor(view, contacts);
 
   return (
-    <div className="rounded-xl border shadow-sm border-rose-300 bg-rose-50 p-5" data-testid="downtime-active">
+    <div
+      className="rounded-xl border shadow-sm border-rose-300 bg-rose-50 p-5"
+      data-testid="downtime-active"
+    >
       <div className="flex flex-wrap items-start justify-between gap-2">
         <div>
           <p className="text-xs font-semibold uppercase tracking-wide text-rose-800">
@@ -477,7 +480,10 @@ function PlannedDowntime({
   const confirm = useConfirm();
   const [error, setError] = useState<string | null>(null);
   return (
-    <div className="rounded-xl border shadow-sm border-amber-300 bg-amber-50 p-4" data-testid="downtime-planned">
+    <div
+      className="rounded-xl border shadow-sm border-amber-300 bg-amber-50 p-4"
+      data-testid="downtime-planned"
+    >
       <p className="text-xs font-semibold uppercase tracking-wide text-amber-900">Planned</p>
       <h3 className="text-base font-semibold text-slate-900">{downtime.headline}</h3>
       <p className="text-sm text-slate-800">

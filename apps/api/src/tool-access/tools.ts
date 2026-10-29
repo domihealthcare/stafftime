@@ -53,8 +53,6 @@ export const TOOLS: ToolInfo[] = [
   { key: 'inpatient-notes', label: 'Inpatient notes', managersAlways: true, defaults: providers },
 ];
 
-export const TOOL_KEYS = TOOLS.map((tool) => tool.key);
-
 export interface ToolSetting {
   key: string;
   everyone: boolean;

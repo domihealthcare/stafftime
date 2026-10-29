@@ -148,7 +148,16 @@ export class AttentionService {
     private readonly settings: PracticeSettingsService,
   ) {}
 
-  async gather(): Promise<DigestContents> {
+  /**
+   * `only`: the sections a screen's banner shows (maintenance pass, October
+   * 2026). The loaders for every other section are skipped and their sections
+   * come back empty, so a banner showing one or two sections no longer works
+   * out the whole round-up. The nightly email and Ask Domi Staff ask for
+   * everything, as before.
+   */
+  async gather(only?: ReadonlySet<keyof DigestContents>): Promise<DigestContents> {
+    const wants = (...keys: (keyof DigestContents)[]) => !only || keys.some((key) => only.has(key));
+    const none = <T>(value: T) => Promise.resolve(value);
     // The practice's today, not the server's: after 8pm in New Jersey the
     // server is already on tomorrow.
     const today = practiceToday();
@@ -197,120 +206,152 @@ export class AttentionService {
       cme,
       downtime,
     ] = await Promise.all([
-      this.prisma.employeeCredential.findMany({
-        where: {
-          archivedAt: null,
-          expiresOn: { lte: addUtcDays(today, CREDENTIAL_HORIZON_DAYS) },
-          employee: { employmentStatus: { not: EmploymentStatus.TERMINATED } },
-        },
-        select: {
-          name: true,
-          expiresOn: true,
-          employee: { select: { firstName: true, lastName: true } },
-        },
-        orderBy: { expiresOn: 'asc' },
-      }),
+      wants('expiredCredentials', 'expiringCredentials')
+        ? this.prisma.employeeCredential.findMany({
+            where: {
+              archivedAt: null,
+              expiresOn: { lte: addUtcDays(today, CREDENTIAL_HORIZON_DAYS) },
+              employee: { employmentStatus: { not: EmploymentStatus.TERMINATED } },
+            },
+            select: {
+              name: true,
+              expiresOn: true,
+              employee: { select: { firstName: true, lastName: true } },
+            },
+            orderBy: { expiresOn: 'asc' },
+          })
+        : none([]),
 
-      this.prisma.employeeChecklistTask.findMany({
-        where: {
-          status: ChecklistTaskStatus.PENDING,
-          dueAt: { lt: today },
-          checklist: {
-            completedAt: null,
-            employee: { employmentStatus: { not: EmploymentStatus.TERMINATED } },
-          },
-        },
-        select: {
-          title: true,
-          dueAt: true,
-          checklist: {
-            select: { employee: { select: { firstName: true, lastName: true } } },
-          },
-        },
-        orderBy: { dueAt: 'asc' },
-        take: 20,
-      }),
+      wants('overdueTasks')
+        ? this.prisma.employeeChecklistTask.findMany({
+            where: {
+              status: ChecklistTaskStatus.PENDING,
+              dueAt: { lt: today },
+              checklist: {
+                completedAt: null,
+                employee: { employmentStatus: { not: EmploymentStatus.TERMINATED } },
+              },
+            },
+            select: {
+              title: true,
+              dueAt: true,
+              checklist: {
+                select: { employee: { select: { firstName: true, lastName: true } } },
+              },
+            },
+            orderBy: { dueAt: 'asc' },
+            take: 20,
+          })
+        : none([]),
 
       // Clock-outs to correct: a punch still open from an earlier day (rare
       // now - they are closed at midnight), and one the app clocked out at
       // midnight that no manager has corrected yet, however old.
-      this.prisma.timeEntry.findMany({
-        where: {
-          status: { not: TimeEntryStatus.APPROVED },
-          OR: [
-            {
-              clockOutAt: null,
-              clockInAt: { lt: dayStart, gte: addUtcDays(dayStart, -MISSING_PUNCH_DAYS) },
+      wants('missingPunches')
+        ? this.prisma.timeEntry.findMany({
+            where: {
+              status: { not: TimeEntryStatus.APPROVED },
+              OR: [
+                {
+                  clockOutAt: null,
+                  clockInAt: { lt: dayStart, gte: addUtcDays(dayStart, -MISSING_PUNCH_DAYS) },
+                },
+                { autoClockedOutAt: { not: null }, isMissingPunch: true },
+              ],
             },
-            { autoClockedOutAt: { not: null }, isMissingPunch: true },
-          ],
-        },
-        select: {
-          clockInAt: true,
-          autoClockedOutAt: true,
-          employee: { select: { firstName: true, lastName: true } },
-        },
-        orderBy: { clockInAt: 'asc' },
-        take: 20,
-      }),
+            select: {
+              clockInAt: true,
+              autoClockedOutAt: true,
+              employee: { select: { firstName: true, lastName: true } },
+            },
+            orderBy: { clockInAt: 'asc' },
+            take: 20,
+          })
+        : none([]),
 
-      this.prisma.ptoRequest.findMany({
-        where: { status: PtoStatus.PENDING },
-        select: {
-          startDate: true,
-          endDate: true,
-          employee: { select: { firstName: true, lastName: true } },
-        },
-        orderBy: { startDate: 'asc' },
-        take: 20,
-      }),
-      this.gatherOperational(today, who, day, on),
-      this.handEntries(who, on),
-      this.missingCredentials(),
-      this.shiftsInClosures(today, on),
-      this.gatherClosing(today, day),
-      this.newSuggestions(day),
-      loadPunchPatterns(this.prisma),
-      loadTimeOffClashes(
-        this.prisma,
-        localDateIn(new Date(), PRACTICE_ZONE),
-        addDaysTo(localDateIn(new Date(), PRACTICE_ZONE), EMAIL_DAYS - 1),
-      ),
-      loadOvertimeForecast(this.prisma),
-      loadMissedShifts(this.prisma),
-      loadRegularShiftClashes(this.prisma),
-      loadShortDays(
-        this.prisma,
-        localDateIn(new Date(), PRACTICE_ZONE),
-        addDaysTo(localDateIn(new Date(), PRACTICE_ZONE), SHORT_DAYS_AHEAD - 1),
-      ),
-      this.settings.get().then((settings) => loadPayrollDue(this.prisma, settings.payPeriodStart)),
-      this.prisma.correctionRequest.findMany({
-        where: { status: CorrectionStatus.PENDING },
-        select: {
-          clockInAt: true,
-          clockOutAt: true,
-          reason: true,
-          employee: { select: { firstName: true, lastName: true } },
-        },
-        orderBy: { createdAt: 'asc' },
-      }),
-      this.prisma.cmeRequest.findMany({
-        where: { status: CmeStatus.PENDING },
-        select: {
-          title: true,
-          startsOn: true,
-          endsOn: true,
-          registrationCents: true,
-          travelCents: true,
-          lodgingCents: true,
-          otherCents: true,
-          employee: { select: { firstName: true, lastName: true } },
-        },
-        orderBy: { startsOn: 'asc' },
-        take: 20,
-      }),
-      loadDowntimeLines(this.prisma),
+      wants('undecidedTimeOff')
+        ? this.prisma.ptoRequest.findMany({
+            where: { status: PtoStatus.PENDING },
+            select: {
+              startDate: true,
+              endDate: true,
+              employee: { select: { firstName: true, lastName: true } },
+            },
+            orderBy: { startDate: 'asc' },
+            take: 20,
+          })
+        : none([]),
+      wants('openShifts', 'silentKiosks', 'unpublishedRota', 'unapprovedHours', 'shiftsForLeavers')
+        ? this.gatherOperational(today, who, day, on)
+        : none({
+            openShifts: [] as string[],
+            silentKiosks: [] as string[],
+            unpublishedRota: [] as string[],
+            unapprovedHours: [] as string[],
+            shiftsForLeavers: [] as string[],
+          }),
+      wants('handEntries') ? this.handEntries(who, on) : none<string[]>([]),
+      wants('missingCredentials') ? this.missingCredentials() : none<string[]>([]),
+      wants('shiftsInClosures') ? this.shiftsInClosures(today, on) : none<string[]>([]),
+      wants('closingGaps', 'suppliesNeeded')
+        ? this.gatherClosing(today, day)
+        : none({ closingGaps: [] as string[], suppliesNeeded: [] as string[] }),
+      wants('newSuggestions') ? this.newSuggestions(day) : none<string[]>([]),
+      wants('punchPatterns') ? loadPunchPatterns(this.prisma) : none([]),
+      wants('timeOffClashes')
+        ? loadTimeOffClashes(
+            this.prisma,
+            localDateIn(new Date(), PRACTICE_ZONE),
+            addDaysTo(localDateIn(new Date(), PRACTICE_ZONE), EMAIL_DAYS - 1),
+          )
+        : none([]),
+      wants('overtimeHeading')
+        ? loadOvertimeForecast(this.prisma)
+        : none({ weekStart: '', thresholdHours: 0, people: [] }),
+      wants('missedShifts') ? loadMissedShifts(this.prisma) : none([]),
+      wants('regularShiftClashes') ? loadRegularShiftClashes(this.prisma) : none([]),
+      wants('belowMinimum')
+        ? loadShortDays(
+            this.prisma,
+            localDateIn(new Date(), PRACTICE_ZONE),
+            addDaysTo(localDateIn(new Date(), PRACTICE_ZONE), SHORT_DAYS_AHEAD - 1),
+          )
+        : none([]),
+      wants('payrollDue')
+        ? this.settings
+            .get()
+            .then((settings) => loadPayrollDue(this.prisma, settings.payPeriodStart))
+        : none<string[]>([]),
+      wants('correctionsAsked')
+        ? this.prisma.correctionRequest.findMany({
+            where: { status: CorrectionStatus.PENDING },
+            select: {
+              clockInAt: true,
+              clockOutAt: true,
+              reason: true,
+              employee: { select: { firstName: true, lastName: true } },
+            },
+            orderBy: { createdAt: 'asc' },
+          })
+        : none([]),
+      wants('cmeWaiting')
+        ? this.prisma.cmeRequest.findMany({
+            where: { status: CmeStatus.PENDING },
+            select: {
+              title: true,
+              startsOn: true,
+              endsOn: true,
+              registrationCents: true,
+              travelCents: true,
+              lodgingCents: true,
+              otherCents: true,
+              employee: { select: { firstName: true, lastName: true } },
+            },
+            orderBy: { startsOn: 'asc' },
+            take: 20,
+          })
+        : none([]),
+      wants('downtime') ? loadDowntimeLines(this.prisma) : none<string[]>([]),
     ]);
 
     /// "8:52 AM", on the practice's clock.

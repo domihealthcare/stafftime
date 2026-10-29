@@ -188,25 +188,129 @@ export class PtoPolicyService {
   ): Promise<{ balance: PtoBalance; person: PersonalTerms }> {
     const employee = await this.prisma.employee.findUniqueOrThrow({
       where: { id: employeeId },
-      select: {
-        id: true,
-        hireDate: true,
-        createdAt: true,
-        payType: true,
-        locations: { select: { locationId: true } },
-        ptoAllowance: { select: { vacationDaysPerYear: true, sickDaysPerYear: true } },
-        ptoStartingPoints: {
-          select: {
-            policyYear: true,
-            vacationUsed: true,
-            sickUsed: true,
-            vacationCarriedOver: true,
-            sickCarriedOver: true,
-          },
-        },
-      },
+      select: BALANCE_EMPLOYEE_SELECT,
     });
+    const window = this.balanceWindow(employee, policy, year);
+    const person = personalTerms(employee, policy);
+    if (person.accruesSick) {
+      person.hoursByYear = await this.hoursWorkedByYear(
+        employeeId,
+        policy,
+        window.firstStart,
+        window.end,
+      );
+    }
+    const [requests, closures] = await Promise.all([
+      this.prisma.ptoRequest.findMany({
+        where: {
+          employeeId,
+          status: { in: [PtoStatus.PENDING, PtoStatus.APPROVED] },
+          startDate: { lt: window.end },
+          endDate: { gte: window.firstStart },
+        },
+        select: BALANCE_REQUEST_SELECT,
+      }),
+      loadClosedDays(this.prisma, isoDate(window.firstStart), isoDate(window.lastDay)),
+    ]);
+    // Weekends and the days their office is shut never come off it.
+    const closed = closedFor(
+      closures,
+      (employee.locations ?? []).map((row) => row.locationId),
+    );
+    return this.workOutBalance(employeeId, policy, window, person, requests, closed);
+  }
 
+  /**
+   * The same balances for many people at once, for the staff list (the
+   * Dashboard's Time off balances card): a handful of reads for everybody
+   * instead of about six each, one after another (maintenance pass, October
+   * 2026). Each person's figures are worked out by workOutBalance exactly as
+   * for one person; each read covers everybody's years, and each person's
+   * share is cut back to their own window first, so nothing outside it is
+   * seen. In the order of `ids`; anybody not found is left out.
+   */
+  private async balancesWithTerms(
+    ids: string[],
+    policy: PtoPolicy,
+  ): Promise<Map<string, { balance: PtoBalance; person: PersonalTerms }>> {
+    const results = new Map<string, { balance: PtoBalance; person: PersonalTerms }>();
+    if (ids.length === 0) return results;
+    const employees = await this.prisma.employee.findMany({
+      where: { id: { in: ids } },
+      select: BALANCE_EMPLOYEE_SELECT,
+    });
+    if (employees.length === 0) return results;
+    const people = employees.map((employee) => ({
+      employee,
+      window: this.balanceWindow(employee, policy),
+      person: personalTerms(employee, policy),
+    }));
+    // Everybody shares this year's end; the start goes back to the earliest.
+    const end = people[0].window.end;
+    const lastDay = people[0].window.lastDay;
+    const earliest = new Date(Math.min(...people.map((one) => one.window.firstStart.getTime())));
+    const accruing = people.filter((one) => one.person.accruesSick);
+    const accruingFrom = new Date(
+      Math.min(...accruing.map((one) => one.window.firstStart.getTime()), end.getTime()),
+    );
+
+    const [requests, closures, entries] = await Promise.all([
+      this.prisma.ptoRequest.findMany({
+        where: {
+          employeeId: { in: employees.map((employee) => employee.id) },
+          status: { in: [PtoStatus.PENDING, PtoStatus.APPROVED] },
+          startDate: { lt: end },
+          endDate: { gte: earliest },
+        },
+        select: { ...BALANCE_REQUEST_SELECT, employeeId: true },
+      }),
+      loadClosedDays(this.prisma, isoDate(earliest), isoDate(lastDay)),
+      accruing.length === 0
+        ? Promise.resolve([])
+        : this.prisma.timeEntry.findMany({
+            where: {
+              employeeId: { in: accruing.map((one) => one.employee.id) },
+              clockOutAt: { not: null },
+              autoClockedOutAt: null,
+              clockInAt: { gte: accruingFrom, lt: end },
+            },
+            select: { employeeId: true, clockInAt: true, clockOutAt: true },
+          }),
+    ]);
+
+    for (const { employee, window, person } of people) {
+      // Exactly what the one-person reads would have returned.
+      const own = requests.filter(
+        (request) => request.employeeId === employee.id && request.endDate >= window.firstStart,
+      );
+      if (person.accruesSick) {
+        person.hoursByYear = this.hoursByYear(
+          entries.filter(
+            (entry) => entry.employeeId === employee.id && entry.clockInAt >= window.firstStart,
+          ),
+          policy,
+        );
+      }
+      const from = isoDate(window.firstStart);
+      const closed = new Set(
+        [
+          ...closedFor(
+            closures,
+            (employee.locations ?? []).map((row) => row.locationId),
+          ),
+        ].filter((date) => date >= from),
+      );
+      results.set(
+        employee.id,
+        this.workOutBalance(employee.id, policy, window, person, own, closed),
+      );
+    }
+    return results;
+  }
+
+  /// The policy year asked about (this one by default) and how far back the
+  /// carry-over walk reaches for this person.
+  private balanceWindow(employee: BalanceEmployee, policy: PtoPolicy, year?: number) {
     const policyYear = year ?? this.policyYearOf(practiceToday(), policy);
     const { start, end } = this.yearBounds(policyYear, policy);
 
@@ -222,44 +326,20 @@ export class PtoPolicyService {
     const firstYear = Math.min(this.policyYearOf(since, policy), policyYear);
     const firstStart = this.yearBounds(firstYear, policy).start;
     const lastDay = new Date(end.getTime() - 86_400_000);
+    return { policyYear, start, end, since, firstStart, lastDay };
+  }
 
-    const person: PersonalTerms = {
-      hireDate: employee.hireDate,
-      allowance: employee.ptoAllowance ?? null,
-      startingPoints: new Map(
-        (employee.ptoStartingPoints ?? []).map((point) => [point.policyYear, point]),
-      ),
-      accruesSick: accruesSick(policy, employee),
-      hoursByYear: new Map(),
-    };
-    if (person.accruesSick) {
-      person.hoursByYear = await this.hoursWorkedByYear(employeeId, policy, firstStart, end);
-    }
+  /// The arithmetic, from what was read: the same for one person or many.
+  private workOutBalance(
+    employeeId: string,
+    policy: PtoPolicy,
+    window: ReturnType<PtoPolicyService['balanceWindow']>,
+    person: PersonalTerms,
+    requests: BalanceRequest[],
+    closed: Set<string>,
+  ): { balance: PtoBalance; person: PersonalTerms } {
+    const { policyYear, start, end, since, lastDay } = window;
     const startingPoint = person.startingPoints.get(policyYear);
-
-    const [requests, closures] = await Promise.all([
-      this.prisma.ptoRequest.findMany({
-        where: {
-          employeeId,
-          status: { in: [PtoStatus.PENDING, PtoStatus.APPROVED] },
-          startDate: { lt: end },
-          endDate: { gte: firstStart },
-        },
-        select: {
-          type: true,
-          status: true,
-          startDate: true,
-          endDate: true,
-          isHalfDay: true,
-        },
-      }),
-      loadClosedDays(this.prisma, isoDate(firstStart), isoDate(lastDay)),
-    ]);
-    // Weekends and the days their office is shut never come off it.
-    const closed = closedFor(
-      closures,
-      (employee.locations ?? []).map((row) => row.locationId),
-    );
 
     const tally = (bucket: 'vacation' | 'sick', status: PtoStatus) =>
       requests
@@ -346,6 +426,14 @@ export class PtoPolicyService {
       },
       select: { clockInAt: true, clockOutAt: true },
     });
+    return this.hoursByYear(entries, policy);
+  }
+
+  /// Closed punches added up by the policy year their day falls in.
+  private hoursByYear(
+    entries: Array<{ clockInAt: Date; clockOutAt: Date | null }>,
+    policy: PtoPolicy,
+  ): Map<number, number> {
     const hours = new Map<number, number>();
     for (const entry of entries) {
       const day = new Date(`${localDateIn(entry.clockInAt, PRACTICE_ZONE)}T00:00:00Z`);
@@ -367,13 +455,14 @@ export class PtoPolicyService {
       select: { id: true, firstName: true, lastName: true, preferredName: true, email: true },
     });
     const policy = await this.get();
-    const rows: StaffBalance[] = [];
-    // One at a time: a practice's worth of staff, and each balance is two
-    // small reads. Not worth holding many connections open at once.
-    for (const person of staff) {
-      rows.push(await this.staffBalance(person.id, person, policy));
-    }
-    return rows;
+    // Everybody's balances from a handful of reads (see balancesWithTerms).
+    const worked = await this.balancesWithTerms(
+      staff.map((person) => person.id),
+      policy,
+    );
+    return staff
+      .filter((person) => worked.has(person.id))
+      .map((person) => staffBalanceRow(person, worked.get(person.id)!));
   }
 
   /// One person's row of the above - for Adjust on their staff profile.
@@ -433,19 +522,7 @@ export class PtoPolicyService {
     person: StaffBalance['employee'],
     policy: PtoPolicy,
   ): Promise<StaffBalance> {
-    const { balance, person: terms } = await this.balanceWithTerms(employeeId, policy);
-    const allowance = terms.allowance;
-    const startingPoint = terms.startingPoints.get(balance.policyYear);
-    return {
-      employee: person,
-      balance,
-      vacationDaysPerYear: allowance?.vacationDaysPerYear ?? null,
-      sickDaysPerYear: allowance?.sickDaysPerYear ?? null,
-      vacationUsed: startingPoint?.vacationUsed ?? 0,
-      sickUsed: startingPoint?.sickUsed ?? 0,
-      vacationCarriedOver: startingPoint?.vacationCarriedOver ?? null,
-      sickCarriedOver: startingPoint?.sickCarriedOver ?? null,
-    };
+    return staffBalanceRow(person, await this.balanceWithTerms(employeeId, policy));
   }
 
   // -------------------------------------------------------------------------
@@ -607,6 +684,68 @@ interface StartingPointTerms {
 }
 
 /// What is particular to one person: their own allowance and starting points.
+/// What a balance needs to know about the person, read once.
+const BALANCE_EMPLOYEE_SELECT = {
+  id: true,
+  hireDate: true,
+  createdAt: true,
+  payType: true,
+  locations: { select: { locationId: true } },
+  ptoAllowance: { select: { vacationDaysPerYear: true, sickDaysPerYear: true } },
+  ptoStartingPoints: {
+    select: {
+      policyYear: true,
+      vacationUsed: true,
+      sickUsed: true,
+      vacationCarriedOver: true,
+      sickCarriedOver: true,
+    },
+  },
+} satisfies Prisma.EmployeeSelect;
+type BalanceEmployee = Prisma.EmployeeGetPayload<{ select: typeof BALANCE_EMPLOYEE_SELECT }>;
+
+/// What a balance needs to know about each request.
+const BALANCE_REQUEST_SELECT = {
+  type: true,
+  status: true,
+  startDate: true,
+  endDate: true,
+  isHalfDay: true,
+} satisfies Prisma.PtoRequestSelect;
+type BalanceRequest = Prisma.PtoRequestGetPayload<{ select: typeof BALANCE_REQUEST_SELECT }>;
+
+/// The person's own terms, as read; hours worked are filled in by the caller.
+function personalTerms(employee: BalanceEmployee, policy: PtoPolicy): PersonalTerms {
+  return {
+    hireDate: employee.hireDate,
+    allowance: employee.ptoAllowance ?? null,
+    startingPoints: new Map(
+      (employee.ptoStartingPoints ?? []).map((point) => [point.policyYear, point]),
+    ),
+    accruesSick: accruesSick(policy, employee),
+    hoursByYear: new Map(),
+  };
+}
+
+/// One row of the staff list from a person's balance and terms.
+function staffBalanceRow(
+  employee: StaffBalance['employee'],
+  { balance, person: terms }: { balance: PtoBalance; person: PersonalTerms },
+): StaffBalance {
+  const allowance = terms.allowance;
+  const startingPoint = terms.startingPoints.get(balance.policyYear);
+  return {
+    employee,
+    balance,
+    vacationDaysPerYear: allowance?.vacationDaysPerYear ?? null,
+    sickDaysPerYear: allowance?.sickDaysPerYear ?? null,
+    vacationUsed: startingPoint?.vacationUsed ?? 0,
+    sickUsed: startingPoint?.sickUsed ?? 0,
+    vacationCarriedOver: startingPoint?.vacationCarriedOver ?? null,
+    sickCarriedOver: startingPoint?.sickCarriedOver ?? null,
+  };
+}
+
 interface PersonalTerms {
   hireDate: Date | null;
   allowance: { vacationDaysPerYear: number | null; sickDaysPerYear: number | null } | null;

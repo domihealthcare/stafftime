@@ -104,8 +104,22 @@ export async function confirmOvertime(
   proposed: ProposedShift,
   name: string,
 ): Promise<boolean> {
-  const check = await api.overtimeCheck(proposed).catch(() => null);
-  if (!check || !check.hourly || check.level !== 'over') return true;
+  let check;
+  try {
+    check = await api.overtimeCheck(proposed);
+  } catch {
+    // Never a silent yes: the check did not run, so say so and let them choose.
+    return confirm({
+      title: 'Could not check overtime',
+      body: (
+        <p>The app could not check whether this puts {name} into overtime. Schedule it anyway?</p>
+      ),
+      confirmLabel: 'Yes, schedule it',
+      cancelLabel: 'Go back',
+      tone: 'neutral',
+    });
+  }
+  if (!check.hourly || check.level !== 'over') return true;
   return confirm({
     title: `Schedule ${name} into overtime?`,
     body: (

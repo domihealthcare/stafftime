@@ -10,7 +10,11 @@ import {
 } from '@prisma/client';
 import { ClosingService } from '../src/closing/closing.service';
 import { JOB_ROLE_COLOURS } from '../src/job-roles/job-role-colours';
+import { seedRefusal } from '../src/common/seed-guard';
 
+// Importing the Prisma client has already read apps/api/.env into
+// process.env (see jest.setup-env.js), so the check in main() sees the
+// DATABASE_URL the seed would actually use.
 const prisma = new PrismaClient();
 
 /**
@@ -96,6 +100,12 @@ async function seedJobRoles() {
 }
 
 async function main() {
+  const refusal = seedRefusal(process.env);
+  if (refusal) {
+    console.error(`Not seeding: ${refusal}`);
+    process.exitCode = 1;
+    return;
+  }
   const northBergen = await prisma.location.upsert({
     where: { slug: 'north-bergen' },
     // Reset the geofence too, so seeding always gives a known starting point -

@@ -111,7 +111,11 @@ export function checkStudyHref(value: string | null | undefined): {
 } {
   const href = value?.trim() || null;
   if (!href) return { href: null };
-  if (href.startsWith('/') && !href.startsWith('//') && !/\s/.test(href)) return { href };
+  // Not "//" or a backslash: browsers read "/\example.com" as "//example.com",
+  // another site.
+  if (href.startsWith('/') && !href.startsWith('//') && !href.includes('\\') && !/\s/.test(href)) {
+    return { href };
+  }
   try {
     const url = new URL(href);
     if (url.protocol === 'https:' && !/\s/.test(href)) return { href: url.toString() };

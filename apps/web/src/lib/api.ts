@@ -686,14 +686,6 @@ export const api = {
     isShared?: boolean;
     options: Partial<TimesheetExportOptions>;
   }) => request<ReportPreset>('/exports/presets', { method: 'POST', body: JSON.stringify(body) }),
-  updateReportPreset: (
-    id: string,
-    body: { name?: string; isShared?: boolean; options?: Partial<TimesheetExportOptions> },
-  ) =>
-    request<ReportPreset>(`/exports/presets/${id}`, {
-      method: 'PATCH',
-      body: JSON.stringify(body),
-    }),
   deleteReportPreset: (id: string) =>
     request<{ deleted: boolean }>(`/exports/presets/${id}`, { method: 'DELETE' }),
   reportPresetOptions: (id: string) =>
@@ -1052,7 +1044,9 @@ export const api = {
       body: JSON.stringify({ currentPassword, newPassword }),
     }),
   listSessions: () => request<AuthSession[]>('/auth/sessions'),
-  attention: () => request<Attention>('/attention'),
+  /// Only the sections a banner shows; the others come back empty.
+  attention: (sections: (keyof Attention)[]) =>
+    request<Attention>(`/attention?sections=${encodeURIComponent(sections.join(','))}`),
 
   loadDemoData: () => request<DemoSummary>('/demo/load', { method: 'POST' }),
   testData: () => request<TestDataPreview>('/demo/test-data'),
@@ -1432,8 +1426,6 @@ export const api = {
       notes: string;
     }>,
   ) => request<Credential>(`/credentials/${id}`, { method: 'PATCH', body: JSON.stringify(body) }),
-  archiveCredential: (id: string) =>
-    request<Credential>(`/credentials/${id}/archive`, { method: 'POST' }),
   deleteCredential: (id: string) =>
     request<{ deleted: boolean }>(`/credentials/${id}`, { method: 'DELETE' }),
   /// Each person against the licenses their job roles ask for.
@@ -1626,8 +1618,6 @@ export const api = {
     request<PersonName[]>(`/productivity/access/${employeeId}`, { method: 'DELETE' }),
   productivityPeople: () => request<PersonName[]>('/productivity/people'),
   productivityPlans: () => request<ProductivityPlan[]>('/productivity/plans'),
-  productivityPlan: (employeeId: string) =>
-    request<ProductivityPlan | null>(`/productivity/plans/${employeeId}`),
   saveProductivityPlan: (
     employeeId: string,
     body: {
@@ -2026,8 +2016,6 @@ export const api = {
     request<Announcement[]>(latest ? `/announcements?latest=${latest}` : '/announcements'),
   /// The posts ticked to show publicly - needs no session, for the sign-in page.
   publicPosts: () => request<PublicPost[]>('/announcements/public'),
-  primaryAnnouncement: () =>
-    request<{ announcement: Announcement | null }>('/announcements/primary'),
   createAnnouncement: (
     body: {
       title: string;

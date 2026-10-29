@@ -25,7 +25,7 @@ import { Roles } from '../common/auth/roles.decorator';
 import { ToolAccessService } from '../tool-access/tool-access.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { AuthService } from './auth.service';
-import { SESSION_COOKIE, clearSessionCookie, sessionCookieOptions } from './cookie';
+import { SESSION_COOKIE, clearSessionCookie, secureCookies, sessionCookieOptions } from './cookie';
 import { ChangePasswordDto } from './dto/change-password.dto';
 import { UpdatePreferencesDto } from './dto/preferences.dto';
 import { CompletePasswordResetDto, RequestPasswordResetDto } from './dto/password-reset.dto';
@@ -36,7 +36,7 @@ import { SessionService } from './session.service';
 
 @Controller('auth')
 export class AuthController {
-  private readonly isProduction: boolean;
+  private readonly secureCookies: boolean;
 
   constructor(
     private readonly auth: AuthService,
@@ -46,7 +46,7 @@ export class AuthController {
     private readonly toolAccess: ToolAccessService,
     config: ConfigService,
   ) {
-    this.isProduction = config.get<string>('NODE_ENV') === 'production';
+    this.secureCookies = secureCookies(config);
   }
 
   /**
@@ -71,7 +71,7 @@ export class AuthController {
     @Res({ passthrough: true }) response: Response,
   ) {
     const result = await this.resets.complete(dto.token, dto.newPassword);
-    clearSessionCookie(response, this.isProduction);
+    clearSessionCookie(response, this.secureCookies);
     return { ...result, signedOutEverywhere: true };
   }
 
@@ -92,7 +92,7 @@ export class AuthController {
     response.cookie(
       SESSION_COOKIE,
       session.token,
-      sessionCookieOptions(session.expiresAt, this.isProduction),
+      sessionCookieOptions(session.expiresAt, this.secureCookies),
     );
 
     return this.describeCurrentUser(await this.requireEmployeeId(session.token));
@@ -104,7 +104,7 @@ export class AuthController {
     if (request.sessionToken) {
       await this.auth.logout(request.sessionToken);
     }
-    clearSessionCookie(response, this.isProduction);
+    clearSessionCookie(response, this.secureCookies);
     return { signedOut: true };
   }
 

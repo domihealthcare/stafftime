@@ -206,6 +206,11 @@ const mgrCtx = await browser.newContext({ viewport: { width: 1280, height: 1000 
 const mgr = await mgrCtx.newPage();
 mgr.on('pageerror', (e) => errors.push(`manager pageerror: ${e.message}`));
 await signIn(mgr, 'manager@domihealthcare.com');
+// An admin, for the one thing only an admin may do: set somebody's PIN.
+const adminCtx = await browser.newContext({ viewport: { width: 1280, height: 1000 } });
+const admin = await adminCtx.newPage();
+admin.on('pageerror', (e) => errors.push(`admin pageerror: ${e.message}`));
+await signIn(admin, 'admin@domihealthcare.com');
 
 await step('the Directory shows the name, pronouns, photo, line and phone', async () => {
   await openDirectory(mgr);
@@ -221,10 +226,23 @@ await step('the Directory shows the name, pronouns, photo, line and phone', asyn
 });
 await mgr.screenshot({ path: `${OUT}/101-directory-profile.png`, fullPage: true });
 
-await step('the Directory card has no tablet PIN control (it is on the Staff screen), and never carries a PIN', async () => {
+await step('the Directory card has no tablet PIN control, a manager cannot set one, and it never carries a PIN', async () => {
   const card = mgr.getByTestId('person-Frankie J Front-Desk');
   if (await card.getByRole('button', { name: /tablet PIN/ }).count()) throw new Error('a PIN control on the Directory card');
-  const set = await mgr.evaluate(async () => {
+  // Admins only since October 2026: the same PIN unlocks pay.
+  const refused = await mgr.evaluate(async () => {
+    const people = await fetch('/api/directory').then((r) => r.json());
+    const frankie = people.find((p) => p.lastName === 'Front-Desk');
+    return (
+      await fetch(`/api/kiosk/employees/${frankie.id}/pin`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ pin: '7391' }),
+      })
+    ).status;
+  });
+  if (refused !== 403) throw new Error(`a manager setting a PIN answered ${refused}, expected 403`);
+  const set = await admin.evaluate(async () => {
     const people = await fetch('/api/directory').then((r) => r.json());
     const frankie = people.find((p) => p.lastName === 'Front-Desk');
     const response = await fetch(`/api/kiosk/employees/${frankie.id}/pin`, {
@@ -235,6 +253,9 @@ await step('the Directory card has no tablet PIN control (it is on the Staff scr
     return response.status;
   });
   if (set >= 300) throw new Error(`setting the PIN answered ${set}`);
+  const told = await frankie.evaluate(() => fetch('/api/notifications').then((r) => r.json()));
+  if (!told.items?.some((n) => n.title === 'Your tablet PIN was changed for you'))
+    throw new Error('Frankie was not told under the bell that an admin changed their PIN');
   const people = await mgr.evaluate(() => fetch('/api/directory').then((r) => r.text()));
   // Look for the PIN as a value, not as four characters anywhere: the
   // response is full of random ids, and "7391" turns up inside one now and
