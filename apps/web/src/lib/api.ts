@@ -598,9 +598,9 @@ export interface CalendarInviteRound {
   remaining: number;
 }
 
+/// Whether there is a link, never the link: only its fingerprint is kept.
 export interface CalendarLink {
   hasLink: boolean;
-  token: string | null;
   createdAt: string | null;
 }
 
@@ -651,7 +651,9 @@ export const api = {
 
   // ------------------------------------------------------------------- calendar
   calendarLink: () => request<CalendarLink>('/calendar/link'),
-  issueCalendarLink: () => request<{ token: string }>('/calendar/link', { method: 'POST' }),
+  /// The one answer that carries the token: show it now, it cannot be fetched again.
+  issueCalendarLink: () =>
+    request<{ token: string; createdAt: string }>('/calendar/link', { method: 'POST' }),
   revokeCalendarLink: () => request<{ revoked: boolean }>('/calendar/link', { method: 'DELETE' }),
 
   // ------------------------------------------------------------- first-run setup

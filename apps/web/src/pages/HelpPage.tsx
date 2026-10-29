@@ -457,7 +457,10 @@ const STAFF: Section[] = [
             it is waiting. Your shifts reach your own calendar (Google, Apple or Outlook) either as
             invites to your email - accept them if asked - or through the calendar link on that
             screen, which keeps itself up to date; <strong>Your calendar</strong> on that screen
-            says which. Treat the link like a password: anyone who has it can see what is on it.
+            says which. Treat the link like a password: anyone who has it can see what is on it. It
+            is shown only once, when you make it, so copy it then; to add it somewhere new later,
+            press <strong>Make a new link</strong> and add the new one wherever you used the old
+            one, which stops updating.
           </p>
         ),
       },
@@ -578,7 +581,8 @@ const STAFF: Section[] = [
             the calendar link at the bottom of the page: <strong>Everything in one calendar</strong>
             , or <strong>Separate calendars</strong> to add only the ones you want (say, just
             Diagnostics and Pay days) - each shows on your phone as its own calendar you can colour
-            and switch off. Use one or the other, not both, or things show twice.
+            and switch off. Use one or the other, not both, or things show twice. The addresses are
+            shown once, when the link is made, so add the ones you want then.
           </p>
         ),
       },

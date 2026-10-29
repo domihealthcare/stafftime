@@ -139,10 +139,24 @@ export const CALENDAR: Record<string, string> = {
     'Ajustes → Apps → Calendario → Cuentas → Añadir cuenta → Otra → Añadir calendario suscrito → pegar.',
   'Add calendar → Subscribe from web → paste.':
     'Agregar calendario → Suscribirse desde la web → pegar.',
-  'Keep these addresses to yourself. Anyone who has one can see your schedule without signing in - that is how calendar subscriptions work. If one gets out, regenerate below: every address changes at once.':
-    'No compartas estas direcciones. Cualquiera que tenga una puede ver tu horario sin iniciar sesión - así funcionan las suscripciones de calendario. Si alguna se comparte, genera una nueva abajo: todas las direcciones cambian a la vez.',
+  'Keep these addresses to yourself. Anyone who has one can see your schedule without signing in - that is how calendar subscriptions work. If one gets out, make a new link below: every address changes at once.':
+    'No compartas estas direcciones. Cualquiera que tenga una puede ver tu horario sin iniciar sesión - así funcionan las suscripciones de calendario. Si alguna se comparte, crea un enlace nuevo abajo: todas las direcciones cambian a la vez.',
   'Calendars usually check for changes every few hours, so a new shift may take a while to appear.':
     'Los calendarios suelen buscar cambios cada pocas horas, así que un turno nuevo puede tardar un rato en aparecer.',
-  'Regenerate the link': 'Generar un enlace nuevo',
   'Turn off syncing': 'Desactivar sincronización',
+
+  // The link is shown once (only its fingerprint is kept, October 2026)
+  'This is the only time your calendar addresses are shown. Copy the one you want now and add it to your calendar: for your privacy they are not kept, so they cannot be shown again. If you lose it, make a new link.':
+    'Esta es la única vez que se muestran las direcciones de tu calendario. Copia ahora la que quieras y agrégala a tu calendario: por tu privacidad no se guardan, así que no se pueden volver a mostrar. Si la pierdes, crea un enlace nuevo.',
+  'Set up on {date}.': 'Configurado el {date}.',
+  'Phones and calendars already subscribed keep updating.':
+    'Los teléfonos y calendarios que ya están suscritos se siguen actualizando.',
+  'For your privacy the address is shown only once, when it is made, so it cannot be shown again. To add your calendar somewhere new, make a new link and add it again wherever you used the old one: the old one stops updating.':
+    'Por tu privacidad, la dirección se muestra solo una vez, cuando se crea, así que no se puede volver a mostrar. Para agregar tu calendario en otro lugar, crea un enlace nuevo y vuelve a agregarlo donde usabas el anterior: el anterior deja de actualizarse.',
+  'Make a new link': 'Crear un enlace nuevo',
+  'Make a new link?': '¿Crear un enlace nuevo?',
+  'The old address stops working at once, so any phone or calendar using it stops updating until you add the new one.':
+    'La dirección anterior deja de funcionar de inmediato, así que cualquier teléfono o calendario que la use dejará de actualizarse hasta que agregues la nueva.',
+  'Yes, make a new link': 'Sí, crear un enlace nuevo',
+  'Keep the old link': 'Mantener el enlace anterior',
 };
