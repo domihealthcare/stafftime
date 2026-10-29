@@ -15,7 +15,7 @@ import {
   UseGuards,
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { Role } from '@prisma/client';
+import { NotificationKind, Role } from '@prisma/client';
 import type { Request, Response } from 'express';
 import { AuthUser } from '../common/auth/auth-user';
 import { CurrentUser } from '../common/auth/current-user.decorator';
@@ -28,6 +28,7 @@ import { KioskPunchService } from './kiosk-punch.service';
 import { KioskService } from './kiosk.service';
 import { PinService } from './pin.service';
 import { DowntimeService } from '../downtime/downtime.service';
+import { InboxService } from '../email/inbox.service';
 
 /**
  * Two audiences in one controller, kept apart by their guards:
@@ -45,6 +46,7 @@ export class KioskController {
     private readonly punches: KioskPunchService,
     private readonly pins: PinService,
     private readonly downtimes: DowntimeService,
+    private readonly inbox: InboxService,
     config: ConfigService,
   ) {
     this.isProduction = config.get<string>('NODE_ENV') === 'production';
@@ -156,25 +158,47 @@ export class KioskController {
     return { revoked: true };
   }
 
-  /// Managers too, not only admins: resetting a forgotten PIN is a front-desk
-  /// job, and a manager is who somebody asks. They can set one, never read one.
+  /// Admins only (October 2026). Staff choose their own PIN on Your profile;
+  /// an admin sets a replacement from the Staff editor or Kiosks, never reads
+  /// one. Managers could too until the maintenance pass of 29 October 2026:
+  /// the same PIN unlocks the pay screens, so a manager able to set an
+  /// admin's PIN could open pay on a computer where that admin was still
+  /// signed in. The screens were already admins' only.
   @Put('employees/:id/pin')
-  @Roles(Role.MANAGER)
+  @Roles(Role.ADMIN)
   @HttpCode(HttpStatus.OK)
-  async setPin(@Param('id', ParseUUIDPipe) id: string, @Body() dto: SetKioskPinDto) {
+  async setPin(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Body() dto: SetKioskPinDto,
+    @CurrentUser() user: AuthUser,
+  ) {
     const verdict = this.pins.check(dto.pin);
     if (!verdict.ok) {
       throw new BadRequestException(verdict.reason);
     }
     await this.punches.setPin(id, dto.pin);
+    await this.tellOfPinChange(id, user, 'Your tablet PIN was changed for you');
     return { set: true };
   }
 
   @Delete('employees/:id/pin')
-  @Roles(Role.MANAGER)
+  @Roles(Role.ADMIN)
   @HttpCode(HttpStatus.OK)
-  async clearPin(@Param('id', ParseUUIDPipe) id: string) {
+  async clearPin(@Param('id', ParseUUIDPipe) id: string, @CurrentUser() user: AuthUser) {
     await this.punches.clearPin(id);
+    await this.tellOfPinChange(id, user, 'Your tablet PIN was removed');
     return { cleared: true };
+  }
+
+  /// The person hears when somebody else sets or removes their PIN, since it
+  /// also unlocks pay. The bell's "profile" kind: it is about Your profile.
+  private async tellOfPinChange(employeeId: string, actor: AuthUser, title: string) {
+    if (employeeId === actor.id) return;
+    await this.inbox.notify([employeeId], {
+      kind: NotificationKind.PROFILE_PHOTO,
+      title,
+      body: 'An admin did this. If you did not ask for it, tell a manager. You can choose a new PIN on Your profile.',
+      link: '/profile',
+    });
   }
 }
