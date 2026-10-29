@@ -12,7 +12,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { usePersonMenu } from '../components/PersonMenu';
 import { Alert, Card, EmptyState, PageHeading, Spinner } from '../components/ui';
-import { ApiError, api } from '../lib/api';
+import { ApiError, api, type Background } from '../lib/api';
 import { displayName } from '../lib/format';
 import { t as translate, useT } from '../lib/i18n';
 import { useIsManager, useSession } from '../lib/session';
@@ -52,12 +52,14 @@ export function DirectoryPage() {
       : undefined,
   });
 
-  const load = useCallback(async () => {
+  /// `background`: the minute's refresh or the tab coming back, not the
+  /// person, so it does not count as using the app (see `request`).
+  const load = useCallback(async ({ background }: Background = {}) => {
     try {
       const [found, lines] = await Promise.all([
-        api.directory(),
+        api.directory({ background }),
         // The extensions are extra: without them the Directory still works.
-        api.extensions().catch(() => null),
+        api.extensions({ background }).catch(() => null),
       ]);
       setPeople(found);
       if (lines) setExtensions(lines);
@@ -75,10 +77,11 @@ export function DirectoryPage() {
     void load();
     // Only while somebody is looking; coming back to it refreshes at once.
     const timer = window.setInterval(
-      () => document.visibilityState === 'visible' && void load(),
+      () => document.visibilityState === 'visible' && void load({ background: true }),
       REFRESH_MS,
     );
-    const onVisible = () => document.visibilityState === 'visible' && void load();
+    const onVisible = () =>
+      document.visibilityState === 'visible' && void load({ background: true });
     document.addEventListener('visibilitychange', onVisible);
     return () => {
       window.clearInterval(timer);

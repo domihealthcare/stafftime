@@ -15,7 +15,7 @@ import {
   buttonClass,
   inputClass,
 } from '../components/ui';
-import { ApiError, api } from '../lib/api';
+import { ApiError, api, type Background } from '../lib/api';
 import {
   CAUSE_OPTIONS,
   SYSTEM_OPTIONS,
@@ -74,9 +74,11 @@ export function DowntimePage() {
   const asked = (params.get('tab') ?? 'now') as Tab;
   const tab = tabs.some((entry) => entry.key === asked) ? asked : 'now';
 
-  const load = useCallback(async () => {
+  /// `background` for the minute's look below: the screen asking by itself
+  /// does not count as using the app (see `request`).
+  const load = useCallback(async ({ background }: Background = {}) => {
     try {
-      setCurrent(await api.downtimeCurrent());
+      setCurrent(await api.downtimeCurrent({ background }));
       setError(null);
     } catch (err) {
       setError(err instanceof ApiError ? err.message : 'Could not load the downtime.');
@@ -90,7 +92,7 @@ export function DowntimePage() {
       .then((check) => setCheckAsked(check.asked))
       .catch(() => undefined);
     // Updates come in while it is on: look again every minute.
-    const timer = window.setInterval(() => void load(), 60_000);
+    const timer = window.setInterval(() => void load({ background: true }), 60_000);
     return () => window.clearInterval(timer);
   }, [load]);
 

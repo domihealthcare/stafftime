@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { api, type AppNotification } from '../lib/api';
+import { api, type AppNotification, type Background } from '../lib/api';
 import { useIsManager } from '../lib/session';
 import { locale, t as translate, useT } from '../lib/i18n';
 
@@ -31,10 +31,12 @@ export function NotificationBell() {
   // which re-fetches the count, and whichever answer lands last used to win.
   const generation = useRef(0);
 
-  const refreshCount = useCallback(() => {
+  /// `background`: the timer or the tab coming back asked, not the person,
+  /// so it does not count as using the app (see `request`).
+  const refreshCount = useCallback(({ background }: Background = {}) => {
     const asked = generation.current;
     api
-      .unreadNotifications()
+      .unreadNotifications({ background })
       .then((result) => {
         if (asked === generation.current) setUnread(result.unread);
       })
@@ -50,10 +52,11 @@ export function NotificationBell() {
     // Not while the phone is locked or the tab is in the background - that is
     // data and battery for a badge nobody can see. Coming back refreshes it.
     const timer = window.setInterval(
-      () => document.visibilityState === 'visible' && refreshCount(),
+      () => document.visibilityState === 'visible' && refreshCount({ background: true }),
       POLL_MS,
     );
-    const onVisible = () => document.visibilityState === 'visible' && refreshCount();
+    const onVisible = () =>
+      document.visibilityState === 'visible' && refreshCount({ background: true });
     document.addEventListener('visibilitychange', onVisible);
     return () => {
       window.clearInterval(timer);
