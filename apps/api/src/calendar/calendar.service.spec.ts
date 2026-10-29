@@ -1,5 +1,6 @@
 import { NotFoundException } from '@nestjs/common';
 import { PtoStatus, ShiftStatus } from '@prisma/client';
+import { hashToken } from '../auth/session.service';
 import { fakeSettings } from '../settings/practice-settings.test-double';
 import { CalendarService } from './calendar.service';
 
@@ -20,7 +21,7 @@ describe('CalendarService', () => {
     const prisma = {
       employee: {
         findUniqueOrThrow: jest.fn().mockResolvedValue({
-          calendarToken: 'existing-token',
+          calendarTokenHash: hashToken('existing-token'),
           calendarTokenSetAt: NOW,
         }),
         findUnique: jest.fn().mockResolvedValue(
@@ -71,20 +72,34 @@ describe('CalendarService', () => {
   };
 
   describe('the link', () => {
-    it('reports an existing token', async () => {
+    it('reports that a link exists and since when, never the token or its fingerprint', async () => {
       const { service } = build();
-      await expect(service.currentToken('emp-1')).resolves.toMatchObject({
-        token: 'existing-token',
+      const link = await service.currentLink('emp-1');
+      expect(link).toEqual({ hasLink: true, setAt: NOW });
+      expect(JSON.stringify(link)).not.toContain(hashToken('existing-token'));
+    });
+
+    it('reports no link for somebody who never made one', async () => {
+      const { service, prisma } = build();
+      prisma.employee.findUniqueOrThrow.mockResolvedValueOnce({
+        calendarTokenHash: null,
+        calendarTokenSetAt: null,
+      });
+      await expect(service.currentLink('emp-1')).resolves.toEqual({
+        hasLink: false,
+        setAt: null,
       });
     });
 
-    it('issues a long random token', async () => {
+    it('issues a long random token, returned once and stored only as its fingerprint', async () => {
       const { service, prisma } = build();
-      const { token } = await service.issueToken('emp-1');
+      const { token, setAt } = await service.issueToken('emp-1');
       // 24 bytes, base64url.
       expect(token).toHaveLength(32);
       expect(token).toMatch(/^[A-Za-z0-9_-]+$/);
-      expect(prisma.employee.update.mock.calls[0][0].data.calendarToken).toBe(token);
+      const data = prisma.employee.update.mock.calls[0][0].data;
+      expect(data).toEqual({ calendarTokenHash: hashToken(token), calendarTokenSetAt: setAt });
+      expect(JSON.stringify(data)).not.toContain(token);
     });
 
     it('issues a different token each time, so regenerating really rotates', async () => {
@@ -98,7 +113,7 @@ describe('CalendarService', () => {
       const { service, prisma } = build();
       await service.revokeToken('emp-1');
       expect(prisma.employee.update.mock.calls[0][0].data).toEqual({
-        calendarToken: null,
+        calendarTokenHash: null,
         calendarTokenSetAt: null,
       });
     });
@@ -123,12 +138,29 @@ describe('CalendarService', () => {
       await expect(service.feedForToken('token', NOW)).rejects.toThrow(NotFoundException);
     });
 
-    it('looks up the employee by the token, not by id', async () => {
+    it('looks up the employee by the token’s fingerprint, not by id or the token itself', async () => {
       const { service, prisma } = build();
       await service.feedForToken('some-token', NOW);
       expect(prisma.employee.findUnique.mock.calls[0][0].where).toEqual({
-        calendarToken: 'some-token',
+        calendarTokenHash: hashToken('some-token'),
       });
+    });
+
+    it('serves the feed for a link it issued: the fingerprint stored is the one looked up', async () => {
+      const { service, prisma } = build();
+      const { token } = await service.issueToken('emp-1');
+      await service.feedForToken(token, NOW, 'shifts');
+      expect(prisma.employee.findUnique.mock.calls[0][0].where.calendarTokenHash).toBe(
+        prisma.employee.update.mock.calls[0][0].data.calendarTokenHash,
+      );
+    });
+
+    it('matches the fingerprint the database migration made from the old plain tokens', () => {
+      // encode(sha256(convert_to(token, 'UTF8')), 'hex') in
+      // 20261029010000_calendar_token_fingerprint, for the token 'abc'.
+      expect(hashToken('abc')).toBe(
+        'ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad',
+      );
     });
 
     it('publishes only published shifts, never drafts', async () => {

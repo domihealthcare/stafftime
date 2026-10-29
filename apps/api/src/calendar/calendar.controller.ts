@@ -21,18 +21,21 @@ import { PayDaysQuery } from './pay-days.dto';
 export class CalendarController {
   constructor(private readonly calendar: CalendarService) {}
 
-  /// Whether this employee has a calendar link, and when it was created.
+  /// Whether this employee has a calendar link, and when it was created. Never
+  /// the link: it is shown once, when it is made, and only its fingerprint kept.
   @Get('link')
   async link(@CurrentUser() user: AuthUser) {
-    const { token, setAt } = await this.calendar.currentToken(user.id);
-    return { hasLink: token !== null, token, createdAt: setAt };
+    const { hasLink, setAt } = await this.calendar.currentLink(user.id);
+    return { hasLink, createdAt: setAt };
   }
 
   /// Creates a link, or replaces the existing one. Replacing invalidates the old.
+  /// The only answer that ever carries the token.
   @Post('link')
   @HttpCode(HttpStatus.OK)
-  issue(@CurrentUser() user: AuthUser) {
-    return this.calendar.issueToken(user.id);
+  async issue(@CurrentUser() user: AuthUser) {
+    const { token, setAt } = await this.calendar.issueToken(user.id);
+    return { token, createdAt: setAt };
   }
 
   @Delete('link')

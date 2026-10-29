@@ -1030,8 +1030,25 @@ added next month appears without anyone doing anything.
 A calendar app cannot send a cookie or an auth header, so the unguessable token
 in the path is what authenticates the request. That is how Google's own secret
 iCal addresses work, and it means the URL must be treated as a password. The
-screen says so plainly, and offers **Regenerate** — which rotates the token and
-breaks the old URL everywhere — and **Turn off**.
+screen says so plainly, and offers **Make a new link** (asked first), which
+rotates the token and breaks the old URL everywhere, and **Turn off**.
+
+**Only a fingerprint is kept** (29 October 2026, from a security review). The
+token used to sit in plain text in `Employee.calendarToken`, so a copy of the
+database would have let an outsider keep reading everybody's schedules until
+each person made a new link. Now the column is `calendarTokenHash`: the
+SHA-256 of the token as hex, made by the same `hashToken` as sessions and
+reset links, and the feed hashes the token in the path and looks that up.
+So the address can be shown only once: `POST /calendar/link` is the one answer
+that carries the token, and the card shows the addresses (all-in-one and
+Separate calendars) with a line saying this is the only time, to copy them
+then. `GET /calendar/link` says only whether there is a link and since when;
+on later visits the card says syncing is on since that day, that phones already
+subscribed keep updating, and offers a new link to add it anywhere else.
+Migration `20261029010000_calendar_token_fingerprint` filled the new column in
+SQL (`encode(sha256(convert_to("calendarToken", 'UTF8')), 'hex')`, the same
+value as `hashToken`) and dropped the old one, so every phone already
+subscribed kept working and no plain token was left.
 
 The feed is scoped to one employee, and stops working the moment they are
 terminated, like their sign-in.
@@ -1594,7 +1611,8 @@ Content-Security-Policy that allows scripts, styles and images only from the
 app's own origin.
 
 `no-referrer` is not the usual default and is deliberate: the app puts a
-calendar subscription URL on screen, and that URL is a credential. A referrer
+calendar subscription URL on screen (once, when it is made), and that URL is a
+credential. A referrer
 header is a quiet way for one to end up in somebody else's logs.
 
 The API sets its own equivalents in `configure-app.ts`, shared by `main.ts` and
@@ -4293,8 +4311,9 @@ calendar per kind — `shifts` (shifts and time off), `diagnostics`,
 "Diagnostics — Domi Staff" and so on, so a phone lists them as separate
 calendars with their own colours and switches. The calendar card offers
 **Everything in one calendar** or **Separate calendars** and warns against
-both at once (everything would show twice). Regenerating the link changes
-every address together. The same rules hold as for the all-in-one feed:
+both at once (everything would show twice). Making a new link changes
+every address together. Since 29 October 2026 the addresses are shown only
+once, when the link is made (see *The token is the credential*). The same rules hold as for the all-in-one feed:
 what the person may see, no rep phone or notes, and with invites on, no
 shifts or meetings.
 
