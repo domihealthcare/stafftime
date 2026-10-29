@@ -220,9 +220,37 @@ otherwise every read would carry a write.
 ### The cookie
 
 `httpOnly` (a script on the page cannot read it, so an XSS bug cannot steal the
-session), `sameSite=lax` (not sent cross-site, which is what blocks CSRF —
-combined with same-origin hosting, no separate CSRF token is needed), and
-`secure` in production.
+session), `sameSite=lax` (not sent cross-site), and `secure` in production.
+
+### Forged requests (CSRF)
+
+`sameSite=lax` alone was thought to block forged requests, and does not
+quite (a security review, October 2026): a browser counts every
+`*.domihealthcare.com` address as the same "site", the practice's Wix website
+included, so a hidden form on any page there could post to
+`staff.domihealthcare.com/api/...` with the staff member's cookie attached. The
+API also read form-encoded bodies, and a form post to `/api/auth/logout` or
+`/api/pto` went through. So every POST, PUT, PATCH and DELETE now passes
+`refuseForgedRequest` (`common/request-origin.ts`, applied first in
+`configure-app.ts`, before the body is read):
+
+- **Where it came from.** If the browser sent `Sec-Fetch-Site`, only
+  `same-origin` and `none` pass; `same-site` (the website) and `cross-site` get
+  a 403. An older browser without it is judged by `Origin`, which must name the
+  host the request went to (`Host`, or `X-Forwarded-Host` behind a proxy that
+  rewrites it, as the Vite dev server does). A request with neither is not
+  from a browser page (curl, cron-job.org, Vercel's timer, the browser suites'
+  API calls) and passes: no page can make a browser leave both off a form post,
+  and the session cookie is still needed for anything that matters.
+- **What it carries.** A request with a body must be `application/json`
+  (charset allowed), else a 415. The app only ever sends JSON; an HTML form can
+  only send urlencoded, multipart or text/plain, and a page elsewhere could send
+  JSON only with fetch, which needs a CORS answer the API never gives.
+
+Reads (GET, HEAD, OPTIONS) are never refused by it; they change nothing. Each
+refusal is logged with the headers it went by. `tests/browser/forged-requests.mjs`
+checks both refusals, and that the app's own requests still work. With this
+and the single origin, no CSRF token is needed.
 
 ### What a failed sign-in reveals
 
@@ -915,8 +943,9 @@ built web app as static files and routes `/api/*` to the NestJS app running as
 one serverless function.
 
 One project, one origin. That is not incidental: the session cookie is
-`sameSite=lax`, which is what removes the need for CSRF tokens, and that only
-works if the browser sees the API and the app on the same host.
+`sameSite=lax`, and with the check on where a request came from (see *Forged
+requests (CSRF)*) that removes the need for CSRF tokens, which only works if
+the browser sees the API and the app on the same host.
 
 The Nest app is cached per warm instance — booting it and opening a database
 connection on every request would be slow and would exhaust Postgres

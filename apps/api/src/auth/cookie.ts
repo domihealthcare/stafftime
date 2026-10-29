@@ -7,9 +7,14 @@ export const SESSION_COOKIE = 'stafftime_session';
  * Session cookie settings.
  *
  * - httpOnly: JavaScript cannot read it, so an XSS bug cannot steal the session.
- * - sameSite lax: the cookie is not sent on cross-site requests, which is what
- *   blocks CSRF. Combined with the API being same-origin with the web app, no
- *   separate CSRF token is needed.
+ * - sameSite lax: the cookie is not sent on requests from other sites. On its
+ *   own that does not block forged requests: a browser counts every
+ *   *.domihealthcare.com address as the same site, the practice's Wix website
+ *   included, so a form there would still carry the cookie. What blocks them is
+ *   `refuseForgedRequest` (common/request-origin.ts, applied in
+ *   configure-app.ts): a change must come from this origin and be JSON. With
+ *   that, and the API on the same origin as the web app, no CSRF token is
+ *   needed.
  * - secure wherever the app is served over HTTPS: never sent over plain HTTP.
  */
 /**
