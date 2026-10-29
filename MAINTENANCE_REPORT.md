@@ -21,7 +21,7 @@ used a throwaway database on the temporary machine this work ran on.
 | Lint (code style rules) | 0 errors, 0 warnings | 0 errors, 0 warnings |
 | Type checks | 0 errors (web app only was checked) | 0 errors (web app, API, and the Vercel entry file now all checked) |
 | Unit tests | 1,807 pass, 0 fail (139 files) | 1,831 pass, 0 fail (143 files) |
-| Browser tests (a real browser clicking through the app) | 121 suites, 1,267 checks, all pass | still running when this was first committed; see the next commit |
+| Browser tests (a real browser clicking through the app) | 121 suites, 1,267 checks, all pass | 122 suites (one new), 1,272 checks, all pass |
 | Files not in the house formatting style | 12 | 0 |
 | Known security problems in dependencies (`npm audit`) | 46 (3 critical, 14 high, 18 moderate, 11 low) | 40 (0 critical, 13 high, 16 moderate, 11 low) |
 | ...of those, in code that runs on the live site | 13 (4 high, 9 moderate) | 13 (needs the major upgrades in section 3) |
