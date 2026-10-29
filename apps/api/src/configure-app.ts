@@ -1,8 +1,13 @@
-import { ValidationPipe } from '@nestjs/common';
+import { Logger, ValidationPipe } from '@nestjs/common';
 import type { NestExpressApplication } from '@nestjs/platform-express';
 import cookieParser from 'cookie-parser';
 import type { NextFunction, Request, Response } from 'express';
 import { PrismaExceptionFilter } from './common/filters/prisma-exception.filter';
+import { refuseForgedRequest } from './common/request-origin';
+
+/// A refusal is written to the log, so a real client the rule shuts out by
+/// mistake shows up there rather than as a puzzle.
+const forgedLog = new Logger('ForgedRequest');
 
 /**
  * Everything the app needs before it answers a request, shared by `main.ts`
@@ -11,6 +16,22 @@ import { PrismaExceptionFilter } from './common/filters/prisma-exception.filter'
  */
 export function configureApp(app: NestExpressApplication): void {
   app.use(cookieParser());
+
+  // Refuse a request that changes something when it was sent from another
+  // site, the practice's own website included, or carries a form's body
+  // rather than JSON. Before the body parsers, so a forged body is never read.
+  // Why, and what still passes: common/request-origin.ts.
+  app.use((request: Request, response: Response, next: NextFunction) => {
+    const refusal = refuseForgedRequest(request.method, request.headers);
+    if (!refusal) return next();
+    forgedLog.warn(
+      `${refusal.statusCode} ${request.method} ${request.path}: ` +
+        `sec-fetch-site=${String(request.headers['sec-fetch-site'] ?? '-')} ` +
+        `origin=${String(request.headers.origin ?? '-')} ` +
+        `content-type=${String(request.headers['content-type'] ?? '-')}`,
+    );
+    response.status(refusal.statusCode).json(refusal);
+  });
 
   // Room for a profile photo: the browser keeps one under 180,000 characters,
   // and Express's own limit is 100 kB.
