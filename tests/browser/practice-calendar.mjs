@@ -503,8 +503,12 @@ await step('correcting a rep’s name renames their lunches', async () => {
 
 await step('separate calendars: one address per kind, each carrying only its own', async () => {
   await calendar(frankie);
-  // Syncing is already on from the feed step above.
-  await frankie.getByRole('button', { name: 'Show link' }).click();
+  // Syncing is already on from the feed step above, and the addresses are only
+  // shown when a link is made, so make a new one and copy them from it.
+  await frankie.getByRole('button', { name: 'Details', exact: true }).click();
+  await frankie.getByRole('button', { name: 'Make a new link', exact: true }).click();
+  await frankie.getByRole('alertdialog', { name: 'Make a new link?' }).getByRole('button', { name: 'Yes, make a new link' }).click();
+  await frankie.getByTestId('calendar-link-once').waitFor({ timeout: 10000 });
   await frankie.getByRole('group', { name: 'How many calendars' }).getByRole('button', { name: 'Separate calendars' }).click();
   const list = frankie.getByTestId('separate-calendars');
   const address = await list.getByLabel('Rep lunches', { exact: true }).inputValue();

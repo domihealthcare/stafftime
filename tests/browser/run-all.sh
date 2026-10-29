@@ -24,7 +24,7 @@ reset_state() {
     -c "delete from pto_allowances;" \
     -c "delete from report_presets;" \
     -c "delete from pto_policy;" \
-    -c "update employees set \"calendarToken\" = null, \"calendarTokenSetAt\" = null;" \
+    -c "update employees set \"calendarTokenHash\" = null, \"calendarTokenSetAt\" = null;" \
     -c "update employees set \"failedLoginAttempts\"=0, \"lockedUntil\"=null, \"pinFailedAttempts\"=0, \"pinLockedUntil\"=null;" \
     -c "delete from shifts where \"startsAt\" >= '2027-01-01';" \
     -c "delete from employee_checklists;" \

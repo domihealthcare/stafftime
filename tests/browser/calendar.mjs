@@ -54,10 +54,18 @@ await step('the schedule offers calendar syncing', async () => {
 });
 
 let url;
-await step('the link can be revealed and copied', async () => {
-  // Already on from the API checks, so it shows "Show link".
-  const toggle = page.getByRole('button', { name: /Show link|Turn on syncing/ });
-  await toggle.click();
+await step('turning it on shows the link once, to copy then', async () => {
+  // run-all.sh clears every link between suites; run alone after an earlier
+  // run, the link is already on and can only be replaced, never shown again.
+  const turnOn = page.getByRole('button', { name: 'Turn on syncing' });
+  if (await turnOn.count()) {
+    await turnOn.click();
+  } else {
+    await page.getByRole('button', { name: 'Details', exact: true }).click();
+    await page.getByRole('button', { name: 'Make a new link', exact: true }).click();
+    await page.getByRole('alertdialog', { name: 'Make a new link?' }).getByRole('button', { name: 'Yes, make a new link' }).click();
+  }
+  await page.getByTestId('calendar-link-once').getByText(/only time your calendar addresses are shown/).waitFor({ timeout: 15000 });
   const input = page.getByLabel('Your private calendar address');
   await input.waitFor({ timeout: 15000 });
   url = await input.inputValue();
@@ -94,9 +102,36 @@ await step('the link actually serves a calendar to an unauthenticated fetch', as
   await anon.close();
 });
 
-await step('regenerating the link breaks the old address', async () => {
+await step('the link is never shown or sent again, but syncing stays on', async () => {
+  const read = await page.evaluate(() => fetch('/api/calendar/link').then((r) => r.json()));
+  if (!read.hasLink || 'token' in read || JSON.stringify(read).includes(new URL(url).pathname.split('/')[3])) {
+    throw new Error(`reading the link answered ${JSON.stringify(read)}`);
+  }
+  await page.reload({ waitUntil: 'networkidle' });
+  await page.getByText('Your calendar').waitFor({ timeout: 15000 });
+  await page.getByRole('button', { name: 'Details', exact: true }).click();
+  const setUp = page.getByTestId('calendar-link-set-up');
+  await setUp.getByText(/^Set up on /).waitFor({ timeout: 10000 });
+  await setUp.getByText('Phones and calendars already subscribed keep updating.').waitFor();
+  if (await page.getByLabel('Your private calendar address').count()) throw new Error('the address is shown again after a reload');
+  if ((await page.content()).includes(url)) throw new Error('the address is somewhere on the page after a reload');
+  // The phone's copy still works.
+  const anon = await browser.newContext();
+  const response = await anon.request.get(url);
+  if (!response.ok()) throw new Error(`the subscribed address stopped working: ${response.status()}`);
+  await anon.close();
+});
+
+await step('a new link asks first, then breaks the old address', async () => {
   const old = url;
-  await page.getByRole('button', { name: 'Regenerate the link' }).click();
+  await page.getByRole('button', { name: 'Make a new link', exact: true }).click();
+  const ask = page.getByRole('alertdialog', { name: 'Make a new link?' });
+  await ask.getByRole('button', { name: 'Keep the old link' }).click();
+  await ask.waitFor({ state: 'detached', timeout: 5000 });
+  if (await page.getByLabel('Your private calendar address').count()) throw new Error('a new link was made without saying yes');
+  await page.getByRole('button', { name: 'Make a new link', exact: true }).click();
+  await ask.getByRole('button', { name: 'Yes, make a new link' }).click();
+  await page.getByLabel('Your private calendar address').waitFor({ timeout: 15000 });
   await page.waitForFunction(
     (previous) => {
       const field = document.getElementById('calendar-url');
