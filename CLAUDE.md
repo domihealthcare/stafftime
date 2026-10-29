@@ -1973,8 +1973,16 @@ Beyond the phases, the parts worth knowing about before picking up work:
   clock-in after 11pm that night the finish landed on the day after next
   (and the server refused it as over 16 hours). It now steps to the next day
   on New Jersey's calendar (`atPracticeTimeNextDay` in
-  `lib/practice-time.ts`, with tests for both clock changes). Nothing else
-  changed.
+  `lib/practice-time.ts`, with tests for both clock changes). **Same
+  release** (Dominguez: "fix the browser-day date bugs too"): a few screens
+  went by the browser's own day where the server goes by New Jersey's, wrong
+  only on a computer set to another time zone. Now New Jersey's: the time off
+  cards (Schedule, staff profile; "upcoming" and the record-past-time-off
+  form), the Add hours date limit, a checklist task's "overdue" mark, and the
+  Timesheet and Export periods (sent from New Jersey's midnight,
+  `practiceMidnight`, not the browser's; the This week / This month
+  shortcuts too, `presetRanges`). The other date boxes still start on the
+  browser's day (`lib/dates.ts` explains the two).
 - **Turned down: "PTO about to be lost"** (9 October 2026, Dominguez): a
   reminder to use PTO before it fails to carry over was proposed and refused —
   not in the practice's interest. Do not propose it again.

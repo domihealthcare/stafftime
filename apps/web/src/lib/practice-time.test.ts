@@ -4,6 +4,7 @@ import {
   PRACTICE_ZONE,
   atPracticeTime,
   atPracticeTimeNextDay,
+  practiceMidnight,
   practiceClockOf,
   practiceDate,
   practiceToday,
@@ -198,5 +199,19 @@ describe('atPracticeTimeNextDay', () => {
     expect(atPracticeTimeNextDay('2027-01-01T02:00:00.000Z', '05:00')).toBe(
       '2027-01-01T10:00:00.000Z',
     );
+  });
+});
+
+describe('practiceMidnight', () => {
+  it("gives New Jersey's midnight, summer and winter", () => {
+    expect(practiceMidnight('2026-07-15')).toBe('2026-07-15T04:00:00.000Z');
+    expect(practiceMidnight('2026-12-15')).toBe('2026-12-15T05:00:00.000Z');
+  });
+
+  it('starts the days the clocks change on the right side of the change', () => {
+    expect(practiceMidnight('2026-03-08')).toBe('2026-03-08T05:00:00.000Z');
+    expect(practiceMidnight('2026-03-09')).toBe('2026-03-09T04:00:00.000Z');
+    expect(practiceMidnight('2026-11-01')).toBe('2026-11-01T04:00:00.000Z');
+    expect(practiceMidnight('2026-11-02')).toBe('2026-11-02T05:00:00.000Z');
   });
 });

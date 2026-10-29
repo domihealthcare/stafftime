@@ -36,7 +36,7 @@ export function TimesheetPage() {
   const isManager = useIsManager();
   // Opens on this week, as it always has; the shortcuts reach pay periods and
   // months, and Custom anything else.
-  const [range, setRange] = useState<DayRange>(() => presetRanges(new Date(), null)[0].range!);
+  const [range, setRange] = useState<DayRange>(() => presetRanges(null)[0].range!);
   const [entries, setEntries] = useState<TimeEntry[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);

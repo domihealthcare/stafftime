@@ -70,6 +70,14 @@ export function atPracticeTimeNextDay(onDayOf: string, time: string): string {
   return atPracticeTime(noonNextDay, time);
 }
 
+/// The first instant of a "YYYY-MM-DD" on the practice's calendar: New
+/// Jersey's midnight, not this browser's. For a range of days sent to the
+/// server, which reads instants.
+export function practiceMidnight(day: string): string {
+  // Noon UTC is that same date in New Jersey, winter or summer.
+  return atPracticeTime(`${day}T12:00:00.000Z`, '00:00');
+}
+
 /// Today on the practice's calendar, as the first and last instants of the
 /// day - what Home asks the server for. Not the browser's day: the app's
 /// "today" is New Jersey's, and a browser in another zone (CI's, in UTC)
