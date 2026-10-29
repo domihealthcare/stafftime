@@ -1,5 +1,5 @@
 import { useEffect } from 'react';
-import { useBlocker } from 'react-router-dom';
+import { useBlocker } from 'react-router';
 import { useConfirm } from '../../components/ConfirmDialog';
 import { setUnsavedWork } from '../../lib/unsaved-work';
 

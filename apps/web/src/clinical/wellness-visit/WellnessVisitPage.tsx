@@ -1,5 +1,5 @@
 import { useCallback, useMemo, useRef, useState } from 'react';
-import { useSearchParams } from 'react-router-dom';
+import { useSearchParams } from 'react-router';
 import { Alert, Card, PageHeading } from '../../components/ui';
 import { canUseWellnessForm, wellnessStartPage } from '../../lib/clinical-access';
 import { browserToday } from '../../lib/dates';

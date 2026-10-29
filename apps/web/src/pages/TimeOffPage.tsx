@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { Link, useSearchParams } from 'react-router-dom';
+import { Link, useSearchParams } from 'react-router';
 import { ApiError, api } from '../lib/api';
 import { ClashNote } from '../components/TimeOffClashes';
 import { addCalendarDays } from '../lib/dates';

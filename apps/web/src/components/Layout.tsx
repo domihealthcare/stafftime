@@ -1,6 +1,6 @@
 import { plural, useT } from '../lib/i18n';
 import { Suspense, useEffect, useRef } from 'react';
-import { Link, NavLink, Outlet, useLocation } from 'react-router-dom';
+import { Link, NavLink, Outlet, useLocation } from 'react-router';
 import { BadgesProvider, useBadgePoll } from '../lib/badges';
 import { AccountMenu } from './AccountMenu';
 import { ViewAsBanner } from './ViewAsBanner';

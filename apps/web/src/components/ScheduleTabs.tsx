@@ -1,4 +1,4 @@
-import { NavLink } from 'react-router-dom';
+import { NavLink } from 'react-router';
 import { canSeeOnCall } from '../lib/on-call';
 import { useSession } from '../lib/session';
 import { useT } from '../lib/i18n';

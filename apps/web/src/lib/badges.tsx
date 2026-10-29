@@ -8,7 +8,7 @@ import {
   useState,
   type MutableRefObject,
 } from 'react';
-import { useLocation } from 'react-router-dom';
+import { useLocation } from 'react-router';
 import { TIME_OFF_CHANGED, api, type Background } from './api';
 import { DOWNTIME_CHANGED } from './downtime';
 import type { Downtime } from './types';

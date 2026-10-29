@@ -9,7 +9,7 @@ import {
 } from '../components/PersonDetails';
 import { useTodaysScheduleReviews } from '../lib/schedule-reviews';
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { useNavigate, useSearchParams } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router';
 import { usePersonMenu } from '../components/PersonMenu';
 import { Alert, Card, EmptyState, PageHeading, Spinner } from '../components/ui';
 import { ApiError, api, type Background } from '../lib/api';

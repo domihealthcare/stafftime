@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { NavLink, useLocation } from 'react-router-dom';
+import { NavLink, useLocation } from 'react-router';
 import { canUseTool } from '../lib/clinical-access';
 import { useT } from '../lib/i18n';
 import { useSession } from '../lib/session';

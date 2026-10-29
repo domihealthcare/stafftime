@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link } from 'react-router';
 import { useConfirm } from './ConfirmDialog';
 import { Alert, Card, EmptyState, buttonClass } from './ui';
 import { ApiError, api } from '../lib/api';

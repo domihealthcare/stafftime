@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import type { ReactNode } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate } from 'react-router';
 import { useIsAdmin } from '../lib/session';
 
 /// Somebody a right-click can be about: enough to find them again elsewhere.

@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Link, useParams } from 'react-router-dom';
+import { Link, useParams } from 'react-router';
 import { Alert, Card, Spinner } from '../components/ui';
 import { ApiError, api } from '../lib/api';
 import { formatCalendarDate } from '../lib/format';

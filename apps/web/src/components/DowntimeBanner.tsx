@@ -1,4 +1,4 @@
-import { Link, useLocation } from 'react-router-dom';
+import { Link, useLocation } from 'react-router';
 import { useBadges } from '../lib/badges';
 import { practiceTimeWords } from '../lib/downtime';
 

@@ -1,4 +1,4 @@
-import { Link } from 'react-router-dom';
+import { Link } from 'react-router';
 import { api } from '../lib/api';
 import { KIND_STYLE } from '../lib/calendar-kinds';
 import { formatTimeCompact, localDate } from '../lib/format';

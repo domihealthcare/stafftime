@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link } from 'react-router';
 import { PracticeOverviewSection } from '../components/PracticeOverviewSection';
 import { Alert, Card, EmptyState, PageHeading, Spinner } from '../components/ui';
 import { ApiError, api } from '../lib/api';

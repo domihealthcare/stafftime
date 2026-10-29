@@ -1,5 +1,5 @@
 import { Fragment, useId, useState, type ReactNode } from 'react';
-import { Link } from 'react-router-dom';
+import { Link } from 'react-router';
 import {
   blanksOf,
   fillTemplate,

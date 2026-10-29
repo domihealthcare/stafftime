@@ -1,6 +1,6 @@
 import { BrandLogo } from '../components/Brand';
 import { useState } from 'react';
-import { Link, useSearchParams } from 'react-router-dom';
+import { Link, useSearchParams } from 'react-router';
 import { PasswordField } from '../components/PasswordField';
 import { Alert, Card } from '../components/ui';
 import { ApiError, api } from '../lib/api';

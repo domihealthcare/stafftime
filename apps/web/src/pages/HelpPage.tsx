@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react';
-import { Link, useSearchParams } from 'react-router-dom';
+import { Link, useSearchParams } from 'react-router';
 import { canUseCarePlan, canUseWellnessForm } from '../lib/clinical-access';
 import { textOf, type HelpTopicText } from '../lib/help-text';
 import { useIsManager, useSession } from '../lib/session';

@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link } from 'react-router';
 import { useConfirm } from '../components/ConfirmDialog';
 import { Modal } from '../components/Modal';
 import {

@@ -5,7 +5,7 @@ import { ApiError, api } from '../lib/api';
 import { addCalendarDays } from '../lib/dates';
 import { formatCalendarDate, formatTimeCompact, localDate } from '../lib/format';
 import { t, useT } from '../lib/i18n';
-import { Link } from 'react-router-dom';
+import { Link } from 'react-router';
 import { KIND_STYLE, officeShort } from '../lib/calendar-kinds';
 import { FOOD_LABEL, STATUS_LABEL } from '../lib/reps';
 import { SearchableSelect } from './SearchableSelect';

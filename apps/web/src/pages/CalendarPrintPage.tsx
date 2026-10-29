@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { Link, useSearchParams } from 'react-router-dom';
+import { Link, useSearchParams } from 'react-router';
 import { BrandLogoForPrint } from '../components/Brand';
 import { eventsOnDay, eventTimeLabel, shortTitle, shownAt } from '../components/PracticeEvents';
 import { Alert, Spinner, buttonClass } from '../components/ui';
