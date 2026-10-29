@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { browserToday } from '../lib/dates';
+import { practiceDate } from '../lib/practice-time';
 import { formatCalendarDate } from '../lib/format';
 import { ApiError, api } from '../lib/api';
 import { PTO_TYPE_LABELS, REQUESTABLE_PTO_TYPES, hasNone } from '../lib/time-off';
@@ -69,7 +69,7 @@ export function StaffTimeOffCard({
   onChanged: () => void;
 }) {
   const [open, setOpen] = useState<'all' | 'record' | 'adjust' | null>(null);
-  const today = browserToday();
+  const today = practiceDate();
   const live = requests.filter((r) => r.status === 'APPROVED' || r.status === 'PENDING');
   const waiting = live.filter((r) => r.status === 'PENDING').length;
   const next = live
@@ -330,7 +330,7 @@ function RecordForm({
   onCancel: () => void;
   onRecorded: () => void;
 }) {
-  const today = browserToday();
+  const today = practiceDate();
   const [type, setType] = useState<(typeof REQUESTABLE_PTO_TYPES)[number]>('SICK');
   const [startDate, setStartDate] = useState(today);
   const [endDate, setEndDate] = useState(today);

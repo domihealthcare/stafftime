@@ -17,6 +17,16 @@ const step = async (name, fn) => {
   catch (e) { console.log(`FAIL  ${name}: ${e.message}`); errors.push(`${name}: ${e.message}`); }
 };
 
+/// The first instant of a day in New Jersey. 5am UTC is midnight or 1am
+/// there, before any 2am clock change, so its offset is midnight's.
+function njMidnight(day) {
+  const hour = Number(
+    new Intl.DateTimeFormat('en-US', { timeZone: 'America/New_York', hour: 'numeric', hourCycle: 'h23' })
+      .format(new Date(`${day}T05:00:00Z`)),
+  );
+  return new Date(Date.parse(`${day}T05:00:00Z`) - hour * 3_600_000).toISOString();
+}
+
 async function signIn(page, email) {
   await page.goto(`${BASE}/`, { waitUntil: 'networkidle' });
   await page.getByLabel('Email').fill(email);
@@ -117,9 +127,10 @@ await step('staff get the pay-period shortcuts too, and they ask for exactly tho
   const request = emp.waitForRequest((r) => r.url().includes('/api/time-entries') && r.method() === 'GET');
   await chip(emp, 'This pay period').click();
   const url = new URL((await request).url());
-  const expectFrom = await emp.evaluate((d) => new Date(`${d}T00:00:00`).toISOString(), current.from);
-  // The last day is included: the request runs to the midnight after it.
-  const expectTo = await emp.evaluate((d) => new Date(`${d}T00:00:00`).toISOString(), addDays(current.to, 1));
+  // New Jersey's midnights, whatever zone the test browser is in (CI's is
+  // UTC). The last day is included: the request runs to the midnight after it.
+  const expectFrom = njMidnight(current.from);
+  const expectTo = njMidnight(addDays(current.to, 1));
   if (url.searchParams.get('from') !== expectFrom || url.searchParams.get('to') !== expectTo)
     throw new Error(`asked for ${url.searchParams.get('from')}..${url.searchParams.get('to')}, wanted ${expectFrom}..${expectTo}`);
   if ((await emp.getByTestId('date-range-label').innerText()) !== (await labelFor(emp, current)))

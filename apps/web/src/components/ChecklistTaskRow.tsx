@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { ApiError, api } from '../lib/api';
-import { browserToday } from '../lib/dates';
+import { practiceDate } from '../lib/practice-time';
 import { formatCalendarDate, formatDate } from '../lib/format';
 import type { Checklist, ChecklistTask, ChecklistTaskStatus } from '../lib/types';
 import { Badge, buttonClass } from './ui';
@@ -25,10 +25,10 @@ export function ChecklistTaskRow({
   const [skipping, setSkipping] = useState(false);
   const [note, setNote] = useState('');
 
-  // Today where the person is - not in UTC, which is already tomorrow after
-  // 8pm in New Jersey and marked things due today as overdue.
+  // Today in New Jersey, as the server's overdue count has it - not UTC's
+  // (already tomorrow after 8pm there) nor the browser's own.
   const overdue =
-    task.status === 'PENDING' && task.dueAt !== null && task.dueAt.slice(0, 10) < browserToday();
+    task.status === 'PENDING' && task.dueAt !== null && task.dueAt.slice(0, 10) < practiceDate();
 
   async function setStatus(status: ChecklistTaskStatus, reason?: string) {
     setBusy(true);

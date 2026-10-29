@@ -2,7 +2,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { ApiError, api } from '../lib/api';
 import { formatDate, formatTime } from '../lib/format';
 import { useT } from '../lib/i18n';
-import { atPracticeTime, practiceClockOf } from '../lib/practice-time';
+import { atPracticeTime, atPracticeTimeNextDay, practiceClockOf } from '../lib/practice-time';
 import type { CorrectionRequest, TimeEntry } from '../lib/types';
 import { useConfirm } from './ConfirmDialog';
 import { Modal } from './Modal';
@@ -60,9 +60,6 @@ export function AskCorrectionButton({ entry, onAsk }: { entry: TimeEntry; onAsk:
   );
 }
 
-const plusDays = (iso: string, days: number) =>
-  new Date(new Date(iso).getTime() + days * 86_400_000).toISOString();
-
 export function AskCorrectionDialog({
   entry,
   onClose,
@@ -88,7 +85,7 @@ export function AskCorrectionDialog({
     const clockInAt = atPracticeTime(entry.clockInAt, start);
     // A finish earlier in the day than the start is the next morning.
     let clockOutAt = atPracticeTime(entry.clockInAt, end);
-    if (clockOutAt <= clockInAt) clockOutAt = atPracticeTime(plusDays(entry.clockInAt, 1), end);
+    if (clockOutAt <= clockInAt) clockOutAt = atPracticeTimeNextDay(entry.clockInAt, end);
     try {
       await api.askCorrection(entry.id, { clockInAt, clockOutAt, reason: reason.trim() });
       onSent();

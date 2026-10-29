@@ -7,7 +7,9 @@ import {
   type TimesheetExportOptions,
 } from '../lib/api';
 import type { ReportPreset } from '../lib/types';
-import { addDays, formatCalendarDate, formatDateTime } from '../lib/format';
+import { formatCalendarDate, formatDateTime } from '../lib/format';
+import { addCalendarDays } from '../lib/dates';
+import { practiceMidnight } from '../lib/practice-time';
 import type {
   DayRange,
   ExportCheck,
@@ -54,7 +56,7 @@ export function ExportPage() {
 
   // Opens on last week, then on the last pay period as soon as the server says
   // which fortnight that is - unless somebody has already picked a period.
-  const [range, setRange] = useState<DayRange>(() => presetRanges(new Date(), null)[1].range!);
+  const [range, setRange] = useState<DayRange>(() => presetRanges(null)[1].range!);
   const [rangeTouched, setRangeTouched] = useState(false);
   const lastPayPeriod = usePresetRange('last-pay-period', 'last-week');
   useEffect(() => {
@@ -125,9 +127,10 @@ export function ExportPage() {
     () => ({
       // The end date is inclusive on screen. `to` here is its start; the
       // preview and the download both replace it with the following midnight
-      // (endExclusive), so the last day's punches are included.
-      from: new Date(`${from}T00:00:00`).toISOString(),
-      to: new Date(`${to}T00:00:00`).toISOString(),
+      // (endExclusive), so the last day's punches are included. Midnights are
+      // New Jersey's, as the server's are.
+      from: practiceMidnight(from),
+      to: practiceMidnight(to),
       locationId: locationId || undefined,
       statuses,
       includeOpen,
@@ -892,7 +895,7 @@ function ExportHistory({
 }
 
 /// The screen shows an inclusive end date; the API takes an exclusive one:
-/// the next midnight on this browser's clock.
+/// the next midnight in New Jersey.
 function endExclusive(date: string): string {
-  return addDays(new Date(`${date}T00:00:00`), 1).toISOString();
+  return practiceMidnight(addCalendarDays(date, 1));
 }

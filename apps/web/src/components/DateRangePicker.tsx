@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { api } from '../lib/api';
-import { browserToday } from '../lib/dates';
+import { addCalendarDays } from '../lib/dates';
+import { practiceDate, practiceMidnight } from '../lib/practice-time';
 import { addDays, addMonths, localDate, startOfMonth, startOfWeek } from '../lib/format';
 import type { DayRange, PayPeriodInfo } from '../lib/types';
 import { locale, useT } from '../lib/i18n';
@@ -23,7 +24,8 @@ interface Preset {
 let payPeriodRequest: Promise<PayPeriodInfo | null> | null = null;
 let payPeriodDay = '';
 function loadPayPeriod(): Promise<PayPeriodInfo | null> {
-  const today = browserToday();
+  // The server's pay period moves at New Jersey's midnight.
+  const today = practiceDate();
   if (payPeriodDay !== today) {
     payPeriodDay = today;
     payPeriodRequest = null;
@@ -40,7 +42,17 @@ export function refreshPayPeriod() {
   payPeriodRequest = null;
 }
 
-export function presetRanges(today: Date, payPeriod: PayPeriodInfo | null): Preset[] {
+/// Today in New Jersey as a `Date` at midnight on this browser's calendar, for
+/// the week and month arithmetic in `format.ts`: "this week" is the practice's,
+/// as the pay periods are, whatever zone the computer is in.
+export function practiceCalendarToday(): Date {
+  return new Date(`${practiceDate()}T00:00:00`);
+}
+
+export function presetRanges(
+  payPeriod: PayPeriodInfo | null,
+  today: Date = practiceCalendarToday(),
+): Preset[] {
   const weekStart = startOfWeek(today);
   const firstOfMonth = startOfMonth(today);
   const lastMonth = addMonths(firstOfMonth, -1);
@@ -82,7 +94,7 @@ export function usePresetRange(key: PresetKey, fallback: PresetKey): DayRange | 
     let cancelled = false;
     void loadPayPeriod().then((payPeriod) => {
       if (cancelled) return;
-      const presets = presetRanges(new Date(), payPeriod);
+      const presets = presetRanges(payPeriod);
       setRange(
         presets.find((p) => p.key === key)?.range ?? presets.find((p) => p.key === fallback)!.range,
       );
@@ -126,7 +138,7 @@ export function DateRangePicker({
     };
   }, []);
 
-  const presets = presetRanges(new Date(), payPeriod);
+  const presets = presetRanges(payPeriod);
   const active = presets.find(
     (preset) => preset.range && preset.range.from === value.from && preset.range.to === value.to,
   );
@@ -271,11 +283,12 @@ function describe(range: DayRange): string {
   return range.from === range.to ? end : `${start} – ${end}`;
 }
 
-/// The API takes instants and an exclusive end: local midnight at the start of
-/// `from`, and local midnight after the last day.
+/// The API takes instants and an exclusive end: New Jersey's midnight at the
+/// start of `from`, and New Jersey's midnight after the last day. Not this
+/// browser's, which on a computer in another zone moved the period by hours.
 export function toInstants(range: DayRange): { from: string; to: string } {
   return {
-    from: day(range.from).toISOString(),
-    to: addDays(day(range.to), 1).toISOString(),
+    from: practiceMidnight(range.from),
+    to: practiceMidnight(addCalendarDays(range.to, 1)),
   };
 }

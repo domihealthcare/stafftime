@@ -289,12 +289,14 @@ unit test, the type checks and the whole browser suite).
 9. **Found while doing this, not fixed (small):**
    - **Ask to fix your hours, on the night the clocks go forward:** for an
      entry clocked in between 11 pm and midnight that night, an overnight
-     correction lands a day late (`components/Corrections.tsx` adds 24 hours
-     instead of one calendar day). Once a year, narrow.
-   - A few screens use the browser's own date where the server uses New
+     correction landed a day late (`components/Corrections.tsx` added 24
+     hours instead of one calendar day). **Fixed in 1.33.1**
+     (`atPracticeTimeNextDay` in `lib/practice-time.ts`).
+   - A few screens used the browser's own date where the server uses New
      Jersey's (the time off cards, the Add hours date limit, the checklist
-     "overdue" mark, the Export end date). Only wrong on a computer set to
-     another time zone.
+     "overdue" mark, the Export end date, and the Timesheet's period too).
+     Only wrong on a computer set to another time zone. **Fixed in 1.33.1**
+     (`practiceDate` and `practiceMidnight` in `lib/practice-time.ts`).
    - `parseDay('2026-02-30')` gives 2 March instead of nothing, and one code
      comment about the month grid is wrong. Neither shows on screen.
    - **For a clinician:** the BrainCheck Care Plan reads a Cornell score of
