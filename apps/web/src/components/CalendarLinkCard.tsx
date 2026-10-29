@@ -298,7 +298,7 @@ export function CalendarLinkCard() {
           <div data-testid="separate-calendars">
             <p className="text-sm text-slate-600">
               {t(
-                'Add only the ones you want. Each shows on your phone as its own calendar, with its own colour and its own on/off. Use these instead of the all-in-one address, not as well, or everything shows twice.',
+                'Add only the ones you want. Each shows on your phone as its own calendar, with its own colour and its own on/off. Use these instead of the all-in-one address, not as well, or everything shows twice (Providers is the one exception: it is not in the all-in-one).',
               )}
             </p>
             <ul className="mt-2 space-y-2">
@@ -362,6 +362,39 @@ export function CalendarLinkCard() {
                 {copied === 'domi' ? t('Copied') : t('Copy')}
               </button>
             </div>
+            {/* Where the providers are is not in the all-in-one calendar (it
+                would fill everybody's), so it is offered beside it. */}
+            {SEPARATE_FEEDS.filter((feed) => feed.alongside).map((feed) => (
+              <div key={feed.slug} className="mt-3" data-testid={`alongside-${feed.slug}`}>
+                <label
+                  htmlFor={`calendar-url-alongside-${feed.slug}`}
+                  className="block text-sm font-medium text-slate-700"
+                >
+                  {t(feed.label)}
+                </label>
+                <p className="text-xs text-slate-600">
+                  {t('Not in the calendar above. Add it as well if you want it.')}
+                </p>
+                <div className="mt-1 flex flex-wrap gap-2">
+                  <input
+                    id={`calendar-url-alongside-${feed.slug}`}
+                    type="text"
+                    readOnly
+                    value={feedUrl(feed.slug) ?? ''}
+                    onFocus={(event) => event.currentTarget.select()}
+                    className="w-full min-w-0 flex-1 rounded-lg border-slate-300 bg-slate-50 font-mono text-xs shadow-sm"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => void copy(feed.slug)}
+                    aria-label={t('Copy the {calendar} address', { calendar: t(feed.label) })}
+                    className="rounded-lg bg-slate-800 px-4 py-2 text-sm font-medium text-white hover:bg-slate-900"
+                  >
+                    {copied === feed.slug ? t('Copied') : t('Copy')}
+                  </button>
+                </div>
+              </div>
+            ))}
           </>
         )}
 

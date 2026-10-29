@@ -18,6 +18,7 @@ import { named, OnCallService, PERSON, PROVIDER } from '../on-call/on-call.servi
 import { PracticeSettingsService } from '../settings/practice-settings.service';
 import { FEEDS, type FeedPart } from './feeds';
 import { buildCalendar, type CalendarEvent } from './ical';
+import { providerLabels } from './provider-labels';
 
 /// How much history and future to publish. Enough to be useful, bounded so the
 /// feed stays small and fast for a calendar app polling it hourly.
@@ -59,43 +60,63 @@ export class CalendarService {
     if (end.getTime() - start.getTime() > 62 * 86_400_000) {
       throw new BadRequestException('At most 62 days at a time.');
     }
-    const rows = await this.prisma.shift.findMany({
-      where: {
-        status: 'PUBLISHED',
-        employee: PROVIDER,
-        // A day either side: the browser reads each shift on its own clock.
-        startsAt: {
-          gte: new Date(start.getTime() - 86_400_000),
-          lt: new Date(end.getTime() + 2 * 86_400_000),
-        },
-      },
-      select: {
-        id: true,
-        isRemote: true,
-        startsAt: true,
-        endsAt: true,
-        location: { select: { id: true, name: true } },
-        employee: { select: PERSON },
-      },
-      orderBy: { startsAt: 'asc' },
-    });
+    // A day either side: the browser reads each shift on its own clock.
+    const rows = await this.providerShifts(
+      new Date(start.getTime() - 86_400_000),
+      new Date(end.getTime() + 2 * 86_400_000),
+    );
     return {
-      shifts: rows.flatMap((row) =>
-        row.employee
-          ? [
-              {
-                id: row.id,
-                provider: named(row.employee),
-                isRemote: row.isRemote,
-                locationId: row.location.id,
-                locationName: row.location.name,
-                startsAt: row.startsAt,
-                endsAt: row.endsAt,
-              },
-            ]
-          : [],
-      ),
+      shifts: rows.map((row) => ({
+        id: row.id,
+        provider: named(row.employee),
+        label: row.label,
+        isRemote: row.isRemote,
+        locationId: row.location.id,
+        locationName: row.location.name,
+        startsAt: row.startsAt,
+        endsAt: row.endsAt,
+      })),
     };
+  }
+
+  /**
+   * The published shifts of providers starting between two instants, each
+   * with the provider's label ("Dr. J Dominguez", `provider-labels.ts`). For
+   * the Calendar and for the Providers calendar link alike.
+   */
+  private async providerShifts(from: Date, to: Date) {
+    const [rows, providers] = await Promise.all([
+      this.prisma.shift.findMany({
+        where: {
+          status: 'PUBLISHED',
+          employee: PROVIDER,
+          startsAt: { gte: from, lt: to },
+        },
+        select: {
+          id: true,
+          isRemote: true,
+          startsAt: true,
+          endsAt: true,
+          updatedAt: true,
+          location: {
+            select: { id: true, name: true, addressLine1: true, city: true, state: true },
+          },
+          employee: { select: PERSON },
+        },
+        orderBy: { startsAt: 'asc' },
+      }),
+      // Every current provider, so a name reads the same in every month.
+      this.prisma.employee.findMany({ where: PROVIDER, select: PERSON }),
+    ]);
+    const labels = providerLabels([
+      ...providers,
+      ...rows.flatMap((row) => (row.employee ? [row.employee] : [])),
+    ]);
+    return rows.flatMap((row) =>
+      row.employee
+        ? [{ ...row, employee: row.employee, label: labels.get(row.employee.id) ?? '' }]
+        : [],
+    );
   }
 
   /// Pay days from `from` to `to` (YYYY-MM-DD, inclusive): the Friday after
@@ -194,7 +215,7 @@ export class CalendarService {
     const invited = this.invites.enabled;
 
     const wantsEvents = Object.values(PracticeEventKind).some((kind) => wants(kind));
-    const [shifts, timeOff, allEvents, payDays, onCallTurns] = await Promise.all([
+    const [shifts, timeOff, allEvents, payDays, onCallTurns, providerShifts] = await Promise.all([
       invited || !wants('SHIFTS')
         ? Promise.resolve([])
         : this.prisma.shift.findMany({
@@ -244,6 +265,9 @@ export class CalendarService {
         : Promise.resolve([]),
       // Their own on-call turns, noon to noon - a provider's only (October 2026).
       wants('ON_CALL') ? this.onCall.turnsFor(employee.id, from, to) : Promise.resolve([]),
+      // Where every provider is (October 2026, Dominguez): the Calendar's
+      // Providers, one entry a shift.
+      wants('PROVIDERS') ? this.providerShifts(from, to) : Promise.resolve([]),
     ]);
     // Invites carry meetings only; closures, holidays and diagnostics stay here.
     const practiceEvents = allEvents.filter(
@@ -330,6 +354,18 @@ export class CalendarService {
         start: turn.startsAt,
         end: turn.endsAt,
         // Reachable, not busy: nothing should be refused because of it.
+        transparent: true,
+      })),
+      ...providerShifts.map((shift): CalendarEvent => ({
+        uid: `provider-${shift.id}@staff.domihealthcare.com`,
+        sequence: secondsSinceEpoch(shift.updatedAt),
+        // "Dr. J Dominguez - North Bergen": one entry a provider, so each is
+        // on its own line in the calendar app, at their hours.
+        summary: `${shift.label} - ${shift.isRemote ? 'Telemedicine' : shift.location.name}`,
+        location: shift.isRemote ? undefined : addressOf(shift.location),
+        start: shift.startsAt,
+        end: shift.endsAt,
+        // Somebody else's shift: it never makes the reader look busy.
         transparent: true,
       })),
       ...payDays.map((day): CalendarEvent => ({

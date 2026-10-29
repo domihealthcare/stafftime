@@ -3,13 +3,6 @@ import { formatTimeCompact, localDate } from '../lib/format';
 import { useT } from '../lib/i18n';
 import type { ProviderPlaces as Places } from '../lib/types';
 
-/// "Dr. Dominguez": a provider as the practice's own schedule writes them.
-function short(provider: Places['shifts'][number]['provider']): string {
-  const doctor = provider.name.startsWith('Dr.');
-  const last = provider.lastName;
-  return doctor ? `Dr. ${last}` : (provider.preferredName ?? provider.firstName);
-}
-
 export interface PlaceGroup {
   key: string;
   label: string;
@@ -37,8 +30,10 @@ export function placesOn(places: Places, day: string, office: string): PlaceGrou
       label: shift.isRemote ? 'Tele' : officeShort(shift.locationName),
       people: [],
     };
+    // "Dr. Hernandez", or "Dr. J Dominguez" where two share a name: worked
+    // out by the server over every provider (`calendar/provider-labels.ts`).
     group.people.push(
-      `${short(shift.provider)} ${formatTimeCompact(shift.startsAt)}-${formatTimeCompact(shift.endsAt)}`,
+      `${shift.label} ${formatTimeCompact(shift.startsAt)}-${formatTimeCompact(shift.endsAt)}`,
     );
     groups.set(key, group);
   }
@@ -53,6 +48,9 @@ export function placesOn(places: Places, day: string, office: string): PlaceGrou
  * should be there and who's scheduled to be on telemedicine"). From the
  * published shifts of people in a provider job role: names, offices and
  * hours only. Closures show beside it as they always do.
+ *
+ * The place on a line of its own, then each provider on a line of their own
+ * (October 2026, Dominguez), not run together with commas.
  */
 export function ProviderDayChips({
   groups,
@@ -74,8 +72,12 @@ export function ProviderDayChips({
           <span aria-hidden="true">{style.emoji}</span>
           <span className={compact ? 'sr-only' : undefined}>
             {' '}
-            <strong>{group.key === 'TELE' ? t('Telemedicine') : group.label}</strong>:{' '}
-            {group.people.join(', ')}
+            <strong>{group.key === 'TELE' ? t('Telemedicine') : group.label}:</strong>
+            {group.people.map((person, index) => (
+              <span key={index} className="block" data-testid="provider-line">
+                {person}
+              </span>
+            ))}
           </span>
         </span>
       ))}

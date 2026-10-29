@@ -16,6 +16,7 @@ describe('CalendarService', () => {
       invitesOn?: boolean;
       onCall?: { date: string; startsAt: Date; endsAt: Date }[];
       payPeriodStart?: Date | null;
+      providers?: unknown[];
     } = {},
   ) {
     const prisma = {
@@ -36,6 +37,7 @@ describe('CalendarService', () => {
               },
         ),
         update: jest.fn().mockResolvedValue({}),
+        findMany: jest.fn().mockResolvedValue(options.providers ?? []),
       },
       shift: { findMany: jest.fn().mockResolvedValue(options.shifts ?? []) },
       ptoRequest: { findMany: jest.fn().mockResolvedValue(options.timeOff ?? []) },
@@ -293,6 +295,81 @@ describe('CalendarService', () => {
       });
       const feed = await service.feedForToken('token', NOW);
       expect(feed.match(/BEGIN:VEVENT/g)).toHaveLength(2);
+    });
+  });
+
+  describe('the Providers calendar', () => {
+    const doctor = (id: string, firstName: string, lastName: string) => ({
+      id,
+      firstName,
+      lastName,
+      preferredName: null,
+      postNominals: 'MD',
+      photoUpdatedAt: null,
+    });
+    const jonathan = doctor('p-j', 'Jonathan', 'Dominguez');
+    const daniel = doctor('p-d', 'Daniel', 'Dominguez');
+    const kim = doctor('p-h', 'Kim', 'Hernandez');
+    const providerShift = (id: string, employee: unknown, isRemote = false) => ({
+      id,
+      isRemote,
+      startsAt: new Date('2026-10-30T11:00:00.000Z'),
+      endsAt: new Date('2026-10-30T19:00:00.000Z'),
+      updatedAt: new Date('2026-10-20T09:00:00.000Z'),
+      location: {
+        id: 'loc-nb',
+        name: 'North Bergen',
+        addressLine1: '7650 Bergenline Ave',
+        city: 'North Bergen',
+        state: 'NJ',
+      },
+      employee,
+    });
+
+    it('puts each provider shift in as its own entry, two Dr. Dominguez told apart', async () => {
+      const { service, prisma } = build({
+        shifts: [
+          providerShift('s1', jonathan),
+          providerShift('s2', kim),
+          providerShift('s3', daniel, true),
+        ],
+        providers: [jonathan, daniel, kim],
+      });
+      const feed = await service.feedForToken('token', NOW, 'providers');
+      expect(feed.match(/BEGIN:VEVENT/g)).toHaveLength(3);
+      expect(feed).toContain('UID:provider-s1@staff.domihealthcare.com');
+      expect(feed).toContain('SUMMARY:Dr. J Dominguez - North Bergen');
+      expect(feed).toContain('SUMMARY:Dr. Hernandez - North Bergen');
+      expect(feed).toContain('SUMMARY:Dr. D Dominguez - Telemedicine');
+      expect(feed).toContain('LOCATION:7650 Bergenline Ave\\, North Bergen\\, NJ');
+      expect(feed).toContain('DTSTART:20261030T110000Z');
+      expect(feed).not.toContain('TRANSP:OPAQUE');
+      expect(feed).toContain('X-WR-CALNAME:Providers - Domi Staff');
+      // Published shifts of providers only.
+      const where = prisma.shift.findMany.mock.calls[0][0].where;
+      expect(where.status).toBe('PUBLISHED');
+      expect(where.employee.jobRoles).toEqual({
+        some: { jobRole: { usesClinicalForms: true } },
+      });
+    });
+
+    it('is not in the all-in-one calendar', async () => {
+      const { service, prisma } = build({ providers: [kim] });
+      await service.feedForToken('token', NOW);
+      expect(prisma.employee.findMany).not.toHaveBeenCalled();
+    });
+
+    it('labels the Calendar screen the same way', async () => {
+      const { service } = build({
+        shifts: [providerShift('s1', jonathan), providerShift('s2', kim)],
+        providers: [jonathan, daniel, kim],
+      });
+      const places = await service.providerPlaces('2026-10-01', '2026-10-31');
+      expect(places.shifts.map((shift) => shift.label)).toEqual([
+        'Dr. J Dominguez',
+        'Dr. Hernandez',
+      ]);
+      expect(JSON.stringify(places)).not.toContain('Bergenline');
     });
   });
 

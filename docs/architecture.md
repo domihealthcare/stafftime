@@ -4326,6 +4326,27 @@ once, when the link is made (see *The token is the credential*). The same rules 
 what the person may see, no rep phone or notes, and with invites on, no
 shifts or meetings.
 
+**The Providers calendar** (29 October 2026, Dominguez: "add the providers
+calendar as a feed too"): `providers.ics` on the same token, every provider's
+published shift (a job role with *uses clinical forms*), one entry each,
+"Dr. Hernandez - North Bergen" or "... - Telemedicine", at its hours, never
+busy. One entry a shift rather than a day, so each provider is on a line of
+their own in the calendar app. **Not in `domi`**, which would put every
+provider's hours on everybody's phone; the card offers it beside the
+all-in-one address as well as in Separate calendars. Names, offices and
+hours only, the same as the Calendar's Providers, read by the same query
+(`CalendarService.providerShifts`).
+
+**Provider names** (the same day: "there are 2 Dr. Dominguez's"): the
+Calendar, its printout and the Providers calendar call a doctor "Dr." and
+their last name, and add a first initial where two current providers would
+read the same ("Dr. J Dominguez", "Dr. D Dominguez"), the whole first name if
+the initial is shared too; somebody who is not a doctor goes by first name,
+with a last initial if needed (`calendar/provider-labels.ts`, worked out over
+every current provider so a name reads the same in every month). On the
+Calendar and the printout each place is on a line of its own with each
+provider on a line under it, not run together with commas.
+
 **The printed month** (`pages/CalendarPrintPage.tsx`,
 `/schedule/calendar/print`): **Print** on the Calendar opens one landscape
 page shaped like the practice's paper month — logo, the month in large

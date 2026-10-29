@@ -1901,6 +1901,18 @@ Beyond the phases, the parts worth knowing about before picking up work:
   the top of the screen), and waits for the press and the save together with
   a time limit, so any repeat fails as one step with what it saw. Test only;
   the app is unchanged.
+- **A Providers calendar link, one provider a line, and the two Dr.
+  Dominguez told apart** (29 October 2026, Dominguez, version 1.32.0):
+  `providers.ics` on everybody's calendar token, each provider's published
+  shift as its own entry ("Dr. Hernandez - North Bergen", "... -
+  Telemedicine"), never busy; **not in the all-in-one** (it would fill
+  everybody's phone), so the card offers it beside that address too. Asked
+  for so office@ can follow everything but the staff calendar in Google. On
+  the Calendar and its printout the office is on its own line and each
+  provider on a line under it. A first initial is added where two current
+  providers would read the same, "Dr. J Dominguez" / "Dr. D Dominguez"
+  (`calendar/provider-labels.ts`). See *The Providers calendar* in
+  `docs/architecture.md`; `tests/browser/provider-calendar.mjs`.
 - **Turned down: "PTO about to be lost"** (9 October 2026, Dominguez): a
   reminder to use PTO before it fails to carry over was proposed and refused —
   not in the practice's interest. Do not propose it again.

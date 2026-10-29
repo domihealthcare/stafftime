@@ -294,9 +294,13 @@ export function CalendarPrintPage() {
                                 ).map((group) => (
                                   <li key={group.key} className={PRINT_INK.PROVIDERS}>
                                     <strong>
-                                      {group.key === 'TELE' ? 'Telemedicine' : group.label}
+                                      {group.key === 'TELE' ? 'Telemedicine' : group.label}:
                                     </strong>
-                                    : {group.people.join(', ')}
+                                    {group.people.map((person, index) => (
+                                      <span key={index} className="block">
+                                        {person}
+                                      </span>
+                                    ))}
                                   </li>
                                 ))}
                                 {paid.includes(key) && (
