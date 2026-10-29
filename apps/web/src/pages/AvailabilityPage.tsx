@@ -245,7 +245,7 @@ function RuleRow({
               setBusy(true);
               try {
                 const result = await api.removeUnavailability(rule.id);
-                onRemoved(result.endsAfter);
+                await onRemoved(result.endsAfter);
               } catch (cause) {
                 onError(cause instanceof ApiError ? cause.message : t('Could not remove that.'));
               } finally {
