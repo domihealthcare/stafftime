@@ -12,10 +12,7 @@ export class LocationsService {
     try {
       return await this.prisma.location.create({ data: dto });
     } catch (error) {
-      if (
-        error instanceof Prisma.PrismaClientKnownRequestError &&
-        error.code === 'P2002'
-      ) {
+      if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2002') {
         throw new ConflictException(`A location with slug "${dto.slug}" already exists.`);
       }
       throw error;

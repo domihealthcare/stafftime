@@ -60,7 +60,10 @@ function CheckForm({
 
   if (mine.done && !another) {
     return (
-      <div className="rounded-xl border shadow-sm border-emerald-300 bg-emerald-50 p-5" data-testid="downtime-check-done">
+      <div
+        className="rounded-xl border shadow-sm border-emerald-300 bg-emerald-50 p-5"
+        data-testid="downtime-check-done"
+      >
         <h2 className="text-base font-semibold text-emerald-900">
           Done for {monthWords(mine.month)}. Thank you.
         </h2>
@@ -271,7 +274,10 @@ export function HomeDowntimeCheck() {
   }, []);
   if (!mine || !mine.asked || mine.done) return null;
   return (
-    <div className="rounded-xl border shadow-sm border-amber-300 bg-amber-50 p-4" data-testid="home-downtime-check">
+    <div
+      className="rounded-xl border shadow-sm border-amber-300 bg-amber-50 p-4"
+      data-testid="home-downtime-check"
+    >
       <h2 className="text-sm font-semibold text-amber-950">
         Monthly downtime check: {monthWords(mine.month)}
       </h2>
