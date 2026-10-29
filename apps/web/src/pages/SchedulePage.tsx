@@ -314,14 +314,31 @@ export function SchedulePage() {
     const stale = () => latestRange.current !== key;
     setLoading(true);
     try {
-      const [shiftData, locationData, timeOffData, eventData] = await Promise.all([
-        api.listShifts({ from: rangeStart.toISOString(), to: rangeEnd.toISOString() }),
-        api.listLocations(),
-        // Staff get only their own; managers everybody's. Both see it in the rota.
-        api.listPto({ from: localDate(rangeStart), to: localDate(days[days.length - 1]) }),
-        // Staff get the ones for them; managers every one, to look after.
-        api.events(rangeStart.toISOString(), rangeEnd.toISOString()),
-      ]);
+      // Everything at once, the manager's and the staff member's own parts
+      // included, rather than those only after the rest had arrived (one
+      // round trip fewer on every week change; maintenance pass, October 2026).
+      const [[shiftData, locationData, timeOffData, eventData], forManager, ownOvertime] =
+        await Promise.all([
+          Promise.all([
+            api.listShifts({ from: rangeStart.toISOString(), to: rangeEnd.toISOString() }),
+            api.listLocations(),
+            // Staff get only their own; managers everybody's. Both see it in the rota.
+            api.listPto({ from: localDate(rangeStart), to: localDate(days[days.length - 1]) }),
+            // Staff get the ones for them; managers every one, to look after.
+            api.events(rangeStart.toISOString(), rangeEnd.toISOString()),
+          ]),
+          // Only managers may list staff or read coverage.
+          isManager
+            ? Promise.all([
+                api.listEmployees(),
+                api.coverage({
+                  from: localDate(rangeStart),
+                  to: localDate(days[days.length - 1]),
+                }),
+              ])
+            : Promise.resolve(null),
+          isManager ? Promise.resolve(null) : api.myOvertime().catch(() => []),
+        ]);
       if (stale()) return;
       setShifts(shiftData);
       setLocations(locationData);
@@ -344,24 +361,13 @@ export function SchedulePage() {
         .then(setJobRoles)
         .catch(() => setJobRoles([]));
 
-      // Only managers may list staff or read coverage.
-      if (isManager) {
-        const [staff, weekCoverage] = await Promise.all([
-          api.listEmployees(),
-          api.coverage({
-            from: localDate(rangeStart),
-            to: localDate(days[days.length - 1]),
-          }),
-        ]);
-        if (stale()) return;
+      if (forManager) {
+        const [staff, weekCoverage] = forManager;
         // A shared account is never on the rota (`common/people.ts`).
         setEmployees(staff.filter((person) => !person.isSharedAccount));
         setCoverage(weekCoverage);
-      } else {
-        const weeks = await api.myOvertime().catch(() => []);
-        if (stale()) return;
-        setOwnWeeks(weeks);
       }
+      if (ownOvertime) setOwnWeeks(ownOvertime);
       setError(null);
     } catch (err) {
       if (stale()) return;
