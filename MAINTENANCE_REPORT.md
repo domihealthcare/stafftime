@@ -1,12 +1,13 @@
 # Maintenance report, 28 to 29 October 2026
 
-Branch: `maintenance/2026-10-28` (29 commits on top of `main` at `58b6325`).
+Branch: `maintenance/2026-10-28` (on top of `main` at `58b6325`).
 Release number: **1.30.0**.
 
 In short: the app was already in good health. Every automated check passed
 before this work started, and still passes after it. This pass tidied up,
-closed a handful of security gaps, made a few slow screens faster, and
-brought the documentation up to date. Nothing was deployed, no database
+closed a handful of security gaps, made a few slow screens faster,
+brought the documentation up to date, and then (on your go-ahead) upgraded
+the server framework, NestJS, from version 10 to 11. Nothing was deployed, no database
 migration was written or run, and no real data was touched. All testing
 used a throwaway database on the temporary machine this work ran on.
 
@@ -23,8 +24,8 @@ used a throwaway database on the temporary machine this work ran on.
 | Unit tests | 1,807 pass, 0 fail (139 files) | 1,831 pass, 0 fail (143 files) |
 | Browser tests (a real browser clicking through the app) | 121 suites, 1,267 checks, all pass | 122 suites (one new), 1,272 checks, all pass |
 | Files not in the house formatting style | 12 | 0 |
-| Known security problems in dependencies (`npm audit`) | 46 (3 critical, 14 high, 18 moderate, 11 low) | 40 (0 critical, 13 high, 16 moderate, 11 low) |
-| ...of those, in code that runs on the live site | 13 (4 high, 9 moderate) | 13 (needs the major upgrades in section 3) |
+| Known security problems in dependencies (`npm audit`) | 46 (3 critical, 14 high, 18 moderate, 11 low) | 21 (0 critical, 5 high, 7 moderate, 9 low; every high one is in developer tools) |
+| ...of those, in code that runs on the live site | 13 (4 high, 9 moderate) | 4 (0 high, 4 moderate: React Router and the spreadsheet library, see section 3) |
 | First download for every visitor (main JavaScript file) | 508.8 kB (156.2 kB compressed), with a "too large" build warning | 453.4 kB (141.1 kB compressed), no warning |
 | Opening the Invoices screen | also downloaded the 430 kB PDF library | PDF library loads only when you press Download |
 | Dashboard "Time off balances" card | about 6 database reads per person, one after another (about 360 for 60 people) | about 6 reads in total, for everybody |
@@ -181,6 +182,29 @@ behaviour)
   version Vercel uses: see section 3.)*
 - `4daf961` **Version 1.30.0**, as CLAUDE.md asks for each release.
 
+**The server framework upgrade** (you said "continue including the upgrade")
+
+- `a4b5206` **NestJS 10 to 11, and with it Express 5** (the web server
+  underneath).
+  - This is what cleared the 4 "high" security warnings in live-site code:
+    ways to overload the server through how it reads incoming requests.
+  - One helper, `multer` (file uploads, which this app does not use), had to
+    be forced to its fixed version 2.5.0, because NestJS 11 still ships the
+    old one.
+  - NestJS 11 changes a few things. Each was checked against this app:
+    - **Route addresses:** none use the forms that changed.
+    - **Query strings:** they are read more simply now; every one here holds
+      plain values, so nothing changes.
+    - **Requests with no body:** these now leave the body empty, where it
+      used to be `{}`. None of the 83 web calls that send no body reaches a
+      route that reads one.
+    - **Settings:** the settings library now prefers the checked copy of each
+      setting. No setting here is affected.
+  - A real server was also tested by hand: sign-in, sign-out, queries,
+    errors and the calendar feed.
+  - **NestJS 12** exists, but its packages switch to a new module format and
+    would need Node 24.9+ for the unit tests, so it is a later project.
+
 **Worth carrying to the Domi EMR module** (CLAUDE.md asks to point these
 out): the tablet-PIN and pay-lock fix, the seed guard, keeping emails out of
 the logs, the cookie flag, the link check, photo metadata stripping, the
@@ -224,16 +248,21 @@ Ranked by urgency.
    next deployment will run on Node 22. In Vercel: Project → Settings →
    General → Node.js Version should say **22.x**. Everything here was tested
    on Node 22.
-2. **Upgrade NestJS 10 to 11** (the server framework). This is where the 4
-   remaining "high" security warnings in live-site code come from: denial of
-   service (overloading the server) through how it reads incoming requests.
-   They need someone able to reach the site, and Vercel's own limits soften
-   them, but they are real. **Large** job; best done as its own project with
-   the browser tests as the safety net.
-3. **Upgrade React Router 6 to 7 and Vite 5 to 7 or later.** The React Router
-   warnings (moderate) are about link handling; Vite's are developer-only.
-   **Medium to large.**
-4. **Questions for you:**
+2. **Watch the first days after merging the NestJS 11 upgrade.** It is the
+   biggest change in this branch. Every automated check passes, but if
+   anything odd shows up (a screen that fails to save, an error in Vercel's
+   logs), reverting `a4b5206` alone puts NestJS 10 back.
+3. **Upgrade React Router 6 to 7 and Vite 5 to 7 or later.** React Router is
+   2 of the 4 remaining live-site warnings (moderate, about link handling);
+   Vite's are developer-only. **Medium to large.**
+4. **The spreadsheet library (`exceljs`) uses an old `uuid`** (the other 2
+   live-site warnings, moderate). The export never uses the affected part.
+   A newer `exceljs` or a forced `uuid` bump would clear it. **Small**, but
+   needs the export checked in Excel and ADP afterwards.
+5. **NestJS 12**, when convenient: the build tools' remaining "high" warnings
+   go with it. It needs Node 24.9+ for the unit tests, or moving them from
+   Jest to Vitest. **Large.**
+6. **Questions for you:**
    - **Half-built "sign out other browsers".** The server side exists and the
      README used to advertise it, but no screen has a button. Build it (it
      helps with "a login is left open") or remove it?
@@ -248,12 +277,12 @@ Ranked by urgency.
      another page of the domain (the Wix website, for example) could act as a
      signed-in person. That needs somebody to control a page on the domain.
      A small fix, if you want it.
-5. **Things to look at in your dashboards** (I can't see them):
+7. **Things to look at in your dashboards** (I can't see them):
    - Vercel's server region should match Neon's database region; every
      database call pays the distance.
    - Resend's logs, Sunday around 6 pm: "Your week" and "You're on tomorrow"
      go out together, and Resend's default limit is 2 emails a second.
-6. **Already on your list in CLAUDE.md** (unchanged by this pass): rotate the
+8. **Already on your list in CLAUDE.md** (unchanged by this pass): rotate the
    Neon database password, and the ADP test import before anybody is paid
    from it.
 
