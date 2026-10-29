@@ -30,5 +30,8 @@ coverage/
 # FILE_STORAGE=disk writes payroll exports here (names and hours)
 apps/api/var/
 
+# written by tests/contract/generate.mjs on every typecheck
+tests/contract/generated.ts
+
 # local scratch harnesses
 *.local.ts
