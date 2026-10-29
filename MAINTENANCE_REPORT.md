@@ -270,8 +270,9 @@ Ranked by urgency.
    calendar links kept only as a fingerprint; and requests from other
    `domihealthcare.com` pages refused. See *Security round* in CLAUDE.md.
    **One follow-up:** the old `calendarToken` column was emptied but not
-   dropped, so the code still live while Vercel builds keeps working. A later
-   release drops it (fingerprinting anything left in it first). **Small.**
+   dropped, so the code still live while Vercel builds keeps working. 1.31.1
+   stopped the app reading it; a later release drops it (fingerprinting
+   anything left in it first). **Small.**
 7. **Things to look at in your dashboards** (I can't see them):
    - Vercel's server region should match Neon's database region; every
      database call pays the distance.

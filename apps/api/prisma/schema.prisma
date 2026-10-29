@@ -300,12 +300,13 @@ model Employee {
   /// database cannot be used to read anybody's calendar: the link itself is
   /// shown once, when it is made. Making a new one invalidates the old link
   /// everywhere.
+  ///
+  /// The database still has the old, emptied `calendarToken` column (and its
+  /// unique index), deliberately left out of this schema (version 1.31.1) so
+  /// the app no longer reads it. A later release drops it with a migration,
+  /// once this code is the one live while Vercel builds. Until then
+  /// `prisma migrate dev` will offer to drop it: let it only in that release.
   calendarTokenHash  String?   @unique
-  /// Always empty since 29 October 2026: the old plain-text calendar token,
-  /// emptied by the migration that made calendarTokenHash and kept only so
-  /// the code still live during that deploy could read employees. Nothing
-  /// writes it. Drop it in a later release.
-  calendarToken      String?   @unique
   calendarTokenSetAt DateTime?
 
   /// Kiosk credentials. The PIN is only ever stored hashed.

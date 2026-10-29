@@ -27,7 +27,6 @@ const HIDDEN_FIELDS = [
   'pinHash',
   'passwordHash',
   'calendarTokenHash',
-  'calendarToken',
   'failedLoginAttempts',
   'lockedUntil',
   'pinFailedAttempts',

@@ -1049,12 +1049,14 @@ Migration `20261029010000_calendar_token_fingerprint` filled the new column in
 SQL (`encode(sha256(convert_to("calendarToken", 'UTF8')), 'hex')`, the same
 value as `hashToken`) and emptied the old one, so every phone already
 subscribed kept working and no plain token was left. The empty `calendarToken`
-column stays until a later release drops it: Vercel runs migrations while it
-builds, a few minutes before the new code goes live, and the code still live
-then reads every employee with that column in it, so dropping it at once would
-have broken sign-in for those minutes. A token made by that old code in those
-minutes is plain again, so the release that drops the column fingerprints any
-left first.
+column was dropped in two steps, so neither deploy breaks the code still live
+while Vercel builds (it runs migrations a few minutes before the new code takes
+over, and Prisma reads every column it knows of). Version 1.31.0 emptied it
+and kept it in the schema; 1.31.1 took it out of the schema, so the app no
+longer reads it, and left it in the database; a later release drops it with a
+migration, first fingerprinting any code the 1.31.0 deploy's old code made in
+its few minutes (overwriting that person's fingerprint, as the plain code is
+the newer).
 
 The feed is scoped to one employee, and stops working the moment they are
 terminated, like their sign-in.
