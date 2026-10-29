@@ -4,6 +4,10 @@
  * The browser crops, shrinks and re-encodes every photo as a small JPEG
  * before sending it, so anything else is refused rather than converted: the
  * server has no image library, on purpose, and does not need one.
+ *
+ * The re-encoding also drops the camera's metadata, location included. The
+ * server drops it too (stripMetadata), so a photo sent to the API directly,
+ * not through the screen, cannot keep a GPS position either.
  */
 
 /// Big enough for a crisp 256 px square with room to spare, small enough that
@@ -44,7 +48,31 @@ export function checkPhoto(image: string): Buffer {
       'That photo is an unexpected size. Choose it again and the app will shrink it.',
     );
   }
-  return bytes;
+  return stripMetadata(bytes);
+}
+
+/// The segments that carry metadata rather than the picture: APP1 (EXIF,
+/// where a camera writes its GPS position, and XMP), APP13 (Photoshop / IPTC,
+/// which can name a place) and COM (free-text comments).
+const METADATA_MARKERS = new Set([0xe1, 0xed, 0xfe]);
+
+/// The JPEG without its metadata segments. Walks the header segments from the
+/// start (metadata always comes before the picture data) and leaves out those
+/// above; everything from the start of the picture data (SOS), or from
+/// anything it cannot read as a segment, is copied as it is.
+export function stripMetadata(bytes: Buffer): Buffer {
+  const kept: Buffer[] = [bytes.subarray(0, 2)];
+  let at = 2;
+  while (at + 4 <= bytes.length && bytes[at] === 0xff) {
+    const marker = bytes[at + 1];
+    if (marker === 0xda) break; // start of scan: the picture itself
+    const end = at + 2 + bytes.readUInt16BE(at + 2);
+    if (end > bytes.length) break;
+    if (!METADATA_MARKERS.has(marker)) kept.push(bytes.subarray(at, end));
+    at = end;
+  }
+  kept.push(bytes.subarray(at));
+  return Buffer.concat(kept);
 }
 
 /// Width and height from a JPEG's start-of-frame marker, or null if there is
