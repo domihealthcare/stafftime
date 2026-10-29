@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { Link, useLocation } from 'react-router-dom';
+import { Link, useLocation } from 'react-router';
 import { api } from '../lib/api';
 import { DOWNTIME_CHANGED, practiceTimeWords } from '../lib/downtime';
 import type { Downtime } from '../lib/types';

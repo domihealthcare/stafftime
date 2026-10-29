@@ -1,5 +1,5 @@
 import { Fragment, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
-import { Link, useSearchParams } from 'react-router-dom';
+import { Link, useSearchParams } from 'react-router';
 import { GuideBody } from '../components/GuideBody';
 import { Blank, Box, Head, Line, Logo, Ticks } from '../components/DowntimePaper';
 import {

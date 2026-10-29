@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
-import { Link, useParams } from 'react-router-dom';
+import { Link, useParams } from 'react-router';
 import { Avatar } from '../components/Avatar';
 import { useConfirm } from '../components/ConfirmDialog';
 import {

@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { Link, useLocation, useNavigate } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router';
 import { api, type AppNotification, type Background } from '../lib/api';
 import { useIsManager } from '../lib/session';
 import { useT } from '../lib/i18n';

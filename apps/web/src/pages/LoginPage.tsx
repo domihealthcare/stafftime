@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link } from 'react-router';
 import { ApiError, api, type PublicPost } from '../lib/api';
 import { useSession } from '../lib/session';
 import { BrandLogo } from '../components/Brand';

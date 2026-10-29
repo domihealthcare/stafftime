@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link } from 'react-router';
 import { ApiError, api } from '../lib/api';
 import { ClashNote } from './TimeOffClashes';
 import { formatCalendarDate, localDate } from '../lib/format';

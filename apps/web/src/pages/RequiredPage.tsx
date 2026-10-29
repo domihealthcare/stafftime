@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
-import { Link, useSearchParams } from 'react-router-dom';
+import { Link, useSearchParams } from 'react-router';
 import { useConfirm } from '../components/ConfirmDialog';
 import { InviteePicker, NOBODY, type InviteeSelection } from '../components/InviteePicker';
 import { MyRequirementItem, RequirementLinks, dueLabel } from '../components/RequiredItems';

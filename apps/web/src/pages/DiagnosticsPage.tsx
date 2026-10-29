@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link } from 'react-router';
 import { BigBoard } from '../components/BigBoard';
 import { useConfirm } from '../components/ConfirmDialog';
 import { HoverNote } from '../components/HoverNote';

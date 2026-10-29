@@ -1,6 +1,6 @@
 import { NotSignedInCard } from '../components/NotSignedInCard';
 import { useCallback, useEffect, useState } from 'react';
-import { Link, useLocation } from 'react-router-dom';
+import { Link, useLocation } from 'react-router';
 import { JobRolesSection } from '../components/JobRolesSection';
 import { JobRoleDot } from '../components/JobRoleTag';
 import { Modal } from '../components/Modal';

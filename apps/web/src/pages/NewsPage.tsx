@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
-import { Link, useLocation } from 'react-router-dom';
+import { Link, useLocation } from 'react-router';
 import { useConfirm } from '../components/ConfirmDialog';
 import { NewsLanguageToggle, usePostWords } from '../components/NewsLanguage';
 import { PollView, PostActions, PostComments } from '../components/PostSocial';

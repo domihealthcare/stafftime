@@ -1,4 +1,4 @@
-import { useSearchParams } from 'react-router-dom';
+import { useSearchParams } from 'react-router';
 
 /**
  * A screen narrowed to one person by `?person=<id>` - how a staff profile's

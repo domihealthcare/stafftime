@@ -1,6 +1,6 @@
 import { plural, useT } from '../lib/i18n';
 import { Suspense, useEffect, useRef, useState } from 'react';
-import { Link, NavLink, Outlet, useLocation } from 'react-router-dom';
+import { Link, NavLink, Outlet, useLocation } from 'react-router';
 import { TIME_OFF_CHANGED, api } from '../lib/api';
 import { AccountMenu } from './AccountMenu';
 import { ViewAsBanner } from './ViewAsBanner';

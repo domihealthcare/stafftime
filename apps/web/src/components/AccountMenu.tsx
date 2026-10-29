@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { Avatar } from './Avatar';
-import { NavLink } from 'react-router-dom';
+import { NavLink } from 'react-router';
 import { useIsActualAdmin, useIsManager, useSession } from '../lib/session';
 import { ViewAsDialog } from './ViewAsDialog';
 import { unsavedWork } from '../lib/unsaved-work';
