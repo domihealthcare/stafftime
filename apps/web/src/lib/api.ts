@@ -382,13 +382,15 @@ export interface ClockOutPayload {
   closing?: ClosingSubmission;
 }
 
+/// A browser signed in as you, for "Where you're signed in" on Your profile.
+/// `current` is the one asking.
 export interface AuthSession {
   id: string;
   createdAt: string;
   lastUsedAt: string;
   expiresAt: string;
   userAgent: string | null;
-  ipAddress: string | null;
+  current: boolean;
 }
 
 export interface KioskSession {
@@ -1085,6 +1087,9 @@ export const api = {
       body: JSON.stringify(preferences),
     }),
   revokeOtherSessions: () => request<{ signedOut: number }>('/auth/sessions', { method: 'DELETE' }),
+  /// One of your other browsers; the server refuses the one you are using.
+  revokeSession: (sessionId: string) =>
+    request<{ signedOut: number }>(`/auth/sessions/${sessionId}`, { method: 'DELETE' }),
   setTemporaryPassword: (employeeId: string, temporaryPassword: string) =>
     request<{ set: boolean }>(`/auth/employees/${employeeId}/password`, {
       method: 'PUT',

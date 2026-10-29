@@ -118,6 +118,35 @@ export const SHELL: Record<string, string> = {
   'Change PIN': 'Cambiar PIN',
   'Set PIN': 'Definir PIN',
 
+  // Where you're signed in (components/SignedInDevicesCard.tsx)
+  'Where you’re signed in': 'Dónde tienes la sesión iniciada',
+  'The phones and computers signed in as you. If one is a phone or computer you no longer use, or somebody else’s, sign it out here.':
+    'Los teléfonos y computadoras con tu sesión iniciada. Si alguno es un teléfono o computadora que ya no usas, o de otra persona, cierra su sesión aquí.',
+  'Could not load where you are signed in.': 'No se pudo cargar dónde tienes la sesión iniciada.',
+  '{browser} on {system}': '{browser} en {system}',
+  'A browser on {system}': 'Un navegador en {system}',
+  'A browser': 'Un navegador',
+  'This device': 'Este dispositivo',
+  'Signed in {when}': 'Sesión iniciada: {when}',
+  'Last used {when}': 'Último uso: {when}',
+  'In use now': 'En uso ahora',
+  'Sign out {device}': 'Cerrar sesión en {device}',
+  'Sign out {device}?': '¿Cerrar sesión en {device}?',
+  'Whoever has it open will have to sign in again with your password. This device stays signed in.':
+    'Quien lo tenga abierto tendrá que volver a iniciar sesión con tu contraseña. Este dispositivo sigue con la sesión iniciada.',
+  'Yes, sign it out': 'Sí, cerrar su sesión',
+  'Keep it signed in': 'Dejarla abierta',
+  'Signed out {device}.': 'Se cerró la sesión en {device}.',
+  'Sign out everywhere else': 'Cerrar sesión en todos los demás',
+  'Sign out everywhere else?': '¿Cerrar sesión en todos los demás?',
+  'Every other phone and computer signed in as you will have to sign in again with your password. This device stays signed in.':
+    'Todos los demás teléfonos y computadoras con tu sesión iniciada tendrán que volver a iniciar sesión con tu contraseña. Este dispositivo sigue con la sesión iniciada.',
+  'Yes, sign them out': 'Sí, cerrar sus sesiones',
+  'Keep them signed in': 'Dejarlas abiertas',
+  'Signed out {n} other device.': 'Se cerró la sesión en {n} otro dispositivo.',
+  'Signed out {n} other devices.': 'Se cerró la sesión en otros {n} dispositivos.',
+  'Only this device is signed in as you.': 'Solo este dispositivo tiene tu sesión iniciada.',
+
   // Fitting a photo
   'Fit your photo': 'Ajusta tu foto',
   'Drag the picture to move it, and slide to zoom. What is inside the circle is what colleagues will see.':
