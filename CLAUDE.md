@@ -1882,9 +1882,11 @@ Beyond the phases, the parts worth knowing about before picking up work:
     the code still live while Vercel builds reads it. **Version 1.31.1** (29
     October 2026, Dominguez: "go ahead with the first column release") took it
     out of `schema.prisma`, so the app no longer reads it; it is still in the
-    database. **The next step is a migration that drops it**, fingerprinting
-    any code left in it first; until then `prisma migrate dev` offers to drop
-    it, which is only right in that release.
+    database. **Version 1.31.2** (29 October 2026, Dominguez: "do the second
+    column release") dropped it with migration
+    `20261029020000_drop_calendar_token`, first fingerprinting any code left
+    in it for somebody with no fingerprint yet. The column is gone; nothing is
+    left of this.
   All four were built at once by separate Claude agents, then combined and
   checked together.
 - **Turned down: "PTO about to be lost"** (9 October 2026, Dominguez): a

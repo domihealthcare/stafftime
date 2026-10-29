@@ -269,10 +269,9 @@ Ranked by urgency.
    no longer count as use, so an open tab signs out after 8 idle hours;
    calendar links kept only as a fingerprint; and requests from other
    `domihealthcare.com` pages refused. See *Security round* in CLAUDE.md.
-   **One follow-up:** the old `calendarToken` column was emptied but not
-   dropped, so the code still live while Vercel builds keeps working. 1.31.1
-   stopped the app reading it; a later release drops it (fingerprinting
-   anything left in it first). **Small.**
+   **Follow-up, done:** the old `calendarToken` column was emptied in
+   1.31.0, no longer read from 1.31.1 and dropped in 1.31.2, so no deploy
+   broke the code still live while Vercel built.
 7. **Things to look at in your dashboards** (I can't see them):
    - Vercel's server region should match Neon's database region; every
      database call pays the distance.
