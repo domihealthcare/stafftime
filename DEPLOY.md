@@ -222,9 +222,10 @@ at Wix (Settings → Domains → Manage DNS records): a TXT `resend._domainkey`
 and CNAMEs `send` and `rsend`, alongside — not replacing — Google
 Workspace's MX and SPF records. The steps below are for a new deployment.
 
-Until this is done, the app still works — but **nothing is emailed**. Password
-resets and time-off notifications get written to the server log instead, where
-only you can see them, and the log says so on every message.
+Until this is done, the app still works — but **nothing is emailed**. On the
+deployed site the server log names who each message was for and its subject,
+and says it was not sent; the words themselves (with their reset links) are
+written to the log only when running locally.
 
 It is two variables, and the fiddly part is DNS rather than code:
 

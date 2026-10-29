@@ -11,6 +11,31 @@ describe('LogEmailSender', () => {
       reason: 'no email provider configured',
     });
   });
+
+  it('writes the words to the log locally, so a reset link can be copied from it', async () => {
+    const sender = new LogEmailSender();
+    const log = jest.spyOn(
+      (sender as unknown as { logger: { log: (message: unknown) => void } }).logger,
+      'log',
+    );
+    await sender.send({ to: 'a@b.com', subject: 'Reset', text: 'https://x/reset?token=abc' });
+    expect(String(log.mock.calls[0][0])).toContain('token=abc');
+  });
+
+  it('in production logs who and the subject, never the words (reset links)', async () => {
+    const sender = new LogEmailSender(true);
+    const internals = sender as unknown as {
+      logger: { log: (message: unknown) => void; warn: (message: unknown) => void };
+    };
+    const log = jest.spyOn(internals.logger, 'log');
+    const warn = jest.spyOn(internals.logger, 'warn').mockImplementation(() => undefined);
+    await expect(
+      sender.send({ to: 'a@b.com', subject: 'Reset', text: 'https://x/reset?token=abc' }),
+    ).resolves.toEqual({ delivered: false, reason: 'no email provider configured' });
+    const written = [...log.mock.calls, ...warn.mock.calls].map((call) => String(call[0])).join();
+    expect(written).toContain('Reset');
+    expect(written).not.toContain('token=abc');
+  });
 });
 
 describe('ResendEmailSender', () => {
