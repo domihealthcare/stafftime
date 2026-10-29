@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { Role } from '@prisma/client';
 import { createHash, randomBytes, timingSafeEqual } from 'node:crypto';
@@ -138,19 +138,79 @@ export class SessionService {
     return result.count;
   }
 
-  listForEmployee(employeeId: string) {
-    return this.prisma.session.findMany({
-      where: { employeeId, revokedAt: null, expiresAt: { gt: new Date() } },
+  /**
+   * Signs out one of your other browsers (October 2026, Dominguez: "sometimes
+   * a log in is left open") - a colleague's phone, a home computer, the
+   * shared front-desk computer - without signing out all the rest.
+   *
+   * Only your own: somebody else's session, or one already gone, is "not
+   * found" either way, so this cannot be used to learn which ids exist. The
+   * one you are using is refused, since that is what Sign out is for and
+   * doing it here would leave the screen up with nobody signed in behind it.
+   */
+  async revokeOneForEmployee(
+    employeeId: string,
+    sessionId: string,
+    currentToken?: string,
+  ): Promise<number> {
+    const session = await this.prisma.session.findFirst({
+      where: { id: sessionId, employeeId, revokedAt: null, expiresAt: { gt: new Date() } },
+      select: { id: true, tokenHash: true },
+    });
+    if (!session) {
+      throw new NotFoundException('That sign-in has already ended.');
+    }
+    if (currentToken && safeEquals(session.tokenHash, hashToken(currentToken))) {
+      throw new BadRequestException(
+        'That is the device you are using. To sign out here, use Sign out in the account menu.',
+      );
+    }
+    // Still not revoked by the time we write: two presses, or "Sign out
+    // everywhere else" from another device at the same moment, count once.
+    const result = await this.prisma.session.updateMany({
+      where: { id: session.id, employeeId, revokedAt: null },
+      data: { revokedAt: new Date() },
+    });
+    if (result.count === 0) {
+      throw new NotFoundException('That sign-in has already ended.');
+    }
+    return result.count;
+  }
+
+  /**
+   * The browsers signed in as you, for "Where you're signed in" on Your
+   * profile, with the one asking marked `current`.
+   *
+   * One that has sat idle past the timeout is left out: it would be refused
+   * on its next request anyway, so listing it would only worry somebody about
+   * a device that can no longer do anything. The IP address is kept on the
+   * row but not sent: a number nobody recognises helps nobody, and the
+   * browser and when it was last used are what somebody does recognise.
+   */
+  async listForEmployee(employeeId: string, currentToken?: string) {
+    const idleCutoff = new Date(Date.now() - this.idleTimeoutHours * 3_600_000);
+    const rows = await this.prisma.session.findMany({
+      where: {
+        employeeId,
+        revokedAt: null,
+        expiresAt: { gt: new Date() },
+        lastUsedAt: { gt: idleCutoff },
+      },
       select: {
         id: true,
         createdAt: true,
         lastUsedAt: true,
         expiresAt: true,
         userAgent: true,
-        ipAddress: true,
+        tokenHash: true,
       },
       orderBy: { lastUsedAt: 'desc' },
     });
+    const currentHash = currentToken ? hashToken(currentToken) : null;
+    return rows.map(({ tokenHash, ...row }) => ({
+      ...row,
+      current: currentHash !== null && safeEquals(tokenHash, currentHash),
+    }));
   }
 
   /// Housekeeping for expired rows. Wire to a scheduled job when one exists.
