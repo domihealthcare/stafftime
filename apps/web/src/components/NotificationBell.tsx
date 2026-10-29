@@ -81,7 +81,8 @@ export function NotificationBell() {
         .catch(() => undefined);
     }
     setOpen(false);
-    if (item.link) navigate(item.link);
+    // Moving to another screen: nothing to wait for (React Router 7 returns a promise).
+    if (item.link) void navigate(item.link);
   }
 
   function markAll() {

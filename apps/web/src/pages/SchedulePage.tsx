@@ -250,7 +250,8 @@ export function SchedulePage() {
   function addTimeOffFor(personId: string | null, day: Date) {
     const query = new URLSearchParams({ request: '1', date: localDate(day) });
     if (personId) query.set('for', personId);
-    navigate(`/time-off?${query.toString()}`);
+    // Moving to another screen: nothing to wait for (React Router 7 returns a promise).
+    void navigate(`/time-off?${query.toString()}`);
   }
   const monthMenu = useContextMenu();
   const openMonthMenu = (event: React.MouseEvent, day: Date) => {
