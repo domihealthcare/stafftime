@@ -22,6 +22,7 @@ import { CurrentUser } from '../common/auth/current-user.decorator';
 import { Public } from '../common/auth/public.decorator';
 import { Roles } from '../common/auth/roles.decorator';
 import { CreateKioskDto, KioskPunchDto, PairKioskDto, SetKioskPinDto } from './dto/kiosk.dto';
+import { secureCookies } from '../auth/cookie';
 import { KIOSK_COOKIE, clearKioskCookie, kioskCookieOptions } from './kiosk-cookie';
 import { KioskDeviceGuard } from './kiosk.guard';
 import { KioskPunchService } from './kiosk-punch.service';
@@ -39,7 +40,7 @@ import { InboxService } from '../email/inbox.service';
  */
 @Controller('kiosk')
 export class KioskController {
-  private readonly isProduction: boolean;
+  private readonly secureCookies: boolean;
 
   constructor(
     private readonly kiosks: KioskService,
@@ -49,7 +50,7 @@ export class KioskController {
     private readonly inbox: InboxService,
     config: ConfigService,
   ) {
-    this.isProduction = config.get<string>('NODE_ENV') === 'production';
+    this.secureCookies = secureCookies(config);
   }
 
   // ---------------------------------------------------------------- the tablet
@@ -61,7 +62,7 @@ export class KioskController {
   @HttpCode(HttpStatus.OK)
   async pair(@Body() dto: PairKioskDto, @Res({ passthrough: true }) response: Response) {
     const { token, device } = await this.kiosks.pair(dto.pairingCode);
-    response.cookie(KIOSK_COOKIE, token, kioskCookieOptions(this.isProduction));
+    response.cookie(KIOSK_COOKIE, token, kioskCookieOptions(this.secureCookies));
     return {
       deviceName: device.deviceName,
       locationId: device.locationId,
@@ -125,7 +126,7 @@ export class KioskController {
   @HttpCode(HttpStatus.OK)
   async unpair(@Req() request: Request, @Res({ passthrough: true }) response: Response) {
     await this.kiosks.revoke(request.kiosk!.deviceId);
-    clearKioskCookie(response, this.isProduction);
+    clearKioskCookie(response, this.secureCookies);
     return { unpaired: true };
   }
 
