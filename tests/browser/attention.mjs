@@ -34,6 +34,65 @@ async function signIn(email) {
   return page;
 }
 
+/**
+ * Sets the overtime line on Practice settings and saves it, once the screen
+ * is showing what is stored (`from`).
+ *
+ * Written this way after CI once saw Save never send anything (29 October
+ * 2026): the press waited on a button that stayed greyed out, and the save it
+ * was waiting for was a promise made before the press, so its timeout crashed
+ * the whole suite rather than failing this step. Save is only enabled once
+ * the number differs from the stored one, so this waits for the stored number
+ * before typing, checks Save has woken up (and types again once if not,
+ * saying what it saw), and waits for the press and the save together.
+ */
+async function saveThreshold(page, from, to) {
+  const field = page.getByLabel('Overtime starts after');
+  const save = page.getByRole('button', { name: 'Save', exact: true });
+  const showing = async (value) => {
+    for (let i = 0; i < 50; i += 1) {
+      if ((await field.inputValue().catch(() => '')) === value) return true;
+      await page.waitForTimeout(200);
+    }
+    return false;
+  };
+  const awake = async () => {
+    for (let i = 0; i < 25; i += 1) {
+      if (await save.isEnabled().catch(() => false)) return true;
+      await page.waitForTimeout(200);
+    }
+    return false;
+  };
+  // Any error the screen shows sits at its top, above the field.
+  const what = async () => {
+    const top = (await page.locator('main').innerText().catch(() => '')).slice(0, 240);
+    return `the field reads "${await field.inputValue().catch(() => '?')}", the screen starts "${top.replace(/\s+/g, ' ')}"`;
+  };
+
+  await field.waitFor({ timeout: 15000 });
+  if (!(await showing(String(from))))
+    throw new Error(`Practice settings never showed the stored ${from}: ${await what()}`);
+  await field.fill(String(to));
+  if (!(await awake())) {
+    console.log(`  (Save stayed greyed out after typing ${to}: ${await what()}; typing it again)`);
+    await field.fill('');
+    await field.fill(String(to));
+    if (!(await awake())) throw new Error(`Save stayed greyed out after typing ${to}: ${await what()}`);
+  }
+  // Wait for the save itself, then for the confirmation by its exact words:
+  // the Schedule check after is only meaningful once the new line is stored,
+  // and a loose "Saved." matches any sentence that happens to end in "saved."
+  const [response] = await Promise.all([
+    page.waitForResponse(
+      (r) => r.url().includes('/api/settings') && r.request().method() !== 'GET',
+      { timeout: 15000 },
+    ),
+    save.click({ timeout: 15000 }),
+  ]);
+  if (!response.ok()) throw new Error(`the save answered ${response.status()}`);
+  await page.getByText('Saved.', { exact: true }).waitFor({ timeout: 15000 });
+}
+
 const admin = await signIn('admin@domihealthcare.com');
 const employee = await signIn('frontdesk@domihealthcare.com');
 
@@ -231,18 +290,7 @@ await step('a manager can read them but not change them', async () => {
 
 await step('changing the threshold changes what the rota warns about', async () => {
   // The real test of a setting is whether anything downstream notices.
-  const threshold = admin.getByLabel('Overtime starts after');
-  await threshold.fill('20');
-  // Wait for the save itself, then for the confirmation by its exact words:
-  // the Schedule check below is only meaningful once the new line is stored,
-  // and a loose "Saved." matches any sentence that happens to end in "saved."
-  const saving = admin.waitForResponse(
-    (r) => r.url().includes('/api/settings') && r.request().method() !== 'GET',
-  );
-  await admin.getByRole('button', { name: 'Save', exact: true }).click();
-  const saveResponse = await saving;
-  if (!saveResponse.ok()) throw new Error(`the save answered ${saveResponse.status()}`);
-  await admin.getByText('Saved.', { exact: true }).waitFor({ timeout: 15000 });
+  await saveThreshold(admin, 40, 20);
 
   // The seeded rota is a single 8-hour shift today, which is over 20 for
   // nobody - so build a week that clears the new line but not the old one.
@@ -286,17 +334,7 @@ await admin.screenshot({ path: `${OUT}/74-settings.png`, fullPage: true });
 
 await step('putting it back makes the warning go away again', async () => {
   await pickFromAccountMenu(admin, 'Practice settings');
-  await admin.getByLabel('Overtime starts after').fill('40');
-  // Wait for the save itself, then for the confirmation by its exact words:
-  // the Schedule check below is only meaningful once the new line is stored,
-  // and a loose "Saved." matches any sentence that happens to end in "saved."
-  const saving = admin.waitForResponse(
-    (r) => r.url().includes('/api/settings') && r.request().method() !== 'GET',
-  );
-  await admin.getByRole('button', { name: 'Save', exact: true }).click();
-  const saveResponse = await saving;
-  if (!saveResponse.ok()) throw new Error(`the save answered ${saveResponse.status()}`);
-  await admin.getByText('Saved.', { exact: true }).waitFor({ timeout: 15000 });
+  await saveThreshold(admin, 20, 40);
 
   await goTo(admin, 'Schedule');
   await admin.getByTestId('month-grid').waitFor({ timeout: 15000 });
