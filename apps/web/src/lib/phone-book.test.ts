@@ -124,22 +124,20 @@ describe('doctorsOf', () => {
     expect(doctorsOf('Drew Medical Associates').doctors).toEqual(['Drew Medical Associates']);
   });
 
-  // Known bug, found while writing these tests (October 2026) and not fixed
-  // here: any slash splits the name, brackets or not, and so does "Dr." after
-  // a practice's name. About a dozen of the book's 315 entries show broken on
-  // the cards and the printout. `it.fails` passes while the bug is there; once
-  // it is fixed, make these plain `it`.
-  it.fails('keeps a slash inside brackets in one piece', () => {
+  // Fixed October 2026: any slash used to split the name, brackets or not,
+  // and so did "Dr." after a practice's name, breaking about a dozen of the
+  // book's 315 entries on the cards and the printout.
+  it('keeps a slash inside brackets in one piece', () => {
     expect(doctorsOf('Dr. Payal Shah (Ob/Gyn)').doctors).toEqual(['Dr. Payal Shah (Ob/Gyn)']);
   });
 
-  it.fails('keeps a single place with a slash in its brackets in one piece', () => {
+  it('keeps a single place with a slash in its brackets in one piece', () => {
     expect(doctorsOf('Bergen Imaging Center, P.A. (English/Spanish/Korean)').doctors).toEqual([
       'Bergen Imaging Center, P.A. (English/Spanish/Korean)',
     ]);
   });
 
-  it.fails('keeps "w/" in one piece', () => {
+  it('keeps "w/" in one piece', () => {
     expect(
       doctorsOf(
         'Tawil Physical Therapy & Sports Performance, PA (Provide transportation w/Town WNY)',
@@ -147,7 +145,28 @@ describe('doctorsOf', () => {
     ).toHaveLength(1);
   });
 
-  it.fails('does not split a practice from its one doctor', () => {
+  it('keeps a group that ends with a nurse practitioner', () => {
+    expect(doctorsOf('Dr. Clenton Coleman / Dr. Diane Triolo / Dayra Soto, NP').doctors).toEqual([
+      'Dr. Clenton Coleman',
+      'Dr. Diane Triolo',
+      'Dayra Soto, NP',
+    ]);
+  });
+
+  it('keeps two names for one place on one line', () => {
+    expect(doctorsOf('Sleep Studies / Sleep Center').doctors).toEqual([
+      'Sleep Studies / Sleep Center',
+    ]);
+  });
+
+  it('keeps the note of a group whose specialty has a slash', () => {
+    expect(doctorsOf('Dr. A Smith / Dr. B Jones (Ob/Gyn)')).toEqual({
+      doctors: ['Dr. A Smith', 'Dr. B Jones'],
+      note: 'Ob/Gyn',
+    });
+  });
+
+  it('does not split a practice from its one doctor', () => {
     expect(doctorsOf('Grau Orthopedics - Dr. Luis Grau').doctors).toEqual([
       'Grau Orthopedics - Dr. Luis Grau',
     ]);

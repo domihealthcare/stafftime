@@ -138,12 +138,12 @@ export function printedOffices(offices: ReferralContact['offices']) {
 /// it comes out as a note. A single name is left exactly as it is. The full name
 /// is still what is searched, so any one doctor finds the group.
 export function doctorsOf(name: string): { doctors: string[]; note: string | null } {
-  const parts = name
-    .trim()
-    .split(/\s*\/\s*|,\s*(?=Dr\.?\s)|\s+(?=Dr\.?\s)/i)
-    .map((part) => part.trim())
-    .filter(Boolean);
-  if (parts.length < 2) return { doctors: [name.trim()], note: null };
+  const whole = name.trim();
+  const parts = piecesOf(whole);
+  // A group only when it starts with a doctor ("Dr. A / Dr. B / C, NP"); a
+  // practice with its doctor ("Grau Orthopedics - Dr. Luis Grau") or two names
+  // for one place ("Sleep Studies / Sleep Center") stay on one line.
+  if (parts.length < 2 || !A_DOCTOR.test(parts[0])) return { doctors: [whole], note: null };
   const last = parts[parts.length - 1];
   const bracket = /\s*\(([^()]+)\)\s*$/.exec(last);
   const othersHaveOne = parts.slice(0, -1).some((part) => /\([^()]+\)\s*$/.test(part));
@@ -152,6 +152,31 @@ export function doctorsOf(name: string): { doctors: string[]; note: string | nul
     return { doctors: parts, note: bracket[1].trim() };
   }
   return { doctors: parts, note: null };
+}
+
+const BETWEEN_DOCTORS = /\s*\/\s*|,\s*(?=Dr\.?\s)|\s+(?=Dr\.?\s)/gi;
+const A_DOCTOR = /^Dr\.?\s/i;
+
+/// The name cut where one person ends and the next begins, never inside
+/// brackets: "(Ob/Gyn)" or "(English/Spanish/Korean)" is one note, not a list
+/// (fixed October 2026; a slash in brackets used to split the name).
+function piecesOf(name: string): string[] {
+  let depth = 0;
+  let masked = '';
+  for (const ch of name) {
+    if (ch === '(') depth += 1;
+    masked += depth > 0 ? '_' : ch;
+    if (ch === ')' && depth > 0) depth -= 1;
+  }
+  const pieces: string[] = [];
+  let from = 0;
+  for (const match of masked.matchAll(BETWEEN_DOCTORS)) {
+    const at = match.index ?? 0;
+    pieces.push(name.slice(from, at));
+    from = at + match[0].length;
+  }
+  pieces.push(name.slice(from));
+  return pieces.map((piece) => piece.trim()).filter(Boolean);
 }
 
 export type Piece =
