@@ -285,8 +285,9 @@ export class TimesheetExportService {
    * The threshold comes from the practice's settings rather than a constant, so
    * this and the rota's overtime warning cannot drift apart.
    *
-   * TODO: confirm exempt status per employee with whoever runs payroll. Pay type
-   * is a reasonable proxy but it is not the legal test.
+   * Still to confirm with whoever runs payroll: who is exempt. Pay type is a
+   * reasonable proxy but it is not the legal test. Tracked in
+   * docs/open-questions.md, "Confirm who is exempt from overtime".
    */
   private buildTotals(
     entries: EntryWithRelations[],

@@ -73,7 +73,9 @@ const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
  * as holding chosen job roles. Only an admin is heard, and only downwards -
  * it can never raise anybody - so the guards and every screen answer as that
  * person would be answered; the real access level rides along as
- * `actualRole` for the one place an admin must still not pass (invoices).
+ * `actualRole`, which /auth/me reads to show the View as banner. (Invoices
+ * and the rota's cost go by the person's own switches, not by role, so
+ * viewing as somebody changes neither.)
  */
 function viewAs(
   request: Request,

@@ -2,7 +2,7 @@
   "name": "stafftime",
   "version": "1.29.1",
   "private": true,
-  "description": "Domi Time & Scheduling — staff clock-in, scheduling and timesheets",
+  "description": "Domi Staff: staff clock-in, scheduling and timesheets for Domi Healthcare",
   "workspaces": [
     "apps/*"
   ],

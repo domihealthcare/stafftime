@@ -51,8 +51,9 @@ export class LocationVerificationService {
    * geofence cannot meaningfully prove presence, so it is not trusted and we fall
    * through to the IP check.
    *
-   * TODO: tune once we have real readings from both offices - indoor fixes are
-   * often poor, and too strict a value here means staff cannot clock in at their desk.
+   * Still to tune against real readings from both offices: indoor fixes are
+   * often poor, and too strict a value here means staff cannot clock in at their
+   * desk. Tracked in docs/open-questions.md, "Tune the GPS accuracy tolerance".
    */
   private static readonly ACCURACY_TOLERANCE_MULTIPLIER = 2;
 
