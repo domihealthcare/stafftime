@@ -11,7 +11,7 @@ the server framework, NestJS, from version 10 to 11. Nothing was deployed, no da
 migration was written or run, and no real data was touched. All testing
 used a throwaway database on the temporary machine this work ran on.
 
-**Follow-up, 29 October 2026 (versions 1.31.0 to 1.32.0).** Everything left
+**Follow-up, 29 October 2026 (versions 1.31.0 to 1.33.0).** Everything left
 in sections 2 and 3 has since been done, apart from NestJS 12 (held back on
 purpose, see section 3) and the checks only you can make in your dashboards.
 Sections 2 and 3 below say what happened to each item.
@@ -231,7 +231,7 @@ error screen and the "could not check" messages.
 
 ---
 
-## 2. What can be done (optional, later): all done in 1.32.0
+## 2. What can be done (optional, later): all done in 1.33.0
 
 Six agents did these at the same time on 29 October 2026, each in its own
 copy of the code; the work was then combined and checked together (every
@@ -258,13 +258,13 @@ unit test, the type checks and the whole browser suite).
 2. **NestJS 11 upgrade:** live since 28 October with no errors in Vercel's
    log. If anything odd shows up, reverting `a4b5206` alone puts NestJS 10
    back.
-3. **Done: React Router 7 and Vite 7** (1.32.0). React Router is pinned to
+3. **Done: React Router 7 and Vite 7** (1.33.0). React Router is pinned to
    7.18.4 (six weeks old) rather than the newest 7.18.5. One behaviour
    difference had to be switched off (`useTransitions={false}`): with it on,
    letters typed quickly into the phone book search were lost. A new browser
    check, `address-search.mjs`, catches it. Older phones keep working
    (`build.target` in `vite.config.ts`).
-4. **Done: the spreadsheet library's old `uuid`** (1.32.0, forced to 11.1.1).
+4. **Done: the spreadsheet library's old `uuid`** (1.33.0, forced to 11.1.1).
    Every export file came out identical. **The live site's dependencies now
    have no security warnings at all.**
 5. **NestJS 12: held back on purpose.** Its packages can only be loaded in a

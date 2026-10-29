@@ -581,8 +581,10 @@ const STAFF: Section[] = [
             the calendar link at the bottom of the page: <strong>Everything in one calendar</strong>
             , or <strong>Separate calendars</strong> to add only the ones you want (say, just
             Diagnostics and Pay days) - each shows on your phone as its own calendar you can colour
-            and switch off. Use one or the other, not both, or things show twice. The addresses are
-            shown once, when the link is made, so add the ones you want then.
+            and switch off. Use one or the other, not both, or things show twice. The one exception
+            is <strong>Providers</strong>, every provider&rsquo;s hours at each office and on
+            telemedicine: it is not in the all-in-one calendar, so add it beside either if you want
+            it. The addresses are shown once, when the link is made, so add the ones you want then.
           </p>
         ),
       },

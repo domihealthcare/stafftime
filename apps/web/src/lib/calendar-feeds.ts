@@ -9,6 +9,8 @@ export const SEPARATE_FEEDS: {
   kind: CalendarKind | null;
   /// Only worth offering to providers: empty for anybody else.
   providersOnly?: boolean;
+  /// Not in the all-in-one calendar, so offered beside it too.
+  alongside?: boolean;
 }[] = [
   { slug: 'shifts', label: 'My shifts & time off', kind: null },
   { slug: 'diagnostics', label: 'Diagnostics', kind: 'DIAGNOSTIC' },
@@ -17,5 +19,6 @@ export const SEPARATE_FEEDS: {
   { slug: 'holidays', label: 'Holidays & closures', kind: 'HOLIDAY' },
   { slug: 'pay-days', label: 'Pay days', kind: 'PAY_DAY' },
   { slug: 'events', label: 'Meetings & events', kind: 'EVENT' },
+  { slug: 'providers', label: 'Providers', kind: 'PROVIDERS', alongside: true },
   { slug: 'on-call', label: 'My on call', kind: null, providersOnly: true },
 ];
