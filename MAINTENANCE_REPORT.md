@@ -22,7 +22,7 @@ used a throwaway database on the temporary machine this work ran on.
 | Lint (code style rules) | 0 errors, 0 warnings | 0 errors, 0 warnings |
 | Type checks | 0 errors (web app only was checked) | 0 errors (web app, API, and the Vercel entry file now all checked) |
 | Unit tests | 1,807 pass, 0 fail (139 files) | 1,831 pass, 0 fail (143 files) |
-| Browser tests (a real browser clicking through the app) | 121 suites, 1,267 checks, all pass | 122 suites (one new), 1,272 checks, all pass |
+| Browser tests (a real browser clicking through the app) | 121 suites, 1,267 checks, all pass | 122 suites (one new), 1,272 checks, all pass, before and after the NestJS upgrade |
 | Files not in the house formatting style | 12 | 0 |
 | Known security problems in dependencies (`npm audit`) | 46 (3 critical, 14 high, 18 moderate, 11 low) | 21 (0 critical, 5 high, 7 moderate, 9 low; every high one is in developer tools) |
 | ...of those, in code that runs on the live site | 13 (4 high, 9 moderate) | 4 (0 high, 4 moderate: React Router and the spreadsheet library, see section 3) |
@@ -202,6 +202,9 @@ behaviour)
       setting. No setting here is affected.
   - A real server was also tested by hand: sign-in, sign-out, queries,
     errors and the calendar feed.
+  - On the upgraded framework, the whole browser suite passed again: 122
+    suites, 1,272 checks, 0 failures. So did lint, the type checks, all
+    1,831 unit tests and the build.
   - **NestJS 12** exists, but its packages switch to a new module format and
     would need Node 24.9+ for the unit tests, so it is a later project.
 
