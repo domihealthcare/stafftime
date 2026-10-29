@@ -9,6 +9,7 @@ import { Spinner } from './components/ui';
 import { SessionProvider, useSession } from './lib/session';
 import { ChangePasswordPage } from './pages/ChangePasswordPage';
 import { ClockPage } from './pages/ClockPage';
+import { RouteError } from './components/RouteError';
 import { LoginPage } from './pages/LoginPage';
 import { SetupPage } from './pages/SetupPage';
 
@@ -416,7 +417,11 @@ function AppRoutes() {
   half-filled form by a link or the Back button (September 2026); a plain
   BrowserRouter cannot stop either.
 */
-const router = createBrowserRouter([{ path: '*', element: <AppRoutes /> }]);
+const router = createBrowserRouter([
+  // errorElement: plain words and a Reload button when a screen crashes,
+  // instead of the router's developer page with its stack trace.
+  { path: '*', element: <AppRoutes />, errorElement: <RouteError /> },
+]);
 
 export function App() {
   return <RouterProvider router={router} />;
