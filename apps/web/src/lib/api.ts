@@ -6,6 +6,7 @@ import type {
   DowntimeCause,
   DowntimeCheck,
   DowntimeContact,
+  Badges,
   DowntimeCurrent,
   DowntimeKitItem,
   DowntimeLog,
@@ -567,7 +568,13 @@ export interface AppNotification {
     | 'REQUIRED'
     | 'ON_CALL'
     | 'CLOSING'
-    | 'SHIFT_TOMORROW';
+    | 'SHIFT_TOMORROW'
+    | 'RUNNING_LATE'
+    | 'NO_SHOW'
+    | 'CORRECTION'
+    | 'WEEKLY_SUMMARY'
+    | 'CME'
+    | 'DOWNTIME';
   title: string;
   body: string | null;
   link: string | null;
@@ -658,8 +665,9 @@ export const api = {
   // ---------------------------------------------------------- notifications
   /// The bell: your own notifications, newest first.
   notifications: () => request<NotificationList>('/notifications'),
-  unreadNotifications: (options?: Background) =>
-    request<{ unread: number }>('/notifications/unread-count', options),
+  /// The bell's count, the downtime bar and the time-off badge in one
+  /// request (`lib/badges.tsx`).
+  badges: (options?: Background) => request<Badges>('/badges', options),
   markNotificationRead: (id: string) =>
     request<{ unread: number }>(`/notifications/${id}/read`, { method: 'POST' }),
   markAllNotificationsRead: () =>
@@ -703,7 +711,11 @@ export const api = {
     name: string;
     isShared?: boolean;
     options: Partial<TimesheetExportOptions>;
-  }) => request<ReportPreset>('/exports/presets', { method: 'POST', body: JSON.stringify(body) }),
+  }) =>
+    request<Omit<ReportPreset, 'isMine' | 'ownerName'>>('/exports/presets', {
+      method: 'POST',
+      body: JSON.stringify(body),
+    }),
   deleteReportPreset: (id: string) =>
     request<{ deleted: boolean }>(`/exports/presets/${id}`, { method: 'DELETE' }),
   reportPresetOptions: (id: string) =>
@@ -716,8 +728,6 @@ export const api = {
     request<EveryonesSchedule>(`/schedule-view${toQuery({ from, to })}`),
   listPto: (params: Record<string, string | undefined> = {}) =>
     request<PtoRequest[]>(`/pto${toQuery(params)}`),
-  ptoPendingCount: (options?: Background) =>
-    request<{ pending: number }>('/pto/pending-count', options),
   createPto: (body: {
     type: string;
     startDate: string;
@@ -858,10 +868,13 @@ export const api = {
       answers?: { questionId: string; rating?: number | null; text?: string | null }[];
     },
   ) =>
-    request<{ done: number; total: number; selfDone: boolean }>(`/reviews360/${id}/answers`, {
-      method: 'POST',
-      body: JSON.stringify(body),
-    }),
+    request<{ done: number; total: number; selfDone: boolean } | null>(
+      `/reviews360/${id}/answers`,
+      {
+        method: 'POST',
+        body: JSON.stringify(body),
+      },
+    ),
   closeReview360: (id: string) =>
     request<{ closed: boolean }>(`/reviews360/${id}/close`, { method: 'POST' }),
   deleteReview360: (id: string) =>
@@ -1160,12 +1173,12 @@ export const api = {
     request<{ ordered: boolean }>(`/closing/supplies/${id}/ordered`, { method: 'POST' }),
   closingTemplates: () => request<ClosingTemplateRole[]>('/closing/templates'),
   createClosingSection: (body: { jobRoleId: string; title: string; isPosition?: boolean }) =>
-    request<ClosingTemplateSection>('/closing/sections', {
+    request<Omit<ClosingTemplateSection, 'items'>>('/closing/sections', {
       method: 'POST',
       body: JSON.stringify(body),
     }),
   updateClosingSection: (id: string, body: { title?: string; isPosition?: boolean }) =>
-    request<ClosingTemplateSection>(`/closing/sections/${id}`, {
+    request<Omit<ClosingTemplateSection, 'items'>>(`/closing/sections/${id}`, {
       method: 'PATCH',
       body: JSON.stringify(body),
     }),
@@ -1184,7 +1197,10 @@ export const api = {
     weekdays?: number[];
     locationId?: string | null;
   }) =>
-    request<ClosingTemplateItem>('/closing/items', { method: 'POST', body: JSON.stringify(body) }),
+    request<Omit<ClosingTemplateItem, 'location'>>('/closing/items', {
+      method: 'POST',
+      body: JSON.stringify(body),
+    }),
   updateClosingItem: (
     id: string,
     body: {
@@ -1195,7 +1211,7 @@ export const api = {
       locationId?: string | null;
     },
   ) =>
-    request<ClosingTemplateItem>(`/closing/items/${id}`, {
+    request<Omit<ClosingTemplateItem, 'location'>>(`/closing/items/${id}`, {
       method: 'PATCH',
       body: JSON.stringify(body),
     }),
@@ -1653,7 +1669,7 @@ export const api = {
       carriesBalance: boolean;
     },
   ) =>
-    request<ProductivityPlan>(`/productivity/plans/${employeeId}`, {
+    request<ProductivityPlan | null>(`/productivity/plans/${employeeId}`, {
       method: 'PUT',
       body: JSON.stringify(body),
     }),
@@ -1718,8 +1734,12 @@ export const api = {
   requirementProgress: (id: string) => request<RequirementProgress>(`/requirements/${id}`),
   createRequirement: (body: RequirementInput) =>
     request<RequirementSummary>('/requirements', { method: 'POST', body: JSON.stringify(body) }),
+  /// The counts are left out of a change's answer.
   updateRequirement: (id: string, body: RequirementInput) =>
-    request<RequirementSummary>(`/requirements/${id}`, {
+    request<
+      Omit<RequirementSummary, 'asked' | 'done' | 'overdue'> &
+        Partial<Pick<RequirementSummary, 'asked' | 'done' | 'overdue'>>
+    >(`/requirements/${id}`, {
       method: 'PUT',
       body: JSON.stringify(body),
     }),
@@ -1755,9 +1775,15 @@ export const api = {
   /// The reps who book lunches: managers and admins only.
   reps: () => request<Rep[]>('/reps'),
   createRep: (body: RepInput) =>
-    request<Rep>('/reps', { method: 'POST', body: JSON.stringify(body) }),
+    request<Omit<Rep, 'lastLunch' | 'nextLunch'>>('/reps', {
+      method: 'POST',
+      body: JSON.stringify(body),
+    }),
   updateRep: (id: string, body: RepInput) =>
-    request<Rep>(`/reps/${id}`, { method: 'PUT', body: JSON.stringify(body) }),
+    request<Omit<Rep, 'lastLunch' | 'nextLunch'>>(`/reps/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify(body),
+    }),
   deleteRep: (id: string) => request<{ removed: boolean }>(`/reps/${id}`, { method: 'DELETE' }),
   /// Pay days from one date to another (YYYY-MM-DD, inclusive): the Friday
   /// after each pay period ends. None until a pay period is set.
@@ -1925,7 +1951,7 @@ export const api = {
       body: JSON.stringify(body),
     }),
   deleteInvoice: (id: string) =>
-    request<{ removed: true }>(`/invoices/${id}`, { method: 'DELETE' }),
+    request<{ removed: boolean }>(`/invoices/${id}`, { method: 'DELETE' }),
   invoiceAccess: () => request<{ holders: PersonName[]; others: PersonName[] }>('/invoices/access'),
   grantInvoiceAccess: (employeeId: string) =>
     request<{ holders: PersonName[]; others: PersonName[] }>(`/invoices/access/${employeeId}`, {
@@ -1942,7 +1968,7 @@ export const api = {
       body: JSON.stringify(body),
     }),
   deleteInvoiceVendor: (id: string) =>
-    request<{ removed: true }>(`/invoices/vendors/${id}`, { method: 'DELETE' }),
+    request<{ removed: boolean }>(`/invoices/vendors/${id}`, { method: 'DELETE' }),
   invoicePayees: () => request<InvoicePayee[]>('/invoices/payees'),
   saveInvoicePayee: (id: string | null, body: PayeeInput) =>
     request<InvoicePayee>(id ? `/invoices/payees/${id}` : '/invoices/payees', {
@@ -1950,7 +1976,7 @@ export const api = {
       body: JSON.stringify(body),
     }),
   deleteInvoicePayee: (id: string) =>
-    request<{ removed: true }>(`/invoices/payees/${id}`, { method: 'DELETE' }),
+    request<{ removed: boolean }>(`/invoices/payees/${id}`, { method: 'DELETE' }),
 
   // ---------------------------------------------------------------- reimbursements
   reimbursements: () => request<ReimbursementsBoard>('/reimbursements'),
@@ -1996,9 +2022,15 @@ export const api = {
   // ---------------------------------------------------------------- vendor payments
   vendors: () => request<Vendor[]>('/vendors'),
   createVendor: (body: VendorInput) =>
-    request<Vendor>('/vendors', { method: 'POST', body: JSON.stringify(body) }),
+    request<Omit<Vendor, 'payments' | 'outstanding'>>('/vendors', {
+      method: 'POST',
+      body: JSON.stringify(body),
+    }),
   updateVendor: (id: string, body: VendorInput) =>
-    request<Vendor>(`/vendors/${id}`, { method: 'PUT', body: JSON.stringify(body) }),
+    request<Omit<Vendor, 'payments' | 'outstanding'>>(`/vendors/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify(body),
+    }),
   deleteVendor: (id: string) =>
     request<{ deleted: boolean }>(`/vendors/${id}`, { method: 'DELETE' }),
   addVendorPayment: (vendorId: string, body: VendorPaymentInput) =>
@@ -2183,12 +2215,14 @@ export const api = {
       questions: SurveyInputQuestion[];
     },
   ) =>
-    request<Survey>(id ? `/surveys/${id}` : '/surveys', {
+    request<Omit<Survey, 'answered'>>(id ? `/surveys/${id}` : '/surveys', {
       method: id ? 'PATCH' : 'POST',
       body: JSON.stringify(body),
     }),
-  openSurvey: (id: string) => request<Survey>(`/surveys/${id}/open`, { method: 'POST' }),
-  closeSurvey: (id: string) => request<Survey>(`/surveys/${id}/close`, { method: 'POST' }),
+  openSurvey: (id: string) =>
+    request<Omit<Survey, 'answered'>>(`/surveys/${id}/open`, { method: 'POST' }),
+  closeSurvey: (id: string) =>
+    request<Omit<Survey, 'answered'>>(`/surveys/${id}/close`, { method: 'POST' }),
   deleteSurvey: (id: string) =>
     request<{ deleted: boolean }>(`/surveys/${id}`, { method: 'DELETE' }),
   answerSurvey: (

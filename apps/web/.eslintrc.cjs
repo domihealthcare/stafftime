@@ -3,12 +3,19 @@ module.exports = {
   env: { browser: true, es2022: true },
   extends: ['eslint:recommended', 'plugin:@typescript-eslint/recommended'],
   parser: '@typescript-eslint/parser',
-  parserOptions: { ecmaVersion: 'latest', sourceType: 'module' },
+  parserOptions: {
+    ecmaVersion: 'latest',
+    sourceType: 'module',
+    // Type-aware, for the promise rules below.
+    project: 'tsconfig.app.json',
+    tsconfigRootDir: __dirname,
+  },
   plugins: ['react-hooks', 'react-refresh'],
   ignorePatterns: ['dist', '.eslintrc.cjs', 'node_modules'],
   rules: {
     'react-hooks/rules-of-hooks': 'error',
     'react-hooks/exhaustive-deps': 'warn',
+    '@typescript-eslint/no-floating-promises': 'error',
   },
   overrides: [
     {

@@ -105,6 +105,10 @@ export default defineConfig({
     proxy,
   },
   build: {
+    // The browsers Vite 5 built for. Vite 7's own default asks for newer ones
+    // (Safari 16, Chrome 107), which would leave an older staff phone with a
+    // blank screen, so the old list is kept until there is a reason to drop it.
+    target: ['es2020', 'edge88', 'firefox78', 'chrome87', 'safari14'],
     rollupOptions: {
       input: {
         index: fileURLToPath(new URL('./index.html', import.meta.url)),

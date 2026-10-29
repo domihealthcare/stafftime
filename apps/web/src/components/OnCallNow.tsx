@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link } from 'react-router';
 import { api } from '../lib/api';
 import { canSeeOnCall } from '../lib/on-call';
 import { formatPracticeDateTime, practiceDate } from '../lib/practice-time';

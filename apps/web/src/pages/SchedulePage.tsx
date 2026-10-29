@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { Link, useNavigate, useSearchParams } from 'react-router-dom';
+import { Link, useNavigate, useSearchParams } from 'react-router';
 import { api } from '../lib/api';
+import { addCalendarDays } from '../lib/dates';
 import {
   addDays,
   addMonths,
@@ -249,7 +250,8 @@ export function SchedulePage() {
   function addTimeOffFor(personId: string | null, day: Date) {
     const query = new URLSearchParams({ request: '1', date: localDate(day) });
     if (personId) query.set('for', personId);
-    navigate(`/time-off?${query.toString()}`);
+    // Moving to another screen: nothing to wait for (React Router 7 returns a promise).
+    void navigate(`/time-off?${query.toString()}`);
   }
   const monthMenu = useContextMenu();
   const openMonthMenu = (event: React.MouseEvent, day: Date) => {
@@ -1285,7 +1287,9 @@ function NewShiftForm({
     if (!usual || touchedRef.current) return;
     const date = startsAt.slice(0, 10);
     setStartsAt(`${date}T${usual.startTime}`);
-    setEndsAt(`${usual.endTime > usual.startTime ? date : nextDay(date)}T${usual.endTime}`);
+    setEndsAt(
+      `${usual.endTime > usual.startTime ? date : addCalendarDays(date, 1)}T${usual.endTime}`,
+    );
     setPlace(usual.isRemote ? WORK_FROM_HOME : usual.locationId);
     if (
       usual.jobRoleId &&
@@ -1517,13 +1521,6 @@ function NewShiftForm({
 function isoOrEmpty(value: string): string {
   const date = new Date(value);
   return value && !Number.isNaN(date.getTime()) ? date.toISOString() : '';
-}
-
-/// The calendar day after a "YYYY-MM-DD", for a usual shift past midnight.
-function nextDay(date: string): string {
-  const day = new Date(`${date}T12:00:00Z`);
-  day.setUTCDate(day.getUTCDate() + 1);
-  return day.toISOString().slice(0, 10);
 }
 
 function defaultInput(day: Date, hour: number): string {

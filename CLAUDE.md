@@ -1913,6 +1913,59 @@ Beyond the phases, the parts worth knowing about before picking up work:
   providers would read the same, "Dr. J Dominguez" / "Dr. D Dominguez"
   (`calendar/provider-labels.ts`). See *The Providers calendar* in
   `docs/architecture.md`; `tests/browser/provider-calendar.mjs`.
+- **Maintenance, part two** (29 October 2026, version 1.33.0, Dominguez: "do
+  them all, use multiple agents if need be", and "fix the phone book bug
+  too"): the rest of `MAINTENANCE_REPORT.md`, built by six agents at once and
+  combined. What staff can notice:
+  - **Phone book names** no longer split inside brackets or at a practice
+    ("Dr. Payal Shah (Ob/Gyn)" had shown as "...(Ob" / "Gyn)"; "Grau
+    Orthopedics - Dr. Luis Grau" as two lines): `doctorsOf` in
+    `lib/phone-book.ts` cuts only outside brackets, and only lists a name as
+    a group when it starts with a doctor. 13 of the 315 loaded entries changed,
+    all to read as the book wrote them.
+  - **One badge request**: the bell's count, the downtime bar and managers'
+    time-off badge come from one `GET /api/badges` (`src/badges/`,
+    `lib/badges.tsx`, one poll owned by `Layout`): one request per screen
+    change instead of two or three, every 60 s while the tab is visible
+    (the downtime bar was every 2 minutes), still `background` so it never
+    holds off the idle sign-out. The three old routes are kept.
+  - **Spanish loaded only for Spanish readers** (`lib/i18n/es` its own chunk;
+    the screen waits for it, up to 3 seconds, so it never shows half and
+    half): the first download fell from 457 kB to 397 kB.
+  - **React Router 7** (`react-router` 7.18.4, pinned; the package
+    `react-router-dom` is gone and every import reads `react-router`) and
+    **Vite 7** (7.3.7, `@vitejs/plugin-react` 5.2). `<RouterProvider
+    useTransitions={false}>` keeps v6's navigation: with v7's transitions,
+    letters typed quickly into the phone book and guide searches (kept in the
+    address, `?q=`) were lost; `tests/browser/address-search.mjs` fails if it
+    comes back. `build.target` in `vite.config.ts` keeps Vite 5's old browser
+    list, so older phones still load the app. React stays 18.
+  - **The spreadsheet library's old `uuid`** is overridden to 11.1.1
+    (`overrides` in the root `package.json`); every export file came out
+    identical. With React Router 7, **the live site's dependencies have no
+    `npm audit` warnings at all**; what is left is in development tools (4
+    high, from `@vercel/node`).
+  Faster, same results: **copying a week** (`ShiftPlanningService.
+  createPlanned`, 5 database calls for 150 shifts instead of 431) and
+  **Approve the clean time off** (15 calls instead of 135), each with a spec
+  comparing the old one-by-one path; **two date indexes** (`shifts.startsAt`,
+  `time_entries.clockInAt`, migration `20261030010000_date_indexes`).
+  Checks: **CI fails on unformatted code** under `apps/` (`npm run
+  format:check`; fix with `npm run format`) and on a **forgotten await**
+  (`no-floating-promises`, API and web; a deliberate fire-and-forget is
+  marked `void`). **The web has unit tests** (Vitest 4.1.12, not 3.2.7, which
+  carried two critical advisories; `npm test` runs
+  them after the API's Jest): dates and New Jersey time, repeat patterns
+  (checked against the API's), the user-agent names, the phone book, guide
+  markup and the clinical forms' scoring. More API tests for sign-in, the
+  guards and the pay lock. **The web's types are checked against what the
+  server sends** (`tests/contract/`, run by `npm run typecheck`): 408 of
+  api.ts's 411 calls; a server change the web would misread fails CI.
+  **Not done, on purpose: NestJS 12.** Its packages are ESM-only, and
+  Vercel's Node 24 runtime turns off `require(esm)`, so the live API would
+  fail on every request; nothing before merging can catch it. It needs
+  `NODE_OPTIONS=--experimental-require-module` in Vercel first (Dominguez to
+  decide), and gains little (see `MAINTENANCE_REPORT.md`).
 - **Turned down: "PTO about to be lost"** (9 October 2026, Dominguez): a
   reminder to use PTO before it fails to carry over was proposed and refused —
   not in the practice's interest. Do not propose it again.
@@ -2658,7 +2711,7 @@ Beyond the phases, the parts worth knowing about before picking up work:
   Counts only — never a patient (the schema guard pins the fields; the note is
   the one free-text box and says so). **Not in the payroll export** (decided). See *Provider
   productivity* in `docs/architecture.md`.
-- **Tests**: ~1,800 unit tests, and ~1,270 end-to-end checks (121 suites) in `tests/browser`
+- **Tests**: ~1,960 API unit tests (Jest), ~180 web unit tests (Vitest), and ~1,300 end-to-end checks (127 suites) in `tests/browser`
   driven against a real API, a real Postgres and a real Chromium. Both run in CI
   on every push. The convention is to run the browser suites twice — once
   against the dev server, once against `vite preview`, which applies the

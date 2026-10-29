@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { ApiError, api } from '../lib/api';
-import { formatTime, localDate } from '../lib/format';
+import { browserToday } from '../lib/dates';
+import { formatTime } from '../lib/format';
 import { jobRoleHex } from '../lib/job-role-colours';
 import { useIsManager } from '../lib/session';
 import type {
@@ -122,7 +123,7 @@ function Reviewers() {
 // ------------------------------------------------------------------ clock-outs
 
 function Records() {
-  const [date, setDate] = useState(() => localDate(new Date()));
+  const [date, setDate] = useState(() => browserToday());
   const [locationId, setLocationId] = useState('');
   const [locations, setLocations] = useState<Location[]>([]);
   const [records, setRecords] = useState<ClosingRecord[] | null>(null);

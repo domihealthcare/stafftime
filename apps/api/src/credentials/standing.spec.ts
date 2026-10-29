@@ -5,7 +5,7 @@ const date = (value: string) => new Date(`${value}T00:00:00Z`);
 const type = (id: string, name: string, sortOrder: number) => ({
   id,
   name,
-  kind: 'OTHER',
+  kind: 'OTHER' as const,
   renewalMonths: null,
   sortOrder,
 });

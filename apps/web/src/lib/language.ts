@@ -9,7 +9,7 @@ import { type Language, setLanguage, useLanguageValue } from './i18n';
 export function useLanguage(): [Language, (language: Language) => void] {
   const language = useLanguageValue();
   const choose = (next: Language) => {
-    setLanguage(next);
+    void setLanguage(next);
     api.updateProfile({ language: next }).catch(() => undefined);
   };
   return [language, choose];

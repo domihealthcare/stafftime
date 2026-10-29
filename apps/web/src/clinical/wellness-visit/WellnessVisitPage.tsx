@@ -1,8 +1,8 @@
 import { useCallback, useMemo, useRef, useState } from 'react';
-import { useSearchParams } from 'react-router-dom';
+import { useSearchParams } from 'react-router';
 import { Alert, Card, PageHeading } from '../../components/ui';
 import { canUseWellnessForm, wellnessStartPage } from '../../lib/clinical-access';
-import { localDate } from '../../lib/format';
+import { browserToday } from '../../lib/dates';
 import { useSession } from '../../lib/session';
 import type { Employee } from '../../lib/types';
 import { FieldContext } from '../common/fields';
@@ -101,7 +101,7 @@ function WellnessScreen({ employee }: { employee: Employee }) {
     const asked = params.get('page');
     return asked === '1' ? 1 : asked === '2' ? 2 : wellnessStartPage(employee);
   });
-  const [form, setForm] = useState<WellnessForm>(() => emptyForm(localDate(new Date())));
+  const [form, setForm] = useState<WellnessForm>(() => emptyForm(browserToday()));
   const [untouched, setUntouched] = useState(() => JSON.stringify(form));
   // Until somebody picks the print language, page 1 asked in Spanish is
   // printed in English and Spanish.
@@ -138,7 +138,7 @@ function WellnessScreen({ employee }: { employee: Employee }) {
     [],
   );
 
-  const today = localDate(new Date());
+  const today = browserToday();
   const problems = useMemo(() => validate(form, page, today), [form, page, today]);
   const [showProblems, setShowProblems] = useState(false);
   const problemFor = useCallback(
@@ -207,7 +207,7 @@ function WellnessScreen({ employee }: { employee: Employee }) {
     const next: WellnessForm = {
       ...form,
       ...(page === 1 ? emptyPage1() : emptyPage2()),
-      patient: keepPatient ? form.patient : emptyPatient(localDate(new Date())),
+      patient: keepPatient ? form.patient : emptyPatient(browserToday()),
     };
     if (page === 1 && keepPatient)
       next.pdfLanguage = form.patient.language === 'es' ? 'both' : 'en';

@@ -1,8 +1,9 @@
 import { useCallback, useEffect, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link } from 'react-router';
 import { ApiError, api } from '../lib/api';
 import { ClashNote } from './TimeOffClashes';
-import { formatCalendarDate, localDate } from '../lib/format';
+import { browserToday } from '../lib/dates';
+import { formatCalendarDate } from '../lib/format';
 import { useIsManager, useSession } from '../lib/session';
 import { useT } from '../lib/i18n';
 import { PTO_TYPE_LABELS, hasNone, ptoTypeLabel } from '../lib/time-off';
@@ -203,7 +204,7 @@ export function YourTimeOff({ refreshKey }: { refreshKey: number }) {
     if (!employee) return;
     let cancelled = false;
     setFailed(false);
-    const today = localDate(new Date());
+    const today = browserToday();
     Promise.all([api.ptoBalance(), api.listPto({ employeeId: employee.id })])
       .then(([found, requests]) => {
         if (cancelled) return;

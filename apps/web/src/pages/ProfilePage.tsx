@@ -1,7 +1,7 @@
 import { PhoneNotificationsCard } from '../components/PhoneNotificationsCard';
 import { useEffect, useRef, useState } from 'react';
 import { formatBirthday } from '../lib/birthday';
-import { Link } from 'react-router-dom';
+import { Link } from 'react-router';
 import { Avatar } from '../components/Avatar';
 import { JobRoleTag } from '../components/JobRoleTag';
 import { useConfirm } from '../components/ConfirmDialog';

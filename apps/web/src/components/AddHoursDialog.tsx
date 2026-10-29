@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react';
 import { ApiError, api } from '../lib/api';
 import { HAND_ENTRY_REASONS } from '../lib/hand-entry';
-import { localDate } from '../lib/format';
+import { browserToday } from '../lib/dates';
 import type { Employee, HandEntryReason } from '../lib/types';
 import { Alert, buttonClass } from './ui';
 import { useDialog } from './useDialog';
@@ -42,7 +42,7 @@ export function AddHoursDialog({
 
   const [employeeId, setEmployeeId] = useState('');
   const [locationId, setLocationId] = useState('');
-  const [day, setDay] = useState(() => localDate(new Date()));
+  const [day, setDay] = useState(() => browserToday());
   const [start, setStart] = useState('');
   const [finish, setFinish] = useState('');
   const [reason, setReason] = useState<HandEntryReason | ''>('');
@@ -191,7 +191,7 @@ export function AddHoursDialog({
               id="add-day"
               type="date"
               required
-              max={localDate(new Date())}
+              max={browserToday()}
               value={day}
               onChange={(event) => {
                 setDay(event.target.value);

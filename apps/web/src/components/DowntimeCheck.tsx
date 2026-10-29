@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link } from 'react-router';
 import { ApiError, api } from '../lib/api';
 import { practiceTimeWords } from '../lib/downtime';
 import { formatCalendarDate } from '../lib/format';

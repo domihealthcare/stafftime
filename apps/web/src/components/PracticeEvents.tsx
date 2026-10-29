@@ -2,9 +2,10 @@ import { useDialog } from './useDialog';
 import { useCallback, useEffect, useId, useState } from 'react';
 import { useAiOn } from '../lib/ai';
 import { ApiError, api } from '../lib/api';
+import { addCalendarDays } from '../lib/dates';
 import { formatCalendarDate, formatTimeCompact, localDate } from '../lib/format';
 import { t, useT } from '../lib/i18n';
-import { Link } from 'react-router-dom';
+import { Link } from 'react-router';
 import { KIND_STYLE, officeShort } from '../lib/calendar-kinds';
 import { FOOD_LABEL, STATUS_LABEL } from '../lib/reps';
 import { SearchableSelect } from './SearchableSelect';
@@ -44,6 +45,10 @@ import { EventReplies, REPLY_MARK } from './EventReplies';
 import { FindATime } from './FindATime';
 import { RepeatPicker } from './RepeatPicker';
 import { Alert, Badge, Card, buttonClass } from './ui';
+
+/// A rep as the event form uses one: a rep just added has no lunches yet,
+/// and the form never shows them.
+type RepChoice = Omit<Rep, 'lastLunch' | 'nextLunch'>;
 
 /**
  * Practice events on the schedule: office meetings, provider meetings, a
@@ -458,7 +463,7 @@ export function EventForm({
   const [title, setTitle] = useState(source?.title ?? '');
   /// A rep lunch: the rep, from the managers' list.
   const [repId, setRepId] = useState(source?.rep?.id ?? '');
-  const [reps, setReps] = useState<Rep[] | null>(null);
+  const [reps, setReps] = useState<RepChoice[] | null>(null);
   useEffect(() => {
     if (!repLunch || reps) return;
     api
@@ -666,11 +671,7 @@ export function EventForm({
       (new Date(`${endDate}T00:00:00Z`).getTime() - new Date(`${startDate}T00:00:00Z`).getTime()) /
       86_400_000;
     setStartDate(value);
-    if (value && Number.isFinite(span)) {
-      const end = new Date(`${value}T00:00:00Z`);
-      end.setUTCDate(end.getUTCDate() + Math.max(0, span));
-      setEndDate(end.toISOString().slice(0, 10));
-    }
+    if (value && Number.isFinite(span)) setEndDate(addCalendarDays(value, Math.max(0, span)));
   }
 
   async function submit(form: React.FormEvent) {
@@ -1780,7 +1781,7 @@ function QuickAddRep({
   onCancel,
 }: {
   startName: string;
-  onAdded: (rep: Rep) => void;
+  onAdded: (rep: RepChoice) => void;
   onCancel: () => void;
 }) {
   const id = useId();

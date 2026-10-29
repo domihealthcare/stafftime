@@ -1,5 +1,7 @@
 import { Suspense, lazy, useEffect, useState } from 'react';
-import { Navigate, Route, RouterProvider, Routes, createBrowserRouter } from 'react-router-dom';
+import { Navigate, Route, Routes, createBrowserRouter } from 'react-router';
+// The provider for the browser comes from react-router/dom in version 7.
+import { RouterProvider } from 'react-router/dom';
 import { api } from './lib/api';
 import { ConfirmProvider } from './components/ConfirmDialog';
 import { EnvironmentBanner } from './components/EnvironmentBanner';
@@ -423,6 +425,13 @@ const router = createBrowserRouter([
   { path: '*', element: <AppRoutes />, errorElement: <RouteError /> },
 ]);
 
+/*
+  useTransitions={false} keeps navigation as it was under React Router 6:
+  each change of address is shown at once. Version 7 otherwise wraps it in a
+  React transition, which loses letters typed quickly into search boxes whose
+  text lives in the address (the phone book, the guides) and makes ticks and
+  pickers kept there lag a press behind (October 2026).
+*/
 export function App() {
-  return <RouterProvider router={router} />;
+  return <RouterProvider router={router} useTransitions={false} />;
 }

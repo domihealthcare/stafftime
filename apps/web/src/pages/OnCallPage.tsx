@@ -15,6 +15,7 @@ import {
   inputClass,
 } from '../components/ui';
 import { ApiError, api } from '../lib/api';
+import { addCalendarDays } from '../lib/dates';
 import { formatCalendarDate } from '../lib/format';
 import { canSeeOnCall, clockWords, entryWords, WEEKDAYS } from '../lib/on-call';
 import { formatPracticeDateTime, practiceDate } from '../lib/practice-time';
@@ -393,7 +394,7 @@ function DayDialog({
       return;
     }
     const from = practiceDate();
-    const to = addDays(from, 62);
+    const to = addCalendarDays(from, 62);
     api
       .onCall(from, to)
       .then((found) => setPartnerDays(found.days.filter((d) => d.employee?.id === partner)))
@@ -934,19 +935,13 @@ function PatternEditor({
 function monthRange(month: string) {
   const from = `${month}-01`;
   const next = shiftMonth(month, 1);
-  return { from, to: addDays(`${next}-01`, -1) };
+  return { from, to: addCalendarDays(`${next}-01`, -1) };
 }
 
 function shiftMonth(month: string, by: number): string {
   const [year, m] = month.split('-').map(Number);
   const date = new Date(Date.UTC(year, m - 1 + by, 1));
   return date.toISOString().slice(0, 7);
-}
-
-function addDays(date: string, days: number): string {
-  const d = new Date(`${date}T00:00:00Z`);
-  d.setUTCDate(d.getUTCDate() + days);
-  return d.toISOString().slice(0, 10);
 }
 
 function day(date: string): string {

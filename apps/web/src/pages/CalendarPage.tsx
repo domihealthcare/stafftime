@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { Link, useSearchParams } from 'react-router-dom';
+import { Link, useSearchParams } from 'react-router';
 import { CalendarLinkCard } from '../components/CalendarLinkCard';
 import {
   atAnOffice,
@@ -28,6 +28,7 @@ import {
   TELEMEDICINE,
   type CalendarKind,
 } from '../lib/calendar-kinds';
+import { browserToday } from '../lib/dates';
 import {
   addDays,
   addMonths,
@@ -256,7 +257,7 @@ export function CalendarPage() {
   };
 
   const monthDays = days.filter((day) => day.getMonth() === monthStart.getMonth());
-  const today = localDate(new Date());
+  const today = browserToday();
   const monthName = monthStart.toLocaleDateString(locale(), { month: 'long', year: 'numeric' });
 
   return (

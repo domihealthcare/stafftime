@@ -1,6 +1,6 @@
 import { BrandLogo } from '../components/Brand';
 import { useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link } from 'react-router';
 import { Alert, Card, Field, inputClass } from '../components/ui';
 import { ApiError, api } from '../lib/api';
 

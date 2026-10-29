@@ -1,10 +1,10 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { ApiError, api } from '../lib/api';
+import { browserToday } from '../lib/dates';
 import {
   displayName,
   formatCalendarDate,
   formatClock,
-  localDate,
   WEEK_ORDER,
   WEEKDAY_NAMES,
 } from '../lib/format';
@@ -119,7 +119,7 @@ export function WeeklyScheduleEditor({
   const firstOffice = offices[0]?.id ?? '';
   const [saved, setSaved] = useState<{ week: Week; doubled: number[] } | null>(null);
   const [week, setWeek] = useState<Week | null>(null);
-  const [from, setFrom] = useState(() => localDate(new Date()));
+  const [from, setFrom] = useState(() => browserToday());
   const [asDrafts, setAsDrafts] = useState(false);
   const [busy, setBusy] = useState(false);
   const [problem, setProblem] = useState<string | null>(null);
@@ -349,7 +349,7 @@ export function WeeklyScheduleEditor({
               <span className="block text-xs font-medium">Starting</span>
               <input
                 type="date"
-                min={localDate(new Date())}
+                min={browserToday()}
                 value={from}
                 onChange={(event) => setFrom(event.target.value)}
                 className="mt-0.5 rounded-lg border-slate-300 py-1.5 text-sm shadow-sm"

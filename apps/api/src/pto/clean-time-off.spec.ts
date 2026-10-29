@@ -19,31 +19,39 @@ describe('what makes a request clean', () => {
   });
 });
 
-function build(
-  options: { remaining?: number; clashes?: number; shifts?: { endsAt: Date }[] } = {},
-) {
+function build(options: { remaining?: number; shifts?: { endsAt: Date }[] } = {}) {
   const prisma = {
     ptoRequest: {
-      findMany: jest.fn().mockResolvedValue([
-        {
-          id: 'req-1',
-          type: PtoType.VACATION,
-          employeeId: 'emp-ana',
-          startDate: new Date('2026-11-02'),
-        },
-      ]),
+      // The waiting requests first; then the time off the clash check reads.
+      findMany: jest
+        .fn()
+        .mockResolvedValueOnce([
+          {
+            id: 'req-1',
+            type: PtoType.VACATION,
+            employeeId: 'emp-ana',
+            startDate: new Date('2026-11-02'),
+            endDate: new Date('2026-11-02'),
+          },
+        ])
+        .mockResolvedValue([]),
     },
+    // Nobody else to clash with (time-off-clashes.spec.ts tests clashes).
+    employee: { findMany: jest.fn().mockResolvedValue([]) },
+    shift: { findMany: jest.fn().mockResolvedValue([]) },
+    staffingMinimum: { findMany: jest.fn().mockResolvedValue([]) },
   };
   const pto = {
-    clashes: jest.fn().mockResolvedValue(new Array(options.clashes ?? 0).fill({})),
-    conflictingShifts: jest.fn().mockResolvedValue(options.shifts ?? []),
+    conflictingShiftsFor: jest.fn().mockResolvedValue([options.shifts ?? []]),
     review: jest.fn().mockResolvedValue({}),
   };
   const policy = {
-    balanceOn: jest.fn().mockResolvedValue({
-      vacation: { remaining: options.remaining ?? 3 },
-      sick: { remaining: 5 },
-    }),
+    balancesOn: jest.fn().mockResolvedValue([
+      {
+        vacation: { remaining: options.remaining ?? 3 },
+        sick: { remaining: 5 },
+      },
+    ]),
   };
   return {
     service: new CleanTimeOffService(prisma as never, pto as never, policy as never),

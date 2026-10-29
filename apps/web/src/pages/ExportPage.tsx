@@ -7,7 +7,7 @@ import {
   type TimesheetExportOptions,
 } from '../lib/api';
 import type { ReportPreset } from '../lib/types';
-import { formatCalendarDate, formatDateTime } from '../lib/format';
+import { addDays, formatCalendarDate, formatDateTime } from '../lib/format';
 import type {
   DayRange,
   ExportCheck,
@@ -891,9 +891,8 @@ function ExportHistory({
   );
 }
 
-/// The screen shows an inclusive end date; the API takes an exclusive one.
+/// The screen shows an inclusive end date; the API takes an exclusive one:
+/// the next midnight on this browser's clock.
 function endExclusive(date: string): string {
-  const next = new Date(`${date}T00:00:00`);
-  next.setDate(next.getDate() + 1);
-  return next.toISOString();
+  return addDays(new Date(`${date}T00:00:00`), 1).toISOString();
 }

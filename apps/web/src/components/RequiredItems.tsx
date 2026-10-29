@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link } from 'react-router';
 import { api, ApiError } from '../lib/api';
 import { formatCalendarDate, formatDate } from '../lib/format';
 import { t as translate, useT } from '../lib/i18n';

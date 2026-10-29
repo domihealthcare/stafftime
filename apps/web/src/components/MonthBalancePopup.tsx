@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link } from 'react-router';
 import { api } from '../lib/api';
 import { useT } from '../lib/i18n';
 import type { AllowanceBalance, PtoBalance } from '../lib/types';

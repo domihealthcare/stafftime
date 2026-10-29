@@ -1,10 +1,10 @@
 import { useEffect, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link } from 'react-router';
 import { api } from '../lib/api';
 import { formatCalendarDate } from '../lib/format';
 import { useT } from '../lib/i18n';
 import { practiceDate } from '../lib/practice-time';
-import { addDays } from '../lib/schedule-reviews';
+import { addCalendarDays } from '../lib/dates';
 import { useSession } from '../lib/session';
 import { Card } from './ui';
 
@@ -27,7 +27,7 @@ export function MyOfficeAdminDays() {
     let cancelled = false;
     const today = practiceDate();
     api
-      .officeAdmins(today, addDays(today, DAYS_AHEAD))
+      .officeAdmins(today, addCalendarDays(today, DAYS_AHEAD))
       .then((found) => {
         if (cancelled) return;
         const names = new Map(found.offices.map((office) => [office.id, office.name]));
@@ -51,7 +51,7 @@ export function MyOfficeAdminDays() {
 
   if (days.length === 0) return null;
   const today = practiceDate();
-  const tomorrow = addDays(today, 1);
+  const tomorrow = addCalendarDays(today, 1);
   const when = (date: string) =>
     date === today
       ? t('Today')

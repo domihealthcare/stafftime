@@ -11,6 +11,7 @@ import {
   EmploymentChangeKind,
   EmploymentStatus,
   EventAudience,
+  LeavingKind,
   PayRaise,
   PayRaiseStatus,
   PayRateUnit,
@@ -537,7 +538,7 @@ function personOf(person: PersonRow) {
 }
 
 function leavingOf(
-  record: { kind: string | null; reason: string | null; lastPaycheckOn: Date | null } | null,
+  record: { kind: LeavingKind | null; reason: string | null; lastPaycheckOn: Date | null } | null,
 ) {
   return {
     kind: record?.kind ?? null,

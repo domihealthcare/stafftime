@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
-import { useSearchParams } from 'react-router-dom';
+import { useSearchParams } from 'react-router';
 import { useConfirm } from '../components/ConfirmDialog';
 import { DowntimeCheckSection } from '../components/DowntimeCheck';
 import { DowntimeForms } from '../components/DowntimeForms';

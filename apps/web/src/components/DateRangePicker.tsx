@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { api } from '../lib/api';
+import { browserToday } from '../lib/dates';
 import { addDays, addMonths, localDate, startOfMonth, startOfWeek } from '../lib/format';
 import type { DayRange, PayPeriodInfo } from '../lib/types';
 import { locale, useT } from '../lib/i18n';
@@ -22,7 +23,7 @@ interface Preset {
 let payPeriodRequest: Promise<PayPeriodInfo | null> | null = null;
 let payPeriodDay = '';
 function loadPayPeriod(): Promise<PayPeriodInfo | null> {
-  const today = localDate(new Date());
+  const today = browserToday();
   if (payPeriodDay !== today) {
     payPeriodDay = today;
     payPeriodRequest = null;

@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
-import { Link, useParams } from 'react-router-dom';
+import { Link, useParams } from 'react-router';
 import { formatCalendarDate, formatDateTime } from '../lib/format';
 import { ApiError, api } from '../lib/api';
 import { formatBirthday } from '../lib/birthday';

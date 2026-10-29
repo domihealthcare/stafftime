@@ -1,69 +1,31 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
-import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { api, type AppNotification, type Background } from '../lib/api';
+import { useEffect, useRef, useState } from 'react';
+import { Link, useNavigate } from 'react-router';
+import { api, type AppNotification } from '../lib/api';
+import { useBadges } from '../lib/badges';
 import { useIsManager } from '../lib/session';
 import { useT } from '../lib/i18n';
 import { timeAgo } from '../lib/time-ago';
-
-/// How often the badge asks for a fresh count while the app is open.
-const POLL_MS = 60_000;
 
 /**
  * The bell beside your name: things the app wants you, specifically, to know -
  * your time off decided, your schedule changed, a survey waiting for you.
  *
- * The badge is a count of unread ones. Opening the bell lists the newest;
- * choosing one marks it read and goes to the screen it is about.
+ * The badge is a count of unread ones, asked for with the other badges on
+ * arrival, on every screen change, every minute and when the tab comes back
+ * into view (`lib/badges.tsx`). Opening the bell lists the newest; choosing
+ * one marks it read and goes to the screen it is about.
  */
 export function NotificationBell() {
   const t = useT();
   const isManager = useIsManager();
   const navigate = useNavigate();
-  const { pathname } = useLocation();
   const [open, setOpen] = useState(false);
-  const [unread, setUnread] = useState(0);
+  // `generation` is bumped whenever something is marked read, here or by the
+  // server's answer to it, so a count asked for before then is not shown.
+  const { unread, setUnread, unreadGeneration: generation, refresh } = useBadges();
   const [items, setItems] = useState<AppNotification[] | null>(null);
   const [error, setError] = useState(false);
   const panel = useRef<HTMLDivElement>(null);
-
-  // Bumped whenever something is marked read, here or by the server's answer
-  // to it. A count fetched before that is out of date and must not overwrite
-  // the newer one: clicking an item both marks it read and changes screen,
-  // which re-fetches the count, and whichever answer lands last used to win.
-  const generation = useRef(0);
-
-  /// `background`: the timer or the tab coming back asked, not the person,
-  /// so it does not count as using the app (see `request`).
-  const refreshCount = useCallback(({ background }: Background = {}) => {
-    const asked = generation.current;
-    api
-      .unreadNotifications({ background })
-      .then((result) => {
-        if (asked === generation.current) setUnread(result.unread);
-      })
-      .catch(() => undefined);
-  }, []);
-
-  // On arrival, on every screen change, every minute, and when the tab comes
-  // back into view - cheap, and a stale badge is the thing people notice.
-  useEffect(() => {
-    refreshCount();
-  }, [refreshCount, pathname]);
-  useEffect(() => {
-    // Not while the phone is locked or the tab is in the background - that is
-    // data and battery for a badge nobody can see. Coming back refreshes it.
-    const timer = window.setInterval(
-      () => document.visibilityState === 'visible' && refreshCount({ background: true }),
-      POLL_MS,
-    );
-    const onVisible = () =>
-      document.visibilityState === 'visible' && refreshCount({ background: true });
-    document.addEventListener('visibilitychange', onVisible);
-    return () => {
-      window.clearInterval(timer);
-      document.removeEventListener('visibilitychange', onVisible);
-    };
-  }, [refreshCount]);
 
   // The list is fetched when the bell opens, not before.
   useEffect(() => {
@@ -82,7 +44,7 @@ export function NotificationBell() {
     return () => {
       cancelled = true;
     };
-  }, [open]);
+  }, [open, generation, setUnread]);
 
   // Closes on a click elsewhere or Escape, like the account menu.
   useEffect(() => {
@@ -119,7 +81,8 @@ export function NotificationBell() {
         .catch(() => undefined);
     }
     setOpen(false);
-    if (item.link) navigate(item.link);
+    // Moving to another screen: nothing to wait for (React Router 7 returns a promise).
+    if (item.link) void navigate(item.link);
   }
 
   function markAll() {
@@ -132,7 +95,7 @@ export function NotificationBell() {
       .then(() => {
         generation.current += 1;
       })
-      .catch(() => refreshCount());
+      .catch(() => refresh());
   }
 
   return (
