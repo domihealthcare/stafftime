@@ -20,13 +20,13 @@ const EMPLOYEE_INCLUDE = {
 } satisfies Prisma.EmployeeInclude;
 
 /// Never return credential columns to a client.
-/// Never sent to a browser. The calendar token is the private calendar link's
-/// credential - anybody holding it can read that person's shifts and time off -
-/// and the lockout counters are nobody's business but the server's.
+/// Never sent to a browser. Only a fingerprint of the private calendar link's
+/// token is kept, and that is still nobody else's business; the lockout
+/// counters are nobody's business but the server's.
 const HIDDEN_FIELDS = [
   'pinHash',
   'passwordHash',
-  'calendarToken',
+  'calendarTokenHash',
   'failedLoginAttempts',
   'lockedUntil',
   'pinFailedAttempts',
