@@ -2002,6 +2002,11 @@ Beyond the phases, the parts worth knowing about before picking up work:
     dates from addresses, so a mistyped one now opens on today. The month
     grid's comment says four to six weeks (a February starting on a Sunday
     has four).
+  - **`payroll.mjs` after 8pm**: the browser suite set the Export period to
+    "today" on the test machine's clock (UTC), which after 8pm New Jersey
+    time is already tomorrow; since 1.33.1 the Export reads its days as New
+    Jersey's, so it found no hours. The suite now takes New Jersey's today.
+    Test only.
 - **Turned down: "PTO about to be lost"** (9 October 2026, Dominguez): a
   reminder to use PTO before it fails to carry over was proposed and refused —
   not in the practice's interest. Do not propose it again.

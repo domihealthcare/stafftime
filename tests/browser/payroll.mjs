@@ -50,9 +50,13 @@ await step('nothing has been exported yet', async () => {
   await page.getByText('Nothing has been exported yet.').waitFor({ timeout: 10000 });
 });
 
+/// Today in New Jersey, as the Export screen reads its days. Not UTC's, which
+/// after 8pm there is already tomorrow and misses the punch just made.
+const njToday = () => new Intl.DateTimeFormat('en-CA', { timeZone: 'America/New_York' }).format(new Date());
+
 await step('the period can be set to cover today’s punch', async () => {
   // The screen defaults to last week, which is before the punch just made.
-  const today = new Date().toISOString().slice(0, 10);
+  const today = njToday();
   await page.getByRole('button', { name: 'Custom', exact: true }).click();
   await page.getByLabel('From').fill(today);
   await page.getByLabel('To (included)').fill(today);
@@ -135,7 +139,7 @@ await step('pressing it again makes the correction', async () => {
 await step('the export screen warns that the correction has not reached payroll', async () => {
   await goToManage(page, 'Export');
   // The screen opens on last week again, so point it back at today.
-  const today = new Date().toISOString().slice(0, 10);
+  const today = njToday();
   await page.getByRole('button', { name: 'Custom', exact: true }).click();
   await page.getByLabel('From').fill(today);
   await page.getByLabel('To (included)').fill(today);
