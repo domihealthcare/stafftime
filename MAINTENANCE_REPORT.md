@@ -297,14 +297,17 @@ unit test, the type checks and the whole browser suite).
      "overdue" mark, the Export end date, and the Timesheet's period too).
      Only wrong on a computer set to another time zone. **Fixed in 1.33.1**
      (`practiceDate` and `practiceMidnight` in `lib/practice-time.ts`).
-   - `parseDay('2026-02-30')` gives 2 March instead of nothing, and one code
-     comment about the month grid is wrong. Neither shows on screen.
-   - **For a clinician:** the BrainCheck Care Plan reads a Cornell score of
-     exactly 10 as "probable major depression"; some published versions say
-     only above 10.
-   - **360 feedback:** the server would accept a third kind of question
-     ("choice") that the screens never send. Left as it is, since narrowing
-     it changes what the server accepts.
+   - `parseDay('2026-02-30')` gave 2 March instead of nothing, and one code
+     comment about the month grid was wrong. Neither showed on screen.
+     **Fixed in 1.33.2.**
+   - **For a clinician:** the BrainCheck Care Plan read a Cornell score of
+     exactly 10 as "probable major depression"; the scale's authors say only
+     above 10. **Changed in 1.33.2** to above 10 (Dominguez's choice).
+   - **360 feedback:** the request's check let a third kind of question
+     ("choice") through, which the screens never send; the server then
+     refused it a step later. **Fixed in 1.33.2**: refused at the door, and
+     the web's types are now checked against the server's for 360 questions
+     too (nothing left on the contract check's "loose" list).
 
 **Secrets check:** no passwords, keys or database addresses are committed to
 the repo. The only password in the code is the demo accounts'

@@ -1983,6 +1983,25 @@ Beyond the phases, the parts worth knowing about before picking up work:
   `practiceMidnight`, not the browser's; the This week / This month
   shortcuts too, `presetRanges`). The other date boxes still start on the
   browser's day (`lib/dates.ts` explains the two).
+- **The last small findings** (30 October 2026, Dominguez: "fix the
+  remaining small findings too", version 1.33.2): the end of
+  `MAINTENANCE_REPORT.md`'s list.
+  - **Cornell above 10** (Dominguez's choice): the BrainCheck Care Plan's
+    Cornell Scale reads 11 to 18 as probable and 19 and over as definite
+    major depression, as the scale's authors wrote it (Alexopoulos, 1988);
+    a total of exactly 10 had read as probable and been flagged positive.
+    `SCREENS.cornell` in `clinical/cognitive-assessment/instruments.ts`.
+    Worth carrying to the EMR module's clinical side.
+  - **360 questions**: a "choice" question is refused by the request's own
+    check (`Review360QuestionDto`, `REVIEW_360_KINDS`), not a step later, and
+    the server's 360 types are rating or words only, so the contract check
+    now covers them (`LOOSE_ENUMS` in `tests/contract/not-checked.mjs` is
+    empty).
+  - **`parseDay`** (`lib/format.ts`) turns a day that does not exist
+    ("2026-02-30") into nothing instead of rolling into March; it only reads
+    dates from addresses, so a mistyped one now opens on today. The month
+    grid's comment says four to six weeks (a February starting on a Sunday
+    has four).
 - **Turned down: "PTO about to be lost"** (9 October 2026, Dominguez): a
   reminder to use PTO before it fails to carry over was proposed and refused —
   not in the practice's interest. Do not propose it again.
